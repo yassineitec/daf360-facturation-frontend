@@ -1,0 +1,286 @@
+<div class="detail-page">
+
+  <!-- Back -->
+  <button class="back-btn" (click)="goBack()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Affaires
+  </button>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Chargement de l'affaire…</span>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p>{{ error() }}</p>
+      <button class="btn-retry" (click)="loadAll()">Réessayer</button>
+    </div>
+  } @else if (affaire()) {
+
+    <!-- Page header -->
+    <div class="page-header glass-card">
+      <div class="header-left">
+        <span class="ref-badge">{{ affaire()!.reference }}</span>
+        <div class="header-titles">
+          <h1 class="affaire-title">{{ affaire()!.intitule }}</h1>
+          <div class="header-meta">
+            <span>{{ affaire()!.clientNom }}</span>
+            <span class="meta-sep">·</span>
+            <span>{{ typeLabel() }}</span>
+            <span class="meta-sep">·</span>
+            <span>{{ affaire()!.responsableNom }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <app-status-badge [status]="affaire()!.statut" />
+        @if (!affaire()!.budgetValide) {
+          <span class="badge-budget-warn" title="Budget non validé">Budget non validé</span>
+        }
+      </div>
+    </div>
+
+    @if (actionError()) {
+      <div class="action-error-bar">{{ actionError() }}</div>
+    }
+
+    <!-- Main layout -->
+    <div class="detail-layout">
+
+      <!-- LEFT: Main content -->
+      <div class="detail-main">
+
+        <!-- KPI cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <span class="kpi-label">CA encaissé</span>
+            <span class="kpi-value">{{ formatAmount(kpis()?.caEncaisse ?? null, affaire()!.devise) }}</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">RAF disponible</span>
+            <span class="kpi-value kpi-value--raf" [style.color]="raf() ? (raf()!.rafDisponible / raf()!.budgetPrevisionnel > 0.2 ? '#1a6b7c' : raf()!.rafDisponible / raf()!.budgetPrevisionnel > raf()!.seuilAlertePct / 100 ? '#f59e0b' : '#dc2626') : '#64748b'">
+              {{ formatAmount(raf()?.rafDisponible ?? null, affaire()!.devise) }}
+            </span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">WIP</span>
+            <span class="kpi-value">{{ formatAmount(kpis()?.wip ?? null, affaire()!.devise) }}</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Marge brute</span>
+            <span class="kpi-value">{{ formatPct(kpis()?.margeBrutePct ?? null) }}</span>
+          </div>
+        </div>
+
+        <!-- RAF gauge -->
+        @if (raf() && raf()!.budgetPrevisionnel > 0) {
+          <div class="section-card glass-card">
+            <app-raf-gauge
+              [raf]="raf()!.rafDisponible"
+              [budget]="raf()!.budgetPrevisionnel"
+              [seuilPct]="raf()!.seuilAlertePct"
+              [devise]="affaire()!.devise" />
+            <div class="raf-detail">
+              <span>TS intégrés: <strong>{{ formatAmount(raf()!.totalTsIntegres, affaire()!.devise) }}</strong></span>
+              <span>Factures émises: <strong>{{ formatAmount(raf()!.totalFacturesEmises, affaire()!.devise) }}</strong></span>
+            </div>
+          </div>
+        }
+
+        <!-- Collapsible section: Infos générales -->
+        <div class="collapsible glass-card">
+          <button class="collapsible-header" (click)="toggleSection('info')" [attr.aria-expanded]="isOpen('info')">
+            <span class="section-title">Informations générales</span>
+            <svg class="chevron" [class.open]="isOpen('info')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          @if (isOpen('info')) {
+            <div class="collapsible-body">
+              <div class="info-grid">
+                <div class="info-row">
+                  <span class="info-label">Client</span>
+                  <span class="info-value">{{ affaire()!.clientNom || '—' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Responsable</span>
+                  <span class="info-value">{{ affaire()!.responsableNom || '—' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Type</span>
+                  <span class="info-value">{{ typeLabel() }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Devise</span>
+                  <span class="info-value">{{ affaire()!.devise }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Date début</span>
+                  <span class="info-value">{{ formatDate(affaire()!.dateDebut) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Date fin</span>
+                  <span class="info-value">{{ formatDate(affaire()!.dateFin) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Budget prévisionnel</span>
+                  <span class="info-value">{{ formatAmount(affaire()!.budgetPrevisionnel, affaire()!.devise) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Budget validé</span>
+                  <span class="info-value" [style.color]="affaire()!.budgetValide ? '#065f46' : '#b45309'">
+                    {{ affaire()!.budgetValide ? 'Oui ✓' : 'Non ⚠' }}
+                  </span>
+                </div>
+                @if (affaire()!.doc360Ref) {
+                  <div class="info-row">
+                    <span class="info-label">Doc360</span>
+                    <span class="info-value info-ref">{{ affaire()!.doc360Ref }}</span>
+                  </div>
+                }
+                @if (affaire()!.notes) {
+                  <div class="info-row info-row--full">
+                    <span class="info-label">Notes</span>
+                    <span class="info-value info-notes">{{ affaire()!.notes }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Collapsible section: Budget & TS -->
+        <div class="collapsible glass-card">
+          <button class="collapsible-header" (click)="toggleSection('ts')" [attr.aria-expanded]="isOpen('ts')">
+            <span class="section-title">
+              Budget &amp; TS
+              @if (tsList().length > 0) {
+                <span class="section-count">{{ tsList().length }}</span>
+              }
+            </span>
+            <svg class="chevron" [class.open]="isOpen('ts')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          @if (isOpen('ts')) {
+            <div class="collapsible-body">
+              <app-ts-list
+                [affaireId]="numId"
+                [list]="tsList()"
+                (updated)="loadTs(); loadRaf()" />
+            </div>
+          }
+        </div>
+
+        <!-- Stub sections -->
+        @for (section of stubSections; track section.key) {
+          <div class="collapsible glass-card">
+            <button class="collapsible-header" (click)="toggleSection(section.key)" [attr.aria-expanded]="isOpen(section.key)">
+              <span class="section-title">{{ section.label }}</span>
+              <svg class="chevron" [class.open]="isOpen(section.key)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            @if (isOpen(section.key)) {
+              <div class="collapsible-body stub-body">Module à venir dans la prochaine itération.</div>
+            }
+          </div>
+        }
+
+      </div><!-- /detail-main -->
+
+      <!-- RIGHT: Actions panel -->
+      <div class="detail-sidebar">
+
+        <!-- Budget validation -->
+        @if (!affaire()!.budgetValide) {
+          <div class="action-card glass-card" *appHasPermission="'FACT_VALIDER_BUDGET'">
+            <h3>Validation du budget</h3>
+            <p>Le budget de {{ formatAmount(affaire()!.budgetPrevisionnel, affaire()!.devise) }} est en attente de validation.</p>
+            <button class="btn-action btn-action--teal" [disabled]="budgetLoading()" (click)="validerBudget()">
+              @if (budgetLoading()) { Validation… } @else { Valider le budget }
+            </button>
+          </div>
+        }
+
+        <!-- Statut change -->
+        @if (availableTransitions().length > 0) {
+          <div class="action-card glass-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
+            <h3>Changer le statut</h3>
+            <p>Statut actuel: <strong>{{ statutLabel(affaire()!.statut) }}</strong></p>
+            <button class="btn-action btn-action--slate" (click)="openStatutModal()">
+              Changer le statut
+            </button>
+          </div>
+        }
+
+        <!-- Quick actions -->
+        <div class="action-card glass-card">
+          <h3>Actions rapides</h3>
+          <div class="quick-actions">
+            <a class="quick-link" [routerLink]="['/fact/invoicing']" [queryParams]="{ affaire: numId }">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Nouvelle facture
+            </a>
+            <a class="quick-link" [routerLink]="['/fact/payments']" [queryParams]="{ affaire: numId }">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              Voir les paiements
+            </a>
+          </div>
+        </div>
+
+        <!-- Timeline info -->
+        <div class="action-card glass-card">
+          <h3>Informations</h3>
+          <div class="info-list">
+            <div class="info-item">
+              <span class="info-item-label">Créé le</span>
+              <span class="info-item-value">{{ formatDate(affaire()!.createdAt) }}</span>
+            </div>
+            @if (affaire()!.updatedAt) {
+              <div class="info-item">
+                <span class="info-item-label">Modifié le</span>
+                <span class="info-item-value">{{ formatDate(affaire()!.updatedAt) }}</span>
+              </div>
+            }
+            <div class="info-item">
+              <span class="info-item-label">Seuil alerte RAF</span>
+              <span class="info-item-value">{{ affaire()!.seuilAlertePct }}%</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /detail-sidebar -->
+
+    </div><!-- /detail-layout -->
+
+  }<!-- /affaire block -->
+
+</div><!-- /detail-page -->
+
+<!-- Statut change modal -->
+@if (showStatutModal()) {
+  <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showStatutModal.set(false)">
+    <div class="modal-box" role="dialog" aria-labelledby="statut-modal-title">
+      <div class="modal-header">
+        <h2 id="statut-modal-title">Changer le statut</h2>
+        <button class="close-btn" (click)="showStatutModal.set(false)" aria-label="Fermer">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="new-statut">Nouveau statut *</label>
+          <select id="new-statut" [(ngModel)]="targetStatut">
+            @for (s of availableTransitions(); track s) {
+              <option [value]="s">{{ statutLabel(s) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="motif">Motif (optionnel)</label>
+          <textarea id="motif" [(ngModel)]="motif" rows="3" maxlength="500" placeholder="Raison du changement de statut…"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showStatutModal.set(false)">Annuler</button>
+        <button class="btn-save" [disabled]="actionLoading()" (click)="submitStatut()">
+          @if (actionLoading()) { Traitement… } @else { Confirmer }
+        </button>
+      </div>
+    </div>
+  </div>
+}

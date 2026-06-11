@@ -1,0 +1,162 @@
+<div class="payments-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-title">
+      <h1>Paiements</h1>
+      <span class="page-subtitle">Suivi des encaissements et factures impayées</span>
+    </div>
+    <button class="btn-reconcile" (click)="navigateToReconciliation()"
+      *appHasPermission="'FACT_BANK_RECONCILIATION'">
+      Rapprochement bancaire
+    </button>
+  </div>
+
+  <!-- Stats cards -->
+  <div class="stats-grid">
+    @if (loadingStats()) {
+      @for (_ of [1,2,3,4]; track $index) {
+        <div class="stat-card stat-skeleton"></div>
+      }
+    } @else if (stats()) {
+      <div class="stat-card stat-attente">
+        <span class="stat-label">En attente de paiement</span>
+        <span class="stat-value">{{ formatAmount(stats()!.enAttenteMontant, stats()!.devise) }}</span>
+      </div>
+      <div class="stat-card stat-retard">
+        <span class="stat-label">En retard</span>
+        <span class="stat-value">{{ stats()!.enRetardCount }}</span>
+        <span class="stat-sub">{{ formatAmount(stats()!.enRetardMontant, stats()!.devise) }}</span>
+      </div>
+      <div class="stat-card stat-encaisse">
+        <span class="stat-label">Encaissé ce mois</span>
+        <span class="stat-value">{{ formatAmount(stats()!.encaisseThisMoisMontant, stats()!.devise) }}</span>
+      </div>
+      <div class="stat-card stat-delai">
+        <span class="stat-label">Délai moyen paiement</span>
+        <span class="stat-value">{{ stats()!.delaiMoyenPaiement }}<span class="stat-unit"> j</span></span>
+      </div>
+    }
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label class="filter-label">Affaire</label>
+      <input type="number" class="filter-input" placeholder="ID affaire"
+        [(ngModel)]="filterAffaireId" (change)="onFilterChange()" min="1" />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Client</label>
+      <input type="number" class="filter-input" placeholder="ID client"
+        [(ngModel)]="filterClientId" (change)="onFilterChange()" min="1" />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Du</label>
+      <input type="date" class="filter-input"
+        [(ngModel)]="filterFrom" (change)="onFilterChange()" />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Au</label>
+      <input type="date" class="filter-input"
+        [(ngModel)]="filterTo" (change)="onFilterChange()" />
+    </div>
+    <label class="filter-toggle">
+      <input type="checkbox" [(ngModel)]="overdueOnly" (change)="onFilterChange()" />
+      <span>En retard uniquement</span>
+    </label>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  <!-- Aging table -->
+  <div class="table-wrap">
+    <table class="aging-table">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Facture</th>
+          <th class="num-col">Montant TTC</th>
+          <th>Échéance</th>
+          <th class="num-col">Jours retard</th>
+          <th>Statut relance</th>
+          <th class="action-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loadingRows()) {
+          @for (_ of [1,2,3,4,5]; track $index) {
+            <tr class="skeleton-row">
+              <td colspan="7"><div class="skeleton-line"></div></td>
+            </tr>
+          }
+        } @else if (rows().length === 0) {
+          <tr>
+            <td colspan="7" class="empty-cell">Aucune facture impayée trouvée.</td>
+          </tr>
+        } @else {
+          @for (row of rows(); track row.invoiceId) {
+            <tr class="aging-row"
+              [style.background-color]="agingRowColor(row.joursRetard)"
+              (click)="navigateToInvoice(row.invoiceId)">
+              <td class="client-cell">{{ row.clientNom }}</td>
+              <td class="invoice-cell">
+                <span class="inv-num">{{ row.invoiceNumber ?? '—' }}</span>
+                @if (row.affaireRef) {
+                  <span class="aff-ref">{{ row.affaireRef }}</span>
+                }
+              </td>
+              <td class="num-col amount-cell">{{ formatAmount(row.montantTtc, row.devise) }}</td>
+              <td class="date-cell">{{ formatDate(row.dateEcheance) }}</td>
+              <td class="num-col retard-cell">
+                @if (row.joursRetard > 0) {
+                  <span class="retard-badge"
+                    [class.retard-amber]="row.joursRetard > 30 && row.joursRetard <= 60"
+                    [class.retard-orange]="row.joursRetard > 60 && row.joursRetard <= 90"
+                    [class.retard-red]="row.joursRetard > 90">
+                    {{ row.joursRetard }} j
+                  </span>
+                } @else {
+                  <span class="on-time">—</span>
+                }
+              </td>
+              <td class="reminder-cell">
+                <span class="reminder-type">{{ reminderLabel(row.lastReminderType) }}</span>
+                @if (row.lastReminderSentAt) {
+                  <span class="reminder-date">{{ formatDate(row.lastReminderSentAt) }}</span>
+                }
+              </td>
+              <td class="action-col" (click)="$event.stopPropagation()">
+                <button class="btn-detail" (click)="navigateToInvoice(row.invoiceId)">
+                  Voir
+                </button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (totalPages() > 1) {
+    <div class="pagination">
+      <button class="page-btn" [disabled]="currentPage() === 0" (click)="goToPage(currentPage() - 1)">
+        ← Préc.
+      </button>
+      @for (p of pages; track p) {
+        <button class="page-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">
+          {{ p + 1 }}
+        </button>
+      }
+      <button class="page-btn" [disabled]="currentPage() >= totalPages() - 1" (click)="goToPage(currentPage() + 1)">
+        Suiv. →
+      </button>
+      <span class="page-info">{{ totalElements() }} facture(s)</span>
+    </div>
+  }
+
+</div>

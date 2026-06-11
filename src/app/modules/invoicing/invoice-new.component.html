@@ -1,0 +1,60 @@
+<div class="new-invoice-page">
+
+  <div class="page-header">
+    <a class="back-link" routerLink="/fact/invoicing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Retour aux factures
+    </a>
+    <h1>Nouvelle facture</h1>
+  </div>
+
+  <!-- Stepper indicator -->
+  <div class="stepper-bar glass-card">
+    @for (label of stepLabels; track $index; let i = $index) {
+      <div class="stepper-step"
+        [class.done]="i + 1 < step()"
+        [class.active]="i + 1 === step()"
+        [class.pending]="i + 1 > step()">
+        <div class="step-num">
+          @if (i + 1 < step()) {
+            <svg viewBox="0 0 12 12" fill="none" width="12" height="12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.8"/></svg>
+          } @else {
+            {{ i + 1 }}
+          }
+        </div>
+        <span class="step-label">{{ label }}</span>
+      </div>
+      @if (i < stepLabels.length - 1) {
+        <div class="stepper-line" [class.done]="i + 1 < step()"></div>
+      }
+    }
+  </div>
+
+  <!-- Step content -->
+  <div class="step-content glass-card">
+    @if (step() === 1) {
+      <app-step-affaire (nextStep)="onAffaireDone($event)" />
+    }
+    @if (step() === 2 && affaireValue()) {
+      <app-step-lines
+        [affaireData]="affaireValue()!"
+        (prevStep)="step.set(1)"
+        (nextStep)="onLinesDone($event)" />
+    }
+    @if (step() === 3 && affaireValue() && linesValue()) {
+      <app-step-conditions
+        [affaireData]="affaireValue()!"
+        [linesData]="linesValue()!"
+        (prevStep)="step.set(2)"
+        (nextStep)="onConditionsDone($event)" />
+    }
+    @if (step() === 4 && affaireValue() && linesValue() && conditionsValue()) {
+      <app-step-recap
+        [affaireData]="affaireValue()!"
+        [linesData]="linesValue()!"
+        [conditionsData]="conditionsValue()!"
+        (prevStep)="step.set(3)" />
+    }
+  </div>
+
+</div>

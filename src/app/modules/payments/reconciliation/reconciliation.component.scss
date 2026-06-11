@@ -1,0 +1,222 @@
+.reconciliation-page {
+  padding: 1.5rem 2rem;
+  max-width: 1600px;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+.page-header {
+  margin-bottom: 1.5rem;
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.25rem;
+  }
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+
+.recon-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+
+  @media (max-width: 1100px) { grid-template-columns: 1fr; }
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.right-panel { min-width: 0; }
+
+// ── Panel card ────────────────────────────────────────────────────────────────
+
+.panel-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.panel-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tx-count {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
+// ── Unmatched summary ─────────────────────────────────────────────────────────
+
+.summary-card {}
+
+.summary-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.875rem;
+}
+
+.aging-buckets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.bucket {
+  border-radius: 6px;
+  padding: 0.625rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.bucket-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bucket-count {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.bucket-amount {
+  font-size: 0.75rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+// ── Import history ────────────────────────────────────────────────────────────
+
+.import-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.import-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: #f8fafc; }
+  &.selected { background: #eff6ff; }
+}
+
+.imp-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.imp-filename {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.imp-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.imp-date { font-size: 0.75rem; color: #64748b; }
+
+.format-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.badge-ofx  { background: #dbeafe; color: #1e40af; }
+.badge-camt { background: #d1fae5; color: #065f46; }
+
+.imp-counts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.count-matched   { color: #16a34a; }
+.count-unmatched { color: #d97706; }
+
+// ── Transactions panel ────────────────────────────────────────────────────────
+
+.transactions-panel {
+  padding: 1.25rem;
+}
+
+.tx-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.btn-refresh {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+
+  &:hover { background: #f1f5f9; }
+}
+
+// ── State hints ───────────────────────────────────────────────────────────────
+
+.loading-hint { font-size: 0.875rem; color: #64748b; font-style: italic; }
+.error-hint   { font-size: 0.875rem; color: #991b1b; }
+.empty-hint   { font-size: 0.875rem; color: #94a3b8; font-style: italic; }

@@ -1,0 +1,249 @@
+@if (loading()) {
+  <div class="loading-state">Chargement…</div>
+} @else if (error()) {
+  <div class="error-banner">{{ error() }}</div>
+} @else if (invoice()) {
+<div class="detail-page">
+
+  <!-- Header -->
+  <div class="detail-header">
+    <a class="back-link" routerLink="/fact/invoicing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Factures
+    </a>
+    <div class="header-main">
+      <div class="title-block">
+        <span class="invoice-num">{{ invoice()!.invoiceNumber ?? 'Brouillon' }}</span>
+        <span class="statut-pill"
+          [style.background]="statutConfig().bg"
+          [style.color]="statutConfig().color"
+          [style.border-color]="statutConfig().border">
+          {{ statutConfig().label }}
+        </span>
+        @if (isOverdue()) {
+          <span class="overdue-pill">En retard</span>
+        }
+      </div>
+      <div class="header-meta">
+        <span>{{ invoice()!.clientNom }}</span>
+        @if (invoice()!.affaireRef) {
+          <span class="meta-sep">·</span>
+          <span>{{ invoice()!.affaireRef }}</span>
+        }
+        <span class="meta-sep">·</span>
+        <span>Émis le {{ formatDate(invoice()!.dateEmission) }}</span>
+      </div>
+    </div>
+    <div class="header-amounts">
+      <span class="amount-ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</span>
+      <span class="amount-sub">{{ formatAmount(invoice()!.montantHt, invoice()!.devise) }} HT + {{ formatAmount(invoice()!.montantTva, invoice()!.devise) }} TVA</span>
+    </div>
+  </div>
+
+  <!-- Status timeline -->
+  <div class="timeline-card glass-card">
+    <app-invoice-status-timeline [statut]="invoice()!.statut" />
+  </div>
+
+  @if (actionError()) {
+    <div class="action-error-bar">{{ actionError() }}</div>
+  }
+
+  <!-- Main body: two columns -->
+  <div class="detail-body">
+
+    <!-- Left column: lines + info -->
+    <div class="detail-main">
+
+      <!-- Lines table -->
+      <div class="section-card glass-card">
+        <h2 class="section-title">Lignes de facturation</h2>
+        <div class="lines-scroll">
+          <table class="lines-table">
+            <thead>
+              <tr><th>Description</th><th>Qté</th><th>PU HT</th><th>TVA</th><th>Total HT</th><th>Total TTC</th></tr>
+            </thead>
+            <tbody>
+              @for (line of invoice()!.lines; track line.id ?? $index) {
+                <tr>
+                  <td>{{ line.description }}</td>
+                  <td class="num">{{ line.quantite }}</td>
+                  <td class="num">{{ formatAmount(line.prixUnitaireHt) }}</td>
+                  <td class="num">{{ line.tauxTva }}%</td>
+                  <td class="num">{{ formatAmount(line.totalHt) }}</td>
+                  <td class="num total-ttc">{{ formatAmount(line.totalTtc) }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" class="foot-label">Total général</td>
+                <td class="num foot-ht">{{ formatAmount(invoice()!.montantHt) }}</td>
+                <td class="num foot-ttc">{{ formatAmount(invoice()!.montantTtc) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="section-card glass-card">
+        <h2 class="section-title">Informations</h2>
+        <div class="info-grid">
+          <div class="info-row"><span class="info-label">Type</span><span>{{ invoice()!.invoiceType }}</span></div>
+          <div class="info-row"><span class="info-label">Devise</span><span>{{ invoice()!.devise }}</span></div>
+          <div class="info-row"><span class="info-label">Date émission</span><span>{{ formatDate(invoice()!.dateEmission) }}</span></div>
+          <div class="info-row"><span class="info-label">Date échéance</span><span [class.overdue-val]="isOverdue()">{{ formatDate(invoice()!.dateEcheance) }}</span></div>
+          @if (invoice()!.conditionsPaiement) {
+            <div class="info-row"><span class="info-label">Conditions</span><span>{{ invoice()!.conditionsPaiement }}</span></div>
+          }
+          @if (invoice()!.bonDeCommande) {
+            <div class="info-row"><span class="info-label">BDC</span><span>{{ invoice()!.bonDeCommande }}</span></div>
+          }
+          @if (invoice()!.datePaiementFinal) {
+            <div class="info-row"><span class="info-label">Payée le</span><span>{{ formatDate(invoice()!.datePaiementFinal) }}</span></div>
+          }
+          @if (invoice()!.notes) {
+            <div class="info-row info-row--full"><span class="info-label">Notes</span><span>{{ invoice()!.notes }}</span></div>
+          }
+        </div>
+      </div>
+
+    </div><!-- /detail-main -->
+
+    <!-- Right column: actions + reminders -->
+    <div class="detail-aside">
+
+      <!-- Action panel (per statut) -->
+      <div class="action-card glass-card">
+        <h2 class="section-title">Actions</h2>
+
+        @switch (statut()) {
+          @case ('BROUILLON') {
+            <button class="action-full-btn action-full-btn--primary" [disabled]="saving()" (click)="submitForReview()">
+              Soumettre pour validation
+            </button>
+          }
+          @case ('EN_REVUE') {
+            @if (!showApprovalForm()) {
+              <button class="action-full-btn action-full-btn--primary" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="showApprovalForm.set(true)">
+                Approuver / Retourner
+              </button>
+            } @else {
+              <div class="inline-form">
+                <label>Décision *</label>
+                <div class="decision-btns">
+                  <button class="dec-btn" [class.dec-approve]="approvalDecision === 'APPROVE'" (click)="approvalDecision = 'APPROVE'">✓ Approuver</button>
+                  <button class="dec-btn" [class.dec-return]="approvalDecision === 'RETURN'"   (click)="approvalDecision = 'RETURN'">↩ Retourner</button>
+                  <button class="dec-btn" [class.dec-reject]="approvalDecision === 'REJECT'"   (click)="approvalDecision = 'REJECT'">✕ Rejeter</button>
+                </div>
+                @if (approvalDecision !== 'APPROVE') {
+                  <textarea [(ngModel)]="approvalComment" rows="2" maxlength="500" class="inline-textarea" placeholder="Motif…"></textarea>
+                }
+                <div class="inline-actions">
+                  <button class="btn-sm btn-sm--ghost" (click)="showApprovalForm.set(false)">Annuler</button>
+                  <button class="btn-sm btn-sm--primary" [disabled]="saving()" (click)="approve()">Confirmer</button>
+                </div>
+              </div>
+            }
+          }
+          @case ('VALIDEE') {
+            <button class="action-full-btn action-full-btn--primary" *appHasPermission="'FACT_EMIT_INVOICE'" [disabled]="saving()" (click)="emit()">
+              Émettre la facture
+            </button>
+          }
+          @case ('EMISE') {
+            <button class="action-full-btn action-full-btn--slate" [disabled]="saving()" (click)="markSent()">
+              Marquer comme envoyée
+            </button>
+            <button class="action-full-btn action-full-btn--green" (click)="showPaymentModal.set(true)">
+              Enregistrer un paiement
+            </button>
+          }
+          @case ('ENVOYEE') {
+            <button class="action-full-btn action-full-btn--green" (click)="showPaymentModal.set(true)">
+              Enregistrer un paiement
+            </button>
+            @if (!showDisputeForm()) {
+              <button class="action-full-btn action-full-btn--warn" (click)="showDisputeForm.set(true)">
+                Ouvrir un litige
+              </button>
+            }
+          }
+          @case ('PARTIELLEMENT_PAYEE') {
+            <button class="action-full-btn action-full-btn--green" (click)="showPaymentModal.set(true)">
+              Enregistrer un paiement
+            </button>
+            @if (!showDisputeForm()) {
+              <button class="action-full-btn action-full-btn--warn" (click)="showDisputeForm.set(true)">
+                Ouvrir un litige
+              </button>
+            }
+            <button class="action-full-btn action-full-btn--purple" (click)="showCreditNote.set(true)">
+              Émettre un avoir
+            </button>
+          }
+          @case ('PAYEE') {
+            <button class="action-full-btn action-full-btn--purple" (click)="showCreditNote.set(true)">
+              Émettre un avoir
+            </button>
+          }
+          @case ('EN_LITIGE') {
+            @if (!showResolveForm()) {
+              <button class="action-full-btn action-full-btn--green" (click)="showResolveForm.set(true)">
+                Résoudre le litige
+              </button>
+            }
+          }
+          @default {
+            <p class="no-actions">Aucune action disponible pour ce statut.</p>
+          }
+        }
+
+        <!-- Dispute form -->
+        @if (showDisputeForm()) {
+          <div class="inline-form">
+            <label>Motif du litige *</label>
+            <textarea [(ngModel)]="disputeReason" rows="3" maxlength="500" class="inline-textarea" placeholder="Décrivez le problème…"></textarea>
+            <div class="inline-actions">
+              <button class="btn-sm btn-sm--ghost" (click)="showDisputeForm.set(false)">Annuler</button>
+              <button class="btn-sm btn-sm--warn" [disabled]="saving() || !disputeReason.trim()" (click)="submitDispute()">Confirmer</button>
+            </div>
+          </div>
+        }
+
+        <!-- Resolve form -->
+        @if (showResolveForm()) {
+          <div class="inline-form">
+            <label>Notes de résolution</label>
+            <textarea [(ngModel)]="resolveNotes" rows="3" maxlength="500" class="inline-textarea" placeholder="Optionnel…"></textarea>
+            <div class="inline-actions">
+              <button class="btn-sm btn-sm--ghost" (click)="showResolveForm.set(false)">Annuler</button>
+              <button class="btn-sm btn-sm--primary" [disabled]="saving()" (click)="submitResolve()">Résoudre</button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Reminders -->
+      @if (invoice()!.statut !== 'BROUILLON' && invoice()!.statut !== 'EN_REVUE') {
+        <div class="section-card glass-card">
+          <app-reminders-panel
+            [invoiceId]="invoice()!.id"
+            [remindersActive]="invoice()!.remindersActive" />
+        </div>
+      }
+
+    </div><!-- /detail-aside -->
+  </div><!-- /detail-body -->
+
+</div><!-- /detail-page -->
+}
+
+<!-- Modals -->
+@if (showPaymentModal() && invoice()) {
+  <app-payment-modal [invoice]="invoice()!" (closed)="onPaymentClosed($event)" />
+}
+@if (showCreditNote() && invoice()) {
+  <app-credit-note-modal [invoice]="invoice()!" (closed)="onCreditNoteClosed($event)" />
+}

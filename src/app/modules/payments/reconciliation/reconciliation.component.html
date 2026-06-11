@@ -1,0 +1,124 @@
+<div class="reconciliation-page" *appHasPermission="'FACT_BANK_RECONCILIATION'">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <h1>Rapprochement bancaire</h1>
+      <span class="page-subtitle">Importez un relevé et rapprochez les virements avec vos factures</span>
+    </div>
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="recon-layout">
+
+    <!-- Left: Import panel + history -->
+    <div class="left-panel">
+
+      <div class="panel-card">
+        <h2 class="panel-title">Nouvel import</h2>
+        <app-import-dropzone (imported)="onImported($event)" />
+      </div>
+
+      <!-- Unmatched summary card -->
+      @if (unmatchedSummary()) {
+        <div class="panel-card summary-card">
+          <h2 class="panel-title">Virements non rapprochés</h2>
+          <div class="summary-total">
+            {{ formatAmount(unmatchedSummary()!.totalUnmatchedAmount, unmatchedSummary()!.devise) }}
+          </div>
+          <div class="aging-buckets">
+            <div class="bucket" style="background:#f8fafc">
+              <span class="bucket-label">0 – 30 j</span>
+              <span class="bucket-count">{{ unmatchedSummary()!.bucket0_30.count }}</span>
+              <span class="bucket-amount">{{ formatAmount(unmatchedSummary()!.bucket0_30.montant, unmatchedSummary()!.devise) }}</span>
+            </div>
+            <div class="bucket" style="background:#fef3c7">
+              <span class="bucket-label">31 – 60 j</span>
+              <span class="bucket-count">{{ unmatchedSummary()!.bucket31_60.count }}</span>
+              <span class="bucket-amount">{{ formatAmount(unmatchedSummary()!.bucket31_60.montant, unmatchedSummary()!.devise) }}</span>
+            </div>
+            <div class="bucket" style="background:#ffedd5">
+              <span class="bucket-label">61 – 90 j</span>
+              <span class="bucket-count">{{ unmatchedSummary()!.bucket61_90.count }}</span>
+              <span class="bucket-amount">{{ formatAmount(unmatchedSummary()!.bucket61_90.montant, unmatchedSummary()!.devise) }}</span>
+            </div>
+            <div class="bucket" style="background:#fee2e2">
+              <span class="bucket-label">> 90 j</span>
+              <span class="bucket-count">{{ unmatchedSummary()!.bucket90plus.count }}</span>
+              <span class="bucket-amount">{{ formatAmount(unmatchedSummary()!.bucket90plus.montant, unmatchedSummary()!.devise) }}</span>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Import history -->
+      <div class="panel-card">
+        <h2 class="panel-title">Historique des imports</h2>
+
+        @if (loadingImports()) {
+          <div class="loading-hint">Chargement…</div>
+        } @else if (errorImports()) {
+          <div class="error-hint">{{ errorImports() }}</div>
+        } @else if (imports().length === 0) {
+          <div class="empty-hint">Aucun import pour l'instant.</div>
+        } @else {
+          <div class="import-list">
+            @for (imp of imports(); track imp.id) {
+              <div class="import-row"
+                [class.selected]="imp.id === selectedImportId()"
+                (click)="selectImport(imp.id)">
+                <div class="imp-main">
+                  <span class="imp-filename">{{ imp.filename }}</span>
+                  <div class="imp-meta">
+                    <span class="format-badge"
+                      [class.badge-ofx]="imp.format === 'OFX'"
+                      [class.badge-camt]="imp.format === 'CAMT053'">
+                      {{ imp.format }}
+                    </span>
+                    <span class="imp-date">{{ formatDate(imp.importDate) }}</span>
+                  </div>
+                </div>
+                <div class="imp-counts">
+                  <span class="count-matched">{{ imp.matchedCount }} ✓</span>
+                  <span class="count-unmatched">{{ imp.unmatchedCount }} ?</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <!-- Right: Transactions table -->
+    <div class="right-panel">
+      <div class="panel-card transactions-panel">
+        <div class="tx-panel-header">
+          <h2 class="panel-title">
+            @if (selectedImport()) {
+              Transactions — {{ selectedImport()!.filename }}
+              <span class="tx-count">{{ selectedImport()!.transactionCount }} opération(s)</span>
+            } @else {
+              Transactions
+            }
+          </h2>
+          @if (selectedImportId() && !loadingTx()) {
+            <button class="btn-refresh" title="Actualiser" (click)="onRefreshNeeded()">↻</button>
+          }
+        </div>
+
+        @if (loadingTx()) {
+          <div class="loading-hint">Chargement des transactions…</div>
+        } @else if (errorTx()) {
+          <div class="error-hint">{{ errorTx() }}</div>
+        } @else {
+          <app-transaction-table
+            [transactions]="transactions()"
+            (refreshNeeded)="onRefreshNeeded()" />
+        }
+      </div>
+    </div>
+
+  </div>
+
+</div>

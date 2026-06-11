@@ -1,0 +1,224 @@
+<div class="invoicing-page">
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon stat-icon--teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </span>
+      <div class="stat-body">
+        <span class="stat-label">Total factures</span>
+        <span class="stat-value">{{ totalElements() }}</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon--blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </span>
+      <div class="stat-body">
+        <span class="stat-label">En attente (page)</span>
+        <span class="stat-value">{{ statsEnAttente() }}</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon--red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </span>
+      <div class="stat-body">
+        <span class="stat-label">En retard (page)</span>
+        <span class="stat-value stat-value--red">{{ statsEnRetard() }}</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon stat-icon--amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </span>
+      <div class="stat-body">
+        <span class="stat-label">En litige (page)</span>
+        <span class="stat-value stat-value--amber">{{ statsEnLitige() }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar glass-card">
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" class="search-input" placeholder="N° facture, client, affaire…"
+        [(ngModel)]="searchText" (keyup.enter)="onSearch()" (search)="onSearch()"
+        maxlength="100" autocomplete="off" />
+    </div>
+
+    <select class="filter-select" [(ngModel)]="filterStatut" (change)="onFilterChange()">
+      <option value="">Tous statuts</option>
+      @for (opt of statutOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+
+    <input type="date" class="filter-select" [(ngModel)]="filterFrom" (change)="onFilterChange()" title="Date d'émission depuis" />
+    <input type="date" class="filter-select" [(ngModel)]="filterTo"   (change)="onFilterChange()" title="Date d'émission jusqu'à" />
+
+    <div class="filter-spacer"></div>
+
+    <button class="btn-primary" *appHasPermission="'FACT_CREATE_INVOICE'" (click)="navigateToNew()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nouvelle facture
+    </button>
+  </div>
+
+  @if (actionError()) {
+    <div class="action-error-bar">{{ actionError() }}</div>
+  }
+
+  <!-- Table -->
+  <div class="table-card glass-card">
+    @if (error()) {
+      <div class="error-banner">{{ error() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="skeleton-rows">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="skeleton-row"><div class="sk"></div></div>
+        }
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>N° Facture</th>
+              <th>Affaire</th>
+              <th>Client</th>
+              <th class="num-col">Montant TTC</th>
+              <th>Émission</th>
+              <th>Échéance</th>
+              <th>Statut</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (inv of invoices(); track inv.id) {
+              <tr class="table-row" [class.row-overdue]="isOverdue(inv)" (click)="navigateToDetail(inv.id)">
+                <td>
+                  <span class="invoice-num">
+                    {{ inv.invoiceNumber ?? '(brouillon)' }}
+                  </span>
+                </td>
+                <td>
+                  @if (inv.affaireRef) {
+                    <span class="ref-badge">{{ inv.affaireRef }}</span>
+                  } @else { <span class="text-muted">—</span> }
+                </td>
+                <td class="client-cell">{{ inv.clientNom || '—' }}</td>
+                <td class="num-col amount-cell">{{ formatAmount(inv.montantTtc, inv.devise) }}</td>
+                <td>{{ formatDate(inv.dateEmission) }}</td>
+                <td>
+                  <div class="echeance-cell">
+                    <span [class.overdue-date]="isOverdue(inv)">{{ formatDate(inv.dateEcheance) }}</span>
+                    @if (isOverdue(inv)) {
+                      <span class="overdue-badge">J+{{ overdueDays(inv) }}</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="statut-badge"
+                    [style.background]="statutConfig(inv.statut).bg"
+                    [style.color]="statutConfig(inv.statut).color"
+                    [style.border-color]="statutConfig(inv.statut).border">
+                    {{ statutConfig(inv.statut).label }}
+                  </span>
+                </td>
+                <td class="actions-cell" (click)="$event.stopPropagation()">
+                  <!-- View -->
+                  <button class="action-btn action-btn--view" title="Voir le détail" (click)="navigateToDetail(inv.id)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+
+                  @if (inv.statut === 'VALIDEE') {
+                    <button class="action-btn action-btn--teal" title="Émettre" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="quickEmit(inv, $event)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                  }
+
+                  @if (inv.statut === 'EMISE') {
+                    <button class="action-btn action-btn--slate" title="Marquer envoyée" (click)="quickMarkSent(inv, $event)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    </button>
+                  }
+
+                  @if (inv.statut === 'EN_REVUE') {
+                    <button class="action-btn action-btn--blue" title="Approuver" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="openApprovalModal(inv, $event)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </button>
+                  }
+
+                  @if (inv.statut === 'EMISE' || inv.statut === 'ENVOYEE' || inv.statut === 'PARTIELLEMENT_PAYEE') {
+                    <button class="action-btn action-btn--green" title="Enregistrer paiement" (click)="openPaymentModal(inv, $event)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+            @empty {
+              <tr><td colspan="8" class="empty-row">Aucune facture trouvée.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <span class="page-info">{{ totalElements() }} résultats</span>
+          <div class="page-btns">
+            <button class="page-btn" [disabled]="currentPage() === 0" (click)="goToPage(currentPage() - 1)">‹</button>
+            @for (p of pages; track p) {
+              <button class="page-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p + 1 }}</button>
+            }
+            <button class="page-btn" [disabled]="currentPage() === totalPages() - 1" (click)="goToPage(currentPage() + 1)">›</button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+</div><!-- /invoicing-page -->
+
+<!-- Payment modal -->
+@if (paymentTarget()) {
+  <app-payment-modal [invoice]="paymentTarget()!" (closed)="onPaymentDone($event)" />
+}
+
+<!-- Approval modal -->
+@if (approvalTarget()) {
+  <div class="modal-overlay" (click)="$event.target === $event.currentTarget && approvalTarget.set(null)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Décision de validation</h2>
+        <button class="close-btn" (click)="approvalTarget.set(null)">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Décision *</label>
+          <div class="decision-btns">
+            <button class="decision-btn" [class.active-approve]="approvalDecision === 'APPROVE'" (click)="approvalDecision = 'APPROVE'">✓ Approuver</button>
+            <button class="decision-btn" [class.active-return]="approvalDecision === 'RETURN'"  (click)="approvalDecision = 'RETURN'">↩ Retourner</button>
+            <button class="decision-btn" [class.active-reject]="approvalDecision === 'REJECT'"  (click)="approvalDecision = 'REJECT'">✕ Rejeter</button>
+          </div>
+        </div>
+        @if (approvalDecision !== 'APPROVE') {
+          <div class="field">
+            <label>Commentaire *</label>
+            <textarea [(ngModel)]="approvalComment" rows="3" maxlength="1000" placeholder="Motif obligatoire…"></textarea>
+          </div>
+        }
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="approvalTarget.set(null)">Annuler</button>
+        <button class="btn-save" (click)="submitApproval()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+}

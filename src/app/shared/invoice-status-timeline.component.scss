@@ -1,0 +1,34 @@
+.timeline-wrap { display: flex; flex-direction: column; gap: 8px; }
+.timeline-track { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; padding-bottom: 4px; }
+
+.tl-step {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; min-width: 68px;
+  .tl-dot {
+    width: 24px; height: 24px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    svg { width: 12px; height: 12px; }
+    &--litige { border-color: #fca5a5; background: #fee2e2; }
+    &--annulee { border-color: #fecaca; background: #fef2f2; }
+  }
+  .tl-label { font-size: 0.6375rem; font-weight: 600; color: #94a3b8; text-align: center; max-width: 64px; line-height: 1.2;
+    &--litige { color: #991b1b; }
+    &--annulee { color: #b91c1c; }
+  }
+
+  &.done {
+    .tl-dot { border-color: #1a6b7c; background: #1a6b7c; }
+    .tl-label { color: #0f3d47; }
+  }
+  &.active {
+    .tl-dot { border-color: #1a6b7c; background: #cffafe; box-shadow: 0 0 0 3px rgba(26,107,124,0.15); }
+    .tl-label { color: #0f3d47; font-weight: 700; }
+  }
+}
+
+.tl-line {
+  flex: 1; height: 2px; background: #e2e8f0; margin-top: 11px; min-width: 16px; transition: background 0.2s;
+  &.done { background: #1a6b7c; }
+}
+
+.tl-branch { display: flex; align-items: center; gap: 0; padding-left: 24px; }
+.tl-branch-line { width: 24px; height: 2px; background: #fca5a5; }
