@@ -1,0 +1,332 @@
+<div class="ost-tab">
+
+  <!-- Affaire search -->
+  <div class="affaire-search-bar glass-card">
+    <div class="search-input-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" class="search-input" placeholder="Rechercher une affaire (référence, intitulé)…"
+             [(ngModel)]="searchQuery" (keyup)="onSearchKey($event)" />
+      @if (selectedAffaire()) {
+        <button class="clear-btn" (click)="clearAffaire()" title="Effacer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      }
+    </div>
+    <button class="btn-search" [disabled]="searching()" (click)="searchAffaires()">
+      @if (searching()) { … } @else { Rechercher }
+    </button>
+
+    <!-- Search results dropdown -->
+    @if (searchResults().length > 0) {
+      <div class="search-dropdown">
+        @for (a of searchResults(); track a.id) {
+          <button class="search-result-item" (click)="selectAffaire(a)">
+            <span class="res-ref">{{ a.reference }}</span>
+            <span class="res-intitule">{{ a.intitule }}</span>
+            <span class="res-client">{{ a.clientName }}</span>
+            <span class="res-statut" [style.color]="a.statut === 'EN_COURS' ? '#1a6b7c' : '#64748b'">
+              {{ a.statut }}
+            </span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (!selectedAffaire()) {
+    <div class="empty-state">Sélectionnez une affaire pour afficher ses ordres de sous-traitance.</div>
+  } @else {
+
+    <!-- Affaire summary + create button -->
+    <div class="ost-toolbar">
+      <div class="selected-affaire">
+        <span class="aff-ref">{{ selectedAffaire()!.reference }}</span>
+        <span class="aff-intitule">{{ selectedAffaire()!.intitule }}</span>
+        <span class="aff-client">· {{ selectedAffaire()!.clientName }}</span>
+      </div>
+      <button class="btn-primary" *appHasPermission="'FACT_MANAGE_ST'" (click)="openCreateOst()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nouvel ordre ST
+      </button>
+    </div>
+
+    @if (error()) {
+      <div class="alert-error">{{ error() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="loading-state"><div class="spinner"></div><span>Chargement…</span></div>
+    } @else if (ordres().length === 0) {
+      <div class="empty-state">Aucun ordre de sous-traitance pour cette affaire.</div>
+    } @else {
+      <div class="ost-cards">
+        @for (o of ordres(); track o.id) {
+          <div class="ost-card glass-card">
+            <div class="ost-card-header">
+              <div class="ost-ref-row">
+                <span class="ost-ref">{{ o.referenceOst }}</span>
+                <span class="ost-statut-chip"
+                      [style.background]="statColor(o.statut).bg"
+                      [style.color]="statColor(o.statut).color"
+                      [style.border-color]="statColor(o.statut).border">
+                  {{ statLabel(o.statut) }}
+                </span>
+              </div>
+              <div class="ost-meta">
+                <span class="ost-st-name">{{ o.sousTraitantName }}</span>
+                <span class="ost-perimetre">{{ o.perimetre }}</span>
+              </div>
+            </div>
+
+            <!-- Budget bar -->
+            <div class="budget-section">
+              <div class="budget-labels">
+                <span>Réalisé: <strong>{{ amt(o.montantRealise, o.devise) }}</strong></span>
+                <span>Budget: <strong>{{ amt(o.montantBudget, o.devise) }}</strong></span>
+              </div>
+              <div class="budget-bar-track">
+                <div class="budget-bar-fill"
+                     [style.width.%]="budgetPct(o)"
+                     [class.over]="isOver(o)"></div>
+              </div>
+              <div class="budget-pct" [class.over]="isOver(o)">
+                {{ budgetPct(o).toFixed(0) }}%
+                @if (isOver(o)) { <span class="alert-badge">⚠ Dépassement</span> }
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="ost-card-actions">
+              <button class="btn-ghost" (click)="openDrawer(o)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                  <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                  <line x1="8" y1="18" x2="21" y2="18"/>
+                  <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+                  <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+                Coûts
+              </button>
+
+              @if (o.statut !== 'CLOTURE') {
+                <button class="btn-ghost" *appHasPermission="'FACT_MANAGE_ST'" (click)="openStatutModal(o)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                    <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                  </svg>
+                  Statut
+                </button>
+              }
+
+              <button class="btn-ghost" *appHasPermission="'FACT_MANAGE_ST'" (click)="openEditOst(o)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Modifier
+              </button>
+
+              <button class="btn-ghost" [disabled]="exporting() === o.id" (click)="exportCsv(o, $event)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                @if (exporting() === o.id) { Export… } @else { CSV }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+</div>
+
+<!-- ─── Create / Edit OST Modal ─────────────────────────────────────────────── -->
+@if (showOstModal()) {
+  <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showOstModal.set(false)">
+    <div class="modal-box" role="dialog">
+      <div class="modal-header">
+        <h2>{{ editOstTarget() ? 'Modifier l\'ordre' : 'Nouvel ordre ST' }}</h2>
+        <button class="close-btn" (click)="showOstModal.set(false)">&times;</button>
+      </div>
+      <div class="modal-body">
+        @if (ostError()) { <div class="alert-error">{{ ostError() }}</div> }
+        <div class="field">
+          <label for="ost-st">Sous-traitant *</label>
+          @if (stLoading()) {
+            <span class="muted-sm">Chargement des sous-traitants…</span>
+          } @else if (stList().length === 0) {
+            <span class="muted-sm">Aucun sous-traitant actif pour cette entité.</span>
+          } @else {
+            <select id="ost-st" [(ngModel)]="ostForm.sousTraitantId">
+              @for (st of stList(); track st.id) {
+                <option [value]="st.id">{{ st.name }}</option>
+              }
+            </select>
+          }
+        </div>
+        <div class="field">
+          <label for="ost-perim">Périmètre *</label>
+          <input id="ost-perim" type="text" [(ngModel)]="ostForm.perimetre"
+                 placeholder="Description du périmètre de sous-traitance" maxlength="500" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="ost-budget">Montant budget *</label>
+            <input id="ost-budget" type="number" [(ngModel)]="ostForm.montantBudget" min="0" step="0.001" />
+          </div>
+          <div class="field">
+            <label for="ost-devise">Devise</label>
+            <input id="ost-devise" type="text" [(ngModel)]="ostForm.devise" maxlength="5" placeholder="TND" />
+          </div>
+          <div class="field">
+            <label for="ost-alerte">Seuil alerte (%)</label>
+            <input id="ost-alerte" type="number" [(ngModel)]="ostForm.alerteDepassementPct" min="0" max="100" step="1" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showOstModal.set(false)">Annuler</button>
+        <button class="btn-save" [disabled]="ostSaving() || !ostForm.perimetre.trim() || ostForm.montantBudget <= 0" (click)="saveOst()">
+          @if (ostSaving()) { Enregistrement… } @else { Enregistrer }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ─── Changer Statut Modal ─────────────────────────────────────────────────── -->
+@if (showStatutModal()) {
+  <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showStatutModal.set(false)">
+    <div class="modal-box modal-box--sm" role="dialog">
+      <div class="modal-header">
+        <h2>Changer le statut</h2>
+        <button class="close-btn" (click)="showStatutModal.set(false)">&times;</button>
+      </div>
+      <div class="modal-body">
+        @if (statutError()) { <div class="alert-error">{{ statutError() }}</div> }
+        <p class="ref-line">{{ statutTarget()?.referenceOst }}</p>
+        <div class="field">
+          <label for="new-statut">Nouveau statut</label>
+          <select id="new-statut" [(ngModel)]="newStatut">
+            @for (t of validTransitions(); track t) {
+              <option [value]="t">{{ statLabel(t) }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showStatutModal.set(false)">Annuler</button>
+        <button class="btn-save" [disabled]="statutSaving() || !newStatut" (click)="submitStatut()">
+          @if (statutSaving()) { Traitement… } @else { Confirmer }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ─── Costs Drawer ─────────────────────────────────────────────────────────── -->
+@if (drawerOpen()) {
+  <div class="drawer-overlay" (click)="$event.target === $event.currentTarget && closeDrawer()">
+    <div class="drawer-panel" role="dialog">
+      <div class="drawer-header">
+        <div>
+          <h2 class="drawer-title">Coûts réalisés</h2>
+          <span class="drawer-ref">{{ drawerOst()?.referenceOst }}</span>
+        </div>
+        <button class="close-btn" (click)="closeDrawer()">&times;</button>
+      </div>
+
+      <div class="drawer-summary">
+        <div class="summary-item">
+          <span>Budget</span>
+          <strong>{{ amt(drawerOst()?.montantBudget ?? null, drawerOst()?.devise) }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Réalisé</span>
+          <strong [class.over]="isOver(drawerOst()!)">
+            {{ amt(drawerOst()?.montantRealise ?? null, drawerOst()?.devise) }}
+          </strong>
+        </div>
+      </div>
+
+      <div class="drawer-body">
+        @if (coutsLoading()) {
+          <div class="loading-state"><div class="spinner"></div><span>Chargement…</span></div>
+        } @else if (coutsList().length === 0) {
+          <div class="empty-state-sm">Aucun coût enregistré.</div>
+        } @else {
+          <div class="couts-list">
+            @for (c of coutsList(); track c.id) {
+              <div class="cout-row">
+                <div class="cout-info">
+                  <span class="cout-date">{{ fmtDate(c.dateCout) }}</span>
+                  <span class="cout-desc">{{ c.description || '—' }}</span>
+                </div>
+                <span class="cout-amount">{{ amt(c.montant, c.devise) }}</span>
+                <button class="btn-icon btn-icon--danger" *appHasPermission="'FACT_MANAGE_ST'"
+                        title="Supprimer" (click)="removeCout(c)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                  </svg>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="drawer-footer">
+        @if (coutError()) { <div class="alert-error">{{ coutError() }}</div> }
+
+        @if (!showAddCout()) {
+          <button class="btn-primary" *appHasPermission="'FACT_MANAGE_ST'"
+                  [disabled]="drawerOst()?.statut !== 'EN_COURS'"
+                  (click)="showAddCout.set(true)">
+            Ajouter un coût
+          </button>
+          @if (drawerOst()?.statut !== 'EN_COURS') {
+            <span class="hint">L'ordre doit être EN_COURS pour ajouter des coûts.</span>
+          }
+        } @else {
+          <div class="add-cout-form">
+            <div class="field-row">
+              <div class="field">
+                <label>Montant *</label>
+                <input type="number" [(ngModel)]="coutForm.montant" min="0.001" step="0.001" placeholder="0.000" />
+              </div>
+              <div class="field">
+                <label>Devise</label>
+                <input type="text" [(ngModel)]="coutForm.devise" maxlength="5" placeholder="TND" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Date *</label>
+                <input type="date" [(ngModel)]="coutForm.dateCout" [max]="today" />
+              </div>
+              <div class="field">
+                <label>Description</label>
+                <input type="text" [(ngModel)]="coutForm.description" placeholder="Libellé" maxlength="255" />
+              </div>
+            </div>
+            <div class="add-cout-actions">
+              <button class="btn-cancel" (click)="showAddCout.set(false)">Annuler</button>
+              <button class="btn-save" [disabled]="coutSaving() || !coutForm.montant || !coutForm.dateCout" (click)="addCout()">
+                @if (coutSaving()) { Ajout… } @else { Ajouter }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

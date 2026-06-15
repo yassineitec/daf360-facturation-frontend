@@ -1,0 +1,115 @@
+<div class="analyse-tab">
+
+  <!-- Affaire search -->
+  <div class="search-bar glass-card">
+    <div class="search-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="search-icon">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" class="search-input" placeholder="Rechercher une affaire…"
+             [(ngModel)]="searchQuery" (keyup)="onSearchKey($event)" />
+      @if (selectedAffaire()) {
+        <button class="clear-btn" (click)="clearAffaire()" title="Effacer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      }
+    </div>
+    <button class="btn-search" [disabled]="searching()" (click)="searchAffaires()">
+      @if (searching()) { … } @else { Analyser }
+    </button>
+
+    @if (searchResults().length > 0) {
+      <div class="search-dropdown">
+        @for (a of searchResults(); track a.id) {
+          <button class="result-item" (click)="selectAffaire(a)">
+            <span class="res-ref">{{ a.reference }}</span>
+            <span class="res-intitule">{{ a.intitule }}</span>
+            <span class="res-client">{{ a.clientName }}</span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (!selectedAffaire()) {
+    <div class="empty-state">Sélectionnez une affaire pour analyser ses coûts de sous-traitance.</div>
+  } @else if (loading()) {
+    <div class="empty-state"><div class="spinner"></div><span>Chargement…</span></div>
+  } @else if (error()) {
+    <div class="alert-error">{{ error() }}</div>
+  } @else if (margin()) {
+
+    <div class="margin-card glass-card">
+      <div class="card-title-row">
+        <h2>Analyse de marge</h2>
+        <span class="aff-ref-chip">{{ selectedAffaire()!.reference }}</span>
+      </div>
+
+      <!-- KPI row -->
+      <div class="kpi-row">
+        <div class="kpi-block">
+          <span class="kpi-label">CA global</span>
+          <span class="kpi-value">{{ fmt(margin()!.ca) }}</span>
+        </div>
+        <div class="kpi-block">
+          <span class="kpi-label">Coûts internes</span>
+          <span class="kpi-value">{{ fmt(margin()!.coutsInternes) }}</span>
+        </div>
+        <div class="kpi-block">
+          <span class="kpi-label">Coûts ST</span>
+          <span class="kpi-value kpi-value--warn">{{ fmt(margin()!.coutsST) }}</span>
+        </div>
+        <div class="kpi-block">
+          <span class="kpi-label">Marge brute</span>
+          <span class="kpi-value" [class.kpi-value--positive]="margin()!.margeBrute > 0"
+                                  [class.kpi-value--negative]="margin()!.margeBrute < 0">
+            {{ fmt(margin()!.margeBrute) }}
+          </span>
+        </div>
+        <div class="kpi-block kpi-block--highlight">
+          <span class="kpi-label">Taux marge</span>
+          <span class="kpi-value" [class.kpi-value--positive]="margin()!.margeBrutePct > 0"
+                                  [class.kpi-value--negative]="margin()!.margeBrutePct < 0">
+            {{ fmtPct(margin()!.margeBrutePct) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Visual breakdown -->
+      <div class="breakdown">
+        <h3>Répartition du CA</h3>
+
+        <div class="bar-row">
+          <span class="bar-label">Marge brute</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--teal"
+                 [style.width.%]="barPct(margin()!.margeBrute, margin()!.ca)"></div>
+          </div>
+          <span class="bar-pct">{{ fmtPct(margin()!.margeBrutePct) }}</span>
+        </div>
+
+        <div class="bar-row">
+          <span class="bar-label">Coûts ST</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--orange"
+                 [style.width.%]="barPct(margin()!.coutsST, margin()!.ca)"></div>
+          </div>
+          <span class="bar-pct">{{ fmtPct(barPct(margin()!.coutsST, margin()!.ca)) }}</span>
+        </div>
+
+        <div class="bar-row">
+          <span class="bar-label">Coûts internes</span>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill--slate"
+                 [style.width.%]="barPct(margin()!.coutsInternes, margin()!.ca)"></div>
+          </div>
+          <span class="bar-pct">{{ fmtPct(barPct(margin()!.coutsInternes, margin()!.ca)) }}</span>
+        </div>
+      </div>
+    </div>
+
+  }
+
+</div>

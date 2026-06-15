@@ -44,12 +44,32 @@ export const routes: Routes = [
           import('./modules/reporting/reporting.routes').then(m => m.REPORTING_ROUTES),
       },
       {
+        path: 'clients',
+        loadChildren: () =>
+          import('./modules/clients/clients.routes').then(m => m.CLIENTS_ROUTES),
+      },
+      {
         path: 'admin',
         loadChildren: () =>
           import('./modules/admin/admin.routes').then(m => m.ADMIN_ROUTES),
       },
-      { path: '', redirectTo: 'affaires', pathMatch: 'full' },
+      {
+        path: 'billing',
+        children: [
+          {
+            path: 'approval',
+            loadComponent: () =>
+              import('./modules/affaires/billing/approval-queue.component').then(m => m.ApprovalQueueComponent),
+          },
+        ],
+      },
+      {
+        path: 'home',
+        loadComponent: () =>
+          import('./modules/home/home.component').then(m => m.HomeComponent),
+      },
+      { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
   },
-  { path: '', redirectTo: '/fact/affaires', pathMatch: 'full' },
+  { path: '', redirectTo: '/fact/home', pathMatch: 'full' },
 ];

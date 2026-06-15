@@ -1,0 +1,46 @@
+<div class="page-wrap">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestion des coûts</h1>
+      <p class="page-sub">Lignes de coût, approbations et configuration</p>
+    </div>
+  </div>
+
+  <!-- Tab nav -->
+  <div class="tab-nav">
+    @for (tab of tabs; track tab.id) {
+      <button class="tab-btn"
+        [class.active]="activeTab() === tab.id"
+        (click)="setTab(tab.id)">
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <!-- Tab panels -->
+  <div class="tab-panel">
+
+    @if (activeTab() === 'lines') {
+      <app-cost-lines></app-cost-lines>
+    }
+
+    @if (activeTab() === 'approvals') {
+      <app-approval-queue></app-approval-queue>
+    }
+
+    @if (activeTab() === 'config') {
+      <div class="config-layout">
+        <div class="config-main">
+          <app-cost-config></app-cost-config>
+        </div>
+        <div class="config-side">
+          <app-cost-import-panel [paysId]="paysId()"></app-cost-import-panel>
+        </div>
+      </div>
+    }
+
+  </div>
+
+</div>

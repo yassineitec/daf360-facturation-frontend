@@ -5,11 +5,10 @@
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(26, 107, 124, 0.12);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(15, 61, 71, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 61, 71, 0.08);
 }
 
 // ── Back button ───────────────────────────────────────────────────────────────
@@ -353,4 +352,37 @@
   border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer;
   &:hover:not(:disabled) { background: #134f5c; }
   &:disabled { opacity: 0.6; cursor: default; }
+}
+
+// ── Statut radio group ────────────────────────────────────────────────────────
+
+.statut-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.statut-radio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+  transition: all 0.12s;
+
+  input[type="radio"] {
+    accent-color: #1a6b7c;
+    width: 16px; height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  &:hover { border-color: #1a6b7c; background: rgba(26,107,124,0.04); }
+  &.selected { border-color: #1a6b7c; background: rgba(26,107,124,0.07); color: #0f3d47; font-weight: 600; }
 }

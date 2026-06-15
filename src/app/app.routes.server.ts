@@ -1,18 +1,18 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
 export const serverRoutes: ServerRoute[] = [
-  // Authenticated routes with dynamic params → server-side on demand (no prerender)
+  // Authenticated routes: client-side only — the server has no cookies, so SSR would
+  // render an unauthenticated state and cause a hydration mismatch on the browser.
   {
     path: 'fact/**',
-    renderMode: RenderMode.Server,
+    renderMode: RenderMode.Client,
   },
   {
     path: 'auth/callback',
     renderMode: RenderMode.Server,
   },
-  // Static/shell routes → prerender
   {
     path: '**',
-    renderMode: RenderMode.Prerender,
+    renderMode: RenderMode.Client,
   },
 ];

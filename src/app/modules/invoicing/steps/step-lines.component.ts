@@ -6,7 +6,7 @@ import { TVA_RATES } from '../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 
 export interface StepLinesValue {
-  lines: { description: string; quantite: number; prixUnitaireHt: number; tauxTva: number }[];
+  lines: { description: string; quantity: number; unitRate: number; vatRatePct: number }[];
 }
 
 @Component({
@@ -140,10 +140,10 @@ export class StepLinesComponent {
     if (this.form.invalid) return;
     this.nextStep.emit({
       lines: this.linesArray.value.map((l: { description: string; quantite: number; prixUnitaireHt: number; tauxTva: number }) => ({
-        description:    l.description,
-        quantite:       l.quantite,
-        prixUnitaireHt: l.prixUnitaireHt,
-        tauxTva:        l.tauxTva,
+        description: l.description,
+        quantity:    l.quantite,
+        unitRate:    l.prixUnitaireHt,
+        vatRatePct:  l.tauxTva,
       })),
     });
   }

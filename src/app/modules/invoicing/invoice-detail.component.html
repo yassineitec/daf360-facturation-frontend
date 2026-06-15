@@ -67,11 +67,11 @@
               @for (line of invoice()!.lines; track line.id ?? $index) {
                 <tr>
                   <td>{{ line.description }}</td>
-                  <td class="num">{{ line.quantite }}</td>
-                  <td class="num">{{ formatAmount(line.prixUnitaireHt) }}</td>
-                  <td class="num">{{ line.tauxTva }}%</td>
-                  <td class="num">{{ formatAmount(line.totalHt) }}</td>
-                  <td class="num total-ttc">{{ formatAmount(line.totalTtc) }}</td>
+                  <td class="num">{{ line.quantity }}</td>
+                  <td class="num">{{ formatAmount(line.unitRate) }}</td>
+                  <td class="num">{{ line.vatRatePct }}%</td>
+                  <td class="num">{{ formatAmount(line.lineTotal) }}</td>
+                  <td class="num total-ttc">{{ formatAmount(lineTtc(line)) }}</td>
                 </tr>
               }
             </tbody>
@@ -119,12 +119,12 @@
         <h2 class="section-title">Actions</h2>
 
         @switch (statut()) {
-          @case ('BROUILLON') {
+          @case ('DRAFT') {
             <button class="action-full-btn action-full-btn--primary" [disabled]="saving()" (click)="submitForReview()">
               Soumettre pour validation
             </button>
           }
-          @case ('EN_REVUE') {
+          @case ('SUBMITTED') {
             @if (!showApprovalForm()) {
               <button class="action-full-btn action-full-btn--primary" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="showApprovalForm.set(true)">
                 Approuver / Retourner
@@ -147,12 +147,12 @@
               </div>
             }
           }
-          @case ('VALIDEE') {
+          @case ('APPROVED') {
             <button class="action-full-btn action-full-btn--primary" *appHasPermission="'FACT_EMIT_INVOICE'" [disabled]="saving()" (click)="emit()">
               Émettre la facture
             </button>
           }
-          @case ('EMISE') {
+          @case ('EMITTED') {
             <button class="action-full-btn action-full-btn--slate" [disabled]="saving()" (click)="markSent()">
               Marquer comme envoyée
             </button>
@@ -160,7 +160,7 @@
               Enregistrer un paiement
             </button>
           }
-          @case ('ENVOYEE') {
+          @case ('SENT') {
             <button class="action-full-btn action-full-btn--green" (click)="showPaymentModal.set(true)">
               Enregistrer un paiement
             </button>
@@ -170,7 +170,7 @@
               </button>
             }
           }
-          @case ('PARTIELLEMENT_PAYEE') {
+          @case ('PARTIALLY_PAID') {
             <button class="action-full-btn action-full-btn--green" (click)="showPaymentModal.set(true)">
               Enregistrer un paiement
             </button>
@@ -183,12 +183,12 @@
               Émettre un avoir
             </button>
           }
-          @case ('PAYEE') {
+          @case ('PAID') {
             <button class="action-full-btn action-full-btn--purple" (click)="showCreditNote.set(true)">
               Émettre un avoir
             </button>
           }
-          @case ('EN_LITIGE') {
+          @case ('DISPUTED') {
             @if (!showResolveForm()) {
               <button class="action-full-btn action-full-btn--green" (click)="showResolveForm.set(true)">
                 Résoudre le litige
@@ -226,7 +226,7 @@
       </div>
 
       <!-- Reminders -->
-      @if (invoice()!.statut !== 'BROUILLON' && invoice()!.statut !== 'EN_REVUE') {
+      @if (invoice()!.statut !== 'DRAFT' && invoice()!.statut !== 'SUBMITTED') {
         <div class="section-card glass-card">
           <app-reminders-panel
             [invoiceId]="invoice()!.id"

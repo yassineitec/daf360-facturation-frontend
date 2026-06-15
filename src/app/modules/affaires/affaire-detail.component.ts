@@ -11,10 +11,13 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { RafGaugeComponent } from '../../shared/raf-gauge.component';
 import { TsListComponent } from './ts/ts-list.component';
+import { TsFormComponent } from './ts/ts-form.component';
+import { AffaireOstComponent } from './ost/affaire-ost.component';
+import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.component';
 
 @Component({
   selector: 'app-affaire-detail',
-  imports: [RouterLink, FormsModule, StatusBadgeComponent, PermissionDirective, RafGaugeComponent, TsListComponent],
+  imports: [RouterLink, FormsModule, StatusBadgeComponent, PermissionDirective, RafGaugeComponent, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
   templateUrl: './affaire-detail.component.html',
   styleUrl: './affaire-detail.component.scss',
 })
@@ -41,14 +44,16 @@ export class AffaireDetailComponent implements OnInit {
 
   // Statut modal
   showStatutModal = signal(false);
-  targetStatut    = '';
-  motif           = '';
+  targetStatut    = signal('');
+  motif           = signal('');
+
+  // TS new-form
+  showTsForm = signal(false);
 
   readonly stubSections = [
-    { key: 'factures',       label: 'Factures émises' },
-    { key: 'paiements',      label: 'Paiements reçus' },
-    { key: 'soustraitance',  label: 'Sous-traitance' },
-    { key: 'indicateurs',    label: 'Indicateurs' },
+    { key: 'factures',    label: 'Factures émises' },
+    { key: 'paiements',   label: 'Paiements reçus' },
+    { key: 'indicateurs', label: 'Indicateurs' },
   ];
 
   // Budget validation
@@ -64,8 +69,10 @@ export class AffaireDetailComponent implements OnInit {
 
   readonly typeLabel = computed(() => {
     const a = this.affaire();
-    return a ? (TYPE_LABELS[a.type] ?? a.type) : '';
+    return a ? (TYPE_LABELS[a.typeAffaire] ?? a.typeAffaire) : '';
   });
+
+  readonly affaireDevise = computed(() => this.affaire()?.devise || 'TND');
 
   ngOnInit(): void {
     this.loadAll();
@@ -138,16 +145,17 @@ export class AffaireDetailComponent implements OnInit {
   openStatutModal(): void {
     const transitions = this.availableTransitions();
     if (transitions.length === 0) return;
-    this.targetStatut = transitions[0];
-    this.motif = '';
+    this.targetStatut.set(transitions[0]);
+    this.motif.set('');
     this.showStatutModal.set(true);
   }
 
   submitStatut(): void {
-    if (!this.targetStatut) return;
+    const statut = this.targetStatut();
+    if (!statut) return;
     this.actionLoading.set(true);
     this.actionError.set(null);
-    this.svc.changerStatut(this.numId, { statut: this.targetStatut, motif: this.motif.trim() || null }).subscribe({
+    this.svc.changerStatut(this.numId, { newStatut: statut, reason: this.motif().trim() || null }).subscribe({
       next: () => {
         this.actionLoading.set(false);
         this.showStatutModal.set(false);
@@ -158,6 +166,13 @@ export class AffaireDetailComponent implements OnInit {
         this.actionError.set(err?.error?.message ?? 'Erreur lors du changement de statut.');
       },
     });
+  }
+
+  openTsForm(): void { this.showTsForm.set(true); }
+
+  onTsFormClosed(saved: boolean): void {
+    this.showTsForm.set(false);
+    if (saved) { this.loadTs(); this.loadRaf(); }
   }
 
   // ── Formatting helpers ───────────────────────────────────────────────────────

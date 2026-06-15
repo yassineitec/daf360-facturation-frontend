@@ -8,14 +8,13 @@ export type InvoiceStatut =
   | 'DISPUTED' | 'CANCELLED' | 'CREDIT_NOTED';
 
 export interface InvoiceLine {
-  id?:              number;
-  description:      string;
-  quantite:         number;
-  prixUnitaireHt:   number;
-  tauxTva:          number;
-  totalHt:          number;
-  totalTva:         number;
-  totalTtc:         number;
+  id?:          number;
+  description:  string;
+  quantity:     number;
+  unitRate:     number;
+  vatRatePct:   number;
+  lineTotal:    number;
+  vatAmount:    number;
 }
 
 export interface InvoiceListItem {
@@ -65,22 +64,23 @@ export interface ReminderDto {
 // ── Request types ─────────────────────────────────────────────────────────────
 
 export interface InvoiceLineRequest {
-  description:    string;
-  quantite:       number;
-  prixUnitaireHt: number;
-  tauxTva:        number;
+  description: string;
+  quantity:    number;
+  unitRate:    number;
+  vatRatePct:  number;
 }
 
 export interface CreateDraftRequest {
-  affaireId?:          number | null;
+  paysId:              number;
+  affaireId:           number | null;
+  clientId:            number | null;
+  projectId?:          number | null;
+  billingMode:         string;
+  currency:            string;
   tsId?:               number | null;
-  invoiceType?:        string | null;
-  clientId?:           number | null;
   lines:               InvoiceLineRequest[];
   notes?:              string | null;
-  bonDeCommande?:      string | null;
-  dateEcheance?:       string | null;
-  conditionsPaiement?: string | null;
+  dueDate?:            string | null;
   templateId?:         number | null;
 }
 
@@ -92,10 +92,11 @@ export interface ApproveDecisionRequest {
 }
 
 export interface RecordPaymentRequest {
-  dateReglement:    string;
-  montant:          number;
-  modePaiement:     string;
-  referenceBancaire?: string | null;
+  paymentDate:    string;
+  amountLocal:    number;
+  paymentMethod:  string;
+  bankReference?: string | null;
+  notes?:         string | null;
 }
 
 export interface DisputeRequest { reason: string; }

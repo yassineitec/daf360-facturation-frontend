@@ -1,0 +1,64 @@
+<div class="sc-page">
+
+  <!-- Header card: title + pays selector + tab nav -->
+  <div class="sc-header glass-card">
+    <div class="sc-title-row">
+      <h1 class="sc-title">Sous-traitance</h1>
+      @if (pays().length > 0) {
+        <div class="sc-pays">
+          <label for="pays-sel">Entité</label>
+          <select id="pays-sel" [value]="selectedPaysId()" (change)="onPaysChange($event)">
+            @for (p of pays(); track p.id) {
+              <option [value]="p.id">{{ p.frenchLabel }}</option>
+            }
+          </select>
+        </div>
+      }
+    </div>
+
+    <nav class="sc-tab-nav" role="tablist">
+      <button role="tab" class="tab-btn" [class.active]="activeTab() === 'st'"
+              [attr.aria-selected]="activeTab() === 'st'"
+              (click)="activeTab.set('st')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Sous-traitants
+      </button>
+      <button role="tab" class="tab-btn" [class.active]="activeTab() === 'ordres'"
+              [attr.aria-selected]="activeTab() === 'ordres'"
+              (click)="activeTab.set('ordres')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        Ordres ST
+      </button>
+      <button role="tab" class="tab-btn" [class.active]="activeTab() === 'analyse'"
+              [attr.aria-selected]="activeTab() === 'analyse'"
+              (click)="activeTab.set('analyse')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Analyse des coûts
+      </button>
+    </nav>
+  </div>
+
+  <!-- Tab content -->
+  <div class="sc-body">
+    @if (activeTab() === 'st') {
+      <app-sous-traitants-tab [paysId]="selectedPaysId()" />
+    } @else if (activeTab() === 'ordres') {
+      <app-ordres-st-tab [paysId]="selectedPaysId()" />
+    } @else {
+      <app-couts-analyse-tab />
+    }
+  </div>
+
+</div>

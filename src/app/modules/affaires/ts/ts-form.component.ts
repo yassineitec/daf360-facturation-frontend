@@ -1,5 +1,5 @@
-import { Component, OnInit, input, output, signal, inject } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, input, output, signal, inject } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AffaireService } from '../affaire.service';
 import { CreateTsRequest } from '../affaire.model';
 
@@ -30,11 +30,11 @@ import { CreateTsRequest } from '../affaire.model';
           <div class="form-row">
             <div class="field">
               <label for="ts-montant">Montant *</label>
-              <input id="ts-montant" type="number" formControlName="montant" placeholder="0.00" min="0.01" step="0.01" />
-              @if (f['montant'].touched && f['montant'].errors?.['required']) {
+              <input id="ts-montant" type="number" formControlName="montantEstime" placeholder="0.00" min="0.01" step="0.01" />
+              @if (f['montantEstime'].touched && f['montantEstime'].errors?.['required']) {
                 <span class="field-error">Champ requis.</span>
               }
-              @if (f['montant'].touched && f['montant'].errors?.['min']) {
+              @if (f['montantEstime'].touched && f['montantEstime'].errors?.['min']) {
                 <span class="field-error">Doit être supérieur à 0.</span>
               }
             </div>
@@ -77,7 +77,7 @@ import { CreateTsRequest } from '../affaire.model';
   `,
   styleUrl: './ts-form.component.scss',
 })
-export class TsFormComponent implements OnInit {
+export class TsFormComponent {
   affaireId   = input.required<number>();
   closed      = output<boolean>();
 
@@ -86,19 +86,17 @@ export class TsFormComponent implements OnInit {
 
   saving      = signal(false);
   serverError = signal<string | null>(null);
-  form!: FormGroup;
-  get f() { return this.form.controls; }
 
-  ngOnInit(): void {
-    this.form = this.fb.group({
-      intitule:        ['', [Validators.required, Validators.maxLength(255)]],
-      montant:         [null, [Validators.required, Validators.min(0.01)]],
-      devise:          ['TND'],
-      perimetre:       [''],
-      impactBudgetaire:[''],
-      description:     [''],
-    });
-  }
+  form = this.fb.group({
+    intitule:        ['', [Validators.required, Validators.maxLength(255)]],
+    montantEstime:   [null as number | null, [Validators.required, Validators.min(0.01)]],
+    devise:          ['TND'],
+    perimetre:       [''],
+    impactBudgetaire:[''],
+    description:     [''],
+  });
+
+  get f() { return this.form.controls; }
 
   submit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
@@ -107,9 +105,9 @@ export class TsFormComponent implements OnInit {
 
     const v = this.form.getRawValue();
     const dto: CreateTsRequest = {
-      intitule:         v.intitule.trim(),
-      montant:          Number(v.montant),
-      devise:           v.devise,
+      intitule:         (v.intitule ?? '').trim(),
+      montantEstime:    Number(v.montantEstime),
+      devise:           v.devise ?? 'TND',
       perimetre:        v.perimetre?.trim()        || null,
       impactBudgetaire: v.impactBudgetaire?.trim() || null,
       description:      v.description?.trim()      || null,

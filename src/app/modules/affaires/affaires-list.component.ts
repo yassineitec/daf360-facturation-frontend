@@ -101,10 +101,10 @@ export class AffairesListComponent implements OnInit {
   }
 
   rafColor(a: AffaireListItem): string {
-    if (!a.budgetPrevisionnel || a.rafDisponible === null) return '#94a3b8';
+    if (!a.budgetPrevisionnel || a.rafDisponible == null) return '#94a3b8';
     const pct = (a.rafDisponible / a.budgetPrevisionnel) * 100;
     if (pct > 20) return '#1a6b7c';
-    if (pct > a.seuilAlertePct) return '#f59e0b';
+    if (pct > a.rafAlerteSeuilPct) return '#f59e0b';
     return '#dc2626';
   }
 

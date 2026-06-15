@@ -1,0 +1,58 @@
+<div class="tab-container">
+  <div class="queue-header">
+    <h3 class="queue-title">File d'approbation</h3>
+    <button class="btn-refresh" (click)="load()" [disabled]="isLoading()">↻ Actualiser</button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">Chargement...</div>
+  } @else if (serverError()) {
+    <div class="banner-error">{{ serverError() }}</div>
+  } @else if (pending().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">✓</div>
+      <p>Aucune ligne en attente d'approbation.</p>
+    </div>
+  } @else {
+    <div class="queue-list">
+      @for (line of pending(); track line.id) {
+        <div class="queue-card">
+          <div class="card-info">
+            <div class="card-label">{{ line.label }}</div>
+            <div class="card-meta">
+              {{ line.categoryId ?? '—' }} ·
+              {{ line.transactionDate ?? '—' }} ·
+              {{ formatAmount(line.netAmountLocal, line.currency ?? undefined) }}
+              @if (line.netAmountEur) {
+                <span class="eur-amount">&nbsp;({{ formatAmount(line.netAmountEur, 'EUR') }})</span>
+              }
+            </div>
+            <div class="card-level">
+              Niveau requis : <strong>{{ line.approvalLevelRequired ?? '—' }}</strong>
+              <span class="status-badge"
+                [style.background]="statusConfig(line.status).bg"
+                [style.color]="statusConfig(line.status).text">
+                {{ statusConfig(line.status).label }}
+              </span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-approve" (click)="openModal(line, 'approve')">Approuver</button>
+            <button class="btn-return"  (click)="openModal(line, 'return')">Retourner</button>
+            <button class="btn-reject"  (click)="openModal(line, 'reject')">Rejeter</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (modalLine()) {
+  <app-approve-modal
+    [costLine]="modalLine()!"
+    [action]="modalAction()"
+    [level]="modalLevel()"
+    (closed)="closeModal()"
+    (resolved)="onResolved($event)">
+  </app-approve-modal>
+}

@@ -106,10 +106,10 @@ export class PaymentModalComponent {
     this.serverError.set(null);
     const v = this.form.getRawValue();
     this.svc.recordPayment(this.invoice().id, {
-      dateReglement:    v.dateReglement!,
-      montant:          v.montant!,
-      modePaiement:     v.modePaiement!,
-      referenceBancaire:v.referenceBancaire?.trim() || null,
+      paymentDate:   v.dateReglement!,
+      amountLocal:   v.montant!,
+      paymentMethod: v.modePaiement!,
+      bankReference: v.referenceBancaire?.trim() || null,
     }).subscribe({
       next:  () => { this.saving.set(false); this.closed.emit(true); },
       error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur lors de l\'enregistrement.'); },

@@ -1,0 +1,96 @@
+<div class="tab-container">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="filters">
+      <select class="filter-select" [value]="statusFilter()"
+        (change)="statusFilter.set($any($event.target).value); onStatusChange()">
+        <option value="">Tous les statuts</option>
+        @for (s of statusOptions; track s.code) {
+          <option [value]="s.code">{{ s.label }}</option>
+        }
+      </select>
+    </div>
+    <button class="btn-add" (click)="openCreate()">+ Nouvelle ligne</button>
+  </div>
+
+  <!-- Action error -->
+  @if (actionError()) {
+    <div class="banner-error">{{ actionError() }}</div>
+  }
+
+  <!-- Table -->
+  @if (isLoading()) {
+    <div class="loading-state">Chargement...</div>
+  } @else if (serverError()) {
+    <div class="banner-error">{{ serverError() }}</div>
+  } @else if (lines().length === 0) {
+    <div class="empty-state">
+      <p>Aucune ligne de coût trouvée.</p>
+      <button class="btn-add" (click)="openCreate()">+ Créer la première ligne</button>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Catégorie</th>
+            <th>Date</th>
+            <th class="text-right">Montant HT</th>
+            <th class="text-right">EUR</th>
+            <th>Statut</th>
+            <th>Approbation</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of lines(); track line.id) {
+            <tr>
+              <td class="cell-label">{{ line.label }}</td>
+              <td class="cell-secondary">{{ line.categoryId ?? '—' }}</td>
+              <td class="cell-secondary">{{ line.transactionDate ?? '—' }}</td>
+              <td class="text-right">{{ formatAmount(line.netAmountLocal, line.currency ?? undefined) }}</td>
+              <td class="text-right cell-secondary">{{ formatAmount(line.netAmountEur, 'EUR') }}</td>
+              <td>
+                <span class="status-badge"
+                  [style.background]="statusConfig(line.status).bg"
+                  [style.color]="statusConfig(line.status).text">
+                  {{ statusConfig(line.status).label }}
+                </span>
+              </td>
+              <td class="cell-secondary">{{ line.approvalLevelRequired ?? '—' }}</td>
+              <td class="cell-actions">
+                @if (canEdit(line)) {
+                  <button class="btn-icon" (click)="openEdit(line)" title="Modifier">✏</button>
+                }
+                @if (canSubmit(line)) {
+                  <button class="btn-icon btn-submit" (click)="submit(line)" title="Soumettre">▶</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (total() > size) {
+      <div class="pagination">
+        <span class="page-info">
+          {{ page() * size + 1 }}–{{ pageEnd() }} sur {{ total() }}
+        </span>
+        <button class="page-btn" (click)="prevPage()" [disabled]="page() === 0">‹</button>
+        <button class="page-btn" (click)="nextPage()" [disabled]="page() >= totalPages - 1">›</button>
+      </div>
+    }
+  }
+</div>
+
+@if (showForm()) {
+  <app-cost-line-form
+    [paysId]="paysId()"
+    [costLine]="editLine()"
+    (closed)="showForm.set(false)"
+    (saved)="onSaved($event)">
+  </app-cost-line-form>
+}

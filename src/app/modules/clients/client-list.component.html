@@ -1,0 +1,220 @@
+<div class="clients-page">
+
+  <!-- Stats row -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon stat-icon--teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </span>
+      <div class="stat-body">
+        <span class="stat-label">Total clients</span>
+        <span class="stat-value">{{ statsTotal() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon stat-icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </span>
+      <div class="stat-body">
+        <span class="stat-label">Actifs (page)</span>
+        <span class="stat-value">{{ statsActive() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon stat-icon--blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </span>
+      <div class="stat-body">
+        <span class="stat-label">KYC validé (page)</span>
+        <span class="stat-value">{{ statsKycDone() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon stat-icon--amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </span>
+      <div class="stat-body">
+        <span class="stat-label">CA total (page)</span>
+        <span class="stat-value">{{ formatAmount(statsTotalCA()) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters bar -->
+  <div class="filters-bar glass-card">
+    <!-- Pays selector -->
+    @if (paysList().length > 1) {
+      <select class="filter-select" [(ngModel)]="filterPaysId" (change)="onPaysChange()">
+        @for (p of paysList(); track p.id) {
+          <option [value]="p.id">{{ p.frenchLabel }}</option>
+        }
+      </select>
+    }
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="search"
+        class="search-input"
+        placeholder="Code, nom client…"
+        [(ngModel)]="searchText"
+        (input)="onSearch()"
+        (search)="onSearch()"
+        maxlength="100"
+        autocomplete="off" />
+    </div>
+
+    <!-- Sector -->
+    @if (sectors().length > 0) {
+      <select class="filter-select" [(ngModel)]="filterSector" (change)="onFilterChange()">
+        <option value="">Tous secteurs</option>
+        @for (s of sectors(); track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    }
+
+    <!-- KYC filter chips -->
+    <div class="chip-group">
+      <button
+        class="chip"
+        [class.active]="filterIsKycDone === true"
+        (click)="toggleIsKycDone(true)">
+        KYC validé
+      </button>
+      <button
+        class="chip"
+        [class.active]="filterIsKycDone === false"
+        (click)="toggleIsKycDone(false)">
+        KYC en attente
+      </button>
+    </div>
+
+    <!-- Active filter chips -->
+    <div class="chip-group">
+      <button
+        class="chip"
+        [class.active]="filterIsActive === true"
+        (click)="toggleIsActive(true)">
+        Actifs
+      </button>
+      <button
+        class="chip chip--red"
+        [class.active]="filterIsActive === false"
+        (click)="toggleIsActive(false)">
+        Inactifs
+      </button>
+    </div>
+
+    <div class="filter-spacer"></div>
+
+    <button class="btn-primary" *appHasPermission="'FACT_MANAGE_CLIENTS'"
+            (click)="showCreateModal.set(true)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nouveau client
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card glass-card">
+    @if (error()) {
+      <div class="error-banner">{{ error() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="skeleton-rows">
+        @for (i of [1,2,3,4,5,6]; track i) {
+          <div class="skeleton-row"><div class="sk"></div></div>
+        }
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Nom client</th>
+              <th>Secteur</th>
+              <th class="num-col">Échéance</th>
+              <th>Devise</th>
+              <th class="num-col">Affaires actives</th>
+              <th class="num-col">CA total</th>
+              <th>KYC</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of clients(); track c.id) {
+              <tr class="table-row" (click)="navigateToDetail(c.id)">
+                <td>
+                  <span class="ref-badge">{{ c.clientCode }}</span>
+                </td>
+                <td class="name-cell">{{ c.clientName }}</td>
+                <td>{{ c.sector || '—' }}</td>
+                <td class="num-col">
+                  {{ c.paymentTermsDays != null ? c.paymentTermsDays + 'j' : '—' }}
+                </td>
+                <td>{{ c.defaultCurrency || '—' }}</td>
+                <td class="num-col">
+                  <span class="affaire-count" [class.has-affaires]="c.activeAffaireCount > 0">
+                    {{ c.activeAffaireCount }}
+                  </span>
+                </td>
+                <td class="num-col">{{ formatAmount(c.totalCA, c.defaultCurrency ?? 'TND') }}</td>
+                <td>
+                  @if (c.isKycDone) {
+                    <span class="kyc-badge kyc-badge--ok">KYC ✓</span>
+                  } @else {
+                    <span class="kyc-badge kyc-badge--pending">En attente</span>
+                  }
+                </td>
+                <td>
+                  @if (c.isActive) {
+                    <span class="status-badge status-badge--active">Actif</span>
+                  } @else {
+                    <span class="status-badge status-badge--inactive">Inactif</span>
+                  }
+                </td>
+              </tr>
+            }
+            @empty {
+              <tr>
+                <td colspan="9" class="empty-row">Aucun client trouvé.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <span class="page-info">{{ totalElements() }} client(s)</span>
+          <div class="page-btns">
+            <button class="page-btn" [disabled]="currentPage() === 0" (click)="goToPage(currentPage() - 1)">‹</button>
+            @for (p of pages; track p) {
+              <button class="page-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p + 1 }}</button>
+            }
+            <button class="page-btn" [disabled]="currentPage() === totalPages() - 1" (click)="goToPage(currentPage() + 1)">›</button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+</div>
+
+<!-- Create client modal -->
+@if (showCreateModal()) {
+  <app-client-form
+    [paysId]="filterPaysId"
+    (saved)="onClientCreated($event)"
+    (closed)="showCreateModal.set(false)">
+  </app-client-form>
+}

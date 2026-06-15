@@ -1,0 +1,250 @@
+<div class="tab-container">
+
+  @if (paysList().length > 1) {
+    <div class="list-tabs">
+      @for (p of paysList(); track p.id) {
+        <button class="list-tab" [class.active]="paysId() === p.id"
+          (click)="selectPays(p.id)">
+          {{ p.isoCode }} — {{ p.frenchLabel }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">Chargement de la configuration...</div>
+  } @else if (serverError()) {
+    <div class="banner-error">{{ serverError() }}</div>
+  } @else {
+
+    <!-- THRESHOLDS -->
+    <section class="config-section">
+      <h3 class="section-title">Seuils d'approbation</h3>
+      @if (thresholdError()) {
+        <div class="banner-error">{{ thresholdError() }}</div>
+      }
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Niveau</th>
+              <th>Rôle approbateur</th>
+              <th class="text-right">Min EUR</th>
+              <th class="text-right">Max EUR</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of thresholds(); track t.id) {
+              @if (getEdit(t.id).minAmountEur !== undefined || getEdit(t.id).approverRoleCode !== undefined) {
+                <tr class="row-editing">
+                  <td><strong>{{ t.level }}</strong></td>
+                  <td>
+                    <input class="inline-input" type="text"
+                      [value]="getEdit(t.id).approverRoleCode ?? t.approverRoleCode"
+                      (input)="patchThreshold(t.id, 'approverRoleCode', $any($event.target).value)">
+                  </td>
+                  <td class="text-right">
+                    <input class="inline-input text-right" type="number"
+                      [value]="getEdit(t.id).minAmountEur ?? t.minAmountEur"
+                      (input)="patchThreshold(t.id, 'minAmountEur', +$any($event.target).value)">
+                  </td>
+                  <td class="text-right">
+                    <input class="inline-input text-right" type="number"
+                      [value]="getEdit(t.id).maxAmountEur ?? t.maxAmountEur"
+                      (input)="patchThreshold(t.id, 'maxAmountEur', +$any($event.target).value)">
+                  </td>
+                  <td class="cell-actions">
+                    <button class="btn-save" (click)="saveThreshold(t)"
+                      [disabled]="thresholdSaving() === t.id">
+                      @if (thresholdSaving() === t.id) { … } @else { ✓ }
+                    </button>
+                    <button class="btn-icon" (click)="cancelEdit(t.id)">✕</button>
+                  </td>
+                </tr>
+              } @else {
+                <tr>
+                  <td><strong>{{ t.level }}</strong></td>
+                  <td>{{ t.approverRoleCode }}</td>
+                  <td class="text-right">{{ t.minAmountEur | number:'1.0-0' }} €</td>
+                  <td class="text-right">{{ t.maxAmountEur != null ? (t.maxAmountEur | number:'1.0-0') + ' €' : '∞' }}</td>
+                  <td class="cell-actions">
+                    <button class="btn-icon" (click)="startEdit(t)" title="Modifier">✏</button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section class="config-section">
+      <h3 class="section-title">Catégories de coût</h3>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Code</th>
+              <th>Libellé FR</th>
+              <th>Libellé EN</th>
+              <th>Source</th>
+              <th>CapEx</th>
+              <th>Direct</th>
+              <th>Scrutiny</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cat of categories(); track cat.id) {
+              @if (editingCategoryId() === cat.id) {
+                <tr class="row-editing">
+                  <td><strong>{{ cat.categoryNumber }}</strong></td>
+                  <td class="cell-secondary">{{ cat.code }}</td>
+                  <td>
+                    <input class="inline-input" type="text"
+                      [value]="categoryEditForm().labelFr ?? ''"
+                      (input)="patchCategoryForm('labelFr', $any($event.target).value)">
+                  </td>
+                  <td>
+                    <input class="inline-input" type="text"
+                      [value]="categoryEditForm().labelEn ?? ''"
+                      (input)="patchCategoryForm('labelEn', $any($event.target).value)">
+                  </td>
+                  <td colspan="3">
+                    <input class="inline-input" type="text"
+                      [value]="categoryEditForm().descriptionFr ?? ''"
+                      (input)="patchCategoryForm('descriptionFr', $any($event.target).value)"
+                      placeholder="Description FR (optionnel)">
+                  </td>
+                  <td></td>
+                  <td class="cell-actions">
+                    <button class="btn-save" (click)="saveCategoryLabel(cat)"
+                      [disabled]="isSavingCategory()">
+                      @if (isSavingCategory()) { … } @else { ✓ }
+                    </button>
+                    <button class="btn-icon" (click)="cancelCategoryEdit()">✕</button>
+                  </td>
+                </tr>
+              } @else {
+                <tr>
+                  <td><strong>{{ cat.categoryNumber }}</strong></td>
+                  <td class="cell-secondary">{{ cat.code }}</td>
+                  <td>
+                    {{ cat.labelFr }}
+                    @if (cat.descriptionFr) {
+                      <span class="cat-desc">{{ cat.descriptionFr }}</span>
+                    }
+                  </td>
+                  <td class="cell-secondary">{{ cat.labelEn ?? '—' }}</td>
+                  <td>
+                    @if (cat.sourceType === 'AUTO_PUSH') {
+                      <span class="badge-auto-push" [title]="cat.autoPushModule ?? ''">Auto-push</span>
+                    } @else {
+                      <span class="badge-manual">Manuel</span>
+                    }
+                  </td>
+                  <td class="text-center">{{ cat.isCapex ? '✓' : '—' }}</td>
+                  <td class="text-center">{{ cat.isDirect ? '✓' : '—' }}</td>
+                  <td class="text-center">
+                    @if (cat.isStrictScrutiny) {
+                      <span class="icon-scrutiny" title="Contrôle renforcé">⚠</span>
+                    } @else {
+                      <span class="cell-secondary">—</span>
+                    }
+                  </td>
+                  <td class="cell-actions">
+                    <button class="btn-icon" (click)="startEditCategory(cat)" title="Modifier libellé">✏</button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- LIST MANAGEMENT -->
+    <section class="config-section">
+      <h3 class="section-title">Valeurs de liste</h3>
+
+      <div class="list-tabs">
+        @for (tab of LIST_TABS; track tab) {
+          <button class="list-tab" [class.active]="activeListTab() === tab"
+            (click)="selectListTab(tab)">
+            {{ LIST_TAB_LABELS[tab] }}
+          </button>
+        }
+      </div>
+
+      @if (listError()) {
+        <div class="banner-error">{{ listError() }}</div>
+      }
+
+      @if (listLoading()) {
+        <div class="loading-state">Chargement...</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Libellé FR</th>
+                <th>Libellé EN</th>
+                <th>Défaut</th>
+                <th>Ordre</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of listValues(); track v.id) {
+                <tr>
+                  <td><code class="code-pill">{{ v.code }}</code></td>
+                  <td>{{ v.labelFr }}</td>
+                  <td class="cell-secondary">{{ v.labelEn ?? '—' }}</td>
+                  <td class="text-center">{{ v.isDefault ? '★' : '' }}</td>
+                  <td class="text-center cell-secondary">{{ v.displayOrder }}</td>
+                  <td class="cell-actions">
+                    <button class="btn-icon btn-danger" (click)="deactivate(v.id)" title="Désactiver">✕</button>
+                  </td>
+                </tr>
+              }
+
+              <!-- New value row -->
+              <tr class="row-new">
+                <td>
+                  <input class="inline-input" type="text"
+                    [(ngModel)]="newValue.code" placeholder="CODE">
+                </td>
+                <td>
+                  <input class="inline-input" type="text"
+                    [(ngModel)]="newValue.labelFr" placeholder="Libellé FR *">
+                </td>
+                <td>
+                  <input class="inline-input" type="text"
+                    [(ngModel)]="newValue.labelEn" placeholder="Libellé EN">
+                </td>
+                <td class="text-center">
+                  <input type="checkbox" [(ngModel)]="newValue.isDefault" style="accent-color:#1a6b7c">
+                </td>
+                <td></td>
+                <td class="cell-actions">
+                  <button class="btn-save" (click)="createValue()"
+                    [disabled]="isCreating() || !newValue.code || !newValue.labelFr">
+                    @if (isCreating()) { … } @else { + }
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          @if (createError()) {
+            <div class="banner-error" style="margin-top:8px">{{ createError() }}</div>
+          }
+        </div>
+      }
+    </section>
+
+  }
+</div>

@@ -1,0 +1,315 @@
+<div class="detail-page">
+
+  <!-- Back button -->
+  <button class="back-btn" routerLink="/fact/clients">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    Clients
+  </button>
+
+  <!-- Loading state -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Chargement du client…</span>
+    </div>
+  }
+
+  <!-- Error with no data loaded -->
+  @if (!isLoading() && !client() && actionError()) {
+    <div class="error-state">
+      <p>{{ actionError() }}</p>
+      <button class="btn-retry" (click)="retryLoad()">Réessayer</button>
+    </div>
+  }
+
+  @if (!isLoading() && client()) {
+
+    <!-- Action error bar (for KYC / deactivate errors) -->
+    @if (actionError()) {
+      <div class="action-error-bar">{{ actionError() }}</div>
+    }
+
+    <!-- ── Page header ───────────────────────────────────────────────── -->
+    <div class="page-header glass-card">
+      <div class="header-left">
+        <span class="code-badge">{{ client()!.clientCode }}</span>
+        <div class="header-titles">
+          <h1 class="client-name">{{ client()!.clientName }}</h1>
+          <div class="header-meta">
+            @if (client()!.paysLabel) {
+              <span>{{ client()!.paysLabel }}</span>
+              <span class="meta-sep">·</span>
+            }
+            @if (client()!.sector) {
+              <span>{{ client()!.sector }}</span>
+              <span class="meta-sep">·</span>
+            }
+            <span>Délai : {{ client()!.paymentTermsDays ?? '—' }}j</span>
+            <span class="meta-sep">·</span>
+            <span>{{ client()!.defaultCurrency }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        @if (client()!.isKycDone) {
+          <span class="kyc-badge kyc-badge--ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            KYC validé
+          </span>
+        } @else {
+          <span class="kyc-badge kyc-badge--pending">KYC en attente</span>
+        }
+        @if (!client()!.isActive) {
+          <span class="inactive-badge">Inactif</span>
+        }
+        <button class="btn-edit" (click)="showEditModal.set(true)"
+                *appHasPermission="'FACT_MANAGE_CLIENTS'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Modifier
+        </button>
+      </div>
+    </div>
+
+    <!-- ── KPI tiles ─────────────────────────────────────────────────── -->
+    <div class="kpi-grid">
+      @for (kpi of clientKpis(); track kpi.label) {
+        <div class="kpi-card">
+          <span class="kpi-label">{{ kpi.label }}</span>
+          <span class="kpi-value">{{ kpi.value }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- ── Main layout ───────────────────────────────────────────────── -->
+    <div class="detail-layout">
+
+      <!-- LEFT: Info cards -->
+      <div class="detail-main">
+
+        <!-- General info -->
+        <div class="section-card glass-card">
+          <div class="card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Informations générales
+          </div>
+          <dl class="info-list">
+            @for (item of generalInfo(); track item.label) {
+              <div class="info-row">
+                <dt>{{ item.label }}</dt>
+                <dd>{{ item.value }}</dd>
+              </div>
+            }
+          </dl>
+        </div>
+
+        <!-- Contact card -->
+        <div class="section-card glass-card">
+          <div class="card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Contact principal
+          </div>
+          <dl class="info-list">
+            <div class="info-row">
+              <dt>Nom</dt>
+              <dd>{{ client()!.contactName || '—' }}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Email</dt>
+              <dd>
+                @if (client()!.contactEmail) {
+                  <a [href]="'mailto:' + client()!.contactEmail" class="link">
+                    {{ client()!.contactEmail }}
+                  </a>
+                } @else { — }
+              </dd>
+            </div>
+            <div class="info-row">
+              <dt>Téléphone</dt>
+              <dd>{{ client()!.contactPhone || '—' }}</dd>
+            </div>
+            <div class="info-row">
+              <dt>Email général</dt>
+              <dd>
+                @if (client()!.email) {
+                  <a [href]="'mailto:' + client()!.email" class="link">
+                    {{ client()!.email }}
+                  </a>
+                } @else { — }
+              </dd>
+            </div>
+            @if (client()!.website) {
+              <div class="info-row">
+                <dt>Site web</dt>
+                <dd>
+                  <a [href]="client()!.website!" target="_blank" rel="noopener noreferrer"
+                     class="link">{{ client()!.website }}</a>
+                </dd>
+              </div>
+            }
+            @if (client()!.notes) {
+              <div class="info-row">
+                <dt>Notes</dt>
+                <dd class="notes-text">{{ client()!.notes }}</dd>
+              </div>
+            }
+          </dl>
+        </div>
+
+        <!-- Affaires quick link -->
+        <div class="section-card glass-card">
+          <div class="card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="14" rx="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+            Affaires
+            <span class="affaires-count">{{ stats()?.totalAffaires ?? 0 }}</span>
+          </div>
+          <div class="card-body">
+            <a [routerLink]="['/fact/affaires']"
+               class="link-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+              Voir toutes les affaires de ce client
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Actions -->
+      <div class="detail-sidebar">
+
+        <!-- KYC card -->
+        <div class="action-card glass-card">
+          <div class="card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Validation KYC
+          </div>
+          <div class="card-body">
+            @if (client()!.isKycDone) {
+              <p class="kyc-ok-text">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Validé le {{ formatDate(client()!.kycApprovedAt) }}
+              </p>
+              @if (client()!.kycApprovedByName) {
+                <p class="kyc-by">Par : {{ client()!.kycApprovedByName }}</p>
+              }
+              <button class="btn-danger-link" (click)="revokeKyc()"
+                      *appHasPermission="'FACT_VALIDATE_KYC'">
+                Révoquer le KYC
+              </button>
+            } @else {
+              <p class="kyc-pending-text">
+                Ce client n'a pas encore été validé KYC. Sans cette validation,
+                aucune facture ne pourra lui être émise.
+              </p>
+              <button class="btn-primary-full" (click)="validateKyc()"
+                      *appHasPermission="'FACT_VALIDATE_KYC'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Valider le KYC
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="action-card glass-card">
+          <div class="card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            Actions rapides
+          </div>
+          <div class="card-body quick-actions">
+            <a [routerLink]="['/fact/invoicing']" class="quick-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Voir les factures
+            </a>
+            <a [routerLink]="['/fact/payments']" class="quick-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+              Suivi des paiements
+            </a>
+          </div>
+        </div>
+
+        <!-- Dates card -->
+        <div class="action-card glass-card">
+          <div class="card-body">
+            <div class="date-row">
+              <span class="date-label">Créé le</span>
+              <span class="date-value">{{ formatDate(client()!.createdAt) }}</span>
+            </div>
+            @if (client()!.updatedAt) {
+              <div class="date-row">
+                <span class="date-label">Modifié le</span>
+                <span class="date-value">{{ formatDate(client()!.updatedAt) }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Deactivate / Reactivate -->
+        @if (client()!.isActive && (stats()?.activeAffaires ?? 0) === 0) {
+          <button class="btn-deactivate" (click)="deactivateClient()"
+                  *appHasPermission="'FACT_MANAGE_CLIENTS'">
+            Désactiver ce client
+          </button>
+        }
+        @if (!client()!.isActive) {
+          <button class="btn-reactivate" (click)="reactivateClient()"
+                  *appHasPermission="'FACT_MANAGE_CLIENTS'">
+            Réactiver ce client
+          </button>
+        }
+
+      </div>
+    </div>
+
+    <!-- Edit modal -->
+    @if (showEditModal()) {
+      <app-client-form
+        [client]="client()!"
+        [paysId]="client()!.paysId"
+        (saved)="onClientSaved($event)"
+        (closed)="showEditModal.set(false)">
+      </app-client-form>
+    }
+
+  }
+
+</div>

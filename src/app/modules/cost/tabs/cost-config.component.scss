@@ -1,0 +1,225 @@
+:host { display: contents; }
+
+.tab-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f3d47;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.banner-error {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 0.8125rem;
+}
+
+.loading-state {
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+// ── Table ──────────────────────────────────────────────────────────────────
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+
+  th {
+    padding: 9px 14px;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+
+    &.text-right  { text-align: right; }
+    &.text-center { text-align: center; }
+  }
+
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: #1e293b;
+
+    &.text-right  { text-align: right; }
+    &.text-center { text-align: center; }
+    &.cell-secondary { color: #64748b; }
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+  tr.row-editing td { background: #f0fbfd; }
+  tr.row-new td { background: #f8fafc; }
+}
+
+.inline-input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.8125rem;
+  background: #fff;
+  box-sizing: border-box;
+
+  &:focus { outline: none; border-color: #1a6b7c; }
+  &.text-right { text-align: right; }
+}
+
+.cell-actions {
+  display: flex;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.btn-icon {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover { border-color: #94a3b8; }
+  &.btn-danger { color: #dc2626; border-color: #fecaca; background: #fff5f5; &:hover { background: #fee2e2; } }
+}
+
+.btn-save {
+  height: 26px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: #1a6b7c;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.5; cursor: default; }
+  &:hover:not(:disabled) { background: #134f5c; }
+}
+
+.badge-active {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-inactive {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.code-pill {
+  font-family: monospace;
+  font-size: 0.75rem;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #0f3d47;
+}
+
+// ── Category badges ───────────────────────────────────────────────────────
+
+.badge-auto-push {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.badge-manual {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.icon-scrutiny {
+  color: #d97706;
+  font-size: 0.9375rem;
+}
+
+.cat-desc {
+  display: block;
+  font-size: 0.6875rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+// ── List sub-tabs ─────────────────────────────────────────────────────────
+
+.list-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.list-tab {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &.active {
+    background: #0f3d47;
+    color: #fff;
+    border-color: #0f3d47;
+  }
+
+  &:hover:not(.active) { border-color: #94a3b8; }
+}

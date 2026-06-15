@@ -137,9 +137,9 @@ export class InvoiceDetailComponent implements OnInit {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  lineTtc(l: { quantite: number; prixUnitaireHt: number; tauxTva: number }): number {
-    const ht = l.quantite * l.prixUnitaireHt;
-    return ht * (1 + l.tauxTva / 100);
+  lineTtc(l: { quantity: number; unitRate: number; vatRatePct: number }): number {
+    const ht = l.quantity * l.unitRate;
+    return ht * (1 + l.vatRatePct / 100);
   }
 
   formatAmount(v: number, devise = 'TND'): string {

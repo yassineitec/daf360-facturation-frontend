@@ -2,17 +2,16 @@ import { Component, input, output, signal, inject } from '@angular/core';
 import { TsDto, TS_STATUT_CONFIG } from '../affaire.model';
 import { AffaireService } from '../affaire.service';
 import { UserStore } from '../../../core/user.store';
-import { TsFormComponent } from './ts-form.component';
 import { TsValidationModalComponent, ValidationConfig } from './ts-validation-modal.component';
 
 @Component({
   selector: 'app-ts-list',
-  imports: [TsFormComponent, TsValidationModalComponent],
+  imports: [TsValidationModalComponent],
   template: `
     <div class="ts-list">
       <div class="ts-header">
         <span class="ts-title">Travaux supplémentaires</span>
-        <button class="btn-add" (click)="showNewForm.set(true)">
+        <button class="btn-add" (click)="openNewForm.emit()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nouveau TS
         </button>
@@ -40,9 +39,9 @@ import { TsValidationModalComponent, ValidationConfig } from './ts-validation-mo
             <tbody>
               @for (ts of list(); track ts.id) {
                 <tr>
-                  <td><span class="ref-badge">{{ ts.reference }}</span></td>
+                  <td><span class="ref-badge">{{ ts.referenceTs }}</span></td>
                   <td class="intitule-cell">{{ ts.intitule }}</td>
-                  <td class="num-col">{{ formatAmount(ts.montant, ts.devise) }}</td>
+                  <td class="num-col">{{ formatAmount(ts.montantEstime, ts.devise) }}</td>
                   <td><span class="ts-badge" [style.background]="tsConfig(ts.statut).bg" [style.color]="tsConfig(ts.statut).color" [style.border-color]="tsConfig(ts.statut).border">{{ tsConfig(ts.statut).label }}</span></td>
                   <td>{{ formatDate(ts.integreAuBudgetAt) }}</td>
                   <td class="actions-cell">
@@ -65,10 +64,6 @@ import { TsValidationModalComponent, ValidationConfig } from './ts-validation-mo
       }
     </div>
 
-    @if (showNewForm()) {
-      <app-ts-form [affaireId]="affaireId()" (closed)="onNewFormClosed($event)" />
-    }
-
     @if (validationTarget()) {
       <app-ts-validation-modal
         [config]="validationTarget()!"
@@ -79,17 +74,17 @@ import { TsValidationModalComponent, ValidationConfig } from './ts-validation-mo
   styleUrl: './ts-list.component.scss',
 })
 export class TsListComponent {
-  affaireId = input.required<number>();
-  list      = input.required<TsDto[]>();
-  updated   = output<void>();
+  affaireId   = input.required<number>();
+  list        = input.required<TsDto[]>();
+  updated     = output<void>();
+  openNewForm = output<void>();
 
   private readonly svc   = inject(AffaireService);
   private readonly store = inject(UserStore);
 
-  showNewForm     = signal(false);
-  actionLoading   = signal(false);
-  errorMsg        = signal<string | null>(null);
-  validationTarget= signal<ValidationConfig | null>(null);
+  actionLoading    = signal(false);
+  errorMsg         = signal<string | null>(null);
+  validationTarget = signal<ValidationConfig | null>(null);
 
   tsConfig(statut: string) {
     return TS_STATUT_CONFIG[statut] ?? { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
@@ -108,7 +103,7 @@ export class TsListComponent {
       tsId:     ts.id,
       step,
       intitule: ts.intitule,
-      montant:  ts.montant,
+      montant:  ts.montantEstime,
       devise:   ts.devise,
     });
   }
@@ -135,11 +130,6 @@ export class TsListComponent {
         this.errorMsg.set(err?.error?.message ?? 'Erreur lors de la validation.');
       },
     });
-  }
-
-  onNewFormClosed(saved: boolean): void {
-    this.showNewForm.set(false);
-    if (saved) this.updated.emit();
   }
 
   formatAmount(v: number, devise = 'TND'): string {

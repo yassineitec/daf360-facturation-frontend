@@ -1,0 +1,252 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-label="Ligne de coût">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">{{ isEditMode ? 'Modifier la ligne' : 'Nouvelle ligne de coût' }}</h2>
+        <p class="modal-sub">Renseignez les informations de la ligne</p>
+      </div>
+      <button class="modal-close" (click)="closed.emit()" aria-label="Fermer">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body" [formGroup]="form">
+
+      <!-- SECTION 1 — Classification -->
+      <div class="section">
+        <h3 class="section-title">
+          <span class="section-num">1</span> Classification
+        </h3>
+        <div class="form-grid">
+
+          <!-- Category -->
+          <div class="field-full">
+            <label for="categoryId" class="field-label">Catégorie *</label>
+            <select id="categoryId" formControlName="categoryId" class="field-select"
+              [class.field-error]="isInvalid('categoryId')">
+              <option value="">Sélectionner une catégorie...</option>
+              @for (cat of categories(); track cat.id) {
+                <option [value]="cat.id">
+                  {{ cat.categoryNumber.toString().padStart(2, '0') }} — {{ cat.labelFr }}
+                  @if (isCategoryStrictScrutiny(cat)) { ⚠ }
+                </option>
+              }
+            </select>
+            @if (isInvalid('categoryId')) {
+              <p class="field-err-text">La catégorie est obligatoire.</p>
+            }
+            @if (selectedCategory?.descriptionFr) {
+              <p class="field-hint">{{ selectedCategory!.descriptionFr }}</p>
+            }
+            @if (strictScrutinyWarning) {
+              <div class="warning-banner">
+                ⚠ Scrutin strict (cat. 12) — le niveau d'approbation est relevé d'un cran.
+              </div>
+            }
+          </div>
+
+          <!-- Transaction date -->
+          <div class="field-half">
+            <label for="transactionDate" class="field-label">Date de transaction *</label>
+            <input id="transactionDate" type="date" formControlName="transactionDate"
+              class="field-input" [class.field-error]="isInvalid('transactionDate')">
+            @if (isInvalid('transactionDate')) {
+              <p class="field-err-text">La date est obligatoire.</p>
+            }
+          </div>
+
+          <!-- Period (auto-filled) -->
+          <div class="field-half">
+            <label class="field-label">Période (auto)</label>
+            <div class="field-readonly">
+              @if (form.get('periodYear')!.value) {
+                {{ form.get('periodMonth')!.value }}/{{ form.get('periodYear')!.value }}
+              } @else {
+                <span style="color:#94a3b8">Saisir une date</span>
+              }
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="field-full">
+            <label for="description" class="field-label">Description *</label>
+            <input id="description" type="text" formControlName="description"
+              placeholder="Ex: Prestation topographie..."
+              class="field-input" [class.field-error]="isInvalid('description')">
+            @if (isInvalid('description')) {
+              <p class="field-err-text">La description est obligatoire (min 3 caractères).</p>
+            }
+          </div>
+
+          <!-- Cost type -->
+          <div class="field-full">
+            <label for="costTypeId" class="field-label">Type de coût</label>
+            <select id="costTypeId" formControlName="costTypeId" class="field-select">
+              <option [value]="null">Type de coût (optionnel)</option>
+              @for (v of costTypes(); track v.id) {
+                <option [value]="v.id">{{ v.labelFr }}</option>
+              }
+            </select>
+            @if (costTypes().length === 0) {
+              <p class="field-warn-text">⚠ Aucun type configuré — contactez l'administrateur.</p>
+            }
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECTION 2 — Montant -->
+      <div class="section">
+        <h3 class="section-title">
+          <span class="section-num">2</span> Montant
+        </h3>
+        <div class="form-grid">
+
+          <!-- Net amount -->
+          <div class="field-half">
+            <label for="netAmountLocal" class="field-label">Montant HT *</label>
+            <input id="netAmountLocal" type="number" step="0.001" min="0.01"
+              formControlName="netAmountLocal"
+              placeholder="0.000"
+              class="field-input" [class.field-error]="isInvalid('netAmountLocal')">
+            @if (isInvalid('netAmountLocal')) {
+              <p class="field-err-text">Montant obligatoire (> 0).</p>
+            }
+          </div>
+
+          <!-- VAT -->
+          <div class="field-half">
+            <label for="vatAmountLocal" class="field-label">TVA</label>
+            <input id="vatAmountLocal" type="number" step="0.001" min="0"
+              formControlName="vatAmountLocal"
+              placeholder="0.000"
+              class="field-input">
+          </div>
+
+          <!-- Currency -->
+          <div class="field-half">
+            <label for="currencyId" class="field-label">Devise *</label>
+            <select id="currencyId" formControlName="currencyId" class="field-select"
+              [class.field-error]="isInvalid('currencyId')">
+              <option [value]="null">Devise...</option>
+              @for (v of currencies(); track v.id) {
+                <option [value]="v.id">{{ v.code }} — {{ v.labelFr }}</option>
+              }
+            </select>
+            @if (isInvalid('currencyId')) {
+              <p class="field-err-text">La devise est obligatoire.</p>
+            }
+            @if (currencies().length === 0) {
+              <p class="field-warn-text">⚠ Aucune devise configurée.</p>
+            }
+          </div>
+
+          <!-- Payment method -->
+          <div class="field-half">
+            <label for="paymentMethodId" class="field-label">Mode de paiement</label>
+            <select id="paymentMethodId" formControlName="paymentMethodId" class="field-select">
+              <option [value]="null">Mode de paiement (optionnel)</option>
+              @for (v of paymentMethods(); track v.id) {
+                <option [value]="v.id">{{ v.labelFr }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Approval preview -->
+          @if (approvalPreview()) {
+            <div class="field-full">
+              <div class="approval-preview" [class]="previewBgClass">
+                <span class="preview-label-text">Niveau d'approbation estimé :</span>
+                <span class="preview-badge" [class]="previewBgClass + '-badge'">{{ previewLabel }}</span>
+              </div>
+            </div>
+          }
+
+        </div>
+      </div>
+
+      <!-- SECTION 3 — Justificatif -->
+      <div class="section">
+        <h3 class="section-title">
+          <span class="section-num">3</span> Justificatif &amp; options
+        </h3>
+        <div class="form-grid">
+
+          <!-- Supplier -->
+          <div class="field-full">
+            <label for="supplierNameFree" class="field-label">Fournisseur</label>
+            <input id="supplierNameFree" type="text" formControlName="supplierNameFree"
+              placeholder="Nom du fournisseur..."
+              class="field-input">
+          </div>
+
+          <!-- Document URL -->
+          <div class="field-full">
+            <label for="documentUrl" class="field-label">Référence document / URL</label>
+            <input id="documentUrl" type="text" formControlName="documentUrl"
+              placeholder="Ex: FAC-2026-0042 ou https://..."
+              class="field-input">
+          </div>
+
+          <!-- Notes -->
+          <div class="field-full">
+            <label for="notes" class="field-label">Notes internes</label>
+            <textarea id="notes" formControlName="notes"
+              placeholder="Notes optionnelles..."
+              class="field-textarea" rows="3"></textarea>
+          </div>
+
+          <!-- Recurring -->
+          <div class="field-full">
+            <label class="toggle-label">
+              <input type="checkbox" formControlName="isRecurring" class="toggle-cb">
+              <span>Dépense récurrente</span>
+            </label>
+          </div>
+
+          @if (form.get('isRecurring')!.value) {
+            <div class="field-half">
+              <label for="recurrenceFrequencyId" class="field-label">Fréquence *</label>
+              <select id="recurrenceFrequencyId" formControlName="recurrenceFrequencyId"
+                class="field-select"
+                [class.field-error]="isInvalid('recurrenceFrequencyId')">
+                <option [value]="null">Fréquence...</option>
+                @for (v of recurrenceFreqs(); track v.id) {
+                  <option [value]="v.id">{{ v.labelFr }}</option>
+                }
+              </select>
+              @if (isInvalid('recurrenceFrequencyId')) {
+                <p class="field-err-text">La fréquence est obligatoire.</p>
+              }
+              @if (recurrenceFreqs().length === 0) {
+                <p class="field-warn-text">⚠ Aucune fréquence configurée.</p>
+              }
+            </div>
+          }
+
+        </div>
+      </div>
+
+      <!-- Server error -->
+      @if (serverError()) {
+        <div class="server-error">
+          <strong>Erreur :</strong> {{ serverError() }}
+        </div>
+      }
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closed.emit()" [disabled]="isSaving()">
+        Annuler
+      </button>
+      <button type="button" class="btn-primary" (click)="saveForm()" [disabled]="isSaving()">
+        @if (isSaving()) { <span class="spinner"></span> }
+        {{ isEditMode ? 'Enregistrer' : 'Créer la ligne' }}
+      </button>
+    </div>
+
+  </div>
+</div>

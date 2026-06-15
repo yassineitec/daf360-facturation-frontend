@@ -15,38 +15,44 @@ export interface AffaireListItem {
   reference:          string;
   intitule:           string;
   clientId:           number | null;
-  clientNom:          string;
-  responsableId:      number | null;
-  responsableNom:     string;
-  type:               AffaireType | string;
+  clientName:         string | null;
+  responsableUserId:  number | null;
+  responsableFullName:string | null;
+  typeAffaire:        AffaireType | string;
   statut:             AffaireStatut | string;
   budgetPrevisionnel: number | null;
   budgetValide:       boolean;
-  rafDisponible:      number | null;
-  seuilAlertePct:     number;
+  rafDisponible?:     number | null;
+  rafAlerteSeuilPct:  number;
   paysId:             number;
-  paysIsoCode:        string | null;
+  devise?:            string;
+  billingMode?:       string | null;
   dateDebut:          string | null;
   dateFin:            string | null;
 }
 
 export interface AffaireDetail extends AffaireListItem {
-  notes:         string | null;
-  doc360Ref:     string | null;
-  devise:        string;
-  rafAlerteSent: boolean;
-  createdAt:     string;
-  updatedAt:     string | null;
+  notes:             string | null;
+  doc360Ref:         string | null;
+  devise:            string;
+  rafAlerteSent:     boolean;
+  createdAt:         string;
+  updatedAt:         string | null;
+  billingModeLocked?:boolean;
+  contractAmount?:   number | null;
+  cpMarginRatePct?:  number | null;
 }
 
 export interface RafDetailsDto {
   affaireId:          number;
+  reference:          string;
   budgetPrevisionnel: number;
-  totalTsIntegres:    number;
+  budgetValide:       boolean;
+  montantTsIntegres:  number;
   totalFacturesEmises:number;
   rafDisponible:      number;
-  seuilAlertePct:     number;
-  alerteEnvoyee:      boolean;
+  rafPourcentage:     number;
+  alerteActive:       boolean;
 }
 
 export interface AffaireKpisDto {
@@ -57,30 +63,30 @@ export interface AffaireKpisDto {
 }
 
 export interface TsDto {
-  id:               number;
-  reference:        string;
-  affaireId:        number;
-  intitule:         string;
-  montant:          number;
-  devise:           string;
-  perimetre:        string | null;
-  description:      string | null;
-  impactBudgetaire: string | null;
-  statut:           TsStatut | string;
-  notesTechnique:   string | null;
-  notesCommerciale: string | null;
-  valideTechniqueAt:   string | null;
-  valideCommercialAt:  string | null;
+  id:                  number;
+  referenceTs:         string;
+  affaireId:           number;
+  intitule:            string;
+  montantEstime:       number;
+  devise:              string;
+  perimetre:           string | null;
+  description:         string | null;
+  impactBudgetaire:    string | null;
+  statut:              TsStatut | string;
+  validTechniqueNotes: string | null;
+  validCommercialeNotes: string | null;
+  validTechniqueAt:    string | null;
+  validCommercialeAt:  string | null;
   integreAuBudgetAt:   string | null;
-  createdAt:        string;
+  createdAt:           string;
 }
 
 export interface CreateAffaireRequest {
   reference?:          string | null;
   intitule:            string;
   clientId:            number;
-  responsableId:       number;
-  type:                string;
+  responsableUserId?:  number | null;
+  typeAffaire?:        string | null;
   dateDebut?:          string | null;
   dateFin?:            string | null;
   budgetPrevisionnel?: number | null;
@@ -92,13 +98,13 @@ export interface CreateAffaireRequest {
 export type UpdateAffaireRequest = CreateAffaireRequest;
 
 export interface ChangerStatutRequest {
-  statut: string;
-  motif?: string | null;
+  newStatut: string;
+  reason?: string | null;
 }
 
 export interface CreateTsRequest {
   intitule:          string;
-  montant:           number;
+  montantEstime:     number;
   devise?:           string;
   perimetre?:        string | null;
   description?:      string | null;
@@ -120,11 +126,11 @@ export interface AffaireFilter {
 }
 
 export interface ClientDto {
-  id:            number;
-  raisonSociale: string;
-  siret:         string | null;
-  kycValide:     boolean;
-  contactEmail:  string | null;
+  id:              number;
+  clientName:      string;
+  clientCode:      string | null;
+  isKycDone:       boolean;
+  defaultCurrency: string | null;
 }
 
 export interface UserRefDto {

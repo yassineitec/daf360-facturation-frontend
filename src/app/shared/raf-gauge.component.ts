@@ -51,7 +51,7 @@ export class RafGaugeComponent {
 
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: this.devise(),
+      style: 'currency', currency: this.devise() || 'TND',
       minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(v);
   }

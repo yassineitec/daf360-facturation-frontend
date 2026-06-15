@@ -53,11 +53,11 @@ import { StepConditionsValue } from './step-conditions.component';
         @for (l of linesData().lines; track $index) {
           <tr>
             <td>{{ l.description }}</td>
-            <td class="num">{{ l.quantite }}</td>
-            <td class="num">{{ formatAmount(l.prixUnitaireHt) }}</td>
-            <td class="num">{{ l.tauxTva }}%</td>
-            <td class="num">{{ formatAmount(l.quantite * l.prixUnitaireHt) }}</td>
-            <td class="num">{{ formatAmount(l.quantite * l.prixUnitaireHt * (1 + l.tauxTva / 100)) }}</td>
+            <td class="num">{{ l.quantity }}</td>
+            <td class="num">{{ formatAmount(l.unitRate) }}</td>
+            <td class="num">{{ l.vatRatePct }}%</td>
+            <td class="num">{{ formatAmount(l.quantity * l.unitRate) }}</td>
+            <td class="num">{{ formatAmount(l.quantity * l.unitRate * (1 + l.vatRatePct / 100)) }}</td>
           </tr>
         }
       </tbody>
@@ -114,10 +114,10 @@ export class StepRecapComponent {
   serverError = signal<string | null>(null);
 
   readonly totalHt = computed(() =>
-    this.linesData().lines.reduce((s, l) => s + l.quantite * l.prixUnitaireHt, 0)
+    this.linesData().lines.reduce((s, l) => s + l.quantity * l.unitRate, 0)
   );
   readonly totalTtc = computed(() =>
-    this.linesData().lines.reduce((s, l) => s + l.quantite * l.prixUnitaireHt * (1 + l.tauxTva / 100), 0)
+    this.linesData().lines.reduce((s, l) => s + l.quantity * l.unitRate * (1 + l.vatRatePct / 100), 0)
   );
 
   readonly reminderPreview = computed(() => {
@@ -140,15 +140,15 @@ export class StepRecapComponent {
   private buildRequest() {
     const a = this.affaireData(), l = this.linesData(), c = this.conditionsData();
     return {
-      affaireId:          a.affaireId,
-      tsId:               a.tsId,
-      invoiceType:        a.invoiceType,
-      clientId:           a.clientId,
-      lines:              l.lines,
-      dateEcheance:       c.dateEcheance,
-      conditionsPaiement: c.conditionsPaiement,
-      bonDeCommande:      c.bonDeCommande,
-      notes:              c.notes,
+      paysId:      a.paysId,
+      affaireId:   a.affaireId,
+      clientId:    a.clientId,
+      billingMode: a.billingMode,
+      currency:    a.currency,
+      tsId:        a.tsId,
+      dueDate:     c.dateEcheance,
+      notes:       c.notes,
+      lines:       l.lines,
     };
   }
 

@@ -1,17 +1,22 @@
 import {
-  Component, OnInit, inject, input, output, signal, computed,
+  Component, OnInit, inject, output, signal, computed,
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { InvoiceService } from '../invoice.service';
-import { AffaireListItem, TsDto } from '../../affaires/affaire.model';
+import { AffaireListItem, RafDetailsDto, TsDto } from '../../affaires/affaire.model';
 import { AffaireService } from '../../affaires/affaire.service';
+
+const VALID_BILLING_MODES = new Set(['AV', 'JAL', 'TM', 'CP', 'RMB']);
 
 export interface StepAffaireValue {
   affaireId:   number | null;
   tsId:        number | null;
   invoiceType: string;
   clientId:    number | null;
+  paysId:      number;
+  currency:    string;
+  billingMode: string;
 }
 
 @Component({
@@ -39,7 +44,7 @@ export interface StepAffaireValue {
           <div class="search-item" (click)="selectAffaire(a)">
             <span class="aff-ref">{{ a.reference }}</span>
             <span class="aff-name">{{ a.intitule }}</span>
-            <span class="aff-client">{{ a.clientNom }}</span>
+            <span class="aff-client">{{ a.clientName }}</span>
           </div>
         }
       </div>
@@ -59,9 +64,13 @@ export interface StepAffaireValue {
           </div>
           <div class="kpi">
             <span class="kpi-label">RAF</span>
-            <span class="kpi-val" [class.raf-warn]="rafWarning()" [class.raf-block]="rafBlocked()">
-              {{ formatAmount(selectedAffaire()!.rafDisponible ?? 0) }}
-            </span>
+            @if (rafLoading()) {
+              <span class="kpi-val">…</span>
+            } @else {
+              <span class="kpi-val" [class.raf-warn]="rafWarning()" [class.raf-block]="rafBlocked()">
+                {{ rafDetails() ? formatAmount(rafDetails()!.rafDisponible) : '—' }}
+              </span>
+            }
           </div>
         </div>
         @if (rafBlocked()) {
@@ -72,6 +81,25 @@ export interface StepAffaireValue {
       </div>
     }
   </div>
+
+  <!-- Mode de facturation (affiché si l'affaire n'a pas de mode valide) -->
+  @if (selectedAffaire() && !validBillingModeFromAffaire()) {
+    <div class="field">
+      <label>Mode de facturation *</label>
+      <select class="form-input" [formControl]="form.controls['billingMode']"
+        [class.invalid]="form.controls['billingMode'].invalid && form.controls['billingMode'].touched">
+        <option value="">Sélectionner…</option>
+        <option value="TM">TM — Temps &amp; Matériaux</option>
+        <option value="CP">CP — Coût Plus</option>
+        <option value="AV">AV — Avancement</option>
+        <option value="JAL">JAL — Jalons</option>
+        <option value="RMB">RMB — Remboursement</option>
+      </select>
+      @if (form.controls['billingMode'].invalid && form.controls['billingMode'].touched) {
+        <span class="error-msg">Mode de facturation requis.</span>
+      }
+    </div>
+  }
 
   <!-- Type de facture -->
   <div class="field">
@@ -96,14 +124,14 @@ export interface StepAffaireValue {
       <select class="form-input" [formControl]="form.controls['tsId']">
         <option [value]="null">Aucun</option>
         @for (ts of tsList(); track ts.id) {
-          <option [value]="ts.id">{{ ts.reference }} — {{ ts.intitule }} ({{ formatAmount(ts.montant) }})</option>
+          <option [value]="ts.id">{{ ts.referenceTs }} — {{ ts.intitule }} ({{ formatAmount(ts.montantEstime) }})</option>
         }
       </select>
     </div>
   }
 
   <div class="step-actions">
-    <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked()">
+    <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading()">
       Suivant →
     </button>
   </div>
@@ -118,29 +146,41 @@ export class StepAffaireComponent implements OnInit {
 
   nextStep = output<StepAffaireValue>();
 
-  searchQuery  = signal('');
-  searchResults = signal<AffaireListItem[]>([]);
-  searching    = signal(false);
+  searchQuery     = signal('');
+  searchResults   = signal<AffaireListItem[]>([]);
+  searching       = signal(false);
   selectedAffaire = signal<AffaireListItem | null>(null);
-  tsList       = signal<TsDto[]>([]);
+  rafDetails      = signal<RafDetailsDto | null>(null);
+  rafLoading      = signal(false);
+  tsList          = signal<TsDto[]>([]);
 
   private readonly search$ = new Subject<string>();
 
   form = this.fb.group({
-    invoiceType: ['', Validators.required],
-    tsId:        [null as number | null],
+    invoiceType:  ['', Validators.required],
+    tsId:         [null as number | null],
+    billingMode:  [''],
+  });
+
+  readonly validBillingModeFromAffaire = computed(() => {
+    const bm = this.selectedAffaire()?.billingMode;
+    return bm && VALID_BILLING_MODES.has(bm) ? bm : null;
   });
 
   readonly rafPct = computed(() => {
-    const a = this.selectedAffaire();
-    if (!a || !a.budgetPrevisionnel) return 100;
-    return ((a.rafDisponible ?? 0) / a.budgetPrevisionnel) * 100;
+    const raf    = this.rafDetails();
+    const budget = this.selectedAffaire()?.budgetPrevisionnel;
+    if (!raf || !budget || budget === 0) return 100;
+    return (raf.rafDisponible / budget) * 100;
   });
   readonly rafWarning = computed(() => this.rafPct() < 20 && this.rafPct() > 0);
   readonly rafBlocked = computed(() => {
-    const a = this.selectedAffaire();
-    return a ? (a.rafDisponible ?? 0) <= 0 : false;
+    if (this.rafLoading()) return false;       // don't block while still loading
+    const raf = this.rafDetails();
+    if (!raf) return false;                    // no RAF data yet — let backend enforce
+    return raf.rafDisponible <= 0;
   });
+
 
   ngOnInit(): void {
     this.search$.pipe(
@@ -162,28 +202,57 @@ export class StepAffaireComponent implements OnInit {
 
   selectAffaire(a: AffaireListItem): void {
     this.selectedAffaire.set(a);
+    this.rafDetails.set(null);
     this.searchResults.set([]);
     this.searchQuery.set(`${a.reference} — ${a.intitule}`);
+    // Only use affaire's billingMode if it's a valid invoice billing mode
+    const bmCtrl = this.form.controls['billingMode'];
+    const validBm = a.billingMode && VALID_BILLING_MODES.has(a.billingMode) ? a.billingMode : null;
+    if (validBm) {
+      bmCtrl.setValue(validBm);
+      bmCtrl.clearValidators();
+    } else {
+      bmCtrl.setValue('');
+      bmCtrl.setValidators([Validators.required]);
+    }
+    bmCtrl.updateValueAndValidity();
+
+    // Fetch real RAF from the dedicated endpoint
+    this.rafLoading.set(true);
+    this.affSvc.getAffaireRaf(a.id).subscribe({
+      next:  r => { this.rafDetails.set(r); this.rafLoading.set(false); },
+      error: () => this.rafLoading.set(false),
+    });
+
     this.affSvc.getTS(a.id).subscribe({ next: r => this.tsList.set(r), error: () => {} });
   }
 
   clearAffaire(): void {
     this.selectedAffaire.set(null);
+    this.rafDetails.set(null);
     this.searchQuery.set('');
     this.searchResults.set([]);
     this.tsList.set([]);
+    const bmCtrl = this.form.controls['billingMode'];
+    bmCtrl.setValue('');
+    bmCtrl.clearValidators();
+    bmCtrl.updateValueAndValidity();
     this.form.patchValue({ tsId: null });
   }
 
   next(): void {
     this.form.markAllAsTouched();
-    if (this.form.invalid || this.rafBlocked()) return;
+    if (this.form.invalid || this.rafBlocked() || this.rafLoading()) return;
     const v = this.form.getRawValue();
+    const aff = this.selectedAffaire();
     this.nextStep.emit({
-      affaireId:   this.selectedAffaire()?.id ?? null,
+      affaireId:   aff?.id ?? null,
       tsId:        v.tsId ?? null,
       invoiceType: v.invoiceType!,
-      clientId:    this.selectedAffaire()?.clientId ?? null,
+      clientId:    aff?.clientId ?? null,
+      paysId:      aff?.paysId ?? 0,
+      currency:    aff?.devise ?? 'TND',
+      billingMode: v.billingMode || this.validBillingModeFromAffaire() || '',
     });
   }
 

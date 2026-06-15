@@ -1,7 +1,11 @@
-import { Component, OnInit, Output, EventEmitter, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { AffaireService } from './affaire.service';
-import { ClientDto, UserRefDto, PaysRefDto, CreateAffaireRequest } from './affaire.model';
+import { ClientService } from '../clients/client.service';
+import { ClientDropdownItemDto } from '../clients/client.model';
+import { UserRefDto, PaysRefDto, CreateAffaireRequest } from './affaire.model';
+
 
 @Component({
   selector: 'app-affaire-form',
@@ -36,29 +40,30 @@ import { ClientDto, UserRefDto, PaysRefDto, CreateAffaireRequest } from './affai
 
           <div class="form-row">
             <div class="field">
-              <label for="clientId">Client *</label>
-              <select id="clientId" formControlName="clientId">
+              <label for="paysId">Entité (pays) *</label>
+              <select id="paysId" formControlName="paysId">
                 <option value="">— Sélectionner —</option>
+                @for (p of pays(); track p.id) {
+                  <option [value]="p.id">{{ p.frenchLabel }}</option>
+                }
+              </select>
+              @if (f['paysId'].touched && f['paysId'].errors?.['required']) {
+                <span class="field-error">Champ requis.</span>
+              }
+            </div>
+            <div class="field">
+              <label for="clientId">Client *</label>
+              <select id="clientId" formControlName="clientId" [attr.disabled]="!f['paysId'].value ? true : null">
+                <option value="">{{ f['paysId'].value ? (clients().length ? '— Sélectionner —' : '— Aucun client KYC validé —') : "— Choisir une entité d'abord —" }}</option>
                 @for (c of clients(); track c.id) {
-                  <option [value]="c.id">{{ c.raisonSociale }}</option>
+                  <option [value]="c.id">{{ c.clientName }}</option>
                 }
               </select>
               @if (f['clientId'].touched && f['clientId'].errors?.['required']) {
                 <span class="field-error">Champ requis.</span>
               }
             </div>
-            <div class="field">
-              <label for="responsableId">Responsable *</label>
-              <select id="responsableId" formControlName="responsableId">
-                <option value="">— Sélectionner —</option>
-                @for (u of users(); track u.id) {
-                  <option [value]="u.id">{{ u.fullName }}</option>
-                }
-              </select>
-              @if (f['responsableId'].touched && f['responsableId'].errors?.['required']) {
-                <span class="field-error">Champ requis.</span>
-              }
-            </div>
+            
           </div>
 
           <div class="form-row">
@@ -75,14 +80,14 @@ import { ClientDto, UserRefDto, PaysRefDto, CreateAffaireRequest } from './affai
               }
             </div>
             <div class="field">
-              <label for="paysId">Entité (pays) *</label>
-              <select id="paysId" formControlName="paysId">
+              <label for="responsableId">Responsable *</label>
+              <select id="responsableId" formControlName="responsableId">
                 <option value="">— Sélectionner —</option>
-                @for (p of pays(); track p.id) {
-                  <option [value]="p.id">{{ p.frenchLabel }}</option>
+                @for (u of users(); track u.id) {
+                  <option [value]="u.id">{{ u.fullName }}</option>
                 }
               </select>
-              @if (f['paysId'].touched && f['paysId'].errors?.['required']) {
+              @if (f['responsableId'].touched && f['responsableId'].errors?.['required']) {
                 <span class="field-error">Champ requis.</span>
               }
             </div>
@@ -131,17 +136,19 @@ import { ClientDto, UserRefDto, PaysRefDto, CreateAffaireRequest } from './affai
   `,
   styleUrl: './affaire-form.component.scss',
 })
-export class AffaireFormComponent implements OnInit {
+export class AffaireFormComponent implements OnInit, OnDestroy {
   @Output() closed = new EventEmitter<boolean>();
 
-  private readonly svc = inject(AffaireService);
-  private readonly fb  = inject(FormBuilder);
+  private readonly svc         = inject(AffaireService);
+  private readonly clientSvc   = inject(ClientService);
+  private readonly fb          = inject(FormBuilder);
+  private paysSub?: Subscription;
 
   saving      = signal(false);
   serverError = signal<string | null>(null);
-  clients = signal<ClientDto[]>([]);
-  users   = signal<UserRefDto[]>([]);
-  pays    = signal<PaysRefDto[]>([]);
+  clients     = signal<ClientDropdownItemDto[]>([]);
+  users       = signal<UserRefDto[]>([]);
+  pays        = signal<PaysRefDto[]>([]);
 
   form!: FormGroup;
   get f() { return this.form.controls; }
@@ -161,9 +168,21 @@ export class AffaireFormComponent implements OnInit {
       notes:             [''],
     });
 
-    this.svc.getClients().subscribe(r => this.clients.set(r));
     this.svc.getUsers().subscribe(r => this.users.set(r));
     this.svc.getPays().subscribe(r => this.pays.set(r));
+
+    // Load clients whenever pays changes
+    this.paysSub = this.form.get('paysId')!.valueChanges.subscribe(paysId => {
+      this.clients.set([]);
+      this.form.get('clientId')!.setValue('');
+      if (paysId) {
+        this.clientSvc.getDropdown(Number(paysId)).subscribe(r => this.clients.set(r.filter(c => c.isKycDone)));
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.paysSub?.unsubscribe();
   }
 
   submit(): void {
@@ -179,8 +198,8 @@ export class AffaireFormComponent implements OnInit {
       intitule:          v.intitule.trim(),
       reference:         v.reference?.trim() || null,
       clientId:          Number(v.clientId),
-      responsableId:     Number(v.responsableId),
-      type:              v.type,
+      responsableUserId: v.responsableId ? Number(v.responsableId) : null,
+      typeAffaire:       v.type || null,
       paysId:            Number(v.paysId),
       dateDebut:         v.dateDebut || null,
       dateFin:           v.dateFin   || null,
@@ -193,7 +212,7 @@ export class AffaireFormComponent implements OnInit {
       next:  () => { this.saving.set(false); this.closed.emit(true); },
       error: err => {
         this.saving.set(false);
-        this.serverError.set(err?.error?.message ?? 'Une erreur est survenue. Veuillez réessayer.');
+        this.serverError.set(err?.error?.detail ?? err?.error?.message ?? 'Une erreur est survenue. Veuillez réessayer.');
       },
     });
   }

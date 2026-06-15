@@ -1,0 +1,148 @@
+<div class="st-tab">
+
+  <!-- Toolbar -->
+  <div class="tab-toolbar">
+    <span class="tab-count">
+      @if (!loading()) { {{ list().length }} sous-traitant(s) }
+    </span>
+    <button class="btn-primary" *appHasPermission="'FACT_MANAGE_ST'" (click)="openCreate()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Nouveau sous-traitant
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="alert-error">{{ error() }}</div>
+  }
+
+  @if (paysId() == null) {
+    <div class="empty-state">Sélectionnez une entité pour afficher les sous-traitants.</div>
+  } @else if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Chargement…</span>
+    </div>
+  } @else if (list().length === 0) {
+    <div class="empty-state">Aucun sous-traitant enregistré pour cette entité.</div>
+  } @else {
+    <div class="st-table-wrap">
+      <table class="st-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Téléphone</th>
+            <th>N° Fiscal</th>
+            <th>Pays</th>
+            <th>Statut</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (st of list(); track st.id) {
+            <tr [class.inactive]="!st.isActive">
+              <td class="name-cell">{{ st.name }}</td>
+              <td class="muted">{{ st.contactEmail || '—' }}</td>
+              <td class="muted">{{ st.contactPhone || '—' }}</td>
+              <td class="muted">{{ st.taxId || '—' }}</td>
+              <td class="muted">{{ st.country || '—' }}</td>
+              <td>
+                <span class="status-chip" [class.active]="st.isActive" [class.inactive]="!st.isActive">
+                  {{ st.isActive ? 'Actif' : 'Inactif' }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <button class="btn-icon" title="Modifier" *appHasPermission="'FACT_MANAGE_ST'" (click)="openEdit(st)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="btn-icon btn-icon--danger" title="Désactiver" *appHasPermission="'FACT_MANAGE_ST'" (click)="confirmDelete(st)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>
+
+<!-- Create / Edit Modal -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showModal.set(false)">
+    <div class="modal-box" role="dialog">
+      <div class="modal-header">
+        <h2>{{ editTarget() ? 'Modifier' : 'Nouveau' }} sous-traitant</h2>
+        <button class="close-btn" (click)="showModal.set(false)">&times;</button>
+      </div>
+      <div class="modal-body">
+        @if (formError()) {
+          <div class="alert-error">{{ formError() }}</div>
+        }
+        <div class="field">
+          <label for="st-name">Nom *</label>
+          <input id="st-name" type="text" [(ngModel)]="form.name" placeholder="Nom du sous-traitant" maxlength="200" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="st-email">Email</label>
+            <input id="st-email" type="email" [(ngModel)]="form.contactEmail" placeholder="contact@exemple.com" />
+          </div>
+          <div class="field">
+            <label for="st-phone">Téléphone</label>
+            <input id="st-phone" type="tel" [(ngModel)]="form.contactPhone" placeholder="+216 …" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="st-tax">N° Fiscal</label>
+            <input id="st-tax" type="text" [(ngModel)]="form.taxId" placeholder="Numéro fiscal" />
+          </div>
+          <div class="field">
+            <label for="st-country">Pays (texte)</label>
+            <input id="st-country" type="text" [(ngModel)]="form.country" placeholder="ex: Tunisie" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showModal.set(false)">Annuler</button>
+        <button class="btn-save" [disabled]="saving() || !form.name.trim()" (click)="save()">
+          @if (saving()) { Enregistrement… } @else { Enregistrer }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete Confirm -->
+@if (deleteTarget()) {
+  <div class="modal-overlay" (click)="$event.target === $event.currentTarget && deleteTarget.set(null)">
+    <div class="modal-box modal-box--sm" role="dialog">
+      <div class="modal-header">
+        <h2>Confirmer la désactivation</h2>
+        <button class="close-btn" (click)="deleteTarget.set(null)">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Désactiver <strong>{{ deleteTarget()!.name }}</strong> ?</p>
+        <p class="hint">Cette action échouera si des ordres EN_COURS sont associés à ce sous-traitant.</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="deleteTarget.set(null)">Annuler</button>
+        <button class="btn-danger" [disabled]="deleting()" (click)="doDelete()">
+          @if (deleting()) { Suppression… } @else { Désactiver }
+        </button>
+      </div>
+    </div>
+  </div>
+}

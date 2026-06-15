@@ -7,7 +7,7 @@ import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const store = inject(UserStore);
-  const auth  = inject(AuthService);
+  const auth  = inject(AuthService);  // used for portal 401 redirect
 
   const isPortalCall = req.url.startsWith(environment.portalUrl);
   const isFactApi    = req.url.startsWith(environment.factApiUrl);
@@ -27,12 +27,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` }, withCredentials: true })
       : req.clone({ withCredentials: true });
 
-    return next(authReq).pipe(
-      catchError(err => {
-        if (err.status === 401) auth.login();
-        return throwError(() => err);
-      }),
-    );
+    // Do NOT redirect to login on facturation-backend 401s — propagate to the component.
+    // Only portal 401s (session expired) should trigger an OAuth redirect.
+    return next(authReq);
   }
 
   return next(req);

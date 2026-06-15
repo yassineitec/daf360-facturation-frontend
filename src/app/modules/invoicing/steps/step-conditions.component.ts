@@ -20,7 +20,7 @@ export interface StepConditionsValue {
   <div class="form-grid">
     <div class="field">
       <label for="sc-echeance">Date d'échéance *</label>
-      <input id="sc-echeance" type="date" formControlName="dateEcheance" [formControl]="form.controls['dateEcheance']"
+      <input id="sc-echeance" type="date" [formControl]="form.controls['dateEcheance']"
         class="form-input"
         [class.invalid]="form.controls['dateEcheance'].invalid && form.controls['dateEcheance'].touched" />
       @if (form.controls['dateEcheance'].invalid && form.controls['dateEcheance'].touched) {

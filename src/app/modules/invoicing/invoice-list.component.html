@@ -136,25 +136,25 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
 
-                  @if (inv.statut === 'VALIDEE') {
+                  @if (inv.statut === 'APPROVED') {
                     <button class="action-btn action-btn--teal" title="Émettre" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="quickEmit(inv, $event)">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     </button>
                   }
 
-                  @if (inv.statut === 'EMISE') {
+                  @if (inv.statut === 'EMITTED') {
                     <button class="action-btn action-btn--slate" title="Marquer envoyée" (click)="quickMarkSent(inv, $event)">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                     </button>
                   }
 
-                  @if (inv.statut === 'EN_REVUE') {
+                  @if (inv.statut === 'SUBMITTED') {
                     <button class="action-btn action-btn--blue" title="Approuver" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="openApprovalModal(inv, $event)">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     </button>
                   }
 
-                  @if (inv.statut === 'EMISE' || inv.statut === 'ENVOYEE' || inv.statut === 'PARTIELLEMENT_PAYEE') {
+                  @if (inv.statut === 'EMITTED' || inv.statut === 'SENT' || inv.statut === 'PARTIALLY_PAID') {
                     <button class="action-btn action-btn--green" title="Enregistrer paiement" (click)="openPaymentModal(inv, $event)">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                     </button>

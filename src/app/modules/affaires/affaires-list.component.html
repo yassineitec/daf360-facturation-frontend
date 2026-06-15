@@ -116,9 +116,9 @@
                   <span class="ref-badge">{{ a.reference }}</span>
                 </td>
                 <td class="intitule-cell">{{ a.intitule }}</td>
-                <td>{{ a.clientNom || '—' }}</td>
-                <td>{{ a.responsableNom || '—' }}</td>
-                <td><span class="type-chip">{{ typeLabel(a.type) }}</span></td>
+                <td>{{ a.clientName || '—' }}</td>
+                <td>{{ a.responsableFullName || '—' }}</td>
+                <td><span class="type-chip">{{ typeLabel(a.typeAffaire) }}</span></td>
                 <td class="num-col">
                   <div class="budget-cell">
                     <span>{{ formatAmount(a.budgetPrevisionnel) }}</span>
@@ -131,7 +131,7 @@
                 </td>
                 <td class="num-col">
                   <span class="raf-value" [style.color]="rafColor(a)">
-                    {{ formatAmount(a.rafDisponible) }}
+                    {{ formatAmount(a.rafDisponible ?? null) }}
                   </span>
                 </td>
                 <td><app-status-badge [status]="a.statut" /></td>

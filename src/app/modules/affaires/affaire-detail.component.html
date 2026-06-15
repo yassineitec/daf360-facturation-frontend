@@ -25,11 +25,11 @@
         <div class="header-titles">
           <h1 class="affaire-title">{{ affaire()!.intitule }}</h1>
           <div class="header-meta">
-            <span>{{ affaire()!.clientNom }}</span>
+            <span>{{ affaire()!.clientName }}</span>
             <span class="meta-sep">·</span>
             <span>{{ typeLabel() }}</span>
             <span class="meta-sep">·</span>
-            <span>{{ affaire()!.responsableNom }}</span>
+            <span>{{ affaire()!.responsableFullName }}</span>
           </div>
         </div>
       </div>
@@ -55,17 +55,17 @@
         <div class="kpi-grid">
           <div class="kpi-card">
             <span class="kpi-label">CA encaissé</span>
-            <span class="kpi-value">{{ formatAmount(kpis()?.caEncaisse ?? null, affaire()!.devise) }}</span>
+            <span class="kpi-value">{{ formatAmount(kpis()?.caEncaisse ?? null, affaireDevise()) }}</span>
           </div>
           <div class="kpi-card">
             <span class="kpi-label">RAF disponible</span>
-            <span class="kpi-value kpi-value--raf" [style.color]="raf() ? (raf()!.rafDisponible / raf()!.budgetPrevisionnel > 0.2 ? '#1a6b7c' : raf()!.rafDisponible / raf()!.budgetPrevisionnel > raf()!.seuilAlertePct / 100 ? '#f59e0b' : '#dc2626') : '#64748b'">
-              {{ formatAmount(raf()?.rafDisponible ?? null, affaire()!.devise) }}
+            <span class="kpi-value kpi-value--raf" [style.color]="raf() ? (raf()!.rafDisponible / raf()!.budgetPrevisionnel > 0.2 ? '#1a6b7c' : raf()!.rafDisponible / raf()!.budgetPrevisionnel > (affaire()!.rafAlerteSeuilPct / 100) ? '#f59e0b' : '#dc2626') : '#64748b'">
+              {{ formatAmount(raf()?.rafDisponible ?? null, affaireDevise()) }}
             </span>
           </div>
           <div class="kpi-card">
             <span class="kpi-label">WIP</span>
-            <span class="kpi-value">{{ formatAmount(kpis()?.wip ?? null, affaire()!.devise) }}</span>
+            <span class="kpi-value">{{ formatAmount(kpis()?.wip ?? null, affaireDevise()) }}</span>
           </div>
           <div class="kpi-card">
             <span class="kpi-label">Marge brute</span>
@@ -79,11 +79,11 @@
             <app-raf-gauge
               [raf]="raf()!.rafDisponible"
               [budget]="raf()!.budgetPrevisionnel"
-              [seuilPct]="raf()!.seuilAlertePct"
-              [devise]="affaire()!.devise" />
+              [seuilPct]="affaire()!.rafAlerteSeuilPct"
+              [devise]="affaireDevise()" />
             <div class="raf-detail">
-              <span>TS intégrés: <strong>{{ formatAmount(raf()!.totalTsIntegres, affaire()!.devise) }}</strong></span>
-              <span>Factures émises: <strong>{{ formatAmount(raf()!.totalFacturesEmises, affaire()!.devise) }}</strong></span>
+              <span>TS intégrés: <strong>{{ formatAmount(raf()!.montantTsIntegres, affaireDevise()) }}</strong></span>
+              <span>Factures émises: <strong>{{ formatAmount(raf()!.totalFacturesEmises, affaireDevise()) }}</strong></span>
             </div>
           </div>
         }
@@ -99,11 +99,11 @@
               <div class="info-grid">
                 <div class="info-row">
                   <span class="info-label">Client</span>
-                  <span class="info-value">{{ affaire()!.clientNom || '—' }}</span>
+                  <span class="info-value">{{ affaire()!.clientName || '—' }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Responsable</span>
-                  <span class="info-value">{{ affaire()!.responsableNom || '—' }}</span>
+                  <span class="info-value">{{ affaire()!.responsableFullName || '—' }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Type</span>
@@ -111,7 +111,7 @@
                 </div>
                 <div class="info-row">
                   <span class="info-label">Devise</span>
-                  <span class="info-value">{{ affaire()!.devise }}</span>
+                  <span class="info-value">{{ affaireDevise() }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Date début</span>
@@ -123,7 +123,7 @@
                 </div>
                 <div class="info-row">
                   <span class="info-label">Budget prévisionnel</span>
-                  <span class="info-value">{{ formatAmount(affaire()!.budgetPrevisionnel, affaire()!.devise) }}</span>
+                  <span class="info-value">{{ formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Budget validé</span>
@@ -164,10 +164,50 @@
               <app-ts-list
                 [affaireId]="numId"
                 [list]="tsList()"
+                (openNewForm)="openTsForm()"
                 (updated)="loadTs(); loadRaf()" />
             </div>
           }
         </div>
+
+        <!-- Sous-traitance section -->
+        @if (affaire()) {
+          <div class="collapsible glass-card">
+            <button class="collapsible-header" (click)="toggleSection('soustraitance')" [attr.aria-expanded]="isOpen('soustraitance')">
+              <span class="section-title">Sous-traitance</span>
+              <svg class="chevron" [class.open]="isOpen('soustraitance')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            @if (isOpen('soustraitance')) {
+              <div class="collapsible-body">
+                <app-affaire-ost
+                  [affaireId]="numId"
+                  [paysId]="affaire()!.paysId"
+                  [devise]="affaireDevise()"
+                  [affaireStatut]="affaire()!.statut" />
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Facturation section (shown only when billingMode is configured) -->
+        @if (affaire()!.billingMode) {
+          <div class="collapsible glass-card">
+            <button class="collapsible-header" (click)="toggleSection('facturation')" [attr.aria-expanded]="isOpen('facturation')">
+              <span class="section-title">
+                Facturation
+                <span class="section-badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-size:10px;padding:1px 7px;border-radius:999px;font-weight:600;margin-left:6px;">
+                  {{ affaire()!.billingMode }}
+                </span>
+              </span>
+              <svg class="chevron" [class.open]="isOpen('facturation')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            @if (isOpen('facturation')) {
+              <div class="collapsible-body">
+                <app-affaire-billing-tab [affaire]="affaire()!" />
+              </div>
+            }
+          </div>
+        }
 
         <!-- Stub sections -->
         @for (section of stubSections; track section.key) {
@@ -191,7 +231,7 @@
         @if (!affaire()!.budgetValide) {
           <div class="action-card glass-card" *appHasPermission="'FACT_VALIDER_BUDGET'">
             <h3>Validation du budget</h3>
-            <p>Le budget de {{ formatAmount(affaire()!.budgetPrevisionnel, affaire()!.devise) }} est en attente de validation.</p>
+            <p>Le budget de {{ formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) }} est en attente de validation.</p>
             <button class="btn-action btn-action--teal" [disabled]="budgetLoading()" (click)="validerBudget()">
               @if (budgetLoading()) { Validation… } @else { Valider le budget }
             </button>
@@ -240,7 +280,7 @@
             }
             <div class="info-item">
               <span class="info-item-label">Seuil alerte RAF</span>
-              <span class="info-item-value">{{ affaire()!.seuilAlertePct }}%</span>
+              <span class="info-item-value">{{ affaire()!.rafAlerteSeuilPct }}%</span>
             </div>
           </div>
         </div>
@@ -263,16 +303,20 @@
       </div>
       <div class="modal-body">
         <div class="field">
-          <label for="new-statut">Nouveau statut *</label>
-          <select id="new-statut" [(ngModel)]="targetStatut">
+          <label>Nouveau statut *</label>
+          <div class="statut-radio-group">
             @for (s of availableTransitions(); track s) {
-              <option [value]="s">{{ statutLabel(s) }}</option>
+              <label class="statut-radio" [class.selected]="targetStatut() === s">
+                <input type="radio" name="new-statut" [value]="s"
+                       [ngModel]="targetStatut()" (ngModelChange)="targetStatut.set($event)" />
+                {{ statutLabel(s) }}
+              </label>
             }
-          </select>
+          </div>
         </div>
         <div class="field">
           <label for="motif">Motif (optionnel)</label>
-          <textarea id="motif" [(ngModel)]="motif" rows="3" maxlength="500" placeholder="Raison du changement de statut…"></textarea>
+          <textarea id="motif" [ngModel]="motif()" (ngModelChange)="motif.set($event)" rows="3" maxlength="500" placeholder="Raison du changement de statut…"></textarea>
         </div>
       </div>
       <div class="modal-actions">
@@ -283,4 +327,9 @@
       </div>
     </div>
   </div>
+}
+
+<!-- TS new-form modal (rendered at root level, outside any glass-card) -->
+@if (showTsForm()) {
+  <app-ts-form [affaireId]="numId" (closed)="onTsFormClosed($event)" />
 }

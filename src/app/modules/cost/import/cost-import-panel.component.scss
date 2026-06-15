@@ -1,0 +1,239 @@
+:host { display: contents; }
+
+.import-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f3d47;
+  margin: 0;
+}
+
+.btn-template {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover { border-color: #94a3b8; }
+}
+
+// ── Drop zone ──────────────────────────────────────────────────────────────
+
+.drop-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  transition: all 0.2s;
+  background: #f8fafc;
+  cursor: default;
+
+  &.dragging {
+    border-color: #1a6b7c;
+    background: #f0fbfd;
+  }
+}
+
+.drop-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.drop-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  color: #94a3b8;
+}
+
+.drop-hint p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.btn-browse {
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid #1a6b7c;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a6b7c;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+
+  &:hover { background: #f0fbfd; }
+}
+
+.file-selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.file-icon { font-size: 1.5rem; }
+
+.file-name {
+  font-weight: 600;
+  color: #0f3d47;
+  font-size: 0.875rem;
+}
+
+.file-size {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.banner-error {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 0.8125rem;
+}
+
+.btn-cancel-sm {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { border-color: #94a3b8; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.btn-upload {
+  height: 34px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 8px;
+  background: #1a6b7c;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  &:hover:not(:disabled) { background: #134f5c; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Result ─────────────────────────────────────────────────────────────────
+
+.result-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.result-summary {
+  display: flex;
+  gap: 16px;
+}
+
+.result-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  min-width: 70px;
+
+  &.success { background: #dcfce7; }
+  &.error   { background: #fee2e2; }
+  &.warn    { background: #fef3c7; }
+}
+
+.stat-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f3d47;
+}
+
+.stat-label {
+  font-size: 0.6875rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.error-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.error-list-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #991b1b;
+  margin: 0 0 4px;
+}
+
+.error-row {
+  display: flex;
+  gap: 10px;
+  font-size: 0.8125rem;
+  padding: 4px 0;
+  border-top: 1px solid #fee2e2;
+}
+
+.error-row-num {
+  font-weight: 600;
+  color: #dc2626;
+  white-space: nowrap;
+}
+
+.error-row-msg { color: #1e293b; }
