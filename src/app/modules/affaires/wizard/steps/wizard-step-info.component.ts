@@ -68,6 +68,12 @@ import { ListValueDto } from '../../../cost/cost.model';
       @if (clientFocused && draft.paysId && allClients().length === 0) {
         <p class="text-xs text-[#75777d] mt-1">Aucun client disponible pour cette entité.</p>
       }
+      @if (draft.clientId && !draft.clientKycDone) {
+        <p class="text-xs text-[#92400e] mt-1 flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">warning</span>
+          Ce client n'a pas de validation KYC. Aucune facture ne pourra être émise.
+        </p>
+      }
     </div>
 
     <!-- Intitulé -->
@@ -301,8 +307,9 @@ export class WizardStepInfoComponent implements OnInit {
 
   selectClient(c: ClientDropdownItemDto): void {
     if (this.clientHideTimer) { clearTimeout(this.clientHideTimer); this.clientHideTimer = undefined; }
-    this.draft.clientId   = c.id;
-    this.draft.clientName = c.clientName;
+    this.draft.clientId     = c.id;
+    this.draft.clientName   = c.clientName;
+    this.draft.clientKycDone = c.isKycDone;
     this.clientResults.set([]);
     this.emit();
   }

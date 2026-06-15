@@ -5,11 +5,10 @@ import { AffaireService } from './affaire.service';
 import { AffaireListItem, AffaireFilter, TYPE_LABELS, STATUT_LABELS } from './affaire.model';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { PermissionDirective } from '../../shared/permission.directive';
-import { AffaireFormComponent } from './affaire-form.component';
 
 @Component({
   selector: 'app-affaires-list',
-  imports: [FormsModule, StatusBadgeComponent, PermissionDirective, AffaireFormComponent],
+  imports: [FormsModule, StatusBadgeComponent, PermissionDirective],
   templateUrl: './affaires-list.component.html',
   styleUrl: './affaires-list.component.scss',
 })
@@ -23,7 +22,6 @@ export class AffairesListComponent implements OnInit {
   totalElements  = signal(0);
   totalPages     = signal(0);
   currentPage    = signal(0);
-  showForm       = signal(false);
 
   // filter model bound with ngModel
   searchText  = '';
@@ -92,12 +90,7 @@ export class AffairesListComponent implements OnInit {
   }
 
   openNewForm(): void {
-    this.showForm.set(true);
-  }
-
-  onFormClosed(saved: boolean): void {
-    this.showForm.set(false);
-    if (saved) this.load();
+    this.router.navigate(['/fact/affaires/new']);
   }
 
   rafColor(a: AffaireListItem): string {

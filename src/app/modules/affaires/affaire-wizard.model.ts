@@ -64,6 +64,7 @@ export interface AffaireDraftState {
   paysId: number;
   clientId?: number;
   clientName?: string;
+  clientKycDone?: boolean;
   intitule: string;
   reference?: string;
   responsableUserIds: number[];

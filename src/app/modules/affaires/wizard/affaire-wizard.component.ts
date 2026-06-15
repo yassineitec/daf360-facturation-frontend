@@ -63,7 +63,10 @@ export class AffaireWizardComponent {
     if (this.isSaving()) return false;
     const d = this.draft();
     if (this.currentStep() === 1) {
-      return !!(Number(d.paysId) && d.clientId && d.intitule?.trim() && d.billingMode);
+      const modeNeedsContract = BILLING_MODES.find(m => m.code === d.billingMode)?.requiresContractAmount ?? false;
+      return !!(Number(d.paysId) && d.clientId && d.clientKycDone
+                && d.intitule?.trim() && d.billingMode
+                && (!modeNeedsContract || (d.contractAmount && d.contractAmount > 0)));
     }
     if (this.currentStep() === 2) {
       switch (d.billingMode) {
