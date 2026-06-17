@@ -1,0 +1,206 @@
+:host { display: block; }
+
+.step-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.step-intro-text {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Selected project card */
+.selected-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
+  background: #f0fdf9;
+  border: 1.5px solid #0d9488;
+  border-radius: 10px;
+}
+.selected-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0d9488;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { color: #fff; font-size: 20px; }
+}
+.selected-card-body { flex: 1; min-width: 0; }
+.selected-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+.selected-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+.badge {
+  background: #e6f7f5;
+  color: #0d9488;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.ref-tag {
+  background: #ede9fe;
+  color: #7c3aed;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.meta-sep { color: #cbd5e1; }
+.clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #94a3b8;
+  flex-shrink: 0;
+  &:hover { background: rgba(0,0,0,0.06); color: #ef4444; }
+  .material-symbols-outlined { font-size: 18px; }
+}
+
+/* Search field */
+.search-wrapper { position: relative; }
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #fff;
+  transition: border-color 0.2s;
+  &:focus-within { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+}
+.search-icon { color: #94a3b8; font-size: 20px; }
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 13px 0;
+  font-size: 15px;
+  color: #0f172a;
+  background: transparent;
+  &::placeholder { color: #94a3b8; }
+}
+.search-spinner {
+  color: #0d9488;
+  font-size: 20px;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Results dropdown */
+.results-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+  z-index: 50;
+  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.result-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+  &:last-child { border-bottom: none; }
+  &:hover { background: #f8fafc; }
+}
+.result-number {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0d9488;
+  grid-column: 1;
+  grid-row: 1;
+  white-space: nowrap;
+}
+.result-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+  grid-column: 2;
+  grid-row: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.result-client {
+  font-size: 12px;
+  color: #64748b;
+  grid-column: 2;
+  grid-row: 2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.result-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #64748b;
+  grid-column: 3;
+  grid-row: 1 / 3;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.no-results {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  font-size: 14px;
+  color: #94a3b8;
+  .material-symbols-outlined { font-size: 20px; }
+}
+
+.skip-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  .material-symbols-outlined { font-size: 16px; }
+}

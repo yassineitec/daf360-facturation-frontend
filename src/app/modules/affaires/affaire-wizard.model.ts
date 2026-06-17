@@ -7,7 +7,6 @@ export interface BillingModeOption {
   description: string;
   icon: string;
   requiresContractAmount: boolean;
-  steps: string[];
 }
 
 export const BILLING_MODES: BillingModeOption[] = [
@@ -18,7 +17,6 @@ export const BILLING_MODES: BillingModeOption[] = [
     description: 'Facturation selon le taux d\'avancement validé chaque mois par le Chef de Projet.',
     icon: 'trending_up',
     requiresContractAmount: true,
-    steps: ['Informations', 'Répartition CTR/BPE/TQC', 'Récapitulatif'],
   },
   {
     code: 'JAL',
@@ -27,7 +25,6 @@ export const BILLING_MODES: BillingModeOption[] = [
     description: 'Facturation déclenchée à l\'atteinte de jalons contractuels prédéfinis.',
     icon: 'flag',
     requiresContractAmount: true,
-    steps: ['Informations', 'Jalons', 'Récapitulatif'],
   },
   {
     code: 'TM',
@@ -36,7 +33,6 @@ export const BILLING_MODES: BillingModeOption[] = [
     description: 'Facturation basée sur les heures validées en timesheet × taux contractuels par ressource.',
     icon: 'schedule',
     requiresContractAmount: false,
-    steps: ['Informations', 'Ressources & Taux', 'Récapitulatif'],
   },
   {
     code: 'CP',
@@ -45,7 +41,6 @@ export const BILLING_MODES: BillingModeOption[] = [
     description: 'Facturation des coûts réels majorés d\'un taux de marge contractuel.',
     icon: 'add_circle',
     requiresContractAmount: false,
-    steps: ['Informations', 'Types de coûts & Marge', 'Récapitulatif'],
   },
   {
     code: 'RMB',
@@ -54,50 +49,95 @@ export const BILLING_MODES: BillingModeOption[] = [
     description: 'Refacturation des frais remboursables validés par le manager.',
     icon: 'receipt',
     requiresContractAmount: false,
-    steps: ['Informations', 'Catégories de frais', 'Récapitulatif'],
   },
 ];
 
+export const WIZARD_STEPS_LABELS = [
+  'Recherche DOC360',
+  'Informations',
+  'Mode de facturation',
+  'Responsables & Budget',
+  'Planification',
+  'Récapitulatif',
+];
+
+// ── DTOs matching backend ──────────────────────────────────────────────────────
+
+export interface ExternalProjectResult {
+  serverReference: string;
+  projectNumber: string;
+  projectName: string;
+  clientName: string;
+  status: string;
+}
+
+export interface DisciplineDto {
+  id: number;
+  code: string;
+  label: string;
+}
+
+export interface ResponsableItem {
+  userId: number;
+  userName: string;
+  isPrimary: boolean;
+  role?: string;
+}
+
+// ── Wizard state ───────────────────────────────────────────────────────────────
+
 export interface AffaireDraftState {
-  // Step 1
   id?: number;
+
+  // paysId — NOT shown in UI; populated from backend response after draft creation
   paysId: number;
+
+  // Step 1 — DOC360 project (optional)
+  doc360ProjectName?: string;
+  doc360ProjectNumber?: string;
+  doc360ServerReference?: string;  // used to populate discipline dropdown in step 4
+  doc360ClientName?: string;
+
+  // Step 2 — Informations générales
   clientId?: number;
   clientName?: string;
   clientKycDone?: boolean;
   intitule: string;
   reference?: string;
-  responsableUserIds: number[];
-  responsableNames: string[];
-  dateDebut?: string;
-  dateFin?: string;
-  contractAmount?: number;
-  contractCurrency: string;
+  doc360Ref?: string;    // manual reference (distinct from DOC360 project)
+  notes?: string;
+
+  // Step 3 — Mode de facturation
   billingMode?: BillingMode;
   billingPeriod: string;
-  notes?: string;
-  doc360Ref?: string;
+  contractAmount?: number;
+  contractCurrency: string;
 
-  // Step 2 AV
+  // Step 3 — Mode-specific sub-data
   repartitions: { repartitionTypeId: number; percentage: number; label?: string }[];
   repartitionTotal: number;
-
-  // Step 2 JAL
   jalons: { label: string; description?: string; montant: number; ordre: number; datePrevisionnelle?: string }[];
   jalonTotal: number;
-
-  // Step 2 TM
   ressources: {
     userId: number; userName?: string;
     resourceType: string; rateType: string;
     rateAmount: number; rateCurrency: string;
     costAmount?: number;
   }[];
-
-  // Step 2 CP
   eligibleCostCategoryIds: number[];
   marginRatePct?: number;
-
-  // Step 2 RMB
   eligibleExpenseCategoryIds: number[];
+
+  // Step 4 — Responsables & Budget
+  responsables: ResponsableItem[];
+  budgetPrevisionnel?: number;
+  activiteId?: number;
+  disciplineId?: number;
+  disciplineLabel?: string;
+  disciplineServerRef?: string;
+
+  // Step 5 — Planification
+  dateDebutFacturation?: string;
+  dateFinContractuelle?: string;
+  datePremireEcheance?: string;
 }

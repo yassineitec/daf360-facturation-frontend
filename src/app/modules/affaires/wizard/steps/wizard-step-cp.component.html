@@ -1,0 +1,55 @@
+<div class="step-form">
+
+  <!-- Margin rate -->
+  <div class="margin-box">
+    <div class="section-header">
+      <span class="material-symbols-outlined section-icon" style="font-variation-settings:'FILL' 1">percent</span>
+      <div>
+        <p class="section-title">Taux de marge contractuel</p>
+        <p class="section-sub">Verrouillé après la première facturation · Formule : Coût réel × (1 + taux/100)</p>
+      </div>
+    </div>
+    <div class="margin-field">
+      <input type="number" step="0.01" min="0" max="200"
+        [(ngModel)]="draft.marginRatePct"
+        class="margin-input" />
+      <span class="margin-symbol">%</span>
+    </div>
+  </div>
+
+  <!-- Eligible cost categories -->
+  <div class="categories-section">
+    <div class="section-header">
+      <span class="material-symbols-outlined section-icon" style="font-variation-settings:'FILL' 1">category</span>
+      <div>
+        <p class="section-title">Types de coûts éligibles</p>
+        <p class="section-sub">Seuls les coûts des catégories cochées seront intégrés dans le calcul mensuel de facturation.</p>
+      </div>
+    </div>
+    <div class="category-list">
+      @for (cat of categories(); track cat.id) {
+        <label class="category-item">
+          <input type="checkbox"
+            [checked]="draft.eligibleCostCategoryIds.includes(cat.id)"
+            (change)="toggleCategory(cat.id, $any($event.target).checked)"
+            class="category-checkbox" />
+          <div class="category-text">
+            <span class="category-name">
+              {{ cat.categoryNumber.toString().padStart(2, '0') }} — {{ cat.labelFr }}
+            </span>
+            @if (cat.descriptionFr) {
+              <p class="category-desc">{{ cat.descriptionFr }}</p>
+            }
+          </div>
+          @if (cat.sourceType !== 'MANUAL' && cat.sourceType !== null) {
+            <span class="auto-badge">Auto</span>
+          }
+        </label>
+      }
+      @if (categories().length === 0) {
+        <p class="empty-msg">Chargement des catégories...</p>
+      }
+    </div>
+  </div>
+
+</div>

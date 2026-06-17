@@ -1,0 +1,134 @@
+<div class="step-form">
+
+  <!-- Responsables section -->
+  <div class="step-section">
+    <div class="section-header">
+      <span class="section-icon material-symbols-outlined">group</span>
+      <div>
+        <div class="section-title">Responsables de l'affaire *</div>
+        <div class="section-sub">Ajoutez au moins un responsable principal</div>
+      </div>
+    </div>
+
+    <!-- Current responsables list -->
+    @if (draft.responsables.length > 0) {
+      <div class="resp-list">
+        @for (resp of draft.responsables; track resp.userId) {
+          <div class="resp-item" [class.is-primary]="resp.isPrimary">
+            <div class="resp-avatar">
+              {{ (getUserName(resp.userId) || '#')[0].toUpperCase() }}
+            </div>
+            <div class="resp-info">
+              <div class="resp-name">{{ getUserName(resp.userId) }}</div>
+              <input class="resp-role-input" type="text"
+                placeholder="Rôle (ex : Chef de projet)"
+                [value]="resp.role ?? ''"
+                (input)="updateRole(resp.userId, $any($event.target).value)">
+            </div>
+            <div class="resp-actions">
+              @if (resp.isPrimary) {
+                <span class="primary-badge">
+                  <span class="material-symbols-outlined">star</span>
+                  Principal
+                </span>
+              } @else {
+                <button class="set-primary-btn" type="button"
+                  title="Définir comme principal"
+                  (click)="setPrimary(resp.userId)">
+                  <span class="material-symbols-outlined">star_border</span>
+                </button>
+              }
+              <button class="remove-btn" type="button" (click)="removeUser(resp.userId)">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Add user typeahead -->
+    <div class="user-search-wrapper">
+      <div class="user-search-field">
+        <span class="material-symbols-outlined">person_add</span>
+        <input class="user-search-input" type="text"
+          placeholder="Rechercher un collaborateur…"
+          [value]="userQuery"
+          (input)="onUserInput($any($event.target).value)"
+          (focus)="showAllUsers()"
+          (blur)="scheduleHideUsers()"
+          autocomplete="off">
+      </div>
+      @if (userResults().length > 0) {
+        <div class="user-dropdown">
+          @for (u of userResults(); track u.id) {
+            <button class="user-item" type="button" (mousedown)="addUser(u)">
+              <span class="user-avatar">{{ u.fullName[0].toUpperCase() }}</span>
+              <span class="user-name">{{ u.fullName }}</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Budget & Classification section -->
+  <div class="step-section">
+    <div class="section-header">
+      <span class="section-icon material-symbols-outlined">account_balance_wallet</span>
+      <div>
+        <div class="section-title">Budget & Classification</div>
+        <div class="section-sub">Montant prévisionnel, activité et discipline du projet</div>
+      </div>
+    </div>
+
+    <div class="field-grid">
+      <div class="field">
+        <label class="field-label">Budget prévisionnel</label>
+        <input class="form-input" type="number" min="0" step="0.001"
+          placeholder="Ex : 250000"
+          [value]="draft.budgetPrevisionnel ?? ''"
+          (input)="onBudgetChange($any($event.target).value)">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Activité</label>
+        <select class="form-select"
+          [value]="draft.activiteId ?? ''"
+          (change)="onActiviteChange($any($event.target).value)">
+          <option value="">— Sélectionner —</option>
+          @for (a of activites(); track a.id) {
+            <option [value]="a.id">{{ a.labelFr }}</option>
+          }
+        </select>
+      </div>
+
+      @if (disciplines().length > 0) {
+        <div class="field field-full">
+          <label class="field-label">Discipline DOC360</label>
+          <select class="form-select"
+            [value]="draft.disciplineId ?? ''"
+            (change)="onDisciplineChange($any($event.target).value)">
+            <option value="">— Sélectionner —</option>
+            @for (d of disciplines(); track d.id) {
+              <option [value]="d.id">{{ d.label }}</option>
+            }
+          </select>
+          @if (draft.doc360ServerReference) {
+            <div class="field-hint">Disciplines du projet {{ draft.doc360ServerReference }}</div>
+          }
+        </div>
+      }
+
+      @if (disciplines().length === 0 && draft.doc360ServerReference) {
+        <div class="field field-full">
+          <label class="field-label">Discipline DOC360</label>
+          <input class="form-input" type="text" placeholder="Saisie libre"
+            [value]="draft.disciplineLabel ?? ''"
+            (input)="draftChange.emit({ ...draft, disciplineLabel: $any($event.target).value })">
+        </div>
+      }
+    </div>
+  </div>
+
+</div>

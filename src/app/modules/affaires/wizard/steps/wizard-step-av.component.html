@@ -1,0 +1,53 @@
+<div class="step-form">
+
+  <div class="info-banner">
+    <span class="material-symbols-outlined" style="font-size:18px">info</span>
+    <p class="m-0">
+      La somme des pourcentages doit être égale à <strong>100 %</strong>.
+      La liste des types de répartition est configurable via l'administration.
+    </p>
+  </div>
+
+  <!-- Repartition rows -->
+  @for (r of draft.repartitions; track $index; let i = $index) {
+    <div class="rep-row">
+      <select [(ngModel)]="r.repartitionTypeId" class="form-select">
+        <option [value]="0">Type de répartition *</option>
+        @for (t of repartitionTypes(); track t.id) {
+          <option [value]="t.id">{{ t.labelFr }}</option>
+        }
+      </select>
+      <div class="pct-field">
+        <input type="number" [(ngModel)]="r.percentage" (ngModelChange)="updateTotal()"
+          min="0" max="100" step="0.1"
+          class="form-input-pct" />
+        <span class="pct-symbol">%</span>
+      </div>
+      <daf-button [options]="{variant: 'danger', size: 'sm', iconStart: 'close'}" (onClick)="removeRow(i)"></daf-button>
+    </div>
+  }
+
+  <daf-button [options]="{variant: 'ghost', iconStart: 'add', label: 'Ajouter un type de répartition', fullWidth: true}" (onClick)="addRow()"></daf-button>
+
+  @if (draft.repartitions.length > 0) {
+    <div class="total-indicator"
+      [class.ok]="draft.repartitionTotal === 100"
+      [class.error]="draft.repartitionTotal !== 100">
+      <span class="total-label">Total</span>
+      <span class="total-value">{{ draft.repartitionTotal | number:'1.1-1' }} %</span>
+    </div>
+
+    @if (draft.repartitionTotal !== 100) {
+      <p class="warning-msg">
+        <span class="material-symbols-outlined" style="font-size:16px">warning</span>
+        La somme doit être exactement 100 %.
+        @if (draft.repartitionTotal < 100) {
+          Il manque {{ 100 - draft.repartitionTotal | number:'1.1-1' }} %.
+        } @else {
+          L'excédent est de {{ draft.repartitionTotal - 100 | number:'1.1-1' }} %.
+        }
+      </p>
+    }
+  }
+
+</div>

@@ -1,0 +1,265 @@
+<div class="recap-form">
+
+  <!-- Intro banner -->
+  <div class="recap-banner">
+    <span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1">check_circle</span>
+    <p class="m-0">
+      Vérifiez les informations ci-dessous avant d'activer l'affaire.
+      Une fois activée, le mode de facturation sera verrouillé.
+    </p>
+  </div>
+
+  <!-- Section A: Informations générales -->
+  <div class="recap-card">
+    <div class="recap-card-head">
+      <span class="recap-section-letter">A</span>
+      <span class="recap-section-title">Informations générales</span>
+    </div>
+    <div class="recap-grid">
+
+      @if (draft.doc360ProjectName) {
+        <div class="recap-field recap-field--full">
+          <p class="recap-label">Projet DOC360</p>
+          <p class="recap-value">{{ draft.doc360ProjectNumber }} — {{ draft.doc360ProjectName }}</p>
+        </div>
+      }
+
+      <div class="recap-field">
+        <p class="recap-label">Client</p>
+        <p class="recap-value">{{ draft.clientName ?? '—' }}</p>
+      </div>
+
+      <div class="recap-field">
+        <p class="recap-label">Intitulé</p>
+        <p class="recap-value">{{ draft.intitule }}</p>
+      </div>
+
+      <div class="recap-field">
+        <p class="recap-label">Mode de facturation</p>
+        <div class="recap-mode">
+          <span class="material-symbols-outlined" style="font-size:16px;font-variation-settings:'FILL' 1">{{ getModeIcon() }}</span>
+          {{ getModeLabelFr() }}
+        </div>
+      </div>
+
+      @if (draft.budgetPrevisionnel) {
+        <div class="recap-field">
+          <p class="recap-label">Budget prévisionnel</p>
+          <p class="recap-value recap-value--teal">{{ draft.budgetPrevisionnel | number:'1.3-3' }}</p>
+        </div>
+      }
+
+      @if (draft.contractAmount) {
+        <div class="recap-field">
+          <p class="recap-label">Montant contractuel</p>
+          <p class="recap-value recap-value--teal">{{ draft.contractAmount | number:'1.3-3' }} {{ draft.contractCurrency }}</p>
+        </div>
+      }
+
+      @if (draft.reference) {
+        <div class="recap-field">
+          <p class="recap-label">Référence</p>
+          <p class="recap-value recap-value--mono">{{ draft.reference }}</p>
+        </div>
+      }
+
+      @if (draft.notes) {
+        <div class="recap-field recap-field--full">
+          <p class="recap-label">Notes</p>
+          <p class="recap-value">{{ draft.notes }}</p>
+        </div>
+      }
+
+    </div>
+  </div>
+
+  <!-- Section B: Responsables & Budget -->
+  @if (draft.responsables.length > 0) {
+    <div class="recap-card">
+      <div class="recap-card-head">
+        <span class="recap-section-letter">B</span>
+        <span class="recap-section-title">Responsables</span>
+      </div>
+      <div class="recap-grid">
+        @for (r of draft.responsables; track r.userId) {
+          <div class="recap-field">
+            <p class="recap-label">
+              @if (r.isPrimary) { <span class="primary-star">★</span> }
+              {{ r.isPrimary ? 'Responsable principal' : 'Responsable' }}
+            </p>
+            <p class="recap-value">
+              {{ r.userName }}
+              @if (r.role) { <span class="recap-role"> — {{ r.role }}</span> }
+            </p>
+          </div>
+        }
+
+        @if (draft.activiteId) {
+          <div class="recap-field">
+            <p class="recap-label">Activité</p>
+            <p class="recap-value">ID #{{ draft.activiteId }}</p>
+          </div>
+        }
+
+        @if (draft.disciplineLabel) {
+          <div class="recap-field">
+            <p class="recap-label">Discipline</p>
+            <p class="recap-value">{{ draft.disciplineLabel }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Section C: Planification -->
+  @if (draft.dateDebutFacturation) {
+    <div class="recap-card">
+      <div class="recap-card-head">
+        <span class="recap-section-letter">C</span>
+        <span class="recap-section-title">Planification</span>
+      </div>
+      <div class="recap-grid">
+        <div class="recap-field">
+          <p class="recap-label">Date de début de facturation</p>
+          <p class="recap-value">{{ draft.dateDebutFacturation | date:'dd/MM/yyyy' }}</p>
+        </div>
+        @if (draft.dateFinContractuelle) {
+          <div class="recap-field">
+            <p class="recap-label">Date de fin contractuelle</p>
+            <p class="recap-value">{{ draft.dateFinContractuelle | date:'dd/MM/yyyy' }}</p>
+          </div>
+        }
+        @if (draft.datePremireEcheance) {
+          <div class="recap-field">
+            <p class="recap-label">Première échéance</p>
+            <p class="recap-value">{{ draft.datePremireEcheance | date:'dd/MM/yyyy' }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Section D: Configuration spécifique -->
+  <div class="recap-card">
+    <div class="recap-card-head">
+      <span class="recap-section-letter">D</span>
+      <span class="recap-section-title">Configuration — {{ draft.billingMode }}</span>
+    </div>
+    <div class="recap-table-wrap">
+
+      @if (draft.billingMode === 'AV') {
+        <table class="recap-table">
+          <thead>
+            <tr>
+              <th class="text-left">Type de répartition</th>
+              <th class="text-right">Pourcentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of draft.repartitions; track $index) {
+              <tr>
+                <td>Type ID #{{ r.repartitionTypeId }}</td>
+                <td class="text-right recap-tfoot-value">{{ r.percentage | number:'1.1-1' }} %</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td class="recap-tfoot-label">Total</td>
+              <td class="text-right recap-tfoot-value">{{ draft.repartitionTotal | number:'1.1-1' }} %</td>
+            </tr>
+          </tfoot>
+        </table>
+      }
+
+      @if (draft.billingMode === 'JAL') {
+        <table class="recap-table">
+          <thead>
+            <tr>
+              <th class="text-left">Jalon</th>
+              <th class="text-left">Date prévisionnelle</th>
+              <th class="text-right">Montant</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (j of draft.jalons; track $index; let i = $index) {
+              <tr>
+                <td>
+                  <span class="recap-jalon-label">{{ i + 1 }}. {{ j.label }}</span>
+                  @if (j.description) {
+                    <p class="recap-jalon-desc">{{ j.description }}</p>
+                  }
+                </td>
+                <td class="recap-date">{{ j.datePrevisionnelle ? (j.datePrevisionnelle | date:'dd/MM/yyyy') : '—' }}</td>
+                <td class="text-right recap-tfoot-value">{{ j.montant | number:'1.3-3' }} {{ draft.contractCurrency }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" class="recap-tfoot-label">Total</td>
+              <td class="text-right recap-tfoot-value">{{ draft.jalonTotal | number:'1.3-3' }} {{ draft.contractCurrency }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      }
+
+      @if (draft.billingMode === 'TM') {
+        <table class="recap-table">
+          <thead>
+            <tr>
+              <th class="text-left">Collaborateur</th>
+              <th class="text-left">Type taux</th>
+              <th class="text-right">Taux</th>
+              <th class="text-right">Coût interne</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of draft.ressources; track $index) {
+              <tr>
+                <td>
+                  <span class="recap-jalon-label">{{ r.userName ?? 'User #' + r.userId }}</span>
+                  <span class="resource-type-badge">{{ r.resourceType === 'INTERNAL' ? 'Interne' : 'Externe' }}</span>
+                </td>
+                <td class="recap-date">{{ r.rateType === 'DAILY' ? 'JH' : 'H' }}</td>
+                <td class="text-right recap-tfoot-value">{{ r.rateAmount | number:'1.2-2' }} {{ r.rateCurrency }}</td>
+                <td class="text-right recap-date">{{ r.costAmount ? (r.costAmount | number:'1.2-2') + ' ' + r.rateCurrency : '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      @if (draft.billingMode === 'CP') {
+        <div class="cp-summary">
+          <div class="cp-margin-kpi">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">percent</span>
+            <div>
+              <p class="recap-label">Taux de marge</p>
+              <p class="cp-margin-value">{{ draft.marginRatePct | number:'1.2-2' }} %</p>
+            </div>
+          </div>
+          <p class="recap-label" style="margin-bottom:8px">{{ draft.eligibleCostCategoryIds.length }} catégorie(s) sélectionnée(s)</p>
+          <div class="badge-wrap">
+            @for (id of draft.eligibleCostCategoryIds; track id) {
+              <span class="mode-badge">Catégorie #{{ id }}</span>
+            }
+          </div>
+        </div>
+      }
+
+      @if (draft.billingMode === 'RMB') {
+        <div class="cp-summary">
+          <p class="recap-label" style="margin-bottom:8px">{{ draft.eligibleExpenseCategoryIds.length }} catégorie(s) sélectionnée(s)</p>
+          <div class="badge-wrap">
+            @for (id of draft.eligibleExpenseCategoryIds; track id) {
+              <span class="mode-badge">Catégorie #{{ id }}</span>
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+
+</div>

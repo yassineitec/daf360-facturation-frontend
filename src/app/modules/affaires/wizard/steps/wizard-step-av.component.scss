@@ -1,0 +1,118 @@
+:host { display: block; }
+
+.step-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ── Info banner ────────────────────────────────────────────────────────
+.info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #f0f4ff;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #1d2b3e;
+  line-height: 1.6;
+
+  .material-symbols-outlined { color: #4648d4; flex-shrink: 0; margin-top: 1px; }
+}
+
+// ── Row ────────────────────────────────────────────────────────────────
+.rep-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #eceef0;
+  border-radius: 14px;
+}
+
+.pct-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pct-symbol {
+  font-size: 13px;
+  font-weight: 600;
+  color: #44474c;
+}
+
+// ── Inputs ─────────────────────────────────────────────────────────────
+.form-select {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1.5px solid #eceef0;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1d2b3e;
+  background: #ffffff;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus { border-color: #4648d4; box-shadow: 0 0 0 3px rgba(70,72,212,0.10); }
+}
+
+.form-input-pct {
+  width: 72px;
+  padding: 9px 10px;
+  border: 1.5px solid #eceef0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d2b3e;
+  background: #ffffff;
+  outline: none;
+  text-align: center;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus { border-color: #4648d4; box-shadow: 0 0 0 3px rgba(70,72,212,0.10); }
+}
+
+// ── Total indicator ────────────────────────────────────────────────────
+.total-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 12px;
+
+  &.ok    { background: #d1fae5; }
+  &.error { background: #fee2e2; }
+}
+
+.total-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #44474c;
+}
+
+.total-value {
+  font-size: 20px;
+  font-weight: 900;
+
+  .ok &    { color: #065f46; }
+  .error & { color: #991b1b; }
+}
+
+// ── Warning ────────────────────────────────────────────────────────────
+.warning-msg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #ba1a1a;
+  margin: 0;
+
+  .material-symbols-outlined { flex-shrink: 0; }
+}

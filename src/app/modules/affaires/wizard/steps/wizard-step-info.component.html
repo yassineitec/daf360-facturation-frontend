@@ -1,0 +1,98 @@
+<div class="step-form">
+
+  <!-- DOC360 pre-fill banner (if project was selected in step 1) -->
+  @if (draft.doc360ProjectName) {
+    <div class="doc360-banner">
+      <span class="material-symbols-outlined doc360-banner-icon">link</span>
+      <div class="doc360-banner-body">
+        <span class="doc360-banner-label">Lié au projet DOC360</span>
+        <span class="doc360-banner-value">{{ draft.doc360ProjectNumber }} — {{ draft.doc360ProjectName }}</span>
+      </div>
+    </div>
+  }
+
+  <!-- Identification section -->
+  <div class="step-section">
+    <div class="section-header">
+      <span class="material-symbols-outlined section-icon">corporate_fare</span>
+      <div>
+        <p class="section-title">Identification de l'affaire</p>
+        <p class="section-sub">Informations générales et client</p>
+      </div>
+    </div>
+
+    <div class="field-grid">
+
+      <!-- Intitulé -->
+      <div class="field field-full">
+        <daf-form-field
+          [(value)]="intitule"
+          [options]="{label: 'Intitulé de l\'affaire', required: true, placeholder: 'Ex : Développement plateforme RH...', fullWidth: true}"
+          (valueChange)="emit()">
+        </daf-form-field>
+      </div>
+
+      <!-- Client typeahead -->
+      <div class="field">
+        <label class="field-label">
+          Client *
+          <span class="kyc-badge">KYC requis</span>
+        </label>
+        <div class="field-relative">
+          <input type="text"
+            [value]="clientInputValue()"
+            (input)="onClientInput($any($event.target).value)"
+            (focus)="showAllClients()"
+            (blur)="scheduleHideClients()"
+            [placeholder]="clientPlaceholder()"
+            class="form-input" />
+          @if (clientResults().length > 0) {
+            <div class="dropdown">
+              @for (c of clientResults(); track c.id) {
+                <button type="button" (mousedown)="selectClient(c)" class="dropdown-item">
+                  <span class="dropdown-item-label">{{ c.clientName }}</span>
+                  @if (!c.isKycDone) {
+                    <span class="kyc-badge">KYC requis</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+          @if (draft.clientId && !draft.clientKycDone) {
+            <p class="field-warning">
+              <span class="material-symbols-outlined" style="font-size:15px">warning</span>
+              Ce client n'a pas de validation KYC.
+            </p>
+          }
+        </div>
+      </div>
+
+      <!-- Référence -->
+      <div class="field">
+        <daf-form-field
+          [(value)]="reference"
+          [options]="{label: 'Référence (auto si vide)', placeholder: 'AFF-2026-0001', fullWidth: true}"
+          (valueChange)="emit()">
+        </daf-form-field>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Notes section -->
+  <div class="step-section">
+    <div class="section-header">
+      <span class="material-symbols-outlined section-icon">notes</span>
+      <div>
+        <p class="section-title">Notes</p>
+        <p class="section-sub">Informations complémentaires</p>
+      </div>
+    </div>
+    <daf-form-field
+      [(value)]="notes"
+      [options]="{label: 'Notes internes', type: 'textarea', rows: 3, fullWidth: true}"
+      (valueChange)="emit()">
+    </daf-form-field>
+  </div>
+
+</div>

@@ -1,26 +1,28 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { Router, RouterLink }                   from '@angular/router';
-import { NgClass }                              from '@angular/common';
 import { Observable }                           from 'rxjs';
 
-import { AffaireWizardService }    from '../affaire-wizard.service';
-import { AffaireDraftState, BILLING_MODES } from '../affaire-wizard.model';
-import { WizardStepInfoComponent }  from './steps/wizard-step-info.component';
-import { WizardStepAvComponent }    from './steps/wizard-step-av.component';
-import { WizardStepJalComponent }   from './steps/wizard-step-jal.component';
-import { WizardStepTmComponent }    from './steps/wizard-step-tm.component';
-import { WizardStepCpComponent }    from './steps/wizard-step-cp.component';
-import { WizardStepRmbComponent }   from './steps/wizard-step-rmb.component';
-import { WizardStepRecapComponent } from './steps/wizard-step-recap.component';
+import { ButtonComponent } from '@khalilrebhiitec/daf360';
+
+import { AffaireWizardService }          from '../affaire-wizard.service';
+import { AffaireDraftState, BILLING_MODES, WIZARD_STEPS_LABELS } from '../affaire-wizard.model';
+import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
+import { WizardStepInfoComponent }       from './steps/wizard-step-info.component';
+import { WizardStepBillingComponent }    from './steps/wizard-step-billing.component';
+import { WizardStepResponsablesComponent } from './steps/wizard-step-responsables.component';
+import { WizardStepPlanningComponent }   from './steps/wizard-step-planning.component';
+import { WizardStepRecapComponent }      from './steps/wizard-step-recap.component';
 
 @Component({
   selector: 'app-affaire-wizard',
   standalone: true,
   imports: [
-    RouterLink, NgClass,
-    WizardStepInfoComponent, WizardStepAvComponent,
-    WizardStepJalComponent, WizardStepTmComponent,
-    WizardStepCpComponent, WizardStepRmbComponent,
+    RouterLink, ButtonComponent,
+    WizardStepDoc360Component,
+    WizardStepInfoComponent,
+    WizardStepBillingComponent,
+    WizardStepResponsablesComponent,
+    WizardStepPlanningComponent,
     WizardStepRecapComponent,
   ],
   templateUrl: './affaire-wizard.component.html',
@@ -30,6 +32,9 @@ export class AffaireWizardComponent {
 
   private readonly wizardService = inject(AffaireWizardService);
   private readonly router        = inject(Router);
+
+  readonly WIZARD_STEPS = WIZARD_STEPS_LABELS;
+  readonly totalSteps   = computed(() => this.WIZARD_STEPS.length); // always 6
 
   currentStep = signal(1);
   draftId     = signal<number | null>(null);
@@ -41,8 +46,7 @@ export class AffaireWizardComponent {
     intitule: '',
     contractCurrency: 'EUR',
     billingPeriod: 'MONTHLY',
-    responsableUserIds: [],
-    responsableNames: [],
+    responsables: [],
     repartitions: [],
     repartitionTotal: 0,
     jalons: [],
@@ -52,44 +56,52 @@ export class AffaireWizardComponent {
     eligibleExpenseCategoryIds: [],
   });
 
-  currentSteps = computed(() => {
-    const mode = this.draft().billingMode;
-    return BILLING_MODES.find(m => m.code === mode)?.steps ?? ['Informations', 'Récapitulatif'];
-  });
-
-  totalSteps = computed(() => this.currentSteps().length);
-
   canGoNext = computed(() => {
     if (this.isSaving()) return false;
     const d = this.draft();
-    if (this.currentStep() === 1) {
-      const modeNeedsContract = BILLING_MODES.find(m => m.code === d.billingMode)?.requiresContractAmount ?? false;
-      return !!(Number(d.paysId) && d.clientId && d.clientKycDone
-                && d.intitule?.trim() && d.billingMode
-                && (!modeNeedsContract || (d.contractAmount && d.contractAmount > 0)));
-    }
-    if (this.currentStep() === 2) {
-      switch (d.billingMode) {
-        case 'AV':
-          return d.repartitionTotal === 100 && d.repartitions.length > 0 &&
-                 d.repartitions.every(r => r.repartitionTypeId > 0);
-        case 'JAL': {
-          const balanced = d.contractAmount != null &&
-                           Math.abs(d.jalonTotal - d.contractAmount) < 0.001;
-          return d.jalons.length > 0 && d.jalons.every(j => j.label.trim()) && balanced;
+    switch (this.currentStep()) {
+      case 1:
+        return true; // DOC360 step is optional
+
+      case 2:
+        return !!(d.clientId && d.clientKycDone && d.intitule?.trim());
+
+      case 3: {
+        if (!d.billingMode) return false;
+        const modeNeedsContract = BILLING_MODES.find(m => m.code === d.billingMode)?.requiresContractAmount ?? false;
+        if (modeNeedsContract && !(d.contractAmount && d.contractAmount > 0)) return false;
+        switch (d.billingMode) {
+          case 'AV':
+            return d.repartitionTotal === 100 && d.repartitions.length > 0
+                   && d.repartitions.every(r => r.repartitionTypeId > 0);
+          case 'JAL': {
+            const balanced = d.contractAmount != null &&
+                             Math.abs(d.jalonTotal - d.contractAmount) < 0.001;
+            return d.jalons.length > 0 && d.jalons.every(j => j.label.trim()) && balanced;
+          }
+          case 'TM':
+            return d.ressources.length > 0 && d.ressources.every(r => r.userId > 0 && r.rateAmount > 0);
+          case 'CP':
+            return d.eligibleCostCategoryIds.length > 0 && d.marginRatePct != null;
+          case 'RMB':
+            return d.eligibleExpenseCategoryIds.length > 0;
+          default:
+            return false;
         }
-        case 'TM':
-          return d.ressources.length > 0 &&
-                 d.ressources.every(r => r.userId > 0 && r.rateAmount > 0);
-        case 'CP':
-          return d.eligibleCostCategoryIds.length > 0 && d.marginRatePct != null;
-        case 'RMB':
-          return d.eligibleExpenseCategoryIds.length > 0;
-        default:
-          return false;
       }
+
+      case 4:
+        return d.responsables.length > 0 && d.responsables.some(r => r.isPrimary);
+
+      case 5:
+        return !!d.dateDebutFacturation;
+
+      case 6:
+        return true; // recap — activate button enabled always
+
+      default:
+        return false;
     }
-    return true; // step 3 always ok
   });
 
   goNext(): void {
@@ -98,12 +110,13 @@ export class AffaireWizardComponent {
       this.serverError.set('Veuillez compléter tous les champs obligatoires avant de continuer.');
       return;
     }
-    if (this.currentStep() === 1) {
-      this.saveStep1();
-    } else if (this.currentStep() < this.totalSteps()) {
-      this.saveStep2();
-    } else {
-      this.activateAffaire();
+    switch (this.currentStep()) {
+      case 1: this.currentStep.set(2); break;
+      case 2: this.saveStep2(); break;
+      case 3: this.saveStep3(); break;
+      case 4: this.saveStep4(); break;
+      case 5: this.saveStep5(); break;
+      case 6: this.activateAffaire(); break;
     }
   }
 
@@ -111,33 +124,26 @@ export class AffaireWizardComponent {
     if (this.currentStep() > 1) this.currentStep.update(s => s - 1);
   }
 
-  private saveStep1(): void {
-    if (this.draftId()) {
-      // Already created — just advance
-      this.currentStep.set(2);
-      return;
-    }
+  // ── Step 2 — create draft ──────────────────────────────────────────────
+
+  private saveStep2(): void {
+    if (this.draftId()) { this.currentStep.set(3); return; }
     this.isSaving.set(true);
     const d = this.draft();
     this.wizardService.createDraft({
-      paysId:              Number(d.paysId),
       clientId:            d.clientId,
       intitule:            d.intitule.trim(),
       reference:           d.reference?.trim() || null,
-      responsableUserIds:  d.responsableUserIds.length ? d.responsableUserIds : null,
-      dateDebut:           d.dateDebut || null,
-      dateFin:             d.dateFin   || null,
-      contractAmount:      d.contractAmount  ?? null,
-      contractCurrency:    d.contractCurrency,
-      billingMode:         d.billingMode,
-      billingPeriod:       d.billingPeriod,
       notes:               d.notes?.trim()    || null,
       doc360Ref:           d.doc360Ref?.trim() || null,
+      doc360ServerReference: d.doc360ServerReference || null,
     }).subscribe({
       next: result => {
         this.draftId.set(result['id'] as number);
+        // paysId comes back from the server — store it so sub-components can use it
+        this.draft.update(prev => ({ ...prev, paysId: result['paysId'] as number ?? 0 }));
         this.isSaving.set(false);
-        this.currentStep.set(2);
+        this.currentStep.set(3);
       },
       error: err => {
         this.isSaving.set(false);
@@ -146,7 +152,9 @@ export class AffaireWizardComponent {
     });
   }
 
-  private saveStep2(): void {
+  // ── Step 3 — configure billing ────────────────────────────────────────
+
+  private saveStep3(): void {
     const id   = this.draftId()!;
     const d    = this.draft();
     const mode = d.billingMode!;
@@ -156,7 +164,7 @@ export class AffaireWizardComponent {
       switch (mode) {
         case 'AV':
           return this.wizardService.configureAV(id, {
-            repartitions: d.repartitions.map(r => ({
+            items: d.repartitions.map(r => ({
               repartitionTypeId: r.repartitionTypeId,
               percentage: r.percentage,
             })),
@@ -166,12 +174,9 @@ export class AffaireWizardComponent {
         case 'TM':
           return this.wizardService.configureTM(id, {
             ressources: d.ressources.map(r => ({
-              userId: r.userId,
-              resourceType: r.resourceType,
-              rateType: r.rateType,
-              rateAmount: r.rateAmount,
-              rateCurrency: r.rateCurrency,
-              costAmount: r.costAmount ?? null,
+              userId: r.userId, resourceType: r.resourceType,
+              rateType: r.rateType, rateAmount: r.rateAmount,
+              rateCurrency: r.rateCurrency, costAmount: r.costAmount ?? null,
             })),
           });
         case 'CP':
@@ -187,10 +192,7 @@ export class AffaireWizardComponent {
     })();
 
     save$.subscribe({
-      next: () => {
-        this.isSaving.set(false);
-        this.currentStep.set(this.totalSteps());
-      },
+      next: () => { this.isSaving.set(false); this.currentStep.set(4); },
       error: err => {
         this.isSaving.set(false);
         this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
@@ -198,12 +200,55 @@ export class AffaireWizardComponent {
     });
   }
 
+  // ── Step 4 — configure responsables & budget ──────────────────────────
+
+  private saveStep4(): void {
+    const id = this.draftId()!;
+    const d  = this.draft();
+    this.isSaving.set(true);
+    this.wizardService.configureResponsables(id, {
+      responsables: d.responsables.map(r => ({
+        userId: r.userId, isPrimary: r.isPrimary, role: r.role ?? null,
+      })),
+      budgetPrevisionnel: d.budgetPrevisionnel ?? null,
+      activiteId:         d.activiteId ?? null,
+      disciplineId:       d.disciplineId ?? null,
+      disciplineLabel:    d.disciplineLabel ?? null,
+      disciplineServerRef: d.disciplineServerRef ?? null,
+    }).subscribe({
+      next: () => { this.isSaving.set(false); this.currentStep.set(5); },
+      error: err => {
+        this.isSaving.set(false);
+        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
+      },
+    });
+  }
+
+  // ── Step 5 — configure planning ───────────────────────────────────────
+
+  private saveStep5(): void {
+    const id = this.draftId()!;
+    const d  = this.draft();
+    this.isSaving.set(true);
+    this.wizardService.configurePlanning(id, {
+      dateDebutFacturation:  d.dateDebutFacturation,
+      dateFinContractuelle:  d.dateFinContractuelle ?? null,
+      datePremireEcheance:   d.datePremireEcheance  ?? null,
+    }).subscribe({
+      next: () => { this.isSaving.set(false); this.currentStep.set(6); },
+      error: err => {
+        this.isSaving.set(false);
+        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
+      },
+    });
+  }
+
+  // ── Step 6 — activate ─────────────────────────────────────────────────
+
   private activateAffaire(): void {
     this.isSaving.set(true);
     this.wizardService.validateAndActivate(this.draftId()!).subscribe({
-      next: affaire => {
-        this.router.navigate(['/fact/affaires', affaire['id']]);
-      },
+      next: affaire => { this.router.navigate(['/fact/affaires', affaire['id']]); },
       error: err => {
         this.isSaving.set(false);
         this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur d\'activation.');

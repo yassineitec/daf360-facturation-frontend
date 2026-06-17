@@ -1,0 +1,328 @@
+:host { display: block; }
+
+// ── DOC360 banner ──────────────────────────────────────────────────────
+.doc360-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #f0fdf9;
+  border: 1.5px solid #0d9488;
+  border-radius: 10px;
+}
+.doc360-banner-icon {
+  font-size: 20px;
+  color: #0d9488;
+  flex-shrink: 0;
+}
+.doc360-banner-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.doc360-banner-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0d9488;
+}
+.doc360-banner-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+// ── Layout ─────────────────────────────────────────────────────────────
+.step-form {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.step-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eceef0;
+}
+
+.section-icon {
+  font-size: 20px;
+  color: #1a6b7c;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1d2b3e;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.section-sub {
+  font-size: 12px;
+  color: #75777d;
+  margin: 2px 0 0;
+}
+
+// ── Field grid ─────────────────────────────────────────────────────────
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-full {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #44474c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field-relative {
+  position: relative;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #75777d;
+}
+
+.field-warning {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #92400e;
+}
+
+// ── Form inputs ────────────────────────────────────────────────────────
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #eceef0;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1d2b3e;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+
+  &:focus {
+    border-color: #1a6b7c;
+    box-shadow: 0 0 0 3px rgba(26,107,124,0.12);
+  }
+
+  &:disabled {
+    background: #f7f9fb;
+    color: #c5c6cd;
+    cursor: not-allowed;
+  }
+}
+
+.form-select { cursor: pointer; }
+
+// ── Dropdown ───────────────────────────────────────────────────────────
+.dropdown {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #eceef0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(29,43,62,0.10);
+  overflow: hidden;
+  max-height: 192px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 13px;
+  color: #1d2b3e;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.12s;
+
+  &:hover { background-color: #f2f4f6; }
+}
+
+.dropdown-item-label { font-weight: 500; }
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #1a6b7c;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+// ── KYC badge ──────────────────────────────────────────────────────────
+.kyc-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+// ── Billing mode grid ──────────────────────────────────────────────────
+.billing-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.billing-mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 10px;
+  border: 2px solid #eceef0;
+  border-radius: 14px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.18s ease;
+
+  &:hover { border-color: #c5c6cd; background: #f7f9fb; }
+
+  &.selected { box-shadow: 0 2px 10px rgba(29,43,62,0.10); }
+
+  &[data-mode="AV"].selected  { border-color: #4648d4; background: rgba(70,72,212,0.05); }
+  &[data-mode="JAL"].selected { border-color: #7e22ce; background: rgba(126,34,206,0.05); }
+  &[data-mode="TM"].selected  { border-color: #1a6b7c; background: rgba(26,107,124,0.05); }
+  &[data-mode="CP"].selected  { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+  &[data-mode="RMB"].selected { border-color: #059669; background: rgba(5,150,105,0.05); }
+}
+
+.mode-icon {
+  font-size: 24px;
+  .billing-mode-card[data-mode="AV"] &  { color: #4648d4; }
+  .billing-mode-card[data-mode="JAL"] & { color: #7e22ce; }
+  .billing-mode-card[data-mode="TM"] &  { color: #1a6b7c; }
+  .billing-mode-card[data-mode="CP"] &  { color: #f59e0b; }
+  .billing-mode-card[data-mode="RMB"] & { color: #059669; }
+}
+
+.mode-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1d2b3e;
+  margin: 0;
+}
+
+.mode-desc {
+  font-size: 10px;
+  color: #75777d;
+  margin: 0;
+  line-height: 1.4;
+}
+
+// ── Contract box ───────────────────────────────────────────────────────
+.contract-box {
+  background: #f0fdf4;
+  border: 1.5px solid #a7f3d0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.contract-box-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(167,243,208,0.25);
+  border-bottom: 1px solid #a7f3d0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #065f46;
+
+  .material-symbols-outlined { color: #059669; }
+}
+
+.contract-box .field-grid {
+  padding: 20px;
+}
+
+// ── Responsable tags ───────────────────────────────────────────────────
+.resp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.resp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e6f7f5;
+  color: #1a6b7c;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.resp-tag-remove {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  font-family: inherit;
+  transition: color 0.12s;
+  &:hover { color: #ba1a1a; }
+}

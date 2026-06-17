@@ -1,0 +1,90 @@
+<div class="step-form">
+
+  <div class="info-banner">
+    <span class="material-symbols-outlined" style="font-size:18px">info</span>
+    <p class="m-0">
+      Sélectionnez les collaborateurs et définissez leurs taux de facturation.
+      Les taux seront verrouillés après la première facturation.
+    </p>
+  </div>
+
+  @for (r of draft.ressources; track $index; let i = $index) {
+    <div class="item-card">
+      <div class="item-card-header">
+        <div class="item-badge item-badge--tm">Ressource {{ i + 1 }}</div>
+        <daf-button [options]="{variant: 'danger', size: 'sm', iconStart: 'close'}" (onClick)="removeRessource(i)"></daf-button>
+      </div>
+
+      <div class="resource-grid">
+
+        <!-- Collaborateur -->
+        <div class="resource-col-2">
+          <label class="field-label">Collaborateur *</label>
+          <select [(ngModel)]="r.userId" (ngModelChange)="onUserChange(r, $event)" class="form-select">
+            <option [value]="0">Sélectionner...</option>
+            @for (u of users(); track u.id) {
+              <option [value]="u.id">{{ u.fullName }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Type ressource -->
+        <div>
+          <label class="field-label">Type</label>
+          <select [(ngModel)]="r.resourceType" class="form-select">
+            <option value="INTERNAL">Interne</option>
+            <option value="EXTERNAL">Externe</option>
+          </select>
+        </div>
+
+        <!-- Type taux -->
+        <div>
+          <label class="field-label">Type taux</label>
+          <select [(ngModel)]="r.rateType" class="form-select">
+            <option value="DAILY">Journalier (JH)</option>
+            <option value="HOURLY">Horaire (H)</option>
+          </select>
+        </div>
+
+        <!-- Taux facturation -->
+        <div>
+          <label class="field-label">Taux facturation *</label>
+          <input type="number" step="0.01" min="0" [(ngModel)]="r.rateAmount" class="form-input" />
+        </div>
+
+        <!-- Devise -->
+        <div>
+          <label class="field-label">Devise</label>
+          <select [(ngModel)]="r.rateCurrency" class="form-select">
+            @for (c of currencies(); track c.id) {
+              <option [value]="c.code">{{ c.code }}</option>
+            }
+            @if (!currencies().length) {
+              <option value="EUR">EUR</option>
+              <option value="TND">TND</option>
+            }
+          </select>
+        </div>
+
+        <!-- Coût interne -->
+        <div class="resource-col-3">
+          <div class="cost-box">
+            <span class="material-symbols-outlined" style="font-size:18px;color:#75777d;margin-top:18px;flex-shrink:0">euro</span>
+            <div class="cost-box-content">
+              <label class="field-label">Coût interne (optionnel)</label>
+              <input type="number" step="0.01" min="0"
+                [(ngModel)]="r.costAmount"
+                placeholder="Coût journalier / horaire interne"
+                class="form-input" />
+            </div>
+            <p class="cost-box-hint">Utilisé pour le calcul de rentabilité interne. Non communiqué au client.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <daf-button [options]="{variant: 'ghost', iconStart: 'person_add', label: 'Ajouter une ressource', fullWidth: true}" (onClick)="addRessource()"></daf-button>
+
+</div>

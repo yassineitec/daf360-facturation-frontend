@@ -1,0 +1,40 @@
+<div class="step-form">
+
+  <div class="info-banner">
+    <span class="material-symbols-outlined" style="font-size:18px">info</span>
+    <p class="m-0">
+      Seules les catégories cochées seront disponibles pour les collaborateurs
+      lors de la saisie des frais. La liste est configurable via l'administration.
+    </p>
+  </div>
+
+  <div class="categories-section">
+    <div class="section-header">
+      <span class="material-symbols-outlined section-icon" style="font-variation-settings:'FILL' 1">payments</span>
+      <div>
+        <p class="section-title">Catégories de frais éligibles</p>
+        <p class="section-sub">Cochez les catégories de frais autorisées pour cette affaire</p>
+      </div>
+    </div>
+    <div class="category-list">
+      @for (cat of expenseCategories(); track cat.id) {
+        <label class="category-item">
+          <input type="checkbox"
+            [checked]="draft.eligibleExpenseCategoryIds.includes(cat.id)"
+            (change)="toggleCategory(cat.id, $any($event.target).checked)"
+            class="category-checkbox" />
+          <div class="category-icon-wrap">
+            <span class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">
+              {{ getCategoryIcon(cat.code) }}
+            </span>
+          </div>
+          <span class="category-name">{{ cat.labelFr }}</span>
+        </label>
+      }
+      @if (expenseCategories().length === 0) {
+        <p class="empty-msg">Chargement des catégories...</p>
+      }
+    </div>
+  </div>
+
+</div>

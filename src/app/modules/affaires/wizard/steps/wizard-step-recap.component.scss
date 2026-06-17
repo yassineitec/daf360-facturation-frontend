@@ -1,0 +1,220 @@
+:host { display: block; }
+
+// ── Layout ─────────────────────────────────────────────────────────────
+.recap-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// ── Banner ─────────────────────────────────────────────────────────────
+.recap-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #e6f7f5;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #1d2b3e;
+  line-height: 1.6;
+
+  .material-symbols-outlined { color: #059669; flex-shrink: 0; margin-top: 1px; }
+}
+
+// ── Card ───────────────────────────────────────────────────────────────
+.recap-card {
+  background: #ffffff;
+  border: 1px solid #eceef0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.recap-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #f7f9fb;
+  border-bottom: 1px solid #eceef0;
+}
+
+.recap-section-letter {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #1a6b7c;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.recap-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d2b3e;
+}
+
+// ── Data grid ──────────────────────────────────────────────────────────
+.recap-grid {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 32px;
+}
+
+.recap-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &--full { grid-column: 1 / -1; }
+}
+
+.recap-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #75777d;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.recap-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d2b3e;
+  margin: 0;
+
+  &--teal { color: #1a6b7c; font-weight: 700; font-size: 14px; }
+  &--mono { font-family: 'Courier New', monospace; font-size: 13px; }
+}
+
+.recap-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d2b3e;
+
+  .material-symbols-outlined { color: #1a6b7c; }
+}
+
+// ── Table ──────────────────────────────────────────────────────────────
+.recap-table-wrap { padding: 20px; }
+
+.recap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    font-size: 11px;
+    font-weight: 600;
+    color: #75777d;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eceef0;
+  }
+
+  td {
+    padding: 10px 0;
+    color: #1d2b3e;
+    border-bottom: 1px solid #f2f4f6;
+    vertical-align: top;
+  }
+
+  tfoot td { border-bottom: none; padding-top: 12px; }
+
+  .text-left  { text-align: left; }
+  .text-right { text-align: right; }
+}
+
+.recap-jalon-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d2b3e;
+}
+
+.recap-jalon-desc {
+  font-size: 11px;
+  color: #75777d;
+  margin: 2px 0 0;
+}
+
+.recap-date { color: #44474c; }
+
+.recap-tfoot-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #44474c;
+  text-transform: uppercase;
+}
+
+.recap-tfoot-value {
+  font-weight: 700;
+  color: #1a6b7c;
+}
+
+.resource-type-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  background: #f2f4f6;
+  color: #44474c;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+// ── CP / RMB summary ───────────────────────────────────────────────────
+.cp-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cp-margin-kpi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f7f9fb;
+  border-radius: 10px;
+
+  .material-symbols-outlined { font-size: 20px; color: #1a6b7c; }
+}
+
+.cp-margin-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a6b7c;
+  margin: 2px 0 0;
+}
+
+.badge-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mode-badge {
+  background: #e6f7f5;
+  color: #1a6b7c;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.recap-field--full { grid-column: 1 / -1; }
+
+.primary-star { color: #0d9488; margin-right: 3px; }
+.recap-role { color: #64748b; font-weight: 400; }

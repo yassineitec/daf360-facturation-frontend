@@ -57,6 +57,10 @@ export class AffaireService {
     return this.http.post<void>(`${this.base}/affaires/${id}/changer-statut`, req);
   }
 
+  deleteAffaire(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/affaires/${id}`);
+  }
+
   // ── Travaux supplémentaires ──────────────────────────────────────────
 
   getTS(affaireId: number): Observable<TsDto[]> {

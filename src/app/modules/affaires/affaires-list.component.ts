@@ -19,6 +19,7 @@ export class AffairesListComponent implements OnInit {
   affaires       = signal<AffaireListItem[]>([]);
   loading        = signal(false);
   error          = signal<string | null>(null);
+  deletingId     = signal<number | null>(null);
   totalElements  = signal(0);
   totalPages     = signal(0);
   currentPage    = signal(0);
@@ -91,6 +92,22 @@ export class AffairesListComponent implements OnInit {
 
   openNewForm(): void {
     this.router.navigate(['/fact/affaires/new']);
+  }
+
+  deleteAffaire(a: AffaireListItem, event: MouseEvent): void {
+    event.stopPropagation();
+    if (!confirm(`Supprimer l'affaire "${a.reference} — ${a.intitule}" ?\nCette action est irréversible.`)) return;
+    this.deletingId.set(a.id);
+    this.svc.deleteAffaire(a.id).subscribe({
+      next: () => {
+        this.affaires.update(list => list.filter(x => x.id !== a.id));
+        this.deletingId.set(null);
+      },
+      error: err => {
+        this.deletingId.set(null);
+        alert((err?.error as { message?: string })?.message ?? 'Impossible de supprimer cette affaire.');
+      },
+    });
   }
 
   rafColor(a: AffaireListItem): string {

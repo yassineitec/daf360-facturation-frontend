@@ -1,150 +1,143 @@
-<div class="min-h-screen bg-[#f0f4f8] p-8">
+<div class="wizard-page">
+  <div class="wizard-container">
 
-  <!-- Page header -->
-  <div class="flex items-center gap-4 mb-8">
-    <a routerLink="/fact/affaires"
-       class="flex items-center gap-1 text-sm text-[#44474c] hover:text-[#1a6b7c] transition-colors">
-      <span class="material-symbols-outlined text-base">arrow_back</span>
+    <!-- Back link -->
+    <a routerLink="/fact/affaires" class="back-link">
+      <span class="material-symbols-outlined">arrow_back</span>
       Retour aux affaires
     </a>
-    <span class="text-[#c5c6cd]">/</span>
-    <h1 class="text-xl font-semibold text-[#1d2b3e]">Nouvelle affaire</h1>
-  </div>
 
-  <!-- Main card -->
-  <div class="glass-panel rounded-2xl p-6">
+    <!-- Page title -->
+    <h1 class="wizard-title">Nouvelle affaire</h1>
 
-    <!-- ── Step indicator ── -->
-    <div class="flex items-center mb-10">
-      @for (step of currentSteps(); track $index; let i = $index) {
-        <div class="flex items-center"
-          [class.flex-1]="i < currentSteps().length - 1">
-          <!-- Circle + label -->
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm
-                        font-bold border-2 transition-all duration-200"
-              [ngClass]="{
-                'bg-[#1a6b7c] border-[#1a6b7c] text-white':     currentStep() === i + 1,
-                'bg-[#e6f7f5] border-[#1a6b7c] text-[#1a6b7c]': currentStep() > i + 1,
-                'bg-white border-[#c5c6cd] text-[#c5c6cd]':      currentStep() < i + 1
-              }">
-              @if (currentStep() > i + 1) {
-                <span class="material-symbols-outlined text-sm"
-                      style="font-variation-settings:'FILL' 1">check</span>
-              } @else {
-                {{ i + 1 }}
-              }
+    <!-- Main card -->
+    <div class="wizard-card">
+
+      <!-- ── STEP INDICATOR ──────────────────────────────────── -->
+      <div class="step-indicator">
+        <div class="step-indicator-row">
+          @for (step of WIZARD_STEPS; track $index; let last = $last) {
+
+            <div class="step-item">
+              <div class="step-circle"
+                [class.active]="currentStep() === $index + 1"
+                [class.done]="currentStep() > $index + 1"
+                [class.pending]="currentStep() < $index + 1">
+                @if (currentStep() > $index + 1) {
+                  <span class="material-symbols-outlined">check</span>
+                } @else {
+                  {{ $index + 1 }}
+                }
+              </div>
+              <span class="step-label"
+                [class.active]="currentStep() >= $index + 1"
+                [class.done]="currentStep() > $index + 1"
+                [class.pending]="currentStep() < $index + 1">
+                {{ step }}
+              </span>
             </div>
-            <span class="text-sm font-medium whitespace-nowrap"
-              [ngClass]="currentStep() >= i + 1 ? 'text-[#1d2b3e]' : 'text-[#c5c6cd]'">
-              {{ step }}
-            </span>
-          </div>
-          <!-- Connector line -->
-          @if (i < currentSteps().length - 1) {
-            <div class="flex-1 h-0.5 mx-4 rounded transition-colors duration-300"
-              [ngClass]="currentStep() > i + 1 ? 'bg-[#1a6b7c]' : 'bg-[#eceef0]'">
-            </div>
+
+            @if (!last) {
+              <div class="step-connector"
+                [class.done]="currentStep() > $index + 1"
+                [class.pending]="currentStep() <= $index + 1">
+              </div>
+            }
+
           }
         </div>
-      }
-    </div>
-
-    <!-- ── Step content ── -->
-    <div class="min-h-[360px]">
-
-      @if (currentStep() === 1) {
-        <app-wizard-step-info
-          [draft]="draft()"
-          (draftChange)="onDraftChange($event)">
-        </app-wizard-step-info>
-      }
-
-      @if (currentStep() === 2) {
-        @switch (draft().billingMode) {
-          @case ('AV') {
-            <app-wizard-step-av
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-av>
-          }
-          @case ('JAL') {
-            <app-wizard-step-jal
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-jal>
-          }
-          @case ('TM') {
-            <app-wizard-step-tm
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-tm>
-          }
-          @case ('CP') {
-            <app-wizard-step-cp
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-cp>
-          }
-          @case ('RMB') {
-            <app-wizard-step-rmb
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-rmb>
-          }
-        }
-      }
-
-      @if (currentStep() === totalSteps()) {
-        <app-wizard-step-recap
-          [draft]="draft()"
-          [draftId]="draftId()">
-        </app-wizard-step-recap>
-      }
-
-    </div>
-
-    <!-- ── Server error banner ── -->
-    @if (serverError()) {
-      <div class="mt-5 p-3.5 bg-[#fee2e2] rounded-xl text-sm text-[#991b1b]
-                  flex items-start gap-2 border border-[#fca5a5]">
-        <span class="material-symbols-outlined text-base flex-shrink-0"
-              style="font-variation-settings:'FILL' 1">error</span>
-        {{ serverError() }}
       </div>
-    }
 
-    <!-- ── Navigation buttons ── -->
-    <div class="flex justify-between items-center mt-8 pt-5 border-t border-[#eceef0]">
-      <button (click)="goPrev()"
-        [class.invisible]="currentStep() === 1"
-        class="px-5 py-2.5 rounded-xl border border-[#c5c6cd] text-sm font-medium
-               text-[#44474c] hover:bg-[#f2f4f6] transition-colors">
-        ← Précédent
-      </button>
+      <!-- ── STEP CONTENT ─────────────────────────────────────── -->
+      <div class="step-content">
 
-      <button (click)="goNext()"
-        [disabled]="!canGoNext()"
-        [ngClass]="canGoNext()
-          ? 'bg-[#1a6b7c] hover:bg-[#134f5c] cursor-pointer'
-          : 'bg-[#c5c6cd] cursor-not-allowed'"
-        class="text-white font-bold py-2.5 px-7 rounded-xl text-sm
-               flex items-center gap-2 transition-colors">
-        @if (isSaving()) {
-          <span class="material-symbols-outlined text-base" style="animation: spin 1s linear infinite">
-            progress_activity
-          </span>
-          Enregistrement...
-        } @else if (currentStep() === totalSteps()) {
-          <span class="material-symbols-outlined text-base"
-                style="font-variation-settings:'FILL' 1">rocket_launch</span>
-          Activer l'affaire
-        } @else {
-          Suivant →
+        @if (currentStep() === 1) {
+          <app-wizard-step-doc360
+            [draft]="draft()"
+            (draftChange)="onDraftChange($event)">
+          </app-wizard-step-doc360>
         }
-      </button>
+
+        @if (currentStep() === 2) {
+          <app-wizard-step-info
+            [draft]="draft()"
+            (draftChange)="onDraftChange($event)">
+          </app-wizard-step-info>
+        }
+
+        @if (currentStep() === 3) {
+          <app-wizard-step-billing
+            [draft]="draft()"
+            (draftChange)="onDraftChange($event)">
+          </app-wizard-step-billing>
+        }
+
+        @if (currentStep() === 4) {
+          <app-wizard-step-responsables
+            [draft]="draft()"
+            (draftChange)="onDraftChange($event)">
+          </app-wizard-step-responsables>
+        }
+
+        @if (currentStep() === 5) {
+          <app-wizard-step-planning
+            [draft]="draft()"
+            (draftChange)="onDraftChange($event)">
+          </app-wizard-step-planning>
+        }
+
+        @if (currentStep() === 6) {
+          <app-wizard-step-recap
+            [draft]="draft()"
+            [draftId]="draftId()">
+          </app-wizard-step-recap>
+        }
+
+      </div>
+
+      <!-- ── ERROR BANNER ─────────────────────────────────────── -->
+      @if (serverError()) {
+        <div class="error-banner">
+          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">error</span>
+          <span>{{ serverError() }}</span>
+        </div>
+      }
+
+      <!-- ── NAVIGATION ──────────────────────────────────────── -->
+      <div class="wizard-nav">
+
+        <daf-button
+          [class.invisible]="currentStep() === 1"
+          [options]="{variant: 'ghost', iconStart: 'arrow_back', label: 'Précédent'}"
+          (onClick)="goPrev()">
+        </daf-button>
+
+        <div class="wizard-nav-right">
+          <span class="step-counter">Étape {{ currentStep() }} / {{ totalSteps() }}</span>
+
+          @if (currentStep() === 1) {
+            <daf-button
+              [options]="{variant: 'ghost', iconEnd: 'skip_next', label: 'Passer cette étape'}"
+              (onClick)="goNext()">
+            </daf-button>
+          }
+
+          <daf-button
+            [options]="{
+              variant: 'teal',
+              loading: isSaving(),
+              disabled: !canGoNext(),
+              iconEnd: currentStep() < totalSteps() ? 'arrow_forward' : 'check_circle',
+              label: currentStep() === 1 ? 'DOC360 sélectionné — Suivant'
+                   : currentStep() < totalSteps() ? 'Suivant'
+                   : 'Activer l\'affaire'
+            }"
+            (onClick)="goNext()">
+          </daf-button>
+        </div>
+
+      </div>
+
     </div>
-
   </div>
-
 </div>

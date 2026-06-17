@@ -1,0 +1,65 @@
+<div class="step-form">
+
+  <div class="step-section">
+    <div class="section-header">
+      <span class="section-icon material-symbols-outlined">calendar_month</span>
+      <div>
+        <div class="section-title">Dates de planification</div>
+        <div class="section-sub">Définissez les jalons temporels de l'affaire</div>
+      </div>
+    </div>
+
+    <div class="field-grid">
+
+      <div class="field">
+        <label class="field-label">Date de début de facturation *</label>
+        <div class="date-field-wrap">
+          <span class="date-icon material-symbols-outlined">today</span>
+          <input class="form-input date-input"
+            type="date"
+            [(ngModel)]="dateDebutFacturation"
+            (ngModelChange)="emit()">
+        </div>
+        <div class="field-hint">Première date à partir de laquelle la facturation peut être émise</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Date de fin contractuelle</label>
+        <div class="date-field-wrap">
+          <span class="date-icon material-symbols-outlined">event</span>
+          <input class="form-input date-input"
+            type="date"
+            [(ngModel)]="dateFinContractuelle"
+            (ngModelChange)="emit()">
+        </div>
+        <div class="field-hint">Échéance contractuelle finale de l'affaire</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Date de première échéance</label>
+        <div class="date-field-wrap">
+          <span class="date-icon material-symbols-outlined">event_repeat</span>
+          <input class="form-input date-input"
+            type="date"
+            [(ngModel)]="datePremireEcheance"
+            (ngModelChange)="emit()">
+        </div>
+        <div class="field-hint">Date de la première facture émise</div>
+      </div>
+
+    </div>
+  </div>
+
+  @if (draft.dateDebutFacturation && draft.dateFinContractuelle) {
+    <div class="timeline-preview">
+      <span class="material-symbols-outlined">timeline</span>
+      <div class="timeline-text">
+        Affaire active du
+        <strong>{{ draft.dateDebutFacturation | date:'dd/MM/yyyy' }}</strong>
+        au
+        <strong>{{ draft.dateFinContractuelle | date:'dd/MM/yyyy' }}</strong>
+      </div>
+    </div>
+  }
+
+</div>

@@ -263,3 +263,45 @@ table {
   &.active { background: #1a6b7c; border-color: #1a6b7c; color: #fff; font-weight: 700; }
   &:disabled { opacity: 0.35; cursor: default; }
 }
+
+// ── Actions column ─────────────────────────────────────────────────────────────
+
+.action-col {
+  width: 44px;
+  text-align: center;
+}
+
+.btn-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+
+  svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  &:hover:not(:disabled) {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+    opacity: 1 !important;
+  }
+
+  &--loading { opacity: 1 !important; color: #94a3b8; cursor: default; }
+  &:disabled { cursor: default; }
+
+  .spin { animation: spin 0.9s linear infinite; }
+}
+
+.table-row:hover .btn-delete { opacity: 1; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

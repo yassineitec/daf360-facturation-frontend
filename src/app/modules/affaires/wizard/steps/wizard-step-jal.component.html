@@ -1,0 +1,67 @@
+<div class="step-form">
+
+  <div class="info-banner">
+    <span class="material-symbols-outlined" style="font-size:18px">info</span>
+    <p class="m-0">
+      La somme des montants des jalons doit être égale au
+      <strong>montant du contrat
+        ({{ draft.contractAmount | number:'1.3-3' }} {{ draft.contractCurrency }})
+      </strong>.
+    </p>
+  </div>
+
+  <!-- Jalon cards -->
+  @for (j of draft.jalons; track $index; let i = $index) {
+    <div class="item-card">
+      <div class="item-card-header">
+        <div class="item-badge item-badge--jal">Jalon {{ i + 1 }}</div>
+        <daf-button [options]="{variant: 'danger', size: 'sm', iconStart: 'close'}" (onClick)="removeJalon(i)"></daf-button>
+      </div>
+      <div class="jalon-grid">
+        <div class="jalon-col-full">
+          <input type="text" [(ngModel)]="j.label" maxlength="255"
+            placeholder="Libellé du jalon *"
+            class="form-input" />
+        </div>
+        <div>
+          <input type="number" step="0.001" min="0"
+            [(ngModel)]="j.montant" (ngModelChange)="updateJalonTotal()"
+            placeholder="Montant *"
+            class="form-input" />
+        </div>
+        <div>
+          <input type="date" [(ngModel)]="j.datePrevisionnelle" class="form-input" />
+        </div>
+        <div class="jalon-col-full">
+          <textarea [(ngModel)]="j.description" rows="2" maxlength="500"
+            placeholder="Description (optionnel)"
+            class="form-textarea"></textarea>
+        </div>
+      </div>
+    </div>
+  }
+
+  <daf-button [options]="{variant: 'ghost', iconStart: 'add', label: 'Ajouter un jalon', fullWidth: true}" (onClick)="addJalon()"></daf-button>
+
+  @if (draft.jalons.length > 0) {
+    <div class="total-indicator"
+      [class.ok]="isBalanced()" [class.error]="!isBalanced()">
+      <div class="total-col">
+        <p class="total-sub-label">Total jalons</p>
+        <p class="total-sub-value">{{ draft.jalonTotal | number:'1.3-3' }} {{ draft.contractCurrency }}</p>
+      </div>
+      <div class="total-col total-col--right">
+        <p class="total-sub-label">Montant contrat</p>
+        <p class="total-contract-value">{{ draft.contractAmount | number:'1.3-3' }} {{ draft.contractCurrency }}</p>
+      </div>
+    </div>
+
+    @if (!isBalanced()) {
+      <p class="warning-msg">
+        <span class="material-symbols-outlined" style="font-size:16px">warning</span>
+        La somme des jalons doit être égale au montant du contrat.
+      </p>
+    }
+  }
+
+</div>

@@ -1,10 +1,167 @@
-.glass-panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+:host { display: block; }
+
+// ── Page layout ────────────────────────────────────────────────────────
+.wizard-page {
+  min-height: 100vh;
+  background-color: var(--color-surface-alt, #f7f9fb);
+  padding: 40px 24px;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+.wizard-container {
+  max-width: 920px;
+  margin: 0 auto;
 }
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #44474c;
+  text-decoration: none;
+  margin-bottom: 10px;
+  transition: color 0.15s;
+
+  &:hover { color: var(--color-teal, #1a6b7c); }
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+.wizard-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-on-surface, #1d2b3e);
+  margin: 0 0 28px;
+  letter-spacing: -0.01em;
+}
+
+// ── Main card ──────────────────────────────────────────────────────────
+.wizard-card {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 32px rgba(29,43,62,0.09);
+  border: 1px solid var(--color-outline-variant, #eceef0);
+  overflow: hidden;
+}
+
+// ── Step indicator ─────────────────────────────────────────────────────
+.step-indicator {
+  padding: 24px 40px;
+  border-bottom: 1px solid var(--color-outline-variant, #eceef0);
+  background: #fafbfc;
+}
+
+.step-indicator-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid transparent;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &.active {
+    background-color: var(--color-teal, #1a6b7c);
+    color: #ffffff;
+    border-color: var(--color-teal, #1a6b7c);
+    box-shadow: 0 0 0 4px rgba(26,107,124,0.15);
+  }
+
+  &.done {
+    background-color: #d1fae5;
+    color: #065f46;
+    border-color: var(--color-teal, #1a6b7c);
+  }
+
+  &.pending {
+    background-color: #f2f4f6;
+    color: #c5c6cd;
+    border-color: #eceef0;
+  }
+}
+
+.step-label {
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.2s;
+  white-space: nowrap;
+
+  &.active  { color: var(--color-on-surface, #1d2b3e); font-weight: 600; }
+  &.done    { color: #065f46; }
+  &.pending { color: #c5c6cd; }
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  margin: 0 20px;
+  border-radius: 2px;
+  transition: background-color 0.3s;
+
+  &.done    { background-color: var(--color-teal, #1a6b7c); }
+  &.pending { background-color: var(--color-outline-variant, #eceef0); }
+}
+
+// ── Step content ───────────────────────────────────────────────────────
+.step-content {
+  padding: 40px;
+  min-height: 380px;
+}
+
+// ── Error banner ───────────────────────────────────────────────────────
+.error-banner {
+  margin: 0 40px 16px;
+  padding: 14px 16px;
+  background: var(--color-error-container, #fee2e2);
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #991b1b;
+
+  .material-symbols-outlined { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────
+.wizard-nav {
+  padding: 20px 40px 28px;
+  border-top: 1px solid var(--color-outline-variant, #eceef0);
+  background: #fafbfc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wizard-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-counter {
+  font-size: 12px;
+  color: var(--color-ink-muted, #75777d);
+  font-weight: 500;
+}
+
+.invisible { visibility: hidden; pointer-events: none; }

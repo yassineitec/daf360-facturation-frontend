@@ -107,6 +107,7 @@
               <th class="num-col">Budget</th>
               <th class="num-col">RAF</th>
               <th>Statut</th>
+              <th class="action-col"></th>
             </tr>
           </thead>
           <tbody>
@@ -135,11 +136,24 @@
                   </span>
                 </td>
                 <td><app-status-badge [status]="a.statut" /></td>
+                <td class="action-col">
+                  <button class="btn-delete"
+                    [class.btn-delete--loading]="deletingId() === a.id"
+                    [disabled]="deletingId() === a.id"
+                    title="Supprimer"
+                    (click)="deleteAffaire(a, $event)">
+                    @if (deletingId() === a.id) {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/></svg>
+                    } @else {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    }
+                  </button>
+                </td>
               </tr>
             }
             @empty {
               <tr>
-                <td colspan="8" class="empty-row">Aucune affaire trouvée.</td>
+                <td colspan="9" class="empty-row">Aucune affaire trouvée.</td>
               </tr>
             }
           </tbody>
