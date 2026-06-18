@@ -60,13 +60,21 @@ export class WizardStepDoc360Component implements OnInit {
     if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = undefined; }
     this.showResults.set(false);
     this.searchQuery = `${p.serverReference} — ${p.projectName}`;
+
+    // Update intitulé if it is empty OR still matches the previous project name (not manually edited)
+    const prevName   = this.draft.doc360ProjectName;
+    const intitule   = (!this.draft.intitule?.trim() || this.draft.intitule === prevName)
+        ? p.projectName
+        : this.draft.intitule;
+
     this.draftChange.emit({
       ...this.draft,
       doc360ProjectName:     p.projectName,
       doc360ErpReference:    p.erpReference,
       doc360ServerReference: p.serverReference,
       doc360ClientName:      p.clientName,
-      reference:             p.serverReference,  // auto-fill reference from DOC360 server_reference
+      reference:             p.serverReference,
+      intitule,
     });
   }
 
@@ -74,6 +82,10 @@ export class WizardStepDoc360Component implements OnInit {
     this.searchQuery = '';
     this.results.set([]);
     this.showResults.set(false);
+    // Reset intitulé only if it was auto-filled (still matches the project name)
+    const intitule = this.draft.intitule === this.draft.doc360ProjectName
+        ? ''
+        : this.draft.intitule;
     this.draftChange.emit({
       ...this.draft,
       doc360ProjectName:     undefined,
@@ -81,6 +93,7 @@ export class WizardStepDoc360Component implements OnInit {
       doc360ServerReference: undefined,
       doc360ClientName:      undefined,
       reference:             undefined,
+      intitule,
     });
   }
 }
