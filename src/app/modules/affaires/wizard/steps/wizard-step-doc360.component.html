@@ -16,14 +16,14 @@
       <div class="selected-card-body">
         <div class="selected-card-title">{{ draft.doc360ProjectName }}</div>
         <div class="selected-card-meta">
-          <span class="badge">{{ draft.doc360ProjectNumber }}</span>
+          <span class="badge">{{ draft.doc360ServerReference }}</span>
+          @if (draft.doc360ErpReference) {
+            <span class="meta-sep">·</span>
+            <span class="ref-tag">ERP: {{ draft.doc360ErpReference }}</span>
+          }
           @if (draft.doc360ClientName) {
             <span class="meta-sep">·</span>
             <span>{{ draft.doc360ClientName }}</span>
-          }
-          @if (draft.doc360ServerReference) {
-            <span class="meta-sep">·</span>
-            <span class="ref-tag">{{ draft.doc360ServerReference }}</span>
           }
         </div>
       </div>
@@ -41,7 +41,7 @@
         <input
           class="search-input"
           type="text"
-          placeholder="N° projet, intitulé ou client…"
+          placeholder="Référence DOC360, intitulé ou client…"
           [value]="searchQuery"
           (input)="onInput($any($event.target).value)"
           (focus)="showResultsNow()"
@@ -57,11 +57,16 @@
           @for (p of results(); track p.serverReference) {
             <button class="result-item" type="button"
               (mousedown)="selectProject(p)">
-              <div class="result-number">{{ p.projectNumber }}</div>
-              <div class="result-name">{{ p.projectName }}</div>
-              @if (p.clientName) {
-                <div class="result-client">{{ p.clientName }}</div>
-              }
+              <div class="result-body">
+                <div class="result-number">{{ p.serverReference }}</div>
+                <div class="result-name">{{ p.projectName }}</div>
+                @if (p.erpReference) {
+                  <div class="result-erp">ERP: {{ p.erpReference }}</div>
+                }
+                @if (p.clientName) {
+                  <div class="result-client">{{ p.clientName }}</div>
+                }
+              </div>
               <span class="result-status" [attr.data-status]="p.status">{{ p.status }}</span>
             </button>
           }

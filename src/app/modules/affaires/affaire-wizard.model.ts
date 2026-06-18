@@ -65,7 +65,7 @@ export const WIZARD_STEPS_LABELS = [
 
 export interface ExternalProjectResult {
   serverReference: string;
-  projectNumber: string;
+  erpReference: string;
   projectName: string;
   clientName: string;
   status: string;
@@ -94,7 +94,7 @@ export interface AffaireDraftState {
 
   // Step 1 — DOC360 project (optional)
   doc360ProjectName?: string;
-  doc360ProjectNumber?: string;
+  doc360ErpReference?: string;     // erp_reference from ODS (e.g. ERP project code)
   doc360ServerReference?: string;  // used to populate discipline dropdown in step 4
   doc360ClientName?: string;
 

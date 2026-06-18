@@ -59,13 +59,14 @@ export class WizardStepDoc360Component implements OnInit {
   selectProject(p: ExternalProjectResult): void {
     if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = undefined; }
     this.showResults.set(false);
-    this.searchQuery = `${p.projectNumber} — ${p.projectName}`;
+    this.searchQuery = `${p.serverReference} — ${p.projectName}`;
     this.draftChange.emit({
       ...this.draft,
       doc360ProjectName:     p.projectName,
-      doc360ProjectNumber:   p.projectNumber,
+      doc360ErpReference:    p.erpReference,
       doc360ServerReference: p.serverReference,
       doc360ClientName:      p.clientName,
+      reference:             p.serverReference,  // auto-fill reference from DOC360 server_reference
     });
   }
 
@@ -76,9 +77,10 @@ export class WizardStepDoc360Component implements OnInit {
     this.draftChange.emit({
       ...this.draft,
       doc360ProjectName:     undefined,
-      doc360ProjectNumber:   undefined,
+      doc360ErpReference:    undefined,
       doc360ServerReference: undefined,
       doc360ClientName:      undefined,
+      reference:             undefined,
     });
   }
 }

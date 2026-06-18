@@ -58,7 +58,13 @@ export class WizardStepInfoComponent implements OnInit {
       changed = true;
     }
 
-    // 2. Client ← client_name (best-effort name match)
+    // 2. Reference ← server_reference (when pre-filled from DOC360)
+    if (updated.doc360ServerReference && !updated.reference?.trim()) {
+      updated = { ...updated, reference: updated.doc360ServerReference };
+      changed = true;
+    }
+
+    // 3. Client ← client_name (best-effort name match)
     if (updated.doc360ClientName && !updated.clientId) {
       const raw   = updated.doc360ClientName.toLowerCase();
       const match = clients.find(c =>

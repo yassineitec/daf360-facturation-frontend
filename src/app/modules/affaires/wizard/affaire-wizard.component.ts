@@ -131,12 +131,13 @@ export class AffaireWizardComponent {
     this.isSaving.set(true);
     const d = this.draft();
     this.wizardService.createDraft({
-      clientId:            d.clientId,
-      intitule:            d.intitule.trim(),
-      reference:           d.reference?.trim() || null,
-      notes:               d.notes?.trim()    || null,
-      doc360Ref:           d.doc360Ref?.trim() || null,
+      clientId:              d.clientId,
+      intitule:              d.intitule.trim(),
+      reference:             d.reference?.trim() || null,
+      notes:                 d.notes?.trim()    || null,
+      doc360Ref:             d.doc360Ref?.trim() || null,
       doc360ServerReference: d.doc360ServerReference || null,
+      erpReference:          d.doc360ErpReference?.trim() || null,
     }).subscribe({
       next: result => {
         this.draftId.set(result['id'] as number);
