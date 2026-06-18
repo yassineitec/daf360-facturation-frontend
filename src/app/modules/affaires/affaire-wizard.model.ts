@@ -96,8 +96,8 @@ export interface ExternalProjectResult {
 
 export interface DisciplineDto {
   id: number;
-  code: string;
-  label: string;
+  levelLabel: string;
+  levelConcat?: string;
 }
 
 export interface ResponsableItem {
@@ -105,6 +105,7 @@ export interface ResponsableItem {
   userName: string;
   isPrimary: boolean;
   role?: string;
+  budgetAllocation?: number;
 }
 
 // ── Wizard state ───────────────────────────────────────────────────────────────
@@ -158,6 +159,7 @@ export interface AffaireDraftState {
   disciplineId?: number;
   disciplineLabel?: string;
   disciplineServerRef?: string;
+  disciplineLevelConcat?: string;
 
   // Step 5 — Planification
   dateDebutFacturation?: string;

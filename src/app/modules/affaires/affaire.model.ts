@@ -34,6 +34,7 @@ export interface AffaireListItem {
 export interface AffaireDetail extends AffaireListItem {
   notes:             string | null;
   doc360Ref:         string | null;
+  erpReference?:     string | null;
   devise:            string;
   rafAlerteSent:     boolean;
   createdAt:         string;

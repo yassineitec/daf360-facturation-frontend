@@ -137,6 +137,12 @@
                     <span class="info-value info-ref">{{ affaire()!.doc360Ref }}</span>
                   </div>
                 }
+                @if (affaire()!.erpReference) {
+                  <div class="info-row">
+                    <span class="info-label">Réf. ERP</span>
+                    <span class="info-value info-ref">{{ affaire()!.erpReference }}</span>
+                  </div>
+                }
                 @if (affaire()!.notes) {
                   <div class="info-row info-row--full">
                     <span class="info-label">Notes</span>

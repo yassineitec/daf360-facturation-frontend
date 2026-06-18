@@ -76,34 +76,73 @@
         <span class="recap-section-letter">B</span>
         <span class="recap-section-title">Responsables</span>
       </div>
-      <div class="recap-grid">
-        @for (r of draft.responsables; track r.userId) {
-          <div class="recap-field">
-            <p class="recap-label">
-              @if (r.isPrimary) { <span class="primary-star">★</span> }
-              {{ r.isPrimary ? 'Responsable principal' : 'Responsable' }}
-            </p>
-            <p class="recap-value">
-              {{ r.userName }}
-              @if (r.role) { <span class="recap-role"> — {{ r.role }}</span> }
-            </p>
-          </div>
-        }
-
-        @if (draft.activiteId) {
-          <div class="recap-field">
-            <p class="recap-label">Activité</p>
-            <p class="recap-value">ID #{{ draft.activiteId }}</p>
-          </div>
-        }
-
-        @if (draft.disciplineLabel) {
-          <div class="recap-field">
-            <p class="recap-label">Discipline</p>
-            <p class="recap-value">{{ draft.disciplineLabel }}</p>
-          </div>
-        }
+      <div class="recap-table-wrap">
+        <table class="recap-table">
+          <thead>
+            <tr>
+              <th class="text-left">Responsable</th>
+              <th class="text-left">Rôle</th>
+              @if (draft.budgetPrevisionnel) {
+                <th class="text-right">Budget alloué</th>
+                <th class="text-right">%</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of draft.responsables; track r.userId) {
+              <tr>
+                <td>
+                  <span class="recap-jalon-label">
+                    @if (r.isPrimary) { <span class="primary-star">★ </span> }
+                    {{ r.userName }}
+                  </span>
+                </td>
+                <td class="recap-date">{{ r.role || '—' }}</td>
+                @if (draft.budgetPrevisionnel) {
+                  <td class="text-right recap-tfoot-value">
+                    {{ (r.budgetAllocation ?? 0) | number:'1.3-3' }} {{ draft.contractCurrency }}
+                  </td>
+                  <td class="text-right recap-date">
+                    {{ draft.budgetPrevisionnel ? ((r.budgetAllocation ?? 0) / draft.budgetPrevisionnel * 100 | number:'1.1-1') : '—' }} %
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+          @if (draft.budgetPrevisionnel) {
+            <tfoot>
+              <tr>
+                <td colspan="2" class="recap-tfoot-label">Total alloué</td>
+                <td class="text-right recap-tfoot-value">
+                  {{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}
+                </td>
+                <td class="text-right recap-tfoot-value">100 %</td>
+              </tr>
+            </tfoot>
+          }
+        </table>
       </div>
+
+      @if (draft.activiteId || draft.disciplineLabel) {
+        <div class="recap-grid" style="padding: 12px 16px 4px">
+          @if (draft.activiteId) {
+            <div class="recap-field">
+              <p class="recap-label">Activité</p>
+              <p class="recap-value">ID #{{ draft.activiteId }}</p>
+            </div>
+          }
+          @if (draft.disciplineLabel) {
+            <div class="recap-field">
+              <p class="recap-label">Discipline</p>
+              <p class="recap-value">{{ draft.disciplineLabel }}
+                @if (draft.disciplineLevelConcat) {
+                  <span class="recap-role"> — {{ draft.disciplineLevelConcat }}</span>
+                }
+              </p>
+            </div>
+          }
+        </div>
+      }
     </div>
   }
 

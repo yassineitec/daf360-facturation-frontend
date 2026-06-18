@@ -92,8 +92,14 @@ export class AffaireWizardComponent {
         }
       }
 
-      case 4:
-        return d.responsables.length > 0 && d.responsables.some(r => r.isPrimary);
+      case 4: {
+        if (d.responsables.length === 0) return false;
+        if (!d.responsables.some(r => r.isPrimary)) return false;
+        if (!d.responsables.every(r => r.userId > 0 && (r.budgetAllocation ?? 0) > 0)) return false;
+        const totalAlloc = d.responsables.reduce((s, r) => s + (r.budgetAllocation ?? 0), 0);
+        const budget = d.budgetPrevisionnel ?? 0;
+        return Math.abs(totalAlloc - budget) < 0.001;
+      }
 
       case 5:
         return !!d.dateDebutFacturation;
@@ -219,7 +225,10 @@ export class AffaireWizardComponent {
     this.isSaving.set(true);
     this.wizardService.configureResponsables(id, {
       responsables: d.responsables.map(r => ({
-        userId: r.userId, isPrimary: r.isPrimary, role: r.role ?? null,
+        userId:           r.userId,
+        isPrimary:        r.isPrimary,
+        role:             r.role ?? null,
+        budgetAllocation: r.budgetAllocation ?? 0,
       })),
       budgetPrevisionnel: d.budgetPrevisionnel ?? null,
       activiteId:         d.activiteId ?? null,
