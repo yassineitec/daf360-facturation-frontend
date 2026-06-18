@@ -3,9 +3,11 @@ import { FormsModule } from '@angular/forms';
 
 import { FormFieldComponent } from '@khalilrebhiitec/daf360';
 
-import { ClientService }      from '../../../clients/client.service';
-import { AffaireDraftState }  from '../../affaire-wizard.model';
-import { ClientDropdownItemDto } from '../../../clients/client.model';
+import { FactListService }        from '../../../../core/fact-list.service';
+import { ClientService }          from '../../../clients/client.service';
+import { AffaireDraftState, BillingMode, BILLING_MODES, BUDGET_LABEL } from '../../affaire-wizard.model';
+import { ClientDropdownItemDto }  from '../../../clients/client.model';
+import { ListValueDto }           from '../../../cost/cost.model';
 
 @Component({
   selector: 'app-wizard-step-info',
@@ -19,11 +21,15 @@ export class WizardStepInfoComponent implements OnInit {
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   private readonly clientSvc = inject(ClientService);
+  private readonly listSvc   = inject(FactListService);
+
+  readonly BILLING_MODES = BILLING_MODES;
 
   allClients       = signal<ClientDropdownItemDto[]>([]);
   clientResults    = signal<ClientDropdownItemDto[]>([]);
-  clientInputValue = signal('');   // display value, decoupled from draft.clientName
+  clientInputValue = signal('');
   clientFocused    = false;
+  currencies       = signal<ListValueDto[]>([]);
   private clientHideTimer?: ReturnType<typeof setTimeout>;
 
   // ── daf-form-field two-way bridges ────────────────────────────
@@ -37,13 +43,41 @@ export class WizardStepInfoComponent implements OnInit {
   set notes(v: string | number | null)     { this.draft.notes = (v as string) || undefined; }
 
   ngOnInit(): void {
-    // Restore display value when navigating back to this step
     this.clientInputValue.set(this.draft.clientName ?? '');
-
+    this.listSvc.getListValues('CURRENCY', 0).subscribe(c => this.currencies.set(c));
     this.clientSvc.getDropdown(0).subscribe(clients => {
       this.allClients.set(clients);
       this.prefillFromDoc360(clients);
     });
+  }
+
+  // ── Billing mode & budget ───────────────────────────────────────
+
+  selectMode(code: BillingMode): void {
+    this.draft = { ...this.draft, billingMode: code };
+    this.emit();
+  }
+
+  onBudgetChange(val: string): void {
+    this.draft = { ...this.draft, budgetPrevisionnel: val ? Number(val) : undefined };
+    this.emit();
+  }
+
+  onCurrencyChange(val: string): void {
+    this.draft = { ...this.draft, contractCurrency: val };
+    this.emit();
+  }
+
+  budgetLabel(): string {
+    return this.draft.billingMode ? BUDGET_LABEL[this.draft.billingMode].label : 'Budget';
+  }
+
+  budgetHint(): string {
+    return this.draft.billingMode ? BUDGET_LABEL[this.draft.billingMode].hint : '';
+  }
+
+  isContractualMode(): boolean {
+    return this.draft.billingMode === 'AV' || this.draft.billingMode === 'JAL';
   }
 
   // ── DOC360 pre-fill ────────────────────────────────────────────
@@ -73,12 +107,10 @@ export class WizardStepInfoComponent implements OnInit {
       );
 
       if (match) {
-        // Auto-select the matched client
         updated = { ...updated, clientId: match.id, clientName: match.clientName, clientKycDone: match.isKycDone };
         this.clientInputValue.set(match.clientName);
         changed = true;
       } else {
-        // No DB match — seed the search box with the DOC360 name so the user can pick manually
         this.clientInputValue.set(updated.doc360ClientName);
         this.searchClients(updated.doc360ClientName);
       }
@@ -110,7 +142,6 @@ export class WizardStepInfoComponent implements OnInit {
   onClientInput(value: string): void {
     this.clientInputValue.set(value);
     if (!value) {
-      // User cleared the input — deselect client
       this.draft = { ...this.draft, clientId: undefined, clientName: undefined, clientKycDone: undefined };
       this.draftChange.emit(this.draft);
     }

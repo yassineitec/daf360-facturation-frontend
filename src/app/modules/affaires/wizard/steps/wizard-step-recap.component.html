@@ -47,15 +47,8 @@
 
       @if (draft.budgetPrevisionnel) {
         <div class="recap-field">
-          <p class="recap-label">Budget prévisionnel</p>
-          <p class="recap-value recap-value--teal">{{ draft.budgetPrevisionnel | number:'1.3-3' }}</p>
-        </div>
-      }
-
-      @if (draft.contractAmount) {
-        <div class="recap-field">
-          <p class="recap-label">Montant contractuel</p>
-          <p class="recap-value recap-value--teal">{{ draft.contractAmount | number:'1.3-3' }} {{ draft.contractCurrency }}</p>
+          <p class="recap-label">{{ getBudgetLabel() }}</p>
+          <p class="recap-value recap-value--teal">{{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}</p>
         </div>
       }
 

@@ -93,6 +93,68 @@
     </div>
   </div>
 
+  <!-- Mode de facturation + Budget section -->
+  <div class="step-section">
+    <div class="section-header">
+      <span class="material-symbols-outlined section-icon">receipt_long</span>
+      <div>
+        <p class="section-title">Mode de facturation *</p>
+        <p class="section-sub">Sélectionnez le mode contractuel de cette affaire</p>
+      </div>
+    </div>
+
+    <div class="billing-grid">
+      @for (mode of BILLING_MODES; track mode.code) {
+        <button type="button"
+          class="billing-mode-card"
+          [class.selected]="draft.billingMode === mode.code"
+          [attr.data-mode]="mode.code"
+          (click)="selectMode(mode.code)">
+          <span class="mode-icon material-symbols-outlined">{{ mode.icon }}</span>
+          <span class="mode-name">{{ mode.code }}</span>
+          <span class="mode-desc">{{ mode.labelFr }}</span>
+        </button>
+      }
+    </div>
+
+    @if (draft.billingMode) {
+      <div class="contract-box" [class.contract-box--budget]="!isContractualMode()">
+        <div class="contract-box-header">
+          <span class="material-symbols-outlined">{{ isContractualMode() ? 'payments' : 'savings' }}</span>
+          {{ budgetLabel() }} *
+        </div>
+        <div class="field-grid" style="padding: 20px">
+          <div class="field">
+            <label class="field-label">Montant *</label>
+            <input class="form-input"
+              type="number" min="0" step="0.001"
+              [placeholder]="isContractualMode() ? 'Ex : 150 000' : 'Ex : 200 000'"
+              [value]="draft.budgetPrevisionnel ?? ''"
+              (input)="onBudgetChange($any($event.target).value)" />
+          </div>
+          <div class="field">
+            <label class="field-label">Devise</label>
+            <select class="form-select"
+              [value]="draft.contractCurrency"
+              (change)="onCurrencyChange($any($event.target).value)">
+              @if (currencies().length > 0) {
+                @for (c of currencies(); track c.id) {
+                  <option [value]="c.code">{{ c.code }} — {{ c.labelFr }}</option>
+                }
+              } @else {
+                <option value="EUR">EUR — Euro</option>
+                <option value="USD">USD — Dollar</option>
+                <option value="TND">TND — Dinar tunisien</option>
+                <option value="MAD">MAD — Dirham marocain</option>
+              }
+            </select>
+          </div>
+          <p class="field-hint field-full" style="margin:0">{{ budgetHint() }}</p>
+        </div>
+      </div>
+    }
+  </div>
+
   <!-- Notes section -->
   <div class="step-section">
     <div class="section-header">

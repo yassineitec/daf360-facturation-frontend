@@ -300,7 +300,7 @@
   line-height: 1.4;
 }
 
-// ── Contract box ───────────────────────────────────────────────────────
+// ── Contract / budget box ──────────────────────────────────────────────
 .contract-box {
   background: #f0fdf4;
   border: 1.5px solid #a7f3d0;
@@ -322,8 +322,17 @@
   .material-symbols-outlined { color: #059669; }
 }
 
-.contract-box .field-grid {
-  padding: 20px;
+// Indigo variant for TM / CP / RMB (budget prévisionnel)
+.contract-box--budget {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+
+  .contract-box-header {
+    background: rgba(196,181,253,0.20);
+    border-bottom-color: #c4b5fd;
+    color: #4338ca;
+    .material-symbols-outlined { color: #7c3aed; }
+  }
 }
 
 // ── Responsable tags ───────────────────────────────────────────────────

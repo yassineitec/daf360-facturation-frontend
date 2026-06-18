@@ -43,8 +43,9 @@ export class WizardStepJalComponent implements OnInit {
   }
 
   isBalanced(): boolean {
-    if (!this.draft.contractAmount) return false;
-    return Math.abs(this.draft.jalonTotal - this.draft.contractAmount) < 0.001;
+    const budget = this.draft.budgetPrevisionnel ?? 0;
+    if (!budget) return false;
+    return Math.abs(this.draft.jalonTotal - budget) < 0.001;
   }
 
   private emit(): void {

@@ -4,7 +4,10 @@
     <span class="material-symbols-outlined" style="font-size:18px">info</span>
     <p class="m-0">
       La somme des pourcentages doit être égale à <strong>100 %</strong>.
-      La liste des types de répartition est configurable via l'administration.
+      @if (draft.budgetPrevisionnel) {
+        La facturation sera calculée sur la base du montant contractuel de
+        <strong>{{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}</strong>.
+      }
     </p>
   </div>
 

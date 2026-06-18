@@ -5,7 +5,7 @@ import { Observable }                           from 'rxjs';
 import { ButtonComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireWizardService }          from '../affaire-wizard.service';
-import { AffaireDraftState, BILLING_MODES, WIZARD_STEPS_LABELS } from '../affaire-wizard.model';
+import { AffaireDraftState, WIZARD_STEPS_LABELS } from '../affaire-wizard.model';
 import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
 import { WizardStepInfoComponent }       from './steps/wizard-step-info.component';
 import { WizardStepBillingComponent }    from './steps/wizard-step-billing.component';
@@ -64,19 +64,21 @@ export class AffaireWizardComponent {
         return true; // DOC360 step is optional
 
       case 2:
-        return !!(d.clientId && d.clientKycDone && d.intitule?.trim());
+        return !!(
+          d.clientId && d.clientKycDone && d.intitule?.trim() &&
+          d.billingMode && d.budgetPrevisionnel && d.budgetPrevisionnel > 0 &&
+          d.contractCurrency?.trim()
+        );
 
       case 3: {
         if (!d.billingMode) return false;
-        const modeNeedsContract = BILLING_MODES.find(m => m.code === d.billingMode)?.requiresContractAmount ?? false;
-        if (modeNeedsContract && !(d.contractAmount && d.contractAmount > 0)) return false;
+        const budget = d.budgetPrevisionnel ?? 0;
         switch (d.billingMode) {
           case 'AV':
             return d.repartitionTotal === 100 && d.repartitions.length > 0
                    && d.repartitions.every(r => r.repartitionTypeId > 0);
           case 'JAL': {
-            const balanced = d.contractAmount != null &&
-                             Math.abs(d.jalonTotal - d.contractAmount) < 0.001;
+            const balanced = budget > 0 && Math.abs(d.jalonTotal - budget) < 0.001;
             return d.jalons.length > 0 && d.jalons.every(j => j.label.trim()) && balanced;
           }
           case 'TM':
@@ -133,16 +135,24 @@ export class AffaireWizardComponent {
     this.wizardService.createDraft({
       clientId:              d.clientId,
       intitule:              d.intitule.trim(),
-      reference:             d.reference?.trim() || null,
-      notes:                 d.notes?.trim()    || null,
-      doc360Ref:             d.doc360Ref?.trim() || null,
+      reference:             d.reference?.trim()    || null,
+      notes:                 d.notes?.trim()        || null,
+      doc360Ref:             d.doc360Ref?.trim()    || null,
       doc360ServerReference: d.doc360ServerReference || null,
       erpReference:          d.doc360ErpReference?.trim() || null,
+      billingMode:           d.billingMode          || null,
+      budgetPrevisionnel:    d.budgetPrevisionnel   ?? null,
+      contractCurrency:      d.contractCurrency     || 'EUR',
+      billingPeriod:         d.billingPeriod        || 'MONTHLY',
     }).subscribe({
       next: result => {
         this.draftId.set(result['id'] as number);
-        // paysId comes back from the server — store it so sub-components can use it
-        this.draft.update(prev => ({ ...prev, paysId: result['paysId'] as number ?? 0 }));
+        this.draft.update(prev => ({
+          ...prev,
+          paysId:             result['paysId']             as number  ?? 0,
+          contractAmount:     result['contractAmount']     as number  ?? undefined,
+          budgetPrevisionnel: result['budgetPrevisionnel'] as number  ?? prev.budgetPrevisionnel,
+        }));
         this.isSaving.set(false);
         this.currentStep.set(3);
       },

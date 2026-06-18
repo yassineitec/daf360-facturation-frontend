@@ -52,6 +52,29 @@ export const BILLING_MODES: BillingModeOption[] = [
   },
 ];
 
+export const BUDGET_LABEL: Record<BillingMode, { label: string; hint: string }> = {
+  AV:  {
+    label: 'Montant contractuel',
+    hint:  'Montant total du contrat. La somme des répartitions CTR/BPE/TQC sera appliquée sur ce montant.',
+  },
+  JAL: {
+    label: 'Montant contractuel',
+    hint:  'Montant total du contrat. La somme des jalons doit être égale à ce montant.',
+  },
+  TM:  {
+    label: 'Budget prévisionnel',
+    hint:  'Enveloppe budgétaire estimée. La facturation réelle est basée sur les heures validées × taux contractuels.',
+  },
+  CP:  {
+    label: 'Budget prévisionnel',
+    hint:  'Enveloppe budgétaire estimée. La facturation réelle est basée sur les coûts réels + taux de marge.',
+  },
+  RMB: {
+    label: 'Budget prévisionnel',
+    hint:  'Enveloppe de remboursements estimée. La facturation réelle est basée sur les frais validés.',
+  },
+};
+
 export const WIZARD_STEPS_LABELS = [
   'Recherche DOC360',
   'Informations',

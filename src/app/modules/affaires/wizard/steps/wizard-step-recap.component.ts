@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 
-import { AffaireDraftState, BILLING_MODES } from '../../affaire-wizard.model';
+import { AffaireDraftState, BILLING_MODES, BUDGET_LABEL } from '../../affaire-wizard.model';
 
 @Component({
   selector: 'app-wizard-step-recap',
@@ -14,7 +14,8 @@ export class WizardStepRecapComponent {
   @Input() draft!: AffaireDraftState;
   @Input() draftId!: number | null;
 
-  getModeOption() { return BILLING_MODES.find(m => m.code === this.draft.billingMode); }
+  getModeOption()  { return BILLING_MODES.find(m => m.code === this.draft.billingMode); }
   getModeLabelFr() { return this.getModeOption()?.labelFr ?? this.draft.billingMode ?? '—'; }
-  getModeIcon()   { return this.getModeOption()?.icon ?? 'receipt'; }
+  getModeIcon()    { return this.getModeOption()?.icon ?? 'receipt'; }
+  getBudgetLabel() { return this.draft.billingMode ? BUDGET_LABEL[this.draft.billingMode].label : 'Budget'; }
 }
