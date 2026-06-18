@@ -20,7 +20,10 @@
       @if (draft.doc360ProjectName) {
         <div class="recap-field recap-field--full">
           <p class="recap-label">Projet DOC360</p>
-          <p class="recap-value">{{ draft.doc360ProjectNumber }} — {{ draft.doc360ProjectName }}</p>
+          <p class="recap-value">{{ draft.doc360ServerReference }} — {{ draft.doc360ProjectName }}</p>
+          @if (draft.doc360ErpReference) {
+            <p class="recap-value recap-value--mono" style="font-size:12px">ERP : {{ draft.doc360ErpReference }}</p>
+          }
         </div>
       }
 
