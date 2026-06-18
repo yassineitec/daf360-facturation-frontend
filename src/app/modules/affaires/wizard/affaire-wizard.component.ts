@@ -269,5 +269,6 @@ export class AffaireWizardComponent {
 
   onDraftChange(updated: AffaireDraftState): void {
     this.draft.set(updated);
+    this.serverError.set(null); // clear API error when user edits — forces re-validation before retry
   }
 }
