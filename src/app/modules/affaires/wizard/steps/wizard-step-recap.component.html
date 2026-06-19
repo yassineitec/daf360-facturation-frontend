@@ -89,25 +89,21 @@
             </tr>
           </thead>
           <tbody>
-            @for (r of draft.responsables; track r.userId) {
+            @for (r of draft.responsables; track $index) {
               <tr>
                 <td>
                   <span class="recap-jalon-label">
                     @if (r.isPrimary) { <span class="primary-star">★ </span> }
                     {{ r.userName }}
                   </span>
-                  @if (r.activites.length > 0) {
+                  @if (r.activiteLabel) {
                     <p class="recap-resp-tags">
-                      @for (a of r.activites; track a.activiteId) {
-                        <span class="recap-tag recap-tag--teal">{{ a.activiteLabel }}</span>
-                      }
+                      <span class="recap-tag recap-tag--teal">{{ r.activiteLabel }}</span>
                     </p>
                   }
-                  @if (r.disciplines.length > 0) {
+                  @if (r.disciplineLabel) {
                     <p class="recap-resp-tags">
-                      @for (d of r.disciplines; track d.disciplineId) {
-                        <span class="recap-tag recap-tag--purple">{{ d.disciplineLabel }}</span>
-                      }
+                      <span class="recap-tag recap-tag--purple">{{ r.disciplineLabel }}</span>
                     </p>
                   }
                 </td>

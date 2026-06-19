@@ -104,7 +104,9 @@ export class AffaireWizardComponent implements OnInit {
         if (d.responsables.length === 0) return false;
         if (!d.responsables.some(r => r.isPrimary)) return false;
         if (!d.responsables.every(r => r.userId > 0 && (r.budgetAllocation ?? 0) > 0)) return false;
-        if (!d.responsables.every(r => r.activites.length >= 1)) return false;
+        if (!d.responsables.every(r => r.activiteId != null)) return false;
+        const pairs = d.responsables.map(r => `${r.userId}|${r.activiteId}`);
+        if (new Set(pairs).size !== pairs.length) return false;
         const totalAlloc = d.responsables.reduce((s, r) => s + (r.budgetAllocation ?? 0), 0);
         const budget = d.budgetPrevisionnel ?? 0;
         return Math.abs(totalAlloc - budget) < 0.001;
@@ -298,11 +300,9 @@ export class AffaireWizardComponent implements OnInit {
         isPrimary:        r.isPrimary,
         role:             r.role ?? null,
         budgetAllocation: r.budgetAllocation ?? 0,
-        activites:        r.activites.map(a => ({ activiteId: a.activiteId })),
-        disciplines:      r.disciplines.map(disc => ({
-          disciplineId:    disc.disciplineId,
-          disciplineLabel: disc.disciplineLabel,
-        })),
+        activiteId:       r.activiteId,
+        disciplineId:     r.disciplineId,
+        disciplineLabel:  r.disciplineLabel ?? null,
       })),
       budgetPrevisionnel: d.budgetPrevisionnel ?? null,
     }).subscribe({

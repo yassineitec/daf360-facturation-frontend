@@ -25,15 +25,11 @@ export class WizardStepResponsablesComponent implements OnInit {
   private readonly wizardSvc   = inject(AffaireWizardService);
   private readonly listSvc     = inject(FactListService);
 
-  allUsers        = signal<UserRefDto[]>([]);
-  userResults     = signal<UserRefDto[]>([]);
-  activites       = signal<ListValueDto[]>([]);
-  disciplines     = signal<DisciplineDto[]>([]);
-  isLoadingDisc   = signal(false);
+  allUsers          = signal<UserRefDto[]>([]);
+  activites         = signal<ListValueDto[]>([]);
+  disciplines       = signal<DisciplineDto[]>([]);
+  isLoadingDisc     = signal(false);
   isDisciplineAvail = signal(true);
-
-  userQuery = '';
-  private userHideTimer?: ReturnType<typeof setTimeout>;
 
   // ── Budget tracking ────────────────────────────────────────────
   totalAllocated = computed(() =>
@@ -57,7 +53,6 @@ export class WizardStepResponsablesComponent implements OnInit {
   ngOnInit(): void {
     this.affaireSvc.getUsers().subscribe(u => {
       this.allUsers.set(u);
-      // Resolve userNames for responsables pre-loaded from edit mode
       if (this.draft.responsables.some(r => !r.userName)) {
         const resolved = this.draft.responsables.map(r => ({
           ...r,
@@ -90,72 +85,111 @@ export class WizardStepResponsablesComponent implements OnInit {
     });
   }
 
-  // ── User typeahead ─────────────────────────────────────────────
+  // ── Row operations ─────────────────────────────────────────────
 
-  showAllUsers(): void {
-    if (this.userHideTimer) { clearTimeout(this.userHideTimer); this.userHideTimer = undefined; }
-    const selected = new Set(this.draft.responsables.map(r => r.userId));
-    this.userResults.set(this.allUsers().filter(u => !selected.has(u.id)).slice(0, 8));
-  }
-
-  scheduleHideUsers(): void {
-    this.userHideTimer = setTimeout(() => this.userResults.set([]), 150);
-  }
-
-  onUserInput(value: string): void {
-    this.userQuery = value;
-    if (this.userHideTimer) { clearTimeout(this.userHideTimer); this.userHideTimer = undefined; }
-    const selected = new Set(this.draft.responsables.map(r => r.userId));
-    const list = this.allUsers().filter(u => !selected.has(u.id));
-    if (!value.trim()) { this.userResults.set(list.slice(0, 8)); return; }
-    const q = value.toLowerCase();
-    this.userResults.set(list.filter(u => u.fullName.toLowerCase().includes(q)).slice(0, 8));
-  }
-
-  addUser(user: UserRefDto): void {
-    if (this.userHideTimer) { clearTimeout(this.userHideTimer); this.userHideTimer = undefined; }
-    if (this.draft.responsables.some(r => r.userId === user.id)) return;
+  addRow(): void {
     const isFirst = this.draft.responsables.length === 0;
-    // Auto-assign full budget to first, remaining to subsequent
     const defaultBudget = isFirst
       ? (this.draft.budgetPrevisionnel ?? 0)
       : Math.max(0, this.budgetRemaining());
-    const updated: ResponsableItem[] = [
-      ...this.draft.responsables,
-      { userId: user.id, userName: user.fullName, isPrimary: isFirst, budgetAllocation: defaultBudget || undefined, activites: [], disciplines: [] },
-    ];
-    this.userQuery = '';
-    this.userResults.set([]);
-    this.emit({ ...this.draft, responsables: updated });
+    const newRow: ResponsableItem = {
+      userId: 0, userName: '', isPrimary: isFirst,
+      budgetAllocation: defaultBudget || undefined,
+      activiteId: null, disciplineId: null,
+    };
+    this.emit({ ...this.draft, responsables: [...this.draft.responsables, newRow] });
   }
 
-  removeUser(userId: number): void {
-    const updated = this.draft.responsables.filter(r => r.userId !== userId);
+  removeRow(index: number): void {
+    const updated = this.draft.responsables.filter((_, i) => i !== index);
     if (updated.length > 0 && !updated.some(r => r.isPrimary)) {
       updated[0] = { ...updated[0], isPrimary: true };
     }
     this.emit({ ...this.draft, responsables: updated });
   }
 
-  setPrimary(userId: number): void {
-    const updated = this.draft.responsables.map(r => ({ ...r, isPrimary: r.userId === userId }));
+  setPrimary(index: number): void {
+    const updated = this.draft.responsables.map((r, i) => ({ ...r, isPrimary: i === index }));
     this.emit({ ...this.draft, responsables: updated });
   }
 
-  updateRole(userId: number, role: string): void {
-    const updated = this.draft.responsables.map(r =>
-      r.userId === userId ? { ...r, role } : r);
+  updateUser(index: number, userId: number): void {
+    const user = this.allUsers().find(u => u.id === userId);
+    const updated = this.draft.responsables.map((r, i) =>
+      i === index ? { ...r, userId, userName: user?.fullName ?? '' } : r
+    );
     this.emit({ ...this.draft, responsables: updated });
   }
 
-  updateBudget(userId: number, val: string): void {
+  updateRole(index: number, role: string): void {
+    const updated = this.draft.responsables.map((r, i) =>
+      i === index ? { ...r, role } : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
+  }
+
+  updateBudget(index: number, val: string): void {
     const amount = val ? Number(val) : undefined;
-    const updated = this.draft.responsables.map(r =>
-      r.userId === userId ? { ...r, budgetAllocation: amount } : r);
+    const updated = this.draft.responsables.map((r, i) =>
+      i === index ? { ...r, budgetAllocation: amount } : r
+    );
     this.emit({ ...this.draft, responsables: updated });
   }
 
-  // Distribute total budget evenly across all responsables
+  onActiviteChange(index: number, value: string): void {
+    if (!value) {
+      const updated = this.draft.responsables.map((r, i) =>
+        i === index ? { ...r, activiteId: null, activiteLabel: undefined } : r
+      );
+      this.emit({ ...this.draft, responsables: updated });
+      return;
+    }
+    const sep = value.indexOf('|');
+    const id = Number(value.substring(0, sep));
+    const label = value.substring(sep + 1);
+    const updated = this.draft.responsables.map((r, i) =>
+      i === index ? { ...r, activiteId: id, activiteLabel: label } : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
+  }
+
+  onDisciplineChange(index: number, value: string): void {
+    if (!value) {
+      const updated = this.draft.responsables.map((r, i) =>
+        i === index ? { ...r, disciplineId: null, disciplineLabel: undefined } : r
+      );
+      this.emit({ ...this.draft, responsables: updated });
+      return;
+    }
+    const sep = value.indexOf('|');
+    const id = Number(value.substring(0, sep));
+    const label = value.substring(sep + 1);
+    const updated = this.draft.responsables.map((r, i) =>
+      i === index ? { ...r, disciplineId: id, disciplineLabel: label } : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
+  }
+
+  onFreeDisciplineChange(index: number, text: string): void {
+    const trimmed = text.trim();
+    const updated = this.draft.responsables.map((r, i) =>
+      i === index ? {
+        ...r,
+        disciplineId: trimmed ? -1 : null,
+        disciplineLabel: trimmed || undefined,
+      } : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
+  }
+
+  hasDuplicatePair(index: number): boolean {
+    const r = this.draft.responsables[index];
+    if (!r || !r.activiteId) return false;
+    return this.draft.responsables.some(
+      (other, i) => i !== index && other.userId === r.userId && other.activiteId === r.activiteId
+    );
+  }
+
   distributeEvenly(): void {
     const total = this.draft.budgetPrevisionnel ?? 0;
     const count = this.draft.responsables.length;
@@ -173,85 +207,6 @@ export class WizardStepResponsablesComponent implements OnInit {
     const budget = this.draft.budgetPrevisionnel ?? 0;
     if (!budget || !amount) return 0;
     return Math.round((amount / budget) * 1000) / 10;
-  }
-
-  // ── Per-responsable activités ─────────────────────────────────
-
-  onActiviteSelect(userId: number, value: string): void {
-    if (!value) return;
-    const sep = value.indexOf('|');
-    const id = Number(value.substring(0, sep));
-    const label = value.substring(sep + 1);
-    const resp = this.draft.responsables.find(r => r.userId === userId);
-    if (!resp || resp.activites.some(a => a.activiteId === id)) return;
-    const updated = this.draft.responsables.map(r =>
-      r.userId === userId
-        ? { ...r, activites: [...r.activites, { activiteId: id, activiteLabel: label }] }
-        : r
-    );
-    this.emit({ ...this.draft, responsables: updated });
-  }
-
-  removeActivite(userId: number, activiteId: number): void {
-    const updated = this.draft.responsables.map(r =>
-      r.userId === userId
-        ? { ...r, activites: r.activites.filter(a => a.activiteId !== activiteId) }
-        : r
-    );
-    this.emit({ ...this.draft, responsables: updated });
-  }
-
-  getAvailableActivites(resp: ResponsableItem): ListValueDto[] {
-    const selected = new Set(resp.activites.map(a => a.activiteId));
-    return this.activites().filter(a => !selected.has(a.id));
-  }
-
-  // ── Per-responsable disciplines ───────────────────────────────
-
-  onDisciplineSelect(userId: number, value: string): void {
-    if (!value) return;
-    const sep = value.indexOf('|');
-    const id = Number(value.substring(0, sep));
-    const label = value.substring(sep + 1);
-    const resp = this.draft.responsables.find(r => r.userId === userId);
-    if (!resp || resp.disciplines.some(d => d.disciplineId === id)) return;
-    const updated = this.draft.responsables.map(r =>
-      r.userId === userId
-        ? { ...r, disciplines: [...r.disciplines, { disciplineId: id, disciplineLabel: label }] }
-        : r
-    );
-    this.emit({ ...this.draft, responsables: updated });
-  }
-
-  onFreeDisciplineAdd(userId: number, input: HTMLInputElement): void {
-    const text = input.value?.trim();
-    if (!text) return;
-    const syntheticId = -(Date.now());
-    const updated = this.draft.responsables.map(r =>
-      r.userId === userId
-        ? { ...r, disciplines: [...r.disciplines, { disciplineId: syntheticId, disciplineLabel: text }] }
-        : r
-    );
-    input.value = '';
-    this.emit({ ...this.draft, responsables: updated });
-  }
-
-  removeDiscipline(userId: number, disciplineId: number): void {
-    const updated = this.draft.responsables.map(r =>
-      r.userId === userId
-        ? { ...r, disciplines: r.disciplines.filter(d => d.disciplineId !== disciplineId) }
-        : r
-    );
-    this.emit({ ...this.draft, responsables: updated });
-  }
-
-  getAvailableDisciplines(resp: ResponsableItem): DisciplineDto[] {
-    const selected = new Set(resp.disciplines.map(d => d.disciplineId));
-    return this.disciplines().filter(d => !selected.has(d.id));
-  }
-
-  getUserName(userId: number): string {
-    return this.allUsers().find(u => u.id === userId)?.fullName ?? `#${userId}`;
   }
 
   private emit(state: AffaireDraftState): void {

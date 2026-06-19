@@ -106,8 +106,10 @@ export interface ResponsableItem {
   isPrimary: boolean;
   role?: string;
   budgetAllocation?: number;
-  activites: { activiteId: number; activiteLabel: string }[];
-  disciplines: { disciplineId: number; disciplineLabel: string }[];
+  activiteId: number | null;
+  activiteLabel?: string;
+  disciplineId: number | null;
+  disciplineLabel?: string;
 }
 
 // ── Wizard state ───────────────────────────────────────────────────────────────
@@ -194,14 +196,10 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     isPrimary: r.isPrimary,
     role: r.role,
     budgetAllocation: r.budgetAllocation != null ? Number(r.budgetAllocation) : undefined,
-    activites: (r.activites ?? []).map((a: any) => ({
-      activiteId: a.activiteId,
-      activiteLabel: a.activiteLabel ?? '',
-    })),
-    disciplines: (r.disciplines ?? []).map((d: any) => ({
-      disciplineId: d.disciplineId,
-      disciplineLabel: d.disciplineLabel ?? '',
-    })),
+    activiteId: r.activiteId ?? null,
+    activiteLabel: r.activiteLabel,
+    disciplineId: r.disciplineId ?? null,
+    disciplineLabel: r.disciplineLabel,
   }));
   return {
     id:                          dto.id,
