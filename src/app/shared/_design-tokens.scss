@@ -1,0 +1,135 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// Design tokens partagés — à importer dans tous les composants
+// Usage : @use '../../../shared/design-tokens' as t;  puis t.$brand-teal
+//         OU @import '../../../shared/design-tokens';  (selon config Angular)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Couleurs de marque ───────────────────────────────────────────────────────
+$brand-teal:    #79D7BE;
+$brand-slate:   #50717B;
+$primary:       #3b5bdb;
+$secondary:     #006c49;
+
+// ── Texte ────────────────────────────────────────────────────────────────────
+$text-dark:     #111827;
+$text-body:     #374151;
+$text-muted:    #6b7280;
+$text-light:    #9ca3af;
+
+// ── Surfaces ─────────────────────────────────────────────────────────────────
+$surface:       #ffffff;
+$surface-low:   #f9fafb;
+$surface-mid:   #f3f4f6;
+$surface-high:  #e5e7eb;
+$border:        #e5e7eb;
+
+// ── États ────────────────────────────────────────────────────────────────────
+$success-bg:    #d1fae5;
+$success-color: #065f46;
+$error-bg:      #fee2e2;
+$error-color:   #991b1b;
+$warning-bg:    #fef3c7;
+$warning-color: #92400e;
+
+// ── Typographie — identique au HTML de référence ─────────────────────────────
+// label-caps   : 10px / 800 / uppercase / tracking 0.1em
+// label-bold   : 11px / 700 / tracking 0.05em
+// body-sm      : 12px / 400 / lh 16px
+// body-md      : 14px / 500 / lh 20px
+// title-md     : 18px / 700 / lh 24px
+// headline-xl  : 24px / 800 / lh 32px
+// price-display: 24px / 900 / lh 32px
+
+@mixin text-label-caps {
+  font-size: 10px; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase; line-height: 12px;
+}
+@mixin text-label-bold {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.05em; line-height: 14px;
+}
+@mixin text-body-sm  { font-size: 12px; font-weight: 400; line-height: 16px; }
+@mixin text-body-md  { font-size: 14px; font-weight: 500; line-height: 20px; }
+@mixin text-title-md { font-size: 18px; font-weight: 700; line-height: 24px; }
+@mixin text-headline-xl { font-size: 24px; font-weight: 800; line-height: 32px; letter-spacing: -0.02em; }
+
+// ── Bouton pill teal (Suivant, actions primaires) ────────────────────────────
+@mixin btn-pill-teal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  color: #ffffff;
+  background: $brand-teal;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 24px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(121, 215, 190, 0.35);
+  transition:
+    background    0.18s ease,
+    box-shadow    0.18s ease,
+    transform     0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &:hover:not(:disabled) {
+    background: #5ec9a8;
+    box-shadow: 0 6px 20px rgba(94, 201, 168, 0.55);
+    transform: translateY(-2px);
+  }
+  &:active:not(:disabled) {
+    background: #4ab898;
+    transform: translateY(0) scale(0.97);
+    box-shadow: 0 2px 8px rgba(94, 201, 168, 0.30);
+    transition-duration: 0.08s;
+  }
+  &:disabled { opacity: 0.40; cursor: not-allowed; box-shadow: none; transform: none; }
+}
+
+// ── Bouton ghost (Précédent, actions secondaires) ────────────────────────────
+@mixin btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: $text-muted;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: $text-dark;
+  }
+  &:active { background: rgba(0, 0, 0, 0.08); }
+}
+
+// ── Card glass ───────────────────────────────────────────────────────────────
+@mixin glass-card {
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.40);
+  border-radius: 16px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.10),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.10), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}

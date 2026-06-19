@@ -6,6 +6,15 @@ $brand-slate: #50717B;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  height: 100%;
+
+  // Le tableau est le dernier enfant — il prend tout l'espace restant
+  app-affaire-table {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 // ── Page header ───────────────────────────────────────────────────────────────

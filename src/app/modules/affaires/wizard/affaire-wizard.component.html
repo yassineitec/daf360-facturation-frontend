@@ -13,40 +13,11 @@
     <!-- Main card -->
     <div class="wizard-card">
 
-      <!-- ── STEP INDICATOR ──────────────────────────────────── -->
-      <div class="step-indicator">
-        <div class="step-indicator-row">
-          @for (step of WIZARD_STEPS; track $index; let last = $last) {
-
-            <div class="step-item">
-              <div class="step-circle"
-                [class.active]="currentStep() === $index + 1"
-                [class.done]="currentStep() > $index + 1"
-                [class.pending]="currentStep() < $index + 1">
-                @if (currentStep() > $index + 1) {
-                  <span class="material-symbols-outlined">check</span>
-                } @else {
-                  {{ $index + 1 }}
-                }
-              </div>
-              <span class="step-label"
-                [class.active]="currentStep() >= $index + 1"
-                [class.done]="currentStep() > $index + 1"
-                [class.pending]="currentStep() < $index + 1">
-                {{ step }}
-              </span>
-            </div>
-
-            @if (!last) {
-              <div class="step-connector"
-                [class.done]="currentStep() > $index + 1"
-                [class.pending]="currentStep() <= $index + 1">
-              </div>
-            }
-
-          }
-        </div>
-      </div>
+      <!-- ── STEPPER ──────────────────────────────────────────── -->
+      <app-wizard-stepper
+        [steps]="WIZARD_STEPS_SHORT"
+        [currentStep]="currentStep()">
+      </app-wizard-stepper>
 
       <!-- ── STEP CONTENT ─────────────────────────────────────── -->
       <div class="step-content">
@@ -107,39 +78,44 @@
       <!-- ── NAVIGATION ──────────────────────────────────────── -->
       <div class="wizard-nav">
 
-        <daf-button
-          [class.invisible]="currentStep() === 1 || (editMode() && currentStep() === 2)"
-          [options]="{variant: 'ghost', iconStart: 'arrow_back', label: 'Précédent'}"
-          (onClick)="goPrev()">
-        </daf-button>
+        @if (currentStep() === 1 || (editMode() && currentStep() === 2)) {
+          <a routerLink="/fact/affaires" class="nav-cancel">Annuler</a>
+        } @else {
+          <button class="nav-prev" type="button" (click)="goPrev()">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Précédent
+          </button>
+        }
 
-        <div class="wizard-nav-right">
-          <span class="step-counter">Étape {{ currentStep() }} / {{ totalSteps() }}</span>
-
-          @if (currentStep() === 1) {
-            <daf-button
-              [options]="{variant: 'ghost', iconEnd: 'skip_next', label: 'Passer cette étape'}"
-              (onClick)="goNext()">
-            </daf-button>
+        <button class="nav-next" type="button"
+          [disabled]="!canGoNext() || isSaving()"
+          (click)="goNext()">
+          @if (isSaving()) {
+            <span class="material-symbols-outlined nav-spin">progress_activity</span>
           }
-
-          <daf-button
-            [options]="{
-              variant: 'teal',
-              loading: isSaving(),
-              disabled: !canGoNext(),
-              iconEnd: currentStep() < totalSteps() ? 'arrow_forward' : 'check_circle',
-              label: currentStep() === 1 ? 'DOC360 sélectionné — Suivant'
-                   : currentStep() < totalSteps() ? 'Suivant'
+          <span>{{ currentStep() < totalSteps() ? 'Suivant'
                    : editMode() ? 'Enregistrer'
-                   : 'Activer l\'affaire'
-            }"
-            (onClick)="goNext()">
-          </daf-button>
-        </div>
+                   : 'Activer l\'affaire' }}</span>
+          @if (!isSaving()) {
+            <span class="material-symbols-outlined">
+              {{ currentStep() < totalSteps() ? 'arrow_forward' : 'check_circle' }}
+            </span>
+          }
+        </button>
 
       </div>
 
     </div>
+
+    <!-- Lien brouillon — en dehors de la card, en bas de page -->
+    @if (!editMode()) {
+      <div class="wizard-footer">
+        <a routerLink="/fact/affaires" class="draft-link">
+          <span class="material-symbols-outlined">history</span>
+          Reprendre une affaire en brouillon
+        </a>
+      </div>
+    }
+
   </div>
 </div>

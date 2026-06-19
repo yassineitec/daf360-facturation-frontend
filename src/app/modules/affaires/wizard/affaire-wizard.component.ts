@@ -2,12 +2,11 @@ import { Component, OnInit, inject, signal, computed, input } from '@angular/cor
 import { Router, RouterLink }                   from '@angular/router';
 import { Observable, forkJoin }                 from 'rxjs';
 
-import { ButtonComponent } from '@khalilrebhiitec/daf360';
-
 import { AffaireWizardService }          from '../affaire-wizard.service';
 import { AffaireDraftState, WIZARD_STEPS_LABELS, mapDraftToState } from '../affaire-wizard.model';
 import { AffaireService }           from '../affaire.service';
 import { AffaireDetail }            from '../affaire.model';
+import { WizardStepperComponent }        from '../../../shared/wizard-stepper.component';
 import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
 import { WizardStepInfoComponent }       from './steps/wizard-step-info.component';
 import { WizardStepBillingComponent }    from './steps/wizard-step-billing.component';
@@ -19,7 +18,8 @@ import { WizardStepRecapComponent }      from './steps/wizard-step-recap.compone
   selector: 'app-affaire-wizard',
   standalone: true,
   imports: [
-    RouterLink, ButtonComponent,
+    RouterLink,
+    WizardStepperComponent,
     WizardStepDoc360Component,
     WizardStepInfoComponent,
     WizardStepBillingComponent,
@@ -40,8 +40,9 @@ export class AffaireWizardComponent implements OnInit {
   readonly id       = input<string>();   // bound from route :id via withComponentInputBinding()
   readonly editMode = signal(false);
 
-  readonly WIZARD_STEPS = WIZARD_STEPS_LABELS;
-  readonly totalSteps   = computed(() => this.WIZARD_STEPS.length); // always 6
+  readonly WIZARD_STEPS       = WIZARD_STEPS_LABELS;
+  readonly WIZARD_STEPS_SHORT = ['Origine', 'Infos', 'Facturation', 'Budget', 'Planning', 'Récap'];
+  readonly totalSteps         = computed(() => this.WIZARD_STEPS.length);
 
   currentStep = signal(1);
   draftId     = signal<number | null>(null);
