@@ -2,82 +2,105 @@
 @source "./app/**/*.html";
 @source "./app/**/*.ts";
 
-/* ── DAF360 semantic design tokens ─────────────────────────────────── */
+/* ── DAF360 design tokens (Material You — matches reference design) ─────── */
 @theme {
-  /* Brand / primary */
-  --color-primary:              #1a6b7c;
-  --color-primary-hover:        #155e6b;
-  --color-primary-container:    #e6f7f5;
+  /* Primary — deep navy blue */
+  --color-primary:              #00288e;
+  --color-primary-hover:        #001e6b;
+  --color-primary-container:    #1e40af;
   --color-on-primary:           #ffffff;
+  --color-on-primary-container: #a8b8ff;
+  --color-primary-fixed:        #dde1ff;
+  --color-primary-fixed-dim:    #b8c4ff;
 
-  /* Secondary */
-  --color-secondary:            #4648d4;
-  --color-secondary-hover:      #3b3db0;
-  --color-secondary-container:  #ede9fe;
+  /* Secondary — green */
+  --color-secondary:            #006c49;
+  --color-secondary-hover:      #005236;
+  --color-secondary-container:  #6cf8bb;
   --color-on-secondary:         #ffffff;
+  --color-on-secondary-container: #00714d;
 
-  /* Teal (alias for primary) */
-  --color-teal:                 #1a6b7c;
-  --color-teal-light:           #e6f7f5;
+  /* Brand accents */
+  --color-brand-teal:           #79D7BE;
+  --color-brand-slate:          #50717B;
 
   /* Tertiary */
-  --color-tertiary:             #7e22ce;
-  --color-tertiary-container:   #ede9fe;
+  --color-tertiary:             #4c2e00;
+  --color-tertiary-container:   #6b4200;
+  --color-tertiary-fixed:       #ffddb8;
+
+  /* Error */
+  --color-error:                #ba1a1a;
+  --color-error-container:      #ffdad6;
+  --color-on-error:             #ffffff;
+  --color-on-error-container:   #93000a;
 
   /* Surfaces */
-  --color-surface:                    #ffffff;
-  --color-surface-alt:                #f7f9fb;
-  --color-surface-container:          #f2f4f6;
-  --color-surface-container-high:     #eceef0;
-  --color-surface-container-low:      #fafbfc;
-  --color-surface-container-lowest:   #ffffff;
+  --color-background:                #f8f9fb;
+  --color-surface:                   #f8f9fb;
+  --color-surface-bright:            #f8f9fb;
+  --color-surface-container-lowest:  #ffffff;
+  --color-surface-container-low:     #f3f4f6;
+  --color-surface-container:         #edeef0;
+  --color-surface-container-high:    #e7e8ea;
+  --color-surface-container-highest: #e1e2e4;
+  --color-surface-dim:               #d9dadc;
+  --color-surface-variant:           #e1e2e4;
+  --color-surface-tint:              #3755c3;
 
   /* On-surface text */
-  --color-on-surface:           #1d2b3e;
-  --color-on-surface-variant:   #44474c;
+  --color-on-surface:           #191c1e;
+  --color-on-surface-variant:   #444653;
+  --color-on-background:        #191c1e;
 
-  /* Ink */
-  --color-ink:                  #1d2b3e;
-  --color-ink-muted:            #75777d;
+  /* Inverse */
+  --color-inverse-surface:      #2e3132;
+  --color-inverse-on-surface:   #f0f1f3;
+  --color-inverse-primary:      #b8c4ff;
 
-  /* Outline / border */
-  --color-outline:              #c5c6cd;
-  --color-outline-variant:      #eceef0;
-
-  /* Semantic states */
-  --color-danger:               #ba1a1a;
-  --color-error-container:      #fee2e2;
-  --color-warning:              #f59e0b;
+  /* Outline */
+  --color-outline:              #757684;
+  --color-outline-variant:      #c4c5d5;
 }
 
-/* DAF360 Facturation — global styles */
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #f8f9fb;
+  color: #191c1e;
+}
 
+/* ── CSS custom properties (for SCSS access) ─────────────────────────────── */
 :root {
-  --color-primary:       #1a6b7c;
-  --color-primary-dark:  #134f5c;
-  --color-primary-light: #e0f5f8;
-  --color-accent:        #0ea5e9;
-  --color-bg:            #f0f4f8;
-  --color-surface:       #ffffff;
-  --color-sidebar-bg:    #0f3d47;
-  --color-text:          #1e293b;
-  --color-text-muted:    #64748b;
-  --color-border:        #e2e8f0;
-  --color-error:         #dc2626;
-  --color-warning:       #f59e0b;
-  --color-success:       #065f46;
+  --color-primary:        #00288e;
+  --color-primary-dark:   #001e6b;
+  --color-secondary:      #006c49;
+  --color-brand-teal:     #79D7BE;
+  --color-brand-slate:    #50717B;
+  --color-bg:             #f8f9fb;
+  --color-surface:        #ffffff;
+  --color-on-surface:     #191c1e;
+  --color-on-surface-var: #444653;
+  --color-outline:        #757684;
+  --color-outline-var:    #c4c5d5;
+  --color-error:          #ba1a1a;
+  --color-warning:        #f59e0b;
+  --color-success:        #006c49;
   --radius-sm:  4px;
   --radius-md:  8px;
   --radius-lg:  12px;
-  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.10);
-  --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.12);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
+  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.10);
 }
 
+/* ── Material Symbols ─────────────────────────────────────────────────────── */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -94,11 +117,5 @@ html, body { height: 100%; margin: 0; padding: 0; }
   -webkit-font-feature-settings: 'liga';
   font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
-}
-
-.glass-card {
-  background: rgba(255,255,255,0.9);
-  border: 1px solid #eceef0;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(29,43,62,0.08);
+  vertical-align: middle;
 }
