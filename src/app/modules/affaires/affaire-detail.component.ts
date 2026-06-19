@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { AffaireService } from './affaire.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto,
@@ -17,7 +18,7 @@ import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.compone
 
 @Component({
   selector: 'app-affaire-detail',
-  imports: [RouterLink, FormsModule, StatusBadgeComponent, PermissionDirective, RafGaugeComponent, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
+  imports: [RouterLink, FormsModule, DecimalPipe, StatusBadgeComponent, PermissionDirective, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
   templateUrl: './affaire-detail.component.html',
   styleUrl: './affaire-detail.component.scss',
 })
