@@ -361,6 +361,8 @@ table {
 
 // ── Card view ─────────────────────────────────────────────────────────────────
 
+$brand-green: #006b58;
+
 .card-empty {
   display: flex;
   flex-direction: column;
@@ -373,131 +375,173 @@ table {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-  padding: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  padding: 32px 20px 20px;
   align-content: start;
   flex: 1;
   overflow-y: auto;
+
+  @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width:  680px) { grid-template-columns: 1fr; }
 }
 
+// ── Approval-style card ───────────────────────────────────────────────────────
 .aff-card {
-  background: $surface;
-  border: 1px solid $border;
-  border-radius: 12px;
-  padding: 18px;
+  position: relative;
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 24px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.18s, transform 0.18s;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.08),
+    0 10px 20px -5px rgba(0,0,0,0.05),
+    0 20px 25px -5px rgba(0,0,0,0.02);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
 
   &:hover {
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
-    transform: translateY(-2px);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow:
+      0 10px 15px -3px rgba(0,0,0,0.08),
+      0 25px 30px -5px rgba(0,0,0,0.05),
+      inset 0 0 0 1px rgba($brand-green, 0.10);
 
     .aff-card__cta { opacity: 1; }
   }
 
+  // Badge statut flottant au-dessus de la card
+  &__badge {
+    position: absolute;
+    top: -13px; left: 28px;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 10px; font-weight: 900;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: #fff;
+  }
+
+  // Header
   &__header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    margin-bottom: 22px;
+    margin-top: 8px;
   }
 
-  &__title {
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: $text-dark;
-    line-height: 1.4;
+  &__id-block {
+    display: flex; align-items: center; gap: 14px;
   }
 
-  &__client {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.8125rem;
-    color: $client-color;
-
-    .material-symbols-outlined { font-size: 14px; }
+  &__icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: #f8fafc; border: 1px solid #e8edf2;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    .material-symbols-outlined { font-size: 22px; color: #64748b; }
   }
 
-  &__meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+  &__ref {
+    display: block;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    color: $brand-green; margin-bottom: 2px;
   }
 
-  &__resp {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8125rem;
-    color: $text-muted;
+  &__name {
+    font-size: 15px; font-weight: 700; line-height: 20px;
+    color: $text-dark; margin: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 180px;
   }
 
-  &__amounts {
-    display: flex;
-    border: 1px solid $border;
-    border-radius: 8px;
-    overflow: hidden;
+  &__dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0; margin-top: 6px;
   }
 
-  &__amount {
-    flex: 1;
-    padding: 8px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  // Body
+  &__body {
+    display: flex; flex-direction: column;
+    gap: 14px; flex: 1; margin-bottom: 22px;
+  }
 
-    &--raf { border-left: 1px solid $border; }
+  &__row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  &__row-label {
+    font-size: 12px; font-weight: 400; color: #64748b;
+  }
+
+  &__row-val {
+    font-size: 14px; font-weight: 600; color: $text-dark;
+  }
+
+  &__resp-val {
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  &__amount-block {
+    padding-top: 4px;
   }
 
   &__amount-label {
-    font-size: 0.625rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: $text-light;
+    display: block;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.10em;
+    text-transform: uppercase; color: #94a3b8; margin-bottom: 4px;
   }
 
-  &__amount-val {
-    font-size: 0.9rem;
-    font-weight: 700;
+  &__amount {
+    font-size: 24px; font-weight: 900; line-height: 32px;
     color: $text-dark;
-    display: flex;
-    align-items: center;
-    gap: 4px;
   }
 
+  &__amount-unit {
+    font-size: 14px; font-weight: 600; color: #94a3b8;
+    margin-left: 4px;
+  }
+
+  &__raf {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; border-radius: 10px;
+    background: #f8fafc;
+  }
+
+  &__raf-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; color: #94a3b8;
+  }
+
+  &__raf-val {
+    font-size: 14px; font-weight: 700;
+  }
+
+  // CTA button
   &__cta {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 7px 14px;
-    background: $primary;
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    opacity: 0;
-    transition: opacity 0.18s, background 0.12s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 13px;
+    border-radius: 16px; border: none;
+    background: $brand-green; color: #fff;
+    font-size: 14px; font-weight: 700; font-family: inherit;
+    cursor: pointer; opacity: 0;
+    box-shadow: 0 8px 20px rgba($brand-green, 0.25);
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.15s;
+    .material-symbols-outlined { font-size: 18px; }
 
-    .material-symbols-outlined { font-size: 16px; }
-
-    &:hover { background: #2f4dbf; }
+    &:hover {
+      box-shadow: 0 12px 24px rgba($brand-green, 0.30);
+    }
+    &:active { transform: scale(0.98); }
   }
 }
 
 .resp-avatar--sm {
-  width: 20px;
-  height: 20px;
+  width: 22px; height: 22px;
   font-size: 0.5rem;
 }
 

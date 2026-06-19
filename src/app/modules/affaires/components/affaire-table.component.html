@@ -145,54 +145,77 @@
       } @else {
         <div class="card-grid">
           @for (a of affaires(); track a.id) {
+
             <div class="aff-card" (click)="rowClick.emit(a.id)">
 
+              <!-- Badge statut flottant -->
+              <div class="aff-card__badge"
+                   [style.background]="statutBadgeCfg(a.statut).color"
+                   [style.box-shadow]="'0 4px 10px ' + statutBadgeCfg(a.statut).shadow">
+                {{ statutBadgeCfg(a.statut).label }}
+              </div>
+
+              <!-- Header -->
               <div class="aff-card__header">
-                <span class="ref-mono">{{ a.reference }}</span>
-                <app-status-badge [status]="a.statut" />
+                <div class="aff-card__id-block">
+                  <div class="aff-card__icon">
+                    <span class="material-symbols-outlined">business_center</span>
+                  </div>
+                  <div>
+                    <span class="aff-card__ref">{{ a.reference }}</span>
+                    <h5 class="aff-card__name">{{ a.intitule }}</h5>
+                  </div>
+                </div>
+                <div class="aff-card__dot"
+                     [style.background]="statutBadgeCfg(a.statut).color"
+                     [style.box-shadow]="'0 0 0 4px ' + statutBadgeCfg(a.statut).color + '22'">
+                </div>
               </div>
 
-              <div class="aff-card__title">{{ a.intitule }}</div>
-
-              @if (a.clientName) {
-                <div class="aff-card__client">
-                  <span class="material-symbols-outlined">corporate_fare</span>
-                  {{ a.clientName }}
+              <!-- Body -->
+              <div class="aff-card__body">
+                <div class="aff-card__row">
+                  <span class="aff-card__row-label">Client</span>
+                  <span class="aff-card__row-val">{{ a.clientName || '—' }}</span>
                 </div>
-              }
-
-              <div class="aff-card__meta">
-                <div class="aff-card__resp">
-                  <div class="resp-avatar resp-avatar--sm">{{ initials(a.responsableFullName) }}</div>
-                  <span>{{ a.responsableFullName || '—' }}</span>
+                <div class="aff-card__row">
+                  <span class="aff-card__row-label">Responsable</span>
+                  <div class="aff-card__resp-val">
+                    <div class="resp-avatar resp-avatar--sm">{{ initials(a.responsableFullName) }}</div>
+                    <span class="aff-card__row-val">{{ a.responsableFullName || '—' }}</span>
+                  </div>
                 </div>
-                <span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
-              </div>
+                <div class="aff-card__row">
+                  <span class="aff-card__row-label">Type</span>
+                  <span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
+                </div>
 
-              <div class="aff-card__amounts">
-                <div class="aff-card__amount">
-                  <span class="aff-card__amount-label">Budget</span>
-                  <span class="aff-card__amount-val">
+                <div class="aff-card__amount-block">
+                  <span class="aff-card__amount-label">BUDGET PRÉVISIONNEL</span>
+                  <span class="aff-card__amount">
                     {{ formatAmount(a.budgetPrevisionnel) }}
-                    <span class="material-symbols-outlined budget-icon budget-icon--sm"
-                          [class.budget-icon--filled]="a.budgetValide"
-                          [style.color]="budgetIconColor(a)">{{ budgetIcon(a) }}</span>
+                    <span class="aff-card__amount-unit">TND</span>
                   </span>
                 </div>
-                <div class="aff-card__amount aff-card__amount--raf">
-                  <span class="aff-card__amount-label">RAF</span>
-                  <span class="aff-card__amount-val" [style.color]="rafColor(a)">
-                    {{ formatAmount(a.rafDisponible ?? null) }}
-                  </span>
-                </div>
+
+                @if (a.rafDisponible != null) {
+                  <div class="aff-card__raf">
+                    <span class="aff-card__raf-label">RAF</span>
+                    <span class="aff-card__raf-val" [style.color]="rafColor(a)">
+                      {{ formatAmount(a.rafDisponible) }} TND
+                    </span>
+                  </div>
+                }
               </div>
 
+              <!-- CTA -->
               <button class="aff-card__cta" (click)="rowClick.emit(a.id); $event.stopPropagation()">
                 <span class="material-symbols-outlined">arrow_forward</span>
                 Voir le détail
               </button>
 
             </div>
+
           }
         </div>
       }
