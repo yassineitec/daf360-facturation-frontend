@@ -8,7 +8,7 @@
     </a>
 
     <!-- Page title -->
-    <h1 class="wizard-title">Nouvelle affaire</h1>
+    <h1 class="wizard-title">{{ editMode() ? 'Modifier l\'affaire' : 'Nouvelle affaire' }}</h1>
 
     <!-- Main card -->
     <div class="wizard-card">
@@ -68,6 +68,7 @@
         @if (currentStep() === 3) {
           <app-wizard-step-billing
             [draft]="draft()"
+            [locked]="editMode() && (draft().billingModeLocked ?? false)"
             (draftChange)="onDraftChange($event)">
           </app-wizard-step-billing>
         }
@@ -130,6 +131,7 @@
               iconEnd: currentStep() < totalSteps() ? 'arrow_forward' : 'check_circle',
               label: currentStep() === 1 ? 'DOC360 sélectionné — Suivant'
                    : currentStep() < totalSteps() ? 'Suivant'
+                   : editMode() ? 'Enregistrer'
                    : 'Activer l\'affaire'
             }"
             (onClick)="goNext()">
