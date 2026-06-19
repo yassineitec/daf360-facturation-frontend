@@ -1,11 +1,13 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
 import { Router, RouterLink }                   from '@angular/router';
-import { Observable }                           from 'rxjs';
+import { Observable, forkJoin }                 from 'rxjs';
 
 import { ButtonComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireWizardService }          from '../affaire-wizard.service';
-import { AffaireDraftState, WIZARD_STEPS_LABELS } from '../affaire-wizard.model';
+import { AffaireDraftState, WIZARD_STEPS_LABELS, mapDraftToState } from '../affaire-wizard.model';
+import { AffaireService }           from '../affaire.service';
+import { AffaireDetail }            from '../affaire.model';
 import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
 import { WizardStepInfoComponent }       from './steps/wizard-step-info.component';
 import { WizardStepBillingComponent }    from './steps/wizard-step-billing.component';
@@ -28,10 +30,15 @@ import { WizardStepRecapComponent }      from './steps/wizard-step-recap.compone
   templateUrl: './affaire-wizard.component.html',
   styleUrl: './affaire-wizard.component.scss',
 })
-export class AffaireWizardComponent {
+export class AffaireWizardComponent implements OnInit {
 
   private readonly wizardService = inject(AffaireWizardService);
   private readonly router        = inject(Router);
+  private readonly affaireSvc    = inject(AffaireService);
+
+  // Edit mode
+  readonly id       = input<string>();   // bound from route :id via withComponentInputBinding()
+  readonly editMode = signal(false);
 
   readonly WIZARD_STEPS = WIZARD_STEPS_LABELS;
   readonly totalSteps   = computed(() => this.WIZARD_STEPS.length); // always 6
@@ -71,6 +78,7 @@ export class AffaireWizardComponent {
         );
 
       case 3: {
+        if (this.editMode() && d.billingModeLocked) return true;
         if (!d.billingMode) return false;
         const budget = d.budgetPrevisionnel ?? 0;
         switch (d.billingMode) {
@@ -132,9 +140,62 @@ export class AffaireWizardComponent {
     if (this.currentStep() > 1) this.currentStep.update(s => s - 1);
   }
 
+  ngOnInit(): void {
+    const rawId = this.id();
+    if (rawId) {
+      this.editMode.set(true);
+      this.loadExistingDraft(Number(rawId));
+    }
+  }
+
+  private loadExistingDraft(id: number): void {
+    this.isSaving.set(true);
+    forkJoin({
+      draft:  this.wizardService.loadDraft(id) as Observable<any>,
+      detail: this.affaireSvc.getAffaire(id),
+    }).subscribe({
+      next: ({ draft, detail }: { draft: any; detail: AffaireDetail }) => {
+        this.draft.set(
+          mapDraftToState(
+            draft,
+            detail.clientName ?? '',
+            true   // KYC already validated at affaire creation
+          )
+        );
+        this.draftId.set(id);
+        this.isSaving.set(false);
+      },
+      error: () => {
+        this.serverError.set('Impossible de charger l\'affaire. Réessayez.');
+        this.isSaving.set(false);
+      },
+    });
+  }
+
   // ── Step 2 — create draft ──────────────────────────────────────────────
 
   private saveStep2(): void {
+    if (this.editMode()) {
+      const d = this.draft();
+      this.isSaving.set(true);
+      this.wizardService.updateInfo(this.draftId()!, {
+        intitule:           d.intitule.trim(),
+        clientId:           d.clientId!,
+        notes:              d.notes ?? null,
+        doc360Ref:          d.doc360ServerReference ?? null,
+        erpReference:       d.erpReference ?? null,
+        contractCurrency:   d.contractCurrency,
+        billingPeriod:      d.billingPeriod,
+        budgetPrevisionnel: d.budgetPrevisionnel ?? null,
+      }).subscribe({
+        next: () => { this.isSaving.set(false); this.currentStep.set(3); },
+        error: err => {
+          this.isSaving.set(false);
+          this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur lors de la mise à jour.');
+        },
+      });
+      return;
+    }
     if (this.draftId()) { this.currentStep.set(3); return; }
     this.isSaving.set(true);
     const d = this.draft();
@@ -172,6 +233,11 @@ export class AffaireWizardComponent {
   // ── Step 3 — configure billing ────────────────────────────────────────
 
   private saveStep3(): void {
+    if (this.editMode()) {
+      // Billing mode is locked in edit mode — no API call, just advance
+      this.currentStep.set(4);
+      return;
+    }
     const id   = this.draftId()!;
     const d    = this.draft();
     const mode = d.billingMode!;
@@ -266,6 +332,11 @@ export class AffaireWizardComponent {
   // ── Step 6 — activate ─────────────────────────────────────────────────
 
   private activateAffaire(): void {
+    if (this.editMode()) {
+      // No activation needed — navigate back to detail
+      this.router.navigate(['/fact/affaires', this.draftId()]);
+      return;
+    }
     this.isSaving.set(true);
     this.wizardService.validateAndActivate(this.draftId()!).subscribe({
       next: affaire => { this.router.navigate(['/fact/affaires', affaire['id']]); },
