@@ -6,7 +6,7 @@
       <span class="section-icon material-symbols-outlined">group</span>
       <div>
         <div class="section-title">Responsables de l'affaire *</div>
-        <div class="section-sub">Ajoutez au moins un responsable principal</div>
+        <div class="section-sub">Ajoutez au moins un responsable principal. Chaque responsable doit avoir au moins une activité.</div>
       </div>
     </div>
 
@@ -112,6 +112,81 @@
               }
             </div>
 
+            <!-- Activités row -->
+            <div class="resp-field-row">
+              <label class="resp-field-label">
+                Activité(s) *
+                @if (resp.activites.length === 0) {
+                  <span class="field-required-hint">— au moins une requise</span>
+                }
+              </label>
+              <div class="chips-row">
+                @for (act of resp.activites; track act.activiteId) {
+                  <span class="chip chip--teal">
+                    {{ act.activiteLabel }}
+                    <button type="button" class="chip-remove"
+                      (click)="removeActivite(resp.userId, act.activiteId)">×</button>
+                  </span>
+                }
+                @if (getAvailableActivites(resp).length > 0) {
+                  <select class="chip-select"
+                    (change)="onActiviteSelect(resp.userId, $any($event.target).value); $any($event.target).value = ''">
+                    <option value="">+ Activité…</option>
+                    @for (a of getAvailableActivites(resp); track a.id) {
+                      <option [value]="a.id + '|' + a.labelFr">{{ a.labelFr }}</option>
+                    }
+                  </select>
+                }
+              </div>
+            </div>
+
+            <!-- Disciplines row -->
+            <div class="resp-field-row">
+              <label class="resp-field-label">
+                Discipline(s)
+                @if (draft.doc360ServerReference) {
+                  <span class="doc360-badge">DOC360</span>
+                }
+              </label>
+              <div class="chips-row">
+                @for (disc of resp.disciplines; track disc.disciplineId) {
+                  <span class="chip chip--purple">
+                    {{ disc.disciplineLabel }}
+                    <button type="button" class="chip-remove"
+                      (click)="removeDiscipline(resp.userId, disc.disciplineId)">×</button>
+                  </span>
+                }
+
+                @if (!draft.doc360ServerReference) {
+                  <input #freeDiscInput type="text" class="chip-input"
+                    placeholder="Saisie libre + Entrée…"
+                    (keydown.enter)="onFreeDisciplineAdd(resp.userId, freeDiscInput); $event.preventDefault()">
+
+                } @else if (isLoadingDisc()) {
+                  <span class="disc-loading">
+                    <span class="material-symbols-outlined spin">progress_activity</span>
+                    Chargement…
+                  </span>
+
+                } @else if (disciplines().length > 0) {
+                  @if (getAvailableDisciplines(resp).length > 0) {
+                    <select class="chip-select"
+                      (change)="onDisciplineSelect(resp.userId, $any($event.target).value); $any($event.target).value = ''">
+                      <option value="">+ Discipline…</option>
+                      @for (d of getAvailableDisciplines(resp); track d.id) {
+                        <option [value]="d.id + '|' + d.levelLabel">{{ d.levelLabel }}</option>
+                      }
+                    </select>
+                  }
+
+                } @else {
+                  <input #freeDiscInput2 type="text" class="chip-input"
+                    [placeholder]="!isDisciplineAvail() ? 'DOC360 indisponible — saisie libre…' : 'Aucune discipline — saisie libre…'"
+                    (keydown.enter)="onFreeDisciplineAdd(resp.userId, freeDiscInput2); $event.preventDefault()">
+                }
+              </div>
+            </div>
+
           </div>
         }
       </div>
@@ -170,95 +245,6 @@
         </p>
       </div>
     }
-  </div>
-
-  <!-- ── SECTION: Classification ────────────────────────────────── -->
-  <div class="step-section">
-    <div class="section-header">
-      <span class="section-icon material-symbols-outlined">account_balance_wallet</span>
-      <div>
-        <div class="section-title">Classification de l'affaire</div>
-        <div class="section-sub">Activité et discipline du projet</div>
-      </div>
-    </div>
-
-    <div class="field-grid">
-
-      <!-- Activité -->
-      <div class="field">
-        <label class="field-label">Activité</label>
-        <select class="form-select"
-          [value]="draft.activiteId ?? ''"
-          (change)="onActiviteChange($any($event.target).value)">
-          <option value="">— Sélectionner —</option>
-          @for (a of activites(); track a.id) {
-            <option [value]="a.id">{{ a.labelFr }}</option>
-          }
-        </select>
-      </div>
-
-      <!-- Discipline -->
-      <div class="field">
-        <label class="field-label">
-          Discipline
-          @if (draft.doc360ServerReference) {
-            <span class="doc360-badge">DOC360</span>
-          }
-        </label>
-
-        @if (!draft.doc360ServerReference) {
-          <!-- No DOC360 project → free text -->
-          <input class="form-input" type="text"
-            placeholder="Saisie libre…"
-            [value]="draft.disciplineLabel ?? ''"
-            (input)="onFreeDisciplineChange($any($event.target).value)">
-          <div class="field-hint">Sélectionnez un projet DOC360 à l'étape 1 pour accéder aux disciplines.</div>
-
-        } @else if (isLoadingDisc()) {
-          <!-- Loading -->
-          <div class="form-input disc-loading">
-            <span class="material-symbols-outlined spin">progress_activity</span>
-            Chargement…
-          </div>
-
-        } @else if (!isDisciplineAvail() || disciplines().length === 0) {
-          <!-- ODS unavailable or no disciplines → free text -->
-          <input class="form-input"
-            [class.input-warn]="!isDisciplineAvail()"
-            type="text"
-            [placeholder]="!isDisciplineAvail() ? 'DOC360 indisponible — saisie libre…' : 'Aucune discipline — saisie libre…'"
-            [value]="draft.disciplineLabel ?? ''"
-            (input)="onFreeDisciplineChange($any($event.target).value)">
-          @if (!isDisciplineAvail()) {
-            <div class="field-hint field-hint--warn">
-              <span class="material-symbols-outlined">cloud_off</span>
-              DOC360 indisponible
-            </div>
-          }
-
-        } @else {
-          <!-- Real dropdown from DOC360 -->
-          <select class="form-select"
-            [value]="draft.disciplineId ?? ''"
-            (change)="onDisciplineChange($any($event.target).value)">
-            <option value="">— Sélectionner —</option>
-            @for (d of disciplines(); track d.id) {
-              <option [value]="d.id">
-                {{ d.levelLabel }}{{ d.levelConcat ? ' (' + d.levelConcat + ')' : '' }}
-              </option>
-            }
-          </select>
-          @if (draft.disciplineId && draft.disciplineLabel) {
-            <div class="field-hint field-hint--ok">
-              <span class="material-symbols-outlined">check_circle</span>
-              {{ draft.disciplineLabel }}
-              @if (draft.disciplineLevelConcat) { — {{ draft.disciplineLevelConcat }} }
-            </div>
-          }
-        }
-      </div>
-
-    </div>
   </div>
 
 </div>

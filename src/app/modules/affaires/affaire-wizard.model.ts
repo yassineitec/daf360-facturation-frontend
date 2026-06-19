@@ -106,6 +106,8 @@ export interface ResponsableItem {
   isPrimary: boolean;
   role?: string;
   budgetAllocation?: number;
+  activites: { activiteId: number; activiteLabel: string }[];
+  disciplines: { disciplineId: number; disciplineLabel: string }[];
 }
 
 // ── Wizard state ───────────────────────────────────────────────────────────────
@@ -157,11 +159,6 @@ export interface AffaireDraftState {
   // Step 4 — Responsables & Budget
   responsables: ResponsableItem[];
   budgetPrevisionnel?: number;
-  activiteId?: number;
-  disciplineId?: number;
-  disciplineLabel?: string;
-  disciplineServerRef?: string;
-  disciplineLevelConcat?: string;
 
   // Step 5 — Planification
   dateDebutFacturation?: string;
@@ -197,6 +194,14 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     isPrimary: r.isPrimary,
     role: r.role,
     budgetAllocation: r.budgetAllocation != null ? Number(r.budgetAllocation) : undefined,
+    activites: (r.activites ?? []).map((a: any) => ({
+      activiteId: a.activiteId,
+      activiteLabel: a.activiteLabel ?? '',
+    })),
+    disciplines: (r.disciplines ?? []).map((d: any) => ({
+      disciplineId: d.disciplineId,
+      disciplineLabel: d.disciplineLabel ?? '',
+    })),
   }));
   return {
     id:                          dto.id,
@@ -225,11 +230,6 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     eligibleExpenseCategoryIds:  dto.eligibleExpenseCategoryIds ?? [],
     marginRatePct:               dto.cpMarginRatePct != null ? Number(dto.cpMarginRatePct) : undefined,
     responsables,
-    activiteId:                  dto.activiteId,
-    disciplineId:                dto.disciplineId,
-    disciplineLabel:             dto.disciplineLabel,
-    disciplineServerRef:         dto.disciplineServerRef,
-    disciplineLevelConcat:       undefined,
     dateDebutFacturation:        dto.dateDebutFacturation,
     dateFinContractuelle:        dto.dateFinContractuelle,
     datePremireEcheance:         dto.datePremireEcheance,

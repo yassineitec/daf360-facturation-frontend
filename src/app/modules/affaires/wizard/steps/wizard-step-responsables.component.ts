@@ -122,7 +122,7 @@ export class WizardStepResponsablesComponent implements OnInit {
       : Math.max(0, this.budgetRemaining());
     const updated: ResponsableItem[] = [
       ...this.draft.responsables,
-      { userId: user.id, userName: user.fullName, isPrimary: isFirst, budgetAllocation: defaultBudget || undefined },
+      { userId: user.id, userName: user.fullName, isPrimary: isFirst, budgetAllocation: defaultBudget || undefined, activites: [], disciplines: [] },
     ];
     this.userQuery = '';
     this.userResults.set([]);
@@ -175,31 +175,79 @@ export class WizardStepResponsablesComponent implements OnInit {
     return Math.round((amount / budget) * 1000) / 10;
   }
 
-  // ── Field changes ──────────────────────────────────────────────
+  // ── Per-responsable activités ─────────────────────────────────
 
-  onActiviteChange(val: string): void {
-    this.emit({ ...this.draft, activiteId: val ? Number(val) : undefined });
+  onActiviteSelect(userId: number, value: string): void {
+    if (!value) return;
+    const sep = value.indexOf('|');
+    const id = Number(value.substring(0, sep));
+    const label = value.substring(sep + 1);
+    const resp = this.draft.responsables.find(r => r.userId === userId);
+    if (!resp || resp.activites.some(a => a.activiteId === id)) return;
+    const updated = this.draft.responsables.map(r =>
+      r.userId === userId
+        ? { ...r, activites: [...r.activites, { activiteId: id, activiteLabel: label }] }
+        : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
   }
 
-  onDisciplineChange(val: string): void {
-    const discipline = this.disciplines().find(d => String(d.id) === val);
-    this.emit({
-      ...this.draft,
-      disciplineId:           discipline?.id,
-      disciplineLabel:        discipline?.levelLabel,
-      disciplineServerRef:    this.draft.doc360ServerReference,
-      disciplineLevelConcat:  discipline?.levelConcat,
-    });
+  removeActivite(userId: number, activiteId: number): void {
+    const updated = this.draft.responsables.map(r =>
+      r.userId === userId
+        ? { ...r, activites: r.activites.filter(a => a.activiteId !== activiteId) }
+        : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
   }
 
-  onFreeDisciplineChange(val: string): void {
-    this.emit({
-      ...this.draft,
-      disciplineId:    undefined,
-      disciplineLabel: val,
-      disciplineServerRef: undefined,
-      disciplineLevelConcat: undefined,
-    });
+  getAvailableActivites(resp: ResponsableItem): ListValueDto[] {
+    const selected = new Set(resp.activites.map(a => a.activiteId));
+    return this.activites().filter(a => !selected.has(a.id));
+  }
+
+  // ── Per-responsable disciplines ───────────────────────────────
+
+  onDisciplineSelect(userId: number, value: string): void {
+    if (!value) return;
+    const sep = value.indexOf('|');
+    const id = Number(value.substring(0, sep));
+    const label = value.substring(sep + 1);
+    const resp = this.draft.responsables.find(r => r.userId === userId);
+    if (!resp || resp.disciplines.some(d => d.disciplineId === id)) return;
+    const updated = this.draft.responsables.map(r =>
+      r.userId === userId
+        ? { ...r, disciplines: [...r.disciplines, { disciplineId: id, disciplineLabel: label }] }
+        : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
+  }
+
+  onFreeDisciplineAdd(userId: number, input: HTMLInputElement): void {
+    const text = input.value?.trim();
+    if (!text) return;
+    const syntheticId = -(Date.now());
+    const updated = this.draft.responsables.map(r =>
+      r.userId === userId
+        ? { ...r, disciplines: [...r.disciplines, { disciplineId: syntheticId, disciplineLabel: text }] }
+        : r
+    );
+    input.value = '';
+    this.emit({ ...this.draft, responsables: updated });
+  }
+
+  removeDiscipline(userId: number, disciplineId: number): void {
+    const updated = this.draft.responsables.map(r =>
+      r.userId === userId
+        ? { ...r, disciplines: r.disciplines.filter(d => d.disciplineId !== disciplineId) }
+        : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
+  }
+
+  getAvailableDisciplines(resp: ResponsableItem): DisciplineDto[] {
+    const selected = new Set(resp.disciplines.map(d => d.disciplineId));
+    return this.disciplines().filter(d => !selected.has(d.id));
   }
 
   getUserName(userId: number): string {
