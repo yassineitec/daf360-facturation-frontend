@@ -55,7 +55,17 @@ export class WizardStepResponsablesComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.affaireSvc.getUsers().subscribe(u => this.allUsers.set(u));
+    this.affaireSvc.getUsers().subscribe(u => {
+      this.allUsers.set(u);
+      // Resolve userNames for responsables pre-loaded from edit mode
+      if (this.draft.responsables.some(r => !r.userName)) {
+        const resolved = this.draft.responsables.map(r => ({
+          ...r,
+          userName: r.userName || u.find(u2 => u2.id === r.userId)?.fullName || `Utilisateur #${r.userId}`,
+        }));
+        this.emit({ ...this.draft, responsables: resolved });
+      }
+    });
     this.listSvc.getListValues('ACTIVITE', 0).subscribe(a => this.activites.set(a));
     if (this.draft.doc360ServerReference) {
       this.loadDisciplines(this.draft.doc360ServerReference);
