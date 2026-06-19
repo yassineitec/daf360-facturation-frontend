@@ -198,4 +198,8 @@ export class AffaireDetailComponent implements OnInit {
   statutLabel(s: string): string { return STATUT_LABELS[s] ?? s; }
 
   goBack(): void { this.router.navigate(['/fact/affaires']); }
+
+  openEdit(): void {
+    this.router.navigate(['/fact/affaires', this.numId, 'edit']);
+  }
 }

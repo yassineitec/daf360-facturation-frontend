@@ -12,6 +12,11 @@ export const AFFAIRES_ROUTES: Routes = [
       import('./wizard/affaire-wizard.component').then(m => m.AffaireWizardComponent),
   },
   {
+    path: ':id/edit',
+    loadComponent: () =>
+      import('./wizard/affaire-wizard.component').then(m => m.AffaireWizardComponent),
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./affaire-detail.component').then(m => m.AffaireDetailComponent),

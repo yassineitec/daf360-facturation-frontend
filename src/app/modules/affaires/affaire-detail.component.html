@@ -255,6 +255,17 @@
           </div>
         }
 
+        <!-- Edit affaire -->
+        @if (affaire()!.statut === 'EN_COURS' || affaire()!.statut === 'SUSPENDUE') {
+          <div class="action-card glass-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
+            <h3>Modifier l'affaire</h3>
+            <p>Modifier les responsables, le planning, les informations générales.</p>
+            <button class="btn-action btn-action--teal" (click)="openEdit()">
+              Modifier l'affaire
+            </button>
+          </div>
+        }
+
         <!-- Quick actions -->
         <div class="action-card glass-card">
           <h3>Actions rapides</h3>
