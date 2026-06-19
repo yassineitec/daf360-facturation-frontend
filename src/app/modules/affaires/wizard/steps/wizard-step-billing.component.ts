@@ -19,6 +19,7 @@ import { WizardStepRmbComponent } from './wizard-step-rmb.component';
 })
 export class WizardStepBillingComponent {
   @Input() draft!: AffaireDraftState;
+  @Input() locked = false;
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   onSubDraftChange(updated: AffaireDraftState): void {

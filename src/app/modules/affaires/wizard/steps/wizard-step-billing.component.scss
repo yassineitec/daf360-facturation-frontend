@@ -1,5 +1,23 @@
 :host { display: block; }
 
+.locked-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #92400e;
+  font-size: 13px;
+  margin-bottom: 16px;
+
+  .material-symbols-outlined {
+    font-size: 18px;
+    font-variation-settings: 'FILL' 1;
+  }
+}
+
 .step-form {
   display: flex;
   flex-direction: column;

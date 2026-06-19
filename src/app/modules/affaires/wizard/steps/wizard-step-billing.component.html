@@ -1,5 +1,12 @@
 <div class="step-form">
 
+  @if (locked) {
+    <div class="locked-notice">
+      <span class="material-symbols-outlined">lock</span>
+      Le mode de facturation est verrouillé et ne peut pas être modifié.
+    </div>
+  }
+
   @if (draft.billingMode) {
     <div class="mode-config">
       <div class="mode-config-header">
@@ -11,30 +18,35 @@
         @case ('AV') {
           <app-wizard-step-av
             [draft]="draft"
+            [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-av>
         }
         @case ('JAL') {
           <app-wizard-step-jal
             [draft]="draft"
+            [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-jal>
         }
         @case ('TM') {
           <app-wizard-step-tm
             [draft]="draft"
+            [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-tm>
         }
         @case ('CP') {
           <app-wizard-step-cp
             [draft]="draft"
+            [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-cp>
         }
         @case ('RMB') {
           <app-wizard-step-rmb
             [draft]="draft"
+            [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-rmb>
         }

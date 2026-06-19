@@ -14,6 +14,7 @@ import { ListValueDto }      from '../../../cost/cost.model';
 })
 export class WizardStepRmbComponent implements OnInit {
   @Input() draft!: AffaireDraftState;
+  @Input() locked = false;
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   private readonly listSvc = inject(FactListService);

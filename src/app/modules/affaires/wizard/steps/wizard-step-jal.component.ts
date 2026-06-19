@@ -15,6 +15,7 @@ import { AffaireDraftState } from '../../affaire-wizard.model';
 })
 export class WizardStepJalComponent implements OnInit {
   @Input() draft!: AffaireDraftState;
+  @Input() locked = false;
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   ngOnInit(): void {

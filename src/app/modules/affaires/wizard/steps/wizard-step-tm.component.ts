@@ -18,6 +18,7 @@ import { ListValueDto }      from '../../../cost/cost.model';
 })
 export class WizardStepTmComponent implements OnInit {
   @Input() draft!: AffaireDraftState;
+  @Input() locked = false;
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   private readonly affaireSvc = inject(AffaireService);

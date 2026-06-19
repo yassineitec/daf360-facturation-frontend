@@ -14,6 +14,7 @@ import { CostCategoryDto }   from '../../../cost/cost.model';
 })
 export class WizardStepCpComponent implements OnInit {
   @Input() draft!: AffaireDraftState;
+  @Input() locked = false;
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   private readonly costSvc = inject(CostService);
