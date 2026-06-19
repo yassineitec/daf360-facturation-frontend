@@ -129,6 +129,7 @@ export interface AffaireDraftState {
   intitule: string;
   reference?: string;
   doc360Ref?: string;    // manual reference (distinct from DOC360 project)
+  erpReference?: string | null;  // affaire's own ERP reference (from backend entity)
   notes?: string;
 
   // Step 3 — Mode de facturation
@@ -206,6 +207,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     intitule:                    dto.intitule ?? '',
     reference:                   dto.reference,
     doc360Ref:                   dto.doc360Ref,
+    erpReference:                dto.erpReference ?? null,
     doc360ServerReference:       dto.doc360Ref,
     notes:                       dto.notes,
     billingMode:                 dto.billingMode,
