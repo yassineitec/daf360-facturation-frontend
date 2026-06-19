@@ -1,13 +1,14 @@
-$primary:       #006b58;
-$on-surface:    #0b1c30;
-$on-surface-var:#3e4945;
-$surface:       #F8F9FB;
-$background:    #F0F4F8;
-$error:         #BA1A1A;
-$warning:       #D97706;
-$slate-200:     #e2e8f0;
-$slate-400:     #94A3B8;
-$slate-500:     #64748B;
+@import '../../../shared/design-tokens';
+
+// Alias locaux pour ce composant (pointent vers les tokens partagés)
+$primary:       $brand-green;
+$on-surface:    $text-dark;
+$on-surface-var:$text-body;
+$error:         $error-color;
+$warning:       $warning-color;
+$slate-200:     $border;
+$slate-400:     $text-light;
+$slate-500:     $text-muted;
 
 :host { display: block; }
 

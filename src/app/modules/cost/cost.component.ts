@@ -5,6 +5,7 @@ import { ApprovalQueueComponent } from './tabs/approval-queue.component';
 import { CostConfigComponent }    from './tabs/cost-config.component';
 import { CostImportPanelComponent } from './import/cost-import-panel.component';
 import { ClientService } from '../clients/client.service';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 type CostTab = 'lines' | 'approvals' | 'config';
 
@@ -13,6 +14,7 @@ type CostTab = 'lines' | 'approvals' | 'config';
   standalone: true,
   imports: [
     CommonModule,
+    PageHeaderComponent,
     CostLinesComponent,
     ApprovalQueueComponent,
     CostConfigComponent,

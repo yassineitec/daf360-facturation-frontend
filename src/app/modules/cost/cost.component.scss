@@ -1,3 +1,5 @@
+@import '../../shared/design-tokens';
+
 :host { display: contents; }
 
 .page-wrap {
@@ -7,71 +9,20 @@
   min-height: 100%;
 }
 
-// ── Header ─────────────────────────────────────────────────────────────────
-
-.page-header {
-  padding: 24px 28px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.page-title {
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: #0f3d47;
-  margin: 0;
-}
-
-.page-sub {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin: 2px 0 0;
-}
-
-// ── Tab nav ────────────────────────────────────────────────────────────────
-
+// ── Tab nav (via mixin partagé) ─────────────────────────────────────────────
 .tab-nav {
-  display: flex;
-  gap: 0;
+  @include tab-nav-styles;
   padding: 16px 28px 0;
-  border-bottom: 2px solid #e2e8f0;
   margin-bottom: 0;
 }
 
-.tab-btn {
-  height: 40px;
-  padding: 0 20px;
-  border: none;
-  border-bottom: 3px solid transparent;
-  background: none;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: -2px;
-
-  &:hover:not(.active) {
-    color: #334155;
-    border-bottom-color: #cbd5e1;
-  }
-
-  &.active {
-    color: #1a6b7c;
-    border-bottom-color: #1a6b7c;
-  }
-}
-
-// ── Tab panel ─────────────────────────────────────────────────────────────
-
+// ── Tab panel ─────────────────────────────────────────────────────────────────
 .tab-panel {
   padding: 24px 28px;
   flex: 1;
 }
 
-// ── Config layout ──────────────────────────────────────────────────────────
-
+// ── Config layout ──────────────────────────────────────────────────────────────
 .config-layout {
   display: grid;
   grid-template-columns: 1fr 360px;
@@ -80,14 +31,6 @@
 }
 
 @media (max-width: 900px) {
-  .config-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .page-header,
-  .tab-nav,
-  .tab-panel {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
+  .config-layout { grid-template-columns: 1fr; }
+  .tab-nav, .tab-panel { padding-left: 16px; padding-right: 16px; }
 }

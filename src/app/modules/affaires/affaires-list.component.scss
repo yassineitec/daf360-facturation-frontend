@@ -1,6 +1,4 @@
-$primary:     #3b5bdb;
-$brand-teal:  #79D7BE;
-$brand-slate: #50717B;
+@import '../../shared/design-tokens';
 
 .affaires-page {
   display: flex;
@@ -8,7 +6,6 @@ $brand-slate: #50717B;
   gap: 24px;
   height: 100%;
 
-  // Le tableau est le dernier enfant — il prend tout l'espace restant
   app-affaire-table {
     flex: 1;
     min-height: 0;
@@ -17,64 +14,8 @@ $brand-slate: #50717B;
   }
 }
 
-// ── Page header ───────────────────────────────────────────────────────────────
+// ── KPI grid (mixin partagé avec 4 colonnes) ──────────────────────────────────
+.kpi-grid { @include kpi-grid(4); }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.page-icon {
-  font-size: 1.75rem;
-  color: $brand-teal;
-  line-height: 1;
-}
-
-.page-title {
-  font-size: 1.875rem;     // 30px — même taille que le HTML de référence
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #111827;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.btn-new {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  background: $brand-slate;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(80, 113, 123, 0.3);
-  transition: opacity 0.15s, transform 0.1s;
-
-  .material-symbols-outlined { font-size: 18px; }
-
-  &:hover  { opacity: 0.88; }
-  &:active { transform: scale(0.98); }
-}
-
-// ── KPI grid ──────────────────────────────────────────────────────────────────
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-
-  @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 640px)  { grid-template-columns: 1fr; }
-}
+// ── Bouton "+ Nouvelle Affaire" (mixin partagé) ───────────────────────────────
+.btn-new { @include btn-new($brand-slate); }

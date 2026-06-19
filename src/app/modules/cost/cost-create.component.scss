@@ -1,16 +1,15 @@
 @import '../../shared/design-tokens';
 
-// ── Tokens locaux (référence HTML) ───────────────────────────────────────────
-$primary:          #006b58;
+// ── Surcharges locales (ce composant utilise le vert foncé comme primary) ─────
+$primary:          $brand-green;
 $secondary:        #006c49;
-$surface:          #F8F9FB;
-$background:       #F0F4F8;
-$surface-cont-low: #F0F4FA;
-$on-surface:       #0b1c30;
-$on-surface-var:   #3e4945;
-$outline-var:      #bdc9c4;
-$warning-soft:     #FFFBEB;
-$warning-text:     #D97706;
+$background:       $bg-page;
+$surface-cont-low: $surface-low;
+$on-surface:       $text-dark;
+$on-surface-var:   $text-body;
+$outline-var:      $border;
+$warning-soft:     $warning-bg;
+$warning-text:     $warning-color;
 $tertiary-cont:    #ffb85d;
 
 // ── Host ──────────────────────────────────────────────────────────────────────

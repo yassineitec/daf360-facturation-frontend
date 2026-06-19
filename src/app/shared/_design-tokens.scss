@@ -1,14 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// Design tokens partagés — à importer dans tous les composants
-// Usage : @use '../../../shared/design-tokens' as t;  puis t.$brand-teal
-//         OU @import '../../../shared/design-tokens';  (selon config Angular)
+// Design tokens partagés — source unique de vérité pour toute l'application
+// Usage : @import '../../../shared/design-tokens';
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── Couleurs de marque ───────────────────────────────────────────────────────
-$brand-teal:    #79D7BE;
-$brand-slate:   #50717B;
-$primary:       #3b5bdb;
-$secondary:     #006c49;
+$brand-teal:    #79D7BE;   // accent clair (hover, tags, accents)
+$brand-slate:   #50717B;   // primary brand (boutons, liens, active)
+$brand-green:   #006b58;   // vert foncé (création, confirmation)
+
+// Alias sémantiques
+$primary:       $brand-slate;
+$primary-green: $brand-green;
 
 // ── Texte ────────────────────────────────────────────────────────────────────
 $text-dark:     #111827;
@@ -16,14 +18,27 @@ $text-body:     #374151;
 $text-muted:    #6b7280;
 $text-light:    #9ca3af;
 
-// ── Surfaces ─────────────────────────────────────────────────────────────────
+// ── Surfaces & fonds ─────────────────────────────────────────────────────────
 $surface:       #ffffff;
 $surface-low:   #f9fafb;
 $surface-mid:   #f3f4f6;
 $surface-high:  #e5e7eb;
+$bg-page:       #f8f9fb;
 $border:        #e5e7eb;
+$border-soft:   #f1f5f9;
 
-// ── États ────────────────────────────────────────────────────────────────────
+// ── Ombres ────────────────────────────────────────────────────────────────────
+$shadow-card:   0 2px 8px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.05);
+$shadow-hover:  0 12px 40px rgba(0,0,0,.12), 0 4px 16px rgba(0,0,0,.08);
+$shadow-modal:  0 20px 60px rgba(15, 61, 71, 0.2);
+
+// ── Rayons ────────────────────────────────────────────────────────────────────
+$radius-sm:   8px;
+$radius-md:   12px;
+$radius-lg:   16px;
+$radius-pill: 999px;
+
+// ── États sémantiques ────────────────────────────────────────────────────────
 $success-bg:    #d1fae5;
 $success-color: #065f46;
 $error-bg:      #fee2e2;
@@ -31,14 +46,9 @@ $error-color:   #991b1b;
 $warning-bg:    #fef3c7;
 $warning-color: #92400e;
 
-// ── Typographie — identique au HTML de référence ─────────────────────────────
-// label-caps   : 10px / 800 / uppercase / tracking 0.1em
-// label-bold   : 11px / 700 / tracking 0.05em
-// body-sm      : 12px / 400 / lh 16px
-// body-md      : 14px / 500 / lh 20px
-// title-md     : 18px / 700 / lh 24px
-// headline-xl  : 24px / 800 / lh 32px
-// price-display: 24px / 900 / lh 32px
+// ═══════════════════════════════════════════════════════════════════════════
+// Mixins — Typographie
+// ═══════════════════════════════════════════════════════════════════════════
 
 @mixin text-label-caps {
   font-size: 10px; font-weight: 800;
@@ -53,18 +63,137 @@ $warning-color: #92400e;
 @mixin text-title-md { font-size: 18px; font-weight: 700; line-height: 24px; }
 @mixin text-headline-xl { font-size: 24px; font-weight: 800; line-height: 32px; letter-spacing: -0.02em; }
 
-// ── Bouton pill teal (Suivant, actions primaires) ────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// Mixins — Cards
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Carte avec effet hover 3D (lift + spring bounce)
+@mixin card-3d($radius: $radius-lg) {
+  background: $surface;
+  border-radius: $radius;
+  border: 1px solid $border;
+  box-shadow: $shadow-card;
+  transition:
+    transform   0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow  0.25s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-hover;
+  }
+}
+
+// Carte glassmorphism (wizards, overlays)
+@mixin glass-card {
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.40);
+  border-radius: $radius-lg;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.10),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.10), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Mixins — Layout de page
+// ═══════════════════════════════════════════════════════════════════════════
+
+// En-tête de page liste (titre + sous-titre + slot boutons)
+@mixin page-header-layout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 24px 28px 0;
+}
+
+// Grille de KPI cards
+@mixin kpi-grid($cols: 4) {
+  display: grid;
+  grid-template-columns: repeat($cols, 1fr);
+  gap: 16px;
+
+  @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 640px)  { grid-template-columns: 1fr; }
+}
+
+// Barre d'onglets (tab-nav)
+@mixin tab-nav-styles {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid $surface-high;
+
+  .tab-btn {
+    height: 40px;
+    padding: 0 20px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-muted;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: -2px;
+
+    &:hover:not(.active) {
+      color: $text-body;
+      border-bottom-color: $surface-high;
+    }
+
+    &.active {
+      color: $brand-slate;
+      border-bottom-color: $brand-slate;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Mixins — Boutons
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Bouton "+ Nouveau" — header de pages liste
+@mixin btn-new($bg: $brand-slate, $color: #fff) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: $radius-md;
+  background: $bg;
+  color: $color;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s, transform 0.15s;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+  &:active:not(:disabled) { transform: translateY(0); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+// Bouton pill teal (actions primaires wizard)
 @mixin btn-pill-teal {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
   font-weight: 700;
-  line-height: 20px;
-  color: #ffffff;
+  color: #fff;
   background: $brand-teal;
   border: none;
-  border-radius: 50px;
+  border-radius: $radius-pill;
   padding: 10px 24px;
   cursor: pointer;
   font-family: inherit;
@@ -84,24 +213,22 @@ $warning-color: #92400e;
   &:active:not(:disabled) {
     background: #4ab898;
     transform: translateY(0) scale(0.97);
-    box-shadow: 0 2px 8px rgba(94, 201, 168, 0.30);
     transition-duration: 0.08s;
   }
-  &:disabled { opacity: 0.40; cursor: not-allowed; box-shadow: none; transform: none; }
+  &:disabled { opacity: 0.40; cursor: not-allowed; box-shadow: none; }
 }
 
-// ── Bouton ghost (Précédent, actions secondaires) ────────────────────────────
+// Bouton ghost (secondaire)
 @mixin btn-ghost {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
   font-weight: 500;
-  line-height: 20px;
   color: $text-muted;
   background: none;
   border: none;
-  border-radius: 10px;
+  border-radius: $radius-md;
   padding: 8px 14px;
   cursor: pointer;
   font-family: inherit;
@@ -109,27 +236,134 @@ $warning-color: #92400e;
 
   .material-symbols-outlined { font-size: 16px; }
 
-  &:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: $text-dark;
-  }
-  &:active { background: rgba(0, 0, 0, 0.08); }
+  &:hover { background: rgba(0,0,0,.05); color: $text-dark; }
+  &:active { background: rgba(0,0,0,.08); }
 }
 
-// ── Card glass ───────────────────────────────────────────────────────────────
-@mixin glass-card {
-  background: rgba(255, 255, 255, 0.70);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.40);
-  border-radius: 16px;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.10),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+// ═══════════════════════════════════════════════════════════════════════════
+// Mixins — Modales
+// ═══════════════════════════════════════════════════════════════════════════
 
-  &:hover {
-    transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.10), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+@mixin modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+@mixin modal-box($max-width: 520px) {
+  background: $surface;
+  border-radius: 14px;
+  box-shadow: $shadow-modal;
+  width: 100%;
+  max-width: $max-width;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@mixin modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid $border-soft;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: $text-dark;
   }
+}
+
+@mixin modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid $border-soft;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Mixins — Formulaires
+// ═══════════════════════════════════════════════════════════════════════════
+
+@mixin form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: $text-body;
+  }
+
+  input, textarea, select {
+    padding: 9px 12px;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    font-size: 0.875rem;
+    font-family: inherit;
+    background: $surface;
+    color: $text-dark;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: $brand-slate;
+      box-shadow: 0 0 0 3px rgba($brand-slate, 0.12);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Mixins — Alertes / Banners
+// ═══════════════════════════════════════════════════════════════════════════
+
+@mixin info-banner($icon-color: #4648d4) {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #f0f4ff;
+  border-radius: $radius-md;
+  font-size: 13px;
+  color: $text-dark;
+  line-height: 1.6;
+
+  .material-symbols-outlined {
+    color: $icon-color;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+@mixin error-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: $error-bg;
+  color: $error-color;
+  border-radius: $radius-sm;
+  font-size: 0.875rem;
+  border: 1px solid #fca5a5;
+}
+
+@mixin warning-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: $warning-bg;
+  color: $warning-color;
+  border-radius: $radius-sm;
+  font-size: 0.875rem;
+  border: 1px solid #fcd34d;
 }

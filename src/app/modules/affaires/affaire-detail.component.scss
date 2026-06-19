@@ -1,16 +1,10 @@
-// ── Tokens couleurs — PRIMARY vert comme le HTML de référence ───────────────
-$primary:    #006b58;   // vert foncé référence
-$secondary:  #006c49;
-$tertiary:   #855300;
-$brand-teal: #79D7BE;
-$text-dark:  #111827;
-$text-body:  #374151;
-$text-muted: #6b7280;
-$text-light: #9ca3af;
-$surface:    #ffffff;
-$surface-low:#f9fafb;
-$surface-mid:#f3f4f6;
-$border:     #bdc9c4;
+@import '../../shared/design-tokens';
+
+// ── Surcharges locales (ce composant utilise le vert foncé comme primary) ─────
+$primary:   $brand-green;
+$secondary: #006c49;
+$tertiary:  #855300;
+$border:    #bdc9c4; // variante légèrement plus foncée que le token global
 
 // ── Système typographique ─────────────────────────────────────────────────
 .text-label-caps {

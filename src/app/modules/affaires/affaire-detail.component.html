@@ -222,27 +222,36 @@
         </section>
 
         <!-- Budget & TS -->
-        <section class="glass-card section-card">
-          <div class="section-card__header">
-            <h2 class="section-card__title text-title-md">
+        <section class="glass-card collapsible">
+          <button class="collapsible__header" (click)="toggleSection('ts')"
+                  [attr.aria-expanded]="isOpen('ts')">
+            <h2 class="text-title-md section-card__title">
               <span class="material-symbols-outlined text-primary">add_task</span>
               Budget &amp; TS
               @if (tsList().length > 0) {
                 <span class="section-count">{{ tsList().length }}</span>
               }
             </h2>
-            <button class="btn-primary" *appHasPermission="'FACT_CREATE_TS'" (click)="openTsForm()">
-              <span class="material-symbols-outlined">add</span>
-              Nouveau TS
-            </button>
-          </div>
-          <div class="ts-table-wrap">
-            <app-ts-list
-              [affaireId]="numId"
-              [list]="tsList()"
-              (openNewForm)="openTsForm()"
-              (updated)="loadTs(); loadRaf()" />
-          </div>
+            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('ts')">expand_more</span>
+          </button>
+          @if (isOpen('ts')) {
+            <div class="collapsible__body">
+              <div class="section-card__header" style="padding: 0 0 16px;">
+                <span></span>
+                <button class="btn-primary" *appHasPermission="'FACT_CREATE_TS'" (click)="openTsForm(); $event.stopPropagation()">
+                  <span class="material-symbols-outlined">add</span>
+                  Nouveau TS
+                </button>
+              </div>
+              <div class="ts-table-wrap">
+                <app-ts-list
+                  [affaireId]="numId"
+                  [list]="tsList()"
+                  (openNewForm)="openTsForm()"
+                  (updated)="loadTs(); loadRaf()" />
+              </div>
+            </div>
+          }
         </section>
 
         <!-- Sous-traitance -->

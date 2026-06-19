@@ -40,7 +40,7 @@ export class AffaireDetailComponent implements OnInit {
   actionLoading= signal(false);
 
   // Section open states
-  openSections = signal<Set<string>>(new Set(['info', 'ts']));
+  openSections = signal<Set<string>>(new Set(['info']));
 
   // Statut modal
   showStatutModal = signal(false);
