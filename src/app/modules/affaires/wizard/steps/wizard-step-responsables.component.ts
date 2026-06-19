@@ -51,7 +51,7 @@ export class WizardStepResponsablesComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.affaireSvc.getUsers().subscribe(u => {
+    this.affaireSvc.getResponsableUsers('Responsable Génie Civil').subscribe(u => {
       this.allUsers.set(u);
       if (this.draft.responsables.some(r => !r.userName)) {
         const resolved = this.draft.responsables.map(r => ({
@@ -116,7 +116,19 @@ export class WizardStepResponsablesComponent implements OnInit {
   updateUser(index: number, userId: number): void {
     const user = this.allUsers().find(u => u.id === userId);
     const updated = this.draft.responsables.map((r, i) =>
-      i === index ? { ...r, userId, userName: user?.fullName ?? '' } : r
+      i === index ? {
+        ...r,
+        userId,
+        userName: user?.fullName ?? '',
+        role: user?.roleName ?? '',
+      } : r
+    );
+    this.emit({ ...this.draft, responsables: updated });
+  }
+
+  clearUser(index: number): void {
+    const updated = this.draft.responsables.map((r, i) =>
+      i === index ? { ...r, userId: 0, userName: '', role: '' } : r
     );
     this.emit({ ...this.draft, responsables: updated });
   }

@@ -107,10 +107,9 @@
             <div class="resp-fields">
               <div class="resp-field">
                 <label class="resp-field-label">Rôle</label>
-                <input class="form-input resp-role-input" type="text"
-                  placeholder="Chef de projet, Coordinateur…"
+                <input class="form-input resp-role-input resp-role-input--readonly" type="text"
                   [value]="resp.role ?? ''"
-                  (input)="updateRole(idx, $any($event.target).value)">
+                  readonly>
               </div>
 
               @if (draft.budgetPrevisionnel) {

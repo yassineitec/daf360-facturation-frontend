@@ -481,3 +481,12 @@
   &::placeholder { color: #94a3b8; }
   &:focus { border-color: #0d9488; border-style: solid; background: #fff; }
 }
+
+/* ── Read-only role input (auto-filled from user's role) ─────── */
+.resp-role-input--readonly {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: default;
+  pointer-events: none;
+  border-color: #e2e8f0;
+}

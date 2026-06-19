@@ -142,6 +142,7 @@ export interface UserRefDto {
   fullName: string;
   email:    string;
   paysId:   number;
+  roleName: string | null;
 }
 
 export interface PaysRefDto {
