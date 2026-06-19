@@ -10,7 +10,6 @@ import {
 import { UserStore } from '../../core/user.store';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { PermissionDirective } from '../../shared/permission.directive';
-import { RafGaugeComponent } from '../../shared/raf-gauge.component';
 import { TsListComponent } from './ts/ts-list.component';
 import { TsFormComponent } from './ts/ts-form.component';
 import { AffaireOstComponent } from './ost/affaire-ost.component';
@@ -52,10 +51,11 @@ export class AffaireDetailComponent implements OnInit {
   showTsForm = signal(false);
 
   readonly stubSections = [
-    { key: 'factures',    label: 'Factures émises' },
-    { key: 'paiements',   label: 'Paiements reçus' },
-    { key: 'indicateurs', label: 'Indicateurs' },
+    { key: 'factures',  label: 'Factures émises' },
+    { key: 'paiements', label: 'Paiements reçus' },
   ];
+
+  readonly ALL_STATUTS = ['EN_COURS', 'SUSPENDUE', 'CLOTUREE', 'ARCHIVEE'];
 
   // Budget validation
   budgetLoading = signal(false);
@@ -197,6 +197,22 @@ export class AffaireDetailComponent implements OnInit {
   }
 
   statutLabel(s: string): string { return STATUT_LABELS[s] ?? s; }
+
+  statutIcon(s: string): string {
+    const m: Record<string, string> = {
+      EN_COURS: 'play_circle', SUSPENDUE: 'pause_circle',
+      CLOTUREE: 'check_circle', ARCHIVEE: 'archive',
+    };
+    return m[s] ?? 'circle';
+  }
+
+  canTransitionTo(s: string): boolean {
+    return this.availableTransitions().includes(s);
+  }
+
+  gaugeOffset(pct: number): number {
+    return Math.round(175 * (1 - Math.min(Math.max(pct, 0), 100) / 100));
+  }
 
   goBack(): void { this.router.navigate(['/fact/affaires']); }
 

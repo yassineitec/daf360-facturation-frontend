@@ -1,10 +1,5 @@
 <div class="detail-page">
 
-  <!-- ── Retour ─────────────────────────────────────────────────────────────── -->
-  <button class="back-btn" (click)="goBack()">
-    <span class="material-symbols-outlined">arrow_back</span>
-  </button>
-
   @if (loading()) {
     <div class="state-box">
       <div class="spinner"></div>
@@ -20,19 +15,20 @@
 
     <!-- ── Page Header ─────────────────────────────────────────────────────── -->
     <header class="page-header">
-      <div class="page-header-left">
-        <div class="hd-titles">
-          <div class="hd-title-row">
-            <h1 class="text-headline-xl">{{ affaire()!.intitule }} — {{ affaire()!.reference }}</h1>
-            <app-status-badge [status]="affaire()!.statut" />
-            @if (!affaire()!.budgetValide) {
-              <span class="badge-warn">Budget non validé</span>
-            }
-          </div>
-          <p class="text-body-sm text-muted">
-            Dernière mise à jour : {{ formatDate(affaire()!.updatedAt ?? affaire()!.createdAt) }}
-          </p>
+      <button class="back-btn" (click)="goBack()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div class="hd-titles">
+        <div class="hd-title-row">
+          <h1 class="text-headline-xl">{{ affaire()!.intitule }} — {{ affaire()!.reference }}</h1>
+          <app-status-badge [status]="affaire()!.statut" />
+          @if (!affaire()!.budgetValide) {
+            <span class="badge-warn">Budget non validé</span>
+          }
         </div>
+        <p class="text-body-sm text-muted">
+          Dernière mise à jour : {{ formatDate(affaire()!.updatedAt ?? affaire()!.createdAt) }}
+        </p>
       </div>
     </header>
 
@@ -43,7 +39,6 @@
     <!-- ── KPI Grid ────────────────────────────────────────────────────────── -->
     <div class="kpi-grid">
 
-      <!-- CA Encaissé -->
       <div class="kpi-card">
         <div class="kpi-card__top">
           <p class="text-label-bold text-muted">CA Encaissement</p>
@@ -58,7 +53,6 @@
         </div>
       </div>
 
-      <!-- RAF Disponible -->
       <div class="kpi-card">
         <div class="kpi-card__top">
           <p class="text-label-bold text-muted">RAF Disponible</p>
@@ -71,7 +65,9 @@
           <div class="kpi-card__progress">
             <div class="kpi-card__progress-row">
               <span class="text-body-sm text-muted">Utilisation Budget</span>
-              <span class="text-body-sm text-secondary">{{ ((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 | number:'1.0-0') }}%</span>
+              <span class="text-body-sm text-secondary">
+                {{ ((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 | number:'1.0-0') }}%
+              </span>
             </div>
             <div class="kpi-bar">
               <div class="kpi-bar__fill kpi-bar__fill--secondary"
@@ -81,7 +77,6 @@
         }
       </div>
 
-      <!-- WIP -->
       <div class="kpi-card">
         <div class="kpi-card__top">
           <p class="text-label-bold text-muted">WIP (En cours)</p>
@@ -96,7 +91,6 @@
         </div>
       </div>
 
-      <!-- Marge Brute -->
       <div class="kpi-card">
         <div class="kpi-card__top">
           <p class="text-label-bold text-muted">Marge Brute</p>
@@ -126,7 +120,9 @@
           <div class="raf-bar-item">
             <div class="raf-bar-item__label">
               <span class="text-label-bold text-muted">Facturé</span>
-              <span class="text-label-bold text-primary">{{ (raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%</span>
+              <span class="text-label-bold text-primary">
+                {{ (raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
+              </span>
             </div>
             <div class="kpi-bar">
               <div class="kpi-bar__fill kpi-bar__fill--primary"
@@ -136,7 +132,9 @@
           <div class="raf-bar-item">
             <div class="raf-bar-item__label">
               <span class="text-label-bold text-muted">TS Intégré</span>
-              <span class="text-label-bold text-secondary">{{ (raf()!.montantTsIntegres / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%</span>
+              <span class="text-label-bold text-secondary">
+                {{ (raf()!.montantTsIntegres / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
+              </span>
             </div>
             <div class="kpi-bar">
               <div class="kpi-bar__fill kpi-bar__fill--secondary"
@@ -146,7 +144,9 @@
           <div class="raf-bar-item">
             <div class="raf-bar-item__label">
               <span class="text-label-bold text-muted">Restant (RAF)</span>
-              <span class="text-label-bold text-light">{{ (raf()!.rafDisponible / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%</span>
+              <span class="text-label-bold text-light">
+                {{ (raf()!.rafDisponible / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
+              </span>
             </div>
             <div class="kpi-bar">
               <div class="kpi-bar__fill kpi-bar__fill--light"
@@ -165,7 +165,7 @@
 
         <!-- Informations Générales -->
         <section class="glass-card section-card">
-          <h2 class="section-card__title text-title-md">
+          <h2 class="section-card__title text-title-md" style="margin-bottom:20px">
             <span class="material-symbols-outlined text-primary">info</span>
             Informations Générales
           </h2>
@@ -175,7 +175,7 @@
               <p class="text-body-md">{{ affaire()!.clientName || '—' }}</p>
             </div>
             <div class="info-field">
-              <p class="text-body-sm text-muted">Responsable</p>
+              <p class="text-body-sm text-muted">Manager de projet</p>
               <p class="text-body-md">{{ affaire()!.responsableFullName || '—' }}</p>
             </div>
             <div class="info-field">
@@ -191,7 +191,7 @@
               <p class="text-body-md">{{ formatDate(affaire()!.dateDebut) }} — {{ formatDate(affaire()!.dateFin) }}</p>
             </div>
             <div class="info-field">
-              <p class="text-body-sm text-muted">Type / Engagement</p>
+              <p class="text-body-sm text-muted">Engagement</p>
               <p class="text-body-md">{{ typeLabel() }}</p>
             </div>
             <div class="info-field">
@@ -297,10 +297,79 @@
               <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen(section.key)">expand_more</span>
             </button>
             @if (isOpen(section.key)) {
-              <div class="collapsible__body stub-body text-body-sm text-muted">
+              <div class="collapsible__body stub-body text-body-sm">
                 Module à venir dans la prochaine itération.
               </div>
             }
+          </section>
+        }
+
+        <!-- ── Indicateurs de Pilotage ──────────────────────────────────── -->
+        @if (raf() && raf()!.budgetPrevisionnel > 0) {
+          <section class="indicateurs-section">
+            <h2 class="indicateurs-title">Indicateurs de Pilotage</h2>
+            <div class="indicateurs-grid">
+
+              <!-- Taux Facturation -->
+              <div class="indicateur-card">
+                <p class="indicateur-card__label">Taux Facturation</p>
+                <div class="gauge-wrap">
+                  <svg width="64" height="64" style="transform:rotate(-90deg)">
+                    <circle cx="32" cy="32" r="28" fill="transparent"
+                            stroke="#e5e7eb" stroke-width="4"></circle>
+                    <circle cx="32" cy="32" r="28" fill="transparent"
+                            stroke="#006b58" stroke-width="4"
+                            stroke-dasharray="175"
+                            [attr.stroke-dashoffset]="gaugeOffset(raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100)"></circle>
+                  </svg>
+                  <span class="gauge-label">
+                    {{ (raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
+                  </span>
+                </div>
+              </div>
+
+              <!-- Consommation Budget (cercle) -->
+              <div class="indicateur-card">
+                <p class="indicateur-card__label">Taux Conso.</p>
+                <div class="gauge-wrap">
+                  <svg width="64" height="64" style="transform:rotate(-90deg)">
+                    <circle cx="32" cy="32" r="28" fill="transparent"
+                            stroke="#e5e7eb" stroke-width="4"></circle>
+                    <circle cx="32" cy="32" r="28" fill="transparent"
+                            stroke="#006c49" stroke-width="4"
+                            stroke-dasharray="175"
+                            [attr.stroke-dashoffset]="gaugeOffset((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100)"></circle>
+                  </svg>
+                  <span class="gauge-label">
+                    {{ ((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 | number:'1.0-0') }}%
+                  </span>
+                </div>
+              </div>
+
+              <!-- Conso Budget en montant -->
+              <div class="indicateur-card" style="justify-content:center">
+                <p class="indicateur-card__label">Conso Budget</p>
+                <p class="indicateur-card__value-big">
+                  {{ formatAmount(raf()!.budgetPrevisionnel - raf()!.rafDisponible, affaireDevise()) }}
+                </p>
+                <p class="indicateur-card__value-sub">
+                  SUR {{ formatAmount(raf()!.budgetPrevisionnel, affaireDevise()) }}
+                </p>
+              </div>
+
+              <!-- Évolution Fin. — mini bar chart -->
+              <div class="indicateur-card" style="justify-content:center">
+                <p class="indicateur-card__label">Évolution Fin.</p>
+                <div class="mini-bars">
+                  <div class="bar" style="height:50%"></div>
+                  <div class="bar bar--filled" style="height:65%"></div>
+                  <div class="bar" style="height:100%"></div>
+                  <div class="bar bar--filled" style="height:80%"></div>
+                  <div class="bar" style="height:35%"></div>
+                </div>
+              </div>
+
+            </div>
           </section>
         }
 
@@ -310,31 +379,36 @@
       <div class="detail-sidebar">
 
         <!-- Changement de Statut -->
-        @if (availableTransitions().length > 0) {
-          <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
-            <h2 class="text-title-md" style="margin-bottom:16px">Changement de Statut</h2>
-            <div class="statut-grid">
-              @for (s of availableTransitions(); track s) {
-                <button class="statut-btn"
-                        [class.statut-btn--active]="affaire()!.statut === s"
-                        (click)="targetStatut.set(s); motif.set(''); showStatutModal.set(true)">
-                  <div class="statut-btn__icon">
-                    <span class="material-symbols-outlined">
-                      {{ s === 'EN_COURS' ? 'play_circle' : s === 'SUSPENDUE' ? 'pause_circle' : s === 'CLOTUREE' ? 'check_circle' : 'archive' }}
-                    </span>
+        <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
+          <h2 class="text-title-md" style="margin-bottom:16px">Changement de Statut</h2>
+          <div class="statut-grid">
+            @for (s of ALL_STATUTS; track s) {
+              <button class="statut-btn"
+                      [class.statut-btn--active]="affaire()!.statut === s"
+                      [disabled]="affaire()!.statut === s || !canTransitionTo(s)"
+                      (click)="targetStatut.set(s); motif.set(''); showStatutModal.set(true)">
+                <div class="statut-btn__icon">
+                  <span class="material-symbols-outlined"
+                        [class.icon-filled]="affaire()!.statut === s">
+                    {{ statutIcon(s) }}
+                  </span>
+                </div>
+                <span class="text-label-bold">{{ statutLabel(s) }}</span>
+                @if (affaire()!.statut === s) {
+                  <div class="statut-btn__check">
+                    <span class="material-symbols-outlined">check</span>
                   </div>
-                  <span class="text-label-bold">{{ statutLabel(s) }}</span>
-                </button>
-              }
-            </div>
-          </section>
-        }
+                }
+              </button>
+            }
+          </div>
+        </section>
 
         <!-- Validation budget -->
         @if (!affaire()!.budgetValide) {
-          <section class="glass-card section-card" *appHasPermission="'FACT_VALIDER_BUDGET'">
-            <h2 class="text-title-md" style="margin-bottom:8px">Validation du budget</h2>
-            <p class="text-body-sm text-muted" style="margin-bottom:14px">
+          <section class="glass-card section-card budget-valid-section" *appHasPermission="'FACT_VALIDER_BUDGET'">
+            <h2 class="text-title-md">Validation du budget</h2>
+            <p class="text-body-sm text-muted">
               Budget de {{ formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) }} en attente.
             </p>
             <button class="btn-full btn-full--primary" [disabled]="budgetLoading()" (click)="validerBudget()">
@@ -351,14 +425,21 @@
               <button class="quick-link" (click)="openEdit()">
                 <div class="quick-link__left">
                   <span class="material-symbols-outlined text-primary">person_check</span>
-                  <span class="text-label-bold">Responsables &amp; Planning</span>
+                  <span class="text-label-bold">Responsables</span>
+                </div>
+                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
+              </button>
+              <button class="quick-link" (click)="openEdit()">
+                <div class="quick-link__left">
+                  <span class="material-symbols-outlined text-primary">calendar_month</span>
+                  <span class="text-label-bold">Planning</span>
                 </div>
                 <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
               </button>
               <button class="quick-link" (click)="openEdit()">
                 <div class="quick-link__left">
                   <span class="material-symbols-outlined text-primary">description</span>
-                  <span class="text-label-bold">Informations générales</span>
+                  <span class="text-label-bold">Informations Générales</span>
                 </div>
                 <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
               </button>
@@ -366,7 +447,7 @@
           </section>
         }
 
-        <!-- Actions rapides -->
+        <!-- Actions Rapides -->
         <section class="glass-card section-card">
           <h2 class="text-title-md" style="margin-bottom:14px">Actions Rapides</h2>
           <div class="action-btns">
@@ -380,7 +461,7 @@
             </a>
             <a class="btn-full btn-full--outline-primary" [routerLink]="['/fact/invoicing']" [queryParams]="{ affaire: numId }">
               <span class="material-symbols-outlined">receipt_long</span>
-              Voir les factures
+              Voir factures
             </a>
           </div>
         </section>
@@ -414,16 +495,16 @@
             </div>
           </div>
 
-          <!-- Alerte RAF si proche du seuil -->
           @if (raf() && raf()!.budgetPrevisionnel > 0 &&
                (1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 >= affaire()!.rafAlerteSeuilPct) {
             <div class="raf-alert">
               <div class="raf-alert__header">
-                <span class="material-symbols-outlined">warning</span>
+                <span class="material-symbols-outlined"
+                      style="font-variation-settings:'FILL' 1">warning</span>
                 <span class="text-label-bold" style="color:#d97706">Seuil d'alerte RAF</span>
               </div>
-              <p class="text-body-sm" style="color:#744800;margin:4px 0 10px">
-                Le projet approche les {{ affaire()!.rafAlerteSeuilPct }}% de consommation du budget.
+              <p class="text-body-sm" style="color:#744800; margin:4px 0 0">
+                Le projet approche les {{ affaire()!.rafAlerteSeuilPct }}% de consommation du budget initial.
               </p>
               <div class="raf-alert__bar">
                 <div class="raf-alert__fill"
