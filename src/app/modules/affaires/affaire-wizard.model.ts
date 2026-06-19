@@ -133,6 +133,7 @@ export interface AffaireDraftState {
 
   // Step 3 — Mode de facturation
   billingMode?: BillingMode;
+  billingModeLocked?: boolean;
   billingPeriod: string;
   contractAmount?: number;
   contractCurrency: string;
@@ -165,4 +166,70 @@ export interface AffaireDraftState {
   dateDebutFacturation?: string;
   dateFinContractuelle?: string;
   datePremireEcheance?: string;
+}
+
+export function mapDraftToState(dto: any, clientName: string, clientKycDone: boolean): AffaireDraftState {
+  const repartitions: AffaireDraftState['repartitions'] = (dto.ctrBpeTqcItems ?? []).map((r: any) => ({
+    repartitionTypeId: r.repartitionTypeId,
+    percentage: Number(r.percentage),
+    label: r.label,
+  }));
+  const jalons: AffaireDraftState['jalons'] = (dto.jalons ?? []).map((j: any) => ({
+    label: j.label,
+    description: j.description,
+    montant: Number(j.montant),
+    ordre: j.ordre,
+    datePrevisionnelle: j.datePrevisionnelle,
+  }));
+  const ressources: AffaireDraftState['ressources'] = (dto.ressources ?? []).map((r: any) => ({
+    userId: r.userId,
+    userName: '',
+    resourceType: r.resourceType,
+    rateType: r.rateType,
+    rateAmount: Number(r.rateAmount),
+    rateCurrency: r.rateCurrency,
+    costAmount: r.costAmount != null ? Number(r.costAmount) : undefined,
+  }));
+  const responsables: AffaireDraftState['responsables'] = (dto.responsables ?? []).map((r: any) => ({
+    userId: r.userId,
+    userName: '',
+    isPrimary: r.isPrimary,
+    role: r.role,
+    budgetAllocation: r.budgetAllocation != null ? Number(r.budgetAllocation) : undefined,
+  }));
+  return {
+    id:                          dto.id,
+    paysId:                      dto.paysId ?? 0,
+    clientId:                    dto.clientId,
+    clientName,
+    clientKycDone,
+    intitule:                    dto.intitule ?? '',
+    reference:                   dto.reference,
+    doc360Ref:                   dto.doc360Ref,
+    doc360ServerReference:       dto.doc360Ref,
+    notes:                       dto.notes,
+    billingMode:                 dto.billingMode,
+    billingModeLocked:           dto.billingModeLocked ?? false,
+    billingPeriod:               dto.billingPeriod ?? 'MONTHLY',
+    contractAmount:              dto.contractAmount != null ? Number(dto.contractAmount) : undefined,
+    contractCurrency:            dto.contractCurrency ?? 'EUR',
+    budgetPrevisionnel:          dto.budgetPrevisionnel != null ? Number(dto.budgetPrevisionnel) : undefined,
+    repartitions,
+    repartitionTotal:            repartitions.reduce((s, r) => s + r.percentage, 0),
+    jalons,
+    jalonTotal:                  jalons.reduce((s, j) => s + j.montant, 0),
+    ressources,
+    eligibleCostCategoryIds:     dto.eligibleCostCategoryIds ?? [],
+    eligibleExpenseCategoryIds:  dto.eligibleExpenseCategoryIds ?? [],
+    marginRatePct:               dto.cpMarginRatePct != null ? Number(dto.cpMarginRatePct) : undefined,
+    responsables,
+    activiteId:                  dto.activiteId,
+    disciplineId:                dto.disciplineId,
+    disciplineLabel:             dto.disciplineLabel,
+    disciplineServerRef:         dto.disciplineServerRef,
+    disciplineLevelConcat:       undefined,
+    dateDebutFacturation:        dto.dateDebutFacturation,
+    dateFinContractuelle:        dto.dateFinContractuelle,
+    datePremireEcheance:         dto.datePremireEcheance,
+  };
 }

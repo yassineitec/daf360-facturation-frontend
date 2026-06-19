@@ -94,6 +94,9 @@ export interface CreateAffaireRequest {
   paysId:              number;
   notes?:              string | null;
   doc360Ref?:          string | null;
+  erpReference?:       string | null;
+  contractCurrency?:   string | null;
+  billingPeriod?:      string | null;
 }
 
 export type UpdateAffaireRequest = CreateAffaireRequest;

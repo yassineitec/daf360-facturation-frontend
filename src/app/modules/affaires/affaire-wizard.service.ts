@@ -61,4 +61,21 @@ export class AffaireWizardService {
     return this.http.get<DisciplineDto[]>(`${this.base}/disciplines`,
       { params: { ref }, withCredentials: true });
   }
+
+  updateInfo(id: number, dto: {
+    intitule: string;
+    clientId: number;
+    notes: string | null;
+    doc360Ref: string | null;
+    erpReference: string | null;
+    contractCurrency: string;
+    billingPeriod: string;
+    budgetPrevisionnel: number | null;
+  }): Observable<unknown> {
+    return this.http.patch<unknown>(
+      `${this.base}/${id}`,
+      dto,
+      { withCredentials: true }
+    );
+  }
 }
