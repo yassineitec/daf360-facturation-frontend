@@ -47,7 +47,12 @@ export class WizardStepInfoComponent implements OnInit {
     this.listSvc.getListValues('CURRENCY', 0).subscribe(c => this.currencies.set(c));
     this.clientSvc.getDropdown(0).subscribe(clients => {
       this.allClients.set(clients);
-      this.prefillFromDoc360(clients);
+      if (this.draft.doc360ClientName) {
+        this.prefillFromDoc360(clients);
+      } else if (this.draft.clientId && this.draft.clientName) {
+        // Edit mode: client already selected — show the name in the search input
+        this.clientInputValue.set(this.draft.clientName);
+      }
     });
   }
 
