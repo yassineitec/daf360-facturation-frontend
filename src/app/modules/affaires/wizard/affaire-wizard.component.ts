@@ -137,7 +137,8 @@ export class AffaireWizardComponent implements OnInit {
   }
 
   goPrev(): void {
-    if (this.currentStep() > 1) this.currentStep.update(s => s - 1);
+    const minStep = this.editMode() ? 2 : 1;
+    if (this.currentStep() > minStep) this.currentStep.update(s => s - 1);
   }
 
   ngOnInit(): void {
@@ -163,6 +164,7 @@ export class AffaireWizardComponent implements OnInit {
           )
         );
         this.draftId.set(id);
+        this.currentStep.set(2);
         this.isSaving.set(false);
       },
       error: () => {

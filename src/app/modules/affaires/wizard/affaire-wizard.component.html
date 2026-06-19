@@ -108,7 +108,7 @@
       <div class="wizard-nav">
 
         <daf-button
-          [class.invisible]="currentStep() === 1"
+          [class.invisible]="currentStep() === 1 || (editMode() && currentStep() === 2)"
           [options]="{variant: 'ghost', iconStart: 'arrow_back', label: 'Précédent'}"
           (onClick)="goPrev()">
         </daf-button>
