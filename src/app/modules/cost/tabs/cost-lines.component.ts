@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CostService } from '../cost.service';
 import { CostLineDto, CostLineStatus, COST_STATUS_CONFIG } from '../cost.model';
 import { CostLineFormComponent } from '../modals/cost-line-form.component';
@@ -18,6 +19,7 @@ import { ClientService } from '../../clients/client.service';
 export class CostLinesComponent implements OnInit {
   private readonly svc        = inject(CostService);
   private readonly clientSvc  = inject(ClientService);
+  private readonly router     = inject(Router);
 
   paysId = signal<number>(0);
   lines  = signal<CostLineDto[]>([]);
@@ -78,9 +80,7 @@ export class CostLinesComponent implements OnInit {
   }
 
   openCreate(): void {
-    if (!this.paysId()) return;
-    this.editLine.set(undefined);
-    this.showForm.set(true);
+    this.router.navigate(['/fact/cost/new']);
   }
 
   openEdit(line: CostLineDto): void {
