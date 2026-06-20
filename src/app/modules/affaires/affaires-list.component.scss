@@ -14,8 +14,30 @@
   }
 }
 
-// ── KPI grid (mixin partagé avec 4 colonnes) ──────────────────────────────────
-.kpi-grid { @include kpi-grid(4); }
+// ── Page header ───────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-// ── Bouton "+ Nouvelle Affaire" (mixin partagé) ───────────────────────────────
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-title {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #111827;
+  margin: 0;
+  line-height: 1.2;
+}
+
+// ── Bouton "+ Nouvelle Affaire" ────────────────────────────────────────────────
 .btn-new { @include btn-new($brand-slate); }
+
+// ── KPI grid ──────────────────────────────────────────────────────────────────
+.kpi-grid { @include kpi-grid(4); }
