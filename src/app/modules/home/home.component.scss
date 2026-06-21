@@ -310,3 +310,170 @@
 .mod-card:hover .icon--slate     { background: #1E293B; color: #fff; }
 .mod-card:hover .icon--amber     { background: #653e00; color: #fff; }
 .mod-card:hover .icon--outline   { background: #3e4945; color: #fff; }
+
+// ── Activité Récente ──────────────────────────────────────────────────────────
+// ── Activité Récente — fidèle au HTML de référence ───────────────────────────
+// grid-cols-3, card prend col-span-2 (≈ 2/3)
+.activity-section {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 1024px) { grid-template-columns: 1fr; }
+}
+
+.activity-card {
+  // bg-white/40 + rounded-3xl + border border-white/60 + shadow-inner
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;  // mb-6 = 24px
+  }
+
+  &__title {
+    // font-title-md = 18px / 700
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: $text-dark;
+    margin: 0;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: $brand-green;
+    cursor: pointer;
+    font-family: inherit;
+
+    .material-symbols-outlined { font-size: 14px; vertical-align: middle; }
+    &:hover { text-decoration: underline; }
+  }
+}
+
+// ── Activity list — space-y-4 = 16px gap entre items ─────────────────────────
+.act-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;   // space-y-4
+}
+
+.act-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;          // gap-4
+  padding: 12px;      // p-3
+  border-radius: 16px; // rounded-2xl
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: rgba(255, 255, 255, 0.6); }  // hover:bg-white/60
+
+  &__body { flex: 1; min-width: 0; }
+
+  &__title {
+    font-size: 0.875rem;   // text-sm
+    font-weight: 700;      // font-bold
+    color: $text-dark;     // text-on-surface
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__sub {
+    font-size: 10px;       // text-[10px]
+    color: #64748B;        // text-slate-500
+    margin: 0;
+    font-weight: 400;
+  }
+
+  &__amount {
+    font-size: 0.875rem;   // text-sm
+    font-weight: 700;      // font-bold
+    color: $text-dark;
+    flex-shrink: 0;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  &__more {
+    font-size: 24px;
+    color: #94A3B8;        // text-slate-400
+    flex-shrink: 0;
+  }
+}
+
+// ── Activity icon — w-10 h-10 rounded-full, icon = text-sm (14px) ─────────────
+.act-icon {
+  width: 40px;     // w-10
+  height: 40px;    // h-10
+  border-radius: 999px;   // rounded-full
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .material-symbols-outlined {
+    font-size: 14px;   // text-sm
+    font-variation-settings: 'FILL' 0;
+  }
+
+  // Couleurs fidèles au référence (primary = #006b58)
+  &.act--green { background: rgba(0,107,88,.10);   color: #006b58; }   // bg-success/10 text-primary
+  &.act--blue  { background: rgba(59,130,246,.10); color: #3b82f6; }
+  &.act--teal  { background: rgba(0,107,88,.10);   color: #006b58; }
+  &.act--amber { background: rgba(217,119,6,.10);  color: #D97706; }   // bg-warning/10 text-warning-text
+  &.act--red   { background: rgba(186,26,26,.10);  color: #BA1A1A; }
+  &.act--slate { background: rgba(71,85,105,.08);  color: #64748B; }
+}
+
+// ── Activity skeleton ─────────────────────────────────────────────────────────
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.sk {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.act-skeleton { display: flex; flex-direction: column; gap: 16px; }
+
+.act-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+}
+
+.sk-circle  { width: 40px; height: 40px; border-radius: 999px; flex-shrink: 0; }
+.sk-lines   { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.sk-line    { height: 12px; &--lg { width: 60%; } &--sm { width: 35%; } }
+.sk-amount  { width: 70px; height: 12px; flex-shrink: 0; }
+
+// ── Empty state ────────────────────────────────────────────────────────────────
+.act-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 0;
+  color: $text-muted;
+
+  .material-symbols-outlined { font-size: 36px; color: $text-light; }
+  p { font-size: 0.875rem; font-weight: 600; margin: 0; }
+}

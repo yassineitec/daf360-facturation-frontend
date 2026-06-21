@@ -138,4 +138,57 @@
 
   </div>
 
+  <!-- ── Activité Récente ─────────────────────────────────────────────────── -->
+  <div class="activity-section">
+
+    <div class="activity-card">
+      <div class="activity-card__header">
+        <h5 class="activity-card__title">Activité Récente</h5>
+        <button class="activity-card__link" (click)="navigateTo('/fact/invoicing')">
+          Voir tout <span class="material-symbols-outlined">open_in_new</span>
+        </button>
+      </div>
+
+      @if (loadingActivity()) {
+        <div class="act-skeleton">
+          @for (i of [1,2,3,4]; track i) {
+            <div class="act-skeleton__row">
+              <div class="sk sk-circle"></div>
+              <div class="sk-lines">
+                <div class="sk sk-line sk-line--lg"></div>
+                <div class="sk sk-line sk-line--sm"></div>
+              </div>
+              <div class="sk sk-amount"></div>
+            </div>
+          }
+        </div>
+      } @else if (recentActivity().length === 0) {
+        <div class="act-empty">
+          <span class="material-symbols-outlined">inbox</span>
+          <p>Aucune activité récente</p>
+        </div>
+      } @else {
+        <div class="act-list">
+          @for (item of recentActivity(); track item.invoice.id) {
+            <div class="act-item" (click)="navigateToInvoice(item.invoice.id)">
+              <div [class]="'act-icon ' + item.iconClass">
+                <span class="material-symbols-outlined">{{ item.icon }}</span>
+              </div>
+              <div class="act-item__body">
+                <p class="act-item__title">{{ item.title }}</p>
+                <p class="act-item__sub">{{ item.sub }}</p>
+              </div>
+              @if (item.amount) {
+                <span class="act-item__amount">{{ item.amount }}</span>
+              } @else {
+                <span class="material-symbols-outlined act-item__more">more_vert</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+  </div>
+
 </div>

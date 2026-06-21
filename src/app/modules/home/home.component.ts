@@ -3,6 +3,8 @@ import { TitleCasePipe }   from '@angular/common';
 import { Router }          from '@angular/router';
 import { PaymentService }  from '../payments/payment.service';
 import { PaymentsDashboardStats } from '../payments/payment.model';
+import { InvoiceService }  from '../invoicing/invoice.service';
+import { InvoiceListItem, INVOICE_STATUT_CONFIG } from '../invoicing/invoice.model';
 import { UserStore }       from '../../core/user.store';
 
 interface ModuleDef {
@@ -17,19 +19,42 @@ interface ModuleDef {
   wide?:       boolean;
 }
 
+export interface ActivityItem {
+  icon:      string;
+  iconClass: string;
+  title:     string;
+  sub:       string;
+  amount:    string | null;
+  invoice:   InvoiceListItem;
+}
+
 const MODULE_DEFS: ModuleDef[] = [
-  { path: '/fact/clients',        label: 'Clients',             icon: 'groups',                 iconVariant: 'primary',   stat: '1 284 Clients',           statClass: 'stat--primary',   description: 'Référentiel clients, contrats et conditions de paiement.', permission: null },
-  { path: '/fact/fournisseurs',   label: 'Fournisseurs',        icon: 'inventory_2',            iconVariant: 'secondary', stat: '412 Actifs',              statClass: 'stat--secondary', description: 'Admin, banques et historique des achats.',                  permission: null },
-  { path: '/fact/affaires',       label: 'Affaires',            icon: 'business_center',        iconVariant: 'tertiary',  stat: '86 En cours',             statClass: 'stat--tertiary',  description: 'Gestion de projets, budgets et jalons de facturation.',    permission: 'FACT_CREATE_AFFAIRE' },
-  { path: '/fact/invoicing',      label: 'Facturation',         icon: 'receipt_long',           iconVariant: 'fact',      stat: '',                        statClass: '',                description: 'Création, validation et cycle de vie des factures.',       permission: 'FACT_CREATE_INVOICE' },
-  { path: '/fact/payments',       label: 'Paiements',           icon: 'payments',               iconVariant: 'pay',       stat: '98% Réconcilié',          statClass: 'stat--pay',       description: 'Rapprochement bancaire et suivi des soldes.',              permission: 'FACT_BANK_RECONCILIATION' },
-  { path: '/fact/recouvrement',   label: 'Recouvrement',        icon: 'assignment_late',        iconVariant: 'error',     stat: 'Litiges critiques',       statClass: 'stat--error',     description: 'Relances, campagnes et gestion des litiges.',              permission: null },
-  { path: '/fact/tresorerie',     label: 'Gestion de Trésorerie', icon: 'account_balance_wallet', iconVariant: 'primary', stat: '',                        statClass: '',                description: 'Flux de trésorerie, comptes bancaires et prévisions financières.', permission: null, wide: true },
-  { path: '/fact/subcontracting', label: 'Sous-traitance',      icon: 'handshake',              iconVariant: 'slate',     stat: '24 Contrats',             statClass: 'stat--slate',     description: 'Gestion des sous-traitants, commandes et coûts.',          permission: 'FACT_MANAGE_ST' },
-  { path: '/fact/cost',           label: 'Coûts',               icon: 'trending_down',          iconVariant: 'amber',     stat: '-2.4% vs Budget',         statClass: 'stat--amber',     description: 'Coûts opérationnels, variances et CAPEX/OPEX.',            permission: null },
-  { path: '/fact/reporting',      label: 'Reporting',           icon: 'monitoring',             iconVariant: 'primary',   stat: 'Nouveau rapport prêt',    statClass: 'stat--primary',   description: 'Dashboards financiers, KPIs et analyse de profitabilité.',  permission: 'FACT_VIEW_KPIS' },
-  { path: '/fact/admin',          label: 'Administration',      icon: 'admin_panel_settings',   iconVariant: 'outline',   stat: 'Paramètres sécurisés',    statClass: 'stat--muted',     description: 'Réglages système, devises et workflows de validation.',     permission: 'FACT_VALIDER_BUDGET' },
+  { path: '/fact/clients',        label: 'Clients',             icon: 'groups',                 iconVariant: 'primary',   stat: '1 284 Clients',        statClass: 'stat--primary',   description: 'Référentiel clients, contrats et conditions de paiement.', permission: null },
+  { path: '/fact/fournisseurs',   label: 'Fournisseurs',        icon: 'inventory_2',            iconVariant: 'secondary', stat: '412 Actifs',           statClass: 'stat--secondary', description: 'Admin, banques et historique des achats.',                  permission: null },
+  { path: '/fact/affaires',       label: 'Affaires',            icon: 'business_center',        iconVariant: 'tertiary',  stat: '86 En cours',          statClass: 'stat--tertiary',  description: 'Gestion de projets, budgets et jalons de facturation.',    permission: 'FACT_CREATE_AFFAIRE' },
+  { path: '/fact/invoicing',      label: 'Facturation',         icon: 'receipt_long',           iconVariant: 'fact',      stat: '',                     statClass: '',                description: 'Création, validation et cycle de vie des factures.',       permission: 'FACT_CREATE_INVOICE' },
+  { path: '/fact/payments',       label: 'Paiements',           icon: 'payments',               iconVariant: 'pay',       stat: '98% Réconcilié',       statClass: 'stat--pay',       description: 'Rapprochement bancaire et suivi des soldes.',              permission: 'FACT_BANK_RECONCILIATION' },
+  { path: '/fact/recouvrement',   label: 'Recouvrement',        icon: 'assignment_late',        iconVariant: 'error',     stat: 'Litiges critiques',    statClass: 'stat--error',     description: 'Relances, campagnes et gestion des litiges.',              permission: null },
+  { path: '/fact/tresorerie',     label: 'Gestion de Trésorerie', icon: 'account_balance_wallet', iconVariant: 'primary', stat: '',                     statClass: '',                description: 'Flux de trésorerie, comptes bancaires et prévisions financières.', permission: null, wide: true },
+  { path: '/fact/subcontracting', label: 'Sous-traitance',      icon: 'handshake',              iconVariant: 'slate',     stat: '24 Contrats',          statClass: 'stat--slate',     description: 'Gestion des sous-traitants, commandes et coûts.',          permission: 'FACT_MANAGE_ST' },
+  { path: '/fact/cost',           label: 'Coûts',               icon: 'trending_down',          iconVariant: 'amber',     stat: '-2.4% vs Budget',      statClass: 'stat--amber',     description: 'Coûts opérationnels, variances et CAPEX/OPEX.',            permission: null },
+  { path: '/fact/reporting',      label: 'Reporting',           icon: 'monitoring',             iconVariant: 'primary',   stat: 'Nouveau rapport prêt', statClass: 'stat--primary',   description: 'Dashboards financiers, KPIs et analyse de profitabilité.',  permission: 'FACT_VIEW_KPIS' },
+  { path: '/fact/admin',          label: 'Administration',      icon: 'admin_panel_settings',   iconVariant: 'outline',   stat: 'Paramètres sécurisés', statClass: 'stat--muted',     description: 'Réglages système, devises et workflows de validation.',     permission: 'FACT_VALIDER_BUDGET' },
 ];
+
+const ACTIVITY_CONFIG: Record<string, { icon: string; cls: string }> = {
+  PAID:           { icon: 'check_circle',   cls: 'act--green'  },
+  APPROVED:       { icon: 'verified',       cls: 'act--green'  },
+  EMITTED:        { icon: 'send',           cls: 'act--blue'   },
+  SENT:           { icon: 'mark_email_read',cls: 'act--blue'   },
+  PARTIALLY_PAID: { icon: 'payments',       cls: 'act--teal'   },
+  SUBMITTED:      { icon: 'hourglass_top',  cls: 'act--amber'  },
+  RETURNED:       { icon: 'undo',           cls: 'act--amber'  },
+  DRAFT:          { icon: 'edit_note',      cls: 'act--slate'  },
+  DISPUTED:       { icon: 'gavel',          cls: 'act--red'    },
+  CANCELLED:      { icon: 'cancel',         cls: 'act--red'    },
+  CREDIT_NOTED:   { icon: 'receipt',        cls: 'act--slate'  },
+};
 
 @Component({
   selector: 'app-home',
@@ -39,12 +64,15 @@ const MODULE_DEFS: ModuleDef[] = [
   styleUrl: './home.component.scss',
 })
 export class HomeComponent implements OnInit {
-  private readonly svc    = inject(PaymentService);
-  private readonly router = inject(Router);
-  readonly store          = inject(UserStore);
+  private readonly paymentSvc  = inject(PaymentService);
+  private readonly invoiceSvc  = inject(InvoiceService);
+  private readonly router      = inject(Router);
+  readonly store               = inject(UserStore);
 
-  stats        = signal<PaymentsDashboardStats | null>(null);
-  loadingStats = signal(true);
+  stats           = signal<PaymentsDashboardStats | null>(null);
+  loadingStats    = signal(true);
+  recentActivity  = signal<ActivityItem[]>([]);
+  loadingActivity = signal(true);
 
   readonly today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -61,13 +89,34 @@ export class HomeComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.svc.getStats().subscribe({
+    this.paymentSvc.getStats().subscribe({
       next:  s  => { this.stats.set(s); this.loadingStats.set(false); },
       error: () => this.loadingStats.set(false),
     });
+
+    this.invoiceSvc.getInvoices({ page: 0, size: 6, statut: null, from: null, to: null, search: null }).subscribe({
+      next: res => {
+        const items: ActivityItem[] = res.content.map(inv => {
+          const cfg = ACTIVITY_CONFIG[inv.statut] ?? { icon: 'receipt_long', cls: 'act--slate' };
+          const statutLabel = INVOICE_STATUT_CONFIG[inv.statut]?.label ?? inv.statut;
+          return {
+            icon:      cfg.icon,
+            iconClass: cfg.cls,
+            title:     `Facture ${inv.invoiceNumber ?? '(brouillon)'} — ${inv.clientNom ?? '—'}`,
+            sub:       `${statutLabel}${inv.dateEmission ? ' · ' + this.fmtDate(inv.dateEmission) : ''}`,
+            amount:    inv.montantTtc ? this.fmt(inv.montantTtc, inv.devise) : null,
+            invoice:   inv,
+          };
+        });
+        this.recentActivity.set(items);
+        this.loadingActivity.set(false);
+      },
+      error: () => this.loadingActivity.set(false),
+    });
   }
 
-  navigateTo(path: string): void { this.router.navigate([path]); }
+  navigateTo(path: string):      void { this.router.navigate([path]); }
+  navigateToInvoice(id: number): void { this.router.navigate(['/fact/invoicing', id]); }
 
   fmt(v: number | undefined | null, devise = 'TND'): string {
     if (v == null) return '—';
@@ -75,5 +124,9 @@ export class HomeComponent implements OnInit {
       style: 'currency', currency: devise,
       minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(v);
+  }
+
+  fmtDate(d: string): string {
+    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }
