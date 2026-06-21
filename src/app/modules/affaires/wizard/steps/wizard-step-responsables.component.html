@@ -6,15 +6,15 @@
       <span class="section-icon material-symbols-outlined">group</span>
       <div>
         <div class="section-title">Responsables de l'affaire *</div>
-        <div class="section-sub">Ajoutez au moins un responsable principal</div>
+        <div class="section-sub">Chaque ligne = un responsable avec une activité. Le même collaborateur peut apparaître sur plusieurs lignes.</div>
       </div>
     </div>
 
-    <!-- Budget overview bar (shown once project budget is set) -->
+    <!-- Budget overview bar -->
     @if (draft.budgetPrevisionnel) {
       <div class="budget-bar-card"
         [ngClass]="{
-          'budget-bar-card--ok':   budgetMatchesProject(),
+          'budget-bar-card--ok':    budgetMatchesProject(),
           'budget-bar-card--under': !budgetMatchesProject() && budgetRemaining() > 0,
           'budget-bar-card--over':  !budgetMatchesProject() && budgetRemaining() < 0
         }">
@@ -55,45 +55,56 @@
       </div>
     }
 
-    <!-- Responsable cards -->
+    <!-- Responsable rows -->
     @if (draft.responsables.length > 0) {
       <div class="resp-list">
-        @for (resp of draft.responsables; track resp.userId) {
+        @for (resp of draft.responsables; track $index; let idx = $index) {
           <div class="resp-item" [class.is-primary]="resp.isPrimary">
 
             <!-- Header row -->
             <div class="resp-header">
-              <div class="resp-avatar">{{ (getUserName(resp.userId) || '#')[0].toUpperCase() }}</div>
+              <div class="resp-avatar">
+                {{ (resp.userName || '#')[0].toUpperCase() }}
+              </div>
               <div class="resp-name-wrap">
-                <span class="resp-name">{{ getUserName(resp.userId) }}</span>
-                @if (resp.isPrimary) {
-                  <span class="primary-badge">
-                    <span class="material-symbols-outlined">star</span>Principal
-                  </span>
-                }
+                <span class="resp-name">{{ resp.userName || 'Ligne ' + (idx + 1) }}</span>
               </div>
               <div class="resp-header-actions">
                 @if (!resp.isPrimary) {
                   <button class="set-primary-btn" type="button"
                     title="Définir comme principal"
-                    (click)="setPrimary(resp.userId)">
+                    (click)="setPrimary(idx)">
                     <span class="material-symbols-outlined">star_border</span>
                   </button>
                 }
-                <button class="remove-btn" type="button" (click)="removeUser(resp.userId)">
+                <button class="remove-btn" type="button" (click)="removeRow(idx)">
                   <span class="material-symbols-outlined">close</span>
                 </button>
               </div>
             </div>
 
-            <!-- Fields row: role + budget -->
+            <!-- User select -->
+            <div class="resp-fields">
+              <div class="resp-field resp-field--full">
+                <label class="resp-field-label">Collaborateur *</label>
+                <select class="form-input"
+                  [value]="resp.userId || ''"
+                  (change)="updateUser(idx, +$any($event.target).value)">
+                  <option value="">— Sélectionner —</option>
+                  @for (u of allUsers(); track u.id) {
+                    <option [value]="u.id">{{ u.fullName }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Role + budget -->
             <div class="resp-fields">
               <div class="resp-field">
                 <label class="resp-field-label">Rôle</label>
-                <input class="form-input resp-role-input" type="text"
-                  placeholder="Chef de projet, Coordinateur…"
+                <input class="form-input resp-role-input resp-role-input--readonly" type="text"
                   [value]="resp.role ?? ''"
-                  (input)="updateRole(resp.userId, $any($event.target).value)">
+                  readonly>
               </div>
 
               @if (draft.budgetPrevisionnel) {
@@ -105,41 +116,89 @@
                     <input class="form-input budget-input" type="number"
                       min="0" step="0.001"
                       [value]="resp.budgetAllocation ?? ''"
-                      (input)="updateBudget(resp.userId, $any($event.target).value)">
+                      (input)="updateBudget(idx, $any($event.target).value)">
                     <span class="budget-pct">{{ getBudgetPct(resp.budgetAllocation) | number:'1.1-1' }} %</span>
                   </div>
                 </div>
               }
             </div>
 
+            <!-- Activité (single select) + Discipline (single select or free text) -->
+            <div class="resp-fields">
+              <div class="resp-field">
+                <label class="resp-field-label">
+                  Activité *
+                  @if (!resp.activiteId) {
+                    <span class="field-required-hint">— obligatoire</span>
+                  }
+                </label>
+                <select class="form-input"
+                  [value]="resp.activiteId ? resp.activiteId + '|' + resp.activiteLabel : ''"
+                  (change)="onActiviteChange(idx, $any($event.target).value)">
+                  <option value="">— Sélectionner —</option>
+                  @for (a of activites(); track a.id) {
+                    <option [value]="a.id + '|' + a.labelFr">{{ a.labelFr }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="resp-field">
+                <label class="resp-field-label">
+                  Discipline
+                  @if (draft.doc360ServerReference) {
+                    <span class="doc360-badge">DOC360</span>
+                  }
+                </label>
+
+                @if (!draft.doc360ServerReference) {
+                  <input class="form-input" type="text"
+                    placeholder="Saisie libre…"
+                    [value]="resp.disciplineLabel ?? ''"
+                    (input)="onFreeDisciplineChange(idx, $any($event.target).value)">
+
+                } @else if (isLoadingDisc()) {
+                  <span class="disc-loading">
+                    <span class="material-symbols-outlined spin">progress_activity</span>
+                    Chargement…
+                  </span>
+
+                } @else if (disciplines().length > 0) {
+                  <select class="form-input"
+                    [value]="resp.disciplineId && resp.disciplineId > 0 ? resp.disciplineId + '|' + resp.disciplineLabel : ''"
+                    (change)="onDisciplineChange(idx, $any($event.target).value)">
+                    <option value="">— Sélectionner —</option>
+                    @for (d of disciplines(); track d.id) {
+                      <option [value]="d.id + '|' + d.levelLabel">{{ d.levelLabel }}</option>
+                    }
+                  </select>
+
+                } @else {
+                  <input class="form-input" type="text"
+                    [placeholder]="!isDisciplineAvail() ? 'DOC360 indisponible — saisie libre…' : 'Aucune discipline — saisie libre…'"
+                    [value]="resp.disciplineLabel ?? ''"
+                    (input)="onFreeDisciplineChange(idx, $any($event.target).value)">
+                }
+              </div>
+            </div>
+
+            <!-- Duplicate pair error -->
+            @if (hasDuplicatePair(idx)) {
+              <div class="duplicate-error">
+                <span class="material-symbols-outlined">error</span>
+                Cette combinaison collaborateur + activité existe déjà dans une autre ligne.
+              </div>
+            }
+
           </div>
         }
       </div>
     }
 
-    <!-- Add user typeahead -->
-    <div class="user-search-wrapper">
-      <div class="user-search-field">
-        <span class="material-symbols-outlined">person_add</span>
-        <input class="user-search-input" type="text"
-          placeholder="Rechercher un collaborateur…"
-          [value]="userQuery"
-          (input)="onUserInput($any($event.target).value)"
-          (focus)="showAllUsers()"
-          (blur)="scheduleHideUsers()"
-          autocomplete="off">
-      </div>
-      @if (userResults().length > 0) {
-        <div class="user-dropdown">
-          @for (u of userResults(); track u.id) {
-            <button class="user-item" type="button" (mousedown)="addUser(u)">
-              <span class="user-avatar">{{ u.fullName[0].toUpperCase() }}</span>
-              <span class="user-name">{{ u.fullName }}</span>
-            </button>
-          }
-        </div>
-      }
-    </div>
+    <!-- Add row button -->
+    <button class="btn-add-row" type="button" (click)="addRow()">
+      <span class="material-symbols-outlined">add</span>
+      Ajouter une ligne
+    </button>
 
     <!-- Action buttons -->
     <div class="resp-actions-row">
@@ -170,95 +229,6 @@
         </p>
       </div>
     }
-  </div>
-
-  <!-- ── SECTION: Classification ────────────────────────────────── -->
-  <div class="step-section">
-    <div class="section-header">
-      <span class="section-icon material-symbols-outlined">account_balance_wallet</span>
-      <div>
-        <div class="section-title">Classification de l'affaire</div>
-        <div class="section-sub">Activité et discipline du projet</div>
-      </div>
-    </div>
-
-    <div class="field-grid">
-
-      <!-- Activité -->
-      <div class="field">
-        <label class="field-label">Activité</label>
-        <select class="form-select"
-          [value]="draft.activiteId ?? ''"
-          (change)="onActiviteChange($any($event.target).value)">
-          <option value="">— Sélectionner —</option>
-          @for (a of activites(); track a.id) {
-            <option [value]="a.id">{{ a.labelFr }}</option>
-          }
-        </select>
-      </div>
-
-      <!-- Discipline -->
-      <div class="field">
-        <label class="field-label">
-          Discipline
-          @if (draft.doc360ServerReference) {
-            <span class="doc360-badge">DOC360</span>
-          }
-        </label>
-
-        @if (!draft.doc360ServerReference) {
-          <!-- No DOC360 project → free text -->
-          <input class="form-input" type="text"
-            placeholder="Saisie libre…"
-            [value]="draft.disciplineLabel ?? ''"
-            (input)="onFreeDisciplineChange($any($event.target).value)">
-          <div class="field-hint">Sélectionnez un projet DOC360 à l'étape 1 pour accéder aux disciplines.</div>
-
-        } @else if (isLoadingDisc()) {
-          <!-- Loading -->
-          <div class="form-input disc-loading">
-            <span class="material-symbols-outlined spin">progress_activity</span>
-            Chargement…
-          </div>
-
-        } @else if (!isDisciplineAvail() || disciplines().length === 0) {
-          <!-- ODS unavailable or no disciplines → free text -->
-          <input class="form-input"
-            [class.input-warn]="!isDisciplineAvail()"
-            type="text"
-            [placeholder]="!isDisciplineAvail() ? 'DOC360 indisponible — saisie libre…' : 'Aucune discipline — saisie libre…'"
-            [value]="draft.disciplineLabel ?? ''"
-            (input)="onFreeDisciplineChange($any($event.target).value)">
-          @if (!isDisciplineAvail()) {
-            <div class="field-hint field-hint--warn">
-              <span class="material-symbols-outlined">cloud_off</span>
-              DOC360 indisponible
-            </div>
-          }
-
-        } @else {
-          <!-- Real dropdown from DOC360 -->
-          <select class="form-select"
-            [value]="draft.disciplineId ?? ''"
-            (change)="onDisciplineChange($any($event.target).value)">
-            <option value="">— Sélectionner —</option>
-            @for (d of disciplines(); track d.id) {
-              <option [value]="d.id">
-                {{ d.levelLabel }}{{ d.levelConcat ? ' (' + d.levelConcat + ')' : '' }}
-              </option>
-            }
-          </select>
-          @if (draft.disciplineId && draft.disciplineLabel) {
-            <div class="field-hint field-hint--ok">
-              <span class="material-symbols-outlined">check_circle</span>
-              {{ draft.disciplineLabel }}
-              @if (draft.disciplineLevelConcat) { — {{ draft.disciplineLevelConcat }} }
-            </div>
-          }
-        }
-      </div>
-
-    </div>
   </div>
 
 </div>

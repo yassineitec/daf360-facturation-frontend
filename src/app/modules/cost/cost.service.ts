@@ -1,11 +1,14 @@
 import { Injectable, inject }            from '@angular/core';
 import { HttpClient, HttpParams }        from '@angular/common/http';
-import { Observable, catchError, of }    from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 import { environment }                   from '../../../environments/environment';
 import {
-  CostCategoryDto, UpdateCostCategoryLabelRequest, CostApprovalThresholdDto,
+  CostCategoryDto, UpdateCostCategoryLabelRequest, CreateCostCategoryRequest,
+  CostApprovalThresholdDto, CreateCostApprovalThresholdRequest,
   CostLineDto, CreateCostLineRequest,
   CostImportResult, PageResponse,
+  CostAttachmentDto, ForexPreviewDto, CircuitPreviewDto,
+  ListValueDto, SupplierSearchItem,
 } from './cost.model';
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +30,14 @@ export class CostService {
     return this.http.patch<CostCategoryDto>(`${this.base}/cost-categories/${id}`, dto);
   }
 
+  createCategory(dto: CreateCostCategoryRequest): Observable<CostCategoryDto> {
+    return this.http.post<CostCategoryDto>(`${this.base}/cost-categories`, dto);
+  }
+
+  deactivateCategory(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/cost-categories/${id}`);
+  }
+
   // ── Approval thresholds ───────────────────────────────────────────────────────
 
   getThresholds(paysId: number): Observable<CostApprovalThresholdDto[]> {
@@ -36,10 +47,18 @@ export class CostService {
     ).pipe(catchError(() => of([] as CostApprovalThresholdDto[])));
   }
 
+  createThreshold(dto: CreateCostApprovalThresholdRequest): Observable<CostApprovalThresholdDto> {
+    return this.http.post<CostApprovalThresholdDto>(`${this.base}/cost/approval-thresholds`, dto);
+  }
+
   updateThreshold(id: number, patch: { minAmountEur?: number; maxAmountEur?: number | null; approverRoleCode?: string }): Observable<CostApprovalThresholdDto> {
     return this.http.patch<CostApprovalThresholdDto>(
       `${this.base}/cost/approval-thresholds/${id}`, patch,
     );
+  }
+
+  deactivateThreshold(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/cost/approval-thresholds/${id}`);
   }
 
   // ── Cost lines ───────────────────────────────────────────────────────────────
@@ -123,6 +142,62 @@ export class CostService {
     form.append('file', file);
     form.append('paysId', String(paysId));
     return this.http.post<CostImportResult>(`${this.base}/cost-lines/import`, form);
+  }
+
+  // ── D3-127: Forex preview ──────────────────────────────────────────────────
+
+  getForexPreview(amount: number, currency: string): Observable<ForexPreviewDto> {
+    const params = new HttpParams()
+      .set('amount', String(amount))
+      .set('currency', currency);
+    return this.http.get<ForexPreviewDto>(`${this.base}/cost-lines/forex-preview`, { params });
+  }
+
+  getCircuitPreview(amountEur: number, paysId: number, categoryId?: number | null): Observable<CircuitPreviewDto> {
+    let params = new HttpParams()
+      .set('amountEur', String(amountEur))
+      .set('paysId', String(paysId));
+    if (categoryId != null) params = params.set('categoryId', String(categoryId));
+    return this.http.get<CircuitPreviewDto>(`${this.base}/cost-lines/circuit-preview`, { params });
+  }
+
+  // ── D3-124/125: Attachments ────────────────────────────────────────────────
+
+  addAttachment(costId: number, file: File): Observable<CostAttachmentDto> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<CostAttachmentDto>(`${this.base}/cost-lines/${costId}/attachments`, formData);
+  }
+
+  listAttachments(costId: number): Observable<CostAttachmentDto[]> {
+    return this.http.get<CostAttachmentDto[]>(`${this.base}/cost-lines/${costId}/attachments`).pipe(
+      catchError(() => of([] as CostAttachmentDto[])),
+    );
+  }
+
+  removeAttachment(costId: number, attachId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/cost-lines/${costId}/attachments/${attachId}`);
+  }
+
+  // ── D3-112: Configurable list values ─────────────────────────────────────────
+
+  getListValues(typeCode: string, paysId?: number): Observable<ListValueDto[]> {
+    if (paysId == null) return of([]);
+    const params = new HttpParams().set('pays', String(paysId));
+    return this.http.get<ListValueDto[]>(`${this.base}/lists/${typeCode}`, { params }).pipe(
+      catchError(() => of([] as ListValueDto[])),
+    );
+  }
+
+  // ── D3-113: Supplier search autocomplete ──────────────────────────────────────
+
+  searchSuppliers(paysId: number, q?: string): Observable<SupplierSearchItem[]> {
+    let params = new HttpParams().set('paysId', String(paysId)).set('size', '15');
+    if (q) params = params.set('q', q);
+    return this.http.get<{ content: SupplierSearchItem[] }>(`${this.base}/suppliers/search`, { params }).pipe(
+      map(page => page.content),
+      catchError(() => of([] as SupplierSearchItem[])),
+    );
   }
 
   downloadCsvTemplate(): void {

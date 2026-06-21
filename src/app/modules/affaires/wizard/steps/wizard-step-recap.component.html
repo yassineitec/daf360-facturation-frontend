@@ -89,13 +89,23 @@
             </tr>
           </thead>
           <tbody>
-            @for (r of draft.responsables; track r.userId) {
+            @for (r of draft.responsables; track $index) {
               <tr>
                 <td>
                   <span class="recap-jalon-label">
                     @if (r.isPrimary) { <span class="primary-star">★ </span> }
                     {{ r.userName }}
                   </span>
+                  @if (r.activiteLabel) {
+                    <p class="recap-resp-tags">
+                      <span class="recap-tag recap-tag--teal">{{ r.activiteLabel }}</span>
+                    </p>
+                  }
+                  @if (r.disciplineLabel) {
+                    <p class="recap-resp-tags">
+                      <span class="recap-tag recap-tag--purple">{{ r.disciplineLabel }}</span>
+                    </p>
+                  }
                 </td>
                 <td class="recap-date">{{ r.role || '—' }}</td>
                 @if (draft.budgetPrevisionnel) {
@@ -123,26 +133,6 @@
         </table>
       </div>
 
-      @if (draft.activiteId || draft.disciplineLabel) {
-        <div class="recap-grid" style="padding: 12px 16px 4px">
-          @if (draft.activiteId) {
-            <div class="recap-field">
-              <p class="recap-label">Activité</p>
-              <p class="recap-value">ID #{{ draft.activiteId }}</p>
-            </div>
-          }
-          @if (draft.disciplineLabel) {
-            <div class="recap-field">
-              <p class="recap-label">Discipline</p>
-              <p class="recap-value">{{ draft.disciplineLabel }}
-                @if (draft.disciplineLevelConcat) {
-                  <span class="recap-role"> — {{ draft.disciplineLevelConcat }}</span>
-                }
-              </p>
-            </div>
-          }
-        </div>
-      }
     </div>
   }
 

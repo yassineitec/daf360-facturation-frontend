@@ -38,6 +38,10 @@ export class ApprovalQueueComponent implements OnInit {
   serverError = signal<string | null>(null);
   searchQuery = signal('');
 
+  urgentCount = computed(() =>
+    this.pending().filter(l => l.approvalLevelRequired === 'L3' || l.approvalLevelRequired === 'L4').length
+  );
+
   modalLine   = signal<CostLineDto | null>(null);
   modalAction = signal<ApproveAction>('approve');
   modalLevel  = signal<string>('L2');
@@ -52,12 +56,16 @@ export class ApprovalQueueComponent implements OnInit {
     );
   });
 
-  urgentCount  = computed(() => this.pending().filter(l => this.priorityOf(l) === 'urgent').length);
   pendingCount = computed(() => this.pending().length);
 
   ngOnInit(): void {
     this.clientSvc.getMyPays().subscribe({
-      next: id => { if (id != null && id > 0) this.paysId.set(id); this.load(); },
+      next: paysId => {
+        if (paysId != null && paysId > 0) {
+          this.paysId.set(paysId);
+        }
+        this.load();
+      },
       error: () => this.load(),
     });
   }

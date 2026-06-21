@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @source "./app/**/*.html";
 @source "./app/**/*.ts";
+@source "../node_modules/@khalilrebhiitec/daf360/fesm2022/khalilrebhiitec-daf360.mjs";
 
 /* ── DAF360 design tokens (Material You — matches reference design) ─────── */
 @theme {
@@ -119,3 +120,22 @@ html, body {
   -webkit-font-smoothing: antialiased;
   vertical-align: middle;
 }
+
+/* ── D3-115 cost approval queue ──────────────────────────────────────── */
+.lifted-card {
+  background: white;
+  border: 1px solid #F0F4F8;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05),
+              0 4px 6px -2px rgba(0,0,0,0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.lifted-card:hover {
+  transform: scale(1.01) translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1),
+              0 10px 10px -5px rgba(0,0,0,0.04);
+}
+.primary-fab-shadow {
+  box-shadow: 0 8px 16px rgba(26,107,124,0.4);
+}
+.active-icon { font-variation-settings: 'FILL' 1; }

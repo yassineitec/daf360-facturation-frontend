@@ -14,11 +14,12 @@
       "sourceRoot": "src",
       "prefix": "app",
       "architect": {
-        "build": {
+        "esbuild": {
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
+            "outputPath": "dist/daf360-facturation",
             "assets": [
               {
                 "glob": "**/*",
@@ -28,12 +29,21 @@
             "styles": [
               "src/styles.css"
             ],
+            "polyfills": [
+              "es-module-shims"
+            ],
             "security": {
               "allowedHosts": []
             }
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.production.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -46,7 +56,7 @@
                   "maximumError": "14kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "media"
             },
             "development": {
               "optimization": false,
@@ -56,20 +66,43 @@
           },
           "defaultConfiguration": "production"
         },
-        "serve": {
+        "build": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {},
+          "configurations": {
+            "production": {
+              "target": "daf360-facturation-frontend:esbuild:production"
+            },
+            "development": {
+              "target": "daf360-facturation-frontend:esbuild:development",
+              "dev": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve-original": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "port": 4202
+            "port": 4204
           },
           "configurations": {
             "production": {
-              "buildTarget": "daf360-facturation-frontend:build:production"
+              "buildTarget": "daf360-facturation-frontend:esbuild:production"
             },
             "development": {
-              "buildTarget": "daf360-facturation-frontend:build:development"
+              "buildTarget": "daf360-facturation-frontend:esbuild:development"
             }
           },
           "defaultConfiguration": "development"
+        },
+        "serve": {
+          "builder": "@angular-architects/native-federation:build",
+          "options": {
+            "target": "daf360-facturation-frontend:serve-original:development",
+            "rebuildDelay": 500,
+            "dev": true,
+            "port": 4204
+          }
         },
         "test": {
           "builder": "@angular/build:unit-test"

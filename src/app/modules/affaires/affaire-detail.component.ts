@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { AffaireService } from './affaire.service';
+import { AffaireWizardService } from './affaire-wizard.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto,
   STATUT_TRANSITIONS, STATUT_LABELS, TYPE_LABELS,
@@ -25,14 +26,17 @@ export class AffaireDetailComponent implements OnInit {
   // Bound from route param via withComponentInputBinding()
   id = input<string>();
 
-  private readonly svc    = inject(AffaireService);
-  private readonly store  = inject(UserStore);
-  private readonly router = inject(Router);
+  private readonly svc       = inject(AffaireService);
+  private readonly wizardSvc = inject(AffaireWizardService);
+  private readonly store     = inject(UserStore);
+  private readonly router    = inject(Router);
 
   affaire      = signal<AffaireDetail | null>(null);
   raf          = signal<RafDetailsDto | null>(null);
   kpis         = signal<AffaireKpisDto | null>(null);
   tsList       = signal<TsDto[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  draft        = signal<any>(null);
 
   loading      = signal(true);
   error        = signal<string | null>(null);
@@ -93,6 +97,7 @@ export class AffaireDetailComponent implements OnInit {
         this.loadRaf();
         this.loadKpis();
         this.loadTs();
+        this.loadDraft();
       },
       error: () => {
         this.error.set('Impossible de charger l\'affaire.');
@@ -111,6 +116,12 @@ export class AffaireDetailComponent implements OnInit {
 
   loadTs(): void {
     this.svc.getTS(this.numId).subscribe({ next: ts => this.tsList.set(ts) });
+  }
+
+  loadDraft(): void {
+    this.wizardSvc.loadDraft(this.numId).subscribe({
+      next: dto => this.draft.set(dto),
+    });
   }
 
   toggleSection(key: string): void {

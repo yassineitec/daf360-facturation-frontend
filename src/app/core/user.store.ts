@@ -20,10 +20,14 @@ export class UserStore {
   readonly user            = this._me.asReadonly();
   readonly isAuthenticated = computed(() => this._me() !== null);
   readonly permissions     = computed(() => this._me()?.permissions ?? []);
+  readonly isAdmin         = computed(() =>
+    this._me()?.roleName?.toLowerCase() === 'administrateur'
+  );
 
   constructor(private http: HttpClient) {}
 
   hasPermission(code: string): boolean {
+    if (this.isAdmin()) return true;
     return this.permissions().includes(code);
   }
 

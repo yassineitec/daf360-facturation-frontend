@@ -5,14 +5,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CostService } from '../cost.service';
-import { CostLineDto, CostLineStatus, COST_STATUS_CONFIG } from '../cost.model';
-import { CostLineFormComponent } from '../modals/cost-line-form.component';
+import {
+  CostLineDto, CostLineStatus, COST_STATUS_CONFIG, CostCategoryDto,
+} from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 
 @Component({
   selector: 'app-cost-lines',
   standalone: true,
-  imports: [CommonModule, FormsModule, CostLineFormComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './cost-lines.component.html',
   styleUrl: './cost-lines.component.scss',
 })
@@ -30,11 +31,16 @@ export class CostLinesComponent implements OnInit {
   statusFilter = signal<string>('');
   isLoading    = signal(false);
   serverError  = signal<string | null>(null);
-
-  showForm     = signal(false);
-  editLine     = signal<CostLineDto | undefined>(undefined);
-
   actionError  = signal<string | null>(null);
+
+  categories  = signal<CostCategoryDto[]>([]);
+  categoryMap = computed(() => new Map(this.categories().map(c => [c.id, c.labelFr])));
+
+  draftCount    = computed(() => this.lines().filter(l => l.status === 'DRAFT').length);
+  pendingCount  = computed(() => this.lines().filter(l => l.status === 'SUBMITTED').length);
+  approvedCount = computed(() =>
+    this.lines().filter(l => l.status === 'APPROVED' || l.status === 'VALIDATED' || l.status === 'POSTED').length
+  );
 
   readonly statusOptions = Object.entries(COST_STATUS_CONFIG).map(([k, v]) => ({ code: k, label: v.label }));
 
@@ -44,6 +50,10 @@ export class CostLinesComponent implements OnInit {
         if (paysId != null && paysId > 0) {
           this.paysId.set(paysId);
           this.load();
+          this.svc.getCategories(paysId).subscribe({
+            next: cats => this.categories.set(cats),
+            error: () => {},
+          });
         } else {
           this.serverError.set('Pays introuvable pour votre compte.');
         }
@@ -84,17 +94,11 @@ export class CostLinesComponent implements OnInit {
   }
 
   openEdit(line: CostLineDto): void {
-    if (!this.paysId()) return;
-    this.editLine.set(line);
-    this.showForm.set(true);
+    this.router.navigate(['/fact/cost', line.id, 'edit']);
   }
 
-  onSaved(saved: CostLineDto): void {
-    this.showForm.set(false);
-    this.load();
-  }
-
-  submit(line: CostLineDto): void {
+  submit(line: CostLineDto, event: Event): void {
+    event.stopPropagation();
     this.actionError.set(null);
     this.svc.submitCostLine(line.id).subscribe({
       next: () => this.load(),
@@ -102,15 +106,13 @@ export class CostLinesComponent implements OnInit {
     });
   }
 
-  delete(line: CostLineDto): void {
-    // Only DRAFT lines can be deleted; backend enforces
-    if (!confirm(`Supprimer la ligne "${line.label}" ?`)) return;
-    // No delete endpoint yet — placeholder
-    this.actionError.set('La suppression n\'est pas encore disponible.');
+  getCategoryLabel(id: number | null): string {
+    if (id == null) return '—';
+    return this.categoryMap().get(id) ?? `Cat. ${id}`;
   }
 
   statusConfig(status: string) {
-    return COST_STATUS_CONFIG[status as CostLineStatus] ?? { label: status, color: '#94a3b8', bg: '#f1f5f9' };
+    return COST_STATUS_CONFIG[status as CostLineStatus] ?? { label: status, bg: '#f1f5f9', text: '#475569' };
   }
 
   get totalPages(): number { return Math.ceil(this.total() / this.size); }
@@ -137,5 +139,14 @@ export class CostLinesComponent implements OnInit {
     } catch {
       return `${amount} ${currency}`;
     }
+  }
+
+  formatDate(date: string | null): string {
+    if (!date) return '—';
+    try {
+      return new Date(date).toLocaleDateString('fr-FR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+      });
+    } catch { return date; }
   }
 }

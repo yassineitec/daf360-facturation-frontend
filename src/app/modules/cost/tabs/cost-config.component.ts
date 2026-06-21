@@ -8,7 +8,7 @@ import { FactListService } from '../../../core/fact-list.service';
 import { ClientService } from '../../clients/client.service';
 import {
   CostCategoryDto, CostApprovalThresholdDto, ListValueDto, ListTypeDto,
-  UpdateCostCategoryLabelRequest,
+  UpdateCostCategoryLabelRequest, CreateCostCategoryRequest, CreateCostApprovalThresholdRequest,
 } from '../cost.model';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import { forkJoin } from 'rxjs';
@@ -30,27 +30,35 @@ export class CostConfigComponent implements OnInit {
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);
 
-  // Thresholds
-  thresholds      = signal<CostApprovalThresholdDto[]>([]);
-  editThreshold   = signal<{ [id: number]: Partial<CostApprovalThresholdDto> }>({});
-  thresholdSaving = signal<number | null>(null);
-  thresholdError  = signal<string | null>(null);
+  // ── Thresholds ────────────────────────────────────────────────────────────
+  thresholds           = signal<CostApprovalThresholdDto[]>([]);
+  editThreshold        = signal<{ [id: number]: Partial<CostApprovalThresholdDto> }>({});
+  thresholdSaving      = signal<number | null>(null);
+  thresholdError       = signal<string | null>(null);
+  showAddThreshold     = signal(false);
+  isCreatingThreshold  = signal(false);
+  createThresholdError = signal<string | null>(null);
+  newThreshold = { level: 'L2', minAmountEur: null as number | null, maxAmountEur: null as number | null, approverRoleCode: '' };
 
-  // Categories
-  categories        = signal<CostCategoryDto[]>([]);
-  editingCategoryId = signal<number | null>(null);
-  isSavingCategory  = signal(false);
-  categoryEditForm  = signal<UpdateCostCategoryLabelRequest>({});
+  // ── Categories ────────────────────────────────────────────────────────────
+  categories         = signal<CostCategoryDto[]>([]);
+  editingCategoryId  = signal<number | null>(null);
+  isSavingCategory   = signal(false);
+  categoryEditForm   = signal<UpdateCostCategoryLabelRequest>({});
+  showAddCategory    = signal(false);
+  isCreatingCategory = signal(false);
+  createCatError     = signal<string | null>(null);
+  newCat = { code: '', labelFr: '', labelEn: '', categoryNumber: null as number | null, isCapex: false, isDirect: false, isOverhead: false };
 
-  // List management
+  // ── List management ───────────────────────────────────────────────────────
   activeListTab = signal<ListTab>('CURRENCY');
   listValues    = signal<ListValueDto[]>([]);
   listTypes     = signal<ListTypeDto[]>([]);
   listLoading   = signal(false);
   listError     = signal<string | null>(null);
 
-  newValue   = { code: '', labelFr: '', labelEn: '', isDefault: false };
-  isCreating = signal(false);
+  newValue    = { code: '', labelFr: '', labelEn: '', isDefault: false };
+  isCreating  = signal(false);
   createError = signal<string | null>(null);
 
   readonly LIST_TABS: ListTab[] = ['CURRENCY', 'COST_TYPE', 'PAYMENT_METHOD', 'RECURRENCE_FREQUENCY'];
@@ -93,6 +101,8 @@ export class CostConfigComponent implements OnInit {
     this.paysId.set(id);
     this.editThreshold.set({});
     this.editingCategoryId.set(null);
+    this.showAddThreshold.set(false);
+    this.showAddCategory.set(false);
     this.loadAll();
   }
 
@@ -118,7 +128,7 @@ export class CostConfigComponent implements OnInit {
     this.loadListTab(this.activeListTab());
   }
 
-  // ── Threshold editing ──────────────────────────────────────────────────────
+  // ── Threshold CRUD ────────────────────────────────────────────────────────
 
   getEdit(id: number): Partial<CostApprovalThresholdDto> {
     return this.editThreshold()[id] ?? {};
@@ -129,6 +139,7 @@ export class CostConfigComponent implements OnInit {
   }
 
   startEdit(t: CostApprovalThresholdDto): void {
+    this.showAddThreshold.set(false);
     this.editThreshold.update(m => ({
       ...m,
       [t.id]: { minAmountEur: t.minAmountEur, maxAmountEur: t.maxAmountEur, approverRoleCode: t.approverRoleCode },
@@ -157,9 +168,48 @@ export class CostConfigComponent implements OnInit {
     this.editThreshold.update(m => { const c = { ...m }; delete c[id]; return c; });
   }
 
-  // ── Category label editing ────────────────────────────────────────────────
+  saveNewThreshold(): void {
+    if (!this.newThreshold.level || this.newThreshold.minAmountEur === null) {
+      this.createThresholdError.set('Niveau et montant minimum sont requis.');
+      return;
+    }
+    const dto: CreateCostApprovalThresholdRequest = {
+      paysId:           this.paysId(),
+      level:            this.newThreshold.level,
+      minAmountEur:     Number(this.newThreshold.minAmountEur),
+      maxAmountEur:     this.newThreshold.maxAmountEur != null ? Number(this.newThreshold.maxAmountEur) : null,
+      approverRoleCode: this.newThreshold.approverRoleCode || null,
+    };
+    this.isCreatingThreshold.set(true);
+    this.createThresholdError.set(null);
+    this.svc.createThreshold(dto).subscribe({
+      next: created => {
+        this.thresholds.update(list =>
+          [...list, created].sort((a, b) => (a.minAmountEur as number) - (b.minAmountEur as number)),
+        );
+        this.newThreshold = { level: 'L2', minAmountEur: null, maxAmountEur: null, approverRoleCode: '' };
+        this.showAddThreshold.set(false);
+        this.isCreatingThreshold.set(false);
+      },
+      error: err => {
+        this.createThresholdError.set(err.error?.message ?? 'Erreur de création.');
+        this.isCreatingThreshold.set(false);
+      },
+    });
+  }
+
+  deleteThreshold(id: number): void {
+    if (!confirm('Désactiver ce seuil d\'approbation ?')) return;
+    this.svc.deactivateThreshold(id).subscribe({
+      next: () => this.thresholds.update(list => list.filter(t => t.id !== id)),
+      error: err => this.thresholdError.set(err.error?.message ?? 'Erreur de désactivation.'),
+    });
+  }
+
+  // ── Category CRUD ─────────────────────────────────────────────────────────
 
   startEditCategory(cat: CostCategoryDto): void {
+    this.showAddCategory.set(false);
     this.editingCategoryId.set(cat.id);
     this.categoryEditForm.set({
       labelFr:       cat.labelFr,
@@ -195,7 +245,48 @@ export class CostConfigComponent implements OnInit {
     this.categoryEditForm.update(f => ({ ...f, [field]: value }));
   }
 
-  // ── List management ───────────────────────────────────────────────────────
+  saveNewCategory(): void {
+    if (!this.newCat.code || !this.newCat.labelFr || !this.newCat.labelEn || this.newCat.categoryNumber === null) {
+      this.createCatError.set('Numéro, code, libellé FR et libellé EN sont requis.');
+      return;
+    }
+    const dto: CreateCostCategoryRequest = {
+      paysId:         this.paysId(),
+      code:           this.newCat.code.trim().toUpperCase(),
+      labelFr:        this.newCat.labelFr.trim(),
+      labelEn:        this.newCat.labelEn.trim(),
+      categoryNumber: Number(this.newCat.categoryNumber),
+      isCapex:        this.newCat.isCapex,
+      isDirect:       this.newCat.isDirect,
+      isOverhead:     this.newCat.isOverhead,
+    };
+    this.isCreatingCategory.set(true);
+    this.createCatError.set(null);
+    this.svc.createCategory(dto).subscribe({
+      next: created => {
+        this.categories.update(list =>
+          [...list, created].sort((a, b) => a.categoryNumber - b.categoryNumber),
+        );
+        this.newCat = { code: '', labelFr: '', labelEn: '', categoryNumber: null, isCapex: false, isDirect: false, isOverhead: false };
+        this.showAddCategory.set(false);
+        this.isCreatingCategory.set(false);
+      },
+      error: err => {
+        this.createCatError.set(err.error?.message ?? 'Erreur de création.');
+        this.isCreatingCategory.set(false);
+      },
+    });
+  }
+
+  deleteCategory(id: number): void {
+    if (!confirm('Désactiver cette catégorie ? Les lignes de coût associées ne seront pas supprimées.')) return;
+    this.svc.deactivateCategory(id).subscribe({
+      next: () => this.categories.update(list => list.filter(c => c.id !== id)),
+      error: err => this.serverError.set(err.error?.message ?? 'Erreur de désactivation.'),
+    });
+  }
+
+  // ── List values ───────────────────────────────────────────────────────────
 
   selectListTab(tab: ListTab): void {
     this.activeListTab.set(tab);

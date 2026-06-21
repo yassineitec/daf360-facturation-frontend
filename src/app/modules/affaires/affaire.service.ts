@@ -95,6 +95,13 @@ export class AffaireService {
     );
   }
 
+  getResponsableUsers(roleName: string): Observable<UserRefDto[]> {
+    const params = new HttpParams().set('roleName', roleName);
+    return this.http.get<UserRefDto[]>(`${this.base}/ref/users/by-role`, { params }).pipe(
+      catchError(() => of([] as UserRefDto[])),
+    );
+  }
+
   getPays(): Observable<PaysRefDto[]> {
     return this.http.get<PaysRefDto[]>(`${this.base}/ref/pays`).pipe(
       catchError(() => of([] as PaysRefDto[])),

@@ -106,6 +106,10 @@ export interface ResponsableItem {
   isPrimary: boolean;
   role?: string;
   budgetAllocation?: number;
+  activiteId: number | null;
+  activiteLabel?: string;
+  disciplineId: number | null;
+  disciplineLabel?: string;
 }
 
 // ── Wizard state ───────────────────────────────────────────────────────────────
@@ -157,11 +161,6 @@ export interface AffaireDraftState {
   // Step 4 — Responsables & Budget
   responsables: ResponsableItem[];
   budgetPrevisionnel?: number;
-  activiteId?: number;
-  disciplineId?: number;
-  disciplineLabel?: string;
-  disciplineServerRef?: string;
-  disciplineLevelConcat?: string;
 
   // Step 5 — Planification
   dateDebutFacturation?: string;
@@ -184,7 +183,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
   }));
   const ressources: AffaireDraftState['ressources'] = (dto.ressources ?? []).map((r: any) => ({
     userId: r.userId,
-    userName: '',
+    userName: r.fullName ?? '',
     resourceType: r.resourceType,
     rateType: r.rateType,
     rateAmount: Number(r.rateAmount),
@@ -193,10 +192,14 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
   }));
   const responsables: AffaireDraftState['responsables'] = (dto.responsables ?? []).map((r: any) => ({
     userId: r.userId,
-    userName: '',
+    userName: r.fullName ?? '',
     isPrimary: r.isPrimary,
     role: r.role,
     budgetAllocation: r.budgetAllocation != null ? Number(r.budgetAllocation) : undefined,
+    activiteId: r.activiteId ?? null,
+    activiteLabel: r.activiteLabel,
+    disciplineId: r.disciplineId ?? null,
+    disciplineLabel: r.disciplineLabel,
   }));
   return {
     id:                          dto.id,
@@ -225,11 +228,6 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     eligibleExpenseCategoryIds:  dto.eligibleExpenseCategoryIds ?? [],
     marginRatePct:               dto.cpMarginRatePct != null ? Number(dto.cpMarginRatePct) : undefined,
     responsables,
-    activiteId:                  dto.activiteId,
-    disciplineId:                dto.disciplineId,
-    disciplineLabel:             dto.disciplineLabel,
-    disciplineServerRef:         dto.disciplineServerRef,
-    disciplineLevelConcat:       undefined,
     dateDebutFacturation:        dto.dateDebutFacturation,
     dateFinContractuelle:        dto.dateFinContractuelle,
     datePremireEcheance:         dto.datePremireEcheance,

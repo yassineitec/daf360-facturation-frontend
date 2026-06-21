@@ -12,13 +12,38 @@
   gap: 12px;
 }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
 .section-title {
   font-size: 0.9375rem;
   font-weight: 700;
   color: #0f3d47;
   margin: 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0;
+
+  // standalone (no .section-header wrapper) keeps its own border
+  .config-section > &:first-child { padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+}
+
+.btn-add {
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid #1a6b7c;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a6b7c;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover { background: #f0fbfd; }
 }
 
 .banner-error {

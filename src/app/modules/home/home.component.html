@@ -96,7 +96,7 @@
     @for (mod of visibleModules(); track mod.path) {
       <div class="mod-card glass-card"
            [class.mod-card--wide]="mod.wide"
-           [class.mod-card--active]="mod.path === '/fact/invoicing'"
+           [class.mod-card--active]="mod.path === 'invoicing'"
            (click)="navigateTo(mod.path)">
 
         @if (mod.wide) {
@@ -122,7 +122,7 @@
           <h4 class="mod-card__title">{{ mod.label }}</h4>
           <p class="mod-card__desc">{{ mod.description }}</p>
           <div class="mod-card__footer">
-            @if (mod.path === '/fact/invoicing') {
+            @if (mod.path === 'invoicing') {
               <span class="mod-card__badge badge--active">Page active</span>
             } @else if (mod.stat) {
               <span class="mod-card__stat" [class]="mod.statClass">{{ mod.stat }}</span>
@@ -144,7 +144,7 @@
     <div class="activity-card">
       <div class="activity-card__header">
         <h5 class="activity-card__title">Activité Récente</h5>
-        <button class="activity-card__link" (click)="navigateTo('/fact/invoicing')">
+        <button class="activity-card__link" (click)="navigateTo('invoicing')">
           Voir tout <span class="material-symbols-outlined">open_in_new</span>
         </button>
       </div>

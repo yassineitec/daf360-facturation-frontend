@@ -4,12 +4,14 @@ import {
 import {
   FormControl, FormGroup, ReactiveFormsModule, Validators,
 } from '@angular/forms';
-import { debounceTime } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { FactListService }   from '../../../core/fact-list.service';
 import { CostService }       from '../cost.service';
 import {
   CostCategoryDto, CostApprovalThresholdDto, CostLineDto,
-  CreateCostLineRequest, ListValueDto,
+  CreateCostLineRequest, ListValueDto, SupplierSearchItem,
   isManualSource, isCategoryStrictScrutiny,
 } from '../cost.model';
 
@@ -28,62 +30,62 @@ export class CostLineFormComponent implements OnInit {
 
   private readonly svc          = inject(CostService);
   private readonly factListSvc  = inject(FactListService);
+  private readonly supplierSearch$ = new Subject<string>();
 
-  categories    = signal<CostCategoryDto[]>([]);
-  thresholds    = signal<CostApprovalThresholdDto[]>([]);
-  currencies    = signal<ListValueDto[]>([]);
-  costTypes     = signal<ListValueDto[]>([]);
-  paymentMethods = signal<ListValueDto[]>([]);
-  recurrenceFreqs = signal<ListValueDto[]>([]);
-  isSaving      = signal(false);
-  serverError   = signal<string | null>(null);
+  categories      = signal<CostCategoryDto[]>([]);
+  thresholds      = signal<CostApprovalThresholdDto[]>([]);
+  currencies      = signal<ListValueDto[]>([]);
+  costTypes       = signal<ListValueDto[]>([]);
+  isSaving        = signal(false);
+  serverError     = signal<string | null>(null);
   approvalPreview = signal<string | null>(null);
 
+  // ── Supplier autocomplete ──────────────────────────────────────────────────
+  supplierSuggestions  = signal<SupplierSearchItem[]>([]);
+  isSearchingSupplier  = signal(false);
+  showSupplierDrop     = signal(false);
+  supplierDisplayName  = signal('');
+
   form = new FormGroup({
-    categoryId:           new FormControl<number | null>(null, Validators.required),
-    transactionDate:      new FormControl<string>('',   Validators.required),
-    periodYear:           new FormControl<number | null>(null),
-    periodMonth:          new FormControl<number | null>(null),
-    description:          new FormControl<string>('',   [Validators.required, Validators.minLength(3), Validators.maxLength(500)]),
-    costTypeId:           new FormControl<number | null>(null),
-    netAmountLocal:       new FormControl<number | null>(null, [Validators.required, Validators.min(0.01)]),
-    vatAmountLocal:       new FormControl<number>(0),
-    currencyId:           new FormControl<number | null>(null, Validators.required),
-    paymentMethodId:      new FormControl<number | null>(null),
-    supplierNameFree:     new FormControl<string>(''),
-    documentUrl:          new FormControl<string>(''),
-    notes:                new FormControl<string>(''),
-    isRecurring:          new FormControl<boolean>(false),
-    recurrenceFrequencyId: new FormControl<number | null>(null),
+    categoryId:       new FormControl<number | null>(null, Validators.required),
+    transactionDate:  new FormControl<string>('',   Validators.required),
+    periodYear:       new FormControl<number | null>(null),
+    periodMonth:      new FormControl<number | null>(null),
+    description:      new FormControl<string>('',   [Validators.required, Validators.minLength(3), Validators.maxLength(500)]),
+    costTypeId:       new FormControl<number | null>(null),
+    netAmountLocal:   new FormControl<number | null>(null, [Validators.required, Validators.min(0.01)]),
+    currencyId:       new FormControl<number | null>(null, Validators.required),
+    supplierId:       new FormControl<number | null>(null),
+    supplierNameFree: new FormControl<string>(''),
+    notes:            new FormControl<string>(''),
   });
 
   ngOnInit(): void {
-    this.factListSvc.getListValues('CURRENCY',             this.paysId).subscribe(v => this.currencies.set(v));
-    this.factListSvc.getListValues('COST_TYPE',            this.paysId).subscribe(v => this.costTypes.set(v));
-    this.factListSvc.getListValues('PAYMENT_METHOD',       this.paysId).subscribe(v => this.paymentMethods.set(v));
-    this.factListSvc.getListValues('RECURRENCE_FREQUENCY', this.paysId).subscribe(v => this.recurrenceFreqs.set(v));
+    this.factListSvc.getListValues('CURRENCY',  this.paysId).subscribe(v => this.currencies.set(v));
+    this.factListSvc.getListValues('COST_TYPE', this.paysId).subscribe(v => this.costTypes.set(v));
 
     this.svc.getCategories(this.paysId).subscribe(cats =>
-      this.categories.set(cats.filter(c => c.isActive)),
+      this.categories.set(cats.filter(c => c.isActive && isManualSource(c))),
     );
     this.svc.getThresholds(this.paysId).subscribe(t => this.thresholds.set(t));
 
     if (this.costLine) {
       this.form.patchValue({
-        categoryId:           this.costLine.categoryId,
-        transactionDate:      this.costLine.transactionDate ?? '',
-        description:          this.costLine.label ?? '',
-        netAmountLocal:       this.costLine.netAmountLocal,
-        vatAmountLocal:       this.costLine.vatAmountLocal ?? 0,
-        currencyId:           this.costLine.currencyId,
-        costTypeId:           this.costLine.costTypeId,
-        paymentMethodId:      this.costLine.paymentMethodId,
-        supplierNameFree:     this.costLine.supplierNameFree ?? '',
-        documentUrl:          this.costLine.documentUrl ?? '',
-        notes:                this.costLine.notes ?? '',
-        isRecurring:          this.costLine.recurrenceFlag ?? false,
-        recurrenceFrequencyId: this.costLine.recurrenceFrequencyId,
+        categoryId:      this.costLine.categoryId,
+        transactionDate: this.costLine.transactionDate ?? '',
+        description:     this.costLine.label ?? '',
+        netAmountLocal:  this.costLine.netAmountLocal,
+        currencyId:      this.costLine.currencyId,
+        costTypeId:      this.costLine.costTypeId,
+        supplierId:      this.costLine.supplierId,
+        supplierNameFree: this.costLine.supplierNameFree ?? '',
+        notes:           this.costLine.notes ?? '',
       });
+      if (this.costLine.supplierId) {
+        this.supplierDisplayName.set(this.costLine.supplierNameFree ?? `Fournisseur #${this.costLine.supplierId}`);
+      } else if (this.costLine.supplierNameFree) {
+        this.supplierDisplayName.set(this.costLine.supplierNameFree);
+      }
       if (this.costLine.transactionDate) {
         const d = new Date(this.costLine.transactionDate);
         this.form.patchValue({ periodYear: d.getFullYear(), periodMonth: d.getMonth() + 1 }, { emitEvent: false });
@@ -105,13 +107,54 @@ export class CostLineFormComponent implements OnInit {
       this.updateApprovalPreview(this.form.get('netAmountLocal')!.value),
     );
 
-    this.form.get('isRecurring')!.valueChanges.subscribe(isRecurring => {
-      const ctrl = this.form.get('recurrenceFrequencyId')!;
-      if (isRecurring) ctrl.setValidators(Validators.required);
-      else { ctrl.clearValidators(); ctrl.setValue(null); }
-      ctrl.updateValueAndValidity();
+    this.supplierSearch$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(q => {
+        if (q.trim().length < 2) {
+          this.isSearchingSupplier.set(false);
+          return of([] as SupplierSearchItem[]);
+        }
+        this.isSearchingSupplier.set(true);
+        return this.svc.searchSuppliers(this.paysId, q);
+      }),
+    ).subscribe(results => {
+      this.supplierSuggestions.set(results);
+      this.isSearchingSupplier.set(false);
+      this.showSupplierDrop.set(results.length > 0);
     });
   }
+
+  // ── Supplier autocomplete handlers ─────────────────────────────────────────
+
+  onSupplierInput(value: string): void {
+    this.form.patchValue({ supplierId: null, supplierNameFree: value }, { emitEvent: false });
+    this.supplierDisplayName.set(value);
+    if (!value) {
+      this.supplierSuggestions.set([]);
+      this.showSupplierDrop.set(false);
+    }
+    this.supplierSearch$.next(value);
+  }
+
+  selectSupplierItem(s: SupplierSearchItem): void {
+    this.form.patchValue({ supplierId: s.id, supplierNameFree: '' }, { emitEvent: false });
+    this.supplierDisplayName.set(s.name);
+    this.showSupplierDrop.set(false);
+  }
+
+  clearSupplier(): void {
+    this.form.patchValue({ supplierId: null, supplierNameFree: '' }, { emitEvent: false });
+    this.supplierDisplayName.set('');
+    this.supplierSuggestions.set([]);
+    this.showSupplierDrop.set(false);
+  }
+
+  onSupplierBlur(): void {
+    setTimeout(() => this.showSupplierDrop.set(false), 150);
+  }
+
+  // ── Rest ───────────────────────────────────────────────────────────────────
 
   get isEditMode(): boolean { return !!this.costLine; }
 
@@ -180,22 +223,18 @@ export class CostLineFormComponent implements OnInit {
 
     const v = this.form.value;
     const dto: CreateCostLineRequest = {
-      paysId:               this.paysId,
-      categoryId:           v.categoryId!,
-      transactionDate:      v.transactionDate!,
-      periodYear:           v.periodYear!,
-      periodMonth:          v.periodMonth!,
-      description:          v.description!,
-      netAmountLocal:       v.netAmountLocal!,
-      vatAmountLocal:       v.vatAmountLocal ?? 0,
-      currencyId:           v.currencyId!,
-      costTypeId:           v.costTypeId ?? undefined,
-      paymentMethodId:      v.paymentMethodId ?? undefined,
-      supplierNameFree:     v.supplierNameFree || undefined,
-      documentUrl:          v.documentUrl || undefined,
-      notes:                v.notes || undefined,
-      isRecurring:          v.isRecurring ?? false,
-      recurrenceFrequencyId: v.recurrenceFrequencyId ?? undefined,
+      paysId:          this.paysId,
+      categoryId:      v.categoryId!,
+      transactionDate: v.transactionDate!,
+      periodYear:      v.periodYear!,
+      periodMonth:     v.periodMonth!,
+      description:     v.description!,
+      netAmountLocal:  v.netAmountLocal!,
+      currencyId:      v.currencyId!,
+      costTypeId:      v.costTypeId ?? undefined,
+      supplierId:      v.supplierId ?? undefined,
+      supplierNameFree: !v.supplierId ? (v.supplierNameFree || undefined) : undefined,
+      notes:           v.notes || undefined,
     };
 
     const save$ = this.costLine
