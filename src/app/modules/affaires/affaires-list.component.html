@@ -1,179 +1,62 @@
 <div class="affaires-page">
 
-  <!-- Stats row -->
-  <div class="stats-grid">
-    <div class="stat-card">
-      <span class="stat-icon stat-icon--teal">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-      </span>
-      <div class="stat-body">
-        <span class="stat-label">Affaires actives</span>
-        <span class="stat-value">{{ totalElements() }}</span>
-      </div>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h2 class="page-title">Gestion des Affaires</h2>
     </div>
-
-    <div class="stat-card">
-      <span class="stat-icon stat-icon--green">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-      </span>
-      <div class="stat-body">
-        <span class="stat-label">RAF total (page)</span>
-        <span class="stat-value">{{ formatAmount(statsRafTotal()) }}</span>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <span class="stat-icon stat-icon--blue">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      </span>
-      <div class="stat-body">
-        <span class="stat-label">Budget total (page)</span>
-        <span class="stat-value">{{ formatAmount(statsBudgetTotal()) }}</span>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <span class="stat-icon stat-icon--amber">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      </span>
-      <div class="stat-body">
-        <span class="stat-label">En cours (page)</span>
-        <span class="stat-value">{{ statsActives() }}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filters bar -->
-  <div class="filters-bar glass-card">
-    <div class="search-wrap">
-      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <input
-        type="search"
-        class="search-input"
-        placeholder="Réf., intitulé, client…"
-        [(ngModel)]="searchText"
-        (keyup.enter)="onSearch()"
-        (search)="onSearch()"
-        maxlength="100"
-        autocomplete="off" />
-    </div>
-
-    <select class="filter-select" [(ngModel)]="filterStatut" (change)="onFilterChange()">
-      <option value="">Tous statuts</option>
-      @for (opt of statutOptions; track opt.value) {
-        <option [value]="opt.value">{{ opt.label }}</option>
-      }
-    </select>
-
-    <select class="filter-select" [(ngModel)]="filterType" (change)="onFilterChange()">
-      <option value="">Tous types</option>
-      @for (opt of typeOptions; track opt.value) {
-        <option [value]="opt.value">{{ opt.label }}</option>
-      }
-    </select>
-
-    <div class="filter-spacer"></div>
-
-    <button class="btn-primary" *appHasPermission="'FACT_CREATE_AFFAIRE'" (click)="openNewForm()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Nouvelle affaire
+    <button class="btn-new" (click)="openNewForm()">
+      <span class="material-symbols-outlined">add</span>
+      Nouvelle Affaire
     </button>
   </div>
 
-  <!-- Table -->
-  <div class="table-card glass-card">
-    @if (error()) {
-      <div class="error-banner">{{ error() }}</div>
-    }
+  <!-- KPI Grid -->
+  <div class="kpi-grid">
+    <app-affaire-kpi-card
+      label="Affaires en cours"
+      icon="work"
+      [value]="statsActives()"
+      trend="+12%"
+      variant="green" />
 
-    @if (loading()) {
-      <div class="skeleton-rows">
-        @for (i of [1,2,3,4,5,6]; track i) {
-          <div class="skeleton-row"><div class="sk"></div></div>
-        }
-      </div>
-    } @else {
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Référence</th>
-              <th>Intitulé</th>
-              <th>Client</th>
-              <th>Responsable</th>
-              <th>Type</th>
-              <th class="num-col">Budget</th>
-              <th class="num-col">RAF</th>
-              <th>Statut</th>
-              <th class="action-col"></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (a of affaires(); track a.id) {
-              <tr class="table-row" (click)="navigateToDetail(a.id)">
-                <td>
-                  <span class="ref-badge">{{ a.reference }}</span>
-                </td>
-                <td class="intitule-cell">{{ a.intitule }}</td>
-                <td>{{ a.clientName || '—' }}</td>
-                <td>{{ a.responsableFullName || '—' }}</td>
-                <td><span class="type-chip">{{ typeLabel(a.typeAffaire) }}</span></td>
-                <td class="num-col">
-                  <div class="budget-cell">
-                    <span>{{ formatAmount(a.budgetPrevisionnel) }}</span>
-                    @if (a.budgetValide) {
-                      <span class="badge-valide" title="Budget validé">✓</span>
-                    } @else {
-                      <span class="badge-non-valide" title="Budget non validé">⚠</span>
-                    }
-                  </div>
-                </td>
-                <td class="num-col">
-                  <span class="raf-value" [style.color]="rafColor(a)">
-                    {{ formatAmount(a.rafDisponible ?? null) }}
-                  </span>
-                </td>
-                <td><app-status-badge [status]="a.statut" /></td>
-                <td class="action-col">
-                  <button class="btn-delete"
-                    [class.btn-delete--loading]="deletingId() === a.id"
-                    [disabled]="deletingId() === a.id"
-                    title="Supprimer"
-                    (click)="deleteAffaire(a, $event)">
-                    @if (deletingId() === a.id) {
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/></svg>
-                    } @else {
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                    }
-                  </button>
-                </td>
-              </tr>
-            }
-            @empty {
-              <tr>
-                <td colspan="9" class="empty-row">Aucune affaire trouvée.</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+    <app-affaire-kpi-card
+      label="RAF Total"
+      icon="account_balance_wallet"
+      [value]="formatAmount(statsRafTotal())"
+      unit="TND"
+      variant="blue" />
 
-      <!-- Pagination -->
-      @if (totalPages() > 1) {
-        <div class="pagination">
-          <span class="page-info">{{ totalElements() }} résultats</span>
-          <div class="page-btns">
-            <button class="page-btn" [disabled]="currentPage() === 0" (click)="goToPage(currentPage() - 1)">‹</button>
-            @for (p of pages; track p) {
-              <button class="page-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p + 1 }}</button>
-            }
-            <button class="page-btn" [disabled]="currentPage() === totalPages() - 1" (click)="goToPage(currentPage() + 1)">›</button>
-          </div>
-        </div>
-      }
-    }
+    <app-affaire-kpi-card
+      label="Budget Total"
+      icon="payments"
+      [value]="formatAmount(statsBudgetTotal())"
+      unit="TND"
+      variant="amber" />
+
+    <app-affaire-kpi-card
+      label="Projets en attente"
+      icon="pause_circle"
+      [value]="statsSuspendu()"
+      unit="Unités"
+      variant="red" />
   </div>
+
+  <!-- Table -->
+  <app-affaire-table
+    [affaires]="affaires()"
+    [loading]="loading()"
+    [error]="error()"
+    [deletingId]="deletingId()"
+    [totalElements]="totalElements()"
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [(searchText)]="searchText"
+    [(filterStatut)]="filterStatut"
+    [(filterType)]="filterType"
+    (rowClick)="navigateToDetail($event)"
+    (pageChange)="goToPage($event)"
+    (searchGo)="onSearch()"
+    (filterGo)="onFilterChange()" />
 
 </div>

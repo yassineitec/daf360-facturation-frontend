@@ -189,19 +189,22 @@
             </div>
 
           </div>
+
         </div>
       }
     </div>
+
   }
 
 </div>
 
+<!-- ── Modal ─────────────────────────────────────────────────────────────── -->
 @if (modalLine()) {
   <app-approve-modal
     [costLine]="modalLine()!"
     [action]="modalAction()"
     [level]="modalLevel()"
     (closed)="closeModal()"
-    (resolved)="onResolved($event)">
+    (resolved)="onResolved()">
   </app-approve-modal>
 }

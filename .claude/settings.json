@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "\\dev"
+    ],
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\MSI\\\\Desktop\\\\daf360-facturation-frontend\\\\node_modules\\\\@khalilrebhiitec\\\\daf360\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object -First 15 Name, Extension)"
+    ]
+  }
+}

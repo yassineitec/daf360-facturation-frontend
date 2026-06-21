@@ -11,7 +11,6 @@ import {
 import { UserStore } from '../../core/user.store';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { PermissionDirective } from '../../shared/permission.directive';
-import { RafGaugeComponent } from '../../shared/raf-gauge.component';
 import { TsListComponent } from './ts/ts-list.component';
 import { TsFormComponent } from './ts/ts-form.component';
 import { AffaireOstComponent } from './ost/affaire-ost.component';
@@ -19,7 +18,7 @@ import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.compone
 
 @Component({
   selector: 'app-affaire-detail',
-  imports: [RouterLink, FormsModule, DecimalPipe, StatusBadgeComponent, PermissionDirective, RafGaugeComponent, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
+  imports: [RouterLink, FormsModule, DecimalPipe, StatusBadgeComponent, PermissionDirective, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
   templateUrl: './affaire-detail.component.html',
   styleUrl: './affaire-detail.component.scss',
 })
@@ -45,7 +44,7 @@ export class AffaireDetailComponent implements OnInit {
   actionLoading= signal(false);
 
   // Section open states
-  openSections = signal<Set<string>>(new Set(['info', 'ts', 'responsables']));
+  openSections = signal<Set<string>>(new Set(['info']));
 
   // Statut modal
   showStatutModal = signal(false);
@@ -56,10 +55,11 @@ export class AffaireDetailComponent implements OnInit {
   showTsForm = signal(false);
 
   readonly stubSections = [
-    { key: 'factures',    label: 'Factures émises' },
-    { key: 'paiements',   label: 'Paiements reçus' },
-    { key: 'indicateurs', label: 'Indicateurs' },
+    { key: 'factures',  label: 'Factures émises' },
+    { key: 'paiements', label: 'Paiements reçus' },
   ];
+
+  readonly ALL_STATUTS = ['EN_COURS', 'SUSPENDUE', 'CLOTUREE', 'ARCHIVEE'];
 
   // Budget validation
   budgetLoading = signal(false);
@@ -209,32 +209,20 @@ export class AffaireDetailComponent implements OnInit {
 
   statutLabel(s: string): string { return STATUT_LABELS[s] ?? s; }
 
-  getBudgetPct(allocation: number | null | undefined, total: number | null | undefined): number {
-    if (!total || !allocation) return 0;
-    return Math.round((allocation / total) * 1000) / 10;
+  statutIcon(s: string): string {
+    const m: Record<string, string> = {
+      EN_COURS: 'play_circle', SUSPENDUE: 'pause_circle',
+      CLOTUREE: 'check_circle', ARCHIVEE: 'archive',
+    };
+    return m[s] ?? 'circle';
   }
 
-  billingModeLabel(mode: string): string {
-    const labels: Record<string, string> = {
-      AV: 'Facturation à l\'avancement', JAL: 'Forfait par jalons',
-      TM: 'Régie Time & Materials',      CP:  'Cost-Plus',
-      RMB: 'Remboursable',
-    };
-    return labels[mode] ?? mode;
+  canTransitionTo(s: string): boolean {
+    return this.availableTransitions().includes(s);
   }
 
-  rateTypeLabel(t: string): string {
-    const map: Record<string, string> = {
-      DAILY: 'Jour', HOURLY: 'Heure', MONTHLY: 'Mois', FIXED: 'Forfait',
-    };
-    return map[t] ?? t;
-  }
-
-  jalonStatutLabel(s: string): string {
-    const map: Record<string, string> = {
-      A_FACTURER: 'À facturer', FACTURE: 'Facturé', ANNULE: 'Annulé',
-    };
-    return map[s] ?? s;
+  gaugeOffset(pct: number): number {
+    return Math.round(175 * (1 - Math.min(Math.max(pct, 0), 100) / 100));
   }
 
   goBack(): void { this.router.navigate(['/fact/affaires']); }

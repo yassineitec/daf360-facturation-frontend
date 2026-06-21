@@ -1,29 +1,29 @@
-<div class="step-form">
+<div class="origin-step">
 
-  <div class="step-intro">
-    <p class="step-intro-text">
-      Recherchez un projet DOC360 pour pré-remplir les informations de l'affaire.
-      Cette étape est <strong>optionnelle</strong> — vous pouvez passer directement à l'étape suivante.
+  <!-- Step heading -->
+  <div class="origin-header">
+    <h2 class="origin-title">1. Origine de l'affaire</h2>
+    <p class="origin-sub">
+      Lier un projet (Optionnel) — Recherchez un projet DOC360 ou Interco pour
+      importer automatiquement les données de base.
     </p>
   </div>
 
-  <!-- Selected project banner -->
+  <!-- ── Selected project banner ── -->
   @if (draft.doc360ServerReference) {
-    <div class="selected-card">
-      <div class="selected-card-icon">
+    <div class="selected-banner">
+      <div class="selected-banner__icon">
         <span class="material-symbols-outlined">task_alt</span>
       </div>
-      <div class="selected-card-body">
-        <div class="selected-card-title">{{ draft.doc360ProjectName }}</div>
-        <div class="selected-card-meta">
-          <span class="badge">{{ draft.doc360ServerReference }}</span>
+      <div class="selected-banner__body">
+        <div class="selected-banner__name">{{ draft.doc360ProjectName }}</div>
+        <div class="selected-banner__meta">
+          <span class="tag tag--teal">{{ draft.doc360ServerReference }}</span>
           @if (draft.doc360ErpReference) {
-            <span class="meta-sep">·</span>
-            <span class="ref-tag">ERP: {{ draft.doc360ErpReference }}</span>
+            <span class="tag tag--purple">ERP: {{ draft.doc360ErpReference }}</span>
           }
           @if (draft.doc360ClientName) {
-            <span class="meta-sep">·</span>
-            <span>{{ draft.doc360ClientName }}</span>
+            <span class="selected-banner__client">{{ draft.doc360ClientName }}</span>
           }
         </div>
       </div>
@@ -33,58 +33,88 @@
     </div>
   }
 
-  <!-- Search box -->
+  <!-- ── Search section ── -->
   @if (!draft.doc360ServerReference) {
-    <div class="search-wrapper">
-      <div class="search-field">
-        <span class="search-icon material-symbols-outlined">search</span>
-        <input
-          class="search-input"
-          type="text"
-          placeholder="Référence DOC360, intitulé ou client…"
-          [value]="searchQuery"
-          (input)="onInput($any($event.target).value)"
-          (focus)="showResultsNow()"
-          (blur)="scheduleHideResults()"
-          autocomplete="off">
-        @if (isSearching()) {
-          <span class="search-spinner material-symbols-outlined">progress_activity</span>
-        }
-      </div>
+    <div class="search-section">
+      <p class="search-label">Rechercher un projet existant</p>
 
-      @if (showResults() && results().length > 0) {
-        <div class="results-dropdown">
-          @for (p of results(); track p.serverReference) {
-            <button class="result-item" type="button"
-              (mousedown)="selectProject(p)">
-              <div class="result-body">
-                <div class="result-number">{{ p.serverReference }}</div>
-                <div class="result-name">{{ p.projectName }}</div>
-                @if (p.erpReference) {
-                  <div class="result-erp">ERP: {{ p.erpReference }}</div>
-                }
-                @if (p.clientName) {
-                  <div class="result-client">{{ p.clientName }}</div>
-                }
-              </div>
-              <span class="result-status" [attr.data-status]="p.status">{{ p.status }}</span>
-            </button>
+      <div class="search-wrapper">
+        <div class="search-field">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input
+            class="search-input"
+            type="text"
+            placeholder="Entrez le nom ou le code du projet…"
+            [value]="searchQuery"
+            (input)="onInput($any($event.target).value)"
+            (focus)="showResultsNow()"
+            (blur)="scheduleHideResults()"
+            autocomplete="off">
+          @if (isSearching()) {
+            <span class="search-spinner material-symbols-outlined">progress_activity</span>
           }
         </div>
-      }
 
-      @if (showResults() && results().length === 0 && searchQuery.length >= 2 && !isSearching()) {
-        <div class="no-results">
-          <span class="material-symbols-outlined">search_off</span>
-          Aucun projet DOC360 trouvé pour « {{ searchQuery }} »
-        </div>
-      }
+        @if (showResults() && results().length > 0) {
+          <div class="results-dropdown">
+            @for (p of results(); track p.serverReference) {
+              <button class="result-item" type="button" (mousedown)="selectProject(p)">
+                <div class="result-body">
+                  <div class="result-ref">{{ p.serverReference }}</div>
+                  <div class="result-name">{{ p.projectName }}</div>
+                  @if (p.erpReference) { <div class="result-erp">ERP: {{ p.erpReference }}</div> }
+                  @if (p.clientName)   { <div class="result-client">{{ p.clientName }}</div> }
+                </div>
+                <span class="result-status">{{ p.status }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        @if (showResults() && results().length === 0 && searchQuery.length >= 2 && !isSearching()) {
+          <div class="no-results">
+            <span class="material-symbols-outlined">search_off</span>
+            Aucun projet trouvé pour « {{ searchQuery }} »
+          </div>
+        }
+      </div>
     </div>
   }
 
-  <div class="skip-hint">
-    <span class="material-symbols-outlined">info</span>
-    Vous pouvez ignorer cette étape si l'affaire n'est pas liée à un projet DOC360.
+  <!-- ── Bento grid ── -->
+  <div class="bento-grid">
+
+    <div class="bento-card"
+         [class.bento-card--active]="selectedSource() === 'doc360'"
+         (click)="selectSource('doc360')">
+      <div class="bento-icon bento-icon--teal">
+        <span class="material-symbols-outlined">folder_supervised</span>
+      </div>
+      <h3 class="bento-title">Projets DOC360</h3>
+      <p class="bento-desc">Accédez aux projets gérés directement dans le système central.</p>
+    </div>
+
+    <div class="bento-card"
+         [class.bento-card--active]="selectedSource() === 'interco'"
+         (click)="selectSource('interco')">
+      <div class="bento-icon bento-icon--slate">
+        <span class="material-symbols-outlined">hub</span>
+      </div>
+      <h3 class="bento-title">Projets Interco</h3>
+      <p class="bento-desc">Liez des projets provenant de filiales ou de partenaires inter-compagnies.</p>
+    </div>
+
+  </div>
+
+  <!-- ── Info banner ── -->
+  <div class="info-banner">
+    <div class="info-banner__icon">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">info</span>
+    </div>
+    <div class="info-banner__body">
+      <span class="info-banner__title">Pas de projet à lier?</span>
+      Vous pouvez continuer et saisir les informations manuellement à l'étape suivante.
+    </div>
   </div>
 
 </div>

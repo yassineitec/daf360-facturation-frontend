@@ -6,6 +6,8 @@ import {
   InvoiceDetail, INVOICE_STATUT_CONFIG, OVERDUE_STATUTS, InvoiceStatut,
 } from './invoice.model';
 import { InvoiceStatusTimelineComponent } from '../../shared/invoice-status-timeline.component';
+import { StatusBadgeComponent } from '../../shared/status-badge.component';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 import { PaymentModalComponent } from './payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
@@ -16,6 +18,8 @@ import { PermissionDirective } from '../../shared/permission.directive';
   imports: [
     RouterLink, FormsModule,
     InvoiceStatusTimelineComponent,
+    StatusBadgeComponent,
+    PageHeaderComponent,
     PaymentModalComponent,
     CreditNoteModalComponent,
     RemindersPanelComponent,
@@ -54,6 +58,28 @@ export class InvoiceDetailComponent implements OnInit {
     if (!inv || !OVERDUE_STATUTS.has(inv.statut)) return false;
     if (!inv.dateEcheance) return false;
     return new Date(inv.dateEcheance) < new Date();
+  });
+
+  readonly billingProgress = computed(() => {
+    const progressMap: Record<string, number> = {
+      DRAFT: 5, SUBMITTED: 15, RETURNED: 10, APPROVED: 30,
+      EMITTED: 50, SENT: 65, PARTIALLY_PAID: 75, PAID: 100,
+      DISPUTED: 40, CANCELLED: 0, CREDIT_NOTED: 80,
+    };
+    return progressMap[this.statut()] ?? 0;
+  });
+
+  readonly radialOffset = computed(() => {
+    const circumference = 2 * Math.PI * 50; // r=50
+    return Math.round(circumference * (1 - this.billingProgress() / 100));
+  });
+
+  readonly montantRestant = computed(() => {
+    const inv = this.invoice();
+    if (!inv) return 0;
+    if (inv.statut === 'PAID') return 0;
+    if (inv.statut === 'PARTIALLY_PAID') return inv.montantTtc / 2;
+    return inv.montantTtc;
   });
 
   ngOnInit(): void {

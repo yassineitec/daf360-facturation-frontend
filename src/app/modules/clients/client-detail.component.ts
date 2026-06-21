@@ -110,7 +110,7 @@ export class ClientDetailComponent implements OnInit {
     if (!confirm('Désactiver ce client ? Cette action est réversible.')) return;
     this.actionError.set(null);
     this.svc.deactivate(c.id).subscribe({
-      next:  () => this.router.navigate(['/fact/clients']),
+      next:  () => this.router.navigate(['..'], { relativeTo: this.route }),
       error: err => this.actionError.set(err?.error?.message ?? 'Erreur lors de la désactivation.'),
     });
   }

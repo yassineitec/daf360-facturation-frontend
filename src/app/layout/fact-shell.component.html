@@ -1,59 +1,9 @@
-<div class="fact-shell" [class.collapsed]="collapsed()">
-  <!-- Fixed Header -->
-  <header class="shell-header">
-    <div class="header-left">
-      <button class="menu-toggle" (click)="collapsed.update(v => !v)" aria-label="Toggle sidebar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-      <div class="brand">
-        <span class="brand-name">DAF360</span>
-        <span class="brand-sep">|</span>
-        <span class="brand-module">Facturation</span>
-      </div>
-    </div>
+<daf-side-nav
+  [items]="navItems()"
+  [config]="sideNavConfig"
+  [activeRoute]="activeRoute()"
+  (itemClick)="onNavClick($event)" />
 
-    <div class="header-right">
-      <div class="user-chip">
-        <div class="avatar">{{ initials() }}</div>
-        <div class="user-details">
-          <span class="user-name">{{ user()?.fullName }}</span>
-          <span class="user-role">{{ user()?.roleName }}</span>
-        </div>
-      </div>
-      <button class="logout-btn" (click)="auth.logout()" title="Déconnexion">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <div class="shell-body">
-    <!-- Sidebar Navigation -->
-    <nav class="shell-sidebar">
-      <ul class="nav-list">
-        @for (item of visibleNavItems(); track item.path) {
-          <li>
-            <a [routerLink]="item.path"
-               routerLinkActive="active"
-               class="nav-item">
-              <span class="nav-icon" [innerHTML]="getIcon(item.icon)"></span>
-              <span class="nav-label">{{ item.label }}</span>
-            </a>
-          </li>
-        }
-      </ul>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="shell-content">
-      <router-outlet />
-    </main>
-  </div>
-</div>
+<main class="shell-content">
+  <router-outlet />
+</main>

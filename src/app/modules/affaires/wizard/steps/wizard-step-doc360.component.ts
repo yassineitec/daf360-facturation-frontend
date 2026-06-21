@@ -18,10 +18,11 @@ export class WizardStepDoc360Component implements OnInit {
 
   private readonly wizardSvc = inject(AffaireWizardService);
 
-  searchQuery = '';
-  results     = signal<ExternalProjectResult[]>([]);
-  isSearching = signal(false);
-  showResults = signal(false);
+  searchQuery    = '';
+  results        = signal<ExternalProjectResult[]>([]);
+  isSearching    = signal(false);
+  showResults    = signal(false);
+  selectedSource = signal<'doc360' | 'interco' | null>(null);
 
   private readonly search$ = new Subject<string>();
   private hideTimer?: ReturnType<typeof setTimeout>;
@@ -76,6 +77,10 @@ export class WizardStepDoc360Component implements OnInit {
       reference:             p.serverReference,
       intitule,
     });
+  }
+
+  selectSource(source: 'doc360' | 'interco'): void {
+    this.selectedSource.set(this.selectedSource() === source ? null : source);
   }
 
   clearSelection(): void {
