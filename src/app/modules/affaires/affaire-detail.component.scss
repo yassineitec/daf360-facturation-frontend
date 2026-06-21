@@ -354,6 +354,125 @@
   &:disabled { opacity: 0.6; cursor: default; }
 }
 
+// ── Responsables view ─────────────────────────────────────────────────────────
+
+.rv-list { display: flex; flex-direction: column; gap: 8px; }
+
+.rv-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  &--primary { border-color: #0d9488; background: #f0fdf9; }
+}
+
+.rv-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: #1a6b7c;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+.rv-info { flex: 1; min-width: 0; }
+
+.rv-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+
+.rv-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 2px 8px 2px 6px;
+  border-radius: 20px;
+  &--primary { background: #0d9488; color: #fff; }
+}
+
+.rv-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.rv-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  &--gray   { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  &--teal   { background: #e6f7f5; color: #0d6e65; border: 1px solid #a7f3d0; }
+  &--purple { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+}
+
+.rv-budget {
+  text-align: right;
+  flex-shrink: 0;
+  .rv-budget-amount { display: block; font-size: 0.875rem; font-weight: 700; color: #0f172a; }
+  .rv-budget-pct    { display: block; font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+}
+
+// ── Billing config section ────────────────────────────────────────────────────
+
+.section-badge-mode {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  margin-left: 4px;
+}
+
+.cfg-table-wrap { overflow-x: auto; }
+
+.cfg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  th {
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0 10px 8px;
+    border-bottom: 1.5px solid #e2e8f0;
+  }
+  td { padding: 10px; border-bottom: 1px solid #f8fafc; vertical-align: top; color: #1e293b; }
+  tr:last-child td { border-bottom: none; }
+}
+
+.cfg-td-num    { font-weight: 700; color: #0d9488; width: 32px; }
+.cfg-td-amount { font-weight: 700; text-align: right; white-space: nowrap; }
+.cfg-label     { font-weight: 600; color: #0f172a; }
+.cfg-sub       { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+
+.cfg-repartitions { display: flex; flex-direction: column; gap: 4px; }
+.cfg-rep-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.cfg-rep-label { font-size: 0.875rem; font-weight: 600; color: #0f172a; }
+.cfg-rep-pct   { font-size: 0.9375rem; font-weight: 800; color: #1a6b7c; }
+
+.cfg-empty { font-size: 0.875rem; color: #94a3b8; font-style: italic; margin: 0; }
+
 // ── Statut radio group ────────────────────────────────────────────────────────
 
 .statut-radio-group {

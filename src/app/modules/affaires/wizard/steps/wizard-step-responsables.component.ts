@@ -53,11 +53,15 @@ export class WizardStepResponsablesComponent implements OnInit {
   ngOnInit(): void {
     this.affaireSvc.getResponsableUsers('Responsable Génie Civil').subscribe(u => {
       this.allUsers.set(u);
-      if (this.draft.responsables.some(r => !r.userName)) {
-        const resolved = this.draft.responsables.map(r => ({
-          ...r,
-          userName: r.userName || u.find(u2 => u2.id === r.userId)?.fullName || `Utilisateur #${r.userId}`,
-        }));
+      if (this.draft.responsables.some(r => !r.userName || !r.role)) {
+        const resolved = this.draft.responsables.map(r => {
+          const found = u.find(u2 => u2.id === r.userId);
+          return {
+            ...r,
+            userName: r.userName || found?.fullName || `Utilisateur #${r.userId}`,
+            role: r.role || found?.roleName || '',
+          };
+        });
         this.emit({ ...this.draft, responsables: resolved });
       }
     });

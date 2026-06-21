@@ -183,7 +183,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
   }));
   const ressources: AffaireDraftState['ressources'] = (dto.ressources ?? []).map((r: any) => ({
     userId: r.userId,
-    userName: '',
+    userName: r.fullName ?? '',
     resourceType: r.resourceType,
     rateType: r.rateType,
     rateAmount: Number(r.rateAmount),
@@ -192,7 +192,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
   }));
   const responsables: AffaireDraftState['responsables'] = (dto.responsables ?? []).map((r: any) => ({
     userId: r.userId,
-    userName: '',
+    userName: r.fullName ?? '',
     isPrimary: r.isPrimary,
     role: r.role,
     budgetAllocation: r.budgetAllocation != null ? Number(r.budgetAllocation) : undefined,

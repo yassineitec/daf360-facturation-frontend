@@ -64,6 +64,11 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'suppliers',
+        loadComponent: () =>
+          import('./modules/suppliers/supplier-list.component').then(m => m.SupplierListComponent),
+      },
+      {
         path: 'home',
         loadComponent: () =>
           import('./modules/home/home.component').then(m => m.HomeComponent),

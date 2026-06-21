@@ -17,12 +17,22 @@
     <div class="banner-error">{{ serverError() }}</div>
   } @else {
 
-    <!-- THRESHOLDS -->
+    <!-- ── THRESHOLDS ──────────────────────────────────────────────────────── -->
     <section class="config-section">
-      <h3 class="section-title">Seuils d'approbation</h3>
+      <div class="section-header">
+        <h3 class="section-title">Seuils d'approbation</h3>
+        <button class="btn-add" (click)="showAddThreshold.set(!showAddThreshold())">
+          {{ showAddThreshold() ? '✕ Annuler' : '+ Ajouter' }}
+        </button>
+      </div>
+
       @if (thresholdError()) {
         <div class="banner-error">{{ thresholdError() }}</div>
       }
+      @if (createThresholdError()) {
+        <div class="banner-error">{{ createThresholdError() }}</div>
+      }
+
       <div class="table-wrap">
         <table class="data-table">
           <thead>
@@ -70,18 +80,64 @@
                   <td class="text-right">{{ t.maxAmountEur != null ? (t.maxAmountEur | number:'1.0-0') + ' €' : '∞' }}</td>
                   <td class="cell-actions">
                     <button class="btn-icon" (click)="startEdit(t)" title="Modifier">✏</button>
+                    <button class="btn-icon btn-danger" (click)="deleteThreshold(t.id)" title="Désactiver">🗑</button>
                   </td>
                 </tr>
               }
+            }
+
+            @if (showAddThreshold()) {
+              <tr class="row-new">
+                <td>
+                  <select class="inline-input" [(ngModel)]="newThreshold.level">
+                    <option value="L1">L1</option>
+                    <option value="L2">L2</option>
+                    <option value="L3">L3</option>
+                    <option value="L4">L4</option>
+                  </select>
+                </td>
+                <td>
+                  <input class="inline-input" type="text"
+                    [(ngModel)]="newThreshold.approverRoleCode"
+                    placeholder="Code rôle (optionnel)">
+                </td>
+                <td class="text-right">
+                  <input class="inline-input text-right" type="number"
+                    [(ngModel)]="newThreshold.minAmountEur"
+                    placeholder="0" min="0">
+                </td>
+                <td class="text-right">
+                  <input class="inline-input text-right" type="number"
+                    [(ngModel)]="newThreshold.maxAmountEur"
+                    placeholder="∞ (vide)" min="0">
+                </td>
+                <td class="cell-actions">
+                  <button class="btn-save" (click)="saveNewThreshold()"
+                    [disabled]="isCreatingThreshold()">
+                    @if (isCreatingThreshold()) { … } @else { + }
+                  </button>
+                  <button class="btn-icon" (click)="showAddThreshold.set(false)">✕</button>
+                </td>
+              </tr>
             }
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- CATEGORIES -->
+    <!-- ── CATEGORIES ─────────────────────────────────────────────────────── -->
     <section class="config-section">
-      <h3 class="section-title">Catégories de coût</h3>
+      <div class="section-header">
+        <h3 class="section-title">Catégories de coût</h3>
+        <button class="btn-add" (click)="showAddCategory.set(!showAddCategory())">
+          {{ showAddCategory() ? '✕ Annuler' : '+ Ajouter' }}
+        </button>
+      </div>
+
+      @if (createCatError()) {
+        <div class="banner-error">{{ createCatError() }}</div>
+      }
+
       <div class="table-wrap">
         <table class="data-table">
           <thead>
@@ -157,16 +213,57 @@
                   </td>
                   <td class="cell-actions">
                     <button class="btn-icon" (click)="startEditCategory(cat)" title="Modifier libellé">✏</button>
+                    <button class="btn-icon btn-danger" (click)="deleteCategory(cat.id)" title="Désactiver">🗑</button>
                   </td>
                 </tr>
               }
+            }
+
+            @if (showAddCategory()) {
+              <tr class="row-new">
+                <td>
+                  <input class="inline-input text-right" type="number"
+                    [(ngModel)]="newCat.categoryNumber"
+                    placeholder="#" min="1" style="width:52px">
+                </td>
+                <td>
+                  <input class="inline-input" type="text"
+                    [(ngModel)]="newCat.code"
+                    placeholder="CODE" style="text-transform:uppercase">
+                </td>
+                <td>
+                  <input class="inline-input" type="text"
+                    [(ngModel)]="newCat.labelFr"
+                    placeholder="Libellé FR *">
+                </td>
+                <td>
+                  <input class="inline-input" type="text"
+                    [(ngModel)]="newCat.labelEn"
+                    placeholder="Libellé EN *">
+                </td>
+                <td><span class="badge-manual">Manuel</span></td>
+                <td class="text-center">
+                  <input type="checkbox" [(ngModel)]="newCat.isCapex" style="accent-color:#1a6b7c">
+                </td>
+                <td class="text-center">
+                  <input type="checkbox" [(ngModel)]="newCat.isDirect" style="accent-color:#1a6b7c">
+                </td>
+                <td></td>
+                <td class="cell-actions">
+                  <button class="btn-save" (click)="saveNewCategory()"
+                    [disabled]="isCreatingCategory()">
+                    @if (isCreatingCategory()) { … } @else { + }
+                  </button>
+                  <button class="btn-icon" (click)="showAddCategory.set(false)">✕</button>
+                </td>
+              </tr>
             }
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- LIST MANAGEMENT -->
+    <!-- ── LIST MANAGEMENT ───────────────────────────────────────────────── -->
     <section class="config-section">
       <h3 class="section-title">Valeurs de liste</h3>
 

@@ -1,0 +1,624 @@
+<div style="background:#F0F4F8;min-height:100vh;padding:2rem 2rem 6rem 2rem">
+
+  <!-- ── Page header ─────────────────────────────────────────────────────── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <a routerLink="/fact/cost"
+         style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
+                justify-content:center;background:white;border:1px solid #e2e8f0;
+                color:#44474c;text-decoration:none;transition:all .2s">
+        <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
+      </a>
+      <div>
+        <h1 style="font-size:1.4rem;font-weight:900;color:#0b1c30;margin:0">
+          @if (isEditMode()) { Modifier la ligne de coût } @else { Nouvelle ligne de coût }
+        </h1>
+        <p style="font-size:0.8rem;color:#44474c;margin:2px 0 0 0">
+          @if (isEditMode()) { Mise à jour de la ligne #{{ editId() }} }
+          @else { Saisie d'une dépense dans le circuit d'approbation }
+        </p>
+      </div>
+    </div>
+    <!-- Draft indicator -->
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
+                background:#006b5812;border:1px solid #006b5825">
+      <span style="width:8px;height:8px;border-radius:50%;background:#006b58;
+                   display:inline-block;animation:pulse 2s infinite"></span>
+      <span style="font-size:0.7rem;font-weight:900;color:#006b58;letter-spacing:.08em">BROUILLON AUTOMATISÉ</span>
+    </div>
+  </div>
+
+  <!-- ── Page loading ─────────────────────────────────────────────────────── -->
+  @if (isPageLoading()) {
+    <div style="display:flex;align-items:center;justify-content:center;padding:5rem 0">
+      <span class="material-symbols-outlined animate-spin" style="font-size:2.5rem;color:#006b58">
+        progress_activity
+      </span>
+    </div>
+  }
+
+  @if (!isPageLoading()) {
+
+    <!-- Error banner -->
+    @if (error()) {
+      <div style="margin-bottom:1.5rem;padding:1rem;border-radius:1rem;display:flex;
+                  align-items:flex-start;gap:.75rem;background:#ffdad6;color:#ba1a1a">
+        <span class="material-symbols-outlined" style="flex-shrink:0">error</span>
+        <p style="font-size:.875rem;font-weight:500;margin:0">{{ error() }}</p>
+      </div>
+    }
+
+    <!-- ── Two-column layout ───────────────────────────────────────────────── -->
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start">
+
+      <!-- ═══════ LEFT: FORM SECTIONS ════════════════════════════════════════ -->
+      <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        <!-- SECTION 1 — Contexte ───────────────────────────────────────────── -->
+        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                    padding:1.5rem">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+            <div style="width:40px;height:40px;border-radius:12px;background:#006b5812;
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">pin_drop</span>
+            </div>
+            <div>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Contexte</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Entité, catégorie et date de la dépense</p>
+            </div>
+          </div>
+          <!-- Fields -->
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <!-- Pays -->
+            <div>
+              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
+                Pays / Entité <span style="color:#ba1a1a">*</span>
+              </label>
+              <select [ngModel]="paysId()" (ngModelChange)="onPaysChange($event)"
+                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                       cursor:pointer;appearance:auto">
+                <option [ngValue]="null">— Sélectionner un pays —</option>
+                @for (p of paysList(); track p.id) {
+                  <option [ngValue]="p.id">{{ p.frenchLabel }} ({{ p.isoCode }})</option>
+                }
+              </select>
+            </div>
+            <!-- Catégorie -->
+            <div>
+              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
+                Catégorie de coût <span style="color:#ba1a1a">*</span>
+              </label>
+              <select [ngModel]="categoryId()"
+                (ngModelChange)="categoryId.set($event); onAmountOrCurrencyChange()"
+                [disabled]="!paysId()"
+                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                       cursor:pointer;opacity:1;appearance:auto">
+                <option [ngValue]="null">— Sélectionner une catégorie —</option>
+                @for (cat of filteredCategories(); track cat.id) {
+                  <option [ngValue]="cat.id">{{ cat.labelFr }}</option>
+                }
+              </select>
+            </div>
+            <!-- Date -->
+            <div>
+              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
+                Date de transaction <span style="color:#ba1a1a">*</span>
+              </label>
+              <input type="date" [ngModel]="transactionDate()" (ngModelChange)="transactionDate.set($event)"
+                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                       box-sizing:border-box"/>
+            </div>
+            <!-- Description -->
+            <div>
+              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
+                Description <span style="color:#ba1a1a">*</span>
+              </label>
+              <input type="text" [ngModel]="description()" (ngModelChange)="description.set($event)"
+                placeholder="Objet de la dépense..."
+                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                       box-sizing:border-box"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2 — Montants ────────────────────────────────────────────── -->
+        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                    padding:1.5rem">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+            <div style="width:40px;height:40px;border-radius:12px;background:#fef3c720;
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#d97706">payments</span>
+            </div>
+            <div>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Montants et devise</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Montant hors-taxes et devise locale</p>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <!-- Montant HT -->
+            <div>
+              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
+                Montant HT <span style="color:#ba1a1a">*</span>
+              </label>
+              <input type="number" min="0" step="0.01" [ngModel]="netAmountLocal()"
+                (ngModelChange)="netAmountLocal.set($event)" (blur)="onAmountOrCurrencyChange()"
+                placeholder="0.00"
+                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                       box-sizing:border-box"/>
+            </div>
+            <!-- Devise -->
+            <div>
+              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
+                Devise <span style="color:#ba1a1a">*</span>
+              </label>
+              <select [ngModel]="currencyId()"
+                (ngModelChange)="currencyId.set($event); onAmountOrCurrencyChange()"
+                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                       cursor:pointer;appearance:auto">
+                <option [ngValue]="null">—</option>
+                @for (c of currencies(); track c.id) {
+                  <option [ngValue]="c.id">{{ c.code }} — {{ c.labelFr }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          @if (currencies().length === 0 && paysId()) {
+            <p style="font-size:.75rem;color:#44474c90;margin-top:.75rem">
+              <span class="material-symbols-outlined" style="font-size:.875rem;vertical-align:middle">info</span>
+              Aucune devise configurée. Contactez l'administrateur.
+            </p>
+          }
+        </div>
+
+        <!-- SECTION 3 — Fournisseur ─────────────────────────────────────────── -->
+        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                    padding:1.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <div style="width:40px;height:40px;border-radius:12px;background:#dbeafe20;
+                          display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <span class="material-symbols-outlined" style="font-size:1.2rem;color:#1d4ed8">business</span>
+              </div>
+              <div>
+                <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Fournisseur</p>
+                <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Fournisseur lié à cette dépense</p>
+              </div>
+            </div>
+            <!-- Toggle Libre / Base -->
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:.75rem;color:#44474c">Libre</span>
+              <button type="button"
+                (click)="useSupplierDb.set(!useSupplierDb()); supplierId.set(null); supplierNameFree.set(''); supplierQuery.set('')"
+                style="width:44px;height:24px;border-radius:999px;border:none;cursor:pointer;
+                       position:relative;transition:background .2s"
+                [style.background]="useSupplierDb() ? '#006b58' : '#bdc9c4'">
+                <span style="position:absolute;top:2px;width:20px;height:20px;background:white;
+                             border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s"
+                      [style.left]="useSupplierDb() ? '22px' : '2px'"></span>
+              </button>
+              <span style="font-size:.75rem;color:#44474c">Base</span>
+            </div>
+          </div>
+
+          @if (useSupplierDb()) {
+            <div style="position:relative">
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;
+                          border-radius:12px;background:#eff4ff">
+                <span class="material-symbols-outlined" style="font-size:1.2rem;color:#44474c">search</span>
+                <input type="text" [value]="supplierQuery()"
+                  (input)="onSupplierQueryChange($any($event.target).value)"
+                  placeholder="Chercher un fournisseur dans la base..."
+                  style="flex:1;background:transparent;border:none;outline:none;
+                         font-size:.875rem;color:#0b1c30"/>
+              </div>
+              @if (suppliers().length > 0) {
+                <div style="position:absolute;z-index:20;background:white;border-radius:12px;
+                            box-shadow:0 10px 25px rgba(0,0,0,.12);margin-top:4px;width:100%;
+                            max-height:192px;overflow-y:auto;border:1px solid #e2e8f0">
+                  @for (s of suppliers(); track s.id) {
+                    <button type="button" (click)="selectSupplier(s)"
+                      style="width:100%;padding:10px 16px;text-align:left;font-size:.875rem;
+                             background:transparent;border:none;cursor:pointer;
+                             display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:#0b1c30">{{ s.name }}</span>
+                      @if (s.supplierCode) {
+                        <span style="font-size:.75rem;color:#44474c">{{ s.supplierCode }}</span>
+                      }
+                    </button>
+                  }
+                </div>
+              }
+              @if (supplierId()) {
+                <p style="font-size:.75rem;margin-top:6px;display:flex;align-items:center;
+                           gap:4px;color:#006b58">
+                  <span class="material-symbols-outlined" style="font-size:.875rem">check_circle</span>
+                  Fournisseur sélectionné (ID: {{ supplierId() }})
+                </p>
+              }
+            </div>
+          } @else {
+            <input type="text" [ngModel]="supplierNameFree()" (ngModelChange)="supplierNameFree.set($event)"
+              placeholder="Nom du fournisseur (saisie libre)..."
+              style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                     background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                     box-sizing:border-box"/>
+          }
+        </div>
+
+        <!-- SECTION 4 — Affectation ─────────────────────────────────────────── -->
+        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                    padding:1.5rem">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+            <div style="width:40px;height:40px;border-radius:12px;background:#f0fdf4;
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">work</span>
+            </div>
+            <div>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Affectation</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Rattachement à une affaire (optionnel)</p>
+            </div>
+          </div>
+          <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                        letter-spacing:.08em;color:#44474c;margin-bottom:6px">Affaire</label>
+          <select [ngModel]="affaireId()" (ngModelChange)="affaireId.set($event)"
+            [disabled]="!paysId()"
+            style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                   background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                   cursor:pointer;appearance:auto">
+            <option [ngValue]="null">— Aucune affaire —</option>
+            @for (a of affaires(); track a.id) {
+              <option [ngValue]="a.id">{{ a.reference }} — {{ a.intitule }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- SECTION 5 — Options avancées ────────────────────────────────────── -->
+        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                    padding:1.5rem">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+            <div style="width:40px;height:40px;border-radius:12px;background:#f8fafc;
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                        border:1px solid #e2e8f0">
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#64748b">tune</span>
+            </div>
+            <div>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Options avancées</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Type de coût et notes internes</p>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <!-- Type de coût -->
+            <div>
+              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">Type de coût</label>
+              <select [ngModel]="costTypeId()" (ngModelChange)="costTypeId.set($event)"
+                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                       cursor:pointer;appearance:auto">
+                <option [ngValue]="null">— Non précisé —</option>
+                @for (t of costTypes(); track t.id) {
+                  <option [ngValue]="t.id">{{ t.labelFr }}</option>
+                }
+              </select>
+            </div>
+            <!-- Notes -->
+            <div>
+              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
+                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">Notes internes</label>
+              <textarea rows="3" [ngModel]="notes()" (ngModelChange)="notes.set($event)"
+                placeholder="Commentaire ou précision..."
+                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
+                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
+                       resize:none;box-sizing:border-box;font-family:inherit">
+              </textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 6 — Pièces jointes ──────────────────────────────────────── -->
+        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                    padding:1.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <div style="width:40px;height:40px;border-radius:12px;background:#f8fafc;
+                          display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                          border:1px solid #e2e8f0">
+                <span class="material-symbols-outlined" style="font-size:1.2rem;color:#64748b">attach_file</span>
+              </div>
+              <div>
+                <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Pièces jointes</p>
+                <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">PDF, JPEG, PNG — max 10 Mo par fichier</p>
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;
+                          border-radius:12px;border:1.5px dashed #bdc9c4;color:#44474c;
+                          font-size:.8rem;font-weight:700;cursor:pointer">
+              <span class="material-symbols-outlined" style="font-size:1rem">upload</span>
+              Ajouter
+              <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png"
+                (change)="onFileSelected($event)" style="display:none"/>
+            </label>
+          </div>
+
+          @if (pendingFiles().length > 0) {
+            <div style="display:flex;flex-direction:column;gap:.5rem">
+              @for (f of pendingFiles(); track $index; let i = $index) {
+                <div style="display:flex;align-items:center;gap:.75rem;padding:10px 14px;
+                            border-radius:12px;background:#eff4ff">
+                  <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">description</span>
+                  <div style="flex:1;min-width:0">
+                    <p style="font-size:.875rem;font-weight:500;color:#0b1c30;margin:0;
+                               white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</p>
+                    <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ fmtFileSize(f.size) }}</p>
+                  </div>
+                  <button type="button" (click)="removeFile(i)"
+                    style="padding:6px;border-radius:8px;border:none;cursor:pointer;
+                           background:transparent;color:#ba1a1a">
+                    <span class="material-symbols-outlined" style="font-size:1rem">delete</span>
+                  </button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div style="padding:1.5rem;text-align:center;border-radius:12px;
+                        border:1.5px dashed #bdc9c4">
+              <span class="material-symbols-outlined" style="font-size:2rem;display:block;
+                           margin-bottom:4px;color:#bdc9c4">upload_file</span>
+              <p style="font-size:.75rem;color:#44474c80;margin:0">Aucun fichier sélectionné</p>
+            </div>
+          }
+        </div>
+
+      </div>
+      <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+      <!-- ═══════ RIGHT: SIDEBAR ════════════════════════════════════════════ -->
+      <div style="display:flex;flex-direction:column;gap:1.25rem;position:sticky;top:2rem">
+
+        <!-- Forex dark card ─────────────────────────────────────────────────── -->
+        <div style="border-radius:1rem;overflow:hidden;background:#0b1c30">
+          <!-- Dark header bar -->
+          <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;
+                      border-bottom:1px solid rgba(255,255,255,.1)">
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(74,222,128,.15);
+                        display:flex;align-items:center;justify-content:center">
+              <span class="material-symbols-outlined" style="font-size:1.1rem;color:#4ade80">currency_exchange</span>
+            </div>
+            <p style="font-size:.7rem;font-weight:900;text-transform:uppercase;
+                      letter-spacing:.08em;color:#bdc9c4;margin:0">Conversion Forex</p>
+          </div>
+          <div style="padding:20px">
+            @if (forexPreview(); as fx) {
+              <div>
+                <p style="font-size:.7rem;color:rgba(189,201,196,.6);margin:0 0 2px 0">Montant local</p>
+                <p style="font-size:1.5rem;font-weight:900;color:white;margin:0 0 16px 0">
+                  {{ fx.local | number:'1.0-2' }} {{ fx.deviseLocal }}
+                </p>
+                <div style="display:flex;flex-direction:column;gap:6px;
+                            border-top:1px solid rgba(255,255,255,.12);padding-top:14px">
+                  <!-- EUR rate -->
+                  <div style="display:flex;justify-content:space-between;align-items:center;
+                              padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.04)">
+                    <span style="font-size:.75rem;color:#bdc9c4">Taux EUR</span>
+                    <span style="font-size:.875rem;font-weight:700;color:white">{{ fx.tauxEur | number:'1.4-4' }}</span>
+                  </div>
+                  <!-- EUR amount -->
+                  <div style="display:flex;justify-content:space-between;align-items:center;
+                              padding:10px 12px;border-radius:10px;background:rgba(74,222,128,.1)">
+                    <span style="font-size:.75rem;color:#bdc9c4">≈ EUR</span>
+                    <span style="font-size:1.1rem;font-weight:900;color:#4ade80">
+                      {{ fx.montantEur | number:'1.0-2' }} €
+                    </span>
+                  </div>
+                  <!-- CHF rate -->
+                  <div style="display:flex;justify-content:space-between;align-items:center;
+                              padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.04)">
+                    <span style="font-size:.75rem;color:#bdc9c4">Taux CHF</span>
+                    <span style="font-size:.875rem;font-weight:700;color:white">{{ fx.tauxChf | number:'1.4-4' }}</span>
+                  </div>
+                  <!-- CHF amount -->
+                  <div style="display:flex;justify-content:space-between;align-items:center;
+                              padding:10px 12px;border-radius:10px;background:rgba(96,165,250,.1)">
+                    <span style="font-size:.75rem;color:#bdc9c4">≈ CHF</span>
+                    <span style="font-size:1.1rem;font-weight:900;color:#60a5fa">
+                      {{ fx.montantChf | number:'1.0-2' }} Fr.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            } @else if (previewLoading()) {
+              <div style="display:flex;align-items:center;gap:8px;padding:1rem 0">
+                <span class="material-symbols-outlined" style="font-size:.875rem;color:#bdc9c4;
+                             animation:spin 1s linear infinite">progress_activity</span>
+                <span style="font-size:.75rem;color:rgba(189,201,196,.6)">Calcul en cours…</span>
+              </div>
+            } @else {
+              <p style="font-size:.75rem;padding:1rem 0;color:rgba(189,201,196,.5);margin:0">
+                Saisissez un montant et sélectionnez une devise pour voir la conversion en EUR et CHF.
+              </p>
+            }
+          </div>
+        </div>
+
+        <!-- Circuit d'approbation ───────────────────────────────────────────── -->
+        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;overflow:hidden;
+                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03)">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;
+                      border-bottom:1px solid #f0f4f8;background:#fafbfc">
+            <div style="width:32px;height:32px;border-radius:8px;background:#006b5812;
+                        display:flex;align-items:center;justify-content:center">
+              <span class="material-symbols-outlined" style="font-size:1.1rem;color:#006b58">account_tree</span>
+            </div>
+            <p style="font-size:.7rem;font-weight:900;text-transform:uppercase;
+                      letter-spacing:.08em;color:#44474c;margin:0">Circuit d'approbation</p>
+          </div>
+          <div style="padding:20px">
+            @if (circuitPreview(); as cp) {
+              <div style="display:flex;flex-direction:column;gap:.75rem">
+                <!-- Level badge + description -->
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+                            border-radius:12px;background:#f8fafc">
+                  <span style="padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:900;
+                               flex-shrink:0"
+                    [style.background]="levelBg(cp.level)"
+                    [style.color]="levelColor(cp.level)">
+                    {{ cp.level }}
+                  </span>
+                  <span style="font-size:.875rem;font-weight:700;color:#0b1c30">{{ cp.description }}</span>
+                </div>
+                <!-- Flags -->
+                @if (cp.autoApprove) {
+                  <div style="display:flex;align-items:center;gap:6px;padding:8px 12px;
+                              border-radius:10px;background:#f0fdf4">
+                    <span class="material-symbols-outlined" style="font-size:1rem;color:#006b58">check_circle</span>
+                    <p style="font-size:.75rem;font-weight:500;color:#006b58;margin:0">Approbation automatique</p>
+                  </div>
+                }
+                @if (cp.dualApproval) {
+                  <div style="display:flex;align-items:center;gap:6px;padding:8px 12px;
+                              border-radius:10px;background:rgba(255,218,214,.3)">
+                    <span class="material-symbols-outlined" style="font-size:1rem;color:#ba1a1a">group</span>
+                    <p style="font-size:.75rem;font-weight:500;color:#ba1a1a;margin:0">Double validation requise</p>
+                  </div>
+                }
+                <!-- Approver roles — vertical stepper -->
+                @if (cp.approverRoles.length > 0) {
+                  <div style="border-top:1px solid #f0f4f8;padding-top:12px">
+                    <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
+                              letter-spacing:.08em;color:#44474c;margin:0 0 12px 0">Approbateurs</p>
+                    <div style="display:flex;flex-direction:column;gap:8px;
+                                padding-left:20px;border-left:2px solid #e2e8f0">
+                      @for (role of cp.approverRoles; track role) {
+                        <div style="display:flex;align-items:center;gap:8px;position:relative">
+                          <div style="position:absolute;left:-25px;width:14px;height:14px;
+                                      border-radius:50%;border:2px solid #006b58;background:white;
+                                      display:flex;align-items:center;justify-content:center">
+                            <div style="width:6px;height:6px;border-radius:50%;background:#006b58"></div>
+                          </div>
+                          <span class="material-symbols-outlined" style="font-size:.875rem;color:#64748b">badge</span>
+                          <span style="font-size:.8rem;font-weight:500;color:#0b1c30">{{ role }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else if (!previewLoading()) {
+              <p style="font-size:.75rem;color:#44474c80;margin:0">
+                Le circuit sera calculé une fois le montant converti.
+              </p>
+            } @else {
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="material-symbols-outlined" style="font-size:.875rem;color:#44474c;
+                             animation:spin 1s linear infinite">progress_activity</span>
+                <span style="font-size:.75rem;color:#44474c80">Calcul…</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Help card ───────────────────────────────────────────────────────── -->
+        <div style="border-radius:1rem;padding:1.2rem;background:#006b5810;
+                    border:1px solid #006b5830">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span class="material-symbols-outlined" style="font-size:1rem;color:#006b58">lightbulb</span>
+            <p style="font-size:.75rem;font-weight:700;color:#006b58;margin:0">Bon à savoir</p>
+          </div>
+          <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
+            <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
+              <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
+              Le brouillon est sauvegardé sans envoyer au circuit.
+            </li>
+            <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
+              <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
+              La soumission déclenche immédiatement le circuit d'approbation.
+            </li>
+            <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
+              <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
+              Les pièces jointes sont attachées après sauvegarde.
+            </li>
+          </ul>
+        </div>
+
+      </div>
+      <!-- ═════════════════════════════════════════════════════════════════ -->
+    </div>
+    <!-- end two-column grid -->
+  }
+
+</div>
+
+<!-- ── FIXED BOTTOM ACTION BAR ─────────────────────────────────────────────── -->
+<footer style="position:fixed;bottom:0;left:0;right:0;z-index:50;
+               display:flex;align-items:center;justify-content:space-between;
+               padding:0 2.5rem;height:72px;
+               background:rgba(240,244,248,.95);
+               backdrop-filter:blur(12px);
+               border-top:1px solid #e2e8f0;
+               box-shadow:0 -4px 20px rgba(0,0,0,.06)">
+
+  <!-- Cancel -->
+  <a routerLink="/fact/cost"
+     style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;
+            color:#44474c;border:1px solid #d1d5db;background:white;
+            font-size:.875rem;font-weight:500;text-decoration:none;transition:all .2s">
+    <span class="material-symbols-outlined" style="font-size:1rem">arrow_back</span>
+    Annuler
+  </a>
+
+  <!-- Right actions -->
+  <div style="display:flex;align-items:center;gap:.75rem">
+    @if (!canSave()) {
+      <span style="font-size:.75rem;color:#44474c90">Remplissez les champs obligatoires pour continuer</span>
+    }
+    <!-- Save draft -->
+    <button type="button" (click)="saveDraft()" [disabled]="!canSave() || isSaving()"
+      style="padding:10px 24px;border-radius:12px;font-size:.875rem;font-weight:700;
+             border:1.5px solid #006b58;color:#006b58;background:white;cursor:pointer;
+             transition:all .2s;opacity:1"
+      [style.opacity]="(!canSave() || isSaving()) ? '0.5' : '1'">
+      @if (isSaving()) {
+        <span class="material-symbols-outlined" style="font-size:.875rem;vertical-align:middle;
+               animation:spin 1s linear infinite">progress_activity</span>
+      } @else {
+        Enregistrer brouillon
+      }
+    </button>
+    <!-- Submit -->
+    <button type="button" (click)="submitLine()" [disabled]="!canSave() || isSaving()"
+      style="display:flex;align-items:center;gap:8px;padding:10px 24px;border-radius:12px;
+             font-size:.875rem;font-weight:700;color:white;background:#006b58;border:none;
+             cursor:pointer;transition:all .2s;
+             box-shadow:0 4px 14px rgba(0,107,88,.4)"
+      [style.opacity]="(!canSave() || isSaving()) ? '0.5' : '1'">
+      @if (isSaving()) {
+        <span class="material-symbols-outlined" style="font-size:1rem;
+               animation:spin 1s linear infinite">progress_activity</span>
+      } @else {
+        <span class="material-symbols-outlined" style="font-size:1rem">send</span>
+      }
+      Soumettre pour approbation
+    </button>
+  </div>
+
+</footer>

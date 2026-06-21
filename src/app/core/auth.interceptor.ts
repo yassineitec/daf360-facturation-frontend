@@ -1,13 +1,19 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject }            from '@angular/core';
-import { catchError, throwError } from 'rxjs';
+import { catchError, throwError, from, switchMap, EMPTY } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { UserStore }   from './user.store';
 import { AuthService } from './auth.service';
 
+function withToken(req: HttpRequest<unknown>, token: string | null | undefined): HttpRequest<unknown> {
+  return token
+    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` }, withCredentials: true })
+    : req.clone({ withCredentials: true });
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const store = inject(UserStore);
-  const auth  = inject(AuthService);  // used for portal 401 redirect
+  const auth  = inject(AuthService);
 
   const isPortalCall = req.url.startsWith(environment.portalUrl);
   const isFactApi    = req.url.startsWith(environment.factApiUrl);
@@ -22,14 +28,19 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (isFactApi) {
-    const token = store.user()?.rhToken;
-    const authReq = token
-      ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` }, withCredentials: true })
-      : req.clone({ withCredentials: true });
-
-    // Do NOT redirect to login on facturation-backend 401s — propagate to the component.
-    // Only portal 401s (session expired) should trigger an OAuth redirect.
-    return next(authReq);
+    return next(withToken(req, store.user()?.rhToken)).pipe(
+      catchError(err => {
+        if (err.status !== 401) return throwError(() => err);
+        // Token expired or missing — refresh from portal then retry once.
+        return from(auth.refreshToken()).pipe(
+          switchMap(isAuthenticated => {
+            if (!isAuthenticated) { auth.login(); return EMPTY; }
+            return next(withToken(req, store.user()?.rhToken));
+          }),
+          catchError(() => { auth.login(); return EMPTY; }),
+        );
+      }),
+    );
   }
 
   return next(req);

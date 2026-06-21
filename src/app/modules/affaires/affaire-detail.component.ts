@@ -1,7 +1,9 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { AffaireService } from './affaire.service';
+import { AffaireWizardService } from './affaire-wizard.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto,
   STATUT_TRANSITIONS, STATUT_LABELS, TYPE_LABELS,
@@ -17,7 +19,7 @@ import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.compone
 
 @Component({
   selector: 'app-affaire-detail',
-  imports: [RouterLink, FormsModule, StatusBadgeComponent, PermissionDirective, RafGaugeComponent, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
+  imports: [RouterLink, FormsModule, DecimalPipe, StatusBadgeComponent, PermissionDirective, RafGaugeComponent, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
   templateUrl: './affaire-detail.component.html',
   styleUrl: './affaire-detail.component.scss',
 })
@@ -25,14 +27,17 @@ export class AffaireDetailComponent implements OnInit {
   // Bound from route param via withComponentInputBinding()
   id = input<string>();
 
-  private readonly svc    = inject(AffaireService);
-  private readonly store  = inject(UserStore);
-  private readonly router = inject(Router);
+  private readonly svc       = inject(AffaireService);
+  private readonly wizardSvc = inject(AffaireWizardService);
+  private readonly store     = inject(UserStore);
+  private readonly router    = inject(Router);
 
   affaire      = signal<AffaireDetail | null>(null);
   raf          = signal<RafDetailsDto | null>(null);
   kpis         = signal<AffaireKpisDto | null>(null);
   tsList       = signal<TsDto[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  draft        = signal<any>(null);
 
   loading      = signal(true);
   error        = signal<string | null>(null);
@@ -40,7 +45,7 @@ export class AffaireDetailComponent implements OnInit {
   actionLoading= signal(false);
 
   // Section open states
-  openSections = signal<Set<string>>(new Set(['info', 'ts']));
+  openSections = signal<Set<string>>(new Set(['info', 'ts', 'responsables']));
 
   // Statut modal
   showStatutModal = signal(false);
@@ -92,6 +97,7 @@ export class AffaireDetailComponent implements OnInit {
         this.loadRaf();
         this.loadKpis();
         this.loadTs();
+        this.loadDraft();
       },
       error: () => {
         this.error.set('Impossible de charger l\'affaire.');
@@ -110,6 +116,12 @@ export class AffaireDetailComponent implements OnInit {
 
   loadTs(): void {
     this.svc.getTS(this.numId).subscribe({ next: ts => this.tsList.set(ts) });
+  }
+
+  loadDraft(): void {
+    this.wizardSvc.loadDraft(this.numId).subscribe({
+      next: dto => this.draft.set(dto),
+    });
   }
 
   toggleSection(key: string): void {
@@ -196,6 +208,34 @@ export class AffaireDetailComponent implements OnInit {
   }
 
   statutLabel(s: string): string { return STATUT_LABELS[s] ?? s; }
+
+  getBudgetPct(allocation: number | null | undefined, total: number | null | undefined): number {
+    if (!total || !allocation) return 0;
+    return Math.round((allocation / total) * 1000) / 10;
+  }
+
+  billingModeLabel(mode: string): string {
+    const labels: Record<string, string> = {
+      AV: 'Facturation à l\'avancement', JAL: 'Forfait par jalons',
+      TM: 'Régie Time & Materials',      CP:  'Cost-Plus',
+      RMB: 'Remboursable',
+    };
+    return labels[mode] ?? mode;
+  }
+
+  rateTypeLabel(t: string): string {
+    const map: Record<string, string> = {
+      DAILY: 'Jour', HOURLY: 'Heure', MONTHLY: 'Mois', FIXED: 'Forfait',
+    };
+    return map[t] ?? t;
+  }
+
+  jalonStatutLabel(s: string): string {
+    const map: Record<string, string> = {
+      A_FACTURER: 'À facturer', FACTURE: 'Facturé', ANNULE: 'Annulé',
+    };
+    return map[s] ?? s;
+  }
 
   goBack(): void { this.router.navigate(['/fact/affaires']); }
 

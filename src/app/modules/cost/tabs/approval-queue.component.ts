@@ -1,5 +1,5 @@
 import {
-  Component, OnInit, inject, signal,
+  Component, OnInit, inject, signal, computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CostService } from '../cost.service';
@@ -30,6 +30,10 @@ export class ApprovalQueueComponent implements OnInit {
   isLoading = signal(false);
   serverError = signal<string | null>(null);
 
+  urgentCount = computed(() =>
+    this.pending().filter(l => l.approvalLevelRequired === 'L3' || l.approvalLevelRequired === 'L4').length
+  );
+
   modalLine   = signal<CostLineDto | null>(null);
   modalAction = signal<ApproveAction>('approve');
   modalLevel  = signal<string>('L2');
@@ -39,8 +43,8 @@ export class ApprovalQueueComponent implements OnInit {
       next: paysId => {
         if (paysId != null && paysId > 0) {
           this.paysId.set(paysId);
-          this.load();
         }
+        this.load();
       },
       error: () => this.load(),
     });

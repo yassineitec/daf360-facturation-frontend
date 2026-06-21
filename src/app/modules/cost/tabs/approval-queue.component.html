@@ -1,50 +1,199 @@
-<div class="tab-container">
-  <div class="queue-header">
-    <h3 class="queue-title">File d'approbation</h3>
-    <button class="btn-refresh" (click)="load()" [disabled]="isLoading()">↻ Actualiser</button>
+<div style="display:flex;flex-direction:column;gap:20px">
+
+  <!-- ── KPI cards ──────────────────────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+
+    <!-- En attente -->
+    <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem">
+      <div style="width:48px;height:48px;border-radius:12px;background:#fef3c7;
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span class="material-symbols-outlined" style="font-size:1.5rem;color:#d97706;
+              font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">pending_actions</span>
+      </div>
+      <div>
+        <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
+                  letter-spacing:.1em;color:#64748b;margin:0">En attente</p>
+        <p style="font-size:1.6rem;font-weight:900;color:#0f3d47;margin:2px 0 0 0;line-height:1">
+          {{ pending().length }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Urgents -->
+    <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                border-left:4px solid #ba1a1a;padding:1.1rem 1.25rem;
+                display:flex;align-items:center;gap:1rem">
+      <div style="width:48px;height:48px;border-radius:12px;background:#ffdad6;
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span class="material-symbols-outlined" style="font-size:1.5rem;color:#ba1a1a;
+              font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">priority_high</span>
+      </div>
+      <div>
+        <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
+                  letter-spacing:.1em;color:#64748b;margin:0">Urgents (L3–L4)</p>
+        <p style="font-size:1.6rem;font-weight:900;color:#ba1a1a;margin:2px 0 0 0;line-height:1">
+          {{ urgentCount() }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Traités -->
+    <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
+                box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem">
+      <div style="width:48px;height:48px;border-radius:12px;background:#d1fae5;
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span class="material-symbols-outlined" style="font-size:1.5rem;color:#065f46;
+              font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">verified</span>
+      </div>
+      <div>
+        <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
+                  letter-spacing:.1em;color:#64748b;margin:0">Traités aujourd'hui</p>
+        <p style="font-size:1.6rem;font-weight:900;color:#0f3d47;margin:2px 0 0 0;line-height:1">—</p>
+      </div>
+    </div>
+
   </div>
 
+  <!-- ── Header + refresh ────────────────────────────────────────────────── -->
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <h3 style="font-size:.75rem;font-weight:900;text-transform:uppercase;
+               letter-spacing:.1em;color:#44474c;margin:0">
+      File d'approbation
+    </h3>
+    <button style="display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:12px;
+                   font-size:.875rem;font-weight:700;border:1px solid #e2e8f0;
+                   color:#44474c;background:white;cursor:pointer;transition:all .2s"
+            (click)="load()" [disabled]="isLoading()">
+      <span class="material-symbols-outlined" style="font-size:1rem"
+            [style.animation]="isLoading() ? 'spin 1s linear infinite' : 'none'">refresh</span>
+      Actualiser
+    </button>
+  </div>
+
+  <!-- ── States ──────────────────────────────────────────────────────────── -->
   @if (isLoading()) {
-    <div class="loading-state">Chargement...</div>
+    <div style="background:white;border-radius:1rem;border:1px solid #e2e8f0;
+                padding:4rem 0;text-align:center">
+      <span class="material-symbols-outlined animate-spin"
+            style="font-size:2.5rem;display:block;margin:0 auto .5rem;color:#1a6b7c">
+        progress_activity
+      </span>
+      <p style="font-size:.875rem;color:#64748b;margin:0">Chargement…</p>
+    </div>
   } @else if (serverError()) {
-    <div class="banner-error">{{ serverError() }}</div>
+    <div style="padding:1rem;border-radius:1rem;font-size:.875rem;font-weight:500;
+                background:#fee2e2;color:#991b1b">
+      {{ serverError() }}
+    </div>
   } @else if (pending().length === 0) {
-    <div class="empty-state">
-      <div class="empty-icon">✓</div>
-      <p>Aucune ligne en attente d'approbation.</p>
+    <div style="background:white;border-radius:1rem;border:1px solid #e2e8f0;
+                padding:4rem 0;text-align:center">
+      <span class="material-symbols-outlined"
+            style="font-size:3.5rem;display:block;margin-bottom:.75rem;color:#bdc9c4">
+        task_alt
+      </span>
+      <p style="font-size:.875rem;font-weight:500;color:#64748b;margin:0">
+        Aucune ligne en attente d'approbation
+      </p>
+      <p style="font-size:.75rem;margin:.25rem 0 0 0;color:#94a3b8">
+        Toutes les lignes soumises ont été traitées.
+      </p>
     </div>
   } @else {
-    <div class="queue-list">
+    <div style="display:flex;flex-direction:column;gap:12px">
       @for (line of pending(); track line.id) {
-        <div class="queue-card">
-          <div class="card-info">
-            <div class="card-label">{{ line.label }}</div>
-            <div class="card-meta">
-              {{ line.categoryId ?? '—' }} ·
-              {{ line.transactionDate ?? '—' }} ·
-              {{ formatAmount(line.netAmountLocal, line.currency ?? undefined) }}
-              @if (line.netAmountEur) {
-                <span class="eur-amount">&nbsp;({{ formatAmount(line.netAmountEur, 'EUR') }})</span>
-              }
+        @let sc = statusConfig(line.status);
+        @let isUrgent = line.approvalLevelRequired === 'L3' || line.approvalLevelRequired === 'L4';
+
+        <div style="background:white;border-radius:1rem;padding:1.25rem;
+                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+                    border:1px solid #f0f4f8;
+                    transition:all .2s"
+             [style.border-left]="isUrgent ? '4px solid #ba1a1a' : '1px solid #f0f4f8'">
+
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">
+
+            <!-- Left: info -->
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:.5rem">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <p style="font-size:.875rem;font-weight:700;color:#0f3d47;margin:0;
+                           white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  {{ line.label ?? '—' }}
+                </p>
+                @if (isUrgent) {
+                  <span style="padding:2px 8px;border-radius:999px;font-size:.65rem;font-weight:900;
+                               background:#ffdad6;color:#ba1a1a">URGENT</span>
+                }
+              </div>
+
+              <div style="display:flex;align-items:center;gap:16px;font-size:.75rem;
+                          color:#64748b;flex-wrap:wrap">
+                <span style="display:flex;align-items:center;gap:4px">
+                  <span class="material-symbols-outlined" style="font-size:.875rem">folder</span>
+                  Cat. {{ line.categoryId ?? '—' }}
+                </span>
+                <span style="display:flex;align-items:center;gap:4px">
+                  <span class="material-symbols-outlined" style="font-size:.875rem">calendar_today</span>
+                  {{ line.transactionDate ?? '—' }}
+                </span>
+                <span style="display:flex;align-items:center;gap:4px;font-weight:700;color:#0f3d47">
+                  <span class="material-symbols-outlined" style="font-size:.875rem">payments</span>
+                  {{ formatAmount(line.netAmountLocal, line.currency ?? undefined) }}
+                  @if (line.netAmountEur) {
+                    <span style="font-weight:400;color:#64748b">
+                      ({{ formatAmount(line.netAmountEur, 'EUR') }})
+                    </span>
+                  }
+                </span>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:700"
+                      [style.background]="sc.bg" [style.color]="sc.text">
+                  {{ sc.label }}
+                </span>
+                @if (line.approvalLevelRequired) {
+                  <span style="padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:900"
+                        [style.background]="isUrgent ? '#ffdad6' : '#f1f5f9'"
+                        [style.color]="isUrgent ? '#ba1a1a' : '#475569'">
+                    {{ line.approvalLevelRequired }}
+                  </span>
+                }
+              </div>
             </div>
-            <div class="card-level">
-              Niveau requis : <strong>{{ line.approvalLevelRequired ?? '—' }}</strong>
-              <span class="status-badge"
-                [style.background]="statusConfig(line.status).bg"
-                [style.color]="statusConfig(line.status).text">
-                {{ statusConfig(line.status).label }}
-              </span>
+
+            <!-- Right: action buttons -->
+            <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">
+              <button style="padding:8px 16px;border-radius:12px;font-size:.75rem;font-weight:700;
+                             background:#d1fae5;color:#065f46;border:none;cursor:pointer;
+                             transition:all .2s"
+                      (click)="openModal(line, 'approve')">
+                Approuver
+              </button>
+              <button style="padding:8px 16px;border-radius:12px;font-size:.75rem;font-weight:700;
+                             background:#fef3c7;color:#92400e;border:none;cursor:pointer;
+                             transition:all .2s"
+                      (click)="openModal(line, 'return')">
+                Retourner
+              </button>
+              <button style="padding:8px 16px;border-radius:12px;font-size:.75rem;font-weight:700;
+                             background:#fee2e2;color:#991b1b;border:none;cursor:pointer;
+                             transition:all .2s"
+                      (click)="openModal(line, 'reject')">
+                Rejeter
+              </button>
             </div>
-          </div>
-          <div class="card-actions">
-            <button class="btn-approve" (click)="openModal(line, 'approve')">Approuver</button>
-            <button class="btn-return"  (click)="openModal(line, 'return')">Retourner</button>
-            <button class="btn-reject"  (click)="openModal(line, 'reject')">Rejeter</button>
+
           </div>
         </div>
       }
     </div>
   }
+
 </div>
 
 @if (modalLine()) {

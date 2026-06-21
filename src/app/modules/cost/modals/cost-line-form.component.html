@@ -115,15 +115,6 @@
             }
           </div>
 
-          <!-- VAT -->
-          <div class="field-half">
-            <label for="vatAmountLocal" class="field-label">TVA</label>
-            <input id="vatAmountLocal" type="number" step="0.001" min="0"
-              formControlName="vatAmountLocal"
-              placeholder="0.000"
-              class="field-input">
-          </div>
-
           <!-- Currency -->
           <div class="field-half">
             <label for="currencyId" class="field-label">Devise *</label>
@@ -140,17 +131,6 @@
             @if (currencies().length === 0) {
               <p class="field-warn-text">⚠ Aucune devise configurée.</p>
             }
-          </div>
-
-          <!-- Payment method -->
-          <div class="field-half">
-            <label for="paymentMethodId" class="field-label">Mode de paiement</label>
-            <select id="paymentMethodId" formControlName="paymentMethodId" class="field-select">
-              <option [value]="null">Mode de paiement (optionnel)</option>
-              @for (v of paymentMethods(); track v.id) {
-                <option [value]="v.id">{{ v.labelFr }}</option>
-              }
-            </select>
           </div>
 
           <!-- Approval preview -->
@@ -173,20 +153,49 @@
         </h3>
         <div class="form-grid">
 
-          <!-- Supplier -->
-          <div class="field-full">
-            <label for="supplierNameFree" class="field-label">Fournisseur</label>
-            <input id="supplierNameFree" type="text" formControlName="supplierNameFree"
-              placeholder="Nom du fournisseur..."
-              class="field-input">
-          </div>
-
-          <!-- Document URL -->
-          <div class="field-full">
-            <label for="documentUrl" class="field-label">Référence document / URL</label>
-            <input id="documentUrl" type="text" formControlName="documentUrl"
-              placeholder="Ex: FAC-2026-0042 ou https://..."
-              class="field-input">
+          <!-- Supplier autocomplete -->
+          <div class="field-full" style="position:relative">
+            <label class="field-label">Fournisseur</label>
+            <div style="position:relative">
+              <input type="text"
+                [value]="supplierDisplayName()"
+                (input)="onSupplierInput($any($event.target).value)"
+                (focus)="showSupplierDrop.set(supplierSuggestions().length > 0)"
+                (blur)="onSupplierBlur()"
+                placeholder="Rechercher ou saisir un fournisseur..."
+                class="field-input"
+                autocomplete="off">
+              @if (supplierDisplayName() && form.get('supplierId')!.value) {
+                <button type="button" (click)="clearSupplier()"
+                  style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                         background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1rem;
+                         line-height:1;padding:0">✕</button>
+              }
+            </div>
+            @if (isSearchingSupplier()) {
+              <p class="field-hint">Recherche en cours…</p>
+            } @else if (form.get('supplierId')!.value) {
+              <p class="field-hint" style="color:#065f46">✓ Fournisseur enregistré lié</p>
+            }
+            @if (showSupplierDrop()) {
+              <div style="position:absolute;z-index:200;left:0;right:0;top:calc(100% + 2px);
+                          background:#fff;border:1px solid #cbd5e1;border-radius:10px;
+                          box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto">
+                @for (s of supplierSuggestions(); track s.id) {
+                  <div (mousedown)="selectSupplierItem(s)"
+                    style="padding:9px 14px;cursor:pointer;font-size:.8125rem;
+                           color:#1e293b;border-bottom:1px solid #f1f5f9;
+                           transition:background .1s"
+                    onmouseover="this.style.background='#f0fbfd'"
+                    onmouseout="this.style.background='transparent'">
+                    <span style="font-weight:600">{{ s.name }}</span>
+                    @if (s.supplierCode) {
+                      <span style="color:#64748b;font-size:.75rem;margin-left:8px">{{ s.supplierCode }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
           </div>
 
           <!-- Notes -->
@@ -196,34 +205,6 @@
               placeholder="Notes optionnelles..."
               class="field-textarea" rows="3"></textarea>
           </div>
-
-          <!-- Recurring -->
-          <div class="field-full">
-            <label class="toggle-label">
-              <input type="checkbox" formControlName="isRecurring" class="toggle-cb">
-              <span>Dépense récurrente</span>
-            </label>
-          </div>
-
-          @if (form.get('isRecurring')!.value) {
-            <div class="field-half">
-              <label for="recurrenceFrequencyId" class="field-label">Fréquence *</label>
-              <select id="recurrenceFrequencyId" formControlName="recurrenceFrequencyId"
-                class="field-select"
-                [class.field-error]="isInvalid('recurrenceFrequencyId')">
-                <option [value]="null">Fréquence...</option>
-                @for (v of recurrenceFreqs(); track v.id) {
-                  <option [value]="v.id">{{ v.labelFr }}</option>
-                }
-              </select>
-              @if (isInvalid('recurrenceFrequencyId')) {
-                <p class="field-err-text">La fréquence est obligatoire.</p>
-              }
-              @if (recurrenceFreqs().length === 0) {
-                <p class="field-warn-text">⚠ Aucune fréquence configurée.</p>
-              }
-            </div>
-          }
 
         </div>
       </div>

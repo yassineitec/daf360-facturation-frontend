@@ -68,11 +68,6 @@
               </div>
               <div class="resp-name-wrap">
                 <span class="resp-name">{{ resp.userName || 'Ligne ' + (idx + 1) }}</span>
-                @if (resp.isPrimary) {
-                  <span class="primary-badge">
-                    <span class="material-symbols-outlined">star</span>Principal
-                  </span>
-                }
               </div>
               <div class="resp-header-actions">
                 @if (!resp.isPrimary) {

@@ -59,6 +59,28 @@ export interface UpdateCostCategoryLabelRequest {
   descriptionEn?: string;
 }
 
+export interface CreateCostCategoryRequest {
+  paysId: number;
+  code: string;
+  labelFr: string;
+  labelEn: string;
+  categoryNumber: number;
+  isCapex?: boolean | null;
+  isOverhead?: boolean | null;
+  isDirect?: boolean | null;
+  parentId?: number | null;
+  displayOrder?: number | null;
+}
+
+export interface CreateCostApprovalThresholdRequest {
+  paysId: number;
+  categoryId?: number | null;
+  level: string;
+  minAmountEur: number;
+  maxAmountEur?: number | null;
+  approverRoleCode?: string | null;
+}
+
 /** Categories whose lines are auto-pushed from external modules — manual entry blocked. */
 const AUTO_PUSH_CATEGORY_NUMBERS = new Set([2, 3, 8, 11]);
 
@@ -112,6 +134,7 @@ export interface CostLineDto {
   periodMonth: number;
   transactionDate: string | null;
   categoryId: number | null;
+  reference?: string | null;
   label: string | null;           // backend field name is "label"
   originModule: string | null;
   originReferenceId: string | null;
@@ -224,4 +247,67 @@ export function formatAmount(amount: number | null, currency = 'EUR'): string {
   } catch {
     return `${amount.toFixed(0)} ${currency}`;
   }
+}
+
+// ── D3-115/127 additional types ───────────────────────────────────────────────
+
+export interface CostAttachmentDto {
+  id: number;
+  costLineId: number;
+  fileName: string;
+  fileSizeBytes?: number | null;
+  fileType?: string | null;
+  uploadedBy?: number | null;
+  uploadedAt: string;
+  downloadUrl?: string | null;
+}
+
+export interface ForexPreviewDto {
+  local: number;
+  deviseLocal: string;
+  tauxEur: number;
+  montantEur: number;
+  tauxChf: number;
+  montantChf: number;
+}
+
+export interface CircuitPreviewDto {
+  level: string;
+  description: string;
+  dualApproval: boolean;
+  autoApprove: boolean;
+  approverRoles: string[];
+}
+
+// ── Category icon map (for approval-queue cards) ──────────────────────────────
+
+export const CATEGORY_ICON: Record<string, { icon: string; color: string; bg: string }> = {
+  INFRA_IT:    { icon: 'dns',            color: '#4648d4', bg: '#eff0ff' },
+  VOYAGE:      { icon: 'flight_takeoff', color: '#006b58', bg: '#f0fdf4' },
+  LOGISTIQUE:  { icon: 'local_shipping', color: '#64748B', bg: '#F1F5F9' },
+  FORMATION:   { icon: 'school',         color: '#7e22ce', bg: '#f5f0ff' },
+  MARKETING:   { icon: 'campaign',       color: '#D97706', bg: '#FFFBEB' },
+  BIEN_ETRE:   { icon: 'spa',            color: '#065f46', bg: '#d1fae5' },
+  COUT_PROJET: { icon: 'construction',   color: '#ba1a1a', bg: '#ffdad6' },
+  FOURNITURE:  { icon: 'edit',           color: '#64748B', bg: '#F1F5F9' },
+  DEFAULT:     { icon: 'receipt_long',   color: '#64748B', bg: '#F1F5F9' },
+};
+
+// ── Supplier search result (lightweight DTO for form autocomplete) ────────────
+
+export interface SupplierSearchItem {
+  id: number;
+  name: string;
+  supplierCode: string | null;
+  code: string | null;
+  paysId: number | null;
+}
+
+// Derive urgency level from the approval level (L1→BASSE, L2→NORMAL, L3/L4→URGENT)
+export function getUrgencyFromLevel(level: string | null | undefined): {
+  label: string; color: string; bg: string;
+} {
+  if (!level || level === 'L1') return { label: 'BASSE',  color: '#64748B', bg: '#F1F5F9' };
+  if (level === 'L2')           return { label: 'NORMAL', color: '#D97706', bg: '#FFFBEB' };
+  return                               { label: 'URGENT', color: '#ba1a1a', bg: '#ffdad6' };
 }
