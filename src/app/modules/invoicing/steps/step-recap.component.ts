@@ -7,13 +7,14 @@ import { StepConditionsValue } from './step-conditions.component';
 
 @Component({
   selector: 'app-step-recap',
+  standalone: true,
   imports: [],
   template: `
 <div class="step-recap">
 
-  <!-- Summary header -->
+  <!-- Informations générales -->
   <div class="recap-section">
-    <h3>Récapitulatif</h3>
+    <h3>Informations générales</h3>
     <div class="recap-grid">
       <div class="recap-row">
         <span class="recap-label">Type</span>
@@ -42,12 +43,19 @@ import { StepConditionsValue } from './step-conditions.component';
     </div>
   </div>
 
-  <!-- Lines table -->
+  <!-- Lignes -->
   <div class="recap-section">
-    <h3>Lignes</h3>
+    <h3>Lignes de facturation</h3>
     <table class="recap-lines">
       <thead>
-        <tr><th>Description</th><th>Qté</th><th>PU HT</th><th>TVA</th><th>Total HT</th><th>Total TTC</th></tr>
+        <tr>
+          <th>Description</th>
+          <th>Qté</th>
+          <th>PU HT</th>
+          <th>TVA</th>
+          <th>Total HT</th>
+          <th>Total TTC</th>
+        </tr>
       </thead>
       <tbody>
         @for (l of linesData().lines; track $index) {
@@ -71,7 +79,7 @@ import { StepConditionsValue } from './step-conditions.component';
     </table>
   </div>
 
-  <!-- Reminder schedule preview -->
+  <!-- Rappels planifiés -->
   <div class="recap-section">
     <h3>Rappels planifiés (aperçu)</h3>
     <div class="reminder-preview-list">
@@ -89,13 +97,20 @@ import { StepConditionsValue } from './step-conditions.component';
   }
 
   <div class="step-actions">
-    <button type="button" class="btn-back" (click)="prevStep.emit()">← Retour</button>
-    <button type="button" class="btn-draft" [disabled]="saving()" (click)="saveDraft()">
-      {{ saving() ? 'Enregistrement…' : 'Enregistrer en brouillon' }}
+    <button type="button" class="btn-back" (click)="prevStep.emit()">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Retour
     </button>
-    <button type="button" class="btn-submit" [disabled]="saving()" (click)="saveAndSubmit()">
-      {{ saving() ? 'Envoi…' : 'Soumettre pour validation' }}
-    </button>
+    <div class="recap-actions">
+      <button type="button" class="btn-draft" [disabled]="saving()" (click)="saveDraft()">
+        <span class="material-symbols-outlined">save</span>
+        {{ saving() ? 'Enregistrement…' : 'Brouillon' }}
+      </button>
+      <button type="button" class="btn-submit" [disabled]="saving()" (click)="saveAndSubmit()">
+        {{ saving() ? 'Envoi…' : 'Soumettre' }}
+        <span class="material-symbols-outlined">send</span>
+      </button>
+    </div>
   </div>
 </div>
   `,
@@ -105,10 +120,10 @@ export class StepRecapComponent {
   private readonly svc    = inject(InvoiceService);
   private readonly router = inject(Router);
 
-  affaireData   = input.required<StepAffaireValue>();
-  linesData     = input.required<StepLinesValue>();
+  affaireData    = input.required<StepAffaireValue>();
+  linesData      = input.required<StepLinesValue>();
   conditionsData = input.required<StepConditionsValue>();
-  prevStep      = output<void>();
+  prevStep       = output<void>();
 
   saving      = signal(false);
   serverError = signal<string | null>(null);
@@ -129,11 +144,11 @@ export class StepRecapComponent {
       return this.formatDate(t.toISOString().slice(0, 10));
     };
     return [
-      { label: 'J-7 (avant échéance)',     date: offsetDays(-7)  },
-      { label: 'J+0 (jour échéance)',       date: offsetDays(0)   },
-      { label: 'J+7 (1re relance)',         date: offsetDays(7)   },
-      { label: 'J+15 (2e relance)',         date: offsetDays(15)  },
-      { label: 'J+30 (3e relance)',         date: offsetDays(30)  },
+      { label: 'J-7 (avant échéance)',  date: offsetDays(-7) },
+      { label: 'J+0 (jour échéance)',   date: offsetDays(0)  },
+      { label: 'J+7 (1re relance)',     date: offsetDays(7)  },
+      { label: 'J+15 (2e relance)',     date: offsetDays(15) },
+      { label: 'J+30 (3e relance)',     date: offsetDays(30) },
     ];
   });
 

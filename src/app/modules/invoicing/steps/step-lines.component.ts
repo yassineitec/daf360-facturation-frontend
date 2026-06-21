@@ -11,6 +11,7 @@ export interface StepLinesValue {
 
 @Component({
   selector: 'app-step-lines',
+  standalone: true,
   imports: [ReactiveFormsModule],
   template: `
 <div class="step-lines">
@@ -83,8 +84,14 @@ export interface StepLinesValue {
   }
 
   <div class="step-actions">
-    <button type="button" class="btn-back" (click)="prevStep.emit()">← Retour</button>
-    <button type="button" class="btn-next" (click)="next()" [disabled]="linesArray.length === 0">Suivant →</button>
+    <button type="button" class="btn-back" (click)="prevStep.emit()">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Retour
+    </button>
+    <button type="button" class="btn-next" (click)="next()" [disabled]="linesArray.length === 0">
+      Suivant
+      <span class="material-symbols-outlined">arrow_forward</span>
+    </button>
   </div>
 </div>
   `,
@@ -128,8 +135,7 @@ export class StepLinesComponent {
 
   lineTtc(i: number): number {
     const g = this.linesArray.at(i) as FormGroup;
-    const ht = this.lineHt(i);
-    return ht * (1 + (g.value.tauxTva ?? 0) / 100);
+    return this.lineHt(i) * (1 + (g.value.tauxTva ?? 0) / 100);
   }
 
   get totalHt():  number { return this.linesArray.controls.reduce((s, _, i) => s + this.lineHt(i), 0); }

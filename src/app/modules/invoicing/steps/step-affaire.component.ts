@@ -21,6 +21,7 @@ export interface StepAffaireValue {
 
 @Component({
   selector: 'app-step-affaire',
+  standalone: true,
   imports: [ReactiveFormsModule],
   template: `
 <div class="step-affaire">
@@ -29,22 +30,27 @@ export interface StepAffaireValue {
   <div class="field">
     <label>Affaire</label>
     <div class="search-wrap">
-      <input type="search" class="form-input" placeholder="Rechercher une affaire (ref, intitulé)…"
+      <span class="material-symbols-outlined search-icon-prefix">search</span>
+      <input type="search" class="form-input form-input--search"
+        placeholder="Rechercher par nom ou numéro de projet…"
         [value]="searchQuery()" (input)="onSearchInput($event)"
         maxlength="100" autocomplete="off" />
     </div>
 
     @if (searching()) {
-      <div class="search-hint">Recherche…</div>
+      <div class="search-hint">Recherche en cours…</div>
     }
 
     @if (searchResults().length > 0 && !selectedAffaire()) {
       <div class="search-dropdown">
         @for (a of searchResults(); track a.id) {
           <div class="search-item" (click)="selectAffaire(a)">
-            <span class="aff-ref">{{ a.reference }}</span>
-            <span class="aff-name">{{ a.intitule }}</span>
-            <span class="aff-client">{{ a.clientName }}</span>
+            <span class="material-symbols-outlined si-icon">folder_open</span>
+            <div>
+              <span class="aff-ref">{{ a.reference }}</span>
+              <span class="aff-name"> | {{ a.intitule }}</span>
+              <p class="aff-client">{{ a.clientName }}</p>
+            </div>
           </div>
         }
       </div>
@@ -55,7 +61,7 @@ export interface StepAffaireValue {
         <div class="sel-header">
           <span class="aff-ref">{{ selectedAffaire()!.reference }}</span>
           <span class="aff-name">{{ selectedAffaire()!.intitule }}</span>
-          <button type="button" class="clear-btn" (click)="clearAffaire()">&times;</button>
+          <button type="button" class="clear-btn" (click)="clearAffaire()" title="Désélectionner">&times;</button>
         </div>
         <div class="sel-kpis">
           <div class="kpi">
@@ -63,7 +69,7 @@ export interface StepAffaireValue {
             <span class="kpi-val">{{ formatAmount(selectedAffaire()!.budgetPrevisionnel ?? 0) }}</span>
           </div>
           <div class="kpi">
-            <span class="kpi-label">RAF</span>
+            <span class="kpi-label">RAF disponible</span>
             @if (rafLoading()) {
               <span class="kpi-val">…</span>
             } @else {
@@ -74,9 +80,15 @@ export interface StepAffaireValue {
           </div>
         </div>
         @if (rafBlocked()) {
-          <div class="raf-alert raf-alert--block">RAF épuisé — facturation bloquée (RG10).</div>
+          <div class="raf-alert raf-alert--block">
+            <span class="material-symbols-outlined">block</span>
+            RAF épuisé — facturation bloquée (RG10).
+          </div>
         } @else if (rafWarning()) {
-          <div class="raf-alert raf-alert--warn">RAF faible ({{ formatPct(rafPct()) }}%) — vérifiez le montant.</div>
+          <div class="raf-alert raf-alert--warn">
+            <span class="material-symbols-outlined">warning</span>
+            RAF faible ({{ formatPct(rafPct()) }}%) — vérifiez le montant.
+          </div>
         }
       </div>
     }
@@ -86,15 +98,17 @@ export interface StepAffaireValue {
   @if (selectedAffaire() && !validBillingModeFromAffaire()) {
     <div class="field">
       <label>Mode de facturation *</label>
-      <select class="form-input" [formControl]="form.controls['billingMode']"
-        [class.invalid]="form.controls['billingMode'].invalid && form.controls['billingMode'].touched">
-        <option value="">Sélectionner…</option>
-        <option value="TM">TM — Temps &amp; Matériaux</option>
-        <option value="CP">CP — Coût Plus</option>
-        <option value="AV">AV — Avancement</option>
-        <option value="JAL">JAL — Jalons</option>
-        <option value="RMB">RMB — Remboursement</option>
-      </select>
+      <div class="form-select-wrap">
+        <select class="form-input" [formControl]="form.controls['billingMode']"
+          [class.invalid]="form.controls['billingMode'].invalid && form.controls['billingMode'].touched">
+          <option value="">Sélectionner…</option>
+          <option value="TM">TM — Temps &amp; Matériaux</option>
+          <option value="CP">CP — Coût Plus</option>
+          <option value="AV">AV — Avancement</option>
+          <option value="JAL">JAL — Jalons</option>
+          <option value="RMB">RMB — Remboursement</option>
+        </select>
+      </div>
       @if (form.controls['billingMode'].invalid && form.controls['billingMode'].touched) {
         <span class="error-msg">Mode de facturation requis.</span>
       }
@@ -104,14 +118,16 @@ export interface StepAffaireValue {
   <!-- Type de facture -->
   <div class="field">
     <label>Type de facture *</label>
-    <select class="form-input" [formControl]="form.controls['invoiceType']"
-      [class.invalid]="form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched">
-      <option value="">Sélectionner…</option>
-      <option value="ACOMPTE">Acompte</option>
-      <option value="INTERMEDIAIRE">Intermédiaire</option>
-      <option value="FINALE">Finale</option>
-      <option value="AVOIR">Avoir</option>
-    </select>
+    <div class="form-select-wrap">
+      <select class="form-input" [formControl]="form.controls['invoiceType']"
+        [class.invalid]="form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched">
+        <option value="">Sélectionner le type…</option>
+        <option value="ACOMPTE">Facture d'acompte</option>
+        <option value="INTERMEDIAIRE">Facture de situation (Avancement)</option>
+        <option value="FINALE">Facture de solde</option>
+        <option value="AVOIR">Note d'avoir</option>
+      </select>
+    </div>
     @if (form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched) {
       <span class="error-msg">Type requis.</span>
     }
@@ -121,18 +137,25 @@ export interface StepAffaireValue {
   @if (selectedAffaire() && tsList().length > 0) {
     <div class="field">
       <label>TS associé (optionnel)</label>
-      <select class="form-input" [formControl]="form.controls['tsId']">
-        <option [value]="null">Aucun</option>
-        @for (ts of tsList(); track ts.id) {
-          <option [value]="ts.id">{{ ts.referenceTs }} — {{ ts.intitule }} ({{ formatAmount(ts.montantEstime) }})</option>
-        }
-      </select>
+      <div class="form-select-wrap">
+        <select class="form-input" [formControl]="form.controls['tsId']">
+          <option [value]="null">Aucun</option>
+          @for (ts of tsList(); track ts.id) {
+            <option [value]="ts.id">{{ ts.referenceTs }} — {{ ts.intitule }} ({{ formatAmount(ts.montantEstime) }})</option>
+          }
+        </select>
+      </div>
     </div>
   }
 
   <div class="step-actions">
+    <button type="button" class="btn-cancel" (click)="cancel.emit()">
+      <span class="material-symbols-outlined">close</span>
+      Annuler
+    </button>
     <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading()">
-      Suivant →
+      Suivant
+      <span class="material-symbols-outlined">arrow_forward</span>
     </button>
   </div>
 </div>
@@ -145,6 +168,7 @@ export class StepAffaireComponent implements OnInit {
   private readonly fb     = inject(FormBuilder);
 
   nextStep = output<StepAffaireValue>();
+  cancel   = output<void>();
 
   searchQuery     = signal('');
   searchResults   = signal<AffaireListItem[]>([]);
@@ -175,12 +199,11 @@ export class StepAffaireComponent implements OnInit {
   });
   readonly rafWarning = computed(() => this.rafPct() < 20 && this.rafPct() > 0);
   readonly rafBlocked = computed(() => {
-    if (this.rafLoading()) return false;       // don't block while still loading
+    if (this.rafLoading()) return false;
     const raf = this.rafDetails();
-    if (!raf) return false;                    // no RAF data yet — let backend enforce
+    if (!raf) return false;
     return raf.rafDisponible <= 0;
   });
-
 
   ngOnInit(): void {
     this.search$.pipe(
@@ -205,7 +228,6 @@ export class StepAffaireComponent implements OnInit {
     this.rafDetails.set(null);
     this.searchResults.set([]);
     this.searchQuery.set(`${a.reference} — ${a.intitule}`);
-    // Only use affaire's billingMode if it's a valid invoice billing mode
     const bmCtrl = this.form.controls['billingMode'];
     const validBm = a.billingMode && VALID_BILLING_MODES.has(a.billingMode) ? a.billingMode : null;
     if (validBm) {
@@ -217,7 +239,6 @@ export class StepAffaireComponent implements OnInit {
     }
     bmCtrl.updateValueAndValidity();
 
-    // Fetch real RAF from the dedicated endpoint
     this.rafLoading.set(true);
     this.affSvc.getAffaireRaf(a.id).subscribe({
       next:  r => { this.rafDetails.set(r); this.rafLoading.set(false); },
