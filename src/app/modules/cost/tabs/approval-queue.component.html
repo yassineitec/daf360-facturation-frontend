@@ -1,58 +1,168 @@
-<div class="tab-container">
-  <div class="queue-header">
-    <h3 class="queue-title">File d'approbation</h3>
-    <button class="btn-refresh" (click)="load()" [disabled]="isLoading()">↻ Actualiser</button>
+<div class="aq-page">
+
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="aq-header">
+    <div>
+      <h1 class="aq-title">File d'approbation</h1>
+      <p class="aq-sub">Flux de travail consolidé pour les validations financières.</p>
+    </div>
+    <div class="aq-header-actions">
+      <div class="search-wrap">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input class="search-input" type="text" placeholder="ID, titre, ou montant…"
+               [value]="searchQuery()"
+               (input)="searchQuery.set($any($event.target).value)">
+      </div>
+      <button class="btn-filter" type="button" (click)="load()" [disabled]="isLoading()">
+        <span class="material-symbols-outlined">sync</span>
+        Actualiser
+      </button>
+    </div>
   </div>
 
+  <!-- ── KPI Stats ─────────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+
+    <div class="kpi-card">
+      <div class="kpi-icon kpi-icon--green">
+        <span class="material-symbols-outlined kpi-icon__sym" style="font-variation-settings:'FILL' 1">pending_actions</span>
+      </div>
+      <div>
+        <p class="kpi-label">En attente</p>
+        <h4 class="kpi-value">{{ pendingCount() }}</h4>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--urgent">
+      <div class="kpi-icon kpi-icon--red">
+        <span class="material-symbols-outlined kpi-icon__sym" style="font-variation-settings:'FILL' 1">priority_high</span>
+      </div>
+      <div>
+        <p class="kpi-label">Urgents</p>
+        <h4 class="kpi-value">{{ urgentCount() | number:'2.0' }}</h4>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--wide">
+      <div>
+        <p class="kpi-label">Performance d'approbation</p>
+        <div class="kpi-perf-row">
+          <h4 class="kpi-value">4.2h</h4>
+          <span class="kpi-trend">
+            <span class="material-symbols-outlined" style="font-size:14px">trending_down</span>
+            12%
+          </span>
+        </div>
+        <p class="kpi-perf-sub">Temps de traitement moyen hebdomadaire</p>
+      </div>
+      <svg class="sparkline-svg" viewBox="0 0 200 60" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="spkGrad" x1="0%" x2="0%" y1="0%" y2="100%">
+            <stop offset="0%"   stop-color="#006b58"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </linearGradient>
+        </defs>
+        <path class="sparkline-line" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35"/>
+        <path class="sparkline-fill" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35 V60 H0 Z"/>
+      </svg>
+    </div>
+
+  </div>
+
+  <!-- ── States ────────────────────────────────────────────────────────────── -->
   @if (isLoading()) {
-    <div class="loading-state">Chargement...</div>
+    <div class="aq-loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Chargement…
+    </div>
   } @else if (serverError()) {
-    <div class="banner-error">{{ serverError() }}</div>
-  } @else if (pending().length === 0) {
-    <div class="empty-state">
-      <div class="empty-icon">✓</div>
+    <div class="aq-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ serverError() }}
+    </div>
+  } @else if (filteredPending().length === 0) {
+    <div class="aq-empty">
+      <span class="material-symbols-outlined aq-empty__icon">check_circle</span>
       <p>Aucune ligne en attente d'approbation.</p>
     </div>
   } @else {
-    <div class="queue-list">
-      @for (line of pending(); track line.id) {
-        <div class="queue-card">
-          <div class="card-info">
-            <div class="card-label">{{ line.label }}</div>
-            <div class="card-meta">
-              {{ line.categoryId ?? '—' }} ·
-              {{ line.transactionDate ?? '—' }} ·
-              {{ formatAmount(line.netAmountLocal, line.currency ?? undefined) }}
-              @if (line.netAmountEur) {
-                <span class="eur-amount">&nbsp;({{ formatAmount(line.netAmountEur, 'EUR') }})</span>
-              }
+
+    <!-- ── Cards Grid ─────────────────────────────────────────────────────── -->
+    <div class="approval-grid">
+      @for (line of filteredPending(); track line.id) {
+        <div class="appr-card">
+
+          <!-- Priority badge -->
+          <div class="priority-badge"
+               [style.background]="priorityCfg(line).color"
+               [style.box-shadow]="'0 4px 10px ' + priorityCfg(line).shadow">
+            {{ priorityCfg(line).label }}
+          </div>
+
+          <!-- Card header -->
+          <div class="appr-card__header">
+            <div class="appr-card__id-block">
+              <div class="appr-card__icon">
+                <span class="material-symbols-outlined">receipt_long</span>
+              </div>
+              <div>
+                <span class="appr-card__ref">#{{ line.id }}</span>
+                <h5 class="appr-card__name">{{ line.label ?? 'Sans titre' }}</h5>
+              </div>
             </div>
-            <div class="card-level">
-              Niveau requis : <strong>{{ line.approvalLevelRequired ?? '—' }}</strong>
-              <span class="status-badge"
-                [style.background]="statusConfig(line.status).bg"
-                [style.color]="statusConfig(line.status).text">
-                {{ statusConfig(line.status).label }}
+            <div class="status-dot"
+                 [style.background]="priorityCfg(line).color"
+                 [style.box-shadow]="'0 0 0 4px ' + priorityCfg(line).color + '22'">
+            </div>
+          </div>
+
+          <!-- Card body -->
+          <div class="appr-card__body">
+            <div class="appr-card__row">
+              <span class="appr-card__row-label">Catégorie</span>
+              <span class="appr-card__row-val">{{ line.categoryId ?? '—' }}</span>
+            </div>
+            <div class="appr-card__row">
+              <span class="appr-card__row-label">Date</span>
+              <span class="appr-card__row-val">{{ line.transactionDate ?? '—' }}</span>
+            </div>
+            <div class="appr-card__amount-block">
+              <span class="appr-card__amount-label">MONTANT TOTAL</span>
+              <span class="appr-card__amount">
+                {{ formatAmount(line.netAmountLocal, line.currency ?? 'EUR') }}
               </span>
             </div>
           </div>
-          <div class="card-actions">
-            <button class="btn-approve" (click)="openModal(line, 'approve')">Approuver</button>
-            <button class="btn-return"  (click)="openModal(line, 'return')">Retourner</button>
-            <button class="btn-reject"  (click)="openModal(line, 'reject')">Rejeter</button>
+
+          <!-- Card actions -->
+          <div class="appr-card__actions">
+            <button class="btn-approve" type="button" (click)="openModal(line, 'approve')">
+              <span class="material-symbols-outlined">check_circle</span>
+              Approuver la demande
+            </button>
+            <div class="appr-card__secondary-actions">
+              <button class="btn-complement" type="button" (click)="openModal(line, 'return')">Complément</button>
+              <button class="btn-reject" type="button" (click)="openModal(line, 'reject')">
+                <span class="material-symbols-outlined">block</span>
+              </button>
+            </div>
           </div>
+
         </div>
       }
     </div>
+
   }
+
 </div>
 
+<!-- ── Modal ─────────────────────────────────────────────────────────────── -->
 @if (modalLine()) {
   <app-approve-modal
     [costLine]="modalLine()!"
     [action]="modalAction()"
     [level]="modalLevel()"
     (closed)="closeModal()"
-    (resolved)="onResolved($event)">
+    (resolved)="onResolved()">
   </app-approve-modal>
 }

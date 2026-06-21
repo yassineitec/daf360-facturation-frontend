@@ -1,0 +1,312 @@
+<div class="create-page">
+
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title">Création de Coût</h1>
+      <p class="page-sub">Saisie d'une nouvelle dépense professionnelle pour validation.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-outline" type="button" (click)="cancel()">Annuler</button>
+      <button class="btn-draft" type="button" (click)="saveDraft()" [disabled]="isSaving()">
+        <span class="material-symbols-outlined">save</span>
+        Enregistrer Brouillon
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Error ─────────────────────────────────────────────────────────────── -->
+  @if (serverError()) {
+    <div class="error-bar">
+      <span class="material-symbols-outlined">error</span>
+      {{ serverError() }}
+    </div>
+  }
+
+  <!-- ── Main Grid ─────────────────────────────────────────────────────────── -->
+  <div class="main-grid" [formGroup]="form">
+
+    <!-- ══ LEFT COLUMN — Form ══ -->
+    <div class="form-col">
+
+      <!-- Informations Générales -->
+      <section class="lifted-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <span class="material-symbols-outlined">description</span>
+          </div>
+          <h2 class="section-title">Informations Générales</h2>
+        </div>
+
+        <div class="form-grid">
+
+          <!-- Date -->
+          <div class="field-group">
+            <label class="field-label">Date *</label>
+            <input class="field-input" type="date" formControlName="transactionDate"
+                   [class.field-input--error]="isInvalid('transactionDate')">
+            @if (isInvalid('transactionDate')) {
+              <span class="field-error">Date requise</span>
+            }
+          </div>
+
+          <!-- Catégorie -->
+          <div class="field-group">
+            <label class="field-label">Catégorie *</label>
+            <select class="field-input field-select" formControlName="categoryId"
+                    [class.field-input--error]="isInvalid('categoryId')">
+              <option [value]="null">Sélectionner une catégorie…</option>
+              @for (cat of categories(); track cat.id) {
+                <option [value]="cat.id">{{ cat.labelFr }}</option>
+              }
+            </select>
+            @if (isInvalid('categoryId')) {
+              <span class="field-error">Catégorie requise</span>
+            }
+          </div>
+
+          <!-- Fournisseur -->
+          <div class="field-group">
+            <label class="field-label">Fournisseur</label>
+            <input class="field-input" type="text" formControlName="supplierNameFree"
+                   placeholder="Nom du fournisseur…">
+          </div>
+
+          <!-- Type de coût -->
+          <div class="field-group">
+            <label class="field-label">Type de coût</label>
+            <select class="field-input field-select" formControlName="costTypeId">
+              <option [value]="null">Sélectionner…</option>
+              @for (t of costTypes(); track t.id) {
+                <option [value]="t.id">{{ t.labelFr }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Référence / Description -->
+          <div class="field-group field-group--full">
+            <label class="field-label">Description *</label>
+            <input class="field-input" type="text" formControlName="description"
+                   placeholder="Détails de la dépense…"
+                   [class.field-input--error]="isInvalid('description')">
+            @if (isInvalid('description')) {
+              <span class="field-error">Description requise (min. 3 caractères)</span>
+            }
+          </div>
+
+          <!-- Montant + TVA + Devise -->
+          <div class="field-group field-group--full">
+            <div class="amount-row">
+              <div class="field-group" style="flex:2">
+                <label class="field-label">Montant HT *</label>
+                <input class="field-input amount-input" type="number" step="0.01" min="0"
+                       formControlName="netAmountLocal"
+                       placeholder="0.00"
+                       [class.field-input--error]="isInvalid('netAmountLocal')">
+                @if (isInvalid('netAmountLocal')) {
+                  <span class="field-error">Montant requis</span>
+                }
+              </div>
+              <div class="field-group" style="flex:1">
+                <label class="field-label">TVA</label>
+                <input class="field-input amount-input" type="number" step="0.01" min="0"
+                       formControlName="vatAmountLocal" placeholder="0.00">
+              </div>
+              <div class="field-group" style="flex:1">
+                <label class="field-label">Devise *</label>
+                <select class="field-input field-select" formControlName="currencyId"
+                        [class.field-input--error]="isInvalid('currencyId')">
+                  <option [value]="null">—</option>
+                  @for (c of currencies(); track c.id) {
+                    <option [value]="c.id">{{ c.code }} ({{ c.labelFr }})</option>
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode de paiement -->
+          <div class="field-group">
+            <label class="field-label">Mode de paiement</label>
+            <select class="field-input field-select" formControlName="paymentMethodId">
+              <option [value]="null">Sélectionner…</option>
+              @for (p of paymentMethods(); track p.id) {
+                <option [value]="p.id">{{ p.labelFr }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Récurrence -->
+          <div class="field-group">
+            <label class="field-label">Récurrence</label>
+            <div class="recurrence-row">
+              <label class="toggle-label">
+                <input type="checkbox" formControlName="isRecurring" class="toggle-check">
+                <span class="toggle-track"></span>
+                <span class="toggle-text">{{ form.get('isRecurring')!.value ? 'Oui' : 'Non' }}</span>
+              </label>
+              @if (form.get('isRecurring')!.value) {
+                <select class="field-input field-select" formControlName="recurrenceFrequencyId" style="flex:1">
+                  <option [value]="null">Fréquence…</option>
+                  @for (f of recurrenceFreqs(); track f.id) {
+                    <option [value]="f.id">{{ f.labelFr }}</option>
+                  }
+                </select>
+              }
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="field-group field-group--full">
+            <label class="field-label">Commentaire / Notes</label>
+            <textarea class="field-input field-textarea" formControlName="notes"
+                      rows="3" placeholder="Détails supplémentaires…"></textarea>
+          </div>
+
+          <!-- Référence document -->
+          <div class="field-group field-group--full">
+            <label class="field-label">Référence document</label>
+            <input class="field-input" type="text" formControlName="documentUrl"
+                   placeholder="URL ou référence du justificatif…">
+          </div>
+
+        </div>
+
+        <!-- Alerte catégorie scrutiny -->
+        @if (strictScrutinyWarning) {
+          <div class="scrutiny-alert">
+            <span class="material-symbols-outlined">warning</span>
+            <span>Cette catégorie nécessite une vérification renforcée. Un niveau d'approbation supplémentaire sera appliqué.</span>
+          </div>
+        }
+      </section>
+
+      <!-- Pièces Jointes -->
+      <section class="lifted-card pj-card">
+        <div class="pj-header">
+          <div class="pj-title-row">
+            <div class="pj-icon-wrap">
+              <span class="material-symbols-outlined">attach_file</span>
+            </div>
+            <h2 class="pj-title">Pièces Jointes</h2>
+          </div>
+          <button class="pj-add-btn" type="button">
+            <span class="material-symbols-outlined">add_circle</span>
+            Ajouter un fichier
+          </button>
+        </div>
+
+        <label class="pj-drop pj-drop--full">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" hidden>
+          <span class="material-symbols-outlined pj-drop__icon">cloud_upload</span>
+          <span class="pj-drop__label">GLISSER &amp; DÉPOSER</span>
+          <span class="pj-drop__hint">PDF, JPG, PNG — max. 10 Mo</span>
+        </label>
+      </section>
+
+    </div>
+
+    <!-- ══ RIGHT COLUMN — Sidebar ══ -->
+    <div class="sidebar-col">
+
+      <!-- Résumé Montant -->
+      <div class="total-card">
+        <div class="total-card__top">
+          <span class="total-card__label">TOTAL {{ selectedCurrency?.code || 'CHF' }}</span>
+          <span class="total-card__rate">1:0.965</span>
+        </div>
+        <p class="total-card__amount">
+          {{ (grossAmount | number:'1.2-2') }}
+          <span class="total-card__unit">{{ selectedCurrency?.code || 'Fr.' }}</span>
+        </p>
+        <div class="total-card__breakdown">
+          <span>HT : {{ (netAmount | number:'1.2-2') }}</span>
+          <span>TVA : {{ (vatAmount | number:'1.2-2') }}</span>
+        </div>
+      </div>
+
+      <!-- Circuit d'Approbation -->
+      <section class="lifted-card">
+        <h3 class="section-title" style="margin-bottom:20px">Circuit d'Approbation</h3>
+
+        @if (!approvalPreview()) {
+          <p class="approval-hint">Saisissez un montant pour estimer le circuit d'approbation.</p>
+        } @else if (approvalPreview() === 'L1') {
+          <div class="approval-auto">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;color:#006b58">check_circle</span>
+            <div>
+              <p class="approval-auto__title">Auto-approuvé</p>
+              <p class="approval-auto__sub">Montant sous le seuil — aucune approbation manuelle requise.</p>
+            </div>
+          </div>
+        } @else {
+          <div class="approval-steps">
+            @for (step of approvalSteps; track step.label) {
+              <div class="appr-step">
+                <div class="appr-step__circle"
+                     [class.appr-step__circle--current]="step.state === 'current'"
+                     [class.appr-step__circle--done]="step.state === 'done'">
+                  @if (step.state === 'done') {
+                    <span class="material-symbols-outlined" style="font-size:14px">check</span>
+                  } @else if (step.state === 'current') {
+                    <span class="material-symbols-outlined" style="font-size:14px">play_arrow</span>
+                  } @else {
+                    <span class="material-symbols-outlined" style="font-size:14px">lock</span>
+                  }
+                </div>
+                <div class="appr-step__body">
+                  <p class="appr-step__title"
+                     [class.appr-step__title--active]="step.state === 'current'">
+                    {{ step.label }}
+                  </p>
+                  <p class="appr-step__role">{{ step.role }}</p>
+                  @if (step.state === 'current') {
+                    <span class="appr-badge">À VALIDER</span>
+                  } @else if (step.state === 'pending') {
+                    <span class="appr-step__pending">En attente de l'étape précédente</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (approvalPreview()) {
+          <div class="approval-level-badge" [attr.data-level]="approvalPreview()">
+            {{ approvalLabel }}
+          </div>
+        }
+      </section>
+
+      <!-- Note de conformité -->
+      <div class="info-alert">
+        <span class="material-symbols-outlined info-alert__icon">info</span>
+        <div>
+          <p class="info-alert__title">Note de conformité</p>
+          <p class="info-alert__body">
+            Assurez-vous que la TVA est clairement visible sur le justificatif pour permettre la déduction fiscale.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ── Bottom Actions Bar (fixed) ────────────────────────────────────────── -->
+<footer class="bottom-bar">
+  <div class="bottom-bar__left">
+    <span class="draft-pulse"></span>
+    <span class="draft-label">BROUILLON AUTOMATISÉ</span>
+  </div>
+  <button class="btn-outline" type="button" (click)="reset()">Réinitialiser</button>
+  <button class="btn-submit" type="button" (click)="submitForm()" [disabled]="isSaving()">
+    @if (isSaving() && !isDraft()) {
+      <span class="material-symbols-outlined spin">progress_activity</span>
+    }
+    Soumettre la demande
+    <span class="material-symbols-outlined">send</span>
+  </button>
+</footer>

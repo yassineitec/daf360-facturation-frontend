@@ -9,13 +9,6 @@ import { TsValidationModalComponent, ValidationConfig } from './ts-validation-mo
   imports: [TsValidationModalComponent],
   template: `
     <div class="ts-list">
-      <div class="ts-header">
-        <span class="ts-title">Travaux supplémentaires</span>
-        <button class="btn-add" (click)="openNewForm.emit()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nouveau TS
-        </button>
-      </div>
 
       @if (errorMsg()) {
         <div class="ts-error">{{ errorMsg() }}</div>

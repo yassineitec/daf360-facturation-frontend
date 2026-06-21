@@ -1,19 +1,25 @@
 $sidebar-width:     220px;
 $sidebar-collapsed: 56px;
 $header-height:     56px;
-$sidebar-bg:        #0f3d47;
-$sidebar-text:      rgba(255, 255, 255, 0.65);
-$sidebar-active:    rgba(255, 255, 255, 0.14);
-$primary:           #1a6b7c;
+$primary:           #1a6b7c;   // original brand teal — header unchanged
 $ease:              0.2s ease;
+
+// ── Light sidebar design tokens ──────────────────────────────────────────────
+$sidebar-bg:          #ffffff;
+$sidebar-border:      #c4c5d5;
+$nav-text:            #444653;
+$nav-text-active:     #00288e;
+$nav-hover-bg:        #e7e8ea;
+$nav-active-bg:       #e7e8ea;
+$nav-active-indicator:#50717B;
 
 .fact-shell {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--color-bg, #f0f4f8);
+  background: #f8f9fb;
 
-  // ── Header ──────────────────────────────────────────────────────────
+  // ── Header — original style, unchanged ─────────────────────────────
   .shell-header {
     position: fixed;
     inset-block-start: 0;
@@ -57,21 +63,9 @@ $ease:              0.2s ease;
       gap: 0.5rem;
       font-size: 0.9375rem;
 
-      .brand-name {
-        font-weight: 700;
-        color: $primary;
-        letter-spacing: -0.02em;
-      }
-
-      .brand-sep {
-        color: #cbd5e1;
-        font-weight: 300;
-      }
-
-      .brand-module {
-        font-weight: 500;
-        color: #475569;
-      }
+      .brand-name   { font-weight: 700; color: $primary; letter-spacing: -0.02em; }
+      .brand-sep    { color: #cbd5e1; font-weight: 300; }
+      .brand-module { font-weight: 500; color: #475569; }
     }
 
     .header-right {
@@ -105,16 +99,8 @@ $ease:              0.2s ease;
         flex-direction: column;
         line-height: 1.25;
 
-        .user-name {
-          font-size: 0.8125rem;
-          font-weight: 600;
-          color: #1e293b;
-        }
-
-        .user-role {
-          font-size: 0.6875rem;
-          color: #94a3b8;
-        }
+        .user-name { font-size: 0.8125rem; font-weight: 600; color: #1e293b; }
+        .user-role { font-size: 0.6875rem; color: #94a3b8; }
       }
     }
 
@@ -129,14 +115,11 @@ $ease:              0.2s ease;
       align-items: center;
       transition: background $ease, color $ease;
 
-      &:hover {
-        background: #fee2e2;
-        color: #dc2626;
-      }
+      &:hover { background: #fee2e2; color: #dc2626; }
     }
   }
 
-  // ── Body (sidebar + content) ─────────────────────────────────────────
+  // ── Body ─────────────────────────────────────────────────────────────
   .shell-body {
     display: flex;
     flex: 1;
@@ -145,51 +128,50 @@ $ease:              0.2s ease;
     height: calc(100vh - #{$header-height});
   }
 
-  // ── Sidebar ──────────────────────────────────────────────────────────
+  // ── Sidebar — light design ────────────────────────────────────────────
   .shell-sidebar {
     width: $sidebar-width;
     background: $sidebar-bg;
+    border-right: 2px solid $sidebar-border;
     display: flex;
     flex-direction: column;
     transition: width $ease;
     overflow: hidden;
     flex-shrink: 0;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
 
     .nav-list {
       list-style: none;
       margin: 0;
-      padding: 0.75rem 0.5rem;
+      padding: 12px 10px;
       flex: 1;
       overflow-y: auto;
       scrollbar-width: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
 
       &::-webkit-scrollbar { display: none; }
-
-      li { margin: 2px 0; }
     }
 
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.5625rem 0.875rem;
-      color: $sidebar-text;
+      gap: 12px;
+      padding: 8px 12px;
+      color: $nav-text;
       text-decoration: none;
       font-size: 0.875rem;
-      font-weight: 500;
-      border-radius: 7px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      border-radius: 8px;
       transition: background $ease, color $ease;
       white-space: nowrap;
+      overflow: hidden;
 
       .nav-icon {
+        font-size: 22px;
         flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 18px;
-        height: 18px;
-
-        ::ng-deep svg { display: block; }
       }
 
       .nav-label {
@@ -198,13 +180,13 @@ $ease:              0.2s ease;
       }
 
       &:hover {
-        background: $sidebar-active;
-        color: #fff;
+        background: $nav-hover-bg;
+        color: #191c1e;
       }
 
       &.active {
-        background: rgba(255, 255, 255, 0.18);
-        color: #fff;
+        background: $nav-active-bg;
+        color: $nav-text-active;
         position: relative;
 
         &::before {
@@ -214,21 +196,21 @@ $ease:              0.2s ease;
           top: 20%;
           height: 60%;
           width: 3px;
-          background: #5eead4;
+          background: $nav-active-indicator;
           border-radius: 0 3px 3px 0;
         }
       }
     }
   }
 
-  // ── Collapsed state ──────────────────────────────────────────────────
+  // ── Collapsed state ───────────────────────────────────────────────────
   &.collapsed {
     .shell-sidebar {
       width: $sidebar-collapsed;
 
       .nav-item {
         justify-content: center;
-        padding: 0.625rem;
+        padding: 10px;
         gap: 0;
       }
 
@@ -236,11 +218,12 @@ $ease:              0.2s ease;
     }
   }
 
-  // ── Main content ─────────────────────────────────────────────────────
+  // ── Main content ──────────────────────────────────────────────────────
   .shell-content {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem;
+    padding: 2rem 2.5rem;
     min-width: 0;
+    background: #f8f9fb;
   }
 }

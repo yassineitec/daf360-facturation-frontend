@@ -1,190 +1,272 @@
 <div class="detail-page">
 
-  <!-- Back -->
-  <button class="back-btn" (click)="goBack()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-    Affaires
-  </button>
-
   @if (loading()) {
-    <div class="loading-state">
+    <div class="state-box">
       <div class="spinner"></div>
-      <span>Chargement de l'affaire…</span>
+      <span class="text-body-md text-muted">Chargement de l'affaire…</span>
     </div>
   } @else if (error()) {
-    <div class="error-state">
-      <p>{{ error() }}</p>
+    <div class="state-box">
+      <span class="material-symbols-outlined state-icon">error_outline</span>
+      <p class="text-body-md text-muted">{{ error() }}</p>
       <button class="btn-retry" (click)="loadAll()">Réessayer</button>
     </div>
   } @else if (affaire()) {
 
-    <!-- Page header -->
-    <div class="page-header glass-card">
-      <div class="header-left">
-        <span class="ref-badge">{{ affaire()!.reference }}</span>
-        <div class="header-titles">
-          <h1 class="affaire-title">{{ affaire()!.intitule }}</h1>
-          <div class="header-meta">
-            <span>{{ affaire()!.clientName }}</span>
-            <span class="meta-sep">·</span>
-            <span>{{ typeLabel() }}</span>
-            <span class="meta-sep">·</span>
-            <span>{{ affaire()!.responsableFullName }}</span>
-          </div>
-        </div>
-      </div>
-      <div class="header-right">
-        <app-status-badge [status]="affaire()!.statut" />
-        @if (!affaire()!.budgetValide) {
-          <span class="badge-budget-warn" title="Budget non validé">Budget non validé</span>
-        }
-      </div>
-    </div>
-
-    @if (actionError()) {
-      <div class="action-error-bar">{{ actionError() }}</div>
-    }
-
-    <!-- Main layout -->
-    <div class="detail-layout">
-
-      <!-- LEFT: Main content -->
-      <div class="detail-main">
-
-        <!-- KPI cards -->
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <span class="kpi-label">CA encaissé</span>
-            <span class="kpi-value">{{ formatAmount(kpis()?.caEncaisse ?? null, affaireDevise()) }}</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">RAF disponible</span>
-            <span class="kpi-value kpi-value--raf" [style.color]="raf() ? (raf()!.rafDisponible / raf()!.budgetPrevisionnel > 0.2 ? '#1a6b7c' : raf()!.rafDisponible / raf()!.budgetPrevisionnel > (affaire()!.rafAlerteSeuilPct / 100) ? '#f59e0b' : '#dc2626') : '#64748b'">
-              {{ formatAmount(raf()?.rafDisponible ?? null, affaireDevise()) }}
-            </span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">WIP</span>
-            <span class="kpi-value">{{ formatAmount(kpis()?.wip ?? null, affaireDevise()) }}</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">Marge brute</span>
-            <span class="kpi-value">{{ formatPct(kpis()?.margeBrutePct ?? null) }}</span>
-          </div>
-        </div>
-
-        <!-- RAF gauge -->
-        @if (raf() && raf()!.budgetPrevisionnel > 0) {
-          <div class="section-card glass-card">
-            <app-raf-gauge
-              [raf]="raf()!.rafDisponible"
-              [budget]="raf()!.budgetPrevisionnel"
-              [seuilPct]="affaire()!.rafAlerteSeuilPct"
-              [devise]="affaireDevise()" />
-            <div class="raf-detail">
-              <span>TS intégrés: <strong>{{ formatAmount(raf()!.montantTsIntegres, affaireDevise()) }}</strong></span>
-              <span>Factures émises: <strong>{{ formatAmount(raf()!.totalFacturesEmises, affaireDevise()) }}</strong></span>
-            </div>
-          </div>
-        }
-
-        <!-- Collapsible section: Infos générales -->
-        <div class="collapsible glass-card">
-          <button class="collapsible-header" (click)="toggleSection('info')" [attr.aria-expanded]="isOpen('info')">
-            <span class="section-title">Informations générales</span>
-            <svg class="chevron" [class.open]="isOpen('info')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          @if (isOpen('info')) {
-            <div class="collapsible-body">
-              <div class="info-grid">
-                <div class="info-row">
-                  <span class="info-label">Client</span>
-                  <span class="info-value">{{ affaire()!.clientName || '—' }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Responsable</span>
-                  <span class="info-value">{{ affaire()!.responsableFullName || '—' }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Type</span>
-                  <span class="info-value">{{ typeLabel() }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Devise</span>
-                  <span class="info-value">{{ affaireDevise() }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Date début</span>
-                  <span class="info-value">{{ formatDate(affaire()!.dateDebut) }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Date fin</span>
-                  <span class="info-value">{{ formatDate(affaire()!.dateFin) }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Budget prévisionnel</span>
-                  <span class="info-value">{{ formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Budget validé</span>
-                  <span class="info-value" [style.color]="affaire()!.budgetValide ? '#065f46' : '#b45309'">
-                    {{ affaire()!.budgetValide ? 'Oui ✓' : 'Non ⚠' }}
-                  </span>
-                </div>
-                @if (affaire()!.doc360Ref) {
-                  <div class="info-row">
-                    <span class="info-label">Doc360</span>
-                    <span class="info-value info-ref">{{ affaire()!.doc360Ref }}</span>
-                  </div>
-                }
-                @if (affaire()!.erpReference) {
-                  <div class="info-row">
-                    <span class="info-label">Réf. ERP</span>
-                    <span class="info-value info-ref">{{ affaire()!.erpReference }}</span>
-                  </div>
-                }
-                @if (affaire()!.notes) {
-                  <div class="info-row info-row--full">
-                    <span class="info-label">Notes</span>
-                    <span class="info-value info-notes">{{ affaire()!.notes }}</span>
-                  </div>
-                }
-              </div>
-            </div>
+    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+    <header class="page-header">
+      <button class="back-btn" (click)="goBack()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div class="hd-titles">
+        <div class="hd-title-row">
+          <h1 class="text-headline-xl">{{ affaire()!.intitule }} — {{ affaire()!.reference }}</h1>
+          <app-status-badge [status]="affaire()!.statut" />
+          @if (!affaire()!.budgetValide) {
+            <span class="badge-warn">Budget non validé</span>
           }
         </div>
+        <p class="text-body-sm text-muted">
+          Dernière mise à jour : {{ formatDate(affaire()!.updatedAt ?? affaire()!.createdAt) }}
+        </p>
+      </div>
+    </header>
 
-        <!-- Collapsible section: Budget & TS -->
-        <div class="collapsible glass-card">
-          <button class="collapsible-header" (click)="toggleSection('ts')" [attr.aria-expanded]="isOpen('ts')">
-            <span class="section-title">
+    @if (actionError()) {
+      <div class="action-error-bar text-body-sm">{{ actionError() }}</div>
+    }
+
+    <!-- ── KPI Grid ────────────────────────────────────────────────────────── -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <p class="text-label-bold text-muted">CA Encaissement</p>
+          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">account_balance_wallet</span>
+        </div>
+        <div class="kpi-card__value-row">
+          <span class="text-price-display">{{ formatAmount(kpis()?.caEncaisse ?? null, affaireDevise()) }}</span>
+        </div>
+        <div class="kpi-card__sub kpi-card__sub--primary">
+          <span class="material-symbols-outlined">trending_up</span>
+          <span>+12% vs mois dernier</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <p class="text-label-bold text-muted">RAF Disponible</p>
+          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--secondary">request_quote</span>
+        </div>
+        <div class="kpi-card__value-row">
+          <span class="text-price-display">{{ formatAmount(raf()?.rafDisponible ?? null, affaireDevise()) }}</span>
+        </div>
+        @if (raf() && raf()!.budgetPrevisionnel > 0) {
+          <div class="kpi-card__progress">
+            <div class="kpi-card__progress-row">
+              <span class="text-body-sm text-muted">Utilisation Budget</span>
+              <span class="text-body-sm text-secondary">
+                {{ ((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 | number:'1.0-0') }}%
+              </span>
+            </div>
+            <div class="kpi-bar">
+              <div class="kpi-bar__fill kpi-bar__fill--secondary"
+                   [style.width.%]="(1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100"></div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <p class="text-label-bold text-muted">WIP (En cours)</p>
+          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--tertiary">pending_actions</span>
+        </div>
+        <div class="kpi-card__value-row">
+          <span class="text-price-display">{{ formatAmount(kpis()?.wip ?? null, affaireDevise()) }}</span>
+        </div>
+        <div class="kpi-card__sub kpi-card__sub--tertiary">
+          <span class="material-symbols-outlined">schedule</span>
+          <span>Facturation prévue J+5</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <p class="text-label-bold text-muted">Marge Brute</p>
+          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">analytics</span>
+        </div>
+        <div class="kpi-card__value-row">
+          <span class="text-price-display">{{ formatPct(kpis()?.margeBrutePct ?? null) }}</span>
+        </div>
+        <div class="kpi-card__sub kpi-card__sub--primary">
+          <span class="material-symbols-outlined">target</span>
+          <span>Objectif : 35%</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── RAF Tracking ────────────────────────────────────────────────────── -->
+    @if (raf() && raf()!.budgetPrevisionnel > 0) {
+      <div class="glass-card raf-section">
+        <div class="raf-section__header">
+          <h2 class="text-title-md">Suivi RAF &amp; Consommation</h2>
+          <span class="text-body-sm text-primary" style="font-weight:700">
+            Budget Total : {{ formatAmount(raf()!.budgetPrevisionnel, affaireDevise()) }}
+          </span>
+        </div>
+        <div class="raf-bars">
+          <div class="raf-bar-item">
+            <div class="raf-bar-item__label">
+              <span class="text-label-bold text-muted">Facturé</span>
+              <span class="text-label-bold text-primary">
+                {{ (raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
+              </span>
+            </div>
+            <div class="kpi-bar">
+              <div class="kpi-bar__fill kpi-bar__fill--primary"
+                   [style.width.%]="raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100"></div>
+            </div>
+          </div>
+          <div class="raf-bar-item">
+            <div class="raf-bar-item__label">
+              <span class="text-label-bold text-muted">TS Intégré</span>
+              <span class="text-label-bold text-secondary">
+                {{ (raf()!.montantTsIntegres / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
+              </span>
+            </div>
+            <div class="kpi-bar">
+              <div class="kpi-bar__fill kpi-bar__fill--secondary"
+                   [style.width.%]="raf()!.montantTsIntegres / raf()!.budgetPrevisionnel * 100"></div>
+            </div>
+          </div>
+          <div class="raf-bar-item">
+            <div class="raf-bar-item__label">
+              <span class="text-label-bold text-muted">Restant (RAF)</span>
+              <span class="text-label-bold text-light">
+                {{ (raf()!.rafDisponible / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
+              </span>
+            </div>
+            <div class="kpi-bar">
+              <div class="kpi-bar__fill kpi-bar__fill--light"
+                   [style.width.%]="raf()!.rafDisponible / raf()!.budgetPrevisionnel * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ── Main Layout ────────────────────────────────────────────────────── -->
+    <div class="detail-layout">
+
+      <!-- ══ LEFT COLUMN ══ -->
+      <div class="detail-main">
+
+        <!-- Informations Générales -->
+        <section class="glass-card section-card">
+          <h2 class="section-card__title text-title-md" style="margin-bottom:20px">
+            <span class="material-symbols-outlined text-primary">info</span>
+            Informations Générales
+          </h2>
+          <div class="info-grid-2col">
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Client</p>
+              <p class="text-body-md">{{ affaire()!.clientName || '—' }}</p>
+            </div>
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Manager de projet</p>
+              <p class="text-body-md">{{ affaire()!.responsableFullName || '—' }}</p>
+            </div>
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Mode de Facturation</p>
+              <p class="text-body-md">{{ affaire()!.billingMode || '—' }}</p>
+            </div>
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Devise</p>
+              <p class="text-body-md">{{ affaireDevise() }}</p>
+            </div>
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Période du contrat</p>
+              <p class="text-body-md">{{ formatDate(affaire()!.dateDebut) }} — {{ formatDate(affaire()!.dateFin) }}</p>
+            </div>
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Engagement</p>
+              <p class="text-body-md">{{ typeLabel() }}</p>
+            </div>
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Budget validé</p>
+              <p class="text-body-md" [style.color]="affaire()!.budgetValide ? '#006c49' : '#d97706'">
+                {{ affaire()!.budgetValide ? 'Oui ✓' : 'Non ⚠' }}
+              </p>
+            </div>
+            @if (affaire()!.doc360Ref) {
+              <div class="info-field">
+                <p class="text-body-sm text-muted">Doc360</p>
+                <p class="text-body-md text-primary info-ref">{{ affaire()!.doc360Ref }}</p>
+              </div>
+            }
+            @if (affaire()!.erpReference) {
+              <div class="info-field">
+                <p class="text-body-sm text-muted">Réf. ERP</p>
+                <p class="text-body-md text-primary info-ref">{{ affaire()!.erpReference }}</p>
+              </div>
+            }
+            @if (affaire()!.notes) {
+              <div class="info-field info-field--full">
+                <p class="text-body-sm text-muted">Notes</p>
+                <p class="text-body-md info-notes">{{ affaire()!.notes }}</p>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Budget & TS -->
+        <section class="glass-card collapsible">
+          <button class="collapsible__header" (click)="toggleSection('ts')"
+                  [attr.aria-expanded]="isOpen('ts')">
+            <h2 class="text-title-md section-card__title">
+              <span class="material-symbols-outlined text-primary">add_task</span>
               Budget &amp; TS
               @if (tsList().length > 0) {
                 <span class="section-count">{{ tsList().length }}</span>
               }
-            </span>
-            <svg class="chevron" [class.open]="isOpen('ts')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </h2>
+            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('ts')">expand_more</span>
           </button>
           @if (isOpen('ts')) {
-            <div class="collapsible-body">
-              <app-ts-list
-                [affaireId]="numId"
-                [list]="tsList()"
-                (openNewForm)="openTsForm()"
-                (updated)="loadTs(); loadRaf()" />
+            <div class="collapsible__body">
+              <div class="section-card__header" style="padding: 0 0 16px;">
+                <span></span>
+                <button class="btn-primary" *appHasPermission="'FACT_CREATE_TS'" (click)="openTsForm(); $event.stopPropagation()">
+                  <span class="material-symbols-outlined">add</span>
+                  Nouveau TS
+                </button>
+              </div>
+              <div class="ts-table-wrap">
+                <app-ts-list
+                  [affaireId]="numId"
+                  [list]="tsList()"
+                  (openNewForm)="openTsForm()"
+                  (updated)="loadTs(); loadRaf()" />
+              </div>
             </div>
           }
-        </div>
+        </section>
 
-        <!-- Sous-traitance section -->
+        <!-- Sous-traitance -->
         @if (affaire()) {
-          <div class="collapsible glass-card">
-            <button class="collapsible-header" (click)="toggleSection('soustraitance')" [attr.aria-expanded]="isOpen('soustraitance')">
-              <span class="section-title">Sous-traitance</span>
-              <svg class="chevron" [class.open]="isOpen('soustraitance')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          <section class="glass-card collapsible">
+            <button class="collapsible__header" (click)="toggleSection('soustraitance')"
+                    [attr.aria-expanded]="isOpen('soustraitance')">
+              <h2 class="text-title-md section-card__title">
+                <span class="material-symbols-outlined text-primary">engineering</span>
+                Sous-traitance
+              </h2>
+              <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('soustraitance')">expand_more</span>
             </button>
             @if (isOpen('soustraitance')) {
-              <div class="collapsible-body">
+              <div class="collapsible__body">
                 <app-affaire-ost
                   [affaireId]="numId"
                   [paysId]="affaire()!.paysId"
@@ -192,115 +274,254 @@
                   [affaireStatut]="affaire()!.statut" />
               </div>
             }
-          </div>
+          </section>
         }
 
-        <!-- Facturation section (shown only when billingMode is configured) -->
+        <!-- Facturation -->
         @if (affaire()!.billingMode) {
-          <div class="collapsible glass-card">
-            <button class="collapsible-header" (click)="toggleSection('facturation')" [attr.aria-expanded]="isOpen('facturation')">
-              <span class="section-title">
+          <section class="glass-card collapsible">
+            <button class="collapsible__header" (click)="toggleSection('facturation')"
+                    [attr.aria-expanded]="isOpen('facturation')">
+              <h2 class="text-title-md section-card__title">
+                <span class="material-symbols-outlined text-primary">receipt_long</span>
                 Facturation
-                <span class="section-badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-size:10px;padding:1px 7px;border-radius:999px;font-weight:600;margin-left:6px;">
-                  {{ affaire()!.billingMode }}
-                </span>
-              </span>
-              <svg class="chevron" [class.open]="isOpen('facturation')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                <span class="badge-billing">{{ affaire()!.billingMode }}</span>
+              </h2>
+              <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('facturation')">expand_more</span>
             </button>
             @if (isOpen('facturation')) {
-              <div class="collapsible-body">
+              <div class="collapsible__body">
                 <app-affaire-billing-tab [affaire]="affaire()!" />
               </div>
             }
-          </div>
+          </section>
         }
 
         <!-- Stub sections -->
         @for (section of stubSections; track section.key) {
-          <div class="collapsible glass-card">
-            <button class="collapsible-header" (click)="toggleSection(section.key)" [attr.aria-expanded]="isOpen(section.key)">
-              <span class="section-title">{{ section.label }}</span>
-              <svg class="chevron" [class.open]="isOpen(section.key)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          <section class="glass-card collapsible">
+            <button class="collapsible__header" (click)="toggleSection(section.key)"
+                    [attr.aria-expanded]="isOpen(section.key)">
+              <h2 class="text-title-md section-card__title">{{ section.label }}</h2>
+              <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen(section.key)">expand_more</span>
             </button>
             @if (isOpen(section.key)) {
-              <div class="collapsible-body stub-body">Module à venir dans la prochaine itération.</div>
+              <div class="collapsible__body stub-body text-body-sm">
+                Module à venir dans la prochaine itération.
+              </div>
             }
-          </div>
+          </section>
+        }
+
+        <!-- ── Indicateurs de Pilotage ──────────────────────────────────── -->
+        @if (raf() && raf()!.budgetPrevisionnel > 0) {
+          <section class="indicateurs-section">
+            <h2 class="indicateurs-title">Indicateurs de Pilotage</h2>
+            <div class="indicateurs-grid">
+
+              <!-- Taux Facturation -->
+              <div class="indicateur-card">
+                <p class="indicateur-card__label">Taux Facturation</p>
+                <div class="gauge-wrap">
+                  <svg width="64" height="64" style="transform:rotate(-90deg)">
+                    <circle cx="32" cy="32" r="28" fill="transparent"
+                            stroke="#e5e7eb" stroke-width="4"></circle>
+                    <circle cx="32" cy="32" r="28" fill="transparent"
+                            stroke="#006b58" stroke-width="4"
+                            stroke-dasharray="175"
+                            [attr.stroke-dashoffset]="gaugeOffset(raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100)"></circle>
+                  </svg>
+                  <span class="gauge-label">
+                    {{ (raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
+                  </span>
+                </div>
+              </div>
+
+              <!-- Consommation Budget (cercle) -->
+              <div class="indicateur-card">
+                <p class="indicateur-card__label">Taux Conso.</p>
+                <div class="gauge-wrap">
+                  <svg width="64" height="64" style="transform:rotate(-90deg)">
+                    <circle cx="32" cy="32" r="28" fill="transparent"
+                            stroke="#e5e7eb" stroke-width="4"></circle>
+                    <circle cx="32" cy="32" r="28" fill="transparent"
+                            stroke="#006c49" stroke-width="4"
+                            stroke-dasharray="175"
+                            [attr.stroke-dashoffset]="gaugeOffset((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100)"></circle>
+                  </svg>
+                  <span class="gauge-label">
+                    {{ ((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 | number:'1.0-0') }}%
+                  </span>
+                </div>
+              </div>
+
+              <!-- Conso Budget en montant -->
+              <div class="indicateur-card" style="justify-content:center">
+                <p class="indicateur-card__label">Conso Budget</p>
+                <p class="indicateur-card__value-big">
+                  {{ formatAmount(raf()!.budgetPrevisionnel - raf()!.rafDisponible, affaireDevise()) }}
+                </p>
+                <p class="indicateur-card__value-sub">
+                  SUR {{ formatAmount(raf()!.budgetPrevisionnel, affaireDevise()) }}
+                </p>
+              </div>
+
+              <!-- Évolution Fin. — mini bar chart -->
+              <div class="indicateur-card" style="justify-content:center">
+                <p class="indicateur-card__label">Évolution Fin.</p>
+                <div class="mini-bars">
+                  <div class="bar" style="height:50%"></div>
+                  <div class="bar bar--filled" style="height:65%"></div>
+                  <div class="bar" style="height:100%"></div>
+                  <div class="bar bar--filled" style="height:80%"></div>
+                  <div class="bar" style="height:35%"></div>
+                </div>
+              </div>
+
+            </div>
+          </section>
         }
 
       </div><!-- /detail-main -->
 
-      <!-- RIGHT: Actions panel -->
+      <!-- ══ RIGHT COLUMN ══ -->
       <div class="detail-sidebar">
 
-        <!-- Budget validation -->
+        <!-- Changement de Statut -->
+        <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
+          <h2 class="text-title-md" style="margin-bottom:16px">Changement de Statut</h2>
+          <div class="statut-grid">
+            @for (s of ALL_STATUTS; track s) {
+              <button class="statut-btn"
+                      [class.statut-btn--active]="affaire()!.statut === s"
+                      [disabled]="affaire()!.statut === s || !canTransitionTo(s)"
+                      (click)="targetStatut.set(s); motif.set(''); showStatutModal.set(true)">
+                <div class="statut-btn__icon">
+                  <span class="material-symbols-outlined"
+                        [class.icon-filled]="affaire()!.statut === s">
+                    {{ statutIcon(s) }}
+                  </span>
+                </div>
+                <span class="text-label-bold">{{ statutLabel(s) }}</span>
+                @if (affaire()!.statut === s) {
+                  <div class="statut-btn__check">
+                    <span class="material-symbols-outlined">check</span>
+                  </div>
+                }
+              </button>
+            }
+          </div>
+        </section>
+
+        <!-- Validation budget -->
         @if (!affaire()!.budgetValide) {
-          <div class="action-card glass-card" *appHasPermission="'FACT_VALIDER_BUDGET'">
-            <h3>Validation du budget</h3>
-            <p>Le budget de {{ formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) }} est en attente de validation.</p>
-            <button class="btn-action btn-action--teal" [disabled]="budgetLoading()" (click)="validerBudget()">
+          <section class="glass-card section-card budget-valid-section" *appHasPermission="'FACT_VALIDER_BUDGET'">
+            <h2 class="text-title-md">Validation du budget</h2>
+            <p class="text-body-sm text-muted">
+              Budget de {{ formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) }} en attente.
+            </p>
+            <button class="btn-full btn-full--primary" [disabled]="budgetLoading()" (click)="validerBudget()">
               @if (budgetLoading()) { Validation… } @else { Valider le budget }
             </button>
-          </div>
+          </section>
         }
 
-        <!-- Statut change -->
-        @if (availableTransitions().length > 0) {
-          <div class="action-card glass-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
-            <h3>Changer le statut</h3>
-            <p>Statut actuel: <strong>{{ statutLabel(affaire()!.statut) }}</strong></p>
-            <button class="btn-action btn-action--slate" (click)="openStatutModal()">
-              Changer le statut
-            </button>
-          </div>
-        }
-
-        <!-- Edit affaire -->
+        <!-- Modifier l'affaire -->
         @if (affaire()!.statut === 'EN_COURS' || affaire()!.statut === 'SUSPENDUE') {
-          <div class="action-card glass-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
-            <h3>Modifier l'affaire</h3>
-            <p>Modifier les responsables, le planning, les informations générales.</p>
-            <button class="btn-action btn-action--teal" (click)="openEdit()">
-              Modifier l'affaire
-            </button>
-          </div>
+          <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
+            <h2 class="text-title-md" style="margin-bottom:14px">Modifier l'affaire</h2>
+            <div class="quick-links">
+              <button class="quick-link" (click)="openEdit()">
+                <div class="quick-link__left">
+                  <span class="material-symbols-outlined text-primary">person_check</span>
+                  <span class="text-label-bold">Responsables</span>
+                </div>
+                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
+              </button>
+              <button class="quick-link" (click)="openEdit()">
+                <div class="quick-link__left">
+                  <span class="material-symbols-outlined text-primary">calendar_month</span>
+                  <span class="text-label-bold">Planning</span>
+                </div>
+                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
+              </button>
+              <button class="quick-link" (click)="openEdit()">
+                <div class="quick-link__left">
+                  <span class="material-symbols-outlined text-primary">description</span>
+                  <span class="text-label-bold">Informations Générales</span>
+                </div>
+                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
+              </button>
+            </div>
+          </section>
         }
 
-        <!-- Quick actions -->
-        <div class="action-card glass-card">
-          <h3>Actions rapides</h3>
-          <div class="quick-actions">
-            <a class="quick-link" [routerLink]="['/fact/invoicing']" [queryParams]="{ affaire: numId }">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              Nouvelle facture
+        <!-- Actions Rapides -->
+        <section class="glass-card section-card">
+          <h2 class="text-title-md" style="margin-bottom:14px">Actions Rapides</h2>
+          <div class="action-btns">
+            <a class="btn-full btn-full--primary" [routerLink]="['/fact/invoicing']" [queryParams]="{ affaire: numId }">
+              <span class="material-symbols-outlined">add_card</span>
+              Nouvelle Facture
             </a>
-            <a class="quick-link" [routerLink]="['/fact/payments']" [queryParams]="{ affaire: numId }">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-              Voir les paiements
+            <a class="btn-full btn-full--outline-secondary" [routerLink]="['/fact/payments']" [queryParams]="{ affaire: numId }">
+              <span class="material-symbols-outlined">payments</span>
+              Consulter Paiements
+            </a>
+            <a class="btn-full btn-full--outline-primary" [routerLink]="['/fact/invoicing']" [queryParams]="{ affaire: numId }">
+              <span class="material-symbols-outlined">receipt_long</span>
+              Voir factures
             </a>
           </div>
-        </div>
+        </section>
 
-        <!-- Timeline info -->
-        <div class="action-card glass-card">
-          <h3>Informations</h3>
-          <div class="info-list">
-            <div class="info-item">
-              <span class="info-item-label">Créé le</span>
-              <span class="info-item-value">{{ formatDate(affaire()!.createdAt) }}</span>
+        <!-- Traçabilité & Alertes -->
+        <section class="glass-card section-card tracability">
+          <h2 class="text-title-md" style="margin-bottom:16px">Traçabilité &amp; Alertes</h2>
+          <div class="trace-list">
+            <div class="trace-item">
+              <span class="material-symbols-outlined text-light">history</span>
+              <div>
+                <p class="text-label-caps text-muted">Créé le</p>
+                <p class="text-body-sm">{{ formatDate(affaire()!.createdAt) }}</p>
+              </div>
             </div>
             @if (affaire()!.updatedAt) {
-              <div class="info-item">
-                <span class="info-item-label">Modifié le</span>
-                <span class="info-item-value">{{ formatDate(affaire()!.updatedAt) }}</span>
+              <div class="trace-item">
+                <span class="material-symbols-outlined text-light">edit_note</span>
+                <div>
+                  <p class="text-label-caps text-muted">Dernière modification</p>
+                  <p class="text-body-sm">{{ formatDate(affaire()!.updatedAt) }}</p>
+                </div>
               </div>
             }
-            <div class="info-item">
-              <span class="info-item-label">Seuil alerte RAF</span>
-              <span class="info-item-value">{{ affaire()!.rafAlerteSeuilPct }}%</span>
+            <div class="trace-item">
+              <span class="material-symbols-outlined text-light">tune</span>
+              <div>
+                <p class="text-label-caps text-muted">Seuil alerte RAF</p>
+                <p class="text-body-sm">{{ affaire()!.rafAlerteSeuilPct }}%</p>
+              </div>
             </div>
           </div>
-        </div>
+
+          @if (raf() && raf()!.budgetPrevisionnel > 0 &&
+               (1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 >= affaire()!.rafAlerteSeuilPct) {
+            <div class="raf-alert">
+              <div class="raf-alert__header">
+                <span class="material-symbols-outlined"
+                      style="font-variation-settings:'FILL' 1">warning</span>
+                <span class="text-label-bold" style="color:#d97706">Seuil d'alerte RAF</span>
+              </div>
+              <p class="text-body-sm" style="color:#744800; margin:4px 0 0">
+                Le projet approche les {{ affaire()!.rafAlerteSeuilPct }}% de consommation du budget initial.
+              </p>
+              <div class="raf-alert__bar">
+                <div class="raf-alert__fill"
+                     [style.width.%]="(1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100"></div>
+              </div>
+            </div>
+          }
+        </section>
 
       </div><!-- /detail-sidebar -->
 
@@ -310,20 +531,22 @@
 
 </div><!-- /detail-page -->
 
-<!-- Statut change modal -->
+<!-- ── Modal changement de statut ──────────────────────────────────────── -->
 @if (showStatutModal()) {
   <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showStatutModal.set(false)">
     <div class="modal-box" role="dialog" aria-labelledby="statut-modal-title">
       <div class="modal-header">
-        <h2 id="statut-modal-title">Changer le statut</h2>
-        <button class="close-btn" (click)="showStatutModal.set(false)" aria-label="Fermer">&times;</button>
+        <h2 class="text-title-md" id="statut-modal-title">Changer le statut</h2>
+        <button class="close-btn" (click)="showStatutModal.set(false)" aria-label="Fermer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
       </div>
       <div class="modal-body">
         <div class="field">
-          <label>Nouveau statut *</label>
+          <label class="text-label-bold">Nouveau statut *</label>
           <div class="statut-radio-group">
             @for (s of availableTransitions(); track s) {
-              <label class="statut-radio" [class.selected]="targetStatut() === s">
+              <label class="statut-radio" [class.statut-radio--selected]="targetStatut() === s">
                 <input type="radio" name="new-statut" [value]="s"
                        [ngModel]="targetStatut()" (ngModelChange)="targetStatut.set($event)" />
                 {{ statutLabel(s) }}
@@ -332,13 +555,14 @@
           </div>
         </div>
         <div class="field">
-          <label for="motif">Motif (optionnel)</label>
-          <textarea id="motif" [ngModel]="motif()" (ngModelChange)="motif.set($event)" rows="3" maxlength="500" placeholder="Raison du changement de statut…"></textarea>
+          <label class="text-label-bold" for="motif">Motif (optionnel)</label>
+          <textarea id="motif" [ngModel]="motif()" (ngModelChange)="motif.set($event)"
+                    rows="3" maxlength="500" placeholder="Raison du changement…"></textarea>
         </div>
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" (click)="showStatutModal.set(false)">Annuler</button>
-        <button class="btn-save" [disabled]="actionLoading()" (click)="submitStatut()">
+        <button class="btn-confirm" [disabled]="actionLoading()" (click)="submitStatut()">
           @if (actionLoading()) { Traitement… } @else { Confirmer }
         </button>
       </div>
@@ -346,7 +570,7 @@
   </div>
 }
 
-<!-- TS new-form modal (rendered at root level, outside any glass-card) -->
+<!-- ── TS Form modal ────────────────────────────────────────────────────── -->
 @if (showTsForm()) {
   <app-ts-form [affaireId]="numId" (closed)="onTsFormClosed($event)" />
 }

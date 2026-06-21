@@ -1,5 +1,6 @@
 <div class="fact-shell" [class.collapsed]="collapsed()">
-  <!-- Fixed Header -->
+
+  <!-- Fixed Header — original style unchanged -->
   <header class="shell-header">
     <div class="header-left">
       <button class="menu-toggle" (click)="collapsed.update(v => !v)" aria-label="Toggle sidebar">
@@ -35,15 +36,17 @@
   </header>
 
   <div class="shell-body">
-    <!-- Sidebar Navigation -->
+
+    <!-- Sidebar — light style, Material icons -->
     <nav class="shell-sidebar">
       <ul class="nav-list">
         @for (item of visibleNavItems(); track item.path) {
           <li>
             <a [routerLink]="item.path"
                routerLinkActive="active"
-               class="nav-item">
-              <span class="nav-icon" [innerHTML]="getIcon(item.icon)"></span>
+               class="nav-item"
+               [title]="collapsed() ? item.label : ''">
+              <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
               <span class="nav-label">{{ item.label }}</span>
             </a>
           </li>
@@ -51,9 +54,10 @@
       </ul>
     </nav>
 
-    <!-- Main Content -->
+    <!-- Main content -->
     <main class="shell-content">
       <router-outlet />
     </main>
+
   </div>
 </div>

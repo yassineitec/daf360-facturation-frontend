@@ -6,11 +6,12 @@ import {
   InvoiceListItem, InvoiceFilter, INVOICE_STATUT_CONFIG, OVERDUE_STATUTS,
 } from './invoice.model';
 import { PermissionDirective } from '../../shared/permission.directive';
+import { StatusBadgeComponent } from '../../shared/status-badge.component';
 import { PaymentModalComponent } from './payment-modal.component';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [FormsModule, PermissionDirective, PaymentModalComponent],
+  imports: [FormsModule, PermissionDirective, StatusBadgeComponent, PaymentModalComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })
@@ -106,10 +107,11 @@ export class InvoiceListComponent implements OnInit {
     return Math.floor((Date.now() - new Date(item.dateEcheance).getTime()) / 86_400_000);
   }
 
-  // ── Row actions ───────────────────────────────────────────────────────────
+  // ── Navigation ────────────────────────────────────────────────────────────
 
-  navigateToDetail(id: number):    void { this.router.navigate(['/fact/invoicing', id]); }
-  navigateToNew():                  void { this.router.navigate(['/fact/invoicing/new']); }
+  navigateToDetail(id: number): void { this.router.navigate(['/fact/invoicing', id]); }
+  navigateToNew():               void { this.router.navigate(['/fact/invoicing/new']); }
+  navigateTo(path: string):      void { this.router.navigate([path]); }
 
   quickEmit(item: InvoiceListItem, e: Event): void {
     e.stopPropagation();

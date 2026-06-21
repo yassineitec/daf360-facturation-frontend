@@ -1,0 +1,263 @@
+<div class="table-container">
+
+  <!-- Header -->
+  <div class="tc-header">
+    <h3 class="tc-title">Liste des Affaires</h3>
+    <div class="tc-actions">
+      <!-- View toggle -->
+      <div class="view-toggle">
+        <button class="vt-btn" [class.vt-btn--active]="viewMode() === 'table'"
+                (click)="viewMode.set('table')" title="Vue tableau">
+          <span class="material-symbols-outlined">table_rows</span>
+        </button>
+        <button class="vt-btn" [class.vt-btn--active]="viewMode() === 'card'"
+                (click)="viewMode.set('card')" title="Vue cartes">
+          <span class="material-symbols-outlined">grid_view</span>
+        </button>
+      </div>
+      <div class="tc-sep"></div>
+      <button class="icon-btn" title="Filtrer">
+        <span class="material-symbols-outlined">filter_list</span>
+      </button>
+      <button class="icon-btn" title="Exporter">
+        <span class="material-symbols-outlined">download</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="error-banner">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Skeleton -->
+  @if (loading()) {
+    <div class="skeleton-list">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="skeleton-row">
+          <div class="sk sk--ref"></div>
+          <div class="sk sk--lg"></div>
+          <div class="sk sk--md"></div>
+          <div class="sk sk--sm"></div>
+          <div class="sk sk--xs"></div>
+          <div class="sk sk--md ml-auto"></div>
+        </div>
+      }
+    </div>
+  } @else {
+
+    <!-- ═══ TABLE VIEW ═══ -->
+    @if (viewMode() === 'table') {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Intitulé</th>
+              <th>Client</th>
+              <th>Responsable</th>
+              <th>Type</th>
+              <th class="num">Budget (TND)</th>
+              <th class="num">RAF (TND)</th>
+              <th>Statut</th>
+              <th class="act"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of affaires(); track a.id) {
+              <tr class="data-row" (click)="rowClick.emit(a.id)">
+
+                <td><span class="ref-mono">{{ a.reference }}</span></td>
+
+                <td>
+                  <div class="intitule-cell">
+                    <span class="intitule-name">{{ a.intitule }}</span>
+                    @if (a.billingMode) {
+                      <span class="intitule-sub">{{ a.billingMode }}</span>
+                    }
+                  </div>
+                </td>
+
+                <td><span class="client-name">{{ a.clientName || '—' }}</span></td>
+
+                <td>
+                  <div class="resp-cell">
+                    <div class="resp-avatar">{{ initials(a.responsableFullName) }}</div>
+                    <span class="resp-name">{{ a.responsableFullName || '—' }}</span>
+                  </div>
+                </td>
+
+                <td><span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span></td>
+
+                <td class="num">
+                  <div class="budget-cell">
+                    <span class="budget-val">{{ formatAmount(a.budgetPrevisionnel) }}</span>
+                    <span class="material-symbols-outlined budget-icon"
+                          [class.budget-icon--filled]="a.budgetValide"
+                          [style.color]="budgetIconColor(a)">
+                      {{ budgetIcon(a) }}
+                    </span>
+                  </div>
+                </td>
+
+                <td class="num">
+                  <span class="raf-val" [style.color]="rafColor(a)">
+                    {{ formatAmount(a.rafDisponible ?? null) }}
+                  </span>
+                </td>
+
+                <td><app-status-badge [status]="a.statut" /></td>
+
+                <td class="act">
+                  <button class="view-btn" title="Voir"
+                          (click)="rowClick.emit(a.id); $event.stopPropagation()">
+                    <span class="material-symbols-outlined">arrow_forward_ios</span>
+                  </button>
+                </td>
+
+              </tr>
+            }
+            @empty {
+              <tr>
+                <td colspan="9">
+                  <div class="empty-state">
+                    <span class="material-symbols-outlined empty-icon">search_off</span>
+                    <span>Aucune affaire trouvée.</span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- ═══ CARD VIEW ═══ -->
+    @if (viewMode() === 'card') {
+      @if (affaires().length === 0) {
+        <div class="card-empty">
+          <span class="material-symbols-outlined empty-icon">search_off</span>
+          <span>Aucune affaire trouvée.</span>
+        </div>
+      } @else {
+        <div class="card-grid">
+          @for (a of affaires(); track a.id) {
+
+            <div class="aff-card" (click)="rowClick.emit(a.id)">
+
+              <!-- Badge statut flottant -->
+              <div class="aff-card__badge"
+                   [style.background]="statutBadgeCfg(a.statut).color"
+                   [style.box-shadow]="'0 4px 10px ' + statutBadgeCfg(a.statut).shadow">
+                {{ statutBadgeCfg(a.statut).label }}
+              </div>
+
+              <!-- Header -->
+              <div class="aff-card__header">
+                <div class="aff-card__id-block">
+                  <div class="aff-card__icon">
+                    <span class="material-symbols-outlined">business_center</span>
+                  </div>
+                  <div>
+                    <span class="aff-card__ref">{{ a.reference }}</span>
+                    <h5 class="aff-card__name">{{ a.intitule }}</h5>
+                  </div>
+                </div>
+                <div class="aff-card__dot"
+                     [style.background]="statutBadgeCfg(a.statut).color"
+                     [style.box-shadow]="'0 0 0 4px ' + statutBadgeCfg(a.statut).color + '22'">
+                </div>
+              </div>
+
+              <!-- Body -->
+              <div class="aff-card__body">
+                <div class="aff-card__row">
+                  <span class="aff-card__row-label">Client</span>
+                  <span class="aff-card__row-val">{{ a.clientName || '—' }}</span>
+                </div>
+                <div class="aff-card__row">
+                  <span class="aff-card__row-label">Responsable</span>
+                  <div class="aff-card__resp-val">
+                    <div class="resp-avatar resp-avatar--sm">{{ initials(a.responsableFullName) }}</div>
+                    <span class="aff-card__row-val">{{ a.responsableFullName || '—' }}</span>
+                  </div>
+                </div>
+                <div class="aff-card__row">
+                  <span class="aff-card__row-label">Type</span>
+                  <span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
+                </div>
+
+                <div class="aff-card__amount-block">
+                  <span class="aff-card__amount-label">BUDGET PRÉVISIONNEL</span>
+                  <span class="aff-card__amount">
+                    {{ formatAmount(a.budgetPrevisionnel) }}
+                    <span class="aff-card__amount-unit">TND</span>
+                  </span>
+                </div>
+
+                @if (a.rafDisponible != null) {
+                  <div class="aff-card__raf">
+                    <span class="aff-card__raf-label">RAF</span>
+                    <span class="aff-card__raf-val" [style.color]="rafColor(a)">
+                      {{ formatAmount(a.rafDisponible) }} TND
+                    </span>
+                  </div>
+                }
+              </div>
+
+              <!-- CTA -->
+              <button class="aff-card__cta" (click)="rowClick.emit(a.id); $event.stopPropagation()">
+                <span class="material-symbols-outlined">arrow_forward</span>
+                Voir le détail
+              </button>
+
+            </div>
+
+          }
+        </div>
+      }
+    }
+
+    <!-- Footer -->
+    <div class="tc-footer">
+      <!-- gauche : compteur -->
+      <span class="footer-count">
+        Affichage de {{ affaires().length }} sur {{ totalElements() }} affaires
+      </span>
+
+      <!-- centre : pagination -->
+      @if (totalPages() > 1) {
+        <div class="page-btns">
+          <button class="page-btn" [disabled]="currentPage() === 0"
+                  (click)="pageChange.emit(currentPage() - 1)">‹</button>
+          @for (p of pages; track p) {
+            <button class="page-btn" [class.active]="p === currentPage()"
+                    (click)="pageChange.emit(p)">{{ p + 1 }}</button>
+          }
+          <button class="page-btn" [disabled]="currentPage() === totalPages() - 1"
+                  (click)="pageChange.emit(currentPage() + 1)">›</button>
+        </div>
+      }
+
+      <!-- droite : légende statuts -->
+      <div class="footer-legend">
+        @if (statsEnCours() > 0) {
+          <div class="legend-item">
+            <span class="dot dot--green"></span>
+            <span>{{ statsEnCours() }} En cours</span>
+          </div>
+        }
+        @if (statsSuspendu() > 0) {
+          <div class="legend-item">
+            <span class="dot dot--gray"></span>
+            <span>{{ statsSuspendu() }} Suspendue</span>
+          </div>
+        }
+      </div>
+    </div>
+
+  }
+</div>
