@@ -237,6 +237,22 @@ $slate-500:     $text-muted;
   color: #fff;
 }
 
+%action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  &:hover   { opacity: 0.88; }
+  &:active  { transform: scale(0.97); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
 .btn-approve { @extend %action-btn; background: #1a6b7c; color: #fff; }
 .btn-return  { @extend %action-btn; background: #d97706; color: #fff; }
 .btn-reject  { @extend %action-btn; background: #dc2626; color: #fff; }
