@@ -102,9 +102,7 @@
             @for (inv of invoices(); track inv.id) {
               <tr class="table-row" [class.row-overdue]="isOverdue(inv)" (click)="navigateToDetail(inv.id)">
                 <td>
-                  <span class="invoice-num">
-                    {{ inv.invoiceNumber ?? '(brouillon)' }}
-                  </span>
+                  <span class="invoice-num">{{ inv.invoiceNumber ?? '(brouillon)' }}</span>
                 </td>
                 <td>
                   @if (inv.affaireRef) {
@@ -123,15 +121,9 @@
                   </div>
                 </td>
                 <td>
-                  <span class="statut-badge"
-                    [style.background]="statutConfig(inv.statut).bg"
-                    [style.color]="statutConfig(inv.statut).color"
-                    [style.border-color]="statutConfig(inv.statut).border">
-                    {{ statutConfig(inv.statut).label }}
-                  </span>
+                  <app-status-badge [status]="inv.statut" />
                 </td>
                 <td class="actions-cell" (click)="$event.stopPropagation()">
-                  <!-- View -->
                   <button class="action-btn action-btn--view" title="Voir le détail" (click)="navigateToDetail(inv.id)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
@@ -184,7 +176,7 @@
     }
   </div>
 
-</div><!-- /invoicing-page -->
+</div>
 
 <!-- Payment modal -->
 @if (paymentTarget()) {

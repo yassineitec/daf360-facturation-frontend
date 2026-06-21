@@ -1,119 +1,141 @@
-<div class="home">
+<div class="home-page">
 
   <!-- ── Greeting ─────────────────────────────────────────────────────────── -->
-  <div class="greeting">
-    <div class="greeting-text">
-      <h1>Bonjour, {{ firstName() }}&nbsp;👋</h1>
-      <p class="date">{{ today | titlecase }}</p>
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Bonjour, {{ firstName() }}</h1>
+      <p class="page-sub">{{ today | titlecase }}</p>
     </div>
-    <div class="greeting-badge">
-      <span class="badge-label">DAF360</span>
-      <span class="badge-sub">Facturation</span>
+    <div class="daf-badge">
+      <span class="daf-badge__label">DAF360</span>
+      <span class="daf-badge__sub">Facturation</span>
     </div>
   </div>
 
-  <!-- ── KPI Row ───────────────────────────────────────────────────────────── -->
-  <section class="kpi-row" aria-label="Indicateurs clés">
+  <!-- ── KPI Glass Cards ──────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
 
-    <div class="kpi-card kpi-green">
-      <div class="kpi-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
+    <div class="kpi-card glass-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Encaissé ce mois</span>
+        <div class="kpi-card__icon" style="background:rgba(16,185,129,.1);color:#10b981">
+          <span class="material-symbols-outlined">check_circle</span>
+        </div>
       </div>
-      <div class="kpi-body">
-        <span class="kpi-label">Encaissé ce mois</span>
+      <div>
         @if (loadingStats()) {
-          <span class="kpi-value skeleton"></span>
+          <p class="kpi-card__value skeleton-val"></p>
         } @else {
-          <span class="kpi-value">{{ fmt(stats()?.encaisseThisMoisMontant, stats()?.devise) }}</span>
+          <p class="kpi-card__value">{{ fmt(stats()?.encaisseThisMoisMontant, stats()?.devise) }}</p>
         }
+        <p class="kpi-card__sub kpi-card__sub--green">Ce mois</p>
       </div>
     </div>
 
-    <div class="kpi-card kpi-blue">
-      <div class="kpi-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
+    <div class="kpi-card glass-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">En attente de paiement</span>
+        <div class="kpi-card__icon" style="background:rgba(59,130,246,.1);color:#3b82f6">
+          <span class="material-symbols-outlined">schedule</span>
+        </div>
       </div>
-      <div class="kpi-body">
-        <span class="kpi-label">En attente de paiement</span>
+      <div>
         @if (loadingStats()) {
-          <span class="kpi-value skeleton"></span>
+          <p class="kpi-card__value skeleton-val"></p>
         } @else {
-          <span class="kpi-value">{{ fmt(stats()?.enAttenteMontant, stats()?.devise) }}</span>
+          <p class="kpi-card__value">{{ fmt(stats()?.enAttenteMontant, stats()?.devise) }}</p>
         }
+        <p class="kpi-card__sub">Solde en attente</p>
       </div>
     </div>
 
-    <div class="kpi-card kpi-red">
-      <div class="kpi-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
+    <div class="kpi-card glass-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Factures en retard</span>
+        <div class="kpi-card__icon" style="background:rgba(186,26,26,.08);color:#BA1A1A">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
       </div>
-      <div class="kpi-body">
-        <span class="kpi-label">Factures en retard</span>
+      <div>
         @if (loadingStats()) {
-          <span class="kpi-value skeleton"></span>
+          <p class="kpi-card__value skeleton-val"></p>
         } @else {
-          <span class="kpi-value">
-            {{ stats()?.enRetardCount ?? '—' }}
-            @if ((stats()?.enRetardCount ?? 0) > 0) {
-              <span class="kpi-sub">{{ fmt(stats()?.enRetardMontant, stats()?.devise) }}</span>
+          <p class="kpi-card__value kpi-card__value--red">{{ stats()?.enRetardCount ?? '—' }}</p>
+        }
+        <p class="kpi-card__sub kpi-card__sub--red">
+          @if ((stats()?.enRetardCount ?? 0) > 0) { {{ fmt(stats()?.enRetardMontant, stats()?.devise) }} }
+          @else { Aucun retard }
+        </p>
+      </div>
+    </div>
+
+    <div class="kpi-card glass-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Délai moyen de paiement</span>
+        <div class="kpi-card__icon" style="background:rgba(26,107,124,.1);color:#1a6b7c">
+          <span class="material-symbols-outlined">timer</span>
+        </div>
+      </div>
+      <div>
+        @if (loadingStats()) {
+          <p class="kpi-card__value skeleton-val"></p>
+        } @else {
+          <p class="kpi-card__value">
+            {{ stats()?.delaiMoyenPaiement != null ? stats()!.delaiMoyenPaiement.toFixed(0) + ' j' : '—' }}
+          </p>
+        }
+        <p class="kpi-card__sub">Jours moyens</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Module Cards Grid ────────────────────────────────────────────────── -->
+  <div class="modules-grid">
+
+    @for (mod of visibleModules(); track mod.path) {
+      <div class="mod-card glass-card"
+           [class.mod-card--wide]="mod.wide"
+           [class.mod-card--active]="mod.path === '/fact/invoicing'"
+           (click)="navigateTo(mod.path)">
+
+        @if (mod.wide) {
+          <!-- Wide layout (Trésorerie) -->
+          <div class="mod-card__wide-inner">
+            <div [class]="'mod-card__icon mod-card__icon--lg icon--' + mod.iconVariant">
+              <span class="material-symbols-outlined">{{ mod.icon }}</span>
+            </div>
+            <div class="mod-card__wide-body">
+              <h4 class="mod-card__title">{{ mod.label }}</h4>
+              <p class="mod-card__desc">{{ mod.description }}</p>
+            </div>
+            <div class="mod-card__wide-kpi">
+              <p class="mod-card__wide-label">Solde Consolidé</p>
+              <p class="mod-card__wide-value">—</p>
+            </div>
+          </div>
+        } @else {
+          <!-- Standard layout -->
+          <div [class]="'mod-card__icon icon--' + mod.iconVariant">
+            <span class="material-symbols-outlined">{{ mod.icon }}</span>
+          </div>
+          <h4 class="mod-card__title">{{ mod.label }}</h4>
+          <p class="mod-card__desc">{{ mod.description }}</p>
+          <div class="mod-card__footer">
+            @if (mod.path === '/fact/invoicing') {
+              <span class="mod-card__badge badge--active">Page active</span>
+            } @else if (mod.stat) {
+              <span class="mod-card__stat" [class]="mod.statClass">{{ mod.stat }}</span>
+            } @else {
+              <span></span>
             }
-          </span>
-        }
-      </div>
-    </div>
-
-    <div class="kpi-card kpi-teal">
-      <div class="kpi-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-        </svg>
-      </div>
-      <div class="kpi-body">
-        <span class="kpi-label">Délai moyen de paiement</span>
-        @if (loadingStats()) {
-          <span class="kpi-value skeleton"></span>
-        } @else {
-          <span class="kpi-value">
-            {{ stats()?.delaiMoyenPaiement != null ? (stats()!.delaiMoyenPaiement | number:'1.0-0') + ' j' : '—' }}
-          </span>
-        }
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ── Module Cards ──────────────────────────────────────────────────────── -->
-  <section class="modules-section">
-    <h2 class="section-title">Modules</h2>
-    <div class="modules-grid">
-      @for (mod of visibleModules(); track mod.path) {
-        <a class="module-card" [routerLink]="mod.path"
-           [style.--accent]="mod.color">
-          <div class="module-icon" [innerHTML]="mod.icon"></div>
-          <div class="module-body">
-            <span class="module-label">{{ mod.label }}</span>
-            <span class="module-desc">{{ mod.description }}</span>
+            <span class="material-symbols-outlined mod-card__arrow">arrow_forward</span>
           </div>
-          <div class="module-arrow">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </div>
-        </a>
-      }
-    </div>
-  </section>
+        }
+
+      </div>
+    }
+
+  </div>
 
 </div>

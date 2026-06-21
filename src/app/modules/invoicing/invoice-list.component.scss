@@ -43,7 +43,7 @@
 .filter-select { padding: 7px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; color: #0f172a; background: #f8fafc; cursor: pointer;
   &:focus { outline: none; border-color: #1a6b7c; } }
 .filter-spacer { flex: 1; }
-.btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #1a6b7c; color: white; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+.btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #1a6b7c; color: white; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit;
   svg { width: 15px; height: 15px; }
   &:hover { background: #134f5c; } }
 .action-error-bar { padding: 10px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-size: 0.875rem; }
@@ -78,8 +78,6 @@ table { width: 100%; border-collapse: collapse;
 .overdue-date { color: #dc2626; font-weight: 600; }
 .overdue-badge { display: inline-block; font-size: 0.6875rem; font-weight: 700; color: #fff; background: #dc2626; padding: 1px 6px; border-radius: 999px; align-self: flex-start; }
 
-.statut-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
-
 .actions-cell { text-align: right; }
 .action-btn {
   width: 30px; height: 30px; border: none; border-radius: 7px; cursor: pointer;
@@ -98,7 +96,7 @@ table { width: 100%; border-collapse: collapse;
 // ── Pagination ────────────────────────────────────────────────────────────────
 .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid #f1f5f9; font-size: 0.8125rem; color: #64748b; }
 .page-btns { display: flex; gap: 4px; }
-.page-btn { width: 32px; height: 32px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; font-size: 0.8125rem; color: #475569; cursor: pointer;
+.page-btn { width: 32px; height: 32px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; font-size: 0.8125rem; color: #475569; cursor: pointer; font-family: inherit;
   &:hover:not(:disabled) { border-color: #1a6b7c; color: #1a6b7c; }
   &.active { background: #1a6b7c; border-color: #1a6b7c; color: #fff; font-weight: 700; }
   &:disabled { opacity: 0.35; cursor: default; }
@@ -112,11 +110,11 @@ table { width: 100%; border-collapse: collapse;
 .modal-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 5px; label { font-size: 0.8125rem; font-weight: 600; color: #374151; } textarea { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; color: #0f172a; font-family: inherit; resize: vertical; &:focus { outline: none; border-color: #1a6b7c; } } }
 .decision-btns { display: flex; gap: 8px; }
-.decision-btn { flex: 1; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+.decision-btn { flex: 1; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit;
   &.active-approve { background: #d1fae5; border-color: #34d399; color: #065f46; }
   &.active-return  { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
   &.active-reject  { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid #f1f5f9; }
-.btn-cancel { padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; font-size: 0.875rem; color: #64748b; cursor: pointer; &:hover { background: #f8fafc; } }
-.btn-save   { padding: 8px 18px; background: #1a6b7c; color: #fff; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; &:hover { background: #134f5c; } }
+.btn-cancel { padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; font-size: 0.875rem; color: #64748b; cursor: pointer; font-family: inherit; &:hover { background: #f8fafc; } }
+.btn-save   { padding: 8px 18px; background: #1a6b7c; color: #fff; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; font-family: inherit; &:hover { background: #134f5c; } }
