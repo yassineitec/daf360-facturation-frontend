@@ -1,6 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
 import { FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 import { FactListService }        from '../../../../core/fact-list.service';
@@ -50,7 +49,6 @@ export class WizardStepInfoComponent implements OnInit {
       if (this.draft.doc360ClientName) {
         this.prefillFromDoc360(clients);
       } else if (this.draft.clientId && this.draft.clientName) {
-        // Edit mode: client already selected — show the name in the search input
         this.clientInputValue.set(this.draft.clientName);
       }
     });

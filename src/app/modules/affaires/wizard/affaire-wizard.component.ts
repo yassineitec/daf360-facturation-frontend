@@ -1,10 +1,11 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
-import { Router, RouterLink }                   from '@angular/router';
+import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
 import { Observable, forkJoin }                 from 'rxjs';
 
 import { AffaireWizardService }          from '../affaire-wizard.service';
 import { AffaireDraftState, WIZARD_STEPS_LABELS, mapDraftToState } from '../affaire-wizard.model';
 import { AffaireService }           from '../affaire.service';
+import { UserStore }                from '../../../core/user.store';
 import { AffaireDetail }            from '../affaire.model';
 import { WizardStepperComponent }        from '../../../shared/wizard-stepper.component';
 import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
@@ -32,9 +33,16 @@ import { WizardStepRecapComponent }      from './steps/wizard-step-recap.compone
 })
 export class AffaireWizardComponent implements OnInit {
 
-  private readonly wizardService = inject(AffaireWizardService);
-  private readonly router        = inject(Router);
-  private readonly affaireSvc    = inject(AffaireService);
+  private readonly wizardService  = inject(AffaireWizardService);
+  private readonly router         = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly affaireSvc     = inject(AffaireService);
+  private readonly userStore      = inject(UserStore);
+
+  // Relative path back to the affaires list:
+  // new  → mounted at affaires/new  → '..' = affaires/
+  // edit → mounted at affaires/:id/edit → '../..' = affaires/
+  readonly cancelRoute = computed(() => this.editMode() ? ['../..'] : ['..']);
 
   // Edit mode
   readonly id       = input<string>();   // bound from route :id via withComponentInputBinding()
@@ -62,6 +70,52 @@ export class AffaireWizardComponent implements OnInit {
     ressources: [],
     eligibleCostCategoryIds: [],
     eligibleExpenseCategoryIds: [],
+  });
+
+  /** Returns a user-facing message listing missing fields for the current step, or null when valid. */
+  readonly stepValidationError = computed((): string | null => {
+    const d = this.draft();
+    switch (this.currentStep()) {
+      case 2: {
+        const missing: string[] = [];
+        if (!d.clientId)                                        missing.push('client');
+        else if (!d.clientKycDone)                              missing.push('validation KYC du client requise');
+        if (!d.intitule?.trim())                                missing.push('intitulé de l\'affaire');
+        if (!d.billingMode)                                     missing.push('mode de facturation');
+        if (!d.budgetPrevisionnel || d.budgetPrevisionnel <= 0) missing.push('budget prévisionnel (> 0)');
+        if (!d.contractCurrency?.trim())                        missing.push('devise du contrat');
+        return missing.length ? `Champs requis : ${missing.join(' · ')}.` : null;
+      }
+      case 3: {
+        if (this.editMode() && d.billingModeLocked) return null;
+        if (!d.billingMode) return 'Sélectionnez un mode de facturation à l\'étape précédente.';
+        const budget = d.budgetPrevisionnel ?? 0;
+        switch (d.billingMode) {
+          case 'AV':  return 'Répartition requise (total = 100 %) avec au moins un type sélectionné.';
+          case 'JAL': return `Jalons requis avec labels et total = ${budget.toLocaleString('fr-FR')} ${d.contractCurrency}.`;
+          case 'TM':  return 'Au moins une ressource avec tarif > 0 requise.';
+          case 'CP':  return 'Sélectionnez au moins une catégorie de coût et définissez un taux de marge.';
+          case 'RMB': return 'Sélectionnez au moins une catégorie de dépenses.';
+          default:    return null;
+        }
+      }
+      case 4: {
+        const d4 = this.draft();
+        if (!d4.responsables.length) return 'Ajoutez au moins un responsable.';
+        if (!d4.responsables.some(r => r.isPrimary)) return 'Désignez un responsable principal.';
+        if (!d4.responsables.every(r => r.userId > 0 && (r.budgetAllocation ?? 0) > 0))
+          return 'Chaque responsable doit avoir un utilisateur et une allocation > 0.';
+        const total = d4.responsables.reduce((s, r) => s + (r.budgetAllocation ?? 0), 0);
+        const budget = d4.budgetPrevisionnel ?? 0;
+        return Math.abs(total - budget) >= 0.001
+          ? `Total des allocations (${total.toLocaleString('fr-FR')}) doit égaler le budget (${budget.toLocaleString('fr-FR')}).`
+          : null;
+      }
+      case 5:
+        return d.dateDebutFacturation ? null : 'Date de début de facturation requise.';
+      default:
+        return null;
+    }
   });
 
   canGoNext = computed(() => {
@@ -124,7 +178,7 @@ export class AffaireWizardComponent implements OnInit {
   goNext(): void {
     this.serverError.set(null);
     if (!this.canGoNext()) {
-      this.serverError.set('Veuillez compléter tous les champs obligatoires avant de continuer.');
+      this.serverError.set(this.stepValidationError() ?? 'Veuillez compléter tous les champs obligatoires avant de continuer.');
       return;
     }
     switch (this.currentStep()) {
@@ -203,6 +257,7 @@ export class AffaireWizardComponent implements OnInit {
     this.isSaving.set(true);
     const d = this.draft();
     this.wizardService.createDraft({
+      refId:                 this.userStore.user()?.id,
       clientId:              d.clientId,
       intitule:              d.intitule.trim(),
       reference:             d.reference?.trim()    || null,
@@ -336,13 +391,16 @@ export class AffaireWizardComponent implements OnInit {
 
   private activateAffaire(): void {
     if (this.editMode()) {
-      // No activation needed — navigate back to detail
-      this.router.navigate(['/fact/affaires', this.draftId()]);
+      // edit → affaires/:id/edit → '../..' → affaires/ → then detail id
+      this.router.navigate(['../..', this.draftId()], { relativeTo: this.activatedRoute });
       return;
     }
     this.isSaving.set(true);
     this.wizardService.validateAndActivate(this.draftId()!).subscribe({
-      next: affaire => { this.router.navigate(['/fact/affaires', affaire['id']]); },
+      next: affaire => {
+        // new → affaires/new → '..' → affaires/ → then detail id
+        this.router.navigate(['..', affaire['id']], { relativeTo: this.activatedRoute });
+      },
       error: err => {
         this.isSaving.set(false);
         this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur d\'activation.');

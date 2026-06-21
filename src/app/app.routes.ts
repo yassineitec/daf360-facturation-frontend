@@ -1,9 +1,11 @@
-import { Routes }    from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { Routes }          from '@angular/router';
+import { authGuard }        from './core/auth.guard';
+import { FactShellComponent } from './layout/fact-shell.component';
 
 export const routes: Routes = [
   {
     path: '',
+    component: FactShellComponent,
     canActivate: [authGuard],
     children: [
       {

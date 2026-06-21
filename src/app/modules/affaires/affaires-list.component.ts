@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AffaireService } from './affaire.service';
 import { AffaireListItem, AffaireFilter, TYPE_LABELS, STATUT_LABELS } from './affaire.model';
 import { PermissionDirective } from '../../shared/permission.directive';
@@ -13,8 +13,9 @@ import { AffaireTableComponent } from './components/affaire-table.component';
   styleUrl: './affaires-list.component.scss',
 })
 export class AffairesListComponent implements OnInit {
-  private readonly svc    = inject(AffaireService);
-  private readonly router = inject(Router);
+  private readonly svc            = inject(AffaireService);
+  private readonly router         = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
 
   affaires      = signal<AffaireListItem[]>([]);
   loading       = signal(false);
@@ -80,11 +81,11 @@ export class AffairesListComponent implements OnInit {
   }
 
   navigateToDetail(id: number): void {
-    this.router.navigate(['/fact/affaires', id]);
+    this.router.navigate([id], { relativeTo: this.activatedRoute });
   }
 
   openNewForm(): void {
-    this.router.navigate(['/fact/affaires/new']);
+    this.router.navigate(['new'], { relativeTo: this.activatedRoute });
   }
 
   formatAmount(v: number): string {

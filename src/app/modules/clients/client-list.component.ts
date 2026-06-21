@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ClientService } from './client.service';
@@ -16,9 +16,10 @@ import { PaysRefDto } from '../affaires/affaire.model';
   styleUrl: './client-list.component.scss',
 })
 export class ClientListComponent implements OnInit, OnDestroy {
-  private readonly svc      = inject(ClientService);
-  private readonly router   = inject(Router);
-  private readonly destroy$ = new Subject<void>();
+  private readonly svc            = inject(ClientService);
+  private readonly router         = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly destroy$       = new Subject<void>();
   private readonly search$  = new Subject<string>();
 
   clients          = signal<ClientListItemDto[]>([]);
@@ -93,10 +94,11 @@ export class ClientListComponent implements OnInit, OnDestroy {
   }
 
   load(): void {
+    if (!this.filterPaysId) return;  // wait until pays list has resolved a valid ID
     this.loading.set(true);
     this.error.set(null);
     const filter: ClientFilter = {
-      paysId:    this.filterPaysId || null,
+      paysId:    this.filterPaysId,
       page:      this.currentPage(),
       size:      this.PAGE_SIZE,
       search:    this.searchText.trim() || null,
@@ -166,7 +168,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
     this.load();
   }
 
-  navigateToDetail(id: number): void { this.router.navigate(['/fact/clients', id]); }
+  navigateToDetail(id: number): void { this.router.navigate([id], { relativeTo: this.activatedRoute }); }
 
   formatAmount(v: number | null, currency = 'TND'): string {
     if (v === null || v === undefined) return '—';

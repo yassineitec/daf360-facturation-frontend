@@ -2,7 +2,7 @@
   <div class="wizard-container">
 
     <!-- Back link -->
-    <a routerLink="/fact/affaires" class="back-link">
+    <a [routerLink]="cancelRoute()" class="back-link">
       <span class="material-symbols-outlined">arrow_back</span>
       Retour aux affaires
     </a>
@@ -67,6 +67,14 @@
 
       </div>
 
+      <!-- ── VALIDATION HINT ────────────────────────────────────── -->
+      @if (!canGoNext() && !isSaving() && currentStep() !== 1) {
+        <div class="validation-hint">
+          <span class="material-symbols-outlined">info</span>
+          <span>{{ stepValidationError() }}</span>
+        </div>
+      }
+
       <!-- ── ERROR BANNER ─────────────────────────────────────── -->
       @if (serverError()) {
         <div class="error-banner">
@@ -79,7 +87,7 @@
       <div class="wizard-nav">
 
         @if (currentStep() === 1 || (editMode() && currentStep() === 2)) {
-          <a routerLink="/fact/affaires" class="nav-cancel">Annuler</a>
+          <a [routerLink]="cancelRoute()" class="nav-cancel">Annuler</a>
         } @else {
           <button class="nav-prev" type="button" (click)="goPrev()">
             <span class="material-symbols-outlined">arrow_back</span>
@@ -88,7 +96,8 @@
         }
 
         <button class="nav-next" type="button"
-          [disabled]="!canGoNext() || isSaving()"
+          [disabled]="isSaving()"
+          [class.nav-next--incomplete]="!canGoNext() && !isSaving()"
           (click)="goNext()">
           @if (isSaving()) {
             <span class="material-symbols-outlined nav-spin">progress_activity</span>
@@ -110,7 +119,7 @@
     <!-- Lien brouillon — en dehors de la card, en bas de page -->
     @if (!editMode()) {
       <div class="wizard-footer">
-        <a routerLink="/fact/affaires" class="draft-link">
+        <a [routerLink]="cancelRoute()" class="draft-link">
           <span class="material-symbols-outlined">history</span>
           Reprendre une affaire en brouillon
         </a>
