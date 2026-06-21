@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @source "./app/**/*.html";
 @source "./app/**/*.ts";
+@source "../node_modules/@khalilrebhiitec/daf360/fesm2022/khalilrebhiitec-daf360.mjs";
 
 /* ── DAF360 semantic design tokens ─────────────────────────────────── */
 @theme {

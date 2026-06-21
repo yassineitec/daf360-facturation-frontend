@@ -1,0 +1,14 @@
+{
+  "FACTURATION": {
+    "TITLE": "Facturation",
+    "DASHBOARD": "Tableau de bord",
+    "INVOICES": "Factures",
+    "AFFAIRES": "Affaires",
+    "CLIENTS": "Clients",
+    "PAYMENTS": "Paiements",
+    "COSTS": "Coûts",
+    "SUBCONTRACTING": "Sous-traitance",
+    "REPORTING": "Reporting",
+    "ADMIN": "Administration"
+  }
+}

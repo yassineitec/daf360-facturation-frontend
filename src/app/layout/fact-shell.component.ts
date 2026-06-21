@@ -1,8 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeHtml }              from '@angular/platform-browser';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { UserStore }   from '../core/user.store';
-import { AuthService } from '../core/auth.service';
+import { UserStore }             from '../core/user.store';
+import { AuthService }           from '../core/auth.service';
+import { RemoteStylesService }   from '../core/remote-styles.service';
+import { environment }           from '../../environments/environment';
 
 interface NavItem {
   path:       string;
@@ -43,10 +45,15 @@ const ICONS: Record<string, string> = {
   templateUrl: './fact-shell.component.html',
   styleUrl: './fact-shell.component.scss',
 })
-export class FactShellComponent {
+export class FactShellComponent implements OnInit {
   protected readonly store     = inject(UserStore);
   protected readonly auth      = inject(AuthService);
   private   readonly sanitizer = inject(DomSanitizer);
+  private   readonly remoteStyles = inject(RemoteStylesService);
+
+  ngOnInit(): void {
+    this.remoteStyles.injectStyles(environment.stylesUrl);
+  }
 
   protected readonly collapsed = signal(false);
   protected readonly user      = this.store.user;

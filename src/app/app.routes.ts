@@ -1,16 +1,9 @@
-import { Routes }                from '@angular/router';
-import { authGuard }             from './core/auth.guard';
-import { FactShellComponent }    from './layout/fact-shell.component';
-import { AuthCallbackComponent } from './core/auth-callback.component';
+import { Routes }    from '@angular/router';
+import { authGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   {
-    path: 'auth/callback',
-    component: AuthCallbackComponent,
-  },
-  {
-    path: 'fact',
-    component: FactShellComponent,
+    path: '',
     canActivate: [authGuard],
     children: [
       {
@@ -71,5 +64,4 @@ export const routes: Routes = [
       { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
   },
-  { path: '', redirectTo: '/fact/home', pathMatch: 'full' },
 ];

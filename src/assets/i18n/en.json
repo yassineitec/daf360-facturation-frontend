@@ -1,0 +1,14 @@
+{
+  "FACTURATION": {
+    "TITLE": "Billing",
+    "DASHBOARD": "Dashboard",
+    "INVOICES": "Invoices",
+    "AFFAIRES": "Projects",
+    "CLIENTS": "Clients",
+    "PAYMENTS": "Payments",
+    "COSTS": "Costs",
+    "SUBCONTRACTING": "Subcontracting",
+    "REPORTING": "Reporting",
+    "ADMIN": "Administration"
+  }
+}
