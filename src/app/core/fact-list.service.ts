@@ -56,10 +56,11 @@ export class FactListService {
     return this.http.post<ListValueDto>(`${this.base}/admin/lists/${typeCode}/values`, body);
   }
 
-  updateListValue(id: number, body: {
-    labelFr?: string; labelEn?: string; isDefault?: boolean;
+  updateListValue(id: number, paysId: number, body: {
+    labelFr?: string; labelEn?: string; isDefault?: boolean; isActive?: boolean;
   }): Observable<ListValueDto> {
-    return this.http.patch<ListValueDto>(`${this.base}/admin/lists/values/${id}`, body);
+    const params = new HttpParams().set('pays', String(paysId));
+    return this.http.patch<ListValueDto>(`${this.base}/admin/lists/values/${id}`, body, { params });
   }
 
   deactivateListValue(id: number): Observable<void> {
