@@ -1,5 +1,5 @@
 import { Component, inject, input, output, signal, computed } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { InvoiceService } from '../invoice.service';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
@@ -104,6 +104,7 @@ import { StepConditionsValue } from './step-conditions.component';
 export class StepRecapComponent {
   private readonly svc    = inject(InvoiceService);
   private readonly router = inject(Router);
+  private readonly route  = inject(ActivatedRoute);
 
   affaireData   = input.required<StepAffaireValue>();
   linesData     = input.required<StepLinesValue>();
@@ -156,7 +157,7 @@ export class StepRecapComponent {
     this.saving.set(true);
     this.serverError.set(null);
     this.svc.createDraft(this.buildRequest()).subscribe({
-      next:  inv => { this.saving.set(false); this.router.navigate(['/fact/invoicing', inv.id]); },
+      next:  inv => { this.saving.set(false); this.router.navigate(['..', inv.id], { relativeTo: this.route }); },
       error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur.'); },
     });
   }
@@ -167,7 +168,7 @@ export class StepRecapComponent {
     this.svc.createDraft(this.buildRequest()).subscribe({
       next: inv => {
         this.svc.submit(inv.id).subscribe({
-          next:  () => { this.saving.set(false); this.router.navigate(['/fact/invoicing', inv.id]); },
+          next:  () => { this.saving.set(false); this.router.navigate(['..', inv.id], { relativeTo: this.route }); },
           error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur lors de la soumission.'); },
         });
       },

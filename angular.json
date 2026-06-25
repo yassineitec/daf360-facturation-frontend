@@ -100,8 +100,7 @@
           "options": {
             "target": "daf360-facturation-frontend:serve-original:development",
             "rebuildDelay": 500,
-            "dev": true,
-            "port": 4204
+            "dev": true
           }
         },
         "test": {

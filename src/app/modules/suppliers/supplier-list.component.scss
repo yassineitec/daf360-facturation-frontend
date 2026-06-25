@@ -1,4 +1,28 @@
 :host { display: block; }
 
-@keyframes spin  { to   { transform: rotate(360deg); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.action-icon-btn {
+  width: 28px; height: 28px; border: none; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+  background: var(--color-surface-container); color: var(--color-on-surface-variant);
+
+  .material-symbols-outlined { font-size: 15px; }
+
+  &:hover { background: var(--color-outline-variant); }
+}
+
+.decision-btn {
+  flex: 1; padding: 10px 12px; border: 1px solid var(--color-outline-variant);
+  border-radius: 10px; background: var(--color-surface-container-low);
+  font-size: 0.75rem; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; cursor: pointer; transition: all 0.15s;
+  font-family: inherit; color: var(--color-on-surface-variant);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &--danger  { background: rgba(220,38,38,0.08);  border-color: rgba(220,38,38,0.25);  color: var(--color-danger); }
+  &--success { background: rgba(0,107,88,0.08);   border-color: rgba(0,107,88,0.25);   color: #006b58; }
+}

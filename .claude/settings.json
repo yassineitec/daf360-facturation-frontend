@@ -1,10 +1,13 @@
 {
   "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\MSI\\\\Desktop\\\\daf360-facturation-frontend\\\\node_modules\\\\@khalilrebhiitec\\\\daf360\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object -First 15 Name, Extension)",
+      "Bash(git -C \"C:\\\\Users\\\\MSI\\\\Desktop\\\\daf360-facturation-frontend\" show fdcfd94:src/app/modules/home/home.component.html)",
+      "Bash(git -C \"C:\\\\Users\\\\MSI\\\\Desktop\\\\daf360-facturation-frontend\" show 4ebec94:src/app/modules/home/home.component.html)",
+      "Bash(xargs grep -l \"fournisseurs\\\\|recouvrement\\\\|tresorerie\")"
+    ],
     "additionalDirectories": [
       "\\dev"
-    ],
-    "allow": [
-      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\MSI\\\\Desktop\\\\daf360-facturation-frontend\\\\node_modules\\\\@khalilrebhiitec\\\\daf360\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object -First 15 Name, Extension)"
     ]
   }
 }

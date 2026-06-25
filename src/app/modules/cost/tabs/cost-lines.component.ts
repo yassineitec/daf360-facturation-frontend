@@ -1,26 +1,36 @@
-import {
-  Component, OnInit, inject, signal, computed,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CostService } from '../cost.service';
 import {
   CostLineDto, CostLineStatus, COST_STATUS_CONFIG, CostCategoryDto,
 } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
+import {
+  MetricCardComponent,
+  DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
+  PaginationComponent,
+  ToolbarComponent, ToolbarAction,
+  SelectComponent, SelectOption,
+  StatusBadgeComponent as DafBadgeComponent, BadgeOptions, BadgeVariant,
+  CardComponent,
+} from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-cost-lines',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    MetricCardComponent, DataTableComponent, DafCellDirective,
+    PaginationComponent, ToolbarComponent, SelectComponent,
+    DafBadgeComponent, CardComponent,
+  ],
   templateUrl: './cost-lines.component.html',
   styleUrl: './cost-lines.component.scss',
 })
 export class CostLinesComponent implements OnInit {
-  private readonly svc        = inject(CostService);
-  private readonly clientSvc  = inject(ClientService);
-  private readonly router     = inject(Router);
+  private readonly svc       = inject(CostService);
+  private readonly clientSvc = inject(ClientService);
+  private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
 
   paysId = signal<number>(0);
   lines  = signal<CostLineDto[]>([]);
@@ -28,10 +38,11 @@ export class CostLinesComponent implements OnInit {
   page   = signal(0);
   size   = 25;
 
-  statusFilter = signal<string>('');
-  isLoading    = signal(false);
-  serverError  = signal<string | null>(null);
-  actionError  = signal<string | null>(null);
+  statusFilterSel = signal<string[]>([]);
+  searchText      = signal<string>('');
+  isLoading       = signal(false);
+  serverError     = signal<string | null>(null);
+  actionError     = signal<string | null>(null);
 
   categories  = signal<CostCategoryDto[]>([]);
   categoryMap = computed(() => new Map(this.categories().map(c => [c.id, c.labelFr])));
@@ -39,10 +50,59 @@ export class CostLinesComponent implements OnInit {
   draftCount    = computed(() => this.lines().filter(l => l.status === 'DRAFT').length);
   pendingCount  = computed(() => this.lines().filter(l => l.status === 'SUBMITTED').length);
   approvedCount = computed(() =>
-    this.lines().filter(l => l.status === 'APPROVED' || l.status === 'VALIDATED' || l.status === 'POSTED').length
+    this.lines().filter(l => ['APPROVED', 'VALIDATED', 'POSTED'].includes(l.status)).length
   );
 
-  readonly statusOptions = Object.entries(COST_STATUS_CONFIG).map(([k, v]) => ({ code: k, label: v.label }));
+  readonly totalPagesCount = computed(() => Math.ceil(this.total() / this.size) || 1);
+
+  readonly statusSelectOptions: SelectOption[] = Object.entries(COST_STATUS_CONFIG)
+    .map(([k, v]) => ({ value: k, label: v.label }));
+
+  readonly tableColumns: TableColumn[] = [
+    { key: 'label',         label: 'Description', type: 'custom' },
+    { key: 'categoryLabel', label: 'Catégorie',   type: 'text' },
+    { key: 'date',          label: 'Date',        type: 'text' },
+    { key: 'netAmountLocal',label: 'Montant HT',  type: 'custom', align: 'right' },
+    { key: 'netAmountEur',  label: 'EUR',         type: 'custom', align: 'right' },
+    { key: 'status',        label: 'Statut',      type: 'custom', align: 'center' },
+    { key: 'approvalLevel', label: 'Approbation', type: 'custom', align: 'center' },
+    { key: '_actions',      label: 'Actions',     type: 'custom', align: 'right', width: '80px' },
+  ];
+
+  readonly tableConfig = computed<TableConfig>(() => ({
+    hoverable:    true,
+    loading:      this.isLoading(),
+    emptyMessage: 'Aucune ligne de coût trouvée.',
+    skeletonRows: 5,
+  }));
+
+  readonly toolbarActions: ToolbarAction[] = [
+    { id: 'new', label: 'Nouvelle ligne', icon: 'add', position: 'right', variant: 'primary' },
+  ];
+
+  readonly tableRows = computed(() => {
+    const q = this.searchText().toLowerCase().trim();
+    return this.lines()
+      .filter(line => !q ||
+        (line.label ?? '').toLowerCase().includes(q) ||
+        (line.reference ?? '').toLowerCase().includes(q)
+      )
+      .map(line => ({
+        id:            line.id,
+        label:         line.label,
+        reference:     line.reference,
+        categoryLabel: this.getCategoryLabel(line.categoryId),
+        date:          this.formatDate(line.transactionDate),
+        netAmountLocal:line.netAmountLocal,
+        currency:      line.currency,
+        netAmountEur:  line.netAmountEur,
+        status:        line.status,
+        approvalLevel: line.approvalLevelRequired,
+        _canEdit:      this.canEdit(line),
+        _canSubmit:    this.canSubmit(line),
+        _raw:          line,
+      }));
+  });
 
   ngOnInit(): void {
     this.clientSvc.getMyPays().subscribe({
@@ -68,13 +128,13 @@ export class CostLinesComponent implements OnInit {
     this.serverError.set(null);
     this.svc.getCostLines({
       paysId: this.paysId(),
-      status: this.statusFilter() || null,
-      page: this.page(),
-      size: this.size,
+      status: this.statusFilterSel()[0] || null,
+      page:   this.page(),
+      size:   this.size,
     }).subscribe({
-      next: page => {
-        this.lines.set(page.content);
-        this.total.set(page.totalElements);
+      next: p => {
+        this.lines.set(p.content);
+        this.total.set(p.totalElements);
         this.isLoading.set(false);
       },
       error: err => {
@@ -84,24 +144,18 @@ export class CostLinesComponent implements OnInit {
     });
   }
 
-  onStatusChange(): void {
-    this.page.set(0);
-    this.load();
-  }
+  onStatusChange(): void { this.page.set(0); this.load(); }
+  onToolbarAction(id: string): void { if (id === 'new') this.openCreate(); }
+  onRowClick(row: TableRow): void { this.openEdit(row['_raw']); }
+  goToPage(p: number): void { this.page.set(p); this.load(); }
 
-  openCreate(): void {
-    this.router.navigate(['/fact/cost/new']);
-  }
+  openCreate(): void { this.router.navigate(['new'], { relativeTo: this.route }); }
+  openEdit(line: CostLineDto): void { this.router.navigate([line.id, 'edit'], { relativeTo: this.route }); }
 
-  openEdit(line: CostLineDto): void {
-    this.router.navigate(['/fact/cost', line.id, 'edit']);
-  }
-
-  submit(line: CostLineDto, event: Event): void {
-    event.stopPropagation();
+  submitLine(line: CostLineDto): void {
     this.actionError.set(null);
     this.svc.submitCostLine(line.id).subscribe({
-      next: () => this.load(),
+      next:  () => this.load(),
       error: err => this.actionError.set(err.error?.message ?? 'Erreur lors de la soumission.'),
     });
   }
@@ -111,23 +165,33 @@ export class CostLinesComponent implements OnInit {
     return this.categoryMap().get(id) ?? `Cat. ${id}`;
   }
 
-  statusConfig(status: string) {
-    return COST_STATUS_CONFIG[status as CostLineStatus] ?? { label: status, bg: '#f1f5f9', text: '#475569' };
-  }
-
-  get totalPages(): number { return Math.ceil(this.total() / this.size); }
-  pageEnd(): number { return Math.min((this.page() + 1) * this.size, this.total()); }
-
-  prevPage(): void {
-    if (this.page() > 0) { this.page.update(p => p - 1); this.load(); }
-  }
-
-  nextPage(): void {
-    if (this.page() < this.totalPages - 1) { this.page.update(p => p + 1); this.load(); }
-  }
-
-  canEdit(line: CostLineDto): boolean { return line.status === 'DRAFT' || line.status === 'RETURNED'; }
+  canEdit(line: CostLineDto): boolean   { return line.status === 'DRAFT' || line.status === 'RETURNED'; }
   canSubmit(line: CostLineDto): boolean { return line.status === 'DRAFT' || line.status === 'RETURNED'; }
+
+  statusBadgeOptions(s: string): BadgeOptions {
+    const variantMap: Record<string, BadgeVariant> = {
+      DRAFT:     'neutral',
+      SUBMITTED: 'info',
+      RETURNED:  'warning',
+      APPROVED:  'success',
+      VALIDATED: 'success',
+      POSTED:    'secondary',
+      CANCELLED: 'danger',
+      REJECTED:  'danger',
+    };
+    return { variant: variantMap[s] ?? 'neutral', pill: true };
+  }
+
+  statusLabel(s: string): string {
+    return COST_STATUS_CONFIG[s as CostLineStatus]?.label ?? s;
+  }
+
+  approvalBadgeOptions(level: string | null): BadgeOptions {
+    const variantMap: Record<string, BadgeVariant> = {
+      L1: 'neutral', L2: 'info', L3: 'warning', L4: 'danger',
+    };
+    return { variant: (level ? (variantMap[level] ?? 'neutral') : 'neutral'), pill: true };
+  }
 
   formatAmount(amount: number | null | undefined, currency = 'EUR'): string {
     if (amount == null) return '—';
@@ -136,9 +200,7 @@ export class CostLinesComponent implements OnInit {
         style: 'currency', currency,
         minimumFractionDigits: 0, maximumFractionDigits: 0,
       }).format(amount);
-    } catch {
-      return `${amount} ${currency}`;
-    }
+    } catch { return `${amount} ${currency}`; }
   }
 
   formatDate(date: string | null): string {

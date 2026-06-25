@@ -229,12 +229,12 @@ export class CostFormComponent implements OnInit {
           this.pendingFiles.set([]);
           if (submit) {
             this.costSvc.submitCostLine(line.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-              next:  () => { this.isSaving.set(false); this.router.navigate(['/fact/cost']); },
+              next:  () => { this.isSaving.set(false); this.router.navigate(this.isEditMode() ? ['../..'] : ['..'], { relativeTo: this.route }); },
               error: err => { this.isSaving.set(false); this.error.set(err.error?.message ?? 'Erreur lors de la soumission.'); },
             });
           } else {
             this.isSaving.set(false);
-            this.router.navigate(['/fact/cost']);
+            this.router.navigate(this.isEditMode() ? ['../..'] : ['..'], { relativeTo: this.route });
           }
         });
       },

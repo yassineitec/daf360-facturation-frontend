@@ -1,4 +1,30 @@
 :host { display: block; }
 
-@keyframes spin  { to   { transform: rotate(360deg); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+// ── Action icon buttons ──────────────────────────────────────────────────────
+.action-icon-btn {
+  width: 28px; height: 28px; border: none; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+  background: var(--color-surface-container); color: var(--color-on-surface-variant);
+
+  .material-symbols-outlined { font-size: 15px; }
+
+  &:hover { background: var(--color-outline-variant); }
+
+  &--green  { background: rgba(6,95,70,0.1);    color: #065f46; &:hover { background: rgba(6,95,70,0.2); } }
+  &--danger { background: rgba(220,38,38,0.1);  color: var(--color-danger); &:hover { background: rgba(220,38,38,0.2); } }
+}
+
+// ── Approval decision buttons (inside ModalService template) ─────────────────
+.decision-btn {
+  flex: 1; padding: 8px 10px; border: 1px solid var(--color-outline-variant);
+  border-radius: 8px; background: var(--color-surface-container-low);
+  font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &--approve { background: #d1fae5; border-color: #34d399; color: #065f46; }
+  &--reject  { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+}

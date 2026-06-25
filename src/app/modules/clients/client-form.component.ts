@@ -1,9 +1,18 @@
 import {
-  Component, OnInit, Input, Output, EventEmitter, inject, signal,
+  Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, inject, signal,
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ClientService }                from './client.service';
 import { ClientDetailDto, CreateClientRequest } from './client.model';
+
+const DEFAULT_SECTORS = [
+  'Agriculture', 'Agroalimentaire', 'BTP & Construction', 'Commerce de détail',
+  'Commerce de gros', 'Éducation & Formation', 'Énergie & Utilities',
+  'Finance & Banque', 'Hôtellerie & Tourisme', 'Immobilier',
+  'Industrie & Manufacture', 'Informatique & Tech', 'Logistique & Transport',
+  'Médias & Communication', 'Santé & Pharmacie', 'Services aux entreprises',
+  'Télécommunications', 'Textile & Mode',
+];
 
 @Component({
   selector: 'app-client-form',
@@ -60,14 +69,18 @@ import { ClientDetailDto, CreateClientRequest } from './client.model';
               <div class="form-row">
                 <div class="field">
                   <label for="sector">Secteur d'activité</label>
-                  <input id="sector" type="text" formControlName="sector"
-                         placeholder="Ex : Finance, Industrie…"
-                         maxlength="100" [attr.list]="'sectors-list-' + uid" />
-                  <datalist [id]="'sectors-list-' + uid">
-                    @for (s of sectors(); track s) {
-                      <option [value]="s">{{ s }}</option>
-                    }
-                  </datalist>
+                  @if (loadingSectors()) {
+                    <select id="sector" disabled>
+                      <option>Chargement…</option>
+                    </select>
+                  } @else {
+                    <select id="sector" formControlName="sector">
+                      <option value="">— Sélectionner un secteur —</option>
+                      @for (s of sectors(); track s) {
+                        <option [value]="s">{{ s }}</option>
+                      }
+                    </select>
+                  }
                 </div>
                 <div class="field">
                   <label for="taxId">N° fiscal / TVA</label>
@@ -204,7 +217,7 @@ import { ClientDetailDto, CreateClientRequest } from './client.model';
   `,
   styleUrl: './client-form.component.scss',
 })
-export class ClientFormComponent implements OnInit {
+export class ClientFormComponent implements OnInit, OnChanges {
   @Input() client?: ClientDetailDto;
   @Input() paysId!: number;
   @Output() saved  = new EventEmitter<ClientDetailDto>();
@@ -213,20 +226,33 @@ export class ClientFormComponent implements OnInit {
   private readonly svc = inject(ClientService);
   private readonly fb  = inject(FormBuilder);
 
-  saving      = signal(false);
-  serverError = signal<string | null>(null);
-  sectors     = signal<string[]>([]);
+  saving         = signal(false);
+  serverError    = signal<string | null>(null);
+  sectors        = signal<string[]>([]);
+  loadingSectors = signal(false);
 
   form!: FormGroup;
   get f() { return this.form.controls; }
 
   get isEditMode(): boolean { return !!this.client; }
-  readonly uid = Math.random().toString(36).slice(2, 8);
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['paysId']) {
+      const effectiveId: number = this.client?.paysId ?? changes['paysId'].currentValue;
+      if (effectiveId) {
+        this.loadingSectors.set(true);
+        this.svc.getSectors(effectiveId).subscribe({
+          next:  s  => { this.sectors.set(s.length ? s : DEFAULT_SECTORS); this.loadingSectors.set(false); },
+          error: () => { this.sectors.set(DEFAULT_SECTORS); this.loadingSectors.set(false); },
+        });
+      } else {
+        this.sectors.set(DEFAULT_SECTORS);
+      }
+    }
+  }
 
   ngOnInit(): void {
     const c = this.client;
-    const effectivePaysId = c?.paysId ?? this.paysId;
-
     this.form = this.fb.group({
       clientName:        [c?.clientName ?? '',  [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
       clientCode:        [{ value: c?.clientCode ?? '', disabled: this.isEditMode }],
@@ -246,10 +272,6 @@ export class ClientFormComponent implements OnInit {
       defaultCurrency:   [c?.defaultCurrency ?? 'TND'],
       notes:             [c?.notes ?? ''],
     });
-
-    if (effectivePaysId) {
-      this.svc.getSectors(effectivePaysId).subscribe(s => this.sectors.set(s));
-    }
   }
 
   submit(): void {

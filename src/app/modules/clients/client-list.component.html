@@ -96,7 +96,7 @@
       <button class="pill" [class.pill--active]="activeFilter() === 'kyc'"     (click)="toggleIsKycDone(true)">KYC Validé</button>
     </div>
 
-    <button class="btn-new" *appHasPermission="'FACT_CREATE_AFFAIRE'" (click)="showCreateModal.set(true)">
+    <button class="btn-new" (click)="showCreateModal.set(true)">
       <span class="material-symbols-outlined">add</span>
       Nouveau Client
     </button>
@@ -215,5 +215,5 @@
   <app-client-form
     [paysId]="filterPaysId"
     (saved)="onClientCreated($event)"
-    (cancelled)="showCreateModal.set(false)" />
+    (closed)="showCreateModal.set(false)" />
 }
