@@ -1,0 +1,476 @@
+<div class="admin-page">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Administration</h1>
+      <p class="page-sub">Configuration système du module Facturation</p>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">Chargement…</div>
+  }
+
+  @if (pageError()) {
+    <div class="banner-error">{{ pageError() }}</div>
+  }
+
+  @if (!isLoading() && !pageError()) {
+
+    <!-- Pays selector (multi-pays only) -->
+    @if (paysList().length > 1) {
+      <div class="pays-bar">
+        @for (p of paysList(); track p.id) {
+          <button class="pays-tab" [class.active]="paysId() === p.id" (click)="selectPays(p.id)">
+            {{ p.isoCode }} — {{ p.frenchLabel }}
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Main tab nav -->
+    <div class="main-tabs">
+      <button class="main-tab" [class.active]="activeTab() === 'lists'"
+        (click)="activeTab.set('lists')">
+        Listes configurables
+      </button>
+      <button class="main-tab" [class.active]="activeTab() === 'forex'"
+        (click)="activeTab.set('forex')">
+        Taux de change
+      </button>
+      <button class="main-tab" [class.active]="activeTab() === 'forex-api'"
+        (click)="openForexApiTab()">
+        API Forex
+      </button>
+    </div>
+
+    <!-- ── LISTES TAB ────────────────────────────────────────────────────── -->
+    @if (activeTab() === 'lists') {
+      <div class="tab-content">
+
+        <!-- Type sub-tabs -->
+        <div class="type-tabs">
+          @for (t of listTypes(); track t.code) {
+            <button class="type-tab" [class.active]="activeListType() === t.code"
+              (click)="selectListType(t.code)">
+              {{ t.labelFr }}
+            </button>
+          }
+          @if (listTypes().length === 0) {
+            <span class="loading-inline">Chargement des types…</span>
+          }
+        </div>
+
+        @if (listError()) {
+          <div class="banner-error">{{ listError() }}</div>
+        }
+
+        @if (listLoading()) {
+          <div class="loading-state">Chargement des valeurs…</div>
+        }
+
+        @if (!listLoading()) {
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:120px">Code</th>
+                  <th>Libellé FR</th>
+                  <th>Libellé EN</th>
+                  <th class="text-center" style="width:90px">Défaut</th>
+                  <th class="text-center" style="width:90px">Statut</th>
+                  <th class="text-right"  style="width:110px">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (v of listValues(); track v.id) {
+                  @if (editMap()[v.id]; as patch) {
+                    <!-- Edit row -->
+                    <tr class="row-editing">
+                      <td><span class="code-pill">{{ v.code }}</span></td>
+                      <td>
+                        <input class="inline-input"
+                          [value]="patch.labelFr"
+                          (input)="patchEditFr(v.id, $any($event.target).value)">
+                      </td>
+                      <td>
+                        <input class="inline-input"
+                          [value]="patch.labelEn"
+                          (input)="patchEditEn(v.id, $any($event.target).value)">
+                      </td>
+                      <td class="text-center">
+                        <span class="star-default">{{ v.isDefault ? '★' : '' }}</span>
+                      </td>
+                      <td class="text-center">
+                        <span [class]="v.isActive ? 'badge-active' : 'badge-inactive'">
+                          {{ v.isActive ? 'Actif' : 'Inactif' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="cell-actions">
+                          <button class="btn-save"
+                            (click)="saveEditValue(v)"
+                            [disabled]="valueSaving() === v.id">
+                            {{ valueSaving() === v.id ? '…' : 'Sauv.' }}
+                          </button>
+                          <button class="btn-icon" (click)="cancelEditValue(v.id)" title="Annuler">✕</button>
+                        </div>
+                      </td>
+                    </tr>
+                  } @else {
+                    <!-- Display row -->
+                    <tr [class.row-inactive]="!v.isActive">
+                      <td><span class="code-pill">{{ v.code }}</span></td>
+                      <td>{{ v.labelFr }}</td>
+                      <td class="cell-secondary">{{ v.labelEn }}</td>
+                      <td class="text-center">
+                        <span class="star-default">{{ v.isDefault ? '★' : '' }}</span>
+                      </td>
+                      <td class="text-center">
+                        <span [class]="v.isActive ? 'badge-active' : 'badge-inactive'">
+                          {{ v.isActive ? 'Actif' : 'Inactif' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="cell-actions">
+                          <button class="btn-icon" title="Modifier" (click)="startEditValue(v)">✎</button>
+                          @if (v.isActive) {
+                            <button class="btn-icon btn-danger" title="Désactiver"
+                              (click)="deactivateValue(v)">✕</button>
+                          } @else {
+                            <button class="btn-icon btn-reactivate" title="Réactiver"
+                              (click)="reactivateValue(v)">↩</button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
+
+                <!-- Empty state -->
+                @if (listValues().length === 0) {
+                  <tr>
+                    <td colspan="6" class="empty-cell">Aucune valeur configurée pour ce type.</td>
+                  </tr>
+                }
+
+                <!-- Add new row -->
+                @if (showAddValue()) {
+                  <tr class="row-new">
+                    <td>
+                      <input class="inline-input" [(ngModel)]="newValue.code"
+                        placeholder="CODE" style="text-transform:uppercase">
+                    </td>
+                    <td>
+                      <input class="inline-input" [(ngModel)]="newValue.labelFr"
+                        placeholder="Libellé français">
+                    </td>
+                    <td>
+                      <input class="inline-input" [(ngModel)]="newValue.labelEn"
+                        placeholder="Libellé anglais">
+                    </td>
+                    <td class="text-center">
+                      <input type="checkbox" [(ngModel)]="newValue.isDefault" title="Valeur par défaut">
+                    </td>
+                    <td></td>
+                    <td>
+                      <div class="cell-actions">
+                        <button class="btn-save" (click)="createValue()" [disabled]="isCreatingValue()">
+                          {{ isCreatingValue() ? '…' : 'Créer' }}
+                        </button>
+                        <button class="btn-icon" (click)="showAddValue.set(false)">✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (createValueError()) {
+            <div class="banner-error">{{ createValueError() }}</div>
+          }
+
+          <div class="section-footer">
+            @if (!showAddValue()) {
+              <button class="btn-add" (click)="showAddValue.set(true); createValueError.set(null)">
+                + Ajouter une valeur
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── FOREX TAB ─────────────────────────────────────────────────────── -->
+    @if (activeTab() === 'forex') {
+      <div class="tab-content">
+
+        <div class="forex-info">
+          <span class="info-icon">ℹ</span>
+          <p>
+            Les taux convertissent les montants des lignes de coût vers EUR et CHF lors des calculs P&amp;L.
+            Le taux CHF est calculé automatiquement (<strong>EUR × 0,965</strong>) si non défini.
+            Les clés suivent le format <code>RATE_EUR_CODE</code> et <code>RATE_CHF_CODE</code>.
+          </p>
+        </div>
+
+        @if (forexError()) {
+          <div class="banner-error">{{ forexError() }}</div>
+        }
+
+        @if (forexLoading()) {
+          <div class="loading-state">Chargement des taux…</div>
+        }
+
+        @if (!forexLoading()) {
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:100px">Devise</th>
+                  <th class="text-right" style="width:180px">1 devise → EUR</th>
+                  <th class="text-right" style="width:200px">1 devise → CHF</th>
+                  <th class="text-right" style="width:110px">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of forexRows(); track row.code) {
+                  @if (editingForex() === row.code) {
+                    <!-- Edit row -->
+                    <tr class="row-editing">
+                      <td><span class="code-pill">{{ row.code }}</span></td>
+                      <td>
+                        <input class="inline-input text-right"
+                          [(ngModel)]="editEurRate"
+                          type="number" step="0.000001" min="0.000001"
+                          placeholder="0.000000">
+                      </td>
+                      <td>
+                        <input class="inline-input text-right"
+                          [(ngModel)]="editChfRate"
+                          type="number" step="0.000001" min="0.000001"
+                          placeholder="Optionnel (auto EUR × 0.965)">
+                      </td>
+                      <td>
+                        <div class="cell-actions">
+                          <button class="btn-save" (click)="saveForex(row)"
+                            [disabled]="isSavingForex()">
+                            {{ isSavingForex() ? '…' : 'Sauv.' }}
+                          </button>
+                          <button class="btn-icon" (click)="cancelEditForex()">✕</button>
+                        </div>
+                      </td>
+                    </tr>
+                  } @else {
+                    <!-- Display row -->
+                    <tr>
+                      <td><span class="code-pill">{{ row.code }}</span></td>
+                      <td class="text-right mono-val">
+                        {{ row.eurParam?.paramValue ?? '—' }}
+                      </td>
+                      <td class="text-right">
+                        @if (row.chfParam) {
+                          <span class="mono-val">{{ row.chfParam.paramValue }}</span>
+                        } @else {
+                          <span class="cell-secondary" style="font-style:italic;font-size:0.75rem">
+                            auto {{ chfFallback(row) }}
+                          </span>
+                        }
+                      </td>
+                      <td>
+                        <div class="cell-actions">
+                          <button class="btn-icon" title="Modifier" (click)="startEditForex(row)">✎</button>
+                          @if (row.eurParam) {
+                            <button class="btn-icon btn-danger" title="Supprimer ce taux"
+                              (click)="deleteForexParam(row.eurParam)">✕</button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
+
+                <!-- Empty state -->
+                @if (forexRows().length === 0) {
+                  <tr>
+                    <td colspan="4" class="empty-cell">Aucun taux configuré.</td>
+                  </tr>
+                }
+
+                <!-- Add new row -->
+                @if (showAddForex()) {
+                  <tr class="row-new">
+                    <td>
+                      <input class="inline-input" [(ngModel)]="newForexCode"
+                        placeholder="USD" style="text-transform:uppercase;width:70px">
+                    </td>
+                    <td>
+                      <input class="inline-input text-right" [(ngModel)]="newForexEur"
+                        type="number" step="0.000001" placeholder="0.000000">
+                    </td>
+                    <td>
+                      <input class="inline-input text-right" [(ngModel)]="newForexChf"
+                        type="number" step="0.000001" placeholder="Optionnel">
+                    </td>
+                    <td>
+                      <div class="cell-actions">
+                        <button class="btn-save" (click)="addNewForexRate()"
+                          [disabled]="isAddingForex()">
+                          {{ isAddingForex() ? '…' : 'Créer' }}
+                        </button>
+                        <button class="btn-icon"
+                          (click)="showAddForex.set(false); forexAddError.set(null)">✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (forexAddError()) {
+            <div class="banner-error">{{ forexAddError() }}</div>
+          }
+
+          <div class="section-footer">
+            @if (!showAddForex()) {
+              <button class="btn-add" (click)="showAddForex.set(true); forexAddError.set(null)">
+                + Ajouter un taux
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── FOREX API CONFIG TAB ────────────────────────────────────────── -->
+    @if (activeTab() === 'forex-api') {
+      <div class="tab-content">
+
+        <div class="forex-info">
+          <span class="info-icon">ℹ</span>
+          <p>
+            Connectez une API de taux de change pour rafraîchir automatiquement les taux EUR et CHF.
+            <strong>Frankfurter</strong> (défaut) est gratuit et ne nécessite pas de clé API — il utilise les données ECB.
+            <strong>Fixer.io</strong> nécessite une clé API (plan gratuit disponible) mais ne met à jour que les taux EUR.
+          </p>
+        </div>
+
+        @if (forexApiStatusLoading()) {
+          <div class="loading-state">Chargement de la configuration…</div>
+        }
+
+        @if (!forexApiStatusLoading()) {
+
+          <!-- Config card -->
+          <div class="config-card">
+            <h3 class="config-card-title">Configuration du fournisseur</h3>
+
+            <div class="config-row">
+              <label class="config-label">Fournisseur</label>
+              <div class="config-value">
+                <label class="radio-option">
+                  <input type="radio" name="provider" value="frankfurter"
+                    [checked]="forexApiProvider() === 'frankfurter'"
+                    (change)="forexApiProvider.set('frankfurter')">
+                  Frankfurter (gratuit, sans clé)
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="provider" value="fixer"
+                    [checked]="forexApiProvider() === 'fixer'"
+                    (change)="forexApiProvider.set('fixer')">
+                  Fixer.io (clé API requise, taux EUR uniquement)
+                </label>
+              </div>
+            </div>
+
+            @if (forexApiProvider() === 'fixer') {
+              <div class="config-row">
+                <label class="config-label">Clé API Fixer</label>
+                <div class="config-value">
+                  @if (forexApiStatus()?.hasApiKey) {
+                    <p class="key-hint">Une clé est déjà configurée. Entrez une nouvelle valeur pour la remplacer.</p>
+                  }
+                  <input class="config-input" type="password"
+                    [value]="forexApiKey()"
+                    (input)="forexApiKey.set($any($event.target).value)"
+                    placeholder="Votre clé API Fixer.io">
+                </div>
+              </div>
+            }
+
+            <div class="config-row">
+              <label class="config-label">Devises cibles</label>
+              <div class="config-value">
+                <input class="config-input" type="text"
+                  [value]="forexApiCurrencies()"
+                  (input)="forexApiCurrencies.set($any($event.target).value)"
+                  placeholder="TND,MAD,DZD  (laisser vide = auto-détection)">
+                <p class="config-hint">
+                  Si vide, les devises sont détectées automatiquement depuis les taux existants (RATE_EUR_*).
+                </p>
+              </div>
+            </div>
+
+            <div class="config-row">
+              <label class="config-label">Rafraîchissement auto</label>
+              <div class="config-value">
+                <label class="toggle-label">
+                  <input type="checkbox"
+                    [checked]="forexApiAutoRefresh()"
+                    (change)="forexApiAutoRefresh.set($any($event.target).checked)">
+                  Activer (chaque jour ouvré à 8h00)
+                </label>
+              </div>
+            </div>
+
+            @if (forexApiError()) {
+              <div class="banner-error">{{ forexApiError() }}</div>
+            }
+            @if (forexApiSuccess()) {
+              <div class="banner-success">{{ forexApiSuccess() }}</div>
+            }
+
+            <div class="config-actions">
+              <button class="btn-save-lg" (click)="saveForexApiConfig()" [disabled]="forexApiSaving()">
+                {{ forexApiSaving() ? 'Sauvegarde…' : 'Sauvegarder la configuration' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Status & manual refresh card -->
+          <div class="config-card">
+            <h3 class="config-card-title">Rafraîchissement manuel</h3>
+
+            @if (forexApiStatus()?.lastRefreshAt) {
+              <div class="status-row">
+                <span class="status-label">Dernier rafraîchissement</span>
+                <span class="status-value">{{ forexApiStatus()!.lastRefreshAt }}</span>
+                @if (forexApiStatus()!.lastRefreshStatus?.startsWith('success')) {
+                  <span class="badge-success-sm">OK</span>
+                } @else if (forexApiStatus()!.lastRefreshStatus?.startsWith('error')) {
+                  <span class="badge-error-sm">Erreur</span>
+                }
+              </div>
+              @if (forexApiStatus()!.lastRefreshStatus?.startsWith('error')) {
+                <p class="status-error-detail">{{ forexApiStatus()!.lastRefreshStatus!.substring(6) }}</p>
+              }
+            } @else {
+              <p class="config-hint">Aucun rafraîchissement effectué.</p>
+            }
+
+            <div class="config-actions">
+              <button class="btn-refresh" (click)="triggerForexRefresh()" [disabled]="forexRefreshing()">
+                {{ forexRefreshing() ? 'Rafraîchissement en cours…' : 'Rafraîchir les taux maintenant' }}
+              </button>
+            </div>
+          </div>
+
+        }
+      </div>
+    }
+
+  }
+</div>
