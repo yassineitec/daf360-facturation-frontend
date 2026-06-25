@@ -5,14 +5,15 @@ import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 
 export interface StepConditionsValue {
-  dateEcheance:      string;
+  dateEcheance:       string;
   conditionsPaiement: string;
-  bonDeCommande:     string | null;
-  notes:             string | null;
+  bonDeCommande:      string | null;
+  notes:              string | null;
 }
 
 @Component({
   selector: 'app-step-conditions',
+  standalone: true,
   imports: [ReactiveFormsModule],
   template: `
 <div class="step-conditions">
@@ -30,13 +31,15 @@ export interface StepConditionsValue {
 
     <div class="field">
       <label for="sc-cond">Conditions de paiement *</label>
-      <select id="sc-cond" class="form-input" [formControl]="form.controls['conditionsPaiement']"
-        [class.invalid]="form.controls['conditionsPaiement'].invalid && form.controls['conditionsPaiement'].touched">
-        <option value="">Sélectionner…</option>
-        @for (opt of conditionOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
-        }
-      </select>
+      <div class="form-select-wrap">
+        <select id="sc-cond" class="form-input" [formControl]="form.controls['conditionsPaiement']"
+          [class.invalid]="form.controls['conditionsPaiement'].invalid && form.controls['conditionsPaiement'].touched">
+          <option value="">Sélectionner…</option>
+          @for (opt of conditionOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
       @if (form.controls['conditionsPaiement'].invalid && form.controls['conditionsPaiement'].touched) {
         <span class="error-msg">Conditions requises.</span>
       }
@@ -45,7 +48,9 @@ export interface StepConditionsValue {
     <div class="field field--full">
       <label for="sc-bdc">
         Bon de commande
-        @if (isForfaitOrLumpSum()) { <span class="required-mark">* requis pour Forfait/Lump Sum</span> }
+        @if (isForfaitOrLumpSum()) {
+          <span class="required-mark">* requis pour Forfait/Lump Sum</span>
+        }
       </label>
       <input id="sc-bdc" type="text" class="form-input" [formControl]="form.controls['bonDeCommande']"
         maxlength="100" placeholder="N° bon de commande"
@@ -63,8 +68,14 @@ export interface StepConditionsValue {
   </div>
 
   <div class="step-actions">
-    <button type="button" class="btn-back" (click)="prevStep.emit()">← Retour</button>
-    <button type="button" class="btn-next" (click)="next()">Suivant →</button>
+    <button type="button" class="btn-back" (click)="prevStep.emit()">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Retour
+    </button>
+    <button type="button" class="btn-next" (click)="next()">
+      Suivant
+      <span class="material-symbols-outlined">arrow_forward</span>
+    </button>
   </div>
 </div>
   `,
@@ -87,14 +98,13 @@ export class StepConditionsComponent {
   };
 
   form = this.fb.group({
-    dateEcheance:      ['', Validators.required],
-    conditionsPaiement:['', Validators.required],
-    bonDeCommande:     [''],
-    notes:             [''],
+    dateEcheance:       ['', Validators.required],
+    conditionsPaiement: ['', Validators.required],
+    bonDeCommande:      [''],
+    notes:              [''],
   });
 
   next(): void {
-    // Dynamically require bonDeCommande for FINALE/INTERMEDIAIRE
     const bdcCtrl = this.form.controls['bonDeCommande'];
     if (this.isForfaitOrLumpSum()) {
       bdcCtrl.setValidators([Validators.required]);
@@ -107,10 +117,10 @@ export class StepConditionsComponent {
     if (this.form.invalid) return;
     const v = this.form.getRawValue();
     this.nextStep.emit({
-      dateEcheance:      v.dateEcheance!,
-      conditionsPaiement:v.conditionsPaiement!,
-      bonDeCommande:     v.bonDeCommande?.trim() || null,
-      notes:             v.notes?.trim() || null,
+      dateEcheance:       v.dateEcheance!,
+      conditionsPaiement: v.conditionsPaiement!,
+      bonDeCommande:      v.bonDeCommande?.trim() || null,
+      notes:              v.notes?.trim()         || null,
     });
   }
 }
