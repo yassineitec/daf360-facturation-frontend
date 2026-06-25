@@ -1,7 +1,7 @@
 import {
   Component, OnInit, inject, signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime } from 'rxjs/operators';
@@ -27,6 +27,7 @@ export class CostCreateComponent implements OnInit {
   private readonly factListSvc = inject(FactListService);
   private readonly clientSvc   = inject(ClientService);
   private readonly router      = inject(Router);
+  private readonly route       = inject(ActivatedRoute);
 
   categories      = signal<CostCategoryDto[]>([]);
   thresholds      = signal<CostApprovalThresholdDto[]>([]);
@@ -218,11 +219,11 @@ export class CostCreateComponent implements OnInit {
         this.isSaving.set(false);
         if (!draft) {
           this.svc.submitCostLine(created.id).subscribe({
-            next: () => this.router.navigate(['/fact/cost']),
-            error: () => this.router.navigate(['/fact/cost']),
+            next: () => this.router.navigate(['..'], { relativeTo: this.route }),
+            error: () => this.router.navigate(['..'], { relativeTo: this.route }),
           });
         } else {
-          this.router.navigate(['/fact/cost']);
+          this.router.navigate(['..'], { relativeTo: this.route });
         }
       },
       error: err => {
@@ -234,5 +235,5 @@ export class CostCreateComponent implements OnInit {
   }
 
   reset(): void { this.form.reset({ transactionDate: this.today, vatAmountLocal: 0, isRecurring: false }); }
-  cancel(): void { this.router.navigate(['/fact/cost']); }
+  cancel(): void { this.router.navigate(['..'], { relativeTo: this.route }); }
 }

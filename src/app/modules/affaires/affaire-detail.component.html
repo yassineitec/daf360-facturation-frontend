@@ -460,15 +460,15 @@
         <section class="glass-card section-card">
           <h2 class="text-title-md" style="margin-bottom:14px">Actions Rapides</h2>
           <div class="action-btns">
-            <a class="btn-full btn-full--primary" [routerLink]="['/fact/invoicing']" [queryParams]="{ affaire: numId }">
+            <a class="btn-full btn-full--primary" [routerLink]="['../../invoicing']" [queryParams]="{ affaire: numId }">
               <span class="material-symbols-outlined">add_card</span>
               Nouvelle Facture
             </a>
-            <a class="btn-full btn-full--outline-secondary" [routerLink]="['/fact/payments']" [queryParams]="{ affaire: numId }">
+            <a class="btn-full btn-full--outline-secondary" [routerLink]="['../../payments']" [queryParams]="{ affaire: numId }">
               <span class="material-symbols-outlined">payments</span>
               Consulter Paiements
             </a>
-            <a class="btn-full btn-full--outline-primary" [routerLink]="['/fact/invoicing']" [queryParams]="{ affaire: numId }">
+            <a class="btn-full btn-full--outline-primary" [routerLink]="['../../invoicing']" [queryParams]="{ affaire: numId }">
               <span class="material-symbols-outlined">receipt_long</span>
               Voir factures
             </a>

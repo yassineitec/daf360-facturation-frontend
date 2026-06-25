@@ -1,180 +1,172 @@
-<div class="invoicing-page">
+<div class="flex flex-col gap-5">
 
   <!-- Stats -->
-  <div class="stats-grid">
-    <div class="stat-card">
-      <span class="stat-icon stat-icon--teal">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      </span>
-      <div class="stat-body">
-        <span class="stat-label">Total factures</span>
-        <span class="stat-value">{{ totalElements() }}</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-icon stat-icon--blue">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </span>
-      <div class="stat-body">
-        <span class="stat-label">En attente (page)</span>
-        <span class="stat-value">{{ statsEnAttente() }}</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-icon stat-icon--red">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      </span>
-      <div class="stat-body">
-        <span class="stat-label">En retard (page)</span>
-        <span class="stat-value stat-value--red">{{ statsEnRetard() }}</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-icon stat-icon--amber">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </span>
-      <div class="stat-body">
-        <span class="stat-label">En litige (page)</span>
-        <span class="stat-value stat-value--amber">{{ statsEnLitige() }}</span>
-      </div>
-    </div>
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <daf-metric-card
+      label="Total Factures"
+      [value]="totalElements()"
+      [options]="{ icon: 'receipt_long', iconBg: 'bg-teal/10', iconColor: 'text-teal' }" />
+
+    <daf-metric-card
+      label="En attente"
+      [value]="statsEnAttente()"
+      [options]="{ icon: 'schedule', iconBg: 'bg-secondary/10', iconColor: 'text-secondary' }" />
+
+    <daf-metric-card
+      label="En retard"
+      [value]="statsEnRetard()"
+      [options]="{ icon: 'warning', iconBg: 'bg-danger/10', iconColor: 'text-danger', valueColor: 'text-danger' }" />
+
+    <daf-metric-card
+      label="En litige"
+      [value]="statsEnLitige()"
+      [options]="{ icon: 'gavel', iconBg: 'bg-warning/10', iconColor: 'text-warning', valueColor: 'text-warning' }" />
   </div>
+
+  <!-- Toolbar: search + new -->
+  <daf-toolbar
+    [searchValue]="searchText()"
+    searchPlaceholder="N° facture, client, affaire…"
+    [actions]="toolbarActions"
+    (searchChange)="searchText.set($event); onSearch()"
+    (actionClick)="onToolbarAction($event)" />
 
   <!-- Filters -->
-  <div class="filters-bar glass-card">
-    <div class="search-wrap">
-      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" class="search-input" placeholder="N° facture, client, affaire…"
-        [(ngModel)]="searchText" (keyup.enter)="onSearch()" (search)="onSearch()"
-        maxlength="100" autocomplete="off" />
+  <daf-card [options]="{ padding: 'sm', variant: 'default', radius: 'lg' }">
+    <div class="flex flex-wrap items-end gap-3 p-2">
+      <div class="min-w-52">
+        <daf-select
+          [options]="statutSelectOptions"
+          [selected]="filterStatutSel()"
+          (selectedChange)="filterStatutSel.set($event); onFilterChange()"
+          [config]="{ label: 'Statut', placeholder: 'Tous statuts', fullWidth: true }" />
+      </div>
+      <div class="min-w-44">
+        <daf-date-picker
+          [value]="filterFrom()"
+          (valueChange)="filterFrom.set($event); onFilterChange()"
+          [config]="{ label: 'Émis depuis' }" />
+      </div>
+      <div class="min-w-44">
+        <daf-date-picker
+          [value]="filterTo()"
+          (valueChange)="filterTo.set($event); onFilterChange()"
+          [config]="{ label: 'Émis jusqu\'à', min: filterFrom() }" />
+      </div>
     </div>
+  </daf-card>
 
-    <select class="filter-select" [(ngModel)]="filterStatut" (change)="onFilterChange()">
-      <option value="">Tous statuts</option>
-      @for (opt of statutOptions; track opt.value) {
-        <option [value]="opt.value">{{ opt.label }}</option>
-      }
-    </select>
-
-    <input type="date" class="filter-select" [(ngModel)]="filterFrom" (change)="onFilterChange()" title="Date d'émission depuis" />
-    <input type="date" class="filter-select" [(ngModel)]="filterTo"   (change)="onFilterChange()" title="Date d'émission jusqu'à" />
-
-    <div class="filter-spacer"></div>
-
-    <button class="btn-primary" *appHasPermission="'FACT_CREATE_INVOICE'" (click)="navigateToNew()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Nouvelle facture
-    </button>
-  </div>
-
+  <!-- Action error banner -->
   @if (actionError()) {
-    <div class="action-error-bar">{{ actionError() }}</div>
+    <div class="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+      {{ actionError() }}
+    </div>
   }
 
-  <!-- Table -->
-  <div class="table-card glass-card">
+  <!-- Table card -->
+  <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
     @if (error()) {
-      <div class="error-banner">{{ error() }}</div>
+      <div class="px-4 py-3 bg-red-50 text-red-700 text-sm border-b border-red-200 rounded-t-xl">
+        {{ error() }}
+      </div>
     }
 
-    @if (loading()) {
-      <div class="skeleton-rows">
-        @for (i of [1,2,3,4,5]; track i) {
-          <div class="skeleton-row"><div class="sk"></div></div>
+    <daf-data-table
+      [columns]="tableColumns"
+      [rows]="tableRows()"
+      [config]="tableConfig()"
+      (rowClick)="onRowClick($event)">
+
+      <ng-template dafCell="invoiceNumber" let-row>
+        <span class="font-mono text-xs font-bold text-primary">
+          {{ row['invoiceNumber'] ?? '(brouillon)' }}
+        </span>
+      </ng-template>
+
+      <ng-template dafCell="affaireRef" let-row>
+        @if (row['affaireRef']) {
+          <span class="font-mono text-xs font-bold text-teal bg-teal/10 px-2 py-0.5 rounded">
+            {{ row['affaireRef'] }}
+          </span>
+        } @else {
+          <span class="text-outline">—</span>
         }
-      </div>
-    } @else {
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>N° Facture</th>
-              <th>Affaire</th>
-              <th>Client</th>
-              <th class="num-col">Montant TTC</th>
-              <th>Émission</th>
-              <th>Échéance</th>
-              <th>Statut</th>
-              <th class="actions-col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (inv of invoices(); track inv.id) {
-              <tr class="table-row" [class.row-overdue]="isOverdue(inv)" (click)="navigateToDetail(inv.id)">
-                <td>
-                  <span class="invoice-num">{{ inv.invoiceNumber ?? '(brouillon)' }}</span>
-                </td>
-                <td>
-                  @if (inv.affaireRef) {
-                    <span class="ref-badge">{{ inv.affaireRef }}</span>
-                  } @else { <span class="text-muted">—</span> }
-                </td>
-                <td class="client-cell">{{ inv.clientNom || '—' }}</td>
-                <td class="num-col amount-cell">{{ formatAmount(inv.montantTtc, inv.devise) }}</td>
-                <td>{{ formatDate(inv.dateEmission) }}</td>
-                <td>
-                  <div class="echeance-cell">
-                    <span [class.overdue-date]="isOverdue(inv)">{{ formatDate(inv.dateEcheance) }}</span>
-                    @if (isOverdue(inv)) {
-                      <span class="overdue-badge">J+{{ overdueDays(inv) }}</span>
-                    }
-                  </div>
-                </td>
-                <td>
-                  <app-status-badge [status]="inv.statut" />
-                </td>
-                <td class="actions-cell" (click)="$event.stopPropagation()">
-                  <button class="action-btn action-btn--view" title="Voir le détail" (click)="navigateToDetail(inv.id)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  </button>
+      </ng-template>
 
-                  @if (inv.statut === 'APPROVED') {
-                    <button class="action-btn action-btn--teal" title="Émettre" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="quickEmit(inv, $event)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </button>
-                  }
+      <ng-template dafCell="montantTtc" let-row>
+        <span class="font-bold text-on-surface">
+          {{ formatAmount(row['montantTtc'], row['devise']) }}
+        </span>
+      </ng-template>
 
-                  @if (inv.statut === 'EMITTED') {
-                    <button class="action-btn action-btn--slate" title="Marquer envoyée" (click)="quickMarkSent(inv, $event)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                    </button>
-                  }
-
-                  @if (inv.statut === 'SUBMITTED') {
-                    <button class="action-btn action-btn--blue" title="Approuver" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="openApprovalModal(inv, $event)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                    </button>
-                  }
-
-                  @if (inv.statut === 'EMITTED' || inv.statut === 'SENT' || inv.statut === 'PARTIALLY_PAID') {
-                    <button class="action-btn action-btn--green" title="Enregistrer paiement" (click)="openPaymentModal(inv, $event)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                    </button>
-                  }
-                </td>
-              </tr>
-            }
-            @empty {
-              <tr><td colspan="8" class="empty-row">Aucune facture trouvée.</td></tr>
-            }
-          </tbody>
-        </table>
-      </div>
-
-      @if (totalPages() > 1) {
-        <div class="pagination">
-          <span class="page-info">{{ totalElements() }} résultats</span>
-          <div class="page-btns">
-            <button class="page-btn" [disabled]="currentPage() === 0" (click)="goToPage(currentPage() - 1)">‹</button>
-            @for (p of pages; track p) {
-              <button class="page-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p + 1 }}</button>
-            }
-            <button class="page-btn" [disabled]="currentPage() === totalPages() - 1" (click)="goToPage(currentPage() + 1)">›</button>
-          </div>
+      <ng-template dafCell="dateEcheance" let-row>
+        <div class="flex flex-col gap-0.5">
+          <span [class.text-danger]="row['_isOverdue']" [class.font-semibold]="row['_isOverdue']">
+            {{ row['_formattedEcheance'] }}
+          </span>
+          @if (row['_isOverdue']) {
+            <span class="text-xs font-bold text-white bg-danger px-1.5 py-px rounded-full w-fit">
+              J+{{ row['_overdueDays'] }}
+            </span>
+          }
         </div>
-      }
+      </ng-template>
+
+      <ng-template dafCell="statut" let-row>
+        <daf-badge
+          [label]="statutLabel(row['statut'])"
+          [options]="statutBadgeOptions(row['statut'])" />
+      </ng-template>
+
+      <ng-template dafCell="_actions" let-row>
+        <div class="flex justify-end gap-1" (click)="$event.stopPropagation()">
+          <button class="action-icon-btn" title="Voir le détail"
+            (click)="navigateToDetail(row['id'])">
+            <span class="material-symbols-outlined">visibility</span>
+          </button>
+
+          @if (row['statut'] === 'APPROVED') {
+            <button class="action-icon-btn action-icon-btn--teal" title="Émettre"
+              *appHasPermission="'FACT_APPROVE_INVOICE'"
+              (click)="quickEmit(row['_raw'])">
+              <span class="material-symbols-outlined">send</span>
+            </button>
+          }
+
+          @if (row['statut'] === 'EMITTED') {
+            <button class="action-icon-btn action-icon-btn--blue" title="Marquer envoyée"
+              (click)="quickMarkSent(row['_raw'])">
+              <span class="material-symbols-outlined">check</span>
+            </button>
+          }
+
+          @if (row['statut'] === 'SUBMITTED') {
+            <button class="action-icon-btn action-icon-btn--blue" title="Approuver"
+              *appHasPermission="'FACT_APPROVE_INVOICE'"
+              (click)="openApprovalModal(row['_raw'])">
+              <span class="material-symbols-outlined">task_alt</span>
+            </button>
+          }
+
+          @if (row['statut'] === 'EMITTED' || row['statut'] === 'SENT' || row['statut'] === 'PARTIALLY_PAID') {
+            <button class="action-icon-btn action-icon-btn--green" title="Enregistrer paiement"
+              (click)="openPaymentModal(row['_raw'])">
+              <span class="material-symbols-outlined">payments</span>
+            </button>
+          }
+        </div>
+      </ng-template>
+
+    </daf-data-table>
+
+    @if (totalPages() > 1) {
+      <daf-pagination
+        [currentPage]="currentPage()"
+        [totalPages]="totalPages()"
+        [totalElements]="totalElements()"
+        (pageChange)="goToPage($event)" />
     }
-  </div>
+  </daf-card>
 
 </div>
 
@@ -183,34 +175,40 @@
   <app-payment-modal [invoice]="paymentTarget()!" (closed)="onPaymentDone($event)" />
 }
 
-<!-- Approval modal -->
-@if (approvalTarget()) {
-  <div class="modal-overlay" (click)="$event.target === $event.currentTarget && approvalTarget.set(null)">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h2>Décision de validation</h2>
-        <button class="close-btn" (click)="approvalTarget.set(null)">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="field">
-          <label>Décision *</label>
-          <div class="decision-btns">
-            <button class="decision-btn" [class.active-approve]="approvalDecision === 'APPROVE'" (click)="approvalDecision = 'APPROVE'">✓ Approuver</button>
-            <button class="decision-btn" [class.active-return]="approvalDecision === 'RETURN'"  (click)="approvalDecision = 'RETURN'">↩ Retourner</button>
-            <button class="decision-btn" [class.active-reject]="approvalDecision === 'REJECT'"  (click)="approvalDecision = 'REJECT'">✕ Rejeter</button>
-          </div>
-        </div>
-        @if (approvalDecision !== 'APPROVE') {
-          <div class="field">
-            <label>Commentaire *</label>
-            <textarea [(ngModel)]="approvalComment" rows="3" maxlength="1000" placeholder="Motif obligatoire…"></textarea>
-          </div>
-        }
-      </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" (click)="approvalTarget.set(null)">Annuler</button>
-        <button class="btn-save" (click)="submitApproval()">Confirmer</button>
+<!-- Approval modal body template -->
+<ng-template #approvalTpl>
+  <div class="flex flex-col gap-4">
+    <div>
+      <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
+        Décision *
+      </label>
+      <div class="flex gap-2">
+        <button class="decision-btn"
+          [class.decision-btn--approve]="approvalDecision === 'APPROVE'"
+          (click)="approvalDecision = 'APPROVE'">
+          <span class="material-symbols-outlined text-sm">check_circle</span>
+          Approuver
+        </button>
+        <button class="decision-btn"
+          [class.decision-btn--return]="approvalDecision === 'RETURN'"
+          (click)="approvalDecision = 'RETURN'">
+          <span class="material-symbols-outlined text-sm">undo</span>
+          Retourner
+        </button>
+        <button class="decision-btn"
+          [class.decision-btn--reject]="approvalDecision === 'REJECT'"
+          (click)="approvalDecision = 'REJECT'">
+          <span class="material-symbols-outlined text-sm">cancel</span>
+          Rejeter
+        </button>
       </div>
     </div>
+
+    @if (approvalDecision !== 'APPROVE') {
+      <daf-form-field
+        [value]="approvalCommentSig()"
+        (valueChange)="approvalCommentSig.set($event)"
+        [options]="{ label: 'Commentaire', type: 'textarea', required: true, placeholder: 'Motif obligatoire…', rows: 3 }" />
+    }
   </div>
-}
+</ng-template>

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PaymentService } from './payment.service';
 import {
@@ -17,6 +17,7 @@ import { PermissionDirective } from '../../shared/permission.directive';
 export class PaymentsDashboardComponent implements OnInit {
   private readonly svc    = inject(PaymentService);
   private readonly router = inject(Router);
+  private readonly route  = inject(ActivatedRoute);
 
   stats         = signal<PaymentsDashboardStats | null>(null);
   rows          = signal<AgingRow[]>([]);
@@ -86,11 +87,11 @@ export class PaymentsDashboardComponent implements OnInit {
   }
 
   navigateToInvoice(id: number): void {
-    this.router.navigate(['/fact/invoicing', id]);
+    this.router.navigate(['../invoicing', id], { relativeTo: this.route });
   }
 
   navigateToReconciliation(): void {
-    this.router.navigate(['/fact/payments/reconciliation']);
+    this.router.navigate(['reconciliation'], { relativeTo: this.route });
   }
 
   formatAmount(v: number, devise = 'TND'): string {

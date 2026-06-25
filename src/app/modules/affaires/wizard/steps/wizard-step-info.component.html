@@ -139,13 +139,13 @@
               (change)="onCurrencyChange($any($event.target).value)">
               @if (currencies().length > 0) {
                 @for (c of currencies(); track c.id) {
-                  <option [value]="c.code">{{ c.code }} — {{ c.labelFr }}</option>
+                  <option [value]="c.code" [selected]="c.code === draft.contractCurrency">{{ c.code }} — {{ c.labelFr }}</option>
                 }
               } @else {
-                <option value="EUR">EUR — Euro</option>
-                <option value="USD">USD — Dollar</option>
-                <option value="TND">TND — Dinar tunisien</option>
-                <option value="MAD">MAD — Dirham marocain</option>
+                <option value="EUR" [selected]="draft.contractCurrency === 'EUR'">EUR — Euro</option>
+                <option value="USD" [selected]="draft.contractCurrency === 'USD'">USD — Dollar</option>
+                <option value="TND" [selected]="draft.contractCurrency === 'TND'">TND — Dinar tunisien</option>
+                <option value="MAD" [selected]="draft.contractCurrency === 'MAD'">MAD — Dirham marocain</option>
               }
             </select>
           </div>

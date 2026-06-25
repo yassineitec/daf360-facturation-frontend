@@ -1,200 +1,126 @@
-<div style="display:flex;flex-direction:column;gap:20px">
+<div class="flex flex-col gap-5">
 
-  <!-- ── KPI cards ──────────────────────────────────────────────────────── -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+  <!-- KPI cards -->
+  <div class="grid grid-cols-3 gap-4">
+    <daf-metric-card
+      label="Brouillons"
+      [value]="draftCount()"
+      [options]="{ icon: 'edit_note', iconBg: 'bg-teal/10', iconColor: 'text-teal' }" />
 
-    <!-- Brouillons -->
-    <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;
-                transition:all .3s">
-      <div style="width:48px;height:48px;border-radius:12px;background:#eff4ff;
-                  display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <span class="material-symbols-outlined" style="font-size:1.5rem;color:#1a6b7c;
-              font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">edit_note</span>
-      </div>
-      <div>
-        <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
-                  letter-spacing:.1em;color:#64748b;margin:0">Brouillons</p>
-        <p style="font-size:1.6rem;font-weight:900;color:#0f3d47;margin:2px 0 0 0;line-height:1">
-          {{ draftCount() }}
-        </p>
-      </div>
-    </div>
+    <daf-metric-card
+      label="En attente"
+      [value]="pendingCount()"
+      [options]="{ icon: 'pending_actions', iconBg: 'bg-warning/10', iconColor: 'text-warning' }" />
 
-    <!-- En attente -->
-    <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;
-                transition:all .3s">
-      <div style="width:48px;height:48px;border-radius:12px;background:#fef3c7;
-                  display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <span class="material-symbols-outlined" style="font-size:1.5rem;color:#d97706;
-              font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">pending_actions</span>
-      </div>
-      <div>
-        <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
-                  letter-spacing:.1em;color:#64748b;margin:0">En attente</p>
-        <p style="font-size:1.6rem;font-weight:900;color:#0f3d47;margin:2px 0 0 0;line-height:1">
-          {{ pendingCount() }}
-        </p>
-      </div>
-    </div>
-
-    <!-- Approuvés -->
-    <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;
-                transition:all .3s">
-      <div style="width:48px;height:48px;border-radius:12px;background:#d1fae5;
-                  display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <span class="material-symbols-outlined" style="font-size:1.5rem;color:#065f46;
-              font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">check_circle</span>
-      </div>
-      <div>
-        <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
-                  letter-spacing:.1em;color:#64748b;margin:0">Approuvés</p>
-        <p style="font-size:1.6rem;font-weight:900;color:#0f3d47;margin:2px 0 0 0;line-height:1">
-          {{ approvedCount() }}
-        </p>
-      </div>
-    </div>
-
+    <daf-metric-card
+      label="Approuvés"
+      [value]="approvedCount()"
+      [options]="{ icon: 'check_circle', iconBg: 'bg-success/10', iconColor: 'text-success' }" />
   </div>
 
-  <!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-    <select
-      [value]="statusFilter()"
-      (change)="statusFilter.set($any($event.target).value); onStatusChange()"
-      class="filter-select">
-      <option value="">Tous les statuts</option>
-      @for (s of statusOptions; track s.code) {
-        <option [value]="s.code">{{ s.label }}</option>
-      }
-    </select>
+  <!-- Toolbar: search + new button -->
+  <daf-toolbar
+    [searchValue]="searchText()"
+    searchPlaceholder="Description, référence…"
+    [actions]="toolbarActions"
+    (searchChange)="searchText.set($event)"
+    (actionClick)="onToolbarAction($event)" />
 
-    <button class="btn-add" style="display:flex;align-items:center;gap:8px" (click)="openCreate()">
-      <span class="material-symbols-outlined" style="font-size:1rem;line-height:1">add</span>
-      Nouvelle ligne
-    </button>
-  </div>
+  <!-- Status filter -->
+  <daf-card [options]="{ padding: 'sm', variant: 'default', radius: 'lg' }">
+    <div class="flex flex-wrap items-end gap-3 p-2">
+      <div class="min-w-52">
+        <daf-select
+          [options]="statusSelectOptions"
+          [selected]="statusFilterSel()"
+          (selectedChange)="statusFilterSel.set($event); onStatusChange()"
+          [config]="{ label: 'Statut', placeholder: 'Tous les statuts', fullWidth: true }" />
+      </div>
+    </div>
+  </daf-card>
 
-  <!-- Action error -->
+  <!-- Error banners -->
+  @if (serverError()) {
+    <div class="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+      {{ serverError() }}
+    </div>
+  }
   @if (actionError()) {
-    <div style="padding:.75rem 1rem;border-radius:.75rem;font-size:.875rem;font-weight:500;
-                background:#fee2e2;color:#991b1b">
+    <div class="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
       {{ actionError() }}
     </div>
   }
 
-  <!-- ── States ──────────────────────────────────────────────────────────── -->
-  @if (isLoading()) {
-    <div style="background:white;border-radius:1rem;border:1px solid #e2e8f0;
-                padding:4rem 0;text-align:center">
-      <span class="material-symbols-outlined animate-spin"
-            style="font-size:2.5rem;display:block;margin:0 auto .5rem;color:#1a6b7c">
-        progress_activity
-      </span>
-      <p style="font-size:.875rem;color:#64748b;margin:0">Chargement…</p>
-    </div>
-  } @else if (serverError()) {
-    <div style="padding:1rem;border-radius:1rem;font-size:.875rem;font-weight:500;
-                background:#fee2e2;color:#991b1b">
-      {{ serverError() }}
-    </div>
-  } @else if (lines().length === 0) {
-    <div style="background:white;border-radius:1rem;border:1px solid #e2e8f0;
-                padding:4rem 0;text-align:center">
-      <span class="material-symbols-outlined"
-            style="font-size:3rem;display:block;margin-bottom:.75rem;color:#bdc9c4">
-        receipt_long
-      </span>
-      <p style="font-size:.875rem;font-weight:500;color:#64748b;margin:0 0 1rem 0">
-        Aucune ligne de coût trouvée
-      </p>
-      <button class="btn-add" (click)="openCreate()">+ Créer la première ligne</button>
-    </div>
-  } @else {
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Description</th>
-            <th>Catégorie</th>
-            <th>Date</th>
-            <th style="text-align:right">Montant HT</th>
-            <th style="text-align:right">EUR</th>
-            <th>Statut</th>
-            <th>Approbation</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (line of lines(); track line.id) {
-            @let sc = statusConfig(line.status);
-            <tr (click)="openEdit(line)" style="cursor:pointer">
-              <td>
-                <p class="cell-label">{{ line.label ?? '—' }}</p>
-                @if (line.reference) {
-                  <p style="font-size:.7rem;font-family:monospace;margin:.2rem 0 0 0;color:#94a3b8">
-                    {{ line.reference }}
-                  </p>
-                }
-              </td>
-              <td class="cell-secondary">{{ getCategoryLabel(line.categoryId) }}</td>
-              <td class="cell-secondary">{{ formatDate(line.transactionDate) }}</td>
-              <td style="text-align:right">
-                <span style="font-weight:700;color:#0f3d47">
-                  {{ formatAmount(line.netAmountLocal, line.currency ?? undefined) }}
-                </span>
-              </td>
-              <td class="cell-secondary" style="text-align:right">
-                {{ formatAmount(line.netAmountEur, 'EUR') }}
-              </td>
-              <td>
-                <span class="status-badge"
-                  [style.background]="sc.bg"
-                  [style.color]="sc.text">
-                  {{ sc.label }}
-                </span>
-              </td>
-              <td>
-                @if (line.approvalLevelRequired) {
-                  <span style="padding:2px 8px;border-radius:6px;font-size:.75rem;font-weight:700;
-                               background:#f1f5f9;color:#475569">
-                    {{ line.approvalLevelRequired }}
-                  </span>
-                } @else {
-                  <span class="cell-secondary">—</span>
-                }
-              </td>
-              <td class="cell-actions" (click)="$event.stopPropagation()">
-                @if (canEdit(line)) {
-                  <button class="btn-icon" (click)="openEdit(line)" title="Modifier">
-                    <span class="material-symbols-outlined" style="font-size:.875rem">edit</span>
-                  </button>
-                }
-                @if (canSubmit(line)) {
-                  <button class="btn-icon btn-submit" (click)="submit(line, $event)" title="Soumettre">
-                    <span class="material-symbols-outlined" style="font-size:.875rem">send</span>
-                  </button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+  <!-- Data table -->
+  <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
+    <daf-data-table
+      [columns]="tableColumns"
+      [rows]="tableRows()"
+      [config]="tableConfig()"
+      (rowClick)="onRowClick($event)">
 
-    <!-- Pagination -->
-    @if (total() > size) {
-      <div class="pagination">
-        <span class="page-info">{{ page() * size + 1 }}–{{ pageEnd() }} sur {{ total() }}</span>
-        <button class="page-btn" (click)="prevPage()" [disabled]="page() === 0">‹</button>
-        <button class="page-btn" (click)="nextPage()" [disabled]="page() >= totalPages - 1">›</button>
-      </div>
+      <ng-template dafCell="label" let-row>
+        <div>
+          <p class="font-semibold text-on-surface text-sm truncate max-w-56">
+            {{ row['label'] ?? '—' }}
+          </p>
+          @if (row['reference']) {
+            <p class="font-mono text-xs text-outline mt-0.5">{{ row['reference'] }}</p>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template dafCell="netAmountLocal" let-row>
+        <span class="font-bold text-on-surface">
+          {{ formatAmount(row['netAmountLocal'], row['currency'] ?? undefined) }}
+        </span>
+      </ng-template>
+
+      <ng-template dafCell="netAmountEur" let-row>
+        <span class="text-on-surface-variant">{{ formatAmount(row['netAmountEur'], 'EUR') }}</span>
+      </ng-template>
+
+      <ng-template dafCell="status" let-row>
+        <daf-badge
+          [label]="statusLabel(row['status'])"
+          [options]="statusBadgeOptions(row['status'])" />
+      </ng-template>
+
+      <ng-template dafCell="approvalLevel" let-row>
+        @if (row['approvalLevel']) {
+          <daf-badge
+            [label]="row['approvalLevel']"
+            [options]="approvalBadgeOptions(row['approvalLevel'])" />
+        } @else {
+          <span class="text-outline">—</span>
+        }
+      </ng-template>
+
+      <ng-template dafCell="_actions" let-row>
+        <div class="flex justify-end gap-1" (click)="$event.stopPropagation()">
+          @if (row['_canEdit']) {
+            <button class="action-icon-btn" title="Modifier" (click)="openEdit(row['_raw'])">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+          }
+          @if (row['_canSubmit']) {
+            <button class="action-icon-btn action-icon-btn--teal" title="Soumettre"
+              (click)="submitLine(row['_raw'])">
+              <span class="material-symbols-outlined">send</span>
+            </button>
+          }
+        </div>
+      </ng-template>
+
+    </daf-data-table>
+
+    @if (totalPagesCount() > 1) {
+      <daf-pagination
+        [currentPage]="page()"
+        [totalPages]="totalPagesCount()"
+        [totalElements]="total()"
+        (pageChange)="goToPage($event)" />
     }
-  }
+  </daf-card>
 
 </div>

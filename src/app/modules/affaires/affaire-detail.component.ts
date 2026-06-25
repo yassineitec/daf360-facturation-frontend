@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { AffaireService } from './affaire.service';
@@ -30,6 +30,7 @@ export class AffaireDetailComponent implements OnInit {
   private readonly wizardSvc = inject(AffaireWizardService);
   private readonly store     = inject(UserStore);
   private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
 
   affaire      = signal<AffaireDetail | null>(null);
   raf          = signal<RafDetailsDto | null>(null);
@@ -225,9 +226,9 @@ export class AffaireDetailComponent implements OnInit {
     return Math.round(175 * (1 - Math.min(Math.max(pct, 0), 100) / 100));
   }
 
-  goBack(): void { this.router.navigate(['/fact/affaires']); }
+  goBack(): void { this.router.navigate(['..'], { relativeTo: this.route }); }
 
   openEdit(): void {
-    this.router.navigate(['/fact/affaires', this.numId, 'edit']);
+    this.router.navigate(['edit'], { relativeTo: this.route });
   }
 }

@@ -22,7 +22,7 @@ export const COST_ROUTES: Routes = [
       import('./cost.component').then(m => m.CostComponent),
   },
   {
-    path: 'new',
+    path: 'create',
     loadComponent: () =>
       import('./cost-create.component').then(m => m.CostCreateComponent),
   },
