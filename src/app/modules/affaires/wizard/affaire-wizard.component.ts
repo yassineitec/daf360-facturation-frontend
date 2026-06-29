@@ -1,9 +1,10 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
 import { Observable, forkJoin }                 from 'rxjs';
+import { StepperComponent, StepperStep, StepperConfig, CardComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireWizardService }          from '../affaire-wizard.service';
-import { AffaireDraftState, WIZARD_STEPS_LABELS, mapDraftToState } from '../affaire-wizard.model';
+import { AffaireDraftState, mapDraftToState } from '../affaire-wizard.model';
 import { AffaireService }           from '../affaire.service';
 import { UserStore }                from '../../../core/user.store';
 import { AffaireDetail }            from '../affaire.model';
@@ -37,6 +38,8 @@ const STEP_TIPS = [
   standalone: true,
   imports: [
     RouterLink,
+    StepperComponent,
+    CardComponent,
     WizardStepDoc360Component,
     WizardStepInfoComponent,
     WizardStepBillingComponent,
@@ -64,9 +67,22 @@ export class AffaireWizardComponent implements OnInit {
   readonly id       = input<string>();   // bound from route :id via withComponentInputBinding()
   readonly editMode = signal(false);
 
-  readonly WIZARD_STEPS       = WIZARD_STEPS_LABELS;
-  readonly WIZARD_STEPS_SHORT = ['Origine', 'Infos', 'Facturation', 'Budget', 'Planning', 'Récap'];
-  readonly totalSteps         = computed(() => this.WIZARD_STEPS.length);
+  readonly wizardSteps: StepperStep[] = [
+    { title: 'Origine' },
+    { title: 'Infos générales' },
+    { title: 'Facturation' },
+    { title: 'Responsables' },
+    { title: 'Planning' },
+    { title: 'Récapitulatif' },
+  ];
+
+  readonly stepperConfig = computed((): StepperConfig => ({
+    nextLabel:   'Suivant',
+    prevLabel:   'Précédent',
+    cancelLabel: 'Annuler',
+    finishLabel: this.editMode() ? 'Enregistrer' : 'Activer l\'affaire',
+    showCancel:  true,
+  }));
 
   currentStep = signal(1);
   draftId     = signal<number | null>(null);
@@ -424,6 +440,10 @@ export class AffaireWizardComponent implements OnInit {
         this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur d\'activation.');
       },
     });
+  }
+
+  cancelWizard(): void {
+    this.router.navigate(this.cancelRoute(), { relativeTo: this.activatedRoute });
   }
 
   onDraftChange(updated: AffaireDraftState): void {

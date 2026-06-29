@@ -3,7 +3,7 @@ import { TitleCasePipe }   from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Store }           from '@ngrx/store';
 import { toSignal }        from '@angular/core/rxjs-interop';
-import { selectCurrentUser, selectUserPermissions } from '@khalilrebhiitec/daf360';
+import { CardComponent, selectCurrentUser, selectUserPermissions } from '@khalilrebhiitec/daf360';
 import { PaymentService }  from '../payments/payment.service';
 import { PaymentsDashboardStats } from '../payments/payment.model';
 import { InvoiceService }  from '../invoicing/invoice.service';
@@ -62,7 +62,7 @@ const ACTIVITY_CONFIG: Record<string, { icon: string; cls: string }> = {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [TitleCasePipe],
+  imports: [TitleCasePipe, CardComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })

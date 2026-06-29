@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { UpperCasePipe } from '@angular/common';
 import { AffaireListItem, STATUT_LABELS, TYPE_LABELS } from '../affaire.model';
 import { StatusBadgeComponent } from '../../../shared/status-badge.component';
+import { CardComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-affaire-table',
-  imports: [FormsModule, UpperCasePipe, StatusBadgeComponent],
+  imports: [FormsModule, UpperCasePipe, StatusBadgeComponent, CardComponent],
   templateUrl: './affaire-table.component.html',
   styleUrl: './affaire-table.component.scss',
 })

@@ -1,4 +1,4 @@
-<div class="table-container">
+<daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="table-container">
 
   <!-- Header -->
   <div class="tc-header">
@@ -146,7 +146,8 @@
         <div class="card-grid">
           @for (a of affaires(); track a.id) {
 
-            <div class="aff-card" (click)="rowClick.emit(a.id)">
+            <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true,clickable:true}"
+                      class="aff-card" (click)="rowClick.emit(a.id)">
 
               <!-- Badge statut flottant -->
               <div class="aff-card__badge"
@@ -214,7 +215,7 @@
                 Voir le détail
               </button>
 
-            </div>
+            </daf-card>
 
           }
         </div>
@@ -260,4 +261,4 @@
     </div>
 
   }
-</div>
+</daf-card>

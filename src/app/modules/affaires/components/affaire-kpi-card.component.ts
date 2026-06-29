@@ -1,9 +1,12 @@
 import { Component, input } from '@angular/core';
+import { CardComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-affaire-kpi-card',
+  imports: [CardComponent],
   template: `
-    <div class="kpi-card" [class]="'kpi-card--' + variant()">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}"
+              class="kpi-card" [class]="'kpi-card--' + variant()">
       <div class="kpi-top">
         <span class="kpi-label">{{ label() }}</span>
         <div class="kpi-icon">
@@ -15,7 +18,7 @@ import { Component, input } from '@angular/core';
         @if (unit()) { <span class="kpi-unit">{{ unit() }}</span> }
         @if (trend()) { <span class="kpi-trend">{{ trend() }}</span> }
       </div>
-    </div>
+    </daf-card>
   `,
   styleUrl: './affaire-kpi-card.component.scss',
 })

@@ -15,7 +15,7 @@
   <!-- ── KPI Glass Cards ──────────────────────────────────────────────────── -->
   <div class="kpi-grid">
 
-    <div class="kpi-card glass-card">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
       <div class="kpi-card__top">
         <span class="kpi-card__label">Encaissé ce mois</span>
         <div class="kpi-card__icon" style="background:rgba(16,185,129,.1);color:#10b981">
@@ -30,9 +30,9 @@
         }
         <p class="kpi-card__sub kpi-card__sub--green">Ce mois</p>
       </div>
-    </div>
+    </daf-card>
 
-    <div class="kpi-card glass-card">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
       <div class="kpi-card__top">
         <span class="kpi-card__label">En attente de paiement</span>
         <div class="kpi-card__icon" style="background:rgba(59,130,246,.1);color:#3b82f6">
@@ -47,9 +47,9 @@
         }
         <p class="kpi-card__sub">Solde en attente</p>
       </div>
-    </div>
+    </daf-card>
 
-    <div class="kpi-card glass-card">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
       <div class="kpi-card__top">
         <span class="kpi-card__label">Factures en retard</span>
         <div class="kpi-card__icon" style="background:rgba(186,26,26,.08);color:#BA1A1A">
@@ -67,9 +67,9 @@
           @else { Aucun retard }
         </p>
       </div>
-    </div>
+    </daf-card>
 
-    <div class="kpi-card glass-card">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
       <div class="kpi-card__top">
         <span class="kpi-card__label">Délai moyen de paiement</span>
         <div class="kpi-card__icon" style="background:rgba(26,107,124,.1);color:#1a6b7c">
@@ -86,7 +86,7 @@
         }
         <p class="kpi-card__sub">Jours moyens</p>
       </div>
-    </div>
+    </daf-card>
 
   </div>
 
@@ -94,10 +94,11 @@
   <div class="modules-grid">
 
     @for (mod of visibleModules(); track mod.path) {
-      <div class="mod-card glass-card"
-           [class.mod-card--wide]="mod.wide"
-           [class.mod-card--active]="mod.path === 'invoicing'"
-           (click)="navigateTo(mod.path)">
+      <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true,clickable:true}"
+                class="mod-card"
+                [class.mod-card--wide]="mod.wide"
+                [class.mod-card--active]="mod.path === 'invoicing'"
+                (click)="navigateTo(mod.path)">
 
         @if (mod.wide) {
           <!-- Wide layout (Trésorerie) -->
@@ -133,7 +134,7 @@
           </div>
         }
 
-      </div>
+      </daf-card>
     }
 
   </div>
@@ -141,7 +142,7 @@
   <!-- ── Activité Récente ─────────────────────────────────────────────────── -->
   <div class="activity-section">
 
-    <div class="activity-card">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="activity-card">
       <div class="activity-card__header">
         <h5 class="activity-card__title">Activité Récente</h5>
         <button class="activity-card__link" (click)="navigateTo('invoicing')">
@@ -187,7 +188,7 @@
           }
         </div>
       }
-    </div>
+    </daf-card>
 
   </div>
 

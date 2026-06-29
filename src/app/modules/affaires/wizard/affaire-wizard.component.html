@@ -17,118 +17,100 @@
         </div>
       </div>
 
-      <!-- ── Form card ─────────────────────────────────────────────── -->
-      <div class="form-card">
+      <!-- ── daf-stepper (remplace stepper sidebar + boutons nav) ──── -->
+      <daf-stepper
+        [steps]="wizardSteps"
+        [currentStep]="currentStep()"
+        [stepValid]="canGoNext()"
+        [config]="stepperConfig()"
+        (nextClick)="goNext()"
+        (prevClick)="goPrev()"
+        (cancelClick)="cancelWizard()"
+        (finishClick)="goNext()">
 
-        <!-- Card head: icon + step title + sub -->
-        <div class="card-head">
-          <div class="card-head__icon">
-            <span class="material-symbols-outlined">{{ cardIcon() }}</span>
+        <!-- Form card (projeté dans le stepper) -->
+        <div class="form-card">
+
+          <!-- Card head: icon + step title + sub -->
+          <div class="card-head">
+            <div class="card-head__icon">
+              <span class="material-symbols-outlined">{{ cardIcon() }}</span>
+            </div>
+            <div>
+              <h2 class="card-head__title">{{ cardTitle() }}</h2>
+              <p class="card-head__sub">{{ cardSub() }}</p>
+            </div>
           </div>
-          <div>
-            <h2 class="card-head__title">{{ cardTitle() }}</h2>
-            <p class="card-head__sub">{{ cardSub() }}</p>
-          </div>
-        </div>
 
-        <!-- Step body -->
-        <div class="step-body">
+          <!-- Step body -->
+          <div class="step-body">
 
-          @if (currentStep() === 1) {
-            <app-wizard-step-doc360
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-doc360>
+            @if (currentStep() === 1) {
+              <app-wizard-step-doc360
+                [draft]="draft()"
+                (draftChange)="onDraftChange($event)" />
+            }
+
+            @if (currentStep() === 2) {
+              <app-wizard-step-info
+                [draft]="draft()"
+                (draftChange)="onDraftChange($event)" />
+            }
+
+            @if (currentStep() === 3) {
+              <app-wizard-step-billing
+                [draft]="draft()"
+                [locked]="editMode() && (draft().billingModeLocked ?? false)"
+                (draftChange)="onDraftChange($event)" />
+            }
+
+            @if (currentStep() === 4) {
+              <app-wizard-step-responsables
+                [draft]="draft()"
+                (draftChange)="onDraftChange($event)" />
+            }
+
+            @if (currentStep() === 5) {
+              <app-wizard-step-planning
+                [draft]="draft()"
+                (draftChange)="onDraftChange($event)" />
+            }
+
+            @if (currentStep() === 6) {
+              <app-wizard-step-recap
+                [draft]="draft()"
+                [draftId]="draftId()" />
+            }
+
+          </div><!-- /step-body -->
+
+          <!-- Validation hint -->
+          @if (!canGoNext() && !isSaving() && currentStep() !== 1) {
+            <div class="validation-hint">
+              <span class="material-symbols-outlined">info</span>
+              <span>{{ stepValidationError() }}</span>
+            </div>
           }
 
-          @if (currentStep() === 2) {
-            <app-wizard-step-info
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-info>
+          <!-- Error banner -->
+          @if (serverError()) {
+            <div class="error-banner">
+              <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">error</span>
+              <span>{{ serverError() }}</span>
+            </div>
           }
 
-          @if (currentStep() === 3) {
-            <app-wizard-step-billing
-              [draft]="draft()"
-              [locked]="editMode() && (draft().billingModeLocked ?? false)"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-billing>
-          }
-
-          @if (currentStep() === 4) {
-            <app-wizard-step-responsables
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-responsables>
-          }
-
-          @if (currentStep() === 5) {
-            <app-wizard-step-planning
-              [draft]="draft()"
-              (draftChange)="onDraftChange($event)">
-            </app-wizard-step-planning>
-          }
-
-          @if (currentStep() === 6) {
-            <app-wizard-step-recap
-              [draft]="draft()"
-              [draftId]="draftId()">
-            </app-wizard-step-recap>
-          }
-
-        </div><!-- /step-body -->
-
-        <!-- Validation hint -->
-        @if (!canGoNext() && !isSaving() && currentStep() !== 1) {
-          <div class="validation-hint">
-            <span class="material-symbols-outlined">info</span>
-            <span>{{ stepValidationError() }}</span>
-          </div>
-        }
-
-        <!-- Error banner -->
-        @if (serverError()) {
-          <div class="error-banner">
-            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">error</span>
-            <span>{{ serverError() }}</span>
-          </div>
-        }
-
-      </div><!-- /form-card -->
-
-      <!-- ── Navigation — outside the card ─────────────────────────── -->
-      <div class="form-nav">
-
-        <div class="form-nav__left">
-          @if (currentStep() === 1 || (editMode() && currentStep() === 2)) {
-            <a [routerLink]="cancelRoute()" class="nav-cancel">Annuler</a>
-          } @else {
-            <button class="nav-prev" type="button" (click)="goPrev()">
-              <span class="material-symbols-outlined">arrow_back</span>
-              Précédent
-            </button>
-          }
-        </div>
-
-        <button class="nav-next" type="button"
-          [disabled]="isSaving()"
-          [class.nav-next--incomplete]="!canGoNext() && !isSaving()"
-          (click)="goNext()">
+          <!-- Saving indicator -->
           @if (isSaving()) {
-            <span class="material-symbols-outlined nav-spin">progress_activity</span>
+            <div class="saving-hint">
+              <span class="material-symbols-outlined saving-spin">progress_activity</span>
+              <span>Enregistrement en cours…</span>
+            </div>
           }
-          <span>{{ currentStep() < totalSteps() ? 'Suivant'
-                   : editMode() ? 'Enregistrer'
-                   : 'Activer l\'affaire' }}</span>
-          @if (!isSaving()) {
-            <span class="material-symbols-outlined">
-              {{ currentStep() < totalSteps() ? 'arrow_forward' : 'check_circle' }}
-            </span>
-          }
-        </button>
 
-      </div><!-- /form-nav -->
+        </div><!-- /form-card -->
+
+      </daf-stepper>
 
       <!-- Brouillon footer -->
       @if (!editMode()) {
@@ -143,33 +125,12 @@
     </div><!-- /form-area -->
 
     <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- RIGHT — sidebar                                               -->
+    <!-- RIGHT — sidebar (stepper supprimé, résumé + conseil)         -->
     <!-- ══════════════════════════════════════════════════════════════ -->
     <aside class="sidebar">
 
-      <!-- Vertical stepper -->
-      <div class="panel panel--stepper">
-        <p class="panel__label">Progression</p>
-        <ol class="v-step-list">
-          @for (s of WIZARD_STEPS_SHORT; track s; let i = $index) {
-            <li class="v-step"
-              [class.v-step--done]="currentStep() > i + 1"
-              [class.v-step--active]="currentStep() === i + 1">
-              <div class="v-step__bullet">
-                @if (currentStep() > i + 1) {
-                  <span class="material-symbols-outlined">check</span>
-                } @else {
-                  {{ i + 1 }}
-                }
-              </div>
-              <span class="v-step__label">{{ s }}</span>
-            </li>
-          }
-        </ol>
-      </div>
-
       <!-- Résumé -->
-      <div class="panel panel--resume">
+      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="panel">
         <p class="panel__label">Résumé</p>
         <div class="summary-rows">
           <div class="summary-row">
@@ -189,7 +150,7 @@
             <span class="summary-row__val">{{ formatBudget() }}</span>
           </div>
         </div>
-      </div>
+      </daf-card>
 
       <!-- Conseil -->
       <div class="tips-panel">
