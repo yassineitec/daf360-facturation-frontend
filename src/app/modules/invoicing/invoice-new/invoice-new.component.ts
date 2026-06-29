@@ -1,6 +1,6 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { WizardStepperComponent } from '../../shared/wizard-stepper.component';
+import { WizardStepperComponent } from '../../../shared/wizard-stepper.component';
 import { StepAffaireComponent, StepAffaireValue } from './steps/step-affaire.component';
 import { StepLinesComponent,  StepLinesValue  } from './steps/step-lines.component';
 import { StepConditionsComponent, StepConditionsValue } from './steps/step-conditions.component';

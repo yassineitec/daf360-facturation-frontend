@@ -4,11 +4,11 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { SupplierService }   from './supplier.service';
-import { ClientService }     from '../clients/client.service';
-import { PermissionDirective } from '../../shared/permission.directive';
-import { SupplierDto, SupplierStatsDto, CreateSupplierRequest, PageResponse } from './supplier.model';
-import { PaysRefDto } from '../affaires/affaire.model';
+import { SupplierService }   from '../supplier.service';
+import { ClientService }     from '../../clients/client.service';
+import { PermissionDirective } from '../../../shared/permission.directive';
+import { SupplierDto, SupplierStatsDto, CreateSupplierRequest, PageResponse } from '../supplier.model';
+import { PaysRefDto } from '../../affaires/affaire.model';
 import {
   MetricCardComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,

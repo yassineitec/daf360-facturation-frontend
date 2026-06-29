@@ -1,11 +1,11 @@
 import { Component, OnInit, inject, signal, computed, ViewChild, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { InvoiceService } from './invoice.service';
+import { InvoiceService } from '../invoice.service';
 import {
   InvoiceListItem, InvoiceFilter, INVOICE_STATUT_CONFIG, OVERDUE_STATUTS,
-} from './invoice.model';
-import { PermissionDirective } from '../../shared/permission.directive';
-import { PaymentModalComponent } from './payment-modal.component';
+} from '../invoice.model';
+import { PermissionDirective } from '../../../shared/permission.directive';
+import { PaymentModalComponent } from '../payment-modal.component';
 import {
   SelectOption, ModalService, ModalRef,
   CardComponent, ButtonComponent, PaginationComponent,

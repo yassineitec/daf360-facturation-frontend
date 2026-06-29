@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, input, signal, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { InvoiceService } from './invoice.service';
-import { ReminderDto } from './invoice.model';
+import { InvoiceService } from '../invoice.service';
+import { ReminderDto } from '../invoice.model';
 
 @Component({
   selector: 'app-reminders-panel',

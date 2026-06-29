@@ -4,12 +4,12 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
-import { FactListService }    from '../../core/fact-list.service';
-import { ClientService }      from '../clients/client.service';
-import { ParameterSetService, ParameterSetDto } from '../../core/parameter-set.service';
-import { ForexApiConfigService, ForexApiStatusDto } from '../../core/forex-api-config.service';
-import { ListValueDto, ListTypeDto } from '../cost/cost.model';
-import { PaysRefDto }         from '../affaires/affaire.model';
+import { FactListService }    from '../../../core/fact-list.service';
+import { ClientService }      from '../../clients/client.service';
+import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-set.service';
+import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-api-config.service';
+import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
+import { PaysRefDto }         from '../../affaires/affaire.model';
 
 type AdminTab = 'lists' | 'forex' | 'forex-api';
 

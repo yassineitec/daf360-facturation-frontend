@@ -61,7 +61,7 @@ export const routes: Routes = [
       {
         path: 'suppliers',
         loadComponent: () =>
-          import('./modules/suppliers/supplier-list.component').then(m => m.SupplierListComponent),
+          import('./modules/suppliers/supplier-list/supplier-list.component').then(m => m.SupplierListComponent),
       },
       {
         path: 'home',

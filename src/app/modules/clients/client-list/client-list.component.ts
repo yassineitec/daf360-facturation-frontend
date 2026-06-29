@@ -3,11 +3,11 @@ import { DecimalPipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
-import { ClientService } from './client.service';
-import { ClientListItemDto, ClientDetailDto, ClientFilter } from './client.model';
-import { PermissionDirective } from '../../shared/permission.directive';
-import { ClientFormComponent } from './client-form.component';
-import { PaysRefDto } from '../affaires/affaire.model';
+import { ClientService } from '../client.service';
+import { ClientListItemDto, ClientDetailDto, ClientFilter } from '../client.model';
+import { PermissionDirective } from '../../../shared/permission.directive';
+import { ClientFormComponent } from '../client-form.component';
+import { PaysRefDto } from '../../affaires/affaire.model';
 import { CardComponent, ButtonComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
 
 @Component({

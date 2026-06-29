@@ -1,6 +1,6 @@
 import { Component, inject, input, output, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { InvoiceService } from '../invoice.service';
+import { InvoiceService } from '../../invoice.service';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';

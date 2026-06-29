@@ -1,6 +1,6 @@
 import { Component, inject, input, output } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { CONDITIONS_PAIEMENT } from '../invoice.model';
+import { CONDITIONS_PAIEMENT } from '../../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 

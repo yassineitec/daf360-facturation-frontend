@@ -3,9 +3,9 @@ import {
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
-import { InvoiceService } from '../invoice.service';
-import { AffaireListItem, RafDetailsDto, TsDto } from '../../affaires/affaire.model';
-import { AffaireService } from '../../affaires/affaire.service';
+import { InvoiceService } from '../../invoice.service';
+import { AffaireListItem, RafDetailsDto, TsDto } from '../../../affaires/affaire.model';
+import { AffaireService } from '../../../affaires/affaire.service';
 
 const VALID_BILLING_MODES = new Set(['AV', 'JAL', 'TM', 'CP', 'RMB']);
 

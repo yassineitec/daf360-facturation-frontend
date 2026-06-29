@@ -1,17 +1,17 @@
 import { Component, OnInit, inject, input, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { InvoiceService } from './invoice.service';
+import { InvoiceService } from '../invoice.service';
 import {
   InvoiceDetail, INVOICE_STATUT_CONFIG, OVERDUE_STATUTS, InvoiceStatut,
-} from './invoice.model';
-import { InvoiceStatusTimelineComponent } from '../../shared/invoice-status-timeline.component';
-import { StatusBadgeComponent } from '../../shared/status-badge.component';
-import { PageHeaderComponent } from '../../shared/page-header.component';
-import { PaymentModalComponent } from './payment-modal.component';
+} from '../invoice.model';
+import { InvoiceStatusTimelineComponent } from '../../../shared/invoice-status-timeline.component';
+import { StatusBadgeComponent } from '../../../shared/status-badge.component';
+import { PageHeaderComponent } from '../../../shared/page-header.component';
+import { PaymentModalComponent } from '../payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
-import { PermissionDirective } from '../../shared/permission.directive';
+import { PermissionDirective } from '../../../shared/permission.directive';
 
 @Component({
   selector: 'app-invoice-detail',

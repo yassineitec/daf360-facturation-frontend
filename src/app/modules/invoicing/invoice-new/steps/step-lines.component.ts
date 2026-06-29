@@ -2,7 +2,7 @@ import { Component, inject, input, output } from '@angular/core';
 import {
   ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators,
 } from '@angular/forms';
-import { TVA_RATES } from '../invoice.model';
+import { TVA_RATES } from '../../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 
 export interface StepLinesValue {

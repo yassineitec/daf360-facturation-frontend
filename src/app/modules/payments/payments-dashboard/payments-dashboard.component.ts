@@ -1,12 +1,12 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { PaymentService } from './payment.service';
+import { PaymentService } from '../payment.service';
 import {
   PaymentsDashboardStats, AgingRow, AgingFilter, PageResponse,
   agingRowColor,
-} from './payment.model';
-import { PermissionDirective } from '../../shared/permission.directive';
+} from '../payment.model';
+import { PermissionDirective } from '../../../shared/permission.directive';
 import { CardComponent, ButtonComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
 
 @Component({

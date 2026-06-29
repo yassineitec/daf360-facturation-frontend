@@ -1,7 +1,7 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { InvoiceService } from './invoice.service';
-import { InvoiceDetail, CREDIT_NOTE_REASONS } from './invoice.model';
+import { InvoiceService } from '../invoice.service';
+import { InvoiceDetail, CREDIT_NOTE_REASONS } from '../invoice.model';
 
 @Component({
   selector: 'app-credit-note-modal',

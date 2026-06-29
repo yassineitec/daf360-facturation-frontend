@@ -1,10 +1,10 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router, RouterLink, ActivatedRoute }           from '@angular/router';
 import { forkJoin }                                     from 'rxjs';
-import { ClientService }                                from './client.service';
-import { ClientDetailDto, ClientStatsDto }              from './client.model';
-import { PermissionDirective }                          from '../../shared/permission.directive';
-import { ClientFormComponent }                          from './client-form.component';
+import { ClientService }                                from '../client.service';
+import { ClientDetailDto, ClientStatsDto }              from '../client.model';
+import { PermissionDirective }                          from '../../../shared/permission.directive';
+import { ClientFormComponent }                          from '../client-form.component';
 
 @Component({
   selector: 'app-client-detail',
