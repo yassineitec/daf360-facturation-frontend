@@ -7,7 +7,6 @@ import { AffaireDraftState, WIZARD_STEPS_LABELS, mapDraftToState } from '../affa
 import { AffaireService }           from '../affaire.service';
 import { UserStore }                from '../../../core/user.store';
 import { AffaireDetail }            from '../affaire.model';
-import { WizardStepperComponent }        from '../../../shared/wizard-stepper.component';
 import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
 import { WizardStepInfoComponent }       from './steps/wizard-step-info.component';
 import { WizardStepBillingComponent }    from './steps/wizard-step-billing.component';
@@ -15,12 +14,29 @@ import { WizardStepResponsablesComponent } from './steps/wizard-step-responsable
 import { WizardStepPlanningComponent }   from './steps/wizard-step-planning.component';
 import { WizardStepRecapComponent }      from './steps/wizard-step-recap.component';
 
+const STEP_CARD_INFO = [
+  { title: 'Origine & Document',     sub: 'Associez un document DOC360 à cette affaire.',            icon: 'description'      },
+  { title: 'Informations générales', sub: 'Renseignez le client, l\'intitulé et le budget.',          icon: 'business_center'  },
+  { title: 'Mode de facturation',    sub: 'Définissez la méthode de facturation de l\'affaire.',      icon: 'receipt_long'     },
+  { title: 'Responsables & Budget',  sub: 'Affectez les responsables et leurs allocations.',          icon: 'group'            },
+  { title: 'Planning',               sub: 'Fixez les dates de début et de fin.',                      icon: 'calendar_month'   },
+  { title: 'Récapitulatif',          sub: 'Vérifiez toutes les informations avant activation.',       icon: 'fact_check'       },
+];
+
+const STEP_TIPS = [
+  'Liez un document DOC360 pour associer automatiquement les pièces contractuelles à l\'affaire.',
+  'Le client doit avoir un KYC validé. Le budget prévisionnel peut évoluer en cours de vie de l\'affaire.',
+  'Le mode de facturation ne peut plus être modifié après activation. Choisissez-le avec soin.',
+  'La somme des allocations responsables doit égaler exactement le budget prévisionnel.',
+  'La date de début de facturation déclenche la première émission. Elle peut être dans le futur.',
+  'Relisez chaque section avant l\'activation. Une affaire active peut être modifiée mais pas recréée.',
+];
+
 @Component({
   selector: 'app-affaire-wizard',
   standalone: true,
   imports: [
     RouterLink,
-    WizardStepperComponent,
     WizardStepDoc360Component,
     WizardStepInfoComponent,
     WizardStepBillingComponent,
@@ -413,5 +429,28 @@ export class AffaireWizardComponent implements OnInit {
   onDraftChange(updated: AffaireDraftState): void {
     this.draft.set(updated);
     this.serverError.set(null); // clear API error when user edits — forces re-validation before retry
+  }
+
+  readonly cardTitle = computed(() => STEP_CARD_INFO[this.currentStep() - 1].title);
+  readonly cardSub   = computed(() => STEP_CARD_INFO[this.currentStep() - 1].sub);
+  readonly cardIcon  = computed(() => STEP_CARD_INFO[this.currentStep() - 1].icon);
+  readonly stepTip   = computed(() => STEP_TIPS[this.currentStep() - 1]);
+
+  billingModeLabel(): string {
+    switch (this.draft().billingMode) {
+      case 'AV':  return 'Avancement';
+      case 'JAL': return 'Jalons';
+      case 'TM':  return 'Temps & Matériels';
+      case 'CP':  return 'Coût + Marge';
+      case 'RMB': return 'Remboursement';
+      default:    return '—';
+    }
+  }
+
+  formatBudget(): string {
+    const d = this.draft();
+    if (!d.budgetPrevisionnel) return '—';
+    return d.budgetPrevisionnel.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+      + ' ' + (d.contractCurrency ?? 'EUR');
   }
 }

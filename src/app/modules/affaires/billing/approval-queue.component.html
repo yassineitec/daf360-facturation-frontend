@@ -1,0 +1,355 @@
+<div class="aq-page">
+
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="aq-header">
+    <div>
+      <h3 class="aq-header__title">File d'approbation</h3>
+      <p class="aq-header__sub">Flux de travail consolidé pour les validations financières et RH.</p>
+    </div>
+    <div class="aq-header__actions">
+      <a routerLink="/fact/affaires" class="aq-back-btn">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Retour aux affaires
+      </a>
+    </div>
+  </div>
+
+  <!-- ── KPI Stats ─────────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+
+    <div class="kpi-glass">
+      <div class="kpi-icon-box kpi-icon-box--amber">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
+      </div>
+      <div>
+        <p class="kpi-label">En attente RF</p>
+        <h4 class="kpi-value">{{ pendingTaux().length + pendingJalons().length }}</h4>
+      </div>
+    </div>
+
+    <div class="kpi-glass kpi-glass--indigo">
+      <div class="kpi-icon-box kpi-icon-box--indigo">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">task_alt</span>
+      </div>
+      <div>
+        <p class="kpi-label">En attente DF</p>
+        <h4 class="kpi-value">{{ pendingLines().length }}</h4>
+      </div>
+    </div>
+
+    <div class="kpi-glass kpi-glass--perf">
+      <div class="kpi-perf-content">
+        <p class="kpi-label">Historique des actions</p>
+        <h4 class="kpi-value">{{ auditLog().length }}</h4>
+        <p class="kpi-perf-sub">Décisions enregistrées au total</p>
+      </div>
+      <div class="kpi-icon-box kpi-icon-box--teal kpi-icon-box--lg">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">history</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Tabs card ─────────────────────────────────────────────────────────── -->
+  <div class="tabs-card">
+
+    <!-- Tab bar -->
+    <div class="tabs-bar">
+      @for (tab of tabs; track tab.key) {
+        <button class="tab-btn" [class.tab-btn--active]="activeTab() === tab.key"
+          (click)="setTab(tab.key)">
+          <span class="material-symbols-outlined">{{ tab.icon }}</span>
+          {{ tab.label }}
+          @if (tab.key === 'rf' && pendingTaux().length + pendingJalons().length > 0) {
+            <span class="tab-badge tab-badge--amber">
+              {{ pendingTaux().length + pendingJalons().length }}
+            </span>
+          }
+          @if (tab.key === 'df' && pendingLines().length > 0) {
+            <span class="tab-badge tab-badge--indigo">
+              {{ pendingLines().length }}
+            </span>
+          }
+        </button>
+      }
+    </div>
+
+    <!-- Tab body -->
+    <div class="tab-body">
+
+      <!-- ── RF Tab ─────────────────────────────────────────────────────── -->
+      @if (activeTab() === 'rf') {
+
+        @if (rfLoading()) {
+          <div class="tab-loading">
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            Chargement…
+          </div>
+        } @else if (pendingTaux().length === 0 && pendingJalons().length === 0) {
+          <div class="tab-empty">
+            <span class="material-symbols-outlined">check_circle</span>
+            <p>Aucun élément en attente de validation RF.</p>
+          </div>
+        } @else {
+
+          <!-- Taux d'avancement -->
+          @if (pendingTaux().length > 0) {
+            <div class="section-head">
+              <span class="material-symbols-outlined">trending_up</span>
+              Taux d'avancement (AV) — {{ pendingTaux().length }}
+            </div>
+            <div class="table-wrap">
+              <table class="aq-table">
+                <thead>
+                  <tr>
+                    <th>Affaire</th>
+                    <th class="th-right">Taux</th>
+                    <th class="th-right">Valeur</th>
+                    <th>Soumis le</th>
+                    <th class="th-actions"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (t of pendingTaux(); track t.id) {
+                    <tr>
+                      <td>
+                        <a [routerLink]="['/fact/affaires', t.affaireId]" class="cell-link">
+                          {{ t.affaireRef }}
+                        </a>
+                        <span class="cell-sub">{{ t.affaireIntitule }}</span>
+                      </td>
+                      <td class="td-right">
+                        <span class="cell-bold">{{ t.taux }}%</span>
+                      </td>
+                      <td class="td-right">{{ fmtAmt(t.valeurCalculee) }}</td>
+                      <td class="cell-muted">{{ fmtDate(t.soumisAt) }}</td>
+                      <td class="td-actions">
+                        <div class="action-btns">
+                          <button class="act-btn act-btn--green" (click)="doValidateTaux(t.id)">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            Valider
+                          </button>
+                          <button class="act-btn act-btn--red" (click)="openRfRefuseModal(t.id, 'taux')">
+                            <span class="material-symbols-outlined">block</span>
+                            Refuser
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Jalons -->
+          @if (pendingJalons().length > 0) {
+            <div class="section-head" [class.section-head--mt]="pendingTaux().length > 0">
+              <span class="material-symbols-outlined">flag</span>
+              Jalons (JAL) — {{ pendingJalons().length }}
+            </div>
+            <div class="table-wrap">
+              <table class="aq-table">
+                <thead>
+                  <tr>
+                    <th>Affaire</th>
+                    <th>Jalon</th>
+                    <th class="th-right">Montant</th>
+                    <th>Échéance</th>
+                    <th class="th-actions"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (j of pendingJalons(); track j.id) {
+                    <tr>
+                      <td>
+                        <a [routerLink]="['/fact/affaires', j.affaireId]" class="cell-link">
+                          {{ j.affaireRef }}
+                        </a>
+                        <span class="cell-sub">{{ j.affaireIntitule }}</span>
+                      </td>
+                      <td>{{ j.label }}</td>
+                      <td class="td-right">
+                        <span class="cell-bold">{{ fmtAmt(j.montant) }}</span>
+                      </td>
+                      <td class="cell-muted">{{ fmtDate(j.echeance) }}</td>
+                      <td class="td-actions">
+                        <div class="action-btns">
+                          <button class="act-btn act-btn--green" (click)="doValidateJalon(j.id)">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            Valider
+                          </button>
+                          <button class="act-btn act-btn--red" (click)="openRfRefuseModal(j.id, 'jalon')">
+                            <span class="material-symbols-outlined">block</span>
+                            Refuser
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+        }
+      }
+
+      <!-- ── DF Tab ─────────────────────────────────────────────────────── -->
+      @if (activeTab() === 'df') {
+
+        @if (dfLoading()) {
+          <div class="tab-loading">
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            Chargement…
+          </div>
+        } @else if (pendingLines().length === 0) {
+          <div class="tab-empty">
+            <span class="material-symbols-outlined">check_circle</span>
+            <p>Aucune ligne en attente de validation DF.</p>
+          </div>
+        } @else {
+          <div class="table-wrap">
+            <table class="aq-table">
+              <thead>
+                <tr>
+                  <th>Affaire</th>
+                  <th>Référence</th>
+                  <th>Période</th>
+                  <th class="th-right">Montant HT</th>
+                  <th>Mode</th>
+                  <th>Statut</th>
+                  <th class="th-actions"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of pendingLines(); track line.id) {
+                  <tr>
+                    <td>
+                      <a [routerLink]="['/fact/affaires', line.affaireId]" class="cell-link">
+                        {{ line.affaireRef }}
+                      </a>
+                      <span class="cell-sub">{{ line.affaireIntitule }}</span>
+                    </td>
+                    <td>
+                      <span class="cell-mono">{{ line.reference }}</span>
+                    </td>
+                    <td class="cell-muted">{{ line.periode || '—' }}</td>
+                    <td class="td-right">
+                      <span class="cell-bold">{{ fmtAmt(line.montantHt) }}</span>
+                    </td>
+                    <td>
+                      <span class="cell-mode">{{ line.mode }}</span>
+                    </td>
+                    <td>
+                      <span class="line-badge"
+                        [style.background]="lineCfg(line.statut).bg"
+                        [style.color]="lineCfg(line.statut).color"
+                        [style.border-color]="lineCfg(line.statut).border">
+                        {{ lineCfg(line.statut).label }}
+                      </span>
+                    </td>
+                    <td class="td-actions">
+                      <div class="action-btns">
+                        <button class="act-btn act-btn--green" (click)="doValidateDF(line.id)">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          Valider
+                        </button>
+                        <button class="act-btn act-btn--orange" (click)="openDfRetourModal(line.id)">
+                          <span class="material-symbols-outlined">undo</span>
+                          Retourner
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      <!-- ── History Tab ────────────────────────────────────────────────── -->
+      @if (activeTab() === 'history') {
+
+        @if (histLoading()) {
+          <div class="tab-loading">
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            Chargement…
+          </div>
+        } @else if (auditLog().length === 0) {
+          <div class="tab-empty">
+            <span class="material-symbols-outlined">history</span>
+            <p>Aucun historique disponible.</p>
+          </div>
+        } @else {
+          <div class="table-wrap">
+            <table class="aq-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Utilisateur</th>
+                  <th>Action</th>
+                  <th>Entité</th>
+                  <th>Commentaire</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of auditLog(); track entry.id) {
+                  <tr>
+                    <td class="cell-muted cell-nowrap">{{ fmtDateTime(entry.createdAt) }}</td>
+                    <td><span class="cell-bold">{{ entry.userNom }}</span></td>
+                    <td>
+                      <span class="action-chip">{{ entry.action }}</span>
+                    </td>
+                    <td class="cell-muted">{{ entry.entityType }} #{{ entry.entityId }}</td>
+                    <td class="cell-muted cell-truncate">{{ entry.commentaire || '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+    </div><!-- /tab-body -->
+
+  </div><!-- /tabs-card -->
+
+</div><!-- /aq-page -->
+
+<!-- ── RF Refuse modal ───────────────────────────────────────────────────── -->
+@if (showRfRefuseModal()) {
+  <div class="modal-backdrop" (click)="$event.target === $event.currentTarget && showRfRefuseModal.set(false)">
+    <div class="modal-box">
+      <h3 class="modal-title">Motif de refus</h3>
+      <textarea class="modal-textarea" rows="3" maxlength="500" placeholder="Raison du refus…"
+        [(ngModel)]="rfRefuseMotif"></textarea>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn--cancel" (click)="showRfRefuseModal.set(false)">Annuler</button>
+        <button class="modal-btn modal-btn--danger"
+          [class.modal-btn--disabled]="!rfRefuseMotif.trim()"
+          [disabled]="!rfRefuseMotif.trim()"
+          (click)="submitRfRefuse()">Refuser</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── DF Retour modal ───────────────────────────────────────────────────── -->
+@if (showDfRetourModal()) {
+  <div class="modal-backdrop" (click)="$event.target === $event.currentTarget && showDfRetourModal.set(false)">
+    <div class="modal-box">
+      <h3 class="modal-title">Motif de retour</h3>
+      <textarea class="modal-textarea" rows="3" maxlength="500" placeholder="Raison du retour…"
+        [(ngModel)]="dfRetourMotif"></textarea>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn--cancel" (click)="showDfRetourModal.set(false)">Annuler</button>
+        <button class="modal-btn modal-btn--primary"
+          [class.modal-btn--disabled]="!dfRetourMotif.trim()"
+          [disabled]="!dfRetourMotif.trim()"
+          (click)="submitDfRetour()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+}

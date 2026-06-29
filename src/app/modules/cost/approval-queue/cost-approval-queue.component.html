@@ -1,133 +1,222 @@
-<div class="flex flex-col gap-5">
+<div class="ap-page">
 
-  <!-- KPI cards -->
-  <div class="grid grid-cols-3 gap-4">
-    <daf-metric-card
-      label="En attente"
-      [value]="pendingCount()"
-      [options]="{ icon: 'pending_actions', iconBg: 'bg-teal/10', iconColor: 'text-teal' }" />
-
-    <daf-metric-card
-      label="Urgents L3–L4"
-      [value]="urgentCount()"
-      [options]="{ icon: 'priority_high', iconBg: 'bg-danger/10', iconColor: 'text-danger', valueColor: 'text-danger' }" />
-
-    <daf-metric-card
-      label="Temps moyen"
-      [value]="avgHours + 'h'"
-      [options]="{ icon: 'speed', iconBg: 'bg-success/10', iconColor: 'text-success' }"
-      [delta]="{ value: perfDelta + '% vs sem. passée', direction: 'down' }" />
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="ap-header">
+    <div>
+      <h3 class="ap-header__title">File d'approbation</h3>
+      <p class="ap-header__sub">Flux de travail consolidé pour les validations financières.</p>
+    </div>
+    <div class="ap-header__actions">
+      <div class="ap-search-wrap">
+        <span class="material-symbols-outlined ap-search-icon">search</span>
+        <input class="ap-search-input" type="text" placeholder="ID, titre, ou montant..."
+          [value]="searchTerm()"
+          (input)="searchTerm.set(getInputValue($event))" />
+      </div>
+      <button class="ap-filter-btn">
+        <span class="material-symbols-outlined">tune</span>
+        <span>Filtres</span>
+      </button>
+    </div>
   </div>
 
-  <!-- Toolbar: search + refresh + new -->
-  <daf-toolbar
-    [searchValue]="searchTerm()"
-    searchPlaceholder="Référence, description ou montant…"
-    [actions]="toolbarActions"
-    (searchChange)="searchTerm.set($event)"
-    (actionClick)="onToolbarAction($event)" />
+  <!-- ── KPI Stats ─────────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
 
-  <!-- Data table -->
-  <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
-    <daf-data-table
-      [columns]="tableColumns"
-      [rows]="tableRows()"
-      [config]="tableConfig()">
+    <!-- En attente -->
+    <div class="kpi-glass">
+      <div class="kpi-icon-box kpi-icon-box--teal">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
+      </div>
+      <div>
+        <p class="kpi-label">En attente</p>
+        <h4 class="kpi-value">{{ pendingCount() }}</h4>
+      </div>
+    </div>
 
-      <ng-template dafCell="reference" let-row>
-        <div>
-          <p class="font-mono text-xs font-bold text-primary">{{ row['reference'] }}</p>
-          @if (row['label']) {
-            <p class="text-sm text-on-surface-variant mt-0.5 truncate max-w-56">{{ row['label'] }}</p>
-          }
+    <!-- Urgents -->
+    <div class="kpi-glass kpi-glass--danger">
+      <div class="kpi-danger-bar"></div>
+      <div class="kpi-icon-box kpi-icon-box--danger">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">priority_high</span>
+      </div>
+      <div>
+        <p class="kpi-label">Urgents</p>
+        <h4 class="kpi-value">{{ urgentCount() }}</h4>
+      </div>
+    </div>
+
+    <!-- Performance sparkline -->
+    <div class="kpi-glass kpi-glass--perf">
+      <div class="kpi-perf-content">
+        <p class="kpi-label">Performance d'approbation</p>
+        <div class="kpi-perf-row">
+          <h4 class="kpi-value">{{ avgHours }}h</h4>
+          <span class="kpi-delta">
+            <span class="material-symbols-outlined">trending_down</span>
+            {{ perfDelta }}%
+          </span>
         </div>
-      </ng-template>
+        <p class="kpi-perf-sub">Temps de traitement moyen hebdomadaire</p>
+      </div>
+      <div class="kpi-sparkline-wrap">
+        <svg viewBox="0 0 200 60" preserveAspectRatio="none" width="100%" height="100%">
+          <defs>
+            <linearGradient id="spark-grad" x1="0%" x2="0%" y1="0%" y2="100%">
+              <stop offset="0%" stop-color="#006b58" />
+              <stop offset="100%" stop-color="transparent" />
+            </linearGradient>
+          </defs>
+          <path class="sp-line" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35" />
+          <path class="sp-fill" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35 V60 H0 Z" />
+        </svg>
+      </div>
+    </div>
 
-      <ng-template dafCell="amount" let-row>
-        <span class="font-bold text-on-surface">{{ row['amount'] }}</span>
-      </ng-template>
+  </div>
 
-      <ng-template dafCell="level" let-row>
-        <daf-badge
-          [label]="urgencyLabel(row['level'])"
-          [options]="urgencyBadgeOptions(row['level'])" />
-      </ng-template>
+  <!-- ── Approval Grid ─────────────────────────────────────────────────────── -->
+  <div class="ap-grid">
 
-      <ng-template dafCell="_actions" let-row>
-        <div class="flex justify-end gap-1" (click)="$event.stopPropagation()">
-          <button class="action-icon-btn action-icon-btn--green" title="Approuver"
-            *appHasPermission="'FACT_APPROVE_COST_L1'"
-            (click)="openApprove(row['_raw'])">
-            <span class="material-symbols-outlined">check_circle</span>
-          </button>
-          <button class="action-icon-btn action-icon-btn--danger" title="Refuser"
-            (click)="openReject(row['_raw'])">
-            <span class="material-symbols-outlined">cancel</span>
-          </button>
+    @if (isLoading()) {
+      @for (n of [1,2,3,4,5,6]; track n) {
+        <div class="ap-card ap-card--skel">
+          <div class="skel skel--sm" style="width:70px; height:22px; border-radius:8px; margin-bottom:20px;"></div>
+          <div class="skel skel--lg" style="height:14px; margin-bottom:8px;"></div>
+          <div class="skel skel--md" style="height:18px; margin-bottom:28px;"></div>
+          <div class="skel skel--full" style="height:12px; margin-bottom:8px;"></div>
+          <div class="skel skel--full" style="height:12px; margin-bottom:24px;"></div>
+          <div class="skel skel--full" style="height:44px; border-radius:16px;"></div>
         </div>
-      </ng-template>
+      }
+    }
 
-    </daf-data-table>
-  </daf-card>
+    @if (!isLoading()) {
+      @for (cost of filteredCosts(); track cost.id) {
+        <div class="ap-card">
+
+          <!-- Urgency pill badge -->
+          <div class="ap-urgency ap-urgency--{{ urgencyClass(cost.approvalLevelRequired) }}">
+            {{ urgencyLabel(cost.approvalLevelRequired) }}
+          </div>
+
+          <!-- Card head -->
+          <div class="ap-card__head">
+            <div class="ap-card__icon">
+              <span class="material-symbols-outlined">receipt_long</span>
+            </div>
+            <div class="ap-card__meta">
+              <span class="ap-card__ref">{{ cost.reference ?? ('COUT-' + cost.id) }}</span>
+              <h5 class="ap-card__title">{{ cost.label || '—' }}</h5>
+            </div>
+            <div class="ap-card__dot ap-card__dot--{{ urgencyClass(cost.approvalLevelRequired) }}"></div>
+          </div>
+
+          <!-- Details -->
+          <div class="ap-card__details">
+            <div class="ap-card__row">
+              <span class="ap-card__row-k">Priorité</span>
+              <span class="ap-card__row-v">{{ urgencyLabel(cost.approvalLevelRequired) }}</span>
+            </div>
+            <div class="ap-card__row">
+              <span class="ap-card__row-k">Date</span>
+              <span class="ap-card__row-v">{{ fmtDate(cost.transactionDate) }}</span>
+            </div>
+            <div class="ap-card__amount-block">
+              <span class="ap-card__amount-lbl">Montant Total</span>
+              <span class="ap-card__amount">
+                {{ formatAmt(cost.netAmountEur ?? cost.netAmountLocal, cost.netAmountEur != null ? 'EUR' : (cost.currency ?? 'EUR')) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="ap-card__actions">
+            <button class="ap-btn-approve"
+              *appHasPermission="'FACT_APPROVE_COST_L1'"
+              (click)="openApprove(cost)">
+              <span class="material-symbols-outlined">check_circle</span>
+              <span>Approuver la demande</span>
+            </button>
+            <div class="ap-btn-row2">
+              <button class="ap-btn-complement" (click)="openApprove(cost)">Complément</button>
+              <button class="ap-btn-reject" (click)="openReject(cost)" title="Refuser">
+                <span class="material-symbols-outlined">block</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      }
+
+      @if (filteredCosts().length === 0) {
+        <div class="ap-empty">
+          <span class="material-symbols-outlined">pending_actions</span>
+          <p>Aucune demande en attente.</p>
+        </div>
+      }
+    }
+
+  </div>
 
 </div>
 
-<!-- Approval decision modal template -->
-<ng-template #approvalTpl>
-  <div class="flex flex-col gap-4">
+<!-- ── FAB ────────────────────────────────────────────────────────────────── -->
+<button class="ap-fab" (click)="navigateToNew()" title="Nouvelle Demande">
+  <span class="material-symbols-outlined">add</span>
+  <span class="ap-fab__tip">Nouvelle Demande</span>
+</button>
 
-    <!-- Cost summary -->
+<!-- ── Approval modal template ────────────────────────────────────────────── -->
+<ng-template #approvalTpl>
+  <div class="modal-body">
+
     @if (selectedCost()) {
-      <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant">
-        <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+      <div class="modal-cost-summary">
+        <p class="modal-cost-ref">
           {{ selectedCost()!.reference ?? ('COUT-' + selectedCost()!.id) }}
         </p>
-        <p class="text-lg font-bold text-on-surface mt-0.5">
+        <p class="modal-cost-amount">
           {{ formatAmt(
               selectedCost()!.netAmountEur ?? selectedCost()!.netAmountLocal,
               selectedCost()!.netAmountEur != null ? 'EUR' : (selectedCost()!.currency ?? 'EUR')
-             ) }}
+            ) }}
         </p>
-        <p class="text-sm text-on-surface-variant mt-0.5">{{ selectedCost()!.label ?? '—' }}</p>
+        <p class="modal-cost-label">{{ selectedCost()!.label ?? '—' }}</p>
       </div>
     }
 
-    <!-- Decision toggle -->
     <div>
-      <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
-        Décision *
-      </label>
-      <div class="flex gap-2">
+      <label class="modal-field-label">Décision *</label>
+      <div class="decision-btns">
         <button class="decision-btn"
           [class.decision-btn--approve]="modalDecision() === 'approve'"
           (click)="modalDecision.set('approve')">
-          <span class="material-symbols-outlined text-sm">check_circle</span>
+          <span class="material-symbols-outlined">check_circle</span>
           Approuver
         </button>
         <button class="decision-btn"
           [class.decision-btn--reject]="modalDecision() === 'reject'"
           (click)="modalDecision.set('reject')">
-          <span class="material-symbols-outlined text-sm">cancel</span>
+          <span class="material-symbols-outlined">cancel</span>
           Refuser
         </button>
       </div>
     </div>
 
-    <!-- Comment -->
-    <daf-form-field
-      [value]="approvalCommentSig()"
-      (valueChange)="approvalCommentSig.set($event)"
-      [options]="{
-        label: 'Commentaire',
-        type: 'textarea',
-        required: modalDecision() === 'reject',
-        placeholder: modalDecision() === 'reject' ? 'Motif du refus (obligatoire)…' : 'Commentaire optionnel…',
-        rows: 3
-      }" />
+    <div>
+      <label class="modal-field-label">
+        Commentaire @if (modalDecision() === 'reject') { * }
+      </label>
+      <textarea class="modal-textarea" rows="3"
+        [placeholder]="modalDecision() === 'reject' ? 'Motif du refus (obligatoire)…' : 'Commentaire optionnel…'"
+        [value]="approvalCommentSig()"
+        (input)="approvalCommentSig.set(getInputValue($event))"></textarea>
+    </div>
 
     @if (modalError()) {
-      <div class="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
-        <span class="material-symbols-outlined text-base">error</span>
+      <div class="modal-error">
+        <span class="material-symbols-outlined">error</span>
         {{ modalError() }}
       </div>
     }

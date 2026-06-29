@@ -7,26 +7,12 @@ import {
 import { PermissionDirective } from '../../shared/permission.directive';
 import { PaymentModalComponent } from './payment-modal.component';
 import {
-  MetricCardComponent,
-  DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
-  PaginationComponent,
-  ToolbarComponent, ToolbarAction,
-  SelectComponent, SelectOption,
-  DatePickerComponent,
-  StatusBadgeComponent as DafBadgeComponent, BadgeOptions, BadgeVariant,
-  CardComponent,
-  FormFieldComponent,
-  ModalService, ModalRef,
+  SelectOption, ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [
-    PermissionDirective, PaymentModalComponent,
-    MetricCardComponent, DataTableComponent, DafCellDirective,
-    PaginationComponent, ToolbarComponent, SelectComponent, DatePickerComponent,
-    DafBadgeComponent, CardComponent, FormFieldComponent,
-  ],
+  imports: [PermissionDirective, PaymentModalComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })
@@ -50,7 +36,7 @@ export class InvoiceListComponent implements OnInit {
   paymentTarget  = signal<InvoiceListItem | null>(null);
   approvalTarget = signal<InvoiceListItem | null>(null);
   approvalDecision: 'APPROVE' | 'RETURN' | 'REJECT' = 'APPROVE';
-  approvalCommentSig = signal<string | number | null>(null);
+  approvalCommentSig = signal<string>('');
 
   filterStatutSel = signal<string[]>([]);
   filterFrom      = signal<string>('');
@@ -62,55 +48,28 @@ export class InvoiceListComponent implements OnInit {
   readonly statutSelectOptions: SelectOption[] = Object.entries(INVOICE_STATUT_CONFIG)
     .map(([k, v]) => ({ value: k, label: v.label }));
 
+  // ── KPI counts ────────────────────────────────────────────────────────────
   readonly statsEnAttente = computed(() =>
     this.invoices().filter(i => ['EMITTED', 'SENT', 'PARTIALLY_PAID'].includes(i.statut)).length
   );
-  readonly statsEnRetard = computed(() =>
-    this.invoices().filter(i => this.isOverdue(i)).length
+  readonly statsEnRetard  = computed(() => this.invoices().filter(i => this.isOverdue(i)).length);
+  readonly statsEnLitige  = computed(() => this.invoices().filter(i => i.statut === 'DISPUTED').length);
+
+  // ── KPI monetary amounts (summed on current page, same currency assumed) ──
+  readonly amountTotal = computed(() =>
+    this.invoices().reduce((s, i) => s + (i.montantTtc ?? 0), 0)
   );
-  readonly statsEnLitige = computed(() =>
-    this.invoices().filter(i => i.statut === 'DISPUTED').length
+  readonly amountEnAttente = computed(() =>
+    this.invoices()
+      .filter(i => ['EMITTED', 'SENT', 'PARTIALLY_PAID'].includes(i.statut))
+      .reduce((s, i) => s + (i.montantTtc ?? 0), 0)
   );
-
-  readonly tableRows = computed(() =>
-    this.invoices().map(inv => ({
-      id:                  inv.id,
-      invoiceNumber:       inv.invoiceNumber,
-      affaireRef:          inv.affaireRef,
-      clientNom:           inv.clientNom || '—',
-      montantTtc:          inv.montantTtc,
-      devise:              inv.devise,
-      dateEmission:        this.formatDate(inv.dateEmission),
-      dateEcheance:        inv.dateEcheance,
-      statut:              inv.statut,
-      _isOverdue:          this.isOverdue(inv),
-      _overdueDays:        this.overdueDays(inv),
-      _formattedEcheance:  this.formatDate(inv.dateEcheance),
-      _raw:                inv,
-    }))
+  readonly amountEnRetard = computed(() =>
+    this.invoices().filter(i => this.isOverdue(i)).reduce((s, i) => s + (i.montantTtc ?? 0), 0)
   );
-
-  readonly tableColumns: TableColumn[] = [
-    { key: 'invoiceNumber', label: 'N° Facture',  type: 'custom' },
-    { key: 'affaireRef',    label: 'Affaire',     type: 'custom' },
-    { key: 'clientNom',     label: 'Client',      type: 'text' },
-    { key: 'montantTtc',    label: 'Montant TTC', type: 'custom', align: 'right' },
-    { key: 'dateEmission',  label: 'Émission',    type: 'text' },
-    { key: 'dateEcheance',  label: 'Échéance',    type: 'custom' },
-    { key: 'statut',        label: 'Statut',      type: 'custom', align: 'center' },
-    { key: '_actions',      label: 'Actions',     type: 'custom', align: 'right', width: '150px' },
-  ];
-
-  readonly tableConfig = computed<TableConfig>(() => ({
-    hoverable:    true,
-    loading:      this.loading(),
-    emptyMessage: 'Aucune facture trouvée.',
-    skeletonRows: 5,
-  }));
-
-  readonly toolbarActions: ToolbarAction[] = [
-    { id: 'new', label: 'Nouvelle facture', icon: 'add', position: 'right', variant: 'primary' },
-  ];
+  readonly amountEnLitige = computed(() =>
+    this.invoices().filter(i => i.statut === 'DISPUTED').reduce((s, i) => s + (i.montantTtc ?? 0), 0)
+  );
 
   ngOnInit(): void { this.load(); }
 
@@ -147,9 +106,6 @@ export class InvoiceListComponent implements OnInit {
     this.currentPage.set(p);
     this.load();
   }
-
-  onRowClick(row: TableRow): void { this.navigateToDetail(row['id']); }
-  onToolbarAction(id: string): void { if (id === 'new') this.navigateToNew(); }
 
   isOverdue(item: InvoiceListItem): boolean {
     if (!OVERDUE_STATUTS.has(item.statut)) return false;
@@ -191,7 +147,7 @@ export class InvoiceListComponent implements OnInit {
   openApprovalModal(item: InvoiceListItem): void {
     this.approvalTarget.set(item);
     this.approvalDecision = 'APPROVE';
-    this.approvalCommentSig.set(null);
+    this.approvalCommentSig.set('');
     this.approvalRef = this.modal.open({
       title: 'Décision de validation',
       body:  this.approvalTpl,
@@ -209,33 +165,28 @@ export class InvoiceListComponent implements OnInit {
     if (!item) return;
     this.svc.approve(item.id, {
       decision: this.approvalDecision,
-      comment:  String(this.approvalCommentSig() ?? '').trim() || null,
+      comment:  this.approvalCommentSig().trim() || null,
     }).subscribe({
       next:  () => { this.approvalRef?.close(); this.approvalTarget.set(null); this.load(); },
       error: err => this.actionError.set(err?.error?.message ?? 'Erreur lors de l\'approbation.'),
     });
   }
 
-  statutLabel(s: string): string {
-    return INVOICE_STATUT_CONFIG[s]?.label ?? s;
+  statutLabel(s: string): string { return INVOICE_STATUT_CONFIG[s]?.label ?? s; }
+
+  statutBadgeVariant(s: string): string {
+    const map: Record<string, string> = {
+      DRAFT: 'neutral', SUBMITTED: 'info', RETURNED: 'warning',
+      APPROVED: 'secondary', EMITTED: 'teal', SENT: 'success',
+      PARTIALLY_PAID: 'warning', PAID: 'success',
+      DISPUTED: 'danger', CANCELLED: 'danger', CREDIT_NOTED: 'info',
+    };
+    return map[s] ?? 'neutral';
   }
 
-  statutBadgeOptions(s: string): BadgeOptions {
-    const variantMap: Record<string, BadgeVariant> = {
-      DRAFT:          'neutral',
-      SUBMITTED:      'info',
-      RETURNED:       'warning',
-      APPROVED:       'secondary',
-      EMITTED:        'teal',
-      SENT:           'success',
-      PARTIALLY_PAID: 'warning',
-      PAID:           'success',
-      DISPUTED:       'danger',
-      CANCELLED:      'danger',
-      CREDIT_NOTED:   'info',
-    };
-    return { variant: variantMap[s] ?? 'neutral', pill: true };
-  }
+  getInputValue(e: Event):  string { return (e.target as HTMLInputElement).value; }
+  getSelectValue(e: Event): string { return (e.target as HTMLSelectElement).value; }
+  minVal(a: number, b: number): number { return Math.min(a, b); }
 
   formatAmount(v: number, devise = 'TND'): string {
     return new Intl.NumberFormat('fr-FR', {

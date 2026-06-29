@@ -1,172 +1,226 @@
-<div class="flex flex-col gap-5">
+<div class="inv-page">
 
-  <!-- Stats -->
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-    <daf-metric-card
-      label="Total Factures"
-      [value]="totalElements()"
-      [options]="{ icon: 'receipt_long', iconBg: 'bg-teal/10', iconColor: 'text-teal' }" />
+  <!-- ── Page header ───────────────────────────────────────────────────────── -->
+  <header class="inv-header">
+    <div class="inv-header__left">
+      <h2 class="inv-header__title">Facturation</h2>
+      <p class="inv-header__sub">Gérez vos émissions et suivis de factures clients.</p>
+    </div>
+    <div class="inv-header__right">
+      <button class="btn-new" (click)="navigateToNew()">
+        <span class="material-symbols-outlined">add</span>
+        Nouvelle facture
+      </button>
+    </div>
+  </header>
 
-    <daf-metric-card
-      label="En attente"
-      [value]="statsEnAttente()"
-      [options]="{ icon: 'schedule', iconBg: 'bg-secondary/10', iconColor: 'text-secondary' }" />
+  <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
+  <section class="kpi-grid">
 
-    <daf-metric-card
-      label="En retard"
-      [value]="statsEnRetard()"
-      [options]="{ icon: 'warning', iconBg: 'bg-danger/10', iconColor: 'text-danger', valueColor: 'text-danger' }" />
-
-    <daf-metric-card
-      label="En litige"
-      [value]="statsEnLitige()"
-      [options]="{ icon: 'gavel', iconBg: 'bg-warning/10', iconColor: 'text-warning', valueColor: 'text-warning' }" />
-  </div>
-
-  <!-- Toolbar: search + new -->
-  <daf-toolbar
-    [searchValue]="searchText()"
-    searchPlaceholder="N° facture, client, affaire…"
-    [actions]="toolbarActions"
-    (searchChange)="searchText.set($event); onSearch()"
-    (actionClick)="onToolbarAction($event)" />
-
-  <!-- Filters -->
-  <daf-card [options]="{ padding: 'sm', variant: 'default', radius: 'lg' }">
-    <div class="flex flex-wrap items-end gap-3 p-2">
-      <div class="min-w-52">
-        <daf-select
-          [options]="statutSelectOptions"
-          [selected]="filterStatutSel()"
-          (selectedChange)="filterStatutSel.set($event); onFilterChange()"
-          [config]="{ label: 'Statut', placeholder: 'Tous statuts', fullWidth: true }" />
-      </div>
-      <div class="min-w-44">
-        <daf-date-picker
-          [value]="filterFrom()"
-          (valueChange)="filterFrom.set($event); onFilterChange()"
-          [config]="{ label: 'Émis depuis' }" />
-      </div>
-      <div class="min-w-44">
-        <daf-date-picker
-          [value]="filterTo()"
-          (valueChange)="filterTo.set($event); onFilterChange()"
-          [config]="{ label: 'Émis jusqu\'à', min: filterFrom() }" />
+    <div class="kpi-card">
+      <span class="kpi-card__label">Total Facturé</span>
+      <div class="kpi-card__row">
+        <span class="kpi-card__value">{{ formatAmount(amountTotal()) }}</span>
+        <span class="kpi-badge kpi-badge--success">{{ totalElements() }} fact.</span>
       </div>
     </div>
-  </daf-card>
 
-  <!-- Action error banner -->
+    <div class="kpi-card">
+      <span class="kpi-card__label">En attente</span>
+      <div class="kpi-card__row">
+        <span class="kpi-card__value kpi-card__value--pending">{{ formatAmount(amountEnAttente()) }}</span>
+        <span class="material-symbols-outlined kpi-icon kpi-icon--pending">schedule</span>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-card--danger">
+      <span class="kpi-card__label">En retard</span>
+      <div class="kpi-card__row">
+        <span class="kpi-card__value kpi-card__value--danger">{{ formatAmount(amountEnRetard()) }}</span>
+        @if (statsEnRetard() > 0) {
+          <span class="kpi-badge kpi-badge--danger">{{ statsEnRetard() }} factures</span>
+        }
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-card__label">Litiges</span>
+      <div class="kpi-card__row">
+        <span class="kpi-card__value kpi-card__value--warning">{{ formatAmount(amountEnLitige()) }}</span>
+        <span class="material-symbols-outlined kpi-icon kpi-icon--warning">gavel</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Search & Filters ──────────────────────────────────────────────────── -->
+  <div class="search-bar-row">
+
+    <div class="search-wrap">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input class="search-input" type="text"
+        placeholder="Rechercher client, facture, projet..."
+        [value]="searchText()"
+        (input)="searchText.set(getInputValue($event)); onSearch()" />
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-btn-wrap">
+        <span class="material-symbols-outlined filter-btn-icon">filter_list</span>
+        <select class="filter-select"
+          [value]="filterStatutSel()[0] || ''"
+          (change)="filterStatutSel.set(getSelectValue($event) ? [getSelectValue($event)] : []); onFilterChange()">
+          <option value="">Statut</option>
+          @for (opt of statutSelectOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-btn-wrap">
+        <span class="material-symbols-outlined filter-btn-icon">calendar_today</span>
+        <input class="filter-date" type="date" title="Émis depuis"
+          [value]="filterFrom()"
+          (change)="filterFrom.set(getInputValue($event)); onFilterChange()" />
+      </div>
+
+      <div class="filter-btn-wrap">
+        <span class="material-symbols-outlined filter-btn-icon">event</span>
+        <input class="filter-date" type="date" title="Émis jusqu'à"
+          [value]="filterTo()" [min]="filterFrom()"
+          (change)="filterTo.set(getInputValue($event)); onFilterChange()" />
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <button class="filter-ghost-btn">
+        <span class="material-symbols-outlined">file_download</span>
+        Export
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── Action error ───────────────────────────────────────────────────────── -->
   @if (actionError()) {
-    <div class="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+    <div class="error-banner">
+      <span class="material-symbols-outlined">error</span>
       {{ actionError() }}
     </div>
   }
 
-  <!-- Table card -->
-  <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
+  <!-- ── Data table ────────────────────────────────────────────────────────── -->
+  <div class="table-card">
     @if (error()) {
-      <div class="px-4 py-3 bg-red-50 text-red-700 text-sm border-b border-red-200 rounded-t-xl">
-        {{ error() }}
+      <div class="table-error">{{ error() }}</div>
+    }
+
+    <div class="table-scroll">
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th>Référence / Projet</th>
+            <th>Client</th>
+            <th class="th-right">Montant TTC</th>
+            <th>Statut</th>
+            <th>Date / Échéance</th>
+            <th class="th-actions"></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          @if (loading()) {
+            @for (n of [1,2,3,4,5]; track n) {
+              <tr class="skeleton-row">
+                <td><div class="skel skel--md"></div></td>
+                <td><div class="skel skel--lg"></div></td>
+                <td><div class="skel skel--sm"></div></td>
+                <td><div class="skel skel--sm"></div></td>
+                <td><div class="skel skel--sm"></div></td>
+                <td></td>
+              </tr>
+            }
+          }
+
+          @for (inv of invoices(); track inv.id) {
+            <tr class="inv-row" [class.inv-row--overdue]="isOverdue(inv)"
+              (click)="navigateToDetail(inv.id)">
+
+              <td>
+                <div class="cell-ref">
+                  <span class="cell-ref__num">{{ inv.invoiceNumber || '(brouillon)' }}</span>
+                  <span class="cell-ref__aff">{{ inv.affaireRef ?? '—' }}</span>
+                </div>
+              </td>
+
+              <td>
+                <div class="cell-client" [title]="inv.clientNom ?? ''">
+                  {{ inv.clientNom || '—' }}
+                </div>
+              </td>
+
+              <td class="td-right">
+                <span class="cell-amount">{{ formatAmount(inv.montantTtc, inv.devise) }}</span>
+              </td>
+
+              <td>
+                <div class="cell-statut">
+                  <span class="badge badge--{{ statutBadgeVariant(inv.statut) }}">
+                    {{ statutLabel(inv.statut) }}
+                  </span>
+                  @if (isOverdue(inv)) {
+                    <span class="overdue-tag">+{{ overdueDays(inv) }} jours</span>
+                  }
+                </div>
+              </td>
+
+              <td>
+                <div class="cell-date" [class.cell-date--overdue]="isOverdue(inv)">
+                  {{ inv.dateEcheance ? 'Éch. ' + formatDate(inv.dateEcheance) : formatDate(inv.dateEmission) }}
+                </div>
+              </td>
+
+              <td class="td-actions" (click)="$event.stopPropagation()">
+                <button class="menu-btn" title="Actions">
+                  <span class="material-symbols-outlined">more_vert</span>
+                </button>
+              </td>
+
+            </tr>
+          }
+
+          @if (!loading() && invoices().length === 0) {
+            <tr>
+              <td colspan="6" class="empty-cell">
+                <span class="material-symbols-outlined">receipt_long</span>
+                Aucune facture trouvée.
+              </td>
+            </tr>
+          }
+
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="table-footer">
+        <span class="table-footer__info">
+          Affichage de
+          <b>{{ currentPage() * PAGE_SIZE + 1 }}–{{ minVal(currentPage() * PAGE_SIZE + PAGE_SIZE, totalElements()) }}</b>
+          sur <b>{{ totalElements() }}</b> factures
+        </span>
+        <div class="pagination-btns">
+          <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 0">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button class="page-btn" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() >= totalPages() - 1">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
       </div>
     }
 
-    <daf-data-table
-      [columns]="tableColumns"
-      [rows]="tableRows()"
-      [config]="tableConfig()"
-      (rowClick)="onRowClick($event)">
-
-      <ng-template dafCell="invoiceNumber" let-row>
-        <span class="font-mono text-xs font-bold text-primary">
-          {{ row['invoiceNumber'] ?? '(brouillon)' }}
-        </span>
-      </ng-template>
-
-      <ng-template dafCell="affaireRef" let-row>
-        @if (row['affaireRef']) {
-          <span class="font-mono text-xs font-bold text-teal bg-teal/10 px-2 py-0.5 rounded">
-            {{ row['affaireRef'] }}
-          </span>
-        } @else {
-          <span class="text-outline">—</span>
-        }
-      </ng-template>
-
-      <ng-template dafCell="montantTtc" let-row>
-        <span class="font-bold text-on-surface">
-          {{ formatAmount(row['montantTtc'], row['devise']) }}
-        </span>
-      </ng-template>
-
-      <ng-template dafCell="dateEcheance" let-row>
-        <div class="flex flex-col gap-0.5">
-          <span [class.text-danger]="row['_isOverdue']" [class.font-semibold]="row['_isOverdue']">
-            {{ row['_formattedEcheance'] }}
-          </span>
-          @if (row['_isOverdue']) {
-            <span class="text-xs font-bold text-white bg-danger px-1.5 py-px rounded-full w-fit">
-              J+{{ row['_overdueDays'] }}
-            </span>
-          }
-        </div>
-      </ng-template>
-
-      <ng-template dafCell="statut" let-row>
-        <daf-badge
-          [label]="statutLabel(row['statut'])"
-          [options]="statutBadgeOptions(row['statut'])" />
-      </ng-template>
-
-      <ng-template dafCell="_actions" let-row>
-        <div class="flex justify-end gap-1" (click)="$event.stopPropagation()">
-          <button class="action-icon-btn" title="Voir le détail"
-            (click)="navigateToDetail(row['id'])">
-            <span class="material-symbols-outlined">visibility</span>
-          </button>
-
-          @if (row['statut'] === 'APPROVED') {
-            <button class="action-icon-btn action-icon-btn--teal" title="Émettre"
-              *appHasPermission="'FACT_APPROVE_INVOICE'"
-              (click)="quickEmit(row['_raw'])">
-              <span class="material-symbols-outlined">send</span>
-            </button>
-          }
-
-          @if (row['statut'] === 'EMITTED') {
-            <button class="action-icon-btn action-icon-btn--blue" title="Marquer envoyée"
-              (click)="quickMarkSent(row['_raw'])">
-              <span class="material-symbols-outlined">check</span>
-            </button>
-          }
-
-          @if (row['statut'] === 'SUBMITTED') {
-            <button class="action-icon-btn action-icon-btn--blue" title="Approuver"
-              *appHasPermission="'FACT_APPROVE_INVOICE'"
-              (click)="openApprovalModal(row['_raw'])">
-              <span class="material-symbols-outlined">task_alt</span>
-            </button>
-          }
-
-          @if (row['statut'] === 'EMITTED' || row['statut'] === 'SENT' || row['statut'] === 'PARTIALLY_PAID') {
-            <button class="action-icon-btn action-icon-btn--green" title="Enregistrer paiement"
-              (click)="openPaymentModal(row['_raw'])">
-              <span class="material-symbols-outlined">payments</span>
-            </button>
-          }
-        </div>
-      </ng-template>
-
-    </daf-data-table>
-
-    @if (totalPages() > 1) {
-      <daf-pagination
-        [currentPage]="currentPage()"
-        [totalPages]="totalPages()"
-        [totalElements]="totalElements()"
-        (pageChange)="goToPage($event)" />
-    }
-  </daf-card>
+  </div>
 
 </div>
 
@@ -177,38 +231,37 @@
 
 <!-- Approval modal body template -->
 <ng-template #approvalTpl>
-  <div class="flex flex-col gap-4">
+  <div class="approval-body">
     <div>
-      <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
-        Décision *
-      </label>
-      <div class="flex gap-2">
+      <label class="approval-label">Décision *</label>
+      <div class="decision-btns">
         <button class="decision-btn"
           [class.decision-btn--approve]="approvalDecision === 'APPROVE'"
           (click)="approvalDecision = 'APPROVE'">
-          <span class="material-symbols-outlined text-sm">check_circle</span>
+          <span class="material-symbols-outlined">check_circle</span>
           Approuver
         </button>
         <button class="decision-btn"
           [class.decision-btn--return]="approvalDecision === 'RETURN'"
           (click)="approvalDecision = 'RETURN'">
-          <span class="material-symbols-outlined text-sm">undo</span>
+          <span class="material-symbols-outlined">undo</span>
           Retourner
         </button>
         <button class="decision-btn"
           [class.decision-btn--reject]="approvalDecision === 'REJECT'"
           (click)="approvalDecision = 'REJECT'">
-          <span class="material-symbols-outlined text-sm">cancel</span>
+          <span class="material-symbols-outlined">cancel</span>
           Rejeter
         </button>
       </div>
     </div>
-
     @if (approvalDecision !== 'APPROVE') {
-      <daf-form-field
-        [value]="approvalCommentSig()"
-        (valueChange)="approvalCommentSig.set($event)"
-        [options]="{ label: 'Commentaire', type: 'textarea', required: true, placeholder: 'Motif obligatoire…', rows: 3 }" />
+      <div>
+        <label class="approval-label">Commentaire *</label>
+        <textarea class="approval-textarea" rows="3" placeholder="Motif obligatoire…"
+          [value]="approvalCommentSig()"
+          (input)="approvalCommentSig.set(getInputValue($event))"></textarea>
+      </div>
     }
   </div>
 </ng-template>

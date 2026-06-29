@@ -53,8 +53,8 @@ export class InvoiceNewComponent {
     this.tiltTransform.set('rotateX(0deg) rotateY(0deg) translateY(0px)');
   }
 
-  onAffaireDone(v: StepAffaireValue):      void { this.affaireValue.set(v);    this.step.set(2); }
-  onLinesDone(v: StepLinesValue):          void { this.linesValue.set(v);      this.step.set(3); }
+  onAffaireDone(v: StepAffaireValue):       void { this.affaireValue.set(v);    this.step.set(2); }
+  onLinesDone(v: StepLinesValue):           void { this.linesValue.set(v);      this.step.set(3); }
   onConditionsDone(v: StepConditionsValue): void { this.conditionsValue.set(v); this.step.set(4); }
   cancel(): void { this.router.navigate(['/fact/invoicing']); }
 }
