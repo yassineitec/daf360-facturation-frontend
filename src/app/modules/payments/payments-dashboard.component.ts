@@ -7,10 +7,11 @@ import {
   agingRowColor,
 } from './payment.model';
 import { PermissionDirective } from '../../shared/permission.directive';
+import { CardComponent, ButtonComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-payments-dashboard',
-  imports: [FormsModule, PermissionDirective],
+  imports: [FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent],
   templateUrl: './payments-dashboard.component.html',
   styleUrl:    './payments-dashboard.component.scss',
 })

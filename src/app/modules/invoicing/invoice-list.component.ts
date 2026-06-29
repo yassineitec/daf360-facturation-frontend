@@ -8,11 +8,12 @@ import { PermissionDirective } from '../../shared/permission.directive';
 import { PaymentModalComponent } from './payment-modal.component';
 import {
   SelectOption, ModalService, ModalRef,
+  CardComponent, ButtonComponent, PaginationComponent,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, PaymentModalComponent],
+  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })

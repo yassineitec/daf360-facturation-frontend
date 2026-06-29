@@ -1,19 +1,5 @@
 @import '../../shared/design-tokens';
 
-// ── Glass card ────────────────────────────────────────────────────────────────
-.glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -2px rgba(0,0,0,.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: scale(1.01) translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,.10), 0 8px 10px -6px rgba(0,0,0,.06);
-  }
-}
-
 // ── Page wrapper ──────────────────────────────────────────────────────────────
 .clients-page {
   display: flex;
@@ -32,7 +18,6 @@
 }
 
 .kpi-card {
-  border-radius: 14px;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -97,15 +82,11 @@
 
 // ── Filters bar ───────────────────────────────────────────────────────────────
 .filters-bar {
-  border-radius: 14px;
   padding: 16px 20px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 14px;
-
-  // Override glass-card hover for filter bar (avoid lifting the bar)
-  &:hover { transform: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,.05); }
 }
 
 .search-wrap {
@@ -204,14 +185,6 @@
   }
 }
 
-.btn-new {
-  @include btn-new($brand-slate);
-  margin-left: auto;
-  white-space: nowrap;
-
-  .material-symbols-outlined { font-size: 18px; }
-}
-
 // ── Error bar ─────────────────────────────────────────────────────────────────
 .error-bar {
   display: flex;
@@ -238,18 +211,15 @@
 
 // ── Client Card ───────────────────────────────────────────────────────────────
 .client-card {
-  border-radius: 18px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,.6);
 
   &--skeleton {
     pointer-events: none;
     min-height: 200px;
-    &:hover { transform: none; box-shadow: none; }
   }
 
   &__header {
@@ -441,32 +411,3 @@
   span { font-size: 0.875rem; color: #64748B; }
 }
 
-// ── Pagination ────────────────────────────────────────────────────────────────
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 8px 0;
-}
-
-.page-info { font-size: 0.8125rem; color: #3e4945; }
-.page-btns { display: flex; gap: 4px; }
-
-.page-btn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid #bdc9c4;
-  border-radius: 10px;
-  background: rgba(255,255,255,.7);
-  font-size: 0.875rem;
-  color: #3e4945;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-
-  &:hover:not(:disabled) { border-color: #006b58; color: #006b58; }
-  &--active { background: #006b58; border-color: #006b58; color: #fff; font-weight: 700; }
-  &:disabled { opacity: 0.35; cursor: default; }
-}

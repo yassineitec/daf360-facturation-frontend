@@ -8,10 +8,12 @@ import { ClientListItemDto, ClientDetailDto, ClientFilter } from './client.model
 import { PermissionDirective } from '../../shared/permission.directive';
 import { ClientFormComponent } from './client-form.component';
 import { PaysRefDto } from '../affaires/affaire.model';
+import { CardComponent, ButtonComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-client-list',
-  imports: [FormsModule, DecimalPipe, PermissionDirective, ClientFormComponent],
+  imports: [FormsModule, DecimalPipe, PermissionDirective, ClientFormComponent,
+            CardComponent, ButtonComponent, PaginationComponent],
   templateUrl: './client-list.component.html',
   styleUrl: './client-list.component.scss',
 })

@@ -7,33 +7,30 @@
       <p class="inv-header__sub">Gérez vos émissions et suivis de factures clients.</p>
     </div>
     <div class="inv-header__right">
-      <button class="btn-new" (click)="navigateToNew()">
-        <span class="material-symbols-outlined">add</span>
-        Nouvelle facture
-      </button>
+      <daf-button [options]="{variant:'teal', label:'Nouvelle facture', iconStart:'add'}" (onClick)="navigateToNew()" />
     </div>
   </header>
 
   <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
   <section class="kpi-grid">
 
-    <div class="kpi-card">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
       <span class="kpi-card__label">Total Facturé</span>
       <div class="kpi-card__row">
         <span class="kpi-card__value">{{ formatAmount(amountTotal()) }}</span>
         <span class="kpi-badge kpi-badge--success">{{ totalElements() }} fact.</span>
       </div>
-    </div>
+    </daf-card>
 
-    <div class="kpi-card">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
       <span class="kpi-card__label">En attente</span>
       <div class="kpi-card__row">
         <span class="kpi-card__value kpi-card__value--pending">{{ formatAmount(amountEnAttente()) }}</span>
         <span class="material-symbols-outlined kpi-icon kpi-icon--pending">schedule</span>
       </div>
-    </div>
+    </daf-card>
 
-    <div class="kpi-card kpi-card--danger">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
       <span class="kpi-card__label">En retard</span>
       <div class="kpi-card__row">
         <span class="kpi-card__value kpi-card__value--danger">{{ formatAmount(amountEnRetard()) }}</span>
@@ -41,65 +38,67 @@
           <span class="kpi-badge kpi-badge--danger">{{ statsEnRetard() }} factures</span>
         }
       </div>
-    </div>
+    </daf-card>
 
-    <div class="kpi-card">
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
       <span class="kpi-card__label">Litiges</span>
       <div class="kpi-card__row">
         <span class="kpi-card__value kpi-card__value--warning">{{ formatAmount(amountEnLitige()) }}</span>
         <span class="material-symbols-outlined kpi-icon kpi-icon--warning">gavel</span>
       </div>
-    </div>
+    </daf-card>
 
   </section>
 
   <!-- ── Search & Filters ──────────────────────────────────────────────────── -->
-  <div class="search-bar-row">
+  <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}">
+    <div class="search-bar-row">
 
-    <div class="search-wrap">
-      <span class="material-symbols-outlined search-icon">search</span>
-      <input class="search-input" type="text"
-        placeholder="Rechercher client, facture, projet..."
-        [value]="searchText()"
-        (input)="searchText.set(getInputValue($event)); onSearch()" />
+      <div class="search-wrap">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input class="search-input" type="text"
+          placeholder="Rechercher client, facture, projet..."
+          [value]="searchText()"
+          (input)="searchText.set(getInputValue($event)); onSearch()" />
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-btn-wrap">
+          <span class="material-symbols-outlined filter-btn-icon">filter_list</span>
+          <select class="filter-select"
+            [value]="filterStatutSel()[0] || ''"
+            (change)="filterStatutSel.set(getSelectValue($event) ? [getSelectValue($event)] : []); onFilterChange()">
+            <option value="">Statut</option>
+            @for (opt of statutSelectOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filter-btn-wrap">
+          <span class="material-symbols-outlined filter-btn-icon">calendar_today</span>
+          <input class="filter-date" type="date" title="Émis depuis"
+            [value]="filterFrom()"
+            (change)="filterFrom.set(getInputValue($event)); onFilterChange()" />
+        </div>
+
+        <div class="filter-btn-wrap">
+          <span class="material-symbols-outlined filter-btn-icon">event</span>
+          <input class="filter-date" type="date" title="Émis jusqu'à"
+            [value]="filterTo()" [min]="filterFrom()"
+            (change)="filterTo.set(getInputValue($event)); onFilterChange()" />
+        </div>
+
+        <div class="filter-sep"></div>
+
+        <button class="filter-ghost-btn">
+          <span class="material-symbols-outlined">file_download</span>
+          Export
+        </button>
+      </div>
+
     </div>
-
-    <div class="filter-group">
-      <div class="filter-btn-wrap">
-        <span class="material-symbols-outlined filter-btn-icon">filter_list</span>
-        <select class="filter-select"
-          [value]="filterStatutSel()[0] || ''"
-          (change)="filterStatutSel.set(getSelectValue($event) ? [getSelectValue($event)] : []); onFilterChange()">
-          <option value="">Statut</option>
-          @for (opt of statutSelectOptions; track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
-
-      <div class="filter-btn-wrap">
-        <span class="material-symbols-outlined filter-btn-icon">calendar_today</span>
-        <input class="filter-date" type="date" title="Émis depuis"
-          [value]="filterFrom()"
-          (change)="filterFrom.set(getInputValue($event)); onFilterChange()" />
-      </div>
-
-      <div class="filter-btn-wrap">
-        <span class="material-symbols-outlined filter-btn-icon">event</span>
-        <input class="filter-date" type="date" title="Émis jusqu'à"
-          [value]="filterTo()" [min]="filterFrom()"
-          (change)="filterTo.set(getInputValue($event)); onFilterChange()" />
-      </div>
-
-      <div class="filter-sep"></div>
-
-      <button class="filter-ghost-btn">
-        <span class="material-symbols-outlined">file_download</span>
-        Export
-      </button>
-    </div>
-
-  </div>
+  </daf-card>
 
   <!-- ── Action error ───────────────────────────────────────────────────────── -->
   @if (actionError()) {
@@ -110,7 +109,7 @@
   }
 
   <!-- ── Data table ────────────────────────────────────────────────────────── -->
-  <div class="table-card">
+  <daf-card [options]="{variant:'default',padding:'none',radius:'xl'}" class="table-card">
     @if (error()) {
       <div class="table-error">{{ error() }}</div>
     }
@@ -202,25 +201,13 @@
       </table>
     </div>
 
-    @if (totalPages() > 1) {
-      <div class="table-footer">
-        <span class="table-footer__info">
-          Affichage de
-          <b>{{ currentPage() * PAGE_SIZE + 1 }}–{{ minVal(currentPage() * PAGE_SIZE + PAGE_SIZE, totalElements()) }}</b>
-          sur <b>{{ totalElements() }}</b> factures
-        </span>
-        <div class="pagination-btns">
-          <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 0">
-            <span class="material-symbols-outlined">chevron_left</span>
-          </button>
-          <button class="page-btn" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() >= totalPages() - 1">
-            <span class="material-symbols-outlined">chevron_right</span>
-          </button>
-        </div>
-      </div>
-    }
+    <daf-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [totalElements]="totalElements()"
+      (pageChange)="goToPage($event)" />
 
-  </div>
+  </daf-card>
 
 </div>
 
