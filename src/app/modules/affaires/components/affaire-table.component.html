@@ -25,17 +25,17 @@
         </button>
       </div>
 
-      <!-- View toggle -->
+      <!-- View toggle — RH profiles style -->
       <div class="flex border border-outline-variant rounded-lg overflow-hidden shrink-0">
         <button type="button" class="p-2 transition-colors" title="Vue grille"
                 [class]="viewMode() === 'grid' ? 'bg-[#617f88] text-white' : 'hover:bg-surface-container text-outline'"
                 (click)="viewMode.set('grid')">
           <span class="material-symbols-outlined text-[20px]">grid_view</span>
         </button>
-        <button type="button" class="p-2 transition-colors" title="Vue liste"
+        <button type="button" class="p-2 transition-colors" title="Vue tableau"
                 [class]="viewMode() === 'list' ? 'bg-[#617f88] text-white' : 'hover:bg-surface-container text-outline'"
                 (click)="viewMode.set('list')">
-          <span class="material-symbols-outlined text-[20px]">view_list</span>
+          <span class="material-symbols-outlined text-[20px]">table_rows</span>
         </button>
       </div>
 
@@ -66,10 +66,10 @@
     </div>
   } @else {
 
-    <!-- ═══ GRID VIEW ═══ -->
+    <!-- ═══ GRID VIEW (cards) ═══ -->
     @if (viewMode() === 'grid') {
       @if (affaires().length === 0) {
-        <div class="empty-state-full">
+        <div class="card-empty">
           <span class="material-symbols-outlined empty-icon">search_off</span>
           <span>Aucune affaire trouvée.</span>
         </div>
@@ -77,77 +77,69 @@
         <div class="card-grid">
           @for (a of affaires(); track a.id) {
 
-            <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}"
+            <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true,clickable:true}"
                       (click)="rowClick.emit(a.id)">
-              <div class="relative p-5 flex flex-col overflow-hidden cursor-pointer" style="height:290px">
+              <div class="aff-card">
 
-                <!-- Status badge -->
-                <div class="absolute top-3 right-3 z-10">
-                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white"
-                        [style.background]="statutBadgeCfg(a.statut).color">
-                    {{ statutBadgeCfg(a.statut).label }}
-                  </span>
+                <div class="aff-card__badge"
+                     [style.background]="statutBadgeCfg(a.statut).color"
+                     [style.box-shadow]="'0 4px 10px ' + statutBadgeCfg(a.statut).shadow">
+                  {{ statutBadgeCfg(a.statut).label }}
                 </div>
 
-                <!-- Body: icon+name | divider | fields -->
-                <div class="flex gap-4 flex-1 min-h-0 mt-1">
-
-                  <!-- LEFT: icon + reference + intitule -->
-                  <div class="w-[42%] shrink-0 flex flex-col items-center text-center overflow-hidden">
-                    <div class="w-14 h-14 rounded-xl border border-outline-variant bg-surface-container shrink-0 flex items-center justify-center">
-                      <span class="material-symbols-outlined text-[28px] text-outline">business_center</span>
+                <div class="aff-card__header">
+                  <div class="aff-card__id-block">
+                    <div class="aff-card__icon">
+                      <span class="material-symbols-outlined">business_center</span>
                     </div>
-                    <span class="mt-2 text-[10px] font-bold uppercase tracking-wider text-teal">{{ a.reference }}</span>
-                    <h3 class="mt-1 text-[14px] font-bold text-on-surface leading-tight line-clamp-2 w-full px-1">
-                      {{ a.intitule }}
-                    </h3>
-                    @if (a.billingMode) {
-                      <span class="mt-1 text-[10px] text-on-surface-variant uppercase tracking-wider truncate w-full px-1">
-                        {{ a.billingMode }}
+                    <div>
+                      <span class="aff-card__ref">{{ a.reference }}</span>
+                      <h5 class="aff-card__name">{{ a.intitule }}</h5>
+                    </div>
+                  </div>
+                  <div class="aff-card__dot"
+                       [style.background]="statutBadgeCfg(a.statut).color"
+                       [style.box-shadow]="'0 0 0 4px ' + statutBadgeCfg(a.statut).color + '22'">
+                  </div>
+                </div>
+
+                <div class="aff-card__body">
+                  <div class="aff-card__row">
+                    <span class="aff-card__row-label">Client</span>
+                    <span class="aff-card__row-val">{{ a.clientName || '—' }}</span>
+                  </div>
+                  <div class="aff-card__row">
+                    <span class="aff-card__row-label">Responsable</span>
+                    <div class="aff-card__resp-val">
+                      <div class="resp-avatar resp-avatar--sm">{{ initials(a.responsableFullName) }}</div>
+                      <span class="aff-card__row-val">{{ a.responsableFullName || '—' }}</span>
+                    </div>
+                  </div>
+                  <div class="aff-card__row">
+                    <span class="aff-card__row-label">Type</span>
+                    <span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
+                  </div>
+                  <div class="aff-card__amount-block">
+                    <span class="aff-card__amount-label">BUDGET PRÉVISIONNEL</span>
+                    <span class="aff-card__amount">
+                      {{ formatAmount(a.budgetPrevisionnel) }}
+                      <span class="aff-card__amount-unit">TND</span>
+                    </span>
+                  </div>
+                  @if (a.rafDisponible != null) {
+                    <div class="aff-card__raf">
+                      <span class="aff-card__raf-label">RAF</span>
+                      <span class="aff-card__raf-val" [style.color]="rafColor(a)">
+                        {{ formatAmount(a.rafDisponible) }} TND
                       </span>
-                    }
-                  </div>
-
-                  <!-- Vertical divider -->
-                  <div class="w-px self-stretch shrink-0 bg-outline-variant opacity-30"></div>
-
-                  <!-- RIGHT: data fields -->
-                  <div class="flex-1 overflow-hidden space-y-2.5">
-                    <div>
-                      <p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-0.5">CLIENT</p>
-                      <p class="font-semibold text-[13px] text-on-surface truncate">{{ a.clientName || '—' }}</p>
                     </div>
-                    <div>
-                      <p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-0.5">RESPONSABLE</p>
-                      <p class="font-semibold text-[13px] text-on-surface truncate">{{ a.responsableFullName || '—' }}</p>
-                    </div>
-                    <div>
-                      <p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-0.5">TYPE</p>
-                      <p class="font-semibold text-[13px] text-on-surface uppercase truncate">{{ typeLabel(a.typeAffaire) }}</p>
-                    </div>
-                    @if (a.rafDisponible != null) {
-                      <div>
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-0.5">RAF</p>
-                        <div class="flex items-center gap-1.5">
-                          <span class="w-2 h-2 rounded-full shrink-0" [style.background-color]="rafColor(a)"></span>
-                          <p class="font-semibold text-[13px] text-on-surface">
-                            {{ formatAmount(a.rafDisponible) }}<span class="text-[11px] text-outline"> TND</span>
-                          </p>
-                        </div>
-                      </div>
-                    }
-                  </div>
-
+                  }
                 </div>
 
-                <!-- Footer -->
-                <div class="flex justify-end mt-4 shrink-0">
-                  <button type="button"
-                          class="bg-[#1b3a4b] text-white px-6 py-2.5 rounded-lg font-semibold text-[13px] hover:opacity-90 active:scale-95 transition-all shadow-sm"
-                          (click)="rowClick.emit(a.id); $event.stopPropagation()">
-                    Voir détail
-                  </button>
-                </div>
+                <button class="aff-card__cta" (click)="rowClick.emit(a.id); $event.stopPropagation()">
+                  <span class="material-symbols-outlined">arrow_forward</span>
+                  Voir le détail
+                </button>
 
               </div>
             </daf-card>
@@ -157,82 +149,90 @@
       }
     }
 
-    <!-- ═══ LIST VIEW ═══ -->
+    <!-- ═══ TABLE VIEW ═══ -->
     @if (viewMode() === 'list') {
-      @if (affaires().length === 0) {
-        <div class="empty-state-full">
-          <span class="material-symbols-outlined empty-icon">search_off</span>
-          <span>Aucune affaire trouvée.</span>
-        </div>
-      } @else {
-        <div class="list-view">
-          @for (a of affaires(); track a.id) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Intitulé</th>
+              <th>Client</th>
+              <th>Responsable</th>
+              <th>Type</th>
+              <th class="num">Budget (TND)</th>
+              <th class="num">RAF (TND)</th>
+              <th>Statut</th>
+              <th class="act"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of affaires(); track a.id) {
+              <tr class="data-row" (click)="rowClick.emit(a.id)">
 
-            <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}"
-                      (click)="rowClick.emit(a.id)">
-              <div class="p-4 flex items-center gap-4 cursor-pointer">
+                <td><span class="ref-mono">{{ a.reference }}</span></td>
 
-                <!-- Icon -->
-                <div class="w-12 h-12 rounded-xl border border-outline-variant bg-surface-container flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[22px] text-outline">business_center</span>
-                </div>
+                <td>
+                  <div class="intitule-cell">
+                    <span class="intitule-name">{{ a.intitule }}</span>
+                    @if (a.billingMode) {
+                      <span class="intitule-sub">{{ a.billingMode }}</span>
+                    }
+                  </div>
+                </td>
 
-                <!-- Info block -->
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-[14px] font-bold text-on-surface">{{ a.intitule }}</span>
-                    <span class="px-2 py-0.5 bg-surface-container rounded text-[10px] font-bold text-teal uppercase">
-                      {{ a.reference }}
+                <td><span class="client-name">{{ a.clientName || '—' }}</span></td>
+
+                <td>
+                  <div class="resp-cell">
+                    <div class="resp-avatar">{{ initials(a.responsableFullName) }}</div>
+                    <span class="resp-name">{{ a.responsableFullName || '—' }}</span>
+                  </div>
+                </td>
+
+                <td><span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span></td>
+
+                <td class="num">
+                  <div class="budget-cell">
+                    <span class="budget-val">{{ formatAmount(a.budgetPrevisionnel) }}</span>
+                    <span class="material-symbols-outlined budget-icon"
+                          [class.budget-icon--filled]="a.budgetValide"
+                          [style.color]="budgetIconColor(a)">
+                      {{ budgetIcon(a) }}
                     </span>
-                    @if (a.typeAffaire) {
-                      <span class="px-2 py-0.5 bg-surface-container rounded text-[10px] font-bold text-on-surface-variant uppercase">
-                        {{ typeLabel(a.typeAffaire) }}
-                      </span>
-                    }
                   </div>
-                  <p class="text-[13px] text-outline truncate mt-0.5">
-                    {{ a.clientName || '—' }}{{ a.responsableFullName ? ' · ' + a.responsableFullName : '' }}
-                  </p>
-                  <div class="flex flex-wrap gap-4 mt-1">
-                    @if (a.budgetPrevisionnel) {
-                      <span class="flex items-center gap-1 text-[12px] text-outline">
-                        <span class="material-symbols-outlined text-[14px]">payments</span>
-                        Budget: {{ formatAmount(a.budgetPrevisionnel) }} TND
-                      </span>
-                    }
-                    @if (a.rafDisponible != null) {
-                      <span class="flex items-center gap-1 text-[12px] font-semibold"
-                            [style.color]="rafColor(a)">
-                        <span class="material-symbols-outlined text-[14px]">account_balance_wallet</span>
-                        RAF: {{ formatAmount(a.rafDisponible) }} TND
-                      </span>
-                    }
-                  </div>
-                </div>
+                </td>
 
-                <!-- Status badge -->
-                <div class="shrink-0">
-                  <span class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider text-white"
-                        [style.background]="statutBadgeCfg(a.statut).color">
-                    {{ statutBadgeCfg(a.statut).label }}
+                <td class="num">
+                  <span class="raf-val" [style.color]="rafColor(a)">
+                    {{ formatAmount(a.rafDisponible ?? null) }}
                   </span>
-                </div>
+                </td>
 
-                <!-- Action -->
-                <div class="shrink-0">
-                  <button type="button"
-                          class="px-4 py-2 bg-[#1b3a4b] text-white rounded-lg text-[13px] font-semibold hover:opacity-90 transition-opacity"
+                <td><app-status-badge [status]="a.statut" /></td>
+
+                <td class="act">
+                  <button class="view-btn" title="Voir"
                           (click)="rowClick.emit(a.id); $event.stopPropagation()">
-                    Voir détail
+                    <span class="material-symbols-outlined">arrow_forward_ios</span>
                   </button>
-                </div>
+                </td>
 
-              </div>
-            </daf-card>
-
-          }
-        </div>
-      }
+              </tr>
+            }
+            @empty {
+              <tr>
+                <td colspan="9">
+                  <div class="empty-state">
+                    <span class="material-symbols-outlined empty-icon">search_off</span>
+                    <span>Aucune affaire trouvée.</span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
 
     <!-- Footer -->
