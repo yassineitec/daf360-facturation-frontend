@@ -33,7 +33,7 @@ export class AffaireTableComponent {
   readonly statutOptions = Object.entries(STATUT_LABELS).map(([k, v]) => ({ value: k, label: v }));
   readonly typeOptions   = Object.entries(TYPE_LABELS).map(([k, v])   => ({ value: k, label: v }));
 
-  readonly viewMode = signal<'table' | 'card'>('table');
+  readonly viewMode = signal<'table' | 'card'>('card');
 
   readonly statsEnCours  = computed(() => this.affaires().filter(a => a.statut === 'EN_COURS').length);
   readonly statsSuspendu = computed(() => this.affaires().filter(a => a.statut === 'SUSPENDUE').length);

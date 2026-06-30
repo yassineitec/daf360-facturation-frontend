@@ -42,16 +42,126 @@
     </div>
   }
 
-  <!-- ── Timeline (shared) ─────────────────────────────────────────────── -->
-  <div class="timeline-wrap card-3d">
-    <app-invoice-status-timeline [statut]="invoice()!.statut" />
-  </div>
+  <!-- ── Lifecycle stepper ─────────────────────────────────────────────── -->
+  <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="lifecycle-card">
+    <daf-stepper
+      [steps]="lifecycleSteps"
+      [currentStep]="detailStep()"
+      [stepValid]="lifecycleStepValid()"
+      [config]="lifecycleConfig()"
+      (nextClick)="onStepperNext()"
+      (prevClick)="onStepperPrev()"
+      (finishClick)="onStepperFinish()">
+
+      <div class="step-body">
+        @switch (statut()) {
+
+          @case ('SUBMITTED') {
+            <div class="decision-form">
+              <p class="decision-hint">Sélectionnez votre décision :</p>
+              <div class="decision-btns">
+                <button class="dec-btn" [class.dec-approve]="approvalDecision === 'APPROVE'"
+                        (click)="approvalDecision = 'APPROVE'">
+                  <span class="material-symbols-outlined">check</span> Approuver
+                </button>
+                <button class="dec-btn" [class.dec-return]="approvalDecision === 'RETURN'"
+                        (click)="approvalDecision = 'RETURN'">
+                  <span class="material-symbols-outlined">undo</span> Retourner
+                </button>
+                <button class="dec-btn" [class.dec-reject]="approvalDecision === 'REJECT'"
+                        (click)="approvalDecision = 'REJECT'">
+                  <span class="material-symbols-outlined">close</span> Rejeter
+                </button>
+              </div>
+              @if (approvalDecision !== 'APPROVE') {
+                <textarea [(ngModel)]="approvalComment" rows="2" maxlength="500"
+                          class="inline-textarea" placeholder="Motif (requis pour Retourner / Rejeter)…"></textarea>
+              }
+            </div>
+          }
+
+          @case ('SENT') {
+            <div class="step-secondary">
+              @if (!showDisputeForm()) {
+                <daf-button
+                  [options]="{variant:'ghost', label:'Ouvrir un litige', iconStart:'gavel'}"
+                  (onClick)="showDisputeForm.set(true)" />
+              } @else {
+                <div class="inline-form">
+                  <label class="inline-form__label">Motif du litige *</label>
+                  <textarea [(ngModel)]="disputeReason" rows="2" maxlength="500"
+                            class="inline-textarea" placeholder="Décrivez le problème…"></textarea>
+                  <div class="inline-actions">
+                    <button class="btn-sm btn-sm--ghost" (click)="showDisputeForm.set(false)">Annuler</button>
+                    <button class="btn-sm btn-sm--warn"
+                            [disabled]="saving() || !disputeReason.trim()"
+                            (click)="submitDispute()">Confirmer</button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @case ('PARTIALLY_PAID') {
+            <div class="step-secondary">
+              @if (!showDisputeForm()) {
+                <daf-button
+                  [options]="{variant:'ghost', label:'Ouvrir un litige', iconStart:'gavel'}"
+                  (onClick)="showDisputeForm.set(true)" />
+              } @else {
+                <div class="inline-form">
+                  <label class="inline-form__label">Motif du litige *</label>
+                  <textarea [(ngModel)]="disputeReason" rows="2" maxlength="500"
+                            class="inline-textarea" placeholder="Décrivez le problème…"></textarea>
+                  <div class="inline-actions">
+                    <button class="btn-sm btn-sm--ghost" (click)="showDisputeForm.set(false)">Annuler</button>
+                    <button class="btn-sm btn-sm--warn"
+                            [disabled]="saving() || !disputeReason.trim()"
+                            (click)="submitDispute()">Confirmer</button>
+                  </div>
+                </div>
+              }
+              <daf-button
+                [options]="{variant:'ghost', label:'Émettre un avoir', iconStart:'receipt_long'}"
+                (onClick)="showCreditNote.set(true)" />
+            </div>
+          }
+
+          @case ('DISPUTED') {
+            <div class="step-secondary">
+              @if (showResolveForm()) {
+                <div class="inline-form">
+                  <label class="inline-form__label">Notes de résolution</label>
+                  <textarea [(ngModel)]="resolveNotes" rows="2" maxlength="500"
+                            class="inline-textarea" placeholder="Optionnel…"></textarea>
+                  <div class="inline-actions">
+                    <button class="btn-sm btn-sm--ghost" (click)="showResolveForm.set(false)">Annuler</button>
+                    <button class="btn-sm btn-sm--primary" [disabled]="saving()" (click)="submitResolve()">Résoudre</button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @case ('PAID') {
+            <div class="step-secondary">
+              <daf-button
+                [options]="{variant:'ghost', label:'Émettre un avoir', iconStart:'receipt_long'}"
+                (onClick)="showCreditNote.set(true)" />
+            </div>
+          }
+
+          @default { <div class="step-secondary"></div> }
+        }
+      </div>
+
+    </daf-stepper>
+  </daf-card>
 
   <!-- ── KPI Grid ──────────────────────────────────────────────────────── -->
   <div class="kpi-grid">
 
-    <!-- Avancement -->
-    <div class="kpi-card card-3d">
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}" class="kpi-card">
       <div class="kpi-card__top">
         <div>
           <p class="kpi-card__label">Avancement facturation</p>
@@ -65,10 +175,9 @@
         <div class="progress-bar__fill progress-bar__fill--slate" [style.width.%]="billingProgress()"></div>
       </div>
       <p class="kpi-card__sub">{{ statutConfig().label }}</p>
-    </div>
+    </daf-card>
 
-    <!-- Budget total -->
-    <div class="kpi-card card-3d">
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}" class="kpi-card">
       <div class="kpi-card__top">
         <div>
           <p class="kpi-card__label">Budget Total ({{ invoice()!.devise }})</p>
@@ -84,10 +193,9 @@
       <div class="progress-bar">
         <div class="progress-bar__fill progress-bar__fill--teal" style="width: 73%"></div>
       </div>
-    </div>
+    </daf-card>
 
-    <!-- Restant -->
-    <div class="kpi-card card-3d">
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}" class="kpi-card">
       <div class="kpi-card__top">
         <div>
           <p class="kpi-card__label">Restant à payer</p>
@@ -105,18 +213,17 @@
           Pas d'échéance définie
         }
       </div>
-    </div>
+    </daf-card>
 
   </div>
 
-  <!-- ── Body : 8 + 4 ──────────────────────────────────────────────────── -->
+  <!-- ── Body grid ─────────────────────────────────────────────────────── -->
   <div class="body-grid">
 
-    <!-- ══ LEFT : Lines + Info ══ -->
     <div class="body-main">
 
       <!-- Billing Lines table -->
-      <div class="table-card card-3d">
+      <daf-card [options]="{variant:'default', padding:'none', radius:'xl'}" class="table-card">
         <div class="table-card__header">
           <h3 class="table-card__title">Lignes de facturation</h3>
           <div class="table-card__tabs">
@@ -142,9 +249,7 @@
               @for (line of invoice()!.lines; track line.id ?? $index) {
                 <tr class="billing-row">
                   <td class="line-desc">{{ line.description }}</td>
-                  <td>
-                    <span class="status-chip status-chip--green">Actif</span>
-                  </td>
+                  <td><span class="status-chip status-chip--green">Actif</span></td>
                   <td class="num">{{ line.quantity }}</td>
                   <td class="num muted">{{ formatAmount(line.unitRate) }}</td>
                   <td class="num muted">{{ line.vatRatePct }}%</td>
@@ -171,10 +276,10 @@
             </tfoot>
           </table>
         </div>
-      </div>
+      </daf-card>
 
       <!-- Informations -->
-      <div class="info-card card-3d">
+      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="info-card">
         <h3 class="info-card__title">Informations</h3>
         <div class="info-grid">
           <div class="info-row">
@@ -218,176 +323,20 @@
             </div>
           }
         </div>
-      </div>
+      </daf-card>
 
     </div><!-- /body-main -->
 
-    <!-- ══ RIGHT : Actions + Reminders ══ -->
+    <!-- Reminders aside -->
     <div class="body-aside">
-
-      <!-- Actions card -->
-      <div class="actions-card card-3d">
-        <div class="actions-card__header">
-          <h3 class="actions-card__title">Actions disponibles</h3>
-          <p class="actions-card__sub">{{ statutConfig().label }}</p>
-        </div>
-
-        <!-- Radial progress ring -->
-        <div class="radial-wrap">
-          <svg class="radial-svg" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="50" class="radial-track"/>
-            <circle cx="60" cy="60" r="50" class="radial-fill"
-                    [style.stroke-dashoffset]="radialOffset()"/>
-          </svg>
-          <div class="radial-center">
-            <span class="radial-pct">{{ billingProgress() }}%</span>
-            <span class="radial-label">Avancement</span>
-          </div>
-        </div>
-
-        <!-- Action buttons -->
-        <div class="action-btns">
-
-          @switch (statut()) {
-            @case ('DRAFT') {
-              <button class="abtn abtn--primary" [disabled]="saving()" (click)="submitForReview()">
-                <span class="material-symbols-outlined">send</span>
-                Soumettre pour validation
-              </button>
-            }
-            @case ('SUBMITTED') {
-              @if (!showApprovalForm()) {
-                <button class="abtn abtn--primary" *appHasPermission="'FACT_APPROVE_INVOICE'" (click)="showApprovalForm.set(true)">
-                  <span class="material-symbols-outlined">how_to_reg</span>
-                  Approuver / Retourner
-                </button>
-              } @else {
-                <div class="inline-form">
-                  <label class="inline-form__label">Décision *</label>
-                  <div class="decision-btns">
-                    <button class="dec-btn" [class.dec-approve]="approvalDecision === 'APPROVE'" (click)="approvalDecision = 'APPROVE'">
-                      <span class="material-symbols-outlined">check</span> Approuver
-                    </button>
-                    <button class="dec-btn" [class.dec-return]="approvalDecision === 'RETURN'" (click)="approvalDecision = 'RETURN'">
-                      <span class="material-symbols-outlined">undo</span> Retourner
-                    </button>
-                    <button class="dec-btn" [class.dec-reject]="approvalDecision === 'REJECT'" (click)="approvalDecision = 'REJECT'">
-                      <span class="material-symbols-outlined">close</span> Rejeter
-                    </button>
-                  </div>
-                  @if (approvalDecision !== 'APPROVE') {
-                    <textarea [(ngModel)]="approvalComment" rows="2" maxlength="500"
-                              class="inline-textarea" placeholder="Motif…"></textarea>
-                  }
-                  <div class="inline-actions">
-                    <button class="btn-sm btn-sm--ghost" (click)="showApprovalForm.set(false)">Annuler</button>
-                    <button class="btn-sm btn-sm--primary" [disabled]="saving()" (click)="approve()">Confirmer</button>
-                  </div>
-                </div>
-              }
-            }
-            @case ('APPROVED') {
-              <button class="abtn abtn--primary" *appHasPermission="'FACT_EMIT_INVOICE'" [disabled]="saving()" (click)="emit()">
-                <span class="material-symbols-outlined">publish</span>
-                Émettre la facture
-              </button>
-            }
-            @case ('EMITTED') {
-              <button class="abtn abtn--slate" [disabled]="saving()" (click)="markSent()">
-                <span class="material-symbols-outlined">mark_email_read</span>
-                Marquer comme envoyée
-              </button>
-              <button class="abtn abtn--green" (click)="showPaymentModal.set(true)">
-                <span class="material-symbols-outlined">add_card</span>
-                Enregistrer un paiement
-              </button>
-            }
-            @case ('SENT') {
-              <button class="abtn abtn--green" (click)="showPaymentModal.set(true)">
-                <span class="material-symbols-outlined">add_card</span>
-                Enregistrer un paiement
-              </button>
-              @if (!showDisputeForm()) {
-                <button class="abtn abtn--warn" (click)="showDisputeForm.set(true)">
-                  <span class="material-symbols-outlined">gavel</span>
-                  Ouvrir un litige
-                </button>
-              }
-            }
-            @case ('PARTIALLY_PAID') {
-              <button class="abtn abtn--green" (click)="showPaymentModal.set(true)">
-                <span class="material-symbols-outlined">add_card</span>
-                Enregistrer un paiement
-              </button>
-              @if (!showDisputeForm()) {
-                <button class="abtn abtn--warn" (click)="showDisputeForm.set(true)">
-                  <span class="material-symbols-outlined">gavel</span>
-                  Ouvrir un litige
-                </button>
-              }
-              <button class="abtn abtn--purple" (click)="showCreditNote.set(true)">
-                <span class="material-symbols-outlined">receipt_long</span>
-                Émettre un avoir
-              </button>
-            }
-            @case ('PAID') {
-              <button class="abtn abtn--purple" (click)="showCreditNote.set(true)">
-                <span class="material-symbols-outlined">receipt_long</span>
-                Émettre un avoir
-              </button>
-            }
-            @case ('DISPUTED') {
-              @if (!showResolveForm()) {
-                <button class="abtn abtn--green" (click)="showResolveForm.set(true)">
-                  <span class="material-symbols-outlined">handshake</span>
-                  Résoudre le litige
-                </button>
-              }
-            }
-            @default {
-              <p class="no-actions">Aucune action disponible.</p>
-            }
-          }
-
-          <!-- Dispute form -->
-          @if (showDisputeForm()) {
-            <div class="inline-form">
-              <label class="inline-form__label">Motif du litige *</label>
-              <textarea [(ngModel)]="disputeReason" rows="3" maxlength="500"
-                        class="inline-textarea" placeholder="Décrivez le problème…"></textarea>
-              <div class="inline-actions">
-                <button class="btn-sm btn-sm--ghost" (click)="showDisputeForm.set(false)">Annuler</button>
-                <button class="btn-sm btn-sm--warn" [disabled]="saving() || !disputeReason.trim()" (click)="submitDispute()">Confirmer</button>
-              </div>
-            </div>
-          }
-
-          <!-- Resolve form -->
-          @if (showResolveForm()) {
-            <div class="inline-form">
-              <label class="inline-form__label">Notes de résolution</label>
-              <textarea [(ngModel)]="resolveNotes" rows="3" maxlength="500"
-                        class="inline-textarea" placeholder="Optionnel…"></textarea>
-              <div class="inline-actions">
-                <button class="btn-sm btn-sm--ghost" (click)="showResolveForm.set(false)">Annuler</button>
-                <button class="btn-sm btn-sm--primary" [disabled]="saving()" (click)="submitResolve()">Résoudre</button>
-              </div>
-            </div>
-          }
-
-        </div><!-- /action-btns -->
-      </div><!-- /actions-card -->
-
-      <!-- Reminders -->
       @if (invoice()!.statut !== 'DRAFT' && invoice()!.statut !== 'SUBMITTED') {
-        <div class="reminders-wrap card-3d">
+        <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="reminders-wrap">
           <app-reminders-panel
             [invoiceId]="invoice()!.id"
             [remindersActive]="invoice()!.remindersActive" />
-        </div>
+        </daf-card>
       }
-
-    </div><!-- /body-aside -->
+    </div>
 
   </div><!-- /body-grid -->
 
