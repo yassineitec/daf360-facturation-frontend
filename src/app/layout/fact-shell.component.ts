@@ -59,13 +59,6 @@ const APP_NAV_DEFS: AppNavDef[] = [
     route: 'admin',
     permission: null,
   },
-  // {
-  //   id: 'approval',
-  //   label: "File d'approbation",
-  //   icon: 'task_alt',
-  //   route: 'billing/approval',
-  //   permission: null,
-  // },
 ];
 @Component({
   selector: 'app-fact-shell',

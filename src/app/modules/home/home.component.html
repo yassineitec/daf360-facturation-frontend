@@ -15,76 +15,70 @@
   <!-- ── KPI Glass Cards ──────────────────────────────────────────────────── -->
   <div class="kpi-grid">
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <div class="kpi-card__top">
-        <span class="kpi-card__label">Encaissé ce mois</span>
-        <div class="kpi-card__icon" style="background:rgba(16,185,129,.1);color:#10b981">
-          <span class="material-symbols-outlined">check_circle</span>
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Encaissé ce mois</span>
+          <div class="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-sm text-primary">check_circle</span>
+          </div>
         </div>
-      </div>
-      <div>
-        @if (loadingStats()) {
-          <p class="kpi-card__value skeleton-val"></p>
-        } @else {
-          <p class="kpi-card__value">{{ fmt(stats()?.encaisseThisMoisMontant, stats()?.devise) }}</p>
-        }
-        <p class="kpi-card__sub kpi-card__sub--green">Ce mois</p>
+        <div>
+          @if (loadingStats()) { <div class="skeleton-val"></div> }
+          @else { <p class="text-[22px] font-black leading-tight text-on-surface">{{ fmt(stats()?.encaisseThisMoisMontant, stats()?.devise) }}</p> }
+          <p class="text-[10px] font-bold mt-1 text-primary">Ce mois</p>
+        </div>
       </div>
     </daf-card>
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <div class="kpi-card__top">
-        <span class="kpi-card__label">En attente de paiement</span>
-        <div class="kpi-card__icon" style="background:rgba(59,130,246,.1);color:#3b82f6">
-          <span class="material-symbols-outlined">schedule</span>
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">En attente de paiement</span>
+          <div class="w-8 h-8 bg-teal/10 rounded-lg flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-sm text-teal">schedule</span>
+          </div>
         </div>
-      </div>
-      <div>
-        @if (loadingStats()) {
-          <p class="kpi-card__value skeleton-val"></p>
-        } @else {
-          <p class="kpi-card__value">{{ fmt(stats()?.enAttenteMontant, stats()?.devise) }}</p>
-        }
-        <p class="kpi-card__sub">Solde en attente</p>
+        <div>
+          @if (loadingStats()) { <div class="skeleton-val"></div> }
+          @else { <p class="text-[22px] font-black leading-tight text-on-surface">{{ fmt(stats()?.enAttenteMontant, stats()?.devise) }}</p> }
+          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">Solde en attente</p>
+        </div>
       </div>
     </daf-card>
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <div class="kpi-card__top">
-        <span class="kpi-card__label">Factures en retard</span>
-        <div class="kpi-card__icon" style="background:rgba(186,26,26,.08);color:#BA1A1A">
-          <span class="material-symbols-outlined">warning</span>
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Factures en retard</span>
+          <div class="w-8 h-8 bg-danger/10 rounded-lg flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-sm text-danger">warning</span>
+          </div>
         </div>
-      </div>
-      <div>
-        @if (loadingStats()) {
-          <p class="kpi-card__value skeleton-val"></p>
-        } @else {
-          <p class="kpi-card__value kpi-card__value--red">{{ stats()?.enRetardCount ?? '—' }}</p>
-        }
-        <p class="kpi-card__sub kpi-card__sub--red">
-          @if ((stats()?.enRetardCount ?? 0) > 0) { {{ fmt(stats()?.enRetardMontant, stats()?.devise) }} }
-          @else { Aucun retard }
-        </p>
-      </div>
-    </daf-card>
-
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <div class="kpi-card__top">
-        <span class="kpi-card__label">Délai moyen de paiement</span>
-        <div class="kpi-card__icon" style="background:rgba(26,107,124,.1);color:#1a6b7c">
-          <span class="material-symbols-outlined">timer</span>
-        </div>
-      </div>
-      <div>
-        @if (loadingStats()) {
-          <p class="kpi-card__value skeleton-val"></p>
-        } @else {
-          <p class="kpi-card__value">
-            {{ stats()?.delaiMoyenPaiement != null ? stats()!.delaiMoyenPaiement.toFixed(0) + ' j' : '—' }}
+        <div>
+          @if (loadingStats()) { <div class="skeleton-val"></div> }
+          @else { <p class="text-[22px] font-black leading-tight text-danger">{{ stats()?.enRetardCount ?? '—' }}</p> }
+          <p class="text-[10px] font-bold mt-1 text-danger">
+            @if ((stats()?.enRetardCount ?? 0) > 0) { {{ fmt(stats()?.enRetardMontant, stats()?.devise) }} }
+            @else { Aucun retard }
           </p>
-        }
-        <p class="kpi-card__sub">Jours moyens</p>
+        </div>
+      </div>
+    </daf-card>
+
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Délai moyen de paiement</span>
+          <div class="w-8 h-8 bg-outline/10 rounded-lg flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-sm text-outline">timer</span>
+          </div>
+        </div>
+        <div>
+          @if (loadingStats()) { <div class="skeleton-val"></div> }
+          @else { <p class="text-[22px] font-black leading-tight text-on-surface">{{ stats()?.delaiMoyenPaiement != null ? stats()!.delaiMoyenPaiement.toFixed(0) + ' j' : '—' }}</p> }
+          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">Jours moyens</p>
+        </div>
       </div>
     </daf-card>
 
@@ -95,14 +89,13 @@
 
     @for (mod of visibleModules(); track mod.path) {
       <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true,clickable:true}"
-                class="mod-card"
                 [class.mod-card--wide]="mod.wide"
                 [class.mod-card--active]="mod.path === 'invoicing'"
                 (click)="navigateTo(mod.path)">
 
         @if (mod.wide) {
           <!-- Wide layout (Trésorerie) -->
-          <div class="mod-card__wide-inner">
+          <div class="mod-card__inner mod-card__wide-inner">
             <div [class]="'mod-card__icon mod-card__icon--lg icon--' + mod.iconVariant">
               <span class="material-symbols-outlined">{{ mod.icon }}</span>
             </div>
@@ -117,20 +110,22 @@
           </div>
         } @else {
           <!-- Standard layout -->
-          <div [class]="'mod-card__icon icon--' + mod.iconVariant">
-            <span class="material-symbols-outlined">{{ mod.icon }}</span>
-          </div>
-          <h4 class="mod-card__title">{{ mod.label }}</h4>
-          <p class="mod-card__desc">{{ mod.description }}</p>
-          <div class="mod-card__footer">
-            @if (mod.path === 'invoicing') {
-              <span class="mod-card__badge badge--active">Page active</span>
-            } @else if (mod.stat) {
-              <span class="mod-card__stat" [class]="mod.statClass">{{ mod.stat }}</span>
-            } @else {
-              <span></span>
-            }
-            <span class="material-symbols-outlined mod-card__arrow">arrow_forward</span>
+          <div class="mod-card__inner">
+            <div [class]="'mod-card__icon icon--' + mod.iconVariant">
+              <span class="material-symbols-outlined">{{ mod.icon }}</span>
+            </div>
+            <h4 class="mod-card__title">{{ mod.label }}</h4>
+            <p class="mod-card__desc">{{ mod.description }}</p>
+            <div class="mod-card__footer">
+              @if (mod.path === 'invoicing') {
+                <span class="mod-card__badge badge--active">Page active</span>
+              } @else if (mod.stat) {
+                <span class="mod-card__stat" [class]="mod.statClass">{{ mod.stat }}</span>
+              } @else {
+                <span></span>
+              }
+              <span class="material-symbols-outlined mod-card__arrow">arrow_forward</span>
+            </div>
           </div>
         }
 

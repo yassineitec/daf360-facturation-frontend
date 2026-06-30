@@ -26,93 +26,20 @@ $border:       #e5e7eb;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  border-radius: 1rem;
 }
 
-// ── Header — fond gris clair comme le HTML de référence ───────────────────────
+// ── Header ────────────────────────────────────────────────────────────────────
 
 .tc-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
+  padding: 12px 20px;
   border-bottom: 1px solid $border;
-  background: $surface-low;   // #f9fafb — fond gris clair
-}
-
-.tc-title {
-  font-size: 0.6875rem;     // 11px
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: $text-muted;
-  margin: 0;
-}
-
-.tc-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-// ── View toggle ──────────────────────────────────────────────────────────────
-
-.view-toggle {
-  display: flex;
-  background: $surface-mid;
-  border-radius: 8px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.vt-btn {
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  color: $text-light;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: inherit;
-  transition: background 0.12s, color 0.12s;
-
-  .material-symbols-outlined { font-size: 17px; }
-
-  &--active {
-    background: $surface;
-    color: $primary;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  }
-
-  &:not(.vt-btn--active):hover { background: $surface-high; }
-}
-
-.tc-sep {
-  width: 1px;
-  height: 18px;
-  background: $border;
-  flex-shrink: 0;
-  margin: 0 2px;
-}
-
-.icon-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  color: $text-muted;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.12s, color 0.12s;
-
-  .material-symbols-outlined { font-size: 18px; }
-
-  &:hover { background: $surface-mid; color: $text-dark; }
+  background: $surface-low;
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
@@ -385,19 +312,21 @@ $brand-green: #006b58;
 // ── Approval-style card ───────────────────────────────────────────────────────
 .aff-card {
   position: relative;
+  overflow: hidden;
   padding: 28px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  height: 100%;
 
   &:hover {
     .aff-card__cta { opacity: 1; }
   }
 
-  // Badge statut flottant au-dessus de la card
+  // Badge statut — inside the card, top-right
   &__badge {
     position: absolute;
-    top: -13px; left: 28px;
+    top: 14px; right: 14px;
     padding: 4px 12px;
     border-radius: 8px;
     font-size: 10px; font-weight: 900;
@@ -405,13 +334,13 @@ $brand-green: #006b58;
     color: #fff;
   }
 
-  // Header
+  // Header — top padding absorbs the badge area (top-right absolute)
   &__header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 22px;
-    margin-top: 8px;
+    margin-top: 24px;
   }
 
   &__id-block {

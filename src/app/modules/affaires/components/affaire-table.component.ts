@@ -1,13 +1,11 @@
 import { Component, computed, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { UpperCasePipe } from '@angular/common';
 import { AffaireListItem, STATUT_LABELS, TYPE_LABELS } from '../affaire.model';
-import { StatusBadgeComponent } from '../../../shared/status-badge.component';
 import { CardComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-affaire-table',
-  imports: [FormsModule, UpperCasePipe, StatusBadgeComponent, CardComponent],
+  imports: [FormsModule, CardComponent],
   templateUrl: './affaire-table.component.html',
   styleUrl: './affaire-table.component.scss',
 })
@@ -33,7 +31,7 @@ export class AffaireTableComponent {
   readonly statutOptions = Object.entries(STATUT_LABELS).map(([k, v]) => ({ value: k, label: v }));
   readonly typeOptions   = Object.entries(TYPE_LABELS).map(([k, v])   => ({ value: k, label: v }));
 
-  readonly viewMode = signal<'table' | 'card'>('card');
+  readonly viewMode = signal<'grid' | 'list'>('grid');
 
   readonly statsEnCours  = computed(() => this.affaires().filter(a => a.statut === 'EN_COURS').length);
   readonly statsSuspendu = computed(() => this.affaires().filter(a => a.statut === 'SUSPENDUE').length);

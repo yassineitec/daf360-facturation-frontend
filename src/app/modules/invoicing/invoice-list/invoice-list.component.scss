@@ -60,63 +60,6 @@ $teal-bg:     rgba(#79d7be, 0.15);
   @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
 }
 
-.kpi-card {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 96px;
-
-  &__label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: $muted;
-  }
-
-  &__row {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  &__value {
-    font-size: 22px;
-    font-weight: 900;
-    line-height: 1;
-    color: $on-surface;
-    white-space: nowrap;
-
-    &--pending { color: $warning;  }
-    &--danger  { color: $danger;   }
-    &--warning { color: #3e4945;   }
-  }
-}
-
-.kpi-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  &--success { background: $success-bg; color: $success-on; }
-  &--danger  { background: $danger-bg;  color: $danger-on;  }
-  &--warning { background: $warning-bg; color: $warning;    }
-}
-
-.kpi-icon {
-  font-size: 28px;
-  opacity: 0.35;
-  flex-shrink: 0;
-  font-variation-settings: 'FILL' 0;
-
-  &--pending { color: $warning; }
-  &--warning { color: $muted;   }
-}
 
 // ── Search & Filter bar ───────────────────────────────────────────────────────
 .search-bar-row {

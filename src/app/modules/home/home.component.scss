@@ -64,62 +64,6 @@
   @media (max-width: 640px)  { grid-template-columns: 1fr; }
 }
 
-.kpi-card {
-  padding: 24px 28px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 148px;
-
-  &__top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  &__label {
-    font-size: 11px;
-    font-weight: 800;
-    color: $text-muted;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    line-height: 1.4;
-    max-width: 150px;
-  }
-
-  &__icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-
-    .material-symbols-outlined { font-size: 24px; }
-  }
-
-  &__value {
-    font-size: 2rem;
-    font-weight: 900;
-    color: $text-dark;
-    margin: 0;
-    line-height: 1;
-
-    &--red { color: #BA1A1A; }
-  }
-
-  &__sub {
-    font-size: 11px;
-    font-weight: 700;
-    color: $text-muted;
-    margin: 4px 0 0;
-
-    &--green { color: #10b981; }
-    &--red   { color: #BA1A1A; }
-  }
-}
 
 .skeleton-val {
   height: 28px;
@@ -145,11 +89,6 @@
 }
 
 .mod-card {
-  padding: 24px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-
   &--wide {
     grid-column: span 2;
     @media (max-width: 480px) { grid-column: span 1; }
@@ -159,7 +98,20 @@
     border: 1.5px solid rgba($brand-green, 0.3) !important;
     background: rgba(255,255,255,0.95) !important;
   }
+}
 
+.mod-card__inner {
+  padding: 24px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  // hover arrow — scope via inner div
+  &:hover .mod-card__arrow { transform: translateX(3px); }
+}
+
+.mod-card {
   &__icon {
     width: 48px;
     height: 48px;
@@ -223,8 +175,6 @@
     color: $text-light;
     transition: transform 0.2s;
   }
-
-  &:hover &__arrow { transform: translateX(3px); }
 
   // Wide inner layout
   &__wide-inner {

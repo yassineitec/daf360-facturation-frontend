@@ -14,37 +14,67 @@
   <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
   <section class="kpi-grid">
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <span class="kpi-card__label">Total Facturé</span>
-      <div class="kpi-card__row">
-        <span class="kpi-card__value">{{ formatAmount(amountTotal()) }}</span>
-        <span class="kpi-badge kpi-badge--success">{{ totalElements() }} fact.</span>
+    <!-- Total Facturé -->
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Total Facturé</span>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+            <span class="material-symbols-outlined text-sm text-primary">receipt_long</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountTotal()) }}</p>
+          <p class="text-[10px] font-bold mt-1 text-primary">{{ totalElements() }} factures</p>
+        </div>
       </div>
     </daf-card>
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <span class="kpi-card__label">En attente</span>
-      <div class="kpi-card__row">
-        <span class="kpi-card__value kpi-card__value--pending">{{ formatAmount(amountEnAttente()) }}</span>
-        <span class="material-symbols-outlined kpi-icon kpi-icon--pending">schedule</span>
+    <!-- En attente -->
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">En attente</span>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-teal/10">
+            <span class="material-symbols-outlined text-sm text-teal">schedule</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountEnAttente()) }}</p>
+          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnAttente() }} en attente</p>
+        </div>
       </div>
     </daf-card>
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <span class="kpi-card__label">En retard</span>
-      <div class="kpi-card__row">
-        <span class="kpi-card__value kpi-card__value--danger">{{ formatAmount(amountEnRetard()) }}</span>
-        @if (statsEnRetard() > 0) {
-          <span class="kpi-badge kpi-badge--danger">{{ statsEnRetard() }} factures</span>
-        }
+    <!-- En retard -->
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">En retard</span>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-danger/10">
+            <span class="material-symbols-outlined text-sm text-danger">warning</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[22px] font-black leading-tight text-danger">{{ formatAmount(amountEnRetard()) }}</p>
+          <p class="text-[10px] font-bold mt-1 text-danger">{{ statsEnRetard() }} en retard</p>
+        </div>
       </div>
     </daf-card>
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <span class="kpi-card__label">Litiges</span>
-      <div class="kpi-card__row">
-        <span class="kpi-card__value kpi-card__value--warning">{{ formatAmount(amountEnLitige()) }}</span>
-        <span class="material-symbols-outlined kpi-icon kpi-icon--warning">gavel</span>
+    <!-- Litiges -->
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Litiges</span>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-outline/10">
+            <span class="material-symbols-outlined text-sm text-outline">gavel</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountEnLitige()) }}</p>
+          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnLitige() }} en litige</p>
+        </div>
       </div>
     </daf-card>
 

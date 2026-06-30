@@ -1,7 +1,16 @@
 @import "tailwindcss";
+@import '../node_modules/@khalilrebhiitec/daf360/styles.css';
 @source "./app/**/*.html";
 @source "./app/**/*.ts";
 @source "../node_modules/@khalilrebhiitec/daf360/fesm2022/khalilrebhiitec-daf360.mjs";
+
+@source inline("{grid-cols-1,grid-cols-2,grid-cols-3,grid-cols-4,grid-cols-5,grid-cols-6,grid-cols-7,grid-cols-8,grid-cols-9,grid-cols-10,grid-cols-11,grid-cols-12}");
+@source inline("{col-span-1,col-span-2,col-span-3,col-span-4,col-span-5,col-span-6,col-span-7,col-span-8,col-span-9,col-span-10,col-span-11,col-span-12}");
+@source inline("{text-primary,text-secondary,text-teal,text-on-surface,text-on-surface-variant,text-outline,text-error,text-danger,text-success}");
+@source inline("{bg-primary,bg-secondary,bg-teal,bg-surface,bg-surface-container,bg-surface-container-lowest,bg-surface-container-high,bg-background,bg-error,bg-danger}");
+@source inline("{bg-primary/10,bg-secondary/10,bg-teal/10,bg-danger/10,bg-outline/10,bg-error/10,bg-warning/10}");
+@source inline("{text-warning,text-secondary}");
+@source inline("{border-primary,border-secondary,border-outline,border-outline-variant,border-error}");
 
 /* ── DAF360 design tokens (Material You — matches reference design) ─────── */
 @theme {
@@ -24,6 +33,10 @@
   /* Brand accents */
   --color-brand-teal:           #79D7BE;
   --color-brand-slate:          #50717B;
+  --color-teal:                 #79D7BE;
+  --color-danger:               #ba1a1a;
+  --color-warning:              #d97706;
+  --color-secondary:            #006c49;
 
   /* Tertiary */
   --color-tertiary:             #4c2e00;
