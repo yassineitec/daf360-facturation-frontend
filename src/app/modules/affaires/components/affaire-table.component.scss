@@ -227,6 +227,50 @@ table {
 
 .raf-val { font-size: 0.875rem; font-weight: 600; }
 
+// ── Statut badges (colors from reference HTML) ────────────────────────────────
+
+.statut-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+
+  // EN_COURS — bg-secondary-container/20 text-on-secondary-container border-secondary/20
+  &--en-cours {
+    background: rgba(108, 248, 187, 0.20);
+    color: #00714d;
+    border-color: rgba(0, 108, 73, 0.20);
+  }
+  // SUSPENDUE — bg-surface-container-high text-on-surface-variant border-outline/20
+  &--suspendue {
+    background: #e7e8ea;
+    color: #444653;
+    border-color: rgba(117, 118, 132, 0.20);
+  }
+  // CLOTUREE — bg-outline-variant/20 text-outline border-outline/10
+  &--cloturee {
+    background: rgba(196, 197, 213, 0.20);
+    color: #757684;
+    border-color: rgba(117, 118, 132, 0.10);
+  }
+  // ARCHIVEE — neutral gray
+  &--archivee {
+    background: rgba(196, 197, 213, 0.20);
+    color: #9ca3af;
+    border-color: transparent;
+  }
+  // DRAFT / autres — surface-container
+  &--draft {
+    background: #edeef0;
+    color: #444653;
+    border-color: transparent;
+  }
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;

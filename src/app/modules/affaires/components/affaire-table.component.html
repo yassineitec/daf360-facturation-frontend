@@ -28,12 +28,12 @@
       <!-- View toggle — RH profiles style -->
       <div class="flex border border-outline-variant rounded-lg overflow-hidden shrink-0">
         <button type="button" class="p-2 transition-colors" title="Vue grille"
-                [class]="viewMode() === 'grid' ? 'bg-secondary text-white' : 'hover:bg-surface-container text-outline'"
+                [class]="viewMode() === 'grid' ? 'bg-secondary/10 text-secondary' : 'hover:bg-surface-container text-outline'"
                 (click)="viewMode.set('grid')">
           <span class="material-symbols-outlined text-[20px]">grid_view</span>
         </button>
         <button type="button" class="p-2 transition-colors" title="Vue tableau"
-                [class]="viewMode() === 'list' ? 'bg-secondary text-white' : 'hover:bg-surface-container text-outline'"
+                [class]="viewMode() === 'list' ? 'bg-secondary/10 text-secondary' : 'hover:bg-surface-container text-outline'"
                 (click)="viewMode.set('list')">
           <span class="material-symbols-outlined text-[20px]">table_rows</span>
         </button>
@@ -210,9 +210,17 @@
                 </td>
 
                 <td>
-                  <daf-badge
-                    [label]="statutBadgeCfg(a.statut).label"
-                    [options]="{ variant: statutBadgeVariant(a.statut), pill: true, size: 'sm' }" />
+                  @if (a.statut === 'EN_COURS') {
+                    <span class="statut-badge statut-badge--en-cours">En cours</span>
+                  } @else if (a.statut === 'SUSPENDUE') {
+                    <span class="statut-badge statut-badge--suspendue">Suspendue</span>
+                  } @else if (a.statut === 'CLOTUREE') {
+                    <span class="statut-badge statut-badge--cloturee">Clôturée</span>
+                  } @else if (a.statut === 'ARCHIVEE') {
+                    <span class="statut-badge statut-badge--archivee">Archivée</span>
+                  } @else {
+                    <span class="statut-badge statut-badge--draft">{{ a.statut }}</span>
+                  }
                 </td>
 
                 <td class="act">
