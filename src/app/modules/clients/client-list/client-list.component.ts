@@ -7,12 +7,12 @@ import { ClientService } from '../client.service';
 import { ClientListItemDto, ClientFilter } from '../client.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { PaysRefDto } from '../../affaires/affaire.model';
-import { CardComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
+import { CardComponent, PaginationComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-client-list',
   imports: [FormsModule, DecimalPipe, PermissionDirective,
-            CardComponent, PaginationComponent],
+            CardComponent, PaginationComponent, ButtonComponent],
   templateUrl: './client-list.component.html',
   styleUrl: './client-list.component.scss',
 })

@@ -1,4 +1,4 @@
-.reminders-panel { display: flex; flex-direction: column; gap: 10px; }
+.reminders-panel { display: flex; flex-direction: column; gap: 12px; padding: 20px 22px; }
 .panel-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .panel-title { font-weight: 700; font-size: 0.875rem; color: #0f3d47; }
 .panel-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
@@ -10,8 +10,8 @@
   &--ok   { color: #1a6b7c; }
 }
 .loading-text { font-size: 0.8125rem; color: #94a3b8; }
-.reminders-list { display: flex; flex-direction: column; gap: 4px; }
-.reminder-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; background: #f8fafc; border: 1px solid #f1f5f9;
+.reminders-list { display: flex; flex-direction: column; gap: 6px; }
+.reminder-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; background: #f8fafc; border: 1px solid #f1f5f9;
   &.sent      { opacity: 0.7; }
   &.suspended { opacity: 0.55; text-decoration: line-through; }
 }

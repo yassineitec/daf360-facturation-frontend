@@ -19,8 +19,8 @@ $bg:     $bg-page;
 .detail-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px 28px 40px;
+  gap: 24px;
+  padding: 32px 40px 56px;
   background: $bg;
   min-height: 100%;
 }
@@ -147,11 +147,11 @@ $bg:     $bg-page;
 .kpi-card {
   @include card-shell;
   padding: 22px 24px;
-  transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s cubic-bezier(.4,0,.2,1);
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s cubic-bezier(.4,0,.2,1);
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,.10), 0 10px 10px -5px rgba(0,0,0,.04);
+    transform: scale(1.02) translateY(-4px);
+    box-shadow: 0 20px 30px -8px rgba(0,0,0,.14), 0 10px 12px -5px rgba(0,0,0,.06);
   }
 
   &__top {
@@ -410,6 +410,11 @@ $bg:     $bg-page;
 .info-card {
   @include card-shell;
   padding: 20px 22px;
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s cubic-bezier(.4,0,.2,1);
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -6px rgba(0,0,0,.12);
+  }
 
   &__title {
     font-size: 0.9375rem;
@@ -468,6 +473,11 @@ $bg:     $bg-page;
 .reminders-wrap {
   @include card-shell;
   overflow: hidden;
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s cubic-bezier(.4,0,.2,1);
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -6px rgba(0,0,0,.12);
+  }
 }
 
 // ── Inline forms (approval / dispute / resolve inside stepper) ────────────────

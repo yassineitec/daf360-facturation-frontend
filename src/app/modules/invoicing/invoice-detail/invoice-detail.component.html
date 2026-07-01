@@ -219,13 +219,11 @@
       </div>
 
       <!-- Reminders -->
-      @if (invoice()!.statut !== 'DRAFT' && invoice()!.statut !== 'SUBMITTED') {
-        <div class="reminders-wrap">
-          <app-reminders-panel
-            [invoiceId]="invoice()!.id"
-            [remindersActive]="invoice()!.remindersActive" />
-        </div>
-      }
+      <div class="reminders-wrap">
+        <app-reminders-panel
+          [invoiceId]="invoice()!.id"
+          [remindersActive]="invoice()!.remindersActive" />
+      </div>
 
     </div><!-- /body-aside -->
 
