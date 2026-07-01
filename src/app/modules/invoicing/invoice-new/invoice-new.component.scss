@@ -111,6 +111,22 @@ $outline-var: #bdc9c4;        // outline-variant
   z-index: 10;
 }
 
+// ── Step enter animation ───────────────────────────────────────────────────────
+@keyframes stepEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-enter {
+  animation: stepEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 // ── Step heading ──────────────────────────────────────────────────────────────
 .step-heading {
   margin-bottom: 32px;

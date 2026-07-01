@@ -12,7 +12,7 @@
 
 <div class="detail-page">
 
-  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <!-- ── Header ────────────────────────────────────────────────────────────── -->
   <app-page-header
     [title]="invoice()!.invoiceNumber ?? 'Brouillon'"
     [subtitle]="invoice()!.clientNom + (invoice()!.affaireRef ? ' · ' + invoice()!.affaireRef : '')"
@@ -42,168 +42,56 @@
     </div>
   }
 
-  <!-- ── Lifecycle stepper ─────────────────────────────────────────────── -->
-  <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="lifecycle-card">
-    <daf-stepper
-      [steps]="lifecycleSteps"
-      [currentStep]="detailStep()"
-      [stepValid]="lifecycleStepValid()"
-      [config]="lifecycleConfig()"
-      (nextClick)="onStepperNext()"
-      (prevClick)="onStepperPrev()"
-      (finishClick)="onStepperFinish()">
 
-      <div class="step-body">
-        @switch (statut()) {
-
-          @case ('SUBMITTED') {
-            <div class="decision-form">
-              <p class="decision-hint">Sélectionnez votre décision :</p>
-              <div class="decision-btns">
-                <button class="dec-btn" [class.dec-approve]="approvalDecision === 'APPROVE'"
-                        (click)="approvalDecision = 'APPROVE'">
-                  <span class="material-symbols-outlined">check</span> Approuver
-                </button>
-                <button class="dec-btn" [class.dec-return]="approvalDecision === 'RETURN'"
-                        (click)="approvalDecision = 'RETURN'">
-                  <span class="material-symbols-outlined">undo</span> Retourner
-                </button>
-                <button class="dec-btn" [class.dec-reject]="approvalDecision === 'REJECT'"
-                        (click)="approvalDecision = 'REJECT'">
-                  <span class="material-symbols-outlined">close</span> Rejeter
-                </button>
-              </div>
-              @if (approvalDecision !== 'APPROVE') {
-                <textarea [(ngModel)]="approvalComment" rows="2" maxlength="500"
-                          class="inline-textarea" placeholder="Motif (requis pour Retourner / Rejeter)…"></textarea>
-              }
-            </div>
-          }
-
-          @case ('SENT') {
-            <div class="step-secondary">
-              @if (!showDisputeForm()) {
-                <daf-button
-                  [options]="{variant:'ghost', label:'Ouvrir un litige', iconStart:'gavel'}"
-                  (onClick)="showDisputeForm.set(true)" />
-              } @else {
-                <div class="inline-form">
-                  <label class="inline-form__label">Motif du litige *</label>
-                  <textarea [(ngModel)]="disputeReason" rows="2" maxlength="500"
-                            class="inline-textarea" placeholder="Décrivez le problème…"></textarea>
-                  <div class="inline-actions">
-                    <button class="btn-sm btn-sm--ghost" (click)="showDisputeForm.set(false)">Annuler</button>
-                    <button class="btn-sm btn-sm--warn"
-                            [disabled]="saving() || !disputeReason.trim()"
-                            (click)="submitDispute()">Confirmer</button>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-
-          @case ('PARTIALLY_PAID') {
-            <div class="step-secondary">
-              @if (!showDisputeForm()) {
-                <daf-button
-                  [options]="{variant:'ghost', label:'Ouvrir un litige', iconStart:'gavel'}"
-                  (onClick)="showDisputeForm.set(true)" />
-              } @else {
-                <div class="inline-form">
-                  <label class="inline-form__label">Motif du litige *</label>
-                  <textarea [(ngModel)]="disputeReason" rows="2" maxlength="500"
-                            class="inline-textarea" placeholder="Décrivez le problème…"></textarea>
-                  <div class="inline-actions">
-                    <button class="btn-sm btn-sm--ghost" (click)="showDisputeForm.set(false)">Annuler</button>
-                    <button class="btn-sm btn-sm--warn"
-                            [disabled]="saving() || !disputeReason.trim()"
-                            (click)="submitDispute()">Confirmer</button>
-                  </div>
-                </div>
-              }
-              <daf-button
-                [options]="{variant:'ghost', label:'Émettre un avoir', iconStart:'receipt_long'}"
-                (onClick)="showCreditNote.set(true)" />
-            </div>
-          }
-
-          @case ('DISPUTED') {
-            <div class="step-secondary">
-              @if (showResolveForm()) {
-                <div class="inline-form">
-                  <label class="inline-form__label">Notes de résolution</label>
-                  <textarea [(ngModel)]="resolveNotes" rows="2" maxlength="500"
-                            class="inline-textarea" placeholder="Optionnel…"></textarea>
-                  <div class="inline-actions">
-                    <button class="btn-sm btn-sm--ghost" (click)="showResolveForm.set(false)">Annuler</button>
-                    <button class="btn-sm btn-sm--primary" [disabled]="saving()" (click)="submitResolve()">Résoudre</button>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-
-          @case ('PAID') {
-            <div class="step-secondary">
-              <daf-button
-                [options]="{variant:'ghost', label:'Émettre un avoir', iconStart:'receipt_long'}"
-                (onClick)="showCreditNote.set(true)" />
-            </div>
-          }
-
-          @default { <div class="step-secondary"></div> }
-        }
-      </div>
-
-    </daf-stepper>
-  </daf-card>
-
-  <!-- ── KPI Grid ──────────────────────────────────────────────────────── -->
+  <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
   <div class="kpi-grid">
 
-    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}" class="kpi-card">
+    <!-- Avancement facturation -->
+    <div class="kpi-card">
       <div class="kpi-card__top">
         <div>
           <p class="kpi-card__label">Avancement facturation</p>
           <h3 class="kpi-card__value">{{ billingProgress() }}%</h3>
         </div>
-        <div class="kpi-card__icon kpi-card__icon--slate">
+        <span class="kpi-card__icon">
           <span class="material-symbols-outlined">trending_up</span>
-        </div>
+        </span>
       </div>
       <div class="progress-bar">
         <div class="progress-bar__fill progress-bar__fill--slate" [style.width.%]="billingProgress()"></div>
       </div>
       <p class="kpi-card__sub">{{ statutConfig().label }}</p>
-    </daf-card>
+    </div>
 
-    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}" class="kpi-card">
+    <!-- Budget Total -->
+    <div class="kpi-card">
       <div class="kpi-card__top">
         <div>
           <p class="kpi-card__label">Budget Total ({{ invoice()!.devise }})</p>
           <h3 class="kpi-card__value">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</h3>
         </div>
-        <div class="kpi-card__icon kpi-card__icon--teal">
+        <span class="kpi-card__icon kpi-card__icon--teal">
           <span class="material-symbols-outlined">account_balance_wallet</span>
-        </div>
+        </span>
       </div>
       <div class="kpi-card__row">
-        <span class="kpi-card__sub">Montant HT</span>
+        <span class="kpi-card__sub">HT : {{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</span>
       </div>
-      <div class="progress-bar">
-        <div class="progress-bar__fill progress-bar__fill--teal" style="width: 73%"></div>
+      <div class="progress-bar" style="margin-top:10px">
+        <div class="progress-bar__fill progress-bar__fill--teal" style="width:73%"></div>
       </div>
-    </daf-card>
+    </div>
 
-    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}" class="kpi-card">
+    <!-- Restant à payer -->
+    <div class="kpi-card">
       <div class="kpi-card__top">
         <div>
           <p class="kpi-card__label">Restant à payer</p>
           <h3 class="kpi-card__value">{{ formatAmount(montantRestant(), invoice()!.devise) }}</h3>
         </div>
-        <div class="kpi-card__icon kpi-card__icon--green">
+        <span class="kpi-card__icon kpi-card__icon--green">
           <span class="material-symbols-outlined">payments</span>
-        </div>
+        </span>
       </div>
       <div class="kpi-card__due">
         <span class="material-symbols-outlined">schedule</span>
@@ -213,17 +101,17 @@
           Pas d'échéance définie
         }
       </div>
-    </daf-card>
+    </div>
 
   </div>
 
-  <!-- ── Body grid ─────────────────────────────────────────────────────── -->
+  <!-- ── Body grid ──────────────────────────────────────────────────────────── -->
   <div class="body-grid">
 
     <div class="body-main">
 
       <!-- Billing Lines table -->
-      <daf-card [options]="{variant:'default', padding:'none', radius:'xl'}" class="table-card">
+      <div class="table-card">
         <div class="table-card__header">
           <h3 class="table-card__title">Lignes de facturation</h3>
           <div class="table-card__tabs">
@@ -276,10 +164,15 @@
             </tfoot>
           </table>
         </div>
-      </daf-card>
+      </div>
+
+    </div><!-- /body-main -->
+
+    <!-- Aside: Informations + Reminders -->
+    <div class="body-aside">
 
       <!-- Informations -->
-      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="info-card">
+      <div class="info-card">
         <h3 class="info-card__title">Informations</h3>
         <div class="info-grid">
           <div class="info-row">
@@ -317,33 +210,31 @@
             </div>
           }
           @if (invoice()!.notes) {
-            <div class="info-row info-row--full">
+            <div class="info-row info-row--col">
               <span class="info-label">Notes</span>
-              <span class="info-val">{{ invoice()!.notes }}</span>
+              <span class="info-val info-val--notes">{{ invoice()!.notes }}</span>
             </div>
           }
         </div>
-      </daf-card>
+      </div>
 
-    </div><!-- /body-main -->
-
-    <!-- Reminders aside -->
-    <div class="body-aside">
+      <!-- Reminders -->
       @if (invoice()!.statut !== 'DRAFT' && invoice()!.statut !== 'SUBMITTED') {
-        <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="reminders-wrap">
+        <div class="reminders-wrap">
           <app-reminders-panel
             [invoiceId]="invoice()!.id"
             [remindersActive]="invoice()!.remindersActive" />
-        </daf-card>
+        </div>
       }
-    </div>
+
+    </div><!-- /body-aside -->
 
   </div><!-- /body-grid -->
 
 </div><!-- /detail-page -->
 }
 
-<!-- ── Modals ──────────────────────────────────────────────────────────── -->
+<!-- ── Modals ──────────────────────────────────────────────────────────────── -->
 @if (showPaymentModal() && invoice()) {
   <app-payment-modal [invoice]="invoice()!" (closed)="onPaymentClosed($event)" />
 }

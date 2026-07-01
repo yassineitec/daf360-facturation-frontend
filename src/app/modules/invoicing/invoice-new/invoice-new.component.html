@@ -34,27 +34,35 @@
 
         <!-- Step content -->
         @if (step() === 1) {
-          <app-step-affaire (nextStep)="onAffaireDone($event)" (cancel)="cancel()" />
+          <div class="step-enter">
+            <app-step-affaire (nextStep)="onAffaireDone($event)" (cancel)="cancel()" />
+          </div>
         }
         @if (step() === 2 && affaireValue()) {
-          <app-step-lines
-            [affaireData]="affaireValue()!"
-            (prevStep)="step.set(1)"
-            (nextStep)="onLinesDone($event)" />
+          <div class="step-enter">
+            <app-step-lines
+              [affaireData]="affaireValue()!"
+              (prevStep)="step.set(1)"
+              (nextStep)="onLinesDone($event)" />
+          </div>
         }
         @if (step() === 3 && affaireValue() && linesValue()) {
-          <app-step-conditions
-            [affaireData]="affaireValue()!"
-            [linesData]="linesValue()!"
-            (prevStep)="step.set(2)"
-            (nextStep)="onConditionsDone($event)" />
+          <div class="step-enter">
+            <app-step-conditions
+              [affaireData]="affaireValue()!"
+              [linesData]="linesValue()!"
+              (prevStep)="step.set(2)"
+              (nextStep)="onConditionsDone($event)" />
+          </div>
         }
         @if (step() === 4 && affaireValue() && linesValue() && conditionsValue()) {
-          <app-step-recap
-            [affaireData]="affaireValue()!"
-            [linesData]="linesValue()!"
-            [conditionsData]="conditionsValue()!"
-            (prevStep)="step.set(3)" />
+          <div class="step-enter">
+            <app-step-recap
+              [affaireData]="affaireValue()!"
+              [linesData]="linesValue()!"
+              [conditionsData]="conditionsValue()!"
+              (prevStep)="step.set(3)" />
+          </div>
         }
 
       </div>

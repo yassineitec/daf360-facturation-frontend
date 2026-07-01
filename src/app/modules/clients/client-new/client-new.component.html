@@ -1,0 +1,24 @@
+<div class="client-new-page">
+
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <button class="btn-back" (click)="goBack()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div>
+        <h2 class="page-title">Nouveau Client</h2>
+        <p class="page-subtitle">Remplissez les informations pour créer un nouveau client</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Form ─────────────────────────────────────────────────────────────── -->
+  <div class="form-card">
+    <app-client-form
+      [paysId]="paysId()"
+      (saved)="onSaved($event)"
+      (closed)="goBack()" />
+  </div>
+
+</div>

@@ -4,13 +4,7 @@
   gap: 18px;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(26, 107, 124, 0.12);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(15, 61, 71, 0.06);
-}
+// glass effect now provided by daf-card variant:'glass'
 
 // ── Back + States ──────────────────────────────────────────────────────────────
 
@@ -75,7 +69,10 @@
 
 // ── Page header ───────────────────────────────────────────────────────────────
 
-.page-header {
+// daf-card host — no layout needed here
+.page-header { display: block; }
+
+.header-inner {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -183,15 +180,14 @@
   @media (max-width: 480px)  { grid-template-columns: 1fr; }
 }
 
-.kpi-card {
+// daf-card host
+.kpi-card { display: block; }
+
+.kpi-inner {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(26, 107, 124, 0.1);
-  border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(15, 61, 71, 0.05);
 }
 
 .kpi-label {

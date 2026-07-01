@@ -1,57 +1,76 @@
 <div class="clients-page">
 
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h2 class="page-title">Gestion des Clients</h2>
+    </div>
+    <button class="btn-new" (click)="goToNewClient()">
+      <span class="material-symbols-outlined">add</span>
+      Nouveau Client
+    </button>
+  </div>
+
   <!-- ── KPI Cards ─────────────────────────────────────────────────────────── -->
   <section class="kpi-grid">
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <div class="kpi-card__top">
-        <span class="kpi-card__label">Total Clients</span>
-        <div class="kpi-card__icon kpi-icon--primary">
-          <span class="material-symbols-outlined">group</span>
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Total Clients</span>
+          <div class="kpi-card__icon kpi-icon--primary">
+            <span class="material-symbols-outlined">group</span>
+          </div>
         </div>
-      </div>
-      <div class="kpi-card__bottom">
-        <span class="kpi-card__value">{{ statsTotal() | number }}</span>
-        <span class="kpi-card__trend kpi-trend--up">Tous pays</span>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value">{{ statsTotal() | number }}</span>
+          <span class="kpi-card__trend kpi-trend--up">Tous pays</span>
+        </div>
       </div>
     </daf-card>
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <div class="kpi-card__top">
-        <span class="kpi-card__label">KYC Validé</span>
-        <div class="kpi-card__icon kpi-icon--secondary">
-          <span class="material-symbols-outlined">verified</span>
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">KYC Validé</span>
+          <div class="kpi-card__icon kpi-icon--secondary">
+            <span class="material-symbols-outlined">verified</span>
+          </div>
         </div>
-      </div>
-      <div class="kpi-card__bottom">
-        <span class="kpi-card__value">{{ statsKycPct() }}%</span>
-        <span class="kpi-card__trend kpi-trend--up">{{ statsKycDone() }} clients</span>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value">{{ statsKycPct() }}%</span>
+          <span class="kpi-card__trend kpi-trend--up">{{ statsKycDone() }} clients</span>
+        </div>
       </div>
     </daf-card>
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <div class="kpi-card__top">
-        <span class="kpi-card__label">Total CA</span>
-        <div class="kpi-card__icon kpi-icon--tertiary">
-          <span class="material-symbols-outlined">payments</span>
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Total CA</span>
+          <div class="kpi-card__icon kpi-icon--tertiary">
+            <span class="material-symbols-outlined">payments</span>
+          </div>
         </div>
-      </div>
-      <div class="kpi-card__bottom">
-        <span class="kpi-card__value kpi-card__value--sm">{{ formatAmount(statsTotalCA()) }}</span>
-        <span class="kpi-card__trend kpi-trend--neutral">Page courante</span>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value kpi-card__value--sm">{{ formatAmount(statsTotalCA()) }}</span>
+          <span class="kpi-card__trend kpi-trend--neutral">Page courante</span>
+        </div>
       </div>
     </daf-card>
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-      <div class="kpi-card__top">
-        <span class="kpi-card__label">Clients Actifs</span>
-        <div class="kpi-card__icon kpi-icon--primary">
-          <span class="material-symbols-outlined">bolt</span>
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Clients Actifs</span>
+          <div class="kpi-card__icon kpi-icon--primary">
+            <span class="material-symbols-outlined">bolt</span>
+          </div>
         </div>
-      </div>
-      <div class="kpi-card__bottom">
-        <span class="kpi-card__value">{{ statsActive() }}</span>
-        <span class="kpi-card__trend kpi-trend--neutral">Page courante</span>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value">{{ statsActive() }}</span>
+          <span class="kpi-card__trend kpi-trend--neutral">Page courante</span>
+        </div>
       </div>
     </daf-card>
 
@@ -97,8 +116,6 @@
         <button class="pill" [class.pill--active]="activeFilter() === 'kyc'"     (click)="toggleIsKycDone(true)">KYC Validé</button>
       </div>
 
-      <daf-button [options]="{variant:'teal', label:'Nouveau Client', iconStart:'add'}" (onClick)="showCreateModal.set(true)" />
-
     </div>
   </daf-card>
 
@@ -115,72 +132,76 @@
 
     @if (loading()) {
       @for (i of [1,2,3,4,5,6]; track i) {
-        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="client-card client-card--skeleton">
-          <div class="sk-row">
-            <div class="sk sk-avatar"></div>
-            <div class="sk-lines">
-              <div class="sk sk-line sk-line--lg"></div>
-              <div class="sk sk-line sk-line--sm"></div>
+        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}">
+          <div class="client-card client-card--skeleton">
+            <div class="sk-row">
+              <div class="sk sk-avatar"></div>
+              <div class="sk-lines">
+                <div class="sk sk-line sk-line--lg"></div>
+                <div class="sk sk-line sk-line--sm"></div>
+              </div>
             </div>
-          </div>
-          <div class="sk-metrics">
-            <div class="sk sk-box"></div>
-            <div class="sk sk-box"></div>
+            <div class="sk-metrics">
+              <div class="sk sk-box"></div>
+              <div class="sk sk-box"></div>
+            </div>
           </div>
         </daf-card>
       }
     } @else {
       @for (client of clients(); track client.id; let idx = $index) {
         <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true,clickable:true}"
-                  class="client-card" (click)="navigateToDetail(client.id)">
+                  (click)="navigateToDetail(client.id)">
+          <div class="client-card">
 
-          <div class="client-card__header">
-            <div class="client-card__left">
-              <div [class]="'client-avatar client-avatar--' + avatarVariant(idx)">
-                {{ initials(client.clientName) }}
+            <div class="client-card__header">
+              <div class="client-card__left">
+                <div [class]="'client-avatar client-avatar--' + avatarVariant(idx)">
+                  {{ initials(client.clientName) }}
+                </div>
+                <div>
+                  <h3 class="client-card__name">{{ client.clientName }}</h3>
+                  <p class="client-card__sector">{{ client.sector || client.country || '—' }}</p>
+                </div>
               </div>
-              <div>
-                <h3 class="client-card__name">{{ client.clientName }}</h3>
-                <p class="client-card__sector">{{ client.sector || client.country || '—' }}</p>
+              <div class="client-card__badges">
+                @if (client.isKycDone) {
+                  <span class="badge badge--kyc">
+                    <span class="material-symbols-outlined">verified</span> KYC
+                  </span>
+                }
+                @if (!client.isActive) {
+                  <span class="badge badge--inactive">Inactif</span>
+                }
               </div>
             </div>
-            <div class="client-card__badges">
-              @if (client.isKycDone) {
-                <span class="badge badge--kyc">
-                  <span class="material-symbols-outlined">verified</span> KYC
-                </span>
-              }
-              @if (!client.isActive) {
-                <span class="badge badge--inactive">Inactif</span>
-              }
-            </div>
-          </div>
 
-          <div class="client-card__metrics">
-            <div class="metric-box">
-              <p class="metric-box__label">CA Total</p>
-              <p class="metric-box__value">{{ formatAmount(client.totalCA, client.defaultCurrency ?? 'TND') }}</p>
+            <div class="client-card__metrics">
+              <div class="metric-box">
+                <p class="metric-box__label">CA Total</p>
+                <p class="metric-box__value">{{ formatAmount(client.totalCA, client.defaultCurrency ?? 'TND') }}</p>
+              </div>
+              <div class="metric-box">
+                <p class="metric-box__label">Affaires actives</p>
+                <p class="metric-box__value metric-box__value--accent">{{ client.activeAffaireCount }}</p>
+              </div>
             </div>
-            <div class="metric-box">
-              <p class="metric-box__label">Affaires actives</p>
-              <p class="metric-box__value metric-box__value--accent">{{ client.activeAffaireCount }}</p>
-            </div>
-          </div>
 
-          <div class="client-card__footer">
-            <div class="client-card__meta">
-              @if (client.paymentTermsDays) {
-                <span class="material-symbols-outlined meta-icon">schedule</span>
-                <span class="meta-text">{{ client.paymentTermsDays }} j délai</span>
-              } @else {
-                <span class="meta-text">{{ client.clientCode }}</span>
-              }
+            <div class="client-card__footer">
+              <div class="client-card__meta">
+                @if (client.paymentTermsDays) {
+                  <span class="material-symbols-outlined meta-icon">schedule</span>
+                  <span class="meta-text">{{ client.paymentTermsDays }} j délai</span>
+                } @else {
+                  <span class="meta-text">{{ client.clientCode }}</span>
+                }
+              </div>
+              <button class="link-btn" (click)="$event.stopPropagation(); navigateToDetail(client.id)">
+                Voir le dossier →
+              </button>
             </div>
-            <button class="link-btn" (click)="$event.stopPropagation(); navigateToDetail(client.id)">
-              Voir le dossier →
-            </button>
-          </div>
 
+          </div>
         </daf-card>
       }
       @empty {
@@ -203,10 +224,3 @@
 
 </div>
 
-<!-- ── Create Modal ───────────────────────────────────────────────────────── -->
-@if (showCreateModal()) {
-  <app-client-form
-    [paysId]="filterPaysId"
-    (saved)="onClientCreated($event)"
-    (closed)="showCreateModal.set(false)" />
-}

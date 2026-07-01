@@ -80,6 +80,7 @@ export class HomeComponent implements OnInit {
   loadingStats    = signal(true);
   recentActivity  = signal<ActivityItem[]>([]);
   loadingActivity = signal(true);
+  pendingCount    = signal<number | null>(null);
 
   readonly today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -99,6 +100,11 @@ export class HomeComponent implements OnInit {
     this.paymentSvc.getStats().subscribe({
       next:  s  => { this.stats.set(s); this.loadingStats.set(false); },
       error: () => this.loadingStats.set(false),
+    });
+
+    this.invoiceSvc.getInvoices({ page: 0, size: 1, statut: 'SUBMITTED', from: null, to: null, search: null }).subscribe({
+      next:  res => this.pendingCount.set(res.totalElements),
+      error: ()  => this.pendingCount.set(0),
     });
 
     this.invoiceSvc.getInvoices({ page: 0, size: 6, statut: null, from: null, to: null, search: null }).subscribe({

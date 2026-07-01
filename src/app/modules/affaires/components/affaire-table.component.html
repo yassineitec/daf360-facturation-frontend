@@ -28,12 +28,12 @@
       <!-- View toggle — RH profiles style -->
       <div class="flex border border-outline-variant rounded-lg overflow-hidden shrink-0">
         <button type="button" class="p-2 transition-colors" title="Vue grille"
-                [class]="viewMode() === 'grid' ? 'bg-[#617f88] text-white' : 'hover:bg-surface-container text-outline'"
+                [class]="viewMode() === 'grid' ? 'bg-secondary text-white' : 'hover:bg-surface-container text-outline'"
                 (click)="viewMode.set('grid')">
           <span class="material-symbols-outlined text-[20px]">grid_view</span>
         </button>
         <button type="button" class="p-2 transition-colors" title="Vue tableau"
-                [class]="viewMode() === 'list' ? 'bg-[#617f88] text-white' : 'hover:bg-surface-container text-outline'"
+                [class]="viewMode() === 'list' ? 'bg-secondary text-white' : 'hover:bg-surface-container text-outline'"
                 (click)="viewMode.set('list')">
           <span class="material-symbols-outlined text-[20px]">table_rows</span>
         </button>

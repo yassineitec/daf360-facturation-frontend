@@ -3,7 +3,6 @@
 @source "./app/**/*.html";
 @source "./app/**/*.ts";
 @source "../node_modules/@khalilrebhiitec/daf360/fesm2022/khalilrebhiitec-daf360.mjs";
-
 @source inline("{grid-cols-1,grid-cols-2,grid-cols-3,grid-cols-4,grid-cols-5,grid-cols-6,grid-cols-7,grid-cols-8,grid-cols-9,grid-cols-10,grid-cols-11,grid-cols-12}");
 @source inline("{col-span-1,col-span-2,col-span-3,col-span-4,col-span-5,col-span-6,col-span-7,col-span-8,col-span-9,col-span-10,col-span-11,col-span-12}");
 @source inline("{text-primary,text-secondary,text-teal,text-on-surface,text-on-surface-variant,text-outline,text-error,text-danger,text-success}");
@@ -11,8 +10,11 @@
 @source inline("{bg-primary/10,bg-secondary/10,bg-teal/10,bg-danger/10,bg-outline/10,bg-error/10,bg-warning/10}");
 @source inline("{text-warning,text-secondary}");
 @source inline("{border-primary,border-secondary,border-outline,border-outline-variant,border-error}");
-
-/* ── DAF360 design tokens (Material You — matches reference design) ─────── */
+@source inline("{border-outline-variant/10,border-outline-variant/20,border-white/60}");
+@source inline("{bg-white/40,bg-white/60,bg-white/80}");
+@source inline("{shadow-inner,rounded-3xl,rounded-2xl}");
+@source inline("{lg:col-span-2,lg:grid-cols-3,sm:grid-cols-2,lg:grid-cols-4}");
+@source inline("{backdrop-blur-sm,backdrop-blur-md,backdrop-blur-lg,backdrop-blur-xl}");
 @theme {
   /* Primary — deep navy blue */
   --color-primary:              #00288e;
@@ -36,12 +38,11 @@
   --color-teal:                 #79D7BE;
   --color-danger:               #ba1a1a;
   --color-warning:              #d97706;
-  --color-secondary:            #006c49;
 
-  /* Tertiary */
-  --color-tertiary:             #4c2e00;
-  --color-tertiary-container:   #6b4200;
-  --color-tertiary-fixed:       #ffddb8;
+  /* Tertiary — interactive/focus color for all lib form controls */
+  --color-tertiary:             #00c1ad;
+  --color-tertiary-container:   #00796b;
+  --color-tertiary-fixed:       #b2dfdb;
 
   /* Error */
   --color-error:                #ba1a1a;
@@ -77,7 +78,6 @@
   --color-outline-variant:      #c4c5d5;
 }
 
-/* ── Reset & Base ─────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html, body {
   height: 100%;
@@ -89,8 +89,6 @@ html, body {
   background: #f8f9fb;
   color: #191c1e;
 }
-
-/* ── CSS custom properties (for SCSS access) ─────────────────────────────── */
 :root {
   --color-primary:        #00288e;
   --color-primary-dark:   #001e6b;
@@ -115,26 +113,41 @@ html, body {
 }
 
 /* ── Material Symbols ─────────────────────────────────────────────────────── */
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  -webkit-font-feature-settings: 'liga';
-  font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-  vertical-align: middle;
+@layer base {
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    -webkit-font-feature-settings: 'liga';
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    vertical-align: middle;
+  }
 }
 
-/* ── D3-115 cost approval queue ──────────────────────────────────────── */
+/* ── Form controls — focus ring & open border use tertiary (teal/green) ─ */
+daf-form-field,
+daf-select {
+  --color-primary:       var(--color-tertiary);
+  --color-primary-hover: var(--color-tertiary-container);
+}
+
+
+/* ── Modal backdrop blur ─────────────────────────────────────────────── */
+daf-modal-host .modal-backdrop {
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}
+
 .lifted-card {
   background: white;
   border: 1px solid #F0F4F8;
@@ -152,3 +165,19 @@ html, body {
   box-shadow: 0 8px 16px rgba(26,107,124,0.4);
 }
 .active-icon { font-variation-settings: 'FILL' 1; }
+
+/* ── Custom typography utilities — same token scale as reference HTML ───── */
+.text-price-display  { font-size: 1.5rem;    line-height: 2rem;    font-weight: 900; }
+.font-price-display  { font-family: 'Inter', sans-serif; }
+.text-title-md       { font-size: 1.125rem;  line-height: 1.5rem;  }
+.font-title-md       { font-weight: 700; }
+.text-body-sm        { font-size: 0.75rem;   line-height: 1rem;    }
+.font-body-sm        { font-weight: 400; }
+.text-body-md        { font-size: 0.875rem;  line-height: 1.25rem; }
+.font-body-md        { font-weight: 500; }
+.text-label-caps     { font-size: 0.625rem;  line-height: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.text-label-bold     { font-size: 0.6875rem; line-height: 0.875rem; font-weight: 700; letter-spacing: 0.05em; }
+.text-headline-lg    { font-size: 1.25rem;   line-height: 1.75rem; }
+.font-headline-lg    { font-weight: 700; }
+.text-headline-xl    { font-size: 1.5rem;    line-height: 2rem;    }
+.font-headline-xl    { font-weight: 800; }

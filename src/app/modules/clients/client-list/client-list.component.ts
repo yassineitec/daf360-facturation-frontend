@@ -4,16 +4,15 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ClientService } from '../client.service';
-import { ClientListItemDto, ClientDetailDto, ClientFilter } from '../client.model';
+import { ClientListItemDto, ClientFilter } from '../client.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
-import { ClientFormComponent } from '../client-form.component';
 import { PaysRefDto } from '../../affaires/affaire.model';
-import { CardComponent, ButtonComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
+import { CardComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-client-list',
-  imports: [FormsModule, DecimalPipe, PermissionDirective, ClientFormComponent,
-            CardComponent, ButtonComponent, PaginationComponent],
+  imports: [FormsModule, DecimalPipe, PermissionDirective,
+            CardComponent, PaginationComponent],
   templateUrl: './client-list.component.html',
   styleUrl: './client-list.component.scss',
 })
@@ -22,7 +21,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly destroy$       = new Subject<void>();
-  private readonly search$  = new Subject<string>();
+  private readonly search$        = new Subject<string>();
 
   clients          = signal<ClientListItemDto[]>([]);
   loading          = signal(false);
@@ -32,7 +31,6 @@ export class ClientListComponent implements OnInit, OnDestroy {
   currentPage      = signal(0);
   paysList         = signal<PaysRefDto[]>([]);
   sectors          = signal<string[]>([]);
-  showCreateModal  = signal(false);
 
   searchText      = '';
   filterPaysId    = 0;
@@ -165,9 +163,8 @@ export class ClientListComponent implements OnInit, OnDestroy {
     this.load();
   }
 
-  onClientCreated(_client: ClientDetailDto): void {
-    this.showCreateModal.set(false);
-    this.load();
+  goToNewClient(): void {
+    this.router.navigate(['new'], { relativeTo: this.activatedRoute });
   }
 
   navigateToDetail(id: number): void { this.router.navigate([id], { relativeTo: this.activatedRoute }); }

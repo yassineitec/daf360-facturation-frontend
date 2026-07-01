@@ -7,6 +7,14 @@ $bg:     $bg-page;
 
 :host { display: contents; }
 
+// ── Card shell mixin ──────────────────────────────────────────────────────────
+@mixin card-shell {
+  background: white;
+  border: 1px solid var(--color-outline-variant, #c4c5d5);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -1px rgba(0,0,0,.04);
+}
+
 // ── Page wrapper ──────────────────────────────────────────────────────────────
 .detail-page {
   display: flex;
@@ -96,7 +104,11 @@ $bg:     $bg-page;
 }
 
 // ── Lifecycle stepper card ────────────────────────────────────────────────────
-.lifecycle-card { display: block; }
+.lifecycle-card {
+  @include card-shell;
+  display: block;
+  overflow: hidden;
+}
 
 .step-body {
   padding: 0 4px 4px;
@@ -133,7 +145,14 @@ $bg:     $bg-page;
 }
 
 .kpi-card {
-  padding: 20px 22px;
+  @include card-shell;
+  padding: 22px 24px;
+  transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s cubic-bezier(.4,0,.2,1);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,.10), 0 10px 10px -5px rgba(0,0,0,.04);
+  }
 
   &__top {
     display: flex;
@@ -160,19 +179,22 @@ $bg:     $bg-page;
   }
 
   &__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--color-surface-container, #edeef0);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 
-    .material-symbols-outlined { font-size: 22px; }
+    .material-symbols-outlined {
+      font-size: 20px;
+      color: var(--color-brand-slate, #50717B);
+    }
 
-    &--slate { background: rgba($primary, 0.12); color: $primary; }
-    &--teal  { background: rgba($accent, 0.2);   color: #1a7a64; }
-    &--green { background: #d1fae5; color: #065f46; }
+    &--teal .material-symbols-outlined  { color: var(--color-brand-teal, #79D7BE); }
+    &--green .material-symbols-outlined { color: #059669; }
   }
 
   &__sub {
@@ -201,8 +223,8 @@ $bg:     $bg-page;
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
 .progress-bar {
-  height: 6px;
-  background: #f1f5f9;
+  height: 8px;
+  background: var(--color-surface-container, #edeef0);
   border-radius: 99px;
   overflow: hidden;
 
@@ -238,6 +260,7 @@ $bg:     $bg-page;
 
 // ── Billing table card ────────────────────────────────────────────────────────
 .table-card {
+  @include card-shell;
   overflow: hidden;
 
   &__header {
@@ -257,18 +280,18 @@ $bg:     $bg-page;
 
   &__tabs {
     display: flex;
-    gap: 4px;
-    background: #f1f5f9;
-    border-radius: 8px;
-    padding: 3px;
+    gap: 2px;
+    background: var(--color-surface-container, #edeef0);
+    border-radius: 9999px;
+    padding: 4px;
   }
 }
 
 .tct-btn {
-  padding: 4px 12px;
+  padding: 5px 14px;
   border: none;
   background: none;
-  border-radius: 6px;
+  border-radius: 9999px;
   font-size: 0.8125rem;
   font-weight: 600;
   color: $muted;
@@ -288,16 +311,16 @@ $bg:     $bg-page;
   border-collapse: collapse;
   font-size: 0.875rem;
 
-  thead tr { background: #f8fafc; }
+  thead tr { background: var(--color-surface-container-low, #f3f4f6); }
 
   th {
-    padding: 10px 16px;
+    padding: 12px 20px;
     text-align: left;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 700;
     color: $muted;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.06em;
     white-space: nowrap;
 
     &.num { text-align: right; }
@@ -305,17 +328,18 @@ $bg:     $bg-page;
   }
 
   .billing-row {
-    border-top: 1px solid #f1f5f9;
-    transition: background 0.15s;
-    &:hover { background: #f8fafc; }
+    border-top: 1px solid var(--color-outline-variant, #c4c5d5);
+    transition: background 0.12s;
+    &:hover { background: rgba(243,244,246,0.6); }
+    &:hover .edit-btn { opacity: 1; }
   }
 
   td {
-    padding: 12px 16px;
+    padding: 14px 20px;
     color: $text;
     vertical-align: middle;
 
-    &.num    { text-align: right; }
+    &.num    { text-align: right; font-variant-numeric: tabular-nums; }
     &.muted  { color: $muted; }
     &.bold   { font-weight: 700; }
     &.accent { color: $primary; }
@@ -337,48 +361,54 @@ $bg:     $bg-page;
   }
 
   tfoot .tfoot-row {
-    border-top: 2px solid $border;
-    background: #f8fafc;
+    border-top: 2px solid var(--color-outline-variant, #c4c5d5);
+    background: var(--color-surface-container-low, #f3f4f6);
   }
 
-  .foot-label { font-weight: 700; font-size: 0.875rem; color: $text; }
-  .foot-ht    { text-align: right; font-weight: 700; color: $text; }
-  .foot-ttc   { text-align: right; font-weight: 800; color: $primary; font-size: 1rem; }
+  .foot-label { font-weight: 700; font-size: 0.875rem; color: $text; padding: 14px 20px; }
+  .foot-ht    { text-align: right; font-weight: 700; color: $text; padding: 14px 20px; font-variant-numeric: tabular-nums; }
+  .foot-ttc   { text-align: right; font-weight: 800; color: $primary; font-size: 0.9375rem; padding: 14px 20px; font-variant-numeric: tabular-nums; }
 }
 
 .status-chip {
   display: inline-block;
-  padding: 3px 9px;
-  border-radius: 20px;
-  font-size: 0.7rem;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 
-  &--green { background: #d1fae5; color: #065f46; }
+  &--green { background: rgba(110,248,187,.18); color: var(--color-secondary, #006c49); }
   &--blue  { background: #dbeafe; color: #1d4ed8; }
   &--amber { background: #fef3c7; color: #92400e; }
 }
 
 .edit-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid $border;
-  border-radius: 7px;
-  background: $surface;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-outline-variant, #c4c5d5);
+  border-radius: 8px;
+  background: white;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
   color: $muted;
 
-  .material-symbols-outlined { font-size: 14px; }
-}
+  .material-symbols-outlined { font-size: 15px; }
 
-.billing-row:hover .edit-btn { opacity: 1; }
+  &:hover {
+    background: var(--color-surface-container, #edeef0);
+    color: $primary;
+  }
+}
 
 // ── Info card ─────────────────────────────────────────────────────────────────
 .info-card {
+  @include card-shell;
   padding: 20px 22px;
 
   &__title {
@@ -392,19 +422,19 @@ $bg:     $bg-page;
 .info-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px;
+  padding: 9px 0;
   border-bottom: 1px solid #f1f5f9;
 
   &:last-child { border-bottom: none; padding-bottom: 0; }
 
-  &--full {
+  &--full,
+  &--col {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
@@ -412,7 +442,7 @@ $bg:     $bg-page;
 }
 
 .info-label {
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   color: $muted;
   font-weight: 500;
 }
@@ -421,14 +451,23 @@ $bg:     $bg-page;
   font-size: 0.875rem;
   color: $text;
   font-weight: 600;
+  text-align: right;
 
   &.overdue-val { color: #b91c1c; }
+
+  &--notes {
+    font-weight: 400;
+    color: $muted;
+    font-size: 0.8125rem;
+    text-align: left;
+    line-height: 1.5;
+  }
 }
 
 // ── Reminders card ────────────────────────────────────────────────────────────
 .reminders-wrap {
+  @include card-shell;
   overflow: hidden;
-  padding: 18px 20px;
 }
 
 // ── Inline forms (approval / dispute / resolve inside stepper) ────────────────
