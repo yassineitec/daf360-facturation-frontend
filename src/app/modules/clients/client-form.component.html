@@ -1,0 +1,180 @@
+@if (serverError()) {
+  <div class="error-banner">
+    <span class="material-symbols-outlined">error</span>
+    {{ serverError() }}
+  </div>
+}
+
+<!-- ── Section 1 : Identification ──────────────────────────────────────────── -->
+<div class="glass-card rounded-2xl p-6">
+  <p class="section-label">Identification</p>
+
+  <div class="flex flex-col gap-4">
+
+    <div class="grid grid-cols-2 gap-4">
+      <daf-form-field
+        [value]="clientName()"
+        (valueChange)="clientName.set(asStr($event))"
+        [options]="{
+          label: 'Nom du client',
+          type: 'text',
+          placeholder: 'Raison sociale',
+          required: true,
+          maxLength: 255,
+          error: clientNameError()
+        }" />
+
+      <daf-form-field
+        [value]="clientCode()"
+        (valueChange)="clientCode.set(asStr($event))"
+        [options]="{
+          label: 'Code client',
+          type: 'text',
+          placeholder: 'TN-CLI-NNNN',
+          hint: !isEditMode ? '(auto si vide)' : undefined,
+          disabled: isEditMode,
+          maxLength: 50
+        }" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <daf-select
+        [options]="sectorSelectOptions()"
+        [(selected)]="selectedSector"
+        [config]="sectorSelectConfig()" />
+
+      <daf-form-field
+        [value]="taxId()"
+        (valueChange)="taxId.set(asStr($event))"
+        [options]="{ label: 'N° fiscal / TVA', type: 'text', placeholder: 'MF-XXXXXXX', maxLength: 50 }" />
+    </div>
+
+    <div class="w-1/2">
+      <daf-form-field
+        [value]="country()"
+        (valueChange)="country.set(asStr($event))"
+        [options]="countryFieldOpts" />
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Section 2 : Contact & Coordonnées ───────────────────────────────────── -->
+<div class="glass-card rounded-2xl p-6">
+  <p class="section-label">Contact &amp; Coordonnées</p>
+
+  <div class="flex flex-col gap-4">
+
+    <daf-form-field
+      [value]="address()"
+      (valueChange)="address.set(asStr($event))"
+      [options]="{ label: 'Adresse', type: 'text', placeholder: 'Rue, numéro…', maxLength: 255 }" />
+
+    <div class="grid grid-cols-2 gap-4">
+      <daf-form-field
+        [value]="city()"
+        (valueChange)="city.set(asStr($event))"
+        [options]="{ label: 'Ville', type: 'text', placeholder: 'Ville', maxLength: 100 }" />
+
+      <daf-form-field
+        [value]="postalCode()"
+        (valueChange)="postalCode.set(asStr($event))"
+        [options]="{ label: 'Code postal', type: 'text', placeholder: '1000', maxLength: 20 }" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <daf-form-field
+        [value]="phone()"
+        (valueChange)="phone.set(asStr($event))"
+        [options]="{ label: 'Téléphone', type: 'text', placeholder: '+216 XX XXX XXX', maxLength: 30 }" />
+
+      <daf-form-field
+        [value]="email()"
+        (valueChange)="email.set(asStr($event))"
+        [options]="{
+          label: 'Email général',
+          type: 'email',
+          placeholder: 'contact@société.com',
+          maxLength: 150,
+          error: emailError()
+        }" />
+    </div>
+
+    <daf-form-field
+      [value]="website()"
+      (valueChange)="website.set(asStr($event))"
+      [options]="{ label: 'Site web', type: 'text', placeholder: 'https://www.société.com', maxLength: 200 }" />
+
+    <daf-form-field
+      [value]="contactName()"
+      (valueChange)="contactName.set(asStr($event))"
+      [options]="{ label: 'Nom du contact principal', type: 'text', placeholder: 'Prénom Nom', maxLength: 150 }" />
+
+    <div class="grid grid-cols-2 gap-4">
+      <daf-form-field
+        [value]="contactEmail()"
+        (valueChange)="contactEmail.set(asStr($event))"
+        [options]="{
+          label: 'Email contact',
+          type: 'email',
+          placeholder: 'contact@société.com',
+          maxLength: 150,
+          error: contactEmailError()
+        }" />
+
+      <daf-form-field
+        [value]="contactPhone()"
+        (valueChange)="contactPhone.set(asStr($event))"
+        [options]="{ label: 'Tél. contact', type: 'text', placeholder: '+216 XX XXX XXX', maxLength: 30 }" />
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Section 3 : Conditions commerciales ─────────────────────────────────── -->
+<div class="glass-card rounded-2xl p-6">
+  <p class="section-label">Conditions commerciales</p>
+
+  <div class="flex flex-col gap-4">
+
+    <div class="grid grid-cols-2 gap-4">
+      <daf-form-field
+        [value]="paymentTermsDays()"
+        (valueChange)="paymentTermsDays.set(asStr($event))"
+        [options]="{
+          label: 'Délai de paiement (jours)',
+          type: 'number',
+          placeholder: '30',
+          error: paymentTermsError()
+        }" />
+
+      <daf-select
+        [options]="currencyOptions"
+        [(selected)]="selectedCurrency"
+        [config]="currencySelectConfig" />
+    </div>
+
+    <daf-form-field
+      [value]="notes()"
+      (valueChange)="notes.set(asStr($event))"
+      [options]="{ label: 'Notes internes', type: 'textarea', placeholder: 'Informations complémentaires…', maxLength: 1000, rows: 3 }" />
+
+  </div>
+</div>
+
+<!-- ── Actions ──────────────────────────────────────────────────────────────── -->
+<div class="actions-row">
+  <daf-button
+    [options]="{ variant: 'ghost', label: 'Annuler' }"
+    (onClick)="cancel()" />
+  <daf-button
+    [options]="{
+      variant: 'secondary',
+      label: isEditMode ? 'Enregistrer' : 'Créer le client',
+      iconStart: isEditMode ? 'save' : 'person_add',
+      pill: true,
+      loading: saving(),
+      disabled: saving()
+    }"
+    (onClick)="submit()" />
+</div>

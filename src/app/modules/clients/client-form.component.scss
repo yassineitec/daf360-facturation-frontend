@@ -1,12 +1,26 @@
-// ── Form section ──────────────────────────────────────────────────────────────
-.form-section {
-  padding: 20px 0;
+// ── Host : flex column, gap 12px (identique à modules-grid home page) ─────────
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-  & + & {
-    border-top: 1px solid #f1f5f9;
+// ── Glass card — copié exactement depuis le CSS du HTML home page ─────────────
+.glass-card {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.95);
   }
 }
 
+// ── Section label (titre interne) ─────────────────────────────────────────────
 .section-label {
   font-size: 0.6875rem;
   font-weight: 700;
@@ -14,4 +28,27 @@
   letter-spacing: 0.07em;
   color: var(--color-secondary, #006c49);
   margin: 0 0 16px;
+}
+
+// ── Error banner ──────────────────────────────────────────────────────────────
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+
+  .material-symbols-outlined { font-size: 1rem; }
+}
+
+// ── Boutons ───────────────────────────────────────────────────────────────────
+.actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
 }

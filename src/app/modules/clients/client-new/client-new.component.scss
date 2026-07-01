@@ -3,9 +3,8 @@
 .client-new-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 860px;
-  margin: 0 auto;
+  gap: 16px;
+  max-width: 900px;
   width: 100%;
 }
 
@@ -41,12 +40,12 @@
 }
 
 .page-title {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
   color: #111827;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .page-subtitle {
@@ -55,11 +54,3 @@
   margin: 2px 0 0;
 }
 
-// ── Form card ─────────────────────────────────────────────────────────────────
-.form-card {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  padding: 28px 32px;
-  backdrop-filter: blur(8px);
-}

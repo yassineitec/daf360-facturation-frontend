@@ -81,10 +81,10 @@
                       (click)="rowClick.emit(a.id)">
               <div class="aff-card">
 
-                <div class="aff-card__badge"
-                     [style.background]="statutBadgeCfg(a.statut).color"
-                     [style.box-shadow]="'0 4px 10px ' + statutBadgeCfg(a.statut).shadow">
-                  {{ statutBadgeCfg(a.statut).label }}
+                <div class="aff-card__badge-pos">
+                  <daf-badge
+                    [label]="statutBadgeCfg(a.statut).label"
+                    [options]="{ variant: statutBadgeVariant(a.statut), pill: true, size: 'sm' }" />
                 </div>
 
                 <div class="aff-card__header">
@@ -209,12 +209,16 @@
                   </span>
                 </td>
 
-                <td><app-status-badge [status]="a.statut" /></td>
+                <td>
+                  <daf-badge
+                    [label]="statutBadgeCfg(a.statut).label"
+                    [options]="{ variant: statutBadgeVariant(a.statut), pill: true, size: 'sm' }" />
+                </td>
 
                 <td class="act">
                   <button class="view-btn" title="Voir"
                           (click)="rowClick.emit(a.id); $event.stopPropagation()">
-                    <span class="material-symbols-outlined">arrow_forward_ios</span>
+                    <span class="material-symbols-outlined">visibility</span>
                   </button>
                 </td>
 

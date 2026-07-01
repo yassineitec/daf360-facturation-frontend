@@ -2,8 +2,7 @@ import { Component, computed, input, model, output, signal } from '@angular/core
 import { FormsModule } from '@angular/forms';
 import { UpperCasePipe } from '@angular/common';
 import { AffaireListItem, STATUT_LABELS, TYPE_LABELS } from '../affaire.model';
-import { StatusBadgeComponent } from '../../../shared/status-badge.component';
-import { CardComponent } from '@khalilrebhiitec/daf360';
+import { StatusBadgeComponent, CardComponent, BadgeVariant } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-affaire-table',
@@ -89,5 +88,15 @@ export class AffaireTableComponent {
       ARCHIVEE:  { label: 'Archivée', color: '#94A3B8', shadow: 'rgba(148,163,184,0.30)'},
     };
     return map[statut] ?? { label: statut, color: '#94A3B8', shadow: 'rgba(148,163,184,0.30)' };
+  }
+
+  statutBadgeVariant(statut: string): BadgeVariant {
+    const map: Record<string, BadgeVariant> = {
+      EN_COURS:  'success',
+      SUSPENDUE: 'warning',
+      CLOTUREE:  'secondary',
+      ARCHIVEE:  'neutral',
+    };
+    return map[statut] ?? 'neutral';
   }
 }

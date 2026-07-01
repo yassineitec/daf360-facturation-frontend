@@ -14,11 +14,9 @@
   </div>
 
   <!-- ── Form ─────────────────────────────────────────────────────────────── -->
-  <div class="form-card">
-    <app-client-form
-      [paysId]="paysId()"
-      (saved)="onSaved($event)"
-      (closed)="goBack()" />
-  </div>
+  <app-client-form
+    [paysId]="paysId()"
+    (saved)="onSaved($event)"
+    (closed)="goBack()" />
 
 </div>

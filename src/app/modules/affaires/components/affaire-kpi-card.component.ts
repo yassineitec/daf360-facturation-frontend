@@ -1,54 +1,104 @@
 import { Component, computed, input } from '@angular/core';
 import { CardComponent } from '@khalilrebhiitec/daf360';
 
+// Colors extracted directly from reference HTML tailwind config
 const ICON_BG: Record<string, string> = {
-  green: 'bg-secondary/10',
-  blue:  'bg-teal/10',
-  amber: 'bg-warning/10',
-  red:   'bg-danger/10',
+  green: 'rgba(108,248,187,0.30)',  // bg-secondary-container/30
+  blue:  'rgba(221,225,255,0.30)',  // bg-primary-fixed/30
+  amber: 'rgba(255,221,184,0.30)',  // bg-tertiary-fixed/30
+  red:   'rgba(255,218,214,0.30)',  // bg-error-container/30
 };
 
 const ICON_COLOR: Record<string, string> = {
-  green: 'text-secondary',
-  blue:  'text-teal',
-  amber: 'text-warning',
-  red:   'text-danger',
+  green: '#006c49',  // text-secondary
+  blue:  '#00288e',  // text-primary
+  amber: '#4c2e00',  // text-tertiary
+  red:   '#ba1a1a',  // text-error
 };
 
-const DELTA_COLOR: Record<string, string> = {
-  green: 'text-secondary',
-  blue:  'text-on-surface-variant',
-  amber: 'text-warning',
-  red:   'text-danger',
+const TREND_CLASS: Record<string, string> = {
+  green: 'kpi-trend--up',
+  blue:  'kpi-trend--neutral',
+  amber: 'kpi-trend--neutral',
+  red:   'kpi-trend--down',
 };
 
 @Component({
   selector: 'app-affaire-kpi-card',
   imports: [CardComponent],
   template: `
-    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
-      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
-
-        <div class="flex justify-between items-start mb-3">
-          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ label() }}</span>
-          <div [class]="'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ' + iconBg()">
-            <span [class]="'material-symbols-outlined text-sm ' + iconColor()">{{ icon() }}</span>
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">{{ label() }}</span>
+          <div class="kpi-card__icon" [style.background]="iconBg()">
+            <span class="material-symbols-outlined kpi-mat-icon"
+                  [style.color]="iconColor()">{{ icon() }}</span>
           </div>
         </div>
-
-        <div>
-          <p class="text-[22px] font-black leading-tight text-on-surface">
-            {{ value() }}@if (unit()) { <span class="text-[14px] font-semibold text-on-surface-variant ml-1">{{ unit() }}</span> }
-          </p>
+        <div class="kpi-card__bottom">
+          <span [class]="value().toString().length > 8 ? 'kpi-card__value kpi-card__value--sm' : 'kpi-card__value'">
+            {{ value() }}
+          </span>
+          @if (unit()) {
+            <span [class]="'kpi-card__trend ' + trendClass()">{{ unit() }}</span>
+          }
           @if (trend()) {
-            <p [class]="'text-[10px] font-bold mt-1 ' + deltaColor()">{{ trend() }}</p>
+            <span [class]="'kpi-card__trend ' + trendClass()">{{ trend() }}</span>
           }
         </div>
-
       </div>
     </daf-card>
   `,
-  styles: [':host { display: block; }'],
+  styles: [`
+    .kpi-card {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 128px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .kpi-card__label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #3e4945;
+    }
+    .kpi-card__icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .kpi-card__bottom {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .kpi-card__value {
+      font-size: 1.75rem;
+      font-weight: 900;
+      color: #0b1c30;
+      line-height: 1;
+    }
+    .kpi-card__value--sm { font-size: 1.25rem; }
+    .kpi-card__trend { font-size: 0.75rem; font-weight: 700; }
+    .kpi-trend--up      { color: #006c49; }
+    .kpi-trend--down    { color: #ba1a1a; }
+    .kpi-trend--neutral { color: #64748b; }
+  `],
 })
 export class AffaireKpiCardComponent {
   label   = input.required<string>();
@@ -58,7 +108,7 @@ export class AffaireKpiCardComponent {
   trend   = input<string>('');
   variant = input<'green' | 'blue' | 'amber' | 'red'>('blue');
 
-  iconBg    = computed(() => ICON_BG[this.variant()]    ?? 'bg-primary/10');
-  iconColor = computed(() => ICON_COLOR[this.variant()] ?? 'text-primary');
-  deltaColor = computed(() => DELTA_COLOR[this.variant()] ?? 'text-on-surface-variant');
+  iconBg    = computed(() => ICON_BG[this.variant()]    ?? ICON_BG['blue']);
+  iconColor = computed(() => ICON_COLOR[this.variant()] ?? ICON_COLOR['blue']);
+  trendClass = computed(() => TREND_CLASS[this.variant()] ?? 'kpi-trend--neutral');
 }
