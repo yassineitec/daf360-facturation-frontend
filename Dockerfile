@@ -4,7 +4,7 @@ COPY package*.json ./
 COPY .npmrc ./
 RUN npm ci --legacy-peer-deps
 COPY . .
-RUN timeout 40 npm run build || (test -d dist/daf360-facturation/browser && echo "Build OK")
+RUN timeout 120 npm run build || (test -d dist/daf360-facturation/browser && echo "Build OK")
 
 FROM nginx:alpine
 COPY --from=build /app/dist/daf360-facturation/browser /usr/share/nginx/html
