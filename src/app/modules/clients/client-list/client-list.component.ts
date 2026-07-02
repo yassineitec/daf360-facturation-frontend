@@ -74,8 +74,8 @@ export class ClientListComponent implements OnInit, OnDestroy {
       if (pays.length > 0) {
         this.filterPaysId = pays[0].id;
         this.loadSectors();
-        this.load();
       }
+      this.load(); // toujours charger, même si pays indisponible
     });
 
     this.search$.pipe(
@@ -94,11 +94,10 @@ export class ClientListComponent implements OnInit, OnDestroy {
   }
 
   load(): void {
-    if (!this.filterPaysId) return;  // wait until pays list has resolved a valid ID
     this.loading.set(true);
     this.error.set(null);
     const filter: ClientFilter = {
-      paysId:    this.filterPaysId,
+      paysId:    this.filterPaysId || 0,
       page:      this.currentPage(),
       size:      this.PAGE_SIZE,
       search:    this.searchText.trim() || null,

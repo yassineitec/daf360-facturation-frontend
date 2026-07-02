@@ -1,22 +1,150 @@
-<div class="client-new-page">
+<div class="wizard-page">
+  <div class="wizard-layout">
 
-  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
-  <div class="page-header">
-    <div class="page-header-left">
-      <button class="btn-back" (click)="goBack()">
-        <span class="material-symbols-outlined">arrow_back</span>
-      </button>
-      <div>
-        <h2 class="page-title">Nouveau Client</h2>
-        <p class="page-subtitle">Remplissez les informations pour créer un nouveau client</p>
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- LEFT — form area                                              -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="form-area">
+
+      <!-- ── Page header ───────────────────────────────────────────── -->
+      <div class="page-head">
+        <button class="back-btn" (click)="goBack()">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div>
+          <h1 class="page-title">Nouveau Client</h1>
+          <p class="page-sub">Suivez les étapes pour créer un nouveau client</p>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- ── Form ─────────────────────────────────────────────────────────────── -->
-  <app-client-form
-    [paysId]="paysId()"
-    (saved)="onSaved($event)"
-    (closed)="goBack()" />
+      <!-- ── Form card ─────────────────────────────────────────────── -->
+      <div class="form-card">
 
-</div>
+        <!-- Card head: icon + step title + sub -->
+        <div class="card-head">
+          <div class="card-head__icon">
+            <span class="material-symbols-outlined">{{ steps[currentStep() - 1].icon }}</span>
+          </div>
+          <div>
+            <h2 class="card-head__title">{{ steps[currentStep() - 1].title }}</h2>
+            <p class="card-head__sub">Étape {{ currentStep() }} sur {{ steps.length }}</p>
+          </div>
+        </div>
+
+        <!-- Step body -->
+        <div class="step-body">
+          <app-client-form
+            #formRef
+            [paysId]="paysId()"
+            [activeSection]="currentStep()"
+            (saved)="onSaved($event)"
+            (closed)="goBack()" />
+        </div>
+
+        <!-- Validation hint -->
+        @if (!canGoNext() && currentStep() === 1) {
+          <div class="validation-hint">
+            <span class="material-symbols-outlined">info</span>
+            <span>{{ stepValidationError() }}</span>
+          </div>
+        }
+
+        <!-- Navigation footer -->
+        <div class="nav-footer">
+          <div>
+            @if (currentStep() > 1) {
+              <button type="button" class="nav-btn nav-btn--ghost" (click)="goPrev()">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Précédent
+              </button>
+            } @else {
+              <button type="button" class="nav-btn nav-btn--ghost" (click)="goBack()">
+                Annuler
+              </button>
+            }
+          </div>
+          <button type="button" class="nav-btn nav-btn--primary" (click)="goNext()">
+            @if (currentStep() < steps.length) {
+              Suivant
+              <span class="material-symbols-outlined">arrow_forward</span>
+            } @else {
+              <span class="material-symbols-outlined">person_add</span>
+              Créer le client
+            }
+          </button>
+        </div>
+
+      </div><!-- /form-card -->
+    </div><!-- /form-area -->
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- RIGHT — sidebar                                               -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <aside class="sidebar">
+
+      <!-- Progression -->
+      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
+        <div class="panel-header">
+          <p class="panel__label">Progression</p>
+        </div>
+        <div class="panel-body">
+          <div class="step-list">
+            @for (step of steps; track $index; let i = $index) {
+              <div class="step-item"
+                   [class.step-item--done]="currentStep() > i + 1"
+                   [class.step-item--active]="currentStep() === i + 1">
+                <div class="step-num">
+                  @if (currentStep() > i + 1) {
+                    <span class="material-symbols-outlined"
+                          style="font-variation-settings:'FILL' 1;font-size:16px">check</span>
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </div>
+                <span class="step-label">{{ step.title }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </daf-card>
+
+      <!-- Résumé -->
+      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
+        <div class="panel-header">
+          <p class="panel__label">Résumé</p>
+        </div>
+        <div class="panel-body">
+          <div class="summary-rows">
+            <div class="summary-row">
+              <span class="summary-row__key">Nom</span>
+              <span class="summary-row__val">{{ formRef.clientName() || '—' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-row__key">Secteur</span>
+              <span class="summary-row__val">{{ formRef.selectedSector()[0] || '—' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-row__key">Ville</span>
+              <span class="summary-row__val">{{ formRef.city() || '—' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-row__key">Devise</span>
+              <span class="summary-row__val">{{ formRef.selectedCurrency()[0] || '—' }}</span>
+            </div>
+          </div>
+        </div>
+      </daf-card>
+
+      <!-- Conseil -->
+      <div class="tips-panel">
+        <div class="tips-panel__head">
+          <span class="material-symbols-outlined">lightbulb</span>
+          <span>Conseil</span>
+        </div>
+        <p class="tips-panel__text">{{ stepTip() }}</p>
+      </div>
+
+    </aside><!-- /sidebar -->
+
+  </div><!-- /wizard-layout -->
+</div><!-- /wizard-page -->

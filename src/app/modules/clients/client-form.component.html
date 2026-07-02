@@ -6,6 +6,7 @@
 }
 
 <!-- ── Section 1 : Identification ──────────────────────────────────────────── -->
+@if (activeSection === 0 || activeSection === 1) {
 <div class="glass-card rounded-2xl p-6">
   <p class="section-label">Identification</p>
 
@@ -58,8 +59,10 @@
 
   </div>
 </div>
+}
 
 <!-- ── Section 2 : Contact & Coordonnées ───────────────────────────────────── -->
+@if (activeSection === 0 || activeSection === 2) {
 <div class="glass-card rounded-2xl p-6">
   <p class="section-label">Contact &amp; Coordonnées</p>
 
@@ -130,8 +133,10 @@
 
   </div>
 </div>
+}
 
 <!-- ── Section 3 : Conditions commerciales ─────────────────────────────────── -->
+@if (activeSection === 0 || activeSection === 3) {
 <div class="glass-card rounded-2xl p-6">
   <p class="section-label">Conditions commerciales</p>
 
@@ -161,8 +166,10 @@
 
   </div>
 </div>
+}
 
-<!-- ── Actions ──────────────────────────────────────────────────────────────── -->
+<!-- ── Actions (mode classique / édition) ───────────────────────────────────── -->
+@if (activeSection === 0) {
 <div class="actions-row">
   <daf-button
     [options]="{ variant: 'ghost', label: 'Annuler' }"
@@ -178,3 +185,4 @@
     }"
     (onClick)="submit()" />
 </div>
+}

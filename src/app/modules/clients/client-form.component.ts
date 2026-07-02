@@ -32,6 +32,7 @@ const CURRENCY_OPTIONS: SelectOption[] = [
 export class ClientFormComponent implements OnInit, OnChanges {
   @Input() client?: ClientDetailDto;
   @Input() paysId!: number;
+  @Input() activeSection: number = 0;
   @Output() saved  = new EventEmitter<ClientDetailDto>();
   @Output() closed = new EventEmitter<void>();
 

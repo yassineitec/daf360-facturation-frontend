@@ -15,9 +15,9 @@ export class ClientService {
 
   getClients(filter: ClientFilter): Observable<PageResponse<ClientListItemDto>> {
     let params = new HttpParams()
-      .set('page',   String(filter.page   ?? 0))
-      .set('size',   String(filter.size   ?? 20))
-      .set('paysId', String(filter.paysId));   // required by backend (@NotNull)
+      .set('page', String(filter.page ?? 0))
+      .set('size', String(filter.size ?? 20));
+    if (filter.paysId) params = params.set('paysId', String(filter.paysId));
     if (filter.search)            params = params.set('search',    filter.search);
     if (filter.isActive != null)  params = params.set('isActive',  String(filter.isActive));
     if (filter.isKycDone != null) params = params.set('isKycDone', String(filter.isKycDone));
