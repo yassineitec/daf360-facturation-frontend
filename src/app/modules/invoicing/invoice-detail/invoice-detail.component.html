@@ -1,0 +1,241 @@
+@if (loading()) {
+  <div class="loading-state">
+    <span class="material-symbols-outlined spin">progress_activity</span>
+    Chargement…
+  </div>
+} @else if (error()) {
+  <div class="error-banner">
+    <span class="material-symbols-outlined">error</span>
+    {{ error() }}
+  </div>
+} @else if (invoice()) {
+
+<div class="detail-page">
+
+  <!-- ── Header ────────────────────────────────────────────────────────────── -->
+  <app-page-header
+    [title]="invoice()!.invoiceNumber ?? 'Brouillon'"
+    [subtitle]="invoice()!.clientNom + (invoice()!.affaireRef ? ' · ' + invoice()!.affaireRef : '')"
+    backLink="/fact/invoicing"
+    backLabel="Factures">
+    <div actions class="dh-header-right">
+      <div class="dh-pills">
+        <app-status-badge [status]="invoice()!.statut" />
+        @if (isOverdue()) {
+          <span class="overdue-pill">En retard</span>
+        }
+      </div>
+      <div class="dh-amount-block">
+        <span class="dh-amount-ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</span>
+        <span class="dh-amount-sub">
+          {{ formatAmount(invoice()!.montantHt, invoice()!.devise) }} HT +
+          {{ formatAmount(invoice()!.montantTva, invoice()!.devise) }} TVA
+        </span>
+      </div>
+    </div>
+  </app-page-header>
+
+  @if (actionError()) {
+    <div class="action-error-bar">
+      <span class="material-symbols-outlined">warning</span>
+      {{ actionError() }}
+    </div>
+  }
+
+
+  <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+
+    <!-- Avancement facturation -->
+    <div class="kpi-card">
+      <div class="kpi-card__top">
+        <div>
+          <p class="kpi-card__label">Avancement facturation</p>
+          <h3 class="kpi-card__value">{{ billingProgress() }}%</h3>
+        </div>
+        <span class="kpi-card__icon">
+          <span class="material-symbols-outlined">trending_up</span>
+        </span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-bar__fill progress-bar__fill--slate" [style.width.%]="billingProgress()"></div>
+      </div>
+      <p class="kpi-card__sub">{{ statutConfig().label }}</p>
+    </div>
+
+    <!-- Budget Total -->
+    <div class="kpi-card">
+      <div class="kpi-card__top">
+        <div>
+          <p class="kpi-card__label">Budget Total ({{ invoice()!.devise }})</p>
+          <h3 class="kpi-card__value">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</h3>
+        </div>
+        <span class="kpi-card__icon kpi-card__icon--teal">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+        </span>
+      </div>
+      <div class="kpi-card__row">
+        <span class="kpi-card__sub">HT : {{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</span>
+      </div>
+      <div class="progress-bar" style="margin-top:10px">
+        <div class="progress-bar__fill progress-bar__fill--teal" style="width:73%"></div>
+      </div>
+    </div>
+
+    <!-- Restant à payer -->
+    <div class="kpi-card">
+      <div class="kpi-card__top">
+        <div>
+          <p class="kpi-card__label">Restant à payer</p>
+          <h3 class="kpi-card__value">{{ formatAmount(montantRestant(), invoice()!.devise) }}</h3>
+        </div>
+        <span class="kpi-card__icon kpi-card__icon--green">
+          <span class="material-symbols-outlined">payments</span>
+        </span>
+      </div>
+      <div class="kpi-card__due">
+        <span class="material-symbols-outlined">schedule</span>
+        @if (invoice()!.dateEcheance) {
+          Échéance : {{ formatDate(invoice()!.dateEcheance) }}
+        } @else {
+          Pas d'échéance définie
+        }
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Body grid ──────────────────────────────────────────────────────────── -->
+  <div class="body-grid">
+
+    <div class="body-main">
+
+      <!-- Billing Lines table -->
+      <div class="table-card">
+        <div class="table-card__header">
+          <h3 class="table-card__title">Lignes de facturation</h3>
+          <div class="table-card__tabs">
+            <button class="tct-btn tct-btn--active">Détail</button>
+            <button class="tct-btn">Récapitulatif</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="billing-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Statut</th>
+                <th class="num">Qté</th>
+                <th class="num">PU HT</th>
+                <th class="num">TVA</th>
+                <th class="num">Total HT</th>
+                <th class="num">Total TTC</th>
+                <th class="act"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of invoice()!.lines; track line.id ?? $index) {
+                <tr class="billing-row">
+                  <td class="line-desc">{{ line.description }}</td>
+                  <td><span class="status-chip status-chip--green">Actif</span></td>
+                  <td class="num">{{ line.quantity }}</td>
+                  <td class="num muted">{{ formatAmount(line.unitRate) }}</td>
+                  <td class="num muted">{{ line.vatRatePct }}%</td>
+                  <td class="num bold">{{ formatAmount(line.lineTotal) }}</td>
+                  <td class="num bold accent">{{ formatAmount(lineTtc(line)) }}</td>
+                  <td class="act">
+                    <button class="edit-btn" title="Modifier">
+                      <span class="material-symbols-outlined">edit_square</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+              @empty {
+                <tr><td colspan="8" class="empty-cell">Aucune ligne de facturation.</td></tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="tfoot-row">
+                <td colspan="5" class="foot-label">Total général</td>
+                <td class="num foot-ht">{{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</td>
+                <td class="num foot-ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /body-main -->
+
+    <!-- Aside: Informations + Reminders -->
+    <div class="body-aside">
+
+      <!-- Informations -->
+      <div class="info-card">
+        <h3 class="info-card__title">Informations</h3>
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Type</span>
+            <span class="info-val">{{ invoice()!.invoiceType }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Devise</span>
+            <span class="info-val">{{ invoice()!.devise }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Date émission</span>
+            <span class="info-val">{{ formatDate(invoice()!.dateEmission) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Date échéance</span>
+            <span class="info-val" [class.overdue-val]="isOverdue()">{{ formatDate(invoice()!.dateEcheance) }}</span>
+          </div>
+          @if (invoice()!.conditionsPaiement) {
+            <div class="info-row">
+              <span class="info-label">Conditions</span>
+              <span class="info-val">{{ invoice()!.conditionsPaiement }}</span>
+            </div>
+          }
+          @if (invoice()!.bonDeCommande) {
+            <div class="info-row">
+              <span class="info-label">BDC</span>
+              <span class="info-val">{{ invoice()!.bonDeCommande }}</span>
+            </div>
+          }
+          @if (invoice()!.datePaiementFinal) {
+            <div class="info-row">
+              <span class="info-label">Payée le</span>
+              <span class="info-val">{{ formatDate(invoice()!.datePaiementFinal) }}</span>
+            </div>
+          }
+          @if (invoice()!.notes) {
+            <div class="info-row info-row--col">
+              <span class="info-label">Notes</span>
+              <span class="info-val info-val--notes">{{ invoice()!.notes }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Reminders -->
+      <div class="reminders-wrap">
+        <app-reminders-panel
+          [invoiceId]="invoice()!.id"
+          [remindersActive]="invoice()!.remindersActive" />
+      </div>
+
+    </div><!-- /body-aside -->
+
+  </div><!-- /body-grid -->
+
+</div><!-- /detail-page -->
+}
+
+<!-- ── Modals ──────────────────────────────────────────────────────────────── -->
+@if (showPaymentModal() && invoice()) {
+  <app-payment-modal [invoice]="invoice()!" (closed)="onPaymentClosed($event)" />
+}
+@if (showCreditNote() && invoice()) {
+  <app-credit-note-modal [invoice]="invoice()!" (closed)="onCreditNoteClosed($event)" />
+}

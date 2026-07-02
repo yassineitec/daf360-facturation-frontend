@@ -3,7 +3,7 @@ import { TitleCasePipe }   from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Store }           from '@ngrx/store';
 import { toSignal }        from '@angular/core/rxjs-interop';
-import { selectCurrentUser, selectUserPermissions } from '@khalilrebhiitec/daf360';
+import { CardComponent, selectCurrentUser, selectUserPermissions } from '@khalilrebhiitec/daf360';
 import { PaymentService }  from '../payments/payment.service';
 import { PaymentsDashboardStats } from '../payments/payment.model';
 import { InvoiceService }  from '../invoicing/invoice.service';
@@ -62,7 +62,7 @@ const ACTIVITY_CONFIG: Record<string, { icon: string; cls: string }> = {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [TitleCasePipe],
+  imports: [TitleCasePipe, CardComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })
@@ -80,6 +80,7 @@ export class HomeComponent implements OnInit {
   loadingStats    = signal(true);
   recentActivity  = signal<ActivityItem[]>([]);
   loadingActivity = signal(true);
+  pendingCount    = signal<number | null>(null);
 
   readonly today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -99,6 +100,11 @@ export class HomeComponent implements OnInit {
     this.paymentSvc.getStats().subscribe({
       next:  s  => { this.stats.set(s); this.loadingStats.set(false); },
       error: () => this.loadingStats.set(false),
+    });
+
+    this.invoiceSvc.getInvoices({ page: 0, size: 1, statut: 'SUBMITTED', from: null, to: null, search: null }).subscribe({
+      next:  res => this.pendingCount.set(res.totalElements),
+      error: ()  => this.pendingCount.set(0),
     });
 
     this.invoiceSvc.getInvoices({ page: 0, size: 6, statut: null, from: null, to: null, search: null }).subscribe({

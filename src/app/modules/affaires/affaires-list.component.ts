@@ -5,10 +5,11 @@ import { AffaireListItem, AffaireFilter, TYPE_LABELS, STATUT_LABELS } from './af
 import { PermissionDirective } from '../../shared/permission.directive';
 import { AffaireKpiCardComponent } from './components/affaire-kpi-card.component';
 import { AffaireTableComponent } from './components/affaire-table.component';
+import { ButtonComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-affaires-list',
-  imports: [PermissionDirective, AffaireKpiCardComponent, AffaireTableComponent],
+  imports: [PermissionDirective, AffaireKpiCardComponent, AffaireTableComponent, ButtonComponent],
   templateUrl: './affaires-list.component.html',
   styleUrl: './affaires-list.component.scss',
 })

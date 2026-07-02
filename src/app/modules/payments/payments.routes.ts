@@ -4,7 +4,7 @@ export const PAYMENTS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./payments-dashboard.component').then(m => m.PaymentsDashboardComponent),
+      import('./payments-dashboard/payments-dashboard.component').then(m => m.PaymentsDashboardComponent),
   },
   {
     path: 'reconciliation',

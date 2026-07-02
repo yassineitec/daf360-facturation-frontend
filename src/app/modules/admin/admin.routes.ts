@@ -4,6 +4,6 @@ export const ADMIN_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./admin-list.component').then(m => m.AdminListComponent),
+      import('./admin-list/admin-list.component').then(m => m.AdminListComponent),
   },
 ];

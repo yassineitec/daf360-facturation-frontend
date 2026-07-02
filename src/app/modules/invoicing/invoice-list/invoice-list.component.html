@@ -1,0 +1,284 @@
+<div class="inv-page">
+
+  <!-- ── Page header ───────────────────────────────────────────────────────── -->
+  <header class="inv-header">
+    <div class="inv-header__left">
+      <h2 class="inv-header__title">Facturation</h2>
+      <p class="inv-header__sub">Gérez vos émissions et suivis de factures clients.</p>
+    </div>
+    <div class="inv-header__right">
+      <daf-button [options]="{variant:'teal', label:'Nouvelle facture', iconStart:'add'}" (onClick)="navigateToNew()" />
+    </div>
+  </header>
+
+  <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
+  <section class="kpi-grid">
+
+    <!-- Total Facturé -->
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Total Facturé</span>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+            <span class="material-symbols-outlined text-sm text-primary">receipt_long</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountTotal()) }}</p>
+          <p class="text-[10px] font-bold mt-1 text-primary">{{ totalElements() }} factures</p>
+        </div>
+      </div>
+    </daf-card>
+
+    <!-- En attente -->
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">En attente</span>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-teal/10">
+            <span class="material-symbols-outlined text-sm text-teal">schedule</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountEnAttente()) }}</p>
+          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnAttente() }} en attente</p>
+        </div>
+      </div>
+    </daf-card>
+
+    <!-- En retard -->
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">En retard</span>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-danger/10">
+            <span class="material-symbols-outlined text-sm text-danger">warning</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[22px] font-black leading-tight text-danger">{{ formatAmount(amountEnRetard()) }}</p>
+          <p class="text-[10px] font-bold mt-1 text-danger">{{ statsEnRetard() }} en retard</p>
+        </div>
+      </div>
+    </daf-card>
+
+    <!-- Litiges -->
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
+      <div class="p-4 flex flex-col justify-between" style="min-height:112px">
+        <div class="flex justify-between items-start mb-3">
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Litiges</span>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-outline/10">
+            <span class="material-symbols-outlined text-sm text-outline">gavel</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountEnLitige()) }}</p>
+          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnLitige() }} en litige</p>
+        </div>
+      </div>
+    </daf-card>
+
+  </section>
+
+  <!-- ── Search & Filters ──────────────────────────────────────────────────── -->
+  <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}">
+    <div class="search-bar-row">
+
+      <div class="search-wrap">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input class="search-input" type="text"
+          placeholder="Rechercher client, facture, projet..."
+          [value]="searchText()"
+          (input)="searchText.set(getInputValue($event)); onSearch()" />
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-btn-wrap">
+          <span class="material-symbols-outlined filter-btn-icon">filter_list</span>
+          <select class="filter-select"
+            [value]="filterStatutSel()[0] || ''"
+            (change)="filterStatutSel.set(getSelectValue($event) ? [getSelectValue($event)] : []); onFilterChange()">
+            <option value="">Statut</option>
+            @for (opt of statutSelectOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filter-btn-wrap">
+          <span class="material-symbols-outlined filter-btn-icon">calendar_today</span>
+          <input class="filter-date" type="date" title="Émis depuis"
+            [value]="filterFrom()"
+            (change)="filterFrom.set(getInputValue($event)); onFilterChange()" />
+        </div>
+
+        <div class="filter-btn-wrap">
+          <span class="material-symbols-outlined filter-btn-icon">event</span>
+          <input class="filter-date" type="date" title="Émis jusqu'à"
+            [value]="filterTo()" [min]="filterFrom()"
+            (change)="filterTo.set(getInputValue($event)); onFilterChange()" />
+        </div>
+
+        <div class="filter-sep"></div>
+
+        <button class="filter-ghost-btn">
+          <span class="material-symbols-outlined">file_download</span>
+          Export
+        </button>
+      </div>
+
+    </div>
+  </daf-card>
+
+  <!-- ── Action error ───────────────────────────────────────────────────────── -->
+  @if (actionError()) {
+    <div class="error-banner">
+      <span class="material-symbols-outlined">error</span>
+      {{ actionError() }}
+    </div>
+  }
+
+  <!-- ── Data table ────────────────────────────────────────────────────────── -->
+  <daf-card [options]="{variant:'default',padding:'none',radius:'xl'}" class="table-card">
+    @if (error()) {
+      <div class="table-error">{{ error() }}</div>
+    }
+
+    <div class="table-scroll">
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th>Référence / Projet</th>
+            <th>Client</th>
+            <th class="th-right">Montant TTC</th>
+            <th>Statut</th>
+            <th>Date / Échéance</th>
+            <th class="th-actions"></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          @if (loading()) {
+            @for (n of [1,2,3,4,5]; track n) {
+              <tr class="skeleton-row">
+                <td><div class="skel skel--md"></div></td>
+                <td><div class="skel skel--lg"></div></td>
+                <td><div class="skel skel--sm"></div></td>
+                <td><div class="skel skel--sm"></div></td>
+                <td><div class="skel skel--sm"></div></td>
+                <td></td>
+              </tr>
+            }
+          }
+
+          @for (inv of invoices(); track inv.id) {
+            <tr class="inv-row" [class.inv-row--overdue]="isOverdue(inv)"
+              (click)="navigateToDetail(inv.id)">
+
+              <td>
+                <div class="cell-ref">
+                  <span class="cell-ref__num">{{ inv.invoiceNumber || '(brouillon)' }}</span>
+                  <span class="cell-ref__aff">{{ inv.affaireRef ?? '—' }}</span>
+                </div>
+              </td>
+
+              <td>
+                <div class="cell-client" [title]="inv.clientNom ?? ''">
+                  {{ inv.clientNom || '—' }}
+                </div>
+              </td>
+
+              <td class="td-right">
+                <span class="cell-amount">{{ formatAmount(inv.montantTtc, inv.devise) }}</span>
+              </td>
+
+              <td>
+                <div class="cell-statut">
+                  <span class="badge badge--{{ statutBadgeVariant(inv.statut) }}">
+                    {{ statutLabel(inv.statut) }}
+                  </span>
+                  @if (isOverdue(inv)) {
+                    <span class="overdue-tag">+{{ overdueDays(inv) }} jours</span>
+                  }
+                </div>
+              </td>
+
+              <td>
+                <div class="cell-date" [class.cell-date--overdue]="isOverdue(inv)">
+                  {{ inv.dateEcheance ? 'Éch. ' + formatDate(inv.dateEcheance) : formatDate(inv.dateEmission) }}
+                </div>
+              </td>
+
+              <td class="td-actions" (click)="$event.stopPropagation()">
+                <button class="menu-btn" title="Actions">
+                  <span class="material-symbols-outlined">more_vert</span>
+                </button>
+              </td>
+
+            </tr>
+          }
+
+          @if (!loading() && invoices().length === 0) {
+            <tr>
+              <td colspan="6" class="empty-cell">
+                <span class="material-symbols-outlined">receipt_long</span>
+                Aucune facture trouvée.
+              </td>
+            </tr>
+          }
+
+        </tbody>
+      </table>
+    </div>
+
+    <daf-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [totalElements]="totalElements()"
+      (pageChange)="goToPage($event)" />
+
+  </daf-card>
+
+</div>
+
+<!-- Payment modal -->
+@if (paymentTarget()) {
+  <app-payment-modal [invoice]="paymentTarget()!" (closed)="onPaymentDone($event)" />
+}
+
+<!-- Approval modal body template -->
+<ng-template #approvalTpl>
+  <div class="approval-body">
+    <div>
+      <label class="approval-label">Décision *</label>
+      <div class="decision-btns">
+        <button class="decision-btn"
+          [class.decision-btn--approve]="approvalDecision === 'APPROVE'"
+          (click)="approvalDecision = 'APPROVE'">
+          <span class="material-symbols-outlined">check_circle</span>
+          Approuver
+        </button>
+        <button class="decision-btn"
+          [class.decision-btn--return]="approvalDecision === 'RETURN'"
+          (click)="approvalDecision = 'RETURN'">
+          <span class="material-symbols-outlined">undo</span>
+          Retourner
+        </button>
+        <button class="decision-btn"
+          [class.decision-btn--reject]="approvalDecision === 'REJECT'"
+          (click)="approvalDecision = 'REJECT'">
+          <span class="material-symbols-outlined">cancel</span>
+          Rejeter
+        </button>
+      </div>
+    </div>
+    @if (approvalDecision !== 'APPROVE') {
+      <div>
+        <label class="approval-label">Commentaire *</label>
+        <textarea class="approval-textarea" rows="3" placeholder="Motif obligatoire…"
+          [value]="approvalCommentSig()"
+          (input)="approvalCommentSig.set(getInputValue($event))"></textarea>
+      </div>
+    }
+  </div>
+</ng-template>

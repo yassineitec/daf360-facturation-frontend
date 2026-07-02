@@ -1,68 +1,180 @@
 @import '../../../shared/design-tokens';
 
-:host {
-  display: block;
-}
+$green:      $brand-green;   // #006b58
+$teal:       $brand-teal;    // #79D7BE
+$deep-blue:  #164B60;
 
-// ── Page — let shell-content handle the page scroll ────────────────────────
+:host { display: block; }
+
+// ── Page wrapper ───────────────────────────────────────────────────────────────
 .wizard-page {
-  background: #f5f6f8;
+  padding: 28px 16px 48px;
   box-sizing: border-box;
 }
 
-.wizard-container {
-  width: 100%;
-  max-width: 1100px;
+// ── Two-column grid ────────────────────────────────────────────────────────────
+.wizard-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+  max-width: 100%;
   margin: 0 auto;
+  align-items: start;
 }
 
-// ── Back link ────────────────────────────────────────────────────────────────
-.back-link {
+// ══════════════════════════════════════════════════════════════════════════════
+// LEFT — form area
+// ══════════════════════════════════════════════════════════════════════════════
+
+.form-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+// ── Page head ─────────────────────────────────────────────────────────────────
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.back-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid rgba($brand-slate, 0.3);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  text-decoration: none;
+  color: #3e4945;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  .material-symbols-outlined { font-size: 20px; }
+  &:hover { border-color: $green; color: $green; background: rgba($green, 0.05); }
+}
+
+.page-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0b1c30;
+  margin: 0 0 2px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.page-sub {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0;
+}
+
+// ── Form card ─────────────────────────────────────────────────────────────────
+.form-card {
+  overflow: hidden;
+  background: $surface;
+  border-radius: $radius-lg;
+  border: 1px solid $border-soft;
+  box-shadow: $shadow-card;
+}
+
+// ── Navigation footer ─────────────────────────────────────────────────────────
+.nav-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-top: 1px solid $border-soft;
+}
+
+.nav-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  font-weight: 500;
-  color: $brand-slate;
-  text-decoration: none;
-  margin-bottom: 10px;
-  padding: 5px 8px;
-  border-radius: 8px;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: $radius-md;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: all 0.15s;
 
-  &:hover { background: rgba($brand-teal, 0.12); color: darken($brand-slate, 8%); }
-  .material-symbols-outlined { font-size: 16px; }
+  .material-symbols-outlined { font-size: 18px; }
+
+  &--ghost {
+    padding: 9px 16px;
+    background: none;
+    color: $text-muted;
+    &:hover { background: $surface-mid; color: $text-dark; }
+  }
+
+  &--primary {
+    padding: 10px 24px;
+    background: $brand-green;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba($brand-green, 0.30);
+    &:hover:not(:disabled) {
+      background: darken($brand-green, 6%);
+      box-shadow: 0 6px 18px rgba($brand-green, 0.40);
+      transform: translateY(-1px);
+    }
+    &:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transform: none; }
+  }
 }
 
-// ── Page title ────────────────────────────────────────────────────────────────
-.wizard-title {
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 32px;
-  color: $text-dark;
-  margin: 0 0 16px;
-  letter-spacing: -0.02em;
+// ── Card head ─────────────────────────────────────────────────────────────────
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid $border-soft;
+  background: rgba($teal, 0.04);
+
+  &__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba($green, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: $green;
+
+    .material-symbols-outlined { font-size: 22px; }
+  }
+
+  &__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0b1c30;
+    margin: 0 0 3px;
+    line-height: 1.3;
+  }
+
+  &__sub {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
+  }
 }
 
-// ── Main card ─────────────────────────────────────────────────────────────────
-.wizard-card {
-  background: #ffffff;
-  border: 1px solid $border;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  overflow: visible;
+// ── Step body ─────────────────────────────────────────────────────────────────
+.step-body {
+  padding: 28px 32px;
 }
 
-// ── Step content ──────────────────────────────────────────────────────────────
-.step-content {
-  padding: 36px 48px;
-  background: #ffffff;
-}
-
-// ── Validation hint — shown proactively when step is incomplete ───────────────
+// ── Validation hint ──────────────────────────────────────────────────────────
 .validation-hint {
-  margin: 0 48px 4px;
+  margin: 0 32px 12px;
   padding: 10px 14px;
   background: rgba(#1a6b7c, 0.06);
   border: 1px solid rgba(#1a6b7c, 0.18);
@@ -79,7 +191,7 @@
 
 // ── Error banner ──────────────────────────────────────────────────────────────
 .error-banner {
-  margin: 0 48px 12px;
+  margin: 0 32px 16px;
   padding: 12px 16px;
   background: $error-bg;
   border: 1px solid #fca5a5;
@@ -93,59 +205,18 @@
   .material-symbols-outlined { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 }
 
-// ── Navigation — fond blanc, pas de fond gris ─────────────────────────────
-.wizard-nav {
-  padding: 18px 48px 22px;
-  border-top: 1px solid $border;
-  background: #ffffff;
+// ── Saving indicator ─────────────────────────────────────────────────────────
+.saving-hint {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  flex-shrink: 0;
-}
-
-// Annuler — texte cliquable avec cursor
-.nav-cancel {
-  font-size: 14px;
-  font-weight: 500;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 13px;
   color: $text-muted;
-  text-decoration: none;
-  padding: 9px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.15s, color 0.15s;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: $text-dark;
-  }
-  &:active { background: rgba(0, 0, 0, 0.09); }
-}
-
-// Précédent — ghost avec arrow
-.nav-prev {
-  @include btn-ghost;
-  cursor: pointer;
-  user-select: none;
-}
-
-// Suivant — pill teal bien visible
-.nav-next {
-  @include btn-pill-teal;
-  cursor: pointer;
-  user-select: none;
-  min-width: 160px;
   justify-content: center;
-
-  &--incomplete {
-    opacity: 0.5;
-    cursor: default;
-  }
 }
 
-// Spinner
-.nav-spin {
+.saving-spin {
   animation: spin 0.8s linear infinite;
   font-size: 16px;
 }
@@ -153,11 +224,10 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 // ── Footer brouillon ──────────────────────────────────────────────────────────
-.wizard-footer {
+.form-footer {
   display: flex;
   justify-content: center;
-  padding: 14px 0 20px;
-  flex-shrink: 0;
+  padding: 4px 0 0;
 }
 
 .draft-link {
@@ -173,7 +243,192 @@
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 
-  &:hover { color: $brand-slate; background: rgba($brand-teal, 0.12); }
-  &:active { background: rgba($brand-teal, 0.20); }
+  &:hover { color: $brand-slate; background: rgba($teal, 0.12); }
+  &:active { background: rgba($teal, 0.20); }
   .material-symbols-outlined { font-size: 16px; }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RIGHT — sidebar
+// ══════════════════════════════════════════════════════════════════════════════
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 24px;
+}
+
+// ── Panel header / body (matches reference design) ────────────────────────────
+.panel-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid $border-soft;
+  background: $surface-low;
+  border-radius: $radius-lg $radius-lg 0 0;
+}
+
+.panel-body {
+  padding: 20px;
+}
+
+.panel__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $brand-slate;
+  margin: 0;
+}
+
+// ── Progression — vertical step list ─────────────────────────────────────────
+
+.step-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  // Connecting line between circles
+  &::before {
+    content: '';
+    position: absolute;
+    left: 17px;     // center of 36px circle
+    top: 36px;      // start after first circle
+    bottom: 36px;   // stop before last circle
+    width: 2px;
+    background: $border;
+    border-radius: 2px;
+  }
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+  position: relative;
+  z-index: 1;
+
+  &--active {
+    .step-num {
+      background: $brand-teal;
+      color: #164B60;
+      box-shadow: 0 0 0 4px rgba($brand-teal, 0.20), 0 4px 12px rgba($brand-teal, 0.35);
+    }
+    .step-label {
+      color: $brand-teal;
+      font-weight: 700;
+    }
+  }
+
+  &--done {
+    .step-num {
+      background: $brand-green;
+      color: #fff;
+      box-shadow: none;
+    }
+    .step-label {
+      color: $text-muted;
+    }
+  }
+}
+
+.step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: $surface-mid;
+  border: 2px solid $border;
+  color: $text-muted;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+.step-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text-light;
+  transition: color 0.2s;
+  line-height: 1.3;
+}
+
+// ── Résumé rows ───────────────────────────────────────────────────────────────
+.summary-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+
+  &__key {
+    font-size: 12px;
+    color: #94a3b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  &__val {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0b1c30;
+    text-align: right;
+    word-break: break-word;
+    max-width: 180px;
+  }
+}
+
+// ── Tips panel (amber conseil) ────────────────────────────────────────────────
+.tips-panel {
+  background: rgba(#FFF8E1, 0.9);
+  border: 1px solid rgba(#F59E0B, 0.3);
+  border-radius: 14px;
+  padding: 16px 18px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #92400E;
+    margin-bottom: 10px;
+
+    .material-symbols-outlined { font-size: 16px; color: #F59E0B; }
+  }
+
+  &__text {
+    font-size: 12.5px;
+    color: #78350F;
+    line-height: 1.65;
+    margin: 0;
+  }
+}
+
+// ── Responsive: collapse to single column below 900px ────────────────────────
+@media (max-width: 900px) {
+  .wizard-layout {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+
+    .panel, .tips-panel { flex: 1 1 260px; }
+  }
 }

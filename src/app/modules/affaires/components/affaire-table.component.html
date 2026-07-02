@@ -2,26 +2,43 @@
 
   <!-- Header -->
   <div class="tc-header">
-    <h3 class="tc-title">Liste des Affaires</h3>
-    <div class="tc-actions">
-      <!-- View toggle -->
-      <div class="view-toggle">
-        <button class="vt-btn" [class.vt-btn--active]="viewMode() === 'table'"
-                (click)="viewMode.set('table')" title="Vue tableau">
-          <span class="material-symbols-outlined">table_rows</span>
-        </button>
-        <button class="vt-btn" [class.vt-btn--active]="viewMode() === 'card'"
-                (click)="viewMode.set('card')" title="Vue cartes">
-          <span class="material-symbols-outlined">grid_view</span>
+    <div class="flex items-center gap-3">
+
+      <!-- Search + filter -->
+      <div class="flex flex-1 items-center gap-4">
+        <div class="relative flex-1">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2
+                       text-[18px] text-outline pointer-events-none">search</span>
+          <input type="search"
+                 [value]="searchText()"
+                 placeholder="Rechercher une affaire…"
+                 (input)="searchText.set($any($event.target).value); searchGo.emit()"
+                 class="w-full pl-10 pr-4 py-2.5 border border-outline-variant rounded-lg
+                        text-[14px] bg-white focus:outline-none focus:border-[#1b3a4b]
+                        placeholder:text-outline/50 transition-colors" />
+        </div>
+        <button type="button"
+                class="flex items-center gap-2 px-4 py-2.5 border border-outline-variant rounded-lg
+                       text-[14px] font-semibold hover:bg-surface-container transition-colors shrink-0">
+          <span class="material-symbols-outlined text-[18px] text-outline">tune</span>
+          Filtres
         </button>
       </div>
-      <div class="tc-sep"></div>
-      <button class="icon-btn" title="Filtrer">
-        <span class="material-symbols-outlined">filter_list</span>
-      </button>
-      <button class="icon-btn" title="Exporter">
-        <span class="material-symbols-outlined">download</span>
-      </button>
+
+      <!-- View toggle — RH profiles style -->
+      <div class="flex border border-outline-variant rounded-lg overflow-hidden shrink-0">
+        <button type="button" class="p-2 transition-colors" title="Vue grille"
+                [class]="viewMode() === 'grid' ? 'bg-secondary/10 text-secondary' : 'hover:bg-surface-container text-outline'"
+                (click)="viewMode.set('grid')">
+          <span class="material-symbols-outlined text-[20px]">grid_view</span>
+        </button>
+        <button type="button" class="p-2 transition-colors" title="Vue tableau"
+                [class]="viewMode() === 'list' ? 'bg-secondary/10 text-secondary' : 'hover:bg-surface-container text-outline'"
+                (click)="viewMode.set('list')">
+          <span class="material-symbols-outlined text-[20px]">table_rows</span>
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -49,8 +66,91 @@
     </div>
   } @else {
 
+    <!-- ═══ GRID VIEW (cards) ═══ -->
+    @if (viewMode() === 'grid') {
+      @if (affaires().length === 0) {
+        <div class="card-empty">
+          <span class="material-symbols-outlined empty-icon">search_off</span>
+          <span>Aucune affaire trouvée.</span>
+        </div>
+      } @else {
+        <div class="card-grid">
+          @for (a of affaires(); track a.id) {
+
+            <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true,clickable:true}"
+                      (click)="rowClick.emit(a.id)">
+              <div class="aff-card">
+
+                <div class="aff-card__badge-pos">
+                  <daf-badge
+                    [label]="statutBadgeCfg(a.statut).label"
+                    [options]="{ variant: statutBadgeVariant(a.statut), pill: true, size: 'sm' }" />
+                </div>
+
+                <div class="aff-card__header">
+                  <div class="aff-card__id-block">
+                    <div class="aff-card__icon">
+                      <span class="material-symbols-outlined">business_center</span>
+                    </div>
+                    <div>
+                      <span class="aff-card__ref">{{ a.reference }}</span>
+                      <h5 class="aff-card__name">{{ a.intitule }}</h5>
+                    </div>
+                  </div>
+                  <div class="aff-card__dot"
+                       [style.background]="statutBadgeCfg(a.statut).color"
+                       [style.box-shadow]="'0 0 0 4px ' + statutBadgeCfg(a.statut).color + '22'">
+                  </div>
+                </div>
+
+                <div class="aff-card__body">
+                  <div class="aff-card__row">
+                    <span class="aff-card__row-label">Client</span>
+                    <span class="aff-card__row-val">{{ a.clientName || '—' }}</span>
+                  </div>
+                  <div class="aff-card__row">
+                    <span class="aff-card__row-label">Responsable</span>
+                    <div class="aff-card__resp-val">
+                      <div class="resp-avatar resp-avatar--sm">{{ initials(a.responsableFullName) }}</div>
+                      <span class="aff-card__row-val">{{ a.responsableFullName || '—' }}</span>
+                    </div>
+                  </div>
+                  <div class="aff-card__row">
+                    <span class="aff-card__row-label">Type</span>
+                    <span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
+                  </div>
+                  <div class="aff-card__amount-block">
+                    <span class="aff-card__amount-label">BUDGET PRÉVISIONNEL</span>
+                    <span class="aff-card__amount">
+                      {{ formatAmount(a.budgetPrevisionnel) }}
+                      <span class="aff-card__amount-unit">TND</span>
+                    </span>
+                  </div>
+                  @if (a.rafDisponible != null) {
+                    <div class="aff-card__raf">
+                      <span class="aff-card__raf-label">RAF</span>
+                      <span class="aff-card__raf-val" [style.color]="rafColor(a)">
+                        {{ formatAmount(a.rafDisponible) }} TND
+                      </span>
+                    </div>
+                  }
+                </div>
+
+                <button class="aff-card__cta" (click)="rowClick.emit(a.id); $event.stopPropagation()">
+                  <span class="material-symbols-outlined">arrow_forward</span>
+                  Voir le détail
+                </button>
+
+              </div>
+            </daf-card>
+
+          }
+        </div>
+      }
+    }
+
     <!-- ═══ TABLE VIEW ═══ -->
-    @if (viewMode() === 'table') {
+    @if (viewMode() === 'list') {
       <div class="table-scroll">
         <table>
           <thead>
@@ -109,12 +209,24 @@
                   </span>
                 </td>
 
-                <td><app-status-badge [status]="a.statut" /></td>
+                <td>
+                  @if (a.statut === 'EN_COURS') {
+                    <span class="statut-badge statut-badge--en-cours">En cours</span>
+                  } @else if (a.statut === 'SUSPENDUE') {
+                    <span class="statut-badge statut-badge--suspendue">Suspendue</span>
+                  } @else if (a.statut === 'CLOTUREE') {
+                    <span class="statut-badge statut-badge--cloturee">Clôturée</span>
+                  } @else if (a.statut === 'ARCHIVEE') {
+                    <span class="statut-badge statut-badge--archivee">Archivée</span>
+                  } @else {
+                    <span class="statut-badge statut-badge--draft">{{ a.statut }}</span>
+                  }
+                </td>
 
                 <td class="act">
                   <button class="view-btn" title="Voir"
                           (click)="rowClick.emit(a.id); $event.stopPropagation()">
-                    <span class="material-symbols-outlined">arrow_forward_ios</span>
+                    <span class="material-symbols-outlined">visibility</span>
                   </button>
                 </td>
 
@@ -135,100 +247,11 @@
       </div>
     }
 
-    <!-- ═══ CARD VIEW ═══ -->
-    @if (viewMode() === 'card') {
-      @if (affaires().length === 0) {
-        <div class="card-empty">
-          <span class="material-symbols-outlined empty-icon">search_off</span>
-          <span>Aucune affaire trouvée.</span>
-        </div>
-      } @else {
-        <div class="card-grid">
-          @for (a of affaires(); track a.id) {
-
-            <div class="aff-card" (click)="rowClick.emit(a.id)">
-
-              <!-- Badge statut flottant -->
-              <div class="aff-card__badge"
-                   [style.background]="statutBadgeCfg(a.statut).color"
-                   [style.box-shadow]="'0 4px 10px ' + statutBadgeCfg(a.statut).shadow">
-                {{ statutBadgeCfg(a.statut).label }}
-              </div>
-
-              <!-- Header -->
-              <div class="aff-card__header">
-                <div class="aff-card__id-block">
-                  <div class="aff-card__icon">
-                    <span class="material-symbols-outlined">business_center</span>
-                  </div>
-                  <div>
-                    <span class="aff-card__ref">{{ a.reference }}</span>
-                    <h5 class="aff-card__name">{{ a.intitule }}</h5>
-                  </div>
-                </div>
-                <div class="aff-card__dot"
-                     [style.background]="statutBadgeCfg(a.statut).color"
-                     [style.box-shadow]="'0 0 0 4px ' + statutBadgeCfg(a.statut).color + '22'">
-                </div>
-              </div>
-
-              <!-- Body -->
-              <div class="aff-card__body">
-                <div class="aff-card__row">
-                  <span class="aff-card__row-label">Client</span>
-                  <span class="aff-card__row-val">{{ a.clientName || '—' }}</span>
-                </div>
-                <div class="aff-card__row">
-                  <span class="aff-card__row-label">Responsable</span>
-                  <div class="aff-card__resp-val">
-                    <div class="resp-avatar resp-avatar--sm">{{ initials(a.responsableFullName) }}</div>
-                    <span class="aff-card__row-val">{{ a.responsableFullName || '—' }}</span>
-                  </div>
-                </div>
-                <div class="aff-card__row">
-                  <span class="aff-card__row-label">Type</span>
-                  <span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
-                </div>
-
-                <div class="aff-card__amount-block">
-                  <span class="aff-card__amount-label">BUDGET PRÉVISIONNEL</span>
-                  <span class="aff-card__amount">
-                    {{ formatAmount(a.budgetPrevisionnel) }}
-                    <span class="aff-card__amount-unit">TND</span>
-                  </span>
-                </div>
-
-                @if (a.rafDisponible != null) {
-                  <div class="aff-card__raf">
-                    <span class="aff-card__raf-label">RAF</span>
-                    <span class="aff-card__raf-val" [style.color]="rafColor(a)">
-                      {{ formatAmount(a.rafDisponible) }} TND
-                    </span>
-                  </div>
-                }
-              </div>
-
-              <!-- CTA -->
-              <button class="aff-card__cta" (click)="rowClick.emit(a.id); $event.stopPropagation()">
-                <span class="material-symbols-outlined">arrow_forward</span>
-                Voir le détail
-              </button>
-
-            </div>
-
-          }
-        </div>
-      }
-    }
-
     <!-- Footer -->
     <div class="tc-footer">
-      <!-- gauche : compteur -->
       <span class="footer-count">
         Affichage de {{ affaires().length }} sur {{ totalElements() }} affaires
       </span>
-
-      <!-- centre : pagination -->
       @if (totalPages() > 1) {
         <div class="page-btns">
           <button class="page-btn" [disabled]="currentPage() === 0"
@@ -241,8 +264,6 @@
                   (click)="pageChange.emit(currentPage() + 1)">›</button>
         </div>
       }
-
-      <!-- droite : légende statuts -->
       <div class="footer-legend">
         @if (statsEnCours() > 0) {
           <div class="legend-item">
