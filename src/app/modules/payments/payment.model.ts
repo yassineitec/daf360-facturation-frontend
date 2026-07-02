@@ -2,7 +2,7 @@ import { PageResponse } from '../affaires/affaire.model';
 
 export type { PageResponse };
 
-export type MatchStatut = 'UNMATCHED' | 'PROPOSED' | 'CONFIRMED' | 'REJECTED';
+export type MatchStatut = 'UNMATCHED' | 'PROPOSED' | 'CONFIRMED' | 'REJECTED' | 'PARTIALLY_MATCHED' | 'ACOMPTE';
 
 export interface PaymentsDashboardStats {
   enAttenteMontant:        number;
@@ -51,6 +51,10 @@ export interface BankTransaction {
   proposedClientNom:     string | null;
   confidence:            number | null;
   devise:                string;
+  matchedAmount:         number | null;
+  remainingAmount:       number | null;
+  isPartialMatch:        boolean;
+  isAcompte:             boolean;
 }
 
 export interface ImportSummary {
@@ -78,10 +82,12 @@ export interface UnmatchedSummaryDto {
 }
 
 export const MATCH_STATUT_CONFIG: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  UNMATCHED: { label: 'Non rapproché', bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
-  PROPOSED:  { label: 'Proposition',   bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-  CONFIRMED: { label: 'Confirmé',      bg: '#d1fae5', color: '#065f46', border: '#34d399' },
-  REJECTED:  { label: 'Rejeté',        bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+  UNMATCHED:         { label: 'Non rapproché', bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
+  PROPOSED:          { label: 'Proposition',   bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  CONFIRMED:         { label: 'Confirmé',      bg: '#d1fae5', color: '#065f46', border: '#34d399' },
+  REJECTED:          { label: 'Rejeté',        bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+  PARTIALLY_MATCHED: { label: 'Partiel',       bg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc' },
+  ACOMPTE:           { label: 'Acompte',       bg: '#faf5ff', color: '#7c3aed', border: '#c4b5fd' },
 };
 
 export function agingRowColor(joursRetard: number): string {

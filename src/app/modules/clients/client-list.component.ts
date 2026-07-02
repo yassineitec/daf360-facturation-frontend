@@ -2,12 +2,13 @@ import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular
 import { DecimalPipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, forkJoin, takeUntil } from 'rxjs';
 import { ClientService } from './client.service';
 import { ClientListItemDto, ClientDetailDto, ClientFilter } from './client.model';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { ClientFormComponent } from './client-form.component';
 import { PaysRefDto } from '../affaires/affaire.model';
+import { UserStore } from '../../core/user.store';
 
 @Component({
   selector: 'app-client-list',
@@ -19,8 +20,11 @@ export class ClientListComponent implements OnInit, OnDestroy {
   private readonly svc            = inject(ClientService);
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly userStore      = inject(UserStore);
   private readonly destroy$       = new Subject<void>();
-  private readonly search$  = new Subject<string>();
+  private readonly search$        = new Subject<string>();
+
+  readonly canViewAllClients = computed(() => this.userStore.hasPermission('FACT_VIEW_ALL_CLIENTS'));
 
   clients          = signal<ClientListItemDto[]>([]);
   loading          = signal(false);
@@ -69,14 +73,32 @@ export class ClientListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.svc.getPays().subscribe(pays => {
-      this.paysList.set(pays);
-      if (pays.length > 0) {
-        this.filterPaysId = pays[0].id;
-        this.loadSectors();
-        this.load();
-      }
-    });
+    if (this.canViewAllClients()) {
+      // User can browse across all countries — show the pays dropdown
+      forkJoin({
+        pays:     this.svc.getPays(),
+        myPaysId: this.svc.getMyPays(),
+      }).subscribe(({ pays, myPaysId }) => {
+        this.paysList.set(pays);
+        if (pays.length > 0) {
+          const userPays = myPaysId != null
+            ? (pays.find(p => p.id === myPaysId) ?? pays[0])
+            : pays[0];
+          this.filterPaysId = userPays.id;
+          this.loadSectors();
+          this.load();
+        }
+      });
+    } else {
+      // Regular user — locked to their own pays, no dropdown shown
+      this.svc.getMyPays().subscribe(myPaysId => {
+        if (myPaysId != null) {
+          this.filterPaysId = myPaysId;
+          this.loadSectors();
+          this.load();
+        }
+      });
+    }
 
     this.search$.pipe(
       debounceTime(300),

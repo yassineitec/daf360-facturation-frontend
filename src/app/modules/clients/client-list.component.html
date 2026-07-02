@@ -66,15 +66,16 @@
         [(ngModel)]="searchText" (ngModelChange)="onSearch()" maxlength="100" autocomplete="off" />
     </div>
 
-    <div class="filter-group">
-      <span class="filter-label">Pays :</span>
-      <select class="filter-select" [(ngModel)]="filterPaysId" (change)="onPaysChange()">
-        <option [value]="0">Tous</option>
-        @for (p of paysList(); track p.id) {
-          <option [value]="p.id">{{ p.frenchLabel }}</option>
-        }
-      </select>
-    </div>
+    @if (canViewAllClients()) {
+      <div class="filter-group">
+        <span class="filter-label">Pays :</span>
+        <select class="filter-select" [(ngModel)]="filterPaysId" (change)="onPaysChange()">
+          @for (p of paysList(); track p.id) {
+            <option [value]="p.id">{{ p.frenchLabel }}</option>
+          }
+        </select>
+      </div>
+    }
 
     @if (sectors().length > 0) {
       <div class="filter-group">

@@ -30,6 +30,13 @@ const APP_NAV_DEFS: AppNavDef[] = [
   },
   { id: 'payments', label: 'Paiements', icon: 'credit_card', route: 'payments', permission: null },
   {
+    id: 'reconciliation',
+    label: 'Rapprochement bancaire',
+    icon: 'account_balance',
+    route: 'payments/reconciliation',
+    permission: 'FACT_BANK_RECONCILIATION',
+  },
+  {
     id: 'subcontracting',
     label: 'Sous-traitance',
     icon: 'group',
@@ -57,6 +64,13 @@ const APP_NAV_DEFS: AppNavDef[] = [
     label: 'Administration',
     icon: 'admin_panel_settings',
     route: 'admin',
+    permission: null,
+  },
+  {
+    id: 'admin-roles',
+    label: 'Rôles & Permissions',
+    icon: 'manage_accounts',
+    route: 'admin/roles',
     permission: null,
   },
   // {
