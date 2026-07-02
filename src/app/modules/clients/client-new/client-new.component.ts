@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { ClientService } from '../client.service';
 import { ClientDetailDto } from '../client.model';
 import { ClientFormComponent } from '../client-form.component';
-import { CardComponent } from '@khalilrebhiitec/daf360';
+import { CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 
 const STEPS = [
   { title: 'Identification',          icon: 'badge'         },
@@ -19,7 +19,7 @@ const STEP_TIPS = [
 
 @Component({
   selector: 'app-client-new',
-  imports: [ClientFormComponent, CardComponent],
+  imports: [ClientFormComponent, CardComponent, ButtonComponent],
   templateUrl: './client-new.component.html',
   styleUrl: './client-new.component.scss',
 })
@@ -36,7 +36,8 @@ export class ClientNewComponent implements OnInit {
   readonly steps    = STEPS;
   readonly stepTips = STEP_TIPS;
 
-  readonly stepTip = computed(() => STEP_TIPS[this.currentStep() - 1]);
+  readonly stepTip   = computed(() => STEP_TIPS[this.currentStep() - 1]);
+  readonly isSaving  = computed(() => this.formRef()?.saving() ?? false);
 
   readonly canGoNext = computed(() => {
     const form = this.formRef();
