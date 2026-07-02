@@ -3,9 +3,9 @@
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
   <div class="page-header">
     <div class="page-header-left">
-      <h2 class="page-title">Gestion des Clients</h2>
+      <h2 class="page-title">{{ 'CLIENTS.LIST.TITLE' | translate }}</h2>
     </div>
-    <daf-button [options]="{variant:'teal', label:'Nouveau client', iconStart:'add'}" (onClick)="goToNewClient()" />
+    <daf-button [options]="{variant:'teal', label: 'CLIENTS.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="goToNewClient()" />
   </div>
 
   <!-- ── KPI Cards ─────────────────────────────────────────────────────────── -->
@@ -14,14 +14,14 @@
     <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
       <div class="kpi-card">
         <div class="kpi-card__top">
-          <span class="kpi-card__label">Total Clients</span>
+          <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.TOTAL' | translate }}</span>
           <div class="kpi-card__icon kpi-icon--primary">
             <span class="material-symbols-outlined">group</span>
           </div>
         </div>
         <div class="kpi-card__bottom">
           <span class="kpi-card__value">{{ statsTotal() | number }}</span>
-          <span class="kpi-card__trend kpi-trend--up">Tous pays</span>
+          <span class="kpi-card__trend kpi-trend--up">{{ 'CLIENTS.LIST.KPI.ALL_COUNTRIES' | translate }}</span>
         </div>
       </div>
     </daf-card>
@@ -29,14 +29,14 @@
     <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
       <div class="kpi-card">
         <div class="kpi-card__top">
-          <span class="kpi-card__label">KYC Validé</span>
+          <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.KYC_DONE' | translate }}</span>
           <div class="kpi-card__icon kpi-icon--secondary">
             <span class="material-symbols-outlined">verified</span>
           </div>
         </div>
         <div class="kpi-card__bottom">
           <span class="kpi-card__value">{{ statsKycPct() }}%</span>
-          <span class="kpi-card__trend kpi-trend--up">{{ statsKycDone() }} clients</span>
+          <span class="kpi-card__trend kpi-trend--up">{{ statsKycDone() }} {{ 'CLIENTS.LIST.KPI.CLIENTS_SUFFIX' | translate }}</span>
         </div>
       </div>
     </daf-card>
@@ -44,14 +44,14 @@
     <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
       <div class="kpi-card">
         <div class="kpi-card__top">
-          <span class="kpi-card__label">Total CA</span>
+          <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.TOTAL_CA' | translate }}</span>
           <div class="kpi-card__icon kpi-icon--tertiary">
             <span class="material-symbols-outlined">payments</span>
           </div>
         </div>
         <div class="kpi-card__bottom">
           <span class="kpi-card__value kpi-card__value--sm">{{ formatAmount(statsTotalCA()) }}</span>
-          <span class="kpi-card__trend kpi-trend--neutral">Page courante</span>
+          <span class="kpi-card__trend kpi-trend--neutral">{{ 'CLIENTS.LIST.KPI.CURRENT_PAGE' | translate }}</span>
         </div>
       </div>
     </daf-card>
@@ -59,14 +59,14 @@
     <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
       <div class="kpi-card">
         <div class="kpi-card__top">
-          <span class="kpi-card__label">Clients Actifs</span>
+          <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.ACTIVE' | translate }}</span>
           <div class="kpi-card__icon kpi-icon--primary">
             <span class="material-symbols-outlined">bolt</span>
           </div>
         </div>
         <div class="kpi-card__bottom">
           <span class="kpi-card__value">{{ statsActive() }}</span>
-          <span class="kpi-card__trend kpi-trend--neutral">Page courante</span>
+          <span class="kpi-card__trend kpi-trend--neutral">{{ 'CLIENTS.LIST.KPI.CURRENT_PAGE' | translate }}</span>
         </div>
       </div>
     </daf-card>
@@ -79,14 +79,14 @@
 
       <div class="search-wrap">
         <span class="material-symbols-outlined search-icon">search</span>
-        <input class="search-input" type="search" placeholder="Nom, code, secteur…"
+        <input class="search-input" type="search" [placeholder]="'CLIENTS.LIST.SEARCH' | translate"
           [(ngModel)]="searchText" (ngModelChange)="onSearch()" maxlength="100" autocomplete="off" />
       </div>
 
       <div class="filter-group">
-        <span class="filter-label">Pays :</span>
+        <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.COUNTRY' | translate }}</span>
         <select class="filter-select" [(ngModel)]="filterPaysId" (change)="onPaysChange()">
-          <option [value]="0">Tous</option>
+          <option [value]="0">{{ 'CLIENTS.LIST.FILTER.ALL' | translate }}</option>
           @for (p of paysList(); track p.id) {
             <option [value]="p.id">{{ p.frenchLabel }}</option>
           }
@@ -95,9 +95,9 @@
 
       @if (sectors().length > 0) {
         <div class="filter-group">
-          <span class="filter-label">Secteur :</span>
+          <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.SECTOR' | translate }}</span>
           <select class="filter-select" [(ngModel)]="filterSector" (change)="onFilterChange()">
-            <option value="">Tous</option>
+            <option value="">{{ 'CLIENTS.LIST.FILTER.ALL' | translate }}</option>
             @for (s of sectors(); track s) {
               <option [value]="s">{{ s }}</option>
             }
@@ -106,11 +106,11 @@
       }
 
       <div class="status-pills">
-        <span class="filter-label">Statut :</span>
-        <button class="pill" [class.pill--active]="activeFilter() === 'all'"     (click)="resetStatusFilter()">Tous</button>
-        <button class="pill" [class.pill--active]="activeFilter() === 'active'"  (click)="toggleIsActive(true)">Actifs</button>
-        <button class="pill" [class.pill--active]="activeFilter() === 'pending'" (click)="toggleIsActive(false)">Inactifs</button>
-        <button class="pill" [class.pill--active]="activeFilter() === 'kyc'"     (click)="toggleIsKycDone(true)">KYC Validé</button>
+        <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.STATUS' | translate }}</span>
+        <button class="pill" [class.pill--active]="activeFilter() === 'all'"     (click)="resetStatusFilter()">{{ 'CLIENTS.LIST.FILTER.ALL' | translate }}</button>
+        <button class="pill" [class.pill--active]="activeFilter() === 'active'"  (click)="toggleIsActive(true)">{{ 'CLIENTS.LIST.FILTER.ACTIVE' | translate }}</button>
+        <button class="pill" [class.pill--active]="activeFilter() === 'pending'" (click)="toggleIsActive(false)">{{ 'CLIENTS.LIST.FILTER.INACTIVE' | translate }}</button>
+        <button class="pill" [class.pill--active]="activeFilter() === 'kyc'"     (click)="toggleIsKycDone(true)">{{ 'CLIENTS.LIST.FILTER.KYC' | translate }}</button>
       </div>
 
     </div>
@@ -168,18 +168,18 @@
                   </span>
                 }
                 @if (!client.isActive) {
-                  <span class="badge badge--inactive">Inactif</span>
+                  <span class="badge badge--inactive">{{ 'CLIENTS.LIST.CARD.INACTIVE' | translate }}</span>
                 }
               </div>
             </div>
 
             <div class="client-card__metrics">
               <div class="metric-box">
-                <p class="metric-box__label">CA Total</p>
+                <p class="metric-box__label">{{ 'CLIENTS.LIST.CARD.TOTAL_CA' | translate }}</p>
                 <p class="metric-box__value">{{ formatAmount(client.totalCA, client.defaultCurrency ?? 'TND') }}</p>
               </div>
               <div class="metric-box">
-                <p class="metric-box__label">Affaires actives</p>
+                <p class="metric-box__label">{{ 'CLIENTS.LIST.CARD.ACTIVE_PROJECTS' | translate }}</p>
                 <p class="metric-box__value metric-box__value--accent">{{ client.activeAffaireCount }}</p>
               </div>
             </div>
@@ -188,13 +188,13 @@
               <div class="client-card__meta">
                 @if (client.paymentTermsDays) {
                   <span class="material-symbols-outlined meta-icon">schedule</span>
-                  <span class="meta-text">{{ client.paymentTermsDays }} j délai</span>
+                  <span class="meta-text">{{ 'CLIENTS.LIST.CARD.DELAY' | translate: { days: client.paymentTermsDays } }}</span>
                 } @else {
                   <span class="meta-text">{{ client.clientCode }}</span>
                 }
               </div>
               <button class="link-btn" (click)="$event.stopPropagation(); navigateToDetail(client.id)">
-                Voir le dossier →
+                {{ 'CLIENTS.LIST.CARD.SEE_FILE' | translate }}
               </button>
             </div>
 
@@ -204,8 +204,8 @@
       @empty {
         <div class="empty-state">
           <span class="material-symbols-outlined">group_off</span>
-          <p>Aucun client trouvé</p>
-          <span>Modifiez vos filtres ou ajoutez un nouveau client.</span>
+          <p>{{ 'CLIENTS.LIST.EMPTY.TITLE' | translate }}</p>
+          <span>{{ 'CLIENTS.LIST.EMPTY.DESC' | translate }}</span>
         </div>
       }
     }
@@ -220,4 +220,3 @@
     (pageChange)="goToPage($event)" />
 
 </div>
-

@@ -11,7 +11,7 @@
                        text-[18px] text-outline pointer-events-none">search</span>
           <input type="search"
                  [value]="searchText()"
-                 placeholder="Rechercher une affaire…"
+                 [placeholder]="'AFFAIRES.LIST.TABLE.SEARCH' | translate"
                  (input)="searchText.set($any($event.target).value); searchGo.emit()"
                  class="w-full pl-10 pr-4 py-2.5 border border-outline-variant rounded-lg
                         text-[14px] bg-white focus:outline-none focus:border-[#1b3a4b]
@@ -21,18 +21,18 @@
                 class="flex items-center gap-2 px-4 py-2.5 border border-outline-variant rounded-lg
                        text-[14px] font-semibold hover:bg-surface-container transition-colors shrink-0">
           <span class="material-symbols-outlined text-[18px] text-outline">tune</span>
-          Filtres
+          {{ 'AFFAIRES.LIST.TABLE.FILTERS' | translate }}
         </button>
       </div>
 
-      <!-- View toggle — RH profiles style -->
+      <!-- View toggle -->
       <div class="flex border border-outline-variant rounded-lg overflow-hidden shrink-0">
-        <button type="button" class="p-2 transition-colors" title="Vue grille"
+        <button type="button" class="p-2 transition-colors" [title]="'AFFAIRES.LIST.TABLE.VIEW_GRID' | translate"
                 [class]="viewMode() === 'grid' ? 'bg-secondary/10 text-secondary' : 'hover:bg-surface-container text-outline'"
                 (click)="viewMode.set('grid')">
           <span class="material-symbols-outlined text-[20px]">grid_view</span>
         </button>
-        <button type="button" class="p-2 transition-colors" title="Vue tableau"
+        <button type="button" class="p-2 transition-colors" [title]="'AFFAIRES.LIST.TABLE.VIEW_LIST' | translate"
                 [class]="viewMode() === 'list' ? 'bg-secondary/10 text-secondary' : 'hover:bg-surface-container text-outline'"
                 (click)="viewMode.set('list')">
           <span class="material-symbols-outlined text-[20px]">table_rows</span>
@@ -71,7 +71,7 @@
       @if (affaires().length === 0) {
         <div class="card-empty">
           <span class="material-symbols-outlined empty-icon">search_off</span>
-          <span>Aucune affaire trouvée.</span>
+          <span>{{ 'AFFAIRES.LIST.TABLE.EMPTY' | translate }}</span>
         </div>
       } @else {
         <div class="card-grid">
@@ -105,22 +105,22 @@
 
                 <div class="aff-card__body">
                   <div class="aff-card__row">
-                    <span class="aff-card__row-label">Client</span>
+                    <span class="aff-card__row-label">{{ 'AFFAIRES.LIST.TABLE.CARD.CLIENT' | translate }}</span>
                     <span class="aff-card__row-val">{{ a.clientName || '—' }}</span>
                   </div>
                   <div class="aff-card__row">
-                    <span class="aff-card__row-label">Responsable</span>
+                    <span class="aff-card__row-label">{{ 'AFFAIRES.LIST.TABLE.CARD.MANAGER' | translate }}</span>
                     <div class="aff-card__resp-val">
                       <div class="resp-avatar resp-avatar--sm">{{ initials(a.responsableFullName) }}</div>
                       <span class="aff-card__row-val">{{ a.responsableFullName || '—' }}</span>
                     </div>
                   </div>
                   <div class="aff-card__row">
-                    <span class="aff-card__row-label">Type</span>
+                    <span class="aff-card__row-label">{{ 'AFFAIRES.LIST.TABLE.CARD.TYPE' | translate }}</span>
                     <span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
                   </div>
                   <div class="aff-card__amount-block">
-                    <span class="aff-card__amount-label">BUDGET PRÉVISIONNEL</span>
+                    <span class="aff-card__amount-label">{{ 'AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL' | translate }}</span>
                     <span class="aff-card__amount">
                       {{ formatAmount(a.budgetPrevisionnel) }}
                       <span class="aff-card__amount-unit">TND</span>
@@ -138,7 +138,7 @@
 
                 <button class="aff-card__cta" (click)="rowClick.emit(a.id); $event.stopPropagation()">
                   <span class="material-symbols-outlined">arrow_forward</span>
-                  Voir le détail
+                  {{ 'AFFAIRES.LIST.TABLE.SEE_DETAIL' | translate }}
                 </button>
 
               </div>
@@ -155,14 +155,14 @@
         <table>
           <thead>
             <tr>
-              <th>Référence</th>
-              <th>Intitulé</th>
-              <th>Client</th>
-              <th>Responsable</th>
-              <th>Type</th>
-              <th class="num">Budget (TND)</th>
-              <th class="num">RAF (TND)</th>
-              <th>Statut</th>
+              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.REF' | translate }}</th>
+              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.TITLE' | translate }}</th>
+              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.CLIENT' | translate }}</th>
+              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.MANAGER' | translate }}</th>
+              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.TYPE' | translate }}</th>
+              <th class="num">{{ 'AFFAIRES.LIST.TABLE.HEADERS.BUDGET' | translate }}</th>
+              <th class="num">{{ 'AFFAIRES.LIST.TABLE.HEADERS.RAF' | translate }}</th>
+              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.STATUS' | translate }}</th>
               <th class="act"></th>
             </tr>
           </thead>
@@ -211,20 +211,20 @@
 
                 <td>
                   @if (a.statut === 'EN_COURS') {
-                    <span class="statut-badge statut-badge--en-cours">En cours</span>
+                    <span class="statut-badge statut-badge--en-cours">{{ 'AFFAIRES.LIST.TABLE.STATUS.EN_COURS' | translate }}</span>
                   } @else if (a.statut === 'SUSPENDUE') {
-                    <span class="statut-badge statut-badge--suspendue">Suspendue</span>
+                    <span class="statut-badge statut-badge--suspendue">{{ 'AFFAIRES.LIST.TABLE.STATUS.SUSPENDUE' | translate }}</span>
                   } @else if (a.statut === 'CLOTUREE') {
-                    <span class="statut-badge statut-badge--cloturee">Clôturée</span>
+                    <span class="statut-badge statut-badge--cloturee">{{ 'AFFAIRES.LIST.TABLE.STATUS.CLOTUREE' | translate }}</span>
                   } @else if (a.statut === 'ARCHIVEE') {
-                    <span class="statut-badge statut-badge--archivee">Archivée</span>
+                    <span class="statut-badge statut-badge--archivee">{{ 'AFFAIRES.LIST.TABLE.STATUS.ARCHIVEE' | translate }}</span>
                   } @else {
                     <span class="statut-badge statut-badge--draft">{{ a.statut }}</span>
                   }
                 </td>
 
                 <td class="act">
-                  <button class="view-btn" title="Voir"
+                  <button class="view-btn" [title]="'AFFAIRES.LIST.TABLE.SEE_DETAIL' | translate"
                           (click)="rowClick.emit(a.id); $event.stopPropagation()">
                     <span class="material-symbols-outlined">visibility</span>
                   </button>
@@ -237,7 +237,7 @@
                 <td colspan="9">
                   <div class="empty-state">
                     <span class="material-symbols-outlined empty-icon">search_off</span>
-                    <span>Aucune affaire trouvée.</span>
+                    <span>{{ 'AFFAIRES.LIST.TABLE.EMPTY' | translate }}</span>
                   </div>
                 </td>
               </tr>
@@ -250,7 +250,7 @@
     <!-- Footer -->
     <div class="tc-footer">
       <span class="footer-count">
-        Affichage de {{ affaires().length }} sur {{ totalElements() }} affaires
+        {{ 'AFFAIRES.LIST.TABLE.SHOWING' | translate: { current: affaires().length, total: totalElements() } }}
       </span>
       @if (totalPages() > 1) {
         <div class="page-btns">
@@ -268,13 +268,13 @@
         @if (statsEnCours() > 0) {
           <div class="legend-item">
             <span class="dot dot--green"></span>
-            <span>{{ statsEnCours() }} En cours</span>
+            <span>{{ statsEnCours() }} {{ 'AFFAIRES.LIST.TABLE.STATUS.EN_COURS' | translate }}</span>
           </div>
         }
         @if (statsSuspendu() > 0) {
           <div class="legend-item">
             <span class="dot dot--gray"></span>
-            <span>{{ statsSuspendu() }} Suspendue</span>
+            <span>{{ statsSuspendu() }} {{ 'AFFAIRES.LIST.TABLE.STATUS.SUSPENDUE' | translate }}</span>
           </div>
         }
       </div>

@@ -1,54 +1,69 @@
-import { Component, OnInit, inject, input, signal, effect } from '@angular/core';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 import { InvoiceService } from '../invoice.service';
 import { ReminderDto } from '../invoice.model';
 
 @Component({
   selector: 'app-reminders-panel',
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   template: `
 <div class="reminders-panel">
   <div class="panel-header">
-    <span class="panel-title">Rappels de paiement</span>
+    <span class="panel-title">{{ 'INVOICING.REMINDERS.TITLE' | translate }}</span>
     <span class="panel-badge" [class.badge-active]="remindersActive()" [class.badge-suspended]="!remindersActive()">
-      {{ remindersActive() ? 'Actifs' : 'Suspendus' }}
+      {{ remindersActive() ? ('INVOICING.REMINDERS.ACTIVE' | translate) : ('INVOICING.REMINDERS.SUSPENDED' | translate) }}
     </span>
 
     @if (remindersActive()) {
-      <button class="action-link action-link--warn" (click)="openSuspend()">Suspendre</button>
+      <button class="action-link action-link--warn" (click)="openSuspend()">
+        {{ 'INVOICING.REMINDERS.SUSPEND' | translate }}
+      </button>
     } @else {
-      <button class="action-link action-link--ok" (click)="reactivate()">Réactiver</button>
+      <button class="action-link action-link--ok" (click)="reactivate()">
+        {{ 'INVOICING.REMINDERS.REACTIVATE' | translate }}
+      </button>
     }
   </div>
 
   @if (loading()) {
-    <div class="loading-text">Chargement des rappels…</div>
+    <div class="loading-text">{{ 'INVOICING.REMINDERS.LOADING' | translate }}</div>
   } @else {
     <div class="reminders-list">
       @for (r of reminders(); track r.id) {
         <div class="reminder-row" [class.sent]="!!r.sentAt" [class.suspended]="r.suspended">
-          <span class="reminder-type">{{ reminderLabel(r.reminderType) }}</span>
+          <span class="reminder-type">{{ reminderLabel(r.reminderType) | translate }}</span>
           <span class="reminder-date">{{ formatDate(r.scheduledAt) }}</span>
           <span class="reminder-status">
-            @if (r.sentAt) { <span class="badge-sent">Envoyé</span> }
-            @else if (r.suspended) { <span class="badge-susp">Suspendu</span> }
-            @else { <span class="badge-pending">En attente</span> }
+            @if (r.sentAt) {
+              <span class="badge-sent">{{ 'INVOICING.REMINDERS.STATUS.SENT' | translate }}</span>
+            } @else if (r.suspended) {
+              <span class="badge-susp">{{ 'INVOICING.REMINDERS.STATUS.SUSPENDED' | translate }}</span>
+            } @else {
+              <span class="badge-pending">{{ 'INVOICING.REMINDERS.STATUS.PENDING' | translate }}</span>
+            }
           </span>
         </div>
       }
       @empty {
-        <div class="empty-reminders">Aucun rappel planifié.</div>
+        <div class="empty-reminders">{{ 'INVOICING.REMINDERS.EMPTY' | translate }}</div>
       }
     </div>
   }
 
   @if (showSuspendForm()) {
     <div class="suspend-form">
-      <label>Motif de suspension</label>
-      <input type="text" [(ngModel)]="suspendReason" maxlength="200" placeholder="Optionnel" class="suspend-input" />
+      <label>{{ 'INVOICING.REMINDERS.SUSPEND_FORM.LABEL' | translate }}</label>
+      <input type="text" [(ngModel)]="suspendReason" maxlength="200"
+        [placeholder]="'INVOICING.REMINDERS.SUSPEND_FORM.PLACEHOLDER' | translate"
+        class="suspend-input" />
       <div class="suspend-actions">
-        <button class="btn-cancel" (click)="showSuspendForm.set(false)">Annuler</button>
-        <button class="btn-warn" (click)="confirmSuspend()">Confirmer</button>
+        <button class="btn-cancel" (click)="showSuspendForm.set(false)">
+          {{ 'INVOICING.REMINDERS.SUSPEND_FORM.CANCEL' | translate }}
+        </button>
+        <button class="btn-warn" (click)="confirmSuspend()">
+          {{ 'INVOICING.REMINDERS.SUSPEND_FORM.CONFIRM' | translate }}
+        </button>
       </div>
     </div>
   }
@@ -63,22 +78,22 @@ import { ReminderDto } from '../invoice.model';
 export class RemindersPanelComponent implements OnInit {
   private readonly svc = inject(InvoiceService);
 
-  invoiceId      = input.required<number>();
+  invoiceId       = input.required<number>();
   remindersActive = input.required<boolean>();
 
-  reminders      = signal<ReminderDto[]>([]);
-  loading        = signal(false);
-  error          = signal<string | null>(null);
+  reminders       = signal<ReminderDto[]>([]);
+  loading         = signal(false);
+  error           = signal<string | null>(null);
   showSuspendForm = signal(false);
-  suspendReason  = '';
+  suspendReason   = '';
 
   private readonly REMINDER_LABELS: Record<string, string> = {
-    J0:     'Émission',
-    J_7:    'J-7 échéance',
-    J0_ECH: 'Jour échéance',
-    J7:     'J+7 relance',
-    J15:    'J+15 relance',
-    J30:    'J+30 relance',
+    J0:     'INVOICING.REMINDER_TYPE.J0',
+    J_7:    'INVOICING.REMINDER_TYPE.J_7',
+    J0_ECH: 'INVOICING.REMINDER_TYPE.J0_ECH',
+    J7:     'INVOICING.REMINDER_TYPE.J7',
+    J15:    'INVOICING.REMINDER_TYPE.J15',
+    J30:    'INVOICING.REMINDER_TYPE.J30',
   };
 
   ngOnInit(): void { this.load(); }

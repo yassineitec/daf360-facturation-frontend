@@ -6,10 +6,11 @@ import { ClientDetailDto, ClientStatsDto }                                     f
 import { PermissionDirective }                                                 from '../../../shared/permission.directive';
 import { ClientFormComponent }                                                 from '../client-form.component';
 import { CardComponent, ModalService, ModalRef }                               from '@khalilrebhiitec/daf360';
+import { TranslatePipe }                                                        from '@ngx-translate/core';
 
 @Component({
   selector: 'app-client-detail',
-  imports: [RouterLink, PermissionDirective, ClientFormComponent, CardComponent],
+  imports: [RouterLink, PermissionDirective, ClientFormComponent, CardComponent, TranslatePipe],
   templateUrl: './client-detail.component.html',
   styleUrl: './client-detail.component.scss',
 })
@@ -76,12 +77,12 @@ export class ClientDetailComponent implements OnInit {
     if (!s) return [];
     const currency = this.client()?.defaultCurrency ?? 'TND';
     return [
-      { label: 'Total affaires',      value: String(s.totalAffaires) },
-      { label: 'Affaires actives',    value: String(s.activeAffaires) },
-      { label: 'Total facturé',       value: this.formatAmount(s.totalInvoiced, currency) },
-      { label: 'Délai paiement moy.', value: s.averagePaymentDelayDays != null
-                                               ? Math.round(s.averagePaymentDelayDays) + 'j'
-                                               : '—' },
+      { label: 'CLIENTS.DETAIL.KPI.TOTAL_PROJECTS',  value: String(s.totalAffaires) },
+      { label: 'CLIENTS.DETAIL.KPI.ACTIVE_PROJECTS', value: String(s.activeAffaires) },
+      { label: 'CLIENTS.DETAIL.KPI.TOTAL_INVOICED',  value: this.formatAmount(s.totalInvoiced, currency) },
+      { label: 'CLIENTS.DETAIL.KPI.AVG_DELAY',       value: s.averagePaymentDelayDays != null
+                                                              ? Math.round(s.averagePaymentDelayDays) + 'j'
+                                                              : '—' },
     ];
   });
 
@@ -90,14 +91,14 @@ export class ClientDetailComponent implements OnInit {
     if (!c) return [];
     const address = [c.address, c.city, c.postalCode].filter(Boolean).join(', ');
     return [
-      { label: 'Code client', value: c.clientCode },
-      { label: 'N° fiscal',   value: c.taxId },
-      { label: 'Secteur',     value: c.sector },
-      { label: 'Pays',        value: c.country },
-      { label: 'Adresse',     value: address || null },
-      { label: 'Téléphone',   value: c.phone },
-      { label: 'Email',       value: c.email },
-      { label: 'Site web',    value: c.website },
+      { label: 'CLIENTS.DETAIL.INFO.CODE',    value: c.clientCode },
+      { label: 'CLIENTS.DETAIL.INFO.TAX_ID',  value: c.taxId },
+      { label: 'CLIENTS.DETAIL.INFO.SECTOR',  value: c.sector },
+      { label: 'CLIENTS.DETAIL.INFO.COUNTRY', value: c.country },
+      { label: 'CLIENTS.DETAIL.INFO.ADDRESS', value: address || null },
+      { label: 'CLIENTS.DETAIL.INFO.PHONE',   value: c.phone },
+      { label: 'CLIENTS.DETAIL.INFO.EMAIL',   value: c.email },
+      { label: 'CLIENTS.DETAIL.INFO.WEBSITE', value: c.website },
     ].filter(i => i.value);
   });
 

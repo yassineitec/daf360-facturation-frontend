@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AffaireService } from './affaire.service';
 import { AffaireListItem, AffaireFilter, TYPE_LABELS, STATUT_LABELS } from './affaire.model';
+import { TranslatePipe } from '@ngx-translate/core';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { AffaireKpiCardComponent } from './components/affaire-kpi-card.component';
 import { AffaireTableComponent } from './components/affaire-table.component';
@@ -9,7 +10,7 @@ import { ButtonComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-affaires-list',
-  imports: [PermissionDirective, AffaireKpiCardComponent, AffaireTableComponent, ButtonComponent],
+  imports: [TranslatePipe, PermissionDirective, AffaireKpiCardComponent, AffaireTableComponent, ButtonComponent],
   templateUrl: './affaires-list.component.html',
   styleUrl: './affaires-list.component.scss',
 })

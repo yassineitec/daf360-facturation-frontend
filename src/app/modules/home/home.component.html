@@ -2,7 +2,7 @@
 
   <!-- ── Greeting ──────────────────────────────────────────────────────────── -->
   <div class="greeting-block">
-    <h3 class="font-headline-xl text-headline-xl font-extrabold text-slate-800">Bonjour, {{ firstName() }}.</h3>
+    <h3 class="font-headline-xl text-headline-xl font-extrabold text-slate-800">{{ 'HOME.GREETING' | translate: { name: firstName() } }}</h3>
     <p class="font-body-md text-body-md text-slate-500 mt-1">{{ today | titlecase }}</p>
   </div>
 
@@ -12,7 +12,7 @@
     <!-- Encaissé ce mois -->
     <div class="glass-card rounded-2xl p-4 flex flex-col justify-between" style="min-height:108px">
       <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">Encaissé ce mois</span>
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">{{ 'HOME.KPI.COLLECTED_TITLE' | translate }}</span>
         <div class="kpi-icon icon--primary">
           <span class="material-symbols-outlined">trending_up</span>
         </div>
@@ -20,14 +20,14 @@
       <div>
         @if (loadingStats()) { <div class="skeleton-val"></div> }
         @else { <p class="text-xl font-price-display text-on-surface font-bold">{{ fmt(stats()?.encaisseThisMoisMontant, stats()?.devise) }}</p> }
-        <p class="text-[10px] font-bold mt-1 kpi-sub-primary">Ce mois</p>
+        <p class="text-[10px] font-bold mt-1 kpi-sub-primary">{{ 'HOME.KPI.COLLECTED_SUB' | translate }}</p>
       </div>
     </div>
 
     <!-- En attente -->
     <div class="glass-card rounded-2xl p-4 flex flex-col justify-between" style="min-height:108px">
       <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">En attente de paiement</span>
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">{{ 'HOME.KPI.PENDING_TITLE' | translate }}</span>
         <div class="kpi-icon icon--secondary">
           <span class="material-symbols-outlined">schedule</span>
         </div>
@@ -35,14 +35,14 @@
       <div>
         @if (loadingStats()) { <div class="skeleton-val"></div> }
         @else { <p class="text-xl font-price-display text-on-surface font-bold">{{ fmt(stats()?.enAttenteMontant, stats()?.devise) }}</p> }
-        <p class="text-[10px] text-slate-400 font-bold mt-1">Solde en attente</p>
+        <p class="text-[10px] text-slate-500 font-bold mt-1">{{ 'HOME.KPI.PENDING_SUB' | translate }}</p>
       </div>
     </div>
 
     <!-- En retard -->
     <div class="glass-card rounded-2xl p-4 flex flex-col justify-between" style="min-height:108px">
       <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">Factures en retard</span>
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">{{ 'HOME.KPI.OVERDUE_TITLE' | translate }}</span>
         <div class="kpi-icon icon--error">
           <span class="material-symbols-outlined">warning</span>
         </div>
@@ -51,8 +51,11 @@
         @if (loadingStats()) { <div class="skeleton-val"></div> }
         @else { <p class="text-xl font-price-display font-bold kpi-val-error">{{ fmt(stats()?.enRetardMontant, stats()?.devise) }}</p> }
         <p class="text-[10px] font-bold mt-1 kpi-sub-error">
-          @if ((stats()?.enRetardCount ?? 0) > 0) { {{ stats()?.enRetardCount }} factures critiques }
-          @else { Aucun retard }
+          @if ((stats()?.enRetardCount ?? 0) > 0) {
+            {{ 'HOME.KPI.OVERDUE_COUNT' | translate: { count: stats()?.enRetardCount } }}
+          } @else {
+            {{ 'HOME.KPI.NO_DELAY' | translate }}
+          }
         </p>
       </div>
     </div>
@@ -60,7 +63,7 @@
     <!-- Délai moyen -->
     <div class="glass-card rounded-2xl p-4 flex flex-col justify-between" style="min-height:108px">
       <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">Délai moyen (DSO)</span>
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">{{ 'HOME.KPI.DSO_TITLE' | translate }}</span>
         <div class="kpi-icon icon--amber">
           <span class="material-symbols-outlined">timer</span>
         </div>
@@ -68,7 +71,7 @@
       <div>
         @if (loadingStats()) { <div class="skeleton-val"></div> }
         @else { <p class="text-xl font-price-display text-on-surface font-bold">{{ stats()?.delaiMoyenPaiement != null ? stats()!.delaiMoyenPaiement.toFixed(0) + ' j' : '—' }}</p> }
-        <p class="text-[10px] font-bold mt-1 kpi-sub-tertiary">Jours moyens</p>
+        <p class="text-[10px] font-bold mt-1 kpi-sub-tertiary">{{ 'HOME.KPI.DSO_SUB' | translate }}</p>
       </div>
     </div>
 
@@ -89,11 +92,11 @@
               <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">{{ mod.icon }}</span>
             </div>
             <div class="flex-1 min-w-0">
-              <h4 class="font-title-md text-title-md mod-card__title mb-1">{{ mod.label }}</h4>
-              <p class="font-body-sm text-body-sm mod-card__desc">{{ mod.description }}</p>
+              <h4 class="font-title-md text-title-md mod-card__title mb-1">{{ mod.labelKey | translate }}</h4>
+              <p class="font-body-sm text-body-sm mod-card__desc">{{ mod.descKey | translate }}</p>
             </div>
             <div class="text-right shrink-0">
-              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Solde Consolidé</p>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">{{ 'HOME.MODULES.TREASURY_BALANCE' | translate }}</p>
               <p class="mod-card__wide-value">—</p>
             </div>
           </div>
@@ -102,17 +105,17 @@
           <div [class]="'w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors duration-300 icon--' + mod.iconVariant">
             <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">{{ mod.icon }}</span>
           </div>
-          <h4 class="font-title-md text-title-md mod-card__title mb-2">{{ mod.label }}</h4>
-          <p class="font-body-sm text-body-sm mod-card__desc flex-1">{{ mod.description }}</p>
+          <h4 class="font-title-md text-title-md mod-card__title mb-2">{{ mod.labelKey | translate }}</h4>
+          <p class="font-body-sm text-body-sm mod-card__desc flex-1">{{ mod.descKey | translate }}</p>
           <div class="mt-4 pt-4 border-t border-outline-variant/10 flex justify-between items-center">
             @if (mod.path === 'invoicing') {
               @if ((pendingCount() ?? 0) > 0) {
-                <span class="text-xs font-bold stat--primary">{{ pendingCount() }} à valider</span>
+                <span class="text-xs font-bold stat--primary">{{ 'HOME.MODULES.TO_VALIDATE' | translate: { count: pendingCount() } }}</span>
               } @else {
                 <span class="text-xs text-slate-400">—</span>
               }
-            } @else if (mod.stat) {
-              <span class="text-xs font-bold" [class]="mod.statClass">{{ mod.stat }}</span>
+            } @else if (mod.statKey) {
+              <span class="text-xs font-bold" [class]="mod.statClass">{{ mod.statKey | translate }}</span>
             } @else {
               <span></span>
             }
@@ -130,9 +133,9 @@
 
     <div class="activity-inner">
       <div class="flex justify-between items-center mb-6">
-        <h5 class="font-title-md text-title-md text-on-surface">Activité Récente</h5>
+        <h5 class="font-title-md text-title-md text-on-surface">{{ 'HOME.ACTIVITY.TITLE' | translate }}</h5>
         <button class="activity-link" (click)="navigateTo('invoicing')">
-          Voir tout <span class="material-symbols-outlined">open_in_new</span>
+          {{ 'HOME.ACTIVITY.VIEW_ALL' | translate }} <span class="material-symbols-outlined">open_in_new</span>
         </button>
       </div>
 
@@ -152,7 +155,7 @@
       } @else if (recentActivity().length === 0) {
         <div class="act-empty">
           <span class="material-symbols-outlined">inbox</span>
-          <p>Aucune activité récente</p>
+          <p>{{ 'HOME.ACTIVITY.EMPTY' | translate }}</p>
         </div>
       } @else {
         <div class="act-list">

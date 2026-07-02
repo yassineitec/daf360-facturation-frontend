@@ -1,12 +1,13 @@
 import { Component, computed, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UpperCasePipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AffaireListItem, STATUT_LABELS, TYPE_LABELS } from '../affaire.model';
 import { StatusBadgeComponent, CardComponent, BadgeVariant } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-affaire-table',
-  imports: [FormsModule, UpperCasePipe, StatusBadgeComponent, CardComponent],
+  imports: [FormsModule, UpperCasePipe, TranslatePipe, StatusBadgeComponent, CardComponent],
   templateUrl: './affaire-table.component.html',
   styleUrl: './affaire-table.component.scss',
 })

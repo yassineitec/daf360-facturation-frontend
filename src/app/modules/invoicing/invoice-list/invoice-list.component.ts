@@ -6,6 +6,7 @@ import {
 } from '../invoice.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { PaymentModalComponent } from '../payment-modal.component';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   SelectOption, ModalService, ModalRef,
   CardComponent, ButtonComponent, PaginationComponent,
@@ -13,15 +14,16 @@ import {
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent],
+  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })
 export class InvoiceListComponent implements OnInit {
-  private readonly svc    = inject(InvoiceService);
-  private readonly router = inject(Router);
-  private readonly route  = inject(ActivatedRoute);
-  private readonly modal  = inject(ModalService);
+  private readonly svc       = inject(InvoiceService);
+  private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
+  private readonly modal     = inject(ModalService);
+  private readonly translate = inject(TranslateService);
 
   @ViewChild('approvalTpl') approvalTpl!: TemplateRef<any>;
   private approvalRef: ModalRef | null = null;
@@ -47,7 +49,7 @@ export class InvoiceListComponent implements OnInit {
   readonly PAGE_SIZE = 20;
 
   readonly statutSelectOptions: SelectOption[] = Object.entries(INVOICE_STATUT_CONFIG)
-    .map(([k, v]) => ({ value: k, label: v.label }));
+    .map(([k, v]) => ({ value: k, label: this.translate.instant(v.label) }));
 
   // ── KPI counts ────────────────────────────────────────────────────────────
   readonly statsEnAttente = computed(() =>
@@ -150,13 +152,13 @@ export class InvoiceListComponent implements OnInit {
     this.approvalDecision = 'APPROVE';
     this.approvalCommentSig.set('');
     this.approvalRef = this.modal.open({
-      title: 'Décision de validation',
+      title: this.translate.instant('INVOICING.LIST.APPROVAL.TITLE'),
       body:  this.approvalTpl,
       size:  'md',
       closeOnBackdrop: false,
       buttons: [
-        { label: 'Annuler',   variant: 'secondary', action: r => r.close() },
-        { label: 'Confirmer', variant: 'primary',   action: _r => this.submitApproval() },
+        { label: this.translate.instant('INVOICING.LIST.APPROVAL.CANCEL'),  variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('INVOICING.LIST.APPROVAL.CONFIRM'), variant: 'primary',   action: _r => this.submitApproval() },
       ],
     });
   }

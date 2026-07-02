@@ -3,11 +3,11 @@
   <!-- ── Page header ───────────────────────────────────────────────────────── -->
   <header class="inv-header">
     <div class="inv-header__left">
-      <h2 class="inv-header__title">Facturation</h2>
-      <p class="inv-header__sub">Gérez vos émissions et suivis de factures clients.</p>
+      <h2 class="inv-header__title">{{ 'INVOICING.LIST.TITLE' | translate }}</h2>
+      <p class="inv-header__sub">{{ 'INVOICING.LIST.SUBTITLE' | translate }}</p>
     </div>
     <div class="inv-header__right">
-      <daf-button [options]="{variant:'teal', label:'Nouvelle facture', iconStart:'add'}" (onClick)="navigateToNew()" />
+      <daf-button [options]="{variant:'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="navigateToNew()" />
     </div>
   </header>
 
@@ -18,14 +18,14 @@
     <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
       <div class="p-4 flex flex-col justify-between" style="min-height:112px">
         <div class="flex justify-between items-start mb-3">
-          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Total Facturé</span>
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ 'INVOICING.LIST.KPI.TOTAL' | translate }}</span>
           <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
             <span class="material-symbols-outlined text-sm text-primary">receipt_long</span>
           </div>
         </div>
         <div>
           <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountTotal()) }}</p>
-          <p class="text-[10px] font-bold mt-1 text-primary">{{ totalElements() }} factures</p>
+          <p class="text-[10px] font-bold mt-1 text-primary">{{ totalElements() }} {{ 'INVOICING.LIST.KPI.INVOICES_SUFFIX' | translate }}</p>
         </div>
       </div>
     </daf-card>
@@ -34,14 +34,14 @@
     <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
       <div class="p-4 flex flex-col justify-between" style="min-height:112px">
         <div class="flex justify-between items-start mb-3">
-          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">En attente</span>
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ 'INVOICING.LIST.KPI.PENDING' | translate }}</span>
           <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-teal/10">
             <span class="material-symbols-outlined text-sm text-teal">schedule</span>
           </div>
         </div>
         <div>
           <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountEnAttente()) }}</p>
-          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnAttente() }} en attente</p>
+          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnAttente() }} {{ 'INVOICING.LIST.KPI.PENDING_SUFFIX' | translate }}</p>
         </div>
       </div>
     </daf-card>
@@ -50,14 +50,14 @@
     <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
       <div class="p-4 flex flex-col justify-between" style="min-height:112px">
         <div class="flex justify-between items-start mb-3">
-          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">En retard</span>
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ 'INVOICING.LIST.KPI.OVERDUE' | translate }}</span>
           <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-danger/10">
             <span class="material-symbols-outlined text-sm text-danger">warning</span>
           </div>
         </div>
         <div>
           <p class="text-[22px] font-black leading-tight text-danger">{{ formatAmount(amountEnRetard()) }}</p>
-          <p class="text-[10px] font-bold mt-1 text-danger">{{ statsEnRetard() }} en retard</p>
+          <p class="text-[10px] font-bold mt-1 text-danger">{{ statsEnRetard() }} {{ 'INVOICING.LIST.KPI.OVERDUE_SUFFIX' | translate }}</p>
         </div>
       </div>
     </daf-card>
@@ -66,14 +66,14 @@
     <daf-card [options]="{variant:'glass', padding:'none', radius:'xl', hoverable:true}">
       <div class="p-4 flex flex-col justify-between" style="min-height:112px">
         <div class="flex justify-between items-start mb-3">
-          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">Litiges</span>
+          <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ 'INVOICING.LIST.KPI.DISPUTED' | translate }}</span>
           <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-outline/10">
             <span class="material-symbols-outlined text-sm text-outline">gavel</span>
           </div>
         </div>
         <div>
           <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountEnLitige()) }}</p>
-          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnLitige() }} en litige</p>
+          <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnLitige() }} {{ 'INVOICING.LIST.KPI.DISPUTED_SUFFIX' | translate }}</p>
         </div>
       </div>
     </daf-card>
@@ -87,7 +87,7 @@
       <div class="search-wrap">
         <span class="material-symbols-outlined search-icon">search</span>
         <input class="search-input" type="text"
-          placeholder="Rechercher client, facture, projet..."
+          [placeholder]="'INVOICING.LIST.SEARCH' | translate"
           [value]="searchText()"
           (input)="searchText.set(getInputValue($event)); onSearch()" />
       </div>
@@ -98,7 +98,7 @@
           <select class="filter-select"
             [value]="filterStatutSel()[0] || ''"
             (change)="filterStatutSel.set(getSelectValue($event) ? [getSelectValue($event)] : []); onFilterChange()">
-            <option value="">Statut</option>
+            <option value="">{{ 'INVOICING.LIST.TABLE.STATUS' | translate }}</option>
             @for (opt of statutSelectOptions; track opt.value) {
               <option [value]="opt.value">{{ opt.label }}</option>
             }
@@ -107,14 +107,14 @@
 
         <div class="filter-btn-wrap">
           <span class="material-symbols-outlined filter-btn-icon">calendar_today</span>
-          <input class="filter-date" type="date" title="Émis depuis"
+          <input class="filter-date" type="date" [title]="'INVOICING.LIST.FILTER.DATE_FROM' | translate"
             [value]="filterFrom()"
             (change)="filterFrom.set(getInputValue($event)); onFilterChange()" />
         </div>
 
         <div class="filter-btn-wrap">
           <span class="material-symbols-outlined filter-btn-icon">event</span>
-          <input class="filter-date" type="date" title="Émis jusqu'à"
+          <input class="filter-date" type="date" [title]="'INVOICING.LIST.FILTER.DATE_TO' | translate"
             [value]="filterTo()" [min]="filterFrom()"
             (change)="filterTo.set(getInputValue($event)); onFilterChange()" />
         </div>
@@ -123,7 +123,7 @@
 
         <button class="filter-ghost-btn">
           <span class="material-symbols-outlined">file_download</span>
-          Export
+          {{ 'INVOICING.LIST.FILTER.EXPORT' | translate }}
         </button>
       </div>
 
@@ -148,11 +148,11 @@
       <table class="inv-table">
         <thead>
           <tr>
-            <th>Référence / Projet</th>
-            <th>Client</th>
-            <th class="th-right">Montant TTC</th>
-            <th>Statut</th>
-            <th>Date / Échéance</th>
+            <th>{{ 'INVOICING.LIST.TABLE.REF' | translate }}</th>
+            <th>{{ 'INVOICING.LIST.TABLE.CLIENT' | translate }}</th>
+            <th class="th-right">{{ 'INVOICING.LIST.TABLE.AMOUNT' | translate }}</th>
+            <th>{{ 'INVOICING.LIST.TABLE.STATUS' | translate }}</th>
+            <th>{{ 'INVOICING.LIST.TABLE.DATE' | translate }}</th>
             <th class="th-actions"></th>
           </tr>
         </thead>
@@ -177,7 +177,7 @@
 
               <td>
                 <div class="cell-ref">
-                  <span class="cell-ref__num">{{ inv.invoiceNumber || '(brouillon)' }}</span>
+                  <span class="cell-ref__num">{{ inv.invoiceNumber || ('INVOICING.LIST.TABLE.DRAFT' | translate) }}</span>
                   <span class="cell-ref__aff">{{ inv.affaireRef ?? '—' }}</span>
                 </div>
               </td>
@@ -195,17 +195,17 @@
               <td>
                 <div class="cell-statut">
                   <span class="badge badge--{{ statutBadgeVariant(inv.statut) }}">
-                    {{ statutLabel(inv.statut) }}
+                    {{ statutLabel(inv.statut) | translate }}
                   </span>
                   @if (isOverdue(inv)) {
-                    <span class="overdue-tag">+{{ overdueDays(inv) }} jours</span>
+                    <span class="overdue-tag">{{ 'INVOICING.LIST.TABLE.OVERDUE_DAYS' | translate: { days: overdueDays(inv) } }}</span>
                   }
                 </div>
               </td>
 
               <td>
                 <div class="cell-date" [class.cell-date--overdue]="isOverdue(inv)">
-                  {{ inv.dateEcheance ? 'Éch. ' + formatDate(inv.dateEcheance) : formatDate(inv.dateEmission) }}
+                  {{ inv.dateEcheance ? (('INVOICING.LIST.TABLE.ECH_PREFIX' | translate) + ' ' + formatDate(inv.dateEcheance)) : formatDate(inv.dateEmission) }}
                 </div>
               </td>
 
@@ -222,7 +222,7 @@
             <tr>
               <td colspan="6" class="empty-cell">
                 <span class="material-symbols-outlined">receipt_long</span>
-                Aucune facture trouvée.
+                {{ 'INVOICING.LIST.TABLE.EMPTY' | translate }}
               </td>
             </tr>
           }
@@ -250,32 +250,32 @@
 <ng-template #approvalTpl>
   <div class="approval-body">
     <div>
-      <label class="approval-label">Décision *</label>
+      <label class="approval-label">{{ 'INVOICING.LIST.APPROVAL.DECISION_LABEL' | translate }}</label>
       <div class="decision-btns">
         <button class="decision-btn"
           [class.decision-btn--approve]="approvalDecision === 'APPROVE'"
           (click)="approvalDecision = 'APPROVE'">
           <span class="material-symbols-outlined">check_circle</span>
-          Approuver
+          {{ 'INVOICING.LIST.APPROVAL.APPROVE' | translate }}
         </button>
         <button class="decision-btn"
           [class.decision-btn--return]="approvalDecision === 'RETURN'"
           (click)="approvalDecision = 'RETURN'">
           <span class="material-symbols-outlined">undo</span>
-          Retourner
+          {{ 'INVOICING.LIST.APPROVAL.RETURN' | translate }}
         </button>
         <button class="decision-btn"
           [class.decision-btn--reject]="approvalDecision === 'REJECT'"
           (click)="approvalDecision = 'REJECT'">
           <span class="material-symbols-outlined">cancel</span>
-          Rejeter
+          {{ 'INVOICING.LIST.APPROVAL.REJECT' | translate }}
         </button>
       </div>
     </div>
     @if (approvalDecision !== 'APPROVE') {
       <div>
-        <label class="approval-label">Commentaire *</label>
-        <textarea class="approval-textarea" rows="3" placeholder="Motif obligatoire…"
+        <label class="approval-label">{{ 'INVOICING.LIST.APPROVAL.COMMENT_LABEL' | translate }}</label>
+        <textarea class="approval-textarea" rows="3" [placeholder]="'INVOICING.LIST.APPROVAL.COMMENT_PLACEHOLDER' | translate"
           [value]="approvalCommentSig()"
           (input)="approvalCommentSig.set(getInputValue($event))"></textarea>
       </div>

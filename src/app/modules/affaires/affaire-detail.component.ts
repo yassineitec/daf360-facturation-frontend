@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed, input } from '@angular/cor
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AffaireService } from './affaire.service';
 import { AffaireWizardService } from './affaire-wizard.service';
 import {
@@ -18,7 +19,7 @@ import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.compone
 
 @Component({
   selector: 'app-affaire-detail',
-  imports: [RouterLink, FormsModule, DecimalPipe, StatusBadgeComponent, PermissionDirective, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
+  imports: [RouterLink, FormsModule, DecimalPipe, TranslatePipe, StatusBadgeComponent, PermissionDirective, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent],
   templateUrl: './affaire-detail.component.html',
   styleUrl: './affaire-detail.component.scss',
 })

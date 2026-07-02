@@ -2,6 +2,7 @@ import {
   Component, OnInit, inject, input, output, signal, computed,
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { InvoiceService } from '../../invoice.service';
 import { AffaireListItem, RafDetailsDto, TsDto } from '../../../affaires/affaire.model';
@@ -22,23 +23,23 @@ export interface StepAffaireValue {
 @Component({
   selector: 'app-step-affaire',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TranslatePipe],
   template: `
 <div class="step-affaire">
 
   <!-- Affaire search -->
   <div class="field">
-    <label>Affaire</label>
+    <label>{{ 'INVOICING.STEP_AFFAIRE.AFFAIRE_LABEL' | translate }}</label>
     <div class="search-wrap">
       <span class="material-symbols-outlined search-icon-prefix">search</span>
       <input type="search" class="form-input form-input--search"
-        placeholder="Rechercher par nom ou numéro de projet…"
+        [placeholder]="'INVOICING.STEP_AFFAIRE.SEARCH_PLACEHOLDER' | translate"
         [value]="searchQuery()" (input)="onSearchInput($event)"
         maxlength="100" autocomplete="off" />
     </div>
 
     @if (searching()) {
-      <div class="search-hint">Recherche en cours…</div>
+      <div class="search-hint">{{ 'INVOICING.STEP_AFFAIRE.SEARCHING' | translate }}</div>
     }
 
     @if (searchResults().length > 0 && !selectedAffaire()) {
@@ -61,15 +62,16 @@ export interface StepAffaireValue {
         <div class="sel-header">
           <span class="aff-ref">{{ selectedAffaire()!.reference }}</span>
           <span class="aff-name">{{ selectedAffaire()!.intitule }}</span>
-          <button type="button" class="clear-btn" (click)="clearAffaire()" title="Désélectionner">&times;</button>
+          <button type="button" class="clear-btn" (click)="clearAffaire()"
+            [title]="'INVOICING.STEP_AFFAIRE.DESELECT' | translate">&times;</button>
         </div>
         <div class="sel-kpis">
           <div class="kpi">
-            <span class="kpi-label">Budget prévisionnel</span>
+            <span class="kpi-label">{{ 'INVOICING.STEP_AFFAIRE.BUDGET' | translate }}</span>
             <span class="kpi-val">{{ formatAmount(selectedAffaire()!.budgetPrevisionnel ?? 0) }}</span>
           </div>
           <div class="kpi">
-            <span class="kpi-label">RAF disponible</span>
+            <span class="kpi-label">{{ 'INVOICING.STEP_AFFAIRE.RAF' | translate }}</span>
             @if (rafLoading()) {
               <span class="kpi-val">…</span>
             } @else {
@@ -82,12 +84,12 @@ export interface StepAffaireValue {
         @if (rafBlocked()) {
           <div class="raf-alert raf-alert--block">
             <span class="material-symbols-outlined">block</span>
-            RAF épuisé — facturation bloquée (RG10).
+            {{ 'INVOICING.STEP_AFFAIRE.RAF_BLOCKED' | translate }}
           </div>
         } @else if (rafWarning()) {
           <div class="raf-alert raf-alert--warn">
             <span class="material-symbols-outlined">warning</span>
-            RAF faible ({{ formatPct(rafPct()) }}%) — vérifiez le montant.
+            {{ 'INVOICING.STEP_AFFAIRE.RAF_LOW' | translate: { pct: formatPct(rafPct()) } }}
           </div>
         }
       </div>
@@ -97,49 +99,49 @@ export interface StepAffaireValue {
   <!-- Mode de facturation (affiché si l'affaire n'a pas de mode valide) -->
   @if (selectedAffaire() && !validBillingModeFromAffaire()) {
     <div class="field">
-      <label>Mode de facturation *</label>
+      <label>{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODE_LABEL' | translate }}</label>
       <div class="form-select-wrap">
         <select class="form-input" [formControl]="form.controls['billingMode']"
           [class.invalid]="form.controls['billingMode'].invalid && form.controls['billingMode'].touched">
-          <option value="">Sélectionner…</option>
-          <option value="TM">TM — Temps &amp; Matériaux</option>
-          <option value="CP">CP — Coût Plus</option>
-          <option value="AV">AV — Avancement</option>
-          <option value="JAL">JAL — Jalons</option>
-          <option value="RMB">RMB — Remboursement</option>
+          <option value="">{{ 'INVOICING.STEP_AFFAIRE.SELECT' | translate }}</option>
+          <option value="TM">{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODES.TM' | translate }}</option>
+          <option value="CP">{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODES.CP' | translate }}</option>
+          <option value="AV">{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODES.AV' | translate }}</option>
+          <option value="JAL">{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODES.JAL' | translate }}</option>
+          <option value="RMB">{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODES.RMB' | translate }}</option>
         </select>
       </div>
       @if (form.controls['billingMode'].invalid && form.controls['billingMode'].touched) {
-        <span class="error-msg">Mode de facturation requis.</span>
+        <span class="error-msg">{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODE_REQUIRED' | translate }}</span>
       }
     </div>
   }
 
   <!-- Type de facture -->
   <div class="field">
-    <label>Type de facture *</label>
+    <label>{{ 'INVOICING.STEP_AFFAIRE.TYPE_LABEL' | translate }}</label>
     <div class="form-select-wrap">
       <select class="form-input" [formControl]="form.controls['invoiceType']"
         [class.invalid]="form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched">
-        <option value="">Sélectionner le type…</option>
-        <option value="ACOMPTE">Facture d'acompte</option>
-        <option value="INTERMEDIAIRE">Facture de situation (Avancement)</option>
-        <option value="FINALE">Facture de solde</option>
-        <option value="AVOIR">Note d'avoir</option>
+        <option value="">{{ 'INVOICING.STEP_AFFAIRE.TYPE_SELECT' | translate }}</option>
+        <option value="ACOMPTE">{{ 'INVOICING.STEP_AFFAIRE.INVOICE_TYPES.ACOMPTE' | translate }}</option>
+        <option value="INTERMEDIAIRE">{{ 'INVOICING.STEP_AFFAIRE.INVOICE_TYPES.INTERMEDIAIRE' | translate }}</option>
+        <option value="FINALE">{{ 'INVOICING.STEP_AFFAIRE.INVOICE_TYPES.FINALE' | translate }}</option>
+        <option value="AVOIR">{{ 'INVOICING.STEP_AFFAIRE.INVOICE_TYPES.AVOIR' | translate }}</option>
       </select>
     </div>
     @if (form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched) {
-      <span class="error-msg">Type requis.</span>
+      <span class="error-msg">{{ 'INVOICING.STEP_AFFAIRE.TYPE_REQUIRED' | translate }}</span>
     }
   </div>
 
   <!-- TS associé (si affaire sélectionnée) -->
   @if (selectedAffaire() && tsList().length > 0) {
     <div class="field">
-      <label>TS associé (optionnel)</label>
+      <label>{{ 'INVOICING.STEP_AFFAIRE.TS_LABEL' | translate }}</label>
       <div class="form-select-wrap">
         <select class="form-input" [formControl]="form.controls['tsId']">
-          <option [value]="null">Aucun</option>
+          <option [value]="null">{{ 'INVOICING.STEP_AFFAIRE.TS_NONE' | translate }}</option>
           @for (ts of tsList(); track ts.id) {
             <option [value]="ts.id">{{ ts.referenceTs }} — {{ ts.intitule }} ({{ formatAmount(ts.montantEstime) }})</option>
           }
@@ -152,10 +154,10 @@ export interface StepAffaireValue {
     <div class="step-actions">
       <button type="button" class="btn-cancel" (click)="cancel.emit()">
         <span class="material-symbols-outlined">close</span>
-        Annuler
+        {{ 'INVOICING.STEP_AFFAIRE.CANCEL' | translate }}
       </button>
       <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading()">
-        Suivant
+        {{ 'INVOICING.STEP_AFFAIRE.NEXT' | translate }}
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
     </div>

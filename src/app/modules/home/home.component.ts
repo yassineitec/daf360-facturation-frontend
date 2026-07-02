@@ -3,6 +3,7 @@ import { TitleCasePipe }   from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Store }           from '@ngrx/store';
 import { toSignal }        from '@angular/core/rxjs-interop';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CardComponent, selectCurrentUser, selectUserPermissions } from '@khalilrebhiitec/daf360';
 import { PaymentService }  from '../payments/payment.service';
 import { PaymentsDashboardStats } from '../payments/payment.model';
@@ -11,11 +12,11 @@ import { InvoiceListItem, INVOICE_STATUT_CONFIG } from '../invoicing/invoice.mod
 
 interface ModuleDef {
   path:        string;
-  label:       string;
-  description: string;
+  labelKey:    string;
+  descKey:     string;
   icon:        string;
   iconVariant: string;
-  stat:        string;
+  statKey:     string;
   statClass:   string;
   permission:  string | null;
   wide?:       boolean;
@@ -30,19 +31,18 @@ export interface ActivityItem {
   invoice:   InvoiceListItem;
 }
 
-// Paths are relative route names matching app.routes.ts children.
 const MODULE_DEFS: ModuleDef[] = [
-  { path: 'clients',        label: 'Clients',                 icon: 'groups',                 iconVariant: 'primary',   stat: '1 284 Clients',        statClass: 'stat--primary',   description: 'Référentiel clients, contrats et conditions de paiement.',               permission: null },
-  { path: 'fournisseurs',   label: 'Fournisseurs',            icon: 'inventory_2',            iconVariant: 'secondary', stat: '412 Actifs',           statClass: 'stat--secondary', description: 'Admin, banques et historique des achats.',                               permission: null },
-  { path: 'affaires',       label: 'Affaires',                icon: 'business_center',        iconVariant: 'tertiary',  stat: '86 En cours',          statClass: 'stat--tertiary',  description: 'Gestion de projets, budgets et jalons de facturation.',                 permission: null },
-  { path: 'invoicing',      label: 'Facturation',             icon: 'receipt_long',           iconVariant: 'fact',      stat: '',                     statClass: '',                description: 'Création, validation et cycle de vie des factures.',                    permission: null },
-  { path: 'payments',       label: 'Paiements',               icon: 'payments',               iconVariant: 'pay',       stat: '98% Réconcilié',       statClass: 'stat--pay',       description: 'Rapprochement bancaire et suivi des soldes.',                           permission: null },
-  { path: 'recouvrement',   label: 'Recouvrement',            icon: 'assignment_late',        iconVariant: 'error',     stat: 'Litiges critiques',    statClass: 'stat--error',     description: 'Relances, campagnes et gestion des litiges.',                           permission: null },
-  { path: 'tresorerie',     label: 'Gestion de Trésorerie',  icon: 'account_balance_wallet', iconVariant: 'primary',   stat: '',                     statClass: '',                description: 'Flux de trésorerie, comptes bancaires et prévisions financières.',      permission: null, wide: true },
-  { path: 'subcontracting', label: 'Sous-traitance',          icon: 'handshake',              iconVariant: 'slate',     stat: '24 Contrats',          statClass: 'stat--slate',     description: 'Gestion des sous-traitants, commandes et coûts.',                       permission: null },
-  { path: 'cost',           label: 'Coûts',                   icon: 'trending_down',          iconVariant: 'amber',     stat: '-2.4% vs Budget',      statClass: 'stat--amber',     description: 'Coûts opérationnels, variances et CAPEX/OPEX.',                        permission: null },
-  { path: 'reporting',      label: 'Reporting',               icon: 'monitoring',             iconVariant: 'primary',   stat: 'Nouveau rapport prêt', statClass: 'stat--primary',   description: 'Dashboards financiers, KPIs et analyse de profitabilité.',              permission: null },
-  { path: 'admin',          label: 'Administration',          icon: 'admin_panel_settings',   iconVariant: 'outline',   stat: 'Paramètres sécurisés', statClass: 'stat--muted',     description: 'Réglages système, devises et workflows de validation.',                 permission: null },
+  { path: 'clients',        labelKey: 'HOME.MODULES.CLIENTS.LABEL',       descKey: 'HOME.MODULES.CLIENTS.DESC',       icon: 'groups',                 iconVariant: 'primary',   statKey: 'HOME.MODULES.CLIENTS.STAT',       statClass: 'stat--primary',   permission: null },
+  { path: 'fournisseurs',   labelKey: 'HOME.MODULES.SUPPLIERS.LABEL',     descKey: 'HOME.MODULES.SUPPLIERS.DESC',     icon: 'inventory_2',            iconVariant: 'secondary', statKey: 'HOME.MODULES.SUPPLIERS.STAT',     statClass: 'stat--secondary', permission: null },
+  { path: 'affaires',       labelKey: 'HOME.MODULES.PROJECTS.LABEL',      descKey: 'HOME.MODULES.PROJECTS.DESC',      icon: 'business_center',        iconVariant: 'tertiary',  statKey: 'HOME.MODULES.PROJECTS.STAT',      statClass: 'stat--tertiary',  permission: null },
+  { path: 'invoicing',      labelKey: 'HOME.MODULES.INVOICING.LABEL',     descKey: 'HOME.MODULES.INVOICING.DESC',     icon: 'receipt_long',           iconVariant: 'fact',      statKey: '',                                statClass: '',                permission: null },
+  { path: 'payments',       labelKey: 'HOME.MODULES.PAYMENTS.LABEL',      descKey: 'HOME.MODULES.PAYMENTS.DESC',      icon: 'payments',               iconVariant: 'pay',       statKey: 'HOME.MODULES.PAYMENTS.STAT',      statClass: 'stat--pay',       permission: null },
+  { path: 'recouvrement',   labelKey: 'HOME.MODULES.RECOVERY.LABEL',      descKey: 'HOME.MODULES.RECOVERY.DESC',      icon: 'assignment_late',        iconVariant: 'error',     statKey: 'HOME.MODULES.RECOVERY.STAT',      statClass: 'stat--error',     permission: null },
+  { path: 'tresorerie',     labelKey: 'HOME.MODULES.TREASURY.LABEL',      descKey: 'HOME.MODULES.TREASURY.DESC',      icon: 'account_balance_wallet', iconVariant: 'primary',   statKey: '',                                statClass: '',                permission: null, wide: true },
+  { path: 'subcontracting', labelKey: 'HOME.MODULES.SUBCONTRACTING.LABEL',descKey: 'HOME.MODULES.SUBCONTRACTING.DESC',icon: 'handshake',              iconVariant: 'slate',     statKey: 'HOME.MODULES.SUBCONTRACTING.STAT',statClass: 'stat--slate',     permission: null },
+  { path: 'cost',           labelKey: 'HOME.MODULES.COSTS.LABEL',         descKey: 'HOME.MODULES.COSTS.DESC',         icon: 'trending_down',          iconVariant: 'amber',     statKey: 'HOME.MODULES.COSTS.STAT',         statClass: 'stat--amber',     permission: null },
+  { path: 'reporting',      labelKey: 'HOME.MODULES.REPORTING.LABEL',     descKey: 'HOME.MODULES.REPORTING.DESC',     icon: 'monitoring',             iconVariant: 'primary',   statKey: 'HOME.MODULES.REPORTING.STAT',     statClass: 'stat--primary',   permission: null },
+  { path: 'admin',          labelKey: 'HOME.MODULES.ADMIN.LABEL',         descKey: 'HOME.MODULES.ADMIN.DESC',         icon: 'admin_panel_settings',   iconVariant: 'outline',   statKey: 'HOME.MODULES.ADMIN.STAT',         statClass: 'stat--muted',     permission: null },
 ];
 
 const ACTIVITY_CONFIG: Record<string, { icon: string; cls: string }> = {
@@ -62,7 +62,7 @@ const ACTIVITY_CONFIG: Record<string, { icon: string; cls: string }> = {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [TitleCasePipe, CardComponent],
+  imports: [TitleCasePipe, CardComponent, TranslatePipe],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })

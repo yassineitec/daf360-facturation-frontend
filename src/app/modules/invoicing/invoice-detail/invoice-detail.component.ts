@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { InvoiceService } from '../invoice.service';
 import {
-  InvoiceDetail, INVOICE_STATUT_CONFIG, OVERDUE_STATUTS, InvoiceStatut,
+  InvoiceDetail, INVOICE_STATUT_CONFIG, OVERDUE_STATUTS, InvoiceStatut, CONDITIONS_PAIEMENT,
 } from '../invoice.model';
 import { StatusBadgeComponent } from '../../../shared/status-badge.component';
 import { PageHeaderComponent } from '../../../shared/page-header.component';
@@ -11,6 +11,7 @@ import { PaymentModalComponent } from '../payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   CardComponent, ButtonComponent,
   StepperComponent, StepperStep, StepperConfig,
@@ -26,13 +27,14 @@ import {
     CreditNoteModalComponent,
     RemindersPanelComponent,
     PermissionDirective,
-    CardComponent, ButtonComponent, StepperComponent,
+    CardComponent, ButtonComponent, StepperComponent, TranslatePipe,
   ],
   templateUrl: './invoice-detail.component.html',
   styleUrl:    './invoice-detail.component.scss',
 })
 export class InvoiceDetailComponent implements OnInit {
-  private readonly svc = inject(InvoiceService);
+  private readonly svc       = inject(InvoiceService);
+  private readonly translate = inject(TranslateService);
 
   id = input<string>();
 
@@ -85,15 +87,19 @@ export class InvoiceDetailComponent implements OnInit {
 
   // ── Lifecycle stepper ─────────────────────────────────────────────────────
 
-  readonly lifecycleSteps: StepperStep[] = [
-    { title: 'Brouillon'   },
-    { title: 'En revue'    },
-    { title: 'Validée'     },
-    { title: 'Émise'       },
-    { title: 'Envoyée'     },
-    { title: 'Part. payée' },
-    { title: 'Terminée'    },
-  ];
+  readonly lifecycleSteps = computed((): StepperStep[] => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { title: t('INVOICING.LIFECYCLE.DRAFT')          },
+      { title: t('INVOICING.LIFECYCLE.SUBMITTED')      },
+      { title: t('INVOICING.LIFECYCLE.APPROVED')       },
+      { title: t('INVOICING.LIFECYCLE.EMITTED')        },
+      { title: t('INVOICING.LIFECYCLE.SENT')           },
+      { title: t('INVOICING.LIFECYCLE.PARTIALLY_PAID') },
+      { title: t('INVOICING.LIFECYCLE.DONE')           },
+    ];
+  });
 
   readonly detailStep = computed(() => {
     const map: Record<string, number> = {
@@ -109,19 +115,21 @@ export class InvoiceDetailComponent implements OnInit {
   });
 
   readonly lifecycleConfig = computed((): StepperConfig => {
+    this.translate.currentLang();
     const s = this.statut();
+    const t = (k: string) => this.translate.instant(k);
     const cfgMap: Partial<Record<string, StepperConfig>> = {
-      DRAFT:          { nextLabel: 'Soumettre pour validation', showCancel: false },
-      RETURNED:       { nextLabel: 'Soumettre à nouveau',       showCancel: false },
-      SUBMITTED:      { nextLabel: 'Confirmer la décision',     prevLabel: 'Annuler', showCancel: false },
-      APPROVED:       { nextLabel: 'Émettre la facture',        showCancel: false },
-      EMITTED:        { nextLabel: 'Marquer comme envoyée',     showCancel: false },
-      SENT:           { nextLabel: 'Enregistrer un paiement',   showCancel: false },
-      PARTIALLY_PAID: { nextLabel: 'Enregistrer un paiement',   showCancel: false },
-      PAID:           { finishLabel: 'Émettre un avoir',        showCancel: false },
-      CREDIT_NOTED:   { finishLabel: 'Avoir émis ✓',            showCancel: false },
-      DISPUTED:       { nextLabel: 'Résoudre le litige',        showCancel: false },
-      CANCELLED:      { finishLabel: 'Annulée',                 showCancel: false },
+      DRAFT:          { nextLabel:   t('INVOICING.LIFECYCLE.ACTIONS.SUBMIT'),         showCancel: false },
+      RETURNED:       { nextLabel:   t('INVOICING.LIFECYCLE.ACTIONS.RESUBMIT'),       showCancel: false },
+      SUBMITTED:      { nextLabel:   t('INVOICING.LIFECYCLE.ACTIONS.CONFIRM'),        prevLabel: t('INVOICING.LIFECYCLE.ACTIONS.CANCEL'), showCancel: false },
+      APPROVED:       { nextLabel:   t('INVOICING.LIFECYCLE.ACTIONS.EMIT'),           showCancel: false },
+      EMITTED:        { nextLabel:   t('INVOICING.LIFECYCLE.ACTIONS.MARK_SENT'),      showCancel: false },
+      SENT:           { nextLabel:   t('INVOICING.LIFECYCLE.ACTIONS.RECORD_PAYMENT'), showCancel: false },
+      PARTIALLY_PAID: { nextLabel:   t('INVOICING.LIFECYCLE.ACTIONS.RECORD_PAYMENT'), showCancel: false },
+      PAID:           { finishLabel: t('INVOICING.LIFECYCLE.ACTIONS.EMIT_CREDIT'),   showCancel: false },
+      CREDIT_NOTED:   { finishLabel: t('INVOICING.LIFECYCLE.ACTIONS.CREDIT_DONE'),   showCancel: false },
+      DISPUTED:       { nextLabel:   t('INVOICING.LIFECYCLE.ACTIONS.RESOLVE'),        showCancel: false },
+      CANCELLED:      { finishLabel: t('INVOICING.LIFECYCLE.ACTIONS.CANCELLED'),      showCancel: false },
     };
     return cfgMap[s] ?? { showCancel: false };
   });
@@ -247,5 +255,9 @@ export class InvoiceDetailComponent implements OnInit {
   formatDate(d: string | null): string {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  conditionLabel(code: string): string {
+    return CONDITIONS_PAIEMENT[code as keyof typeof CONDITIONS_PAIEMENT] ?? code;
   }
 }
