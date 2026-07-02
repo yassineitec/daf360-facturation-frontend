@@ -1,5 +1,5 @@
 import {
-  Component, OnInit, inject, output, signal, computed,
+  Component, OnInit, inject, input, output, signal, computed,
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
@@ -148,16 +148,18 @@ export interface StepAffaireValue {
     </div>
   }
 
-  <div class="step-actions">
-    <button type="button" class="btn-cancel" (click)="cancel.emit()">
-      <span class="material-symbols-outlined">close</span>
-      Annuler
-    </button>
-    <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading()">
-      Suivant
-      <span class="material-symbols-outlined">arrow_forward</span>
-    </button>
-  </div>
+  @if (showActions()) {
+    <div class="step-actions">
+      <button type="button" class="btn-cancel" (click)="cancel.emit()">
+        <span class="material-symbols-outlined">close</span>
+        Annuler
+      </button>
+      <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading()">
+        Suivant
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+    </div>
+  }
 </div>
   `,
   styleUrl: './step.component.scss',
@@ -167,8 +169,9 @@ export class StepAffaireComponent implements OnInit {
   private readonly affSvc = inject(AffaireService);
   private readonly fb     = inject(FormBuilder);
 
-  nextStep = output<StepAffaireValue>();
-  cancel   = output<void>();
+  showActions = input<boolean>(true);
+  nextStep    = output<StepAffaireValue>();
+  cancel      = output<void>();
 
   searchQuery     = signal('');
   searchResults   = signal<AffaireListItem[]>([]);

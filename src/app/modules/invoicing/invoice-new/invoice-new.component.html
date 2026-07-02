@@ -1,87 +1,192 @@
 <div class="wizard-page">
+  <div class="wizard-layout">
 
-  <!-- ── Page header ──────────────────────────────────────────────────────────── -->
-  <div class="wizard-header">
-    <button class="wizard-back" (click)="cancel()">
-      <span class="material-symbols-outlined">arrow_back</span>
-    </button>
-    <div>
-      <h1 class="wizard-title">Nouvelle facture</h1>
-      <p class="wizard-sub">Suivez les étapes pour créer et soumettre votre facture</p>
-    </div>
-  </div>
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- LEFT — form area                                              -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="form-area">
 
-  <!-- ── Stepper ──────────────────────────────────────────────────────────────── -->
-  <div class="stepper-wrap">
-    <app-wizard-stepper [steps]="stepLabels" [currentStep]="step()" />
-  </div>
+      <!-- ── Page header ───────────────────────────────────────────── -->
+      <div class="page-head">
+        <button class="back-btn" (click)="cancel()">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div>
+          <h1 class="page-title">Nouvelle facture</h1>
+          <p class="page-sub">Suivez les étapes pour créer et soumettre votre facture</p>
+        </div>
+      </div>
 
-  <!-- ── Form 3D card ─────────────────────────────────────────────────────────── -->
-  <div class="card-perspective" (mousemove)="onTilt($event)" (mouseleave)="resetTilt()">
-    <div class="form-card" [style.transform]="tiltTransform()">
+      <!-- ── Form card ─────────────────────────────────────────────── -->
+      <div class="form-card">
 
-      <!-- Decorative blobs -->
-      <div class="blob blob--tr"></div>
-      <div class="blob blob--bl"></div>
-
-      <div class="form-card__inner">
-
-        <!-- Step heading -->
-        <div class="step-heading">
-          <h2 class="step-heading__title">{{ stepTitle() }}</h2>
-          <p class="step-heading__sub">{{ stepSub() }}</p>
+        <!-- Card head: icon + step title -->
+        <div class="card-head">
+          <div class="card-head__icon">
+            <span class="material-symbols-outlined">{{ steps[step() - 1].icon }}</span>
+          </div>
+          <div>
+            <h2 class="card-head__title">{{ steps[step() - 1].title }}</h2>
+            <p class="card-head__sub">Étape {{ step() }} sur {{ steps.length }}</p>
+          </div>
         </div>
 
-        <!-- Step content -->
-        @if (step() === 1) {
-          <div class="step-enter">
-            <app-step-affaire (nextStep)="onAffaireDone($event)" (cancel)="cancel()" />
-          </div>
-        }
-        @if (step() === 2 && affaireValue()) {
-          <div class="step-enter">
-            <app-step-lines
-              [affaireData]="affaireValue()!"
-              (prevStep)="step.set(1)"
-              (nextStep)="onLinesDone($event)" />
-          </div>
-        }
-        @if (step() === 3 && affaireValue() && linesValue()) {
-          <div class="step-enter">
-            <app-step-conditions
-              [affaireData]="affaireValue()!"
-              [linesData]="linesValue()!"
-              (prevStep)="step.set(2)"
-              (nextStep)="onConditionsDone($event)" />
-          </div>
-        }
-        @if (step() === 4 && affaireValue() && linesValue() && conditionsValue()) {
-          <div class="step-enter">
-            <app-step-recap
-              [affaireData]="affaireValue()!"
-              [linesData]="linesValue()!"
-              [conditionsData]="conditionsValue()!"
-              (prevStep)="step.set(3)" />
-          </div>
-        }
+        <!-- Step body -->
+        <div class="step-body">
+          @if (step() === 1) {
+            <div class="step-enter">
+              <app-step-affaire
+                [showActions]="false"
+                (nextStep)="onAffaireDone($event)"
+                (cancel)="cancel()" />
+            </div>
+          }
+          @if (step() === 2 && affaireValue()) {
+            <div class="step-enter">
+              <app-step-lines
+                [showActions]="false"
+                [affaireData]="affaireValue()!"
+                (prevStep)="goPrev()"
+                (nextStep)="onLinesDone($event)" />
+            </div>
+          }
+          @if (step() === 3 && affaireValue() && linesValue()) {
+            <div class="step-enter">
+              <app-step-conditions
+                [showActions]="false"
+                [affaireData]="affaireValue()!"
+                [linesData]="linesValue()!"
+                (prevStep)="goPrev()"
+                (nextStep)="onConditionsDone($event)" />
+            </div>
+          }
+          @if (step() === 4 && affaireValue() && linesValue() && conditionsValue()) {
+            <div class="step-enter">
+              <app-step-recap
+                [showActions]="false"
+                [affaireData]="affaireValue()!"
+                [linesData]="linesValue()!"
+                [conditionsData]="conditionsValue()!"
+                (prevStep)="goPrev()" />
+            </div>
+          }
+        </div>
 
+        <!-- Navigation footer -->
+        <div class="nav-footer">
+          <div>
+            @if (step() > 1) {
+              <daf-button
+                [options]="{ variant: 'ghost', label: 'Retour', iconStart: 'arrow_back' }"
+                (onClick)="goPrev()" />
+            } @else {
+              <daf-button
+                [options]="{ variant: 'ghost', label: 'Annuler' }"
+                (onClick)="cancel()" />
+            }
+          </div>
+
+          <div class="nav-actions">
+            @if (step() === 4) {
+              <daf-button
+                [options]="{
+                  variant: 'ghost',
+                  label: isSaving() ? 'Enregistrement…' : 'Brouillon',
+                  iconStart: 'save',
+                  disabled: isSaving()
+                }"
+                (onClick)="saveDraft()" />
+            }
+            <daf-button
+              [options]="{
+                variant: 'secondary',
+                pill: true,
+                label: step() === 4 ? 'Soumettre' : 'Suivant',
+                iconEnd: step() < 4 ? 'arrow_forward' : 'send',
+                loading: isSaving(),
+                disabled: !canGoNext() || isSaving()
+              }"
+              (onClick)="goNext()" />
+          </div>
+        </div>
+
+      </div><!-- /form-card -->
+    </div><!-- /form-area -->
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- RIGHT — sidebar                                               -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <aside class="sidebar">
+
+      <!-- Progression -->
+      <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
+        <div class="panel-header">
+          <p class="panel__label">Progression</p>
+        </div>
+        <div class="panel-body">
+          <div class="step-list">
+            @for (s of steps; track $index; let i = $index) {
+              <div class="step-item"
+                   [class.step-item--done]="step() > i + 1"
+                   [class.step-item--active]="step() === i + 1">
+                <div class="step-num">
+                  @if (step() > i + 1) {
+                    <span class="material-symbols-outlined"
+                          style="font-variation-settings:'FILL' 1;font-size:16px">check</span>
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </div>
+                <span class="step-label">{{ s.title }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </daf-card>
+
+      <!-- Résumé -->
+      <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
+        <div class="panel-header">
+          <p class="panel__label">Résumé</p>
+        </div>
+        <div class="panel-body">
+          <div class="summary-rows">
+            <div class="summary-row">
+              <span class="summary-row__key">Affaire</span>
+              <span class="summary-row__val">{{ summaryAffaire() }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-row__key">Client</span>
+              <span class="summary-row__val">{{ summaryClient() }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-row__key">Type</span>
+              <span class="summary-row__val">{{ summaryType() }}</span>
+            </div>
+            @if (step() > 2) {
+              <div class="summary-row">
+                <span class="summary-row__key">Lignes</span>
+                <span class="summary-row__val">{{ summaryLines() }}</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-row__key">Total TTC</span>
+                <span class="summary-row__val summary-row__val--total">{{ summaryTotal() }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </daf-card>
+
+      <!-- Conseil -->
+      <div class="tips-panel">
+        <div class="tips-panel__head">
+          <span class="material-symbols-outlined">lightbulb</span>
+          <span>Conseil</span>
+        </div>
+        <p class="tips-panel__text">{{ stepTip() }}</p>
       </div>
-    </div>
-  </div>
 
-  <!-- ── Help card ─────────────────────────────────────────────────────────────── -->
-  <div class="help-card">
-    <div class="help-card__icon">
-      <span class="material-symbols-outlined">info</span>
-    </div>
-    <div>
-      <h4 class="help-card__title">Besoin d'aide ?</h4>
-      <p class="help-card__text">
-        L'affaire est le point d'entrée unique de votre facturation. Si vous ne trouvez
-        pas votre affaire, assurez-vous qu'elle est bien activée dans le module
-        <strong>Affaires</strong>.
-      </p>
-    </div>
-  </div>
+    </aside><!-- /sidebar -->
 
-</div>
+  </div><!-- /wizard-layout -->
+</div><!-- /wizard-page -->

@@ -67,16 +67,18 @@ export interface StepConditionsValue {
     </div>
   </div>
 
-  <div class="step-actions">
-    <button type="button" class="btn-back" (click)="prevStep.emit()">
-      <span class="material-symbols-outlined">arrow_back</span>
-      Retour
-    </button>
-    <button type="button" class="btn-next" (click)="next()">
-      Suivant
-      <span class="material-symbols-outlined">arrow_forward</span>
-    </button>
-  </div>
+  @if (showActions()) {
+    <div class="step-actions">
+      <button type="button" class="btn-back" (click)="prevStep.emit()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Retour
+      </button>
+      <button type="button" class="btn-next" (click)="next()">
+        Suivant
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+    </div>
+  }
 </div>
   `,
   styleUrl: './step.component.scss',
@@ -84,6 +86,7 @@ export interface StepConditionsValue {
 export class StepConditionsComponent {
   private readonly fb = inject(FormBuilder);
 
+  showActions = input<boolean>(true);
   affaireData = input.required<StepAffaireValue>();
   linesData   = input.required<StepLinesValue>();
   prevStep    = output<void>();

@@ -83,16 +83,18 @@ export interface StepLinesValue {
     <div class="form-error">Toutes les lignes doivent être remplies correctement.</div>
   }
 
-  <div class="step-actions">
-    <button type="button" class="btn-back" (click)="prevStep.emit()">
-      <span class="material-symbols-outlined">arrow_back</span>
-      Retour
-    </button>
-    <button type="button" class="btn-next" (click)="next()" [disabled]="linesArray.length === 0">
-      Suivant
-      <span class="material-symbols-outlined">arrow_forward</span>
-    </button>
-  </div>
+  @if (showActions()) {
+    <div class="step-actions">
+      <button type="button" class="btn-back" (click)="prevStep.emit()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Retour
+      </button>
+      <button type="button" class="btn-next" (click)="next()" [disabled]="linesArray.length === 0">
+        Suivant
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+    </div>
+  }
 </div>
   `,
   styleUrl: './step.component.scss',
@@ -100,6 +102,7 @@ export interface StepLinesValue {
 export class StepLinesComponent {
   private readonly fb = inject(FormBuilder);
 
+  showActions = input<boolean>(true);
   affaireData = input.required<StepAffaireValue>();
   prevStep    = output<void>();
   nextStep    = output<StepLinesValue>();

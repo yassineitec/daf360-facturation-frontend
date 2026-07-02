@@ -1,6 +1,6 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, viewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { WizardStepperComponent } from '../../../shared/wizard-stepper.component';
+import { CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 import { StepAffaireComponent, StepAffaireValue } from './steps/step-affaire.component';
 import { StepLinesComponent,  StepLinesValue  } from './steps/step-lines.component';
 import { StepConditionsComponent, StepConditionsValue } from './steps/step-conditions.component';
@@ -8,19 +8,34 @@ import { StepRecapComponent } from './steps/step-recap.component';
 
 type Step = 1 | 2 | 3 | 4;
 
-const STEP_LABELS = ['Affaire & Client', 'Lignes', 'Conditions', 'Récapitulatif'];
-
-const STEP_INFO = [
-  { title: 'Initialisation de la facture',  sub: "Sélectionnez l'affaire concernée et le type de document à générer."  },
-  { title: 'Lignes de facturation',         sub: 'Ajoutez les prestations, quantités et montants à facturer.'           },
-  { title: 'Conditions de paiement',        sub: "Définissez les modalités et l'échéance de paiement."                  },
-  { title: 'Récapitulatif & Validation',    sub: 'Vérifiez les informations avant de créer la facture.'                  },
+const STEPS = [
+  { title: 'Affaire & Client', icon: 'folder_open'    },
+  { title: 'Lignes',           icon: 'receipt'        },
+  { title: 'Conditions',       icon: 'calendar_month' },
+  { title: 'Récapitulatif',    icon: 'summarize'      },
 ];
+
+const STEP_TIPS = [
+  "Sélectionnez l'affaire concernée. Le RAF disponible est vérifié automatiquement pour bloquer toute sur-facturation.",
+  "Ajoutez chaque prestation avec sa quantité, son prix unitaire HT et le taux de TVA applicable.",
+  "Définissez l'échéance, les conditions de paiement et le bon de commande si le type de facturation l'exige.",
+  "Vérifiez toutes les informations avant de soumettre ou d'enregistrer en brouillon pour y revenir plus tard.",
+];
+
+const INVOICE_TYPE_LABELS: Record<string, string> = {
+  ACOMPTE:      'Acompte',
+  INTERMEDIAIRE: 'Situation',
+  FINALE:       'Solde',
+  AVOIR:        "Note d'avoir",
+};
 
 @Component({
   selector: 'app-invoice-new',
   standalone: true,
-  imports: [WizardStepperComponent, StepAffaireComponent, StepLinesComponent, StepConditionsComponent, StepRecapComponent],
+  imports: [
+    CardComponent, ButtonComponent,
+    StepAffaireComponent, StepLinesComponent, StepConditionsComponent, StepRecapComponent,
+  ],
   templateUrl: './invoice-new.component.html',
   styleUrl:    './invoice-new.component.scss',
 })
@@ -28,33 +43,82 @@ export class InvoiceNewComponent {
   private readonly router = inject(Router);
 
   step            = signal<Step>(1);
-  affaireValue    = signal<StepAffaireValue   | null>(null);
-  linesValue      = signal<StepLinesValue     | null>(null);
+  affaireValue    = signal<StepAffaireValue    | null>(null);
+  linesValue      = signal<StepLinesValue      | null>(null);
   conditionsValue = signal<StepConditionsValue | null>(null);
 
-  readonly stepLabels = STEP_LABELS;
+  summaryAffaire = signal('—');
+  summaryClient  = signal('—');
+  summaryType    = signal('—');
+  summaryLines   = signal(0);
+  summaryTotal   = signal('—');
 
-  readonly stepTitle = computed(() => STEP_INFO[this.step() - 1].title);
-  readonly stepSub   = computed(() => STEP_INFO[this.step() - 1].sub);
+  readonly steps = STEPS;
 
-  tiltTransform = signal('rotateX(0deg) rotateY(0deg) translateY(0px)');
+  readonly stepAffaireRef    = viewChild(StepAffaireComponent);
+  readonly stepLinesRef      = viewChild(StepLinesComponent);
+  readonly stepConditionsRef = viewChild(StepConditionsComponent);
+  readonly stepRecapRef      = viewChild(StepRecapComponent);
 
-  onTilt(e: MouseEvent): void {
-    const target = e.currentTarget as HTMLElement;
-    const rect   = target.getBoundingClientRect();
-    const x      = e.clientX - rect.left;
-    const y      = e.clientY - rect.top;
-    const rx     = (((y - rect.height / 2) / 25)).toFixed(2);
-    const ry     = (((rect.width  / 2 - x)  / 25)).toFixed(2);
-    this.tiltTransform.set(`rotateX(${rx}deg) rotateY(${ry}deg) translateY(-8px)`);
+  readonly stepTip = computed(() => STEP_TIPS[this.step() - 1]);
+
+  readonly isSaving = computed(() => this.stepRecapRef()?.saving() ?? false);
+
+  readonly canGoNext = computed(() => {
+    const s = this.step();
+    if (s === 1) {
+      return !(this.stepAffaireRef()?.rafBlocked() ?? false)
+          && !(this.stepAffaireRef()?.rafLoading() ?? false);
+    }
+    if (s === 4) return !this.isSaving();
+    return true;
+  });
+
+  goNext(): void {
+    const s = this.step();
+    if (s === 1) this.stepAffaireRef()?.next();
+    else if (s === 2) this.stepLinesRef()?.next();
+    else if (s === 3) this.stepConditionsRef()?.next();
+    else if (s === 4) this.stepRecapRef()?.saveAndSubmit();
   }
 
-  resetTilt(): void {
-    this.tiltTransform.set('rotateX(0deg) rotateY(0deg) translateY(0px)');
+  goPrev(): void {
+    const s = this.step();
+    if (s > 1) this.step.set((s - 1) as Step);
   }
 
-  onAffaireDone(v: StepAffaireValue):       void { this.affaireValue.set(v);    this.step.set(2); }
-  onLinesDone(v: StepLinesValue):           void { this.linesValue.set(v);      this.step.set(3); }
-  onConditionsDone(v: StepConditionsValue): void { this.conditionsValue.set(v); this.step.set(4); }
+  saveDraft(): void {
+    this.stepRecapRef()?.saveDraft();
+  }
+
+  onAffaireDone(v: StepAffaireValue): void {
+    const aff = this.stepAffaireRef()?.selectedAffaire();
+    this.summaryAffaire.set(aff?.intitule ?? '—');
+    this.summaryClient.set(aff?.clientName ?? '—');
+    this.summaryType.set(INVOICE_TYPE_LABELS[v.invoiceType] ?? v.invoiceType);
+    this.affaireValue.set(v);
+    this.step.set(2);
+  }
+
+  onLinesDone(v: StepLinesValue): void {
+    this.summaryLines.set(v.lines.length);
+    const ttc = v.lines.reduce(
+      (s, l) => s + l.quantity * l.unitRate * (1 + l.vatRatePct / 100), 0
+    );
+    this.summaryTotal.set(
+      new Intl.NumberFormat('fr-FR', {
+        style: 'currency', currency: this.affaireValue()?.currency ?? 'TND',
+        minimumFractionDigits: 0, maximumFractionDigits: 0,
+      }).format(ttc)
+    );
+    this.linesValue.set(v);
+    this.step.set(3);
+  }
+
+  onConditionsDone(v: StepConditionsValue): void {
+    this.conditionsValue.set(v);
+    this.step.set(4);
+  }
+
   cancel(): void { this.router.navigate(['/fact/invoicing']); }
 }
