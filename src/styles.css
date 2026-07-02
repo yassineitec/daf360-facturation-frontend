@@ -10,6 +10,7 @@
    resolves to nothing. Remove each line as its components are migrated to
    the lib's own token names directly. */
 :root {
+  --font-sans:                       'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --color-text:                      var(--color-on-surface);
   --color-text-muted:                var(--color-on-surface-variant);
   --color-border:                    var(--color-outline-variant);
@@ -41,4 +42,8 @@
 
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
 }
