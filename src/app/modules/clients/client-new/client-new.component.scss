@@ -1,7 +1,8 @@
 @import '../../../shared/design-tokens';
 
-$green: $brand-green;
-$teal:  $brand-teal;
+// Token CSS de la lib (@khalilrebhiitec/daf360)
+$tertiary:     var(--color-tertiary);   // #00c1ad — couleur interactive
+$tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
 
 :host { display: block; }
 
@@ -48,11 +49,16 @@ $teal:  $brand-teal;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  color: #3e4945;
+  color: $text-muted;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 
   .material-symbols-outlined { font-size: 20px; }
-  &:hover { border-color: $green; color: $green; background: rgba($green, 0.05); }
+
+  &:hover {
+    border-color: $tertiary;
+    color: $tertiary;
+    background: rgba($tertiary-hex, 0.06);
+  }
 }
 
 .page-title {
@@ -85,18 +91,18 @@ $teal:  $brand-teal;
   gap: 14px;
   padding: 24px 32px 20px;
   border-bottom: 1px solid $border-soft;
-  background: rgba($teal, 0.04);
+  background: rgba($tertiary-hex, 0.04);
 
   &__icon {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: rgba($green, 0.1);
+    background: rgba($tertiary-hex, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: $green;
+    color: $tertiary;
 
     .material-symbols-outlined { font-size: 22px; }
   }
@@ -126,14 +132,14 @@ $teal:  $brand-teal;
 .validation-hint {
   margin: 0 32px 12px;
   padding: 10px 14px;
-  background: rgba(#1a6b7c, 0.06);
-  border: 1px solid rgba(#1a6b7c, 0.18);
+  background: rgba($tertiary-hex, 0.06);
+  border: 1px solid rgba($tertiary-hex, 0.20);
   border-radius: 10px;
   display: flex;
   align-items: flex-start;
   gap: 8px;
   font-size: 12.5px;
-  color: #1a6b7c;
+  color: #007a6e;
   line-height: 1.5;
 
   .material-symbols-outlined { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
@@ -148,40 +154,6 @@ $teal:  $brand-teal;
   border-top: 1px solid $border-soft;
 }
 
-.nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  border: none;
-  border-radius: $radius-md;
-  cursor: pointer;
-  transition: all 0.15s;
-
-  .material-symbols-outlined { font-size: 18px; }
-
-  &--ghost {
-    padding: 9px 16px;
-    background: none;
-    color: $text-muted;
-    &:hover { background: $surface-mid; color: $text-dark; }
-  }
-
-  &--primary {
-    padding: 10px 24px;
-    background: $brand-green;
-    color: #fff;
-    box-shadow: 0 4px 14px rgba($brand-green, 0.30);
-    &:hover:not(:disabled) {
-      background: darken($brand-green, 6%);
-      box-shadow: 0 6px 18px rgba($brand-green, 0.40);
-      transform: translateY(-1px);
-    }
-    &:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transform: none; }
-  }
-}
 
 // ── Progression — vertical step list ─────────────────────────────────────────
 .step-list {
@@ -212,15 +184,21 @@ $teal:  $brand-teal;
 
   &--active {
     .step-num {
-      background: $brand-teal;
-      color: #164B60;
-      box-shadow: 0 0 0 4px rgba($brand-teal, 0.20), 0 4px 12px rgba($brand-teal, 0.35);
+      background: $tertiary;
+      color: #fff;
+      border-color: $tertiary;
+      box-shadow: 0 0 0 4px rgba($tertiary-hex, 0.18), 0 4px 12px rgba($tertiary-hex, 0.32);
     }
-    .step-label { color: $brand-teal; font-weight: 700; }
+    .step-label { color: $tertiary; font-weight: 700; }
   }
 
   &--done {
-    .step-num { background: $brand-green; color: #fff; box-shadow: none; }
+    .step-num {
+      background: $tertiary;
+      color: #fff;
+      border-color: $tertiary;
+      box-shadow: none;
+    }
     .step-label { color: $text-muted; }
   }
 }
@@ -238,7 +216,7 @@ $teal:  $brand-teal;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
 
   .material-symbols-outlined { font-size: 16px; }
 }
@@ -277,7 +255,7 @@ $teal:  $brand-teal;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: $brand-slate;
+  color: var(--color-teal);
   margin: 0;
 }
 

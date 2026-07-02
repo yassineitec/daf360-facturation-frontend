@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
 import { Observable, forkJoin }                 from 'rxjs';
-import { StepperStep, StepperConfig, CardComponent } from '@khalilrebhiitec/daf360';
+import { StepperStep, StepperConfig, CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireWizardService }          from '../affaire-wizard.service';
 import { AffaireDraftState, mapDraftToState } from '../affaire-wizard.model';
@@ -39,6 +39,7 @@ const STEP_TIPS = [
   imports: [
     RouterLink,
     CardComponent,
+    ButtonComponent,
     WizardStepDoc360Component,
     WizardStepInfoComponent,
     WizardStepBillingComponent,

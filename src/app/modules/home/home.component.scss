@@ -56,11 +56,11 @@
   .material-symbols-outlined { font-size: 15px; }
 }
 
-// KPI sub-label colour helpers (SCSS avoids Tailwind cascade conflicts)
-.kpi-sub-primary   { color: #006b58; }
-.kpi-sub-error     { color: #ba1a1a; }
-.kpi-sub-tertiary  { color: #653e00; }
-.kpi-val-error     { color: #ba1a1a; }
+// KPI sub-label colour helpers — aligned with reference HTML tokens
+.kpi-sub-primary   { color: #006b58; }   // text-primary
+.kpi-sub-error     { color: #BA1A1A; }   // text-error
+.kpi-sub-tertiary  { color: #653e00; }   // text-on-tertiary-fixed-variant
+.kpi-val-error     { color: #BA1A1A; }   // text-error
 
 // ── Skeleton (KPI loading) ─────────────────────────────────────────────────────
 .skeleton-val {
@@ -101,28 +101,28 @@
   // Arrow slides right on hover
   &:hover .mod-card__arrow { transform: translateX(3px); }
 
-  // Icon fills on hover
-  &:hover .icon--primary   { background: #006b58; color: #fff; }
-  &:hover .icon--secondary { background: #006c49; color: #fff; }
-  &:hover .icon--tertiary  { background: #855300; color: #fff; }
-  &:hover .icon--fact      { background: #005d4d; color: #79d7be; }
-  &:hover .icon--pay       { background: #0c714d; color: #9af2c5; }
-  &:hover .icon--error     { background: #BA1A1A; color: #fff; }
-  &:hover .icon--slate     { background: #1E293B; color: #fff; }
-  &:hover .icon--amber     { background: #653e00; color: #fff; }
-  &:hover .icon--outline   { background: #3e4945; color: #fff; }
+  // Icon fills on hover — group-hover equivalent from reference HTML
+  &:hover .icon--primary   { background: #006b58; color: #fff; }          // group-hover:bg-primary   text-on-primary
+  &:hover .icon--secondary { background: #006c49; color: #fff; }          // group-hover:bg-secondary text-on-secondary
+  &:hover .icon--tertiary  { background: #855300; color: #fff; }          // group-hover:bg-tertiary  text-on-tertiary
+  &:hover .icon--fact      { background: #005d4d; color: #79d7be; }       // group-hover:bg-on-primary-container
+  &:hover .icon--pay       { background: #0c714d; color: #9af2c5; }       // group-hover:bg-on-secondary-container
+  &:hover .icon--error     { background: #BA1A1A; color: #fff; }          // group-hover:bg-error     text-on-error
+  &:hover .icon--slate     { background: #1E293B; color: #fff; }          // group-hover:bg-slate-800 text-white
+  &:hover .icon--amber     { background: #653e00; color: #fff; }          // group-hover:bg-on-tertiary-fixed-variant
+  &:hover .icon--outline   { background: #3e4945; color: #fff; }          // group-hover:bg-on-surface-variant
 }
 
-// title: 18px / 700 / near-black
+// title: 18px / 700 — text-on-surface from reference
 .mod-card__title {
-  color: #111827;
+  color: #0b1c30;
   margin: 0;
   line-height: 1.333;
 }
 
-// desc: 12px / 400 / medium-gray
+// desc: 12px / 400 — text-on-surface-variant from reference
 .mod-card__desc {
-  color: #6b7280;
+  color: #3e4945;
   line-height: 1.5;
   margin: 0;
 }
@@ -160,16 +160,16 @@
 .stat--slate     { color: #64748B; }
 .stat--muted     { color: #94A3B8; }
 
-// ── Icon colour variants ──────────────────────────────────────────────────────
-.icon--primary   { background: rgba(0,107,88,.10);    color: #006b58; }
-.icon--secondary { background: rgba(0,108,73,.10);    color: #006c49; }
-.icon--tertiary  { background: rgba(255,184,93,.20);  color: #855300; }
-.icon--fact      { background: rgba(121,215,190,.30); color: #005d4d; }
-.icon--pay       { background: rgba(154,242,197,.50); color: #0c714d; }
-.icon--error     { background: rgba(255,218,214,.40); color: #93000a; }
-.icon--slate     { background: #f1f5f9;               color: #1E293B; }
-.icon--amber     { background: rgba(101,62,0,.10);    color: #653e00; }
-.icon--outline   { background: rgba(189,201,196,.20); color: #3e4945; }
+// ── Icon colour variants — aligned with reference HTML tokens ─────────────────
+.icon--primary   { background: rgba(0,107,88,.10);    color: #006b58; }   // bg-primary/10   text-primary
+.icon--secondary { background: rgba(0,108,73,.10);    color: #006c49; }   // bg-secondary/10 text-secondary
+.icon--tertiary  { background: rgba(133,83,0,.15);    color: #855300; }   // bg-tertiary/15  text-tertiary
+.icon--fact      { background: rgba(121,215,190,.30); color: #005d4d; }   // bg-primary-container/30
+.icon--pay       { background: rgba(154,242,197,.50); color: #0c714d; }   // bg-secondary-container/50
+.icon--error     { background: rgba(186,26,26,.10);   color: #BA1A1A; }   // bg-error/10     text-error
+.icon--slate     { background: #f1f5f9;               color: #1E293B; }   // bg-slate-100    text-slate-800
+.icon--amber     { background: rgba(101,62,0,.10);    color: #653e00; }   // bg-on-tertiary-fixed-variant/10
+.icon--outline   { background: rgba(189,201,196,.20); color: #3e4945; }   // bg-outline-variant/20
 
 // ── Activity — demi-page ──────────────────────────────────────────────────────
 .activity-wrap {

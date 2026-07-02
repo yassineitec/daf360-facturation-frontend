@@ -49,9 +49,9 @@
       </div>
       <div>
         @if (loadingStats()) { <div class="skeleton-val"></div> }
-        @else { <p class="text-xl font-price-display font-bold kpi-val-error">{{ stats()?.enRetardCount ?? '—' }}</p> }
+        @else { <p class="text-xl font-price-display font-bold kpi-val-error">{{ fmt(stats()?.enRetardMontant, stats()?.devise) }}</p> }
         <p class="text-[10px] font-bold mt-1 kpi-sub-error">
-          @if ((stats()?.enRetardCount ?? 0) > 0) { {{ fmt(stats()?.enRetardMontant, stats()?.devise) }} }
+          @if ((stats()?.enRetardCount ?? 0) > 0) { {{ stats()?.enRetardCount }} factures critiques }
           @else { Aucun retard }
         </p>
       </div>

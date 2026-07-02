@@ -96,6 +96,7 @@ import { StepConditionsValue } from './step-conditions.component';
     <div class="server-error">{{ serverError() }}</div>
   }
 
+  @if (showActions()) {
   <div class="step-actions">
     <button type="button" class="btn-back" (click)="prevStep.emit()">
       <span class="material-symbols-outlined">arrow_back</span>
@@ -112,6 +113,7 @@ import { StepConditionsValue } from './step-conditions.component';
       </button>
     </div>
   </div>
+  }
 </div>
   `,
   styleUrl: './step.component.scss',
@@ -121,6 +123,7 @@ export class StepRecapComponent {
   private readonly router = inject(Router);
   private readonly route  = inject(ActivatedRoute);
 
+  showActions    = input<boolean>(true);
   affaireData    = input.required<StepAffaireValue>();
   linesData      = input.required<StepLinesValue>();
   conditionsData = input.required<StepConditionsValue>();

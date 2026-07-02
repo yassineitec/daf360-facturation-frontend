@@ -5,13 +5,11 @@ $tertiary-hex: #00c1ad;
 
 :host { display: block; }
 
-// ── Page wrapper ───────────────────────────────────────────────────────────────
 .wizard-page {
   padding: 28px 16px 48px;
   box-sizing: border-box;
 }
 
-// ── Two-column grid ────────────────────────────────────────────────────────────
 .wizard-layout {
   display: grid;
   grid-template-columns: 1fr 380px;
@@ -21,7 +19,7 @@ $tertiary-hex: #00c1ad;
   align-items: start;
 }
 
-// ── LEFT — form area ───────────────────────────────────────────────────────────
+// ── LEFT ─────────────────────────────────────────────────────────────────────
 .form-area {
   display: flex;
   flex-direction: column;
@@ -29,7 +27,6 @@ $tertiary-hex: #00c1ad;
   min-width: 0;
 }
 
-// ── Page head ─────────────────────────────────────────────────────────────────
 .page-head {
   display: flex;
   align-items: center;
@@ -52,12 +49,7 @@ $tertiary-hex: #00c1ad;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 
   .material-symbols-outlined { font-size: 20px; }
-
-  &:hover {
-    border-color: $tertiary;
-    color: $tertiary;
-    background: rgba($tertiary-hex, 0.06);
-  }
+  &:hover { border-color: $tertiary; color: $tertiary; background: rgba($tertiary-hex, 0.06); }
 }
 
 .page-title {
@@ -75,7 +67,6 @@ $tertiary-hex: #00c1ad;
   margin: 0;
 }
 
-// ── Form card ─────────────────────────────────────────────────────────────────
 .form-card {
   background: $surface;
   border-radius: $radius-lg;
@@ -83,7 +74,6 @@ $tertiary-hex: #00c1ad;
   box-shadow: $shadow-card;
 }
 
-// ── Card head ─────────────────────────────────────────────────────────────────
 .card-head {
   display: flex;
   align-items: center;
@@ -118,16 +108,13 @@ $tertiary-hex: #00c1ad;
     font-size: 0.8125rem;
     color: #64748b;
     margin: 0;
-    line-height: 1.5;
   }
 }
 
-// ── Step body ─────────────────────────────────────────────────────────────────
 .step-body {
   padding: 28px 32px;
 }
 
-// ── Step enter animation ───────────────────────────────────────────────────────
 @keyframes stepEnter {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0);    }
@@ -137,7 +124,168 @@ $tertiary-hex: #00c1ad;
   animation: stepEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-// ── Navigation footer ─────────────────────────────────────────────────────────
+// ── Form fields ───────────────────────────────────────────────────────────────
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: $text-body;
+  }
+
+  &--full { grid-column: 1 / -1; }
+}
+
+.req { color: #BA1A1A; }
+
+.form-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: $surface;
+  color: $text-dark;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: $tertiary;
+    box-shadow: 0 0 0 3px rgba($tertiary-hex, 0.12);
+  }
+
+  &.invalid { border-color: #BA1A1A; }
+
+  &::placeholder { color: $text-light; }
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.form-select-wrap {
+  position: relative;
+
+  &::after {
+    content: 'expand_more';
+    font-family: 'Material Symbols Outlined';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: $text-muted;
+    pointer-events: none;
+  }
+
+  select { appearance: none; padding-right: 36px; }
+}
+
+.error-msg {
+  font-size: 11.5px;
+  color: #BA1A1A;
+}
+
+.field-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: $text-muted;
+
+  .material-symbols-outlined { font-size: 13px; }
+}
+
+// ── Toggle ────────────────────────────────────────────────────────────────────
+.toggle-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba($tertiary-hex, 0.04);
+  border: 1px solid rgba($tertiary-hex, 0.18);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.toggle-wrap { flex-shrink: 0; padding-top: 2px; }
+
+.toggle-input { display: none; }
+
+.toggle-track {
+  display: block;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: $surface-high;
+  border: 2px solid $border;
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+
+  .toggle-input:checked + & {
+    background: $tertiary;
+    border-color: $tertiary;
+  }
+}
+
+.toggle-thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+
+  .toggle-input:checked ~ .toggle-track & { transform: translateX(18px); }
+}
+
+.toggle-title {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $text-dark;
+}
+
+.toggle-desc {
+  display: block;
+  font-size: 11.5px;
+  color: $text-muted;
+  margin-top: 3px;
+}
+
+// ── Error banner ──────────────────────────────────────────────────────────────
+.save-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #b91c1c;
+  margin-top: 16px;
+
+  .material-symbols-outlined { font-size: 16px; flex-shrink: 0; }
+}
+
+// ── Nav footer ────────────────────────────────────────────────────────────────
 .nav-footer {
   display: flex;
   align-items: center;
@@ -146,13 +294,7 @@ $tertiary-hex: #00c1ad;
   border-top: 1px solid $border-soft;
 }
 
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-// ── RIGHT — sidebar ────────────────────────────────────────────────────────────
+// ── RIGHT — sidebar ───────────────────────────────────────────────────────────
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -161,7 +303,6 @@ $tertiary-hex: #00c1ad;
   top: 24px;
 }
 
-// ── Panel header / body ───────────────────────────────────────────────────────
 .panel-header {
   padding: 14px 20px;
   border-bottom: 1px solid $border-soft;
@@ -169,9 +310,7 @@ $tertiary-hex: #00c1ad;
   border-radius: $radius-lg $radius-lg 0 0;
 }
 
-.panel-body {
-  padding: 20px;
-}
+.panel-body { padding: 20px; }
 
 .panel__label {
   font-size: 10px;
@@ -182,12 +321,11 @@ $tertiary-hex: #00c1ad;
   margin: 0;
 }
 
-// ── Progression — vertical step list ─────────────────────────────────────────
+// ── Step list ─────────────────────────────────────────────────────────────────
 .step-list {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0;
 
   &::before {
     content: '';
@@ -220,12 +358,7 @@ $tertiary-hex: #00c1ad;
   }
 
   &--done {
-    .step-num {
-      background: $tertiary;
-      color: #fff;
-      border-color: $tertiary;
-      box-shadow: none;
-    }
+    .step-num { background: $tertiary; color: #fff; border-color: $tertiary; }
     .step-label { color: $text-muted; }
   }
 }
@@ -253,10 +386,9 @@ $tertiary-hex: #00c1ad;
   font-weight: 500;
   color: $text-light;
   transition: color 0.2s;
-  line-height: 1.3;
 }
 
-// ── Résumé rows ───────────────────────────────────────────────────────────────
+// ── Summary ───────────────────────────────────────────────────────────────────
 .summary-rows {
   display: flex;
   flex-direction: column;
@@ -284,10 +416,7 @@ $tertiary-hex: #00c1ad;
     word-break: break-word;
     max-width: 200px;
 
-    &--total {
-      color: $tertiary;
-      font-size: 13.5px;
-    }
+    &--ok { color: $tertiary; }
   }
 }
 
@@ -322,12 +451,6 @@ $tertiary-hex: #00c1ad;
 
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 900px) {
-  .wizard-layout {
-    grid-template-columns: 1fr;
-  }
-  .sidebar {
-    position: static;
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
+  .wizard-layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; flex-direction: row; flex-wrap: wrap; }
 }

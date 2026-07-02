@@ -53,25 +53,31 @@
         <div class="nav-footer">
           <div>
             @if (currentStep() > 1) {
-              <button type="button" class="nav-btn nav-btn--ghost" (click)="goPrev()">
-                <span class="material-symbols-outlined">arrow_back</span>
-                Précédent
-              </button>
+              <daf-button
+                [options]="{ variant: 'ghost', label: 'Précédent', iconStart: 'arrow_back' }"
+                (onClick)="goPrev()" />
             } @else {
-              <button type="button" class="nav-btn nav-btn--ghost" (click)="goBack()">
-                Annuler
-              </button>
+              <daf-button
+                [options]="{ variant: 'ghost', label: 'Annuler' }"
+                (onClick)="goBack()" />
             }
           </div>
-          <button type="button" class="nav-btn nav-btn--primary" (click)="goNext()">
-            @if (currentStep() < steps.length) {
-              Suivant
-              <span class="material-symbols-outlined">arrow_forward</span>
-            } @else {
-              <span class="material-symbols-outlined">person_add</span>
-              Créer le client
-            }
-          </button>
+          @if (currentStep() < steps.length) {
+            <daf-button
+              [options]="{ variant: 'secondary', label: 'Suivant', iconEnd: 'arrow_forward', pill: true }"
+              (onClick)="goNext()" />
+          } @else {
+            <daf-button
+              [options]="{
+                variant: 'secondary',
+                label: 'Créer le client',
+                iconStart: 'person_add',
+                pill: true,
+                loading: isSaving(),
+                disabled: isSaving()
+              }"
+              (onClick)="goNext()" />
+          }
         </div>
 
       </div><!-- /form-card -->

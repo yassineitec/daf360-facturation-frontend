@@ -101,27 +101,25 @@
         <div class="nav-footer">
           <div>
             @if (currentStep() > (editMode() ? 2 : 1)) {
-              <button type="button" class="nav-btn nav-btn--ghost" (click)="goPrev()">
-                <span class="material-symbols-outlined">arrow_back</span>
-                {{ stepperConfig().prevLabel }}
-              </button>
+              <daf-button
+                [options]="{ variant: 'ghost', label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
+                (onClick)="goPrev()" />
             } @else {
-              <button type="button" class="nav-btn nav-btn--ghost" (click)="cancelWizard()">
-                {{ stepperConfig().cancelLabel }}
-              </button>
+              <daf-button
+                [options]="{ variant: 'ghost', label: stepperConfig().cancelLabel }"
+                (onClick)="cancelWizard()" />
             }
           </div>
-          <button type="button" class="nav-btn nav-btn--primary"
-                  [disabled]="!canGoNext() || isSaving()"
-                  (click)="goNext()">
-            @if (isSaving()) {
-              <span class="material-symbols-outlined saving-spin">progress_activity</span>
-            }
-            {{ currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel }}
-            @if (!isSaving() && currentStep() < 6) {
-              <span class="material-symbols-outlined">arrow_forward</span>
-            }
-          </button>
+          <daf-button
+            [options]="{
+              variant: 'secondary',
+              pill: true,
+              label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
+              iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
+              loading: isSaving(),
+              disabled: !canGoNext() || isSaving()
+            }"
+            (onClick)="goNext()" />
         </div><!-- /nav-footer -->
 
       </div><!-- /form-card -->

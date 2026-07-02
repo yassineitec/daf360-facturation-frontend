@@ -93,40 +93,6 @@ $deep-blue:  #164B60;
   border-top: 1px solid $border-soft;
 }
 
-.nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  border: none;
-  border-radius: $radius-md;
-  cursor: pointer;
-  transition: all 0.15s;
-
-  .material-symbols-outlined { font-size: 18px; }
-
-  &--ghost {
-    padding: 9px 16px;
-    background: none;
-    color: $text-muted;
-    &:hover { background: $surface-mid; color: $text-dark; }
-  }
-
-  &--primary {
-    padding: 10px 24px;
-    background: $brand-green;
-    color: #fff;
-    box-shadow: 0 4px 14px rgba($brand-green, 0.30);
-    &:hover:not(:disabled) {
-      background: darken($brand-green, 6%);
-      box-shadow: 0 6px 18px rgba($brand-green, 0.40);
-      transform: translateY(-1px);
-    }
-    &:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transform: none; }
-  }
-}
 
 // ── Card head ─────────────────────────────────────────────────────────────────
 .card-head {
