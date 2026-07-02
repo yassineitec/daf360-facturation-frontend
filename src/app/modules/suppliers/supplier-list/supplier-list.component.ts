@@ -4,6 +4,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Router } from '@angular/router';
 import { SupplierService }   from '../supplier.service';
 import { ClientService }     from '../../clients/client.service';
 import { PermissionDirective } from '../../../shared/permission.directive';
@@ -37,6 +38,7 @@ export class SupplierListComponent implements OnInit {
   private readonly clientSvc  = inject(ClientService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly modal      = inject(ModalService);
+  private readonly router     = inject(Router);
 
   private readonly search$ = new Subject<string>();
 
@@ -217,17 +219,7 @@ export class SupplierListComponent implements OnInit {
   }
 
   openCreateModal(): void {
-    this.resetCreateForm();
-    this.createRef = this.modal.open({
-      title:           'Nouveau fournisseur',
-      body:            this.createTpl,
-      size:            'lg',
-      closeOnBackdrop: false,
-      buttons: [
-        { label: 'Annuler',              variant: 'secondary', action: r  => { r.close(); this.resetCreateForm(); } },
-        { label: 'Créer le fournisseur', variant: 'primary',   action: _r => this.saveNewSupplier() },
-      ],
-    });
+    this.router.navigate(['/finance/suppliers/new']);
   }
 
   onPaysChange(event: Event): void {

@@ -1,0 +1,241 @@
+<div class="wizard-page">
+  <div class="wizard-layout">
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- LEFT — form area                                              -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="form-area">
+
+      <!-- ── Page header ───────────────────────────────────────────── -->
+      <div class="page-head">
+        <button class="back-btn" (click)="cancel()">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div>
+          <h1 class="page-title">Nouveau Fournisseur</h1>
+          <p class="page-sub">Suivez les étapes pour référencer un nouveau fournisseur</p>
+        </div>
+      </div>
+
+      <!-- ── Form card ─────────────────────────────────────────────── -->
+      <div class="form-card" [formGroup]="form">
+
+        <!-- Card head -->
+        <div class="card-head">
+          <div class="card-head__icon">
+            <span class="material-symbols-outlined">{{ steps[step() - 1].icon }}</span>
+          </div>
+          <div>
+            <h2 class="card-head__title">{{ steps[step() - 1].title }}</h2>
+            <p class="card-head__sub">Étape {{ step() }} sur {{ steps.length }}</p>
+          </div>
+        </div>
+
+        <!-- Step body -->
+        <div class="step-body">
+
+          <!-- Step 1 — Identification -->
+          @if (step() === 1) {
+            <div class="step-enter">
+              <div class="form-grid">
+
+                <div class="field field--full">
+                  <label for="sn-name">Raison sociale <span class="req">*</span></label>
+                  <input id="sn-name" type="text" class="form-input" formControlName="name"
+                    maxlength="200" placeholder="Nom officiel du fournisseur"
+                    [class.invalid]="form.controls['name'].invalid && form.controls['name'].touched" />
+                  @if (form.controls['name'].invalid && form.controls['name'].touched) {
+                    <span class="error-msg">Ce champ est obligatoire.</span>
+                  }
+                </div>
+
+                <div class="field field--full">
+                  <label for="sn-pays">Pays <span class="req">*</span></label>
+                  <div class="form-select-wrap">
+                    <select id="sn-pays" class="form-input" formControlName="paysCode"
+                      (change)="onPaysChange($event)"
+                      [class.invalid]="form.controls['paysCode'].invalid && form.controls['paysCode'].touched">
+                      <option value="">Sélectionner un pays…</option>
+                      @for (p of paysList(); track p.id) {
+                        <option [value]="p.isoCode">{{ p.isoCode }} — {{ p.frenchLabel }}</option>
+                      }
+                    </select>
+                  </div>
+                  @if (form.controls['paysCode'].invalid && form.controls['paysCode'].touched) {
+                    <span class="error-msg">Ce champ est obligatoire.</span>
+                  }
+                </div>
+
+              </div>
+            </div>
+          }
+
+          <!-- Step 2 — Informations fiscales -->
+          @if (step() === 2) {
+            <div class="step-enter">
+              <div class="form-grid">
+
+                <div class="field field--full">
+                  <label for="sn-tva">Numéro TVA</label>
+                  <input id="sn-tva" type="text" class="form-input" formControlName="numeroTva"
+                    maxlength="50" placeholder="Ex: TN12345678" />
+                </div>
+
+                <div class="field field--full">
+                  <label class="toggle-label">
+                    <div class="toggle-wrap">
+                      <input type="checkbox" formControlName="tvaUniqueActive" class="toggle-input" />
+                      <span class="toggle-track">
+                        <span class="toggle-thumb"></span>
+                      </span>
+                    </div>
+                    <div>
+                      <span class="toggle-title">Activer TVA Unique</span>
+                      <span class="toggle-desc">Contrôle automatique de conformité TVA sur les factures entrantes</span>
+                    </div>
+                  </label>
+                </div>
+
+              </div>
+            </div>
+          }
+
+          <!-- Step 3 — Coordonnées bancaires -->
+          @if (step() === 3) {
+            <div class="step-enter">
+              <div class="form-grid">
+
+                <div class="field field--full">
+                  <label for="sn-iban">IBAN</label>
+                  <input id="sn-iban" type="text" class="form-input" formControlName="iban"
+                    maxlength="34" placeholder="FR76 3000 1234 5678…" />
+                  <span class="field-hint">
+                    <span class="material-symbols-outlined">lock</span>
+                    Stocké de façon sécurisée — masqué par défaut
+                  </span>
+                </div>
+
+                <div class="field field--full">
+                  <label for="sn-notes">Notes internes</label>
+                  <textarea id="sn-notes" class="form-input" formControlName="notes"
+                    rows="4" maxlength="1000"
+                    placeholder="Informations internes sur ce fournisseur…"></textarea>
+                </div>
+
+              </div>
+
+              @if (saveError()) {
+                <div class="save-error">
+                  <span class="material-symbols-outlined">error</span>
+                  {{ saveError() }}
+                </div>
+              }
+            </div>
+          }
+
+        </div>
+
+        <!-- Navigation footer -->
+        <div class="nav-footer">
+          <div>
+            @if (step() > 1) {
+              <daf-button
+                [options]="{ variant: 'ghost', label: 'Retour', iconStart: 'arrow_back' }"
+                (onClick)="goPrev()" />
+            } @else {
+              <daf-button
+                [options]="{ variant: 'ghost', label: 'Annuler' }"
+                (onClick)="cancel()" />
+            }
+          </div>
+          <daf-button
+            [options]="{
+              variant: 'secondary',
+              pill: true,
+              label: step() === 3 ? 'Créer le fournisseur' : 'Suivant',
+              iconEnd: step() < 3 ? 'arrow_forward' : undefined,
+              iconStart: step() === 3 ? 'business' : undefined,
+              loading: isSaving(),
+              disabled: !canGoNext() || isSaving()
+            }"
+            (onClick)="goNext()" />
+        </div>
+
+      </div><!-- /form-card -->
+    </div><!-- /form-area -->
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- RIGHT — sidebar                                               -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <aside class="sidebar">
+
+      <!-- Progression -->
+      <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
+        <div class="panel-header">
+          <p class="panel__label">Progression</p>
+        </div>
+        <div class="panel-body">
+          <div class="step-list">
+            @for (s of steps; track $index; let i = $index) {
+              <div class="step-item"
+                   [class.step-item--done]="step() > i + 1"
+                   [class.step-item--active]="step() === i + 1">
+                <div class="step-num">
+                  @if (step() > i + 1) {
+                    <span class="material-symbols-outlined"
+                          style="font-variation-settings:'FILL' 1;font-size:16px">check</span>
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </div>
+                <span class="step-label">{{ s.title }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </daf-card>
+
+      <!-- Résumé -->
+      <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
+        <div class="panel-header">
+          <p class="panel__label">Résumé</p>
+        </div>
+        <div class="panel-body">
+          <div class="summary-rows">
+            <div class="summary-row">
+              <span class="summary-row__key">Raison sociale</span>
+              <span class="summary-row__val">{{ summaryName() }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-row__key">Pays</span>
+              <span class="summary-row__val">{{ summaryPays() }}</span>
+            </div>
+            @if (step() > 1) {
+              <div class="summary-row">
+                <span class="summary-row__key">N° TVA</span>
+                <span class="summary-row__val">{{ summaryTva() }}</span>
+              </div>
+              @if (form.controls['tvaUniqueActive'].value) {
+                <div class="summary-row">
+                  <span class="summary-row__key">TVA Unique</span>
+                  <span class="summary-row__val summary-row__val--ok">Activée</span>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </daf-card>
+
+      <!-- Conseil -->
+      <div class="tips-panel">
+        <div class="tips-panel__head">
+          <span class="material-symbols-outlined">lightbulb</span>
+          <span>Conseil</span>
+        </div>
+        <p class="tips-panel__text">{{ stepTip() }}</p>
+      </div>
+
+    </aside>
+
+  </div>
+</div>

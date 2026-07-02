@@ -120,5 +120,5 @@ export class InvoiceNewComponent {
     this.step.set(4);
   }
 
-  cancel(): void { this.router.navigate(['/fact/invoicing']); }
+  cancel(): void { this.router.navigate(['/finance/invoicing']); }
 }
