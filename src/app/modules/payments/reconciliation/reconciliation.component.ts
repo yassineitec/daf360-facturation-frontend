@@ -3,11 +3,12 @@ import { ReconciliationService } from '../reconciliation.service';
 import { BankTransaction, ImportSummary, UnmatchedSummaryDto } from '../payment.model';
 import { ImportDropzoneComponent } from './import-dropzone.component';
 import { TransactionTableComponent } from './transaction-table.component';
+import { ManualTransactionModalComponent } from './manual-transaction-modal.component';
 import { PermissionDirective } from '../../../shared/permission.directive';
 
 @Component({
   selector: 'app-reconciliation',
-  imports: [ImportDropzoneComponent, TransactionTableComponent, PermissionDirective],
+  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective],
   templateUrl: './reconciliation.component.html',
   styleUrl:    './reconciliation.component.scss',
 })
@@ -22,6 +23,7 @@ export class ReconciliationComponent implements OnInit {
   loadingTx          = signal(false);
   errorImports       = signal<string | null>(null);
   errorTx            = signal<string | null>(null);
+  showManualModal    = signal(false);
 
   readonly selectedImport = computed(() =>
     this.imports().find(i => i.id === this.selectedImportId()) ?? null
@@ -72,6 +74,14 @@ export class ReconciliationComponent implements OnInit {
       next:  s  => this.unmatchedSummary.set(s),
       error: () => {},
     });
+  }
+
+  onManualCreated(tx: BankTransaction): void {
+    this.showManualModal.set(false);
+    this.loadImports();
+    this.loadUnmatchedSummary();
+    this.selectedImportId.set(tx.importId);
+    this.loadTransactions(tx.importId);
   }
 
   onImported(summary: ImportSummary): void {

@@ -38,6 +38,24 @@ export class ReconciliationService {
     return this.http.get<UnmatchedSummaryDto>(`${this.base}/unmatched`);
   }
 
+  confirmPartialMatch(txId: number, invoiceId: number, partialAmount: number): Observable<void> {
+    return this.http.post<void>(`${this.base}/transactions/${txId}/confirm-partial`, { invoiceId, partialAmount });
+  }
+
+  recordAcompte(txId: number, clientId: number, commentaire?: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/transactions/${txId}/record-acompte`, { clientId, commentaire });
+  }
+
+  createManualTransaction(req: {
+    transactionDate: string;
+    amount: number;
+    currency?: string;
+    reference?: string;
+    description?: string;
+  }): Observable<BankTransaction> {
+    return this.http.post<BankTransaction>(`${this.base}/transactions/manual`, req);
+  }
+
   searchInvoicesForMatch(q: string): Observable<PageResponse<InvoiceListItem>> {
     const params = new HttpParams()
       .set('search', q)

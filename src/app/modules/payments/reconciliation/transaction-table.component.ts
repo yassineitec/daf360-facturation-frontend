@@ -3,10 +3,12 @@ import { ReconciliationService } from '../reconciliation.service';
 import { BankTransaction, MATCH_STATUT_CONFIG } from '../payment.model';
 import { ConfirmMatchModalComponent } from './confirm-match-modal.component';
 import { ManualMatchModalComponent } from './manual-match-modal.component';
+import { PartialMatchModalComponent } from './partial-match-modal.component';
+import { AcompteModalComponent } from './acompte-modal.component';
 
 @Component({
   selector: 'app-transaction-table',
-  imports: [ConfirmMatchModalComponent, ManualMatchModalComponent],
+  imports: [ConfirmMatchModalComponent, ManualMatchModalComponent, PartialMatchModalComponent, AcompteModalComponent],
   template: `
 <div class="tx-table-wrap">
   <table class="tx-table">
@@ -31,7 +33,9 @@ import { ManualMatchModalComponent } from './manual-match-modal.component';
       }
       @for (tx of transactions(); track tx.id) {
         <tr class="tx-row" [class.tx-confirmed]="tx.statut === 'CONFIRMED'"
-          [class.tx-rejected]="tx.statut === 'REJECTED'">
+          [class.tx-rejected]="tx.statut === 'REJECTED'"
+          [class.tx-partial]="tx.statut === 'PARTIALLY_MATCHED'"
+          [class.tx-acompte]="tx.statut === 'ACOMPTE'">
           <td class="date-cell">{{ formatDate(tx.transactionDate) }}</td>
           <td class="ref-cell">{{ tx.reference ?? '—' }}</td>
           <td class="desc-cell">{{ tx.description ?? '—' }}</td>
@@ -61,12 +65,17 @@ import { ManualMatchModalComponent } from './manual-match-modal.component';
             @switch (tx.statut) {
               @case ('PROPOSED') {
                 <div class="action-btns">
-                  <button class="btn-accept" (click)="openConfirm(tx)">Confirmer</button>
-                  <button class="btn-reject" (click)="rejectTx(tx)">Rejeter</button>
+                  <button class="btn-accept"  (click)="openConfirm(tx)">Confirmer</button>
+                  <button class="btn-partial" (click)="openPartial(tx)">Partiel</button>
+                  <button class="btn-reject"  (click)="rejectTx(tx)">Rejeter</button>
                 </div>
               }
               @case ('UNMATCHED') {
-                <button class="btn-manual" (click)="openManual(tx)">Rapprocher</button>
+                <div class="action-btns">
+                  <button class="btn-manual"  (click)="openManual(tx)">Rapprocher</button>
+                  <button class="btn-partial" (click)="openPartial(tx)">Partiel</button>
+                  <button class="btn-acompte" (click)="openAcompte(tx)">Acompte</button>
+                </div>
               }
               @default {}
             }
@@ -94,6 +103,20 @@ import { ManualMatchModalComponent } from './manual-match-modal.component';
     (dismissed)="manualTarget.set(null)"
     (confirmed)="onConfirmed()" />
 }
+
+@if (partialTarget()) {
+  <app-partial-match-modal
+    [tx]="partialTarget()!"
+    (dismissed)="partialTarget.set(null)"
+    (confirmed)="onPartialConfirmed()" />
+}
+
+@if (acompteTarget()) {
+  <app-acompte-modal
+    [tx]="acompteTarget()!"
+    (dismissed)="acompteTarget.set(null)"
+    (confirmed)="onAcompteConfirmed()" />
+}
   `,
   styles: [`
     .tx-table-wrap {
@@ -114,11 +137,13 @@ import { ManualMatchModalComponent } from './manual-match-modal.component';
         &:last-child { border-bottom: none; }
         &.tx-confirmed { background: #f0fdf4; }
         &.tx-rejected  { background: #fafafa; opacity: 0.75; }
+        &.tx-partial   { background: #f0f9ff; }
+        &.tx-acompte   { background: #faf5ff; }
       }
       td { padding: 0.75rem 1rem; color: #374151; vertical-align: middle; }
     }
     .num-col  { text-align: right; }
-    .action-col { text-align: center; width: 140px; }
+    .action-col { text-align: center; width: 210px; }
     .amount-cell { font-weight: 600; }
     .date-cell   { white-space: nowrap; }
     .ref-cell    { font-family: monospace; font-size: 0.8rem; color: #475569; }
@@ -136,9 +161,9 @@ import { ManualMatchModalComponent } from './manual-match-modal.component';
     .prop-client { font-size: 0.75rem; color: #64748b; }
     .no-proposal { color: #94a3b8; }
     .action-btns { display: flex; gap: 0.375rem; justify-content: center; }
-    .btn-accept, .btn-reject, .btn-manual {
-      padding: 0.25rem 0.625rem; border-radius: 4px; font-size: 0.8rem;
-      font-weight: 500; cursor: pointer; border: 1px solid transparent;
+    .btn-accept, .btn-reject, .btn-manual, .btn-partial, .btn-acompte {
+      padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.775rem;
+      font-weight: 500; cursor: pointer; border: 1px solid transparent; white-space: nowrap;
     }
     .btn-accept {
       background: #d1fae5; color: #065f46; border-color: #6ee7b7;
@@ -151,6 +176,14 @@ import { ManualMatchModalComponent } from './manual-match-modal.component';
     .btn-manual {
       background: #eff6ff; color: #1e40af; border-color: #93c5fd;
       &:hover { background: #dbeafe; }
+    }
+    .btn-partial {
+      background: #e0f2fe; color: #0369a1; border-color: #7dd3fc;
+      &:hover { background: #bae6fd; }
+    }
+    .btn-acompte {
+      background: #faf5ff; color: #7c3aed; border-color: #c4b5fd;
+      &:hover { background: #ede9fe; }
     }
     .empty-cell {
       text-align: center; color: #94a3b8; padding: 3rem 1rem; font-style: italic;
@@ -167,9 +200,11 @@ export class TransactionTableComponent {
   transactions = input.required<BankTransaction[]>();
   refreshNeeded = output<void>();
 
-  confirmTarget = signal<BankTransaction | null>(null);
-  manualTarget  = signal<BankTransaction | null>(null);
-  actionError   = signal<string | null>(null);
+  confirmTarget  = signal<BankTransaction | null>(null);
+  manualTarget   = signal<BankTransaction | null>(null);
+  partialTarget  = signal<BankTransaction | null>(null);
+  acompteTarget  = signal<BankTransaction | null>(null);
+  actionError    = signal<string | null>(null);
 
   openConfirm(tx: BankTransaction): void {
     this.actionError.set(null);
@@ -179,6 +214,16 @@ export class TransactionTableComponent {
   openManual(tx: BankTransaction): void {
     this.actionError.set(null);
     this.manualTarget.set(tx);
+  }
+
+  openPartial(tx: BankTransaction): void {
+    this.actionError.set(null);
+    this.partialTarget.set(tx);
+  }
+
+  openAcompte(tx: BankTransaction): void {
+    this.actionError.set(null);
+    this.acompteTarget.set(tx);
   }
 
   rejectTx(tx: BankTransaction): void {
@@ -192,6 +237,16 @@ export class TransactionTableComponent {
   onConfirmed(): void {
     this.confirmTarget.set(null);
     this.manualTarget.set(null);
+    this.refreshNeeded.emit();
+  }
+
+  onPartialConfirmed(): void {
+    this.partialTarget.set(null);
+    this.refreshNeeded.emit();
+  }
+
+  onAcompteConfirmed(): void {
+    this.acompteTarget.set(null);
     this.refreshNeeded.emit();
   }
 
