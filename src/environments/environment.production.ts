@@ -3,5 +3,6 @@ export const environment = {
   shellUrl:   '',
   portalUrl:  '',
   factApiUrl: '',
+  hrApiUrl:   '',
   stylesUrl:  '',
 };

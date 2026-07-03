@@ -15,7 +15,10 @@
     <div class="left-panel">
 
       <div class="panel-card">
-        <h2 class="panel-title">Nouvel import</h2>
+        <div class="panel-title-row">
+          <h2 class="panel-title">Nouvel import</h2>
+          <button class="btn-manual-entry" (click)="showManualModal.set(true)">+ Saisie manuelle</button>
+        </div>
         <app-import-dropzone (imported)="onImported($event)" />
       </div>
 
@@ -122,3 +125,9 @@
   </div>
 
 </div>
+
+@if (showManualModal()) {
+  <app-manual-transaction-modal
+    (dismissed)="showManualModal.set(false)"
+    (confirmed)="onManualCreated($event)" />
+}
