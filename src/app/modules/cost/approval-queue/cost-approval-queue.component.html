@@ -8,15 +8,12 @@
     </div>
     <div class="ap-header__actions">
       <div class="ap-search-wrap">
-        <span class="material-symbols-outlined ap-search-icon">search</span>
-        <input class="ap-search-input" type="text" placeholder="ID, titre, ou montant..."
+        <daf-form-field
           [value]="searchTerm()"
-          (input)="searchTerm.set(getInputValue($event))" />
+          (valueChange)="searchTerm.set($any($event) || '')"
+          [options]="{type:'search', placeholder:'ID, titre, ou montant...', fullWidth:true}" />
       </div>
-      <button class="ap-filter-btn">
-        <span class="material-symbols-outlined">tune</span>
-        <span>Filtres</span>
-      </button>
+      <daf-button [options]="{variant:'ghost', label:'Filtres', iconStart:'tune'}" />
     </div>
   </div>
 
@@ -24,54 +21,60 @@
   <div class="kpi-grid">
 
     <!-- En attente -->
-    <div class="kpi-glass">
-      <div class="kpi-icon-box kpi-icon-box--teal">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
+      <div class="kpi-inner">
+        <div class="kpi-icon-box kpi-icon-box--teal">
+          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
+        </div>
+        <div>
+          <p class="kpi-label">En attente</p>
+          <h4 class="kpi-value">{{ pendingCount() }}</h4>
+        </div>
       </div>
-      <div>
-        <p class="kpi-label">En attente</p>
-        <h4 class="kpi-value">{{ pendingCount() }}</h4>
-      </div>
-    </div>
+    </daf-card>
 
     <!-- Urgents -->
-    <div class="kpi-glass kpi-glass--danger">
-      <div class="kpi-danger-bar"></div>
-      <div class="kpi-icon-box kpi-icon-box--danger">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">priority_high</span>
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
+      <div class="kpi-inner">
+        <div class="kpi-danger-bar"></div>
+        <div class="kpi-icon-box kpi-icon-box--danger">
+          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">priority_high</span>
+        </div>
+        <div>
+          <p class="kpi-label">Urgents</p>
+          <h4 class="kpi-value">{{ urgentCount() }}</h4>
+        </div>
       </div>
-      <div>
-        <p class="kpi-label">Urgents</p>
-        <h4 class="kpi-value">{{ urgentCount() }}</h4>
-      </div>
-    </div>
+    </daf-card>
 
     <!-- Performance sparkline -->
-    <div class="kpi-glass kpi-glass--perf">
-      <div class="kpi-perf-content">
-        <p class="kpi-label">Performance d'approbation</p>
-        <div class="kpi-perf-row">
-          <h4 class="kpi-value">{{ avgHours }}h</h4>
-          <span class="kpi-delta">
-            <span class="material-symbols-outlined">trending_down</span>
-            {{ perfDelta }}%
-          </span>
+    <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="kpi-perf-card">
+      <div class="kpi-inner kpi-inner--perf">
+        <div class="kpi-perf-content">
+          <p class="kpi-label">Performance d'approbation</p>
+          <div class="kpi-perf-row">
+            <h4 class="kpi-value">{{ avgHours }}h</h4>
+            <span class="kpi-delta">
+              <span class="material-symbols-outlined">trending_down</span>
+              {{ perfDelta }}%
+            </span>
+          </div>
+          <p class="kpi-perf-sub">Temps de traitement moyen hebdomadaire</p>
         </div>
-        <p class="kpi-perf-sub">Temps de traitement moyen hebdomadaire</p>
+        <div class="kpi-sparkline-wrap">
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none" width="100%" height="100%">
+            <defs>
+              <linearGradient id="spark-grad" x1="0%" x2="0%" y1="0%" y2="100%">
+                <stop offset="0%" stop-color="#006b58" />
+                <stop offset="100%" stop-color="transparent" />
+              </linearGradient>
+            </defs>
+            <path class="sp-line" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35" />
+            <path class="sp-fill" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35 V60 H0 Z" />
+          </svg>
+        </div>
       </div>
-      <div class="kpi-sparkline-wrap">
-        <svg viewBox="0 0 200 60" preserveAspectRatio="none" width="100%" height="100%">
-          <defs>
-            <linearGradient id="spark-grad" x1="0%" x2="0%" y1="0%" y2="100%">
-              <stop offset="0%" stop-color="#006b58" />
-              <stop offset="100%" stop-color="transparent" />
-            </linearGradient>
-          </defs>
-          <path class="sp-line" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35" />
-          <path class="sp-fill" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35 V60 H0 Z" />
-        </svg>
-      </div>
-    </div>
+    </daf-card>
 
   </div>
 
@@ -81,12 +84,12 @@
     @if (isLoading()) {
       @for (n of [1,2,3,4,5,6]; track n) {
         <div class="ap-card ap-card--skel">
-          <div class="skel skel--sm" style="width:70px; height:22px; border-radius:8px; margin-bottom:20px;"></div>
-          <div class="skel skel--lg" style="height:14px; margin-bottom:8px;"></div>
-          <div class="skel skel--md" style="height:18px; margin-bottom:28px;"></div>
-          <div class="skel skel--full" style="height:12px; margin-bottom:8px;"></div>
-          <div class="skel skel--full" style="height:12px; margin-bottom:24px;"></div>
-          <div class="skel skel--full" style="height:44px; border-radius:16px;"></div>
+          <div class="skel" style="width:70px; height:22px; border-radius:8px; margin-bottom:20px;"></div>
+          <div class="skel" style="height:14px; margin-bottom:8px;"></div>
+          <div class="skel" style="width:80%; height:18px; margin-bottom:28px;"></div>
+          <div class="skel" style="height:12px; margin-bottom:8px;"></div>
+          <div class="skel" style="height:12px; margin-bottom:24px;"></div>
+          <div class="skel" style="height:44px; border-radius:16px;"></div>
         </div>
       }
     }
@@ -95,9 +98,11 @@
       @for (cost of filteredCosts(); track cost.id) {
         <div class="ap-card">
 
-          <!-- Urgency pill badge -->
-          <div class="ap-urgency ap-urgency--{{ urgencyClass(cost.approvalLevelRequired) }}">
-            {{ urgencyLabel(cost.approvalLevelRequired) }}
+          <!-- Urgency badge positioned above card top edge -->
+          <div class="ap-badge-pos">
+            <daf-badge
+              [label]="urgencyLabel(cost.approvalLevelRequired)"
+              [options]="urgencyBadgeOptions(cost.approvalLevelRequired)" />
           </div>
 
           <!-- Card head -->
@@ -132,17 +137,17 @@
 
           <!-- Actions -->
           <div class="ap-card__actions">
-            <button class="ap-btn-approve"
+            <daf-button
               *appHasPermission="'FACT_APPROVE_COST_L1'"
-              (click)="openApprove(cost)">
-              <span class="material-symbols-outlined">check_circle</span>
-              <span>Approuver la demande</span>
-            </button>
+              [options]="{variant:'teal', label:'Approuver la demande', iconStart:'check_circle', fullWidth:true}"
+              (onClick)="openApprove(cost)" />
             <div class="ap-btn-row2">
-              <button class="ap-btn-complement" (click)="openApprove(cost)">Complément</button>
-              <button class="ap-btn-reject" (click)="openReject(cost)" title="Refuser">
-                <span class="material-symbols-outlined">block</span>
-              </button>
+              <daf-button class="ap-btn-compl"
+                [options]="{variant:'ghost', label:'Complément', size:'sm', fullWidth:true}"
+                (onClick)="openApprove(cost)" />
+              <daf-button
+                [options]="{variant:'danger', iconStart:'block', size:'sm'}"
+                (onClick)="openReject(cost)" />
             </div>
           </div>
 
@@ -204,15 +209,16 @@
       </div>
     </div>
 
-    <div>
-      <label class="modal-field-label">
-        Commentaire @if (modalDecision() === 'reject') { * }
-      </label>
-      <textarea class="modal-textarea" rows="3"
-        [placeholder]="modalDecision() === 'reject' ? 'Motif du refus (obligatoire)…' : 'Commentaire optionnel…'"
-        [value]="approvalCommentSig()"
-        (input)="approvalCommentSig.set(getInputValue($event))"></textarea>
-    </div>
+    <daf-form-field
+      [value]="approvalCommentSig()"
+      (valueChange)="approvalCommentSig.set($any($event) || '')"
+      [options]="{
+        type: 'textarea',
+        label: 'Commentaire',
+        rows: 3,
+        placeholder: modalDecision() === 'reject' ? 'Motif du refus (obligatoire)…' : 'Commentaire optionnel…',
+        required: modalDecision() === 'reject'
+      }" />
 
     @if (modalError()) {
       <div class="modal-error">

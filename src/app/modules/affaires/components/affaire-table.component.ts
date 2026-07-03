@@ -39,9 +39,7 @@ export class AffaireTableComponent {
 
   readonly viewMode = signal<'grid' | 'list'>('grid');
 
-  readonly toolbarActions = [
-    { id: 'export', label: 'Exporter', icon: 'file_download', position: 'right' as const, variant: 'primary' as const },
-  ];
+  readonly toolbarActions: { id: string; icon?: string; position?: 'left' | 'right'; variant?: 'default' | 'primary' | 'danger' }[] = [];
 
   readonly viewToggleOptions = [
     { id: 'grid', icon: 'grid_view',  tooltip: 'Vue grille' },
