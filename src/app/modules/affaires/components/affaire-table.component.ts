@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { UpperCasePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AffaireListItem, STATUT_LABELS, TYPE_LABELS } from '../affaire.model';
-import { StatusBadgeComponent, CardComponent, BadgeVariant } from '@khalilrebhiitec/daf360';
+import { StatusBadgeComponent, CardComponent, BadgeVariant, SelectComponent } from '@khalilrebhiitec/daf360';
+import { FilterPanelComponent } from '../../../shared/filter-panel/filter-panel.component';
 
 @Component({
   selector: 'app-affaire-table',
-  imports: [FormsModule, UpperCasePipe, TranslatePipe, StatusBadgeComponent, CardComponent],
+  imports: [FormsModule, UpperCasePipe, TranslatePipe, StatusBadgeComponent, CardComponent, SelectComponent, FilterPanelComponent],
   templateUrl: './affaire-table.component.html',
   styleUrl: './affaire-table.component.scss',
 })
@@ -34,6 +35,23 @@ export class AffaireTableComponent {
   readonly typeOptions   = Object.entries(TYPE_LABELS).map(([k, v])   => ({ value: k, label: v }));
 
   readonly viewMode = signal<'grid' | 'list'>('grid');
+
+  filterStatutSel = signal<string[]>([]);
+  filterTypeSel   = signal<string[]>([]);
+
+  readonly selectStatutConfig = { placeholder: 'Statut', multiple: false, searchable: false, fullWidth: true };
+  readonly selectTypeConfig   = { placeholder: 'Type',   multiple: false, searchable: false, fullWidth: true };
+
+  onFilterApply(): void {
+    this.filterStatut.set(this.filterStatutSel()[0] ?? '');
+    this.filterType.set(this.filterTypeSel()[0] ?? '');
+    this.filterGo.emit();
+  }
+
+  onFilterCancel(): void {
+    this.filterStatutSel.set(this.filterStatut() ? [this.filterStatut()] : []);
+    this.filterTypeSel.set(this.filterType()   ? [this.filterType()]   : []);
+  }
 
   readonly statsEnCours  = computed(() => this.affaires().filter(a => a.statut === 'EN_COURS').length);
   readonly statsSuspendu = computed(() => this.affaires().filter(a => a.statut === 'SUSPENDUE').length);

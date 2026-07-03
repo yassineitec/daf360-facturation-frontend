@@ -17,12 +17,31 @@
                         text-[14px] bg-white focus:outline-none focus:border-[#1b3a4b]
                         placeholder:text-outline/50 transition-colors" />
         </div>
-        <button type="button"
-                class="flex items-center gap-2 px-4 py-2.5 border border-outline-variant rounded-lg
-                       text-[14px] font-semibold hover:bg-surface-container transition-colors shrink-0">
-          <span class="material-symbols-outlined text-[18px] text-outline">tune</span>
-          {{ 'AFFAIRES.LIST.TABLE.FILTERS' | translate }}
-        </button>
+        <app-filter-panel
+          (apply)="onFilterApply()"
+          (cancel)="onFilterCancel()">
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-semibold uppercase tracking-wider"
+                   style="color:var(--color-on-surface-variant)">Statut</label>
+            <daf-select
+              [options]="statutOptions"
+              [selected]="filterStatutSel()"
+              [config]="selectStatutConfig"
+              (selectedChange)="filterStatutSel.set($event)" />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-semibold uppercase tracking-wider"
+                   style="color:var(--color-on-surface-variant)">Type</label>
+            <daf-select
+              [options]="typeOptions"
+              [selected]="filterTypeSel()"
+              [config]="selectTypeConfig"
+              (selectedChange)="filterTypeSel.set($event)" />
+          </div>
+
+        </app-filter-panel>
       </div>
 
       <!-- View toggle -->

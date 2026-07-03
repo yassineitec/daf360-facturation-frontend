@@ -1,15 +1,14 @@
 <div class="inv-page">
 
   <!-- ── Page header ───────────────────────────────────────────────────────── -->
-  <header class="inv-header">
-    <div class="inv-header__left">
-      <h2 class="inv-header__title">{{ 'INVOICING.LIST.TITLE' | translate }}</h2>
-      <p class="inv-header__sub">{{ 'INVOICING.LIST.SUBTITLE' | translate }}</p>
+  <div class="flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-[32px] text-[#79D7BE]"
+            style="font-variation-settings:'FILL' 1">receipt_long</span>
+      <h2 class="text-2xl font-bold text-on-surface">{{ 'INVOICING.LIST.TITLE' | translate }}</h2>
     </div>
-    <div class="inv-header__right">
-      <daf-button [options]="{variant:'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="navigateToNew()" />
-    </div>
-  </header>
+    <daf-button [options]="{variant:'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="navigateToNew()" />
+  </div>
 
   <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
   <section class="kpi-grid">
