@@ -292,7 +292,7 @@ export class AffaireWizardComponent implements OnInit {
     this.isSaving.set(true);
     const d = this.draft();
     this.wizardService.createDraft({
-      refId:                 this.userStore.user()?.id,
+      refId:                 this.userStore.user()?.userId,
       clientId:              d.clientId,
       intitule:              d.intitule.trim(),
       reference:             d.reference?.trim()    || null,

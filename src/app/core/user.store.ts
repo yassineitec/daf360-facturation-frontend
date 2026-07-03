@@ -1,48 +1,53 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject } from '@angular/core';
 import { HttpClient }                    from '@angular/common/http';
+import { toSignal }                      from '@angular/core/rxjs-interop';
+import { Store }                         from '@ngrx/store';
 import { lastValueFrom }                 from 'rxjs';
+import {
+  MeResponse,
+  UserActions,
+  selectCurrentUser,
+  selectUserPermissions,
+} from '@khalilrebhiitec/daf360';
 import { environment }                   from '../../environments/environment';
-
-export interface MeResponse {
-  id:          number;
-  email:       string;
-  fullName:    string;
-  roleName:    string;
-  photoUrl:    string | null;
-  permissions: string[];
-  rhToken:     string | null;
-}
 
 @Injectable({ providedIn: 'root' })
 export class UserStore {
-  private readonly _me = signal<MeResponse | null>(null);
+  private http  = inject(HttpClient);
+  private store = inject(Store);
 
-  readonly user            = this._me.asReadonly();
-  readonly isAuthenticated = computed(() => this._me() !== null);
-  readonly permissions     = computed(() => this._me()?.permissions ?? []);
+  readonly user            = toSignal(this.store.select(selectCurrentUser), { initialValue: null });
+  readonly permissions     = toSignal(this.store.select(selectUserPermissions), {
+    initialValue: [] as string[],
+  });
+  readonly isAuthenticated = computed(() => this.user() !== null);
   readonly isAdmin         = computed(() =>
-    this._me()?.roleName?.toLowerCase() === 'administrateur'
+    this.user()?.roleName?.toLowerCase() === 'administrateur'
   );
-
-  constructor(private http: HttpClient) {}
 
   hasPermission(code: string): boolean {
     if (this.isAdmin()) return true;
     return this.permissions().includes(code);
   }
 
+  /**
+   * Also used by AuthService.refreshToken() to re-confirm an existing session
+   * after a 401 from fact-api — a failure here must actually clear the user
+   * (not just record an error) so isAuthenticated() reflects reality and the
+   * caller correctly falls back to login instead of retrying with a stale user.
+   */
   async loadCurrentUser(): Promise<void> {
     try {
       const me = await lastValueFrom(
         this.http.get<MeResponse>(`${environment.portalUrl}/api/me`, { withCredentials: true })
       );
-      this._me.set(me);
+      this.store.dispatch(UserActions.loadCurrentUserSuccess({ user: me }));
     } catch {
-      this._me.set(null);
+      this.store.dispatch(UserActions.clearUser());
     }
   }
 
   clear(): void {
-    this._me.set(null);
+    this.store.dispatch(UserActions.clearUser());
   }
 }
