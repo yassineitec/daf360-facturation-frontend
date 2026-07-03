@@ -10,12 +10,12 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import {
   CardComponent, ButtonComponent, PaginationComponent,
   StatusBadgeComponent, BadgeVariant,
-  MultiDatePickerComponent,
+  MultiDatePickerComponent, MetricCardComponent,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-payments-dashboard',
-  imports: [FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent, StatusBadgeComponent, MultiDatePickerComponent],
+  imports: [FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent, StatusBadgeComponent, MultiDatePickerComponent, MetricCardComponent],
   templateUrl: './payments-dashboard.component.html',
   styleUrl:    './payments-dashboard.component.scss',
 })
