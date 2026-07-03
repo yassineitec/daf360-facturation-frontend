@@ -15,10 +15,7 @@
     "target": "ES2022",
     "module": "preserve",
     "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@public/*": ["public/*"]
-    }
+    "baseUrl": "."
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

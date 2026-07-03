@@ -29,7 +29,8 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular-architects/native-federation": "^21.2.4",
+    "@angular-architects/native-federation": "^21.2.3",
+    "@softarc/native-federation-node": "^3.3.4",
     "@angular/build": "^21.2.7",
     "@angular/cli": "^21.2.7",
     "@angular/compiler-cli": "^21.2.0",

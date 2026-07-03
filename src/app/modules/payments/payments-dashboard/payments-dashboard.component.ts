@@ -7,11 +7,14 @@ import {
   agingRowColor,
 } from '../payment.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
-import { CardComponent, ButtonComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
+import {
+  CardComponent, ButtonComponent, PaginationComponent,
+  StatusBadgeComponent, BadgeVariant,
+} from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-payments-dashboard',
-  imports: [FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent],
+  imports: [FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent, StatusBadgeComponent],
   templateUrl: './payments-dashboard.component.html',
   styleUrl:    './payments-dashboard.component.scss',
 })
@@ -117,6 +120,12 @@ export class PaymentsDashboardComponent implements OnInit {
       RELANCE_3:      '3e relance',
     };
     return labels[type] ?? type;
+  }
+
+  retardVariant(joursRetard: number): BadgeVariant {
+    if (joursRetard > 60) return 'danger';
+    if (joursRetard > 30) return 'warning';
+    return 'neutral';
   }
 
   get pages(): number[] {

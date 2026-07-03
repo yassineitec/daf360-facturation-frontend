@@ -105,19 +105,10 @@
           </select>
         </div>
 
-        <div class="filter-btn-wrap">
-          <span class="material-symbols-outlined filter-btn-icon">calendar_today</span>
-          <input class="filter-date" type="date" [title]="'INVOICING.LIST.FILTER.DATE_FROM' | translate"
-            [value]="filterFrom()"
-            (change)="filterFrom.set(getInputValue($event)); onFilterChange()" />
-        </div>
-
-        <div class="filter-btn-wrap">
-          <span class="material-symbols-outlined filter-btn-icon">event</span>
-          <input class="filter-date" type="date" [title]="'INVOICING.LIST.FILTER.DATE_TO' | translate"
-            [value]="filterTo()" [min]="filterFrom()"
-            (change)="filterTo.set(getInputValue($event)); onFilterChange()" />
-        </div>
+        <daf-multi-date-picker
+          [config]="dateRangeConfig"
+          [value]="filterDateRange()"
+          (valueChange)="filterDateRange.set($event); onDateRangeChange()" />
 
         <div class="filter-sep"></div>
 

@@ -3,8 +3,8 @@ import { ENVIRONMENT_INITIALIZER, DestroyRef, inject } from '@angular/core';
 import { authGuard }                      from './core/auth.guard';
 import { FactShellComponent }             from './layout/fact-shell.component';
 import { TranslateService, TranslationObject } from '@ngx-translate/core';
-import frTranslations from '@public/i18n/fr.json';
-import enTranslations from '@public/i18n/en.json';
+import frTranslations from '../../public/i18n/fr.json';
+import enTranslations from '../../public/i18n/en.json';
 
 const I18N: Record<string, TranslationObject> = {
   fr: frTranslations as unknown as TranslationObject,

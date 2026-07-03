@@ -63,5 +63,5 @@ module.exports = withNativeFederation({
       requiredVersion: 'auto',
     },
   },
-  skip: ['rxjs/ajax', 'rxjs/fetch', 'rxjs/testing', 'rxjs/webSocket'],
+  skip: ['rxjs/ajax', 'rxjs/fetch', 'rxjs/testing', 'rxjs/webSocket', '@public/i18n'],
 });

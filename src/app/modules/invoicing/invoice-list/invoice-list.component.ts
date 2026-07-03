@@ -10,11 +10,12 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   SelectOption, ModalService, ModalRef,
   CardComponent, ButtonComponent, PaginationComponent,
+  MultiDatePickerComponent,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe],
+  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })
@@ -42,9 +43,14 @@ export class InvoiceListComponent implements OnInit {
   approvalCommentSig = signal<string>('');
 
   filterStatutSel = signal<string[]>([]);
-  filterFrom      = signal<string>('');
-  filterTo        = signal<string>('');
+  filterDateRange = signal<Date | Date[] | null>(null);
   searchText      = signal<string>('');
+
+  readonly dateRangeConfig = {
+    selectionMode: 'range' as const,
+    placeholder: 'Période',
+    allowPastDays: true,
+  };
 
   readonly PAGE_SIZE = 20;
 
@@ -79,12 +85,16 @@ export class InvoiceListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
+    const range = this.filterDateRange();
+    const dates = Array.isArray(range) ? range : [];
+    const from  = dates[0] instanceof Date ? dates[0].toISOString().split('T')[0] : null;
+    const to    = dates[1] instanceof Date ? dates[1].toISOString().split('T')[0] : null;
     const filter: InvoiceFilter = {
       page:   this.currentPage(),
       size:   this.PAGE_SIZE,
       statut: this.filterStatutSel()[0] || null,
-      from:   this.filterFrom()         || null,
-      to:     this.filterTo()           || null,
+      from,
+      to,
       search: this.searchText().trim()  || null,
     };
     this.svc.getInvoices(filter).subscribe({
@@ -101,8 +111,9 @@ export class InvoiceListComponent implements OnInit {
     });
   }
 
-  onSearch():       void { this.currentPage.set(0); this.load(); }
-  onFilterChange(): void { this.currentPage.set(0); this.load(); }
+  onSearch():           void { this.currentPage.set(0); this.load(); }
+  onFilterChange():     void { this.currentPage.set(0); this.load(); }
+  onDateRangeChange():  void { this.currentPage.set(0); this.load(); }
 
   goToPage(p: number): void {
     if (p < 0 || p >= this.totalPages()) return;
