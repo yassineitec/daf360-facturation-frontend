@@ -83,10 +83,10 @@ export class AffaireTableComponent {
 
   statutBadgeCfg(statut: string): { label: string; color: string; shadow: string } {
     const map: Record<string, { label: string; color: string; shadow: string }> = {
-      EN_COURS:  { label: 'En cours',  color: '#006b58', shadow: 'rgba(0,107,88,0.30)'   },
-      SUSPENDUE: { label: 'Suspendue', color: '#D97706', shadow: 'rgba(217,119,6,0.30)'  },
-      CLOTUREE:  { label: 'Clôturée', color: '#50717B', shadow: 'rgba(80,113,123,0.30)' },
-      ARCHIVEE:  { label: 'Archivée', color: '#94A3B8', shadow: 'rgba(148,163,184,0.30)'},
+      EN_COURS:  { label: 'AFFAIRES.LIST.TABLE.STATUS.EN_COURS',  color: '#006b58', shadow: 'rgba(0,107,88,0.30)'   },
+      SUSPENDUE: { label: 'AFFAIRES.LIST.TABLE.STATUS.SUSPENDUE', color: '#D97706', shadow: 'rgba(217,119,6,0.30)'  },
+      CLOTUREE:  { label: 'AFFAIRES.LIST.TABLE.STATUS.CLOTUREE',  color: '#50717B', shadow: 'rgba(80,113,123,0.30)' },
+      ARCHIVEE:  { label: 'AFFAIRES.LIST.TABLE.STATUS.ARCHIVEE',  color: '#94A3B8', shadow: 'rgba(148,163,184,0.30)'},
     };
     return map[statut] ?? { label: statut, color: '#94A3B8', shadow: 'rgba(148,163,184,0.30)' };
   }

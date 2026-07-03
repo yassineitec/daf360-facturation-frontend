@@ -515,5 +515,132 @@
       "DEACTIVATE": "Désactiver ce client",
       "REACTIVATE": "Réactiver ce client"
     }
+  },
+  "AFFAIRES": {
+    "LIST": {
+      "TITLE": "Affaires",
+      "NEW_BTN": "Nouvelle affaire",
+      "KPI": {
+        "ACTIVE": "Affaires actives",
+        "RAF": "RAF total",
+        "BUDGET": "Budget total",
+        "PENDING": "En attente",
+        "UNITS": "affaires"
+      },
+      "TABLE": {
+        "SEARCH": "Rechercher par nom, référence…",
+        "FILTERS": "Filtres",
+        "VIEW_GRID": "Vue grille",
+        "VIEW_LIST": "Vue liste",
+        "EMPTY": "Aucune affaire trouvée.",
+        "SEE_DETAIL": "Voir le détail",
+        "SHOWING": "{{current}} affaire(s) sur {{total}}",
+        "CARD": {
+          "CLIENT": "Client",
+          "MANAGER": "Manager",
+          "TYPE": "Type",
+          "BUDGET_LABEL": "Budget"
+        },
+        "HEADERS": {
+          "REF": "Référence",
+          "TITLE": "Intitulé",
+          "CLIENT": "Client",
+          "MANAGER": "Manager",
+          "TYPE": "Type",
+          "BUDGET": "Budget",
+          "RAF": "RAF",
+          "STATUS": "Statut"
+        },
+        "STATUS": {
+          "EN_COURS": "En cours",
+          "SUSPENDUE": "Suspendue",
+          "CLOTUREE": "Clôturée",
+          "ARCHIVEE": "Archivée"
+        }
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Chargement de l'affaire…",
+      "RETRY": "Réessayer",
+      "BUDGET_NOT_VALIDATED": "Budget non validé",
+      "LAST_UPDATE": "Mise à jour le",
+      "KPI": {
+        "CA": "CA Encaissé",
+        "CA_SUB": "Chiffre d'affaires réel",
+        "RAF": "RAF Disponible",
+        "RAF_USAGE": "Consommation budget",
+        "WIP": "WIP",
+        "WIP_SUB": "Travaux en cours",
+        "MARGIN": "Marge brute",
+        "MARGIN_TARGET": "Objectif de marge"
+      },
+      "RAF_SECTION": {
+        "TITLE": "Reste À Facturer (RAF)",
+        "BUDGET_TOTAL": "Budget total :",
+        "INVOICED": "Facturé",
+        "TS_INTEGRATED": "TS intégrés",
+        "REMAINING": "RAF disponible"
+      },
+      "INFO": {
+        "TITLE": "Informations générales",
+        "CLIENT": "Client",
+        "MANAGER": "Manager",
+        "BILLING_MODE": "Mode de facturation",
+        "CURRENCY": "Devise",
+        "PERIOD": "Période",
+        "ENGAGEMENT": "Type d'engagement",
+        "BUDGET_VALIDATED": "Budget validé",
+        "YES": "Oui",
+        "NO": "Non",
+        "DOC360": "Réf. DOC360",
+        "ERP_REF": "Réf. ERP",
+        "NOTES": "Notes"
+      },
+      "SECTIONS": {
+        "BUDGET_TS": "Budget & Ordres de service",
+        "NEW_TS": "Nouvel OS",
+        "SUBCONTRACTING": "Sous-traitance",
+        "BILLING": "Facturation",
+        "STUB": "Section en cours de développement."
+      },
+      "INDICATORS": {
+        "TITLE": "Indicateurs de pilotage",
+        "BILLING_RATE": "Taux de facturation",
+        "CONSUMPTION_RATE": "Taux de consommation",
+        "BUDGET_CONSUMED": "Budget consommé",
+        "ON": "sur",
+        "EVOLUTION": "Évolution"
+      },
+      "SIDEBAR": {
+        "STATUS_CHANGE": "Changement de statut",
+        "VALIDATE_BUDGET": "Valider le budget",
+        "BUDGET_PENDING": "Budget en attente de validation : {{amount}}",
+        "VALIDATING": "Validation en cours…",
+        "VALIDATE_BTN": "Valider le budget",
+        "EDIT_TITLE": "Modifier l'affaire",
+        "EDIT_MANAGERS": "Modifier les responsables",
+        "EDIT_PLANNING": "Modifier la planification",
+        "EDIT_INFO": "Modifier les informations",
+        "ACTIONS_TITLE": "Actions rapides",
+        "NEW_INVOICE": "Nouvelle facture",
+        "VIEW_PAYMENTS": "Suivi des paiements",
+        "VIEW_INVOICES": "Voir les factures",
+        "TRACEABILITY": "Traçabilité & Alertes",
+        "CREATED_AT": "Créé le",
+        "LAST_MODIFIED": "Dernière modification",
+        "RAF_THRESHOLD": "Seuil d'alerte RAF",
+        "RAF_ALERT_TITLE": "Alerte RAF dépassée",
+        "RAF_ALERT_TEXT": "Le seuil d'alerte de {{pct}}% est atteint. Vérifiez le reste à facturer."
+      },
+      "MODAL": {
+        "STATUS_TITLE": "Changer le statut",
+        "NEW_STATUS": "Nouveau statut",
+        "REASON": "Motif",
+        "REASON_PLACEHOLDER": "Raison du changement de statut…",
+        "CANCEL": "Annuler",
+        "PROCESSING": "Traitement…",
+        "CONFIRM": "Confirmer"
+      }
+    }
   }
 }

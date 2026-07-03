@@ -515,5 +515,132 @@
       "DEACTIVATE": "Deactivate this client",
       "REACTIVATE": "Reactivate this client"
     }
+  },
+  "AFFAIRES": {
+    "LIST": {
+      "TITLE": "Projects",
+      "NEW_BTN": "New project",
+      "KPI": {
+        "ACTIVE": "Active projects",
+        "RAF": "Total remaining",
+        "BUDGET": "Total budget",
+        "PENDING": "Suspended",
+        "UNITS": "projects"
+      },
+      "TABLE": {
+        "SEARCH": "Search by name, reference…",
+        "FILTERS": "Filters",
+        "VIEW_GRID": "Grid view",
+        "VIEW_LIST": "List view",
+        "EMPTY": "No projects found.",
+        "SEE_DETAIL": "View detail",
+        "SHOWING": "{{current}} project(s) of {{total}}",
+        "CARD": {
+          "CLIENT": "Client",
+          "MANAGER": "Manager",
+          "TYPE": "Type",
+          "BUDGET_LABEL": "Budget"
+        },
+        "HEADERS": {
+          "REF": "Reference",
+          "TITLE": "Title",
+          "CLIENT": "Client",
+          "MANAGER": "Manager",
+          "TYPE": "Type",
+          "BUDGET": "Budget",
+          "RAF": "Remaining",
+          "STATUS": "Status"
+        },
+        "STATUS": {
+          "EN_COURS": "In progress",
+          "SUSPENDUE": "Suspended",
+          "CLOTUREE": "Closed",
+          "ARCHIVEE": "Archived"
+        }
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Loading project…",
+      "RETRY": "Retry",
+      "BUDGET_NOT_VALIDATED": "Budget not validated",
+      "LAST_UPDATE": "Updated on",
+      "KPI": {
+        "CA": "Collected Revenue",
+        "CA_SUB": "Actual revenue",
+        "RAF": "Remaining to invoice",
+        "RAF_USAGE": "Budget usage",
+        "WIP": "WIP",
+        "WIP_SUB": "Work in progress",
+        "MARGIN": "Gross margin",
+        "MARGIN_TARGET": "Margin target"
+      },
+      "RAF_SECTION": {
+        "TITLE": "Remaining to Invoice (RAF)",
+        "BUDGET_TOTAL": "Total budget:",
+        "INVOICED": "Invoiced",
+        "TS_INTEGRATED": "Integrated orders",
+        "REMAINING": "Remaining (RAF)"
+      },
+      "INFO": {
+        "TITLE": "General information",
+        "CLIENT": "Client",
+        "MANAGER": "Manager",
+        "BILLING_MODE": "Billing mode",
+        "CURRENCY": "Currency",
+        "PERIOD": "Period",
+        "ENGAGEMENT": "Engagement type",
+        "BUDGET_VALIDATED": "Budget validated",
+        "YES": "Yes",
+        "NO": "No",
+        "DOC360": "DOC360 ref.",
+        "ERP_REF": "ERP ref.",
+        "NOTES": "Notes"
+      },
+      "SECTIONS": {
+        "BUDGET_TS": "Budget & Service orders",
+        "NEW_TS": "New order",
+        "SUBCONTRACTING": "Subcontracting",
+        "BILLING": "Billing",
+        "STUB": "Section under development."
+      },
+      "INDICATORS": {
+        "TITLE": "Piloting indicators",
+        "BILLING_RATE": "Billing rate",
+        "CONSUMPTION_RATE": "Consumption rate",
+        "BUDGET_CONSUMED": "Budget consumed",
+        "ON": "of",
+        "EVOLUTION": "Evolution"
+      },
+      "SIDEBAR": {
+        "STATUS_CHANGE": "Change status",
+        "VALIDATE_BUDGET": "Validate budget",
+        "BUDGET_PENDING": "Budget pending validation: {{amount}}",
+        "VALIDATING": "Validating…",
+        "VALIDATE_BTN": "Validate budget",
+        "EDIT_TITLE": "Edit project",
+        "EDIT_MANAGERS": "Edit managers",
+        "EDIT_PLANNING": "Edit planning",
+        "EDIT_INFO": "Edit information",
+        "ACTIONS_TITLE": "Quick actions",
+        "NEW_INVOICE": "New invoice",
+        "VIEW_PAYMENTS": "Payment tracking",
+        "VIEW_INVOICES": "View invoices",
+        "TRACEABILITY": "Traceability & Alerts",
+        "CREATED_AT": "Created on",
+        "LAST_MODIFIED": "Last modified",
+        "RAF_THRESHOLD": "RAF alert threshold",
+        "RAF_ALERT_TITLE": "RAF threshold exceeded",
+        "RAF_ALERT_TEXT": "The alert threshold of {{pct}}% has been reached. Check the remaining amount."
+      },
+      "MODAL": {
+        "STATUS_TITLE": "Change status",
+        "NEW_STATUS": "New status",
+        "REASON": "Reason",
+        "REASON_PLACEHOLDER": "Reason for status change…",
+        "CANCEL": "Cancel",
+        "PROCESSING": "Processing…",
+        "CONFIRM": "Confirm"
+      }
+    }
   }
 }

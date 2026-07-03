@@ -393,7 +393,7 @@
                     {{ statutIcon(s) }}
                   </span>
                 </div>
-                <span class="text-label-bold">{{ statutLabel(s) }}</span>
+                <span class="text-label-bold">{{ statutLabel(s) | translate }}</span>
                 @if (affaire()!.statut === s) {
                   <div class="statut-btn__check">
                     <span class="material-symbols-outlined">check</span>
@@ -543,7 +543,7 @@
               <label class="statut-radio" [class.statut-radio--selected]="targetStatut() === s">
                 <input type="radio" name="new-statut" [value]="s"
                        [ngModel]="targetStatut()" (ngModelChange)="targetStatut.set($event)" />
-                {{ statutLabel(s) }}
+                {{ statutLabel(s) | translate }}
               </label>
             }
           </div>
