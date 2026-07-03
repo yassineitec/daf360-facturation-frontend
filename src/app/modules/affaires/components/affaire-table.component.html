@@ -1,64 +1,45 @@
 <div class="table-container">
 
-  <!-- Header -->
   <div class="tc-header">
-    <div class="flex items-center gap-3">
 
-      <!-- Search + filter -->
-      <div class="flex flex-1 items-center gap-4">
-        <div class="relative flex-1">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2
-                       text-[18px] text-outline pointer-events-none">search</span>
-          <input type="search"
-                 [value]="searchText()"
-                 [placeholder]="'AFFAIRES.LIST.TABLE.SEARCH' | translate"
-                 (input)="searchText.set($any($event.target).value); searchGo.emit()"
-                 class="w-full pl-10 pr-4 py-2.5 border border-outline-variant rounded-lg
-                        text-[14px] bg-white focus:outline-none focus:border-[#1b3a4b]
-                        placeholder:text-outline/50 transition-colors" />
-        </div>
-        <app-filter-panel
-          (apply)="onFilterApply()"
-          (cancel)="onFilterCancel()">
+    <daf-toolbar
+      class="flex-1"
+      [searchValue]="searchText()"
+      [searchPlaceholder]="'AFFAIRES.LIST.TABLE.SEARCH' | translate"
+      [actions]="toolbarActions"
+      [toggleOptions]="viewToggleOptions"
+      [activeToggle]="viewMode()"
+      (searchChange)="searchText.set($event); searchGo.emit()"
+      (toggleChange)="viewMode.set($any($event))"
+      (actionClick)="onToolbarAction($event)" />
 
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-semibold uppercase tracking-wider"
-                   style="color:var(--color-on-surface-variant)">Statut</label>
-            <daf-select
-              [options]="statutOptions"
-              [selected]="filterStatutSel()"
-              [config]="selectStatutConfig"
-              (selectedChange)="filterStatutSel.set($event)" />
-          </div>
+    <app-filter-panel
+      [showTrigger]="true"
+      (apply)="onFilterApply()"
+      (cancel)="onFilterCancel()">
 
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-semibold uppercase tracking-wider"
-                   style="color:var(--color-on-surface-variant)">Type</label>
-            <daf-select
-              [options]="typeOptions"
-              [selected]="filterTypeSel()"
-              [config]="selectTypeConfig"
-              (selectedChange)="filterTypeSel.set($event)" />
-          </div>
-
-        </app-filter-panel>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-semibold uppercase tracking-wider"
+               style="color:var(--color-on-surface-variant)">Statut</label>
+        <daf-select
+          [options]="statutOptions"
+          [selected]="filterStatutSel()"
+          [config]="selectStatutConfig"
+          (selectedChange)="filterStatutSel.set($event)" />
       </div>
 
-      <!-- View toggle -->
-      <div class="flex border border-outline-variant rounded-lg overflow-hidden shrink-0">
-        <button type="button" class="p-2 transition-colors" [title]="'AFFAIRES.LIST.TABLE.VIEW_GRID' | translate"
-                [class]="viewMode() === 'grid' ? 'bg-secondary/10 text-secondary' : 'hover:bg-surface-container text-outline'"
-                (click)="viewMode.set('grid')">
-          <span class="material-symbols-outlined text-[20px]">grid_view</span>
-        </button>
-        <button type="button" class="p-2 transition-colors" [title]="'AFFAIRES.LIST.TABLE.VIEW_LIST' | translate"
-                [class]="viewMode() === 'list' ? 'bg-secondary/10 text-secondary' : 'hover:bg-surface-container text-outline'"
-                (click)="viewMode.set('list')">
-          <span class="material-symbols-outlined text-[20px]">table_rows</span>
-        </button>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-semibold uppercase tracking-wider"
+               style="color:var(--color-on-surface-variant)">Type</label>
+        <daf-select
+          [options]="typeOptions"
+          [selected]="filterTypeSel()"
+          [config]="selectTypeConfig"
+          (selectedChange)="filterTypeSel.set($event)" />
       </div>
 
-    </div>
+    </app-filter-panel>
+
   </div>
 
   <!-- Error -->

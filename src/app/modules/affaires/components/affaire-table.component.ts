@@ -1,18 +1,21 @@
-import { Component, computed, input, model, output, signal } from '@angular/core';
+import { Component, computed, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UpperCasePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import { AffaireListItem, STATUT_LABELS, TYPE_LABELS } from '../affaire.model';
-import { StatusBadgeComponent, CardComponent, BadgeVariant, SelectComponent } from '@khalilrebhiitec/daf360';
+import { StatusBadgeComponent, CardComponent, BadgeVariant, SelectComponent, ToolbarComponent } from '@khalilrebhiitec/daf360';
 import { FilterPanelComponent } from '../../../shared/filter-panel/filter-panel.component';
 
 @Component({
   selector: 'app-affaire-table',
-  imports: [FormsModule, UpperCasePipe, TranslatePipe, StatusBadgeComponent, CardComponent, SelectComponent, FilterPanelComponent],
+  imports: [FormsModule, UpperCasePipe, TranslatePipe, StatusBadgeComponent, CardComponent, SelectComponent, FilterPanelComponent, ToolbarComponent],
   templateUrl: './affaire-table.component.html',
   styleUrl: './affaire-table.component.scss',
 })
 export class AffaireTableComponent {
+  private readonly translate = inject(TranslateService);
+
   affaires      = input.required<AffaireListItem[]>();
   loading       = input(false);
   error         = input<string | null>(null);
@@ -31,16 +34,29 @@ export class AffaireTableComponent {
   readonly searchGo    = output<void>();
   readonly filterGo    = output<void>();
 
-  readonly statutOptions = Object.entries(STATUT_LABELS).map(([k, v]) => ({ value: k, label: v }));
+  readonly statutOptions = Object.entries(STATUT_LABELS).map(([k, v]) => ({ value: k, label: this.translate.instant(v) }));
   readonly typeOptions   = Object.entries(TYPE_LABELS).map(([k, v])   => ({ value: k, label: v }));
 
   readonly viewMode = signal<'grid' | 'list'>('grid');
+
+  readonly toolbarActions = [
+    { id: 'export', label: 'Exporter', icon: 'file_download', position: 'right' as const, variant: 'primary' as const },
+  ];
+
+  readonly viewToggleOptions = [
+    { id: 'grid', icon: 'grid_view',  tooltip: 'Vue grille' },
+    { id: 'list', icon: 'table_rows', tooltip: 'Vue liste'  },
+  ];
 
   filterStatutSel = signal<string[]>([]);
   filterTypeSel   = signal<string[]>([]);
 
   readonly selectStatutConfig = { placeholder: 'Statut', multiple: false, searchable: false, fullWidth: true };
   readonly selectTypeConfig   = { placeholder: 'Type',   multiple: false, searchable: false, fullWidth: true };
+
+  onToolbarAction(id: string): void {
+    // currently only 'export' action exists
+  }
 
   onFilterApply(): void {
     this.filterStatut.set(this.filterStatutSel()[0] ?? '');

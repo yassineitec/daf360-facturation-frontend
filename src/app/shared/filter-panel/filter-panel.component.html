@@ -1,13 +1,15 @@
 <div class="fp-host">
 
-  <!-- Trigger -->
-  <daf-button
-    [options]="{ variant: 'teal', label: 'Filters', iconStart: 'filter_list' }"
-    (onClick)="toggle()" />
+  <!-- Trigger (hidden when toolbar controls the open state) -->
+  @if (showTrigger()) {
+    <daf-button
+      [options]="{ variant: 'teal', label: 'Filters', iconStart: 'filter_list' }"
+      (onClick)="toggle()" />
+  }
 
   <!-- Floating panel -->
   @if (isOpen()) {
-    <div class="fp-panel">
+    <div class="fp-panel" [style.top.px]="panelTop" [style.right.px]="panelRight">
 
       <!-- Header -->
       <div class="fp-header">
