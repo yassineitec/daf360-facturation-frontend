@@ -40,7 +40,7 @@
   </div>
 
   <!-- Filter bar -->
-  <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}">
+  <daf-card [options]="{variant:'default',padding:'none',radius:'xl'}">
     <div class="filter-bar">
       <div class="filter-group">
         <label class="filter-label">Affaire</label>
@@ -53,14 +53,12 @@
           [(ngModel)]="filterClientId" (change)="onFilterChange()" min="1" />
       </div>
       <div class="filter-group">
-        <label class="filter-label">Du</label>
-        <input type="date" class="filter-input"
-          [(ngModel)]="filterFrom" (change)="onFilterChange()" />
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Au</label>
-        <input type="date" class="filter-input"
-          [(ngModel)]="filterTo" (change)="onFilterChange()" />
+        <label class="filter-label">Période</label>
+        <daf-multi-date-picker
+          style="min-width: 240px"
+          [config]="dateRangeConfig"
+          [value]="filterDateRange()"
+          (valueChange)="filterDateRange.set($event); onDateRangeChange()" />
       </div>
       <label class="filter-toggle">
         <input type="checkbox" [(ngModel)]="overdueOnly" (change)="onFilterChange()" />

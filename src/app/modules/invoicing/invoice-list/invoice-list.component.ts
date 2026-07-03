@@ -8,14 +8,14 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
-  SelectOption, ModalService, ModalRef,
+  SelectOption, SelectComponent, ModalService, ModalRef,
   CardComponent, ButtonComponent, PaginationComponent,
   MultiDatePickerComponent,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent],
+  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })
@@ -46,10 +46,18 @@ export class InvoiceListComponent implements OnInit {
   filterDateRange = signal<Date | Date[] | null>(null);
   searchText      = signal<string>('');
 
+  readonly statutSelectConfig = {
+    placeholder: 'Statut',
+    multiple: false,
+    searchable: false,
+    fullWidth: false,
+  };
+
   readonly dateRangeConfig = {
     selectionMode: 'range' as const,
-    placeholder: 'Période',
+    placeholder: 'Date ou plage de dates',
     allowPastDays: true,
+    fullWidth: false,
   };
 
   readonly PAGE_SIZE = 20;

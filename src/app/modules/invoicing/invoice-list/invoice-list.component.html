@@ -81,7 +81,7 @@
   </section>
 
   <!-- ── Search & Filters ──────────────────────────────────────────────────── -->
-  <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}">
+  <daf-card [options]="{variant:'default',padding:'none',radius:'xl'}">
     <div class="search-bar-row">
 
       <div class="search-wrap">
@@ -93,19 +93,15 @@
       </div>
 
       <div class="filter-group">
-        <div class="filter-btn-wrap">
-          <span class="material-symbols-outlined filter-btn-icon">filter_list</span>
-          <select class="filter-select"
-            [value]="filterStatutSel()[0] || ''"
-            (change)="filterStatutSel.set(getSelectValue($event) ? [getSelectValue($event)] : []); onFilterChange()">
-            <option value="">{{ 'INVOICING.LIST.TABLE.STATUS' | translate }}</option>
-            @for (opt of statutSelectOptions; track opt.value) {
-              <option [value]="opt.value">{{ opt.label }}</option>
-            }
-          </select>
-        </div>
+        <daf-select
+          style="min-width: 180px"
+          [options]="statutSelectOptions"
+          [selected]="filterStatutSel()"
+          [config]="statutSelectConfig"
+          (selectedChange)="filterStatutSel.set($event); onFilterChange()" />
 
         <daf-multi-date-picker
+          style="min-width: 240px"
           [config]="dateRangeConfig"
           [value]="filterDateRange()"
           (valueChange)="filterDateRange.set($event); onDateRangeChange()" />
@@ -174,7 +170,7 @@
               </td>
 
               <td>
-                <div class="cell-client" [title]="inv.clientNom ?? ''">
+                <div class="cell-client" [title]="inv.clientNom || ''">
                   {{ inv.clientNom || '—' }}
                 </div>
               </td>
