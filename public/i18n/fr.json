@@ -1,0 +1,646 @@
+{
+  "FACTURATION": {
+    "TITLE": "Facturation",
+    "DASHBOARD": "Tableau de bord",
+    "INVOICES": "Factures",
+    "AFFAIRES": "Affaires",
+    "CLIENTS": "Clients",
+    "PAYMENTS": "Paiements",
+    "COSTS": "Coûts",
+    "SUBCONTRACTING": "Sous-traitance",
+    "REPORTING": "Reporting",
+    "ADMIN": "Administration"
+  },
+  "HOME": {
+    "GREETING": "Bonjour, {{name}}.",
+    "KPI": {
+      "COLLECTED_TITLE": "Encaissé ce mois",
+      "COLLECTED_SUB": "Ce mois",
+      "PENDING_TITLE": "En attente de paiement",
+      "PENDING_SUB": "Solde en attente",
+      "OVERDUE_TITLE": "Factures en retard",
+      "OVERDUE_COUNT": "{{count}} factures critiques",
+      "NO_DELAY": "Aucun retard",
+      "DSO_TITLE": "Délai moyen (DSO)",
+      "DSO_SUB": "Jours moyens"
+    },
+    "MODULES": {
+      "TREASURY_BALANCE": "Solde Consolidé",
+      "TO_VALIDATE": "{{count}} à valider",
+      "CLIENTS": {
+        "LABEL": "Clients",
+        "DESC": "Référentiel clients, contrats et conditions de paiement.",
+        "STAT": "1 284 Clients"
+      },
+      "SUPPLIERS": {
+        "LABEL": "Fournisseurs",
+        "DESC": "Admin, banques et historique des achats.",
+        "STAT": "412 Actifs"
+      },
+      "PROJECTS": {
+        "LABEL": "Affaires",
+        "DESC": "Gestion de projets, budgets et jalons de facturation.",
+        "STAT": "86 En cours"
+      },
+      "INVOICING": {
+        "LABEL": "Facturation",
+        "DESC": "Création, validation et cycle de vie des factures.",
+        "STAT": ""
+      },
+      "PAYMENTS": {
+        "LABEL": "Paiements",
+        "DESC": "Rapprochement bancaire et suivi des soldes.",
+        "STAT": "98% Réconcilié"
+      },
+      "RECOVERY": {
+        "LABEL": "Recouvrement",
+        "DESC": "Relances, campagnes et gestion des litiges.",
+        "STAT": "Litiges critiques"
+      },
+      "TREASURY": {
+        "LABEL": "Gestion de Trésorerie",
+        "DESC": "Flux de trésorerie, comptes bancaires et prévisions financières.",
+        "STAT": ""
+      },
+      "SUBCONTRACTING": {
+        "LABEL": "Sous-traitance",
+        "DESC": "Gestion des sous-traitants, commandes et coûts.",
+        "STAT": "24 Contrats"
+      },
+      "COSTS": {
+        "LABEL": "Coûts",
+        "DESC": "Coûts opérationnels, variances et CAPEX/OPEX.",
+        "STAT": "-2.4% vs Budget"
+      },
+      "REPORTING": {
+        "LABEL": "Reporting",
+        "DESC": "Dashboards financiers, KPIs et analyse de profitabilité.",
+        "STAT": "Nouveau rapport prêt"
+      },
+      "ADMIN": {
+        "LABEL": "Administration",
+        "DESC": "Réglages système, devises et workflows de validation.",
+        "STAT": "Paramètres sécurisés"
+      }
+    },
+    "ACTIVITY": {
+      "TITLE": "Activité Récente",
+      "VIEW_ALL": "Voir tout",
+      "EMPTY": "Aucune activité récente"
+    }
+  },
+  "INVOICING": {
+    "LIST": {
+      "TITLE": "Facturation",
+      "SUBTITLE": "Gérez vos émissions et suivis de factures clients.",
+      "NEW_BTN": "Nouvelle facture",
+      "KPI": {
+        "TOTAL": "Total Facturé",
+        "INVOICES_SUFFIX": "factures",
+        "PENDING": "En attente",
+        "PENDING_SUFFIX": "en attente",
+        "OVERDUE": "En retard",
+        "OVERDUE_SUFFIX": "en retard",
+        "DISPUTED": "Litiges",
+        "DISPUTED_SUFFIX": "en litige"
+      },
+      "SEARCH": "Rechercher client, facture, projet...",
+      "FILTER": { "DATE_FROM": "Émis depuis", "DATE_TO": "Émis jusqu'à", "EXPORT": "Export" },
+      "TABLE": {
+        "REF": "Référence / Projet",
+        "CLIENT": "Client",
+        "AMOUNT": "Montant TTC",
+        "STATUS": "Statut",
+        "DATE": "Date / Échéance",
+        "DRAFT": "(brouillon)",
+        "EMPTY": "Aucune facture trouvée.",
+        "ECH_PREFIX": "Éch.",
+        "OVERDUE_DAYS": "+{{days}} jours"
+      },
+      "APPROVAL": {
+        "TITLE": "Décision de validation",
+        "CANCEL": "Annuler",
+        "CONFIRM": "Confirmer",
+        "DECISION_LABEL": "Décision *",
+        "COMMENT_LABEL": "Commentaire *",
+        "COMMENT_PLACEHOLDER": "Motif obligatoire…",
+        "APPROVE": "Approuver",
+        "RETURN": "Retourner",
+        "REJECT": "Rejeter"
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Chargement…",
+      "OVERDUE": "En retard",
+      "DRAFT_TITLE": "Brouillon",
+      "BACK": "Factures",
+      "KPI": {
+        "BILLING_PROGRESS": "Avancement facturation",
+        "BUDGET_TOTAL": "Budget Total ({{currency}})",
+        "REMAINING": "Restant à payer",
+        "HT_PREFIX": "HT :",
+        "DUE_PREFIX": "Échéance :",
+        "NO_DUE": "Pas d'échéance définie"
+      },
+      "LINES": {
+        "TITLE": "Lignes de facturation",
+        "TAB_DETAIL": "Détail",
+        "TAB_RECAP": "Récapitulatif",
+        "DESC": "Description",
+        "STATUS_COL": "Statut",
+        "QTY": "Qté",
+        "UNIT_PRICE": "PU HT",
+        "VAT": "TVA",
+        "TOTAL_HT": "Total HT",
+        "TOTAL_TTC": "Total TTC",
+        "ACTIVE": "Actif",
+        "EMPTY": "Aucune ligne de facturation.",
+        "GRAND_TOTAL": "Total général"
+      },
+      "INFO": {
+        "TITLE": "Informations",
+        "TYPE": "Type",
+        "CURRENCY": "Devise",
+        "ISSUE_DATE": "Date émission",
+        "DUE_DATE": "Date échéance",
+        "CONDITIONS": "Conditions",
+        "BDC": "BDC",
+        "PAID_ON": "Payée le",
+        "NOTES": "Notes"
+      }
+    },
+    "NEW": {
+      "TITLE": "Nouvelle facture",
+      "SUBTITLE": "Suivez les étapes pour créer et soumettre votre facture",
+      "STEP_OF": "Étape {{step}} sur {{total}}",
+      "BACK": "Retour",
+      "CANCEL": "Annuler",
+      "SAVING": "Enregistrement…",
+      "DRAFT": "Brouillon",
+      "SUBMIT": "Soumettre",
+      "NEXT": "Suivant",
+      "SENDING": "Envoi…",
+      "SIDEBAR": {
+        "PROGRESS": "Progression",
+        "SUMMARY": "Résumé",
+        "AFFAIRE": "Affaire",
+        "CLIENT": "Client",
+        "TYPE": "Type",
+        "LINES": "Lignes",
+        "TOTAL_TTC": "Total TTC",
+        "TIP": "Conseil"
+      },
+      "STEPS": {
+        "AFFAIRE": "Affaire & Client",
+        "LINES": "Lignes",
+        "CONDITIONS": "Conditions",
+        "RECAP": "Récapitulatif"
+      },
+      "STEP_INFO": {
+        "AFFAIRE":    { "TITLE": "Initialisation de la facture",  "SUB": "Sélectionnez l'affaire concernée et le type de document à générer." },
+        "LINES":      { "TITLE": "Lignes de facturation",         "SUB": "Ajoutez les prestations, quantités et montants à facturer." },
+        "CONDITIONS": { "TITLE": "Conditions de paiement",        "SUB": "Définissez les modalités et l'échéance de paiement." },
+        "RECAP":      { "TITLE": "Récapitulatif & Validation",    "SUB": "Vérifiez les informations avant de créer la facture." }
+      },
+      "HELP": {
+        "TITLE": "Besoin d'aide ?",
+        "TEXT": "L'affaire est le point d'entrée unique de votre facturation. Si vous ne trouvez pas votre affaire, assurez-vous qu'elle est bien activée dans le module Affaires."
+      },
+      "TIPS": {
+        "AFFAIRE": "Sélectionnez l'affaire concernée. Le RAF disponible est vérifié automatiquement pour bloquer toute sur-facturation.",
+        "LINES": "Ajoutez chaque prestation avec sa quantité, son prix unitaire HT et le taux de TVA applicable.",
+        "CONDITIONS": "Définissez l'échéance, les conditions de paiement et le bon de commande si le type de facturation l'exige.",
+        "RECAP": "Vérifiez toutes les informations avant de soumettre ou d'enregistrer en brouillon pour y revenir plus tard."
+      }
+    },
+    "STATUS": {
+      "DRAFT": "Brouillon",
+      "SUBMITTED": "En revue",
+      "RETURNED": "Retournée",
+      "APPROVED": "Validée",
+      "EMITTED": "Émise",
+      "SENT": "Envoyée",
+      "PARTIALLY_PAID": "Part. payée",
+      "PAID": "Payée",
+      "DISPUTED": "En litige",
+      "CANCELLED": "Annulée",
+      "CREDIT_NOTED": "Avoir émis"
+    },
+    "LIFECYCLE": {
+      "DRAFT": "Brouillon",
+      "SUBMITTED": "En revue",
+      "APPROVED": "Validée",
+      "EMITTED": "Émise",
+      "SENT": "Envoyée",
+      "PARTIALLY_PAID": "Part. payée",
+      "DONE": "Terminée",
+      "ACTIONS": {
+        "SUBMIT": "Soumettre pour validation",
+        "RESUBMIT": "Soumettre à nouveau",
+        "CONFIRM": "Confirmer la décision",
+        "CANCEL": "Annuler",
+        "EMIT": "Émettre la facture",
+        "MARK_SENT": "Marquer comme envoyée",
+        "RECORD_PAYMENT": "Enregistrer un paiement",
+        "EMIT_CREDIT": "Émettre un avoir",
+        "CREDIT_DONE": "Avoir émis ✓",
+        "RESOLVE": "Résoudre le litige",
+        "CANCELLED": "Annulée"
+      }
+    },
+    "STEP_AFFAIRE": {
+      "AFFAIRE_LABEL": "Affaire",
+      "SEARCH_PLACEHOLDER": "Rechercher par nom ou numéro de projet…",
+      "SEARCHING": "Recherche en cours…",
+      "BUDGET": "Budget prévisionnel",
+      "RAF": "RAF disponible",
+      "RAF_BLOCKED": "RAF épuisé — facturation bloquée (RG10).",
+      "RAF_LOW": "RAF faible ({{pct}}%) — vérifiez le montant.",
+      "DESELECT": "Désélectionner",
+      "BILLING_MODE_LABEL": "Mode de facturation *",
+      "BILLING_MODE_REQUIRED": "Mode de facturation requis.",
+      "SELECT": "Sélectionner…",
+      "BILLING_MODES": {
+        "TM": "TM — Temps & Matériaux",
+        "CP": "CP — Coût Plus",
+        "AV": "AV — Avancement",
+        "JAL": "JAL — Jalons",
+        "RMB": "RMB — Remboursement"
+      },
+      "TYPE_LABEL": "Type de facture *",
+      "TYPE_SELECT": "Sélectionner le type…",
+      "TYPE_REQUIRED": "Type requis.",
+      "INVOICE_TYPES": {
+        "ACOMPTE": "Facture d'acompte",
+        "INTERMEDIAIRE": "Facture de situation (Avancement)",
+        "FINALE": "Facture de solde",
+        "AVOIR": "Note d'avoir"
+      },
+      "TS_LABEL": "TS associé (optionnel)",
+      "TS_NONE": "Aucun",
+      "CANCEL": "Annuler",
+      "NEXT": "Suivant"
+    },
+    "STEP_LINES": {
+      "TITLE": "Lignes de facturation",
+      "ADD_LINE": "+ Ajouter une ligne",
+      "DESC": "Description *",
+      "QTY": "Qté *",
+      "UNIT_PRICE": "PU HT *",
+      "VAT": "TVA",
+      "TOTAL_HT": "Total HT",
+      "TOTAL_TTC": "Total TTC",
+      "DESC_PLACEHOLDER": "Description de la prestation",
+      "TOTALS": "Totaux",
+      "ERROR": "Toutes les lignes doivent être remplies correctement.",
+      "BACK": "Retour",
+      "NEXT": "Suivant"
+    },
+    "STEP_CONDITIONS": {
+      "DUE_DATE_LABEL": "Date d'échéance *",
+      "DUE_DATE_REQUIRED": "Date requise.",
+      "CONDITIONS_LABEL": "Conditions de paiement *",
+      "CONDITIONS_SELECT": "Sélectionner…",
+      "CONDITIONS_REQUIRED": "Conditions requises.",
+      "BDC_LABEL": "Bon de commande",
+      "BDC_REQUIRED_MARK": "* requis pour Forfait/Lump Sum",
+      "BDC_PLACEHOLDER": "N° bon de commande",
+      "BDC_REQUIRED_ERROR": "BDC requis pour ce type de facturation.",
+      "NOTES_LABEL": "Notes internes",
+      "NOTES_PLACEHOLDER": "Notes visibles uniquement en interne…",
+      "BACK": "Retour",
+      "NEXT": "Suivant"
+    },
+    "STEP_RECAP": {
+      "INFO_TITLE": "Informations générales",
+      "TYPE": "Type",
+      "AFFAIRE": "Affaire",
+      "CONDITIONS": "Conditions",
+      "DUE_DATE": "Échéance",
+      "BDC": "BDC",
+      "LINES_TITLE": "Lignes de facturation",
+      "DESC": "Description",
+      "QTY": "Qté",
+      "UNIT_PRICE": "PU HT",
+      "VAT": "TVA",
+      "TOTAL_HT": "Total HT",
+      "TOTAL_TTC": "Total TTC",
+      "TOTAL": "Total",
+      "REMINDERS_TITLE": "Rappels planifiés (aperçu)",
+      "REMINDERS": {
+        "J_MINUS_7": "J-7 (avant échéance)",
+        "J0": "J+0 (jour échéance)",
+        "J7": "J+7 (1re relance)",
+        "J15": "J+15 (2e relance)",
+        "J30": "J+30 (3e relance)"
+      },
+      "BACK": "Retour",
+      "SAVING": "Enregistrement…",
+      "DRAFT": "Brouillon",
+      "SENDING": "Envoi…",
+      "SUBMIT": "Soumettre"
+    },
+    "REMINDERS": {
+      "TITLE": "Rappels de paiement",
+      "ACTIVE": "Actifs",
+      "SUSPENDED": "Suspendus",
+      "SUSPEND": "Suspendre",
+      "REACTIVATE": "Réactiver",
+      "LOADING": "Chargement des rappels…",
+      "STATUS": {
+        "SENT": "Envoyé",
+        "SUSPENDED": "Suspendu",
+        "PENDING": "En attente"
+      },
+      "EMPTY": "Aucun rappel planifié.",
+      "SUSPEND_FORM": {
+        "LABEL": "Motif de suspension",
+        "PLACEHOLDER": "Optionnel",
+        "CANCEL": "Annuler",
+        "CONFIRM": "Confirmer"
+      }
+    },
+    "PAYMENT_MODAL": {
+      "TITLE": "Enregistrer un paiement",
+      "DATE_LABEL": "Date de règlement *",
+      "DATE_REQUIRED": "Date requise.",
+      "AMOUNT_LABEL": "Montant payé ({{currency}}) *",
+      "AMOUNT_REQUIRED": "Montant requis (> 0).",
+      "MODE_LABEL": "Mode de paiement *",
+      "MODE_SELECT": "Sélectionner…",
+      "MODE_REQUIRED": "Mode de paiement requis.",
+      "REF_LABEL": "Référence bancaire",
+      "REF_PLACEHOLDER": "Optionnel",
+      "CANCEL": "Annuler",
+      "SAVING": "Enregistrement…",
+      "SAVE": "Enregistrer"
+    },
+    "CREDIT_NOTE_MODAL": {
+      "TITLE": "Émettre un avoir",
+      "REASON_LABEL": "Motif *",
+      "REASON_SELECT": "Sélectionner un motif…",
+      "REASON_REQUIRED": "Motif requis.",
+      "DETAIL_LABEL": "Détail / commentaire",
+      "DETAIL_PLACEHOLDER": "Précisions optionnelles…",
+      "AMOUNT_LABEL": "Montant TTC de l'avoir ({{currency}})",
+      "AMOUNT_PLACEHOLDER": "Laisser vide pour avoir total",
+      "AMOUNT_HINT": "Si vide, l'avoir sera égal au montant total de la facture.",
+      "CANCEL": "Annuler",
+      "SAVING": "Émission…",
+      "SUBMIT": "Émettre l'avoir"
+    },
+    "PAYMENT_MODE": {
+      "TRANSFER": "Virement bancaire",
+      "CHECK": "Chèque",
+      "CASH": "Espèces",
+      "OTHER": "Autre"
+    },
+    "CONDITIONS": {
+      "TRANSFER_30": "Virement 30 jours",
+      "CHECK_RECEIPT": "Chèque à réception",
+      "CASH": "Comptant",
+      "30_DAYS": "À 30 jours",
+      "60_DAYS": "À 60 jours",
+      "90_DAYS": "À 90 jours"
+    },
+    "CREDIT_REASON": {
+      "BILLING_ERROR": "Erreur de facturation",
+      "CANCELLATION": "Annulation",
+      "DISCOUNT": "Remise commerciale",
+      "OTHER": "Autre"
+    },
+    "INVOICE_TYPE": {
+      "ACOMPTE": "Acompte",
+      "INTERMEDIAIRE": "Situation",
+      "FINALE": "Solde",
+      "AVOIR": "Note d'avoir"
+    },
+    "REMINDER_TYPE": {
+      "J0": "Émission",
+      "J_7": "J-7 échéance",
+      "J0_ECH": "Jour échéance",
+      "J7": "J+7 relance",
+      "J15": "J+15 relance",
+      "J30": "J+30 relance"
+    }
+  },
+  "CLIENTS": {
+    "LIST": {
+      "TITLE": "Gestion des Clients",
+      "NEW_BTN": "Nouveau client",
+      "KPI": {
+        "TOTAL": "Total Clients",
+        "ALL_COUNTRIES": "Tous pays",
+        "KYC_DONE": "KYC Validé",
+        "CLIENTS_SUFFIX": "clients",
+        "TOTAL_CA": "Total CA",
+        "CURRENT_PAGE": "Page courante",
+        "ACTIVE": "Clients Actifs"
+      },
+      "FILTER": {
+        "COUNTRY": "Pays :",
+        "ALL": "Tous",
+        "SECTOR": "Secteur :",
+        "STATUS": "Statut :",
+        "ACTIVE": "Actifs",
+        "INACTIVE": "Inactifs",
+        "KYC": "KYC Validé"
+      },
+      "SEARCH": "Nom, code, secteur…",
+      "CARD": {
+        "TOTAL_CA": "CA Total",
+        "ACTIVE_PROJECTS": "Affaires actives",
+        "DELAY": "{{days}} j délai",
+        "SEE_FILE": "Voir le dossier →",
+        "INACTIVE": "Inactif"
+      },
+      "EMPTY": {
+        "TITLE": "Aucun client trouvé",
+        "DESC": "Modifiez vos filtres ou ajoutez un nouveau client."
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Chargement du client…",
+      "RETRY": "Réessayer",
+      "EDIT": "Modifier",
+      "INACTIVE": "Inactif",
+      "HEADER": { "DELAY": "Délai :" },
+      "KYC": {
+        "SECTION_TITLE": "Validation KYC",
+        "VALIDATED": "KYC validé",
+        "PENDING": "KYC en attente",
+        "VALIDATED_ON": "Validé le",
+        "BY": "Par :",
+        "REVOKE": "Révoquer le KYC",
+        "PENDING_TEXT": "Ce client n'a pas encore été validé KYC. Sans cette validation, aucune facture ne pourra lui être émise.",
+        "VALIDATE_BTN": "Valider le KYC"
+      },
+      "INFO": {
+        "TITLE": "Informations générales",
+        "CODE": "Code client",
+        "TAX_ID": "N° fiscal",
+        "SECTOR": "Secteur",
+        "COUNTRY": "Pays",
+        "ADDRESS": "Adresse",
+        "PHONE": "Téléphone",
+        "EMAIL": "Email",
+        "WEBSITE": "Site web"
+      },
+      "CONTACT": {
+        "TITLE": "Contact principal",
+        "NAME": "Nom",
+        "EMAIL": "Email",
+        "PHONE": "Téléphone",
+        "EMAIL_GENERAL": "Email général",
+        "WEBSITE": "Site web",
+        "NOTES": "Notes"
+      },
+      "KPI": {
+        "TOTAL_PROJECTS": "Total affaires",
+        "ACTIVE_PROJECTS": "Affaires actives",
+        "TOTAL_INVOICED": "Total facturé",
+        "AVG_DELAY": "Délai paiement moy."
+      },
+      "PROJECTS": {
+        "TITLE": "Affaires",
+        "SEE_ALL": "Voir toutes les affaires de ce client"
+      },
+      "ACTIONS": {
+        "TITLE": "Actions rapides",
+        "INVOICES": "Voir les factures",
+        "PAYMENTS": "Suivi des paiements"
+      },
+      "CREATED_AT": "Créé le",
+      "UPDATED_AT": "Modifié le",
+      "DEACTIVATE": "Désactiver ce client",
+      "REACTIVATE": "Réactiver ce client"
+    }
+  },
+  "AFFAIRES": {
+    "LIST": {
+      "TITLE": "Affaires",
+      "NEW_BTN": "Nouvelle affaire",
+      "KPI": {
+        "ACTIVE": "Affaires actives",
+        "RAF": "RAF total",
+        "BUDGET": "Budget total",
+        "PENDING": "En attente",
+        "UNITS": "affaires"
+      },
+      "TABLE": {
+        "SEARCH": "Rechercher par nom, référence…",
+        "FILTERS": "Filtres",
+        "VIEW_GRID": "Vue grille",
+        "VIEW_LIST": "Vue liste",
+        "EMPTY": "Aucune affaire trouvée.",
+        "SEE_DETAIL": "Voir le détail",
+        "SHOWING": "{{current}} affaire(s) sur {{total}}",
+        "CARD": {
+          "CLIENT": "Client",
+          "MANAGER": "Manager",
+          "TYPE": "Type",
+          "BUDGET_LABEL": "Budget"
+        },
+        "HEADERS": {
+          "REF": "Référence",
+          "TITLE": "Intitulé",
+          "CLIENT": "Client",
+          "MANAGER": "Manager",
+          "TYPE": "Type",
+          "BUDGET": "Budget",
+          "RAF": "RAF",
+          "STATUS": "Statut"
+        },
+        "STATUS": {
+          "EN_COURS": "En cours",
+          "SUSPENDUE": "Suspendue",
+          "CLOTUREE": "Clôturée",
+          "ARCHIVEE": "Archivée"
+        }
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Chargement de l'affaire…",
+      "RETRY": "Réessayer",
+      "BUDGET_NOT_VALIDATED": "Budget non validé",
+      "LAST_UPDATE": "Mise à jour le",
+      "KPI": {
+        "CA": "CA Encaissé",
+        "CA_SUB": "Chiffre d'affaires réel",
+        "RAF": "RAF Disponible",
+        "RAF_USAGE": "Consommation budget",
+        "WIP": "WIP",
+        "WIP_SUB": "Travaux en cours",
+        "MARGIN": "Marge brute",
+        "MARGIN_TARGET": "Objectif de marge"
+      },
+      "RAF_SECTION": {
+        "TITLE": "Reste À Facturer (RAF)",
+        "BUDGET_TOTAL": "Budget total :",
+        "INVOICED": "Facturé",
+        "TS_INTEGRATED": "TS intégrés",
+        "REMAINING": "RAF disponible"
+      },
+      "INFO": {
+        "TITLE": "Informations générales",
+        "CLIENT": "Client",
+        "MANAGER": "Manager",
+        "BILLING_MODE": "Mode de facturation",
+        "CURRENCY": "Devise",
+        "PERIOD": "Période",
+        "ENGAGEMENT": "Type d'engagement",
+        "BUDGET_VALIDATED": "Budget validé",
+        "YES": "Oui",
+        "NO": "Non",
+        "DOC360": "Réf. DOC360",
+        "ERP_REF": "Réf. ERP",
+        "NOTES": "Notes"
+      },
+      "SECTIONS": {
+        "BUDGET_TS": "Budget & Ordres de service",
+        "NEW_TS": "Nouvel OS",
+        "SUBCONTRACTING": "Sous-traitance",
+        "BILLING": "Facturation",
+        "STUB": "Section en cours de développement."
+      },
+      "INDICATORS": {
+        "TITLE": "Indicateurs de pilotage",
+        "BILLING_RATE": "Taux de facturation",
+        "CONSUMPTION_RATE": "Taux de consommation",
+        "BUDGET_CONSUMED": "Budget consommé",
+        "ON": "sur",
+        "EVOLUTION": "Évolution"
+      },
+      "SIDEBAR": {
+        "STATUS_CHANGE": "Changement de statut",
+        "VALIDATE_BUDGET": "Valider le budget",
+        "BUDGET_PENDING": "Budget en attente de validation : {{amount}}",
+        "VALIDATING": "Validation en cours…",
+        "VALIDATE_BTN": "Valider le budget",
+        "EDIT_TITLE": "Modifier l'affaire",
+        "EDIT_MANAGERS": "Modifier les responsables",
+        "EDIT_PLANNING": "Modifier la planification",
+        "EDIT_INFO": "Modifier les informations",
+        "ACTIONS_TITLE": "Actions rapides",
+        "NEW_INVOICE": "Nouvelle facture",
+        "VIEW_PAYMENTS": "Suivi des paiements",
+        "VIEW_INVOICES": "Voir les factures",
+        "TRACEABILITY": "Traçabilité & Alertes",
+        "CREATED_AT": "Créé le",
+        "LAST_MODIFIED": "Dernière modification",
+        "RAF_THRESHOLD": "Seuil d'alerte RAF",
+        "RAF_ALERT_TITLE": "Alerte RAF dépassée",
+        "RAF_ALERT_TEXT": "Le seuil d'alerte de {{pct}}% est atteint. Vérifiez le reste à facturer."
+      },
+      "MODAL": {
+        "STATUS_TITLE": "Changer le statut",
+        "NEW_STATUS": "Nouveau statut",
+        "REASON": "Motif",
+        "REASON_PLACEHOLDER": "Raison du changement de statut…",
+        "CANCEL": "Annuler",
+        "PROCESSING": "Traitement…",
+        "CONFIRM": "Confirmer"
+      }
+    }
+  }
+}

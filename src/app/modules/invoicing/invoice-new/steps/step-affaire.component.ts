@@ -2,10 +2,13 @@ import {
   Component, OnInit, inject, input, output, signal, computed,
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { InvoiceService } from '../../invoice.service';
 import { AffaireListItem, RafDetailsDto, TsDto } from '../../../affaires/affaire.model';
 import { AffaireService } from '../../../affaires/affaire.service';
+import { SelectComponent } from '@khalilrebhiitec/daf360';
 
 const VALID_BILLING_MODES = new Set(['AV', 'JAL', 'TM', 'CP', 'RMB']);
 
@@ -22,23 +25,23 @@ export interface StepAffaireValue {
 @Component({
   selector: 'app-step-affaire',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TranslatePipe, SelectComponent],
   template: `
 <div class="step-affaire">
 
   <!-- Affaire search -->
   <div class="field">
-    <label>Affaire</label>
+    <label>{{ 'INVOICING.STEP_AFFAIRE.AFFAIRE_LABEL' | translate }}</label>
     <div class="search-wrap">
       <span class="material-symbols-outlined search-icon-prefix">search</span>
       <input type="search" class="form-input form-input--search"
-        placeholder="Rechercher par nom ou numéro de projet…"
+        [placeholder]="'INVOICING.STEP_AFFAIRE.SEARCH_PLACEHOLDER' | translate"
         [value]="searchQuery()" (input)="onSearchInput($event)"
         maxlength="100" autocomplete="off" />
     </div>
 
     @if (searching()) {
-      <div class="search-hint">Recherche en cours…</div>
+      <div class="search-hint">{{ 'INVOICING.STEP_AFFAIRE.SEARCHING' | translate }}</div>
     }
 
     @if (searchResults().length > 0 && !selectedAffaire()) {
@@ -61,15 +64,16 @@ export interface StepAffaireValue {
         <div class="sel-header">
           <span class="aff-ref">{{ selectedAffaire()!.reference }}</span>
           <span class="aff-name">{{ selectedAffaire()!.intitule }}</span>
-          <button type="button" class="clear-btn" (click)="clearAffaire()" title="Désélectionner">&times;</button>
+          <button type="button" class="clear-btn" (click)="clearAffaire()"
+            [title]="'INVOICING.STEP_AFFAIRE.DESELECT' | translate">&times;</button>
         </div>
         <div class="sel-kpis">
           <div class="kpi">
-            <span class="kpi-label">Budget prévisionnel</span>
+            <span class="kpi-label">{{ 'INVOICING.STEP_AFFAIRE.BUDGET' | translate }}</span>
             <span class="kpi-val">{{ formatAmount(selectedAffaire()!.budgetPrevisionnel ?? 0) }}</span>
           </div>
           <div class="kpi">
-            <span class="kpi-label">RAF disponible</span>
+            <span class="kpi-label">{{ 'INVOICING.STEP_AFFAIRE.RAF' | translate }}</span>
             @if (rafLoading()) {
               <span class="kpi-val">…</span>
             } @else {
@@ -82,12 +86,12 @@ export interface StepAffaireValue {
         @if (rafBlocked()) {
           <div class="raf-alert raf-alert--block">
             <span class="material-symbols-outlined">block</span>
-            RAF épuisé — facturation bloquée (RG10).
+            {{ 'INVOICING.STEP_AFFAIRE.RAF_BLOCKED' | translate }}
           </div>
         } @else if (rafWarning()) {
           <div class="raf-alert raf-alert--warn">
             <span class="material-symbols-outlined">warning</span>
-            RAF faible ({{ formatPct(rafPct()) }}%) — vérifiez le montant.
+            {{ 'INVOICING.STEP_AFFAIRE.RAF_LOW' | translate: { pct: formatPct(rafPct()) } }}
           </div>
         }
       </div>
@@ -97,54 +101,40 @@ export interface StepAffaireValue {
   <!-- Mode de facturation (affiché si l'affaire n'a pas de mode valide) -->
   @if (selectedAffaire() && !validBillingModeFromAffaire()) {
     <div class="field">
-      <label>Mode de facturation *</label>
-      <div class="form-select-wrap">
-        <select class="form-input" [formControl]="form.controls['billingMode']"
-          [class.invalid]="form.controls['billingMode'].invalid && form.controls['billingMode'].touched">
-          <option value="">Sélectionner…</option>
-          <option value="TM">TM — Temps &amp; Matériaux</option>
-          <option value="CP">CP — Coût Plus</option>
-          <option value="AV">AV — Avancement</option>
-          <option value="JAL">JAL — Jalons</option>
-          <option value="RMB">RMB — Remboursement</option>
-        </select>
-      </div>
+      <label>{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODE_LABEL' | translate }}</label>
+      <daf-select
+        [options]="billingModeOptions"
+        [selected]="form.controls['billingMode'].value ? [form.controls['billingMode'].value] : []"
+        [config]="billingSelectConfig"
+        (selectedChange)="form.controls['billingMode'].setValue($event[0] || ''); form.controls['billingMode'].markAsTouched()" />
       @if (form.controls['billingMode'].invalid && form.controls['billingMode'].touched) {
-        <span class="error-msg">Mode de facturation requis.</span>
+        <span class="error-msg">{{ 'INVOICING.STEP_AFFAIRE.BILLING_MODE_REQUIRED' | translate }}</span>
       }
     </div>
   }
 
   <!-- Type de facture -->
   <div class="field">
-    <label>Type de facture *</label>
-    <div class="form-select-wrap">
-      <select class="form-input" [formControl]="form.controls['invoiceType']"
-        [class.invalid]="form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched">
-        <option value="">Sélectionner le type…</option>
-        <option value="ACOMPTE">Facture d'acompte</option>
-        <option value="INTERMEDIAIRE">Facture de situation (Avancement)</option>
-        <option value="FINALE">Facture de solde</option>
-        <option value="AVOIR">Note d'avoir</option>
-      </select>
-    </div>
+    <label>{{ 'INVOICING.STEP_AFFAIRE.TYPE_LABEL' | translate }}</label>
+    <daf-select
+      [options]="typeOptions"
+      [selected]="form.controls['invoiceType'].value ? [form.controls['invoiceType'].value] : []"
+      [config]="typeSelectConfig"
+      (selectedChange)="form.controls['invoiceType'].setValue($event[0] || ''); form.controls['invoiceType'].markAsTouched()" />
     @if (form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched) {
-      <span class="error-msg">Type requis.</span>
+      <span class="error-msg">{{ 'INVOICING.STEP_AFFAIRE.TYPE_REQUIRED' | translate }}</span>
     }
   </div>
 
   <!-- TS associé (si affaire sélectionnée) -->
   @if (selectedAffaire() && tsList().length > 0) {
     <div class="field">
-      <label>TS associé (optionnel)</label>
-      <div class="form-select-wrap">
-        <select class="form-input" [formControl]="form.controls['tsId']">
-          <option [value]="null">Aucun</option>
-          @for (ts of tsList(); track ts.id) {
-            <option [value]="ts.id">{{ ts.referenceTs }} — {{ ts.intitule }} ({{ formatAmount(ts.montantEstime) }})</option>
-          }
-        </select>
-      </div>
+      <label>{{ 'INVOICING.STEP_AFFAIRE.TS_LABEL' | translate }}</label>
+      <daf-select
+        [options]="tsSelectOptions()"
+        [selected]="tsSelectedVal()"
+        [config]="tsSelectConfig"
+        (selectedChange)="form.controls['tsId'].setValue($event[0] ? +$event[0] : null)" />
     </div>
   }
 
@@ -152,10 +142,10 @@ export interface StepAffaireValue {
     <div class="step-actions">
       <button type="button" class="btn-cancel" (click)="cancel.emit()">
         <span class="material-symbols-outlined">close</span>
-        Annuler
+        {{ 'INVOICING.STEP_AFFAIRE.CANCEL' | translate }}
       </button>
       <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading()">
-        Suivant
+        {{ 'INVOICING.STEP_AFFAIRE.NEXT' | translate }}
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
     </div>
@@ -165,9 +155,29 @@ export interface StepAffaireValue {
   styleUrl: './step.component.scss',
 })
 export class StepAffaireComponent implements OnInit {
-  private readonly invSvc = inject(InvoiceService);
-  private readonly affSvc = inject(AffaireService);
-  private readonly fb     = inject(FormBuilder);
+  private readonly invSvc    = inject(InvoiceService);
+  private readonly affSvc    = inject(AffaireService);
+  private readonly fb        = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
+
+  readonly typeOptions = [
+    { value: 'ACOMPTE',       label: this.translate.instant('INVOICING.STEP_AFFAIRE.INVOICE_TYPES.ACOMPTE') },
+    { value: 'INTERMEDIAIRE', label: this.translate.instant('INVOICING.STEP_AFFAIRE.INVOICE_TYPES.INTERMEDIAIRE') },
+    { value: 'FINALE',        label: this.translate.instant('INVOICING.STEP_AFFAIRE.INVOICE_TYPES.FINALE') },
+    { value: 'AVOIR',         label: this.translate.instant('INVOICING.STEP_AFFAIRE.INVOICE_TYPES.AVOIR') },
+  ];
+
+  readonly billingModeOptions = [
+    { value: 'TM',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.TM')  },
+    { value: 'CP',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.CP')  },
+    { value: 'AV',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.AV')  },
+    { value: 'JAL', label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.JAL') },
+    { value: 'RMB', label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.RMB') },
+  ];
+
+  readonly typeSelectConfig    = { placeholder: this.translate.instant('INVOICING.STEP_AFFAIRE.TYPE_SELECT'), multiple: false, searchable: false, fullWidth: true };
+  readonly billingSelectConfig = { placeholder: this.translate.instant('INVOICING.STEP_AFFAIRE.SELECT'),      multiple: false, searchable: false, fullWidth: true };
+  readonly tsSelectConfig      = { placeholder: this.translate.instant('INVOICING.STEP_AFFAIRE.TS_NONE'),     multiple: false, searchable: true,  fullWidth: true };
 
   showActions = input<boolean>(true);
   nextStep    = output<StepAffaireValue>();
@@ -201,6 +211,19 @@ export class StepAffaireComponent implements OnInit {
     return (raf.rafDisponible / budget) * 100;
   });
   readonly rafWarning = computed(() => this.rafPct() < 20 && this.rafPct() > 0);
+  readonly tsSelectOptions = computed(() => [
+    { value: '', label: this.translate.instant('INVOICING.STEP_AFFAIRE.TS_NONE') },
+    ...this.tsList().map(ts => ({
+      value: String(ts.id),
+      label: `${ts.referenceTs} — ${ts.intitule} (${this.formatAmount(ts.montantEstime)})`,
+    })),
+  ]);
+
+  tsSelectedVal(): string[] {
+    const v = this.form.controls['tsId'].value;
+    return v != null ? [String(v)] : [];
+  }
+
   readonly rafBlocked = computed(() => {
     if (this.rafLoading()) return false;
     const raf = this.rafDetails();

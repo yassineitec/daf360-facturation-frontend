@@ -2,6 +2,7 @@ import { Component, inject, input, output } from '@angular/core';
 import {
   ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators,
 } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 import { TVA_RATES } from '../../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 
@@ -12,25 +13,27 @@ export interface StepLinesValue {
 @Component({
   selector: 'app-step-lines',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TranslatePipe],
   template: `
 <div class="step-lines">
 
   <div class="lines-header">
-    <span class="section-title">Lignes de facturation</span>
-    <button type="button" class="btn-add-line" (click)="addLine()">+ Ajouter une ligne</button>
+    <span class="section-title">{{ 'INVOICING.STEP_LINES.TITLE' | translate }}</span>
+    <button type="button" class="btn-add-line" (click)="addLine()">
+      {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
+    </button>
   </div>
 
   <div class="lines-table-wrap">
     <table class="lines-table">
       <thead>
         <tr>
-          <th class="col-desc">Description *</th>
-          <th class="col-num">Qté *</th>
-          <th class="col-num">PU HT *</th>
-          <th class="col-num">TVA</th>
-          <th class="col-num">Total HT</th>
-          <th class="col-num">Total TTC</th>
+          <th class="col-desc">{{ 'INVOICING.STEP_LINES.DESC' | translate }}</th>
+          <th class="col-num">{{ 'INVOICING.STEP_LINES.QTY' | translate }}</th>
+          <th class="col-num">{{ 'INVOICING.STEP_LINES.UNIT_PRICE' | translate }}</th>
+          <th class="col-num">{{ 'INVOICING.STEP_LINES.VAT' | translate }}</th>
+          <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_HT' | translate }}</th>
+          <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_TTC' | translate }}</th>
           <th class="col-action"></th>
         </tr>
       </thead>
@@ -41,7 +44,8 @@ export interface StepLinesValue {
               <td>
                 <input type="text" formControlName="description" class="td-input"
                   [class.invalid]="lg.get('description')!.invalid && lg.get('description')!.touched"
-                  maxlength="255" placeholder="Description de la prestation" />
+                  maxlength="255"
+                  [placeholder]="'INVOICING.STEP_LINES.DESC_PLACEHOLDER' | translate" />
               </td>
               <td>
                 <input type="number" formControlName="quantite" class="td-input td-num"
@@ -61,7 +65,7 @@ export interface StepLinesValue {
               <td class="td-computed">{{ formatAmount(lineHt(i)) }}</td>
               <td class="td-computed">{{ formatAmount(lineTtc(i)) }}</td>
               <td>
-                <button type="button" class="remove-line-btn" title="Supprimer" (click)="removeLine(i)"
+                <button type="button" class="remove-line-btn" title="✕" (click)="removeLine(i)"
                   [disabled]="linesArray.length === 1">✕</button>
               </td>
             </tr>
@@ -70,7 +74,7 @@ export interface StepLinesValue {
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="4" class="totals-label">Totaux</td>
+          <td colspan="4" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
           <td class="total-ht">{{ formatAmount(totalHt) }}</td>
           <td class="total-ttc">{{ formatAmount(totalTtc) }}</td>
           <td></td>
@@ -80,17 +84,17 @@ export interface StepLinesValue {
   </div>
 
   @if (form.invalid && form.touched) {
-    <div class="form-error">Toutes les lignes doivent être remplies correctement.</div>
+    <div class="form-error">{{ 'INVOICING.STEP_LINES.ERROR' | translate }}</div>
   }
 
   @if (showActions()) {
     <div class="step-actions">
       <button type="button" class="btn-back" (click)="prevStep.emit()">
         <span class="material-symbols-outlined">arrow_back</span>
-        Retour
+        {{ 'INVOICING.STEP_LINES.BACK' | translate }}
       </button>
       <button type="button" class="btn-next" (click)="next()" [disabled]="linesArray.length === 0">
-        Suivant
+        {{ 'INVOICING.STEP_LINES.NEXT' | translate }}
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
     </div>

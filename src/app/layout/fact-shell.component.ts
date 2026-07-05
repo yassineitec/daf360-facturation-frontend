@@ -16,64 +16,20 @@ interface AppNavDef {
   permission: string | null;
 }
 
-// Routes mirror the child paths defined in app.routes.ts
 const APP_NAV_DEFS: AppNavDef[] = [
-  { id: 'home', label: 'Accueil', icon: 'home', route: 'home', permission: null },
-  { id: 'affaires', label: 'Affaires', icon: 'work', route: 'affaires', permission: null },
-  { id: 'clients', label: 'Clients', icon: 'corporate_fare', route: 'clients', permission: null },
-  {
-    id: 'invoicing',
-    label: 'Factures',
-    icon: 'receipt_long',
-    route: 'invoicing',
-    permission: null,
-  },
-  { id: 'payments', label: 'Paiements', icon: 'credit_card', route: 'payments', permission: null },
-  {
-    id: 'reconciliation',
-    label: 'Rapprochement bancaire',
-    icon: 'account_balance',
-    route: 'payments/reconciliation',
-    permission: 'FACT_BANK_RECONCILIATION',
-  },
-  {
-    id: 'subcontracting',
-    label: 'Sous-traitance',
-    icon: 'group',
-    route: 'subcontracting',
-    permission: null,
-  },
-  { id: 'cost', label: 'Coûts', icon: 'payments', route: 'cost', permission: null },
-  {
-    id: 'cost-approval',
-    label: 'Approbation Coûts',
-    icon: 'price_check',
-    route: 'cost/approval',
-    permission: null,
-  },
-  {
-    id: 'suppliers',
-    label: 'Fournisseurs',
-    icon: 'storefront',
-    route: 'suppliers',
-    permission: null,
-  },
-  { id: 'reporting', label: 'Reporting', icon: 'bar_chart', route: 'reporting', permission: null },
-  {
-    id: 'admin',
-    label: 'Administration',
-    icon: 'admin_panel_settings',
-    route: 'admin',
-    permission: null,
-  },
-  {
-    id: 'admin-roles',
-    label: 'Rôles & Permissions',
-    icon: 'manage_accounts',
-    route: 'admin/roles',
-    permission: null,
-  },
+  { id: 'home',          label: 'Accueil',          icon: 'home',                 route: 'home',          permission: null },
+  { id: 'affaires',      label: 'Affaires',          icon: 'work',                 route: 'affaires',      permission: null },
+  { id: 'clients',       label: 'Clients',           icon: 'corporate_fare',       route: 'clients',       permission: null },
+  { id: 'invoicing',     label: 'Factures',          icon: 'receipt_long',         route: 'invoicing',     permission: null },
+  { id: 'payments',      label: 'Paiements',         icon: 'credit_card',          route: 'payments',      permission: null },
+  { id: 'subcontracting',label: 'Sous-traitance',    icon: 'group',                route: 'subcontracting',permission: null },
+  { id: 'cost',          label: 'Coûts',             icon: 'payments',             route: 'cost',          permission: null },
+  { id: 'cost-approval', label: 'Approbation Coûts', icon: 'price_check',          route: 'cost/approval', permission: null },
+  { id: 'suppliers',     label: 'Fournisseurs',      icon: 'storefront',           route: 'suppliers',     permission: null },
+  { id: 'reporting',     label: 'Reporting',         icon: 'bar_chart',            route: 'reporting',     permission: null },
+  { id: 'admin',         label: 'Administration',    icon: 'admin_panel_settings', route: 'admin',         permission: null },
 ];
+
 @Component({
   selector: 'app-fact-shell',
   standalone: true,
@@ -82,11 +38,11 @@ const APP_NAV_DEFS: AppNavDef[] = [
   styleUrl: './fact-shell.component.scss',
 })
 export class FactShellComponent implements OnInit {
-  private readonly userStore = inject(UserStore);
-  private readonly router = inject(Router);
+  private readonly userStore      = inject(UserStore);
+  private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
-  private readonly remoteStyles = inject(RemoteStylesService);
-  private readonly injector = inject(Injector);
+  private readonly remoteStyles   = inject(RemoteStylesService);
+  private readonly injector       = inject(Injector);
 
   ngOnInit(): void {
     this.remoteStyles.injectStyles(environment.stylesUrl);

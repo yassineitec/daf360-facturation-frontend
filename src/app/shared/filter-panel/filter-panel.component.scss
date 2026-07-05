@@ -1,0 +1,64 @@
+:host {
+  display: inline-block;
+}
+
+// ── Wrapper (trigger + panel, relative anchor) ─────────────────────────────
+.fp-host {
+  position: relative;
+  display: inline-block;
+}
+
+// ── Floating panel ─────────────────────────────────────────────────────────
+.fp-panel {
+  position: fixed;
+  width: 320px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 200;
+  overflow: hidden;
+}
+
+// ── Header ─────────────────────────────────────────────────────────────────
+.fp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+}
+
+.fp-header__icon {
+  font-size: 18px;
+  color: var(--color-on-surface-variant);
+}
+
+.fp-header__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-on-surface);
+  letter-spacing: -0.01em;
+}
+
+// ── Divider ────────────────────────────────────────────────────────────────
+.fp-divider {
+  height: 1px;
+  background: var(--color-outline-variant);
+}
+
+// ── Body (projected fields) ────────────────────────────────────────────────
+.fp-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ── Footer ─────────────────────────────────────────────────────────────────
+.fp-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px 16px;
+}

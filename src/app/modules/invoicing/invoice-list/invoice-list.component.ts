@@ -6,22 +6,25 @@ import {
 } from '../invoice.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { PaymentModalComponent } from '../payment-modal.component';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
-  SelectOption, ModalService, ModalRef,
+  SelectOption, SelectComponent, ModalService, ModalRef,
   CardComponent, ButtonComponent, PaginationComponent,
+  MultiDatePickerComponent,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent],
+  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })
 export class InvoiceListComponent implements OnInit {
-  private readonly svc    = inject(InvoiceService);
-  private readonly router = inject(Router);
-  private readonly route  = inject(ActivatedRoute);
-  private readonly modal  = inject(ModalService);
+  private readonly svc       = inject(InvoiceService);
+  private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
+  private readonly modal     = inject(ModalService);
+  private readonly translate = inject(TranslateService);
 
   @ViewChild('approvalTpl') approvalTpl!: TemplateRef<any>;
   private approvalRef: ModalRef | null = null;
@@ -40,14 +43,27 @@ export class InvoiceListComponent implements OnInit {
   approvalCommentSig = signal<string>('');
 
   filterStatutSel = signal<string[]>([]);
-  filterFrom      = signal<string>('');
-  filterTo        = signal<string>('');
+  filterDateRange = signal<Date | Date[] | null>(null);
   searchText      = signal<string>('');
+
+  readonly statutSelectConfig = {
+    placeholder: 'Statut',
+    multiple: false,
+    searchable: false,
+    fullWidth: false,
+  };
+
+  readonly dateRangeConfig = {
+    selectionMode: 'range' as const,
+    placeholder: 'Date ou plage de dates',
+    allowPastDays: true,
+    fullWidth: false,
+  };
 
   readonly PAGE_SIZE = 20;
 
   readonly statutSelectOptions: SelectOption[] = Object.entries(INVOICE_STATUT_CONFIG)
-    .map(([k, v]) => ({ value: k, label: v.label }));
+    .map(([k, v]) => ({ value: k, label: this.translate.instant(v.label) }));
 
   // ── KPI counts ────────────────────────────────────────────────────────────
   readonly statsEnAttente = computed(() =>
@@ -77,12 +93,16 @@ export class InvoiceListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
+    const range = this.filterDateRange();
+    const dates = Array.isArray(range) ? range : [];
+    const from  = dates[0] instanceof Date ? dates[0].toISOString().split('T')[0] : null;
+    const to    = dates[1] instanceof Date ? dates[1].toISOString().split('T')[0] : null;
     const filter: InvoiceFilter = {
       page:   this.currentPage(),
       size:   this.PAGE_SIZE,
       statut: this.filterStatutSel()[0] || null,
-      from:   this.filterFrom()         || null,
-      to:     this.filterTo()           || null,
+      from,
+      to,
       search: this.searchText().trim()  || null,
     };
     this.svc.getInvoices(filter).subscribe({
@@ -99,8 +119,9 @@ export class InvoiceListComponent implements OnInit {
     });
   }
 
-  onSearch():       void { this.currentPage.set(0); this.load(); }
-  onFilterChange(): void { this.currentPage.set(0); this.load(); }
+  onSearch():           void { this.currentPage.set(0); this.load(); }
+  onFilterChange():     void { this.currentPage.set(0); this.load(); }
+  onDateRangeChange():  void { this.currentPage.set(0); this.load(); }
 
   goToPage(p: number): void {
     if (p < 0 || p >= this.totalPages()) return;
@@ -150,13 +171,13 @@ export class InvoiceListComponent implements OnInit {
     this.approvalDecision = 'APPROVE';
     this.approvalCommentSig.set('');
     this.approvalRef = this.modal.open({
-      title: 'Décision de validation',
+      title: this.translate.instant('INVOICING.LIST.APPROVAL.TITLE'),
       body:  this.approvalTpl,
       size:  'md',
       closeOnBackdrop: false,
       buttons: [
-        { label: 'Annuler',   variant: 'secondary', action: r => r.close() },
-        { label: 'Confirmer', variant: 'primary',   action: _r => this.submitApproval() },
+        { label: this.translate.instant('INVOICING.LIST.APPROVAL.CANCEL'),  variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('INVOICING.LIST.APPROVAL.CONFIRM'), variant: 'primary',   action: _r => this.submitApproval() },
       ],
     });
   }

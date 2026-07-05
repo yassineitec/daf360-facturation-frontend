@@ -7,11 +7,15 @@ import {
   agingRowColor,
 } from '../payment.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
-import { CardComponent, ButtonComponent, PaginationComponent } from '@khalilrebhiitec/daf360';
+import {
+  CardComponent, ButtonComponent, PaginationComponent,
+  StatusBadgeComponent, BadgeVariant,
+  MultiDatePickerComponent,
+} from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-payments-dashboard',
-  imports: [FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent],
+  imports: [FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent, StatusBadgeComponent, MultiDatePickerComponent],
   templateUrl: './payments-dashboard.component.html',
   styleUrl:    './payments-dashboard.component.scss',
 })
@@ -34,9 +38,15 @@ export class PaymentsDashboardComponent implements OnInit {
   // Filters
   filterAffaireId = '';
   filterClientId  = '';
-  filterFrom      = '';
-  filterTo        = '';
+  filterDateRange = signal<Date | Date[] | null>(null);
   overdueOnly     = false;
+
+  readonly dateRangeConfig = {
+    selectionMode: 'range' as const,
+    placeholder: 'Date ou plage de dates',
+    allowPastDays: true,
+    fullWidth: false,
+  };
 
   readonly agingRowColor = agingRowColor;
 
@@ -56,13 +66,17 @@ export class PaymentsDashboardComponent implements OnInit {
   loadRows(): void {
     this.loadingRows.set(true);
     this.error.set(null);
+    const range = this.filterDateRange();
+    const dates = Array.isArray(range) ? range : [];
+    const from  = dates[0] instanceof Date ? dates[0].toISOString().split('T')[0] : null;
+    const to    = dates[1] instanceof Date ? dates[1].toISOString().split('T')[0] : null;
     const filter: AgingFilter = {
       page:        this.currentPage(),
       size:        this.PAGE_SIZE,
       affaireId:   this.filterAffaireId ? +this.filterAffaireId : null,
       clientId:    this.filterClientId  ? +this.filterClientId  : null,
-      from:        this.filterFrom  || null,
-      to:          this.filterTo    || null,
+      from,
+      to,
       overdueOnly: this.overdueOnly || undefined,
     };
     this.svc.getAgingRows(filter).subscribe({
@@ -79,7 +93,8 @@ export class PaymentsDashboardComponent implements OnInit {
     });
   }
 
-  onFilterChange(): void { this.currentPage.set(0); this.loadRows(); }
+  onFilterChange():    void { this.currentPage.set(0); this.loadRows(); }
+  onDateRangeChange(): void { this.currentPage.set(0); this.loadRows(); }
 
   goToPage(p: number): void {
     if (p < 0 || p >= this.totalPages()) return;
@@ -117,6 +132,12 @@ export class PaymentsDashboardComponent implements OnInit {
       RELANCE_3:      '3e relance',
     };
     return labels[type] ?? type;
+  }
+
+  retardVariant(joursRetard: number): BadgeVariant {
+    if (joursRetard > 60) return 'danger';
+    if (joursRetard > 30) return 'warning';
+    return 'neutral';
   }
 
   get pages(): number[] {

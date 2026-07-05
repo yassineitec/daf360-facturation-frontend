@@ -27,29 +27,6 @@ $teal-bg:     rgba(#79d7be, 0.15);
   min-height: 100%;
 }
 
-// ── Page header ───────────────────────────────────────────────────────────────
-.inv-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-
-  &__title {
-    font-size: 24px;
-    font-weight: 800;
-    line-height: 32px;
-    color: $on-surface;
-    margin: 0 0 2px;
-    letter-spacing: -0.02em;
-  }
-
-  &__sub {
-    font-size: 12px;
-    color: #3e4945;
-    margin: 0;
-  }
-}
 
 // ── KPI Grid ──────────────────────────────────────────────────────────────────
 .kpi-grid {

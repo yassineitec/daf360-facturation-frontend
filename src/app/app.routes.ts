@@ -1,12 +1,42 @@
-import { Routes }          from '@angular/router';
-import { authGuard }        from './core/auth.guard';
-import { FactShellComponent } from './layout/fact-shell.component';
+import { Routes }                        from '@angular/router';
+import { ENVIRONMENT_INITIALIZER, DestroyRef, inject } from '@angular/core';
+import { authGuard }                      from './core/auth.guard';
+import { FactShellComponent }             from './layout/fact-shell.component';
+import { TranslateService, TranslationObject } from '@ngx-translate/core';
+import frTranslations from '../../public/i18n/fr.json';
+import enTranslations from '../../public/i18n/en.json';
+
+const I18N: Record<string, TranslationObject> = {
+  fr: frTranslations as unknown as TranslationObject,
+  en: enTranslations as unknown as TranslationObject,
+};
 
 export const routes: Routes = [
   {
     path: '',
     component: FactShellComponent,
     canActivate: [authGuard],
+    providers: [
+      {
+        provide: ENVIRONMENT_INITIALIZER,
+        multi: true,
+        useValue: () => {
+          const translate  = inject(TranslateService, { optional: true });
+          if (!translate) return;
+          const destroyRef = inject(DestroyRef);
+
+          const merge = () =>
+            Object.entries(I18N).forEach(([lang, data]) =>
+              translate.setTranslation(lang, data, true));
+
+          merge(); // initial merge
+
+          // Re-merge after every shell language-load so the HTTP loader never wipes our keys
+          const sub = translate.onLangChange.subscribe(() => merge());
+          destroyRef.onDestroy(() => sub.unsubscribe());
+        },
+      },
+    ],
     children: [
       {
         path: 'affaires',

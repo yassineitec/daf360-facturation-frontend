@@ -7,29 +7,6 @@
   gap: 20px;
 }
 
-// ── Page header ───────────────────────────────────────────────────────────────
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.page-title {
-  font-size: 1.875rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #111827;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.btn-new { @include btn-new($brand-slate); }
 
 // ── KPI Grid ──────────────────────────────────────────────────────────────────
 .kpi-grid {

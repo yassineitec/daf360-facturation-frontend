@@ -1,16 +1,17 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 import { InvoiceService } from '../invoice.service';
 import { InvoiceDetail, CREDIT_NOTE_REASONS } from '../invoice.model';
 
 @Component({
   selector: 'app-credit-note-modal',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TranslatePipe],
   template: `
 <div class="overlay" (click)="onOverlay($event)">
   <div class="modal">
     <div class="modal-header">
-      <h2>Émettre un avoir</h2>
+      <h2>{{ 'INVOICING.CREDIT_NOTE_MODAL.TITLE' | translate }}</h2>
       <button class="close-btn" type="button" (click)="cancel()">&times;</button>
     </div>
 
@@ -22,31 +23,34 @@ import { InvoiceDetail, CREDIT_NOTE_REASONS } from '../invoice.model';
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="modal-body">
       <div class="field">
-        <label for="cn-reason">Motif *</label>
+        <label for="cn-reason">{{ 'INVOICING.CREDIT_NOTE_MODAL.REASON_LABEL' | translate }}</label>
         <select id="cn-reason" formControlName="reasonCode" class="form-input"
           [class.invalid]="f['reasonCode'].invalid && f['reasonCode'].touched">
-          <option value="">Sélectionner un motif…</option>
+          <option value="">{{ 'INVOICING.CREDIT_NOTE_MODAL.REASON_SELECT' | translate }}</option>
           @for (opt of reasonOptions; track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
+            <option [value]="opt.value">{{ opt.label | translate }}</option>
           }
         </select>
         @if (f['reasonCode'].invalid && f['reasonCode'].touched) {
-          <span class="error-msg">Motif requis.</span>
+          <span class="error-msg">{{ 'INVOICING.CREDIT_NOTE_MODAL.REASON_REQUIRED' | translate }}</span>
         }
       </div>
 
       <div class="field">
-        <label for="cn-text">Détail / commentaire</label>
+        <label for="cn-text">{{ 'INVOICING.CREDIT_NOTE_MODAL.DETAIL_LABEL' | translate }}</label>
         <textarea id="cn-text" formControlName="reasonText" class="form-input" rows="3"
-          maxlength="500" placeholder="Précisions optionnelles…"></textarea>
+          maxlength="500"
+          [placeholder]="'INVOICING.CREDIT_NOTE_MODAL.DETAIL_PLACEHOLDER' | translate"></textarea>
       </div>
 
       <div class="field">
-        <label for="cn-amount">Montant TTC de l'avoir ({{ invoice().devise }})</label>
+        <label for="cn-amount">
+          {{ 'INVOICING.CREDIT_NOTE_MODAL.AMOUNT_LABEL' | translate: { currency: invoice().devise } }}
+        </label>
         <input id="cn-amount" type="number" formControlName="montantTtc" class="form-input"
           step="0.01" min="0.01" [attr.max]="invoice().montantTtc"
-          placeholder="Laisser vide pour avoir total" />
-        <span class="field-hint">Si vide, l'avoir sera égal au montant total de la facture.</span>
+          [placeholder]="'INVOICING.CREDIT_NOTE_MODAL.AMOUNT_PLACEHOLDER' | translate" />
+        <span class="field-hint">{{ 'INVOICING.CREDIT_NOTE_MODAL.AMOUNT_HINT' | translate }}</span>
       </div>
 
       @if (serverError()) {
@@ -54,9 +58,11 @@ import { InvoiceDetail, CREDIT_NOTE_REASONS } from '../invoice.model';
       }
 
       <div class="modal-actions">
-        <button type="button" class="btn-cancel" (click)="cancel()">Annuler</button>
+        <button type="button" class="btn-cancel" (click)="cancel()">
+          {{ 'INVOICING.CREDIT_NOTE_MODAL.CANCEL' | translate }}
+        </button>
         <button type="submit" class="btn-save btn-save--warning" [disabled]="saving()">
-          {{ saving() ? 'Émission…' : 'Émettre l\'avoir' }}
+          {{ saving() ? ('INVOICING.CREDIT_NOTE_MODAL.SAVING' | translate) : ('INVOICING.CREDIT_NOTE_MODAL.SUBMIT' | translate) }}
         </button>
       </div>
     </form>

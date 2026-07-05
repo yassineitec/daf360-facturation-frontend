@@ -3,13 +3,13 @@
   @if (loading()) {
     <div class="state-box">
       <div class="spinner"></div>
-      <span class="text-body-md text-muted">Chargement de l'affaire…</span>
+      <span class="text-body-md text-muted">{{ 'AFFAIRES.DETAIL.LOADING' | translate }}</span>
     </div>
   } @else if (error()) {
     <div class="state-box">
       <span class="material-symbols-outlined state-icon">error_outline</span>
       <p class="text-body-md text-muted">{{ error() }}</p>
-      <button class="btn-retry" (click)="loadAll()">Réessayer</button>
+      <button class="btn-retry" (click)="loadAll()">{{ 'AFFAIRES.DETAIL.RETRY' | translate }}</button>
     </div>
   } @else if (affaire()) {
 
@@ -23,11 +23,11 @@
           <h1 class="text-headline-xl">{{ affaire()!.intitule }} — {{ affaire()!.reference }}</h1>
           <app-status-badge [status]="affaire()!.statut" />
           @if (!affaire()!.budgetValide) {
-            <span class="badge-warn">Budget non validé</span>
+            <span class="badge-warn">{{ 'AFFAIRES.DETAIL.BUDGET_NOT_VALIDATED' | translate }}</span>
           }
         </div>
         <p class="text-body-sm text-muted">
-          Dernière mise à jour : {{ formatDate(affaire()!.updatedAt ?? affaire()!.createdAt) }}
+          {{ 'AFFAIRES.DETAIL.LAST_UPDATE' | translate }} {{ formatDate(affaire()!.updatedAt ?? affaire()!.createdAt) }}
         </p>
       </div>
     </header>
@@ -41,7 +41,7 @@
 
       <div class="kpi-card">
         <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">CA Encaissement</p>
+          <p class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.KPI.CA' | translate }}</p>
           <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">account_balance_wallet</span>
         </div>
         <div class="kpi-card__value-row">
@@ -49,13 +49,13 @@
         </div>
         <div class="kpi-card__sub kpi-card__sub--primary">
           <span class="material-symbols-outlined">trending_up</span>
-          <span>+12% vs mois dernier</span>
+          <span>{{ 'AFFAIRES.DETAIL.KPI.CA_SUB' | translate }}</span>
         </div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">RAF Disponible</p>
+          <p class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.KPI.RAF' | translate }}</p>
           <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--secondary">request_quote</span>
         </div>
         <div class="kpi-card__value-row">
@@ -64,7 +64,7 @@
         @if (raf() && raf()!.budgetPrevisionnel > 0) {
           <div class="kpi-card__progress">
             <div class="kpi-card__progress-row">
-              <span class="text-body-sm text-muted">Utilisation Budget</span>
+              <span class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.KPI.RAF_USAGE' | translate }}</span>
               <span class="text-body-sm text-secondary">
                 {{ ((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 | number:'1.0-0') }}%
               </span>
@@ -79,7 +79,7 @@
 
       <div class="kpi-card">
         <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">WIP (En cours)</p>
+          <p class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.KPI.WIP' | translate }}</p>
           <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--tertiary">pending_actions</span>
         </div>
         <div class="kpi-card__value-row">
@@ -87,13 +87,13 @@
         </div>
         <div class="kpi-card__sub kpi-card__sub--tertiary">
           <span class="material-symbols-outlined">schedule</span>
-          <span>Facturation prévue J+5</span>
+          <span>{{ 'AFFAIRES.DETAIL.KPI.WIP_SUB' | translate }}</span>
         </div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">Marge Brute</p>
+          <p class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.KPI.MARGIN' | translate }}</p>
           <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">analytics</span>
         </div>
         <div class="kpi-card__value-row">
@@ -101,7 +101,7 @@
         </div>
         <div class="kpi-card__sub kpi-card__sub--primary">
           <span class="material-symbols-outlined">target</span>
-          <span>Objectif : 35%</span>
+          <span>{{ 'AFFAIRES.DETAIL.KPI.MARGIN_TARGET' | translate }}</span>
         </div>
       </div>
 
@@ -111,15 +111,15 @@
     @if (raf() && raf()!.budgetPrevisionnel > 0) {
       <div class="glass-card raf-section">
         <div class="raf-section__header">
-          <h2 class="text-title-md">Suivi RAF &amp; Consommation</h2>
+          <h2 class="text-title-md">{{ 'AFFAIRES.DETAIL.RAF_SECTION.TITLE' | translate }}</h2>
           <span class="text-body-sm text-primary" style="font-weight:700">
-            Budget Total : {{ formatAmount(raf()!.budgetPrevisionnel, affaireDevise()) }}
+            {{ 'AFFAIRES.DETAIL.RAF_SECTION.BUDGET_TOTAL' | translate }} {{ formatAmount(raf()!.budgetPrevisionnel, affaireDevise()) }}
           </span>
         </div>
         <div class="raf-bars">
           <div class="raf-bar-item">
             <div class="raf-bar-item__label">
-              <span class="text-label-bold text-muted">Facturé</span>
+              <span class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.RAF_SECTION.INVOICED' | translate }}</span>
               <span class="text-label-bold text-primary">
                 {{ (raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
               </span>
@@ -131,7 +131,7 @@
           </div>
           <div class="raf-bar-item">
             <div class="raf-bar-item__label">
-              <span class="text-label-bold text-muted">TS Intégré</span>
+              <span class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.RAF_SECTION.TS_INTEGRATED' | translate }}</span>
               <span class="text-label-bold text-secondary">
                 {{ (raf()!.montantTsIntegres / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
               </span>
@@ -143,7 +143,7 @@
           </div>
           <div class="raf-bar-item">
             <div class="raf-bar-item__label">
-              <span class="text-label-bold text-muted">Restant (RAF)</span>
+              <span class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.RAF_SECTION.REMAINING' | translate }}</span>
               <span class="text-label-bold text-light">
                 {{ (raf()!.rafDisponible / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
               </span>
@@ -167,54 +167,54 @@
         <section class="glass-card section-card">
           <h2 class="section-card__title text-title-md" style="margin-bottom:20px">
             <span class="material-symbols-outlined text-primary">info</span>
-            Informations Générales
+            {{ 'AFFAIRES.DETAIL.INFO.TITLE' | translate }}
           </h2>
           <div class="info-grid-2col">
             <div class="info-field">
-              <p class="text-body-sm text-muted">Client</p>
+              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.CLIENT' | translate }}</p>
               <p class="text-body-md">{{ affaire()!.clientName || '—' }}</p>
             </div>
             <div class="info-field">
-              <p class="text-body-sm text-muted">Manager de projet</p>
+              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.MANAGER' | translate }}</p>
               <p class="text-body-md">{{ affaire()!.responsableFullName || '—' }}</p>
             </div>
             <div class="info-field">
-              <p class="text-body-sm text-muted">Mode de Facturation</p>
+              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.BILLING_MODE' | translate }}</p>
               <p class="text-body-md">{{ affaire()!.billingMode || '—' }}</p>
             </div>
             <div class="info-field">
-              <p class="text-body-sm text-muted">Devise</p>
+              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.CURRENCY' | translate }}</p>
               <p class="text-body-md">{{ affaireDevise() }}</p>
             </div>
             <div class="info-field">
-              <p class="text-body-sm text-muted">Période du contrat</p>
+              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.PERIOD' | translate }}</p>
               <p class="text-body-md">{{ formatDate(affaire()!.dateDebut) }} — {{ formatDate(affaire()!.dateFin) }}</p>
             </div>
             <div class="info-field">
-              <p class="text-body-sm text-muted">Engagement</p>
+              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.ENGAGEMENT' | translate }}</p>
               <p class="text-body-md">{{ typeLabel() }}</p>
             </div>
             <div class="info-field">
-              <p class="text-body-sm text-muted">Budget validé</p>
+              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.BUDGET_VALIDATED' | translate }}</p>
               <p class="text-body-md" [style.color]="affaire()!.budgetValide ? '#006c49' : '#d97706'">
-                {{ affaire()!.budgetValide ? 'Oui ✓' : 'Non ⚠' }}
+                {{ affaire()!.budgetValide ? ('AFFAIRES.DETAIL.INFO.YES' | translate) : ('AFFAIRES.DETAIL.INFO.NO' | translate) }}
               </p>
             </div>
             @if (affaire()!.doc360Ref) {
               <div class="info-field">
-                <p class="text-body-sm text-muted">Doc360</p>
+                <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.DOC360' | translate }}</p>
                 <p class="text-body-md text-primary info-ref">{{ affaire()!.doc360Ref }}</p>
               </div>
             }
             @if (affaire()!.erpReference) {
               <div class="info-field">
-                <p class="text-body-sm text-muted">Réf. ERP</p>
+                <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.ERP_REF' | translate }}</p>
                 <p class="text-body-md text-primary info-ref">{{ affaire()!.erpReference }}</p>
               </div>
             }
             @if (affaire()!.notes) {
               <div class="info-field info-field--full">
-                <p class="text-body-sm text-muted">Notes</p>
+                <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.NOTES' | translate }}</p>
                 <p class="text-body-md info-notes">{{ affaire()!.notes }}</p>
               </div>
             }
@@ -227,7 +227,7 @@
                   [attr.aria-expanded]="isOpen('ts')">
             <h2 class="text-title-md section-card__title">
               <span class="material-symbols-outlined text-primary">add_task</span>
-              Budget &amp; TS
+              {{ 'AFFAIRES.DETAIL.SECTIONS.BUDGET_TS' | translate }}
               @if (tsList().length > 0) {
                 <span class="section-count">{{ tsList().length }}</span>
               }
@@ -240,7 +240,7 @@
                 <span></span>
                 <button class="btn-primary" *appHasPermission="'FACT_CREATE_TS'" (click)="openTsForm(); $event.stopPropagation()">
                   <span class="material-symbols-outlined">add</span>
-                  Nouveau TS
+                  {{ 'AFFAIRES.DETAIL.SECTIONS.NEW_TS' | translate }}
                 </button>
               </div>
               <div class="ts-table-wrap">
@@ -261,7 +261,7 @@
                     [attr.aria-expanded]="isOpen('soustraitance')">
               <h2 class="text-title-md section-card__title">
                 <span class="material-symbols-outlined text-primary">engineering</span>
-                Sous-traitance
+                {{ 'AFFAIRES.DETAIL.SECTIONS.SUBCONTRACTING' | translate }}
               </h2>
               <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('soustraitance')">expand_more</span>
             </button>
@@ -284,7 +284,7 @@
                     [attr.aria-expanded]="isOpen('facturation')">
               <h2 class="text-title-md section-card__title">
                 <span class="material-symbols-outlined text-primary">receipt_long</span>
-                Facturation
+                {{ 'AFFAIRES.DETAIL.SECTIONS.BILLING' | translate }}
                 <span class="badge-billing">{{ affaire()!.billingMode }}</span>
               </h2>
               <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('facturation')">expand_more</span>
@@ -307,7 +307,7 @@
             </button>
             @if (isOpen(section.key)) {
               <div class="collapsible__body stub-body text-body-sm">
-                Module à venir dans la prochaine itération.
+                {{ 'AFFAIRES.DETAIL.SECTIONS.STUB' | translate }}
               </div>
             }
           </section>
@@ -316,18 +316,15 @@
         <!-- ── Indicateurs de Pilotage ──────────────────────────────────── -->
         @if (raf() && raf()!.budgetPrevisionnel > 0) {
           <section class="indicateurs-section">
-            <h2 class="indicateurs-title">Indicateurs de Pilotage</h2>
+            <h2 class="indicateurs-title">{{ 'AFFAIRES.DETAIL.INDICATORS.TITLE' | translate }}</h2>
             <div class="indicateurs-grid">
 
-              <!-- Taux Facturation -->
               <div class="indicateur-card">
-                <p class="indicateur-card__label">Taux Facturation</p>
+                <p class="indicateur-card__label">{{ 'AFFAIRES.DETAIL.INDICATORS.BILLING_RATE' | translate }}</p>
                 <div class="gauge-wrap">
                   <svg width="64" height="64" style="transform:rotate(-90deg)">
-                    <circle cx="32" cy="32" r="28" fill="transparent"
-                            stroke="#e5e7eb" stroke-width="4"></circle>
-                    <circle cx="32" cy="32" r="28" fill="transparent"
-                            stroke="#006b58" stroke-width="4"
+                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="#e5e7eb" stroke-width="4"></circle>
+                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="#006b58" stroke-width="4"
                             stroke-dasharray="175"
                             [attr.stroke-dashoffset]="gaugeOffset(raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100)"></circle>
                   </svg>
@@ -337,15 +334,12 @@
                 </div>
               </div>
 
-              <!-- Consommation Budget (cercle) -->
               <div class="indicateur-card">
-                <p class="indicateur-card__label">Taux Conso.</p>
+                <p class="indicateur-card__label">{{ 'AFFAIRES.DETAIL.INDICATORS.CONSUMPTION_RATE' | translate }}</p>
                 <div class="gauge-wrap">
                   <svg width="64" height="64" style="transform:rotate(-90deg)">
-                    <circle cx="32" cy="32" r="28" fill="transparent"
-                            stroke="#e5e7eb" stroke-width="4"></circle>
-                    <circle cx="32" cy="32" r="28" fill="transparent"
-                            stroke="#006c49" stroke-width="4"
+                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="#e5e7eb" stroke-width="4"></circle>
+                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="#006c49" stroke-width="4"
                             stroke-dasharray="175"
                             [attr.stroke-dashoffset]="gaugeOffset((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100)"></circle>
                   </svg>
@@ -355,20 +349,18 @@
                 </div>
               </div>
 
-              <!-- Conso Budget en montant -->
               <div class="indicateur-card" style="justify-content:center">
-                <p class="indicateur-card__label">Conso Budget</p>
+                <p class="indicateur-card__label">{{ 'AFFAIRES.DETAIL.INDICATORS.BUDGET_CONSUMED' | translate }}</p>
                 <p class="indicateur-card__value-big">
                   {{ formatAmount(raf()!.budgetPrevisionnel - raf()!.rafDisponible, affaireDevise()) }}
                 </p>
                 <p class="indicateur-card__value-sub">
-                  SUR {{ formatAmount(raf()!.budgetPrevisionnel, affaireDevise()) }}
+                  {{ 'AFFAIRES.DETAIL.INDICATORS.ON' | translate }} {{ formatAmount(raf()!.budgetPrevisionnel, affaireDevise()) }}
                 </p>
               </div>
 
-              <!-- Évolution Fin. — mini bar chart -->
               <div class="indicateur-card" style="justify-content:center">
-                <p class="indicateur-card__label">Évolution Fin.</p>
+                <p class="indicateur-card__label">{{ 'AFFAIRES.DETAIL.INDICATORS.EVOLUTION' | translate }}</p>
                 <div class="mini-bars">
                   <div class="bar" style="height:50%"></div>
                   <div class="bar bar--filled" style="height:65%"></div>
@@ -389,7 +381,7 @@
 
         <!-- Changement de Statut -->
         <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
-          <h2 class="text-title-md" style="margin-bottom:16px">Changement de Statut</h2>
+          <h2 class="text-title-md" style="margin-bottom:16px">{{ 'AFFAIRES.DETAIL.SIDEBAR.STATUS_CHANGE' | translate }}</h2>
           <div class="statut-grid">
             @for (s of ALL_STATUTS; track s) {
               <button class="statut-btn"
@@ -397,12 +389,11 @@
                       [disabled]="affaire()!.statut === s || !canTransitionTo(s)"
                       (click)="targetStatut.set(s); motif.set(''); showStatutModal.set(true)">
                 <div class="statut-btn__icon">
-                  <span class="material-symbols-outlined"
-                        [class.icon-filled]="affaire()!.statut === s">
+                  <span class="material-symbols-outlined" [class.icon-filled]="affaire()!.statut === s">
                     {{ statutIcon(s) }}
                   </span>
                 </div>
-                <span class="text-label-bold">{{ statutLabel(s) }}</span>
+                <span class="text-label-bold">{{ statutLabel(s) | translate }}</span>
                 @if (affaire()!.statut === s) {
                   <div class="statut-btn__check">
                     <span class="material-symbols-outlined">check</span>
@@ -416,12 +407,16 @@
         <!-- Validation budget -->
         @if (!affaire()!.budgetValide) {
           <section class="glass-card section-card budget-valid-section" *appHasPermission="'FACT_VALIDER_BUDGET'">
-            <h2 class="text-title-md">Validation du budget</h2>
+            <h2 class="text-title-md">{{ 'AFFAIRES.DETAIL.SIDEBAR.VALIDATE_BUDGET' | translate }}</h2>
             <p class="text-body-sm text-muted">
-              Budget de {{ formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) }} en attente.
+              {{ 'AFFAIRES.DETAIL.SIDEBAR.BUDGET_PENDING' | translate: { amount: formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) } }}
             </p>
             <button class="btn-full btn-full--primary" [disabled]="budgetLoading()" (click)="validerBudget()">
-              @if (budgetLoading()) { Validation… } @else { Valider le budget }
+              @if (budgetLoading()) {
+                {{ 'AFFAIRES.DETAIL.SIDEBAR.VALIDATING' | translate }}
+              } @else {
+                {{ 'AFFAIRES.DETAIL.SIDEBAR.VALIDATE_BTN' | translate }}
+              }
             </button>
           </section>
         }
@@ -429,26 +424,26 @@
         <!-- Modifier l'affaire -->
         @if (affaire()!.statut === 'EN_COURS' || affaire()!.statut === 'SUSPENDUE') {
           <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
-            <h2 class="text-title-md" style="margin-bottom:14px">Modifier l'affaire</h2>
+            <h2 class="text-title-md" style="margin-bottom:14px">{{ 'AFFAIRES.DETAIL.SIDEBAR.EDIT_TITLE' | translate }}</h2>
             <div class="quick-links">
               <button class="quick-link" (click)="openEdit()">
                 <div class="quick-link__left">
                   <span class="material-symbols-outlined text-primary">person_check</span>
-                  <span class="text-label-bold">Responsables</span>
+                  <span class="text-label-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.EDIT_MANAGERS' | translate }}</span>
                 </div>
                 <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
               </button>
               <button class="quick-link" (click)="openEdit()">
                 <div class="quick-link__left">
                   <span class="material-symbols-outlined text-primary">calendar_month</span>
-                  <span class="text-label-bold">Planning</span>
+                  <span class="text-label-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.EDIT_PLANNING' | translate }}</span>
                 </div>
                 <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
               </button>
               <button class="quick-link" (click)="openEdit()">
                 <div class="quick-link__left">
                   <span class="material-symbols-outlined text-primary">description</span>
-                  <span class="text-label-bold">Informations Générales</span>
+                  <span class="text-label-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.EDIT_INFO' | translate }}</span>
                 </div>
                 <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
               </button>
@@ -458,31 +453,31 @@
 
         <!-- Actions Rapides -->
         <section class="glass-card section-card">
-          <h2 class="text-title-md" style="margin-bottom:14px">Actions Rapides</h2>
+          <h2 class="text-title-md" style="margin-bottom:14px">{{ 'AFFAIRES.DETAIL.SIDEBAR.ACTIONS_TITLE' | translate }}</h2>
           <div class="action-btns">
             <a class="btn-full btn-full--primary" [routerLink]="['../../invoicing']" [queryParams]="{ affaire: numId }">
               <span class="material-symbols-outlined">add_card</span>
-              Nouvelle Facture
+              {{ 'AFFAIRES.DETAIL.SIDEBAR.NEW_INVOICE' | translate }}
             </a>
             <a class="btn-full btn-full--outline-secondary" [routerLink]="['../../payments']" [queryParams]="{ affaire: numId }">
               <span class="material-symbols-outlined">payments</span>
-              Consulter Paiements
+              {{ 'AFFAIRES.DETAIL.SIDEBAR.VIEW_PAYMENTS' | translate }}
             </a>
             <a class="btn-full btn-full--outline-primary" [routerLink]="['../../invoicing']" [queryParams]="{ affaire: numId }">
               <span class="material-symbols-outlined">receipt_long</span>
-              Voir factures
+              {{ 'AFFAIRES.DETAIL.SIDEBAR.VIEW_INVOICES' | translate }}
             </a>
           </div>
         </section>
 
         <!-- Traçabilité & Alertes -->
         <section class="glass-card section-card tracability">
-          <h2 class="text-title-md" style="margin-bottom:16px">Traçabilité &amp; Alertes</h2>
+          <h2 class="text-title-md" style="margin-bottom:16px">{{ 'AFFAIRES.DETAIL.SIDEBAR.TRACEABILITY' | translate }}</h2>
           <div class="trace-list">
             <div class="trace-item">
               <span class="material-symbols-outlined text-light">history</span>
               <div>
-                <p class="text-label-caps text-muted">Créé le</p>
+                <p class="text-label-caps text-muted">{{ 'AFFAIRES.DETAIL.SIDEBAR.CREATED_AT' | translate }}</p>
                 <p class="text-body-sm">{{ formatDate(affaire()!.createdAt) }}</p>
               </div>
             </div>
@@ -490,7 +485,7 @@
               <div class="trace-item">
                 <span class="material-symbols-outlined text-light">edit_note</span>
                 <div>
-                  <p class="text-label-caps text-muted">Dernière modification</p>
+                  <p class="text-label-caps text-muted">{{ 'AFFAIRES.DETAIL.SIDEBAR.LAST_MODIFIED' | translate }}</p>
                   <p class="text-body-sm">{{ formatDate(affaire()!.updatedAt) }}</p>
                 </div>
               </div>
@@ -498,7 +493,7 @@
             <div class="trace-item">
               <span class="material-symbols-outlined text-light">tune</span>
               <div>
-                <p class="text-label-caps text-muted">Seuil alerte RAF</p>
+                <p class="text-label-caps text-muted">{{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_THRESHOLD' | translate }}</p>
                 <p class="text-body-sm">{{ affaire()!.rafAlerteSeuilPct }}%</p>
               </div>
             </div>
@@ -508,12 +503,11 @@
                (1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 >= affaire()!.rafAlerteSeuilPct) {
             <div class="raf-alert">
               <div class="raf-alert__header">
-                <span class="material-symbols-outlined"
-                      style="font-variation-settings:'FILL' 1">warning</span>
-                <span class="text-label-bold" style="color:#d97706">Seuil d'alerte RAF</span>
+                <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">warning</span>
+                <span class="text-label-bold" style="color:#d97706">{{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_ALERT_TITLE' | translate }}</span>
               </div>
               <p class="text-body-sm" style="color:#744800; margin:4px 0 0">
-                Le projet approche les {{ affaire()!.rafAlerteSeuilPct }}% de consommation du budget initial.
+                {{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_ALERT_TEXT' | translate: { pct: affaire()!.rafAlerteSeuilPct } }}
               </p>
               <div class="raf-alert__bar">
                 <div class="raf-alert__fill"
@@ -536,34 +530,39 @@
   <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showStatutModal.set(false)">
     <div class="modal-box" role="dialog" aria-labelledby="statut-modal-title">
       <div class="modal-header">
-        <h2 class="text-title-md" id="statut-modal-title">Changer le statut</h2>
+        <h2 class="text-title-md" id="statut-modal-title">{{ 'AFFAIRES.DETAIL.MODAL.STATUS_TITLE' | translate }}</h2>
         <button class="close-btn" (click)="showStatutModal.set(false)" aria-label="Fermer">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
       <div class="modal-body">
         <div class="field">
-          <label class="text-label-bold">Nouveau statut *</label>
+          <label class="text-label-bold">{{ 'AFFAIRES.DETAIL.MODAL.NEW_STATUS' | translate }}</label>
           <div class="statut-radio-group">
             @for (s of availableTransitions(); track s) {
               <label class="statut-radio" [class.statut-radio--selected]="targetStatut() === s">
                 <input type="radio" name="new-statut" [value]="s"
                        [ngModel]="targetStatut()" (ngModelChange)="targetStatut.set($event)" />
-                {{ statutLabel(s) }}
+                {{ statutLabel(s) | translate }}
               </label>
             }
           </div>
         </div>
         <div class="field">
-          <label class="text-label-bold" for="motif">Motif (optionnel)</label>
+          <label class="text-label-bold" for="motif">{{ 'AFFAIRES.DETAIL.MODAL.REASON' | translate }}</label>
           <textarea id="motif" [ngModel]="motif()" (ngModelChange)="motif.set($event)"
-                    rows="3" maxlength="500" placeholder="Raison du changement…"></textarea>
+                    rows="3" maxlength="500"
+                    [placeholder]="'AFFAIRES.DETAIL.MODAL.REASON_PLACEHOLDER' | translate"></textarea>
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" (click)="showStatutModal.set(false)">Annuler</button>
+        <button class="btn-cancel" (click)="showStatutModal.set(false)">{{ 'AFFAIRES.DETAIL.MODAL.CANCEL' | translate }}</button>
         <button class="btn-confirm" [disabled]="actionLoading()" (click)="submitStatut()">
-          @if (actionLoading()) { Traitement… } @else { Confirmer }
+          @if (actionLoading()) {
+            {{ 'AFFAIRES.DETAIL.MODAL.PROCESSING' | translate }}
+          } @else {
+            {{ 'AFFAIRES.DETAIL.MODAL.CONFIRM' | translate }}
+          }
         </button>
       </div>
     </div>

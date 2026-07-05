@@ -1,0 +1,43 @@
+<div class="fp-host">
+
+  <!-- Trigger (hidden when toolbar controls the open state) -->
+  @if (showTrigger()) {
+    <daf-button
+      [options]="{ variant: 'teal', label: 'Filters', iconStart: 'filter_list' }"
+      (onClick)="toggle()" />
+  }
+
+  <!-- Floating panel -->
+  @if (isOpen()) {
+    <div class="fp-panel" [style.top.px]="panelTop" [style.right.px]="panelRight">
+
+      <!-- Header -->
+      <div class="fp-header">
+        <span class="material-symbols-outlined fp-header__icon"
+              style="font-variation-settings:'FILL' 1">filter_list</span>
+        <span class="fp-header__title">{{ title() }}</span>
+      </div>
+
+      <div class="fp-divider"></div>
+
+      <!-- Fields (projected by caller) -->
+      <div class="fp-body">
+        <ng-content />
+      </div>
+
+      <div class="fp-divider"></div>
+
+      <!-- Footer -->
+      <div class="fp-footer">
+        <daf-button
+          [options]="{ variant: 'ghost', label: cancelLabel() }"
+          (onClick)="onCancel()" />
+        <daf-button
+          [options]="{ variant: 'teal', label: applyLabel(), iconStart: 'check' }"
+          (onClick)="onApply()" />
+      </div>
+
+    </div>
+  }
+
+</div>

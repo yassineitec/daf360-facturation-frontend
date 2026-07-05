@@ -165,10 +165,10 @@ export const TYPE_LABELS: Record<string, string> = {
 };
 
 export const STATUT_LABELS: Record<string, string> = {
-  EN_COURS:  'En cours',
-  SUSPENDUE: 'Suspendue',
-  CLOTUREE:  'Clôturée',
-  ARCHIVEE:  'Archivée',
+  EN_COURS:  'AFFAIRES.LIST.TABLE.STATUS.EN_COURS',
+  SUSPENDUE: 'AFFAIRES.LIST.TABLE.STATUS.SUSPENDUE',
+  CLOTUREE:  'AFFAIRES.LIST.TABLE.STATUS.CLOTUREE',
+  ARCHIVEE:  'AFFAIRES.LIST.TABLE.STATUS.ARCHIVEE',
 };
 
 export const TS_STATUT_CONFIG: Record<string, { label: string; bg: string; color: string; border: string }> = {

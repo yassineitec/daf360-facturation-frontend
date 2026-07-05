@@ -19,6 +19,7 @@ import {
   CardComponent,
   FormFieldComponent,
   ModalService, ModalRef,
+  ButtonComponent,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
@@ -29,6 +30,7 @@ import {
     MetricCardComponent, DataTableComponent, DafCellDirective,
     PaginationComponent, ToolbarComponent,
     DafBadgeComponent, CardComponent, FormFieldComponent,
+    ButtonComponent,
   ],
   templateUrl: './supplier-list.component.html',
   styleUrl:    './supplier-list.component.scss',
@@ -108,9 +110,7 @@ export class SupplierListComponent implements OnInit {
     skeletonRows: 5,
   }));
 
-  readonly toolbarActions: ToolbarAction[] = [
-    { id: 'new', label: 'Nouveau Fournisseur', icon: 'add', position: 'right', variant: 'primary' },
-  ];
+  readonly toolbarActions: ToolbarAction[] = [];
 
   ngOnInit(): void {
     this.clientSvc.getPays().pipe(takeUntilDestroyed(this.destroyRef))

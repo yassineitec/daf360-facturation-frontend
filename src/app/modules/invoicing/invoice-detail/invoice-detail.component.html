@@ -1,7 +1,7 @@
 @if (loading()) {
   <div class="loading-state">
     <span class="material-symbols-outlined spin">progress_activity</span>
-    Chargement…
+    {{ 'INVOICING.DETAIL.LOADING' | translate }}
   </div>
 } @else if (error()) {
   <div class="error-banner">
@@ -14,15 +14,15 @@
 
   <!-- ── Header ────────────────────────────────────────────────────────────── -->
   <app-page-header
-    [title]="invoice()!.invoiceNumber ?? 'Brouillon'"
+    [title]="invoice()!.invoiceNumber ?? ('INVOICING.DETAIL.DRAFT_TITLE' | translate)"
     [subtitle]="invoice()!.clientNom + (invoice()!.affaireRef ? ' · ' + invoice()!.affaireRef : '')"
     backLink="/fact/invoicing"
-    backLabel="Factures">
+    [backLabel]="'INVOICING.DETAIL.BACK' | translate">
     <div actions class="dh-header-right">
       <div class="dh-pills">
         <app-status-badge [status]="invoice()!.statut" />
         @if (isOverdue()) {
-          <span class="overdue-pill">En retard</span>
+          <span class="overdue-pill">{{ 'INVOICING.DETAIL.OVERDUE' | translate }}</span>
         }
       </div>
       <div class="dh-amount-block">
@@ -50,7 +50,7 @@
     <div class="kpi-card">
       <div class="kpi-card__top">
         <div>
-          <p class="kpi-card__label">Avancement facturation</p>
+          <p class="kpi-card__label">{{ 'INVOICING.DETAIL.KPI.BILLING_PROGRESS' | translate }}</p>
           <h3 class="kpi-card__value">{{ billingProgress() }}%</h3>
         </div>
         <span class="kpi-card__icon">
@@ -60,14 +60,14 @@
       <div class="progress-bar">
         <div class="progress-bar__fill progress-bar__fill--slate" [style.width.%]="billingProgress()"></div>
       </div>
-      <p class="kpi-card__sub">{{ statutConfig().label }}</p>
+      <p class="kpi-card__sub">{{ statutConfig().label | translate }}</p>
     </div>
 
     <!-- Budget Total -->
     <div class="kpi-card">
       <div class="kpi-card__top">
         <div>
-          <p class="kpi-card__label">Budget Total ({{ invoice()!.devise }})</p>
+          <p class="kpi-card__label">{{ 'INVOICING.DETAIL.KPI.BUDGET_TOTAL' | translate: { currency: invoice()!.devise } }}</p>
           <h3 class="kpi-card__value">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</h3>
         </div>
         <span class="kpi-card__icon kpi-card__icon--teal">
@@ -75,7 +75,7 @@
         </span>
       </div>
       <div class="kpi-card__row">
-        <span class="kpi-card__sub">HT : {{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</span>
+        <span class="kpi-card__sub">{{ 'INVOICING.DETAIL.KPI.HT_PREFIX' | translate }} {{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</span>
       </div>
       <div class="progress-bar" style="margin-top:10px">
         <div class="progress-bar__fill progress-bar__fill--teal" style="width:73%"></div>
@@ -86,7 +86,7 @@
     <div class="kpi-card">
       <div class="kpi-card__top">
         <div>
-          <p class="kpi-card__label">Restant à payer</p>
+          <p class="kpi-card__label">{{ 'INVOICING.DETAIL.KPI.REMAINING' | translate }}</p>
           <h3 class="kpi-card__value">{{ formatAmount(montantRestant(), invoice()!.devise) }}</h3>
         </div>
         <span class="kpi-card__icon kpi-card__icon--green">
@@ -96,9 +96,9 @@
       <div class="kpi-card__due">
         <span class="material-symbols-outlined">schedule</span>
         @if (invoice()!.dateEcheance) {
-          Échéance : {{ formatDate(invoice()!.dateEcheance) }}
+          {{ 'INVOICING.DETAIL.KPI.DUE_PREFIX' | translate }} {{ formatDate(invoice()!.dateEcheance) }}
         } @else {
-          Pas d'échéance définie
+          {{ 'INVOICING.DETAIL.KPI.NO_DUE' | translate }}
         }
       </div>
     </div>
@@ -113,23 +113,23 @@
       <!-- Billing Lines table -->
       <div class="table-card">
         <div class="table-card__header">
-          <h3 class="table-card__title">Lignes de facturation</h3>
+          <h3 class="table-card__title">{{ 'INVOICING.DETAIL.LINES.TITLE' | translate }}</h3>
           <div class="table-card__tabs">
-            <button class="tct-btn tct-btn--active">Détail</button>
-            <button class="tct-btn">Récapitulatif</button>
+            <button class="tct-btn tct-btn--active">{{ 'INVOICING.DETAIL.LINES.TAB_DETAIL' | translate }}</button>
+            <button class="tct-btn">{{ 'INVOICING.DETAIL.LINES.TAB_RECAP' | translate }}</button>
           </div>
         </div>
         <div class="table-scroll">
           <table class="billing-table">
             <thead>
               <tr>
-                <th>Description</th>
-                <th>Statut</th>
-                <th class="num">Qté</th>
-                <th class="num">PU HT</th>
-                <th class="num">TVA</th>
-                <th class="num">Total HT</th>
-                <th class="num">Total TTC</th>
+                <th>{{ 'INVOICING.DETAIL.LINES.DESC' | translate }}</th>
+                <th>{{ 'INVOICING.DETAIL.LINES.STATUS_COL' | translate }}</th>
+                <th class="num">{{ 'INVOICING.DETAIL.LINES.QTY' | translate }}</th>
+                <th class="num">{{ 'INVOICING.DETAIL.LINES.UNIT_PRICE' | translate }}</th>
+                <th class="num">{{ 'INVOICING.DETAIL.LINES.VAT' | translate }}</th>
+                <th class="num">{{ 'INVOICING.DETAIL.LINES.TOTAL_HT' | translate }}</th>
+                <th class="num">{{ 'INVOICING.DETAIL.LINES.TOTAL_TTC' | translate }}</th>
                 <th class="act"></th>
               </tr>
             </thead>
@@ -137,7 +137,7 @@
               @for (line of invoice()!.lines; track line.id ?? $index) {
                 <tr class="billing-row">
                   <td class="line-desc">{{ line.description }}</td>
-                  <td><span class="status-chip status-chip--green">Actif</span></td>
+                  <td><span class="status-chip status-chip--green">{{ 'INVOICING.DETAIL.LINES.ACTIVE' | translate }}</span></td>
                   <td class="num">{{ line.quantity }}</td>
                   <td class="num muted">{{ formatAmount(line.unitRate) }}</td>
                   <td class="num muted">{{ line.vatRatePct }}%</td>
@@ -151,12 +151,12 @@
                 </tr>
               }
               @empty {
-                <tr><td colspan="8" class="empty-cell">Aucune ligne de facturation.</td></tr>
+                <tr><td colspan="8" class="empty-cell">{{ 'INVOICING.DETAIL.LINES.EMPTY' | translate }}</td></tr>
               }
             </tbody>
             <tfoot>
               <tr class="tfoot-row">
-                <td colspan="5" class="foot-label">Total général</td>
+                <td colspan="5" class="foot-label">{{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}</td>
                 <td class="num foot-ht">{{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</td>
                 <td class="num foot-ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</td>
                 <td></td>
@@ -173,45 +173,45 @@
 
       <!-- Informations -->
       <div class="info-card">
-        <h3 class="info-card__title">Informations</h3>
+        <h3 class="info-card__title">{{ 'INVOICING.DETAIL.INFO.TITLE' | translate }}</h3>
         <div class="info-grid">
           <div class="info-row">
-            <span class="info-label">Type</span>
+            <span class="info-label">{{ 'INVOICING.DETAIL.INFO.TYPE' | translate }}</span>
             <span class="info-val">{{ invoice()!.invoiceType }}</span>
           </div>
           <div class="info-row">
-            <span class="info-label">Devise</span>
+            <span class="info-label">{{ 'INVOICING.DETAIL.INFO.CURRENCY' | translate }}</span>
             <span class="info-val">{{ invoice()!.devise }}</span>
           </div>
           <div class="info-row">
-            <span class="info-label">Date émission</span>
+            <span class="info-label">{{ 'INVOICING.DETAIL.INFO.ISSUE_DATE' | translate }}</span>
             <span class="info-val">{{ formatDate(invoice()!.dateEmission) }}</span>
           </div>
           <div class="info-row">
-            <span class="info-label">Date échéance</span>
+            <span class="info-label">{{ 'INVOICING.DETAIL.INFO.DUE_DATE' | translate }}</span>
             <span class="info-val" [class.overdue-val]="isOverdue()">{{ formatDate(invoice()!.dateEcheance) }}</span>
           </div>
           @if (invoice()!.conditionsPaiement) {
             <div class="info-row">
-              <span class="info-label">Conditions</span>
+              <span class="info-label">{{ 'INVOICING.DETAIL.INFO.CONDITIONS' | translate }}</span>
               <span class="info-val">{{ invoice()!.conditionsPaiement }}</span>
             </div>
           }
           @if (invoice()!.bonDeCommande) {
             <div class="info-row">
-              <span class="info-label">BDC</span>
+              <span class="info-label">{{ 'INVOICING.DETAIL.INFO.BDC' | translate }}</span>
               <span class="info-val">{{ invoice()!.bonDeCommande }}</span>
             </div>
           }
           @if (invoice()!.datePaiementFinal) {
             <div class="info-row">
-              <span class="info-label">Payée le</span>
+              <span class="info-label">{{ 'INVOICING.DETAIL.INFO.PAID_ON' | translate }}</span>
               <span class="info-val">{{ formatDate(invoice()!.datePaiementFinal) }}</span>
             </div>
           }
           @if (invoice()!.notes) {
             <div class="info-row info-row--col">
-              <span class="info-label">Notes</span>
+              <span class="info-label">{{ 'INVOICING.DETAIL.INFO.NOTES' | translate }}</span>
               <span class="info-val info-val--notes">{{ invoice()!.notes }}</span>
             </div>
           }

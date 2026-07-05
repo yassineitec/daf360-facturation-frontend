@@ -121,17 +121,17 @@ export interface InvoiceFilter {
 // ── Display config ─────────────────────────────────────────────────────────────
 
 export const INVOICE_STATUT_CONFIG: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  DRAFT:           { label: 'Brouillon',     bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
-  SUBMITTED:       { label: 'En revue',       bg: '#dbeafe', color: '#1d4ed8', border: '#93c5fd' },
-  RETURNED:        { label: 'Retournée',      bg: '#fff7ed', color: '#c2410c', border: '#fdba74' },
-  APPROVED:        { label: 'Validée',        bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },
-  EMITTED:         { label: 'Émise',          bg: '#ccfbf1', color: '#0f766e', border: '#5eead4' },
-  SENT:            { label: 'Envoyée',        bg: '#99f6e4', color: '#065f46', border: '#2dd4bf' },
-  PARTIALLY_PAID:  { label: 'Part. payée',    bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-  PAID:            { label: 'Payée',          bg: '#d1fae5', color: '#065f46', border: '#34d399' },
-  DISPUTED:        { label: 'En litige',      bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  CANCELLED:       { label: 'Annulée',        bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' },
-  CREDIT_NOTED:    { label: 'Avoir émis',     bg: '#f3e8ff', color: '#7c3aed', border: '#c4b5fd' },
+  DRAFT:           { label: 'INVOICING.STATUS.DRAFT',          bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
+  SUBMITTED:       { label: 'INVOICING.STATUS.SUBMITTED',      bg: '#dbeafe', color: '#1d4ed8', border: '#93c5fd' },
+  RETURNED:        { label: 'INVOICING.STATUS.RETURNED',       bg: '#fff7ed', color: '#c2410c', border: '#fdba74' },
+  APPROVED:        { label: 'INVOICING.STATUS.APPROVED',       bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },
+  EMITTED:         { label: 'INVOICING.STATUS.EMITTED',        bg: '#ccfbf1', color: '#0f766e', border: '#5eead4' },
+  SENT:            { label: 'INVOICING.STATUS.SENT',           bg: '#99f6e4', color: '#065f46', border: '#2dd4bf' },
+  PARTIALLY_PAID:  { label: 'INVOICING.STATUS.PARTIALLY_PAID', bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  PAID:            { label: 'INVOICING.STATUS.PAID',           bg: '#d1fae5', color: '#065f46', border: '#34d399' },
+  DISPUTED:        { label: 'INVOICING.STATUS.DISPUTED',       bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+  CANCELLED:       { label: 'INVOICING.STATUS.CANCELLED',      bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' },
+  CREDIT_NOTED:    { label: 'INVOICING.STATUS.CREDIT_NOTED',   bg: '#f3e8ff', color: '#7c3aed', border: '#c4b5fd' },
 };
 
 export const INVOICE_TIMELINE_STEPS = [
@@ -141,26 +141,26 @@ export const INVOICE_TIMELINE_STEPS = [
 export const OVERDUE_STATUTS = new Set(['EMITTED', 'SENT', 'PARTIALLY_PAID']);
 
 export const CREDIT_NOTE_REASONS: Record<string, string> = {
-  ERREUR_FACTURATION: 'Erreur de facturation',
-  ANNULATION:         'Annulation',
-  REMISE_COMMERCIALE: 'Remise commerciale',
-  AUTRE:              'Autre',
+  ERREUR_FACTURATION: 'INVOICING.CREDIT_REASON.BILLING_ERROR',
+  ANNULATION:         'INVOICING.CREDIT_REASON.CANCELLATION',
+  REMISE_COMMERCIALE: 'INVOICING.CREDIT_REASON.DISCOUNT',
+  AUTRE:              'INVOICING.CREDIT_REASON.OTHER',
 };
 
 export const PAYMENT_MODES: Record<string, string> = {
-  VIREMENT: 'Virement bancaire',
-  CHEQUE:   'Chèque',
-  ESPECES:  'Espèces',
-  AUTRE:    'Autre',
+  VIREMENT: 'INVOICING.PAYMENT_MODE.TRANSFER',
+  CHEQUE:   'INVOICING.PAYMENT_MODE.CHECK',
+  ESPECES:  'INVOICING.PAYMENT_MODE.CASH',
+  AUTRE:    'INVOICING.PAYMENT_MODE.OTHER',
 };
 
 export const CONDITIONS_PAIEMENT: Record<string, string> = {
-  VIREMENT:  'Virement 30 jours',
-  CHEQUE:    'Chèque à réception',
-  COMPTANT:  'Comptant',
-  '30_JOURS':'À 30 jours',
-  '60_JOURS':'À 60 jours',
-  '90_JOURS':'À 90 jours',
+  VIREMENT:  'INVOICING.CONDITIONS.TRANSFER_30',
+  CHEQUE:    'INVOICING.CONDITIONS.CHECK_RECEIPT',
+  COMPTANT:  'INVOICING.CONDITIONS.CASH',
+  '30_JOURS':'INVOICING.CONDITIONS.30_DAYS',
+  '60_JOURS':'INVOICING.CONDITIONS.60_DAYS',
+  '90_JOURS':'INVOICING.CONDITIONS.90_DAYS',
 };
 
 export const TVA_RATES = [0, 7, 13, 19];

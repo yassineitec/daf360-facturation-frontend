@@ -1,5 +1,6 @@
 import { Component, signal, computed, viewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 import { StepAffaireComponent, StepAffaireValue } from './steps/step-affaire.component';
 import { StepLinesComponent,  StepLinesValue  } from './steps/step-lines.component';
@@ -8,39 +9,29 @@ import { StepRecapComponent } from './steps/step-recap.component';
 
 type Step = 1 | 2 | 3 | 4;
 
-const STEPS = [
-  { title: 'Affaire & Client', icon: 'folder_open'    },
-  { title: 'Lignes',           icon: 'receipt'        },
-  { title: 'Conditions',       icon: 'calendar_month' },
-  { title: 'Récapitulatif',    icon: 'summarize'      },
-];
+const STEP_KEYS  = ['AFFAIRE', 'LINES', 'CONDITIONS', 'RECAP'] as const;
+const STEP_ICONS = ['folder_open', 'receipt', 'calendar_month', 'summarize'] as const;
 
-const STEP_TIPS = [
-  "Sélectionnez l'affaire concernée. Le RAF disponible est vérifié automatiquement pour bloquer toute sur-facturation.",
-  "Ajoutez chaque prestation avec sa quantité, son prix unitaire HT et le taux de TVA applicable.",
-  "Définissez l'échéance, les conditions de paiement et le bon de commande si le type de facturation l'exige.",
-  "Vérifiez toutes les informations avant de soumettre ou d'enregistrer en brouillon pour y revenir plus tard.",
-];
-
-const INVOICE_TYPE_LABELS: Record<string, string> = {
-  ACOMPTE:      'Acompte',
-  INTERMEDIAIRE: 'Situation',
-  FINALE:       'Solde',
-  AVOIR:        "Note d'avoir",
+const INVOICE_TYPE_I18N: Record<string, string> = {
+  ACOMPTE:       'INVOICING.INVOICE_TYPE.ACOMPTE',
+  INTERMEDIAIRE: 'INVOICING.INVOICE_TYPE.INTERMEDIAIRE',
+  FINALE:        'INVOICING.INVOICE_TYPE.FINALE',
+  AVOIR:         'INVOICING.INVOICE_TYPE.AVOIR',
 };
 
 @Component({
   selector: 'app-invoice-new',
   standalone: true,
   imports: [
-    CardComponent, ButtonComponent,
+    CardComponent, ButtonComponent, TranslatePipe,
     StepAffaireComponent, StepLinesComponent, StepConditionsComponent, StepRecapComponent,
   ],
   templateUrl: './invoice-new.component.html',
   styleUrl:    './invoice-new.component.scss',
 })
 export class InvoiceNewComponent {
-  private readonly router = inject(Router);
+  private readonly router    = inject(Router);
+  private readonly translate = inject(TranslateService);
 
   step            = signal<Step>(1);
   affaireValue    = signal<StepAffaireValue    | null>(null);
@@ -53,17 +44,35 @@ export class InvoiceNewComponent {
   summaryLines   = signal(0);
   summaryTotal   = signal('—');
 
-  readonly steps = STEPS;
-
   readonly stepAffaireRef    = viewChild(StepAffaireComponent);
   readonly stepLinesRef      = viewChild(StepLinesComponent);
   readonly stepConditionsRef = viewChild(StepConditionsComponent);
   readonly stepRecapRef      = viewChild(StepRecapComponent);
 
-  readonly stepTip = computed(() => STEP_TIPS[this.step() - 1]);
+  readonly steps = computed(() => {
+    this.translate.currentLang();
+    return STEP_KEYS.map((k, i) => ({
+      title: this.translate.instant('INVOICING.NEW.STEPS.' + k),
+      icon:  STEP_ICONS[i],
+    }));
+  });
 
-  readonly isSaving = computed(() => this.stepRecapRef()?.saving() ?? false);
+  readonly stepTitle = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant('INVOICING.NEW.STEP_INFO.' + STEP_KEYS[this.step() - 1] + '.TITLE');
+  });
 
+  readonly stepSub = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant('INVOICING.NEW.STEP_INFO.' + STEP_KEYS[this.step() - 1] + '.SUB');
+  });
+
+  readonly stepTip = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant('INVOICING.NEW.TIPS.' + STEP_KEYS[this.step() - 1]);
+  });
+
+  readonly isSaving  = computed(() => this.stepRecapRef()?.saving() ?? false);
   readonly canGoNext = computed(() => {
     const s = this.step();
     if (s === 1) {
@@ -87,15 +96,14 @@ export class InvoiceNewComponent {
     if (s > 1) this.step.set((s - 1) as Step);
   }
 
-  saveDraft(): void {
-    this.stepRecapRef()?.saveDraft();
-  }
+  saveDraft(): void { this.stepRecapRef()?.saveDraft(); }
 
   onAffaireDone(v: StepAffaireValue): void {
     const aff = this.stepAffaireRef()?.selectedAffaire();
     this.summaryAffaire.set(aff?.intitule ?? '—');
     this.summaryClient.set(aff?.clientName ?? '—');
-    this.summaryType.set(INVOICE_TYPE_LABELS[v.invoiceType] ?? v.invoiceType);
+    const typeKey = INVOICE_TYPE_I18N[v.invoiceType];
+    this.summaryType.set(typeKey ? this.translate.instant(typeKey) : v.invoiceType);
     this.affaireValue.set(v);
     this.step.set(2);
   }

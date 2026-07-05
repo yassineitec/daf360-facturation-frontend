@@ -1,6 +1,8 @@
 import { Component, inject, input, output, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { InvoiceService } from '../../invoice.service';
+import { CONDITIONS_PAIEMENT } from '../../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';
@@ -8,35 +10,35 @@ import { StepConditionsValue } from './step-conditions.component';
 @Component({
   selector: 'app-step-recap',
   standalone: true,
-  imports: [],
+  imports: [TranslatePipe],
   template: `
 <div class="step-recap">
 
   <!-- Informations générales -->
   <div class="recap-section">
-    <h3>Informations générales</h3>
+    <h3>{{ 'INVOICING.STEP_RECAP.INFO_TITLE' | translate }}</h3>
     <div class="recap-grid">
       <div class="recap-row">
-        <span class="recap-label">Type</span>
-        <span class="recap-val">{{ affaireData().invoiceType }}</span>
+        <span class="recap-label">{{ 'INVOICING.STEP_RECAP.TYPE' | translate }}</span>
+        <span class="recap-val">{{ ('INVOICING.INVOICE_TYPE.' + affaireData().invoiceType) | translate }}</span>
       </div>
       @if (affaireData().affaireId) {
         <div class="recap-row">
-          <span class="recap-label">Affaire</span>
+          <span class="recap-label">{{ 'INVOICING.STEP_RECAP.AFFAIRE' | translate }}</span>
           <span class="recap-val">ID {{ affaireData().affaireId }}</span>
         </div>
       }
       <div class="recap-row">
-        <span class="recap-label">Conditions</span>
-        <span class="recap-val">{{ conditionsData().conditionsPaiement }}</span>
+        <span class="recap-label">{{ 'INVOICING.STEP_RECAP.CONDITIONS' | translate }}</span>
+        <span class="recap-val">{{ conditionLabel(conditionsData().conditionsPaiement) | translate }}</span>
       </div>
       <div class="recap-row">
-        <span class="recap-label">Échéance</span>
+        <span class="recap-label">{{ 'INVOICING.STEP_RECAP.DUE_DATE' | translate }}</span>
         <span class="recap-val">{{ formatDate(conditionsData().dateEcheance) }}</span>
       </div>
       @if (conditionsData().bonDeCommande) {
         <div class="recap-row">
-          <span class="recap-label">BDC</span>
+          <span class="recap-label">{{ 'INVOICING.STEP_RECAP.BDC' | translate }}</span>
           <span class="recap-val">{{ conditionsData().bonDeCommande }}</span>
         </div>
       }
@@ -45,16 +47,16 @@ import { StepConditionsValue } from './step-conditions.component';
 
   <!-- Lignes -->
   <div class="recap-section">
-    <h3>Lignes de facturation</h3>
+    <h3>{{ 'INVOICING.STEP_RECAP.LINES_TITLE' | translate }}</h3>
     <table class="recap-lines">
       <thead>
         <tr>
-          <th>Description</th>
-          <th>Qté</th>
-          <th>PU HT</th>
-          <th>TVA</th>
-          <th>Total HT</th>
-          <th>Total TTC</th>
+          <th>{{ 'INVOICING.STEP_RECAP.DESC' | translate }}</th>
+          <th>{{ 'INVOICING.STEP_RECAP.QTY' | translate }}</th>
+          <th>{{ 'INVOICING.STEP_RECAP.UNIT_PRICE' | translate }}</th>
+          <th>{{ 'INVOICING.STEP_RECAP.VAT' | translate }}</th>
+          <th>{{ 'INVOICING.STEP_RECAP.TOTAL_HT' | translate }}</th>
+          <th>{{ 'INVOICING.STEP_RECAP.TOTAL_TTC' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -71,7 +73,7 @@ import { StepConditionsValue } from './step-conditions.component';
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="4" class="total-label">Total</td>
+          <td colspan="4" class="total-label">{{ 'INVOICING.STEP_RECAP.TOTAL' | translate }}</td>
           <td class="num total-ht">{{ formatAmount(totalHt()) }}</td>
           <td class="num total-ttc">{{ formatAmount(totalTtc()) }}</td>
         </tr>
@@ -81,7 +83,7 @@ import { StepConditionsValue } from './step-conditions.component';
 
   <!-- Rappels planifiés -->
   <div class="recap-section">
-    <h3>Rappels planifiés (aperçu)</h3>
+    <h3>{{ 'INVOICING.STEP_RECAP.REMINDERS_TITLE' | translate }}</h3>
     <div class="reminder-preview-list">
       @for (r of reminderPreview(); track r.label) {
         <div class="reminder-preview-row">
@@ -100,15 +102,15 @@ import { StepConditionsValue } from './step-conditions.component';
   <div class="step-actions">
     <button type="button" class="btn-back" (click)="prevStep.emit()">
       <span class="material-symbols-outlined">arrow_back</span>
-      Retour
+      {{ 'INVOICING.STEP_RECAP.BACK' | translate }}
     </button>
     <div class="recap-actions">
       <button type="button" class="btn-draft" [disabled]="saving()" (click)="saveDraft()">
         <span class="material-symbols-outlined">save</span>
-        {{ saving() ? 'Enregistrement…' : 'Brouillon' }}
+        {{ saving() ? ('INVOICING.STEP_RECAP.SAVING' | translate) : ('INVOICING.STEP_RECAP.DRAFT' | translate) }}
       </button>
       <button type="button" class="btn-submit" [disabled]="saving()" (click)="saveAndSubmit()">
-        {{ saving() ? 'Envoi…' : 'Soumettre' }}
+        {{ saving() ? ('INVOICING.STEP_RECAP.SENDING' | translate) : ('INVOICING.STEP_RECAP.SUBMIT' | translate) }}
         <span class="material-symbols-outlined">send</span>
       </button>
     </div>
@@ -119,9 +121,10 @@ import { StepConditionsValue } from './step-conditions.component';
   styleUrl: './step.component.scss',
 })
 export class StepRecapComponent {
-  private readonly svc    = inject(InvoiceService);
-  private readonly router = inject(Router);
-  private readonly route  = inject(ActivatedRoute);
+  private readonly svc       = inject(InvoiceService);
+  private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   showActions    = input<boolean>(true);
   affaireData    = input.required<StepAffaireValue>();
@@ -140,21 +143,27 @@ export class StepRecapComponent {
   );
 
   readonly reminderPreview = computed(() => {
+    this.translate.currentLang();
     const echeance = this.conditionsData().dateEcheance;
     if (!echeance) return [];
+    const t = (k: string) => this.translate.instant(k);
     const due = new Date(echeance);
     const offsetDays = (d: number) => {
-      const t = new Date(due); t.setDate(t.getDate() + d);
-      return this.formatDate(t.toISOString().slice(0, 10));
+      const dt = new Date(due); dt.setDate(dt.getDate() + d);
+      return this.formatDate(dt.toISOString().slice(0, 10));
     };
     return [
-      { label: 'J-7 (avant échéance)',  date: offsetDays(-7) },
-      { label: 'J+0 (jour échéance)',   date: offsetDays(0)  },
-      { label: 'J+7 (1re relance)',     date: offsetDays(7)  },
-      { label: 'J+15 (2e relance)',     date: offsetDays(15) },
-      { label: 'J+30 (3e relance)',     date: offsetDays(30) },
+      { label: t('INVOICING.STEP_RECAP.REMINDERS.J_MINUS_7'), date: offsetDays(-7) },
+      { label: t('INVOICING.STEP_RECAP.REMINDERS.J0'),        date: offsetDays(0)  },
+      { label: t('INVOICING.STEP_RECAP.REMINDERS.J7'),        date: offsetDays(7)  },
+      { label: t('INVOICING.STEP_RECAP.REMINDERS.J15'),       date: offsetDays(15) },
+      { label: t('INVOICING.STEP_RECAP.REMINDERS.J30'),       date: offsetDays(30) },
     ];
   });
+
+  conditionLabel(code: string): string {
+    return CONDITIONS_PAIEMENT[code as keyof typeof CONDITIONS_PAIEMENT] ?? code;
+  }
 
   private buildRequest() {
     const a = this.affaireData(), l = this.linesData(), c = this.conditionsData();

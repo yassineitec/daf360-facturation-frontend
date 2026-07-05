@@ -1,0 +1,646 @@
+{
+  "FACTURATION": {
+    "TITLE": "Billing",
+    "DASHBOARD": "Dashboard",
+    "INVOICES": "Invoices",
+    "AFFAIRES": "Projects",
+    "CLIENTS": "Clients",
+    "PAYMENTS": "Payments",
+    "COSTS": "Costs",
+    "SUBCONTRACTING": "Subcontracting",
+    "REPORTING": "Reporting",
+    "ADMIN": "Administration"
+  },
+  "HOME": {
+    "GREETING": "Hello, {{name}}.",
+    "KPI": {
+      "COLLECTED_TITLE": "Collected this month",
+      "COLLECTED_SUB": "This month",
+      "PENDING_TITLE": "Awaiting payment",
+      "PENDING_SUB": "Outstanding balance",
+      "OVERDUE_TITLE": "Overdue invoices",
+      "OVERDUE_COUNT": "{{count}} critical invoices",
+      "NO_DELAY": "No overdue",
+      "DSO_TITLE": "Average delay (DSO)",
+      "DSO_SUB": "Average days"
+    },
+    "MODULES": {
+      "TREASURY_BALANCE": "Consolidated Balance",
+      "TO_VALIDATE": "{{count}} to validate",
+      "CLIENTS": {
+        "LABEL": "Clients",
+        "DESC": "Client directory, contracts and payment terms.",
+        "STAT": "1,284 Clients"
+      },
+      "SUPPLIERS": {
+        "LABEL": "Suppliers",
+        "DESC": "Admin, banking and purchase history.",
+        "STAT": "412 Active"
+      },
+      "PROJECTS": {
+        "LABEL": "Projects",
+        "DESC": "Project management, budgets and billing milestones.",
+        "STAT": "86 Ongoing"
+      },
+      "INVOICING": {
+        "LABEL": "Invoicing",
+        "DESC": "Invoice creation, approval and lifecycle.",
+        "STAT": ""
+      },
+      "PAYMENTS": {
+        "LABEL": "Payments",
+        "DESC": "Bank reconciliation and balance tracking.",
+        "STAT": "98% Reconciled"
+      },
+      "RECOVERY": {
+        "LABEL": "Collections",
+        "DESC": "Reminders, campaigns and dispute management.",
+        "STAT": "Critical disputes"
+      },
+      "TREASURY": {
+        "LABEL": "Treasury Management",
+        "DESC": "Cash flows, bank accounts and financial forecasts.",
+        "STAT": ""
+      },
+      "SUBCONTRACTING": {
+        "LABEL": "Subcontracting",
+        "DESC": "Subcontractor management, orders and costs.",
+        "STAT": "24 Contracts"
+      },
+      "COSTS": {
+        "LABEL": "Costs",
+        "DESC": "Operational costs, variances and CAPEX/OPEX.",
+        "STAT": "-2.4% vs Budget"
+      },
+      "REPORTING": {
+        "LABEL": "Reporting",
+        "DESC": "Financial dashboards, KPIs and profitability analysis.",
+        "STAT": "New report ready"
+      },
+      "ADMIN": {
+        "LABEL": "Administration",
+        "DESC": "System settings, currencies and approval workflows.",
+        "STAT": "Secure settings"
+      }
+    },
+    "ACTIVITY": {
+      "TITLE": "Recent Activity",
+      "VIEW_ALL": "View all",
+      "EMPTY": "No recent activity"
+    }
+  },
+  "INVOICING": {
+    "LIST": {
+      "TITLE": "Invoicing",
+      "SUBTITLE": "Manage your customer invoice issuance and tracking.",
+      "NEW_BTN": "New invoice",
+      "KPI": {
+        "TOTAL": "Total Invoiced",
+        "INVOICES_SUFFIX": "invoices",
+        "PENDING": "Pending",
+        "PENDING_SUFFIX": "pending",
+        "OVERDUE": "Overdue",
+        "OVERDUE_SUFFIX": "overdue",
+        "DISPUTED": "Disputes",
+        "DISPUTED_SUFFIX": "in dispute"
+      },
+      "SEARCH": "Search client, invoice, project...",
+      "FILTER": { "DATE_FROM": "Issued from", "DATE_TO": "Issued until", "EXPORT": "Export" },
+      "TABLE": {
+        "REF": "Reference / Project",
+        "CLIENT": "Client",
+        "AMOUNT": "Amount incl. tax",
+        "STATUS": "Status",
+        "DATE": "Date / Due",
+        "DRAFT": "(draft)",
+        "EMPTY": "No invoices found.",
+        "ECH_PREFIX": "Due",
+        "OVERDUE_DAYS": "+{{days}} days"
+      },
+      "APPROVAL": {
+        "TITLE": "Approval decision",
+        "CANCEL": "Cancel",
+        "CONFIRM": "Confirm",
+        "DECISION_LABEL": "Decision *",
+        "COMMENT_LABEL": "Comment *",
+        "COMMENT_PLACEHOLDER": "Reason required…",
+        "APPROVE": "Approve",
+        "RETURN": "Return",
+        "REJECT": "Reject"
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Loading…",
+      "OVERDUE": "Overdue",
+      "DRAFT_TITLE": "Draft",
+      "BACK": "Invoices",
+      "KPI": {
+        "BILLING_PROGRESS": "Billing progress",
+        "BUDGET_TOTAL": "Total Budget ({{currency}})",
+        "REMAINING": "Remaining to pay",
+        "HT_PREFIX": "Ex. tax:",
+        "DUE_PREFIX": "Due:",
+        "NO_DUE": "No due date set"
+      },
+      "LINES": {
+        "TITLE": "Billing lines",
+        "TAB_DETAIL": "Detail",
+        "TAB_RECAP": "Summary",
+        "DESC": "Description",
+        "STATUS_COL": "Status",
+        "QTY": "Qty",
+        "UNIT_PRICE": "Unit price",
+        "VAT": "VAT",
+        "TOTAL_HT": "Total ex. tax",
+        "TOTAL_TTC": "Total incl. tax",
+        "ACTIVE": "Active",
+        "EMPTY": "No billing lines.",
+        "GRAND_TOTAL": "Grand total"
+      },
+      "INFO": {
+        "TITLE": "Information",
+        "TYPE": "Type",
+        "CURRENCY": "Currency",
+        "ISSUE_DATE": "Issue date",
+        "DUE_DATE": "Due date",
+        "CONDITIONS": "Conditions",
+        "BDC": "PO",
+        "PAID_ON": "Paid on",
+        "NOTES": "Notes"
+      }
+    },
+    "NEW": {
+      "TITLE": "New invoice",
+      "SUBTITLE": "Follow the steps to create and submit your invoice",
+      "STEP_OF": "Step {{step}} of {{total}}",
+      "BACK": "Back",
+      "CANCEL": "Cancel",
+      "SAVING": "Saving…",
+      "DRAFT": "Draft",
+      "SUBMIT": "Submit",
+      "NEXT": "Next",
+      "SENDING": "Sending…",
+      "SIDEBAR": {
+        "PROGRESS": "Progress",
+        "SUMMARY": "Summary",
+        "AFFAIRE": "Project",
+        "CLIENT": "Client",
+        "TYPE": "Type",
+        "LINES": "Lines",
+        "TOTAL_TTC": "Total incl. tax",
+        "TIP": "Tip"
+      },
+      "STEPS": {
+        "AFFAIRE": "Project & Client",
+        "LINES": "Lines",
+        "CONDITIONS": "Conditions",
+        "RECAP": "Summary"
+      },
+      "STEP_INFO": {
+        "AFFAIRE":    { "TITLE": "Invoice initialization",     "SUB": "Select the relevant project and the type of document to generate." },
+        "LINES":      { "TITLE": "Billing lines",              "SUB": "Add services, quantities and amounts to invoice." },
+        "CONDITIONS": { "TITLE": "Payment conditions",         "SUB": "Set the payment terms and due date." },
+        "RECAP":      { "TITLE": "Summary & Validation",       "SUB": "Review information before creating the invoice." }
+      },
+      "HELP": {
+        "TITLE": "Need help?",
+        "TEXT": "The project is the single entry point for your invoicing. If you can't find your project, make sure it is activated in the Projects module."
+      },
+      "TIPS": {
+        "AFFAIRE": "Select the relevant project. The available RAF is checked automatically to prevent over-billing.",
+        "LINES": "Add each service with its quantity, unit price ex. tax and applicable VAT rate.",
+        "CONDITIONS": "Set the due date, payment terms and purchase order if required for this billing type.",
+        "RECAP": "Review all information before submitting or saving as a draft to come back later."
+      }
+    },
+    "STATUS": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Under review",
+      "RETURNED": "Returned",
+      "APPROVED": "Approved",
+      "EMITTED": "Issued",
+      "SENT": "Sent",
+      "PARTIALLY_PAID": "Partly paid",
+      "PAID": "Paid",
+      "DISPUTED": "Disputed",
+      "CANCELLED": "Cancelled",
+      "CREDIT_NOTED": "Credit issued"
+    },
+    "LIFECYCLE": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Under review",
+      "APPROVED": "Approved",
+      "EMITTED": "Issued",
+      "SENT": "Sent",
+      "PARTIALLY_PAID": "Partly paid",
+      "DONE": "Done",
+      "ACTIONS": {
+        "SUBMIT": "Submit for approval",
+        "RESUBMIT": "Resubmit",
+        "CONFIRM": "Confirm decision",
+        "CANCEL": "Cancel",
+        "EMIT": "Issue invoice",
+        "MARK_SENT": "Mark as sent",
+        "RECORD_PAYMENT": "Record payment",
+        "EMIT_CREDIT": "Issue credit note",
+        "CREDIT_DONE": "Credit issued ✓",
+        "RESOLVE": "Resolve dispute",
+        "CANCELLED": "Cancelled"
+      }
+    },
+    "STEP_AFFAIRE": {
+      "AFFAIRE_LABEL": "Project",
+      "SEARCH_PLACEHOLDER": "Search by name or project number…",
+      "SEARCHING": "Searching…",
+      "BUDGET": "Forecast budget",
+      "RAF": "Available RAF",
+      "RAF_BLOCKED": "RAF exhausted — billing blocked (RG10).",
+      "RAF_LOW": "Low RAF ({{pct}}%) — check the amount.",
+      "DESELECT": "Deselect",
+      "BILLING_MODE_LABEL": "Billing mode *",
+      "BILLING_MODE_REQUIRED": "Billing mode required.",
+      "SELECT": "Select…",
+      "BILLING_MODES": {
+        "TM": "TM — Time & Materials",
+        "CP": "CP — Cost Plus",
+        "AV": "AV — Progress",
+        "JAL": "JAL — Milestones",
+        "RMB": "RMB — Reimbursement"
+      },
+      "TYPE_LABEL": "Invoice type *",
+      "TYPE_SELECT": "Select a type…",
+      "TYPE_REQUIRED": "Type required.",
+      "INVOICE_TYPES": {
+        "ACOMPTE": "Advance invoice",
+        "INTERMEDIAIRE": "Progress invoice",
+        "FINALE": "Final invoice",
+        "AVOIR": "Credit note"
+      },
+      "TS_LABEL": "Associated TS (optional)",
+      "TS_NONE": "None",
+      "CANCEL": "Cancel",
+      "NEXT": "Next"
+    },
+    "STEP_LINES": {
+      "TITLE": "Billing lines",
+      "ADD_LINE": "+ Add a line",
+      "DESC": "Description *",
+      "QTY": "Qty *",
+      "UNIT_PRICE": "Unit price *",
+      "VAT": "VAT",
+      "TOTAL_HT": "Total ex. tax",
+      "TOTAL_TTC": "Total incl. tax",
+      "DESC_PLACEHOLDER": "Service description",
+      "TOTALS": "Totals",
+      "ERROR": "All lines must be filled in correctly.",
+      "BACK": "Back",
+      "NEXT": "Next"
+    },
+    "STEP_CONDITIONS": {
+      "DUE_DATE_LABEL": "Due date *",
+      "DUE_DATE_REQUIRED": "Date required.",
+      "CONDITIONS_LABEL": "Payment conditions *",
+      "CONDITIONS_SELECT": "Select…",
+      "CONDITIONS_REQUIRED": "Conditions required.",
+      "BDC_LABEL": "Purchase order",
+      "BDC_REQUIRED_MARK": "* required for fixed-price contracts",
+      "BDC_PLACEHOLDER": "PO number",
+      "BDC_REQUIRED_ERROR": "PO required for this billing type.",
+      "NOTES_LABEL": "Internal notes",
+      "NOTES_PLACEHOLDER": "Visible internally only…",
+      "BACK": "Back",
+      "NEXT": "Next"
+    },
+    "STEP_RECAP": {
+      "INFO_TITLE": "General information",
+      "TYPE": "Type",
+      "AFFAIRE": "Project",
+      "CONDITIONS": "Conditions",
+      "DUE_DATE": "Due date",
+      "BDC": "PO",
+      "LINES_TITLE": "Billing lines",
+      "DESC": "Description",
+      "QTY": "Qty",
+      "UNIT_PRICE": "Unit price",
+      "VAT": "VAT",
+      "TOTAL_HT": "Total ex. tax",
+      "TOTAL_TTC": "Total incl. tax",
+      "TOTAL": "Total",
+      "REMINDERS_TITLE": "Scheduled reminders (preview)",
+      "REMINDERS": {
+        "J_MINUS_7": "D-7 (before due date)",
+        "J0": "D+0 (due date)",
+        "J7": "D+7 (1st reminder)",
+        "J15": "D+15 (2nd reminder)",
+        "J30": "D+30 (3rd reminder)"
+      },
+      "BACK": "Back",
+      "SAVING": "Saving…",
+      "DRAFT": "Draft",
+      "SENDING": "Sending…",
+      "SUBMIT": "Submit"
+    },
+    "REMINDERS": {
+      "TITLE": "Payment reminders",
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended",
+      "SUSPEND": "Suspend",
+      "REACTIVATE": "Reactivate",
+      "LOADING": "Loading reminders…",
+      "STATUS": {
+        "SENT": "Sent",
+        "SUSPENDED": "Suspended",
+        "PENDING": "Pending"
+      },
+      "EMPTY": "No scheduled reminders.",
+      "SUSPEND_FORM": {
+        "LABEL": "Suspension reason",
+        "PLACEHOLDER": "Optional",
+        "CANCEL": "Cancel",
+        "CONFIRM": "Confirm"
+      }
+    },
+    "PAYMENT_MODAL": {
+      "TITLE": "Record a payment",
+      "DATE_LABEL": "Payment date *",
+      "DATE_REQUIRED": "Date required.",
+      "AMOUNT_LABEL": "Amount paid ({{currency}}) *",
+      "AMOUNT_REQUIRED": "Amount required (> 0).",
+      "MODE_LABEL": "Payment method *",
+      "MODE_SELECT": "Select…",
+      "MODE_REQUIRED": "Payment method required.",
+      "REF_LABEL": "Bank reference",
+      "REF_PLACEHOLDER": "Optional",
+      "CANCEL": "Cancel",
+      "SAVING": "Saving…",
+      "SAVE": "Save"
+    },
+    "CREDIT_NOTE_MODAL": {
+      "TITLE": "Issue a credit note",
+      "REASON_LABEL": "Reason *",
+      "REASON_SELECT": "Select a reason…",
+      "REASON_REQUIRED": "Reason required.",
+      "DETAIL_LABEL": "Detail / comment",
+      "DETAIL_PLACEHOLDER": "Optional details…",
+      "AMOUNT_LABEL": "Credit note amount incl. tax ({{currency}})",
+      "AMOUNT_PLACEHOLDER": "Leave blank for full credit",
+      "AMOUNT_HINT": "If blank, the credit note equals the total invoice amount.",
+      "CANCEL": "Cancel",
+      "SAVING": "Issuing…",
+      "SUBMIT": "Issue credit note"
+    },
+    "PAYMENT_MODE": {
+      "TRANSFER": "Bank transfer",
+      "CHECK": "Cheque",
+      "CASH": "Cash",
+      "OTHER": "Other"
+    },
+    "CONDITIONS": {
+      "TRANSFER_30": "Bank transfer 30 days",
+      "CHECK_RECEIPT": "Cheque on receipt",
+      "CASH": "Cash on delivery",
+      "30_DAYS": "30 days",
+      "60_DAYS": "60 days",
+      "90_DAYS": "90 days"
+    },
+    "CREDIT_REASON": {
+      "BILLING_ERROR": "Billing error",
+      "CANCELLATION": "Cancellation",
+      "DISCOUNT": "Commercial discount",
+      "OTHER": "Other"
+    },
+    "INVOICE_TYPE": {
+      "ACOMPTE": "Advance",
+      "INTERMEDIAIRE": "Progress",
+      "FINALE": "Final",
+      "AVOIR": "Credit note"
+    },
+    "REMINDER_TYPE": {
+      "J0": "Issuance",
+      "J_7": "D-7 due date",
+      "J0_ECH": "Due date",
+      "J7": "D+7 reminder",
+      "J15": "D+15 reminder",
+      "J30": "D+30 reminder"
+    }
+  },
+  "CLIENTS": {
+    "LIST": {
+      "TITLE": "Client Management",
+      "NEW_BTN": "New client",
+      "KPI": {
+        "TOTAL": "Total Clients",
+        "ALL_COUNTRIES": "All countries",
+        "KYC_DONE": "KYC Validated",
+        "CLIENTS_SUFFIX": "clients",
+        "TOTAL_CA": "Total Revenue",
+        "CURRENT_PAGE": "Current page",
+        "ACTIVE": "Active Clients"
+      },
+      "FILTER": {
+        "COUNTRY": "Country:",
+        "ALL": "All",
+        "SECTOR": "Sector:",
+        "STATUS": "Status:",
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive",
+        "KYC": "KYC Validated"
+      },
+      "SEARCH": "Name, code, sector…",
+      "CARD": {
+        "TOTAL_CA": "Total Revenue",
+        "ACTIVE_PROJECTS": "Active projects",
+        "DELAY": "{{days}} d delay",
+        "SEE_FILE": "View file →",
+        "INACTIVE": "Inactive"
+      },
+      "EMPTY": {
+        "TITLE": "No clients found",
+        "DESC": "Adjust your filters or add a new client."
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Loading client…",
+      "RETRY": "Retry",
+      "EDIT": "Edit",
+      "INACTIVE": "Inactive",
+      "HEADER": { "DELAY": "Delay:" },
+      "KYC": {
+        "SECTION_TITLE": "KYC Validation",
+        "VALIDATED": "KYC validated",
+        "PENDING": "KYC pending",
+        "VALIDATED_ON": "Validated on",
+        "BY": "By:",
+        "REVOKE": "Revoke KYC",
+        "PENDING_TEXT": "This client has not yet been KYC validated. Without this validation, no invoice can be issued to them.",
+        "VALIDATE_BTN": "Validate KYC"
+      },
+      "INFO": {
+        "TITLE": "General information",
+        "CODE": "Client code",
+        "TAX_ID": "Tax ID",
+        "SECTOR": "Sector",
+        "COUNTRY": "Country",
+        "ADDRESS": "Address",
+        "PHONE": "Phone",
+        "EMAIL": "Email",
+        "WEBSITE": "Website"
+      },
+      "CONTACT": {
+        "TITLE": "Main contact",
+        "NAME": "Name",
+        "EMAIL": "Email",
+        "PHONE": "Phone",
+        "EMAIL_GENERAL": "General email",
+        "WEBSITE": "Website",
+        "NOTES": "Notes"
+      },
+      "KPI": {
+        "TOTAL_PROJECTS": "Total projects",
+        "ACTIVE_PROJECTS": "Active projects",
+        "TOTAL_INVOICED": "Total invoiced",
+        "AVG_DELAY": "Avg. payment delay"
+      },
+      "PROJECTS": {
+        "TITLE": "Projects",
+        "SEE_ALL": "View all projects for this client"
+      },
+      "ACTIONS": {
+        "TITLE": "Quick actions",
+        "INVOICES": "View invoices",
+        "PAYMENTS": "Payment tracking"
+      },
+      "CREATED_AT": "Created on",
+      "UPDATED_AT": "Modified on",
+      "DEACTIVATE": "Deactivate this client",
+      "REACTIVATE": "Reactivate this client"
+    }
+  },
+  "AFFAIRES": {
+    "LIST": {
+      "TITLE": "Projects",
+      "NEW_BTN": "New project",
+      "KPI": {
+        "ACTIVE": "Active projects",
+        "RAF": "Total remaining",
+        "BUDGET": "Total budget",
+        "PENDING": "Suspended",
+        "UNITS": "projects"
+      },
+      "TABLE": {
+        "SEARCH": "Search by name, reference…",
+        "FILTERS": "Filters",
+        "VIEW_GRID": "Grid view",
+        "VIEW_LIST": "List view",
+        "EMPTY": "No projects found.",
+        "SEE_DETAIL": "View detail",
+        "SHOWING": "{{current}} project(s) of {{total}}",
+        "CARD": {
+          "CLIENT": "Client",
+          "MANAGER": "Manager",
+          "TYPE": "Type",
+          "BUDGET_LABEL": "Budget"
+        },
+        "HEADERS": {
+          "REF": "Reference",
+          "TITLE": "Title",
+          "CLIENT": "Client",
+          "MANAGER": "Manager",
+          "TYPE": "Type",
+          "BUDGET": "Budget",
+          "RAF": "Remaining",
+          "STATUS": "Status"
+        },
+        "STATUS": {
+          "EN_COURS": "In progress",
+          "SUSPENDUE": "Suspended",
+          "CLOTUREE": "Closed",
+          "ARCHIVEE": "Archived"
+        }
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Loading project…",
+      "RETRY": "Retry",
+      "BUDGET_NOT_VALIDATED": "Budget not validated",
+      "LAST_UPDATE": "Updated on",
+      "KPI": {
+        "CA": "Collected Revenue",
+        "CA_SUB": "Actual revenue",
+        "RAF": "Remaining to invoice",
+        "RAF_USAGE": "Budget usage",
+        "WIP": "WIP",
+        "WIP_SUB": "Work in progress",
+        "MARGIN": "Gross margin",
+        "MARGIN_TARGET": "Margin target"
+      },
+      "RAF_SECTION": {
+        "TITLE": "Remaining to Invoice (RAF)",
+        "BUDGET_TOTAL": "Total budget:",
+        "INVOICED": "Invoiced",
+        "TS_INTEGRATED": "Integrated orders",
+        "REMAINING": "Remaining (RAF)"
+      },
+      "INFO": {
+        "TITLE": "General information",
+        "CLIENT": "Client",
+        "MANAGER": "Manager",
+        "BILLING_MODE": "Billing mode",
+        "CURRENCY": "Currency",
+        "PERIOD": "Period",
+        "ENGAGEMENT": "Engagement type",
+        "BUDGET_VALIDATED": "Budget validated",
+        "YES": "Yes",
+        "NO": "No",
+        "DOC360": "DOC360 ref.",
+        "ERP_REF": "ERP ref.",
+        "NOTES": "Notes"
+      },
+      "SECTIONS": {
+        "BUDGET_TS": "Budget & Service orders",
+        "NEW_TS": "New order",
+        "SUBCONTRACTING": "Subcontracting",
+        "BILLING": "Billing",
+        "STUB": "Section under development."
+      },
+      "INDICATORS": {
+        "TITLE": "Piloting indicators",
+        "BILLING_RATE": "Billing rate",
+        "CONSUMPTION_RATE": "Consumption rate",
+        "BUDGET_CONSUMED": "Budget consumed",
+        "ON": "of",
+        "EVOLUTION": "Evolution"
+      },
+      "SIDEBAR": {
+        "STATUS_CHANGE": "Change status",
+        "VALIDATE_BUDGET": "Validate budget",
+        "BUDGET_PENDING": "Budget pending validation: {{amount}}",
+        "VALIDATING": "Validating…",
+        "VALIDATE_BTN": "Validate budget",
+        "EDIT_TITLE": "Edit project",
+        "EDIT_MANAGERS": "Edit managers",
+        "EDIT_PLANNING": "Edit planning",
+        "EDIT_INFO": "Edit information",
+        "ACTIONS_TITLE": "Quick actions",
+        "NEW_INVOICE": "New invoice",
+        "VIEW_PAYMENTS": "Payment tracking",
+        "VIEW_INVOICES": "View invoices",
+        "TRACEABILITY": "Traceability & Alerts",
+        "CREATED_AT": "Created on",
+        "LAST_MODIFIED": "Last modified",
+        "RAF_THRESHOLD": "RAF alert threshold",
+        "RAF_ALERT_TITLE": "RAF threshold exceeded",
+        "RAF_ALERT_TEXT": "The alert threshold of {{pct}}% has been reached. Check the remaining amount."
+      },
+      "MODAL": {
+        "STATUS_TITLE": "Change status",
+        "NEW_STATUS": "New status",
+        "REASON": "Reason",
+        "REASON_PLACEHOLDER": "Reason for status change…",
+        "CANCEL": "Cancel",
+        "PROCESSING": "Processing…",
+        "CONFIRM": "Confirm"
+      }
+    }
+  }
+}
