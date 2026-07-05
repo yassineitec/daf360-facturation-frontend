@@ -6,4 +6,9 @@ export const ADMIN_ROUTES: Routes = [
     loadComponent: () =>
       import('./admin-list/admin-list.component').then(m => m.AdminListComponent),
   },
+  {
+    path: 'roles',
+    loadComponent: () =>
+      import('./roles/fact-roles-admin.component').then(m => m.FactRolesAdminComponent),
+  },
 ];
