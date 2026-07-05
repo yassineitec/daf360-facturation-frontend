@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, model, output, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, computed, inject, input, model, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UpperCasePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -37,9 +37,14 @@ export class AffaireTableComponent {
   readonly statutOptions = Object.entries(STATUT_LABELS).map(([k, v]) => ({ value: k, label: this.translate.instant(v) }));
   readonly typeOptions   = Object.entries(TYPE_LABELS).map(([k, v])   => ({ value: k, label: v }));
 
+  @ViewChild(FilterPanelComponent) private filterPanelRef!: FilterPanelComponent;
+  @ViewChild('tcHeader') private tcHeaderRef!: ElementRef<HTMLElement>;
+
   readonly viewMode = signal<'grid' | 'list'>('grid');
 
-  readonly toolbarActions: { id: string; icon?: string; position?: 'left' | 'right'; variant?: 'default' | 'primary' | 'danger' }[] = [];
+  readonly toolbarActions = [
+    { id: 'filters', label: 'Filtres', icon: 'tune', position: 'right' as const, variant: 'default' as const },
+  ];
 
   readonly viewToggleOptions = [
     { id: 'grid', icon: 'grid_view',  tooltip: 'Vue grille' },
@@ -53,7 +58,10 @@ export class AffaireTableComponent {
   readonly selectTypeConfig   = { placeholder: 'Type',   multiple: false, searchable: false, fullWidth: true };
 
   onToolbarAction(id: string): void {
-    // currently only 'export' action exists
+    if (id === 'filters') {
+      const rect = this.tcHeaderRef.nativeElement.getBoundingClientRect();
+      this.filterPanelRef.openAt(rect);
+    }
   }
 
   onFilterApply(): void {

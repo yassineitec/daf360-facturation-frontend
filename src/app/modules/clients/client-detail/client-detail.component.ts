@@ -5,14 +5,16 @@ import { ClientService }                                                       f
 import { ClientDetailDto, ClientStatsDto }                                     from '../client.model';
 import { PermissionDirective }                                                 from '../../../shared/permission.directive';
 import { ClientFormComponent }                                                 from '../client-form.component';
-import { CardComponent, ModalService, ModalRef }                               from '@khalilrebhiitec/daf360';
+import { ButtonComponent, StatusBadgeComponent, ModalService, ModalRef, BadgeOptions } from '@khalilrebhiitec/daf360';
 import { TranslatePipe }                                                        from '@ngx-translate/core';
+import { DecimalPipe }                                                          from '@angular/common';
 
 @Component({
   selector: 'app-client-detail',
-  imports: [RouterLink, PermissionDirective, ClientFormComponent, CardComponent, TranslatePipe],
+  imports: [RouterLink, DecimalPipe, PermissionDirective, ClientFormComponent,
+            ButtonComponent, StatusBadgeComponent, TranslatePipe],
   templateUrl: './client-detail.component.html',
-  styleUrl: './client-detail.component.scss',
+  styleUrl:    './client-detail.component.scss',
 })
 export class ClientDetailComponent implements OnInit {
   private readonly svc    = inject(ClientService);
@@ -28,6 +30,8 @@ export class ClientDetailComponent implements OnInit {
   isLoading   = signal(true);
   actionError = signal<string | null>(null);
 
+  openSections = signal<Set<string>>(new Set(['info']));
+
   private clientId = 0;
 
   ngOnInit(): void {
@@ -39,6 +43,16 @@ export class ClientDetailComponent implements OnInit {
     this.loadClient(id);
   }
 
+  toggleSection(key: string): void {
+    this.openSections.update(s => {
+      const next = new Set(s);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
+  isOpen(key: string): boolean { return this.openSections().has(key); }
+
   openEditModal(): void {
     this.editModalRef = this.modal.open({
       title:           'Modifier ' + (this.client()?.clientName ?? 'le client'),
@@ -49,9 +63,7 @@ export class ClientDetailComponent implements OnInit {
     });
   }
 
-  onEditFormClosed(): void {
-    this.editModalRef?.close();
-  }
+  onEditFormClosed(): void { this.editModalRef?.close(); }
 
   loadClient(id: number): void {
     this.isLoading.set(true);
@@ -72,35 +84,15 @@ export class ClientDetailComponent implements OnInit {
     });
   }
 
-  readonly clientKpis = computed(() => {
-    const s = this.stats();
-    if (!s) return [];
-    const currency = this.client()?.defaultCurrency ?? 'TND';
-    return [
-      { label: 'CLIENTS.DETAIL.KPI.TOTAL_PROJECTS',  value: String(s.totalAffaires) },
-      { label: 'CLIENTS.DETAIL.KPI.ACTIVE_PROJECTS', value: String(s.activeAffaires) },
-      { label: 'CLIENTS.DETAIL.KPI.TOTAL_INVOICED',  value: this.formatAmount(s.totalInvoiced, currency) },
-      { label: 'CLIENTS.DETAIL.KPI.AVG_DELAY',       value: s.averagePaymentDelayDays != null
-                                                              ? Math.round(s.averagePaymentDelayDays) + 'j'
-                                                              : '—' },
-    ];
-  });
+  readonly kycBadgeOptions = computed((): BadgeOptions => ({
+    variant: this.client()?.isKycDone ? 'success' : 'warning',
+    pill: true, size: 'sm',
+  }));
 
-  readonly generalInfo = computed(() => {
-    const c = this.client();
-    if (!c) return [];
-    const address = [c.address, c.city, c.postalCode].filter(Boolean).join(', ');
-    return [
-      { label: 'CLIENTS.DETAIL.INFO.CODE',    value: c.clientCode },
-      { label: 'CLIENTS.DETAIL.INFO.TAX_ID',  value: c.taxId },
-      { label: 'CLIENTS.DETAIL.INFO.SECTOR',  value: c.sector },
-      { label: 'CLIENTS.DETAIL.INFO.COUNTRY', value: c.country },
-      { label: 'CLIENTS.DETAIL.INFO.ADDRESS', value: address || null },
-      { label: 'CLIENTS.DETAIL.INFO.PHONE',   value: c.phone },
-      { label: 'CLIENTS.DETAIL.INFO.EMAIL',   value: c.email },
-      { label: 'CLIENTS.DETAIL.INFO.WEBSITE', value: c.website },
-    ].filter(i => i.value);
-  });
+  readonly activeBadgeOptions = computed((): BadgeOptions => ({
+    variant: this.client()?.isActive ? 'success' : 'neutral',
+    pill: true, size: 'sm',
+  }));
 
   validateKyc(): void {
     const c = this.client();
@@ -134,10 +126,6 @@ export class ClientDetailComponent implements OnInit {
     });
   }
 
-  retryLoad(): void {
-    this.loadClient(this.clientId);
-  }
-
   reactivateClient(): void {
     const c = this.client();
     if (!c) return;
@@ -148,10 +136,14 @@ export class ClientDetailComponent implements OnInit {
     });
   }
 
+  retryLoad(): void { this.loadClient(this.clientId); }
+
   onClientSaved(updated: ClientDetailDto): void {
     this.client.set(updated);
     this.editModalRef?.close();
   }
+
+  goBack(): void { this.router.navigate(['..'], { relativeTo: this.route }); }
 
   formatAmount(v: number | null, currency = 'TND'): string {
     if (v === null || v === undefined) return '—';
