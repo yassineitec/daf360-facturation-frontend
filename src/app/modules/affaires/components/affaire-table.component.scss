@@ -311,6 +311,128 @@ table {
   &:hover { background: $surface-mid; color: $text-dark; }
 }
 
+// ── Responsive toggle : feed-list = mobile universel ≤ 640px ─────────────────
+
+// Feed-list : caché sur desktop, visible sur mobile
+.feed-list          { display: none; }
+
+// Card-grid et table : visibles sur desktop, cachés sur mobile
+.card-grid          { display: grid; }
+.table-desktop-wrap { display: block; flex: 1; min-height: 0; overflow: hidden; }
+
+@media (max-width: 640px) {
+  .feed-list          { display: flex; }
+  .card-grid          { display: none !important; }
+  .card-empty         { display: none !important; }
+  .table-desktop-wrap { display: none !important; }
+}
+
+// ── Mobile row item ───────────────────────────────────────────────────────────
+
+.m-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
+  border-bottom: 1px solid $border;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: $primary;
+    border-radius: 0 2px 2px 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  &:hover {
+    background: #f0f4ff;
+    &::after { opacity: 1; }
+  }
+
+  &:last-child { border-bottom: none; }
+  &:active { background: #e8edff; }
+}
+
+.m-row__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.m-row__ref {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: $primary;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.m-row__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: $text-dark;
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m-row__meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.m-row__client {
+  font-size: 0.75rem;
+  color: $client-color;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.m-row__sep { color: $text-light; font-size: 0.7rem; flex-shrink: 0; }
+
+.m-row__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.m-row__amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.m-row__budget {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: $text-dark;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-row__unit { font-size: 0.65rem; font-weight: 600; color: $text-muted; margin-left: 1px; }
+
+.m-row__raf {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 // ── Card grid ─────────────────────────────────────────────────────────────────
 
 .card-empty {
@@ -324,7 +446,6 @@ table {
 }
 
 .card-grid {
-  display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   padding: 16px;
@@ -332,11 +453,278 @@ table {
   flex: 1;
   overflow-y: auto;
 
-  daf-card { display: block; }
+  daf-card {
+    display: block;
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.22s ease;
+
+    &:hover {
+      transform: scale(1.03) translateY(-4px);
+      box-shadow: 0 16px 32px rgba(0,0,0,.10), 0 4px 12px rgba(0,0,0,.07);
+      z-index: 2;
+    }
+  }
 
   @media (max-width: 1200px) { grid-template-columns: repeat(2, 1fr); }
   @media (max-width:  680px) { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px; }
-  @media (max-width:  480px) { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
+}
+
+// ── Feed empty state ──────────────────────────────────────────────────────────
+.feed-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 0;
+  color: $text-muted;
+  font-size: 0.875rem;
+}
+
+// ── Feed list (mobile cards — animated) ──────────────────────────────────────
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes stripGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.feed-list {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  gap: 10px;
+  padding: 12px;
+
+  @media (max-width: 480px) { display: flex; }
+}
+
+// ── Card wrapper ─────────────────────────────────────────────────────────────
+.fi {
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  animation: cardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition:
+    transform   0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow  0.25s ease,
+    border-color 0.2s ease;
+
+  // Hover bg tint
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent, #006b58);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  &:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 10px 28px rgba(0,0,0,.10), 0 4px 10px rgba(0,0,0,.06);
+    border-color: color-mix(in srgb, var(--accent, #006b58) 35%, transparent);
+
+    &::after { opacity: 0.04; }
+
+    .fi__strip {
+      animation: stripGrow 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .fi__arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .fi__ref { color: var(--accent, $primary); }
+    .fi__avatar { background: color-mix(in srgb, var(--accent, #006b58) 20%, transparent); }
+  }
+
+  &:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+}
+
+// Accent top strip — always 3px, grows from left on hover
+.fi__strip {
+  height: 3px;
+  background: var(--accent, #006b58);
+  border-radius: 16px 16px 0 0;
+  transform: scaleX(0.25);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+// ── Card inner padding ────────────────────────────────────────────────────────
+.fi__inner {
+  padding: 12px 14px 13px;
+  position: relative;
+  z-index: 1;
+}
+
+// Row 1 — ref + type chip + status
+.fi__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.fi__ref {
+  font-size: 0.69rem;
+  font-weight: 800;
+  color: $primary;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
+.fi__type {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: $text-light;
+  background: $surface-mid;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.fi__spacer { flex: 1; }
+
+.fi__status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fi__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, #10b981);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #10b981) 25%, transparent);
+}
+
+.fi__status-lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent, $text-muted);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+// Row 2 — title
+.fi__title {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: $text-dark;
+  margin: 0 0 5px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Row 3 — avatar + client
+.fi__meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.fi__avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: $surface-mid;
+  color: $text-muted;
+  font-size: 0.5rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  transition: background 0.2s;
+}
+
+.fi__client {
+  font-size: 0.72rem;
+  color: $text-muted;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+// Row 4 — amounts + arrow
+.fi__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 9px;
+  border-top: 1px solid $border;
+}
+
+.fi__amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.fi__budget {
+  font-size: 1rem;
+  font-weight: 900;
+  color: $text-dark;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.fi__unit {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: $text-muted;
+  margin-right: 4px;
+}
+
+.fi__raf {
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+// Arrow — slides in on hover
+.fi__arrow {
+  font-size: 18px;
+  color: var(--accent, $primary);
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.2s, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
 }
 
 // ── aff-card (glass card inner layout) ───────────────────────────────────────

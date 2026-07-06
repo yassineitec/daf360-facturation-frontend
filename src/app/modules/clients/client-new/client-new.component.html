@@ -8,13 +8,15 @@
 
       <!-- ── Page header ───────────────────────────────────────────── -->
       <div class="page-head">
-        <button class="back-btn" (click)="goBack()">
-          <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <div>
-          <h1 class="page-title">Nouveau Client</h1>
-          <p class="page-sub">Suivez les étapes pour créer un nouveau client</p>
-        </div>
+        <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
+          <button type="button" class="font-medium hover:underline transition-colors" (click)="goBack()">
+            Clients
+          </button>
+          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          <span class="font-medium" style="color:#50717b">Nouveau Client</span>
+        </nav>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">Créer un nouveau client</h1>
+        <p class="page-sub">Suivez les étapes pour créer un nouveau client</p>
       </div>
 
       <!-- ── Form card ─────────────────────────────────────────────── -->
@@ -49,37 +51,6 @@
           </div>
         }
 
-        <!-- Navigation footer -->
-        <div class="nav-footer">
-          <div>
-            @if (currentStep() > 1) {
-              <daf-button
-                [options]="{ variant: 'ghost', label: 'Précédent', iconStart: 'arrow_back' }"
-                (onClick)="goPrev()" />
-            } @else {
-              <daf-button
-                [options]="{ variant: 'ghost', label: 'Annuler' }"
-                (onClick)="goBack()" />
-            }
-          </div>
-          @if (currentStep() < steps.length) {
-            <daf-button
-              [options]="{ variant: 'secondary', label: 'Suivant', iconEnd: 'arrow_forward', pill: true }"
-              (onClick)="goNext()" />
-          } @else {
-            <daf-button
-              [options]="{
-                variant: 'secondary',
-                label: 'Créer le client',
-                iconStart: 'person_add',
-                pill: true,
-                loading: isSaving(),
-                disabled: isSaving()
-              }"
-              (onClick)="goNext()" />
-          }
-        </div>
-
       </div><!-- /form-card -->
     </div><!-- /form-area -->
 
@@ -88,11 +59,41 @@
     <!-- ══════════════════════════════════════════════════════════════ -->
     <aside class="sidebar">
 
+      <!-- Boutons navigation -->
+      <div class="panel-nav">
+        @if (currentStep() > 1) {
+          <daf-button class="panel-nav__back"
+            [options]="{ variant: 'ghost', label: 'Précédent', iconStart: 'arrow_back' }"
+            (onClick)="goPrev()" />
+        } @else {
+          <daf-button class="panel-nav__back"
+            [options]="{ variant: 'ghost', label: 'Annuler' }"
+            (onClick)="goBack()" />
+        }
+        @if (currentStep() < steps.length) {
+          <daf-button class="panel-nav__next"
+            [options]="{ variant: 'secondary', label: 'Suivant', iconEnd: 'arrow_forward', pill: true }"
+            (onClick)="goNext()" />
+        } @else {
+          <daf-button class="panel-nav__next"
+            [options]="{
+              variant: 'secondary',
+              label: 'Créer le client',
+              iconStart: 'person_add',
+              pill: true,
+              loading: isSaving(),
+              disabled: isSaving()
+            }"
+            (onClick)="goNext()" />
+        }
+      </div>
+
       <!-- Progression -->
       <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
         <div class="panel-header">
           <p class="panel__label">Progression</p>
         </div>
+
         <div class="panel-body">
           <div class="step-list">
             @for (step of steps; track $index; let i = $index) {

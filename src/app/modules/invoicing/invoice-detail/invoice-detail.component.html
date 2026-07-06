@@ -42,6 +42,148 @@
     </div>
   }
 
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- MOBILE-ONLY view  (≤ 640px)                                               -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <div class="mob-detail">
+
+    <!-- Hero card -->
+    <div class="mob-hero">
+      <div class="mob-hero__top">
+        <app-status-badge [status]="invoice()!.statut" />
+        @if (isOverdue()) {
+          <span class="overdue-pill">{{ 'INVOICING.DETAIL.OVERDUE' | translate }}</span>
+        }
+      </div>
+      <p class="mob-hero__ref">{{ invoice()!.invoiceNumber ?? ('INVOICING.DETAIL.DRAFT_TITLE' | translate) }}</p>
+      <p class="mob-hero__client">{{ invoice()!.clientNom }}
+        @if (invoice()!.affaireRef) { · {{ invoice()!.affaireRef }} }
+      </p>
+      <div class="mob-hero__amount">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</div>
+      <div class="mob-hero__sub">
+        {{ formatAmount(invoice()!.montantHt, invoice()!.devise) }} HT
+        + {{ formatAmount(invoice()!.montantTva, invoice()!.devise) }} TVA
+      </div>
+      @if (invoice()!.dateEcheance) {
+        <div class="mob-hero__due">
+          <span class="material-symbols-outlined">schedule</span>
+          {{ 'INVOICING.DETAIL.KPI.DUE_PREFIX' | translate }} {{ formatDate(invoice()!.dateEcheance) }}
+        </div>
+      }
+    </div>
+
+    <!-- KPI chips — horizontal scroll -->
+    <div class="mob-kpi-strip">
+      <div class="mob-kpi">
+        <span class="mob-kpi__icon material-symbols-outlined">trending_up</span>
+        <span class="mob-kpi__val">{{ billingProgress() }}%</span>
+        <span class="mob-kpi__lbl">{{ 'INVOICING.DETAIL.KPI.BILLING_PROGRESS' | translate }}</span>
+        <div class="mob-kpi__bar">
+          <div class="mob-kpi__fill" [style.width.%]="billingProgress()"></div>
+        </div>
+      </div>
+      <div class="mob-kpi">
+        <span class="mob-kpi__icon material-symbols-outlined" style="color:var(--color-brand-teal)">account_balance_wallet</span>
+        <span class="mob-kpi__val">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</span>
+        <span class="mob-kpi__lbl">{{ 'INVOICING.DETAIL.KPI.BUDGET_TOTAL' | translate: { currency: invoice()!.devise } }}</span>
+      </div>
+      <div class="mob-kpi">
+        <span class="mob-kpi__icon material-symbols-outlined" style="color:#059669">payments</span>
+        <span class="mob-kpi__val">{{ formatAmount(montantRestant(), invoice()!.devise) }}</span>
+        <span class="mob-kpi__lbl">{{ 'INVOICING.DETAIL.KPI.REMAINING' | translate }}</span>
+      </div>
+    </div>
+
+    <!-- Lignes — cards -->
+    <div class="mob-section">
+      <p class="mob-section__title">
+        {{ 'INVOICING.DETAIL.LINES.TITLE' | translate }}
+        <span class="mob-section__count">{{ invoice()!.lines.length }}</span>
+      </p>
+      <div class="mob-lines">
+        @for (line of invoice()!.lines; track line.id ?? $index; let i = $index) {
+          <div class="mob-line" [style.animation-delay]="(i * 50) + 'ms'">
+            <div class="mob-line__head">
+              <span class="mob-line__desc">{{ line.description }}</span>
+              <span class="mob-line__ttc">{{ formatAmount(lineTtc(line)) }}</span>
+            </div>
+            <div class="mob-line__meta">
+              <span class="mob-line__calc">{{ line.quantity }} × {{ formatAmount(line.unitRate) }}</span>
+              <span class="mob-line__tva">TVA {{ line.vatRatePct }}%</span>
+              <span class="mob-line__ht">HT {{ formatAmount(line.lineTotal) }}</span>
+            </div>
+          </div>
+        }
+        @empty {
+          <p class="mob-empty">{{ 'INVOICING.DETAIL.LINES.EMPTY' | translate }}</p>
+        }
+        <!-- Total row -->
+        <div class="mob-total">
+          <span class="mob-total__lbl">{{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}</span>
+          <div class="mob-total__vals">
+            <span class="mob-total__ht">{{ formatAmount(invoice()!.montantHt, invoice()!.devise) }} HT</span>
+            <span class="mob-total__ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Informations -->
+    <div class="mob-section">
+      <p class="mob-section__title">{{ 'INVOICING.DETAIL.INFO.TITLE' | translate }}</p>
+      <div class="mob-info">
+        <div class="mob-info__row">
+          <span class="mob-info__lbl">{{ 'INVOICING.DETAIL.INFO.TYPE' | translate }}</span>
+          <span class="mob-info__val">{{ invoice()!.invoiceType }}</span>
+        </div>
+        <div class="mob-info__row">
+          <span class="mob-info__lbl">{{ 'INVOICING.DETAIL.INFO.CURRENCY' | translate }}</span>
+          <span class="mob-info__val">{{ invoice()!.devise }}</span>
+        </div>
+        <div class="mob-info__row">
+          <span class="mob-info__lbl">{{ 'INVOICING.DETAIL.INFO.ISSUE_DATE' | translate }}</span>
+          <span class="mob-info__val">{{ formatDate(invoice()!.dateEmission) }}</span>
+        </div>
+        <div class="mob-info__row">
+          <span class="mob-info__lbl">{{ 'INVOICING.DETAIL.INFO.DUE_DATE' | translate }}</span>
+          <span class="mob-info__val" [class.overdue-val]="isOverdue()">{{ formatDate(invoice()!.dateEcheance) }}</span>
+        </div>
+        @if (invoice()!.conditionsPaiement) {
+          <div class="mob-info__row">
+            <span class="mob-info__lbl">{{ 'INVOICING.DETAIL.INFO.CONDITIONS' | translate }}</span>
+            <span class="mob-info__val">{{ invoice()!.conditionsPaiement }}</span>
+          </div>
+        }
+        @if (invoice()!.bonDeCommande) {
+          <div class="mob-info__row">
+            <span class="mob-info__lbl">{{ 'INVOICING.DETAIL.INFO.BDC' | translate }}</span>
+            <span class="mob-info__val">{{ invoice()!.bonDeCommande }}</span>
+          </div>
+        }
+        @if (invoice()!.notes) {
+          <div class="mob-info__row mob-info__row--col">
+            <span class="mob-info__lbl">{{ 'INVOICING.DETAIL.INFO.NOTES' | translate }}</span>
+            <span class="mob-info__val mob-info__val--notes">{{ invoice()!.notes }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Rappels -->
+    <div class="mob-section">
+      <div class="reminders-wrap">
+        <app-reminders-panel
+          [invoiceId]="invoice()!.id"
+          [remindersActive]="invoice()!.remindersActive" />
+      </div>
+    </div>
+
+  </div><!-- /mob-detail -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- DESKTOP view  (> 640px)                                                   -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <div class="desk-detail">
 
   <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
   <div class="kpi-grid">
@@ -228,6 +370,8 @@
     </div><!-- /body-aside -->
 
   </div><!-- /body-grid -->
+
+  </div><!-- /desk-detail -->
 
 </div><!-- /detail-page -->
 }

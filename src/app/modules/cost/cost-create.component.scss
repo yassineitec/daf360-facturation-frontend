@@ -37,41 +37,39 @@ $accent-mid:    rgba(0, 107, 88, 0.18);
 // ── Page head ─────────────────────────────────────────────────────────────────
 .page-head {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   margin-bottom: 4px;
 }
 
-.back-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid $border-soft;
-  background: $surface;
+.breadcrumb {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  color: var(--color-on-surface-variant);
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-
-  .material-symbols-outlined { font-size: 18px; }
-
-  &:hover {
-    border-color: $accent;
-    color: $accent;
-    background: $accent-light;
-  }
+  gap: 10px;
 }
 
-.page-title {
-  font-size: 1.75rem;
+.breadcrumb__parent {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  transition: color 0.15s;
+
+  &:hover { color: #0b1c30; text-decoration: underline; }
+}
+
+.breadcrumb__current {
+  font-size: 1.375rem;
   font-weight: 800;
   color: var(--color-on-surface);
-  margin: 0 0 4px;
-  letter-spacing: -0.02em;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .page-sub {
@@ -549,6 +547,28 @@ $accent-mid:    rgba(0, 107, 88, 0.18);
   border-radius: $radius-lg $radius-lg 0 0;
 }
 
+.panel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: $surface;
+  border: 1px solid $border-soft;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+
+  .panel-nav__back,
+  .panel-nav__next {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .panel-nav__next { justify-content: flex-end; }
+}
+
 .panel-body {
   padding: 20px;
 }
@@ -720,8 +740,8 @@ $accent-mid:    rgba(0, 107, 88, 0.18);
     .tips-panel { display: block; }
   }
 
-  .page-head  { gap: 10px; margin-bottom: 8px; }
-  .page-title { font-size: 1.15rem; }
+  .page-head  { margin-bottom: 6px; }
+  .breadcrumb__current { font-size: 1.1rem; }
   .page-sub   { font-size: 0.75rem; }
 }
 

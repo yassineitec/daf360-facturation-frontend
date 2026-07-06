@@ -7,7 +7,10 @@
             style="font-variation-settings:'FILL' 1">group</span>
       <h2 class="text-2xl font-bold text-on-surface">{{ 'CLIENTS.LIST.TITLE' | translate }}</h2>
     </div>
-    <daf-button [options]="{variant:'teal', label: 'CLIENTS.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="goToNewClient()" />
+    <daf-button class="new-btn-desktop" [options]="{variant:'teal', label: 'CLIENTS.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="goToNewClient()" />
+    <button class="new-btn-mobile" (click)="goToNewClient()" aria-label="Nouveau client">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">add</span>
+    </button>
   </div>
 
   <!-- ── KPI Cards ─────────────────────────────────────────────────────────── -->

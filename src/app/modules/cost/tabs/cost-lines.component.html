@@ -54,76 +54,167 @@
     </div>
   }
 
-  <!-- Data table -->
-  <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
-    <daf-data-table
-      [columns]="tableColumns"
-      [rows]="tableRows()"
-      [config]="tableConfig()"
-      (rowClick)="onRowClick($event)">
+  <!-- ══ DESKTOP — Data table (hidden on mobile) ══ -->
+  <div class="table-desktop">
+    <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
+      <daf-data-table
+        [columns]="tableColumns"
+        [rows]="tableRows()"
+        [config]="tableConfig()"
+        (rowClick)="onRowClick($event)">
 
-      <ng-template dafCell="label" let-row>
-        <div>
-          <p class="font-semibold text-on-surface text-sm truncate max-w-56">
-            {{ row['label'] ?? '—' }}
-          </p>
-          @if (row['reference']) {
-            <p class="font-mono text-xs text-outline mt-0.5">{{ row['reference'] }}</p>
-          }
-        </div>
-      </ng-template>
+        <ng-template dafCell="label" let-row>
+          <div>
+            <p class="font-semibold text-on-surface text-sm truncate max-w-56">
+              {{ row['label'] ?? '—' }}
+            </p>
+            @if (row['reference']) {
+              <p class="font-mono text-xs text-outline mt-0.5">{{ row['reference'] }}</p>
+            }
+          </div>
+        </ng-template>
 
-      <ng-template dafCell="netAmountLocal" let-row>
-        <span class="font-bold text-on-surface">
-          {{ formatAmount(row['netAmountLocal'], row['currency'] ?? undefined) }}
-        </span>
-      </ng-template>
+        <ng-template dafCell="netAmountLocal" let-row>
+          <span class="font-bold text-on-surface">
+            {{ formatAmount(row['netAmountLocal'], row['currency'] ?? undefined) }}
+          </span>
+        </ng-template>
 
-      <ng-template dafCell="netAmountEur" let-row>
-        <span class="text-on-surface-variant">{{ formatAmount(row['netAmountEur'], 'EUR') }}</span>
-      </ng-template>
+        <ng-template dafCell="netAmountEur" let-row>
+          <span class="text-on-surface-variant">{{ formatAmount(row['netAmountEur'], 'EUR') }}</span>
+        </ng-template>
 
-      <ng-template dafCell="status" let-row>
-        <daf-badge
-          [label]="statusLabel(row['status'])"
-          [options]="statusBadgeOptions(row['status'])" />
-      </ng-template>
-
-      <ng-template dafCell="approvalLevel" let-row>
-        @if (row['approvalLevel']) {
+        <ng-template dafCell="status" let-row>
           <daf-badge
-            [label]="row['approvalLevel']"
-            [options]="approvalBadgeOptions(row['approvalLevel'])" />
-        } @else {
-          <span class="text-outline">—</span>
-        }
-      </ng-template>
+            [label]="statusLabel(row['status'])"
+            [options]="statusBadgeOptions(row['status'])" />
+        </ng-template>
 
-      <ng-template dafCell="_actions" let-row>
-        <div class="flex justify-end gap-1" (click)="$event.stopPropagation()">
-          @if (row['_canEdit']) {
-            <button class="action-icon-btn" title="Modifier" (click)="openEdit(row['_raw'])">
-              <span class="material-symbols-outlined">edit</span>
-            </button>
+        <ng-template dafCell="approvalLevel" let-row>
+          @if (row['approvalLevel']) {
+            <daf-badge
+              [label]="row['approvalLevel']"
+              [options]="approvalBadgeOptions(row['approvalLevel'])" />
+          } @else {
+            <span class="text-outline">—</span>
           }
-          @if (row['_canSubmit']) {
-            <button class="action-icon-btn action-icon-btn--teal" title="Soumettre"
-              (click)="submitLine(row['_raw'])">
-              <span class="material-symbols-outlined">send</span>
-            </button>
-          }
+        </ng-template>
+
+        <ng-template dafCell="_actions" let-row>
+          <div class="flex justify-end gap-1" (click)="$event.stopPropagation()">
+            @if (row['_canEdit']) {
+              <button class="action-icon-btn" title="Modifier" (click)="openEdit(row['_raw'])">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+            }
+            @if (row['_canSubmit']) {
+              <button class="action-icon-btn action-icon-btn--teal" title="Soumettre"
+                (click)="submitLine(row['_raw'])">
+                <span class="material-symbols-outlined">send</span>
+              </button>
+            }
+          </div>
+        </ng-template>
+
+      </daf-data-table>
+
+      @if (totalPagesCount() > 1) {
+        <daf-pagination
+          [currentPage]="page()"
+          [totalPages]="totalPagesCount()"
+          [totalElements]="total()"
+          (pageChange)="goToPage($event)" />
+      }
+    </daf-card>
+  </div>
+
+  <!-- ══ MOBILE — Card list (hidden on desktop) ══ -->
+  <div class="mobile-list">
+
+    @if (isLoading()) {
+      @for (_ of [1,2,3,4,5]; track $index) {
+        <div class="m-card m-card--skeleton"></div>
+      }
+    } @else if (tableRows().length === 0) {
+      <div class="m-empty">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <p>Aucune ligne de coût trouvée.</p>
+      </div>
+    } @else {
+      @for (row of tableRows(); track row['id']) {
+        <div class="m-card" (click)="onRowClick(row)">
+
+          <!-- Head: description + statut -->
+          <div class="m-card__head">
+            <div class="m-card__title-block">
+              <span class="m-card__label">{{ row['label'] ?? '—' }}</span>
+              @if (row['reference']) {
+                <span class="m-card__ref">{{ row['reference'] }}</span>
+              }
+            </div>
+            <daf-badge
+              [label]="statusLabel(row['status'])"
+              [options]="statusBadgeOptions(row['status'])" />
+          </div>
+
+          <!-- Body: meta infos -->
+          <div class="m-card__body">
+            <div class="m-card__meta">
+              <span class="material-symbols-outlined">category</span>
+              <span>{{ row['categoryLabel'] }}</span>
+            </div>
+            <div class="m-card__meta">
+              <span class="material-symbols-outlined">calendar_today</span>
+              <span>{{ row['date'] }}</span>
+            </div>
+            @if (row['approvalLevel']) {
+              <div class="m-card__meta">
+                <span class="material-symbols-outlined">account_tree</span>
+                <daf-badge
+                  [label]="row['approvalLevel']"
+                  [options]="approvalBadgeOptions(row['approvalLevel'])" />
+              </div>
+            }
+          </div>
+
+          <!-- Foot: montant + actions -->
+          <div class="m-card__foot">
+            <div class="m-card__amounts">
+              <span class="m-card__amount-main">
+                {{ formatAmount(row['netAmountLocal'], row['currency'] ?? undefined) }}
+              </span>
+              <span class="m-card__amount-eur">
+                {{ formatAmount(row['netAmountEur'], 'EUR') }}
+              </span>
+            </div>
+            <div class="m-card__actions" (click)="$event.stopPropagation()">
+              @if (row['_canEdit']) {
+                <button class="action-icon-btn" title="Modifier" (click)="openEdit(row['_raw'])">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              }
+              @if (row['_canSubmit']) {
+                <button class="action-icon-btn action-icon-btn--teal" title="Soumettre"
+                  (click)="submitLine(row['_raw'])">
+                  <span class="material-symbols-outlined">send</span>
+                </button>
+              }
+            </div>
+          </div>
+
         </div>
-      </ng-template>
+      }
 
-    </daf-data-table>
-
-    @if (totalPagesCount() > 1) {
-      <daf-pagination
-        [currentPage]="page()"
-        [totalPages]="totalPagesCount()"
-        [totalElements]="total()"
-        (pageChange)="goToPage($event)" />
+      <!-- Pagination mobile -->
+      @if (totalPagesCount() > 1) {
+        <daf-pagination
+          [currentPage]="page()"
+          [totalPages]="totalPagesCount()"
+          [totalElements]="total()"
+          (pageChange)="goToPage($event)" />
+      }
     }
-  </daf-card>
+
+  </div><!-- /mobile-list -->
 
 </div><!-- /costs-page -->

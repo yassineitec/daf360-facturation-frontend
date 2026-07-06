@@ -6,13 +6,15 @@
 
       <!-- Page head -->
       <div class="page-head">
-        <button class="back-btn" type="button" (click)="cancel()">
-          <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <div>
-          <h1 class="page-title">Création de Coût</h1>
-          <p class="page-sub">Saisie d'une nouvelle dépense professionnelle pour validation.</p>
-        </div>
+        <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
+          <button type="button" class="font-medium hover:underline transition-colors" (click)="cancel()">
+            Coûts
+          </button>
+          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          <span class="font-medium" style="color:#50717b">Création de Coût</span>
+        </nav>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">Saisie d'une nouvelle dépense</h1>
+        <p class="page-sub">Saisie d'une nouvelle dépense professionnelle pour validation.</p>
       </div>
 
       <!-- Form card -->
@@ -235,51 +237,51 @@
 
         </div><!-- /step-body -->
 
-        <!-- Nav footer -->
-        <div class="nav-footer">
-          <div>
-            @if (step() > 1) {
-              <button class="btn-back-nav" type="button" (click)="goPrev()">
-                <span class="material-symbols-outlined">arrow_back</span>
-                Précédent
-              </button>
-            } @else {
-              <button class="btn-cancel-nav" type="button" (click)="cancel()">
-                <span class="material-symbols-outlined">close</span>
-                Annuler
-              </button>
-            }
-          </div>
-
-          <div class="nav-actions">
-            @if (step() === 3) {
-              <button class="btn-draft-nav" type="button" (click)="saveDraft()" [disabled]="isSaving()">
-                <span class="material-symbols-outlined">save</span>
-                Brouillon
-              </button>
-            }
-            <button class="btn-next-nav" type="button" (click)="goNext()"
-                    [disabled]="(!canGoNext() && step() < 3) || isSaving()">
-              @if (isSaving() && !isDraft()) {
-                <span class="material-symbols-outlined spin">progress_activity</span>
-              }
-              {{ step() < 3 ? 'Suivant' : 'Soumettre' }}
-              <span class="material-symbols-outlined">{{ step() < 3 ? 'arrow_forward' : 'send' }}</span>
-            </button>
-          </div>
-        </div>
-
       </div><!-- /form-card -->
     </div><!-- /form-area -->
 
     <!-- ══ RIGHT — Sidebar ══ -->
     <aside class="sidebar">
 
+      <!-- Boutons navigation -->
+      <div class="panel-nav">
+        <div class="panel-nav__back">
+          @if (step() > 1) {
+            <button class="btn-back-nav" type="button" (click)="goPrev()">
+              <span class="material-symbols-outlined">arrow_back</span>
+              Précédent
+            </button>
+          } @else {
+            <button class="btn-cancel-nav" type="button" (click)="cancel()">
+              <span class="material-symbols-outlined">close</span>
+              Annuler
+            </button>
+          }
+        </div>
+        <div class="panel-nav__next">
+          @if (step() === 3) {
+            <button class="btn-draft-nav" type="button" (click)="saveDraft()" [disabled]="isSaving()">
+              <span class="material-symbols-outlined">save</span>
+              Brouillon
+            </button>
+          }
+          <button class="btn-next-nav" type="button" (click)="goNext()"
+                  [disabled]="(!canGoNext() && step() < 3) || isSaving()">
+            @if (isSaving() && !isDraft()) {
+              <span class="material-symbols-outlined spin">progress_activity</span>
+            }
+            {{ step() < 3 ? 'Suivant' : 'Soumettre' }}
+            <span class="material-symbols-outlined">{{ step() < 3 ? 'arrow_forward' : 'send' }}</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Progression -->
       <div class="panel-card">
         <div class="panel-header">
           <p class="panel__label">Progression</p>
         </div>
+
         <div class="panel-body">
           <div class="step-list">
             @for (s of steps; track $index; let i = $index) {

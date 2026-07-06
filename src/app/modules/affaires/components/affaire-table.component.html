@@ -66,7 +66,56 @@
     </div>
   } @else {
 
-    <!-- ═══ GRID VIEW (cards) ═══ -->
+    <!-- ═══ MOBILE — Feed list (affiché ≤ 640px, tous modes) ═══ -->
+    <div class="feed-list">
+      @if (affaires().length === 0) {
+        <div class="feed-empty">
+          <span class="material-symbols-outlined empty-icon">search_off</span>
+          <span>{{ 'AFFAIRES.LIST.TABLE.EMPTY' | translate }}</span>
+        </div>
+      }
+      @for (a of affaires(); track a.id; let i = $index) {
+        <div class="fi"
+             [style.--accent]="statutBadgeCfg(a.statut).color"
+             [style.animation-delay]="(i * 55) + 'ms'"
+             (click)="rowClick.emit(a.id)">
+
+          <div class="fi__strip"></div>
+
+          <div class="fi__inner">
+            <div class="fi__head">
+              <span class="fi__ref">{{ a.reference }}</span>
+              <span class="fi__type">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
+              <div class="fi__spacer"></div>
+              <div class="fi__status">
+                <div class="fi__dot"></div>
+                <span class="fi__status-lbl">{{ statutBadgeCfg(a.statut).label | translate }}</span>
+              </div>
+            </div>
+            <p class="fi__title">{{ a.intitule }}</p>
+            <div class="fi__meta">
+              <div class="fi__avatar">{{ initials(a.responsableFullName) }}</div>
+              <span class="fi__client">{{ a.clientName || '—' }}</span>
+            </div>
+            <div class="fi__foot">
+              <div class="fi__amounts">
+                <span class="fi__budget">{{ formatAmount(a.budgetPrevisionnel) }}</span>
+                <span class="fi__unit">TND</span>
+                @if (a.rafDisponible != null) {
+                  <span class="fi__raf" [style.color]="rafColor(a)">
+                    RAF&nbsp;{{ formatAmount(a.rafDisponible) }}
+                  </span>
+                }
+              </div>
+              <span class="fi__arrow material-symbols-outlined">arrow_forward</span>
+            </div>
+          </div>
+
+        </div>
+      }
+    </div>
+
+    <!-- ═══ GRID VIEW (cards) — Desktop uniquement ═══ -->
     @if (viewMode() === 'grid') {
       @if (affaires().length === 0) {
         <div class="card-empty">
@@ -76,17 +125,14 @@
       } @else {
         <div class="card-grid">
           @for (a of affaires(); track a.id) {
-
             <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true,clickable:true}"
                       (click)="rowClick.emit(a.id)">
               <div class="aff-card">
-
                 <div class="aff-card__badge-pos">
                   <daf-badge
                     [label]="statutBadgeCfg(a.statut).label | translate"
                     [options]="{ variant: statutBadgeVariant(a.statut), pill: true, size: 'sm' }" />
                 </div>
-
                 <div class="aff-card__header">
                   <div class="aff-card__id-block">
                     <div class="aff-card__icon">
@@ -102,7 +148,6 @@
                        [style.box-shadow]="'0 0 0 4px ' + statutBadgeCfg(a.statut).color + '22'">
                   </div>
                 </div>
-
                 <div class="aff-card__body">
                   <div class="aff-card__row">
                     <span class="aff-card__row-label">{{ 'AFFAIRES.LIST.TABLE.CARD.CLIENT' | translate }}</span>
@@ -135,22 +180,20 @@
                     </div>
                   }
                 </div>
-
                 <button class="aff-card__cta" (click)="rowClick.emit(a.id); $event.stopPropagation()">
                   <span class="material-symbols-outlined">arrow_forward</span>
                   {{ 'AFFAIRES.LIST.TABLE.SEE_DETAIL' | translate }}
                 </button>
-
               </div>
             </daf-card>
-
           }
         </div>
       }
     }
 
-    <!-- ═══ TABLE VIEW ═══ -->
+    <!-- ═══ TABLE VIEW — Desktop uniquement ═══ -->
     @if (viewMode() === 'list') {
+      <div class="table-desktop-wrap">
       <div class="table-scroll">
         <table>
           <thead>
@@ -244,7 +287,8 @@
             }
           </tbody>
         </table>
-      </div>
+      </div><!-- /table-scroll -->
+      </div><!-- /table-desktop-wrap -->
     }
 
     <!-- Footer -->

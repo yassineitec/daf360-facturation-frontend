@@ -32,41 +32,39 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
 // ── Page head ─────────────────────────────────────────────────────────────────
 .page-head {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   margin-bottom: 4px;
 }
 
-.back-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid rgba($brand-slate, 0.22);
-  background: #fff;
+.breadcrumb {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  color: $text-muted;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-
-  .material-symbols-outlined { font-size: 14px; }
-
-  &:hover {
-    border-color: $tertiary;
-    color: $tertiary;
-    background: rgba($tertiary-hex, 0.06);
-  }
+  gap: 10px;
 }
 
-.page-title {
-  font-size: 1.4rem;
+.breadcrumb__parent {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  transition: color 0.15s;
+
+  &:hover { color: #0b1c30; text-decoration: underline; }
+}
+
+.breadcrumb__current {
+  font-size: 1.375rem;
   font-weight: 800;
   color: #0b1c30;
-  margin: 0 0 2px;
-  letter-spacing: -0.02em;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .page-sub {
@@ -149,8 +147,9 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 32px;
-  border-top: 1px solid $border-soft;
+  padding: 10px 0;
+  border-bottom: 1px solid $border-soft;
+  margin-bottom: 4px;
 }
 
 
@@ -235,6 +234,22 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   gap: 16px;
   position: sticky;
   top: 24px;
+}
+
+// ── Panel nav buttons ─────────────────────────────────────────────────────────
+.panel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: $surface;
+  border: 1px solid $border-soft;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+
+  .panel-nav__back,
+  .panel-nav__next { flex: 1; }
 }
 
 // ── Panel header / body ───────────────────────────────────────────────────────
@@ -337,8 +352,8 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
     .tips-panel   { display: block; }
   }
 
-  .page-head    { gap: 10px; margin-bottom: 8px; }
-  .page-title   { font-size: 1.15rem; }
+  .page-head    { margin-bottom: 6px; }
+  .breadcrumb__current { font-size: 1.1rem; }
   .page-sub     { font-size: 0.75rem; }
 
   .card-head        { padding: 14px 16px 12px; gap: 10px; }
