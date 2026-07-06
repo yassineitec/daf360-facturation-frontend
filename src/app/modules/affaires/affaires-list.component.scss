@@ -6,6 +6,8 @@
   gap: 24px;
   height: 100%;
 
+  @media (max-width: 768px) { gap: 16px; }
+
   app-affaire-table {
     flex: 1;
     min-height: 0;
@@ -19,25 +21,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
+  flex-wrap: wrap;
+  gap: 12px;
 
-.page-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  @media (max-width: 480px) {
+    h2 { font-size: 1.25rem; }
+    .material-symbols-outlined { font-size: 24px !important; }
+  }
 }
-
-.page-title {
-  font-size: 1.875rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #111827;
-  margin: 0;
-  line-height: 1.2;
-}
-
-// ── Bouton "+ Nouvelle Affaire" ────────────────────────────────────────────────
-.btn-new { @include btn-new($brand-slate); }
 
 // ── KPI grid ──────────────────────────────────────────────────────────────────
 .kpi-grid { @include kpi-grid(4); }
