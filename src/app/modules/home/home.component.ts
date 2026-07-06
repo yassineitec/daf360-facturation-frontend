@@ -3,8 +3,8 @@ import { TitleCasePipe }   from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Store }           from '@ngrx/store';
 import { toSignal }        from '@angular/core/rxjs-interop';
-import { TranslatePipe } from '@ngx-translate/core';
-import { CardComponent, selectCurrentUser, selectUserPermissions } from '@khalilrebhiitec/daf360';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { CardComponent, CardOptions, selectCurrentUser, selectUserPermissions } from '@khalilrebhiitec/daf360';
 import { PaymentService }  from '../payments/payment.service';
 import { PaymentsDashboardStats } from '../payments/payment.model';
 import { InvoiceService }  from '../invoicing/invoice.service';
@@ -30,6 +30,18 @@ export interface ActivityItem {
   amount:    string | null;
   invoice:   InvoiceListItem;
 }
+
+const ICON_VARIANTS: Record<string, { bg: string; clr: string; hbg: string }> = {
+  primary:   { bg: 'icon-bg--primary',   clr: 'icon-clr--primary',   hbg: 'icon-hbg--primary'   },
+  secondary: { bg: 'icon-bg--secondary', clr: 'icon-clr--secondary', hbg: 'icon-hbg--secondary' },
+  tertiary:  { bg: 'icon-bg--tertiary',  clr: 'icon-clr--tertiary',  hbg: 'icon-hbg--tertiary'  },
+  fact:      { bg: 'icon-bg--fact',      clr: 'icon-clr--fact',      hbg: 'icon-hbg--fact'      },
+  pay:       { bg: 'icon-bg--pay',       clr: 'icon-clr--pay',       hbg: 'icon-hbg--pay'       },
+  error:     { bg: 'icon-bg--error',     clr: 'icon-clr--error',     hbg: 'icon-hbg--error'     },
+  slate:     { bg: 'icon-bg--slate',     clr: 'icon-clr--slate',     hbg: 'icon-hbg--slate'     },
+  amber:     { bg: 'icon-bg--amber',     clr: 'icon-clr--amber',     hbg: 'icon-hbg--amber'     },
+  outline:   { bg: 'icon-bg--outline',   clr: 'icon-clr--outline',   hbg: 'icon-hbg--outline'   },
+};
 
 const MODULE_DEFS: ModuleDef[] = [
   { path: 'clients',        labelKey: 'HOME.MODULES.CLIENTS.LABEL',       descKey: 'HOME.MODULES.CLIENTS.DESC',       icon: 'groups',                 iconVariant: 'primary',   statKey: 'HOME.MODULES.CLIENTS.STAT',       statClass: 'stat--primary',   permission: null },
@@ -67,11 +79,20 @@ const ACTIVITY_CONFIG: Record<string, { icon: string; cls: string }> = {
   styleUrl: './home.component.scss',
 })
 export class HomeComponent implements OnInit {
+  readonly kpiOpts = {
+    collected: { variant: 'glass', padding: 'md', radius: 'xl', hoverable: true, fullHeight: true, icon: 'trending_up', iconFilled: false, iconBg: 'kpi-bg-green', iconColor: 'kpi-c-green', iconHoverBg: 'kpi-hbg-green', iconHoverColor: 'icon-hclr' } as CardOptions,
+    pending:   { variant: 'glass', padding: 'md', radius: 'xl', hoverable: true, fullHeight: true, icon: 'schedule',    iconFilled: false, iconBg: 'kpi-bg-sec',   iconColor: 'kpi-c-sec',   iconHoverBg: 'kpi-hbg-sec',   iconHoverColor: 'icon-hclr' } as CardOptions,
+    overdue:   { variant: 'glass', padding: 'md', radius: 'xl', hoverable: true, fullHeight: true, icon: 'warning',     iconFilled: false, iconBg: 'kpi-bg-red',   iconColor: 'kpi-c-red',   iconHoverBg: 'kpi-hbg-red',   iconHoverColor: 'icon-hclr' } as CardOptions,
+    dso:       { variant: 'glass', padding: 'md', radius: 'xl', hoverable: true, fullHeight: true, icon: 'timer',       iconFilled: false, iconBg: 'kpi-bg-amber', iconColor: 'kpi-c-amber', iconHoverBg: 'kpi-hbg-amber', iconHoverColor: 'icon-hclr' } as CardOptions,
+  };
+
+  moduleCardOpts: Record<string, CardOptions> = {};
   private readonly paymentSvc     = inject(PaymentService);
   private readonly invoiceSvc     = inject(InvoiceService);
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly ngrx           = inject(Store);
+  private readonly translate      = inject(TranslateService);
 
   private readonly currentUser  = toSignal(this.ngrx.select(selectCurrentUser));
   private readonly permissions  = toSignal(this.ngrx.select(selectUserPermissions), { initialValue: [] as string[] });
@@ -97,6 +118,28 @@ export class HomeComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.moduleCardOpts = Object.fromEntries(
+      MODULE_DEFS.map(m => {
+        const ic = ICON_VARIANTS[m.iconVariant] ?? ICON_VARIANTS['primary'];
+        return [m.path, {
+          variant:        'glass',
+          padding:        'md',
+          radius:         'xl',
+          hoverable:      true,
+          clickable:      true,
+          fullHeight:     true,
+          icon:           m.icon,
+          iconFilled:     true,
+          iconBg:         ic.bg,
+          iconColor:      ic.clr,
+          iconHoverBg:    ic.hbg,
+          iconHoverColor: 'icon-hclr',
+          title:          this.translate.instant(m.labelKey),
+          description:    this.translate.instant(m.descKey),
+        } as CardOptions];
+      })
+    );
+
     this.paymentSvc.getStats().subscribe({
       next:  s  => { this.stats.set(s); this.loadingStats.set(false); },
       error: () => this.loadingStats.set(false),

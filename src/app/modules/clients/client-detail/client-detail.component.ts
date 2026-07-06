@@ -94,6 +94,12 @@ export class ClientDetailComponent implements OnInit {
     pill: true, size: 'sm',
   }));
 
+  readonly formattedAddress = computed(() => {
+    const c = this.client();
+    if (!c) return '';
+    return [c.address, c.city, c.postalCode].filter(part => !!part).join(', ');
+  });
+
   validateKyc(): void {
     const c = this.client();
     if (!c) return;

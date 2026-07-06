@@ -1,9 +1,8 @@
-FROM node:22-alpine AS builder
-RUN apk add --no-cache gcompat
+FROM node:22-slim AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY package.json ./
 COPY .npmrc ./
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build -- --configuration development
 

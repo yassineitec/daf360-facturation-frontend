@@ -47,3 +47,52 @@
 body {
   font-family: var(--font-sans);
 }
+
+/* ── Module-card icon classes (used as daf-card iconBg/iconColor/iconHoverBg) */
+.icon-bg--primary   { background-color: rgba(0,107,88,.10) !important; }
+.icon-bg--secondary { background-color: rgba(0,108,73,.10) !important; }
+.icon-bg--tertiary  { background-color: rgba(133,83,0,.15) !important; }
+.icon-bg--fact      { background-color: rgba(121,215,190,.30) !important; }
+.icon-bg--pay       { background-color: rgba(154,242,197,.50) !important; }
+.icon-bg--error     { background-color: rgba(186,26,26,.10) !important; }
+.icon-bg--slate     { background-color: #f1f5f9 !important; }
+.icon-bg--amber     { background-color: rgba(101,62,0,.10) !important; }
+.icon-bg--outline   { background-color: rgba(189,201,196,.20) !important; }
+
+.icon-clr--primary   { color: #006b58 !important; }
+.icon-clr--secondary { color: #006c49 !important; }
+.icon-clr--tertiary  { color: #855300 !important; }
+.icon-clr--fact      { color: #005d4d !important; }
+.icon-clr--pay       { color: #0c714d !important; }
+.icon-clr--error     { color: #BA1A1A !important; }
+.icon-clr--slate     { color: #1E293B !important; }
+.icon-clr--amber     { color: #653e00 !important; }
+.icon-clr--outline   { color: #3e4945 !important; }
+
+.icon-hbg--primary   { background-color: #006b58 !important; }
+.icon-hbg--secondary { background-color: #006c49 !important; }
+.icon-hbg--tertiary  { background-color: #855300 !important; }
+.icon-hbg--fact      { background-color: #005d4d !important; }
+.icon-hbg--pay       { background-color: #0c714d !important; }
+.icon-hbg--error     { background-color: #BA1A1A !important; }
+.icon-hbg--slate     { background-color: #1E293B !important; }
+.icon-hbg--amber     { background-color: #653e00 !important; }
+.icon-hbg--outline   { background-color: #3e4945 !important; }
+
+.icon-hclr { color: #fff !important; }
+
+/* ── KPI card icon hover backgrounds (solid fill) ────────────────────────── */
+.kpi-hbg-green { background-color: #006b58 !important; }
+.kpi-hbg-sec   { background-color: #006c49 !important; }
+.kpi-hbg-red   { background-color: #BA1A1A !important; }
+.kpi-hbg-amber { background-color: #653e00 !important; }
+
+/* ── Finance KPI metric-card color tokens ─────────────────────────────────── */
+.kpi-c-green  { color: #006b58 !important; }
+.kpi-bg-green { background-color: rgba(0,107,88,0.10) !important; }
+.kpi-c-sec    { color: #006c49 !important; }
+.kpi-bg-sec   { background-color: rgba(0,108,73,0.10) !important; }
+.kpi-c-red    { color: #BA1A1A !important; }
+.kpi-bg-red   { background-color: rgba(186,26,26,0.10) !important; }
+.kpi-c-amber  { color: #653e00 !important; }
+.kpi-bg-amber { background-color: rgba(101,62,0,0.10) !important; }

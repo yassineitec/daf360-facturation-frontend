@@ -158,7 +158,7 @@
               <div class="info-field info-field--full">
                 <p class="text-body-sm text-muted">Adresse</p>
                 <p class="text-body-md">
-                  {{ [client()!.address, client()!.city, client()!.postalCode].filter(Boolean).join(', ') }}
+                  {{ formattedAddress() }}
                 </p>
               </div>
             }

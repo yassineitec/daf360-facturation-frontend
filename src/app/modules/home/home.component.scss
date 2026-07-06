@@ -6,71 +6,58 @@
 .home-page {
   display: flex;
   flex-direction: column;
-}
+  gap: 28px;
 
-// ── Glass Card — backdrop style ───────────────────────────────────────────────
-.glass-card {
-  backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -1px rgba(0,0,0,.03);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,.10), 0 10px 10px -5px rgba(0,0,0,.04);
-    background: rgba(255, 255, 255, 0.95);
-  }
+  @media (max-width: 1024px) { gap: 24px; }
+  @media (max-width: 640px)  { gap: 20px; }
 }
 
 // ── Greeting block ────────────────────────────────────────────────────────────
 .greeting-block {
-  margin-bottom: 24px;
-
   h3 { margin: 0; }
   p  { margin: 4px 0 0; }
+
+  @media (max-width: 640px) {
+    h3 { font-size: 1.25rem; }
+    p  { font-size: 0.8rem; }
+  }
 }
 
 // ── KPI Section Grid ──────────────────────────────────────────────────────────
 .kpi-section {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 32px;
+  gap: 24px;
 
-  @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 640px)  { grid-template-columns: 1fr; }
+  @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 480px)  { grid-template-columns: 1fr; gap: 12px; }
 }
 
-// ── KPI icon wrapper (32×32, r=8px) ──────────────────────────────────────────
-.kpi-icon {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  border-radius: 8px;
+// ── KPI Card text (rendered below daf-card's built-in 48px icon) ─────────────
+
+// daf-card wrapper is not flex by default — force it so kpi-text can be pushed to bottom
+.kpi-section {
+  ::ng-deep daf-card > div {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}
+
+.kpi-text {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: auto; // push to bottom of card
 
-  .material-symbols-outlined { font-size: 15px; }
+  p { margin: 0; }
 }
 
-// KPI sub-label colour helpers — aligned with reference HTML tokens
-.kpi-sub-primary   { color: #006b58; }   // text-primary
-.kpi-sub-error     { color: #BA1A1A; }   // text-error
-.kpi-sub-tertiary  { color: #653e00; }   // text-on-tertiary-fixed-variant
-.kpi-val-error     { color: #BA1A1A; }   // text-error
-
-// ── Skeleton (KPI loading) ─────────────────────────────────────────────────────
-.skeleton-val {
-  height: 26px;
-  width: 100px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-  margin: 0;
+// uppercase label sitting above the value
+.kpi-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 // ── Module Cards Grid ─────────────────────────────────────────────────────────
@@ -80,72 +67,23 @@
   gap: 12px;
 
   @media (max-width: 1280px) { grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 768px)  { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 480px)  { grid-template-columns: 1fr; }
+  @media (max-width: 900px)  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (max-width: 480px)  { grid-template-columns: 1fr; gap: 8px; }
 }
 
 .mod-card {
-  display: flex;
-  flex-direction: column;
-
   &--wide {
     grid-column: span 2;
+    @media (max-width: 900px) { grid-column: span 2; }
     @media (max-width: 480px) { grid-column: span 1; }
   }
-
-  &--active {
-    border: 1.5px solid rgba(0, 108, 73, 0.3) !important;
-    background: rgba(255,255,255,0.95) !important;
-  }
-
-  // Arrow slides right on hover
-  &:hover .mod-card__arrow { transform: translateX(3px); }
-
-  // Icon fills on hover — group-hover equivalent from reference HTML
-  &:hover .icon--primary   { background: #006b58; color: #fff; }          // group-hover:bg-primary   text-on-primary
-  &:hover .icon--secondary { background: #006c49; color: #fff; }          // group-hover:bg-secondary text-on-secondary
-  &:hover .icon--tertiary  { background: #855300; color: #fff; }          // group-hover:bg-tertiary  text-on-tertiary
-  &:hover .icon--fact      { background: #005d4d; color: #79d7be; }       // group-hover:bg-on-primary-container
-  &:hover .icon--pay       { background: #0c714d; color: #9af2c5; }       // group-hover:bg-on-secondary-container
-  &:hover .icon--error     { background: #BA1A1A; color: #fff; }          // group-hover:bg-error     text-on-error
-  &:hover .icon--slate     { background: #1E293B; color: #fff; }          // group-hover:bg-slate-800 text-white
-  &:hover .icon--amber     { background: #653e00; color: #fff; }          // group-hover:bg-on-tertiary-fixed-variant
-  &:hover .icon--outline   { background: #3e4945; color: #fff; }          // group-hover:bg-on-surface-variant
 }
 
-// title: 18px / 700 — text-on-surface from reference
-.mod-card__title {
-  color: #0b1c30;
-  margin: 0;
-  line-height: 1.333;
-}
-
-// desc: 12px / 400 — text-on-surface-variant from reference
-.mod-card__desc {
-  color: #3e4945;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.mod-card__arrow {
-  font-size: 16px;
-  transition: transform 0.2s;
-}
-
-.mod-card__badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.mod-card__wide-value {
-  font-size: 1.5rem;
-  font-weight: 900;
+.mod-stat {
+  margin: 6px 0 0;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: #006b58;
-  margin: 0;
-  line-height: 1;
 }
 
 // ── Badge & stat colour utilities ─────────────────────────────────────────────
@@ -160,20 +98,9 @@
 .stat--slate     { color: #64748B; }
 .stat--muted     { color: #94A3B8; }
 
-// ── Icon colour variants — aligned with reference HTML tokens ─────────────────
-.icon--primary   { background: rgba(0,107,88,.10);    color: #006b58; }   // bg-primary/10   text-primary
-.icon--secondary { background: rgba(0,108,73,.10);    color: #006c49; }   // bg-secondary/10 text-secondary
-.icon--tertiary  { background: rgba(133,83,0,.15);    color: #855300; }   // bg-tertiary/15  text-tertiary
-.icon--fact      { background: rgba(121,215,190,.30); color: #005d4d; }   // bg-primary-container/30
-.icon--pay       { background: rgba(154,242,197,.50); color: #0c714d; }   // bg-secondary-container/50
-.icon--error     { background: rgba(186,26,26,.10);   color: #BA1A1A; }   // bg-error/10     text-error
-.icon--slate     { background: #f1f5f9;               color: #1E293B; }   // bg-slate-100    text-slate-800
-.icon--amber     { background: rgba(101,62,0,.10);    color: #653e00; }   // bg-on-tertiary-fixed-variant/10
-.icon--outline   { background: rgba(189,201,196,.20); color: #3e4945; }   // bg-outline-variant/20
 
 // ── Activity — demi-page ──────────────────────────────────────────────────────
 .activity-wrap {
-  margin-top: 32px;
   max-width: 50%;
 
   @media (max-width: 1280px) { max-width: 66%; }
@@ -187,6 +114,8 @@
   border-radius: 1.5rem;
   box-shadow: inset 0 2px 4px rgba(0,0,0,.04);
   padding: 24px;
+
+  @media (max-width: 640px) { padding: 16px; border-radius: 1rem; }
 }
 
 // ── "Voir tout" button ────────────────────────────────────────────────────────
@@ -222,6 +151,8 @@
 
   &:hover { background: rgba(255, 255, 255, 0.6); }
 
+  @media (max-width: 480px) { gap: 10px; padding: 10px 8px; }
+
   &__body { flex: 1; min-width: 0; }
 
   &__title {
@@ -232,6 +163,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    @media (max-width: 480px) { font-size: 0.8rem; }
   }
 
   &__sub {
@@ -247,6 +180,8 @@
     color: $text-dark;
     flex-shrink: 0;
     white-space: nowrap;
+
+    @media (max-width: 480px) { font-size: 0.75rem; }
   }
 
   &__more {
