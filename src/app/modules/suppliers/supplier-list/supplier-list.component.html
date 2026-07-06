@@ -1,7 +1,7 @@
-<div class="flex flex-col gap-5">
+<div class="supp-page">
 
   <!-- Page Header -->
-  <div class="flex justify-between items-center">
+  <div class="page-header">
     <div class="flex items-center gap-3">
       <span class="material-symbols-outlined text-[32px] text-[#79D7BE]"
             style="font-variation-settings:'FILL' 1">store</span>
@@ -13,22 +13,54 @@
   </div>
 
   <!-- KPI cards -->
-  <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4">
-    <daf-metric-card
-      label="Total Fournisseurs"
-      [value]="stats().total"
-      [options]="{ icon: 'group', iconBg: 'bg-teal/10', iconColor: 'text-teal' }" />
+  <div class="kpi-grid">
 
-    <daf-metric-card
-      label="Fournisseurs Actifs"
-      [value]="stats().active"
-      [options]="{ icon: 'verified', iconBg: 'bg-success/10', iconColor: 'text-success' }"
-      [delta]="{ value: activePct() + '% du référentiel', direction: 'up' }" />
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Total Fournisseurs</span>
+          <div class="kpi-card__icon kpi-icon--primary">
+            <span class="material-symbols-outlined"
+                  style="font-variation-settings:'FILL' 1">store</span>
+          </div>
+        </div>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value">{{ stats().total | number }}</span>
+        </div>
+      </div>
+    </daf-card>
 
-    <daf-metric-card
-      label="En attente validation"
-      [value]="stats().pendingValidation"
-      [options]="{ icon: 'pending_actions', iconBg: 'bg-danger/10', iconColor: 'text-danger', valueColor: 'text-danger' }" />
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">Fournisseurs Actifs</span>
+          <div class="kpi-card__icon kpi-icon--secondary">
+            <span class="material-symbols-outlined"
+                  style="font-variation-settings:'FILL' 1">verified</span>
+          </div>
+        </div>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value">{{ stats().active | number }}</span>
+          <span class="kpi-card__trend kpi-trend--up">{{ activePct() }}% du référentiel</span>
+        </div>
+      </div>
+    </daf-card>
+
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">En attente validation</span>
+          <div class="kpi-card__icon kpi-icon--danger">
+            <span class="material-symbols-outlined"
+                  style="font-variation-settings:'FILL' 1">pending_actions</span>
+          </div>
+        </div>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value kpi-value--danger">{{ stats().pendingValidation | number }}</span>
+        </div>
+      </div>
+    </daf-card>
+
   </div>
 
   <!-- Toolbar: search + new -->
@@ -262,7 +294,7 @@
 
   </div>
 
-</div>
+</div><!-- /supp-page -->
 
 <!-- Toggle confirm modal -->
 <ng-template #toggleTpl>

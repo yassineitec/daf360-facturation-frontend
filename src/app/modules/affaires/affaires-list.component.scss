@@ -1,5 +1,8 @@
 @import '../../shared/design-tokens';
 
+// Make host transparent so height:100% on .affaires-page resolves against shell-content
+:host { display: contents; }
+
 .affaires-page {
   display: flex;
   flex-direction: column;
@@ -10,7 +13,7 @@
 
   app-affaire-table {
     flex: 1;
-    min-height: 0;
+    min-height: 400px; // Safety: always visible even if flex chain breaks on mobile
     display: flex;
     flex-direction: column;
   }

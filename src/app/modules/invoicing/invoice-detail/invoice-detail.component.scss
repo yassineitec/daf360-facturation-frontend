@@ -20,7 +20,7 @@ $bg:     $bg-page;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 32px 40px 56px;
+  padding: 0 0 56px;
   background: $bg;
   min-height: 100%;
 }
@@ -558,6 +558,7 @@ $bg:     $bg-page;
 }
 
 // ── Responsive ────────────────────────────────────────────────────────────────
+
 @media (max-width: 1100px) {
   .body-grid { grid-template-columns: 1fr; }
 }
@@ -567,15 +568,44 @@ $bg:     $bg-page;
 }
 
 @media (max-width: 900px) {
-  .detail-page { padding: 16px; gap: 14px; }
+  .detail-page { gap: 16px; }
 }
 
 @media (max-width: 768px) {
-  .detail-page { padding: 16px 12px; }
-  .kpi-card    { padding: 16px; }
+  .detail-page { gap: 14px; }
+
+  .kpi-card        { padding: 16px; }
+  .kpi-card__value { font-size: 1.2rem; }
+  .kpi-card__label { font-size: 0.7rem; }
+  .kpi-card__icon  { width: 36px; height: 36px; }
+
+  .table-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .billing-table { min-width: 560px; }
+  .billing-table th,
+  .billing-table td { padding: 10px 12px; }
+
+  .dh-amount-ttc   { font-size: 1.25rem; }
+  .dh-amount-sub   { font-size: 0.75rem; }
+  .dh-header-right { align-items: flex-start; }
+  .dh-pills        { flex-wrap: wrap; }
+
+  .info-card { padding: 16px; }
+  .body-grid { gap: 14px; }
 }
 
 @media (max-width: 480px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .kpi-card { padding: 12px; }
+  .detail-page     { gap: 12px; }
+  .kpi-grid        { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kpi-card        { padding: 12px; }
+  .kpi-card__value { font-size: 1rem; }
+  .kpi-card__icon  { width: 30px; height: 30px; .material-symbols-outlined { font-size: 16px; } }
+  .dh-amount-ttc   { font-size: 1.1rem; }
+  .body-grid       { gap: 12px; }
+  .info-card       { padding: 12px 14px; }
 }
