@@ -16,6 +16,7 @@
   gap: 0.75rem;
   position: relative;
   box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
 }
 
 .search-input-wrap {
@@ -106,6 +107,11 @@
   .res-intitule{ font-size: 0.875rem; color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .res-client  { font-size: 0.8125rem; color: var(--color-text-muted); white-space: nowrap; }
   .res-statut  { font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
 }
 
 // ── Toolbar ────────────────────────────────────────────────────────────────────
@@ -115,6 +121,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .selected-affaire {
@@ -363,7 +371,14 @@
   }
 }
 
-.field-row { display: flex; gap: 0.75rem; }
+.field-row {
+  display: flex;
+  gap: 0.75rem;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+  }
+}
 
 .modal-actions {
   display: flex; justify-content: flex-end; gap: 0.75rem;

@@ -41,10 +41,10 @@ $deep-blue:  #164B60;
 }
 
 .back-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1.5px solid rgba($brand-slate, 0.25);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba($brand-slate, 0.22);
   background: #fff;
   display: flex;
   align-items: center;
@@ -55,7 +55,7 @@ $deep-blue:  #164B60;
   color: #3e4945;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 
-  .material-symbols-outlined { font-size: 16px; }
+  .material-symbols-outlined { font-size: 14px; }
   &:hover { border-color: $green; color: $green; background: rgba($green, 0.05); }
 }
 

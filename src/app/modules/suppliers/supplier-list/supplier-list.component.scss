@@ -26,3 +26,14 @@
   &--danger  { background: rgba(220,38,38,0.08);  border-color: rgba(220,38,38,0.25);  color: var(--color-danger); }
   &--success { background: rgba(0,107,88,0.08);   border-color: rgba(0,107,88,0.25);   color: #006b58; }
 }
+
+.split-panel {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 1.5rem;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}

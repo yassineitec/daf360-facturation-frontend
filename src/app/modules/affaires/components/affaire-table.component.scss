@@ -110,6 +110,7 @@ $brand-green:  #006b58;
 
 table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
 
   thead tr {
@@ -118,7 +119,7 @@ table {
   }
 
   th {
-    padding: 11px 16px;
+    padding: 11px 12px;
     font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -129,7 +130,7 @@ table {
   }
 
   td {
-    padding: 14px 16px;
+    padding: 12px;
     font-size: 0.875rem;
     color: $text-body;
     border-bottom: 1px solid $border;
@@ -325,17 +326,17 @@ table {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  padding: 20px;
+  gap: 16px;
+  padding: 16px;
   align-content: start;
   flex: 1;
   overflow-y: auto;
 
   daf-card { display: block; }
 
-  @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width:  680px) { grid-template-columns: 1fr; gap: 12px; padding: 14px; }
-  @media (max-width:  400px) { padding: 10px; gap: 10px; }
+  @media (max-width: 1200px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width:  680px) { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px; }
+  @media (max-width:  480px) { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
 }
 
 // ── aff-card (glass card inner layout) ───────────────────────────────────────
@@ -343,107 +344,113 @@ table {
 .aff-card {
   position: relative;
   overflow: hidden;
-  padding: 28px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
   height: 100%;
 
+  @media (max-width: 680px) { padding: 16px; }
+
   &:hover { .aff-card__cta { opacity: 1; } }
 
   &__badge-pos {
     position: absolute;
-    top: 14px; right: 14px;
+    top: 12px; right: 12px;
   }
 
   &__header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 22px;
-    margin-top: 24px;
+    margin-bottom: 16px;
+    margin-top: 20px;
+
+    @media (max-width: 680px) { margin-top: 16px; margin-bottom: 12px; }
   }
 
-  &__id-block { display: flex; align-items: center; gap: 14px; }
+  &__id-block { display: flex; align-items: center; gap: 10px; }
 
   &__icon {
-    width: 44px; height: 44px; border-radius: 12px;
+    width: 38px; height: 38px; border-radius: 10px;
     background: #f8fafc; border: 1px solid #e8edf2;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
-    .material-symbols-outlined { font-size: 22px; color: #64748b; }
+    .material-symbols-outlined { font-size: 18px; color: #64748b; }
   }
 
   &__ref {
     display: block;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
     color: $brand-green; margin-bottom: 2px;
   }
 
   &__name {
-    font-size: 15px; font-weight: 700; line-height: 20px;
+    font-size: 14px; font-weight: 700; line-height: 20px;
     color: $text-dark; margin: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-width: 180px;
+    max-width: 100%;
   }
 
   &__dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    flex-shrink: 0; margin-top: 6px;
+    width: 9px; height: 9px; border-radius: 50%;
+    flex-shrink: 0; margin-top: 5px;
   }
 
-  &__body { display: flex; flex-direction: column; gap: 14px; flex: 1; margin-bottom: 22px; }
+  &__body { display: flex; flex-direction: column; gap: 10px; flex: 1; margin-bottom: 16px; }
 
   &__row {
     display: flex; justify-content: space-between; align-items: center;
-    padding-bottom: 14px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #f1f5f9;
   }
 
-  &__row-label { font-size: 12px; font-weight: 400; color: #64748b; }
+  &__row-label { font-size: 11px; font-weight: 400; color: #64748b; }
 
-  &__row-val { font-size: 14px; font-weight: 600; color: $text-dark; }
+  &__row-val { font-size: 13px; font-weight: 600; color: $text-dark; }
 
-  &__resp-val { display: flex; align-items: center; gap: 8px; }
+  &__resp-val { display: flex; align-items: center; gap: 6px; }
 
   &__amount-block { padding-top: 4px; }
 
   &__amount-label {
     display: block;
-    font-size: 10px; font-weight: 800; letter-spacing: 0.10em;
+    font-size: 9px; font-weight: 800; letter-spacing: 0.10em;
     text-transform: uppercase; color: #94a3b8; margin-bottom: 4px;
   }
 
   &__amount {
-    font-size: 24px; font-weight: 900; line-height: 32px; color: $text-dark;
+    font-size: 20px; font-weight: 900; line-height: 28px; color: $text-dark;
+
+    @media (max-width: 680px) { font-size: 18px; }
   }
 
-  &__amount-unit { font-size: 14px; font-weight: 600; color: #94a3b8; margin-left: 4px; }
+  &__amount-unit { font-size: 12px; font-weight: 600; color: #94a3b8; margin-left: 4px; }
 
   &__raf {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 12px; border-radius: 10px; background: #f8fafc;
+    padding: 7px 10px; border-radius: 8px; background: #f8fafc;
   }
 
   &__raf-label {
-    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
     text-transform: uppercase; color: #94a3b8;
   }
 
-  &__raf-val { font-size: 14px; font-weight: 700; }
+  &__raf-val { font-size: 13px; font-weight: 700; }
 
   &__cta {
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 13px;
-    border-radius: 16px; border: none;
+    width: 100%; padding: 11px;
+    border-radius: 14px; border: none;
     background: $brand-green; color: #fff;
-    font-size: 14px; font-weight: 700; font-family: inherit;
+    font-size: 13px; font-weight: 700; font-family: inherit;
     cursor: pointer; opacity: 0;
-    box-shadow: 0 8px 20px rgba(0, 107, 88, 0.25);
+    box-shadow: 0 6px 16px rgba(0, 107, 88, 0.25);
     transition: opacity 0.2s, transform 0.15s, box-shadow 0.15s;
-    .material-symbols-outlined { font-size: 18px; }
+    .material-symbols-outlined { font-size: 16px; }
 
-    &:hover { box-shadow: 0 12px 24px rgba(0, 107, 88, 0.30); }
+    &:hover { box-shadow: 0 10px 20px rgba(0, 107, 88, 0.30); }
     &:active { transform: scale(0.98); }
   }
 }

@@ -157,6 +157,11 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+
+  @media (max-width: 400px) {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 
 .bar-label { font-size: 0.875rem; color: var(--color-text-muted); }

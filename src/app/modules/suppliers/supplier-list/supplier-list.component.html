@@ -13,7 +13,7 @@
   </div>
 
   <!-- KPI cards -->
-  <div class="grid grid-cols-3 gap-4">
+  <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4">
     <daf-metric-card
       label="Total Fournisseurs"
       [value]="stats().total"
@@ -40,7 +40,7 @@
     (actionClick)="onToolbarAction($event)" />
 
   <!-- Split panel -->
-  <div class="grid gap-6" style="grid-template-columns:3fr 2fr;align-items:start">
+  <div class="grid gap-6 split-panel">
 
     <!-- LEFT: supplier table -->
     <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
@@ -192,7 +192,7 @@
                 <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant m-0">CONFIGURATION</p>
               </div>
               <div class="p-4 flex flex-col gap-4">
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                   <div>
                     <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1 m-0">PAYS</p>
                     <span class="px-3 py-0.5 rounded-full text-xs font-medium"

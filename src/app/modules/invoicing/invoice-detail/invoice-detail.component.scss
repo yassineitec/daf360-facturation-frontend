@@ -562,7 +562,20 @@ $bg:     $bg-page;
   .body-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 900px) {
-  .kpi-grid   { grid-template-columns: 1fr; }
   .detail-page { padding: 16px; gap: 14px; }
+}
+
+@media (max-width: 768px) {
+  .detail-page { padding: 16px 12px; }
+  .kpi-card    { padding: 16px; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kpi-card { padding: 12px; }
 }

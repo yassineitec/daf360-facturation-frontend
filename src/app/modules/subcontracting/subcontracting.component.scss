@@ -19,6 +19,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .sc-title {
@@ -61,6 +63,10 @@
   gap: 0;
   margin: 0 -1.5rem;
   border-top: 1px solid var(--color-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
 .tab-btn {
@@ -94,4 +100,13 @@
 .sc-body {
   flex: 1;
   min-height: 0;
+}
+
+@media (max-width: 768px) {
+  .sc-page {
+    padding: 0.75rem;
+  }
+  .sc-header {
+    padding: 0.875rem 1rem 0;
+  }
 }

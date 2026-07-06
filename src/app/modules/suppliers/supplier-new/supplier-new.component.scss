@@ -6,7 +6,7 @@ $tertiary-hex: #00c1ad;
 :host { display: block; }
 
 .wizard-page {
-  padding: 28px 16px 48px;
+  padding: 0 0 32px;
   box-sizing: border-box;
 }
 
@@ -14,7 +14,7 @@ $tertiary-hex: #00c1ad;
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: 24px;
-  max-width: 100%;
+  width: 100%;
   margin: 0 auto;
   align-items: start;
 }
@@ -453,4 +453,7 @@ textarea.form-input {
 @media (max-width: 900px) {
   .wizard-layout { grid-template-columns: 1fr; }
   .sidebar { position: static; flex-direction: row; flex-wrap: wrap; }
+  .card-head { padding: 16px 20px 14px; }
+  .step-body { padding: 20px; }
+  .nav-footer { padding: 14px 20px; }
 }

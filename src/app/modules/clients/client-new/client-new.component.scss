@@ -8,17 +8,16 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
 
 // ── Page wrapper ───────────────────────────────────────────────────────────────
 .wizard-page {
-  padding: 28px 16px 48px;
+  padding: 0 0 32px;
   box-sizing: border-box;
 }
 
 // ── Two-column grid ────────────────────────────────────────────────────────────
 .wizard-layout {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 24px;
-  max-width: 100%;
-  margin: 0 auto;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  width: 100%;
   align-items: start;
 }
 
@@ -39,10 +38,10 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
 }
 
 .back-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  border: 1.5px solid rgba($brand-slate, 0.3);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba($brand-slate, 0.22);
   background: #fff;
   display: flex;
   align-items: center;
@@ -52,7 +51,7 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   color: $text-muted;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 
-  .material-symbols-outlined { font-size: 20px; }
+  .material-symbols-outlined { font-size: 14px; }
 
   &:hover {
     border-color: $tertiary;
@@ -319,13 +318,40 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
 }
 
 // ── Responsive ────────────────────────────────────────────────────────────────
-@media (max-width: 900px) {
-  .wizard-layout {
-    grid-template-columns: 1fr;
-  }
+
+@media (max-width: 1100px) {
+  .wizard-layout   { grid-template-columns: 1fr 260px; gap: 16px; }
+  .step-body       { padding: 20px 24px; }
+  .card-head       { padding: 18px 24px 16px; }
+  .nav-footer      { padding: 16px 24px; }
+  .validation-hint { margin-left: 24px; margin-right: 24px; }
+}
+
+@media (max-width: 768px) {
+  .wizard-page   { padding: 0 0 24px; }
+  .wizard-layout { grid-template-columns: 1fr; gap: 16px; }
+
   .sidebar {
     position: static;
-    flex-direction: row;
-    flex-wrap: wrap;
+    daf-card      { display: none; }
+    .tips-panel   { display: block; }
   }
+
+  .page-head    { gap: 10px; margin-bottom: 8px; }
+  .page-title   { font-size: 1.15rem; }
+  .page-sub     { font-size: 0.75rem; }
+
+  .card-head        { padding: 14px 16px 12px; gap: 10px; }
+  .card-head__icon  { width: 36px; height: 36px; .material-symbols-outlined { font-size: 18px; } }
+  .card-head__title { font-size: 0.95rem; }
+
+  .step-body       { padding: 16px; }
+  .nav-footer      { padding: 14px 16px; }
+  .validation-hint { margin-left: 16px; margin-right: 16px; }
+}
+
+@media (max-width: 480px) {
+  .step-body  { padding: 12px; }
+  .nav-footer { padding: 12px; }
+  .card-head  { padding: 12px 12px 10px; }
 }

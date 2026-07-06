@@ -7,7 +7,7 @@ $tertiary-hex: #00c1ad;
 
 // ── Page wrapper ───────────────────────────────────────────────────────────────
 .wizard-page {
-  padding: 28px 16px 48px;
+  padding: 0 0 32px;
   box-sizing: border-box;
 }
 
@@ -16,7 +16,7 @@ $tertiary-hex: #00c1ad;
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: 24px;
-  max-width: 100%;
+  width: 100%;
   margin: 0 auto;
   align-items: start;
 }
@@ -92,6 +92,9 @@ $tertiary-hex: #00c1ad;
   border-bottom: 1px solid $border-soft;
   background: rgba($tertiary-hex, 0.04);
 
+  @media (max-width: 768px) { padding: 14px 16px; }
+  @media (max-width: 480px) { padding: 12px; }
+
   &__icon {
     width: 44px;
     height: 44px;
@@ -125,6 +128,9 @@ $tertiary-hex: #00c1ad;
 // ── Step body ─────────────────────────────────────────────────────────────────
 .step-body {
   padding: 28px 32px;
+
+  @media (max-width: 768px) { padding: 16px; }
+  @media (max-width: 480px) { padding: 12px; }
 }
 
 // ── Step enter animation ───────────────────────────────────────────────────────
@@ -144,6 +150,9 @@ $tertiary-hex: #00c1ad;
   justify-content: space-between;
   padding: 18px 32px;
   border-top: 1px solid $border-soft;
+
+  @media (max-width: 768px) { padding: 14px 16px; }
+  @media (max-width: 480px) { padding: 12px; }
 }
 
 .nav-actions {

@@ -1,6 +1,8 @@
 .payments-page {
   padding: 1.5rem 2rem;
   max-width: 1400px;
+
+  @media (max-width: 768px) { padding: 1rem; }
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -9,7 +11,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 1.5rem;
 }
 
@@ -107,7 +110,7 @@
 // ── Aging table ───────────────────────────────────────────────────────────────
 
 .table-wrap {
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .aging-table {

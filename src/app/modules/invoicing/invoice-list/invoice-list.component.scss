@@ -28,6 +28,15 @@ $teal-bg:     rgba(#79d7be, 0.15);
 }
 
 
+// ── Page header ───────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 // ── KPI Grid ──────────────────────────────────────────────────────────────────
 .kpi-grid {
   display: grid;
@@ -35,6 +44,12 @@ $teal-bg:     rgba(#79d7be, 0.15);
   gap: 12px;
 
   @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 480px)  { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+}
+
+.kpi-card {
+  @media (max-width: 768px) { padding: 16px; }
+  @media (max-width: 480px) { padding: 12px; }
 }
 
 

@@ -5,6 +5,22 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  @media (max-width: 768px) { gap: 14px; }
+}
+
+// ── Page header ───────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  @media (max-width: 480px) {
+    h2 { font-size: 1.25rem; }
+    .material-symbols-outlined { font-size: 24px !important; }
+  }
 }
 
 
@@ -15,7 +31,7 @@
   gap: 12px;
 
   @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 640px)  { grid-template-columns: 1fr; }
+  @media (max-width: 480px)  { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
 
 .kpi-card {
@@ -26,6 +42,9 @@
   min-height: 128px;
   position: relative;
   overflow: hidden;
+
+  @media (max-width: 768px)  { padding: 16px; min-height: 100px; }
+  @media (max-width: 480px)  { padding: 12px; min-height: 88px; }
 
   &__top {
     display: flex;
@@ -88,13 +107,17 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 14px;
+
+  @media (max-width: 640px) { padding: 12px 14px; gap: 10px; }
 }
 
 .search-wrap {
   position: relative;
   flex: 1;
-  min-width: 240px;
+  min-width: 180px;
   max-width: 360px;
+
+  @media (max-width: 640px) { min-width: 0; width: 100%; max-width: 100%; }
 }
 
 .search-icon {
@@ -206,8 +229,9 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 
-  @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 640px)  { grid-template-columns: 1fr; }
+  @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  @media (max-width: 640px)  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (max-width: 420px)  { grid-template-columns: 1fr; }
 }
 
 // ── Client Card ───────────────────────────────────────────────────────────────
@@ -217,6 +241,9 @@
   flex-direction: column;
   gap: 16px;
   cursor: pointer;
+
+  @media (max-width: 768px) { padding: 16px; gap: 12px; }
+  @media (max-width: 480px) { padding: 12px; gap: 10px; }
 
   &--skeleton {
     pointer-events: none;
@@ -246,7 +273,9 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 180px;
+    max-width: 100%;
+
+    @media (max-width: 480px) { font-size: 0.9rem; }
   }
 
   &__sector {
@@ -290,6 +319,8 @@
   width: 48px;
   height: 48px;
   border-radius: 14px;
+
+  @media (max-width: 640px) { width: 38px; height: 38px; border-radius: 10px; font-size: 0.875rem; }
   display: flex;
   align-items: center;
   justify-content: center;
