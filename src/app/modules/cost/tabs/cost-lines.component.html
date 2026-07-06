@@ -1,21 +1,24 @@
-<div class="flex flex-col gap-5">
+<div class="costs-page">
 
   <!-- KPI cards -->
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 gap-4">
-    <daf-metric-card
+  <div class="kpi-grid">
+    <app-affaire-kpi-card
       label="Brouillons"
+      icon="edit_note"
       [value]="draftCount()"
-      [options]="{ icon: 'edit_note', iconBg: 'bg-teal/10', iconColor: 'text-teal' }" />
+      variant="blue" />
 
-    <daf-metric-card
+    <app-affaire-kpi-card
       label="En attente"
+      icon="pending_actions"
       [value]="pendingCount()"
-      [options]="{ icon: 'pending_actions', iconBg: 'bg-warning/10', iconColor: 'text-warning' }" />
+      variant="amber" />
 
-    <daf-metric-card
+    <app-affaire-kpi-card
       label="Approuvés"
+      icon="check_circle"
       [value]="approvedCount()"
-      [options]="{ icon: 'check_circle', iconBg: 'bg-success/10', iconColor: 'text-success' }" />
+      variant="green" />
   </div>
 
   <!-- Toolbar: search + new button -->
@@ -123,4 +126,4 @@
     }
   </daf-card>
 
-</div>
+</div><!-- /costs-page -->

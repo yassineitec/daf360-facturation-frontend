@@ -3,12 +3,15 @@
 $tertiary:     var(--color-tertiary);
 $tertiary-hex: #00c1ad;
 
-:host { display: block; }
+:host { display: contents; }
 
 // ── Page wrapper ───────────────────────────────────────────────────────────────
 .wizard-page {
   padding: 0 0 32px;
   box-sizing: border-box;
+  min-height: calc(100vh - var(--shell-header-h, 64px) - 4rem);
+  display: flex;
+  flex-direction: column;
 }
 
 // ── Two-column grid ────────────────────────────────────────────────────────────
@@ -24,7 +27,7 @@ $tertiary-hex: #00c1ad;
 .form-area {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 28px;
   min-width: 0;
 }
 
@@ -60,10 +63,10 @@ $tertiary-hex: #00c1ad;
 }
 
 .page-title {
-  font-size: 1.4rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: #0b1c30;
-  margin: 0 0 2px;
+  margin: 0 0 4px;
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
@@ -86,18 +89,19 @@ $tertiary-hex: #00c1ad;
 .card-head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 24px 32px 20px;
+  gap: 18px;
+  padding: 36px 40px 28px;
   border-bottom: 1px solid $border-soft;
   background: rgba($tertiary-hex, 0.04);
 
-  @media (max-width: 768px) { padding: 14px 16px; }
-  @media (max-width: 480px) { padding: 12px; }
+  @media (max-width: 1100px) { padding: 28px 32px 22px; }
+  @media (max-width: 768px)  { padding: 14px 16px; }
+  @media (max-width: 480px)  { padding: 12px; }
 
   &__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
     background: rgba($tertiary-hex, 0.12);
     display: flex;
     align-items: center;
@@ -105,32 +109,41 @@ $tertiary-hex: #00c1ad;
     flex-shrink: 0;
     color: $tertiary;
 
-    .material-symbols-outlined { font-size: 22px; }
+    .material-symbols-outlined { font-size: 32px; }
+
+    @media (max-width: 768px) { width: 40px; height: 40px; border-radius: 10px; .material-symbols-outlined { font-size: 20px; } }
   }
 
   &__title {
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-size: 1.5rem;
+    font-weight: 800;
     color: #0b1c30;
-    margin: 0 0 3px;
-    line-height: 1.3;
+    margin: 0 0 5px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+
+    @media (max-width: 768px) { font-size: 1rem; }
   }
 
   &__sub {
-    font-size: 0.8125rem;
+    font-size: 0.9rem;
     color: #64748b;
     margin: 0;
     line-height: 1.5;
+
+    @media (max-width: 768px) { font-size: 0.8125rem; }
   }
 }
 
 // ── Step body ─────────────────────────────────────────────────────────────────
 .step-body {
-  padding: 28px 32px;
+  padding: 36px 40px;
 
-  @media (max-width: 768px) { padding: 16px; }
-  @media (max-width: 480px) { padding: 12px; }
+  @media (max-width: 1100px) { padding: 28px 32px; }
+  @media (max-width: 768px)  { padding: 16px; }
+  @media (max-width: 480px)  { padding: 12px; }
 }
+
 
 // ── Step enter animation ───────────────────────────────────────────────────────
 @keyframes stepEnter {
@@ -334,7 +347,7 @@ $tertiary-hex: #00c1ad;
 }
 
 @media (max-width: 768px) {
-  .wizard-page   { padding: 0 0 24px; }
+  .wizard-page   { padding: 0 0 24px; min-height: 0; }
   .wizard-layout { grid-template-columns: 1fr; gap: 16px; }
 
   .sidebar {

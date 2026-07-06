@@ -560,7 +560,15 @@ $bg:     $bg-page;
 // ── Responsive ────────────────────────────────────────────────────────────────
 
 @media (max-width: 1100px) {
+  // Body grid collapses: main then aside below
   .body-grid { grid-template-columns: 1fr; }
+
+  // Aside goes side-by-side on tablet (2 cards per row)
+  .body-aside {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -586,17 +594,26 @@ $bg:     $bg-page;
     padding: 14px 16px;
   }
 
+  .tct-btn { padding: 4px 10px; font-size: 0.75rem; }
+
   .billing-table { min-width: 560px; }
   .billing-table th,
   .billing-table td { padding: 10px 12px; }
 
+  .edit-btn { opacity: 1; }
+
   .dh-amount-ttc   { font-size: 1.25rem; }
   .dh-amount-sub   { font-size: 0.75rem; }
-  .dh-header-right { align-items: flex-start; }
+  .dh-header-right { align-items: flex-start; width: 100%; }
   .dh-pills        { flex-wrap: wrap; }
 
   .info-card { padding: 16px; }
   .body-grid { gap: 14px; }
+}
+
+@media (max-width: 640px) {
+  // Aside back to single column on phone
+  .body-aside { grid-template-columns: 1fr; gap: 14px; }
 }
 
 @media (max-width: 480px) {
@@ -604,8 +621,36 @@ $bg:     $bg-page;
   .kpi-grid        { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .kpi-card        { padding: 12px; }
   .kpi-card__value { font-size: 1rem; }
+  .kpi-card__label { font-size: 0.625rem; }
   .kpi-card__icon  { width: 30px; height: 30px; .material-symbols-outlined { font-size: 16px; } }
+
+  .table-card__header { padding: 12px; gap: 8px; }
+  .billing-table      { min-width: 480px; }
+  .billing-table th,
+  .billing-table td   { padding: 8px 8px; }
+  .billing-table .foot-label { padding: 10px 8px; }
+  .billing-table .foot-ht,
+  .billing-table .foot-ttc   { padding: 10px 8px; }
+  .billing-table .line-desc  { max-width: 120px; }
+
   .dh-amount-ttc   { font-size: 1.1rem; }
+  .dh-amount-sub   { font-size: 0.6875rem; }
   .body-grid       { gap: 12px; }
   .info-card       { padding: 12px 14px; }
+  .info-row        { padding: 7px 0; }
+}
+
+@media (max-width: 360px) {
+  .detail-page     { gap: 10px; padding-bottom: 40px; }
+  .kpi-grid        { grid-template-columns: 1fr; gap: 8px; }
+  .kpi-card        { padding: 10px 12px; }
+  .kpi-card__value { font-size: 0.9375rem; }
+  .kpi-card__label { font-size: 0.6rem; }
+  .kpi-card__icon  { width: 28px; height: 28px; .material-symbols-outlined { font-size: 14px; } }
+
+  .billing-table     { min-width: 420px; }
+  .body-grid         { gap: 10px; }
+  .info-card         { padding: 10px 12px; }
+  .table-card__header { padding: 10px 12px; }
+  .dh-amount-ttc     { font-size: 1rem; }
 }

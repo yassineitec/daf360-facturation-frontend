@@ -14,53 +14,24 @@
 
   <!-- KPI cards -->
   <div class="kpi-grid">
+    <app-affaire-kpi-card
+      label="Total Fournisseurs"
+      icon="store"
+      [value]="stats().total"
+      variant="green" />
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <span class="kpi-card__label">Total Fournisseurs</span>
-          <div class="kpi-card__icon kpi-icon--primary">
-            <span class="material-symbols-outlined"
-                  style="font-variation-settings:'FILL' 1">store</span>
-          </div>
-        </div>
-        <div class="kpi-card__bottom">
-          <span class="kpi-card__value">{{ stats().total | number }}</span>
-        </div>
-      </div>
-    </daf-card>
+    <app-affaire-kpi-card
+      label="Fournisseurs Actifs"
+      icon="verified"
+      [value]="stats().active"
+      variant="green"
+      [trend]="activePct() + '% du référentiel'" />
 
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <span class="kpi-card__label">Fournisseurs Actifs</span>
-          <div class="kpi-card__icon kpi-icon--secondary">
-            <span class="material-symbols-outlined"
-                  style="font-variation-settings:'FILL' 1">verified</span>
-          </div>
-        </div>
-        <div class="kpi-card__bottom">
-          <span class="kpi-card__value">{{ stats().active | number }}</span>
-          <span class="kpi-card__trend kpi-trend--up">{{ activePct() }}% du référentiel</span>
-        </div>
-      </div>
-    </daf-card>
-
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <span class="kpi-card__label">En attente validation</span>
-          <div class="kpi-card__icon kpi-icon--danger">
-            <span class="material-symbols-outlined"
-                  style="font-variation-settings:'FILL' 1">pending_actions</span>
-          </div>
-        </div>
-        <div class="kpi-card__bottom">
-          <span class="kpi-card__value kpi-value--danger">{{ stats().pendingValidation | number }}</span>
-        </div>
-      </div>
-    </daf-card>
-
+    <app-affaire-kpi-card
+      label="En attente validation"
+      icon="pending_actions"
+      [value]="stats().pendingValidation"
+      variant="red" />
   </div>
 
   <!-- Toolbar: search + new -->
@@ -72,39 +43,41 @@
     (actionClick)="onToolbarAction($event)" />
 
   <!-- Split panel -->
-  <div class="grid gap-6 split-panel">
+  <div class="split-panel">
 
     <!-- LEFT: supplier table -->
     <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
-      <daf-data-table
-        [columns]="tableColumns"
-        [rows]="tableRows()"
-        [config]="tableConfig()"
-        (rowClick)="onRowClick($event)">
+      <div class="table-overflow-wrap">
+        <daf-data-table
+          [columns]="tableColumns"
+          [rows]="tableRows()"
+          [config]="tableConfig()"
+          (rowClick)="onRowClick($event)">
 
-        <ng-template dafCell="code" let-row>
-          <span class="font-mono text-xs font-bold text-on-surface-variant">{{ row['code'] }}</span>
-        </ng-template>
+          <ng-template dafCell="code" let-row>
+            <span class="font-mono text-xs font-bold text-on-surface-variant">{{ row['code'] }}</span>
+          </ng-template>
 
-        <ng-template dafCell="name" let-row>
-          <p class="font-semibold text-on-surface text-sm m-0">{{ row['name'] }}</p>
-        </ng-template>
+          <ng-template dafCell="name" let-row>
+            <p class="font-semibold text-on-surface text-sm m-0">{{ row['name'] }}</p>
+          </ng-template>
 
-        <ng-template dafCell="tva" let-row>
-          @if (row['tva']) {
-            <span class="font-mono text-xs text-on-surface">{{ row['tva'] }}</span>
-          } @else {
-            <span class="text-outline text-xs">—</span>
-          }
-        </ng-template>
+          <ng-template dafCell="tva" let-row>
+            @if (row['tva']) {
+              <span class="font-mono text-xs text-on-surface">{{ row['tva'] }}</span>
+            } @else {
+              <span class="text-outline text-xs">—</span>
+            }
+          </ng-template>
 
-        <ng-template dafCell="statut" let-row>
-          <daf-badge
-            [label]="row['statut'] ? 'ACTIF' : 'INACTIF'"
-            [options]="activeBadgeOptions(row['statut'])" />
-        </ng-template>
+          <ng-template dafCell="statut" let-row>
+            <daf-badge
+              [label]="row['statut'] ? 'ACTIF' : 'INACTIF'"
+              [options]="activeBadgeOptions(row['statut'])" />
+          </ng-template>
 
-      </daf-data-table>
+        </daf-data-table>
+      </div>
 
       @if (totalPagesCount() > 1) {
         <div class="px-4 py-3 border-t border-outline-variant/20">
@@ -124,9 +97,9 @@
           <div class="flex flex-col gap-5">
 
             <!-- Header -->
-            <div class="flex items-start justify-between">
-              <div>
-                <div class="flex items-center gap-2 mb-2">
+            <div class="flex items-start justify-between flex-wrap gap-2">
+              <div style="min-width:0;flex:1">
+                <div class="flex items-center gap-2 mb-2 flex-wrap">
                   <span class="px-2 py-0.5 rounded-lg text-xs font-bold bg-on-surface text-surface">
                     {{ s.code ?? s.supplierCode ?? 'S-' + s.id }}
                   </span>
@@ -137,13 +110,13 @@
                     </span>
                   }
                 </div>
-                <h2 class="text-xl font-bold text-on-surface m-0">{{ s.name }}</h2>
+                <h2 class="detail-name text-on-surface m-0">{{ s.name }}</h2>
                 <p class="text-sm text-on-surface-variant flex items-center gap-1 mt-1 m-0">
                   <span class="material-symbols-outlined" style="font-size:.875rem">location_on</span>
                   {{ s.paysLabel ?? s.paysCode ?? '—' }}
                 </p>
               </div>
-              <button class="action-icon-btn" title="Modifier"
+              <button class="action-icon-btn flex-shrink-0" title="Modifier"
                 *appHasPermission="'FACT_MANAGE_SUPPLIERS'">
                 <span class="material-symbols-outlined">edit_note</span>
               </button>
@@ -192,8 +165,8 @@
                     Aucun IBAN enregistré
                   </p>
                 } @else {
-                  <div class="flex items-center justify-between gap-3">
-                    <p class="font-mono font-bold text-on-surface m-0 truncate">
+                  <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <p class="font-mono font-bold text-on-surface m-0 truncate" style="min-width:0;flex:1">
                       {{ ibanRevealed() && ibanRaw() ? ibanRaw() : s.ibanMasked }}
                     </p>
                     <button *appHasPermission="'FACT_MANAGE_SUPPLIERS'"

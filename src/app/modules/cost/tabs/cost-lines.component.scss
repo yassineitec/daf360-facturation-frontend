@@ -1,3 +1,24 @@
+// ── Page wrapper ──────────────────────────────────────────────────────────────
+.costs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  @media (max-width: 768px) { gap: 14px; }
+  @media (max-width: 480px) { gap: 12px; }
+}
+
+// ── KPI grid ──────────────────────────────────────────────────────────────────
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+
+  @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 480px) { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+}
+
+// ── Action buttons in table rows ──────────────────────────────────────────────
 .action-icon-btn {
   width: 28px; height: 28px; border: none; border-radius: 7px;
   display: inline-flex; align-items: center; justify-content: center;

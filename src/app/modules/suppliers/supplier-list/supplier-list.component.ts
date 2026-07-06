@@ -21,6 +21,7 @@ import {
   ModalService, ModalRef,
   ButtonComponent,
 } from '@khalilrebhiitec/daf360';
+import { AffaireKpiCardComponent } from '../../affaires/components/affaire-kpi-card.component';
 
 @Component({
   selector: 'app-supplier-list',
@@ -30,7 +31,7 @@ import {
     MetricCardComponent, DataTableComponent, DafCellDirective,
     PaginationComponent, ToolbarComponent,
     DafBadgeComponent, CardComponent, FormFieldComponent,
-    ButtonComponent,
+    ButtonComponent, AffaireKpiCardComponent,
   ],
   templateUrl: './supplier-list.component.html',
   styleUrl:    './supplier-list.component.scss',

@@ -14,6 +14,7 @@ import {
   StatusBadgeComponent as DafBadgeComponent, BadgeOptions, BadgeVariant,
   CardComponent,
 } from '@khalilrebhiitec/daf360';
+import { AffaireKpiCardComponent } from '../../affaires/components/affaire-kpi-card.component';
 
 @Component({
   selector: 'app-cost-lines',
@@ -21,7 +22,7 @@ import {
   imports: [
     MetricCardComponent, DataTableComponent, DafCellDirective,
     PaginationComponent, ToolbarComponent, SelectComponent,
-    DafBadgeComponent, CardComponent,
+    DafBadgeComponent, CardComponent, AffaireKpiCardComponent,
   ],
   templateUrl: './cost-lines.component.html',
   styleUrl: './cost-lines.component.scss',

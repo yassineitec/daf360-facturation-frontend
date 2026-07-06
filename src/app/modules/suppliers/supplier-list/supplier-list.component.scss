@@ -35,74 +35,6 @@
   @media (max-width: 480px) { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
 
-.kpi-card {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 128px;
-  position: relative;
-  overflow: hidden;
-
-  @media (max-width: 768px) { padding: 16px; min-height: 100px; }
-  @media (max-width: 480px) { padding: 12px; min-height: 88px; }
-
-  &__top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  &__label {
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #3e4945;
-  }
-
-  &__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-
-    .material-symbols-outlined { font-size: 20px; }
-  }
-
-  &__bottom {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  &__value {
-    font-size: 1.75rem;
-    font-weight: 900;
-    color: #0b1c30;
-    line-height: 1;
-
-    @media (max-width: 480px) { font-size: 1.375rem; }
-  }
-
-  &__trend {
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
-}
-
-.kpi-icon--primary   { background: rgba(0,107,88,.10);  color: #006b58; }
-.kpi-icon--secondary { background: rgba(0,108,73,.10);  color: #006c49; }
-.kpi-icon--danger    { background: rgba(186,26,26,.10); color: #BA1A1A; }
-
-.kpi-trend--up       { color: #006b58; }
-.kpi-trend--down     { color: #BA1A1A; }
-.kpi-value--danger   { color: #BA1A1A; }
-
 .action-icon-btn {
   width: 28px; height: 28px; border: none; border-radius: 7px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -134,7 +66,42 @@
   gap: 1.5rem;
   align-items: start;
 
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+  @media (max-width: 768px) { gap: 1rem; }
+  @media (max-width: 480px) { gap: 0.75rem; }
+}
+
+// ── Table overflow on small screens ──────────────────────────────────────────
+.table-overflow-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+// ── Detail panel supplier name ────────────────────────────────────────────────
+.detail-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 640px) { font-size: 1.05rem; }
+  @media (max-width: 480px) { font-size: 0.975rem; }
+}
+
+// ── Responsive decision buttons ───────────────────────────────────────────────
+@media (max-width: 640px) {
+  .decision-btn {
+    padding: 8px 10px;
+    font-size: 0.6875rem;
+    .material-symbols-outlined { font-size: 14px; }
+  }
+}
+
+@media (max-width: 480px) {
+  .decision-btn {
+    padding: 7px 8px;
+    font-size: 0.625rem;
+    letter-spacing: 0.03em;
   }
 }
