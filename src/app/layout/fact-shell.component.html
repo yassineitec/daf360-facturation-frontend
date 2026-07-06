@@ -1,8 +1,19 @@
+<!-- Mobile overlay backdrop -->
+<div class="mob-overlay" [class.mob-overlay--open]="sidebarOpen()" (click)="closeSidebar()"></div>
+
+<!-- Sidebar -->
 <daf-side-nav
+  [class.sidebar--open]="sidebarOpen()"
   [items]="navItems()"
   [config]="sideNavConfig"
   [activeRoute]="activeRoute()"
-  (itemClick)="onNavClick($event)" />
+  (itemClick)="onNavClick($event)"
+  (mouseleave)="closeSidebar()" />
+
+<!-- Mobile hamburger (visible only on small screens) -->
+<button class="mob-hamburger" (click)="toggleSidebar()" aria-label="Menu">
+  <span class="material-symbols-outlined">menu</span>
+</button>
 
 <main class="shell-content">
   <router-outlet />
