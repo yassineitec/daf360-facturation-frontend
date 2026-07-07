@@ -1,13 +1,14 @@
 <div class="table-container">
 
-  <div class="tc-header" #tcHeader>
+  <!-- ── Header Desktop ──────────────────────────────────────────────────────── -->
+  <div class="tc-header tc-header--desk" #tcHeader>
 
     <daf-toolbar
       class="flex-1"
       [searchValue]="searchText()"
       [searchPlaceholder]="'AFFAIRES.LIST.TABLE.SEARCH' | translate"
       [actions]="toolbarActions"
-      [toggleOptions]="viewToggleOptions"
+      [toggleOptions]="viewToggleOptions()"
       [activeToggle]="viewMode()"
       (searchChange)="searchText.set($event); searchGo.emit()"
       (toggleChange)="viewMode.set($any($event))"
@@ -17,29 +18,51 @@
       [showTrigger]="false"
       (apply)="onFilterApply()"
       (cancel)="onFilterCancel()">
-
       <div class="flex flex-col gap-1.5">
         <label class="text-xs font-semibold uppercase tracking-wider"
                style="color:var(--color-on-surface-variant)">Statut</label>
-        <daf-select
-          [options]="statutOptions"
-          [selected]="filterStatutSel()"
-          [config]="selectStatutConfig"
-          (selectedChange)="filterStatutSel.set($event)" />
+        <daf-select [options]="statutOptions" [selected]="filterStatutSel()"
+          [config]="selectStatutConfig" (selectedChange)="filterStatutSel.set($event)" />
       </div>
-
       <div class="flex flex-col gap-1.5">
         <label class="text-xs font-semibold uppercase tracking-wider"
                style="color:var(--color-on-surface-variant)">Type</label>
-        <daf-select
-          [options]="typeOptions"
-          [selected]="filterTypeSel()"
-          [config]="selectTypeConfig"
-          (selectedChange)="filterTypeSel.set($event)" />
+        <daf-select [options]="typeOptions" [selected]="filterTypeSel()"
+          [config]="selectTypeConfig" (selectedChange)="filterTypeSel.set($event)" />
       </div>
-
     </app-filter-panel>
 
+  </div>
+
+  <!-- ── Header Mobile ────────────────────────────────────────────────────────── -->
+  <div class="tc-header tc-header--mob" #tcMobHeader>
+    @if (mobileSearchOpen()) {
+      <div class="mob-search-bar">
+        <span class="material-symbols-outlined mob-search-icon">search</span>
+        <input class="mob-search-input"
+               type="text"
+               [value]="searchText()"
+               (input)="searchText.set($any($event.target).value); searchGo.emit()"
+               placeholder="{{ 'AFFAIRES.LIST.TABLE.SEARCH' | translate }}"
+               autofocus />
+        <button class="mob-icon-btn" type="button"
+                (click)="mobileSearchOpen.set(false); searchText.set(''); searchGo.emit()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    } @else {
+      <button class="mob-icon-btn" type="button" (click)="mobileSearchOpen.set(true)">
+        <span class="material-symbols-outlined">search</span>
+      </button>
+      @if (searchText()) {
+        <span class="mob-search-active-pill">{{ searchText() }}</span>
+      }
+      <div class="mob-header-spacer"></div>
+      <button class="mob-filter-btn" type="button" (click)="onMobileFilter()">
+        <span class="material-symbols-outlined">tune</span>
+        <span>Filtres</span>
+      </button>
+    }
   </div>
 
   <!-- Error -->
@@ -66,51 +89,35 @@
     </div>
   } @else {
 
-    <!-- ═══ MOBILE — Feed list (affiché ≤ 640px, tous modes) ═══ -->
-    <div class="feed-list">
+    <!-- ═══ MOBILE ROWS — Affiché ≤640px uniquement ═══ -->
+    <div class="mob-list">
       @if (affaires().length === 0) {
-        <div class="feed-empty">
+        <div class="empty-state">
           <span class="material-symbols-outlined empty-icon">search_off</span>
           <span>{{ 'AFFAIRES.LIST.TABLE.EMPTY' | translate }}</span>
         </div>
       }
-      @for (a of affaires(); track a.id; let i = $index) {
-        <div class="fi"
-             [style.--accent]="statutBadgeCfg(a.statut).color"
-             [style.animation-delay]="(i * 55) + 'ms'"
-             (click)="rowClick.emit(a.id)">
-
-          <div class="fi__strip"></div>
-
-          <div class="fi__inner">
-            <div class="fi__head">
-              <span class="fi__ref">{{ a.reference }}</span>
-              <span class="fi__type">{{ typeLabel(a.typeAffaire) | uppercase }}</span>
-              <div class="fi__spacer"></div>
-              <div class="fi__status">
-                <div class="fi__dot"></div>
-                <span class="fi__status-lbl">{{ statutBadgeCfg(a.statut).label | translate }}</span>
-              </div>
-            </div>
-            <p class="fi__title">{{ a.intitule }}</p>
-            <div class="fi__meta">
-              <div class="fi__avatar">{{ initials(a.responsableFullName) }}</div>
-              <span class="fi__client">{{ a.clientName || '—' }}</span>
-            </div>
-            <div class="fi__foot">
-              <div class="fi__amounts">
-                <span class="fi__budget">{{ formatAmount(a.budgetPrevisionnel) }}</span>
-                <span class="fi__unit">TND</span>
-                @if (a.rafDisponible != null) {
-                  <span class="fi__raf" [style.color]="rafColor(a)">
-                    RAF&nbsp;{{ formatAmount(a.rafDisponible) }}
-                  </span>
-                }
-              </div>
-              <span class="fi__arrow material-symbols-outlined">arrow_forward</span>
+      @for (a of affaires(); track a.id) {
+        <div class="mob-row" (click)="rowClick.emit(a.id)">
+          <div class="mob-row__top">
+            <span class="mob-row__ref">{{ a.reference }}</span>
+            <span class="mob-row__statut" [style.color]="statutBadgeCfg(a.statut).color">
+              {{ statutBadgeCfg(a.statut).label | translate }}
+            </span>
+          </div>
+          <p class="mob-row__title">{{ a.intitule }}</p>
+          <div class="mob-row__foot">
+            <span class="mob-row__client">{{ a.clientName || '—' }}</span>
+            <div class="mob-row__amounts">
+              <span class="mob-row__budget">{{ formatAmount(a.budgetPrevisionnel) }}</span>
+              <span class="mob-row__unit">TND</span>
+              @if (a.rafDisponible != null) {
+                <span class="mob-row__raf" [style.color]="rafColor(a)">
+                  · RAF {{ formatAmount(a.rafDisponible) }}
+                </span>
+              }
             </div>
           </div>
-
         </div>
       }
     </div>
@@ -191,9 +198,8 @@
       }
     }
 
-    <!-- ═══ TABLE VIEW — Desktop uniquement ═══ -->
-    @if (viewMode() === 'list') {
-      <div class="table-desktop-wrap">
+    <!-- ═══ TABLE VIEW — toujours dans le DOM; caché sur desktop en mode grille ═══ -->
+    <div class="table-desktop-wrap" [class.table-grid-mode]="viewMode() === 'grid'">
       <div class="table-scroll">
         <table>
           <thead>
@@ -288,8 +294,7 @@
           </tbody>
         </table>
       </div><!-- /table-scroll -->
-      </div><!-- /table-desktop-wrap -->
-    }
+    </div><!-- /table-desktop-wrap -->
 
     <!-- Footer -->
     <div class="tc-footer">

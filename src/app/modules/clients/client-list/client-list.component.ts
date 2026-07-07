@@ -28,6 +28,8 @@ export class ClientListComponent implements OnInit, OnDestroy {
 
   readonly canViewAllClients = computed(() => this.userStore.hasPermission('FACT_VIEW_ALL_CLIENTS'));
 
+  readonly mobileFiltersOpen = signal(false);
+
   clients          = signal<ClientListItemDto[]>([]);
   loading          = signal(false);
   error            = signal<string | null>(null);

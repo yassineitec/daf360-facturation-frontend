@@ -26,6 +26,14 @@ export class InvoiceListComponent implements OnInit {
   private readonly modal     = inject(ModalService);
   private readonly translate = inject(TranslateService);
 
+  private readonly mobileQuery = window.matchMedia('(max-width: 640px)');
+  readonly isMobile            = signal(this.mobileQuery.matches);
+  readonly mobileSearchOpen    = signal(false);
+
+  constructor() {
+    this.mobileQuery.addEventListener('change', e => this.isMobile.set(e.matches));
+  }
+
   @ViewChild('approvalTpl') approvalTpl!: TemplateRef<any>;
   private approvalRef: ModalRef | null = null;
 

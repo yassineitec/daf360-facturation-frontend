@@ -38,18 +38,32 @@ export class AffaireTableComponent {
   readonly typeOptions   = Object.entries(TYPE_LABELS).map(([k, v])   => ({ value: k, label: v }));
 
   @ViewChild(FilterPanelComponent) private filterPanelRef!: FilterPanelComponent;
-  @ViewChild('tcHeader') private tcHeaderRef!: ElementRef<HTMLElement>;
+  @ViewChild('tcHeader')    private tcHeaderRef!: ElementRef<HTMLElement>;
+  @ViewChild('tcMobHeader') private tcMobHeaderRef!: ElementRef<HTMLElement>;
+
+  readonly mobileSearchOpen = signal(false);
 
   readonly viewMode = signal<'grid' | 'list'>('grid');
+
+  private readonly mobileQuery = window.matchMedia('(max-width: 640px)');
+  readonly isMobile = signal(this.mobileQuery.matches);
+
+  constructor() {
+    this.mobileQuery.addEventListener('change', e => this.isMobile.set(e.matches));
+  }
 
   readonly toolbarActions = [
     { id: 'filters', label: 'Filtres', icon: 'tune', position: 'right' as const, variant: 'default' as const },
   ];
 
-  readonly viewToggleOptions = [
+  private readonly allToggleOptions = [
     { id: 'grid', icon: 'grid_view',  tooltip: 'Vue grille' },
     { id: 'list', icon: 'table_rows', tooltip: 'Vue liste'  },
   ];
+
+  readonly viewToggleOptions = computed(() =>
+    this.isMobile() ? [] : this.allToggleOptions
+  );
 
   filterStatutSel = signal<string[]>([]);
   filterTypeSel   = signal<string[]>([]);
@@ -62,6 +76,11 @@ export class AffaireTableComponent {
       const rect = this.tcHeaderRef.nativeElement.getBoundingClientRect();
       this.filterPanelRef.openAt(rect);
     }
+  }
+
+  onMobileFilter(): void {
+    const rect = this.tcMobHeaderRef.nativeElement.getBoundingClientRect();
+    this.filterPanelRef.openAt(rect);
   }
 
   onFilterApply(): void {

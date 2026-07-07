@@ -36,6 +36,14 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   align-items: flex-start;
   gap: 4px;
   margin-bottom: 4px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-on-surface);
+    line-height: 1.25;
+    margin: 0;
+  }
 }
 
 .breadcrumb {
@@ -234,6 +242,7 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   gap: 16px;
   position: sticky;
   top: 24px;
+  padding-top: 72px;
 }
 
 // ── Panel nav buttons ─────────────────────────────────────────────────────────

@@ -39,6 +39,14 @@ $deep-blue:  #164B60;
   align-items: flex-start;
   gap: 4px;
   margin-bottom: 4px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-on-surface);
+    line-height: 1.25;
+    margin: 0;
+  }
 }
 
 .breadcrumb {

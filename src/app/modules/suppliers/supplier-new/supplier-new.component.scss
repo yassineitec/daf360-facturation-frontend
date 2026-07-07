@@ -18,7 +18,7 @@ $tertiary-hex: #00c1ad;
   grid-template-columns: 1fr 300px;
   gap: 20px;
   width: 100%;
-  align-items: stretch;
+  align-items: start;
   flex: 1;
   min-height: 0;
 }
@@ -37,6 +37,14 @@ $tertiary-hex: #00c1ad;
   align-items: flex-start;
   gap: 4px;
   margin-bottom: 4px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-on-surface);
+    line-height: 1.25;
+    margin: 0;
+  }
 }
 
 .breadcrumb {
@@ -329,6 +337,7 @@ textarea.form-input {
   gap: 16px;
   position: sticky;
   top: 24px;
+  padding-top: 72px;
 }
 
 .panel-header {

@@ -432,6 +432,104 @@
 .sk-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
 .sk-box { height: 64px; border-radius: 12px; }
 
+// ── Responsive filters ────────────────────────────────────────────────────────
+
+.filters-bar__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.mob-filters-toggle {
+  display: none; // hidden on desktop
+}
+
+.filters-bar__extra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .filters-bar {
+    flex-direction: column;
+    gap: 0;
+    padding: 10px 14px;
+  }
+
+  .filters-bar__top {
+    gap: 8px;
+  }
+
+  // Search takes full width on mobile
+  .search-wrap {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    max-width: 100%;
+  }
+
+  // Show the toggle button on mobile
+  .mob-filters-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--color-outline-variant, #e5e7eb);
+    border-radius: 10px;
+    background: var(--color-surface, #fff);
+    color: var(--color-on-surface-variant, #6b7280);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-family: inherit;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 18px; }
+  }
+
+  .mob-filters-toggle__lbl { display: none; } // just icon on very small screens
+
+  // Extra filters section: hidden by default on mobile
+  .filters-bar__extra {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-outline-variant, #e5e7eb);
+    margin-top: 10px;
+    width: 100%;
+
+    &--open { display: flex; }
+  }
+
+  // Filters inside extra: stack vertically
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .filter-select { width: 100%; }
+
+  .status-pills {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  // Client grid: 1 column on mobile
+  .clients-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 // ── Empty state ────────────────────────────────────────────────────────────────
 .empty-state {
   grid-column: 1 / -1;
