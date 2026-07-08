@@ -7,6 +7,7 @@ import { AffaireService } from './affaire.service';
 import { AffaireWizardService } from './affaire-wizard.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto,
+  AffaireInvoiceItem, AffairePaymentItem,
   STATUT_TRANSITIONS, STATUT_LABELS, TYPE_LABELS,
 } from './affaire.model';
 import { UserStore } from '../../core/user.store';
@@ -37,6 +38,8 @@ export class AffaireDetailComponent implements OnInit {
   raf          = signal<RafDetailsDto | null>(null);
   kpis         = signal<AffaireKpisDto | null>(null);
   tsList       = signal<TsDto[]>([]);
+  invoices     = signal<AffaireInvoiceItem[]>([]);
+  payments     = signal<AffairePaymentItem[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   draft        = signal<any>(null);
 
@@ -55,11 +58,6 @@ export class AffaireDetailComponent implements OnInit {
 
   // TS new-form
   showTsForm = signal(false);
-
-  readonly stubSections = [
-    { key: 'factures',  label: 'Factures émises' },
-    { key: 'paiements', label: 'Paiements reçus' },
-  ];
 
   readonly ALL_STATUTS = ['EN_COURS', 'SUSPENDUE', 'CLOTUREE', 'ARCHIVEE'];
 
@@ -100,6 +98,8 @@ export class AffaireDetailComponent implements OnInit {
         this.loadKpis();
         this.loadTs();
         this.loadDraft();
+        this.loadInvoices();
+        this.loadPayments();
       },
       error: () => {
         this.error.set('Impossible de charger l\'affaire.');
@@ -124,6 +124,14 @@ export class AffaireDetailComponent implements OnInit {
     this.wizardSvc.loadDraft(this.numId).subscribe({
       next: dto => this.draft.set(dto),
     });
+  }
+
+  loadInvoices(): void {
+    this.svc.getAffaireInvoices(this.numId).subscribe({ next: inv => this.invoices.set(inv) });
+  }
+
+  loadPayments(): void {
+    this.svc.getAffairePayments(this.numId).subscribe({ next: p => this.payments.set(p) });
   }
 
   toggleSection(key: string): void {

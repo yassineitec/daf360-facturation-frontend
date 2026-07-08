@@ -76,32 +76,24 @@ export class ClientListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    if (this.canViewAllClients()) {
-      // User can browse across all countries — show the pays dropdown
-      forkJoin({
-        pays:     this.svc.getPays(),
-        myPaysId: this.svc.getMyPays(),
-      }).subscribe(({ pays, myPaysId }) => {
-        this.paysList.set(pays);
-        if (pays.length > 0) {
-          const userPays = myPaysId != null
-            ? (pays.find(p => p.id === myPaysId) ?? pays[0])
-            : pays[0];
-          this.filterPaysId = userPays.id;
-          this.loadSectors();
-          this.load();
-        }
-      });
-    } else {
-      // Regular user — locked to their own pays, no dropdown shown
-      this.svc.getMyPays().subscribe(myPaysId => {
-        if (myPaysId != null) {
-          this.filterPaysId = myPaysId;
-          this.loadSectors();
-          this.load();
-        }
-      });
-    }
+    // Data is no longer scoped by pays — always load the full client list.
+    this.loadSectors();
+    this.load();
+
+    // Populate the country dropdown for display only; selecting a country no
+    // longer filters the data (pays is ignored server-side).
+    forkJoin({
+      pays:     this.svc.getPays(),
+      myPaysId: this.svc.getMyPays(),
+    }).subscribe(({ pays, myPaysId }) => {
+      this.paysList.set(pays);
+      if (pays.length > 0) {
+        const userPays = myPaysId != null
+          ? (pays.find(p => p.id === myPaysId) ?? pays[0])
+          : pays[0];
+        this.filterPaysId = userPays.id;
+      }
+    });
 
     this.search$.pipe(
       debounceTime(300),
@@ -145,8 +137,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
   }
 
   loadSectors(): void {
-    if (!this.filterPaysId) return;
-    this.svc.getSectors(this.filterPaysId).subscribe(s => this.sectors.set(s));
+    this.svc.getSectors().subscribe(s => this.sectors.set(s));
   }
 
   onSearch(): void { this.search$.next(this.searchText); }

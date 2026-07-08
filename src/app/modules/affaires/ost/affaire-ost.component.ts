@@ -1,6 +1,8 @@
-import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { Component, OnInit, inject, input, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { BodyPortalDirective } from '../../../shared/body-portal.directive';
 import { SubcontractingService } from '../../subcontracting/subcontracting.service';
 import {
   OSTDto, CoutSTDto, SousTraitantDto,
@@ -11,7 +13,7 @@ import {
 
 @Component({
   selector: 'app-affaire-ost',
-  imports: [FormsModule, PermissionDirective],
+  imports: [FormsModule, PermissionDirective, BodyPortalDirective, SelectComponent],
   templateUrl: './affaire-ost.component.html',
   styleUrl: './affaire-ost.component.scss',
 })
@@ -22,6 +24,15 @@ export class AffaireOstComponent implements OnInit {
   affaireStatut = input<string>('');
 
   private readonly svc = inject(SubcontractingService);
+
+  // daf-select options for the sous-traitant picker.
+  readonly stOptions = computed<SelectOption[]>(() =>
+    this.stList().map(s => ({ value: String(s.id), label: s.name })));
+  readonly stSelectConfig = { placeholder: 'Sélectionner un sous-traitant', searchable: true, fullWidth: true };
+
+  onStSelect(values: string[]): void {
+    this.ostForm.sousTraitantId = values[0] ? Number(values[0]) : 0;
+  }
 
   ordres  = signal<OSTDto[]>([]);
   loading = signal(true);
@@ -70,7 +81,8 @@ export class AffaireOstComponent implements OnInit {
 
   private loadSousTraitants(): void {
     this.stLoading.set(true);
-    this.svc.listSousTraitants(this.paysId()).subscribe({
+    // Affaire-scoped endpoint (pays resolved server-side) → no pays-isolation 403.
+    this.svc.listSousTraitantsForAffaire(this.affaireId()).subscribe({
       next: l => { this.stList.set(l.filter(s => s.isActive)); this.stLoading.set(false); },
       error: () => this.stLoading.set(false),
     });

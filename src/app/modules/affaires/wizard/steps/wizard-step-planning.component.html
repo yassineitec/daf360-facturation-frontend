@@ -13,37 +13,25 @@
 
       <div class="field">
         <label class="field-label">Date de début de facturation *</label>
-        <div class="date-field-wrap">
-          <span class="date-icon material-symbols-outlined">today</span>
-          <input class="form-input date-input"
-            type="date"
-            [(ngModel)]="dateDebutFacturation"
-            (ngModelChange)="emit()">
-        </div>
+        <daf-multi-date-picker
+          [config]="{ selectionMode: 'single', placeholder: 'jj/mm/aaaa', allowPastDays: true, allowWeekends: true, fullWidth: true }"
+          [(value)]="dateDebutFacturation" />
         <div class="field-hint">Première date à partir de laquelle la facturation peut être émise</div>
       </div>
 
       <div class="field">
         <label class="field-label">Date de fin contractuelle</label>
-        <div class="date-field-wrap">
-          <span class="date-icon material-symbols-outlined">event</span>
-          <input class="form-input date-input"
-            type="date"
-            [(ngModel)]="dateFinContractuelle"
-            (ngModelChange)="emit()">
-        </div>
+        <daf-multi-date-picker
+          [config]="{ selectionMode: 'single', placeholder: 'jj/mm/aaaa', allowPastDays: true, allowWeekends: true, fullWidth: true }"
+          [(value)]="dateFinContractuelle" />
         <div class="field-hint">Échéance contractuelle finale de l'affaire</div>
       </div>
 
       <div class="field">
         <label class="field-label">Date de première échéance</label>
-        <div class="date-field-wrap">
-          <span class="date-icon material-symbols-outlined">event_repeat</span>
-          <input class="form-input date-input"
-            type="date"
-            [(ngModel)]="datePremireEcheance"
-            (ngModelChange)="emit()">
-        </div>
+        <daf-multi-date-picker
+          [config]="{ selectionMode: 'single', placeholder: 'jj/mm/aaaa', allowPastDays: true, allowWeekends: true, fullWidth: true }"
+          [(value)]="datePremireEcheance" />
         <div class="field-hint">Date de la première facture émise</div>
       </div>
 

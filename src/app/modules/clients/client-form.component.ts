@@ -119,7 +119,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
       const effectiveId: number = this.client?.paysId ?? changes['paysId'].currentValue;
       if (effectiveId) {
         this.loadingSectors.set(true);
-        this.svc.getSectors(effectiveId).subscribe({
+        this.svc.getSectors().subscribe({
           next:  s  => { this.sectors.set(s.length ? s : DEFAULT_SECTORS); this.loadingSectors.set(false); },
           error: () => { this.sectors.set(DEFAULT_SECTORS); this.loadingSectors.set(false); },
         });

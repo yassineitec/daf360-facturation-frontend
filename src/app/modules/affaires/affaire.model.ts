@@ -10,6 +10,32 @@ export type AffaireStatut = 'EN_COURS' | 'SUSPENDUE' | 'CLOTUREE' | 'ARCHIVEE';
 export type AffaireType    = 'FORFAIT' | 'REGIE' | 'LUMP_SUM';
 export type TsStatut       = 'CREATED' | 'VALID_TECHNIQUE' | 'VALID_COMMERCIALE' | 'INTEGRE' | 'FACTURE' | 'ANNULE';
 
+// Affaire-scoped invoice row (subset of the backend InvoiceResponseDto).
+export interface AffaireInvoiceItem {
+  id:            number;
+  invoiceNumber: string | null;
+  invoiceType:   string | null;
+  montantTtc:    number | null;
+  devise:        string | null;
+  statut:        string | null;
+  dateEmission:  string | null;
+  dateEcheance:  string | null;
+}
+
+// Affaire-scoped payment row (backend PaymentResponseDto).
+export interface AffairePaymentItem {
+  id:            number;
+  invoiceId:     number;
+  invoiceNumber: string | null;
+  paymentDate:   string | null;
+  amountLocal:   number | null;
+  currency:      string | null;
+  paymentMethod: string | null;
+  bankReference: string | null;
+  recordedAt:    string | null;
+  notes:         string | null;
+}
+
 export interface AffaireListItem {
   id:                 number;
   reference:          string;

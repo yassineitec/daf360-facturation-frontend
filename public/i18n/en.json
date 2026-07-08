@@ -601,7 +601,26 @@
         "NEW_TS": "New order",
         "SUBCONTRACTING": "Subcontracting",
         "BILLING": "Billing",
-        "STUB": "Section under development."
+        "STUB": "Section under development.",
+        "INVOICES": "Issued invoices",
+        "PAYMENTS": "Payments received",
+        "NO_INVOICES": "No invoices issued for this affaire.",
+        "NO_PAYMENTS": "No payments received for this affaire."
+      },
+      "INVOICES": {
+        "NUMBER": "Invoice No.",
+        "TYPE": "Type",
+        "EMITTED": "Issued",
+        "DUE": "Due",
+        "AMOUNT": "Amount incl. tax",
+        "STATUS": "Status"
+      },
+      "PAYMENTS": {
+        "DATE": "Date",
+        "INVOICE": "Invoice",
+        "METHOD": "Method",
+        "REFERENCE": "Reference",
+        "AMOUNT": "Amount"
       },
       "INDICATORS": {
         "TITLE": "Piloting indicators",

@@ -37,6 +37,9 @@ export class WizardStepCpComponent implements OnInit {
     this.emit();
   }
 
+  /** Called on margin-rate change so the parent draft signal (and step validation) updates. */
+  emitChange(): void { this.emit(); }
+
   private emit(): void {
     this.draftChange.emit({ ...this.draft, eligibleCostCategoryIds: [...this.draft.eligibleCostCategoryIds] });
   }

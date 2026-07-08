@@ -11,7 +11,7 @@
     </div>
     <div class="margin-field">
       <input type="number" step="0.01" min="0" max="200"
-        [(ngModel)]="draft.marginRatePct"
+        [(ngModel)]="draft.marginRatePct" (ngModelChange)="emitChange()"
         class="margin-input" />
       <span class="margin-symbol">%</span>
     </div>
