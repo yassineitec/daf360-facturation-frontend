@@ -77,60 +77,51 @@
         <span class="recap-section-title">Responsables</span>
       </div>
       <div class="recap-table-wrap">
-        <table class="recap-table">
-          <thead>
-            <tr>
-              <th class="text-left">Responsable</th>
-              <th class="text-left">Rôle</th>
-              @if (draft.budgetPrevisionnel) {
-                <th class="text-right">Budget alloué</th>
-                <th class="text-right">%</th>
-              }
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of draft.responsables; track $index) {
-              <tr>
-                <td>
-                  <span class="recap-jalon-label">
-                    @if (r.isPrimary) { <span class="primary-star">★ </span> }
-                    {{ r.userName }}
-                  </span>
-                  @if (r.activiteLabel) {
-                    <p class="recap-resp-tags">
-                      <span class="recap-tag recap-tag--teal">{{ r.activiteLabel }}</span>
-                    </p>
-                  }
-                  @if (r.disciplineLabel) {
-                    <p class="recap-resp-tags">
-                      <span class="recap-tag recap-tag--purple">{{ r.disciplineLabel }}</span>
-                    </p>
-                  }
-                </td>
-                <td class="recap-date">{{ r.role || '—' }}</td>
-                @if (draft.budgetPrevisionnel) {
-                  <td class="text-right recap-tfoot-value">
-                    {{ (r.budgetAllocation ?? 0) | number:'1.3-3' }} {{ draft.contractCurrency }}
-                  </td>
-                  <td class="text-right recap-date">
-                    {{ draft.budgetPrevisionnel ? ((r.budgetAllocation ?? 0) / draft.budgetPrevisionnel * 100 | number:'1.1-1') : '—' }} %
-                  </td>
-                }
-              </tr>
+        <daf-data-table
+          [columns]="responsablesColumns"
+          [rows]="responsablesRows"
+          [config]="tableConfig">
+
+          <ng-template dafCell="responsable" let-row>
+            <span class="recap-jalon-label">
+              @if (row['isPrimary']) { <span class="primary-star">★ </span> }
+              {{ row['userName'] }}
+            </span>
+            @if (row['activiteLabel']) {
+              <p class="recap-resp-tags">
+                <span class="recap-tag recap-tag--teal">{{ row['activiteLabel'] }}</span>
+              </p>
             }
-          </tbody>
-          @if (draft.budgetPrevisionnel) {
-            <tfoot>
-              <tr>
-                <td colspan="2" class="recap-tfoot-label">Total alloué</td>
-                <td class="text-right recap-tfoot-value">
-                  {{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}
-                </td>
-                <td class="text-right recap-tfoot-value">100 %</td>
-              </tr>
-            </tfoot>
-          }
-        </table>
+            @if (row['disciplineLabel']) {
+              <p class="recap-resp-tags">
+                <span class="recap-tag recap-tag--purple">{{ row['disciplineLabel'] }}</span>
+              </p>
+            }
+          </ng-template>
+
+          <ng-template dafCell="budgetAllocation" let-row>
+            <span class="recap-tfoot-value">
+              {{ row['budgetAllocation'] | number:'1.3-3' }} {{ row['currency'] }}
+            </span>
+          </ng-template>
+
+          <ng-template dafCell="percentage" let-row>
+            <span class="recap-date">
+              {{ row['percentage'] != null ? (row['percentage'] | number:'1.1-1') : '—' }} %
+            </span>
+          </ng-template>
+
+        </daf-data-table>
+
+        @if (draft.budgetPrevisionnel) {
+          <div class="recap-total-row">
+            <span class="recap-tfoot-label">Total alloué</span>
+            <span class="recap-tfoot-value">
+              {{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}
+            </span>
+            <span class="recap-tfoot-value">100 %</span>
+          </div>
+        }
       </div>
 
     </div>
@@ -173,86 +164,72 @@
     <div class="recap-table-wrap">
 
       @if (draft.billingMode === 'AV') {
-        <table class="recap-table">
-          <thead>
-            <tr>
-              <th class="text-left">Type de répartition</th>
-              <th class="text-right">Pourcentage</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of draft.repartitions; track $index) {
-              <tr>
-                <td>Type ID #{{ r.repartitionTypeId }}</td>
-                <td class="text-right recap-tfoot-value">{{ r.percentage | number:'1.1-1' }} %</td>
-              </tr>
-            }
-          </tbody>
-          <tfoot>
-            <tr>
-              <td class="recap-tfoot-label">Total</td>
-              <td class="text-right recap-tfoot-value">{{ draft.repartitionTotal | number:'1.1-1' }} %</td>
-            </tr>
-          </tfoot>
-        </table>
+        <daf-data-table
+          [columns]="repartitionsColumns"
+          [rows]="repartitionsRows"
+          [config]="tableConfig">
+          <ng-template dafCell="percentage" let-row>
+            <span class="recap-tfoot-value">{{ row['percentage'] | number:'1.1-1' }} %</span>
+          </ng-template>
+        </daf-data-table>
+        <div class="recap-total-row">
+          <span class="recap-tfoot-label">Total</span>
+          <span class="recap-tfoot-value">{{ draft.repartitionTotal | number:'1.1-1' }} %</span>
+        </div>
       }
 
       @if (draft.billingMode === 'JAL') {
-        <table class="recap-table">
-          <thead>
-            <tr>
-              <th class="text-left">Jalon</th>
-              <th class="text-left">Date prévisionnelle</th>
-              <th class="text-right">Montant</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (j of draft.jalons; track $index; let i = $index) {
-              <tr>
-                <td>
-                  <span class="recap-jalon-label">{{ i + 1 }}. {{ j.label }}</span>
-                  @if (j.description) {
-                    <p class="recap-jalon-desc">{{ j.description }}</p>
-                  }
-                </td>
-                <td class="recap-date">{{ j.datePrevisionnelle ? (j.datePrevisionnelle | date:'dd/MM/yyyy') : '—' }}</td>
-                <td class="text-right recap-tfoot-value">{{ j.montant | number:'1.3-3' }} {{ draft.contractCurrency }}</td>
-              </tr>
+        <daf-data-table
+          [columns]="jalonsColumns"
+          [rows]="jalonsRows"
+          [config]="tableConfig">
+
+          <ng-template dafCell="jalon" let-row>
+            <span class="recap-jalon-label">{{ row['index'] }}. {{ row['label'] }}</span>
+            @if (row['description']) {
+              <p class="recap-jalon-desc">{{ row['description'] }}</p>
             }
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2" class="recap-tfoot-label">Total</td>
-              <td class="text-right recap-tfoot-value">{{ draft.jalonTotal | number:'1.3-3' }} {{ draft.contractCurrency }}</td>
-            </tr>
-          </tfoot>
-        </table>
+          </ng-template>
+
+          <ng-template dafCell="date" let-row>
+            <span class="recap-date">{{ row['date'] ? (row['date'] | date:'dd/MM/yyyy') : '—' }}</span>
+          </ng-template>
+
+          <ng-template dafCell="montant" let-row>
+            <span class="recap-tfoot-value">{{ row['montant'] | number:'1.3-3' }} {{ row['currency'] }}</span>
+          </ng-template>
+
+        </daf-data-table>
+        <div class="recap-total-row">
+          <span class="recap-tfoot-label">Total</span>
+          <span class="recap-tfoot-value">{{ draft.jalonTotal | number:'1.3-3' }} {{ draft.contractCurrency }}</span>
+        </div>
       }
 
       @if (draft.billingMode === 'TM') {
-        <table class="recap-table">
-          <thead>
-            <tr>
-              <th class="text-left">Collaborateur</th>
-              <th class="text-left">Type taux</th>
-              <th class="text-right">Taux</th>
-              <th class="text-right">Coût interne</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of draft.ressources; track $index) {
-              <tr>
-                <td>
-                  <span class="recap-jalon-label">{{ r.userName ?? 'User #' + r.userId }}</span>
-                  <span class="resource-type-badge">{{ r.resourceType === 'INTERNAL' ? 'Interne' : 'Externe' }}</span>
-                </td>
-                <td class="recap-date">{{ r.rateType === 'DAILY' ? 'JH' : 'H' }}</td>
-                <td class="text-right recap-tfoot-value">{{ r.rateAmount | number:'1.2-2' }} {{ r.rateCurrency }}</td>
-                <td class="text-right recap-date">{{ r.costAmount ? (r.costAmount | number:'1.2-2') + ' ' + r.rateCurrency : '—' }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+        <daf-data-table
+          [columns]="ressourcesColumns"
+          [rows]="ressourcesRows"
+          [config]="tableConfig">
+
+          <ng-template dafCell="collaborateur" let-row>
+            <span class="recap-jalon-label">{{ row['userName'] }}</span>
+            <span class="resource-type-badge">{{ row['resourceType'] === 'INTERNAL' ? 'Interne' : 'Externe' }}</span>
+          </ng-template>
+
+          <ng-template dafCell="rateType" let-row>
+            <span class="recap-date">{{ row['rateType'] }}</span>
+          </ng-template>
+
+          <ng-template dafCell="rateAmount" let-row>
+            <span class="recap-tfoot-value">{{ row['rateAmount'] | number:'1.2-2' }} {{ row['rateCurrency'] }}</span>
+          </ng-template>
+
+          <ng-template dafCell="costAmount" let-row>
+            <span class="recap-date">{{ row['costAmount'] ? (row['costAmount'] | number:'1.2-2') + ' ' + row['rateCurrency'] : '—' }}</span>
+          </ng-template>
+
+        </daf-data-table>
       }
 
       @if (draft.billingMode === 'CP') {

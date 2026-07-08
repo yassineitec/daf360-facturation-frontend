@@ -306,68 +306,34 @@ $bg:     $bg-page;
 
 .table-scroll { overflow-x: auto; }
 
-.billing-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
+// ── daf-data-table cell helpers (billing lines) ───────────────────────────────
+.num    { text-align: right; font-variant-numeric: tabular-nums; }
+.muted  { color: $muted; }
+.bold   { font-weight: 700; }
+.accent { color: $primary; }
 
-  thead tr { background: var(--color-surface-container-low, #f3f4f6); }
+.line-desc {
+  display: block;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
 
-  th {
-    padding: 12px 20px;
-    text-align: left;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    color: $muted;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
+.billing-tfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 2px solid var(--color-outline-variant, #c4c5d5);
+  background: var(--color-surface-container-low, #f3f4f6);
 
-    &.num { text-align: right; }
-    &.act { width: 40px; }
-  }
-
-  .billing-row {
-    border-top: 1px solid var(--color-outline-variant, #c4c5d5);
-    transition: background 0.12s;
-    &:hover { background: rgba(243,244,246,0.6); }
-    &:hover .edit-btn { opacity: 1; }
-  }
-
-  td {
-    padding: 14px 20px;
-    color: $text;
-    vertical-align: middle;
-
-    &.num    { text-align: right; font-variant-numeric: tabular-nums; }
-    &.muted  { color: $muted; }
-    &.bold   { font-weight: 700; }
-    &.accent { color: $primary; }
-    &.act    { text-align: center; }
-  }
-
-  .line-desc {
-    max-width: 240px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 500;
-  }
-
-  .empty-cell {
-    padding: 32px;
-    text-align: center;
-    color: $muted;
-  }
-
-  tfoot .tfoot-row {
-    border-top: 2px solid var(--color-outline-variant, #c4c5d5);
-    background: var(--color-surface-container-low, #f3f4f6);
-  }
-
-  .foot-label { font-weight: 700; font-size: 0.875rem; color: $text; padding: 14px 20px; }
-  .foot-ht    { text-align: right; font-weight: 700; color: $text; padding: 14px 20px; font-variant-numeric: tabular-nums; }
-  .foot-ttc   { text-align: right; font-weight: 800; color: $primary; font-size: 0.9375rem; padding: 14px 20px; font-variant-numeric: tabular-nums; }
+  .foot-label { font-weight: 700; font-size: 0.875rem; color: $text; }
+  .foot-amounts { display: flex; align-items: center; gap: 20px; }
+  .foot-ht  { font-weight: 700; color: $text; font-variant-numeric: tabular-nums; }
+  .foot-ttc { font-weight: 800; color: $primary; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
 }
 
 .status-chip {
@@ -394,8 +360,7 @@ $bg:     $bg-page;
   border-radius: 8px;
   background: white;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s;
   color: $muted;
 
   .material-symbols-outlined { font-size: 15px; }
@@ -698,12 +663,6 @@ $bg:     $bg-page;
 
   .tct-btn { padding: 4px 10px; font-size: 0.75rem; }
 
-  .billing-table { min-width: 560px; }
-  .billing-table th,
-  .billing-table td { padding: 10px 12px; }
-
-  .edit-btn { opacity: 1; }
-
   .dh-amount-ttc   { font-size: 1.25rem; }
   .dh-amount-sub   { font-size: 0.75rem; }
   .dh-header-right { align-items: flex-start; width: 100%; }
@@ -750,13 +709,6 @@ $bg:     $bg-page;
   .kpi-card__icon  { display: none; }
 
   .table-card__header { padding: 12px; gap: 8px; }
-  .billing-table      { min-width: 480px; }
-  .billing-table th,
-  .billing-table td   { padding: 8px 8px; }
-  .billing-table .foot-label { padding: 10px 8px; }
-  .billing-table .foot-ht,
-  .billing-table .foot-ttc   { padding: 10px 8px; }
-  .billing-table .line-desc  { max-width: 120px; }
 
   .dh-amount-ttc   { font-size: 1.1rem; }
   .dh-amount-sub   { font-size: 0.6875rem; }
@@ -772,7 +724,6 @@ $bg:     $bg-page;
   .kpi-card__label { font-size: 0.6rem; }
   .kpi-card__icon  { width: 28px; height: 28px; .material-symbols-outlined { font-size: 14px; } }
 
-  .billing-table     { min-width: 420px; }
   .body-grid         { gap: 10px; }
   .info-card         { padding: 10px 12px; }
   .table-card__header { padding: 10px 12px; }

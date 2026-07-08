@@ -1,5 +1,5 @@
 import {
-  Component, OnInit, inject, signal,
+  Component, OnInit, inject, signal, computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,13 +12,16 @@ import {
 } from '../cost.model';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import { forkJoin } from 'rxjs';
+import {
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig,
+} from '@khalilrebhiitec/daf360';
 
 type ListTab = 'CURRENCY' | 'COST_TYPE' | 'PAYMENT_METHOD' | 'RECURRENCE_FREQUENCY';
 
 @Component({
   selector: 'app-cost-config',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DataTableComponent, DafCellDirective],
   templateUrl: './cost-config.component.html',
   styleUrl: './cost-config.component.scss',
 })
@@ -71,6 +74,123 @@ export class CostConfigComponent implements OnInit {
 
   isLoading   = signal(false);
   serverError = signal<string | null>(null);
+
+  // ── Tables (daf-data-table) ─────────────────────────────────────────────────
+
+  readonly thresholdColumns: TableColumn[] = [
+    { key: 'level',            label: 'Niveau',            type: 'custom' },
+    { key: 'approverRoleCode', label: 'Rôle approbateur',  type: 'custom' },
+    { key: 'minAmountEur',     label: 'Min EUR',           type: 'custom', align: 'right' },
+    { key: 'maxAmountEur',     label: 'Max EUR',           type: 'custom', align: 'right' },
+    { key: '_actions',         label: '',                  type: 'custom', align: 'right' },
+  ];
+
+  readonly thresholdTableConfig: TableConfig = {
+    hoverable: true,
+    emptyMessage: 'Aucun seuil configuré.',
+  };
+
+  readonly thresholdRows = computed(() => {
+    const rows = this.thresholds().map(t => ({
+      id:               t.id,
+      level:            t.level,
+      approverRoleCode: t.approverRoleCode,
+      minAmountEur:     t.minAmountEur,
+      maxAmountEur:     t.maxAmountEur,
+      _isNew:           false,
+      _raw:             t,
+    }));
+    if (this.showAddThreshold()) {
+      rows.push({
+        id: '__new-threshold__' as unknown as number, level: '', approverRoleCode: '',
+        minAmountEur: null as unknown as number, maxAmountEur: null as unknown as number,
+        _isNew: true, _raw: null as unknown as CostApprovalThresholdDto,
+      });
+    }
+    return rows;
+  });
+
+  isThresholdEditing(id: number): boolean {
+    const e = this.getEdit(id);
+    return e.minAmountEur !== undefined || e.approverRoleCode !== undefined;
+  }
+
+  readonly categoryColumns: TableColumn[] = [
+    { key: 'categoryNumber',    label: '#',         type: 'custom' },
+    { key: 'code',              label: 'Code',      type: 'custom' },
+    { key: 'labelFr',           label: 'Libellé FR',type: 'custom' },
+    { key: 'labelEn',           label: 'Libellé EN',type: 'custom' },
+    { key: 'source',            label: 'Source',    type: 'custom' },
+    { key: 'isCapex',           label: 'CapEx',     type: 'custom', align: 'center' },
+    { key: 'isDirect',          label: 'Direct',    type: 'custom', align: 'center' },
+    { key: 'isStrictScrutiny',  label: 'Scrutiny',  type: 'custom', align: 'center' },
+    { key: '_actions',          label: '',          type: 'custom', align: 'right' },
+  ];
+
+  readonly categoryTableConfig: TableConfig = {
+    hoverable: true,
+    emptyMessage: 'Aucune catégorie configurée.',
+  };
+
+  readonly categoryRows = computed(() => {
+    const rows = this.categories().map(cat => ({
+      id:              cat.id,
+      categoryNumber:  cat.categoryNumber,
+      code:            cat.code,
+      labelFr:         cat.labelFr,
+      labelEn:         cat.labelEn,
+      descriptionFr:   cat.descriptionFr,
+      source:          cat.sourceType,
+      autoPushModule:  cat.autoPushModule,
+      isCapex:         cat.isCapex,
+      isDirect:        cat.isDirect,
+      isStrictScrutiny: cat.isStrictScrutiny,
+      _isNew:          false,
+      _raw:            cat,
+    }));
+    if (this.showAddCategory()) {
+      rows.push({
+        id: '__new-category__' as unknown as number, categoryNumber: null as unknown as number,
+        code: '', labelFr: '', labelEn: '', descriptionFr: null, source: 'MANUAL', autoPushModule: null,
+        isCapex: false, isDirect: false, isStrictScrutiny: false, _isNew: true,
+        _raw: null as unknown as CostCategoryDto,
+      });
+    }
+    return rows;
+  });
+
+  readonly listValueColumns: TableColumn[] = [
+    { key: 'code',         label: 'Code',       type: 'custom' },
+    { key: 'labelFr',      label: 'Libellé FR', type: 'custom' },
+    { key: 'labelEn',      label: 'Libellé EN', type: 'custom' },
+    { key: 'isDefault',    label: 'Défaut',     type: 'custom', align: 'center' },
+    { key: 'displayOrder', label: 'Ordre',      type: 'custom', align: 'center' },
+    { key: '_actions',     label: '',           type: 'custom', align: 'right' },
+  ];
+
+  readonly listValueTableConfig: TableConfig = {
+    hoverable: true,
+    emptyMessage: 'Aucune valeur configurée.',
+  };
+
+  readonly listValueRows = computed(() => {
+    const rows = this.listValues().map(v => ({
+      id:            v.id,
+      code:          v.code,
+      labelFr:       v.labelFr,
+      labelEn:       v.labelEn,
+      isDefault:     v.isDefault,
+      displayOrder:  v.displayOrder,
+      _isNew:        false,
+      _raw:          v,
+    }));
+    rows.push({
+      id: '__new-value__' as unknown as number, code: '', labelFr: '', labelEn: null,
+      isDefault: false, displayOrder: null as unknown as number, _isNew: true,
+      _raw: null as unknown as ListValueDto,
+    });
+    return rows;
+  });
 
   ngOnInit(): void {
     this.isLoading.set(true);

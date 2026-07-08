@@ -11,11 +11,16 @@ import {
   SelectOption, SelectComponent, ModalService, ModalRef,
   CardComponent, ButtonComponent, PaginationComponent,
   MultiDatePickerComponent,
+  DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent],
+  imports: [
+    PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent,
+    TranslatePipe, MultiDatePickerComponent, SelectComponent,
+    DataTableComponent, DafCellDirective,
+  ],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })
@@ -72,6 +77,27 @@ export class InvoiceListComponent implements OnInit {
 
   readonly statutSelectOptions: SelectOption[] = Object.entries(INVOICE_STATUT_CONFIG)
     .map(([k, v]) => ({ value: k, label: this.translate.instant(v.label) }));
+
+  // ── Data table ───────────────────────────────────────────────────────────
+  readonly tableColumns: TableColumn[] = [
+    { key: 'ref',     label: this.translate.instant('INVOICING.LIST.TABLE.REF'),    type: 'custom' },
+    { key: 'client',  label: this.translate.instant('INVOICING.LIST.TABLE.CLIENT'), type: 'custom' },
+    { key: 'amount',  label: this.translate.instant('INVOICING.LIST.TABLE.AMOUNT'), type: 'custom', align: 'right' },
+    { key: 'statut',  label: this.translate.instant('INVOICING.LIST.TABLE.STATUS'), type: 'custom' },
+    { key: 'date',    label: this.translate.instant('INVOICING.LIST.TABLE.DATE'),   type: 'custom' },
+    { key: 'actions', label: '', type: 'custom', align: 'right', width: '52px' },
+  ];
+
+  readonly tableRows = computed<TableRow[]>(() =>
+    this.invoices().map(inv => ({ id: inv.id, _raw: inv }))
+  );
+
+  readonly tableConfig = computed<TableConfig>(() => ({
+    hoverable:    true,
+    loading:      this.loading(),
+    emptyMessage: this.translate.instant('INVOICING.LIST.TABLE.EMPTY'),
+    skeletonRows: 5,
+  }));
 
   // ── KPI counts ────────────────────────────────────────────────────────────
   readonly statsEnAttente = computed(() =>
@@ -150,6 +176,8 @@ export class InvoiceListComponent implements OnInit {
 
   navigateToDetail(id: number): void { this.router.navigate([id],    { relativeTo: this.route }); }
   navigateToNew():               void { this.router.navigate(['new'], { relativeTo: this.route }); }
+
+  onRowClick(row: TableRow): void { this.navigateToDetail(row['id'] as number); }
 
   quickEmit(item: InvoiceListItem): void {
     this.actionError.set(null);

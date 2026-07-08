@@ -4,12 +4,18 @@ import { UpperCasePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TranslateService } from '@ngx-translate/core';
 import { AffaireListItem, STATUT_LABELS, TYPE_LABELS } from '../affaire.model';
-import { StatusBadgeComponent, CardComponent, BadgeVariant, SelectComponent, ToolbarComponent } from '@khalilrebhiitec/daf360';
+import {
+  StatusBadgeComponent, CardComponent, BadgeVariant, SelectComponent, ToolbarComponent,
+  DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
+} from '@khalilrebhiitec/daf360';
 import { FilterPanelComponent } from '../../../shared/filter-panel/filter-panel.component';
 
 @Component({
   selector: 'app-affaire-table',
-  imports: [FormsModule, UpperCasePipe, TranslatePipe, StatusBadgeComponent, CardComponent, SelectComponent, FilterPanelComponent, ToolbarComponent],
+  imports: [
+    FormsModule, UpperCasePipe, TranslatePipe, StatusBadgeComponent, CardComponent, SelectComponent,
+    FilterPanelComponent, ToolbarComponent, DataTableComponent, DafCellDirective,
+  ],
   templateUrl: './affaire-table.component.html',
   styleUrl: './affaire-table.component.scss',
 })
@@ -36,6 +42,39 @@ export class AffaireTableComponent {
 
   readonly statutOptions = Object.entries(STATUT_LABELS).map(([k, v]) => ({ value: k, label: this.translate.instant(v) }));
   readonly typeOptions   = Object.entries(TYPE_LABELS).map(([k, v])   => ({ value: k, label: v }));
+
+  readonly tableColumns: TableColumn[] = [
+    { key: 'reference',   label: this.translate.instant('AFFAIRES.LIST.TABLE.HEADERS.REF'),     type: 'custom' },
+    { key: 'intitule',    label: this.translate.instant('AFFAIRES.LIST.TABLE.HEADERS.TITLE'),    type: 'custom' },
+    { key: 'clientName',  label: this.translate.instant('AFFAIRES.LIST.TABLE.HEADERS.CLIENT'),   type: 'custom' },
+    { key: 'responsable', label: this.translate.instant('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'),  type: 'custom' },
+    { key: 'type',        label: this.translate.instant('AFFAIRES.LIST.TABLE.HEADERS.TYPE'),     type: 'custom' },
+    { key: 'budget',      label: this.translate.instant('AFFAIRES.LIST.TABLE.HEADERS.BUDGET'),   type: 'custom', align: 'right' },
+    { key: 'raf',         label: this.translate.instant('AFFAIRES.LIST.TABLE.HEADERS.RAF'),      type: 'custom', align: 'right' },
+    { key: 'statut',      label: this.translate.instant('AFFAIRES.LIST.TABLE.HEADERS.STATUS'),   type: 'custom' },
+    { key: '_actions',    label: '', type: 'custom', align: 'right', width: '40px' },
+  ];
+
+  readonly tableRows = computed<TableRow[]>(() =>
+    this.affaires().map(a => ({
+      id:                   a.id,
+      reference:            a.reference,
+      intitule:             a.intitule,
+      billingMode:          a.billingMode,
+      clientName:           a.clientName,
+      responsableFullName:  a.responsableFullName,
+      typeAffaire:          a.typeAffaire,
+      budgetPrevisionnel:   a.budgetPrevisionnel,
+      rafDisponible:        a.rafDisponible,
+      statut:               a.statut,
+      _raw:                 a,
+    }))
+  );
+
+  readonly tableConfig = computed<TableConfig>(() => ({
+    hoverable:    true,
+    emptyMessage: this.translate.instant('AFFAIRES.LIST.TABLE.EMPTY'),
+  }));
 
   @ViewChild(FilterPanelComponent) private filterPanelRef!: FilterPanelComponent;
   @ViewChild('tcHeader')    private tcHeaderRef!: ElementRef<HTMLElement>;
@@ -81,6 +120,10 @@ export class AffaireTableComponent {
   onMobileFilter(): void {
     const rect = this.tcMobHeaderRef.nativeElement.getBoundingClientRect();
     this.filterPanelRef.openAt(rect);
+  }
+
+  onTableRowClick(row: TableRow): void {
+    this.rowClick.emit(row['id'] as number);
   }
 
   onFilterApply(): void {

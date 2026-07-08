@@ -255,50 +255,6 @@ $teal-bg:     rgba(#79d7be, 0.15);
   &::-webkit-scrollbar-thumb { background: #bdc9c4; border-radius: 10px; }
 }
 
-// ── Table ──────────────────────────────────────────────────────────────────────
-.inv-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  thead { background: $surface-low; border-bottom: 1px solid rgba(#bdc9c4, 0.2); }
-
-  th {
-    padding: 12px 24px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: $muted;
-    white-space: nowrap;
-    text-align: left;
-
-    &.th-right   { text-align: right; }
-    &.th-actions { width: 52px; }
-  }
-
-  td {
-    padding: 16px 24px;
-    font-size: 0.875rem;
-    color: $on-surface;
-    border-bottom: 1px solid rgba(#bdc9c4, 0.1);
-    vertical-align: middle;
-
-    &.td-right   { text-align: right; }
-    &.td-actions { width: 52px; text-align: right; }
-  }
-
-  tbody tr:last-child td { border-bottom: none; }
-}
-
-// ── Table rows ─────────────────────────────────────────────────────────────────
-.inv-row {
-  cursor: pointer;
-  transition: background 0.12s;
-
-  &:hover     { background: rgba($primary, 0.04); }
-  &--overdue  { background: rgba($danger, 0.02);  }
-}
-
 // ── Cell: Référence ────────────────────────────────────────────────────────────
 .cell-ref {
   display: flex;
@@ -398,42 +354,6 @@ $teal-bg:     rgba(#79d7be, 0.15);
   .material-symbols-outlined { font-size: 18px; }
 
   &:hover { background: rgba($primary, 0.08); color: $primary; }
-}
-
-// ── Skeleton loader ───────────────────────────────────────────────────────────
-.skeleton-row td { padding: 18px 24px; }
-
-.skel {
-  height: 12px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-
-  &--sm { width: 80px; }
-  &--md { width: 120px; }
-  &--lg { width: 160px; }
-}
-
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-.empty-cell {
-  padding: 48px 24px !important;
-  text-align: center;
-  color: $muted;
-  font-size: 0.875rem;
-
-  .material-symbols-outlined {
-    display: block;
-    font-size: 40px;
-    margin-bottom: 8px;
-    opacity: 0.3;
-    font-variation-settings: 'FILL' 0;
-  }
 }
 
 // ── Approval modal ────────────────────────────────────────────────────────────

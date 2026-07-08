@@ -190,90 +190,55 @@
     </div>
 
     <div class="table-scroll">
-      <table class="inv-table">
-        <thead>
-          <tr>
-            <th>{{ 'INVOICING.LIST.TABLE.REF' | translate }}</th>
-            <th>{{ 'INVOICING.LIST.TABLE.CLIENT' | translate }}</th>
-            <th class="th-right">{{ 'INVOICING.LIST.TABLE.AMOUNT' | translate }}</th>
-            <th>{{ 'INVOICING.LIST.TABLE.STATUS' | translate }}</th>
-            <th>{{ 'INVOICING.LIST.TABLE.DATE' | translate }}</th>
-            <th class="th-actions"></th>
-          </tr>
-        </thead>
-        <tbody>
+      <daf-data-table
+        [columns]="tableColumns"
+        [rows]="tableRows()"
+        [config]="tableConfig()"
+        (rowClick)="onRowClick($event)">
 
-          @if (loading()) {
-            @for (n of [1,2,3,4,5]; track n) {
-              <tr class="skeleton-row">
-                <td><div class="skel skel--md"></div></td>
-                <td><div class="skel skel--lg"></div></td>
-                <td><div class="skel skel--sm"></div></td>
-                <td><div class="skel skel--sm"></div></td>
-                <td><div class="skel skel--sm"></div></td>
-                <td></td>
-              </tr>
+        <ng-template dafCell="ref" let-row>
+          <div class="cell-ref">
+            <span class="cell-ref__num">{{ row['_raw'].invoiceNumber || ('INVOICING.LIST.TABLE.DRAFT' | translate) }}</span>
+            <span class="cell-ref__aff">{{ row['_raw'].affaireRef ?? '—' }}</span>
+          </div>
+        </ng-template>
+
+        <ng-template dafCell="client" let-row>
+          <div class="cell-client" [title]="row['_raw'].clientNom || ''">
+            {{ row['_raw'].clientNom || '—' }}
+          </div>
+        </ng-template>
+
+        <ng-template dafCell="amount" let-row>
+          <span class="cell-amount">{{ formatAmount(row['_raw'].montantTtc, row['_raw'].devise) }}</span>
+        </ng-template>
+
+        <ng-template dafCell="statut" let-row>
+          <div class="cell-statut">
+            <span class="badge badge--{{ statutBadgeVariant(row['_raw'].statut) }}">
+              {{ statutLabel(row['_raw'].statut) | translate }}
+            </span>
+            @if (isOverdue(row['_raw'])) {
+              <span class="overdue-tag">{{ 'INVOICING.LIST.TABLE.OVERDUE_DAYS' | translate: { days: overdueDays(row['_raw']) } }}</span>
             }
-          }
+          </div>
+        </ng-template>
 
-          @for (inv of invoices(); track inv.id) {
-            <tr class="inv-row" [class.inv-row--overdue]="isOverdue(inv)"
-              (click)="navigateToDetail(inv.id)">
+        <ng-template dafCell="date" let-row>
+          <div class="cell-date" [class.cell-date--overdue]="isOverdue(row['_raw'])">
+            {{ row['_raw'].dateEcheance ? (('INVOICING.LIST.TABLE.ECH_PREFIX' | translate) + ' ' + formatDate(row['_raw'].dateEcheance)) : formatDate(row['_raw'].dateEmission) }}
+          </div>
+        </ng-template>
 
-              <td>
-                <div class="cell-ref">
-                  <span class="cell-ref__num">{{ inv.invoiceNumber || ('INVOICING.LIST.TABLE.DRAFT' | translate) }}</span>
-                  <span class="cell-ref__aff">{{ inv.affaireRef ?? '—' }}</span>
-                </div>
-              </td>
+        <ng-template dafCell="actions" let-row>
+          <div (click)="$event.stopPropagation()">
+            <button class="menu-btn" title="Actions">
+              <span class="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
+        </ng-template>
 
-              <td>
-                <div class="cell-client" [title]="inv.clientNom || ''">
-                  {{ inv.clientNom || '—' }}
-                </div>
-              </td>
-
-              <td class="td-right">
-                <span class="cell-amount">{{ formatAmount(inv.montantTtc, inv.devise) }}</span>
-              </td>
-
-              <td>
-                <div class="cell-statut">
-                  <span class="badge badge--{{ statutBadgeVariant(inv.statut) }}">
-                    {{ statutLabel(inv.statut) | translate }}
-                  </span>
-                  @if (isOverdue(inv)) {
-                    <span class="overdue-tag">{{ 'INVOICING.LIST.TABLE.OVERDUE_DAYS' | translate: { days: overdueDays(inv) } }}</span>
-                  }
-                </div>
-              </td>
-
-              <td>
-                <div class="cell-date" [class.cell-date--overdue]="isOverdue(inv)">
-                  {{ inv.dateEcheance ? (('INVOICING.LIST.TABLE.ECH_PREFIX' | translate) + ' ' + formatDate(inv.dateEcheance)) : formatDate(inv.dateEmission) }}
-                </div>
-              </td>
-
-              <td class="td-actions" (click)="$event.stopPropagation()">
-                <button class="menu-btn" title="Actions">
-                  <span class="material-symbols-outlined">more_vert</span>
-                </button>
-              </td>
-
-            </tr>
-          }
-
-          @if (!loading() && invoices().length === 0) {
-            <tr>
-              <td colspan="6" class="empty-cell">
-                <span class="material-symbols-outlined">receipt_long</span>
-                {{ 'INVOICING.LIST.TABLE.EMPTY' | translate }}
-              </td>
-            </tr>
-          }
-
-        </tbody>
-      </table>
+      </daf-data-table>
     </div>
 
     <daf-pagination

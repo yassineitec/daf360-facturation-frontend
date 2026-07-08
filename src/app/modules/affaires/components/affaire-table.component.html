@@ -201,98 +201,79 @@
     <!-- ═══ TABLE VIEW — toujours dans le DOM; caché sur desktop en mode grille ═══ -->
     <div class="table-desktop-wrap" [class.table-grid-mode]="viewMode() === 'grid'">
       <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.REF' | translate }}</th>
-              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.TITLE' | translate }}</th>
-              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.CLIENT' | translate }}</th>
-              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.MANAGER' | translate }}</th>
-              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.TYPE' | translate }}</th>
-              <th class="num">{{ 'AFFAIRES.LIST.TABLE.HEADERS.BUDGET' | translate }}</th>
-              <th class="num">{{ 'AFFAIRES.LIST.TABLE.HEADERS.RAF' | translate }}</th>
-              <th>{{ 'AFFAIRES.LIST.TABLE.HEADERS.STATUS' | translate }}</th>
-              <th class="act"></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (a of affaires(); track a.id) {
-              <tr class="data-row" (click)="rowClick.emit(a.id)">
+        <daf-data-table
+          [columns]="tableColumns"
+          [rows]="tableRows()"
+          [config]="tableConfig()"
+          (rowClick)="onTableRowClick($event)">
 
-                <td><span class="ref-mono">{{ a.reference }}</span></td>
+          <ng-template dafCell="reference" let-row>
+            <span class="ref-mono">{{ row['reference'] }}</span>
+          </ng-template>
 
-                <td>
-                  <div class="intitule-cell">
-                    <span class="intitule-name">{{ a.intitule }}</span>
-                    @if (a.billingMode) {
-                      <span class="intitule-sub">{{ a.billingMode }}</span>
-                    }
-                  </div>
-                </td>
+          <ng-template dafCell="intitule" let-row>
+            <div class="intitule-cell">
+              <span class="intitule-name">{{ row['intitule'] }}</span>
+              @if (row['billingMode']) {
+                <span class="intitule-sub">{{ row['billingMode'] }}</span>
+              }
+            </div>
+          </ng-template>
 
-                <td><span class="client-name">{{ a.clientName || '—' }}</span></td>
+          <ng-template dafCell="clientName" let-row>
+            <span class="client-name">{{ row['clientName'] || '—' }}</span>
+          </ng-template>
 
-                <td>
-                  <div class="resp-cell">
-                    <div class="resp-avatar">{{ initials(a.responsableFullName) }}</div>
-                    <span class="resp-name">{{ a.responsableFullName || '—' }}</span>
-                  </div>
-                </td>
+          <ng-template dafCell="responsable" let-row>
+            <div class="resp-cell">
+              <div class="resp-avatar">{{ initials(row['responsableFullName']) }}</div>
+              <span class="resp-name">{{ row['responsableFullName'] || '—' }}</span>
+            </div>
+          </ng-template>
 
-                <td><span class="type-chip">{{ typeLabel(a.typeAffaire) | uppercase }}</span></td>
+          <ng-template dafCell="type" let-row>
+            <span class="type-chip">{{ typeLabel(row['typeAffaire']) | uppercase }}</span>
+          </ng-template>
 
-                <td class="num">
-                  <div class="budget-cell">
-                    <span class="budget-val">{{ formatAmount(a.budgetPrevisionnel) }}</span>
-                    <span class="material-symbols-outlined budget-icon"
-                          [class.budget-icon--filled]="a.budgetValide"
-                          [style.color]="budgetIconColor(a)">
-                      {{ budgetIcon(a) }}
-                    </span>
-                  </div>
-                </td>
+          <ng-template dafCell="budget" let-row>
+            <div class="budget-cell">
+              <span class="budget-val">{{ formatAmount(row['budgetPrevisionnel']) }}</span>
+              <span class="material-symbols-outlined budget-icon"
+                    [class.budget-icon--filled]="row['_raw'].budgetValide"
+                    [style.color]="budgetIconColor(row['_raw'])">
+                {{ budgetIcon(row['_raw']) }}
+              </span>
+            </div>
+          </ng-template>
 
-                <td class="num">
-                  <span class="raf-val" [style.color]="rafColor(a)">
-                    {{ formatAmount(a.rafDisponible ?? null) }}
-                  </span>
-                </td>
+          <ng-template dafCell="raf" let-row>
+            <span class="raf-val" [style.color]="rafColor(row['_raw'])">
+              {{ formatAmount(row['rafDisponible'] ?? null) }}
+            </span>
+          </ng-template>
 
-                <td>
-                  @if (a.statut === 'EN_COURS') {
-                    <span class="statut-badge statut-badge--en-cours">{{ 'AFFAIRES.LIST.TABLE.STATUS.EN_COURS' | translate }}</span>
-                  } @else if (a.statut === 'SUSPENDUE') {
-                    <span class="statut-badge statut-badge--suspendue">{{ 'AFFAIRES.LIST.TABLE.STATUS.SUSPENDUE' | translate }}</span>
-                  } @else if (a.statut === 'CLOTUREE') {
-                    <span class="statut-badge statut-badge--cloturee">{{ 'AFFAIRES.LIST.TABLE.STATUS.CLOTUREE' | translate }}</span>
-                  } @else if (a.statut === 'ARCHIVEE') {
-                    <span class="statut-badge statut-badge--archivee">{{ 'AFFAIRES.LIST.TABLE.STATUS.ARCHIVEE' | translate }}</span>
-                  } @else {
-                    <span class="statut-badge statut-badge--draft">{{ a.statut }}</span>
-                  }
-                </td>
-
-                <td class="act">
-                  <button class="view-btn" [title]="'AFFAIRES.LIST.TABLE.SEE_DETAIL' | translate"
-                          (click)="rowClick.emit(a.id); $event.stopPropagation()">
-                    <span class="material-symbols-outlined">visibility</span>
-                  </button>
-                </td>
-
-              </tr>
+          <ng-template dafCell="statut" let-row>
+            @if (row['statut'] === 'EN_COURS') {
+              <span class="statut-badge statut-badge--en-cours">{{ 'AFFAIRES.LIST.TABLE.STATUS.EN_COURS' | translate }}</span>
+            } @else if (row['statut'] === 'SUSPENDUE') {
+              <span class="statut-badge statut-badge--suspendue">{{ 'AFFAIRES.LIST.TABLE.STATUS.SUSPENDUE' | translate }}</span>
+            } @else if (row['statut'] === 'CLOTUREE') {
+              <span class="statut-badge statut-badge--cloturee">{{ 'AFFAIRES.LIST.TABLE.STATUS.CLOTUREE' | translate }}</span>
+            } @else if (row['statut'] === 'ARCHIVEE') {
+              <span class="statut-badge statut-badge--archivee">{{ 'AFFAIRES.LIST.TABLE.STATUS.ARCHIVEE' | translate }}</span>
+            } @else {
+              <span class="statut-badge statut-badge--draft">{{ row['statut'] }}</span>
             }
-            @empty {
-              <tr>
-                <td colspan="9">
-                  <div class="empty-state">
-                    <span class="material-symbols-outlined empty-icon">search_off</span>
-                    <span>{{ 'AFFAIRES.LIST.TABLE.EMPTY' | translate }}</span>
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+          </ng-template>
+
+          <ng-template dafCell="_actions" let-row>
+            <button class="view-btn" [title]="'AFFAIRES.LIST.TABLE.SEE_DETAIL' | translate"
+                    (click)="rowClick.emit(row['id']); $event.stopPropagation()">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </ng-template>
+
+        </daf-data-table>
       </div><!-- /table-scroll -->
     </div><!-- /table-desktop-wrap -->
 

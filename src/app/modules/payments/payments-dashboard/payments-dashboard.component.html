@@ -74,68 +74,69 @@
 
   <!-- Aging table -->
   <daf-card [options]="{variant:'default',padding:'none',radius:'xl'}" class="table-wrap">
-    <table class="aging-table">
-      <thead>
-        <tr>
-          <th>Client</th>
-          <th>Facture</th>
-          <th class="num-col">Montant TTC</th>
-          <th>Échéance</th>
-          <th class="num-col">Jours retard</th>
-          <th>Statut relance</th>
-          <th class="action-col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        @if (loadingRows()) {
-          @for (_ of [1,2,3,4,5]; track $index) {
-            <tr class="skeleton-row">
-              <td colspan="7"><div class="skeleton-line"></div></td>
-            </tr>
+    <daf-data-table
+      [columns]="tableColumns"
+      [rows]="tableRows()"
+      [config]="tableConfig()"
+      (rowClick)="onRowClick($event)">
+
+      <ng-template dafCell="clientNom" let-row>
+        <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])">
+          {{ row['clientNom'] }}
+        </div>
+      </ng-template>
+
+      <ng-template dafCell="invoice" let-row>
+        <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])">
+          <span class="inv-num">{{ row['invoiceNumber'] ?? '—' }}</span>
+          @if (row['affaireRef']) {
+            <span class="aff-ref">{{ row['affaireRef'] }}</span>
           }
-        } @else if (rows().length === 0) {
-          <tr>
-            <td colspan="7" class="empty-cell">Aucune facture impayée trouvée.</td>
-          </tr>
-        } @else {
-          @for (row of rows(); track row.invoiceId) {
-            <tr class="aging-row"
-              [style.background-color]="agingRowColor(row.joursRetard)"
-              (click)="navigateToInvoice(row.invoiceId)">
-              <td class="client-cell">{{ row.clientNom }}</td>
-              <td class="invoice-cell">
-                <span class="inv-num">{{ row.invoiceNumber ?? '—' }}</span>
-                @if (row.affaireRef) {
-                  <span class="aff-ref">{{ row.affaireRef }}</span>
-                }
-              </td>
-              <td class="num-col amount-cell">{{ formatAmount(row.montantTtc, row.devise) }}</td>
-              <td class="date-cell">{{ formatDate(row.dateEcheance) }}</td>
-              <td class="num-col retard-cell">
-                @if (row.joursRetard > 0) {
-                  <daf-badge
-                    [label]="row.joursRetard + ' j'"
-                    [options]="{ variant: retardVariant(row.joursRetard), pill: true, size: 'sm' }" />
-                } @else {
-                  <span class="on-time">—</span>
-                }
-              </td>
-              <td class="reminder-cell">
-                <span class="reminder-type">{{ reminderLabel(row.lastReminderType) }}</span>
-                @if (row.lastReminderSentAt) {
-                  <span class="reminder-date">{{ formatDate(row.lastReminderSentAt) }}</span>
-                }
-              </td>
-              <td class="action-col" (click)="$event.stopPropagation()">
-                <daf-button
-                  [options]="{variant:'ghost', label:'Voir', size:'sm'}"
-                  (onClick)="navigateToInvoice(row.invoiceId)" />
-              </td>
-            </tr>
+        </div>
+      </ng-template>
+
+      <ng-template dafCell="montantTtc" let-row>
+        <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])">
+          {{ formatAmount(row['montantTtc'], row['devise']) }}
+        </div>
+      </ng-template>
+
+      <ng-template dafCell="dateEcheance" let-row>
+        <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])">
+          {{ formatDate(row['dateEcheance']) }}
+        </div>
+      </ng-template>
+
+      <ng-template dafCell="joursRetard" let-row>
+        <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])">
+          @if (row['joursRetard'] > 0) {
+            <daf-badge
+              [label]="row['joursRetard'] + ' j'"
+              [options]="{ variant: retardVariant(row['joursRetard']), pill: true, size: 'sm' }" />
+          } @else {
+            <span class="on-time">—</span>
           }
-        }
-      </tbody>
-    </table>
+        </div>
+      </ng-template>
+
+      <ng-template dafCell="reminder" let-row>
+        <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])">
+          <span class="reminder-type">{{ reminderLabel(row['lastReminderType']) }}</span>
+          @if (row['lastReminderSentAt']) {
+            <span class="reminder-date">{{ formatDate(row['lastReminderSentAt']) }}</span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template dafCell="_actions" let-row>
+        <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])" (click)="$event.stopPropagation()">
+          <daf-button
+            [options]="{variant:'ghost', label:'Voir', size:'sm'}"
+            (onClick)="navigateToInvoice(row['invoiceId'])" />
+        </div>
+      </ng-template>
+
+    </daf-data-table>
   </daf-card>
 
   <!-- Pagination -->

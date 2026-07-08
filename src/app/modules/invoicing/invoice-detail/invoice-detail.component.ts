@@ -15,6 +15,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   CardComponent, ButtonComponent,
   StepperComponent, StepperStep, StepperConfig,
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, BadgeOptions,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
@@ -28,6 +29,7 @@ import {
     RemindersPanelComponent,
     PermissionDirective,
     CardComponent, ButtonComponent, StepperComponent, TranslatePipe,
+    DataTableComponent, DafCellDirective,
   ],
   templateUrl: './invoice-detail.component.html',
   styleUrl:    './invoice-detail.component.scss',
@@ -83,6 +85,47 @@ export class InvoiceDetailComponent implements OnInit {
     if (inv.statut === 'PAID') return 0;
     if (inv.statut === 'PARTIALLY_PAID') return inv.montantTtc / 2;
     return inv.montantTtc;
+  });
+
+  // ── Billing lines table ───────────────────────────────────────────────────
+
+  readonly lineTableColumns = computed((): TableColumn[] => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { key: 'description', label: t('INVOICING.DETAIL.LINES.DESC'),        type: 'custom' },
+      { key: 'status',      label: t('INVOICING.DETAIL.LINES.STATUS_COL'),  type: 'badge'  },
+      { key: 'quantity',    label: t('INVOICING.DETAIL.LINES.QTY'),         type: 'number', align: 'right' },
+      { key: 'unitRate',    label: t('INVOICING.DETAIL.LINES.UNIT_PRICE'),  type: 'custom', align: 'right' },
+      { key: 'vatRatePct',  label: t('INVOICING.DETAIL.LINES.VAT'),         type: 'custom', align: 'right' },
+      { key: 'lineTotal',   label: t('INVOICING.DETAIL.LINES.TOTAL_HT'),    type: 'custom', align: 'right' },
+      { key: 'lineTtc',     label: t('INVOICING.DETAIL.LINES.TOTAL_TTC'),   type: 'custom', align: 'right' },
+      { key: '_actions',    label: '',                                     type: 'custom', align: 'right', width: '56px' },
+    ];
+  });
+
+  readonly lineTableConfig = computed((): TableConfig => ({
+    hoverable:    true,
+    emptyMessage: this.translate.instant('INVOICING.DETAIL.LINES.EMPTY'),
+  }));
+
+  readonly lineTableRows = computed(() => {
+    this.translate.currentLang();
+    const inv = this.invoice();
+    if (!inv) return [];
+    const activeLabel: string = this.translate.instant('INVOICING.DETAIL.LINES.ACTIVE');
+    const statusOptions: BadgeOptions = { variant: 'success', pill: true };
+    return inv.lines.map((line, idx) => ({
+      id:          line.id ?? idx,
+      description: line.description,
+      status:      { label: activeLabel, options: statusOptions },
+      quantity:    line.quantity,
+      unitRate:    line.unitRate,
+      vatRatePct:  line.vatRatePct,
+      lineTotal:   line.lineTotal,
+      lineTtc:     this.lineTtc(line),
+      _raw:        line,
+    }));
   });
 
   // ── Lifecycle stepper ─────────────────────────────────────────────────────

@@ -121,49 +121,48 @@
 
         <!-- Desktop table -->
         <div class="table-scroll table-desktop">
-          <table class="billing-table">
-            <thead>
-              <tr>
-                <th>{{ 'INVOICING.DETAIL.LINES.DESC' | translate }}</th>
-                <th>{{ 'INVOICING.DETAIL.LINES.STATUS_COL' | translate }}</th>
-                <th class="num">{{ 'INVOICING.DETAIL.LINES.QTY' | translate }}</th>
-                <th class="num">{{ 'INVOICING.DETAIL.LINES.UNIT_PRICE' | translate }}</th>
-                <th class="num">{{ 'INVOICING.DETAIL.LINES.VAT' | translate }}</th>
-                <th class="num">{{ 'INVOICING.DETAIL.LINES.TOTAL_HT' | translate }}</th>
-                <th class="num">{{ 'INVOICING.DETAIL.LINES.TOTAL_TTC' | translate }}</th>
-                <th class="act"></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (line of invoice()!.lines; track line.id ?? $index) {
-                <tr class="billing-row">
-                  <td class="line-desc">{{ line.description }}</td>
-                  <td><span class="status-chip status-chip--green">{{ 'INVOICING.DETAIL.LINES.ACTIVE' | translate }}</span></td>
-                  <td class="num">{{ line.quantity }}</td>
-                  <td class="num muted">{{ formatAmount(line.unitRate) }}</td>
-                  <td class="num muted">{{ line.vatRatePct }}%</td>
-                  <td class="num bold">{{ formatAmount(line.lineTotal) }}</td>
-                  <td class="num bold accent">{{ formatAmount(lineTtc(line)) }}</td>
-                  <td class="act">
-                    <button class="edit-btn" title="Modifier">
-                      <span class="material-symbols-outlined">edit_square</span>
-                    </button>
-                  </td>
-                </tr>
-              }
-              @empty {
-                <tr><td colspan="8" class="empty-cell">{{ 'INVOICING.DETAIL.LINES.EMPTY' | translate }}</td></tr>
-              }
-            </tbody>
-            <tfoot>
-              <tr class="tfoot-row">
-                <td colspan="5" class="foot-label">{{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}</td>
-                <td class="num foot-ht">{{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</td>
-                <td class="num foot-ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+          <daf-data-table
+            [columns]="lineTableColumns()"
+            [rows]="lineTableRows()"
+            [config]="lineTableConfig()">
+
+            <ng-template dafCell="description" let-row>
+              <span class="line-desc">{{ row['description'] }}</span>
+            </ng-template>
+
+            <ng-template dafCell="unitRate" let-row>
+              <span class="num muted">{{ formatAmount(row['unitRate']) }}</span>
+            </ng-template>
+
+            <ng-template dafCell="vatRatePct" let-row>
+              <span class="num muted">{{ row['vatRatePct'] }}%</span>
+            </ng-template>
+
+            <ng-template dafCell="lineTotal" let-row>
+              <span class="num bold">{{ formatAmount(row['lineTotal']) }}</span>
+            </ng-template>
+
+            <ng-template dafCell="lineTtc" let-row>
+              <span class="num bold accent">{{ formatAmount(row['lineTtc']) }}</span>
+            </ng-template>
+
+            <ng-template dafCell="_actions" let-row>
+              <button class="edit-btn" title="Modifier">
+                <span class="material-symbols-outlined">edit_square</span>
+              </button>
+            </ng-template>
+
+          </daf-data-table>
+
+          @if (invoice()!.lines.length > 0) {
+            <div class="billing-tfoot">
+              <span class="foot-label">{{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}</span>
+              <span class="foot-amounts">
+                <span class="num foot-ht">{{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</span>
+                <span class="num foot-ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</span>
+              </span>
+            </div>
+          }
         </div>
 
         <!-- Mobile lines list -->

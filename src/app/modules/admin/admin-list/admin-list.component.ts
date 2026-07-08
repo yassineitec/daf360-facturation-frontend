@@ -1,7 +1,6 @@
 import {
   Component, OnInit, inject, signal, computed,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
 import { FactListService }    from '../../../core/fact-list.service';
@@ -10,6 +9,9 @@ import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-se
 import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-api-config.service';
 import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
+import {
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig,
+} from '@khalilrebhiitec/daf360';
 
 type AdminTab = 'lists' | 'forex' | 'forex-api';
 
@@ -22,7 +24,7 @@ interface ForexRow {
 @Component({
   selector: 'app-admin-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, DataTableComponent, DafCellDirective],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',
 })
