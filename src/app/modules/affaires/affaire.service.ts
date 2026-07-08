@@ -7,6 +7,7 @@ import {
   TsDto, CreateAffaireRequest, UpdateAffaireRequest, ChangerStatutRequest,
   CreateTsRequest, ValiderTsRequest, AffaireFilter,
   ClientDto, UserRefDto, PaysRefDto, PageResponse,
+  AffaireInvoiceItem, AffairePaymentItem,
 } from './affaire.model';
 
 @Injectable({ providedIn: 'root' })
@@ -77,6 +78,26 @@ export class AffaireService {
 
   validerCommerciale(tsId: number, req: ValiderTsRequest): Observable<TsDto> {
     return this.http.post<TsDto>(`${this.base}/ts/${tsId}/valider-commerciale`, req);
+  }
+
+  // ── Invoices & Payments (affaire-scoped) ─────────────────────────────
+
+  getAffaireInvoices(affaireId: number): Observable<AffaireInvoiceItem[]> {
+    const params = new HttpParams()
+      .set('affaireId', String(affaireId))
+      .set('page', '0')
+      .set('size', '200');
+    return this.http.get<PageResponse<AffaireInvoiceItem>>(`${this.base}/invoices`, { params }).pipe(
+      map(res => res.content ?? []),
+      catchError(() => of([] as AffaireInvoiceItem[])),
+    );
+  }
+
+  getAffairePayments(affaireId: number): Observable<AffairePaymentItem[]> {
+    const params = new HttpParams().set('affaireId', String(affaireId));
+    return this.http.get<AffairePaymentItem[]>(`${this.base}/payments`, { params }).pipe(
+      catchError(() => of([] as AffairePaymentItem[])),
+    );
   }
 
   // ── Reference data ───────────────────────────────────────────────────

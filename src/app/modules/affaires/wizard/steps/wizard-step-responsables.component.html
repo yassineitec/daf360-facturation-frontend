@@ -87,14 +87,11 @@
             <div class="resp-fields">
               <div class="resp-field resp-field--full">
                 <label class="resp-field-label">Collaborateur *</label>
-                <select class="form-input"
-                  [value]="resp.userId || ''"
-                  (change)="updateUser(idx, +$any($event.target).value)">
-                  <option value="">— Sélectionner —</option>
-                  @for (u of allUsers(); track u.id) {
-                    <option [value]="u.id">{{ u.fullName }}</option>
-                  }
-                </select>
+                <daf-select
+                  [options]="userOptions()"
+                  [config]="selectConfig"
+                  [selected]="resp.userId ? [resp.userId.toString()] : []"
+                  (selectedChange)="onUserSelect(idx, $event)" />
               </div>
             </div>
 
@@ -132,14 +129,11 @@
                     <span class="field-required-hint">— obligatoire</span>
                   }
                 </label>
-                <select class="form-input"
-                  [value]="resp.activiteId ? resp.activiteId + '|' + resp.activiteLabel : ''"
-                  (change)="onActiviteChange(idx, $any($event.target).value)">
-                  <option value="">— Sélectionner —</option>
-                  @for (a of activites(); track a.id) {
-                    <option [value]="a.id + '|' + a.labelFr">{{ a.labelFr }}</option>
-                  }
-                </select>
+                <daf-select
+                  [options]="activiteOptions()"
+                  [config]="selectConfig"
+                  [selected]="resp.activiteId ? [resp.activiteId + '|' + resp.activiteLabel] : []"
+                  (selectedChange)="onActiviteSelect(idx, $event)" />
               </div>
 
               <div class="resp-field">
@@ -163,14 +157,11 @@
                   </span>
 
                 } @else if (disciplines().length > 0) {
-                  <select class="form-input"
-                    [value]="resp.disciplineId && resp.disciplineId > 0 ? resp.disciplineId + '|' + resp.disciplineLabel : ''"
-                    (change)="onDisciplineChange(idx, $any($event.target).value)">
-                    <option value="">— Sélectionner —</option>
-                    @for (d of disciplines(); track d.id) {
-                      <option [value]="d.id + '|' + d.levelLabel">{{ d.levelLabel }}</option>
-                    }
-                  </select>
+                  <daf-select
+                    [options]="disciplineOptions()"
+                    [config]="selectConfig"
+                    [selected]="resp.disciplineId && resp.disciplineId > 0 ? [resp.disciplineId + '|' + resp.disciplineLabel] : []"
+                    (selectedChange)="onDisciplineSelect(idx, $event)" />
 
                 } @else {
                   <input class="form-input" type="text"

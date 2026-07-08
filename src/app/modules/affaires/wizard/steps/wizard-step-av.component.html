@@ -14,10 +14,10 @@
   <!-- Repartition rows -->
   @for (r of draft.repartitions; track $index; let i = $index) {
     <div class="rep-row">
-      <select [(ngModel)]="r.repartitionTypeId" class="form-select">
-        <option [value]="0">Type de répartition *</option>
+      <select [(ngModel)]="r.repartitionTypeId" (ngModelChange)="updateTotal()" class="form-select">
+        <option [ngValue]="0">Type de répartition *</option>
         @for (t of repartitionTypes(); track t.id) {
-          <option [value]="t.id">{{ t.labelFr }}</option>
+          <option [ngValue]="t.id">{{ t.labelFr }}</option>
         }
       </select>
       <div class="pct-field">

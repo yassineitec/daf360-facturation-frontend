@@ -297,21 +297,101 @@
           </section>
         }
 
-        <!-- Stub sections -->
-        @for (section of stubSections; track section.key) {
-          <section class="glass-card collapsible">
-            <button class="collapsible__header" (click)="toggleSection(section.key)"
-                    [attr.aria-expanded]="isOpen(section.key)">
-              <h2 class="text-title-md section-card__title">{{ section.label }}</h2>
-              <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen(section.key)">expand_more</span>
-            </button>
-            @if (isOpen(section.key)) {
-              <div class="collapsible__body stub-body text-body-sm">
-                {{ 'AFFAIRES.DETAIL.SECTIONS.STUB' | translate }}
-              </div>
-            }
-          </section>
-        }
+        <!-- Factures émises -->
+        <section class="glass-card collapsible">
+          <button class="collapsible__header" (click)="toggleSection('factures')"
+                  [attr.aria-expanded]="isOpen('factures')">
+            <h2 class="text-title-md section-card__title">
+              <span class="material-symbols-outlined text-primary">receipt</span>
+              {{ 'AFFAIRES.DETAIL.SECTIONS.INVOICES' | translate }}
+              @if (invoices().length > 0) {
+                <span class="section-count">{{ invoices().length }}</span>
+              }
+            </h2>
+            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('factures')">expand_more</span>
+          </button>
+          @if (isOpen('factures')) {
+            <div class="collapsible__body">
+              @if (invoices().length === 0) {
+                <p class="fp-empty text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.SECTIONS.NO_INVOICES' | translate }}</p>
+              } @else {
+                <div class="fp-table-wrap">
+                  <table class="fp-table">
+                    <thead>
+                      <tr>
+                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.NUMBER' | translate }}</th>
+                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.TYPE' | translate }}</th>
+                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.EMITTED' | translate }}</th>
+                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.DUE' | translate }}</th>
+                        <th class="num">{{ 'AFFAIRES.DETAIL.INVOICES.AMOUNT' | translate }}</th>
+                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.STATUS' | translate }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (inv of invoices(); track inv.id) {
+                        <tr>
+                          <td class="fp-ref">{{ inv.invoiceNumber || '—' }}</td>
+                          <td>{{ inv.invoiceType || '—' }}</td>
+                          <td>{{ formatDate(inv.dateEmission) }}</td>
+                          <td>{{ formatDate(inv.dateEcheance) }}</td>
+                          <td class="num">{{ formatAmount(inv.montantTtc, inv.devise || affaireDevise()) }}</td>
+                          <td><span class="fp-badge">{{ inv.statut || '—' }}</span></td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- Paiements reçus -->
+        <section class="glass-card collapsible">
+          <button class="collapsible__header" (click)="toggleSection('paiements')"
+                  [attr.aria-expanded]="isOpen('paiements')">
+            <h2 class="text-title-md section-card__title">
+              <span class="material-symbols-outlined text-primary">payments</span>
+              {{ 'AFFAIRES.DETAIL.SECTIONS.PAYMENTS' | translate }}
+              @if (payments().length > 0) {
+                <span class="section-count">{{ payments().length }}</span>
+              }
+            </h2>
+            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('paiements')">expand_more</span>
+          </button>
+          @if (isOpen('paiements')) {
+            <div class="collapsible__body">
+              @if (payments().length === 0) {
+                <p class="fp-empty text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.SECTIONS.NO_PAYMENTS' | translate }}</p>
+              } @else {
+                <div class="fp-table-wrap">
+                  <table class="fp-table">
+                    <thead>
+                      <tr>
+                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.DATE' | translate }}</th>
+                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.INVOICE' | translate }}</th>
+                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.METHOD' | translate }}</th>
+                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.REFERENCE' | translate }}</th>
+                        <th class="num">{{ 'AFFAIRES.DETAIL.PAYMENTS.AMOUNT' | translate }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of payments(); track p.id) {
+                        <tr>
+                          <td>{{ formatDate(p.paymentDate) }}</td>
+                          <td class="fp-ref">{{ p.invoiceNumber || '—' }}</td>
+                          <td>{{ p.paymentMethod || '—' }}</td>
+                          <td>{{ p.bankReference || '—' }}</td>
+                          <td class="num">{{ formatAmount(p.amountLocal, p.currency || affaireDevise()) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          }
+        </section>
 
         <!-- ── Indicateurs de Pilotage ──────────────────────────────────── -->
         @if (raf() && raf()!.budgetPrevisionnel > 0) {

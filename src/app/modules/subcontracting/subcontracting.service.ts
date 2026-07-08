@@ -20,6 +20,12 @@ export class SubcontractingService {
     });
   }
 
+  // Affaire-scoped: pays is resolved server-side, so no pays param is sent and
+  // the pays-isolation interceptor does not block the request (no 403).
+  listSousTraitantsForAffaire(affaireId: number): Observable<SousTraitantDto[]> {
+    return this.http.get<SousTraitantDto[]>(`${this.base}/affaires/${affaireId}/sous-traitants`);
+  }
+
   createSousTraitant(req: CreateSousTraitantRequest): Observable<SousTraitantDto> {
     return this.http.post<SousTraitantDto>(`${this.base}/sous-traitants`, req);
   }

@@ -7,6 +7,18 @@ $bg:     $bg-page;
 
 :host { display: contents; }
 
+// ── daf-stepper (lib) — page-footer bar ───────────────────────────────────────
+// Keep the component's native layout intact (no internal size hacks — those broke
+// it). Only remap the primary token → tertiary for this stepper's accent colour.
+.lifecycle-bar {
+  margin-top: 24px;
+
+  ::ng-deep daf-stepper {
+    --color-primary:       var(--color-tertiary);
+    --color-primary-hover: var(--color-tertiary);
+  }
+}
+
 // ── Card shell mixin ──────────────────────────────────────────────────────────
 @mixin card-shell {
   background: white;

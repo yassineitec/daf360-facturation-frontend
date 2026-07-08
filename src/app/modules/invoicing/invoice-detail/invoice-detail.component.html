@@ -20,9 +20,13 @@
     [backLabel]="'INVOICING.DETAIL.BACK' | translate">
     <div actions class="dh-header-right">
       <div class="dh-pills">
-        <app-status-badge [status]="invoice()!.statut" />
+        <daf-badge
+          [label]="statutConfig().label | translate"
+          [options]="{ variant: statusVariant(), pill: true, size: 'md' }" />
         @if (isOverdue()) {
-          <span class="overdue-pill">{{ 'INVOICING.DETAIL.OVERDUE' | translate }}</span>
+          <daf-badge
+            [label]="'INVOICING.DETAIL.OVERDUE' | translate"
+            [options]="{ variant: 'danger', pill: true, size: 'md', icon: 'schedule' }" />
         }
       </div>
       <div class="dh-amount-block">
@@ -42,67 +46,25 @@
     </div>
   }
 
-
-  <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
+  <!-- ── KPI Grid (daf-metric-card) ────────────────────────────────────────── -->
   <div class="kpi-grid">
+    <daf-metric-card
+      [label]="'INVOICING.DETAIL.KPI.BILLING_PROGRESS' | translate"
+      [value]="billingProgress() + '%'"
+      [delta]="{ value: (statutConfig().label | translate) }"
+      [options]="{ icon: 'trending_up', iconColor: '#475569', iconBg: 'rgba(100,116,139,0.12)' }" />
 
-    <!-- Avancement facturation -->
-    <div class="kpi-card">
-      <div class="kpi-card__top">
-        <div>
-          <p class="kpi-card__label">{{ 'INVOICING.DETAIL.KPI.BILLING_PROGRESS' | translate }}</p>
-          <h3 class="kpi-card__value">{{ billingProgress() }}%</h3>
-        </div>
-        <span class="kpi-card__icon">
-          <span class="material-symbols-outlined">trending_up</span>
-        </span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-bar__fill progress-bar__fill--slate" [style.width.%]="billingProgress()"></div>
-      </div>
-      <p class="kpi-card__sub">{{ statutConfig().label | translate }}</p>
-    </div>
+    <daf-metric-card
+      [label]="'INVOICING.DETAIL.KPI.BUDGET_TOTAL' | translate: { currency: invoice()!.devise }"
+      [value]="formatAmount(invoice()!.montantTtc, invoice()!.devise)"
+      [delta]="{ value: ('INVOICING.DETAIL.KPI.HT_PREFIX' | translate) + ' ' + formatAmount(invoice()!.montantHt, invoice()!.devise) }"
+      [options]="{ icon: 'account_balance_wallet', iconColor: '#0f766e', iconBg: 'rgba(15,118,110,0.12)' }" />
 
-    <!-- Budget Total -->
-    <div class="kpi-card">
-      <div class="kpi-card__top">
-        <div>
-          <p class="kpi-card__label">{{ 'INVOICING.DETAIL.KPI.BUDGET_TOTAL' | translate: { currency: invoice()!.devise } }}</p>
-          <h3 class="kpi-card__value">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</h3>
-        </div>
-        <span class="kpi-card__icon kpi-card__icon--teal">
-          <span class="material-symbols-outlined">account_balance_wallet</span>
-        </span>
-      </div>
-      <div class="kpi-card__row">
-        <span class="kpi-card__sub">{{ 'INVOICING.DETAIL.KPI.HT_PREFIX' | translate }} {{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</span>
-      </div>
-      <div class="progress-bar" style="margin-top:10px">
-        <div class="progress-bar__fill progress-bar__fill--teal" style="width:73%"></div>
-      </div>
-    </div>
-
-    <!-- Restant à payer -->
-    <div class="kpi-card">
-      <div class="kpi-card__top">
-        <div>
-          <p class="kpi-card__label">{{ 'INVOICING.DETAIL.KPI.REMAINING' | translate }}</p>
-          <h3 class="kpi-card__value">{{ formatAmount(montantRestant(), invoice()!.devise) }}</h3>
-        </div>
-        <span class="kpi-card__icon kpi-card__icon--green">
-          <span class="material-symbols-outlined">payments</span>
-        </span>
-      </div>
-      <div class="kpi-card__due">
-        <span class="material-symbols-outlined">schedule</span>
-        @if (invoice()!.dateEcheance) {
-          {{ 'INVOICING.DETAIL.KPI.DUE_PREFIX' | translate }} {{ formatDate(invoice()!.dateEcheance) }}
-        } @else {
-          {{ 'INVOICING.DETAIL.KPI.NO_DUE' | translate }}
-        }
-      </div>
-    </div>
-
+    <daf-metric-card
+      [label]="'INVOICING.DETAIL.KPI.REMAINING' | translate"
+      [value]="formatAmount(montantRestant(), invoice()!.devise)"
+      [delta]="{ value: dueLabel() }"
+      [options]="{ icon: 'payments', iconColor: '#16a34a', iconBg: 'rgba(22,163,74,0.12)' }" />
   </div>
 
   <!-- ── Body grid ──────────────────────────────────────────────────────────── -->
@@ -110,14 +72,10 @@
 
     <div class="body-main">
 
-      <!-- Billing Lines table -->
-      <div class="table-card">
+      <!-- Billing lines -->
+      <daf-card [options]="{ variant: 'default', padding: 'none', radius: 'xl' }">
         <div class="table-card__header">
-          <h3 class="table-card__title">{{ 'INVOICING.DETAIL.LINES.TITLE' | translate }}</h3>
-          <div class="table-card__tabs">
-            <button class="tct-btn tct-btn--active">{{ 'INVOICING.DETAIL.LINES.TAB_DETAIL' | translate }}</button>
-            <button class="tct-btn">{{ 'INVOICING.DETAIL.LINES.TAB_RECAP' | translate }}</button>
-          </div>
+          <daf-section-title [title]="'INVOICING.DETAIL.LINES.TITLE' | translate" />
         </div>
         <div class="table-scroll">
           <table class="billing-table">
@@ -137,7 +95,11 @@
               @for (line of invoice()!.lines; track line.id ?? $index) {
                 <tr class="billing-row">
                   <td class="line-desc">{{ line.description }}</td>
-                  <td><span class="status-chip status-chip--green">{{ 'INVOICING.DETAIL.LINES.ACTIVE' | translate }}</span></td>
+                  <td>
+                    <daf-badge
+                      [label]="'INVOICING.DETAIL.LINES.ACTIVE' | translate"
+                      [options]="{ variant: 'success', size: 'sm', pill: true }" />
+                  </td>
                   <td class="num">{{ line.quantity }}</td>
                   <td class="num muted">{{ formatAmount(line.unitRate) }}</td>
                   <td class="num muted">{{ line.vatRatePct }}%</td>
@@ -164,16 +126,15 @@
             </tfoot>
           </table>
         </div>
-      </div>
+      </daf-card>
 
     </div><!-- /body-main -->
 
     <!-- Aside: Informations + Reminders -->
     <div class="body-aside">
 
-      <!-- Informations -->
-      <div class="info-card">
-        <h3 class="info-card__title">{{ 'INVOICING.DETAIL.INFO.TITLE' | translate }}</h3>
+      <daf-card [options]="{ variant: 'default', padding: 'lg', radius: 'xl' }">
+        <daf-section-title [title]="'INVOICING.DETAIL.INFO.TITLE' | translate" />
         <div class="info-grid">
           <div class="info-row">
             <span class="info-label">{{ 'INVOICING.DETAIL.INFO.TYPE' | translate }}</span>
@@ -216,7 +177,7 @@
             </div>
           }
         </div>
-      </div>
+      </daf-card>
 
       <!-- Reminders -->
       <div class="reminders-wrap">
@@ -228,6 +189,18 @@
     </div><!-- /body-aside -->
 
   </div><!-- /body-grid -->
+
+  <!-- ── Lifecycle & actions (daf-stepper) — page footer ───────────────────── -->
+  <div class="lifecycle-bar">
+    <daf-stepper
+      [steps]="lifecycleSteps()"
+      [currentStep]="detailStep()"
+      [stepValid]="lifecycleStepValid()"
+      [config]="lifecycleConfig()"
+      (nextClick)="onStepperNext()"
+      (prevClick)="onStepperPrev()"
+      (finishClick)="onStepperFinish()" />
+  </div>
 
 </div><!-- /detail-page -->
 }

@@ -5,7 +5,6 @@ import { InvoiceService } from '../invoice.service';
 import {
   InvoiceDetail, INVOICE_STATUT_CONFIG, OVERDUE_STATUTS, InvoiceStatut, CONDITIONS_PAIEMENT,
 } from '../invoice.model';
-import { StatusBadgeComponent } from '../../../shared/status-badge.component';
 import { PageHeaderComponent } from '../../../shared/page-header.component';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
@@ -15,19 +14,23 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   CardComponent, ButtonComponent,
   StepperComponent, StepperStep, StepperConfig,
+  StatusBadgeComponent, MetricCardComponent, SectionTitleComponent,
+  BadgeVariant,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-detail',
   imports: [
     RouterLink, FormsModule,
-    StatusBadgeComponent,
     PageHeaderComponent,
     PaymentModalComponent,
     CreditNoteModalComponent,
     RemindersPanelComponent,
     PermissionDirective,
-    CardComponent, ButtonComponent, StepperComponent, TranslatePipe,
+    TranslatePipe,
+    // daf360 lib
+    CardComponent, ButtonComponent, StepperComponent,
+    StatusBadgeComponent, MetricCardComponent, SectionTitleComponent,
   ],
   templateUrl: './invoice-detail.component.html',
   styleUrl:    './invoice-detail.component.scss',
@@ -60,6 +63,22 @@ export class InvoiceDetailComponent implements OnInit {
   readonly statutConfig = computed(() =>
     INVOICE_STATUT_CONFIG[this.statut()] ?? { label: this.statut(), bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' }
   );
+
+  // Maps invoice status → daf-badge variant.
+  private readonly STATUS_VARIANT: Record<string, BadgeVariant> = {
+    DRAFT: 'neutral', SUBMITTED: 'info', RETURNED: 'warning', APPROVED: 'primary',
+    EMITTED: 'teal', SENT: 'info', PARTIALLY_PAID: 'warning', PAID: 'success',
+    DISPUTED: 'danger', CANCELLED: 'neutral', CREDIT_NOTED: 'secondary',
+  };
+  statusVariant(): BadgeVariant { return this.STATUS_VARIANT[this.statut()] ?? 'neutral'; }
+
+  // Sub-label for the "remaining" metric card.
+  dueLabel(): string {
+    const inv = this.invoice();
+    return inv?.dateEcheance
+      ? this.translate.instant('INVOICING.DETAIL.KPI.DUE_PREFIX') + ' ' + this.formatDate(inv.dateEcheance)
+      : this.translate.instant('INVOICING.DETAIL.KPI.NO_DUE');
+  }
 
   readonly isOverdue = computed(() => {
     const inv = this.invoice();
@@ -102,16 +121,19 @@ export class InvoiceDetailComponent implements OnInit {
   });
 
   readonly detailStep = computed(() => {
+    // daf-stepper is 0-based (currentStep is used as an array index), and the
+    // lifecycle has 7 steps (indices 0..6). Keep this map 0-based — a 1-based
+    // value overflows the progress line for terminal statuses (scaleX > 1).
     const map: Record<string, number> = {
-      DRAFT: 1, RETURNED: 1,
-      SUBMITTED: 2,
-      APPROVED: 3,
-      EMITTED: 4,
-      SENT: 5, DISPUTED: 5,
-      PARTIALLY_PAID: 6,
-      PAID: 7, CREDIT_NOTED: 7, CANCELLED: 7,
+      DRAFT: 0, RETURNED: 0,
+      SUBMITTED: 1,
+      APPROVED: 2,
+      EMITTED: 3,
+      SENT: 4, DISPUTED: 4,
+      PARTIALLY_PAID: 5,
+      PAID: 6, CREDIT_NOTED: 6, CANCELLED: 6,
     };
-    return map[this.statut()] ?? 1;
+    return map[this.statut()] ?? 0;
   });
 
   readonly lifecycleConfig = computed((): StepperConfig => {

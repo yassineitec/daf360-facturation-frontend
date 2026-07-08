@@ -90,6 +90,10 @@
 
 </div>
 
+<!-- Overlays are portaled to <body> so their fixed positioning escapes the
+     detail page's backdrop-filter card (containing block) and overflow:hidden. -->
+<div appBodyPortal>
+
 <!-- ─── Create / Edit OST Modal ─────────────────────────────────────────────── -->
 @if (showOstModal()) {
   <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showOstModal.set(false)">
@@ -107,11 +111,11 @@
           } @else if (stList().length === 0) {
             <span class="muted-sm">Aucun sous-traitant actif pour cette entité.</span>
           } @else {
-            <select [(ngModel)]="ostForm.sousTraitantId">
-              @for (st of stList(); track st.id) {
-                <option [value]="st.id">{{ st.name }}</option>
-              }
-            </select>
+            <daf-select
+              [options]="stOptions()"
+              [config]="stSelectConfig"
+              [selected]="ostForm.sousTraitantId ? [ostForm.sousTraitantId.toString()] : []"
+              (selectedChange)="onStSelect($event)" />
           }
         </div>
         <div class="field">
@@ -269,3 +273,7 @@
     </div>
   </div>
 }
+
+</div>
+<!-- /appBodyPortal -->
+

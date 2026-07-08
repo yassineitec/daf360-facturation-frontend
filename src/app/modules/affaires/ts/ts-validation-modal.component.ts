@@ -1,5 +1,6 @@
 import { Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { BodyPortalDirective } from '../../../shared/body-portal.directive';
 
 export interface ValidationConfig {
   tsId:     number;
@@ -11,9 +12,9 @@ export interface ValidationConfig {
 
 @Component({
   selector: 'app-ts-validation-modal',
-  imports: [FormsModule],
+  imports: [FormsModule, BodyPortalDirective],
   template: `
-    <div class="modal-overlay" (click)="onOverlay($event)">
+    <div class="modal-overlay" appBodyPortal (click)="onOverlay($event)">
       <div class="modal-box" role="dialog" aria-labelledby="val-title">
         <div class="modal-header">
           <h2 id="val-title">

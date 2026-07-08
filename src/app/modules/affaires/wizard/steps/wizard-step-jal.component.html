@@ -19,7 +19,7 @@
       </div>
       <div class="jalon-grid">
         <div class="jalon-col-full">
-          <input type="text" [(ngModel)]="j.label" maxlength="255"
+          <input type="text" [(ngModel)]="j.label" (ngModelChange)="updateJalonTotal()" maxlength="255"
             placeholder="Libellé du jalon *"
             class="form-input" />
         </div>
@@ -30,10 +30,10 @@
             class="form-input" />
         </div>
         <div>
-          <input type="date" [(ngModel)]="j.datePrevisionnelle" class="form-input" />
+          <input type="date" [(ngModel)]="j.datePrevisionnelle" (ngModelChange)="updateJalonTotal()" class="form-input" />
         </div>
         <div class="jalon-col-full">
-          <textarea [(ngModel)]="j.description" rows="2" maxlength="500"
+          <textarea [(ngModel)]="j.description" (ngModelChange)="updateJalonTotal()" rows="2" maxlength="500"
             placeholder="Description (optionnel)"
             class="form-textarea"></textarea>
         </div>

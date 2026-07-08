@@ -14,10 +14,11 @@ export class ClientService {
   private readonly http = inject(HttpClient);
 
   getClients(filter: ClientFilter): Observable<PageResponse<ClientListItemDto>> {
+    // Country (paysId) is intentionally ignored — the list is not scoped by pays,
+    // which also avoids the pays-isolation 403 on this endpoint.
     let params = new HttpParams()
       .set('page', String(filter.page ?? 0))
       .set('size', String(filter.size ?? 20));
-    if (filter.paysId) params = params.set('paysId', String(filter.paysId));
     if (filter.search)            params = params.set('search',    filter.search);
     if (filter.isActive != null)  params = params.set('isActive',  String(filter.isActive));
     if (filter.isKycDone != null) params = params.set('isKycDone', String(filter.isKycDone));
@@ -40,9 +41,9 @@ export class ClientService {
     );
   }
 
-  getSectors(paysId: number): Observable<string[]> {
-    const params = new HttpParams().set('pays', String(paysId));
-    return this.http.get<string[]>(`${this.base}/clients/sectors`, { params }).pipe(
+  getSectors(): Observable<string[]> {
+    // Sectors are global — no pays scoping (avoids the pays-isolation 403).
+    return this.http.get<string[]>(`${this.base}/clients/sectors`).pipe(
       catchError(() => of([] as string[])),
     );
   }

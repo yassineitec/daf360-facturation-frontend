@@ -286,7 +286,50 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
   transition: transform 0.22s ease; flex-shrink: 0;
   &--open { transform: rotate(180deg); }
 }
-.stub-body { font-style: italic; color: $text-muted; }
+// ── Factures / Paiements tables ───────────────────────────────────────────
+.fp-empty { margin: 4px 0; }
+
+.fp-table-wrap { overflow-x: auto; }
+
+.fp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $text-muted;
+    border-bottom: 1px solid $border;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 12px;
+    color: $text-body;
+    border-bottom: 1px solid $border;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  .num { text-align: right; }
+}
+
+.fp-ref { font-weight: 700; color: $primary; }
+
+.fp-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: $surface-mid;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: $text-muted;
+}
 .badge-billing {
   font-size: 10px; font-weight: 600;
   padding: 2px 8px; background: #e0f2fe; color: #0369a1;

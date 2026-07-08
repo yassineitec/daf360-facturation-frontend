@@ -54,7 +54,11 @@ export class WizardStepTmComponent implements OnInit {
   onUserChange(r: AffaireDraftState['ressources'][0], userId: number): void {
     const user = this.users().find(u => u.id === Number(userId));
     r.userName = user?.fullName;
+    this.emit();
   }
+
+  /** Called on any field change so the parent draft signal (and step validation) updates. */
+  emitChange(): void { this.emit(); }
 
   private emit(): void {
     this.draftChange.emit({ ...this.draft, ressources: [...this.draft.ressources] });

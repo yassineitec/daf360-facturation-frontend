@@ -21,9 +21,9 @@
         <div class="resource-col-2">
           <label class="field-label">Collaborateur *</label>
           <select [(ngModel)]="r.userId" (ngModelChange)="onUserChange(r, $event)" class="form-select">
-            <option [value]="0">Sélectionner...</option>
+            <option [ngValue]="0">Sélectionner...</option>
             @for (u of users(); track u.id) {
-              <option [value]="u.id">{{ u.fullName }}</option>
+              <option [ngValue]="u.id">{{ u.fullName }}</option>
             }
           </select>
         </div>
@@ -31,7 +31,7 @@
         <!-- Type ressource -->
         <div>
           <label class="field-label">Type</label>
-          <select [(ngModel)]="r.resourceType" class="form-select">
+          <select [(ngModel)]="r.resourceType" (ngModelChange)="emitChange()" class="form-select">
             <option value="INTERNAL">Interne</option>
             <option value="EXTERNAL">Externe</option>
           </select>
@@ -40,7 +40,7 @@
         <!-- Type taux -->
         <div>
           <label class="field-label">Type taux</label>
-          <select [(ngModel)]="r.rateType" class="form-select">
+          <select [(ngModel)]="r.rateType" (ngModelChange)="emitChange()" class="form-select">
             <option value="DAILY">Journalier (JH)</option>
             <option value="HOURLY">Horaire (H)</option>
           </select>
@@ -49,13 +49,13 @@
         <!-- Taux facturation -->
         <div>
           <label class="field-label">Taux facturation *</label>
-          <input type="number" step="0.01" min="0" [(ngModel)]="r.rateAmount" class="form-input" />
+          <input type="number" step="0.01" min="0" [(ngModel)]="r.rateAmount" (ngModelChange)="emitChange()" class="form-input" />
         </div>
 
         <!-- Devise -->
         <div>
           <label class="field-label">Devise</label>
-          <select [(ngModel)]="r.rateCurrency" class="form-select">
+          <select [(ngModel)]="r.rateCurrency" (ngModelChange)="emitChange()" class="form-select">
             @for (c of currencies(); track c.id) {
               <option [value]="c.code">{{ c.code }}</option>
             }
@@ -73,7 +73,7 @@
             <div class="cost-box-content">
               <label class="field-label">Coût interne (optionnel)</label>
               <input type="number" step="0.01" min="0"
-                [(ngModel)]="r.costAmount"
+                [(ngModel)]="r.costAmount" (ngModelChange)="emitChange()"
                 placeholder="Coût journalier / horaire interne"
                 class="form-input" />
             </div>

@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit, inject, signal, compute
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { NgClass }     from '@angular/common';
+import { SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
 
 import { AffaireService }     from '../../affaire.service';
 import { AffaireWizardService } from '../../affaire-wizard.service';
@@ -13,7 +14,7 @@ import { ListValueDto } from '../../../cost/cost.model';
 @Component({
   selector: 'app-wizard-step-responsables',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, NgClass],
+  imports: [FormsModule, DecimalPipe, NgClass, SelectComponent],
   templateUrl: './wizard-step-responsables.component.html',
   styleUrl: './wizard-step-responsables.component.scss',
 })
@@ -49,6 +50,33 @@ export class WizardStepResponsablesComponent implements OnInit {
     if (!budget) return 0;
     return Math.min(100, (this.totalAllocated() / budget) * 100);
   });
+
+  // ── daf-select option lists + config ───────────────────────────
+  readonly userOptions = computed<SelectOption[]>(() =>
+    this.allUsers().map(u => ({ value: String(u.id), label: u.fullName })));
+
+  readonly activiteOptions = computed<SelectOption[]>(() =>
+    this.activites().map(a => ({ value: a.id + '|' + a.labelFr, label: a.labelFr })));
+
+  readonly disciplineOptions = computed<SelectOption[]>(() =>
+    this.disciplines().map(d => ({ value: d.id + '|' + d.levelLabel, label: d.levelLabel })));
+
+  readonly selectConfig = { placeholder: '— Sélectionner —', searchable: true, fullWidth: true };
+
+  // daf-select emits string[]; bridge to the existing single-value handlers.
+  onUserSelect(index: number, values: string[]): void {
+    const v = values[0];
+    if (!v) this.clearUser(index);
+    else this.updateUser(index, Number(v));
+  }
+
+  onActiviteSelect(index: number, values: string[]): void {
+    this.onActiviteChange(index, values[0] ?? '');
+  }
+
+  onDisciplineSelect(index: number, values: string[]): void {
+    this.onDisciplineChange(index, values[0] ?? '');
+  }
 
   ngOnInit(): void {
     this.affaireSvc.getResponsableUsers('Responsable Génie Civil').subscribe(u => {

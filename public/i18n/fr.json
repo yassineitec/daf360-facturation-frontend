@@ -601,7 +601,26 @@
         "NEW_TS": "Nouvel OS",
         "SUBCONTRACTING": "Sous-traitance",
         "BILLING": "Facturation",
-        "STUB": "Section en cours de développement."
+        "STUB": "Section en cours de développement.",
+        "INVOICES": "Factures émises",
+        "PAYMENTS": "Paiements reçus",
+        "NO_INVOICES": "Aucune facture émise pour cette affaire.",
+        "NO_PAYMENTS": "Aucun paiement reçu pour cette affaire."
+      },
+      "INVOICES": {
+        "NUMBER": "N° Facture",
+        "TYPE": "Type",
+        "EMITTED": "Émission",
+        "DUE": "Échéance",
+        "AMOUNT": "Montant TTC",
+        "STATUS": "Statut"
+      },
+      "PAYMENTS": {
+        "DATE": "Date",
+        "INVOICE": "Facture",
+        "METHOD": "Méthode",
+        "REFERENCE": "Référence",
+        "AMOUNT": "Montant"
       },
       "INDICATORS": {
         "TITLE": "Indicateurs de pilotage",
