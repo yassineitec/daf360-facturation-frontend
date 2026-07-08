@@ -15,7 +15,8 @@ import {
   CardComponent, ButtonComponent,
   StepperComponent, StepperStep, StepperConfig,
   StatusBadgeComponent, MetricCardComponent, SectionTitleComponent,
-  BadgeVariant,
+  BadgeVariant, BadgeOptions,
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
@@ -31,6 +32,7 @@ import {
     // daf360 lib
     CardComponent, ButtonComponent, StepperComponent,
     StatusBadgeComponent, MetricCardComponent, SectionTitleComponent,
+    DataTableComponent, DafCellDirective,
   ],
   templateUrl: './invoice-detail.component.html',
   styleUrl:    './invoice-detail.component.scss',
