@@ -54,6 +54,15 @@ export class AffaireTableComponent {
   readonly selectStatutConfig = { placeholder: 'Statut', multiple: false, searchable: false, fullWidth: true };
   readonly selectTypeConfig   = { placeholder: 'Type',   multiple: false, searchable: false, fullWidth: true };
 
+  private searchTimer?: ReturnType<typeof setTimeout>;
+
+  /** Debounce the search so we don't fire (and race) a backend reload on every keystroke. */
+  onSearchChange(value: string): void {
+    this.searchText.set(value);
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => this.searchGo.emit(), 300);
+  }
+
   onToolbarAction(id: string): void {
     // currently only 'export' action exists
   }

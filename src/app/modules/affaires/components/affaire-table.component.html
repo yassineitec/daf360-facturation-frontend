@@ -9,7 +9,7 @@
       [actions]="toolbarActions"
       [toggleOptions]="viewToggleOptions"
       [activeToggle]="viewMode()"
-      (searchChange)="searchText.set($event); searchGo.emit()"
+      (searchChange)="onSearchChange($event)"
       (toggleChange)="viewMode.set($any($event))"
       (actionClick)="onToolbarAction($event)" />
 

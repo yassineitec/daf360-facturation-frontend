@@ -80,7 +80,7 @@ export class AffaireWizardComponent implements OnInit {
     nextLabel:   'Suivant',
     prevLabel:   'Précédent',
     cancelLabel: 'Annuler',
-    finishLabel: this.editMode() ? 'Enregistrer' : 'Activer l\'affaire',
+    finishLabel: (this.editMode() && !this.resumeDraft()) ? 'Enregistrer' : 'Activer l\'affaire',
     showCancel:  true,
   }));
 
@@ -88,6 +88,9 @@ export class AffaireWizardComponent implements OnInit {
   draftId     = signal<number | null>(null);
   isSaving    = signal(false);
   serverError = signal<string | null>(null);
+  // True when editing an affaire still in DRAFT status → finishing activates it,
+  // unlike editing an already-active affaire (which only saves).
+  resumeDraft = signal(false);
 
   draft = signal<AffaireDraftState>({
     paysId: 0,
@@ -253,6 +256,7 @@ export class AffaireWizardComponent implements OnInit {
             true   // KYC already validated at affaire creation
           )
         );
+        this.resumeDraft.set(detail.statut === 'DRAFT');
         this.draftId.set(id);
         this.currentStep.set(2);
         this.isSaving.set(false);
@@ -326,11 +330,13 @@ export class AffaireWizardComponent implements OnInit {
   // ── Step 3 — configure billing ────────────────────────────────────────
 
   private saveStep3(): void {
-    if (this.editMode()) {
-      // Billing mode is locked in edit mode — no API call, just advance
+    if (this.editMode() && !this.resumeDraft()) {
+      // Pure edit of an active affaire — billing mode is locked, no API call, just advance.
       this.currentStep.set(4);
       return;
     }
+    // New affaire OR resuming a DRAFT → persist the mode-specific billing config
+    // (required by validateAndActivate before activation).
     const id   = this.draftId()!;
     const d    = this.draft();
     const mode = d.billingMode!;
@@ -371,7 +377,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(4); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
+        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
       },
     });
   }
@@ -397,7 +403,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(5); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
+        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
       },
     });
   }
@@ -416,7 +422,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(6); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
+        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
       },
     });
   }
@@ -424,26 +430,35 @@ export class AffaireWizardComponent implements OnInit {
   // ── Step 6 — activate ─────────────────────────────────────────────────
 
   private activateAffaire(): void {
-    if (this.editMode()) {
+    // Pure edit of an already-active affaire → just persist & return to detail.
+    if (this.editMode() && !this.resumeDraft()) {
       // edit → affaires/:id/edit → '../..' → affaires/ → then detail id
       this.router.navigate(['../..', this.draftId()], { relativeTo: this.activatedRoute });
       return;
     }
+    // New affaire OR resuming a DRAFT → validate & activate.
     this.isSaving.set(true);
     this.wizardService.validateAndActivate(this.draftId()!).subscribe({
       next: affaire => {
-        // new → affaires/new → '..' → affaires/ → then detail id
-        this.router.navigate(['..', affaire['id']], { relativeTo: this.activatedRoute });
+        // new → affaires/new → '..' ; resume → affaires/:id/edit → '../..'
+        const target = this.editMode() ? ['../..', affaire['id']] : ['..', affaire['id']];
+        this.router.navigate(target, { relativeTo: this.activatedRoute });
       },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur d\'activation.');
+        this.serverError.set(this.apiError(err, 'Erreur d\'activation.'));
       },
     });
   }
 
   cancelWizard(): void {
     this.router.navigate(this.cancelRoute(), { relativeTo: this.activatedRoute });
+  }
+
+  /** Reads the RFC-7807 `detail` from a facturation-service error (falls back to message). */
+  private apiError(err: unknown, fallback: string): string {
+    const e = err as { error?: { detail?: string; message?: string } };
+    return e?.error?.detail ?? e?.error?.message ?? fallback;
   }
 
   onDraftChange(updated: AffaireDraftState): void {

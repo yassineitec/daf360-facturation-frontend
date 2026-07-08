@@ -20,7 +20,7 @@ export class AffaireService {
   getAffaires(filter: AffaireFilter = {}): Observable<PageResponse<AffaireListItem>> {
     let params = new HttpParams()
       .set('page', String(filter.page ?? 0))
-      .set('size', String(filter.size ?? 20));
+      .set('size', String(filter.size ?? 18));
     if (filter.paysId)   params = params.set('paysId',   String(filter.paysId));
     if (filter.statut)   params = params.set('statut',   filter.statut);
     if (filter.type)     params = params.set('type',     filter.type);

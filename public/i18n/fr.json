@@ -552,6 +552,7 @@
           "STATUS": "Statut"
         },
         "STATUS": {
+          "DRAFT": "Brouillon",
           "EN_COURS": "En cours",
           "SUSPENDUE": "Suspendue",
           "CLOTUREE": "Clôturée",
@@ -640,6 +641,8 @@
         "EDIT_MANAGERS": "Modifier les responsables",
         "EDIT_PLANNING": "Modifier la planification",
         "EDIT_INFO": "Modifier les informations",
+        "COMPLETE_DRAFT_TITLE": "Brouillon",
+        "COMPLETE_DRAFT_BTN": "Compléter le brouillon",
         "ACTIONS_TITLE": "Actions rapides",
         "NEW_INVOICE": "Nouvelle facture",
         "VIEW_PAYMENTS": "Suivi des paiements",
