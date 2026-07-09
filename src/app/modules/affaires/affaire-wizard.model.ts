@@ -1,4 +1,4 @@
-export type BillingMode = 'AV' | 'JAL' | 'TM' | 'CP' | 'RMB';
+export type BillingMode = 'AV' | 'JAL' | 'TM' | 'CP' | 'RMB' | 'LIVRABLE';
 
 export interface BillingModeOption {
   code: BillingMode;
@@ -16,14 +16,6 @@ export const BILLING_MODES: BillingModeOption[] = [
     labelEn: 'Progress Billing',
     description: 'Facturation selon le taux d\'avancement validé chaque mois par le Chef de Projet.',
     icon: 'trending_up',
-    requiresContractAmount: true,
-  },
-  {
-    code: 'JAL',
-    labelFr: 'Forfait par jalons',
-    labelEn: 'Milestone Billing',
-    description: 'Facturation déclenchée à l\'atteinte de jalons contractuels prédéfinis.',
-    icon: 'flag',
     requiresContractAmount: true,
   },
   {
@@ -50,6 +42,14 @@ export const BILLING_MODES: BillingModeOption[] = [
     icon: 'receipt',
     requiresContractAmount: false,
   },
+  {
+    code: 'LIVRABLE',
+    labelFr: 'Livrables documentaires',
+    labelEn: 'Deliverables',
+    description: 'Facturation déclenchée à la validation de livrables documentaires définis par discipline et WBS.',
+    icon: 'task',
+    requiresContractAmount: true,
+  },
 ];
 
 export const BUDGET_LABEL: Record<BillingMode, { label: string; hint: string }> = {
@@ -72,6 +72,10 @@ export const BUDGET_LABEL: Record<BillingMode, { label: string; hint: string }> 
   RMB: {
     label: 'Budget prévisionnel',
     hint:  'Enveloppe de remboursements estimée. La facturation réelle est basée sur les frais validés.',
+  },
+  LIVRABLE: {
+    label: 'Montant contractuel',
+    hint:  'Montant total du contrat. Les livrables configurés (par discipline/WBS) seront rattachés à ce montant.',
   },
 };
 
@@ -143,6 +147,9 @@ export interface AffaireDraftState {
   contractAmount?: number;
   contractCurrency: string;
 
+  // Step 3 — LIVRABLE: set to true after first livrable is saved
+  livrablesSaved?: boolean;
+
   // Step 3 — Mode-specific sub-data
   repartitions: { repartitionTypeId: number; percentage: number; label?: string }[];
   repartitionTotal: number;
@@ -153,6 +160,7 @@ export interface AffaireDraftState {
     resourceType: string; rateType: string;
     rateAmount: number; rateCurrency: string;
     costAmount?: number;
+    tauxIntercompany?: number;
   }[];
   eligibleCostCategoryIds: number[];
   marginRatePct?: number;

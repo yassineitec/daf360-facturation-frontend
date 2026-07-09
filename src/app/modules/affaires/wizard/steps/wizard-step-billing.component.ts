@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 import { AffaireDraftState } from '../../affaire-wizard.model';
-import { WizardStepAvComponent }  from './wizard-step-av.component';
-import { WizardStepJalComponent } from './wizard-step-jal.component';
-import { WizardStepTmComponent }  from './wizard-step-tm.component';
-import { WizardStepCpComponent }  from './wizard-step-cp.component';
-import { WizardStepRmbComponent } from './wizard-step-rmb.component';
+import { WizardStepAvComponent }       from './wizard-step-av.component';
+import { WizardStepJalComponent }      from './wizard-step-jal.component';
+import { WizardStepTmComponent }       from './wizard-step-tm.component';
+import { WizardStepCpComponent }       from './wizard-step-cp.component';
+import { WizardStepRmbComponent }      from './wizard-step-rmb.component';
+import { WizardStepLivrableComponent } from './wizard-step-livrable.component';
 
 @Component({
   selector: 'app-wizard-step-billing',
@@ -13,6 +14,7 @@ import { WizardStepRmbComponent } from './wizard-step-rmb.component';
   imports: [
     WizardStepAvComponent, WizardStepJalComponent,
     WizardStepTmComponent, WizardStepCpComponent, WizardStepRmbComponent,
+    WizardStepLivrableComponent,
   ],
   templateUrl: './wizard-step-billing.component.html',
   styleUrl: './wizard-step-billing.component.scss',

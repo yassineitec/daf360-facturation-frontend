@@ -17,6 +17,11 @@ export const COST_ROUTES: Routes = [
       import('./cost-form/cost-form.component').then(m => m.CostFormComponent),
   },
   {
+    path: 'rate-computations',
+    loadComponent: () =>
+      import('./rate-computations/rate-computation.component').then(m => m.RateComputationComponent),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./cost.component').then(m => m.CostComponent),

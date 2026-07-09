@@ -1,6 +1,12 @@
 import { Injectable, inject }          from '@angular/core';
 import { HttpClient, HttpParams }       from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
+
+export interface EmployeeCostRates {
+  cost: number | null;
+  tauxIntercompany: number | null;
+  tauxVente: number | null;
+}
 import { environment } from '../../../environments/environment';
 import {
   AffaireListItem, AffaireDetail, RafDetailsDto, AffaireKpisDto,
@@ -120,6 +126,13 @@ export class AffaireService {
     const params = new HttpParams().set('roleName', roleName);
     return this.http.get<UserRefDto[]>(`${this.base}/ref/users/by-role`, { params }).pipe(
       catchError(() => of([] as UserRefDto[])),
+    );
+  }
+
+  getEmployeeCost(email: string, paysId: number): Observable<EmployeeCostRates | null> {
+    const params = new HttpParams().set('email', email).set('paysId', String(paysId));
+    return this.http.get<EmployeeCostRates>(`${this.base}/ref/employee-cost`, { params }).pipe(
+      catchError(() => of(null)),
     );
   }
 

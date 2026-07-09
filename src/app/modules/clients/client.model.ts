@@ -88,7 +88,7 @@ export interface CreateClientRequest {
 }
 
 export interface ClientFilter {
-  paysId:     number;          // required — backend @NotNull
+  paysId?:    number;
   search?:    string | null;
   isActive?:  boolean | null;
   isKycDone?: boolean | null;

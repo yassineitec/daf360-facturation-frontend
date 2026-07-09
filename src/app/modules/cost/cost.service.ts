@@ -9,6 +9,7 @@ import {
   CostImportResult, PageResponse,
   CostAttachmentDto, ForexPreviewDto, CircuitPreviewDto,
   ListValueDto, SupplierSearchItem,
+  RateComputationDto, CreateRateComputationRequest,
 } from './cost.model';
 
 @Injectable({ providedIn: 'root' })
@@ -198,6 +199,27 @@ export class CostService {
       map(page => page.content),
       catchError(() => of([] as SupplierSearchItem[])),
     );
+  }
+
+  // ── Rate computations ──────────────────────────────────────────────────────
+
+  getRateComputations(paysId: number): Observable<RateComputationDto[]> {
+    const params = new HttpParams().set('paysId', String(paysId));
+    return this.http.get<RateComputationDto[]>(`${this.base}/rate-computations`, { params }).pipe(
+      catchError(() => of([] as RateComputationDto[])),
+    );
+  }
+
+  createRateComputation(req: CreateRateComputationRequest): Observable<RateComputationDto> {
+    return this.http.post<RateComputationDto>(`${this.base}/rate-computations`, req);
+  }
+
+  computeRateComputation(id: number): Observable<RateComputationDto> {
+    return this.http.post<RateComputationDto>(`${this.base}/rate-computations/${id}/compute`, {});
+  }
+
+  validateRateComputation(id: number): Observable<RateComputationDto> {
+    return this.http.post<RateComputationDto>(`${this.base}/rate-computations/${id}/validate`, {});
   }
 
   downloadCsvTemplate(): void {
