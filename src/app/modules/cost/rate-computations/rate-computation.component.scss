@@ -1,0 +1,285 @@
+.tab-container {
+  padding: 0 4px;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px;
+}
+
+.page-subtitle {
+  font-size: 0.83rem;
+  color: #64748b;
+  margin: 0;
+  max-width: 560px;
+  line-height: 1.5;
+}
+
+/* ── Pays tabs ─────────────────────────────────────────── */
+
+.list-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.list-tab {
+  padding: 6px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.82rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &.active, &:hover {
+    background: #1a6b7c;
+    color: #fff;
+    border-color: #1a6b7c;
+  }
+}
+
+/* ── Section ───────────────────────────────────────────── */
+
+.config-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* ── Formula reminder ──────────────────────────────────── */
+
+.formula-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.formula-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formula-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.formula-expr {
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
+  color: #1a6b7c;
+  background: #e6f7f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.formula-sep {
+  color: #cbd5e1;
+  font-size: 1.2rem;
+}
+
+/* ── Table ─────────────────────────────────────────────── */
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: #1e293b;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: #f8fafc; }
+
+  tr.row-validated td { background: #f0fdf4; }
+  tr.row-validated:hover td { background: #dcfce7; }
+
+  tr.row-new td { background: #f8fafc; }
+}
+
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+.cell-secondary { color: #64748b; }
+.cell-period strong { color: #1a6b7c; }
+.cell-rate { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ── Status badge ──────────────────────────────────────── */
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Buttons ───────────────────────────────────────────── */
+
+.btn-add {
+  padding: 8px 16px;
+  background: #1a6b7c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover { background: #155f6d; }
+}
+
+.cell-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.btn-action {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:disabled { opacity: 0.5; cursor: default; }
+
+  &.btn-compute {
+    background: #dbeafe;
+    color: #1d4ed8;
+    &:hover:not(:disabled) { background: #bfdbfe; }
+  }
+
+  &.btn-validate {
+    background: #d1fae5;
+    color: #065f46;
+    &:hover:not(:disabled) { background: #a7f3d0; }
+  }
+}
+
+.btn-save {
+  width: 30px;
+  height: 30px;
+  background: #1a6b7c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.5; cursor: default; }
+  &:hover:not(:disabled) { background: #155f6d; }
+}
+
+.btn-icon {
+  width: 30px;
+  height: 30px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+
+  &:hover { background: #e2e8f0; }
+}
+
+/* ── Inline form inputs ────────────────────────────────── */
+
+.inline-input {
+  padding: 5px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+
+  &:focus {
+    outline: none;
+    border-color: #1a6b7c;
+    box-shadow: 0 0 0 2px rgba(26, 107, 124, 0.12);
+  }
+}
+
+.pct-suffix {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-left: 2px;
+}
+
+.inline-error {
+  font-size: 0.78rem;
+  color: #dc2626;
+}
+
+/* ── Error / loading / empty ───────────────────────────── */
+
+.banner-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.loading-state {
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  padding: 32px !important;
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+}

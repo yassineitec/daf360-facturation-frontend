@@ -83,29 +83,6 @@
           [(ngModel)]="searchText" (ngModelChange)="onSearch()" maxlength="100" autocomplete="off" />
       </div>
 
-      @if (canViewAllClients()) {
-        <div class="filter-group">
-          <span class="filter-label">Pays :</span>
-          <select class="filter-select" [(ngModel)]="filterPaysId" (change)="onPaysChange()">
-            @for (p of paysList(); track p.id) {
-              <option [value]="p.id">{{ p.frenchLabel }}</option>
-            }
-          </select>
-        </div>
-      }
-
-      @if (sectors().length > 0) {
-        <div class="filter-group">
-          <span class="filter-label">Secteur :</span>
-          <select class="filter-select" [(ngModel)]="filterSector" (change)="onFilterChange()">
-            <option value="">Tous</option>
-            @for (s of sectors(); track s) {
-              <option [value]="s">{{ s }}</option>
-            }
-          </select>
-        </div>
-      }
-
       <div class="status-pills">
         <span class="filter-label">Statut :</span>
         <button class="pill" [class.pill--active]="activeFilter() === 'all'"     (click)="resetStatusFilter()">Tous</button>

@@ -48,8 +48,15 @@
 
         <!-- Taux facturation -->
         <div>
-          <label class="field-label">Taux facturation *</label>
+          <label class="field-label">Taux de vente *</label>
           <input type="number" step="0.01" min="0" [(ngModel)]="r.rateAmount" class="form-input" />
+        </div>
+
+        <!-- Taux intercompany -->
+        <div>
+          <label class="field-label">Taux interco</label>
+          <input type="number" step="0.01" min="0" [(ngModel)]="r.tauxIntercompany" class="form-input"
+                 placeholder="—" />
         </div>
 
         <!-- Devise -->
@@ -87,4 +94,28 @@
 
   <daf-button [options]="{variant: 'ghost', iconStart: 'person_add', label: 'Ajouter une ressource', fullWidth: true}" (onClick)="addRessource()"></daf-button>
 
+  @if (!locked && draft.id && draft.paysId) {
+    <div class="auto-rate-row">
+      <span class="material-symbols-outlined auto-rate-icon">calculate</span>
+      <div class="auto-rate-text">
+        <strong>Calcul automatique des taux</strong>
+        <small>Pré-remplissez les taux depuis les coûts réels (moyennes 3 mois).</small>
+      </div>
+      <daf-button
+        [options]="{variant: 'ghost', size: 'sm', label: 'Calculer les taux', iconStart: 'auto_fix_high'}"
+        (onClick)="showRateModal.set(true)">
+      </daf-button>
+    </div>
+  }
+
 </div>
+
+@if (showRateModal()) {
+  <app-tm-rate-modal
+    [affaireId]="draft.id!"
+    [paysId]="draft.paysId"
+    [availableUsers]="users()"
+    (confirmed)="onRatesConfirmed($event)"
+    (closed)="showRateModal.set(false)">
+  </app-tm-rate-modal>
+}

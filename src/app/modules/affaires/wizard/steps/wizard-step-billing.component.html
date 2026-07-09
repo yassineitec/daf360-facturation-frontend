@@ -50,6 +50,13 @@
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-rmb>
         }
+        @case ('LIVRABLE') {
+          <app-wizard-step-livrable
+            [draft]="draft"
+            [locked]="locked"
+            (draftChange)="onSubDraftChange($event)">
+          </app-wizard-step-livrable>
+        }
       }
     </div>
   }
