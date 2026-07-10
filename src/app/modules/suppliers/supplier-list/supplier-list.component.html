@@ -49,12 +49,11 @@
   <div class="mob-toolbar">
     @if (mobileSearchOpen()) {
       <div class="mob-search-bar">
-        <span class="material-symbols-outlined mob-search-icon">search</span>
-        <input class="mob-search-input" type="text"
-               [value]="searchTerm()"
-               (input)="onSearch($any($event.target).value)"
-               placeholder="Rechercher un fournisseur…"
-               autofocus />
+        <daf-form-field
+          class="mob-search-field"
+          [options]="{ type: 'search', placeholder: 'Rechercher un fournisseur…', prefixIcon: 'search', fullWidth: true }"
+          [value]="searchTerm()"
+          (valueChange)="onSearch($any($event) ?? '')" />
         <button class="mob-icon-btn" type="button"
                 (click)="mobileSearchOpen.set(false); onSearch('')">
           <span class="material-symbols-outlined">close</span>

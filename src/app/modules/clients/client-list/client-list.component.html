@@ -25,7 +25,7 @@
           </div>
         </div>
         <div class="kpi-card__bottom">
-          <span class="kpi-card__value">{{ statsTotal() | number }}</span>
+          <span class="kpi-card__value kpi-value--primary">{{ statsTotal() | number }}</span>
           <span class="kpi-card__trend kpi-trend--up">{{ 'CLIENTS.LIST.KPI.ALL_COUNTRIES' | translate }}</span>
         </div>
       </div>
@@ -40,7 +40,7 @@
           </div>
         </div>
         <div class="kpi-card__bottom">
-          <span class="kpi-card__value">{{ statsKycPct() }}%</span>
+          <span class="kpi-card__value kpi-value--secondary">{{ statsKycPct() }}%</span>
           <span class="kpi-card__trend kpi-trend--up">{{ statsKycDone() }} {{ 'CLIENTS.LIST.KPI.CLIENTS_SUFFIX' | translate }}</span>
         </div>
       </div>
@@ -55,7 +55,7 @@
           </div>
         </div>
         <div class="kpi-card__bottom">
-          <span class="kpi-card__value kpi-card__value--sm">{{ formatAmount(statsTotalCA()) }}</span>
+          <span class="kpi-card__value kpi-card__value--sm kpi-value--tertiary">{{ formatAmount(statsTotalCA()) }}</span>
           <span class="kpi-card__trend kpi-trend--neutral">{{ 'CLIENTS.LIST.KPI.CURRENT_PAGE' | translate }}</span>
         </div>
       </div>
@@ -65,12 +65,12 @@
       <div class="kpi-card">
         <div class="kpi-card__top">
           <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.ACTIVE' | translate }}</span>
-          <div class="kpi-card__icon kpi-icon--primary">
+          <div class="kpi-card__icon kpi-icon--blue">
             <span class="material-symbols-outlined">bolt</span>
           </div>
         </div>
         <div class="kpi-card__bottom">
-          <span class="kpi-card__value">{{ statsActive() }}</span>
+          <span class="kpi-card__value kpi-value--blue">{{ statsActive() }}</span>
           <span class="kpi-card__trend kpi-trend--neutral">{{ 'CLIENTS.LIST.KPI.CURRENT_PAGE' | translate }}</span>
         </div>
       </div>
@@ -84,9 +84,10 @@
 
       <div class="filters-bar__top">
         <div class="search-wrap">
-          <span class="material-symbols-outlined search-icon">search</span>
-          <input class="search-input" type="search" [placeholder]="'CLIENTS.LIST.SEARCH' | translate"
-            [(ngModel)]="searchText" (ngModelChange)="onSearch()" maxlength="100" autocomplete="off" />
+          <daf-form-field
+            [options]="{ type: 'search', placeholder: ('CLIENTS.LIST.SEARCH' | translate), prefixIcon: 'search', fullWidth: true }"
+            [value]="searchText"
+            (valueChange)="searchText = ($any($event) ?? ''); onSearch()" />
         </div>
         <!-- Mobile-only: filters toggle -->
         <button class="mob-filters-toggle" type="button" (click)="mobileFiltersOpen.set(!mobileFiltersOpen())">

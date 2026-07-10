@@ -8,13 +8,13 @@ import { ClientListItemDto, ClientFilter } from '../client.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import { UserStore } from '../../../core/user.store';
-import { CardComponent, PaginationComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
+import { CardComponent, PaginationComponent, ButtonComponent, FormFieldComponent } from '@khalilrebhiitec/daf360';
 import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-client-list',
   imports: [FormsModule, DecimalPipe, PermissionDirective,
-            CardComponent, PaginationComponent, ButtonComponent, TranslatePipe],
+            CardComponent, PaginationComponent, ButtonComponent, FormFieldComponent, TranslatePipe],
   templateUrl: './client-list.component.html',
   styleUrl: './client-list.component.scss',
 })

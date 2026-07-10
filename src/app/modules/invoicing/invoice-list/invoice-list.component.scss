@@ -84,6 +84,12 @@ $teal-bg:     rgba(#79d7be, 0.15);
   @media (max-width: 480px) { padding: 12px; }
 }
 
+// Enlarge the KPI label — overrides the library's global .text-label-caps (10px)
+.kpi-grid .text-label-caps {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
 
 // ── Search & Filter bar ───────────────────────────────────────────────────────
 .search-bar-row {
