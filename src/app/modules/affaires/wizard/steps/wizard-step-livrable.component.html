@@ -1,0 +1,290 @@
+<div class="step-form">
+
+  <!-- Info banner -->
+  <div class="info-banner">
+    <span class="material-symbols-outlined" style="font-size:18px">info</span>
+    <p class="m-0">
+      Sélectionnez une discipline, naviguez dans les WBS et affectez un budget aux livrables documentaires.
+      <strong>La base documentaire est chargée depuis le projet ERP associé.</strong>
+    </p>
+  </div>
+
+  <!-- Erreur serveur -->
+  @if (serverError()) {
+    <div class="error-banner">
+      <span class="material-symbols-outlined" style="font-size:16px;font-variation-settings:'FILL' 1">error</span>
+      {{ serverError() }}
+    </div>
+  }
+
+  <!-- ── Étape 1 : Disciplines ─────────────────────────────────────────── -->
+  <div class="section-label">
+    <span class="section-num">1</span>
+    Sélectionner une discipline
+  </div>
+
+  @if (isLoadingDisc()) {
+    <div class="skeleton-row">
+      <div class="skeleton-pill"></div>
+      <div class="skeleton-pill"></div>
+      <div class="skeleton-pill"></div>
+    </div>
+  }
+
+  <div class="disc-list">
+    @for (group of discGroups(); track group.label) {
+      <button
+        class="disc-btn"
+        [class.disc-btn--active]="selectedDisc()?.label === group.label"
+        (click)="selectDiscipline(group)">
+        <span class="disc-label">{{ group.label }}</span>
+        @if (group.montant) {
+          <span class="disc-montant">{{ fmtCurrency(group.montant) }}</span>
+        }
+      </button>
+    }
+    @if (!isLoadingDisc() && discGroups().length === 0) {
+      <p class="empty-hint">Aucune discipline trouvée pour cette affaire. Vérifiez la référence ERP.</p>
+    }
+  </div>
+
+  <!-- ── Étape 2 : Mode + Config (visible si discipline choisie) ───────── -->
+  @if (selectedDisc()) {
+    <div class="section-label">
+      <span class="section-num">2</span>
+      Mode d'affectation du budget
+    </div>
+
+    <div class="mode-toggle">
+      <button class="mode-btn" [class.mode-btn--active]="modeAffectation() === 'MANUEL'"
+        (click)="modeAffectation.set('MANUEL')">
+        <span class="material-symbols-outlined">edit_note</span>
+        <span>Affectation manuelle</span>
+        <small>Budget par document</small>
+      </button>
+      <button class="mode-btn" [class.mode-btn--active]="modeAffectation() === 'AUTO'"
+        (click)="modeAffectation.set('AUTO')">
+        <span class="material-symbols-outlined">auto_fix_high</span>
+        <span>Répartition automatique</span>
+        <small>Budget global ÷ nb documents</small>
+      </button>
+    </div>
+
+    <!-- ════ MODE MANUEL ════════════════════════════════════════════════ -->
+    @if (modeAffectation() === 'MANUEL') {
+      <div class="item-card">
+        <div class="item-card-header">
+          <div class="item-badge item-badge--livrable">Mode manuel</div>
+        </div>
+
+        <!-- Navigation WBS -->
+        <div>
+          <label class="field-label">Sélectionner un WBS</label>
+          @if (isLoadingWbs()) { <div class="skeleton-line"></div> }
+          <div class="wbs-list">
+            @for (wbs of wbsList(); track wbs.id) {
+              <button class="wbs-btn"
+                [class.wbs-btn--active]="selectedWbs()?.id === wbs.id"
+                (click)="selectWbs(wbs)">
+                {{ wbs.titre }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Documents du WBS sélectionné -->
+        @if (selectedWbs()) {
+          @if (isLoadingDocs()) {
+            <div class="skeleton-line"></div>
+          } @else {
+            <div class="table-wrap">
+              <table class="doc-table">
+                <thead>
+                  <tr>
+                    <th class="th-check"></th>
+                    <th>Document</th>
+                    <th class="th-right">Budget ext. (h)</th>
+                    <th class="th-right th-budget">Budget alloué *</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (doc of documents(); track doc.id) {
+                    <tr [class.row-selected]="isDocSelectedManuel(doc.id)">
+                      <td class="td-check">
+                        <input type="checkbox"
+                          [checked]="isDocSelectedManuel(doc.id)"
+                          (change)="toggleDocManuel(doc)" />
+                      </td>
+                      <td class="td-name">
+                        {{ doc.nom }}
+                        @if (doc.statut) {
+                          <span class="doc-statut">{{ doc.statut }}</span>
+                        }
+                      </td>
+                      <td class="td-right td-mono">
+                        {{ doc.budgetHoraire ? fmtCurrency(doc.budgetHoraire) : '—' }}
+                      </td>
+                      <td class="td-right">
+                        <input type="number"
+                          [disabled]="!isDocSelectedManuel(doc.id)"
+                          [value]="getBudget(doc.id)"
+                          (input)="setBudget(doc.id, +$any($event.target).value)"
+                          min="0" step="0.001" placeholder="0.000"
+                          class="budget-input"
+                          [class.budget-input--active]="isDocSelectedManuel(doc.id)" />
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="save-row">
+              <span class="save-summary">
+                <strong>{{ selectedDocs().size }} doc(s)</strong> · Total :
+                <strong class="total-val">{{ fmtCurrency(totalBudgetManuel()) }}</strong>
+              </span>
+              <daf-button
+                [options]="{
+                  variant: 'secondary',
+                  size: 'sm',
+                  label: 'Enregistrer',
+                  iconStart: 'save',
+                  loading: isSaving(),
+                  disabled: selectedDocs().size === 0 || isSaving()
+                }"
+                (onClick)="saveManuel()">
+              </daf-button>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- ════ MODE AUTO ═══════════════════════════════════════════════════ -->
+    @if (modeAffectation() === 'AUTO') {
+      <div class="item-card">
+        <div class="item-card-header">
+          <div class="item-badge item-badge--auto">Mode automatique</div>
+        </div>
+
+        <div>
+          <label class="field-label">Budget global *</label>
+          <div class="auto-budget-row">
+            <input type="number"
+              [ngModel]="budgetGlobal()"
+              (ngModelChange)="budgetGlobal.set($event)"
+              min="0" step="0.001" placeholder="Ex. 150000.000"
+              class="form-input form-input--sm" />
+            @if (budgetGlobal() && selectedDocsAuto().size > 0) {
+              <span class="budget-preview">
+                ≈ {{ fmtCurrency(budgetParDocAuto()) }} / doc
+              </span>
+            }
+          </div>
+        </div>
+
+        <div>
+          <div class="auto-header-row">
+            <label class="field-label">Documents à inclure *</label>
+            <button class="link-btn" (click)="toggleAllDocsAuto()">
+              {{ selectedDocsAuto().size === allDocsByDisc().length ? 'Tout déselectionner' : 'Tout sélectionner' }}
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th class="th-check"></th>
+                  <th>Document</th>
+                  <th>WBS</th>
+                  <th class="th-right">Budget prévu</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (doc of allDocsByDisc(); track doc.id) {
+                  <tr [class.row-selected]="isDocSelectedAuto(doc.id)">
+                    <td class="td-check">
+                      <input type="checkbox"
+                        [checked]="isDocSelectedAuto(doc.id)"
+                        (change)="toggleDocAuto(doc)" />
+                    </td>
+                    <td class="td-name">{{ doc.nom }}</td>
+                    <td class="td-sub">{{ doc.wbsTitre }}</td>
+                    <td class="td-right td-mono">
+                      @if (isDocSelectedAuto(doc.id) && budgetGlobal()) {
+                        {{ fmtCurrency(budgetParDocAuto()) }}
+                      } @else {
+                        —
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="save-row save-row--end">
+          <daf-button
+            [options]="{
+              variant: 'secondary',
+              size: 'sm',
+              label: 'Répartir automatiquement',
+              iconStart: 'auto_fix_high',
+              loading: isSaving(),
+              disabled: !budgetGlobal() || selectedDocsAuto().size === 0 || isSaving()
+            }"
+            (onClick)="saveAuto()">
+          </daf-button>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ── Livrables configurés ──────────────────────────────────────────── -->
+  @if (savedLivrables().length > 0) {
+    <div class="item-card">
+      <div class="item-card-header">
+        <div class="item-badge item-badge--done">
+          <span class="material-symbols-outlined"
+                style="font-size:14px;font-variation-settings:'FILL' 1">check_circle</span>
+          {{ savedLivrables().length }} livrable(s) configuré(s)
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Discipline</th>
+              <th>WBS</th>
+              <th class="th-right">Budget alloué</th>
+              <th class="th-center">Mode</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of savedLivrables(); track l.id) {
+              <tr>
+                <td class="td-name">{{ l.documentNom }}</td>
+                <td class="td-sub">{{ l.disciplineLabel }}</td>
+                <td class="td-sub">{{ l.wbsTitre }}</td>
+                <td class="td-right td-mono td-strong">{{ fmtCurrency(l.budgetAlloue) }}</td>
+                <td class="td-center">
+                  <span class="mode-chip"
+                    [class.mode-chip--manuel]="l.modeAffectation === 'MANUEL'"
+                    [class.mode-chip--auto]="l.modeAffectation === 'AUTO'">
+                    {{ l.modeAffectation }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+</div>

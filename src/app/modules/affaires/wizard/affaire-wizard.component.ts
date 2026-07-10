@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
-import { Observable, forkJoin }                 from 'rxjs';
+import { Observable, forkJoin, of }             from 'rxjs';
 import { StepperStep, StepperConfig, CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireWizardService }          from '../affaire-wizard.service';
@@ -80,7 +80,7 @@ export class AffaireWizardComponent implements OnInit {
     nextLabel:   'Suivant',
     prevLabel:   'Précédent',
     cancelLabel: 'Annuler',
-    finishLabel: this.editMode() ? 'Enregistrer' : 'Activer l\'affaire',
+    finishLabel: (this.editMode() && !this.resumeDraft()) ? 'Enregistrer' : 'Activer l\'affaire',
     showCancel:  true,
   }));
 
@@ -88,6 +88,9 @@ export class AffaireWizardComponent implements OnInit {
   draftId     = signal<number | null>(null);
   isSaving    = signal(false);
   serverError = signal<string | null>(null);
+  // True when editing an affaire still in DRAFT status → finishing activates it,
+  // unlike editing an already-active affaire (which only saves).
+  resumeDraft = signal(false);
 
   draft = signal<AffaireDraftState>({
     paysId: 0,
@@ -124,11 +127,12 @@ export class AffaireWizardComponent implements OnInit {
         const budget = d.budgetPrevisionnel ?? 0;
         switch (d.billingMode) {
           case 'AV':  return 'Répartition requise (total = 100 %) avec au moins un type sélectionné.';
-          case 'JAL': return `Jalons requis avec labels et total = ${budget.toLocaleString('fr-FR')} ${d.contractCurrency}.`;
-          case 'TM':  return 'Au moins une ressource avec tarif > 0 requise.';
-          case 'CP':  return 'Sélectionnez au moins une catégorie de coût et définissez un taux de marge.';
-          case 'RMB': return 'Sélectionnez au moins une catégorie de dépenses.';
-          default:    return null;
+          case 'JAL':      return `Jalons requis avec labels et total = ${budget.toLocaleString('fr-FR')} ${d.contractCurrency}.`;
+          case 'TM':       return 'Au moins une ressource avec tarif > 0 requise.';
+          case 'CP':       return 'Sélectionnez au moins une catégorie de coût et définissez un taux de marge.';
+          case 'RMB':      return 'Sélectionnez au moins une catégorie de dépenses.';
+          case 'LIVRABLE': return 'Configurez au moins un livrable avant de continuer.';
+          default:         return null;
         }
       }
       case 4: {
@@ -182,6 +186,8 @@ export class AffaireWizardComponent implements OnInit {
             return d.eligibleCostCategoryIds.length > 0 && d.marginRatePct != null;
           case 'RMB':
             return d.eligibleExpenseCategoryIds.length > 0;
+          case 'LIVRABLE':
+            return d.livrablesSaved === true;
           default:
             return false;
         }
@@ -253,6 +259,7 @@ export class AffaireWizardComponent implements OnInit {
             true   // KYC already validated at affaire creation
           )
         );
+        this.resumeDraft.set(detail.statut === 'DRAFT');
         this.draftId.set(id);
         this.currentStep.set(2);
         this.isSaving.set(false);
@@ -283,7 +290,7 @@ export class AffaireWizardComponent implements OnInit {
         next: () => { this.isSaving.set(false); this.currentStep.set(3); },
         error: err => {
           this.isSaving.set(false);
-          this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur lors de la mise à jour.');
+          this.serverError.set(err?.error?.rule ?? err?.error?.detail ?? err?.error?.message ?? 'Erreur lors de la mise à jour.');
         },
       });
       return;
@@ -300,7 +307,7 @@ export class AffaireWizardComponent implements OnInit {
       doc360Ref:             d.doc360Ref?.trim()    || null,
       doc360ServerReference: d.doc360ServerReference || null,
       erpReference:          d.doc360ErpReference?.trim() || null,
-      billingMode:           d.billingMode          || null,
+      billingMode:           d.billingMode === 'LIVRABLE' ? 'JAL' : (d.billingMode || null),
       budgetPrevisionnel:    d.budgetPrevisionnel   ?? null,
       contractCurrency:      d.contractCurrency     || 'EUR',
       billingPeriod:         d.billingPeriod        || 'MONTHLY',
@@ -309,6 +316,7 @@ export class AffaireWizardComponent implements OnInit {
         this.draftId.set(result['id'] as number);
         this.draft.update(prev => ({
           ...prev,
+          id:                 result['id']                 as number,
           paysId:             result['paysId']             as number  ?? 0,
           contractAmount:     result['contractAmount']     as number  ?? undefined,
           budgetPrevisionnel: result['budgetPrevisionnel'] as number  ?? prev.budgetPrevisionnel,
@@ -318,7 +326,7 @@ export class AffaireWizardComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur lors de la création.');
+        this.serverError.set(err?.error?.rule ?? err?.error?.detail ?? err?.error?.message ?? 'Erreur lors de la création.');
       },
     });
   }
@@ -326,14 +334,23 @@ export class AffaireWizardComponent implements OnInit {
   // ── Step 3 — configure billing ────────────────────────────────────────
 
   private saveStep3(): void {
-    if (this.editMode()) {
-      // Billing mode is locked in edit mode — no API call, just advance
+    if (this.editMode() && !this.resumeDraft()) {
+      // Pure edit of an active affaire — billing mode is locked, no API call, just advance.
       this.currentStep.set(4);
       return;
     }
+    // New affaire OR resuming a DRAFT → persist the mode-specific billing config
+    // (required by validateAndActivate before activation).
     const id   = this.draftId()!;
     const d    = this.draft();
     const mode = d.billingMode!;
+
+    // LIVRABLE: livrables already saved directly by the component — just advance
+    if (mode === 'LIVRABLE') {
+      this.currentStep.set(4);
+      return;
+    }
+
     this.isSaving.set(true);
 
     const save$: Observable<unknown> = (() => {
@@ -371,7 +388,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(4); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
+        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
       },
     });
   }
@@ -397,7 +414,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(5); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
+        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
       },
     });
   }
@@ -416,7 +433,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(6); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur de configuration.');
+        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
       },
     });
   }
@@ -424,26 +441,37 @@ export class AffaireWizardComponent implements OnInit {
   // ── Step 6 — activate ─────────────────────────────────────────────────
 
   private activateAffaire(): void {
-    if (this.editMode()) {
+    // Pure edit of an already-active affaire → just persist & return to detail.
+    if (this.editMode() && !this.resumeDraft()) {
       // edit → affaires/:id/edit → '../..' → affaires/ → then detail id
       this.router.navigate(['../..', this.draftId()], { relativeTo: this.activatedRoute });
       return;
     }
+    // New affaire OR resuming a DRAFT → validate & activate.
     this.isSaving.set(true);
     this.wizardService.validateAndActivate(this.draftId()!).subscribe({
       next: affaire => {
-        // new → affaires/new → '..' → affaires/ → then detail id
-        this.router.navigate(['..', affaire['id']], { relativeTo: this.activatedRoute });
+        // new → affaires/new → '..' ; resume → affaires/:id/edit → '../..'
+        const target = this.editMode() ? ['../..', affaire['id']] : ['..', affaire['id']];
+        this.router.navigate(target, { relativeTo: this.activatedRoute });
       },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set((err?.error as { message?: string })?.message ?? 'Erreur d\'activation.');
+        this.serverError.set(this.apiError(err, 'Erreur d\'activation.'));
       },
     });
   }
 
   cancelWizard(): void {
     this.router.navigate(this.cancelRoute(), { relativeTo: this.activatedRoute });
+  }
+
+  /** Reads the RFC-7807 `detail` from a facturation-service error (falls back to message). */
+  private apiError(err: unknown, fallback: string): string {
+    // `rule` is the business-rule violation surfaced by the TM/livrable backend;
+    // detail/message are the generic fallbacks.
+    const e = err as { error?: { rule?: string; detail?: string; message?: string } };
+    return e?.error?.rule ?? e?.error?.detail ?? e?.error?.message ?? fallback;
   }
 
   onDraftChange(updated: AffaireDraftState): void {
@@ -458,12 +486,13 @@ export class AffaireWizardComponent implements OnInit {
 
   billingModeLabel(): string {
     switch (this.draft().billingMode) {
-      case 'AV':  return 'Avancement';
-      case 'JAL': return 'Jalons';
-      case 'TM':  return 'Temps & Matériels';
-      case 'CP':  return 'Coût + Marge';
-      case 'RMB': return 'Remboursement';
-      default:    return '—';
+      case 'AV':      return 'Avancement';
+      case 'JAL':     return 'Jalons';
+      case 'TM':      return 'Temps & Matériels';
+      case 'CP':      return 'Coût + Marge';
+      case 'RMB':     return 'Remboursement';
+      case 'LIVRABLE': return 'Livrables';
+      default:        return '—';
     }
   }
 

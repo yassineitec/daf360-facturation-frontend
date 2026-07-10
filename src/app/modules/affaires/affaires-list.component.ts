@@ -39,6 +39,9 @@ export class AffairesListComponent implements OnInit {
   readonly statsBudgetTotal = computed(() => this.affaires().reduce((s, a) => s + (a.budgetPrevisionnel ?? 0), 0));
 
   ngOnInit(): void {
+    // Honor a ?statut= filter passed in (e.g. "Reprendre un brouillon" → statut=DRAFT).
+    const statut = this.activatedRoute.snapshot.queryParamMap.get('statut');
+    if (statut) this.filterStatut = statut;
     this.load();
   }
 

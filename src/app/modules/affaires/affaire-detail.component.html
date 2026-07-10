@@ -501,6 +501,22 @@
           </section>
         }
 
+        <!-- Compléter le brouillon -->
+        @if (affaire()!.statut === 'DRAFT') {
+          <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
+            <h2 class="text-title-md" style="margin-bottom:14px">{{ 'AFFAIRES.DETAIL.SIDEBAR.COMPLETE_DRAFT_TITLE' | translate }}</h2>
+            <div class="quick-links">
+              <button class="quick-link" (click)="openEdit()">
+                <div class="quick-link__left">
+                  <span class="material-symbols-outlined text-primary">edit_note</span>
+                  <span class="text-label-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.COMPLETE_DRAFT_BTN' | translate }}</span>
+                </div>
+                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
+              </button>
+            </div>
+          </section>
+        }
+
         <!-- Modifier l'affaire -->
         @if (affaire()!.statut === 'EN_COURS' || affaire()!.statut === 'SUSPENDUE') {
           <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">

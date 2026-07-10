@@ -1,0 +1,188 @@
+<div class="tab-container">
+
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Barèmes de taux TM</h2>
+      <p class="page-subtitle">
+        Configurez le pourcentage de frais HQ et la marge cible utilisés pour calculer
+        le taux intercompany et le taux de vente de chaque collaborateur en mode Time &amp; Material.
+        Le barème <strong>Validé</strong> le plus récent est appliqué automatiquement.
+      </p>
+    </div>
+    <button class="btn-add" (click)="toggleAddForm()">
+      {{ showAddForm() ? '✕ Annuler' : '+ Nouveau barème' }}
+    </button>
+  </div>
+
+  @if (paysList().length > 1) {
+    <div class="list-tabs">
+      @for (p of paysList(); track p.id) {
+        <button class="list-tab" [class.active]="paysId() === p.id" (click)="selectPays(p.id)">
+          {{ p.isoCode }} — {{ p.frenchLabel }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (serverError()) {
+    <div class="banner-error">{{ serverError() }}</div>
+  }
+  @if (actionError()) {
+    <div class="banner-error">{{ actionError() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">Chargement...</div>
+  } @else {
+
+    <section class="config-section">
+
+      <!-- formula reminder -->
+      <div class="formula-box">
+        <div class="formula-item">
+          <span class="formula-label">Taux interco</span>
+          <span class="formula-expr">= Coût × (1 + % HQ)</span>
+        </div>
+        <div class="formula-sep">·</div>
+        <div class="formula-item">
+          <span class="formula-label">Taux de vente</span>
+          <span class="formula-expr">= Coût × (1 + % HQ + % Marge)</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Période</th>
+              <th>Type</th>
+              <th class="text-right">% HQ</th>
+              <th class="text-right">% Marge</th>
+              <th>Devise</th>
+              <th>Statut</th>
+              <th>Validé le</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- Add form row -->
+            @if (showAddForm()) {
+              <tr class="row-new">
+                <td>
+                  <input class="inline-input" type="number" min="2020" max="2099"
+                    [(ngModel)]="newRecord.periodYear" placeholder="Année">
+                  @if (newRecord.periodType === 'QUARTERLY') {
+                    <select class="inline-input" style="margin-top:4px"
+                      [(ngModel)]="newRecord.periodQuarter">
+                      <option [ngValue]="null">Trim.</option>
+                      <option [ngValue]="1">T1</option>
+                      <option [ngValue]="2">T2</option>
+                      <option [ngValue]="3">T3</option>
+                      <option [ngValue]="4">T4</option>
+                    </select>
+                  }
+                  @if (newRecord.periodType === 'MONTHLY') {
+                    <select class="inline-input" style="margin-top:4px"
+                      [(ngModel)]="newRecord.periodMonth">
+                      <option [ngValue]="null">Mois</option>
+                      @for (m of MONTHS; track m.value) {
+                        <option [ngValue]="m.value">{{ m.label }}</option>
+                      }
+                    </select>
+                  }
+                </td>
+                <td>
+                  <select class="inline-input" [(ngModel)]="newRecord.periodType">
+                    <option value="ANNUAL">Annuel</option>
+                    <option value="QUARTERLY">Trimestriel</option>
+                    <option value="MONTHLY">Mensuel</option>
+                  </select>
+                </td>
+                <td class="text-right">
+                  <input class="inline-input text-right" type="number"
+                    min="0" max="100" step="0.1"
+                    [(ngModel)]="newRecord.hqCostPct"
+                    placeholder="5.0">
+                  <span class="pct-suffix">%</span>
+                </td>
+                <td class="text-right">
+                  <input class="inline-input text-right" type="number"
+                    min="0" max="100" step="0.1"
+                    [(ngModel)]="newRecord.targetMarginPct"
+                    placeholder="10.0">
+                  <span class="pct-suffix">%</span>
+                </td>
+                <td>
+                  <input class="inline-input" type="text"
+                    [(ngModel)]="newRecord.currency"
+                    placeholder="EUR" style="width:60px;text-transform:uppercase">
+                </td>
+                <td colspan="2">
+                  @if (createError()) {
+                    <span class="inline-error">{{ createError() }}</span>
+                  }
+                </td>
+                <td class="cell-actions">
+                  <button class="btn-save" (click)="create()" [disabled]="isCreating()">
+                    @if (isCreating()) { … } @else { + }
+                  </button>
+                  <button class="btn-icon" (click)="toggleAddForm()">✕</button>
+                </td>
+              </tr>
+            }
+
+            <!-- Data rows -->
+            @for (rc of computations(); track rc.id) {
+              <tr [class.row-validated]="rc.status === 'VALIDATED'">
+                <td class="cell-period"><strong>{{ periodLabel(rc) }}</strong></td>
+                <td class="cell-secondary">{{ PERIOD_TYPE_LABELS[rc.periodType] ?? rc.periodType }}</td>
+                <td class="text-right cell-rate">{{ pct(rc.hqCostPct) }}</td>
+                <td class="text-right cell-rate">{{ pct(rc.targetMarginPct) }}</td>
+                <td class="cell-secondary">{{ rc.currency ?? '—' }}</td>
+                <td>
+                  <span class="status-badge"
+                    [style.background]="STATUS_CONFIG[rc.status]?.bg"
+                    [style.color]="STATUS_CONFIG[rc.status]?.text">
+                    {{ STATUS_CONFIG[rc.status]?.label ?? rc.status }}
+                  </span>
+                </td>
+                <td class="cell-secondary">{{ fmtDate(rc.validatedAt) }}</td>
+                <td class="cell-actions">
+                  @if (rc.status === 'DRAFT') {
+                    <button class="btn-action btn-compute"
+                      [disabled]="actionLoadingId() === rc.id"
+                      (click)="compute(rc)"
+                      title="Calculer (DRAFT → COMPUTED)">
+                      @if (actionLoadingId() === rc.id) { … } @else { Calculer }
+                    </button>
+                  }
+                  @if (rc.status === 'COMPUTED') {
+                    <button class="btn-action btn-validate"
+                      [disabled]="actionLoadingId() === rc.id"
+                      (click)="validate(rc)"
+                      title="Valider (COMPUTED → VALIDATED)">
+                      @if (actionLoadingId() === rc.id) { … } @else { Valider }
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+
+            @empty {
+              @if (!showAddForm()) {
+                <tr>
+                  <td colspan="8" class="empty-state">
+                    Aucun barème configuré. Cliquez sur « + Nouveau barème » pour en créer un.
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  }
+
+</div>

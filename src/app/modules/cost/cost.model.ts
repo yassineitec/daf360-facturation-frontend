@@ -293,6 +293,49 @@ export const CATEGORY_ICON: Record<string, { icon: string; color: string; bg: st
   DEFAULT:     { icon: 'receipt_long',   color: '#64748B', bg: '#F1F5F9' },
 };
 
+// ── Rate computation ──────────────────────────────────────────────────────────
+
+export type RateComputationStatus = 'DRAFT' | 'COMPUTED' | 'VALIDATED';
+
+export interface RateComputationDto {
+  id: number;
+  paysId: number;
+  periodType: string;
+  periodYear: number;
+  periodQuarter: number | null;
+  periodMonth: number | null;
+  computationDate: string | null;
+  status: RateComputationStatus;
+  hqCostPct: number | null;
+  targetMarginPct: number | null;
+  productivityRate: number | null;
+  workingDaysPerMonth: number | null;
+  sellingMonthsPerYear: number | null;
+  currency: string | null;
+  validatedAt: string | null;
+  pushedToPmAt: string | null;
+}
+
+export interface CreateRateComputationRequest {
+  paysId: number;
+  periodType: string;
+  periodYear: number;
+  periodQuarter?: number | null;
+  periodMonth?: number | null;
+  hqCostPct?: number | null;
+  targetMarginPct?: number | null;
+  productivityRate?: number | null;
+  workingDaysPerMonth?: number | null;
+  sellingMonthsPerYear?: number | null;
+  currency?: string | null;
+}
+
+export const RATE_COMPUTATION_STATUS_CONFIG: Record<RateComputationStatus, { label: string; bg: string; text: string }> = {
+  DRAFT:     { label: 'Brouillon', bg: '#f1f5f9', text: '#475569' },
+  COMPUTED:  { label: 'Calculé',   bg: '#dbeafe', text: '#1d4ed8' },
+  VALIDATED: { label: 'Validé ✓',  bg: '#d1fae5', text: '#065f46' },
+};
+
 // ── Supplier search result (lightweight DTO for form autocomplete) ────────────
 
 export interface SupplierSearchItem {

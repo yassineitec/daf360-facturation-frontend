@@ -103,7 +103,7 @@
       <!-- Brouillon footer -->
       @if (!editMode()) {
         <div class="form-footer">
-          <a [routerLink]="cancelRoute()" class="draft-link">
+          <a [routerLink]="cancelRoute()" [queryParams]="{ statut: 'DRAFT' }" class="draft-link">
             <span class="material-symbols-outlined">history</span>
             Reprendre une affaire en brouillon
           </a>

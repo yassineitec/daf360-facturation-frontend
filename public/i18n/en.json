@@ -552,6 +552,7 @@
           "STATUS": "Status"
         },
         "STATUS": {
+          "DRAFT": "Draft",
           "EN_COURS": "In progress",
           "SUSPENDUE": "Suspended",
           "CLOTUREE": "Closed",
@@ -640,6 +641,8 @@
         "EDIT_MANAGERS": "Edit managers",
         "EDIT_PLANNING": "Edit planning",
         "EDIT_INFO": "Edit information",
+        "COMPLETE_DRAFT_TITLE": "Draft",
+        "COMPLETE_DRAFT_BTN": "Complete draft",
         "ACTIONS_TITLE": "Quick actions",
         "NEW_INVOICE": "New invoice",
         "VIEW_PAYMENTS": "Payment tracking",

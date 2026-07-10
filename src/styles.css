@@ -51,7 +51,7 @@
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-sans, 'Manrope', sans-serif);
 }
 
 /* ── Module-card icon classes (used as daf-card iconBg/iconColor/iconHoverBg) */

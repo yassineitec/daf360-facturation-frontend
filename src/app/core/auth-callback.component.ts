@@ -7,7 +7,7 @@ import { environment } from '../../environments/environment';
   selector: 'app-auth-callback',
   template: `
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;
-                font-family:'Manrope',sans-serif;color:#44474c;font-size:0.9375rem;">
+                font-family:var(--font-sans);color:#44474c;font-size:0.9375rem;">
       Authentification en cours…
     </div>
   `,
