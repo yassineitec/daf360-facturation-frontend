@@ -6,7 +6,7 @@ import { forkJoin }     from 'rxjs';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
   PaginationComponent, PaginationConfig, ButtonComponent, ModalService, ModalRef,
-  SectionCardComponent, SectionTitleComponent,
+  SectionCardComponent, SectionTitleComponent, CardComponent,
   RadioGroupComponent, RadioGroupConfig, RadioOption,
   ToggleComponent, ToggleOptions,
   FormFieldComponent, StatusBadgeComponent,
@@ -34,7 +34,7 @@ interface ForexRow {
   standalone: true,
   imports: [
     CommonModule, FormsModule,
-    DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent,
+    DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
     FormFieldComponent, StatusBadgeComponent,
   ],
@@ -135,6 +135,38 @@ export class AdminListComponent implements OnInit {
   paysId    = signal<number>(0);
   isLoading = signal(false);
   pageError = signal<string | null>(null);
+
+  // ── Pays / Entité dropdown ───────────────────────────────────────────────
+  paysDropdownOpen = signal(false);
+  paysSearch       = signal('');
+
+  readonly selectedPays = computed(() =>
+    this.paysList().find(p => p.id === this.paysId()) ?? null);
+
+  readonly filteredPaysList = computed(() => {
+    const q = this.paysSearch().trim().toLowerCase();
+    if (!q) return this.paysList();
+    return this.paysList().filter(p =>
+      p.frenchLabel.toLowerCase().includes(q) || p.isoCode.toLowerCase().includes(q));
+  });
+
+  togglePaysDropdown(): void {
+    this.paysDropdownOpen.update(v => !v);
+    if (this.paysDropdownOpen()) this.paysSearch.set('');
+  }
+
+  closePaysDropdown(): void {
+    this.paysDropdownOpen.set(false);
+  }
+
+  selectPaysFromDropdown(id: number): void {
+    this.selectPays(id);
+    this.closePaysDropdown();
+  }
+
+  flagUrl(isoCode: string): string {
+    return `https://flagcdn.com/24x18/${isoCode.toLowerCase()}.png`;
+  }
 
   // ── Lists tab ─────────────────────────────────────────────────────────────
   listTypes      = signal<ListTypeDto[]>([]);

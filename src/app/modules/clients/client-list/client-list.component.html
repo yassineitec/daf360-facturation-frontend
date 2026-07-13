@@ -84,10 +84,10 @@
 
       <div class="filters-bar__top">
         <div class="search-wrap">
-          <daf-form-field
-            [options]="{ type: 'search', placeholder: ('CLIENTS.LIST.SEARCH' | translate), prefixIcon: 'search', fullWidth: true }"
+          <app-search-bar
+            [placeholder]="'CLIENTS.LIST.SEARCH' | translate"
             [value]="searchText"
-            (valueChange)="searchText = ($any($event) ?? ''); onSearch()" />
+            (valueChange)="searchText = $event; onSearch()" />
         </div>
         <!-- Mobile-only: filters toggle -->
         <button class="mob-filters-toggle" type="button" (click)="mobileFiltersOpen.set(!mobileFiltersOpen())">
@@ -103,27 +103,29 @@
 
       <div class="filters-bar__extra" [class.filters-bar__extra--open]="mobileFiltersOpen()">
 
-        <div class="filter-group">
-          <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.COUNTRY' | translate }}</span>
-          <select class="filter-select" [(ngModel)]="filterPaysId" (change)="onPaysChange()">
-            <option [value]="0">{{ 'CLIENTS.LIST.FILTER.ALL' | translate }}</option>
-            @for (p of paysList(); track p.id) {
-              <option [value]="p.id">{{ p.frenchLabel }}</option>
-            }
-          </select>
-        </div>
-
-        @if (sectors().length > 0) {
+        <div class="filters-bar__left">
           <div class="filter-group">
-            <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.SECTOR' | translate }}</span>
-            <select class="filter-select" [(ngModel)]="filterSector" (change)="onFilterChange()">
-              <option value="">{{ 'CLIENTS.LIST.FILTER.ALL' | translate }}</option>
-              @for (s of sectors(); track s) {
-                <option [value]="s">{{ s }}</option>
-              }
-            </select>
+            <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.COUNTRY' | translate }}</span>
+            <daf-select
+              style="min-width: 160px"
+              [options]="paysSelectOptions()"
+              [selected]="paysSelected()"
+              [config]="{ fullWidth: false }"
+              (selectedChange)="onPaysSelectChange($event)" />
           </div>
-        }
+
+          @if (sectors().length > 0) {
+            <div class="filter-group">
+              <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.SECTOR' | translate }}</span>
+              <daf-select
+                style="min-width: 160px"
+                [options]="sectorSelectOptions()"
+                [selected]="sectorSelected()"
+                [config]="{ fullWidth: false }"
+                (selectedChange)="onSectorSelectChange($event)" />
+            </div>
+          }
+        </div>
 
         <div class="status-pills">
           <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.STATUS' | translate }}</span>

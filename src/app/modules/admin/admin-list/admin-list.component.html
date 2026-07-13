@@ -20,50 +20,86 @@
 
     <!-- Pays selector (multi-pays only) -->
     @if (paysList().length > 1) {
-      <div class="pays-bar">
-        @for (p of paysList(); track p.id) {
-          <button class="pays-tab" [class.active]="paysId() === p.id" (click)="selectPays(p.id)">
-            {{ p.isoCode }} — {{ p.frenchLabel }}
-          </button>
-        }
+      <div class="pays-card">
+        <div class="pays-select-wrap">
+          <span class="pays-select-label">Pays / Entité</span>
+          <div class="pays-select">
+            <button type="button" class="pays-select-trigger" (click)="togglePaysDropdown()">
+              @if (selectedPays()) {
+                <img class="pays-flag" [src]="flagUrl(selectedPays()!.isoCode)" alt="" />
+                <span class="pays-select-value">{{ selectedPays()!.isoCode }} – {{ selectedPays()!.frenchLabel }}</span>
+              }
+              <span class="material-symbols-outlined pays-select-chevron">expand_more</span>
+            </button>
+
+            @if (paysDropdownOpen()) {
+              <div class="pays-dropdown-backdrop" (click)="closePaysDropdown()"></div>
+              <div class="pays-dropdown-panel">
+                <div class="pays-dropdown-search">
+                  <input type="text" placeholder="Rechercher un pays"
+                    [ngModel]="paysSearch()" (ngModelChange)="paysSearch.set($event)" />
+                  <span class="material-symbols-outlined">search</span>
+                </div>
+                <ul class="pays-dropdown-list">
+                  @for (p of filteredPaysList(); track p.id) {
+                    <li class="pays-dropdown-item" [class.active]="paysId() === p.id"
+                      (click)="selectPaysFromDropdown(p.id)">
+                      <img class="pays-flag" [src]="flagUrl(p.isoCode)" alt="" />
+                      <span class="pays-dropdown-item-label">{{ p.isoCode }} – {{ p.frenchLabel }}</span>
+                      @if (paysId() === p.id) {
+                        <span class="material-symbols-outlined pays-check">check</span>
+                      }
+                    </li>
+                  } @empty {
+                    <li class="pays-dropdown-empty">Aucun pays trouvé.</li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        </div>
       </div>
     }
 
     <!-- Main tab nav -->
-    <div class="main-tabs">
-      <button class="main-tab" [class.active]="activeTab() === 'lists'"
-        (click)="activeTab.set('lists')">
-        <span class="material-symbols-outlined tab-icon">checklist</span>
-        Listes configurables
-      </button>
-      <button class="main-tab" [class.active]="activeTab() === 'forex'"
-        (click)="activeTab.set('forex')">
-        <span class="material-symbols-outlined tab-icon">currency_exchange</span>
-        Taux de change
-      </button>
-      <button class="main-tab" [class.active]="activeTab() === 'forex-api'"
-        (click)="openForexApiTab()">
-        <span class="material-symbols-outlined tab-icon">api</span>
-        API Forex
-      </button>
-    </div>
+    <daf-card [options]="{variant:'glass', padding:'sm', radius:'xl'}">
+      <div class="main-tabs">
+        <button class="main-tab" [class.active]="activeTab() === 'lists'"
+          (click)="activeTab.set('lists')">
+          <span class="material-symbols-outlined tab-icon">checklist</span>
+          Listes configurables
+        </button>
+        <button class="main-tab" [class.active]="activeTab() === 'forex'"
+          (click)="activeTab.set('forex')">
+          <span class="material-symbols-outlined tab-icon">currency_exchange</span>
+          Taux de change
+        </button>
+        <button class="main-tab" [class.active]="activeTab() === 'forex-api'"
+          (click)="openForexApiTab()">
+          <span class="material-symbols-outlined tab-icon">api</span>
+          API Forex
+        </button>
+      </div>
+    </daf-card>
 
     <!-- ── LISTES TAB ────────────────────────────────────────────────────── -->
     @if (activeTab() === 'lists') {
       <div class="tab-content">
 
         <!-- Type sub-tabs -->
-        <div class="type-tabs">
-          @for (t of listTypes(); track t.code) {
-            <button class="type-tab" [class.active]="activeListType() === t.code"
-              (click)="selectListType(t.code)">
-              {{ t.labelFr }}
-            </button>
-          }
-          @if (listTypes().length === 0) {
-            <span class="loading-inline">Chargement des types…</span>
-          }
-        </div>
+        <daf-card [options]="{variant:'glass', padding:'md', radius:'xl', hoverable:true}">
+          <div class="type-tabs">
+            @for (t of listTypes(); track t.code) {
+              <button class="type-tab" [class.active]="activeListType() === t.code"
+                (click)="selectListType(t.code)">
+                {{ t.labelFr }}
+              </button>
+            }
+            @if (listTypes().length === 0) {
+              <span class="loading-inline">Chargement des types…</span>
+            }
+          </div>
+        </daf-card>
 
         @if (listError()) {
           <div class="banner-error">{{ listError() }}</div>

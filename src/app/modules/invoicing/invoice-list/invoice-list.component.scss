@@ -95,14 +95,15 @@ $teal-bg:     rgba(#79d7be, 0.15);
 .search-bar-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
   padding: 16px;
 }
 
 .search-wrap {
-  flex: 1;
-  min-width: 260px;
+  flex: 0 1 360px;
+  min-width: 200px;
   position: relative;
 }
 

@@ -5,7 +5,7 @@
   flex-direction: column;
   gap: 20px;
   padding: 24px;
-  max-width: 1100px;
+  width: 100%;
 
   @media (max-width: 768px) {
     padding: 16px;
@@ -36,34 +36,172 @@
   margin: 0;
 }
 
-// ── Pays selector ─────────────────────────────────────────────────────────────
+// ── Pays selector (flag + search dropdown) ─────────────────────────────────────
 
-.pays-bar {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+// Same look as daf-card's glass variant, but WITHOUT overflow:hidden — daf-card
+// always clips its content to its rounded corners, which would cut off the
+// absolutely-positioned dropdown panel below the trigger button.
+.pays-card {
+  position: relative;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  border-radius: var(--radius-xl, 16px);
+  padding: 16px;
 }
 
-.pays-tab {
-  height: 30px;
+.pays-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pays-select-label {
+  font-size: var(--text-label-sm);
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+}
+
+.pays-select {
+  position: relative;
+  width: 320px;
+}
+
+.pays-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
   padding: 0 14px;
   border: 1px solid var(--color-outline-variant);
-  border-radius: 20px;
+  border-radius: 10px;
   background: var(--color-surface);
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-label-sm);
-  font-weight: 500;
+  color: var(--color-on-surface);
+  font-size: var(--text-body-md);
+  font-weight: 600;
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
+  transition: border-color var(--duration-fast) var(--ease-smooth);
+
+  &:hover { border-color: var(--color-outline); }
+}
+
+.pays-flag {
+  width: 20px;
+  height: 15px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.pays-select-value {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pays-select-chevron {
+  font-size: 20px;
+  color: var(--color-on-surface-variant);
+  flex-shrink: 0;
+}
+
+.pays-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.pays-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 61;
+  background: var(--color-surface);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.pays-dropdown-search {
+  position: relative;
+  padding: 10px;
+  border-bottom: 1px solid var(--color-outline-variant);
+
+  input {
+    width: 100%;
+    height: 36px;
+    padding: 0 36px 0 12px;
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 8px;
+    font-size: var(--text-body-sm);
+    background: var(--color-surface-container-low);
+    color: var(--color-on-surface);
+    box-sizing: border-box;
+
+    &:focus { outline: none; border-color: var(--color-tertiary); }
+  }
+
+  .material-symbols-outlined {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: var(--color-on-surface-variant);
+    pointer-events: none;
+  }
+}
+
+.pays-dropdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.pays-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface);
+  transition: background var(--duration-fast) var(--ease-smooth);
+
+  &:hover { background: var(--color-surface-container-low); }
 
   &.active {
     background: var(--color-tertiary-container);
     color: var(--color-on-tertiary-container);
-    border-color: var(--color-tertiary);
     font-weight: 700;
   }
+}
 
-  &:hover:not(.active) { border-color: var(--color-outline); }
+.pays-dropdown-item-label {
+  flex: 1;
+}
+
+.pays-check {
+  font-size: 18px;
+  color: var(--color-tertiary);
+}
+
+.pays-dropdown-empty {
+  padding: 14px;
+  text-align: center;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-variant);
 }
 
 // ── Main tabs ─────────────────────────────────────────────────────────────────
@@ -71,7 +209,6 @@
 .main-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 2px solid #e2e8f0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;

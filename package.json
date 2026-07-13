@@ -30,10 +30,10 @@
   },
   "devDependencies": {
     "@angular-architects/native-federation": "^21.2.3",
-    "@softarc/native-federation-node": "^3.3.4",
     "@angular/build": "^21.2.7",
     "@angular/cli": "^21.2.7",
     "@angular/compiler-cli": "^21.2.0",
+    "@softarc/native-federation-node": "^3.3.4",
     "@tailwindcss/postcss": "^4.3.1",
     "@types/node": "^20.17.19",
     "autoprefixer": "^10.5.0",

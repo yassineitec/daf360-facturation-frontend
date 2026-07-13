@@ -6,15 +6,16 @@ import { Subject, debounceTime, distinctUntilChanged, forkJoin, takeUntil } from
 import { ClientService } from '../client.service';
 import { ClientListItemDto, ClientFilter } from '../client.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { SearchBarComponent } from '../../../shared/search-bar.component';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import { UserStore } from '../../../core/user.store';
-import { CardComponent, PaginationComponent, ButtonComponent, FormFieldComponent } from '@khalilrebhiitec/daf360';
-import { TranslatePipe } from '@ngx-translate/core';
+import { CardComponent, PaginationComponent, ButtonComponent, SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-client-list',
   imports: [FormsModule, DecimalPipe, PermissionDirective,
-            CardComponent, PaginationComponent, ButtonComponent, FormFieldComponent, TranslatePipe],
+            CardComponent, PaginationComponent, ButtonComponent, SearchBarComponent, SelectComponent, TranslatePipe],
   templateUrl: './client-list.component.html',
   styleUrl: './client-list.component.scss',
 })
@@ -23,6 +24,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly userStore      = inject(UserStore);
+  private readonly translate      = inject(TranslateService);
   private readonly destroy$       = new Subject<void>();
   private readonly search$        = new Subject<string>();
 
@@ -141,6 +143,29 @@ export class ClientListComponent implements OnInit, OnDestroy {
   }
 
   onSearch(): void { this.search$.next(this.searchText); }
+
+  readonly paysSelectOptions = computed<SelectOption[]>(() => [
+    { value: '0', label: this.translate.instant('CLIENTS.LIST.FILTER.ALL') },
+    ...this.paysList().map(p => ({ value: String(p.id), label: p.frenchLabel })),
+  ]);
+
+  readonly sectorSelectOptions = computed<SelectOption[]>(() => [
+    { value: '', label: this.translate.instant('CLIENTS.LIST.FILTER.ALL') },
+    ...this.sectors().map(s => ({ value: s, label: s })),
+  ]);
+
+  readonly paysSelected   = computed(() => [String(this.filterPaysId)]);
+  readonly sectorSelected = computed(() => [this.filterSector]);
+
+  onPaysSelectChange(values: string[]): void {
+    this.filterPaysId = Number(values[0] ?? 0);
+    this.onPaysChange();
+  }
+
+  onSectorSelectChange(values: string[]): void {
+    this.filterSector = values[0] ?? '';
+    this.onFilterChange();
+  }
 
   onPaysChange(): void {
     this.currentPage.set(0);
