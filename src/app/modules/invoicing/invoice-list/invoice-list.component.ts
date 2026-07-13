@@ -5,6 +5,7 @@ import {
   InvoiceListItem, InvoiceFilter, INVOICE_STATUT_CONFIG, OVERDUE_STATUTS,
 } from '../invoice.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { SearchBarComponent } from '../../../shared/search-bar.component';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
@@ -15,7 +16,7 @@ import {
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent],
+  imports: [PermissionDirective, SearchBarComponent, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })

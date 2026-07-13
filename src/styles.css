@@ -44,3 +44,59 @@
 body {
   font-family: var(--font-sans, 'Manrope', sans-serif);
 }
+
+/* ── Icon-only Modifier/Suppr. row actions (admin tables) ───────────────────
+   daf-button has no built-in icon-only square variant — its `sm` size is
+   sized for icon+label (px-4 py-2). Table row actions here show only the
+   Material Symbol, so force a small square shape and the neutral-gray /
+   light-red glyph-only look used across every admin table's Modifier/Suppr. */
+daf-button.icon-btn-edit button,
+daf-button.icon-btn-delete button {
+  width: 34px;
+  height: 34px;
+  padding: 0 !important;
+  border-radius: var(--radius-md) !important;
+  gap: 0 !important;
+}
+
+daf-button.icon-btn-edit button {
+  background: var(--color-surface) !important;
+  border-color: var(--color-outline-variant) !important;
+  color: #1f1f1f !important;
+}
+
+daf-button.icon-btn-delete button {
+  background: var(--color-error-container) !important;
+  color: var(--color-danger) !important;
+}
+
+daf-button.icon-btn-edit .material-symbols-outlined,
+daf-button.icon-btn-delete .material-symbols-outlined {
+  font-size: 20px !important;
+}
+
+/* ── daf-toolbar search box — match the shared pill/teal search bar ─────────
+   daf-toolbar (used on /finance/affaires, /finance/suppliers, and the "Lignes"
+   cost tab) bakes in its own search input template with no way to swap it out
+   without also losing its action-buttons/toggle layout, so it's restyled here
+   instead of being replaced with app-search-bar. */
+daf-toolbar div.relative.flex-1 input[type="search"] {
+  border-radius: 999px !important;
+  border: 1px solid #bdc9c4 !important;
+  background: rgba(239,244,255,.6) !important;
+  color: #0b1c30 !important;
+}
+
+daf-toolbar div.relative.flex-1 input[type="search"]:focus {
+  border-color: #006b58 !important;
+  box-shadow: 0 0 0 3px rgba(0,107,88,.12) !important;
+  background: #fff !important;
+}
+
+daf-toolbar div.relative.flex-1 input[type="search"]::placeholder {
+  color: #64748B !important;
+}
+
+daf-toolbar div.relative.flex-1 > span.material-symbols-outlined {
+  color: #3e4945 !important;
+}

@@ -102,13 +102,13 @@
 
           <ng-template dafCell="_actions" let-row>
             <div class="cell-actions">
-              <daf-button [options]="{ size: 'sm', variant: 'ghost', iconStart: 'edit' }"
+              <daf-button class="icon-btn-edit" title="Modifier" [options]="{ size: 'sm', variant: 'ghost', iconStart: 'edit' }"
                 (onClick)="openEditValueModal(row['_source'])" />
               @if (row['isActive']) {
-                <daf-button [options]="{ size: 'sm', variant: 'danger', iconStart: 'close' }"
+                <daf-button class="icon-btn-delete" title="Désactiver" [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
                   (onClick)="deactivateValue(row['_source'])" />
               } @else {
-                <daf-button [options]="{ size: 'sm', variant: 'teal', iconStart: 'restart_alt' }"
+                <daf-button title="Réactiver" [options]="{ size: 'sm', variant: 'teal', iconStart: 'restart_alt' }"
                   (onClick)="reactivateValue(row['_source'])" />
               }
             </div>
@@ -173,10 +173,10 @@
 
           <ng-template dafCell="_actions" let-row>
             <div class="cell-actions">
-              <daf-button [options]="{ size: 'sm', variant: 'ghost', iconStart: 'edit' }"
+              <daf-button class="icon-btn-edit" title="Modifier" [options]="{ size: 'sm', variant: 'ghost', iconStart: 'edit' }"
                 (onClick)="openEditForexModal(row['_source'])" />
               @if (row['_source'].eurParam) {
-                <daf-button [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
+                <daf-button class="icon-btn-delete" title="Suppr." [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
                   (onClick)="deleteForexParam(row['_source'].eurParam)" />
               }
             </div>

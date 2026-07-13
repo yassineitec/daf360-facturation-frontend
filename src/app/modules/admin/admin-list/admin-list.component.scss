@@ -9,10 +9,10 @@
 }
 
 /* daf-data-table purges the dynamically-computed text-right Tailwind class from its
-   own build — force the right-aligned Actions column ourselves. */
+   own build — force the centered Actions column ourselves. */
 :host ::ng-deep daf-data-table {
-  th:last-child { text-align: right !important; }
-  td:last-child { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
+  th:last-child { text-align: center !important; }
+  td:last-child { display: flex; justify-content: center; align-items: center; gap: 6px; }
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -252,7 +252,7 @@
 .cell-actions {
   display: flex;
   gap: 5px;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
 }
 

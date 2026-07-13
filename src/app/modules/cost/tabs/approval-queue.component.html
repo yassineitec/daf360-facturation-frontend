@@ -55,10 +55,10 @@
   <!-- ── Search + Refresh ─────────────────────────────────────────────────── -->
   <div class="aq-toolbar">
     <div class="aq-search-wrap">
-      <span class="material-symbols-outlined aq-search-icon">search</span>
-      <input class="aq-search-input" type="text" placeholder="Libellé, ID, montant…"
+      <app-search-bar
+        placeholder="Libellé, ID, montant…"
         [value]="searchQuery()"
-        (input)="searchQuery.set(getInputValue($event))" />
+        (valueChange)="searchQuery.set($event)" />
     </div>
     <button class="aq-refresh-btn" (click)="load()" title="Rafraîchir">
       <span class="material-symbols-outlined">refresh</span>
