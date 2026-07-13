@@ -1,9 +1,17 @@
 import {
-  Component, OnInit, inject, signal, computed,
+  Component, OnInit, inject, signal, computed, ViewChild, TemplateRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
+import {
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
+  PaginationComponent, PaginationConfig, ButtonComponent, ModalService, ModalRef,
+  SectionCardComponent, SectionTitleComponent,
+  RadioGroupComponent, RadioGroupConfig, RadioOption,
+  ToggleComponent, ToggleOptions,
+  FormFieldComponent, StatusBadgeComponent,
+} from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
 import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-set.service';
@@ -12,6 +20,8 @@ import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 
 type AdminTab = 'lists' | 'forex' | 'forex-api';
+
+const PAGE_SIZE = 10;
 
 interface ForexRow {
   code: string;
@@ -22,7 +32,12 @@ interface ForexRow {
 @Component({
   selector: 'app-admin-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, FormsModule,
+    DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent,
+    SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
+    FormFieldComponent, StatusBadgeComponent,
+  ],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',
 })
@@ -31,6 +46,88 @@ export class AdminListComponent implements OnInit {
   private readonly clientSvc    = inject(ClientService);
   private readonly paramSvc     = inject(ParameterSetService);
   private readonly forexApiSvc  = inject(ForexApiConfigService);
+  private readonly modal        = inject(ModalService);
+
+  @ViewChild('valueFormTpl') valueFormTpl!: TemplateRef<unknown>;
+  @ViewChild('forexFormTpl') forexFormTpl!: TemplateRef<unknown>;
+
+  // ── Table / pagination (daf360 lib) ─────────────────────────────────────────
+  readonly paginationConfig: PaginationConfig = {
+    showFirstLast: true,
+    showPrevNext:  true,
+    maxVisible:    5,
+    size:          'sm',
+  };
+
+  readonly listColumns: TableColumn[] = [
+    { key: 'code',      label: 'Code',       width: '120px' },
+    { key: 'labelFr',   label: 'Libellé FR' },
+    { key: 'labelEn',   label: 'Libellé EN' },
+    { key: 'isDefault', label: 'Défaut',     align: 'center', width: '90px' },
+    { key: 'isActive',  label: 'Statut',     align: 'center', width: '90px' },
+    { key: '_actions',  label: 'Actions',    align: 'right',  width: '150px' },
+  ];
+
+  readonly forexColumns: TableColumn[] = [
+    { key: 'code',     label: 'Devise',            width: '100px' },
+    { key: 'eur',      label: '1 devise → EUR',    align: 'right', width: '180px' },
+    { key: 'chf',      label: '1 devise → CHF',    align: 'right', width: '200px' },
+    { key: '_actions', label: 'Actions',           align: 'right', width: '150px' },
+  ];
+
+  readonly listTableConfig = computed<TableConfig>(() => ({
+    hoverable:    true,
+    loading:      this.listLoading(),
+    emptyMessage: 'Aucune valeur configurée pour ce type.',
+  }));
+
+  readonly forexTableConfig = computed<TableConfig>(() => ({
+    hoverable:    true,
+    loading:      this.forexLoading(),
+    emptyMessage: 'Aucun taux configuré.',
+  }));
+
+  listCurrentPage  = signal(0);
+  forexCurrentPage = signal(0);
+
+  readonly listTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.listValues().length / PAGE_SIZE)));
+
+  readonly forexTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.forexRows().length / PAGE_SIZE)));
+
+  onListPageChange(page: number): void  { this.listCurrentPage.set(page); }
+  onForexPageChange(page: number): void { this.forexCurrentPage.set(page); }
+
+  private readonly pagedListValues = computed(() => {
+    const start = this.listCurrentPage() * PAGE_SIZE;
+    return this.listValues().slice(start, start + PAGE_SIZE);
+  });
+
+  private readonly pagedForexRows = computed(() => {
+    const start = this.forexCurrentPage() * PAGE_SIZE;
+    return this.forexRows().slice(start, start + PAGE_SIZE);
+  });
+
+  readonly listRows = computed<TableRow[]>(() =>
+    this.pagedListValues().map(v => ({
+      id: v.id, code: v.code, labelFr: v.labelFr, labelEn: v.labelEn,
+      isDefault: v.isDefault, isActive: v.isActive, _source: v,
+    })),
+  );
+
+  readonly forexTableRows = computed<TableRow[]>(() =>
+    this.pagedForexRows().map(r => ({
+      code: r.code,
+      eur:  r.eurParam?.paramValue ?? '—',
+      chf:  r.chfParam ? r.chfParam.paramValue : `auto ${this.chfFallback(r)}`,
+      chfAuto: !r.chfParam,
+      _source: r,
+    })),
+  );
+
+  readonly activeListTypeLabel = computed(() =>
+    this.listTypes().find(t => t.code === this.activeListType())?.labelFr ?? 'Valeurs');
 
   // ── Common ────────────────────────────────────────────────────────────────
   activeTab = signal<AdminTab>('lists');
@@ -46,30 +143,27 @@ export class AdminListComponent implements OnInit {
   listLoading    = signal(false);
   listError      = signal<string | null>(null);
 
-  editMap     = signal<Record<number, { labelFr: string; labelEn: string }>>({});
-  valueSaving = signal<number | null>(null);
-
-  showAddValue     = signal(false);
-  isCreatingValue  = signal(false);
-  createValueError = signal<string | null>(null);
-  newValue = { code: '', labelFr: '', labelEn: '', isDefault: false };
+  // Add/edit modal state
+  valueModalMode  = signal<'create' | 'edit'>('create');
+  valueModalSaving = signal(false);
+  valueModalError  = signal<string | null>(null);
+  private valueModalRef: ModalRef | null = null;
+  private editingValue: ListValueDto | null = null;
+  valueForm: { code: string; labelFr: string; labelEn: string; isDefault: boolean } =
+    { code: '', labelFr: '', labelEn: '', isDefault: false };
 
   // ── Forex tab ─────────────────────────────────────────────────────────────
   allParams    = signal<ParameterSetDto[]>([]);
   forexLoading = signal(false);
   forexError   = signal<string | null>(null);
 
-  editingForex  = signal<string | null>(null);
-  editEurRate   = '';
-  editChfRate   = '';
-  isSavingForex = signal(false);
-
-  showAddForex  = signal(false);
-  isAddingForex = signal(false);
-  forexAddError = signal<string | null>(null);
-  newForexCode  = '';
-  newForexEur   = '';
-  newForexChf   = '';
+  // Add/edit modal state
+  forexModalMode   = signal<'create' | 'edit'>('create');
+  forexModalSaving = signal(false);
+  forexModalError  = signal<string | null>(null);
+  private forexModalRef: ModalRef | null = null;
+  private editingForexRow: ForexRow | null = null;
+  forexForm: { code: string; eur: string; chf: string } = { code: '', eur: '', chf: '' };
 
   forexRows = computed<ForexRow[]>(() => {
     const params = this.allParams();
@@ -118,9 +212,7 @@ export class AdminListComponent implements OnInit {
   selectPays(id: number): void {
     if (id === this.paysId()) return;
     this.paysId.set(id);
-    this.editMap.set({});
-    this.showAddValue.set(false);
-    this.createValueError.set(null);
+    this.listCurrentPage.set(0);
     this.loadListValues();
   }
 
@@ -133,9 +225,7 @@ export class AdminListComponent implements OnInit {
   selectListType(code: string): void {
     if (code === this.activeListType()) return;
     this.activeListType.set(code);
-    this.editMap.set({});
-    this.showAddValue.set(false);
-    this.createValueError.set(null);
+    this.listCurrentPage.set(0);
     this.loadListValues();
   }
 
@@ -157,46 +247,105 @@ export class AdminListComponent implements OnInit {
     });
   }
 
-  startEditValue(v: ListValueDto): void {
-    this.editMap.update(m => ({ ...m, [v.id]: { labelFr: v.labelFr, labelEn: v.labelEn ?? '' } }));
+  openCreateValueModal(): void {
+    this.valueModalMode.set('create');
+    this.editingValue = null;
+    this.valueForm = { code: '', labelFr: '', labelEn: '', isDefault: false };
+    this.valueModalError.set(null);
+    this.openValueModal('Ajouter une valeur');
   }
 
-  patchEditFr(id: number, value: string): void {
-    this.editMap.update(m => ({ ...m, [id]: { ...m[id], labelFr: value } }));
+  openEditValueModal(v: ListValueDto): void {
+    this.valueModalMode.set('edit');
+    this.editingValue = v;
+    this.valueForm = { code: v.code, labelFr: v.labelFr, labelEn: v.labelEn ?? '', isDefault: v.isDefault };
+    this.valueModalError.set(null);
+    this.openValueModal(`Modifier "${v.code}"`);
   }
 
-  patchEditEn(id: number, value: string): void {
-    this.editMap.update(m => ({ ...m, [id]: { ...m[id], labelEn: value } }));
-  }
-
-  cancelEditValue(id: number): void {
-    this.editMap.update(m => { const c = { ...m }; delete c[id]; return c; });
-  }
-
-  saveEditValue(v: ListValueDto): void {
-    const patch = this.editMap()[v.id];
-    if (!patch) return;
-    this.valueSaving.set(v.id);
-    this.listError.set(null);
-    this.factListSvc.updateListValue(v.id, this.paysId(), patch).subscribe({
-      next: updated => {
-        // v.id and updated.id may differ when a global value was overridden with a country copy
-        this.listValues.update(list => [
-          ...list.filter(x => x.id !== v.id),
-          updated,
-        ]);
-        this.editMap.update(m => { const c = { ...m }; delete c[v.id]; return c; });
-        this.valueSaving.set(null);
-      },
-      error: err => {
-        this.listError.set(err.error?.message ?? 'Erreur de sauvegarde.');
-        this.valueSaving.set(null);
-      },
+  private openValueModal(title: string): void {
+    this.valueModalRef = this.modal.open({
+      title,
+      body: this.valueFormTpl,
+      size: 'md',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: 'Annuler', variant: 'secondary', action: r => r.close() },
+        {
+          label:  this.valueModalMode() === 'create' ? 'Créer' : 'Enregistrer',
+          variant: 'primary',
+          action: () => this.submitValueModal(),
+        },
+      ],
     });
   }
 
+  submitValueModal(): void {
+    if (this.valueModalSaving()) return;
+    const paysId   = this.paysId();
+    const labelFr  = this.valueForm.labelFr.trim();
+    const labelEn  = this.valueForm.labelEn.trim();
+
+    if (this.valueModalMode() === 'create') {
+      const code = this.valueForm.code.trim().toUpperCase();
+      if (!code || !labelFr || !paysId) {
+        this.valueModalError.set('Code et libellé FR sont requis.');
+        return;
+      }
+      this.valueModalSaving.set(true);
+      this.valueModalError.set(null);
+      const typeCode = this.activeListType();
+      this.factListSvc.createListValue(typeCode, {
+        typeCode, paysId, code, labelFr,
+        labelEn: labelEn || undefined,
+        isDefault: this.valueForm.isDefault,
+      }).subscribe({
+        next: created => {
+          this.listValues.update(list => [...list, created]);
+          this.valueModalSaving.set(false);
+          this.valueModalRef?.close();
+        },
+        error: err => {
+          this.valueModalError.set(err.error?.message ?? 'Erreur de création.');
+          this.valueModalSaving.set(false);
+        },
+      });
+    } else {
+      const v = this.editingValue;
+      if (!v || !labelFr) {
+        this.valueModalError.set('Le libellé FR est requis.');
+        return;
+      }
+      this.valueModalSaving.set(true);
+      this.valueModalError.set(null);
+      this.factListSvc.updateListValue(v.id, paysId, { labelFr, labelEn }).subscribe({
+        next: updated => {
+          // v.id and updated.id may differ when a global value was overridden with a country copy
+          this.listValues.update(list => [...list.filter(x => x.id !== v.id), updated]);
+          this.valueModalSaving.set(false);
+          this.valueModalRef?.close();
+        },
+        error: err => {
+          this.valueModalError.set(err.error?.message ?? 'Erreur de sauvegarde.');
+          this.valueModalSaving.set(false);
+        },
+      });
+    }
+  }
+
   deactivateValue(v: ListValueDto): void {
-    if (!confirm(`Désactiver la valeur "${v.code}" ?`)) return;
+    this.modal.open({
+      title: 'Désactiver la valeur',
+      body:  `Désactiver la valeur "${v.code}" ?`,
+      size:  'sm',
+      buttons: [
+        { label: 'Annuler',    variant: 'secondary', action: r => r.close() },
+        { label: 'Désactiver', variant: 'primary',   action: r => { this.doDeactivateValue(v); r.close(); } },
+      ],
+    });
+  }
+
+  private doDeactivateValue(v: ListValueDto): void {
     this.factListSvc.deactivateListValue(v.id).subscribe({
       next: () => this.listValues.update(list =>
         list.map(x => x.id === v.id ? { ...x, isActive: false } : x),
@@ -212,36 +361,6 @@ export class AdminListComponent implements OnInit {
         updated,
       ]),
       error: err => this.listError.set(err.error?.message ?? 'Erreur.'),
-    });
-  }
-
-  createValue(): void {
-    const paysId   = this.paysId();
-    const typeCode = this.activeListType();
-    if (!this.newValue.code || !this.newValue.labelFr || !paysId) {
-      this.createValueError.set('Code et libellé FR sont requis.');
-      return;
-    }
-    this.isCreatingValue.set(true);
-    this.createValueError.set(null);
-    this.factListSvc.createListValue(typeCode, {
-      typeCode,
-      paysId,
-      code:      this.newValue.code.trim().toUpperCase(),
-      labelFr:   this.newValue.labelFr.trim(),
-      labelEn:   this.newValue.labelEn.trim() || undefined,
-      isDefault: this.newValue.isDefault,
-    }).subscribe({
-      next: created => {
-        this.listValues.update(list => [...list, created]);
-        this.newValue = { code: '', labelFr: '', labelEn: '', isDefault: false };
-        this.showAddValue.set(false);
-        this.isCreatingValue.set(false);
-      },
-      error: err => {
-        this.createValueError.set(err.error?.message ?? 'Erreur de création.');
-        this.isCreatingValue.set(false);
-      },
     });
   }
 
@@ -262,38 +381,71 @@ export class AdminListComponent implements OnInit {
     });
   }
 
-  startEditForex(row: ForexRow): void {
-    this.editingForex.set(row.code);
-    this.editEurRate = row.eurParam?.paramValue ?? '';
-    this.editChfRate = row.chfParam?.paramValue ?? '';
-    this.forexError.set(null);
+  openCreateForexModal(): void {
+    this.forexModalMode.set('create');
+    this.editingForexRow = null;
+    this.forexForm = { code: '', eur: '', chf: '' };
+    this.forexModalError.set(null);
+    this.openForexModal('Ajouter un taux');
   }
 
-  cancelEditForex(): void {
-    this.editingForex.set(null);
-    this.editEurRate = '';
-    this.editChfRate = '';
+  openEditForexModal(row: ForexRow): void {
+    this.forexModalMode.set('edit');
+    this.editingForexRow = row;
+    this.forexForm = { code: row.code, eur: row.eurParam?.paramValue ?? '', chf: row.chfParam?.paramValue ?? '' };
+    this.forexModalError.set(null);
+    this.openForexModal(`Modifier le taux "${row.code}"`);
   }
 
-  saveForex(row: ForexRow): void {
-    const eurRate = this.editEurRate.trim();
-    if (!eurRate || isNaN(Number(eurRate)) || Number(eurRate) <= 0) {
-      this.forexError.set('Taux EUR invalide (nombre décimal positif requis).');
+  private openForexModal(title: string): void {
+    this.forexModalRef = this.modal.open({
+      title,
+      body: this.forexFormTpl,
+      size: 'md',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: 'Annuler', variant: 'secondary', action: r => r.close() },
+        {
+          label:  this.forexModalMode() === 'create' ? 'Créer' : 'Enregistrer',
+          variant: 'primary',
+          action: () => this.submitForexModal(),
+        },
+      ],
+    });
+  }
+
+  submitForexModal(): void {
+    if (this.forexModalSaving()) return;
+    const mode    = this.forexModalMode();
+    const code    = this.forexForm.code.trim().toUpperCase();
+    const eurRate = this.forexForm.eur.trim();
+    const chfRate = this.forexForm.chf.trim();
+
+    if (!code || !eurRate) {
+      this.forexModalError.set('Code devise et taux EUR sont requis.');
       return;
     }
-    const chfRate = this.editChfRate.trim();
+    if (isNaN(Number(eurRate)) || Number(eurRate) <= 0) {
+      this.forexModalError.set('Taux EUR invalide.');
+      return;
+    }
     if (chfRate && (isNaN(Number(chfRate)) || Number(chfRate) <= 0)) {
-      this.forexError.set('Taux CHF invalide (nombre décimal positif requis).');
+      this.forexModalError.set('Taux CHF invalide.');
       return;
     }
+    if (mode === 'create' && this.allParams().some(p => p.paramKey === `RATE_EUR_${code}`)) {
+      this.forexModalError.set(`Un taux EUR pour "${code}" existe déjà. Éditez la ligne existante.`);
+      return;
+    }
+
     const ops = [
-      this.paramSvc.upsert({ paramKey: `RATE_EUR_${row.code}`, paramValue: eurRate, description: `1 ${row.code} en EUR` }),
+      this.paramSvc.upsert({ paramKey: `RATE_EUR_${code}`, paramValue: eurRate, description: `1 ${code} en EUR` }),
     ];
     if (chfRate) {
-      ops.push(this.paramSvc.upsert({ paramKey: `RATE_CHF_${row.code}`, paramValue: chfRate, description: `1 ${row.code} en CHF` }));
+      ops.push(this.paramSvc.upsert({ paramKey: `RATE_CHF_${code}`, paramValue: chfRate, description: `1 ${code} en CHF` }));
     }
-    this.isSavingForex.set(true);
-    this.forexError.set(null);
+    this.forexModalSaving.set(true);
+    this.forexModalError.set(null);
     forkJoin(ops).subscribe({
       next: results => {
         results.forEach(updated => {
@@ -304,63 +456,29 @@ export class AdminListComponent implements OnInit {
               : [...list, updated];
           });
         });
-        this.editingForex.set(null);
-        this.isSavingForex.set(false);
+        this.forexModalSaving.set(false);
+        this.forexModalRef?.close();
       },
       error: err => {
-        this.forexError.set(err.error?.message ?? 'Erreur de sauvegarde.');
-        this.isSavingForex.set(false);
-      },
-    });
-  }
-
-  addNewForexRate(): void {
-    const code    = this.newForexCode.trim().toUpperCase();
-    const eurRate = this.newForexEur.trim();
-    const chfRate = this.newForexChf.trim();
-
-    if (!code || !eurRate) {
-      this.forexAddError.set('Code devise et taux EUR sont requis.');
-      return;
-    }
-    if (isNaN(Number(eurRate)) || Number(eurRate) <= 0) {
-      this.forexAddError.set('Taux EUR invalide.');
-      return;
-    }
-    if (this.allParams().some(p => p.paramKey === `RATE_EUR_${code}`)) {
-      this.forexAddError.set(`Un taux EUR pour "${code}" existe déjà. Éditez la ligne existante.`);
-      return;
-    }
-    const ops = [
-      this.paramSvc.upsert({ paramKey: `RATE_EUR_${code}`, paramValue: eurRate, description: `1 ${code} en EUR` }),
-    ];
-    if (chfRate) {
-      if (isNaN(Number(chfRate)) || Number(chfRate) <= 0) {
-        this.forexAddError.set('Taux CHF invalide.');
-        return;
-      }
-      ops.push(this.paramSvc.upsert({ paramKey: `RATE_CHF_${code}`, paramValue: chfRate, description: `1 ${code} en CHF` }));
-    }
-    this.isAddingForex.set(true);
-    this.forexAddError.set(null);
-    forkJoin(ops).subscribe({
-      next: results => {
-        results.forEach(p => this.allParams.update(list => [...list, p]));
-        this.newForexCode = '';
-        this.newForexEur  = '';
-        this.newForexChf  = '';
-        this.showAddForex.set(false);
-        this.isAddingForex.set(false);
-      },
-      error: err => {
-        this.forexAddError.set(err.error?.message ?? 'Erreur.');
-        this.isAddingForex.set(false);
+        this.forexModalError.set(err.error?.message ?? 'Erreur de sauvegarde.');
+        this.forexModalSaving.set(false);
       },
     });
   }
 
   deleteForexParam(param: ParameterSetDto): void {
-    if (!confirm(`Supprimer le paramètre "${param.paramKey}" ?`)) return;
+    this.modal.open({
+      title: 'Supprimer le taux',
+      body:  `Supprimer le paramètre "${param.paramKey}" ?`,
+      size:  'sm',
+      buttons: [
+        { label: 'Annuler',   variant: 'secondary', action: r => r.close() },
+        { label: 'Supprimer', variant: 'primary',   action: r => { this.doDeleteForexParam(param); r.close(); } },
+      ],
+    });
+  }
+
+  private doDeleteForexParam(param: ParameterSetDto): void {
     this.paramSvc.delete(param.id).subscribe({
       next: () => this.allParams.update(list => list.filter(p => p.id !== param.id)),
       error: err => this.forexError.set(err.error?.message ?? 'Erreur de suppression.'),
@@ -379,6 +497,16 @@ export class AdminListComponent implements OnInit {
   forexApiSuccess     = signal<string | null>(null);
   forexApiStatus      = signal<ForexApiStatusDto | null>(null);
   forexApiStatusLoading = signal(false);
+
+  readonly forexProviderOptions: RadioOption[] = [
+    { value: 'frankfurter', label: 'Frankfurter', hint: 'Gratuit, sans clé API (données BCE)' },
+    { value: 'fixer',       label: 'Fixer.io',     hint: 'Clé API requise, taux EUR uniquement' },
+  ];
+  readonly forexProviderConfig: RadioGroupConfig = { label: 'Fournisseur' };
+  readonly forexAutoRefreshOptions: ToggleOptions = {
+    label: 'Rafraîchissement automatique',
+    hint:  'Chaque jour ouvré à 8h00',
+  };
 
   openForexApiTab(): void {
     this.activeTab.set('forex-api');

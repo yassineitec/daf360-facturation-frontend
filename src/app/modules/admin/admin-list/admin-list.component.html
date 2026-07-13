@@ -33,14 +33,17 @@
     <div class="main-tabs">
       <button class="main-tab" [class.active]="activeTab() === 'lists'"
         (click)="activeTab.set('lists')">
+        <span class="material-symbols-outlined tab-icon">checklist</span>
         Listes configurables
       </button>
       <button class="main-tab" [class.active]="activeTab() === 'forex'"
         (click)="activeTab.set('forex')">
+        <span class="material-symbols-outlined tab-icon">currency_exchange</span>
         Taux de change
       </button>
       <button class="main-tab" [class.active]="activeTab() === 'forex-api'"
         (click)="openForexApiTab()">
+        <span class="material-symbols-outlined tab-icon">api</span>
         API Forex
       </button>
     </div>
@@ -66,138 +69,61 @@
           <div class="banner-error">{{ listError() }}</div>
         }
 
-        @if (listLoading()) {
-          <div class="loading-state">Chargement des valeurs…</div>
-        }
+        <div class="section-header">
+          <h3 class="section-header-title">{{ activeListTypeLabel() }}</h3>
+          <daf-button label="Ajouter" variant="teal"
+            [options]="{ size: 'sm', iconStart: 'add' }"
+            (onClick)="openCreateValueModal()" />
+        </div>
 
-        @if (!listLoading()) {
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th style="width:120px">Code</th>
-                  <th>Libellé FR</th>
-                  <th>Libellé EN</th>
-                  <th class="text-center" style="width:90px">Défaut</th>
-                  <th class="text-center" style="width:90px">Statut</th>
-                  <th class="text-right"  style="width:110px">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (v of listValues(); track v.id) {
-                  @if (editMap()[v.id]; as patch) {
-                    <!-- Edit row -->
-                    <tr class="row-editing">
-                      <td><span class="code-pill">{{ v.code }}</span></td>
-                      <td>
-                        <input class="inline-input"
-                          [value]="patch.labelFr"
-                          (input)="patchEditFr(v.id, $any($event.target).value)">
-                      </td>
-                      <td>
-                        <input class="inline-input"
-                          [value]="patch.labelEn"
-                          (input)="patchEditEn(v.id, $any($event.target).value)">
-                      </td>
-                      <td class="text-center">
-                        <span class="star-default">{{ v.isDefault ? '★' : '' }}</span>
-                      </td>
-                      <td class="text-center">
-                        <span [class]="v.isActive ? 'badge-active' : 'badge-inactive'">
-                          {{ v.isActive ? 'Actif' : 'Inactif' }}
-                        </span>
-                      </td>
-                      <td>
-                        <div class="cell-actions">
-                          <button class="btn-save"
-                            (click)="saveEditValue(v)"
-                            [disabled]="valueSaving() === v.id">
-                            {{ valueSaving() === v.id ? '…' : 'Sauv.' }}
-                          </button>
-                          <button class="btn-icon" (click)="cancelEditValue(v.id)" title="Annuler">✕</button>
-                        </div>
-                      </td>
-                    </tr>
-                  } @else {
-                    <!-- Display row -->
-                    <tr [class.row-inactive]="!v.isActive">
-                      <td><span class="code-pill">{{ v.code }}</span></td>
-                      <td>{{ v.labelFr }}</td>
-                      <td class="cell-secondary">{{ v.labelEn }}</td>
-                      <td class="text-center">
-                        <span class="star-default">{{ v.isDefault ? '★' : '' }}</span>
-                      </td>
-                      <td class="text-center">
-                        <span [class]="v.isActive ? 'badge-active' : 'badge-inactive'">
-                          {{ v.isActive ? 'Actif' : 'Inactif' }}
-                        </span>
-                      </td>
-                      <td>
-                        <div class="cell-actions">
-                          <button class="btn-icon" title="Modifier" (click)="startEditValue(v)">✎</button>
-                          @if (v.isActive) {
-                            <button class="btn-icon btn-danger" title="Désactiver"
-                              (click)="deactivateValue(v)">✕</button>
-                          } @else {
-                            <button class="btn-icon btn-reactivate" title="Réactiver"
-                              (click)="reactivateValue(v)">↩</button>
-                          }
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                }
+        <daf-data-table [columns]="listColumns" [rows]="listRows()" [config]="listTableConfig()">
 
-                <!-- Empty state -->
-                @if (listValues().length === 0) {
-                  <tr>
-                    <td colspan="6" class="empty-cell">Aucune valeur configurée pour ce type.</td>
-                  </tr>
-                }
+          <ng-template dafCell="code" let-row>
+            <span class="code-pill">{{ row['code'] }}</span>
+          </ng-template>
 
-                <!-- Add new row -->
-                @if (showAddValue()) {
-                  <tr class="row-new">
-                    <td>
-                      <input class="inline-input" [(ngModel)]="newValue.code"
-                        placeholder="CODE" style="text-transform:uppercase">
-                    </td>
-                    <td>
-                      <input class="inline-input" [(ngModel)]="newValue.labelFr"
-                        placeholder="Libellé français">
-                    </td>
-                    <td>
-                      <input class="inline-input" [(ngModel)]="newValue.labelEn"
-                        placeholder="Libellé anglais">
-                    </td>
-                    <td class="text-center">
-                      <input type="checkbox" [(ngModel)]="newValue.isDefault" title="Valeur par défaut">
-                    </td>
-                    <td></td>
-                    <td>
-                      <div class="cell-actions">
-                        <button class="btn-save" (click)="createValue()" [disabled]="isCreatingValue()">
-                          {{ isCreatingValue() ? '…' : 'Créer' }}
-                        </button>
-                        <button class="btn-icon" (click)="showAddValue.set(false)">✕</button>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+          <ng-template dafCell="labelFr" let-row>
+            {{ row['labelFr'] }}
+          </ng-template>
 
-          @if (createValueError()) {
-            <div class="banner-error">{{ createValueError() }}</div>
-          }
+          <ng-template dafCell="labelEn" let-row>
+            <span class="cell-secondary">{{ row['labelEn'] }}</span>
+          </ng-template>
 
-          <div class="section-footer">
-            @if (!showAddValue()) {
-              <button class="btn-add" (click)="showAddValue.set(true); createValueError.set(null)">
-                + Ajouter une valeur
-              </button>
-            }
+          <ng-template dafCell="isDefault" let-row>
+            <span class="star-default">{{ row['isDefault'] ? '★' : '' }}</span>
+          </ng-template>
+
+          <ng-template dafCell="isActive" let-row>
+            <span [class]="row['isActive'] ? 'badge-active' : 'badge-inactive'">
+              {{ row['isActive'] ? 'Actif' : 'Inactif' }}
+            </span>
+          </ng-template>
+
+          <ng-template dafCell="_actions" let-row>
+            <div class="cell-actions">
+              <daf-button [options]="{ size: 'sm', variant: 'ghost', iconStart: 'edit' }"
+                (onClick)="openEditValueModal(row['_source'])" />
+              @if (row['isActive']) {
+                <daf-button [options]="{ size: 'sm', variant: 'danger', iconStart: 'close' }"
+                  (onClick)="deactivateValue(row['_source'])" />
+              } @else {
+                <daf-button [options]="{ size: 'sm', variant: 'teal', iconStart: 'restart_alt' }"
+                  (onClick)="reactivateValue(row['_source'])" />
+              }
+            </div>
+          </ng-template>
+
+        </daf-data-table>
+
+        @if (listTotalPages() > 1) {
+          <div class="table-pagination">
+            <daf-pagination
+              [currentPage]="listCurrentPage()"
+              [totalPages]="listTotalPages()"
+              [totalElements]="listValues().length"
+              [config]="paginationConfig"
+              (pageChange)="onListPageChange($event)" />
           </div>
         }
       </div>
@@ -220,126 +146,52 @@
           <div class="banner-error">{{ forexError() }}</div>
         }
 
-        @if (forexLoading()) {
-          <div class="loading-state">Chargement des taux…</div>
-        }
+        <div class="section-header">
+          <h3 class="section-header-title">Taux de change</h3>
+          <daf-button label="Ajouter" variant="teal"
+            [options]="{ size: 'sm', iconStart: 'add' }"
+            (onClick)="openCreateForexModal()" />
+        </div>
 
-        @if (!forexLoading()) {
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th style="width:100px">Devise</th>
-                  <th class="text-right" style="width:180px">1 devise → EUR</th>
-                  <th class="text-right" style="width:200px">1 devise → CHF</th>
-                  <th class="text-right" style="width:110px">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of forexRows(); track row.code) {
-                  @if (editingForex() === row.code) {
-                    <!-- Edit row -->
-                    <tr class="row-editing">
-                      <td><span class="code-pill">{{ row.code }}</span></td>
-                      <td>
-                        <input class="inline-input text-right"
-                          [(ngModel)]="editEurRate"
-                          type="number" step="0.000001" min="0.000001"
-                          placeholder="0.000000">
-                      </td>
-                      <td>
-                        <input class="inline-input text-right"
-                          [(ngModel)]="editChfRate"
-                          type="number" step="0.000001" min="0.000001"
-                          placeholder="Optionnel (auto EUR × 0.965)">
-                      </td>
-                      <td>
-                        <div class="cell-actions">
-                          <button class="btn-save" (click)="saveForex(row)"
-                            [disabled]="isSavingForex()">
-                            {{ isSavingForex() ? '…' : 'Sauv.' }}
-                          </button>
-                          <button class="btn-icon" (click)="cancelEditForex()">✕</button>
-                        </div>
-                      </td>
-                    </tr>
-                  } @else {
-                    <!-- Display row -->
-                    <tr>
-                      <td><span class="code-pill">{{ row.code }}</span></td>
-                      <td class="text-right mono-val">
-                        {{ row.eurParam?.paramValue ?? '—' }}
-                      </td>
-                      <td class="text-right">
-                        @if (row.chfParam) {
-                          <span class="mono-val">{{ row.chfParam.paramValue }}</span>
-                        } @else {
-                          <span class="cell-secondary" style="font-style:italic;font-size:0.75rem">
-                            auto {{ chfFallback(row) }}
-                          </span>
-                        }
-                      </td>
-                      <td>
-                        <div class="cell-actions">
-                          <button class="btn-icon" title="Modifier" (click)="startEditForex(row)">✎</button>
-                          @if (row.eurParam) {
-                            <button class="btn-icon btn-danger" title="Supprimer ce taux"
-                              (click)="deleteForexParam(row.eurParam)">✕</button>
-                          }
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                }
+        <daf-data-table [columns]="forexColumns" [rows]="forexTableRows()" [config]="forexTableConfig()">
 
-                <!-- Empty state -->
-                @if (forexRows().length === 0) {
-                  <tr>
-                    <td colspan="4" class="empty-cell">Aucun taux configuré.</td>
-                  </tr>
-                }
+          <ng-template dafCell="code" let-row>
+            <span class="code-pill">{{ row['code'] }}</span>
+          </ng-template>
 
-                <!-- Add new row -->
-                @if (showAddForex()) {
-                  <tr class="row-new">
-                    <td>
-                      <input class="inline-input" [(ngModel)]="newForexCode"
-                        placeholder="USD" style="text-transform:uppercase;width:70px">
-                    </td>
-                    <td>
-                      <input class="inline-input text-right" [(ngModel)]="newForexEur"
-                        type="number" step="0.000001" placeholder="0.000000">
-                    </td>
-                    <td>
-                      <input class="inline-input text-right" [(ngModel)]="newForexChf"
-                        type="number" step="0.000001" placeholder="Optionnel">
-                    </td>
-                    <td>
-                      <div class="cell-actions">
-                        <button class="btn-save" (click)="addNewForexRate()"
-                          [disabled]="isAddingForex()">
-                          {{ isAddingForex() ? '…' : 'Créer' }}
-                        </button>
-                        <button class="btn-icon"
-                          (click)="showAddForex.set(false); forexAddError.set(null)">✕</button>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+          <ng-template dafCell="eur" let-row>
+            <span class="mono-val">{{ row['eur'] }}</span>
+          </ng-template>
 
-          @if (forexAddError()) {
-            <div class="banner-error">{{ forexAddError() }}</div>
-          }
-
-          <div class="section-footer">
-            @if (!showAddForex()) {
-              <button class="btn-add" (click)="showAddForex.set(true); forexAddError.set(null)">
-                + Ajouter un taux
-              </button>
+          <ng-template dafCell="chf" let-row>
+            @if (row['chfAuto']) {
+              <span class="cell-secondary" style="font-style:italic;font-size:0.75rem">{{ row['chf'] }}</span>
+            } @else {
+              <span class="mono-val">{{ row['chf'] }}</span>
             }
+          </ng-template>
+
+          <ng-template dafCell="_actions" let-row>
+            <div class="cell-actions">
+              <daf-button [options]="{ size: 'sm', variant: 'ghost', iconStart: 'edit' }"
+                (onClick)="openEditForexModal(row['_source'])" />
+              @if (row['_source'].eurParam) {
+                <daf-button [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
+                  (onClick)="deleteForexParam(row['_source'].eurParam)" />
+              }
+            </div>
+          </ng-template>
+
+        </daf-data-table>
+
+        @if (forexTotalPages() > 1) {
+          <div class="table-pagination">
+            <daf-pagination
+              [currentPage]="forexCurrentPage()"
+              [totalPages]="forexTotalPages()"
+              [totalElements]="forexRows().length"
+              [config]="paginationConfig"
+              (pageChange)="onForexPageChange($event)" />
           </div>
         }
       </div>
@@ -365,112 +217,139 @@
         @if (!forexApiStatusLoading()) {
 
           <!-- Config card -->
-          <div class="config-card">
-            <h3 class="config-card-title">Configuration du fournisseur</h3>
+          <daf-section-card>
+            <div class="config-card-body">
+              <daf-section-title title="Configuration du fournisseur" />
 
-            <div class="config-row">
-              <label class="config-label">Fournisseur</label>
-              <div class="config-value">
-                <label class="radio-option">
-                  <input type="radio" name="provider" value="frankfurter"
-                    [checked]="forexApiProvider() === 'frankfurter'"
-                    (change)="forexApiProvider.set('frankfurter')">
-                  Frankfurter (gratuit, sans clé)
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="provider" value="fixer"
-                    [checked]="forexApiProvider() === 'fixer'"
-                    (change)="forexApiProvider.set('fixer')">
-                  Fixer.io (clé API requise, taux EUR uniquement)
-                </label>
-              </div>
-            </div>
+              <div class="config-stack">
+                <daf-radio-group
+                  [options]="forexProviderOptions"
+                  [(selected)]="forexApiProvider"
+                  [config]="forexProviderConfig" />
 
-            @if (forexApiProvider() === 'fixer') {
-              <div class="config-row">
-                <label class="config-label">Clé API Fixer</label>
-                <div class="config-value">
-                  @if (forexApiStatus()?.hasApiKey) {
-                    <p class="key-hint">Une clé est déjà configurée. Entrez une nouvelle valeur pour la remplacer.</p>
-                  }
-                  <input class="config-input" type="password"
+                @if (forexApiProvider() === 'fixer') {
+                  <daf-form-field
+                    [options]="{
+                      label: 'Clé API Fixer',
+                      type: 'password',
+                      placeholder: 'Votre clé API Fixer.io',
+                      hint: forexApiStatus()?.hasApiKey
+                        ? 'Une clé est déjà configurée. Entrez une nouvelle valeur pour la remplacer.'
+                        : undefined
+                    }"
                     [value]="forexApiKey()"
-                    (input)="forexApiKey.set($any($event.target).value)"
-                    placeholder="Votre clé API Fixer.io">
+                    (valueChange)="forexApiKey.set($any($event) ?? '')" />
+                }
+
+                <daf-form-field
+                  [options]="{
+                    label: 'Devises cibles',
+                    placeholder: 'TND,MAD,DZD  (laisser vide = auto-détection)',
+                    hint: 'Si vide, les devises sont détectées automatiquement depuis les taux existants (RATE_EUR_*).'
+                  }"
+                  [value]="forexApiCurrencies()"
+                  (valueChange)="forexApiCurrencies.set($any($event) ?? '')" />
+
+                <daf-toggle [(checked)]="forexApiAutoRefresh" [options]="forexAutoRefreshOptions" />
+
+                @if (forexApiError()) {
+                  <div class="banner-error">{{ forexApiError() }}</div>
+                }
+                @if (forexApiSuccess()) {
+                  <div class="banner-success">{{ forexApiSuccess() }}</div>
+                }
+
+                <div class="config-actions">
+                  <daf-button label="Sauvegarder la configuration" variant="teal"
+                    [options]="{ iconStart: 'save', loading: forexApiSaving(), disabled: forexApiSaving() }"
+                    (onClick)="saveForexApiConfig()" />
                 </div>
               </div>
-            }
-
-            <div class="config-row">
-              <label class="config-label">Devises cibles</label>
-              <div class="config-value">
-                <input class="config-input" type="text"
-                  [value]="forexApiCurrencies()"
-                  (input)="forexApiCurrencies.set($any($event.target).value)"
-                  placeholder="TND,MAD,DZD  (laisser vide = auto-détection)">
-                <p class="config-hint">
-                  Si vide, les devises sont détectées automatiquement depuis les taux existants (RATE_EUR_*).
-                </p>
-              </div>
             </div>
-
-            <div class="config-row">
-              <label class="config-label">Rafraîchissement auto</label>
-              <div class="config-value">
-                <label class="toggle-label">
-                  <input type="checkbox"
-                    [checked]="forexApiAutoRefresh()"
-                    (change)="forexApiAutoRefresh.set($any($event.target).checked)">
-                  Activer (chaque jour ouvré à 8h00)
-                </label>
-              </div>
-            </div>
-
-            @if (forexApiError()) {
-              <div class="banner-error">{{ forexApiError() }}</div>
-            }
-            @if (forexApiSuccess()) {
-              <div class="banner-success">{{ forexApiSuccess() }}</div>
-            }
-
-            <div class="config-actions">
-              <button class="btn-save-lg" (click)="saveForexApiConfig()" [disabled]="forexApiSaving()">
-                {{ forexApiSaving() ? 'Sauvegarde…' : 'Sauvegarder la configuration' }}
-              </button>
-            </div>
-          </div>
+          </daf-section-card>
 
           <!-- Status & manual refresh card -->
-          <div class="config-card">
-            <h3 class="config-card-title">Rafraîchissement manuel</h3>
+          <daf-section-card>
+            <div class="config-card-body">
+              <daf-section-title title="Rafraîchissement manuel" />
 
-            @if (forexApiStatus()?.lastRefreshAt) {
-              <div class="status-row">
-                <span class="status-label">Dernier rafraîchissement</span>
-                <span class="status-value">{{ forexApiStatus()!.lastRefreshAt }}</span>
-                @if (forexApiStatus()!.lastRefreshStatus?.startsWith('success')) {
-                  <span class="badge-success-sm">OK</span>
-                } @else if (forexApiStatus()!.lastRefreshStatus?.startsWith('error')) {
-                  <span class="badge-error-sm">Erreur</span>
+              <div class="config-stack">
+                @if (forexApiStatus()?.lastRefreshAt) {
+                  <div class="status-row">
+                    <span class="status-label">Dernier rafraîchissement</span>
+                    <span class="status-value">{{ forexApiStatus()!.lastRefreshAt }}</span>
+                    @if (forexApiStatus()!.lastRefreshStatus?.startsWith('success')) {
+                      <daf-badge label="OK" [options]="{ variant: 'success', size: 'sm' }" />
+                    } @else if (forexApiStatus()!.lastRefreshStatus?.startsWith('error')) {
+                      <daf-badge label="Erreur" [options]="{ variant: 'danger', size: 'sm' }" />
+                    }
+                  </div>
+                  @if (forexApiStatus()!.lastRefreshStatus?.startsWith('error')) {
+                    <p class="status-error-detail">{{ forexApiStatus()!.lastRefreshStatus!.substring(6) }}</p>
+                  }
+                } @else {
+                  <p class="config-hint">Aucun rafraîchissement effectué.</p>
                 }
-              </div>
-              @if (forexApiStatus()!.lastRefreshStatus?.startsWith('error')) {
-                <p class="status-error-detail">{{ forexApiStatus()!.lastRefreshStatus!.substring(6) }}</p>
-              }
-            } @else {
-              <p class="config-hint">Aucun rafraîchissement effectué.</p>
-            }
 
-            <div class="config-actions">
-              <button class="btn-refresh" (click)="triggerForexRefresh()" [disabled]="forexRefreshing()">
-                {{ forexRefreshing() ? 'Rafraîchissement en cours…' : 'Rafraîchir les taux maintenant' }}
-              </button>
+                <div class="config-actions">
+                  <daf-button label="Rafraîchir les taux maintenant" variant="ghost"
+                    [options]="{ iconStart: 'refresh', loading: forexRefreshing(), disabled: forexRefreshing() }"
+                    (onClick)="triggerForexRefresh()" />
+                </div>
+              </div>
             </div>
-          </div>
+          </daf-section-card>
 
         }
       </div>
     }
 
   }
+
+  <!-- Add/edit modal body — Listes configurables -->
+  <ng-template #valueFormTpl>
+    <div class="modal-form">
+      @if (valueModalError()) {
+        <div class="banner-error">{{ valueModalError() }}</div>
+      }
+      <label class="form-label">Code</label>
+      @if (valueModalMode() === 'create') {
+        <input class="inline-input" [(ngModel)]="valueForm.code"
+          placeholder="CODE" style="text-transform:uppercase">
+      } @else {
+        <span class="code-pill">{{ valueForm.code }}</span>
+      }
+      <label class="form-label">Libellé FR</label>
+      <input class="inline-input" [(ngModel)]="valueForm.labelFr" placeholder="Libellé français">
+      <label class="form-label">Libellé EN</label>
+      <input class="inline-input" [(ngModel)]="valueForm.labelEn" placeholder="Libellé anglais">
+      @if (valueModalMode() === 'create') {
+        <label class="form-check">
+          <input type="checkbox" [(ngModel)]="valueForm.isDefault"> Valeur par défaut
+        </label>
+      }
+    </div>
+  </ng-template>
+
+  <!-- Add/edit modal body — Taux de change -->
+  <ng-template #forexFormTpl>
+    <div class="modal-form">
+      @if (forexModalError()) {
+        <div class="banner-error">{{ forexModalError() }}</div>
+      }
+      <label class="form-label">Devise</label>
+      @if (forexModalMode() === 'create') {
+        <input class="inline-input" [(ngModel)]="forexForm.code"
+          placeholder="USD" style="text-transform:uppercase">
+      } @else {
+        <span class="code-pill">{{ forexForm.code }}</span>
+      }
+      <label class="form-label">1 devise → EUR</label>
+      <input class="inline-input" [(ngModel)]="forexForm.eur"
+        type="number" step="0.000001" placeholder="0.000000">
+      <label class="form-label">1 devise → CHF (optionnel)</label>
+      <input class="inline-input" [(ngModel)]="forexForm.chf"
+        type="number" step="0.000001" placeholder="Optionnel (auto EUR × 0.965)">
+    </div>
+  </ng-template>
 </div>
