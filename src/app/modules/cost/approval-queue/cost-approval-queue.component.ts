@@ -5,19 +5,19 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { CostService } from '../cost.service';
 import { ClientService } from '../../clients/client.service';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { SearchBarComponent } from '../../../shared/search-bar.component';
 import {
   CostLineDto,
   formatAmount,
 } from '../cost.model';
 import {
-  ModalService, ModalRef, ButtonComponent, CardComponent,
-  StatusBadgeComponent, FormFieldComponent, BadgeOptions,
+  ModalService, ModalRef, BadgeOptions,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-cost-approval-queue',
   standalone: true,
-  imports: [PermissionDirective, ButtonComponent, CardComponent, StatusBadgeComponent, FormFieldComponent],
+  imports: [PermissionDirective, SearchBarComponent],
   templateUrl: './cost-approval-queue.component.html',
   styleUrl: './cost-approval-queue.component.scss',
 })

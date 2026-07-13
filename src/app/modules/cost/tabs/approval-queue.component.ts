@@ -7,11 +7,12 @@ import {
   CostLineDto, COST_STATUS_CONFIG, CostLineStatus,
 } from '../cost.model';
 import { ApproveModalComponent, ApproveAction } from '../modals/approve-modal.component';
+import { SearchBarComponent } from '../../../shared/search-bar.component';
 
 @Component({
   selector: 'app-approval-queue',
   standalone: true,
-  imports: [ApproveModalComponent],
+  imports: [ApproveModalComponent, SearchBarComponent],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
 })

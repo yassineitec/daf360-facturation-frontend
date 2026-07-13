@@ -7,11 +7,11 @@
       <p class="ap-header__sub">Flux de travail consolidé pour les validations financières.</p>
     </div>
     <div class="ap-header__actions">
-      <div class="ap-search-wrap">
-        <daf-form-field
+      <div class="ap-search-wrap" style="width: 280px">
+        <app-search-bar
+          placeholder="ID, titre, ou montant..."
           [value]="searchTerm()"
-          (valueChange)="searchTerm.set($any($event) || '')"
-          [options]="{type:'search', placeholder:'ID, titre, ou montant...', fullWidth:true}" />
+          (valueChange)="searchTerm.set($event)" />
       </div>
       <daf-button [options]="{variant:'ghost', label:'Filtres', iconStart:'tune'}" />
     </div>

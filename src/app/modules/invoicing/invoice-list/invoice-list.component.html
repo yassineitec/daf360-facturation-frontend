@@ -90,11 +90,10 @@
     <div class="search-bar-row">
 
       <div class="search-wrap">
-        <span class="material-symbols-outlined search-icon">search</span>
-        <input class="search-input" type="text"
+        <app-search-bar
           [placeholder]="'INVOICING.LIST.SEARCH' | translate"
           [value]="searchText()"
-          (input)="searchText.set(getInputValue($event)); onSearch()" />
+          (valueChange)="searchText.set($event); onSearch()" />
       </div>
 
       <div class="filter-group">
