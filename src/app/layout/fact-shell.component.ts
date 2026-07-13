@@ -1,12 +1,10 @@
-import { Component, Injector, OnInit, computed, inject } from '@angular/core';
+import { Component, Injector, computed, inject } from '@angular/core';
 import { Router, NavigationEnd, RouterOutlet, ActivatedRoute } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SideNavComponent } from '@khalilrebhiitec/daf360';
 import type { NavItem, SideNavConfig } from '@khalilrebhiitec/daf360';
 import { UserStore } from '../core/user.store';
-import { RemoteStylesService } from '../core/remote-styles.service';
-import { environment } from '../../environments/environment';
 
 interface AppNavDef {
   id: string;
@@ -37,16 +35,13 @@ const APP_NAV_DEFS: AppNavDef[] = [
   templateUrl: './fact-shell.component.html',
   styleUrl: './fact-shell.component.scss',
 })
-export class FactShellComponent implements OnInit {
+export class FactShellComponent {
   private readonly userStore      = inject(UserStore);
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
-  private readonly remoteStyles   = inject(RemoteStylesService);
   private readonly injector       = inject(Injector);
-
-  ngOnInit(): void {
-    this.remoteStyles.injectStyles(environment.stylesUrl);
-  }
+  // styles.css is injected + awaited by the shell (ensureRemoteStyles) before
+  // this route activates — no runtime injection here.
 
   readonly activeRoute = toSignal(
     this.router.events.pipe(
