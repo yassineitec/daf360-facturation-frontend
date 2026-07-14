@@ -196,11 +196,7 @@ $tertiary-hex: #00c1ad;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 14px;
-  background: $surface;
-  border: 1px solid $border-soft;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-card;
+  padding: 10px 0;
 
   .panel-nav__back { flex: 1; }
   .panel-nav__next { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex: 1; }

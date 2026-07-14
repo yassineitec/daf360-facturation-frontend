@@ -251,11 +251,7 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 14px;
-  background: $surface;
-  border: 1px solid $border-soft;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-card;
+  padding: 10px 0;
 
   .panel-nav__back,
   .panel-nav__next { flex: 1; }

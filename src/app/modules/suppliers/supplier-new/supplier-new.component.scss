@@ -115,15 +115,17 @@ $tertiary-hex: #00c1ad;
   }
 
   &__title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #0b1c30;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #3e4945;
     margin: 0 0 3px;
     line-height: 1.3;
   }
 
   &__sub {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     color: #64748b;
     margin: 0;
   }
@@ -320,11 +322,7 @@ textarea.form-input {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 14px;
-  background: $surface;
-  border: 1px solid $border-soft;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-card;
+  padding: 10px 0;
 
   .panel-nav__back,
   .panel-nav__next { flex: 1; }
@@ -513,7 +511,6 @@ textarea.form-input {
 
   .card-head        { padding: 14px 16px 12px; gap: 10px; }
   .card-head__icon  { width: 36px; height: 36px; .material-symbols-outlined { font-size: 18px; } }
-  .card-head__title { font-size: 0.95rem; }
 
   .step-body  { padding: 16px; }
   .nav-footer { padding: 14px 16px; }

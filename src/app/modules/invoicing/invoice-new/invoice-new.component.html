@@ -88,11 +88,11 @@
       <div class="panel-nav">
         @if (step() > 1) {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', label: ('INVOICING.NEW.BACK' | translate), iconStart: 'arrow_back' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('INVOICING.NEW.BACK' | translate), iconStart: 'arrow_back' }"
             (onClick)="goPrev()" />
         } @else {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', label: ('INVOICING.NEW.CANCEL' | translate) }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('INVOICING.NEW.CANCEL' | translate), iconStart: 'close' }"
             (onClick)="cancel()" />
         }
         <div class="panel-nav__next">
@@ -108,8 +108,9 @@
           }
           <daf-button
             [options]="{
-              variant: 'secondary',
+              variant: 'teal',
               pill: true,
+              fullWidth: true,
               label: step() === 4 ? ('INVOICING.NEW.SUBMIT' | translate) : ('INVOICING.NEW.NEXT' | translate),
               iconEnd: step() < 4 ? 'arrow_forward' : 'send',
               loading: isSaving(),

@@ -62,24 +62,25 @@
       <div class="panel-nav">
         @if (currentStep() > 1) {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', label: 'Précédent', iconStart: 'arrow_back' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Précédent', iconStart: 'arrow_back' }"
             (onClick)="goPrev()" />
         } @else {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', label: 'Annuler' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Annuler', iconStart: 'close' }"
             (onClick)="goBack()" />
         }
         @if (currentStep() < steps.length) {
           <daf-button class="panel-nav__next"
-            [options]="{ variant: 'secondary', label: 'Suivant', iconEnd: 'arrow_forward', pill: true }"
+            [options]="{ variant: 'teal', label: 'Suivant', iconEnd: 'arrow_forward', pill: true, fullWidth: true }"
             (onClick)="goNext()" />
         } @else {
           <daf-button class="panel-nav__next"
             [options]="{
-              variant: 'secondary',
+              variant: 'teal',
               label: 'Créer le client',
               iconStart: 'person_add',
               pill: true,
+              fullWidth: true,
               loading: isSaving(),
               disabled: isSaving()
             }"

@@ -234,6 +234,11 @@ $deep-blue:  #164B60;
   gap: 16px;
   position: sticky;
   top: 24px;
+  // Align the nav buttons with the form card's top edge instead of the page
+  // title — .form-area has a .page-head (breadcrumb + h1) above its card
+  // that the sidebar has no equivalent for. Matches the other "Nouveau ..."
+  // wizards (supplier/client/invoice), which already use this same offset.
+  padding-top: 72px;
 }
 
 // ── Panel nav buttons ─────────────────────────────────────────────────────────
@@ -242,11 +247,7 @@ $deep-blue:  #164B60;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 14px;
-  background: $surface;
-  border: 1px solid $border-soft;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-card;
+  padding: 10px 0;
 
   .panel-nav__back,
   .panel-nav__next { flex: 1; }

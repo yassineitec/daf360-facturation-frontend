@@ -121,17 +121,18 @@
       <div class="panel-nav">
         @if (currentStep() > (editMode() ? 2 : 1)) {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
             (onClick)="goPrev()" />
         } @else {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', label: stepperConfig().cancelLabel }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: stepperConfig().cancelLabel, iconStart: 'close' }"
             (onClick)="cancelWizard()" />
         }
         <daf-button class="panel-nav__next"
           [options]="{
-            variant: 'secondary',
+            variant: 'teal',
             pill: true,
+            fullWidth: true,
             label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
             iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
             loading: isSaving(),

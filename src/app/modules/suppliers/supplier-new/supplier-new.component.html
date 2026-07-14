@@ -148,17 +148,18 @@
       <div class="panel-nav">
         @if (step() > 1) {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', label: 'Retour', iconStart: 'arrow_back' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Retour', iconStart: 'arrow_back' }"
             (onClick)="goPrev()" />
         } @else {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', label: 'Annuler' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Annuler', iconStart: 'close' }"
             (onClick)="cancel()" />
         }
         <daf-button class="panel-nav__next"
           [options]="{
-            variant: 'secondary',
+            variant: 'teal',
             pill: true,
+            fullWidth: true,
             label: step() === 3 ? 'Créer le fournisseur' : 'Suivant',
             iconEnd: step() < 3 ? 'arrow_forward' : undefined,
             iconStart: step() === 3 ? 'business' : undefined,
