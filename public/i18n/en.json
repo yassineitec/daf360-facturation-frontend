@@ -598,8 +598,8 @@
         "NOTES": "Notes"
       },
       "SECTIONS": {
-        "BUDGET_TS": "Budget & Service orders",
-        "NEW_TS": "New order",
+        "BUDGET_TS": "Budget & Additional Work",
+        "NEW_TS": "New Additional Work",
         "SUBCONTRACTING": "Subcontracting",
         "BILLING": "Billing",
         "STUB": "Section under development.",
