@@ -8,13 +8,14 @@
 
       <!-- ── Page header ───────────────────────────────────────────── -->
       <div class="page-head">
-        <a [routerLink]="cancelRoute()" class="back-btn">
-          <span class="material-symbols-outlined">arrow_back</span>
-        </a>
-        <div>
-          <h1 class="page-title">{{ editMode() ? 'Modifier l\'affaire' : 'Nouvelle affaire' }}</h1>
-          <p class="page-sub">Suivez les étapes pour créer et soumettre votre affaire</p>
-        </div>
+        <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
+          <a class="font-medium hover:underline transition-colors" [routerLink]="cancelRoute()">
+            Affaires
+          </a>
+          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          <span class="font-medium" style="color:#50717b">{{ editMode() ? 'Modifier l\'affaire' : 'Nouvelle affaire' }}</span>
+        </nav>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ editMode() ? 'Modifier l\'affaire' : 'Nouvelle affaire' }}</h1>
       </div>
 
       <!-- ── Form card ────────────────────────────────────────────── -->
@@ -97,31 +98,6 @@
           </div>
         }
 
-        <!-- Navigation footer -->
-        <div class="nav-footer">
-          <div>
-            @if (currentStep() > (editMode() ? 2 : 1)) {
-              <daf-button
-                [options]="{ variant: 'ghost', label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
-                (onClick)="goPrev()" />
-            } @else {
-              <daf-button
-                [options]="{ variant: 'ghost', label: stepperConfig().cancelLabel }"
-                (onClick)="cancelWizard()" />
-            }
-          </div>
-          <daf-button
-            [options]="{
-              variant: 'secondary',
-              pill: true,
-              label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
-              iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
-              loading: isSaving(),
-              disabled: !canGoNext() || isSaving()
-            }"
-            (onClick)="goNext()" />
-        </div><!-- /nav-footer -->
-
       </div><!-- /form-card -->
 
       <!-- Brouillon footer -->
@@ -141,11 +117,36 @@
     <!-- ══════════════════════════════════════════════════════════════ -->
     <aside class="sidebar">
 
+      <!-- Boutons navigation -->
+      <div class="panel-nav">
+        @if (currentStep() > (editMode() ? 2 : 1)) {
+          <daf-button class="panel-nav__back"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
+            (onClick)="goPrev()" />
+        } @else {
+          <daf-button class="panel-nav__back"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: stepperConfig().cancelLabel, iconStart: 'close' }"
+            (onClick)="cancelWizard()" />
+        }
+        <daf-button class="panel-nav__next"
+          [options]="{
+            variant: 'teal',
+            pill: true,
+            fullWidth: true,
+            label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
+            iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
+            loading: isSaving(),
+            disabled: !canGoNext() || isSaving()
+          }"
+          (onClick)="goNext()" />
+      </div>
+
       <!-- Progression -->
       <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
         <div class="panel-header">
           <p class="panel__label">Progression</p>
         </div>
+
         <div class="panel-body">
           <div class="step-list">
             @for (step of wizardSteps; track $index; let i = $index) {
@@ -193,15 +194,6 @@
           </div>
         </div>
       </daf-card>
-
-      <!-- Conseil -->
-      <div class="tips-panel">
-        <div class="tips-panel__head">
-          <span class="material-symbols-outlined">lightbulb</span>
-          <span>Conseil</span>
-        </div>
-        <p class="tips-panel__text">{{ stepTip() }}</p>
-      </div>
 
     </aside><!-- /sidebar -->
 

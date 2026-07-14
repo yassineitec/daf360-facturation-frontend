@@ -1,6 +1,8 @@
 .reconciliation-page {
   padding: 1.5rem 2rem;
   max-width: 1600px;
+
+  @media (max-width: 768px) { padding: 1rem; }
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -64,6 +66,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 1rem;
 
   .panel-title { margin-bottom: 0; }

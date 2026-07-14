@@ -9,71 +9,36 @@
   <!-- ── KPI Cards ─────────────────────────────────────────────────────────── -->
   <div class="kpi-section">
 
-    <!-- Encaissé ce mois -->
-    <div class="glass-card rounded-2xl p-4 flex flex-col justify-between" style="min-height:108px">
-      <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">{{ 'HOME.KPI.COLLECTED_TITLE' | translate }}</span>
-        <div class="kpi-icon icon--primary">
-          <span class="material-symbols-outlined">trending_up</span>
-        </div>
+    <daf-card [options]="kpiOpts.collected">
+      <div class="kpi-text">
+        <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.COLLECTED_TITLE' | translate }}</p>
+        <p class="text-headline-lg text-on-surface font-bold kpi-c-green">{{ loadingStats() ? '…' : fmt(stats()?.encaisseThisMoisMontant, stats()?.devise) }}</p>
       </div>
-      <div>
-        @if (loadingStats()) { <div class="skeleton-val"></div> }
-        @else { <p class="text-xl font-price-display text-on-surface font-bold">{{ fmt(stats()?.encaisseThisMoisMontant, stats()?.devise) }}</p> }
-        <p class="text-[10px] font-bold mt-1 kpi-sub-primary">{{ 'HOME.KPI.COLLECTED_SUB' | translate }}</p>
-      </div>
-    </div>
+    </daf-card>
 
-    <!-- En attente -->
-    <div class="glass-card rounded-2xl p-4 flex flex-col justify-between" style="min-height:108px">
-      <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">{{ 'HOME.KPI.PENDING_TITLE' | translate }}</span>
-        <div class="kpi-icon icon--secondary">
-          <span class="material-symbols-outlined">schedule</span>
-        </div>
+    <daf-card [options]="kpiOpts.pending">
+      <div class="kpi-text">
+        <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.PENDING_TITLE' | translate }}</p>
+        <p class="text-headline-lg text-on-surface font-bold">{{ loadingStats() ? '…' : fmt(stats()?.enAttenteMontant, stats()?.devise) }}</p>
       </div>
-      <div>
-        @if (loadingStats()) { <div class="skeleton-val"></div> }
-        @else { <p class="text-xl font-price-display text-on-surface font-bold">{{ fmt(stats()?.enAttenteMontant, stats()?.devise) }}</p> }
-        <p class="text-[10px] text-slate-500 font-bold mt-1">{{ 'HOME.KPI.PENDING_SUB' | translate }}</p>
-      </div>
-    </div>
+    </daf-card>
 
-    <!-- En retard -->
-    <div class="glass-card rounded-2xl p-4 flex flex-col justify-between" style="min-height:108px">
-      <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">{{ 'HOME.KPI.OVERDUE_TITLE' | translate }}</span>
-        <div class="kpi-icon icon--error">
-          <span class="material-symbols-outlined">warning</span>
-        </div>
+    <daf-card [options]="kpiOpts.overdue">
+      <div class="kpi-text">
+        <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.OVERDUE_TITLE' | translate }}</p>
+        <p class="text-headline-lg font-bold kpi-c-red">{{ loadingStats() ? '…' : fmt(stats()?.enRetardMontant, stats()?.devise) }}</p>
+        @if (stats() && stats()!.enRetardCount > 0) {
+          <p class="text-body-sm kpi-c-red">{{ stats()!.enRetardCount }} facture(s)</p>
+        }
       </div>
-      <div>
-        @if (loadingStats()) { <div class="skeleton-val"></div> }
-        @else { <p class="text-xl font-price-display font-bold kpi-val-error">{{ fmt(stats()?.enRetardMontant, stats()?.devise) }}</p> }
-        <p class="text-[10px] font-bold mt-1 kpi-sub-error">
-          @if ((stats()?.enRetardCount ?? 0) > 0) {
-            {{ 'HOME.KPI.OVERDUE_COUNT' | translate: { count: stats()?.enRetardCount } }}
-          } @else {
-            {{ 'HOME.KPI.NO_DELAY' | translate }}
-          }
-        </p>
-      </div>
-    </div>
+    </daf-card>
 
-    <!-- Délai moyen -->
-    <div class="glass-card rounded-2xl p-4 flex flex-col justify-between" style="min-height:108px">
-      <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex-1 pr-2">{{ 'HOME.KPI.DSO_TITLE' | translate }}</span>
-        <div class="kpi-icon icon--amber">
-          <span class="material-symbols-outlined">timer</span>
-        </div>
+    <daf-card [options]="kpiOpts.dso">
+      <div class="kpi-text">
+        <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.DSO_TITLE' | translate }}</p>
+        <p class="text-headline-lg font-bold kpi-c-amber">{{ loadingStats() ? '…' : (stats()?.delaiMoyenPaiement != null ? stats()!.delaiMoyenPaiement.toFixed(0) + ' j' : '—') }}</p>
       </div>
-      <div>
-        @if (loadingStats()) { <div class="skeleton-val"></div> }
-        @else { <p class="text-xl font-price-display text-on-surface font-bold">{{ stats()?.delaiMoyenPaiement != null ? stats()!.delaiMoyenPaiement.toFixed(0) + ' j' : '—' }}</p> }
-        <p class="text-[10px] font-bold mt-1 kpi-sub-tertiary">{{ 'HOME.KPI.DSO_SUB' | translate }}</p>
-      </div>
-    </div>
+    </daf-card>
 
   </div>
 
@@ -81,49 +46,17 @@
   <div class="modules-grid">
 
     @for (mod of visibleModules(); track mod.path) {
-      <div class="glass-card rounded-2xl p-6 cursor-pointer mod-card"
-           [class.mod-card--wide]="mod.wide"
-           (click)="navigateTo(mod.path)">
+      <daf-card
+        class="mod-card"
+        [class.mod-card--wide]="mod.wide"
+        [options]="moduleCardOpts[mod.path]"
+        (cardClick)="navigateTo(mod.path)">
 
-        @if (mod.wide) {
-          <!-- Wide layout (Trésorerie) -->
-          <div class="flex items-center gap-5 flex-wrap">
-            <div [class]="'w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-300 icon--' + mod.iconVariant">
-              <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">{{ mod.icon }}</span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <h4 class="font-title-md text-title-md mod-card__title mb-1">{{ mod.labelKey | translate }}</h4>
-              <p class="font-body-sm text-body-sm mod-card__desc">{{ mod.descKey | translate }}</p>
-            </div>
-            <div class="text-right shrink-0">
-              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">{{ 'HOME.MODULES.TREASURY_BALANCE' | translate }}</p>
-              <p class="mod-card__wide-value">—</p>
-            </div>
-          </div>
-        } @else {
-          <!-- Standard layout -->
-          <div [class]="'w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors duration-300 icon--' + mod.iconVariant">
-            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">{{ mod.icon }}</span>
-          </div>
-          <h4 class="font-title-md text-title-md mod-card__title mb-2">{{ mod.labelKey | translate }}</h4>
-          <p class="font-body-sm text-body-sm mod-card__desc flex-1">{{ mod.descKey | translate }}</p>
-          <div class="mt-4 pt-4 border-t border-outline-variant/10 flex justify-between items-center">
-            @if (mod.path === 'invoicing') {
-              @if ((pendingCount() ?? 0) > 0) {
-                <span class="text-xs font-bold stat--primary">{{ 'HOME.MODULES.TO_VALIDATE' | translate: { count: pendingCount() } }}</span>
-              } @else {
-                <span class="text-xs text-slate-400">—</span>
-              }
-            } @else if (mod.statKey) {
-              <span class="text-xs font-bold" [class]="mod.statClass">{{ mod.statKey | translate }}</span>
-            } @else {
-              <span></span>
-            }
-            <span class="material-symbols-outlined text-sm text-outline mod-card__arrow">arrow_forward</span>
-          </div>
+        @if (mod.path === 'invoicing' && (pendingCount() ?? 0) > 0) {
+          <p class="mod-stat">{{ 'HOME.MODULES.TO_VALIDATE' | translate: { count: pendingCount() } }}</p>
         }
 
-      </div>
+      </daf-card>
     }
 
   </div>

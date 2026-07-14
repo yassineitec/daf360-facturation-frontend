@@ -99,46 +99,44 @@
               Taux d'avancement (AV) — {{ pendingTaux().length }}
             </div>
             <div class="table-wrap">
-              <table class="aq-table">
-                <thead>
-                  <tr>
-                    <th>Affaire</th>
-                    <th class="th-right">Taux</th>
-                    <th class="th-right">Valeur</th>
-                    <th>Soumis le</th>
-                    <th class="th-actions"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (t of pendingTaux(); track t.id) {
-                    <tr>
-                      <td>
-                        <a [routerLink]="['/fact/affaires', t.affaireId]" class="cell-link">
-                          {{ t.affaireRef }}
-                        </a>
-                        <span class="cell-sub">{{ t.affaireIntitule }}</span>
-                      </td>
-                      <td class="td-right">
-                        <span class="cell-bold">{{ t.taux }}%</span>
-                      </td>
-                      <td class="td-right">{{ fmtAmt(t.valeurCalculee) }}</td>
-                      <td class="cell-muted">{{ fmtDate(t.soumisAt) }}</td>
-                      <td class="td-actions">
-                        <div class="action-btns">
-                          <button class="act-btn act-btn--green" (click)="doValidateTaux(t.id)">
-                            <span class="material-symbols-outlined">check_circle</span>
-                            Valider
-                          </button>
-                          <button class="act-btn act-btn--red" (click)="openRfRefuseModal(t.id, 'taux')">
-                            <span class="material-symbols-outlined">block</span>
-                            Refuser
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+              <daf-data-table
+                [columns]="tauxColumns"
+                [rows]="tauxRows()"
+                [config]="tableConfig()">
+
+                <ng-template dafCell="affaire" let-row>
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link">
+                    {{ row['affaireRef'] }}
+                  </a>
+                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="taux" let-row>
+                  <span class="cell-bold">{{ row['taux'] }}%</span>
+                </ng-template>
+
+                <ng-template dafCell="valeur" let-row>
+                  {{ row['valeur'] }}
+                </ng-template>
+
+                <ng-template dafCell="soumis" let-row>
+                  <span class="cell-muted">{{ row['soumis'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="_actions" let-row>
+                  <div class="action-btns">
+                    <button class="act-btn act-btn--green" (click)="doValidateTaux(row['id'])">
+                      <span class="material-symbols-outlined">check_circle</span>
+                      Valider
+                    </button>
+                    <button class="act-btn act-btn--red" (click)="openRfRefuseModal(row['id'], 'taux')">
+                      <span class="material-symbols-outlined">block</span>
+                      Refuser
+                    </button>
+                  </div>
+                </ng-template>
+
+              </daf-data-table>
             </div>
           }
 
@@ -149,46 +147,40 @@
               Jalons (JAL) — {{ pendingJalons().length }}
             </div>
             <div class="table-wrap">
-              <table class="aq-table">
-                <thead>
-                  <tr>
-                    <th>Affaire</th>
-                    <th>Jalon</th>
-                    <th class="th-right">Montant</th>
-                    <th>Échéance</th>
-                    <th class="th-actions"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (j of pendingJalons(); track j.id) {
-                    <tr>
-                      <td>
-                        <a [routerLink]="['/fact/affaires', j.affaireId]" class="cell-link">
-                          {{ j.affaireRef }}
-                        </a>
-                        <span class="cell-sub">{{ j.affaireIntitule }}</span>
-                      </td>
-                      <td>{{ j.label }}</td>
-                      <td class="td-right">
-                        <span class="cell-bold">{{ fmtAmt(j.montant) }}</span>
-                      </td>
-                      <td class="cell-muted">{{ fmtDate(j.echeance) }}</td>
-                      <td class="td-actions">
-                        <div class="action-btns">
-                          <button class="act-btn act-btn--green" (click)="doValidateJalon(j.id)">
-                            <span class="material-symbols-outlined">check_circle</span>
-                            Valider
-                          </button>
-                          <button class="act-btn act-btn--red" (click)="openRfRefuseModal(j.id, 'jalon')">
-                            <span class="material-symbols-outlined">block</span>
-                            Refuser
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+              <daf-data-table
+                [columns]="jalonColumns"
+                [rows]="jalonRows()"
+                [config]="tableConfig()">
+
+                <ng-template dafCell="affaire" let-row>
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link">
+                    {{ row['affaireRef'] }}
+                  </a>
+                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="montant" let-row>
+                  <span class="cell-bold">{{ row['montant'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="echeance" let-row>
+                  <span class="cell-muted">{{ row['echeance'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="_actions" let-row>
+                  <div class="action-btns">
+                    <button class="act-btn act-btn--green" (click)="doValidateJalon(row['id'])">
+                      <span class="material-symbols-outlined">check_circle</span>
+                      Valider
+                    </button>
+                    <button class="act-btn act-btn--red" (click)="openRfRefuseModal(row['id'], 'jalon')">
+                      <span class="material-symbols-outlined">block</span>
+                      Refuser
+                    </button>
+                  </div>
+                </ng-template>
+
+              </daf-data-table>
             </div>
           }
 
@@ -210,61 +202,57 @@
           </div>
         } @else {
           <div class="table-wrap">
-            <table class="aq-table">
-              <thead>
-                <tr>
-                  <th>Affaire</th>
-                  <th>Référence</th>
-                  <th>Période</th>
-                  <th class="th-right">Montant HT</th>
-                  <th>Mode</th>
-                  <th>Statut</th>
-                  <th class="th-actions"></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (line of pendingLines(); track line.id) {
-                  <tr>
-                    <td>
-                      <a [routerLink]="['/fact/affaires', line.affaireId]" class="cell-link">
-                        {{ line.affaireRef }}
-                      </a>
-                      <span class="cell-sub">{{ line.affaireIntitule }}</span>
-                    </td>
-                    <td>
-                      <span class="cell-mono">{{ line.reference }}</span>
-                    </td>
-                    <td class="cell-muted">{{ line.periode || '—' }}</td>
-                    <td class="td-right">
-                      <span class="cell-bold">{{ fmtAmt(line.montantHt) }}</span>
-                    </td>
-                    <td>
-                      <span class="cell-mode">{{ line.mode }}</span>
-                    </td>
-                    <td>
-                      <span class="line-badge"
-                        [style.background]="lineCfg(line.statut).bg"
-                        [style.color]="lineCfg(line.statut).color"
-                        [style.border-color]="lineCfg(line.statut).border">
-                        {{ lineCfg(line.statut).label }}
-                      </span>
-                    </td>
-                    <td class="td-actions">
-                      <div class="action-btns">
-                        <button class="act-btn act-btn--green" (click)="doValidateDF(line.id)">
-                          <span class="material-symbols-outlined">check_circle</span>
-                          Valider
-                        </button>
-                        <button class="act-btn act-btn--orange" (click)="openDfRetourModal(line.id)">
-                          <span class="material-symbols-outlined">undo</span>
-                          Retourner
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+            <daf-data-table
+              [columns]="lineColumns"
+              [rows]="lineRows()"
+              [config]="tableConfig()">
+
+              <ng-template dafCell="affaire" let-row>
+                <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link">
+                  {{ row['affaireRef'] }}
+                </a>
+                <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="reference" let-row>
+                <span class="cell-mono">{{ row['reference'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="periode" let-row>
+                <span class="cell-muted">{{ row['periode'] || '—' }}</span>
+              </ng-template>
+
+              <ng-template dafCell="montantHt" let-row>
+                <span class="cell-bold">{{ row['montantHt'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="mode" let-row>
+                <span class="cell-mode">{{ row['mode'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="statut" let-row>
+                <span class="line-badge"
+                  [style.background]="lineCfg(row['statut']).bg"
+                  [style.color]="lineCfg(row['statut']).color"
+                  [style.border-color]="lineCfg(row['statut']).border">
+                  {{ lineCfg(row['statut']).label }}
+                </span>
+              </ng-template>
+
+              <ng-template dafCell="_actions" let-row>
+                <div class="action-btns">
+                  <button class="act-btn act-btn--green" (click)="doValidateDF(row['id'])">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    Valider
+                  </button>
+                  <button class="act-btn act-btn--orange" (click)="openDfRetourModal(row['id'])">
+                    <span class="material-symbols-outlined">undo</span>
+                    Retourner
+                  </button>
+                </div>
+              </ng-template>
+
+            </daf-data-table>
           </div>
         }
       }
@@ -284,30 +272,32 @@
           </div>
         } @else {
           <div class="table-wrap">
-            <table class="aq-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Utilisateur</th>
-                  <th>Action</th>
-                  <th>Entité</th>
-                  <th>Commentaire</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (entry of auditLog(); track entry.id) {
-                  <tr>
-                    <td class="cell-muted cell-nowrap">{{ fmtDateTime(entry.createdAt) }}</td>
-                    <td><span class="cell-bold">{{ entry.userNom }}</span></td>
-                    <td>
-                      <span class="action-chip">{{ entry.action }}</span>
-                    </td>
-                    <td class="cell-muted">{{ entry.entityType }} #{{ entry.entityId }}</td>
-                    <td class="cell-muted cell-truncate">{{ entry.commentaire || '—' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+            <daf-data-table
+              [columns]="historyColumns"
+              [rows]="historyRows()"
+              [config]="tableConfig()">
+
+              <ng-template dafCell="createdAt" let-row>
+                <span class="cell-muted cell-nowrap">{{ row['createdAt'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="userNom" let-row>
+                <span class="cell-bold">{{ row['userNom'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="action" let-row>
+                <span class="action-chip">{{ row['action'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="entity" let-row>
+                <span class="cell-muted">{{ row['entity'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="commentaire" let-row>
+                <span class="cell-muted cell-truncate">{{ row['commentaire'] || '—' }}</span>
+              </ng-template>
+
+            </daf-data-table>
           </div>
         }
       }

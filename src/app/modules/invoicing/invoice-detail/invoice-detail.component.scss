@@ -32,7 +32,7 @@ $bg:     $bg-page;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 32px 40px 56px;
+  padding: 0 0 56px;
   background: $bg;
   min-height: 100%;
 }
@@ -318,68 +318,34 @@ $bg:     $bg-page;
 
 .table-scroll { overflow-x: auto; }
 
-.billing-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
+// ── daf-data-table cell helpers (billing lines) ───────────────────────────────
+.num    { text-align: right; font-variant-numeric: tabular-nums; }
+.muted  { color: $muted; }
+.bold   { font-weight: 700; }
+.accent { color: $primary; }
 
-  thead tr { background: var(--color-surface-container-low, #f3f4f6); }
+.line-desc {
+  display: block;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
 
-  th {
-    padding: 12px 20px;
-    text-align: left;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    color: $muted;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
+.billing-tfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 2px solid var(--color-outline-variant, #c4c5d5);
+  background: var(--color-surface-container-low, #f3f4f6);
 
-    &.num { text-align: right; }
-    &.act { width: 40px; }
-  }
-
-  .billing-row {
-    border-top: 1px solid var(--color-outline-variant, #c4c5d5);
-    transition: background 0.12s;
-    &:hover { background: rgba(243,244,246,0.6); }
-    &:hover .edit-btn { opacity: 1; }
-  }
-
-  td {
-    padding: 14px 20px;
-    color: $text;
-    vertical-align: middle;
-
-    &.num    { text-align: right; font-variant-numeric: tabular-nums; }
-    &.muted  { color: $muted; }
-    &.bold   { font-weight: 700; }
-    &.accent { color: $primary; }
-    &.act    { text-align: center; }
-  }
-
-  .line-desc {
-    max-width: 240px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 500;
-  }
-
-  .empty-cell {
-    padding: 32px;
-    text-align: center;
-    color: $muted;
-  }
-
-  tfoot .tfoot-row {
-    border-top: 2px solid var(--color-outline-variant, #c4c5d5);
-    background: var(--color-surface-container-low, #f3f4f6);
-  }
-
-  .foot-label { font-weight: 700; font-size: 0.875rem; color: $text; padding: 14px 20px; }
-  .foot-ht    { text-align: right; font-weight: 700; color: $text; padding: 14px 20px; font-variant-numeric: tabular-nums; }
-  .foot-ttc   { text-align: right; font-weight: 800; color: $primary; font-size: 0.9375rem; padding: 14px 20px; font-variant-numeric: tabular-nums; }
+  .foot-label { font-weight: 700; font-size: 0.875rem; color: $text; }
+  .foot-amounts { display: flex; align-items: center; gap: 20px; }
+  .foot-ht  { font-weight: 700; color: $text; font-variant-numeric: tabular-nums; }
+  .foot-ttc { font-weight: 800; color: $primary; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
 }
 
 .status-chip {
@@ -406,8 +372,7 @@ $bg:     $bg-page;
   border-radius: 8px;
   background: white;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s;
   color: $muted;
 
   .material-symbols-outlined { font-size: 15px; }
@@ -569,12 +534,210 @@ $bg:     $bg-page;
   &:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 
+// ── Mobile lines list (remplace le tableau ≤ 640px) ─────────────────────────
+
+.table-desktop { display: block; }
+.lines-mobile  { display: none; }
+
+.lm-row {
+  padding: 14px 18px;
+  border-bottom: 1px solid $border;
+
+  &:last-of-type { border-bottom: none; }
+
+  &__main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  &__desc {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text;
+    flex: 1;
+    line-height: 1.35;
+  }
+
+  &__ttc {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: $primary;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__qty {
+    font-size: 0.75rem;
+    color: $muted;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__tva {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: $muted;
+    background: var(--color-surface-container, #edeef0);
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+
+  &__ht {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $muted;
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.lm-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  background: var(--color-surface-container-low, #f3f4f6);
+  border-top: 2px solid $border;
+
+  &__lbl {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: $text;
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  &__ht {
+    font-size: 0.75rem;
+    color: $muted;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__ttc {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: $primary;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 // ── Responsive ────────────────────────────────────────────────────────────────
+
 @media (max-width: 1100px) {
+  // Body grid collapses: main then aside below
   .body-grid { grid-template-columns: 1fr; }
+
+  // Aside goes side-by-side on tablet (2 cards per row)
+  .body-aside {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 900px) {
-  .kpi-grid   { grid-template-columns: 1fr; }
-  .detail-page { padding: 16px; gap: 14px; }
+  .detail-page { gap: 16px; }
+}
+
+@media (max-width: 768px) {
+  .detail-page { gap: 14px; }
+
+  .kpi-card        { padding: 16px; }
+  .kpi-card__value { font-size: 1.2rem; }
+  .kpi-card__label { font-size: 0.7rem; }
+  .kpi-card__icon  { width: 36px; height: 36px; }
+
+  .table-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .tct-btn { padding: 4px 10px; font-size: 0.75rem; }
+
+  .dh-amount-ttc   { font-size: 1.25rem; }
+  .dh-amount-sub   { font-size: 0.75rem; }
+  .dh-header-right { align-items: flex-start; width: 100%; }
+  .dh-pills        { flex-wrap: wrap; }
+
+  .info-card { padding: 16px; }
+  .body-grid { gap: 14px; }
+}
+
+@media (max-width: 640px) {
+  .body-aside    { grid-template-columns: 1fr; gap: 14px; }
+
+  // Table → ligne cards
+  .table-desktop { display: none; }
+  .lines-mobile  { display: block; }
+
+  // KPI : 3 colonnes égales compactes
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .kpi-card {
+    padding: 12px 10px;
+    &:hover { transform: none; box-shadow: none; }
+  }
+
+  .kpi-card__top    { margin-bottom: 8px; }
+  .kpi-card__value  { font-size: 0.9375rem; letter-spacing: -0.2px; }
+  .kpi-card__label  { font-size: 0.6rem; }
+  .kpi-card__icon   { width: 30px; height: 30px; border-radius: 8px;
+                      .material-symbols-outlined { font-size: 15px; } }
+  .kpi-card__sub    { font-size: 0.6875rem; margin-top: 4px; }
+  .kpi-card__due    { font-size: 0.6875rem;
+                      .material-symbols-outlined { font-size: 13px; } }
+}
+
+@media (max-width: 480px) {
+  .detail-page     { gap: 12px; }
+  .kpi-card        { padding: 10px 8px; }
+  .kpi-card__value { font-size: 0.875rem; }
+  .kpi-card__label { font-size: 0.55rem; }
+  .kpi-card__icon  { display: none; }
+
+  .table-card__header { padding: 12px; gap: 8px; }
+
+  .dh-amount-ttc   { font-size: 1.1rem; }
+  .dh-amount-sub   { font-size: 0.6875rem; }
+  .body-grid       { gap: 12px; }
+  .info-card       { padding: 12px 14px; }
+  .info-row        { padding: 7px 0; }
+}
+
+@media (max-width: 360px) {
+  .detail-page     { gap: 10px; padding-bottom: 40px; }
+  .kpi-card        { padding: 10px 12px; min-width: 130px; }
+  .kpi-card__value { font-size: 0.9375rem; }
+  .kpi-card__label { font-size: 0.6rem; }
+  .kpi-card__icon  { width: 28px; height: 28px; .material-symbols-outlined { font-size: 14px; } }
+
+  .body-grid         { gap: 10px; }
+  .info-card         { padding: 10px 12px; }
+  .table-card__header { padding: 10px 12px; }
+  .dh-amount-ttc     { font-size: 1rem; }
 }

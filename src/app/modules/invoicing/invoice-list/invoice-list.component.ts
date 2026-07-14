@@ -8,15 +8,11 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { SearchBarComponent } from '../../../shared/search-bar.component';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import {
-  SelectOption, SelectComponent, ModalService, ModalRef,
-  CardComponent, ButtonComponent, PaginationComponent,
-  MultiDatePickerComponent,
-} from '@khalilrebhiitec/daf360';
+import { SelectOption, SelectComponent, ModalService, ModalRef, CardComponent, ButtonComponent, PaginationComponent, MultiDatePickerComponent, TableColumn, TableRow, TableConfig, DataTableComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, SearchBarComponent, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent],
+  imports: [PermissionDirective, SearchBarComponent, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent, DataTableComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })
@@ -26,6 +22,14 @@ export class InvoiceListComponent implements OnInit {
   private readonly route     = inject(ActivatedRoute);
   private readonly modal     = inject(ModalService);
   private readonly translate = inject(TranslateService);
+
+  private readonly mobileQuery = window.matchMedia('(max-width: 640px)');
+  readonly isMobile            = signal(this.mobileQuery.matches);
+  readonly mobileSearchOpen    = signal(false);
+
+  constructor() {
+    this.mobileQuery.addEventListener('change', e => this.isMobile.set(e.matches));
+  }
 
   @ViewChild('approvalTpl') approvalTpl!: TemplateRef<any>;
   private approvalRef: ModalRef | null = null;
@@ -65,6 +69,27 @@ export class InvoiceListComponent implements OnInit {
 
   readonly statutSelectOptions: SelectOption[] = Object.entries(INVOICE_STATUT_CONFIG)
     .map(([k, v]) => ({ value: k, label: this.translate.instant(v.label) }));
+
+  // ── Data table ───────────────────────────────────────────────────────────
+  readonly tableColumns: TableColumn[] = [
+    { key: 'ref',     label: this.translate.instant('INVOICING.LIST.TABLE.REF'),    type: 'custom' },
+    { key: 'client',  label: this.translate.instant('INVOICING.LIST.TABLE.CLIENT'), type: 'custom' },
+    { key: 'amount',  label: this.translate.instant('INVOICING.LIST.TABLE.AMOUNT'), type: 'custom', align: 'right' },
+    { key: 'statut',  label: this.translate.instant('INVOICING.LIST.TABLE.STATUS'), type: 'custom' },
+    { key: 'date',    label: this.translate.instant('INVOICING.LIST.TABLE.DATE'),   type: 'custom' },
+    { key: 'actions', label: '', type: 'custom', align: 'right', width: '52px' },
+  ];
+
+  readonly tableRows = computed<TableRow[]>(() =>
+    this.invoices().map(inv => ({ id: inv.id, _raw: inv }))
+  );
+
+  readonly tableConfig = computed<TableConfig>(() => ({
+    hoverable:    true,
+    loading:      this.loading(),
+    emptyMessage: this.translate.instant('INVOICING.LIST.TABLE.EMPTY'),
+    skeletonRows: 5,
+  }));
 
   // ── KPI counts ────────────────────────────────────────────────────────────
   readonly statsEnAttente = computed(() =>
@@ -143,6 +168,8 @@ export class InvoiceListComponent implements OnInit {
 
   navigateToDetail(id: number): void { this.router.navigate([id],    { relativeTo: this.route }); }
   navigateToNew():               void { this.router.navigate(['new'], { relativeTo: this.route }); }
+
+  onRowClick(row: TableRow): void { this.navigateToDetail(row['id'] as number); }
 
   quickEmit(item: InvoiceListItem): void {
     this.actionError.set(null);

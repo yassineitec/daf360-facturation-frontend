@@ -1,4 +1,10 @@
 .reminders-panel { display: flex; flex-direction: column; gap: 12px; padding: 20px 22px; }
+@media (max-width: 480px) {
+  .reminders-panel { padding: 14px 16px; gap: 10px; }
+  .reminder-row    { flex-wrap: wrap; gap: 6px; }
+  .panel-header    { gap: 6px; }
+  .action-link     { margin-left: 0; }
+}
 .panel-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .panel-title { font-weight: 700; font-size: 0.875rem; color: #0f3d47; }
 .panel-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;

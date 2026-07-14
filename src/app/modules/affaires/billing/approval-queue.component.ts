@@ -1,6 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { RouterLink }                         from '@angular/router';
 import { FormsModule }                        from '@angular/forms';
+import {
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig,
+} from '@khalilrebhiitec/daf360';
 import {
   BillingService,
   PendingTauxDto, PendingJalonDto, PendingBillingLineDto, AuditLogEntryDto,
@@ -25,7 +28,7 @@ const TABS: { key: ActiveTab; label: string; icon: string }[] = [
 @Component({
   selector: 'app-approval-queue',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, DataTableComponent, DafCellDirective],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
 })
@@ -52,6 +55,98 @@ export class ApprovalQueueComponent implements OnInit {
   showDfRetourModal = signal(false);
   dfRetourMotif     = '';
   private dfRetourLineId = 0;
+
+  // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
+  readonly tauxColumns: TableColumn[] = [
+    { key: 'affaire', label: 'Affaire',   type: 'custom' },
+    { key: 'taux',    label: 'Taux',      type: 'custom', align: 'right' },
+    { key: 'valeur',  label: 'Valeur',    type: 'custom', align: 'right' },
+    { key: 'soumis',  label: 'Soumis le', type: 'custom' },
+    { key: '_actions',label: '',          type: 'custom', align: 'right', width: '180px' },
+  ];
+
+  readonly tauxRows = computed(() =>
+    this.pendingTaux().map(t => ({
+      id:              t.id,
+      affaireId:       t.affaireId,
+      affaireRef:      t.affaireRef,
+      affaireIntitule: t.affaireIntitule,
+      taux:            t.taux,
+      valeur:          this.fmtAmt(t.valeurCalculee),
+      soumis:          this.fmtDate(t.soumisAt),
+      _raw:            t,
+    }))
+  );
+
+  // ── daf-data-table: Jalons (RF) ──────────────────────────────────────────────
+  readonly jalonColumns: TableColumn[] = [
+    { key: 'affaire',  label: 'Affaire',  type: 'custom' },
+    { key: 'label',    label: 'Jalon',    type: 'text' },
+    { key: 'montant',  label: 'Montant',  type: 'custom', align: 'right' },
+    { key: 'echeance', label: 'Échéance', type: 'custom' },
+    { key: '_actions', label: '',         type: 'custom', align: 'right', width: '180px' },
+  ];
+
+  readonly jalonRows = computed(() =>
+    this.pendingJalons().map(j => ({
+      id:              j.id,
+      affaireId:       j.affaireId,
+      affaireRef:      j.affaireRef,
+      affaireIntitule: j.affaireIntitule,
+      label:           j.label,
+      montant:         this.fmtAmt(j.montant),
+      echeance:        this.fmtDate(j.echeance),
+      _raw:            j,
+    }))
+  );
+
+  // ── daf-data-table: Billing lines (DF) ───────────────────────────────────────
+  readonly lineColumns: TableColumn[] = [
+    { key: 'affaire',   label: 'Affaire',      type: 'custom' },
+    { key: 'reference', label: 'Référence',    type: 'custom' },
+    { key: 'periode',   label: 'Période',      type: 'custom' },
+    { key: 'montantHt', label: 'Montant HT',   type: 'custom', align: 'right' },
+    { key: 'mode',      label: 'Mode',         type: 'custom' },
+    { key: 'statut',    label: 'Statut',       type: 'custom' },
+    { key: '_actions',  label: '',             type: 'custom', align: 'right', width: '200px' },
+  ];
+
+  readonly lineRows = computed(() =>
+    this.pendingLines().map(line => ({
+      id:              line.id,
+      affaireId:       line.affaireId,
+      affaireRef:      line.affaireRef,
+      affaireIntitule: line.affaireIntitule,
+      reference:       line.reference,
+      periode:         line.periode,
+      montantHt:       this.fmtAmt(line.montantHt),
+      mode:            line.mode,
+      statut:          line.statut,
+      _raw:            line,
+    }))
+  );
+
+  // ── daf-data-table: Audit history ────────────────────────────────────────────
+  readonly historyColumns: TableColumn[] = [
+    { key: 'createdAt',   label: 'Date',        type: 'custom' },
+    { key: 'userNom',     label: 'Utilisateur', type: 'custom' },
+    { key: 'action',      label: 'Action',      type: 'custom' },
+    { key: 'entity',      label: 'Entité',      type: 'custom' },
+    { key: 'commentaire', label: 'Commentaire', type: 'custom' },
+  ];
+
+  readonly historyRows = computed(() =>
+    this.auditLog().map(entry => ({
+      id:          entry.id,
+      createdAt:   this.fmtDateTime(entry.createdAt),
+      userNom:     entry.userNom,
+      action:      entry.action,
+      entity:      `${entry.entityType} #${entry.entityId}`,
+      commentaire: entry.commentaire,
+    }))
+  );
+
+  readonly tableConfig = computed<TableConfig>(() => ({ hoverable: true }));
 
   ngOnInit(): void { this.loadRF(); }
 

@@ -8,13 +8,14 @@
 
       <!-- ── Page header ───────────────────────────────────────────── -->
       <div class="page-head">
-        <button class="back-btn" (click)="cancel()">
-          <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <div>
-          <h1 class="page-title">{{ 'INVOICING.NEW.TITLE' | translate }}</h1>
-          <p class="page-sub">{{ 'INVOICING.NEW.SUBTITLE' | translate }}</p>
-        </div>
+        <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
+          <button type="button" class="font-medium hover:underline transition-colors" (click)="cancel()">
+            Facturation
+          </button>
+          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          <span class="font-medium" style="color:#50717b">{{ 'INVOICING.NEW.TITLE' | translate }}</span>
+        </nav>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ 'INVOICING.NEW.TITLE' | translate }}</h1>
       </div>
 
       <!-- ── Form card ─────────────────────────────────────────────── -->
@@ -75,44 +76,6 @@
           }
         </div>
 
-        <!-- Navigation footer -->
-        <div class="nav-footer">
-          <div>
-            @if (step() > 1) {
-              <daf-button
-                [options]="{ variant: 'ghost', label: ('INVOICING.NEW.BACK' | translate), iconStart: 'arrow_back' }"
-                (onClick)="goPrev()" />
-            } @else {
-              <daf-button
-                [options]="{ variant: 'ghost', label: ('INVOICING.NEW.CANCEL' | translate) }"
-                (onClick)="cancel()" />
-            }
-          </div>
-
-          <div class="nav-actions">
-            @if (step() === 4) {
-              <daf-button
-                [options]="{
-                  variant: 'ghost',
-                  label: isSaving() ? ('INVOICING.NEW.SAVING' | translate) : ('INVOICING.NEW.DRAFT' | translate),
-                  iconStart: 'save',
-                  disabled: isSaving()
-                }"
-                (onClick)="saveDraft()" />
-            }
-            <daf-button
-              [options]="{
-                variant: 'secondary',
-                pill: true,
-                label: step() === 4 ? ('INVOICING.NEW.SUBMIT' | translate) : ('INVOICING.NEW.NEXT' | translate),
-                iconEnd: step() < 4 ? 'arrow_forward' : 'send',
-                loading: isSaving(),
-                disabled: !canGoNext() || isSaving()
-              }"
-              (onClick)="goNext()" />
-          </div>
-        </div>
-
       </div><!-- /form-card -->
     </div><!-- /form-area -->
 
@@ -121,11 +84,48 @@
     <!-- ══════════════════════════════════════════════════════════════ -->
     <aside class="sidebar">
 
+      <!-- Boutons navigation -->
+      <div class="panel-nav">
+        @if (step() > 1) {
+          <daf-button class="panel-nav__back"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('INVOICING.NEW.BACK' | translate), iconStart: 'arrow_back' }"
+            (onClick)="goPrev()" />
+        } @else {
+          <daf-button class="panel-nav__back"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('INVOICING.NEW.CANCEL' | translate), iconStart: 'close' }"
+            (onClick)="cancel()" />
+        }
+        <div class="panel-nav__next">
+          @if (step() === 4) {
+            <daf-button
+              [options]="{
+                variant: 'ghost',
+                label: isSaving() ? ('INVOICING.NEW.SAVING' | translate) : ('INVOICING.NEW.DRAFT' | translate),
+                iconStart: 'save',
+                disabled: isSaving()
+              }"
+              (onClick)="saveDraft()" />
+          }
+          <daf-button
+            [options]="{
+              variant: 'teal',
+              pill: true,
+              fullWidth: true,
+              label: step() === 4 ? ('INVOICING.NEW.SUBMIT' | translate) : ('INVOICING.NEW.NEXT' | translate),
+              iconEnd: step() < 4 ? 'arrow_forward' : 'send',
+              loading: isSaving(),
+              disabled: !canGoNext() || isSaving()
+            }"
+            (onClick)="goNext()" />
+        </div>
+      </div>
+
       <!-- Progression -->
       <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
         <div class="panel-header">
           <p class="panel__label">{{ 'INVOICING.NEW.SIDEBAR.PROGRESS' | translate }}</p>
         </div>
+
         <div class="panel-body">
           <div class="step-list">
             @for (s of steps(); track $index; let i = $index) {
@@ -180,14 +180,6 @@
         </div>
       </daf-card>
 
-      <!-- Conseil -->
-      <div class="tips-panel">
-        <div class="tips-panel__head">
-          <span class="material-symbols-outlined">lightbulb</span>
-          <span>{{ 'INVOICING.NEW.SIDEBAR.TIP' | translate }}</span>
-        </div>
-        <p class="tips-panel__text">{{ stepTip() }}</p>
-      </div>
 
     </aside><!-- /sidebar -->
 

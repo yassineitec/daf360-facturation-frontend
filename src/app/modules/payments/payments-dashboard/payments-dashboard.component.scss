@@ -1,6 +1,8 @@
 .payments-page {
   padding: 1.5rem 2rem;
   max-width: 1400px;
+
+  @media (max-width: 768px) { padding: 1rem; }
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -9,7 +11,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 1.5rem;
 }
 
@@ -37,48 +40,9 @@
   @media (max-width: 640px)  { grid-template-columns: 1fr; }
 }
 
-.stat-card {
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-
-  &.stat-skeleton {
-    min-height: 90px;
-  }
+.stat-skeleton {
+  min-height: 90px;
 }
-
-.stat-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-on-surface-variant);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-on-surface);
-  line-height: 1.2;
-}
-
-.stat-unit {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--color-on-surface-variant);
-}
-
-.stat-sub {
-  font-size: 0.875rem;
-  color: var(--color-on-surface-variant);
-  font-weight: 500;
-}
-
-.stat-attente  { border-left: 3px solid var(--color-primary); }
-.stat-retard   { border-left: 3px solid var(--color-danger); }
-.stat-encaisse { border-left: 3px solid var(--color-teal-light); }
-.stat-delai    { border-left: 3px solid var(--color-secondary); }
 
 // ── Filter bar ────────────────────────────────────────────────────────────────
 
@@ -146,7 +110,7 @@
 // ── Aging table ───────────────────────────────────────────────────────────────
 
 .table-wrap {
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .aging-table {

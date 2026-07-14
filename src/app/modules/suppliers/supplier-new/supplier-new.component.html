@@ -8,13 +8,14 @@
 
       <!-- ── Page header ───────────────────────────────────────────── -->
       <div class="page-head">
-        <button class="back-btn" (click)="cancel()">
-          <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <div>
-          <h1 class="page-title">Nouveau Fournisseur</h1>
-          <p class="page-sub">Suivez les étapes pour référencer un nouveau fournisseur</p>
-        </div>
+        <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
+          <button type="button" class="font-medium hover:underline transition-colors" (click)="cancel()">
+            Fournisseurs
+          </button>
+          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          <span class="font-medium" style="color:#50717b">Nouveau Fournisseur</span>
+        </nav>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">Référencer un nouveau fournisseur</h1>
       </div>
 
       <!-- ── Form card ─────────────────────────────────────────────── -->
@@ -135,32 +136,6 @@
 
         </div>
 
-        <!-- Navigation footer -->
-        <div class="nav-footer">
-          <div>
-            @if (step() > 1) {
-              <daf-button
-                [options]="{ variant: 'ghost', label: 'Retour', iconStart: 'arrow_back' }"
-                (onClick)="goPrev()" />
-            } @else {
-              <daf-button
-                [options]="{ variant: 'ghost', label: 'Annuler' }"
-                (onClick)="cancel()" />
-            }
-          </div>
-          <daf-button
-            [options]="{
-              variant: 'secondary',
-              pill: true,
-              label: step() === 3 ? 'Créer le fournisseur' : 'Suivant',
-              iconEnd: step() < 3 ? 'arrow_forward' : undefined,
-              iconStart: step() === 3 ? 'business' : undefined,
-              loading: isSaving(),
-              disabled: !canGoNext() || isSaving()
-            }"
-            (onClick)="goNext()" />
-        </div>
-
       </div><!-- /form-card -->
     </div><!-- /form-area -->
 
@@ -169,11 +144,37 @@
     <!-- ══════════════════════════════════════════════════════════════ -->
     <aside class="sidebar">
 
+      <!-- Boutons navigation -->
+      <div class="panel-nav">
+        @if (step() > 1) {
+          <daf-button class="panel-nav__back"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Retour', iconStart: 'arrow_back' }"
+            (onClick)="goPrev()" />
+        } @else {
+          <daf-button class="panel-nav__back"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Annuler', iconStart: 'close' }"
+            (onClick)="cancel()" />
+        }
+        <daf-button class="panel-nav__next"
+          [options]="{
+            variant: 'teal',
+            pill: true,
+            fullWidth: true,
+            label: step() === 3 ? 'Créer le fournisseur' : 'Suivant',
+            iconEnd: step() < 3 ? 'arrow_forward' : undefined,
+            iconStart: step() === 3 ? 'business' : undefined,
+            loading: isSaving(),
+            disabled: !canGoNext() || isSaving()
+          }"
+          (onClick)="goNext()" />
+      </div>
+
       <!-- Progression -->
       <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
         <div class="panel-header">
           <p class="panel__label">Progression</p>
         </div>
+
         <div class="panel-body">
           <div class="step-list">
             @for (s of steps; track $index; let i = $index) {
@@ -226,14 +227,6 @@
         </div>
       </daf-card>
 
-      <!-- Conseil -->
-      <div class="tips-panel">
-        <div class="tips-panel__head">
-          <span class="material-symbols-outlined">lightbulb</span>
-          <span>Conseil</span>
-        </div>
-        <p class="tips-panel__text">{{ stepTip() }}</p>
-      </div>
 
     </aside>
 

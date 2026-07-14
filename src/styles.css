@@ -5,11 +5,27 @@
 @source './app';
 @source '../node_modules/@khalilrebhiitec/daf360/fesm2022/khalilrebhiitec-daf360.mjs';
 
+@source inline("{grid-cols-1,grid-cols-2,grid-cols-3,grid-cols-4,grid-cols-5,grid-cols-6,grid-cols-7,grid-cols-8,grid-cols-9,grid-cols-10,grid-cols-11,grid-cols-12}");
+@source inline("{col-span-1,col-span-2,col-span-3,col-span-4,col-span-5,col-span-6,col-span-7,col-span-8,col-span-9,col-span-10,col-span-11,col-span-12}");
+@source inline("{lg:col-span-1,lg:col-span-2,lg:col-span-3,lg:col-span-4,lg:col-span-5,lg:col-span-6,lg:col-span-7,lg:col-span-8,lg:col-span-9,lg:col-span-10,lg:col-span-11,lg:col-span-12}");
+@source inline("{md:grid-cols-1,md:grid-cols-2,md:grid-cols-3,md:grid-cols-4,lg:grid-cols-1,lg:grid-cols-2,lg:grid-cols-3,lg:grid-cols-4}");
+@source inline("{ml-0,ml-64,pt-16,min-h-screen,overflow-y-auto,overflow-hidden}");
+@source inline("{text-primary,text-secondary,text-teal,text-on-surface,text-on-surface-variant,text-outline,text-error,text-danger,text-success}");
+@source inline("{bg-primary,bg-secondary,bg-teal,bg-surface,bg-surface-container,bg-surface-container-lowest,bg-surface-container-high,bg-background,bg-error,bg-danger}");
+@source inline("{border-primary,border-secondary,border-outline,border-outline-variant,border-error}");
+
 /* Compatibility shim: legacy variable names still referenced by component
    styles, aliased to the closest @khalilrebhiitec/daf360 token so nothing
    resolves to nothing. Remove each line as its components are migrated to
    the lib's own token names directly. */
 :root {
+  /* Lib bug: --color-teal-light (#1C4E5C) is actually DARKER than
+     --color-teal (#2D5D6E), so daf-button's variant="teal" hover state
+     (hover:bg-teal-light) barely changes anything visible instead of
+     lightening. Point it at the bright teal accent so hover on teal
+     buttons actually shifts toward teal. */
+  --color-teal-light:                #00c1ad;
+
   --color-text:                      var(--color-on-surface);
   --color-text-muted:                var(--color-on-surface-variant);
   --color-border:                    var(--color-outline-variant);
@@ -45,11 +61,78 @@ body {
   font-family: var(--font-sans, 'Manrope', sans-serif);
 }
 
+/* ── Module-card icon classes (used as daf-card iconBg/iconColor/iconHoverBg) */
+.icon-bg--primary   { background-color: rgba(0,107,88,.10) !important; }
+.icon-bg--secondary { background-color: rgba(0,108,73,.10) !important; }
+.icon-bg--tertiary  { background-color: rgba(133,83,0,.15) !important; }
+.icon-bg--fact      { background-color: rgba(121,215,190,.30) !important; }
+.icon-bg--pay       { background-color: rgba(154,242,197,.50) !important; }
+.icon-bg--error     { background-color: rgba(186,26,26,.10) !important; }
+.icon-bg--slate     { background-color: #f1f5f9 !important; }
+.icon-bg--amber     { background-color: rgba(101,62,0,.10) !important; }
+.icon-bg--outline   { background-color: rgba(189,201,196,.20) !important; }
+
+.icon-clr--primary   { color: #006b58 !important; }
+.icon-clr--secondary { color: #006c49 !important; }
+.icon-clr--tertiary  { color: #855300 !important; }
+.icon-clr--fact      { color: #005d4d !important; }
+.icon-clr--pay       { color: #0c714d !important; }
+.icon-clr--error     { color: #BA1A1A !important; }
+.icon-clr--slate     { color: #1E293B !important; }
+.icon-clr--amber     { color: #653e00 !important; }
+.icon-clr--outline   { color: #3e4945 !important; }
+
+.icon-hbg--primary   { background-color: #006b58 !important; }
+.icon-hbg--secondary { background-color: #006c49 !important; }
+.icon-hbg--tertiary  { background-color: #855300 !important; }
+.icon-hbg--fact      { background-color: #005d4d !important; }
+.icon-hbg--pay       { background-color: #0c714d !important; }
+.icon-hbg--error     { background-color: #BA1A1A !important; }
+.icon-hbg--slate     { background-color: #1E293B !important; }
+.icon-hbg--amber     { background-color: #653e00 !important; }
+.icon-hbg--outline   { background-color: #3e4945 !important; }
+
+.icon-hclr { color: #fff !important; }
+
+/* ── KPI card icon hover backgrounds (solid fill) ────────────────────────── */
+.kpi-hbg-green { background-color: #006b58 !important; }
+.kpi-hbg-sec   { background-color: #006c49 !important; }
+.kpi-hbg-red   { background-color: #BA1A1A !important; }
+.kpi-hbg-amber { background-color: #653e00 !important; }
+
+/* ── Responsive sidebar: hide/show on mobile via global CSS ─────────────────
+   daf-side-nav renders a fixed inner div — must target from global CSS
+   because ViewEncapsulation blocks component-scoped ::ng-deep from reaching it. */
+@media (max-width: 768px) {
+  daf-side-nav > nav {
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: none !important;
+  }
+  daf-side-nav.sidebar--open > nav {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15) !important;
+  }
+}
+
+/* ── Finance KPI metric-card color tokens ─────────────────────────────────── */
+.kpi-c-green  { color: #006b58 !important; }
+.kpi-bg-green { background-color: rgba(0,107,88,0.10) !important; }
+.kpi-c-sec    { color: #006c49 !important; }
+.kpi-bg-sec   { background-color: rgba(0,108,73,0.10) !important; }
+.kpi-c-red    { color: #BA1A1A !important; }
+.kpi-bg-red   { background-color: rgba(186,26,26,0.10) !important; }
+.kpi-c-amber  { color: #653e00 !important; }
+.kpi-bg-amber { background-color: rgba(101,62,0,0.10) !important; }
+
 /* ── Icon-only Modifier/Suppr. row actions (admin tables) ───────────────────
    daf-button has no built-in icon-only square variant — its `sm` size is
    sized for icon+label (px-4 py-2). Table row actions here show only the
-   Material Symbol, so force a small square shape and the neutral-gray /
-   light-red glyph-only look used across every admin table's Modifier/Suppr. */
+   Material Symbol, so force a small square shape only. Background, text
+   color and hover come entirely from the library's own variant (edit uses
+   variant="primary" → primary at rest, teal on hover; delete uses
+   variant="danger") — nothing here overrides color, so hover always works
+   exactly like every other daf-button in the app. */
 daf-button.icon-btn-edit button,
 daf-button.icon-btn-delete button {
   width: 34px;
@@ -57,17 +140,6 @@ daf-button.icon-btn-delete button {
   padding: 0 !important;
   border-radius: var(--radius-md) !important;
   gap: 0 !important;
-}
-
-daf-button.icon-btn-edit button {
-  background: var(--color-surface) !important;
-  border-color: var(--color-outline-variant) !important;
-  color: #1f1f1f !important;
-}
-
-daf-button.icon-btn-delete button {
-  background: var(--color-error-container) !important;
-  color: var(--color-danger) !important;
 }
 
 daf-button.icon-btn-edit .material-symbols-outlined,
@@ -99,4 +171,27 @@ daf-toolbar div.relative.flex-1 input[type="search"]::placeholder {
 
 daf-toolbar div.relative.flex-1 > span.material-symbols-outlined {
   color: #3e4945 !important;
+}
+
+/* Shrink the search box to the same max width as /finance/clients' search bar
+   instead of letting it stretch flex-1 across the whole toolbar row. */
+daf-toolbar div.relative.flex-1 {
+  flex: 0 1 360px !important;
+  min-width: 200px !important;
+}
+
+/* ── Form field labels — match daf-form-field's label style everywhere ──────
+   daf-form-field's own label is small-caps (text-[10px] uppercase tracking-wider
+   text-outline), but daf-select and daf-multi-date-picker render their label
+   with a completely different recipe (text-label-md font-medium text-on-surface
+   — larger, normal-case, dark). Same form, two different label looks side by
+   side. Align them here since both live in the compiled library and can't be
+   edited directly. */
+daf-select label.text-label-md,
+daf-multi-date-picker label.text-label-md {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--color-outline) !important;
 }

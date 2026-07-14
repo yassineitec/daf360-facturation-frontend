@@ -1,12 +1,15 @@
-import { Component, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { SubcontractingService } from '../subcontracting.service';
 import { SousTraitantDto, CreateSousTraitantRequest } from '../subcontracting.model';
+import {
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, BadgeOptions,
+} from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-sous-traitants-tab',
-  imports: [FormsModule, PermissionDirective],
+  imports: [FormsModule, PermissionDirective, DataTableComponent, DafCellDirective],
   templateUrl: './sous-traitants-tab.component.html',
   styleUrl: './sous-traitants-tab.component.scss',
 })
@@ -18,6 +21,37 @@ export class SousTraitantsTabComponent {
   list    = signal<SousTraitantDto[]>([]);
   loading = signal(false);
   error   = signal<string | null>(null);
+
+  readonly tableColumns: TableColumn[] = [
+    { key: 'name',         label: 'Nom',        type: 'custom' },
+    { key: 'contactEmail', label: 'Email',      type: 'custom' },
+    { key: 'contactPhone', label: 'Téléphone',  type: 'custom' },
+    { key: 'taxId',        label: 'N° Fiscal',  type: 'custom' },
+    { key: 'country',      label: 'Pays',       type: 'custom' },
+    { key: 'status',       label: 'Statut',     type: 'badge' },
+    { key: '_actions',     label: '',           type: 'custom', align: 'right', width: '80px' },
+  ];
+
+  readonly tableConfig = computed<TableConfig>(() => ({
+    hoverable: true,
+  }));
+
+  readonly tableRows = computed(() =>
+    this.list().map(st => ({
+      id:            st.id,
+      name:          st.name,
+      contactEmail:  st.contactEmail,
+      contactPhone:  st.contactPhone,
+      taxId:         st.taxId,
+      country:       st.country,
+      isActive:      st.isActive,
+      status: {
+        label:   st.isActive ? 'Actif' : 'Inactif',
+        options: { variant: st.isActive ? 'success' : 'neutral', pill: true } as BadgeOptions,
+      },
+      _raw: st,
+    }))
+  );
 
   showModal  = signal(false);
   editTarget = signal<SousTraitantDto | null>(null);

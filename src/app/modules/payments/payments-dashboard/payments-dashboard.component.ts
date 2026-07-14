@@ -10,12 +10,17 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import {
   CardComponent, ButtonComponent, PaginationComponent,
   StatusBadgeComponent, BadgeVariant,
-  MultiDatePickerComponent,
+  MultiDatePickerComponent, MetricCardComponent,
+  DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-payments-dashboard',
-  imports: [FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent, StatusBadgeComponent, MultiDatePickerComponent],
+  imports: [
+    FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent,
+    StatusBadgeComponent, MultiDatePickerComponent, MetricCardComponent,
+    DataTableComponent, DafCellDirective,
+  ],
   templateUrl: './payments-dashboard.component.html',
   styleUrl:    './payments-dashboard.component.scss',
 })
@@ -49,6 +54,27 @@ export class PaymentsDashboardComponent implements OnInit {
   };
 
   readonly agingRowColor = agingRowColor;
+
+  readonly tableColumns: TableColumn[] = [
+    { key: 'clientNom',    label: 'Client',         type: 'custom' },
+    { key: 'invoice',      label: 'Facture',        type: 'custom' },
+    { key: 'montantTtc',   label: 'Montant TTC',    type: 'custom', align: 'right' },
+    { key: 'dateEcheance', label: 'Échéance',       type: 'custom' },
+    { key: 'joursRetard',  label: 'Jours retard',   type: 'custom', align: 'right' },
+    { key: 'reminder',     label: 'Statut relance', type: 'custom' },
+    { key: '_actions',     label: 'Actions',        type: 'custom', align: 'right' },
+  ];
+
+  readonly tableConfig = computed<TableConfig>(() => ({
+    hoverable:    true,
+    loading:      this.loadingRows(),
+    emptyMessage: 'Aucune facture impayée trouvée.',
+    skeletonRows: 5,
+  }));
+
+  readonly tableRows = computed<TableRow[]>(() =>
+    this.rows().map(row => ({ ...row, _raw: row }))
+  );
 
   ngOnInit(): void {
     this.loadStats();
@@ -104,6 +130,10 @@ export class PaymentsDashboardComponent implements OnInit {
 
   navigateToInvoice(id: number): void {
     this.router.navigate(['../invoicing', id], { relativeTo: this.route });
+  }
+
+  onRowClick(row: TableRow): void {
+    this.navigateToInvoice((row['_raw'] as AgingRow).invoiceId);
   }
 
   navigateToReconciliation(): void {

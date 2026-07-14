@@ -1,306 +1,392 @@
 <div class="detail-page">
 
-  <!-- Back button -->
-  <button class="back-btn" routerLink="..">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="15 18 9 12 15 6"/>
-    </svg>
-    {{ 'CLIENTS.LIST.TITLE' | translate }}
-  </button>
-
-  <!-- Loading state -->
   @if (isLoading()) {
-    <div class="loading-state">
+    <div class="state-box">
       <div class="spinner"></div>
-      <span>{{ 'CLIENTS.DETAIL.LOADING' | translate }}</span>
+      <span class="text-body-md text-muted">Chargement du client…</span>
     </div>
-  }
-
-  <!-- Error with no data loaded -->
-  @if (!isLoading() && !client() && actionError()) {
-    <div class="error-state">
-      <p>{{ actionError() }}</p>
-      <button class="btn-retry" (click)="retryLoad()">{{ 'CLIENTS.DETAIL.RETRY' | translate }}</button>
+  } @else if (!client() && actionError()) {
+    <div class="state-box">
+      <span class="material-symbols-outlined state-icon">error_outline</span>
+      <p class="text-body-md text-muted">{{ actionError() }}</p>
+      <button class="btn-retry" (click)="retryLoad()">Réessayer</button>
     </div>
-  }
+  } @else if (client()) {
 
-  @if (!isLoading() && client()) {
+    <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+    <header class="page-header">
+      <button class="back-btn" (click)="goBack()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div class="hd-titles">
+        <div class="hd-title-row">
+          <span class="client-code">{{ client()!.clientCode }}</span>
+          <h1 class="text-headline-xl">{{ client()!.clientName }}</h1>
+          <daf-badge
+            [label]="client()!.isKycDone ? 'KYC Validé' : 'KYC En attente'"
+            [options]="kycBadgeOptions()" />
+          @if (!client()!.isActive) {
+            <daf-badge label="Inactif" [options]="{ variant: 'neutral', pill: true, size: 'sm' }" />
+          }
+        </div>
+        <p class="text-body-sm text-muted">
+          {{ client()!.paysLabel ?? '' }}
+          @if (client()!.sector) { · {{ client()!.sector }} }
+          · Délai paiement {{ client()!.paymentTermsDays ?? '—' }}j
+          · {{ client()!.defaultCurrency ?? 'TND' }}
+        </p>
+      </div>
+      <daf-button
+        *appHasPermission="'FACT_MANAGE_CLIENTS'"
+        [options]="{ variant: 'ghost', label: 'Modifier', iconStart: 'edit' }"
+        (onClick)="openEditModal()" />
+    </header>
 
-    <!-- Action error bar (for KYC / deactivate errors) -->
     @if (actionError()) {
-      <div class="action-error-bar">{{ actionError() }}</div>
+      <div class="action-error-bar text-body-sm">{{ actionError() }}</div>
     }
 
-    <!-- ── Page header ───────────────────────────────────────────────── -->
-    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="page-header">
-      <div class="header-inner">
-        <div class="header-left">
-          <span class="code-badge">{{ client()!.clientCode }}</span>
-          <div class="header-titles">
-            <h1 class="client-name">{{ client()!.clientName }}</h1>
-            <div class="header-meta">
-              @if (client()!.paysLabel) {
-                <span>{{ client()!.paysLabel }}</span>
-                <span class="meta-sep">·</span>
-              }
-              @if (client()!.sector) {
-                <span>{{ client()!.sector }}</span>
-                <span class="meta-sep">·</span>
-              }
-              <span>{{ 'CLIENTS.DETAIL.HEADER.DELAY' | translate }} {{ client()!.paymentTermsDays ?? '—' }}j</span>
-              <span class="meta-sep">·</span>
-              <span>{{ client()!.defaultCurrency }}</span>
-            </div>
-          </div>
+    <!-- ── KPI Grid ─────────────────────────────────────────────────────────── -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <p class="text-label-bold text-muted">Total projets</p>
+          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">business_center</span>
         </div>
-        <div class="header-right">
-          @if (client()!.isKycDone) {
-            <span class="kyc-badge kyc-badge--ok">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              {{ 'CLIENTS.DETAIL.KYC.VALIDATED' | translate }}
-            </span>
-          } @else {
-            <span class="kyc-badge kyc-badge--pending">{{ 'CLIENTS.DETAIL.KYC.PENDING' | translate }}</span>
-          }
-          @if (!client()!.isActive) {
-            <span class="inactive-badge">{{ 'CLIENTS.DETAIL.INACTIVE' | translate }}</span>
-          }
-          <button class="btn-edit" (click)="openEditModal()"
-                  *appHasPermission="'FACT_MANAGE_CLIENTS'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            {{ 'CLIENTS.DETAIL.EDIT' | translate }}
-          </button>
+        <div class="kpi-card__value-row">
+          <span class="text-price-display">{{ stats()?.totalAffaires ?? '—' }}</span>
+        </div>
+        <div class="kpi-card__sub kpi-card__sub--primary">
+          <span class="material-symbols-outlined">folder_open</span>
+          <span>Affaires associées</span>
         </div>
       </div>
-    </daf-card>
 
-    <!-- ── KPI tiles ─────────────────────────────────────────────────── -->
-    <div class="kpi-grid">
-      @for (kpi of clientKpis(); track kpi.label) {
-        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}" class="kpi-card">
-          <div class="kpi-inner">
-            <span class="kpi-label">{{ kpi.label | translate }}</span>
-            <span class="kpi-value">{{ kpi.value }}</span>
-          </div>
-        </daf-card>
-      }
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <p class="text-label-bold text-muted">Projets actifs</p>
+          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--secondary">play_circle</span>
+        </div>
+        <div class="kpi-card__value-row">
+          <span class="text-price-display">{{ stats()?.activeAffaires ?? '—' }}</span>
+        </div>
+        <div class="kpi-card__sub kpi-card__sub--secondary">
+          <span class="material-symbols-outlined">trending_up</span>
+          <span>En cours</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <p class="text-label-bold text-muted">Total facturé</p>
+          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">receipt_long</span>
+        </div>
+        <div class="kpi-card__value-row">
+          <span class="text-price-display">
+            {{ formatAmount(stats()?.totalInvoiced ?? null, client()!.defaultCurrency ?? 'TND') }}
+          </span>
+        </div>
+        <div class="kpi-card__sub kpi-card__sub--primary">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+          <span>Chiffre d'affaires cumulé</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <p class="text-label-bold text-muted">Délai moyen paiement</p>
+          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--tertiary">schedule</span>
+        </div>
+        <div class="kpi-card__value-row">
+          <span class="text-price-display">
+            {{ stats()?.averagePaymentDelayDays != null ? (stats()!.averagePaymentDelayDays | number:'1.0-0') + 'j' : '—' }}
+          </span>
+        </div>
+        <div class="kpi-card__sub kpi-card__sub--tertiary">
+          <span class="material-symbols-outlined">hourglass_top</span>
+          <span>Délai contractuel {{ client()!.paymentTermsDays ?? '—' }}j</span>
+        </div>
+      </div>
+
     </div>
 
-    <!-- ── Main layout ───────────────────────────────────────────────── -->
+    <!-- ── Main Layout ───────────────────────────────────────────────────────── -->
     <div class="detail-layout">
 
-      <!-- LEFT: Info cards -->
+      <!-- ══ LEFT COLUMN ══ -->
       <div class="detail-main">
 
-        <!-- General info -->
-        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="section-card">
-          <div class="card-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            {{ 'CLIENTS.DETAIL.INFO.TITLE' | translate }}
-          </div>
-          <dl class="info-list">
-            @for (item of generalInfo(); track item.label) {
-              <div class="info-row">
-                <dt>{{ item.label | translate }}</dt>
-                <dd>{{ item.value }}</dd>
+        <!-- Informations générales -->
+        <section class="glass-card section-card">
+          <h2 class="section-card__title text-title-md" style="margin-bottom:20px">
+            <span class="material-symbols-outlined text-primary">info</span>
+            Informations générales
+          </h2>
+          <div class="info-grid-2col">
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Code client</p>
+              <p class="text-body-md info-ref">{{ client()!.clientCode }}</p>
+            </div>
+            @if (client()!.taxId) {
+              <div class="info-field">
+                <p class="text-body-sm text-muted">Matricule fiscal</p>
+                <p class="text-body-md info-ref">{{ client()!.taxId }}</p>
               </div>
             }
-          </dl>
-        </daf-card>
-
-        <!-- Contact card -->
-        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="section-card">
-          <div class="card-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            {{ 'CLIENTS.DETAIL.CONTACT.TITLE' | translate }}
-          </div>
-          <dl class="info-list">
-            <div class="info-row">
-              <dt>{{ 'CLIENTS.DETAIL.CONTACT.NAME' | translate }}</dt>
-              <dd>{{ client()!.contactName || '—' }}</dd>
+            @if (client()!.sector) {
+              <div class="info-field">
+                <p class="text-body-sm text-muted">Secteur</p>
+                <p class="text-body-md">{{ client()!.sector }}</p>
+              </div>
+            }
+            @if (client()!.country) {
+              <div class="info-field">
+                <p class="text-body-sm text-muted">Pays</p>
+                <p class="text-body-md">{{ client()!.country }}</p>
+              </div>
+            }
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Délai de paiement</p>
+              <p class="text-body-md">{{ client()!.paymentTermsDays ?? '—' }} jours</p>
             </div>
-            <div class="info-row">
-              <dt>{{ 'CLIENTS.DETAIL.CONTACT.EMAIL' | translate }}</dt>
-              <dd>
-                @if (client()!.contactEmail) {
-                  <a [href]="'mailto:' + client()!.contactEmail" class="link">
-                    {{ client()!.contactEmail }}
-                  </a>
-                } @else { — }
-              </dd>
+            <div class="info-field">
+              <p class="text-body-sm text-muted">Devise</p>
+              <p class="text-body-md">{{ client()!.defaultCurrency ?? 'TND' }}</p>
             </div>
-            <div class="info-row">
-              <dt>{{ 'CLIENTS.DETAIL.CONTACT.PHONE' | translate }}</dt>
-              <dd>{{ client()!.contactPhone || '—' }}</dd>
-            </div>
-            <div class="info-row">
-              <dt>{{ 'CLIENTS.DETAIL.CONTACT.EMAIL_GENERAL' | translate }}</dt>
-              <dd>
-                @if (client()!.email) {
-                  <a [href]="'mailto:' + client()!.email" class="link">
-                    {{ client()!.email }}
-                  </a>
-                } @else { — }
-              </dd>
-            </div>
-            @if (client()!.website) {
-              <div class="info-row">
-                <dt>{{ 'CLIENTS.DETAIL.CONTACT.WEBSITE' | translate }}</dt>
-                <dd>
-                  <a [href]="client()!.website!" target="_blank" rel="noopener noreferrer"
-                     class="link">{{ client()!.website }}</a>
-                </dd>
+            @if (client()!.address || client()!.city) {
+              <div class="info-field info-field--full">
+                <p class="text-body-sm text-muted">Adresse</p>
+                <p class="text-body-md">
+                  {{ formattedAddress() }}
+                </p>
               </div>
             }
             @if (client()!.notes) {
-              <div class="info-row">
-                <dt>{{ 'CLIENTS.DETAIL.CONTACT.NOTES' | translate }}</dt>
-                <dd class="notes-text">{{ client()!.notes }}</dd>
+              <div class="info-field info-field--full">
+                <p class="text-body-sm text-muted">Notes</p>
+                <p class="text-body-md info-notes">{{ client()!.notes }}</p>
               </div>
             }
-          </dl>
-        </daf-card>
-
-        <!-- Affaires quick link -->
-        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="section-card">
-          <div class="card-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="7" width="20" height="14" rx="2"/>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-            </svg>
-            {{ 'CLIENTS.DETAIL.PROJECTS.TITLE' | translate }}
-            <span class="affaires-count">{{ stats()?.totalAffaires ?? 0 }}</span>
           </div>
-          <div class="card-body">
-            <a [routerLink]="['../../affaires']" class="link-action">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="5" y1="12" x2="19" y2="12"/>
-                <polyline points="12 5 19 12 12 19"/>
-              </svg>
-              {{ 'CLIENTS.DETAIL.PROJECTS.SEE_ALL' | translate }}
-            </a>
-          </div>
-        </daf-card>
+        </section>
 
-      </div>
+        <!-- Contact -->
+        <section class="glass-card collapsible">
+          <button class="collapsible__header" (click)="toggleSection('contact')"
+                  [attr.aria-expanded]="isOpen('contact')">
+            <h2 class="text-title-md section-card__title">
+              <span class="material-symbols-outlined text-primary">person</span>
+              Contact
+            </h2>
+            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('contact')">expand_more</span>
+          </button>
+          @if (isOpen('contact')) {
+            <div class="collapsible__body">
+              <div class="info-grid-2col">
+                <div class="info-field">
+                  <p class="text-body-sm text-muted">Nom du contact</p>
+                  <p class="text-body-md">{{ client()!.contactName || '—' }}</p>
+                </div>
+                <div class="info-field">
+                  <p class="text-body-sm text-muted">Téléphone contact</p>
+                  <p class="text-body-md">{{ client()!.contactPhone || '—' }}</p>
+                </div>
+                @if (client()!.contactEmail) {
+                  <div class="info-field">
+                    <p class="text-body-sm text-muted">Email contact</p>
+                    <a [href]="'mailto:' + client()!.contactEmail" class="info-link">{{ client()!.contactEmail }}</a>
+                  </div>
+                }
+                @if (client()!.email) {
+                  <div class="info-field">
+                    <p class="text-body-sm text-muted">Email général</p>
+                    <a [href]="'mailto:' + client()!.email" class="info-link">{{ client()!.email }}</a>
+                  </div>
+                }
+                @if (client()!.phone) {
+                  <div class="info-field">
+                    <p class="text-body-sm text-muted">Téléphone</p>
+                    <p class="text-body-md">{{ client()!.phone }}</p>
+                  </div>
+                }
+                @if (client()!.website) {
+                  <div class="info-field">
+                    <p class="text-body-sm text-muted">Site web</p>
+                    <a [href]="client()!.website!" target="_blank" rel="noopener noreferrer" class="info-link">
+                      {{ client()!.website }}
+                    </a>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </section>
 
-      <!-- RIGHT: Actions -->
+        <!-- Projets liés -->
+        <section class="glass-card collapsible">
+          <button class="collapsible__header" (click)="toggleSection('projets')"
+                  [attr.aria-expanded]="isOpen('projets')">
+            <h2 class="text-title-md section-card__title">
+              <span class="material-symbols-outlined text-primary">business_center</span>
+              Projets liés
+              @if ((stats()?.totalAffaires ?? 0) > 0) {
+                <span class="section-count">{{ stats()!.totalAffaires }}</span>
+              }
+            </h2>
+            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('projets')">expand_more</span>
+          </button>
+          @if (isOpen('projets')) {
+            <div class="collapsible__body">
+              <div class="quick-links" style="margin-bottom:16px">
+                <a [routerLink]="['../../affaires']" class="quick-link">
+                  <div class="quick-link__left">
+                    <span class="material-symbols-outlined text-primary">folder_open</span>
+                    <span class="text-label-bold">Voir toutes les affaires</span>
+                  </div>
+                  <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
+                </a>
+              </div>
+              <div class="projects-summary">
+                <div class="proj-stat">
+                  <span class="proj-stat__val">{{ stats()?.totalAffaires ?? 0 }}</span>
+                  <span class="proj-stat__lbl text-body-sm text-muted">Total</span>
+                </div>
+                <div class="proj-stat">
+                  <span class="proj-stat__val" style="color:#006b58">{{ stats()?.activeAffaires ?? 0 }}</span>
+                  <span class="proj-stat__lbl text-body-sm text-muted">En cours</span>
+                </div>
+                <div class="proj-stat">
+                  <span class="proj-stat__val">{{ (stats()?.totalAffaires ?? 0) - (stats()?.activeAffaires ?? 0) }}</span>
+                  <span class="proj-stat__lbl text-body-sm text-muted">Terminés</span>
+                </div>
+              </div>
+            </div>
+          }
+        </section>
+
+      </div><!-- /detail-main -->
+
+      <!-- ══ RIGHT COLUMN ══ -->
       <div class="detail-sidebar">
 
-        <!-- KYC card -->
-        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="action-card">
-          <div class="card-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            {{ 'CLIENTS.DETAIL.KYC.SECTION_TITLE' | translate }}
-          </div>
-          <div class="card-body">
-            @if (client()!.isKycDone) {
-              <p class="kyc-ok-text">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                {{ 'CLIENTS.DETAIL.KYC.VALIDATED_ON' | translate }} {{ formatDate(client()!.kycApprovedAt) }}
-              </p>
-              @if (client()!.kycApprovedByName) {
-                <p class="kyc-by">{{ 'CLIENTS.DETAIL.KYC.BY' | translate }} {{ client()!.kycApprovedByName }}</p>
-              }
-              <button class="btn-danger-link" (click)="revokeKyc()"
-                      *appHasPermission="'FACT_VALIDATE_KYC'">
-                {{ 'CLIENTS.DETAIL.KYC.REVOKE' | translate }}
-              </button>
-            } @else {
-              <p class="kyc-pending-text">
-                {{ 'CLIENTS.DETAIL.KYC.PENDING_TEXT' | translate }}
-              </p>
-              <button class="btn-primary-full" (click)="validateKyc()"
-                      *appHasPermission="'FACT_VALIDATE_KYC'">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                {{ 'CLIENTS.DETAIL.KYC.VALIDATE_BTN' | translate }}
-              </button>
-            }
-          </div>
-        </daf-card>
+        <!-- KYC -->
+        <section class="glass-card section-card">
+          <h2 class="text-title-md" style="margin-bottom:14px">
+            <span class="material-symbols-outlined text-primary" style="vertical-align:middle;margin-right:6px;font-size:20px">verified_user</span>
+            Validation KYC
+          </h2>
+          @if (client()!.isKycDone) {
+            <div class="kyc-ok">
+              <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;color:#006b58;font-size:28px">check_circle</span>
+              <div>
+                <p class="text-label-bold" style="color:#006b58">Validé le {{ formatDate(client()!.kycApprovedAt) }}</p>
+                @if (client()!.kycApprovedByName) {
+                  <p class="text-body-sm text-muted">Par {{ client()!.kycApprovedByName }}</p>
+                }
+              </div>
+            </div>
+            <daf-button
+              *appHasPermission="'FACT_VALIDATE_KYC'"
+              [options]="{ variant: 'ghost', label: 'Révoquer le KYC', iconStart: 'lock_open', fullWidth: true }"
+              (onClick)="revokeKyc()" />
+          } @else {
+            <p class="text-body-sm text-muted" style="margin-bottom:14px;line-height:1.6">
+              Ce client n'a pas encore été validé KYC. La validation est requise avant d'émettre des factures.
+            </p>
+            <daf-button
+              *appHasPermission="'FACT_VALIDATE_KYC'"
+              [options]="{ variant: 'teal', label: 'Valider le KYC', iconStart: 'verified_user', fullWidth: true }"
+              (onClick)="validateKyc()" />
+          }
+        </section>
 
-        <!-- Quick actions -->
-        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="action-card">
-          <div class="card-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="16"/>
-              <line x1="8" y1="12" x2="16" y2="12"/>
-            </svg>
-            {{ 'CLIENTS.DETAIL.ACTIONS.TITLE' | translate }}
-          </div>
-          <div class="card-body quick-actions">
-            <a [routerLink]="['../../invoicing']" class="quick-action">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-              {{ 'CLIENTS.DETAIL.ACTIONS.INVOICES' | translate }}
+        <!-- Actions rapides -->
+        <section class="glass-card section-card">
+          <h2 class="text-title-md" style="margin-bottom:14px">Actions rapides</h2>
+          <div class="action-btns">
+            <a class="btn-full btn-full--primary" [routerLink]="['../../invoicing']">
+              <span class="material-symbols-outlined">add_card</span>
+              Nouvelle facture
             </a>
-            <a [routerLink]="['../../payments']" class="quick-action">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
-              </svg>
-              {{ 'CLIENTS.DETAIL.ACTIONS.PAYMENTS' | translate }}
+            <a class="btn-full btn-full--outline-secondary" [routerLink]="['../../payments']">
+              <span class="material-symbols-outlined">payments</span>
+              Voir les paiements
+            </a>
+            <a class="btn-full btn-full--outline-primary" [routerLink]="['../../invoicing']">
+              <span class="material-symbols-outlined">receipt_long</span>
+              Voir les factures
             </a>
           </div>
-        </daf-card>
+        </section>
 
-        <!-- Dates card -->
-        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}" class="action-card">
-          <div class="card-body">
-            <div class="date-row">
-              <span class="date-label">{{ 'CLIENTS.DETAIL.CREATED_AT' | translate }}</span>
-              <span class="date-value">{{ formatDate(client()!.createdAt) }}</span>
+        <!-- Traçabilité -->
+        <section class="glass-card section-card tracability">
+          <h2 class="text-title-md" style="margin-bottom:16px">Traçabilité</h2>
+          <div class="trace-list">
+            <div class="trace-item">
+              <span class="material-symbols-outlined text-light">history</span>
+              <div>
+                <p class="text-label-caps text-muted">Créé le</p>
+                <p class="text-body-sm">{{ formatDate(client()!.createdAt) }}</p>
+              </div>
             </div>
             @if (client()!.updatedAt) {
-              <div class="date-row">
-                <span class="date-label">{{ 'CLIENTS.DETAIL.UPDATED_AT' | translate }}</span>
-                <span class="date-value">{{ formatDate(client()!.updatedAt) }}</span>
+              <div class="trace-item">
+                <span class="material-symbols-outlined text-light">edit_note</span>
+                <div>
+                  <p class="text-label-caps text-muted">Dernière modification</p>
+                  <p class="text-body-sm">{{ formatDate(client()!.updatedAt) }}</p>
+                </div>
+              </div>
+            }
+            @if (stats()?.lastActivityDate) {
+              <div class="trace-item">
+                <span class="material-symbols-outlined text-light">event</span>
+                <div>
+                  <p class="text-label-caps text-muted">Dernière activité</p>
+                  <p class="text-body-sm">{{ formatDate(stats()!.lastActivityDate) }}</p>
+                </div>
+              </div>
+            }
+            <div class="trace-item">
+              <span class="material-symbols-outlined text-light">paid</span>
+              <div>
+                <p class="text-label-caps text-muted">Montant réglé</p>
+                <p class="text-body-sm">{{ formatAmount(stats()?.totalPaid ?? null, client()!.defaultCurrency ?? 'TND') }}</p>
+              </div>
+            </div>
+            @if ((stats()?.pendingAmount ?? 0) > 0) {
+              <div class="trace-item">
+                <span class="material-symbols-outlined" style="color:#d97706">hourglass_top</span>
+                <div>
+                  <p class="text-label-caps" style="color:#d97706">En attente de règlement</p>
+                  <p class="text-body-sm" style="color:#92400e;font-weight:600">
+                    {{ formatAmount(stats()!.pendingAmount, client()!.defaultCurrency ?? 'TND') }}
+                  </p>
+                </div>
               </div>
             }
           </div>
-        </daf-card>
+        </section>
 
-        <!-- Deactivate / Reactivate -->
+        <!-- Désactiver / Réactiver -->
         @if (client()!.isActive && (stats()?.activeAffaires ?? 0) === 0) {
-          <button class="btn-deactivate" (click)="deactivateClient()"
-                  *appHasPermission="'FACT_MANAGE_CLIENTS'">
-            {{ 'CLIENTS.DETAIL.DEACTIVATE' | translate }}
-          </button>
+          <daf-button
+            *appHasPermission="'FACT_MANAGE_CLIENTS'"
+            [options]="{ variant: 'danger', label: 'Désactiver ce client', iconStart: 'person_off', fullWidth: true }"
+            (onClick)="deactivateClient()" />
         }
         @if (!client()!.isActive) {
-          <button class="btn-reactivate" (click)="reactivateClient()"
-                  *appHasPermission="'FACT_MANAGE_CLIENTS'">
-            {{ 'CLIENTS.DETAIL.REACTIVATE' | translate }}
-          </button>
+          <daf-button
+            *appHasPermission="'FACT_MANAGE_CLIENTS'"
+            [options]="{ variant: 'ghost', label: 'Réactiver ce client', iconStart: 'person_check', fullWidth: true }"
+            (onClick)="reactivateClient()" />
         }
 
-      </div>
-    </div>
+      </div><!-- /detail-sidebar -->
+
+    </div><!-- /detail-layout -->
 
     <!-- Edit modal template -->
     <ng-template #editFormTpl>
@@ -312,5 +398,4 @@
     </ng-template>
 
   }
-
 </div>

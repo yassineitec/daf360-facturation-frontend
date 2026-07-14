@@ -1,13 +1,17 @@
 <div class="inv-page">
 
   <!-- ── Page header ───────────────────────────────────────────────────────── -->
-  <div class="flex justify-between items-center">
+  <div class="page-header">
     <div class="flex items-center gap-3">
       <span class="material-symbols-outlined text-[32px] text-[#79D7BE]"
             style="font-variation-settings:'FILL' 1">receipt_long</span>
       <h2 class="text-2xl font-bold text-on-surface">{{ 'INVOICING.LIST.TITLE' | translate }}</h2>
     </div>
-    <daf-button [options]="{variant:'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="navigateToNew()" />
+    <!-- Desktop: bouton complet | Mobile: icône + uniquement -->
+    <daf-button class="new-btn-desktop" [options]="{variant:'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="navigateToNew()" />
+    <button class="new-btn-mobile" (click)="navigateToNew()" aria-label="Nouvelle facture">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">add</span>
+    </button>
   </div>
 
   <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
@@ -18,8 +22,8 @@
       <div class="p-4 flex flex-col justify-between" style="min-height:112px">
         <div class="flex justify-between items-start mb-3">
           <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ 'INVOICING.LIST.KPI.TOTAL' | translate }}</span>
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
-            <span class="material-symbols-outlined text-sm text-primary">receipt_long</span>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-primary/10">
+            <span class="material-symbols-outlined text-xl text-primary">receipt_long</span>
           </div>
         </div>
         <div>
@@ -34,8 +38,8 @@
       <div class="p-4 flex flex-col justify-between" style="min-height:112px">
         <div class="flex justify-between items-start mb-3">
           <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ 'INVOICING.LIST.KPI.PENDING' | translate }}</span>
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-teal/10">
-            <span class="material-symbols-outlined text-sm text-teal">schedule</span>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-teal/10">
+            <span class="material-symbols-outlined text-xl text-teal">schedule</span>
           </div>
         </div>
         <div>
@@ -50,8 +54,8 @@
       <div class="p-4 flex flex-col justify-between" style="min-height:112px">
         <div class="flex justify-between items-start mb-3">
           <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ 'INVOICING.LIST.KPI.OVERDUE' | translate }}</span>
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-danger/10">
-            <span class="material-symbols-outlined text-sm text-danger">warning</span>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-danger/10">
+            <span class="material-symbols-outlined text-xl text-danger">warning</span>
           </div>
         </div>
         <div>
@@ -66,8 +70,8 @@
       <div class="p-4 flex flex-col justify-between" style="min-height:112px">
         <div class="flex justify-between items-start mb-3">
           <span class="text-label-caps text-on-surface-variant flex-1 pr-2">{{ 'INVOICING.LIST.KPI.DISPUTED' | translate }}</span>
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-outline/10">
-            <span class="material-symbols-outlined text-sm text-outline">gavel</span>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-outline/10">
+            <span class="material-symbols-outlined text-xl text-outline">gavel</span>
           </div>
         </div>
         <div>
@@ -80,7 +84,9 @@
   </section>
 
   <!-- ── Search & Filters ──────────────────────────────────────────────────── -->
-  <daf-card [options]="{variant:'default',padding:'none',radius:'xl'}">
+
+  <!-- Search bar — Desktop -->
+  <daf-card class="search-card--desk" [options]="{variant:'default',padding:'none',radius:'xl',hoverable:true}">
     <div class="search-bar-row">
 
       <div class="search-wrap">
@@ -115,6 +121,36 @@
     </div>
   </daf-card>
 
+  <!-- Search bar — Mobile (compact) -->
+  <div class="mob-search-card">
+    @if (mobileSearchOpen()) {
+      <div class="mob-search-bar">
+        <span class="material-symbols-outlined mob-search-icon">search</span>
+        <input class="mob-search-input" type="text"
+               [value]="searchText()"
+               (input)="searchText.set(getInputValue($event)); onSearch()"
+               placeholder="{{ 'INVOICING.LIST.SEARCH' | translate }}"
+               autofocus />
+        <button class="mob-icon-btn" type="button"
+                (click)="mobileSearchOpen.set(false); searchText.set(''); onSearch()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    } @else {
+      <button class="mob-icon-btn" type="button" (click)="mobileSearchOpen.set(true)">
+        <span class="material-symbols-outlined">search</span>
+      </button>
+      @if (searchText()) {
+        <span class="mob-search-active-pill">{{ searchText() }}</span>
+      }
+      <div class="mob-header-spacer"></div>
+      <button class="mob-filter-btn" type="button">
+        <span class="material-symbols-outlined">tune</span>
+        <span>Filtres</span>
+      </button>
+    }
+  </div>
+
   <!-- ── Action error ───────────────────────────────────────────────────────── -->
   @if (actionError()) {
     <div class="error-banner">
@@ -129,91 +165,79 @@
       <div class="table-error">{{ error() }}</div>
     }
 
+    <!-- Mobile list rows -->
+    <div class="mob-list">
+      @if (!loading() && invoices().length === 0) {
+        <div class="mob-empty">
+          <span class="material-symbols-outlined">receipt_long</span>
+          {{ 'INVOICING.LIST.TABLE.EMPTY' | translate }}
+        </div>
+      }
+      @for (inv of invoices(); track inv.id) {
+        <div class="mob-row" (click)="navigateToDetail(inv.id)">
+          <div class="mob-row__top">
+            <span class="mob-row__ref">{{ inv.invoiceNumber || ('INVOICING.LIST.TABLE.DRAFT' | translate) }}</span>
+            <span class="mob-row__statut badge--{{ statutBadgeVariant(inv.statut) }}">{{ statutLabel(inv.statut) | translate }}</span>
+          </div>
+          <p class="mob-row__title">{{ inv.clientNom || '—' }}</p>
+          <div class="mob-row__foot">
+            <span class="mob-row__date">{{ inv.affaireRef ?? (inv.dateEcheance ? formatDate(inv.dateEcheance) : formatDate(inv.dateEmission)) }}</span>
+            <span class="mob-row__amount">{{ formatAmount(inv.montantTtc, inv.devise) }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
     <div class="table-scroll">
-      <table class="inv-table">
-        <thead>
-          <tr>
-            <th>{{ 'INVOICING.LIST.TABLE.REF' | translate }}</th>
-            <th>{{ 'INVOICING.LIST.TABLE.CLIENT' | translate }}</th>
-            <th class="th-right">{{ 'INVOICING.LIST.TABLE.AMOUNT' | translate }}</th>
-            <th>{{ 'INVOICING.LIST.TABLE.STATUS' | translate }}</th>
-            <th>{{ 'INVOICING.LIST.TABLE.DATE' | translate }}</th>
-            <th class="th-actions"></th>
-          </tr>
-        </thead>
-        <tbody>
+      <daf-data-table
+        [columns]="tableColumns"
+        [rows]="tableRows()"
+        [config]="tableConfig()"
+        (rowClick)="onRowClick($event)">
 
-          @if (loading()) {
-            @for (n of [1,2,3,4,5]; track n) {
-              <tr class="skeleton-row">
-                <td><div class="skel skel--md"></div></td>
-                <td><div class="skel skel--lg"></div></td>
-                <td><div class="skel skel--sm"></div></td>
-                <td><div class="skel skel--sm"></div></td>
-                <td><div class="skel skel--sm"></div></td>
-                <td></td>
-              </tr>
+        <ng-template dafCell="ref" let-row>
+          <div class="cell-ref">
+            <span class="cell-ref__num">{{ row['_raw'].invoiceNumber || ('INVOICING.LIST.TABLE.DRAFT' | translate) }}</span>
+            <span class="cell-ref__aff">{{ row['_raw'].affaireRef ?? '—' }}</span>
+          </div>
+        </ng-template>
+
+        <ng-template dafCell="client" let-row>
+          <div class="cell-client" [title]="row['_raw'].clientNom || ''">
+            {{ row['_raw'].clientNom || '—' }}
+          </div>
+        </ng-template>
+
+        <ng-template dafCell="amount" let-row>
+          <span class="cell-amount">{{ formatAmount(row['_raw'].montantTtc, row['_raw'].devise) }}</span>
+        </ng-template>
+
+        <ng-template dafCell="statut" let-row>
+          <div class="cell-statut">
+            <span class="badge badge--{{ statutBadgeVariant(row['_raw'].statut) }}">
+              {{ statutLabel(row['_raw'].statut) | translate }}
+            </span>
+            @if (isOverdue(row['_raw'])) {
+              <span class="overdue-tag">{{ 'INVOICING.LIST.TABLE.OVERDUE_DAYS' | translate: { days: overdueDays(row['_raw']) } }}</span>
             }
-          }
+          </div>
+        </ng-template>
 
-          @for (inv of invoices(); track inv.id) {
-            <tr class="inv-row" [class.inv-row--overdue]="isOverdue(inv)"
-              (click)="navigateToDetail(inv.id)">
+        <ng-template dafCell="date" let-row>
+          <div class="cell-date" [class.cell-date--overdue]="isOverdue(row['_raw'])">
+            {{ row['_raw'].dateEcheance ? (('INVOICING.LIST.TABLE.ECH_PREFIX' | translate) + ' ' + formatDate(row['_raw'].dateEcheance)) : formatDate(row['_raw'].dateEmission) }}
+          </div>
+        </ng-template>
 
-              <td>
-                <div class="cell-ref">
-                  <span class="cell-ref__num">{{ inv.invoiceNumber || ('INVOICING.LIST.TABLE.DRAFT' | translate) }}</span>
-                  <span class="cell-ref__aff">{{ inv.affaireRef ?? '—' }}</span>
-                </div>
-              </td>
+        <ng-template dafCell="actions" let-row>
+          <div (click)="$event.stopPropagation()">
+            <button class="menu-btn" title="Actions">
+              <span class="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
+        </ng-template>
 
-              <td>
-                <div class="cell-client" [title]="inv.clientNom || ''">
-                  {{ inv.clientNom || '—' }}
-                </div>
-              </td>
-
-              <td class="td-right">
-                <span class="cell-amount">{{ formatAmount(inv.montantTtc, inv.devise) }}</span>
-              </td>
-
-              <td>
-                <div class="cell-statut">
-                  <span class="badge badge--{{ statutBadgeVariant(inv.statut) }}">
-                    {{ statutLabel(inv.statut) | translate }}
-                  </span>
-                  @if (isOverdue(inv)) {
-                    <span class="overdue-tag">{{ 'INVOICING.LIST.TABLE.OVERDUE_DAYS' | translate: { days: overdueDays(inv) } }}</span>
-                  }
-                </div>
-              </td>
-
-              <td>
-                <div class="cell-date" [class.cell-date--overdue]="isOverdue(inv)">
-                  {{ inv.dateEcheance ? (('INVOICING.LIST.TABLE.ECH_PREFIX' | translate) + ' ' + formatDate(inv.dateEcheance)) : formatDate(inv.dateEmission) }}
-                </div>
-              </td>
-
-              <td class="td-actions" (click)="$event.stopPropagation()">
-                <button class="menu-btn" title="Actions">
-                  <span class="material-symbols-outlined">more_vert</span>
-                </button>
-              </td>
-
-            </tr>
-          }
-
-          @if (!loading() && invoices().length === 0) {
-            <tr>
-              <td colspan="6" class="empty-cell">
-                <span class="material-symbols-outlined">receipt_long</span>
-                {{ 'INVOICING.LIST.TABLE.EMPTY' | translate }}
-              </td>
-            </tr>
-          }
-
-        </tbody>
-      </table>
+      </daf-data-table>
     </div>
 
     <daf-pagination
@@ -223,6 +247,7 @@
       (pageChange)="goToPage($event)" />
 
   </daf-card>
+
 
 </div>
 

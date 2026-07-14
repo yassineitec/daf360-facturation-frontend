@@ -10,12 +10,12 @@ import {
   CostLineDto,
   formatAmount,
 } from '../cost.model';
-import { ModalService, ModalRef } from '@khalilrebhiitec/daf360';
+import { ModalService, ModalRef, BadgeOptions, ButtonComponent, CardComponent, StatusBadgeComponent, FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-cost-approval-queue',
   standalone: true,
-  imports: [PermissionDirective, SearchBarComponent],
+  imports: [PermissionDirective, SearchBarComponent, ButtonComponent, CardComponent, StatusBadgeComponent, FormFieldComponent],
   templateUrl: './cost-approval-queue.component.html',
   styleUrl: './cost-approval-queue.component.scss',
 })
@@ -152,5 +152,11 @@ export class CostApprovalQueueComponent implements OnInit {
 
   getInputValue(e: Event): string {
     return (e.target as HTMLInputElement).value;
+  }
+
+  urgencyBadgeOptions(level: string | null): BadgeOptions {
+    if (!level || level === 'L1') return { variant: 'neutral', pill: true, size: 'sm' };
+    if (level === 'L2') return { variant: 'warning', pill: true, size: 'sm' };
+    return { variant: 'danger', pill: true, size: 'sm' };
   }
 }

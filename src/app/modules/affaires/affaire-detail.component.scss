@@ -20,7 +20,11 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
 .text-title-md { font-size: 18px; font-weight: 700; line-height: 24px; }
 .text-headline-lg { font-size: 20px; font-weight: 700; line-height: 28px; }
 .text-headline-xl { font-size: 24px; font-weight: 800; line-height: 32px; }
-.text-price-display { font-size: 24px; font-weight: 900; line-height: 32px; }
+.text-price-display {
+  font-size: 24px; font-weight: 900; line-height: 32px;
+  @media (max-width: 768px) { font-size: 18px; line-height: 26px; }
+  @media (max-width: 480px) { font-size: 15px; line-height: 22px; }
+}
 
 // ── Helpers couleurs ──────────────────────────────────────────────────────
 .text-primary   { color: $primary; }
@@ -54,6 +58,9 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  @media (max-width: 768px) { gap: 14px; }
+  @media (max-width: 480px) { gap: 10px; }
 }
 
 // ── Loading / Error ───────────────────────────────────────────────────────
@@ -96,26 +103,29 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
 }
 
 .back-btn {
-  width: 40px; height: 40px;
-  border: none;
+  width: 30px; height: 30px;
+  border: 1px solid rgba($primary, 0.22);
   background: rgba(255, 255, 255, 0.7);
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   color: $primary;
   transition: background 0.15s;
   flex-shrink: 0;
   font-family: inherit;
-  .material-symbols-outlined { font-size: 22px; }
+  .material-symbols-outlined { font-size: 16px; }
   &:hover { background: rgba($primary, 0.10); }
 }
 
-.hd-titles { display: flex; flex-direction: column; gap: 4px; }
+.hd-titles { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
 .hd-title-row {
   display: flex; align-items: center;
   gap: 12px; flex-wrap: wrap;
-  h1 { margin: 0; color: $text-dark; }
+  h1 { margin: 0; color: $text-dark;
+    @media (max-width: 768px) { font-size: 18px; line-height: 26px; }
+    @media (max-width: 480px) { font-size: 16px; line-height: 22px; }
+  }
 }
 
 .badge-warn {
@@ -131,7 +141,7 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 640px)  { grid-template-columns: 1fr; }
+  @media (max-width: 480px)  { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
 
 .kpi-card {
@@ -142,6 +152,9 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
   display: flex; flex-direction: column; gap: 14px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  @media (max-width: 768px) { padding: 16px; gap: 10px; }
+  @media (max-width: 480px) { padding: 12px; gap: 8px; border-radius: 12px; }
 
   &:hover {
     transform: translateY(-4px) scale(1.01);
@@ -193,14 +206,17 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
 // ── RAF Tracking ──────────────────────────────────────────────────────────
 .raf-section {
   padding: 24px;
+  @media (max-width: 768px) { padding: 16px; }
+  @media (max-width: 480px) { padding: 12px; }
   &__header {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
+    @media (max-width: 480px) { margin-bottom: 14px; }
   }
 }
 .raf-bars {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
-  @media (max-width: 768px) { grid-template-columns: 1fr; }
+  @media (max-width: 768px) { grid-template-columns: 1fr; gap: 16px; }
 }
 .raf-bar-item {
   display: flex; flex-direction: column; gap: 8px;
@@ -223,7 +239,11 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
 .detail-sidebar { display: flex; flex-direction: column; gap: 16px; }
 
 // ── Section card ──────────────────────────────────────────────────────────
-.section-card { padding: 24px; }
+.section-card {
+  padding: 24px;
+  @media (max-width: 768px) { padding: 16px; }
+  @media (max-width: 480px) { padding: 12px; }
+}
 .section-card__header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 20px; gap: 12px;
@@ -276,10 +296,14 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
   cursor: pointer; font-family: inherit; text-align: left;
   transition: background 0.12s;
   &:hover { background: rgba(0, 0, 0, 0.02); }
+  @media (max-width: 768px) { padding: 14px 16px; }
+  @media (max-width: 480px) { padding: 12px; }
 }
 .collapsible__body {
   padding: 16px 24px 20px;
   border-top: 1px solid $border;
+  @media (max-width: 768px) { padding: 14px 16px; }
+  @media (max-width: 480px) { padding: 12px; }
 }
 .chevron {
   font-size: 20px; color: $text-light;
@@ -421,12 +445,14 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
 .action-btns { display: flex; flex-direction: column; gap: 10px; }
 .btn-full {
   width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
-  padding: 16px; border-radius: 12px;
-  font-size: 16px; font-weight: 700; font-family: inherit;
+  padding: 14px; border-radius: 12px;
+  font-size: 14px; font-weight: 700; font-family: inherit;
   cursor: pointer; text-decoration: none;
   border: 2px solid transparent;
   transition: all 0.18s;
-  .material-symbols-outlined { font-size: 20px; }
+  .material-symbols-outlined { font-size: 18px; }
+
+  @media (max-width: 480px) { padding: 11px; font-size: 13px; }
 
   &--primary {
     background: $secondary; color: #fff; border-color: $secondary;
@@ -484,6 +510,7 @@ $border:    #bdc9c4; // variante légèrement plus foncée que le token global
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 480px) { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
 
 .indicateur-card {

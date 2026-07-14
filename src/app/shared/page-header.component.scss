@@ -46,7 +46,13 @@
   gap: 10px;
 }
 
-@media (max-width: 640px) {
-  .ph-wrap { padding: 16px 16px 0; }
+@media (max-width: 768px) {
   .ph-title { font-size: 1.25rem; }
+  .ph-sub   { font-size: 0.8125rem; }
+  .ph-actions { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+  .ph-title { font-size: 1.1rem; }
+  .ph-wrap  { gap: 8px; }
 }

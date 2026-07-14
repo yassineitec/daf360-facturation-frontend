@@ -8,17 +8,16 @@ $deep-blue:  #164B60;
 
 // ── Page wrapper ───────────────────────────────────────────────────────────────
 .wizard-page {
-  padding: 28px 16px 48px;
+  padding: 0 0 32px;
   box-sizing: border-box;
 }
 
 // ── Two-column grid ────────────────────────────────────────────────────────────
 .wizard-layout {
   display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 24px;
-  max-width: 100%;
-  margin: 0 auto;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  width: 100%;
   align-items: start;
 }
 
@@ -36,37 +35,47 @@ $deep-blue:  #164B60;
 // ── Page head ─────────────────────────────────────────────────────────────────
 .page-head {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   margin-bottom: 4px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-on-surface);
+    line-height: 1.25;
+    margin: 0;
+  }
 }
 
-.back-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  border: 1.5px solid rgba($brand-slate, 0.3);
-  background: #fff;
+.breadcrumb {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  text-decoration: none;
-  color: #3e4945;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-
-  .material-symbols-outlined { font-size: 20px; }
-  &:hover { border-color: $green; color: $green; background: rgba($green, 0.05); }
+  gap: 10px;
 }
 
-.page-title {
-  font-size: 1.4rem;
+.breadcrumb__parent {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  transition: color 0.15s;
+
+  &:hover { color: #0b1c30; text-decoration: underline; }
+}
+
+.breadcrumb__current {
+  font-size: 1.375rem;
   font-weight: 800;
   color: #0b1c30;
-  margin: 0 0 2px;
-  letter-spacing: -0.02em;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .page-sub {
@@ -89,8 +98,9 @@ $deep-blue:  #164B60;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 32px;
-  border-top: 1px solid $border-soft;
+  padding: 10px 0;
+  border-bottom: 1px solid $border-soft;
+  margin-bottom: 4px;
 }
 
 
@@ -224,6 +234,23 @@ $deep-blue:  #164B60;
   gap: 16px;
   position: sticky;
   top: 24px;
+  // Align the nav buttons with the form card's top edge instead of the page
+  // title — .form-area has a .page-head (breadcrumb + h1) above its card
+  // that the sidebar has no equivalent for. Matches the other "Nouveau ..."
+  // wizards (supplier/client/invoice), which already use this same offset.
+  padding-top: 72px;
+}
+
+// ── Panel nav buttons ─────────────────────────────────────────────────────────
+.panel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+
+  .panel-nav__back,
+  .panel-nav__next { flex: 1; }
 }
 
 // ── Panel header / body (matches reference design) ────────────────────────────
@@ -385,16 +412,46 @@ $deep-blue:  #164B60;
   }
 }
 
-// ── Responsive: collapse to single column below 900px ────────────────────────
-@media (max-width: 900px) {
-  .wizard-layout {
-    grid-template-columns: 1fr;
-  }
+// ── Responsive ───────────────────────────────────────────────────────────────
+
+// Tablet: narrow sidebar
+@media (max-width: 1100px) {
+  .wizard-layout { grid-template-columns: 1fr 280px; gap: 16px; }
+  .step-body      { padding: 20px 24px; }
+  .card-head      { padding: 18px 24px 16px; }
+  .nav-footer     { padding: 16px 24px; }
+  .validation-hint,
+  .error-banner   { margin-left: 24px; margin-right: 24px; }
+}
+
+// Mobile: single column, hide sidebar panels
+@media (max-width: 768px) {
+  .wizard-page    { padding: 0 0 24px; }
+  .wizard-layout  { grid-template-columns: 1fr; gap: 16px; }
+
   .sidebar {
     position: static;
-    flex-direction: row;
-    flex-wrap: wrap;
-
-    .panel, .tips-panel { flex: 1 1 260px; }
+    // On mobile show only tips, hide progression+résumé panels to save space
+    daf-card { display: none; }
+    .tips-panel { display: block; }
   }
+
+  .page-head      { margin-bottom: 6px; }
+  .breadcrumb__current { font-size: 1.1rem; }
+  .page-sub       { font-size: 0.75rem; }
+
+  .card-head      { padding: 14px 16px 12px; gap: 10px; }
+  .card-head__icon { width: 36px; height: 36px; .material-symbols-outlined { font-size: 18px; } }
+  .card-head__title { font-size: 0.95rem; }
+
+  .step-body      { padding: 16px; }
+  .nav-footer     { padding: 14px 16px; }
+  .validation-hint,
+  .error-banner   { margin-left: 16px; margin-right: 16px; }
+}
+
+@media (max-width: 480px) {
+  .step-body  { padding: 12px; }
+  .nav-footer { padding: 12px; }
+  .card-head  { padding: 12px 12px 10px; }
 }

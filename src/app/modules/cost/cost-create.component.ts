@@ -1,18 +1,41 @@
 import {
-  Component, OnInit, inject, signal,
+  Component, OnInit, inject, signal, computed,
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime } from 'rxjs/operators';
 
-import { CostService }       from './cost.service';
-import { FactListService }   from '../../core/fact-list.service';
-import { ClientService }     from '../clients/client.service';
+import { CostService }     from './cost.service';
+import { FactListService } from '../../core/fact-list.service';
+import { ClientService }   from '../clients/client.service';
 import {
   CostCategoryDto, CostApprovalThresholdDto, CreateCostLineRequest,
   ListValueDto, isCategoryStrictScrutiny,
 } from './cost.model';
+
+type CostStep = 1 | 2 | 3;
+
+const STEPS = [
+  {
+    icon:  'category',
+    title: 'Contexte',
+    sub:   'Catégorie, date et objet de la dépense',
+    tip:   'Sélectionnez la catégorie la plus précise pour faciliter le contrôle de gestion et l\'imputation comptable.',
+  },
+  {
+    icon:  'payments',
+    title: 'Montants',
+    sub:   'Montant HT, TVA, devise et mode de paiement',
+    tip:   'Vérifiez le taux de TVA applicable selon le pays d\'établissement du fournisseur.',
+  },
+  {
+    icon:  'store',
+    title: 'Fournisseur & Pièces jointes',
+    sub:   'Identification du fournisseur et justificatifs',
+    tip:   'Joignez systématiquement la facture originale pour assurer la déductibilité fiscale.',
+  },
+] as const;
 
 @Component({
   selector: 'app-cost-create',
@@ -41,8 +64,58 @@ export class CostCreateComponent implements OnInit {
   serverError     = signal<string | null>(null);
   approvalPreview = signal<string | null>(null);
 
+  // ── Stepper ──────────────────────────────────────────────────────────────
+  step = signal<CostStep>(1);
+  readonly steps = STEPS;
+
+  readonly stepTitle = computed(() => STEPS[this.step() - 1].title);
+  readonly stepSub   = computed(() => STEPS[this.step() - 1].sub);
+  readonly stepTip   = computed(() => STEPS[this.step() - 1].tip);
+  readonly stepIcon  = computed(() => STEPS[this.step() - 1].icon);
+
+  readonly canGoNext = computed(() => {
+    const s = this.step();
+    if (s === 1) {
+      return this.form.get('categoryId')!.valid
+          && this.form.get('transactionDate')!.valid
+          && this.form.get('description')!.valid;
+    }
+    if (s === 2) {
+      return this.form.get('netAmountLocal')!.valid
+          && this.form.get('currencyId')!.valid;
+    }
+    return true;
+  });
+
+  // ── Summary sidebar ───────────────────────────────────────────────────────
+  readonly summaryCategory = computed(() => {
+    const id = this.form.get('categoryId')!.value;
+    if (!id) return '—';
+    return this.categories().find(c => c.id === +id)?.labelFr ?? '—';
+  });
+
+  readonly summaryDate = computed(() => {
+    const d = this.form.get('transactionDate')!.value;
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' }); }
+    catch { return d; }
+  });
+
+  readonly summaryAmount = computed(() => {
+    const gross = this.grossAmount;
+    if (!gross) return '—';
+    const code = this.selectedCurrency?.code ?? '';
+    return `${gross.toLocaleString('fr-FR', { minimumFractionDigits:2, maximumFractionDigits:2 })} ${code}`.trim();
+  });
+
+  readonly summarySupplier = computed(() =>
+    this.form.get('supplierNameFree')!.value?.trim() || '—'
+  );
+
+  // ── Today ─────────────────────────────────────────────────────────────────
   readonly today = new Date().toISOString().split('T')[0];
 
+  // ── Form ──────────────────────────────────────────────────────────────────
   form = new FormGroup({
     categoryId:            new FormControl<number | null>(null, Validators.required),
     transactionDate:       new FormControl<string>(this.today, Validators.required),
@@ -72,7 +145,6 @@ export class CostCreateComponent implements OnInit {
       error: () => this.loadFormData(1),
     });
 
-    // Auto-fill period from date
     this.form.get('transactionDate')!.valueChanges.subscribe(date => {
       if (date) {
         const d = new Date(date);
@@ -85,7 +157,6 @@ export class CostCreateComponent implements OnInit {
       this.form.patchValue({ periodYear: d.getFullYear(), periodMonth: d.getMonth() + 1 }, { emitEvent: false });
     }
 
-    // Approval preview
     this.form.get('netAmountLocal')!.valueChanges
       .pipe(debounceTime(300))
       .subscribe(v => this.updateApprovalPreview(v));
@@ -93,7 +164,6 @@ export class CostCreateComponent implements OnInit {
     this.form.get('categoryId')!.valueChanges.subscribe(() =>
       this.updateApprovalPreview(this.form.get('netAmountLocal')!.value));
 
-    // Recurrence validation
     this.form.get('isRecurring')!.valueChanges.subscribe(r => {
       const ctrl = this.form.get('recurrenceFrequencyId')!;
       if (r) ctrl.setValidators(Validators.required);
@@ -111,6 +181,34 @@ export class CostCreateComponent implements OnInit {
     this.svc.getThresholds(pid).subscribe(t => this.thresholds.set(t));
   }
 
+  // ── Step navigation ───────────────────────────────────────────────────────
+  goNext(): void {
+    if (this.step() < 3) {
+      this.touchCurrentStep();
+      if (!this.canGoNext()) return;
+      this.step.set((this.step() + 1) as CostStep);
+    } else {
+      this.submitForm();
+    }
+  }
+
+  goPrev(): void {
+    const s = this.step();
+    if (s > 1) this.step.set((s - 1) as CostStep);
+  }
+
+  private touchCurrentStep(): void {
+    const fields: Record<number, string[]> = {
+      1: ['categoryId', 'transactionDate', 'description'],
+      2: ['netAmountLocal', 'currencyId'],
+      3: [],
+    };
+    for (const f of (fields[this.step()] ?? [])) {
+      this.form.get(f)!.markAsTouched();
+    }
+  }
+
+  // ── Getters ───────────────────────────────────────────────────────────────
   get selectedCategory(): CostCategoryDto | undefined {
     const id = this.form.get('categoryId')!.value;
     return id ? this.categories().find(c => c.id === +id) : undefined;
@@ -121,8 +219,8 @@ export class CostCreateComponent implements OnInit {
     return !!cat && isCategoryStrictScrutiny(cat);
   }
 
-  get netAmount(): number { return this.form.get('netAmountLocal')!.value ?? 0; }
-  get vatAmount(): number { return this.form.get('vatAmountLocal')!.value ?? 0; }
+  get netAmount(): number  { return this.form.get('netAmountLocal')!.value ?? 0; }
+  get vatAmount(): number  { return this.form.get('vatAmountLocal')!.value ?? 0; }
   get grossAmount(): number { return this.netAmount + this.vatAmount; }
 
   get selectedCurrency(): ListValueDto | undefined {
@@ -142,14 +240,14 @@ export class CostCreateComponent implements OnInit {
   get approvalSteps(): { label: string; role: string; state: 'done' | 'current' | 'pending' }[] {
     const level = this.approvalPreview();
     const all = [
-      { key: 'L2', label: 'ÉTAPE 1 : MANAGER', role: 'Finance Manager' },
-      { key: 'L3', label: 'ÉTAPE 2 : DIRECTEUR', role: 'Country Director' },
-      { key: 'L4', label: 'ÉTAPE FINALE : DUAL', role: 'Double approbation' },
+      { key: 'L2', label: 'ÉTAPE 1 : MANAGER',    role: 'Finance Manager' },
+      { key: 'L3', label: 'ÉTAPE 2 : DIRECTEUR',  role: 'Country Director' },
+      { key: 'L4', label: 'ÉTAPE FINALE : DUAL',  role: 'Double approbation' },
     ];
     const idx = all.findIndex(s => s.key === level);
     return all.map((s, i) => ({
       label: s.label,
-      role: s.role,
+      role:  s.role,
       state: (level === 'L1' ? 'pending' : i < idx ? 'done' : i === idx ? 'current' : 'pending') as 'done' | 'current' | 'pending',
     }));
   }
@@ -219,7 +317,7 @@ export class CostCreateComponent implements OnInit {
         this.isSaving.set(false);
         if (!draft) {
           this.svc.submitCostLine(created.id).subscribe({
-            next: () => this.router.navigate(['..'], { relativeTo: this.route }),
+            next:  () => this.router.navigate(['..'], { relativeTo: this.route }),
             error: () => this.router.navigate(['..'], { relativeTo: this.route }),
           });
         } else {

@@ -1,5 +1,6 @@
-import { Component, Injector, computed, inject } from '@angular/core';
+import { Component, Injector, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, NavigationEnd, RouterOutlet, ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { filter, map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SideNavComponent } from '@khalilrebhiitec/daf360';
@@ -31,7 +32,7 @@ const APP_NAV_DEFS: AppNavDef[] = [
 @Component({
   selector: 'app-fact-shell',
   standalone: true,
-  imports: [RouterOutlet, SideNavComponent],
+  imports: [RouterOutlet, SideNavComponent, CommonModule],
   templateUrl: './fact-shell.component.html',
   styleUrl: './fact-shell.component.scss',
 })
@@ -51,6 +52,11 @@ export class FactShellComponent {
     { initialValue: this.router.url, injector: this.injector },
   );
 
+  readonly sidebarOpen = signal(false);
+
+  toggleSidebar(): void { this.sidebarOpen.update(v => !v); }
+  closeSidebar():  void { this.sidebarOpen.set(false); }
+
   readonly sideNavConfig: SideNavConfig = {
     sectionLabel: 'FINANCE',
     collapsible: true,
@@ -63,6 +69,7 @@ export class FactShellComponent {
   );
 
   onNavClick(item: NavItem): void {
+    this.closeSidebar();
     if (item.route) {
       this.router.navigate([item.route], { relativeTo: this.activatedRoute });
     }
