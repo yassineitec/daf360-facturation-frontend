@@ -598,8 +598,8 @@
         "NOTES": "Notes"
       },
       "SECTIONS": {
-        "BUDGET_TS": "Budget & Ordres de service",
-        "NEW_TS": "Nouvel OS",
+        "BUDGET_TS": "Budget & Travail Supplémentaire",
+        "NEW_TS": "Nouvel TS",
         "SUBCONTRACTING": "Sous-traitance",
         "BILLING": "Facturation",
         "STUB": "Section en cours de développement.",
