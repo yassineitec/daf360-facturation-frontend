@@ -188,10 +188,28 @@ daf-toolbar div.relative.flex-1 {
    side. Align them here since both live in the compiled library and can't be
    edited directly. */
 daf-select label.text-label-md,
-daf-multi-date-picker label.text-label-md {
+daf-multi-date-picker label.text-label-md,
+daf-chip-group label.text-label-md,
+daf-slider span.text-label-md.font-medium.text-on-surface {
   font-size: 10px !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
   color: var(--color-outline) !important;
+}
+
+/* daf-chip-group's chip row bakes in a fixed 8px gap (flex flex-wrap gap-2),
+   tighter than the 16px rhythm (gap-4/space-y-4) used everywhere else in the
+   form. Widen it to match. */
+daf-chip-group div.flex-wrap {
+  gap: 16px !important;
+}
+
+/* daf-select/daf-data-table set host:{classAttribute:'block'} in the library,
+   but daf-chip-group and daf-slider don't — they default to display:inline,
+   so Tailwind's space-y-4 has no effect on them and neighboring rows collapse
+   tighter than every other field. Restore block display for a uniform rhythm. */
+daf-chip-group,
+daf-slider {
+  display: block;
 }

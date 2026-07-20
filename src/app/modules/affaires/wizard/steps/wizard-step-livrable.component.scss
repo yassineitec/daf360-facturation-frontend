@@ -171,11 +171,11 @@
 // ── Field label ────────────────────────────────────────────────────────────
 .field-label {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: #44474c;
+  color: var(--color-outline);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   margin-bottom: 6px;
 }
 

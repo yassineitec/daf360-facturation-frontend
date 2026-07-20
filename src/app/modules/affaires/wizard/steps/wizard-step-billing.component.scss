@@ -145,11 +145,11 @@
 }
 .field-label {
   display: block;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-outline);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   margin-bottom: 6px;
 }
 .form-input, .form-select {

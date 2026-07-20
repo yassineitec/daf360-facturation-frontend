@@ -149,7 +149,7 @@ $tertiary-hex: #00c1ad;
 .form-grid {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .field {
@@ -158,9 +158,11 @@ $tertiary-hex: #00c1ad;
   gap: 6px;
 
   label {
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: $text-body;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-outline);
   }
 
   &--full { grid-column: 1 / -1; }
