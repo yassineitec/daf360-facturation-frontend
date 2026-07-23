@@ -1,6 +1,8 @@
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { NgClass }                                             from '@angular/common';
 import { FormsModule }                                        from '@angular/forms';
+import { TranslatePipe, TranslateService }                    from '@ngx-translate/core';
+import { FormFieldComponent }                                 from '@khalilrebhiitec/daf360';
 import { BillingService }                                     from '../billing.service';
 import { BillingLinesComponent }                              from '../billing-lines.component';
 import { AffaireDetail }                                      from '../../affaire.model';
@@ -9,21 +11,21 @@ import { UserStore }                                          from '../../../../
 @Component({
   selector: 'app-billing-tm',
   standalone: true,
-  imports: [NgClass, FormsModule, BillingLinesComponent],
+  imports: [NgClass, FormsModule, TranslatePipe, BillingLinesComponent, FormFieldComponent],
   template: `
 <div class="space-y-5">
 
   <div class="flex items-center justify-between">
     <h3 class="text-sm font-semibold text-[#1d2b3e] flex items-center gap-2">
       <span class="material-symbols-outlined text-base text-[#1a6b7c]">schedule</span>
-      Facturation en Régie (TM)
+      {{ 'AFFAIRES.billing.modes.tm.title' | translate }}
     </h3>
     @if (canRF()) {
       <button (click)="openCreateModal()"
         class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl font-medium
                bg-[#1a6b7c] text-white hover:bg-[#134f5c] transition-colors">
         <span class="material-symbols-outlined text-sm">add</span>
-        Créer une ligne
+        {{ 'AFFAIRES.billing.modes.tm.create_line' | translate }}
       </button>
     }
   </div>
@@ -32,10 +34,8 @@ import { UserStore }                                          from '../../../../
     <div class="flex items-start gap-2">
       <span class="material-symbols-outlined text-base text-[#1a6b7c] flex-shrink-0 mt-0.5">info</span>
       <div>
-        <p class="font-medium text-[#1d2b3e] mb-1">Mode Régie — facturation sur consommation</p>
-        <p class="text-xs">Les lignes de facturation sont créées périodiquement selon les ressources et taux
-          configurés lors de la création de l'affaire. Utilisez le bouton "Créer une ligne" pour enregistrer
-          la facturation de la période en cours.</p>
+        <p class="font-medium text-[#1d2b3e] mb-1">{{ 'AFFAIRES.billing.modes.tm.info_title' | translate }}</p>
+        <p class="text-xs">{{ 'AFFAIRES.billing.modes.tm.info_body' | translate }}</p>
       </div>
     </div>
   </div>
@@ -53,20 +53,19 @@ import { UserStore }                                          from '../../../../
   <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
     (click)="$event.target === $event.currentTarget && showModal.set(false)">
     <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-      <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">Créer une ligne de facturation TM</h3>
+      <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">{{ 'AFFAIRES.billing.modes.tm.modal_title' | translate }}</h3>
       <div class="space-y-4">
         <div>
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Période *</label>
+          <label class="block text-xs font-medium text-[#44474c] mb-1">{{ 'AFFAIRES.billing.modes.tm.periode' | translate }}</label>
           <input type="month" [(ngModel)]="periode"
             class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm
                    focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Montant HT *</label>
-          <input type="number" [(ngModel)]="montantHt" min="0.01" step="0.01"
-            class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30"
-            placeholder="Montant en {{ affaire.devise }}" />
+          <daf-form-field
+            [options]="{ type: 'number', label: ('AFFAIRES.billing.modes.tm.montant_ht' | translate), placeholder: ('AFFAIRES.billing.modes.tm.montant_placeholder' | translate:{ devise: affaire.devise }), fullWidth: true }"
+            [value]="montantHt"
+            (valueChange)="montantHt = +($event ?? 0)" />
         </div>
         @if (modalError()) {
           <p class="text-xs text-[#dc2626]">{{ modalError() }}</p>
@@ -75,14 +74,14 @@ import { UserStore }                                          from '../../../../
       <div class="flex justify-end gap-3 mt-5">
         <button (click)="showModal.set(false)"
           class="px-4 py-2 text-sm rounded-xl border border-[#eceef0] text-[#44474c] hover:bg-[#f8fafc]">
-          Annuler
+          {{ 'AFFAIRES.billing.modes.tm.modal_cancel' | translate }}
         </button>
         <button (click)="doCreate()" [disabled]="saving()"
           [ngClass]="canCreate() && !saving()
             ? 'bg-[#1a6b7c] hover:bg-[#134f5c] cursor-pointer'
             : 'bg-[#c5c6cd] cursor-not-allowed'"
           class="px-5 py-2 text-sm rounded-xl text-white font-medium transition-colors">
-          @if (saving()) { Création… } @else { Créer }
+          @if (saving()) { {{ 'AFFAIRES.billing.modes.tm.creating' | translate }} } @else { {{ 'AFFAIRES.billing.modes.tm.create' | translate }} }
         </button>
       </div>
     </div>
@@ -93,8 +92,9 @@ import { UserStore }                                          from '../../../../
 export class BillingTmComponent implements OnInit {
   @Input({ required: true }) affaire!: AffaireDetail;
 
-  private readonly svc   = inject(BillingService);
-  private readonly store = inject(UserStore);
+  private readonly svc       = inject(BillingService);
+  private readonly store     = inject(UserStore);
+  private readonly translate = inject(TranslateService);
 
   showModal   = signal(false);
   saving      = signal(false);
@@ -126,7 +126,7 @@ export class BillingTmComponent implements OnInit {
       montantHt: this.montantHt,
     }).subscribe({
       next:  () => { this.saving.set(false); this.showModal.set(false); },
-      error: err => { this.saving.set(false); this.modalError.set(err?.error?.message ?? 'Erreur.'); },
+      error: err => { this.saving.set(false); this.modalError.set(err?.error?.message ?? this.translate.instant('AFFAIRES.billing.modes.tm.err_generic')); },
     });
   }
 }

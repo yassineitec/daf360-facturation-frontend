@@ -3,17 +3,17 @@
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
   <div class="ap-header">
     <div>
-      <h3 class="ap-header__title">File d'approbation</h3>
-      <p class="ap-header__sub">Flux de travail consolidé pour les validations financières.</p>
+      <h3 class="ap-header__title">{{ 'COST.APPROVAL_QUEUE.TITLE' | translate }}</h3>
+      <p class="ap-header__sub">{{ 'COST.APPROVAL_QUEUE.SUBTITLE' | translate }}</p>
     </div>
     <div class="ap-header__actions">
       <div class="ap-search-wrap" style="width: 280px">
         <app-search-bar
-          placeholder="ID, titre, ou montant..."
+          [placeholder]="'COST.APPROVAL_QUEUE.SEARCH_PLACEHOLDER' | translate"
           [value]="searchTerm()"
           (valueChange)="searchTerm.set($event)" />
       </div>
-      <daf-button [options]="{variant:'ghost', label:'Filtres', iconStart:'tune'}" />
+      <daf-button [options]="{variant:'ghost', label:('COST.APPROVAL_QUEUE.FILTERS' | translate), iconStart:'tune'}" />
     </div>
   </div>
 
@@ -27,7 +27,7 @@
           <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
         </div>
         <div>
-          <p class="kpi-label">En attente</p>
+          <p class="kpi-label">{{ 'COST.APPROVAL_QUEUE.KPI_PENDING' | translate }}</p>
           <h4 class="kpi-value">{{ pendingCount() }}</h4>
         </div>
       </div>
@@ -41,7 +41,7 @@
           <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">priority_high</span>
         </div>
         <div>
-          <p class="kpi-label">Urgents</p>
+          <p class="kpi-label">{{ 'COST.APPROVAL_QUEUE.KPI_URGENT' | translate }}</p>
           <h4 class="kpi-value">{{ urgentCount() }}</h4>
         </div>
       </div>
@@ -51,7 +51,7 @@
     <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="kpi-perf-card">
       <div class="kpi-inner kpi-inner--perf">
         <div class="kpi-perf-content">
-          <p class="kpi-label">Performance d'approbation</p>
+          <p class="kpi-label">{{ 'COST.APPROVAL_QUEUE.KPI_PERF' | translate }}</p>
           <div class="kpi-perf-row">
             <h4 class="kpi-value">{{ avgHours }}h</h4>
             <span class="kpi-delta">
@@ -59,7 +59,7 @@
               {{ perfDelta }}%
             </span>
           </div>
-          <p class="kpi-perf-sub">Temps de traitement moyen hebdomadaire</p>
+          <p class="kpi-perf-sub">{{ 'COST.APPROVAL_QUEUE.KPI_PERF_SUB' | translate }}</p>
         </div>
         <div class="kpi-sparkline-wrap">
           <svg viewBox="0 0 200 60" preserveAspectRatio="none" width="100%" height="100%">
@@ -120,15 +120,15 @@
           <!-- Details -->
           <div class="ap-card__details">
             <div class="ap-card__row">
-              <span class="ap-card__row-k">Priorité</span>
+              <span class="ap-card__row-k">{{ 'COST.APPROVAL_QUEUE.PRIORITY' | translate }}</span>
               <span class="ap-card__row-v">{{ urgencyLabel(cost.approvalLevelRequired) }}</span>
             </div>
             <div class="ap-card__row">
-              <span class="ap-card__row-k">Date</span>
+              <span class="ap-card__row-k">{{ 'COST.APPROVAL_QUEUE.DATE' | translate }}</span>
               <span class="ap-card__row-v">{{ fmtDate(cost.transactionDate) }}</span>
             </div>
             <div class="ap-card__amount-block">
-              <span class="ap-card__amount-lbl">Montant Total</span>
+              <span class="ap-card__amount-lbl">{{ 'COST.APPROVAL_QUEUE.AMOUNT_TOTAL' | translate }}</span>
               <span class="ap-card__amount">
                 {{ formatAmt(cost.netAmountEur ?? cost.netAmountLocal, cost.netAmountEur != null ? 'EUR' : (cost.currency ?? 'EUR')) }}
               </span>
@@ -139,11 +139,11 @@
           <div class="ap-card__actions">
             <daf-button
               *appHasPermission="'FACT_APPROVE_COST_L1'"
-              [options]="{variant:'teal', label:'Approuver la demande', iconStart:'check_circle', fullWidth:true}"
+              [options]="{variant:'teal', label:('COST.APPROVAL_QUEUE.APPROVE_REQUEST' | translate), iconStart:'check_circle', fullWidth:true}"
               (onClick)="openApprove(cost)" />
             <div class="ap-btn-row2">
               <daf-button class="ap-btn-compl"
-                [options]="{variant:'ghost', label:'Complément', size:'sm', fullWidth:true}"
+                [options]="{variant:'ghost', label:('COST.APPROVAL_QUEUE.COMPLEMENT' | translate), size:'sm', fullWidth:true}"
                 (onClick)="openApprove(cost)" />
               <daf-button
                 [options]="{variant:'danger', iconStart:'block', size:'sm'}"
@@ -157,7 +157,7 @@
       @if (filteredCosts().length === 0) {
         <div class="ap-empty">
           <span class="material-symbols-outlined">pending_actions</span>
-          <p>Aucune demande en attente.</p>
+          <p>{{ 'COST.APPROVAL_QUEUE.EMPTY' | translate }}</p>
         </div>
       }
     }
@@ -167,9 +167,9 @@
 </div>
 
 <!-- ── FAB ────────────────────────────────────────────────────────────────── -->
-<button class="ap-fab" (click)="navigateToNew()" title="Nouvelle Demande">
+<button class="ap-fab" (click)="navigateToNew()" [title]="'COST.APPROVAL_QUEUE.FAB' | translate">
   <span class="material-symbols-outlined">add</span>
-  <span class="ap-fab__tip">Nouvelle Demande</span>
+  <span class="ap-fab__tip">{{ 'COST.APPROVAL_QUEUE.FAB' | translate }}</span>
 </button>
 
 <!-- ── Approval modal template ────────────────────────────────────────────── -->
@@ -192,19 +192,19 @@
     }
 
     <div>
-      <label class="modal-field-label">Décision *</label>
+      <label class="modal-field-label">{{ 'COST.APPROVAL_QUEUE.DECISION_LABEL' | translate }}</label>
       <div class="decision-btns">
         <button class="decision-btn"
           [class.decision-btn--approve]="modalDecision() === 'approve'"
           (click)="modalDecision.set('approve')">
           <span class="material-symbols-outlined">check_circle</span>
-          Approuver
+          {{ 'COST.APPROVAL_QUEUE.APPROVE' | translate }}
         </button>
         <button class="decision-btn"
           [class.decision-btn--reject]="modalDecision() === 'reject'"
           (click)="modalDecision.set('reject')">
           <span class="material-symbols-outlined">cancel</span>
-          Refuser
+          {{ 'COST.APPROVAL_QUEUE.REJECT' | translate }}
         </button>
       </div>
     </div>
@@ -214,9 +214,9 @@
       (valueChange)="approvalCommentSig.set($any($event) || '')"
       [options]="{
         type: 'textarea',
-        label: 'Commentaire',
+        label: ('COST.APPROVAL_QUEUE.COMMENT_LABEL' | translate),
         rows: 3,
-        placeholder: modalDecision() === 'reject' ? 'Motif du refus (obligatoire)…' : 'Commentaire optionnel…',
+        placeholder: modalDecision() === 'reject' ? ('COST.APPROVAL_QUEUE.COMMENT_REJECT_PLACEHOLDER' | translate) : ('COST.APPROVAL_QUEUE.COMMENT_OPT_PLACEHOLDER' | translate),
         required: modalDecision() === 'reject'
       }" />
 

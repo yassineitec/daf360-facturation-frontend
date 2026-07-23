@@ -316,30 +316,36 @@
                 <p class="fp-empty text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.SECTIONS.NO_INVOICES' | translate }}</p>
               } @else {
                 <div class="fp-table-wrap">
-                  <table class="fp-table">
-                    <thead>
-                      <tr>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.NUMBER' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.TYPE' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.EMITTED' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.DUE' | translate }}</th>
-                        <th class="num">{{ 'AFFAIRES.DETAIL.INVOICES.AMOUNT' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.STATUS' | translate }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (inv of invoices(); track inv.id) {
-                        <tr>
-                          <td class="fp-ref">{{ inv.invoiceNumber || '—' }}</td>
-                          <td>{{ inv.invoiceType || '—' }}</td>
-                          <td>{{ formatDate(inv.dateEmission) }}</td>
-                          <td>{{ formatDate(inv.dateEcheance) }}</td>
-                          <td class="num">{{ formatAmount(inv.montantTtc, inv.devise || affaireDevise()) }}</td>
-                          <td><span class="fp-badge">{{ inv.statut || '—' }}</span></td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
+                  <daf-data-table
+                    [columns]="invoicesColumns()"
+                    [rows]="invoicesRows()"
+                    [config]="invoicesConfig()">
+
+                    <ng-template dafCell="number" let-row>
+                      <span class="fp-ref">{{ row['_raw'].invoiceNumber || '—' }}</span>
+                    </ng-template>
+
+                    <ng-template dafCell="type" let-row>
+                      {{ row['_raw'].invoiceType || '—' }}
+                    </ng-template>
+
+                    <ng-template dafCell="emitted" let-row>
+                      {{ formatDate(row['_raw'].dateEmission) }}
+                    </ng-template>
+
+                    <ng-template dafCell="due" let-row>
+                      {{ formatDate(row['_raw'].dateEcheance) }}
+                    </ng-template>
+
+                    <ng-template dafCell="amount" let-row>
+                      <span class="num">{{ formatAmount(row['_raw'].montantTtc, row['_raw'].devise || affaireDevise()) }}</span>
+                    </ng-template>
+
+                    <ng-template dafCell="status" let-row>
+                      <span class="fp-badge">{{ row['_raw'].statut || '—' }}</span>
+                    </ng-template>
+
+                  </daf-data-table>
                 </div>
               }
             </div>
@@ -365,28 +371,32 @@
                 <p class="fp-empty text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.SECTIONS.NO_PAYMENTS' | translate }}</p>
               } @else {
                 <div class="fp-table-wrap">
-                  <table class="fp-table">
-                    <thead>
-                      <tr>
-                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.DATE' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.INVOICE' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.METHOD' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.REFERENCE' | translate }}</th>
-                        <th class="num">{{ 'AFFAIRES.DETAIL.PAYMENTS.AMOUNT' | translate }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (p of payments(); track p.id) {
-                        <tr>
-                          <td>{{ formatDate(p.paymentDate) }}</td>
-                          <td class="fp-ref">{{ p.invoiceNumber || '—' }}</td>
-                          <td>{{ p.paymentMethod || '—' }}</td>
-                          <td>{{ p.bankReference || '—' }}</td>
-                          <td class="num">{{ formatAmount(p.amountLocal, p.currency || affaireDevise()) }}</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
+                  <daf-data-table
+                    [columns]="paymentsColumns()"
+                    [rows]="paymentsRows()"
+                    [config]="paymentsConfig()">
+
+                    <ng-template dafCell="date" let-row>
+                      {{ formatDate(row['_raw'].paymentDate) }}
+                    </ng-template>
+
+                    <ng-template dafCell="invoice" let-row>
+                      <span class="fp-ref">{{ row['_raw'].invoiceNumber || '—' }}</span>
+                    </ng-template>
+
+                    <ng-template dafCell="method" let-row>
+                      {{ row['_raw'].paymentMethod || '—' }}
+                    </ng-template>
+
+                    <ng-template dafCell="reference" let-row>
+                      {{ row['_raw'].bankReference || '—' }}
+                    </ng-template>
+
+                    <ng-template dafCell="amount" let-row>
+                      <span class="num">{{ formatAmount(row['_raw'].amountLocal, row['_raw'].currency || affaireDevise()) }}</span>
+                    </ng-template>
+
+                  </daf-data-table>
                 </div>
               }
             </div>
@@ -645,10 +655,11 @@
           </div>
         </div>
         <div class="field">
-          <label class="text-label-bold" for="motif">{{ 'AFFAIRES.DETAIL.MODAL.REASON' | translate }}</label>
-          <textarea id="motif" [ngModel]="motif()" (ngModelChange)="motif.set($event)"
-                    rows="3" maxlength="500"
-                    [placeholder]="'AFFAIRES.DETAIL.MODAL.REASON_PLACEHOLDER' | translate"></textarea>
+          <daf-form-field
+            [(value)]="motif"
+            [options]="{ type: 'textarea', rows: 3, maxLength: 500,
+              label: ('AFFAIRES.DETAIL.MODAL.REASON' | translate),
+              placeholder: ('AFFAIRES.DETAIL.MODAL.REASON_PLACEHOLDER' | translate) }" />
         </div>
       </div>
       <div class="modal-actions">

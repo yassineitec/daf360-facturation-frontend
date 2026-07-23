@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { ClientService } from '../../clients/client.service';
@@ -21,7 +22,7 @@ type ListTab = 'CURRENCY' | 'COST_TYPE' | 'PAYMENT_METHOD' | 'RECURRENCE_FREQUEN
 @Component({
   selector: 'app-cost-config',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataTableComponent, DafCellDirective],
+  imports: [CommonModule, FormsModule, DataTableComponent, DafCellDirective, TranslatePipe],
   templateUrl: './cost-config.component.html',
   styleUrl: './cost-config.component.scss',
 })
@@ -29,6 +30,7 @@ export class CostConfigComponent implements OnInit {
   private readonly svc         = inject(CostService);
   private readonly factListSvc = inject(FactListService);
   private readonly clientSvc   = inject(ClientService);
+  private readonly translate   = inject(TranslateService);
 
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);
@@ -65,30 +67,31 @@ export class CostConfigComponent implements OnInit {
   createError = signal<string | null>(null);
 
   readonly LIST_TABS: ListTab[] = ['CURRENCY', 'COST_TYPE', 'PAYMENT_METHOD', 'RECURRENCE_FREQUENCY'];
-  readonly LIST_TAB_LABELS: Record<ListTab, string> = {
-    CURRENCY:             'Devises',
-    COST_TYPE:            'Types de coût',
-    PAYMENT_METHOD:       'Modes de paiement',
-    RECURRENCE_FREQUENCY: 'Fréquences',
-  };
+
+  listTabLabel(tab: ListTab): string {
+    return this.translate.instant('COST.CONFIG.LIST_TAB.' + tab);
+  }
 
   isLoading   = signal(false);
   serverError = signal<string | null>(null);
 
   // ── Tables (daf-data-table) ─────────────────────────────────────────────────
 
-  readonly thresholdColumns: TableColumn[] = [
-    { key: 'level',            label: 'Niveau',            type: 'custom' },
-    { key: 'approverRoleCode', label: 'Rôle approbateur',  type: 'custom' },
-    { key: 'minAmountEur',     label: 'Min EUR',           type: 'custom', align: 'right' },
-    { key: 'maxAmountEur',     label: 'Max EUR',           type: 'custom', align: 'right' },
-    { key: '_actions',         label: '',                  type: 'custom', align: 'right' },
-  ];
+  readonly thresholdColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'level',            label: this.translate.instant('COST.CONFIG.TH_LEVEL'),   type: 'custom' },
+      { key: 'approverRoleCode', label: this.translate.instant('COST.CONFIG.TH_ROLE'),    type: 'custom' },
+      { key: 'minAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MIN_EUR'), type: 'custom', align: 'right' },
+      { key: 'maxAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MAX_EUR'), type: 'custom', align: 'right' },
+      { key: '_actions',         label: '',                                               type: 'custom', align: 'right' },
+    ];
+  });
 
-  readonly thresholdTableConfig: TableConfig = {
+  readonly thresholdTableConfig = computed<TableConfig>(() => ({
     hoverable: true,
-    emptyMessage: 'Aucun seuil configuré.',
-  };
+    emptyMessage: this.translate.instant('COST.CONFIG.THRESHOLD_EMPTY'),
+  }));
 
   readonly thresholdRows = computed(() => {
     const rows = this.thresholds().map(t => ({
@@ -115,22 +118,25 @@ export class CostConfigComponent implements OnInit {
     return e.minAmountEur !== undefined || e.approverRoleCode !== undefined;
   }
 
-  readonly categoryColumns: TableColumn[] = [
-    { key: 'categoryNumber',    label: '#',         type: 'custom' },
-    { key: 'code',              label: 'Code',      type: 'custom' },
-    { key: 'labelFr',           label: 'Libellé FR',type: 'custom' },
-    { key: 'labelEn',           label: 'Libellé EN',type: 'custom' },
-    { key: 'source',            label: 'Source',    type: 'custom' },
-    { key: 'isCapex',           label: 'CapEx',     type: 'custom', align: 'center' },
-    { key: 'isDirect',          label: 'Direct',    type: 'custom', align: 'center' },
-    { key: 'isStrictScrutiny',  label: 'Scrutiny',  type: 'custom', align: 'center' },
-    { key: '_actions',          label: '',          type: 'custom', align: 'right' },
-  ];
+  readonly categoryColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'categoryNumber',    label: this.translate.instant('COST.CONFIG.CAT_NUM'),      type: 'custom' },
+      { key: 'code',              label: this.translate.instant('COST.CONFIG.CAT_CODE'),     type: 'custom' },
+      { key: 'labelFr',           label: this.translate.instant('COST.CONFIG.CAT_LABEL_FR'), type: 'custom' },
+      { key: 'labelEn',           label: this.translate.instant('COST.CONFIG.CAT_LABEL_EN'), type: 'custom' },
+      { key: 'source',            label: this.translate.instant('COST.CONFIG.CAT_SOURCE'),   type: 'custom' },
+      { key: 'isCapex',           label: this.translate.instant('COST.CONFIG.CAT_CAPEX'),    type: 'custom', align: 'center' },
+      { key: 'isDirect',          label: this.translate.instant('COST.CONFIG.CAT_DIRECT'),   type: 'custom', align: 'center' },
+      { key: 'isStrictScrutiny',  label: this.translate.instant('COST.CONFIG.CAT_SCRUTINY'), type: 'custom', align: 'center' },
+      { key: '_actions',          label: '',                                                 type: 'custom', align: 'right' },
+    ];
+  });
 
-  readonly categoryTableConfig: TableConfig = {
+  readonly categoryTableConfig = computed<TableConfig>(() => ({
     hoverable: true,
-    emptyMessage: 'Aucune catégorie configurée.',
-  };
+    emptyMessage: this.translate.instant('COST.CONFIG.CATEGORY_EMPTY'),
+  }));
 
   readonly categoryRows = computed(() => {
     const rows = this.categories().map(cat => ({
@@ -159,19 +165,22 @@ export class CostConfigComponent implements OnInit {
     return rows;
   });
 
-  readonly listValueColumns: TableColumn[] = [
-    { key: 'code',         label: 'Code',       type: 'custom' },
-    { key: 'labelFr',      label: 'Libellé FR', type: 'custom' },
-    { key: 'labelEn',      label: 'Libellé EN', type: 'custom' },
-    { key: 'isDefault',    label: 'Défaut',     type: 'custom', align: 'center' },
-    { key: 'displayOrder', label: 'Ordre',      type: 'custom', align: 'center' },
-    { key: '_actions',     label: '',           type: 'custom', align: 'right' },
-  ];
+  readonly listValueColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'code',         label: this.translate.instant('COST.CONFIG.LV_CODE'),     type: 'custom' },
+      { key: 'labelFr',      label: this.translate.instant('COST.CONFIG.LV_LABEL_FR'), type: 'custom' },
+      { key: 'labelEn',      label: this.translate.instant('COST.CONFIG.LV_LABEL_EN'), type: 'custom' },
+      { key: 'isDefault',    label: this.translate.instant('COST.CONFIG.LV_DEFAULT'),  type: 'custom', align: 'center' },
+      { key: 'displayOrder', label: this.translate.instant('COST.CONFIG.LV_ORDER'),    type: 'custom', align: 'center' },
+      { key: '_actions',     label: '',                                                type: 'custom', align: 'right' },
+    ];
+  });
 
-  readonly listValueTableConfig: TableConfig = {
+  readonly listValueTableConfig = computed<TableConfig>(() => ({
     hoverable: true,
-    emptyMessage: 'Aucune valeur configurée.',
-  };
+    emptyMessage: this.translate.instant('COST.CONFIG.LIST_VALUE_EMPTY'),
+  }));
 
   readonly listValueRows = computed(() => {
     const rows = this.listValues().map(v => ({
@@ -205,12 +214,12 @@ export class CostConfigComponent implements OnInit {
           this.paysId.set(resolved);
           this.loadAll();
         } else {
-          this.serverError.set('Aucun pays configuré.');
+          this.serverError.set(this.translate.instant('COST.CONFIG.NO_PAYS'));
           this.isLoading.set(false);
         }
       },
       error: () => {
-        this.serverError.set('Impossible de charger les pays.');
+        this.serverError.set(this.translate.instant('COST.CONFIG.LOAD_PAYS_ERROR'));
         this.isLoading.set(false);
       },
     });
@@ -241,7 +250,7 @@ export class CostConfigComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: err => {
-        this.serverError.set(err.error?.message ?? 'Erreur de chargement.');
+        this.serverError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.LOAD_ERROR'));
         this.isLoading.set(false);
       },
     });
@@ -278,7 +287,7 @@ export class CostConfigComponent implements OnInit {
         this.thresholdSaving.set(null);
       },
       error: err => {
-        this.thresholdError.set(err.error?.message ?? 'Erreur de sauvegarde.');
+        this.thresholdError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.SAVE_ERROR'));
         this.thresholdSaving.set(null);
       },
     });
@@ -290,7 +299,7 @@ export class CostConfigComponent implements OnInit {
 
   saveNewThreshold(): void {
     if (!this.newThreshold.level || this.newThreshold.minAmountEur === null) {
-      this.createThresholdError.set('Niveau et montant minimum sont requis.');
+      this.createThresholdError.set(this.translate.instant('COST.CONFIG.THRESHOLD_MIN_MAX_REQUIRED'));
       return;
     }
     const dto: CreateCostApprovalThresholdRequest = {
@@ -312,17 +321,17 @@ export class CostConfigComponent implements OnInit {
         this.isCreatingThreshold.set(false);
       },
       error: err => {
-        this.createThresholdError.set(err.error?.message ?? 'Erreur de création.');
+        this.createThresholdError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.CREATE_ERROR'));
         this.isCreatingThreshold.set(false);
       },
     });
   }
 
   deleteThreshold(id: number): void {
-    if (!confirm('Désactiver ce seuil d\'approbation ?')) return;
+    if (!confirm(this.translate.instant('COST.CONFIG.CONFIRM_DEACTIVATE_THRESHOLD'))) return;
     this.svc.deactivateThreshold(id).subscribe({
       next: () => this.thresholds.update(list => list.filter(t => t.id !== id)),
-      error: err => this.thresholdError.set(err.error?.message ?? 'Erreur de désactivation.'),
+      error: err => this.thresholdError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.DEACTIVATE_ERROR')),
     });
   }
 
@@ -355,7 +364,7 @@ export class CostConfigComponent implements OnInit {
         this.isSavingCategory.set(false);
       },
       error: err => {
-        this.serverError.set(err.error?.message ?? 'Erreur de sauvegarde.');
+        this.serverError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.SAVE_ERROR'));
         this.isSavingCategory.set(false);
       },
     });
@@ -367,7 +376,7 @@ export class CostConfigComponent implements OnInit {
 
   saveNewCategory(): void {
     if (!this.newCat.code || !this.newCat.labelFr || !this.newCat.labelEn || this.newCat.categoryNumber === null) {
-      this.createCatError.set('Numéro, code, libellé FR et libellé EN sont requis.');
+      this.createCatError.set(this.translate.instant('COST.CONFIG.CAT_REQUIRED'));
       return;
     }
     const dto: CreateCostCategoryRequest = {
@@ -392,17 +401,17 @@ export class CostConfigComponent implements OnInit {
         this.isCreatingCategory.set(false);
       },
       error: err => {
-        this.createCatError.set(err.error?.message ?? 'Erreur de création.');
+        this.createCatError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.CREATE_ERROR'));
         this.isCreatingCategory.set(false);
       },
     });
   }
 
   deleteCategory(id: number): void {
-    if (!confirm('Désactiver cette catégorie ? Les lignes de coût associées ne seront pas supprimées.')) return;
+    if (!confirm(this.translate.instant('COST.CONFIG.CONFIRM_DEACTIVATE_CATEGORY'))) return;
     this.svc.deactivateCategory(id).subscribe({
       next: () => this.categories.update(list => list.filter(c => c.id !== id)),
-      error: err => this.serverError.set(err.error?.message ?? 'Erreur de désactivation.'),
+      error: err => this.serverError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.DEACTIVATE_ERROR')),
     });
   }
 
@@ -424,7 +433,7 @@ export class CostConfigComponent implements OnInit {
         this.listLoading.set(false);
       },
       error: err => {
-        this.listError.set(err.error?.message ?? 'Erreur de chargement.');
+        this.listError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.LOAD_ERROR'));
         this.listLoading.set(false);
       },
     });
@@ -449,17 +458,17 @@ export class CostConfigComponent implements OnInit {
         this.isCreating.set(false);
       },
       error: err => {
-        this.createError.set(err.error?.message ?? 'Erreur de création.');
+        this.createError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.CREATE_ERROR'));
         this.isCreating.set(false);
       },
     });
   }
 
   deactivate(id: number): void {
-    if (!confirm('Désactiver cette valeur ?')) return;
+    if (!confirm(this.translate.instant('COST.CONFIG.CONFIRM_DEACTIVATE_VALUE'))) return;
     this.factListSvc.deactivateListValue(id).subscribe({
       next: () => this.listValues.update(list => list.filter(v => v.id !== id)),
-      error: err => this.listError.set(err.error?.message ?? 'Erreur.'),
+      error: err => this.listError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.GENERIC_ERROR')),
     });
   }
 }

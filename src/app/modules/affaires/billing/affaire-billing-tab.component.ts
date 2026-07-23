@@ -1,4 +1,5 @@
 import { Component, Input }      from '@angular/core';
+import { TranslatePipe }         from '@ngx-translate/core';
 import { AffaireDetail }         from '../affaire.model';
 import { BillingAvComponent }    from './modes/billing-av.component';
 import { BillingJalComponent }   from './modes/billing-jal.component';
@@ -10,6 +11,7 @@ import { BillingRmbComponent }   from './modes/billing-rmb.component';
   selector: 'app-affaire-billing-tab',
   standalone: true,
   imports: [
+    TranslatePipe,
     BillingAvComponent, BillingJalComponent, BillingTmComponent,
     BillingCpComponent, BillingRmbComponent,
   ],
@@ -33,7 +35,7 @@ import { BillingRmbComponent }   from './modes/billing-rmb.component';
     }
     @default {
       <div class="text-sm text-[#64748b] text-center py-6">
-        Mode de facturation non reconnu : {{ affaire.billingMode }}
+        {{ 'AFFAIRES.billing.tab.mode_unknown' | translate:{ mode: affaire.billingMode } }}
       </div>
     }
   }

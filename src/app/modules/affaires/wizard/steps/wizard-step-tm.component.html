@@ -3,15 +3,14 @@
   <div class="info-banner">
     <span class="material-symbols-outlined" style="font-size:18px">info</span>
     <p class="m-0">
-      Sélectionnez les collaborateurs et définissez leurs taux de facturation.
-      Les taux seront verrouillés après la première facturation.
+      {{ 'AFFAIRES.wizard.tm.info' | translate }}
     </p>
   </div>
 
   @for (r of draft.ressources; track $index; let i = $index) {
     <div class="item-card">
       <div class="item-card-header">
-        <div class="item-badge item-badge--tm">Ressource {{ i + 1 }}</div>
+        <div class="item-badge item-badge--tm">{{ 'AFFAIRES.wizard.tm.badge' | translate:{ n: i + 1 } }}</div>
         <daf-button [options]="{variant: 'danger', size: 'sm', iconStart: 'close'}" (onClick)="removeRessource(i)"></daf-button>
       </div>
 
@@ -19,58 +18,56 @@
 
         <!-- Collaborateur -->
         <div class="resource-col-2">
-          <label class="field-label">Collaborateur *</label>
-          <select [(ngModel)]="r.userId" (ngModelChange)="onUserChange(r, $event)" class="form-select">
-            <option [ngValue]="0">Sélectionner...</option>
-            @for (u of users(); track u.id) {
-              <option [ngValue]="u.id">{{ u.fullName }}</option>
-            }
-          </select>
+          <daf-select
+            [options]="userOptions()"
+            [config]="{ label: ('AFFAIRES.wizard.tm.collaborateur' | translate), placeholder: ('AFFAIRES.wizard.tm.select' | translate), required: true, searchable: true, fullWidth: true }"
+            [selected]="r.userId ? [r.userId.toString()] : []"
+            (selectedChange)="onUserSelect(r, $event)" />
         </div>
 
         <!-- Type ressource -->
         <div>
-          <label class="field-label">Type</label>
-          <select [(ngModel)]="r.resourceType" (ngModelChange)="emitChange()" class="form-select">
-            <option value="INTERNAL">Interne</option>
-            <option value="EXTERNAL">Externe</option>
-          </select>
+          <daf-select
+            [options]="resourceTypeOptions()"
+            [config]="{ label: ('AFFAIRES.wizard.tm.type' | translate), fullWidth: true }"
+            [selected]="[r.resourceType]"
+            (selectedChange)="r.resourceType = $event[0]; emitChange()" />
         </div>
 
         <!-- Type taux -->
         <div>
-          <label class="field-label">Type taux</label>
-          <select [(ngModel)]="r.rateType" (ngModelChange)="emitChange()" class="form-select">
-            <option value="DAILY">Journalier (JH)</option>
-            <option value="HOURLY">Horaire (H)</option>
-          </select>
+          <daf-select
+            [options]="rateTypeOptions()"
+            [config]="{ label: ('AFFAIRES.wizard.tm.rate_type' | translate), fullWidth: true }"
+            [selected]="[r.rateType]"
+            (selectedChange)="r.rateType = $event[0]; emitChange()" />
         </div>
 
         <!-- Taux facturation -->
         <div>
-          <label class="field-label">Taux de vente *</label>
-          <input type="number" step="0.01" min="0" [(ngModel)]="r.rateAmount" (ngModelChange)="emitChange()" class="form-input" />
+          <daf-form-field
+            [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.selling_rate' | translate), required: true, fullWidth: true }"
+            [value]="r.rateAmount"
+            (valueChange)="onRateAmountChange(r, $event)">
+          </daf-form-field>
         </div>
 
         <!-- Taux intercompany -->
         <div>
-          <label class="field-label">Taux interco</label>
-          <input type="number" step="0.01" min="0" [(ngModel)]="r.tauxIntercompany" class="form-input"
-                 placeholder="—" />
+          <daf-form-field
+            [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.interco_rate' | translate), placeholder: '—', fullWidth: true }"
+            [value]="r.tauxIntercompany ?? null"
+            (valueChange)="onIntercoChange(r, $event)">
+          </daf-form-field>
         </div>
 
         <!-- Devise -->
         <div>
-          <label class="field-label">Devise</label>
-          <select [(ngModel)]="r.rateCurrency" (ngModelChange)="emitChange()" class="form-select">
-            @for (c of currencies(); track c.id) {
-              <option [value]="c.code">{{ c.code }}</option>
-            }
-            @if (!currencies().length) {
-              <option value="EUR">EUR</option>
-              <option value="TND">TND</option>
-            }
-          </select>
+          <daf-select
+            [options]="currencyOptions()"
+            [config]="{ label: ('AFFAIRES.wizard.tm.currency' | translate), fullWidth: true }"
+            [selected]="r.rateCurrency ? [r.rateCurrency] : []"
+            (selectedChange)="r.rateCurrency = $event[0]; emitChange()" />
         </div>
 
         <!-- Coût interne -->
@@ -78,13 +75,13 @@
           <div class="cost-box">
             <span class="material-symbols-outlined" style="font-size:18px;color:#75777d;margin-top:18px;flex-shrink:0">euro</span>
             <div class="cost-box-content">
-              <label class="field-label">Coût interne (optionnel)</label>
-              <input type="number" step="0.01" min="0"
-                [(ngModel)]="r.costAmount" (ngModelChange)="emitChange()"
-                placeholder="Coût journalier / horaire interne"
-                class="form-input" />
+              <daf-form-field
+                [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.internal_cost' | translate), placeholder: ('AFFAIRES.wizard.tm.internal_cost_ph' | translate), fullWidth: true }"
+                [value]="r.costAmount ?? null"
+                (valueChange)="onCostChange(r, $event)">
+              </daf-form-field>
             </div>
-            <p class="cost-box-hint">Utilisé pour le calcul de rentabilité interne. Non communiqué au client.</p>
+            <p class="cost-box-hint">{{ 'AFFAIRES.wizard.tm.cost_hint' | translate }}</p>
           </div>
         </div>
 
@@ -92,17 +89,17 @@
     </div>
   }
 
-  <daf-button [options]="{variant: 'ghost', iconStart: 'person_add', label: 'Ajouter une ressource', fullWidth: true}" (onClick)="addRessource()"></daf-button>
+  <daf-button [options]="{variant: 'ghost', iconStart: 'person_add', label: ('AFFAIRES.wizard.tm.add' | translate), fullWidth: true}" (onClick)="addRessource()"></daf-button>
 
   @if (!locked && draft.id && draft.paysId) {
     <div class="auto-rate-row">
       <span class="material-symbols-outlined auto-rate-icon">calculate</span>
       <div class="auto-rate-text">
-        <strong>Calcul automatique des taux</strong>
-        <small>Pré-remplissez les taux depuis les coûts réels (moyennes 3 mois).</small>
+        <strong>{{ 'AFFAIRES.wizard.tm.auto_title' | translate }}</strong>
+        <small>{{ 'AFFAIRES.wizard.tm.auto_sub' | translate }}</small>
       </div>
       <daf-button
-        [options]="{variant: 'ghost', size: 'sm', label: 'Calculer les taux', iconStart: 'auto_fix_high'}"
+        [options]="{variant: 'ghost', size: 'sm', label: ('AFFAIRES.wizard.tm.auto_btn' | translate), iconStart: 'auto_fix_high'}"
         (onClick)="showRateModal.set(true)">
       </daf-button>
     </div>

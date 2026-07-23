@@ -4,10 +4,10 @@
     <!-- Header -->
     <div class="modal-header">
       <div>
-        <h3 class="modal-title">Collaborateurs & Taux — T&M</h3>
+        <h3 class="modal-title">{{ 'AFFAIRES.wizard.tm.modal.title' | translate }}</h3>
         <p class="modal-sub">
-          @if (step() === 1) { Étape 1/2 — Sélectionner les collaborateurs }
-          @if (step() === 2) { Étape 2/2 — Valider ou ajuster les taux calculés }
+          @if (step() === 1) { {{ 'AFFAIRES.wizard.tm.modal.sub1' | translate }} }
+          @if (step() === 2) { {{ 'AFFAIRES.wizard.tm.modal.sub2' | translate }} }
         </p>
       </div>
       <button class="close-btn" (click)="closed.emit()">
@@ -29,7 +29,7 @@
       @if (step() === 1) {
 
         <p class="step-hint">
-          Les coûts sont calculés à partir des lignes de coût réelles (moyennes sur 3 mois).
+          {{ 'AFFAIRES.wizard.tm.modal.hint' | translate }}
         </p>
 
         <div class="user-list">
@@ -53,15 +53,15 @@
         </div>
 
         <div class="rate-type-row">
-          <label class="field-label">Unité de taux</label>
+          <label class="field-label">{{ 'AFFAIRES.wizard.tm.modal.unit_label' | translate }}</label>
           <div class="rate-type-toggle">
             <button class="rt-btn" [class.rt-btn--active]="rateType() === 'DAILY'"
               (click)="rateType.set('DAILY')">
-              Taux journalier (TJM)
+              {{ 'AFFAIRES.wizard.tm.modal.rt_daily' | translate }}
             </button>
             <button class="rt-btn" [class.rt-btn--active]="rateType() === 'HOURLY'"
               (click)="rateType.set('HOURLY')">
-              Taux horaire
+              {{ 'AFFAIRES.wizard.tm.modal.rt_hourly' | translate }}
             </button>
           </div>
         </div>
@@ -73,13 +73,13 @@
         @if (calculatedTaux().length > 0) {
           <div class="formula-box">
             <p>
-              <strong class="col-interco">Taux interco</strong>
-              = Coût × (1 + {{ pctLabel(calculatedTaux()[0].pctHqCost) }} HQ)
+              <strong class="col-interco">{{ 'AFFAIRES.wizard.tm.modal.interco' | translate }}</strong>
+              = {{ 'AFFAIRES.wizard.tm.modal.cost' | translate }} × (1 + {{ pctLabel(calculatedTaux()[0].pctHqCost) }} HQ)
             </p>
             <p>
-              <strong class="col-vente">Taux de vente</strong>
-              = Coût × (1 + {{ pctLabel(calculatedTaux()[0].pctHqCost) }} HQ
-              + {{ pctLabel(calculatedTaux()[0].pctMargin) }} marge)
+              <strong class="col-vente">{{ 'AFFAIRES.wizard.tm.modal.selling' | translate }}</strong>
+              = {{ 'AFFAIRES.wizard.tm.modal.cost' | translate }} × (1 + {{ pctLabel(calculatedTaux()[0].pctHqCost) }} HQ
+              + {{ pctLabel(calculatedTaux()[0].pctMargin) }} {{ 'AFFAIRES.wizard.tm.modal.margin' | translate }})
             </p>
           </div>
         }
@@ -88,11 +88,11 @@
           <table class="rate-table">
             <thead>
               <tr>
-                <th>Collaborateur</th>
-                <th class="th-right">Coût réel</th>
-                <th class="th-right col-interco">Taux interco</th>
-                <th class="th-right col-vente">Taux de vente</th>
-                <th class="th-center">Source</th>
+                <th>{{ 'AFFAIRES.wizard.tm.modal.th_collab' | translate }}</th>
+                <th class="th-right">{{ 'AFFAIRES.wizard.tm.modal.th_cost' | translate }}</th>
+                <th class="th-right col-interco">{{ 'AFFAIRES.wizard.tm.modal.th_interco' | translate }}</th>
+                <th class="th-right col-vente">{{ 'AFFAIRES.wizard.tm.modal.th_selling' | translate }}</th>
+                <th class="th-center">{{ 'AFFAIRES.wizard.tm.modal.th_source' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -114,11 +114,11 @@
                   </td>
                   <td class="td-center">
                     @if (taux.sourceCalcul === 'COST_LINES') {
-                      <span class="source-chip source-chip--real">Coûts réels</span>
+                      <span class="source-chip source-chip--real">{{ 'AFFAIRES.wizard.tm.modal.source_real' | translate }}</span>
                     } @else {
                       <span class="source-chip source-chip--default"
-                            title="Aucun coût trouvé — valeur par défaut appliquée">
-                        ⚠ Défaut
+                            [title]="'AFFAIRES.wizard.tm.modal.source_default_title' | translate">
+                        {{ 'AFFAIRES.wizard.tm.modal.source_default' | translate }}
                       </span>
                     }
                   </td>
@@ -129,9 +129,8 @@
         </div>
 
         <p class="rate-note">
-          Unité : <strong>{{ rateType() === 'DAILY' ? 'TJM (journalier)' : 'Horaire' }}</strong>.
-          Les taux seront verrouillés après la première facturation.
-          Vous pouvez ajuster le coût réel ci-dessus.
+          {{ 'AFFAIRES.wizard.tm.modal.note_unit' | translate }} <strong>{{ rateType() === 'DAILY' ? ('AFFAIRES.wizard.tm.modal.unit_daily' | translate) : ('AFFAIRES.wizard.tm.modal.unit_hourly' | translate) }}</strong>.
+          {{ 'AFFAIRES.wizard.tm.modal.note_body' | translate }}
         </p>
       }
 
@@ -142,7 +141,7 @@
       <daf-button
         [options]="{
           variant: 'ghost',
-          label: step() === 2 ? '← Retour' : 'Annuler'
+          label: step() === 2 ? ('AFFAIRES.wizard.tm.modal.back' | translate) : ('AFFAIRES.wizard.tm.modal.cancel' | translate)
         }"
         (onClick)="step() === 2 ? step.set(1) : closed.emit()">
       </daf-button>
@@ -151,7 +150,7 @@
         <daf-button
           [options]="{
             variant: 'secondary',
-            label: 'Calculer les taux →',
+            label: ('AFFAIRES.wizard.tm.modal.calc' | translate),
             iconStart: 'calculate',
             loading: isCalculating(),
             disabled: selectedUserIds().size === 0 || isCalculating()
@@ -164,7 +163,7 @@
         <daf-button
           [options]="{
             variant: 'secondary',
-            label: 'Valider et pré-remplir',
+            label: ('AFFAIRES.wizard.tm.modal.validate' | translate),
             iconStart: 'check'
           }"
           (onClick)="valider()">

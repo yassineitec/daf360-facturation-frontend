@@ -3,7 +3,7 @@
   @if (locked) {
     <div class="locked-notice">
       <span class="material-symbols-outlined">lock</span>
-      Le mode de facturation est verrouillé et ne peut pas être modifié.
+      {{ 'AFFAIRES.wizard.billing.locked' | translate }}
     </div>
   }
 
@@ -11,7 +11,7 @@
     <div class="mode-config">
       <div class="mode-config-header">
         <span class="material-symbols-outlined">tune</span>
-        Configuration — {{ draft.billingMode }}
+        {{ 'AFFAIRES.wizard.billing.config' | translate:{ mode: draft.billingMode } }}
       </div>
 
       @switch (draft.billingMode) {

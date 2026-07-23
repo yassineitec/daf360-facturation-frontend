@@ -5,10 +5,10 @@
     <div class="doc360-banner">
       <span class="material-symbols-outlined doc360-banner-icon">link</span>
       <div class="doc360-banner-body">
-        <span class="doc360-banner-label">Lié au projet DOC360</span>
+        <span class="doc360-banner-label">{{ 'AFFAIRES.wizard.info.doc360_linked' | translate }}</span>
         <span class="doc360-banner-value">{{ draft.doc360ServerReference }} — {{ draft.doc360ProjectName }}</span>
         @if (draft.doc360ErpReference) {
-          <span class="doc360-banner-erp">Réf. ERP : {{ draft.doc360ErpReference }}</span>
+          <span class="doc360-banner-erp">{{ 'AFFAIRES.wizard.info.erp_ref' | translate:{ ref: draft.doc360ErpReference } }}</span>
         }
       </div>
     </div>
@@ -19,8 +19,8 @@
     <div class="section-header">
       <span class="material-symbols-outlined section-icon">corporate_fare</span>
       <div>
-        <p class="section-title">Identification de l'affaire</p>
-        <p class="section-sub">Informations générales et client</p>
+        <p class="section-title">{{ 'AFFAIRES.wizard.info.ident_title' | translate }}</p>
+        <p class="section-sub">{{ 'AFFAIRES.wizard.info.ident_sub' | translate }}</p>
       </div>
     </div>
 
@@ -30,7 +30,7 @@
       <div class="field field-full">
         <daf-form-field
           [(value)]="intitule"
-          [options]="{label: 'Intitulé de l\'affaire', required: true, placeholder: 'Ex : Développement plateforme RH...', fullWidth: true}"
+          [options]="{label: ('AFFAIRES.wizard.info.intitule_label' | translate), required: true, placeholder: ('AFFAIRES.wizard.info.intitule_ph' | translate), fullWidth: true}"
           (valueChange)="emit()">
         </daf-form-field>
       </div>
@@ -38,8 +38,8 @@
       <!-- Client typeahead -->
       <div class="field">
         <label class="field-label">
-          Client *
-          <span class="kyc-badge">KYC requis</span>
+          {{ 'AFFAIRES.wizard.info.client' | translate }} *
+          <span class="kyc-badge">{{ 'AFFAIRES.wizard.info.kyc_required' | translate }}</span>
         </label>
         <div class="field-relative">
           <input type="text"
@@ -55,7 +55,7 @@
                 <button type="button" (mousedown)="selectClient(c)" class="dropdown-item">
                   <span class="dropdown-item-label">{{ c.clientName }}</span>
                   @if (!c.isKycDone) {
-                    <span class="kyc-badge">KYC requis</span>
+                    <span class="kyc-badge">{{ 'AFFAIRES.wizard.info.kyc_required' | translate }}</span>
                   }
                 </button>
               }
@@ -64,7 +64,7 @@
           @if (draft.clientId && !draft.clientKycDone) {
             <p class="field-warning">
               <span class="material-symbols-outlined" style="font-size:15px">warning</span>
-              Ce client n'a pas de validation KYC.
+              {{ 'AFFAIRES.wizard.info.kyc_warning' | translate }}
             </p>
           }
         </div>
@@ -73,18 +73,18 @@
       <!-- Référence — read-only when pre-filled from DOC360 -->
       @if (draft.doc360ServerReference) {
         <div class="field">
-          <label class="field-label">Référence</label>
+          <label class="field-label">{{ 'AFFAIRES.wizard.info.reference' | translate }}</label>
           <div class="readonly-ref">
             <span class="material-symbols-outlined readonly-ref-icon">lock</span>
             <span class="readonly-ref-value">{{ draft.reference }}</span>
-            <span class="readonly-ref-source">issu de DOC360</span>
+            <span class="readonly-ref-source">{{ 'AFFAIRES.wizard.info.from_doc360' | translate }}</span>
           </div>
         </div>
       } @else {
         <div class="field">
           <daf-form-field
             [(value)]="reference"
-            [options]="{label: 'Référence (auto si vide)', placeholder: 'AFF-2026-0001', fullWidth: true}"
+            [options]="{label: ('AFFAIRES.wizard.info.reference_label' | translate), placeholder: 'AFF-2026-0001', fullWidth: true}"
             (valueChange)="emit()">
           </daf-form-field>
         </div>
@@ -98,8 +98,8 @@
     <div class="section-header">
       <span class="material-symbols-outlined section-icon">receipt_long</span>
       <div>
-        <p class="section-title">Mode de facturation *</p>
-        <p class="section-sub">Sélectionnez le mode contractuel de cette affaire</p>
+        <p class="section-title">{{ 'AFFAIRES.wizard.info.billing_mode_label' | translate }} *</p>
+        <p class="section-sub">{{ 'AFFAIRES.wizard.info.billing_mode_sub' | translate }}</p>
       </div>
     </div>
 
@@ -125,29 +125,18 @@
         </div>
         <div class="field-grid" style="padding: 20px">
           <div class="field">
-            <label class="field-label">Montant *</label>
-            <input class="form-input"
-              type="number" min="0" step="0.001"
-              [placeholder]="isContractualMode() ? 'Ex : 150 000' : 'Ex : 200 000'"
-              [value]="draft.budgetPrevisionnel ?? ''"
-              (input)="onBudgetChange($any($event.target).value)" />
+            <daf-form-field
+              [options]="{ type: 'number', label: ('AFFAIRES.wizard.info.amount_label' | translate), required: true, placeholder: isContractualMode() ? ('AFFAIRES.wizard.info.amount_ph_contract' | translate) : ('AFFAIRES.wizard.info.amount_ph_budget' | translate), fullWidth: true }"
+              [value]="draft.budgetPrevisionnel ?? null"
+              (valueChange)="onBudgetChange($event)">
+            </daf-form-field>
           </div>
           <div class="field">
-            <label class="field-label">Devise</label>
-            <select class="form-select"
-              [value]="draft.contractCurrency"
-              (change)="onCurrencyChange($any($event.target).value)">
-              @if (currencies().length > 0) {
-                @for (c of currencies(); track c.id) {
-                  <option [value]="c.code" [selected]="c.code === draft.contractCurrency">{{ c.code }} — {{ c.labelFr }}</option>
-                }
-              } @else {
-                <option value="EUR" [selected]="draft.contractCurrency === 'EUR'">EUR — Euro</option>
-                <option value="USD" [selected]="draft.contractCurrency === 'USD'">USD — Dollar</option>
-                <option value="TND" [selected]="draft.contractCurrency === 'TND'">TND — Dinar tunisien</option>
-                <option value="MAD" [selected]="draft.contractCurrency === 'MAD'">MAD — Dirham marocain</option>
-              }
-            </select>
+            <daf-select
+              [options]="currencyOptions()"
+              [config]="{ label: ('AFFAIRES.wizard.info.currency_label' | translate), fullWidth: true }"
+              [selected]="draft.contractCurrency ? [draft.contractCurrency] : []"
+              (selectedChange)="onCurrencyChange($event[0] ?? '')" />
           </div>
           <p class="field-hint field-full" style="margin:0">{{ budgetHint() }}</p>
         </div>
@@ -160,13 +149,13 @@
     <div class="section-header">
       <span class="material-symbols-outlined section-icon">notes</span>
       <div>
-        <p class="section-title">Notes</p>
-        <p class="section-sub">Informations complémentaires</p>
+        <p class="section-title">{{ 'AFFAIRES.wizard.info.notes_title' | translate }}</p>
+        <p class="section-sub">{{ 'AFFAIRES.wizard.info.notes_sub' | translate }}</p>
       </div>
     </div>
     <daf-form-field
       [(value)]="notes"
-      [options]="{label: 'Notes internes', type: 'textarea', rows: 3, fullWidth: true}"
+      [options]="{label: ('AFFAIRES.wizard.info.notes_label' | translate), type: 'textarea', rows: 3, fullWidth: true}"
       (valueChange)="emit()">
     </daf-form-field>
   </div>

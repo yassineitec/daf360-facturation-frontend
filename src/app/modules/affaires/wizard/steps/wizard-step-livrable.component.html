@@ -4,8 +4,8 @@
   <div class="info-banner">
     <span class="material-symbols-outlined" style="font-size:18px">info</span>
     <p class="m-0">
-      Sélectionnez une discipline, naviguez dans les WBS et affectez un budget aux livrables documentaires.
-      <strong>La base documentaire est chargée depuis le projet ERP associé.</strong>
+      {{ 'AFFAIRES.wizard.livrable.info' | translate }}
+      <strong>{{ 'AFFAIRES.wizard.livrable.info_strong' | translate }}</strong>
     </p>
   </div>
 
@@ -20,7 +20,7 @@
   <!-- ── Étape 1 : Disciplines ─────────────────────────────────────────── -->
   <div class="section-label">
     <span class="section-num">1</span>
-    Sélectionner une discipline
+    {{ 'AFFAIRES.wizard.livrable.sec1' | translate }}
   </div>
 
   @if (isLoadingDisc()) {
@@ -44,7 +44,7 @@
       </button>
     }
     @if (!isLoadingDisc() && discGroups().length === 0) {
-      <p class="empty-hint">Aucune discipline trouvée pour cette affaire. Vérifiez la référence ERP.</p>
+      <p class="empty-hint">{{ 'AFFAIRES.wizard.livrable.empty_disc' | translate }}</p>
     }
   </div>
 
@@ -52,21 +52,21 @@
   @if (selectedDisc()) {
     <div class="section-label">
       <span class="section-num">2</span>
-      Mode d'affectation du budget
+      {{ 'AFFAIRES.wizard.livrable.sec2' | translate }}
     </div>
 
     <div class="mode-toggle">
       <button class="mode-btn" [class.mode-btn--active]="modeAffectation() === 'MANUEL'"
         (click)="modeAffectation.set('MANUEL')">
         <span class="material-symbols-outlined">edit_note</span>
-        <span>Affectation manuelle</span>
-        <small>Budget par document</small>
+        <span>{{ 'AFFAIRES.wizard.livrable.mode_manual' | translate }}</span>
+        <small>{{ 'AFFAIRES.wizard.livrable.mode_manual_sub' | translate }}</small>
       </button>
       <button class="mode-btn" [class.mode-btn--active]="modeAffectation() === 'AUTO'"
         (click)="modeAffectation.set('AUTO')">
         <span class="material-symbols-outlined">auto_fix_high</span>
-        <span>Répartition automatique</span>
-        <small>Budget global ÷ nb documents</small>
+        <span>{{ 'AFFAIRES.wizard.livrable.mode_auto' | translate }}</span>
+        <small>{{ 'AFFAIRES.wizard.livrable.mode_auto_sub' | translate }}</small>
       </button>
     </div>
 
@@ -74,12 +74,12 @@
     @if (modeAffectation() === 'MANUEL') {
       <div class="item-card">
         <div class="item-card-header">
-          <div class="item-badge item-badge--livrable">Mode manuel</div>
+          <div class="item-badge item-badge--livrable">{{ 'AFFAIRES.wizard.livrable.badge_manual' | translate }}</div>
         </div>
 
         <!-- Navigation WBS -->
         <div>
-          <label class="field-label">Sélectionner un WBS</label>
+          <label class="field-label">{{ 'AFFAIRES.wizard.livrable.select_wbs' | translate }}</label>
           @if (isLoadingWbs()) { <div class="skeleton-line"></div> }
           <div class="wbs-list">
             @for (wbs of wbsList(); track wbs.id) {
@@ -102,9 +102,9 @@
                 <thead>
                   <tr>
                     <th class="th-check"></th>
-                    <th>Document</th>
-                    <th class="th-right">Budget ext. (h)</th>
-                    <th class="th-right th-budget">Budget alloué *</th>
+                    <th>{{ 'AFFAIRES.wizard.livrable.th_document' | translate }}</th>
+                    <th class="th-right">{{ 'AFFAIRES.wizard.livrable.th_ext_budget' | translate }}</th>
+                    <th class="th-right th-budget">{{ 'AFFAIRES.wizard.livrable.th_alloc_budget' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -141,14 +141,14 @@
 
             <div class="save-row">
               <span class="save-summary">
-                <strong>{{ selectedDocs().size }} doc(s)</strong> · Total :
+                <strong>{{ selectedDocs().size }} {{ 'AFFAIRES.wizard.livrable.docs' | translate }}</strong> · {{ 'AFFAIRES.wizard.livrable.total' | translate }} :
                 <strong class="total-val">{{ fmtCurrency(totalBudgetManuel()) }}</strong>
               </span>
               <daf-button
                 [options]="{
                   variant: 'secondary',
                   size: 'sm',
-                  label: 'Enregistrer',
+                  label: ('AFFAIRES.wizard.livrable.save' | translate),
                   iconStart: 'save',
                   loading: isSaving(),
                   disabled: selectedDocs().size === 0 || isSaving()
@@ -165,20 +165,19 @@
     @if (modeAffectation() === 'AUTO') {
       <div class="item-card">
         <div class="item-card-header">
-          <div class="item-badge item-badge--auto">Mode automatique</div>
+          <div class="item-badge item-badge--auto">{{ 'AFFAIRES.wizard.livrable.badge_auto' | translate }}</div>
         </div>
 
         <div>
-          <label class="field-label">Budget global *</label>
+          <label class="field-label">{{ 'AFFAIRES.wizard.livrable.global_budget' | translate }}</label>
           <div class="auto-budget-row">
-            <input type="number"
-              [ngModel]="budgetGlobal()"
-              (ngModelChange)="budgetGlobal.set($event)"
-              min="0" step="0.001" placeholder="Ex. 150000.000"
-              class="form-input form-input--sm" />
+            <daf-form-field class="form-input--sm"
+              [options]="{ type: 'number', placeholder: 'Ex. 150000.000' }"
+              [value]="budgetGlobal()"
+              (valueChange)="onBudgetGlobalChange($event)" />
             @if (budgetGlobal() && selectedDocsAuto().size > 0) {
               <span class="budget-preview">
-                ≈ {{ fmtCurrency(budgetParDocAuto()) }} / doc
+                ≈ {{ fmtCurrency(budgetParDocAuto()) }} {{ 'AFFAIRES.wizard.livrable.per_doc' | translate }}
               </span>
             }
           </div>
@@ -186,9 +185,9 @@
 
         <div>
           <div class="auto-header-row">
-            <label class="field-label">Documents à inclure *</label>
+            <label class="field-label">{{ 'AFFAIRES.wizard.livrable.docs_include' | translate }}</label>
             <button class="link-btn" (click)="toggleAllDocsAuto()">
-              {{ selectedDocsAuto().size === allDocsByDisc().length ? 'Tout déselectionner' : 'Tout sélectionner' }}
+              {{ selectedDocsAuto().size === allDocsByDisc().length ? ('AFFAIRES.wizard.livrable.deselect_all' | translate) : ('AFFAIRES.wizard.livrable.select_all' | translate) }}
             </button>
           </div>
 
@@ -197,9 +196,9 @@
               <thead>
                 <tr>
                   <th class="th-check"></th>
-                  <th>Document</th>
-                  <th>WBS</th>
-                  <th class="th-right">Budget prévu</th>
+                  <th>{{ 'AFFAIRES.wizard.livrable.th_document' | translate }}</th>
+                  <th>{{ 'AFFAIRES.wizard.livrable.th_wbs' | translate }}</th>
+                  <th class="th-right">{{ 'AFFAIRES.wizard.livrable.th_planned_budget' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -231,7 +230,7 @@
             [options]="{
               variant: 'secondary',
               size: 'sm',
-              label: 'Répartir automatiquement',
+              label: ('AFFAIRES.wizard.livrable.distribute_auto' | translate),
               iconStart: 'auto_fix_high',
               loading: isSaving(),
               disabled: !budgetGlobal() || selectedDocsAuto().size === 0 || isSaving()
@@ -250,7 +249,7 @@
         <div class="item-badge item-badge--done">
           <span class="material-symbols-outlined"
                 style="font-size:14px;font-variation-settings:'FILL' 1">check_circle</span>
-          {{ savedLivrables().length }} livrable(s) configuré(s)
+          {{ savedLivrables().length }} {{ 'AFFAIRES.wizard.livrable.configured' | translate }}
         </div>
       </div>
 
@@ -258,11 +257,11 @@
         <table class="doc-table">
           <thead>
             <tr>
-              <th>Document</th>
-              <th>Discipline</th>
-              <th>WBS</th>
-              <th class="th-right">Budget alloué</th>
-              <th class="th-center">Mode</th>
+              <th>{{ 'AFFAIRES.wizard.livrable.th_document' | translate }}</th>
+              <th>{{ 'AFFAIRES.wizard.livrable.th_discipline' | translate }}</th>
+              <th>{{ 'AFFAIRES.wizard.livrable.th_wbs' | translate }}</th>
+              <th class="th-right">{{ 'AFFAIRES.wizard.livrable.th_alloc_budget_saved' | translate }}</th>
+              <th class="th-center">{{ 'AFFAIRES.wizard.livrable.th_mode' | translate }}</th>
             </tr>
           </thead>
           <tbody>

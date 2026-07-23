@@ -1,5 +1,8 @@
 import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
+
+import { FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 import { CostService }       from '../../../cost/cost.service';
 import { AffaireDraftState } from '../../affaire-wizard.model';
@@ -8,7 +11,7 @@ import { CostCategoryDto }   from '../../../cost/cost.model';
 @Component({
   selector: 'app-wizard-step-cp',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, FormFieldComponent, TranslatePipe],
   templateUrl: './wizard-step-cp.component.html',
   styleUrl: './wizard-step-cp.component.scss',
 })
@@ -39,6 +42,12 @@ export class WizardStepCpComponent implements OnInit {
 
   /** Called on margin-rate change so the parent draft signal (and step validation) updates. */
   emitChange(): void { this.emit(); }
+
+  /** daf-form-field emits string | number | null; keep the numeric model then propagate. */
+  onMarginChange(v: string | number | null): void {
+    this.draft.marginRatePct = v === null || v === '' ? undefined : Number(v);
+    this.emit();
+  }
 
   private emit(): void {
     this.draftChange.emit({ ...this.draft, eligibleCostCategoryIds: [...this.draft.eligibleCostCategoryIds] });

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { environment } from '../../../../environments/environment';
 
 interface PermissionCodeItem { code: string; label: string; }
@@ -17,13 +18,13 @@ interface RoleListItem {
 @Component({
   selector: 'app-fact-roles-admin',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   template: `
 <div class="roles-page">
 
   <div class="page-header">
-    <h1 class="page-title">Rôles & Permissions</h1>
-    <p class="page-sub">Gérez les permissions du module Facturation par rôle.</p>
+    <h1 class="page-title">{{ 'ADMIN.ROLES.TITLE' | translate }}</h1>
+    <p class="page-sub">{{ 'ADMIN.ROLES.SUBTITLE' | translate }}</p>
   </div>
 
   @if (pageError()) {
@@ -35,11 +36,11 @@ interface RoleListItem {
     <!-- Left: role list -->
     <div class="roles-sidebar">
       <div class="sidebar-header">
-        <span class="sidebar-title">Rôles ({{ roles().length }})</span>
+        <span class="sidebar-title">{{ 'ADMIN.ROLES.SIDEBAR_TITLE' | translate:{ count: roles().length } }}</span>
       </div>
 
       @if (loadingRoles()) {
-        <div class="loading-hint">Chargement…</div>
+        <div class="loading-hint">{{ 'ADMIN.ROLES.LOADING' | translate }}</div>
       } @else {
         <div class="role-list">
           @for (r of roles(); track r.id) {
@@ -47,7 +48,7 @@ interface RoleListItem {
                     (click)="selectRole(r)">
               <span class="role-name">{{ r.frenchName }}</span>
               <span class="role-badge" [class.badge-all]="r.showAll">
-                {{ r.showAll ? 'Admin' : r.permissionCount + ' perm.' }}
+                {{ r.showAll ? ('ADMIN.ROLES.BADGE_ADMIN' | translate) : ('ADMIN.ROLES.PERM_COUNT' | translate:{ count: r.permissionCount }) }}
               </span>
             </button>
           }
@@ -58,21 +59,21 @@ interface RoleListItem {
     <!-- Right: permissions -->
     <div class="perms-panel">
       @if (!selectedRole()) {
-        <div class="empty-state">Sélectionnez un rôle pour gérer ses permissions.</div>
+        <div class="empty-state">{{ 'ADMIN.ROLES.EMPTY_STATE' | translate }}</div>
       } @else {
         <div class="perms-header">
           <div>
             <h2 class="perms-title">{{ selectedRole()!.frenchName }}</h2>
             @if (selectedRole()!.showAll) {
-              <span class="admin-note">Ce rôle est administrateur — il a accès à tout.</span>
+              <span class="admin-note">{{ 'ADMIN.ROLES.ADMIN_NOTE' | translate }}</span>
             }
           </div>
           <div class="perms-actions">
-            <button class="btn-ghost" (click)="selectAll()" [disabled]="saving()">Tout cocher</button>
-            <button class="btn-ghost" (click)="clearAll()" [disabled]="saving()">Tout décocher</button>
+            <button class="btn-ghost" (click)="selectAll()" [disabled]="saving()">{{ 'ADMIN.ROLES.CHECK_ALL' | translate }}</button>
+            <button class="btn-ghost" (click)="clearAll()" [disabled]="saving()">{{ 'ADMIN.ROLES.UNCHECK_ALL' | translate }}</button>
             <button class="btn-save" (click)="saveAll()"
                     [disabled]="saving()">
-              {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+              {{ (saving() ? 'ADMIN.ROLES.SAVING' : 'ADMIN.ROLES.SAVE') | translate }}
             </button>
           </div>
         </div>
@@ -85,7 +86,7 @@ interface RoleListItem {
         }
 
         @if (loadingCatalog()) {
-          <div class="loading-hint">Chargement du catalogue…</div>
+          <div class="loading-hint">{{ 'ADMIN.ROLES.LOADING_CATALOG' | translate }}</div>
         } @else {
           <div class="groups-list">
             @for (group of catalog(); track group.groupName) {
@@ -218,6 +219,7 @@ interface RoleListItem {
 })
 export class FactRolesAdminComponent implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly translate = inject(TranslateService);
   private readonly base = `${environment.factApiUrl}/api/fact/admin`;
 
   roles        = signal<RoleListItem[]>([]);
@@ -238,7 +240,7 @@ export class FactRolesAdminComponent implements OnInit {
     this.http.get<RoleListItem[]>(`${this.base}/roles`).subscribe({
       next:  roles => { this.roles.set(roles); this.loadingRoles.set(false); },
       error: ()    => {
-        this.pageError.set('Impossible de charger les rôles. Vérifiez que le service RH est démarré.');
+        this.pageError.set(this.translate.instant('ADMIN.ROLES.ERROR_LOAD_ROLES'));
         this.loadingRoles.set(false);
       },
     });
@@ -300,7 +302,7 @@ export class FactRolesAdminComponent implements OnInit {
       .subscribe({
         next: () => {
           this.saving.set(false);
-          this.saveSuccess.set('Permissions mises à jour avec succès.');
+          this.saveSuccess.set(this.translate.instant('ADMIN.ROLES.SAVE_SUCCESS'));
           // Refresh role in list
           this.roles.update(list => list.map(r =>
             r.id === role.id ? { ...r, permissions: codes, permissionCount: codes.length } : r
@@ -310,7 +312,7 @@ export class FactRolesAdminComponent implements OnInit {
         },
         error: err => {
           this.saving.set(false);
-          this.saveError.set(err?.error?.message ?? 'Erreur lors de la sauvegarde.');
+          this.saveError.set(err?.error?.message ?? this.translate.instant('ADMIN.ROLES.SAVE_ERROR'));
         },
       });
   }

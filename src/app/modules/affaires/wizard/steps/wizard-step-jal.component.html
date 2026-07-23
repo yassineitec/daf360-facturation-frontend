@@ -3,8 +3,8 @@
   <div class="info-banner">
     <span class="material-symbols-outlined" style="font-size:18px">info</span>
     <p class="m-0">
-      La somme des montants des jalons doit être égale au
-      <strong>montant contractuel
+      {{ 'AFFAIRES.wizard.jal.info_pre' | translate }}
+      <strong>{{ 'AFFAIRES.wizard.jal.info_contract' | translate }}
         ({{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }})
       </strong>.
     </p>
@@ -14,44 +14,53 @@
   @for (j of draft.jalons; track $index; let i = $index) {
     <div class="item-card">
       <div class="item-card-header">
-        <div class="item-badge item-badge--jal">Jalon {{ i + 1 }}</div>
+        <div class="item-badge item-badge--jal">{{ 'AFFAIRES.wizard.jal.badge' | translate:{ n: i + 1 } }}</div>
         <daf-button [options]="{variant: 'danger', size: 'sm', iconStart: 'close'}" (onClick)="removeJalon(i)"></daf-button>
       </div>
       <div class="jalon-grid">
         <div class="jalon-col-full">
-          <input type="text" [(ngModel)]="j.label" (ngModelChange)="updateJalonTotal()" maxlength="255"
-            placeholder="Libellé du jalon *"
-            class="form-input" />
+          <daf-form-field
+            [options]="{ type: 'text', maxLength: 255, placeholder: ('AFFAIRES.wizard.jal.label_ph' | translate), fullWidth: true }"
+            [value]="j.label"
+            (valueChange)="onLabelChange(j, $event)">
+          </daf-form-field>
         </div>
         <div>
-          <input type="number" step="0.001" min="0"
-            [(ngModel)]="j.montant" (ngModelChange)="updateJalonTotal()"
-            placeholder="Montant *"
-            class="form-input" />
+          <daf-form-field
+            [options]="{ type: 'number', placeholder: ('AFFAIRES.wizard.jal.amount_ph' | translate), fullWidth: true }"
+            [value]="j.montant"
+            (valueChange)="onMontantChange(j, $event)">
+          </daf-form-field>
         </div>
         <div>
-          <input type="date" [(ngModel)]="j.datePrevisionnelle" (ngModelChange)="updateJalonTotal()" class="form-input" />
+          <daf-form-field
+            [options]="{ type: 'date', fullWidth: true }"
+            [value]="j.datePrevisionnelle ?? null"
+            (valueChange)="onDateChange(j, $event)">
+          </daf-form-field>
         </div>
         <div class="jalon-col-full">
-          <textarea [(ngModel)]="j.description" (ngModelChange)="updateJalonTotal()" rows="2" maxlength="500"
-            placeholder="Description (optionnel)"
-            class="form-textarea"></textarea>
+          <daf-form-field
+            [options]="{ type: 'textarea', rows: 2, maxLength: 500, placeholder: ('AFFAIRES.wizard.jal.desc_ph' | translate), fullWidth: true }"
+            [value]="j.description ?? null"
+            (valueChange)="onDescriptionChange(j, $event)">
+          </daf-form-field>
         </div>
       </div>
     </div>
   }
 
-  <daf-button [options]="{variant: 'ghost', iconStart: 'add', label: 'Ajouter un jalon', fullWidth: true}" (onClick)="addJalon()"></daf-button>
+  <daf-button [options]="{variant: 'ghost', iconStart: 'add', label: ('AFFAIRES.wizard.jal.add' | translate), fullWidth: true}" (onClick)="addJalon()"></daf-button>
 
   @if (draft.jalons.length > 0) {
     <div class="total-indicator"
       [class.ok]="isBalanced()" [class.error]="!isBalanced()">
       <div class="total-col">
-        <p class="total-sub-label">Total jalons</p>
+        <p class="total-sub-label">{{ 'AFFAIRES.wizard.jal.total_jalons' | translate }}</p>
         <p class="total-sub-value">{{ draft.jalonTotal | number:'1.3-3' }} {{ draft.contractCurrency }}</p>
       </div>
       <div class="total-col total-col--right">
-        <p class="total-sub-label">Montant contractuel</p>
+        <p class="total-sub-label">{{ 'AFFAIRES.wizard.jal.contract_amount' | translate }}</p>
         <p class="total-contract-value">{{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}</p>
       </div>
     </div>
@@ -59,7 +68,7 @@
     @if (!isBalanced()) {
       <p class="warning-msg">
         <span class="material-symbols-outlined" style="font-size:16px">warning</span>
-        La somme des jalons doit être égale au montant du contrat.
+        {{ 'AFFAIRES.wizard.jal.warning' | translate }}
       </p>
     }
   }

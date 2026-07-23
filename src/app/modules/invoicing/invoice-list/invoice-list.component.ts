@@ -8,11 +8,11 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { SearchBarComponent } from '../../../shared/search-bar.component';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { SelectOption, SelectComponent, ModalService, ModalRef, CardComponent, ButtonComponent, PaginationComponent, MultiDatePickerComponent, TableColumn, TableRow, TableConfig, DataTableComponent } from '@khalilrebhiitec/daf360';
+import { SelectOption, SelectComponent, ModalService, ModalRef, CardComponent, ButtonComponent, PaginationComponent, MultiDatePickerComponent, TableColumn, TableRow, TableConfig, DataTableComponent, DafCellDirective, FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-invoice-list',
-  imports: [PermissionDirective, SearchBarComponent, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent, DataTableComponent],
+  imports: [PermissionDirective, SearchBarComponent, PaymentModalComponent, CardComponent, ButtonComponent, PaginationComponent, TranslatePipe, MultiDatePickerComponent, SelectComponent, DataTableComponent, DafCellDirective, FormFieldComponent],
   templateUrl: './invoice-list.component.html',
   styleUrl:    './invoice-list.component.scss',
 })

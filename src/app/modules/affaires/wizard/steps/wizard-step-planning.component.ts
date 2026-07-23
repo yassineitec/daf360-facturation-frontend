@@ -1,12 +1,13 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { MultiDatePickerComponent } from '@khalilrebhiitec/daf360';
 import { AffaireDraftState } from '../../affaire-wizard.model';
 
 @Component({
   selector: 'app-wizard-step-planning',
   standalone: true,
-  imports: [DatePipe, MultiDatePickerComponent],
+  imports: [DatePipe, MultiDatePickerComponent, TranslatePipe],
   templateUrl: './wizard-step-planning.component.html',
   styleUrl: './wizard-step-planning.component.scss',
 })

@@ -5,8 +5,8 @@
     <div class="section-header">
       <span class="section-icon material-symbols-outlined">group</span>
       <div>
-        <div class="section-title">Responsables de l'affaire *</div>
-        <div class="section-sub">Chaque ligne = un responsable avec une activité. Le même collaborateur peut apparaître sur plusieurs lignes.</div>
+        <div class="section-title">{{ 'AFFAIRES.wizard.responsables.title' | translate }} *</div>
+        <div class="section-sub">{{ 'AFFAIRES.wizard.responsables.sub' | translate }}</div>
       </div>
     </div>
 
@@ -20,19 +20,19 @@
         }">
         <div class="budget-bar-top">
           <div>
-            <p class="budget-bar-label">Répartition du budget</p>
+            <p class="budget-bar-label">{{ 'AFFAIRES.wizard.responsables.budget_alloc_label' | translate }}</p>
             <p class="budget-bar-status">
               @if (budgetMatchesProject()) {
-                ✓ Budget totalement réparti
+                {{ 'AFFAIRES.wizard.responsables.fully_allocated' | translate }}
               } @else if (budgetRemaining() > 0) {
-                {{ budgetRemaining() | number:'1.3-3' }} {{ draft.contractCurrency }} non alloué
+                {{ budgetRemaining() | number:'1.3-3' }} {{ draft.contractCurrency }} {{ 'AFFAIRES.wizard.responsables.unallocated' | translate }}
               } @else {
-                Dépassement de {{ (budgetRemaining() * -1) | number:'1.3-3' }} {{ draft.contractCurrency }}
+                {{ 'AFFAIRES.wizard.responsables.overrun_prefix' | translate }} {{ (budgetRemaining() * -1) | number:'1.3-3' }} {{ draft.contractCurrency }}
               }
             </p>
           </div>
           <div class="budget-bar-total">
-            <p class="budget-bar-total-label">Budget total affaire</p>
+            <p class="budget-bar-total-label">{{ 'AFFAIRES.wizard.responsables.total_budget_label' | translate }}</p>
             <p class="budget-bar-total-value">
               {{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}
             </p>
@@ -49,8 +49,8 @@
           </div>
         </div>
         <div class="budget-track-labels">
-          <span>Alloué : {{ totalAllocated() | number:'1.3-3' }} {{ draft.contractCurrency }}</span>
-          <span>Restant : {{ budgetRemaining() | number:'1.3-3' }} {{ draft.contractCurrency }}</span>
+          <span>{{ 'AFFAIRES.wizard.responsables.allocated_label' | translate }} {{ totalAllocated() | number:'1.3-3' }} {{ draft.contractCurrency }}</span>
+          <span>{{ 'AFFAIRES.wizard.responsables.remaining_label' | translate }} {{ budgetRemaining() | number:'1.3-3' }} {{ draft.contractCurrency }}</span>
         </div>
       </div>
     }
@@ -67,12 +67,12 @@
                 {{ (resp.userName || '#')[0].toUpperCase() }}
               </div>
               <div class="resp-name-wrap">
-                <span class="resp-name">{{ resp.userName || 'Ligne ' + (idx + 1) }}</span>
+                <span class="resp-name">{{ resp.userName || ('AFFAIRES.wizard.responsables.row' | translate:{ n: idx + 1 }) }}</span>
               </div>
               <div class="resp-header-actions">
                 @if (!resp.isPrimary) {
                   <button class="set-primary-btn" type="button"
-                    title="Définir comme principal"
+                    [title]="'AFFAIRES.wizard.responsables.set_primary' | translate"
                     (click)="setPrimary(idx)">
                     <span class="material-symbols-outlined">star_border</span>
                   </button>
@@ -86,10 +86,10 @@
             <!-- User select -->
             <div class="resp-fields">
               <div class="resp-field resp-field--full">
-                <label class="resp-field-label">Collaborateur *</label>
+                <label class="resp-field-label">{{ 'AFFAIRES.wizard.responsables.collaborateur' | translate }} *</label>
                 <daf-select
                   [options]="userOptions()"
-                  [config]="selectConfig"
+                  [config]="selectConfig()"
                   [selected]="resp.userId ? [resp.userId.toString()] : []"
                   (selectedChange)="onUserSelect(idx, $event)" />
               </div>
@@ -98,22 +98,23 @@
             <!-- Role + budget -->
             <div class="resp-fields">
               <div class="resp-field">
-                <label class="resp-field-label">Rôle</label>
-                <input class="form-input resp-role-input resp-role-input--readonly" type="text"
-                  [value]="resp.role ?? ''"
-                  readonly>
+                <label class="resp-field-label">{{ 'AFFAIRES.wizard.responsables.role' | translate }}</label>
+                <daf-form-field
+                  [options]="{ type: 'text', readonly: true, fullWidth: true }"
+                  [value]="resp.role ?? ''" />
+
               </div>
 
               @if (draft.budgetPrevisionnel) {
                 <div class="resp-field resp-budget-field">
                   <label class="resp-field-label">
-                    Budget alloué * ({{ draft.contractCurrency }})
+                    {{ 'AFFAIRES.wizard.responsables.allocated_budget' | translate }} * ({{ draft.contractCurrency }})
                   </label>
                   <div class="budget-input-row">
-                    <input class="form-input budget-input" type="number"
-                      min="0" step="0.001"
-                      [value]="resp.budgetAllocation ?? ''"
-                      (input)="updateBudget(idx, $any($event.target).value)">
+                    <daf-form-field class="budget-input"
+                      [options]="{ type: 'number', fullWidth: true }"
+                      [value]="resp.budgetAllocation ?? null"
+                      (valueChange)="updateBudget(idx, $event)" />
                     <span class="budget-pct">{{ getBudgetPct(resp.budgetAllocation) | number:'1.1-1' }} %</span>
                   </div>
                 </div>
@@ -124,50 +125,50 @@
             <div class="resp-fields">
               <div class="resp-field">
                 <label class="resp-field-label">
-                  Activité *
+                  {{ 'AFFAIRES.wizard.responsables.activite' | translate }} *
                   @if (!resp.activiteId) {
-                    <span class="field-required-hint">— obligatoire</span>
+                    <span class="field-required-hint">{{ 'AFFAIRES.wizard.responsables.required_hint' | translate }}</span>
                   }
                 </label>
                 <daf-select
                   [options]="activiteOptions()"
-                  [config]="selectConfig"
+                  [config]="selectConfig()"
                   [selected]="resp.activiteId ? [resp.activiteId + '|' + resp.activiteLabel] : []"
                   (selectedChange)="onActiviteSelect(idx, $event)" />
               </div>
 
               <div class="resp-field">
                 <label class="resp-field-label">
-                  Discipline
+                  {{ 'AFFAIRES.wizard.responsables.discipline' | translate }}
                   @if (draft.doc360ServerReference) {
                     <span class="doc360-badge">DOC360</span>
                   }
                 </label>
 
                 @if (!draft.doc360ServerReference) {
-                  <input class="form-input" type="text"
-                    placeholder="Saisie libre…"
+                  <daf-form-field
+                    [options]="{ type: 'text', placeholder: ('AFFAIRES.wizard.responsables.free_ph' | translate), fullWidth: true }"
                     [value]="resp.disciplineLabel ?? ''"
-                    (input)="onFreeDisciplineChange(idx, $any($event.target).value)">
+                    (valueChange)="onFreeDisciplineChange(idx, $event)" />
 
                 } @else if (isLoadingDisc()) {
                   <span class="disc-loading">
                     <span class="material-symbols-outlined spin">progress_activity</span>
-                    Chargement…
+                    {{ 'AFFAIRES.wizard.responsables.disc_loading' | translate }}
                   </span>
 
                 } @else if (disciplines().length > 0) {
                   <daf-select
                     [options]="disciplineOptions()"
-                    [config]="selectConfig"
+                    [config]="selectConfig()"
                     [selected]="resp.disciplineId && resp.disciplineId > 0 ? [resp.disciplineId + '|' + resp.disciplineLabel] : []"
                     (selectedChange)="onDisciplineSelect(idx, $event)" />
 
                 } @else {
-                  <input class="form-input" type="text"
-                    [placeholder]="!isDisciplineAvail() ? 'DOC360 indisponible — saisie libre…' : 'Aucune discipline — saisie libre…'"
+                  <daf-form-field
+                    [options]="{ type: 'text', placeholder: !isDisciplineAvail() ? ('AFFAIRES.wizard.responsables.doc360_unavailable_ph' | translate) : ('AFFAIRES.wizard.responsables.no_discipline_ph' | translate), fullWidth: true }"
                     [value]="resp.disciplineLabel ?? ''"
-                    (input)="onFreeDisciplineChange(idx, $any($event.target).value)">
+                    (valueChange)="onFreeDisciplineChange(idx, $event)" />
                 }
               </div>
             </div>
@@ -176,7 +177,7 @@
             @if (hasDuplicatePair(idx)) {
               <div class="duplicate-error">
                 <span class="material-symbols-outlined">error</span>
-                Cette combinaison collaborateur + activité existe déjà dans une autre ligne.
+                {{ 'AFFAIRES.wizard.responsables.duplicate' | translate }}
               </div>
             }
 
@@ -188,7 +189,7 @@
     <!-- Add row button -->
     <button class="btn-add-row" type="button" (click)="addRow()">
       <span class="material-symbols-outlined">add</span>
-      Ajouter une ligne
+      {{ 'AFFAIRES.wizard.responsables.add_row' | translate }}
     </button>
 
     <!-- Action buttons -->
@@ -196,7 +197,7 @@
       @if (draft.responsables.length > 1 && draft.budgetPrevisionnel) {
         <button class="btn-distribute" type="button" (click)="distributeEvenly()">
           <span class="material-symbols-outlined">equal</span>
-          Répartir équitablement
+          {{ 'AFFAIRES.wizard.responsables.distribute' | translate }}
         </button>
       }
     </div>
@@ -211,11 +212,11 @@
         <span class="material-symbols-outlined">warning</span>
         <p>
           @if (budgetRemaining() > 0) {
-            Il reste <strong>{{ budgetRemaining() | number:'1.3-3' }} {{ draft.contractCurrency }}</strong>
-            à allouer. Ajustez les montants ou cliquez sur "Répartir équitablement".
+            {{ 'AFFAIRES.wizard.responsables.remaining_pre' | translate }} <strong>{{ budgetRemaining() | number:'1.3-3' }} {{ draft.contractCurrency }}</strong>
+            {{ 'AFFAIRES.wizard.responsables.remaining_post' | translate }}
           } @else {
-            Dépassement de <strong>{{ (budgetRemaining() * -1) | number:'1.3-3' }} {{ draft.contractCurrency }}</strong>.
-            Réduisez les allocations.
+            {{ 'AFFAIRES.wizard.responsables.overrun_prefix' | translate }} <strong>{{ (budgetRemaining() * -1) | number:'1.3-3' }} {{ draft.contractCurrency }}</strong>.
+            {{ 'AFFAIRES.wizard.responsables.reduce' | translate }}
           }
         </p>
       </div>

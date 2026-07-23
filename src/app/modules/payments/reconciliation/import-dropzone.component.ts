@@ -1,4 +1,5 @@
 import { Component, inject, output, signal } from '@angular/core';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { ReconciliationService } from '../reconciliation.service';
 import { ImportSummary } from '../payment.model';
 
@@ -7,7 +8,7 @@ const ALLOWED_EXTENSIONS  = ['.ofx', '.xml'];
 
 @Component({
   selector: 'app-import-dropzone',
-  imports: [],
+  imports: [TranslatePipe],
   template: `
 <div class="dropzone-section">
 
@@ -23,8 +24,8 @@ const ALLOWED_EXTENSIONS  = ['.ofx', '.xml'];
     @if (!selectedFile()) {
       <div class="dropzone-idle">
         <span class="dz-icon">📂</span>
-        <span class="dz-primary">Glissez un fichier ici ou cliquez pour parcourir</span>
-        <span class="dz-secondary">Formats acceptés : OFX (.ofx), CAMT053 (.xml) — max 10 Mo</span>
+        <span class="dz-primary">{{ 'PAYMENTS.IMPORT.DROP_PRIMARY' | translate }}</span>
+        <span class="dz-secondary">{{ 'PAYMENTS.IMPORT.DROP_SECONDARY' | translate }}</span>
       </div>
     } @else {
       <div class="dropzone-file">
@@ -38,7 +39,7 @@ const ALLOWED_EXTENSIONS  = ['.ofx', '.xml'];
             {{ detectedFormat() }}
           </span>
         }
-        <button class="clear-file" title="Supprimer" (click)="clearFile($event)">✕</button>
+        <button class="clear-file" [title]="'PAYMENTS.IMPORT.CLEAR' | translate" (click)="clearFile($event)">✕</button>
       </div>
     }
   </div>
@@ -48,7 +49,7 @@ const ALLOWED_EXTENSIONS  = ['.ofx', '.xml'];
   }
 
   @if (uploading()) {
-    <div class="upload-progress">Importation en cours…</div>
+    <div class="upload-progress">{{ 'PAYMENTS.IMPORT.UPLOADING' | translate }}</div>
   }
 
   @if (uploadError()) {
@@ -59,7 +60,7 @@ const ALLOWED_EXTENSIONS  = ['.ofx', '.xml'];
     <button class="btn-import"
       [disabled]="!selectedFile() || !detectedFormat() || uploading()"
       (click)="upload()">
-      {{ uploading() ? 'Importation…' : 'Importer' }}
+      {{ (uploading() ? 'PAYMENTS.IMPORT.UPLOADING_SHORT' : 'PAYMENTS.IMPORT.UPLOAD_BTN') | translate }}
     </button>
   </div>
 
@@ -113,7 +114,8 @@ const ALLOWED_EXTENSIONS  = ['.ofx', '.xml'];
   `],
 })
 export class ImportDropzoneComponent {
-  private readonly svc = inject(ReconciliationService);
+  private readonly svc       = inject(ReconciliationService);
+  private readonly translate = inject(TranslateService);
 
   imported = output<ImportSummary>();
 
@@ -169,14 +171,14 @@ export class ImportDropzoneComponent {
 
     const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      this.validationError.set('Format non supporté. Utilisez un fichier .ofx (OFX) ou .xml (CAMT053).');
+      this.validationError.set(this.translate.instant('PAYMENTS.IMPORT.ERR_FORMAT'));
       this.selectedFile.set(null);
       this.detectedFormat.set(null);
       return;
     }
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      this.validationError.set('Fichier trop volumineux (max 10 Mo).');
+      this.validationError.set(this.translate.instant('PAYMENTS.IMPORT.ERR_SIZE'));
       this.selectedFile.set(null);
       this.detectedFormat.set(null);
       return;
@@ -201,14 +203,14 @@ export class ImportDropzoneComponent {
       },
       error: err => {
         this.uploading.set(false);
-        this.uploadError.set(err?.error?.message ?? 'Erreur lors de l\'importation.');
+        this.uploadError.set(err?.error?.message ?? this.translate.instant('PAYMENTS.IMPORT.ERR_UPLOAD'));
       },
     });
   }
 
   formatSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} o`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+    if (bytes < 1024) return `${bytes} ${this.translate.instant('PAYMENTS.IMPORT.SIZE_B')}`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ${this.translate.instant('PAYMENTS.IMPORT.SIZE_KB')}`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} ${this.translate.instant('PAYMENTS.IMPORT.SIZE_MB')}`;
   }
 }

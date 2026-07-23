@@ -3,6 +3,8 @@ import {
 } from '@angular/core';
 import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
+import { PermissionDirective } from '../../../shared/permission.directive';
+import { FactRolesAdminComponent } from '../roles/fact-roles-admin.component';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
   PaginationComponent, PaginationConfig, ButtonComponent, ModalService, ModalRef,
@@ -18,8 +20,9 @@ import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-ap
 import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 
-type AdminTab = 'lists' | 'forex' | 'forex-api';
+type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions';
 
 const PAGE_SIZE = 10;
 
@@ -36,7 +39,8 @@ interface ForexRow {
     CommonModule, FormsModule,
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
-    FormFieldComponent, StatusBadgeComponent,
+    FormFieldComponent, StatusBadgeComponent, TranslatePipe,
+    PermissionDirective, FactRolesAdminComponent,
   ],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',
@@ -47,6 +51,7 @@ export class AdminListComponent implements OnInit {
   private readonly paramSvc     = inject(ParameterSetService);
   private readonly forexApiSvc  = inject(ForexApiConfigService);
   private readonly modal        = inject(ModalService);
+  private readonly translate    = inject(TranslateService);
 
   @ViewChild('valueFormTpl') valueFormTpl!: TemplateRef<unknown>;
   @ViewChild('forexFormTpl') forexFormTpl!: TemplateRef<unknown>;
@@ -59,32 +64,38 @@ export class AdminListComponent implements OnInit {
     size:          'sm',
   };
 
-  readonly listColumns: TableColumn[] = [
-    { key: 'code',      label: 'Code',       width: '120px' },
-    { key: 'labelFr',   label: 'Libellé FR' },
-    { key: 'labelEn',   label: 'Libellé EN' },
-    { key: 'isDefault', label: 'Défaut',     align: 'center', width: '90px' },
-    { key: 'isActive',  label: 'Statut',     align: 'center', width: '90px' },
-    { key: '_actions',  label: 'Actions',    align: 'right',  width: '150px' },
-  ];
+  readonly listColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'code',      label: this.translate.instant('ADMIN.LISTS.COL_CODE'),      width: '120px' },
+      { key: 'labelFr',   label: this.translate.instant('ADMIN.LISTS.COL_LABEL_FR') },
+      { key: 'labelEn',   label: this.translate.instant('ADMIN.LISTS.COL_LABEL_EN') },
+      { key: 'isDefault', label: this.translate.instant('ADMIN.LISTS.COL_DEFAULT'),   align: 'center', width: '90px' },
+      { key: 'isActive',  label: this.translate.instant('ADMIN.LISTS.COL_STATUS'),    align: 'center', width: '90px' },
+      { key: '_actions',  label: this.translate.instant('ADMIN.COMMON.ACTIONS'),      align: 'right',  width: '150px' },
+    ];
+  });
 
-  readonly forexColumns: TableColumn[] = [
-    { key: 'code',     label: 'Devise',            width: '100px' },
-    { key: 'eur',      label: '1 devise → EUR',    align: 'right', width: '180px' },
-    { key: 'chf',      label: '1 devise → CHF',    align: 'right', width: '200px' },
-    { key: '_actions', label: 'Actions',           align: 'right', width: '150px' },
-  ];
+  readonly forexColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'code',     label: this.translate.instant('ADMIN.FOREX.COL_CODE'),  width: '100px' },
+      { key: 'eur',      label: this.translate.instant('ADMIN.FOREX.COL_EUR'),   align: 'right', width: '180px' },
+      { key: 'chf',      label: this.translate.instant('ADMIN.FOREX.COL_CHF'),   align: 'right', width: '200px' },
+      { key: '_actions', label: this.translate.instant('ADMIN.COMMON.ACTIONS'),  align: 'right', width: '150px' },
+    ];
+  });
 
   readonly listTableConfig = computed<TableConfig>(() => ({
     hoverable:    true,
     loading:      this.listLoading(),
-    emptyMessage: 'Aucune valeur configurée pour ce type.',
+    emptyMessage: this.translate.instant('ADMIN.LISTS.EMPTY'),
   }));
 
   readonly forexTableConfig = computed<TableConfig>(() => ({
     hoverable:    true,
     loading:      this.forexLoading(),
-    emptyMessage: 'Aucun taux configuré.',
+    emptyMessage: this.translate.instant('ADMIN.FOREX.EMPTY'),
   }));
 
   listCurrentPage  = signal(0);
@@ -127,7 +138,8 @@ export class AdminListComponent implements OnInit {
   );
 
   readonly activeListTypeLabel = computed(() =>
-    this.listTypes().find(t => t.code === this.activeListType())?.labelFr ?? 'Valeurs');
+    this.listTypes().find(t => t.code === this.activeListType())?.labelFr
+      ?? this.translate.instant('ADMIN.LISTS.DEFAULT_LABEL'));
 
   // ── Common ────────────────────────────────────────────────────────────────
   activeTab = signal<AdminTab>('lists');
@@ -230,12 +242,12 @@ export class AdminListComponent implements OnInit {
           this.loadListValues();
           this.loadForex();
         } else {
-          this.pageError.set('Aucun pays configuré pour ce compte.');
+          this.pageError.set(this.translate.instant('ADMIN.PAGE.ERR_NO_PAYS'));
         }
         this.isLoading.set(false);
       },
       error: () => {
-        this.pageError.set('Impossible de charger la configuration.');
+        this.pageError.set(this.translate.instant('ADMIN.PAGE.ERR_LOAD_CONFIG'));
         this.isLoading.set(false);
       },
     });
@@ -273,7 +285,7 @@ export class AdminListComponent implements OnInit {
         this.listLoading.set(false);
       },
       error: err => {
-        this.listError.set(err.error?.message ?? 'Erreur de chargement.');
+        this.listError.set(err.error?.message ?? this.translate.instant('ADMIN.LISTS.ERR_LOAD'));
         this.listLoading.set(false);
       },
     });
@@ -284,7 +296,7 @@ export class AdminListComponent implements OnInit {
     this.editingValue = null;
     this.valueForm = { code: '', labelFr: '', labelEn: '', isDefault: false };
     this.valueModalError.set(null);
-    this.openValueModal('Ajouter une valeur');
+    this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_ADD'));
   }
 
   openEditValueModal(v: ListValueDto): void {
@@ -292,7 +304,7 @@ export class AdminListComponent implements OnInit {
     this.editingValue = v;
     this.valueForm = { code: v.code, labelFr: v.labelFr, labelEn: v.labelEn ?? '', isDefault: v.isDefault };
     this.valueModalError.set(null);
-    this.openValueModal(`Modifier "${v.code}"`);
+    this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_EDIT', { code: v.code }));
   }
 
   private openValueModal(title: string): void {
@@ -302,9 +314,9 @@ export class AdminListComponent implements OnInit {
       size: 'md',
       closeOnBackdrop: false,
       buttons: [
-        { label: 'Annuler', variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('ADMIN.COMMON.CANCEL'), variant: 'secondary', action: r => r.close() },
         {
-          label:  this.valueModalMode() === 'create' ? 'Créer' : 'Enregistrer',
+          label:  this.valueModalMode() === 'create' ? this.translate.instant('ADMIN.COMMON.CREATE') : this.translate.instant('ADMIN.COMMON.SAVE'),
           variant: 'primary',
           action: () => this.submitValueModal(),
         },
@@ -321,7 +333,7 @@ export class AdminListComponent implements OnInit {
     if (this.valueModalMode() === 'create') {
       const code = this.valueForm.code.trim().toUpperCase();
       if (!code || !labelFr || !paysId) {
-        this.valueModalError.set('Code et libellé FR sont requis.');
+        this.valueModalError.set(this.translate.instant('ADMIN.LISTS.ERR_CODE_LABEL_REQUIRED'));
         return;
       }
       this.valueModalSaving.set(true);
@@ -338,14 +350,14 @@ export class AdminListComponent implements OnInit {
           this.valueModalRef?.close();
         },
         error: err => {
-          this.valueModalError.set(err.error?.message ?? 'Erreur de création.');
+          this.valueModalError.set(err.error?.message ?? this.translate.instant('ADMIN.LISTS.ERR_CREATE'));
           this.valueModalSaving.set(false);
         },
       });
     } else {
       const v = this.editingValue;
       if (!v || !labelFr) {
-        this.valueModalError.set('Le libellé FR est requis.');
+        this.valueModalError.set(this.translate.instant('ADMIN.LISTS.ERR_LABEL_FR_REQUIRED'));
         return;
       }
       this.valueModalSaving.set(true);
@@ -358,7 +370,7 @@ export class AdminListComponent implements OnInit {
           this.valueModalRef?.close();
         },
         error: err => {
-          this.valueModalError.set(err.error?.message ?? 'Erreur de sauvegarde.');
+          this.valueModalError.set(err.error?.message ?? this.translate.instant('ADMIN.LISTS.ERR_SAVE'));
           this.valueModalSaving.set(false);
         },
       });
@@ -367,12 +379,12 @@ export class AdminListComponent implements OnInit {
 
   deactivateValue(v: ListValueDto): void {
     this.modal.open({
-      title: 'Désactiver la valeur',
-      body:  `Désactiver la valeur "${v.code}" ?`,
+      title: this.translate.instant('ADMIN.LISTS.DEACTIVATE_TITLE'),
+      body:  this.translate.instant('ADMIN.LISTS.DEACTIVATE_CONFIRM', { code: v.code }),
       size:  'sm',
       buttons: [
-        { label: 'Annuler',    variant: 'secondary', action: r => r.close() },
-        { label: 'Désactiver', variant: 'primary',   action: r => { this.doDeactivateValue(v); r.close(); } },
+        { label: this.translate.instant('ADMIN.COMMON.CANCEL'),    variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('ADMIN.LISTS.DEACTIVATE'), variant: 'primary',   action: r => { this.doDeactivateValue(v); r.close(); } },
       ],
     });
   }
@@ -382,7 +394,7 @@ export class AdminListComponent implements OnInit {
       next: () => this.listValues.update(list =>
         list.map(x => x.id === v.id ? { ...x, isActive: false } : x),
       ),
-      error: err => this.listError.set(err.error?.message ?? 'Erreur.'),
+      error: err => this.listError.set(err.error?.message ?? this.translate.instant('ADMIN.LISTS.ERR_GENERIC')),
     });
   }
 
@@ -392,7 +404,7 @@ export class AdminListComponent implements OnInit {
         ...list.filter(x => x.id !== v.id),
         updated,
       ]),
-      error: err => this.listError.set(err.error?.message ?? 'Erreur.'),
+      error: err => this.listError.set(err.error?.message ?? this.translate.instant('ADMIN.LISTS.ERR_GENERIC')),
     });
   }
 
@@ -407,7 +419,7 @@ export class AdminListComponent implements OnInit {
         this.forexLoading.set(false);
       },
       error: err => {
-        this.forexError.set(err.error?.message ?? 'Erreur de chargement.');
+        this.forexError.set(err.error?.message ?? this.translate.instant('ADMIN.FOREX.ERR_LOAD'));
         this.forexLoading.set(false);
       },
     });
@@ -418,7 +430,7 @@ export class AdminListComponent implements OnInit {
     this.editingForexRow = null;
     this.forexForm = { code: '', eur: '', chf: '' };
     this.forexModalError.set(null);
-    this.openForexModal('Ajouter un taux');
+    this.openForexModal(this.translate.instant('ADMIN.FOREX.MODAL_ADD'));
   }
 
   openEditForexModal(row: ForexRow): void {
@@ -426,7 +438,7 @@ export class AdminListComponent implements OnInit {
     this.editingForexRow = row;
     this.forexForm = { code: row.code, eur: row.eurParam?.paramValue ?? '', chf: row.chfParam?.paramValue ?? '' };
     this.forexModalError.set(null);
-    this.openForexModal(`Modifier le taux "${row.code}"`);
+    this.openForexModal(this.translate.instant('ADMIN.FOREX.MODAL_EDIT', { code: row.code }));
   }
 
   private openForexModal(title: string): void {
@@ -436,9 +448,9 @@ export class AdminListComponent implements OnInit {
       size: 'md',
       closeOnBackdrop: false,
       buttons: [
-        { label: 'Annuler', variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('ADMIN.COMMON.CANCEL'), variant: 'secondary', action: r => r.close() },
         {
-          label:  this.forexModalMode() === 'create' ? 'Créer' : 'Enregistrer',
+          label:  this.forexModalMode() === 'create' ? this.translate.instant('ADMIN.COMMON.CREATE') : this.translate.instant('ADMIN.COMMON.SAVE'),
           variant: 'primary',
           action: () => this.submitForexModal(),
         },
@@ -454,19 +466,19 @@ export class AdminListComponent implements OnInit {
     const chfRate = this.forexForm.chf.trim();
 
     if (!code || !eurRate) {
-      this.forexModalError.set('Code devise et taux EUR sont requis.');
+      this.forexModalError.set(this.translate.instant('ADMIN.FOREX.ERR_CODE_EUR_REQUIRED'));
       return;
     }
     if (isNaN(Number(eurRate)) || Number(eurRate) <= 0) {
-      this.forexModalError.set('Taux EUR invalide.');
+      this.forexModalError.set(this.translate.instant('ADMIN.FOREX.ERR_EUR_INVALID'));
       return;
     }
     if (chfRate && (isNaN(Number(chfRate)) || Number(chfRate) <= 0)) {
-      this.forexModalError.set('Taux CHF invalide.');
+      this.forexModalError.set(this.translate.instant('ADMIN.FOREX.ERR_CHF_INVALID'));
       return;
     }
     if (mode === 'create' && this.allParams().some(p => p.paramKey === `RATE_EUR_${code}`)) {
-      this.forexModalError.set(`Un taux EUR pour "${code}" existe déjà. Éditez la ligne existante.`);
+      this.forexModalError.set(this.translate.instant('ADMIN.FOREX.ERR_EUR_EXISTS', { code }));
       return;
     }
 
@@ -492,7 +504,7 @@ export class AdminListComponent implements OnInit {
         this.forexModalRef?.close();
       },
       error: err => {
-        this.forexModalError.set(err.error?.message ?? 'Erreur de sauvegarde.');
+        this.forexModalError.set(err.error?.message ?? this.translate.instant('ADMIN.FOREX.ERR_SAVE'));
         this.forexModalSaving.set(false);
       },
     });
@@ -500,12 +512,12 @@ export class AdminListComponent implements OnInit {
 
   deleteForexParam(param: ParameterSetDto): void {
     this.modal.open({
-      title: 'Supprimer le taux',
-      body:  `Supprimer le paramètre "${param.paramKey}" ?`,
+      title: this.translate.instant('ADMIN.FOREX.DELETE_TITLE'),
+      body:  this.translate.instant('ADMIN.FOREX.DELETE_CONFIRM', { key: param.paramKey }),
       size:  'sm',
       buttons: [
-        { label: 'Annuler',   variant: 'secondary', action: r => r.close() },
-        { label: 'Supprimer', variant: 'primary',   action: r => { this.doDeleteForexParam(param); r.close(); } },
+        { label: this.translate.instant('ADMIN.COMMON.CANCEL'),           variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('ADMIN.FOREX.DELETE_CONFIRM_BTN'), variant: 'primary',   action: r => { this.doDeleteForexParam(param); r.close(); } },
       ],
     });
   }
@@ -513,7 +525,7 @@ export class AdminListComponent implements OnInit {
   private doDeleteForexParam(param: ParameterSetDto): void {
     this.paramSvc.delete(param.id).subscribe({
       next: () => this.allParams.update(list => list.filter(p => p.id !== param.id)),
-      error: err => this.forexError.set(err.error?.message ?? 'Erreur de suppression.'),
+      error: err => this.forexError.set(err.error?.message ?? this.translate.instant('ADMIN.FOREX.ERR_DELETE')),
     });
   }
 
@@ -530,15 +542,24 @@ export class AdminListComponent implements OnInit {
   forexApiStatus      = signal<ForexApiStatusDto | null>(null);
   forexApiStatusLoading = signal(false);
 
-  readonly forexProviderOptions: RadioOption[] = [
-    { value: 'frankfurter', label: 'Frankfurter', hint: 'Gratuit, sans clé API (données BCE)' },
-    { value: 'fixer',       label: 'Fixer.io',     hint: 'Clé API requise, taux EUR uniquement' },
-  ];
-  readonly forexProviderConfig: RadioGroupConfig = { label: 'Fournisseur' };
-  readonly forexAutoRefreshOptions: ToggleOptions = {
-    label: 'Rafraîchissement automatique',
-    hint:  'Chaque jour ouvré à 8h00',
-  };
+  readonly forexProviderOptions = computed<RadioOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: 'frankfurter', label: 'Frankfurter', hint: this.translate.instant('ADMIN.FOREX_API.FRANKFURTER_HINT') },
+      { value: 'fixer',       label: 'Fixer.io',     hint: this.translate.instant('ADMIN.FOREX_API.FIXER_HINT') },
+    ];
+  });
+  readonly forexProviderConfig = computed<RadioGroupConfig>(() => {
+    this.translate.currentLang();
+    return { label: this.translate.instant('ADMIN.FOREX_API.PROVIDER_LABEL') };
+  });
+  readonly forexAutoRefreshOptions = computed<ToggleOptions>(() => {
+    this.translate.currentLang();
+    return {
+      label: this.translate.instant('ADMIN.FOREX_API.AUTO_REFRESH_LABEL'),
+      hint:  this.translate.instant('ADMIN.FOREX_API.AUTO_REFRESH_HINT'),
+    };
+  });
 
   openForexApiTab(): void {
     this.activeTab.set('forex-api');
@@ -589,11 +610,11 @@ export class AdminListComponent implements OnInit {
           hasApiKey:        s.hasApiKey || !!newKey,
         } : s);
         this.forexApiKey.set('');
-        this.forexApiSuccess.set('Configuration sauvegardée.');
+        this.forexApiSuccess.set(this.translate.instant('ADMIN.FOREX_API.SUCCESS_SAVED'));
         this.forexApiSaving.set(false);
       },
       error: err => {
-        this.forexApiError.set(err.error?.message ?? 'Erreur de sauvegarde.');
+        this.forexApiError.set(err.error?.message ?? this.translate.instant('ADMIN.FOREX_API.ERR_SAVE'));
         this.forexApiSaving.set(false);
       },
     });
@@ -621,7 +642,7 @@ export class AdminListComponent implements OnInit {
         this.forexRefreshing.set(false);
       },
       error: err => {
-        this.forexApiError.set(err.error?.message ?? 'Erreur lors du rafraîchissement.');
+        this.forexApiError.set(err.error?.message ?? this.translate.instant('ADMIN.FOREX_API.ERR_REFRESH'));
         this.forexRefreshing.set(false);
       },
     });

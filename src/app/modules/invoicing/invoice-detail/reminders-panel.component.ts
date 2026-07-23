@@ -1,12 +1,12 @@
 import { Component, OnInit, inject, input, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { FormFieldComponent } from '@khalilrebhiitec/daf360';
 import { InvoiceService } from '../invoice.service';
 import { ReminderDto } from '../invoice.model';
 
 @Component({
   selector: 'app-reminders-panel',
-  imports: [FormsModule, TranslatePipe],
+  imports: [TranslatePipe, FormFieldComponent],
   template: `
 <div class="reminders-panel">
   <div class="panel-header">
@@ -53,10 +53,10 @@ import { ReminderDto } from '../invoice.model';
 
   @if (showSuspendForm()) {
     <div class="suspend-form">
-      <label>{{ 'INVOICING.REMINDERS.SUSPEND_FORM.LABEL' | translate }}</label>
-      <input type="text" [(ngModel)]="suspendReason" maxlength="200"
-        [placeholder]="'INVOICING.REMINDERS.SUSPEND_FORM.PLACEHOLDER' | translate"
-        class="suspend-input" />
+      <daf-form-field
+        [options]="{ label: ('INVOICING.REMINDERS.SUSPEND_FORM.LABEL' | translate), placeholder: ('INVOICING.REMINDERS.SUSPEND_FORM.PLACEHOLDER' | translate), maxLength: 200 }"
+        [value]="suspendReason"
+        (valueChange)="suspendReason = $any($event) ?? ''" />
       <div class="suspend-actions">
         <button class="btn-cancel" (click)="showSuspendForm.set(false)">
           {{ 'INVOICING.REMINDERS.SUSPEND_FORM.CANCEL' | translate }}

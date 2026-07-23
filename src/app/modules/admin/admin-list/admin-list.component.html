@@ -3,13 +3,13 @@
   <!-- Page header -->
   <div class="page-header">
     <div>
-      <h1 class="page-title">Administration</h1>
-      <p class="page-sub">Configuration système du module Facturation</p>
+      <h1 class="page-title">{{ 'ADMIN.PAGE.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'ADMIN.PAGE.SUBTITLE' | translate }}</p>
     </div>
   </div>
 
   @if (isLoading()) {
-    <div class="loading-state">Chargement…</div>
+    <div class="loading-state">{{ 'ADMIN.COMMON.LOADING' | translate }}</div>
   }
 
   @if (pageError()) {
@@ -22,7 +22,7 @@
     @if (paysList().length > 1) {
       <div class="pays-card">
         <div class="pays-select-wrap">
-          <span class="pays-select-label">Pays / Entité</span>
+          <span class="pays-select-label">{{ 'ADMIN.PAYS.LABEL' | translate }}</span>
           <div class="pays-select">
             <button type="button" class="pays-select-trigger" (click)="togglePaysDropdown()">
               @if (selectedPays()) {
@@ -36,7 +36,7 @@
               <div class="pays-dropdown-backdrop" (click)="closePaysDropdown()"></div>
               <div class="pays-dropdown-panel">
                 <div class="pays-dropdown-search">
-                  <input type="text" placeholder="Rechercher un pays"
+                  <input type="text" [placeholder]="'ADMIN.PAYS.SEARCH' | translate"
                     [ngModel]="paysSearch()" (ngModelChange)="paysSearch.set($event)" />
                   <span class="material-symbols-outlined">search</span>
                 </div>
@@ -51,7 +51,7 @@
                       }
                     </li>
                   } @empty {
-                    <li class="pays-dropdown-empty">Aucun pays trouvé.</li>
+                    <li class="pays-dropdown-empty">{{ 'ADMIN.PAYS.EMPTY' | translate }}</li>
                   }
                 </ul>
               </div>
@@ -67,17 +67,23 @@
         <button class="main-tab" [class.active]="activeTab() === 'lists'"
           (click)="activeTab.set('lists')">
           <span class="material-symbols-outlined tab-icon">checklist</span>
-          Listes configurables
+          {{ 'ADMIN.TABS.LISTS' | translate }}
         </button>
         <button class="main-tab" [class.active]="activeTab() === 'forex'"
           (click)="activeTab.set('forex')">
           <span class="material-symbols-outlined tab-icon">currency_exchange</span>
-          Taux de change
+          {{ 'ADMIN.TABS.FOREX' | translate }}
         </button>
         <button class="main-tab" [class.active]="activeTab() === 'forex-api'"
           (click)="openForexApiTab()">
           <span class="material-symbols-outlined tab-icon">api</span>
-          API Forex
+          {{ 'ADMIN.TABS.FOREX_API' | translate }}
+        </button>
+        <button *appHasPermission="'FACT_SUPER_ADMIN'" class="main-tab"
+          [class.active]="activeTab() === 'permissions'"
+          (click)="activeTab.set('permissions')">
+          <span class="material-symbols-outlined tab-icon">admin_panel_settings</span>
+          {{ 'ADMIN.TABS.PERMISSIONS' | translate }}
         </button>
       </div>
     </daf-card>
@@ -96,7 +102,7 @@
               </button>
             }
             @if (listTypes().length === 0) {
-              <span class="loading-inline">Chargement des types…</span>
+              <span class="loading-inline">{{ 'ADMIN.LISTS.LOADING_TYPES' | translate }}</span>
             }
           </div>
         </daf-card>
@@ -107,12 +113,12 @@
 
         <div class="section-header">
           <h3 class="section-header-title">{{ activeListTypeLabel() }}</h3>
-          <daf-button label="Ajouter" variant="teal"
+          <daf-button [label]="'ADMIN.COMMON.ADD' | translate" variant="teal"
             [options]="{ size: 'sm', iconStart: 'add' }"
             (onClick)="openCreateValueModal()" />
         </div>
 
-        <daf-data-table [columns]="listColumns" [rows]="listRows()" [config]="listTableConfig()">
+        <daf-data-table [columns]="listColumns()" [rows]="listRows()" [config]="listTableConfig()">
 
           <ng-template dafCell="code" let-row>
             <span class="code-pill">{{ row['code'] }}</span>
@@ -132,19 +138,19 @@
 
           <ng-template dafCell="isActive" let-row>
             <span [class]="row['isActive'] ? 'badge-active' : 'badge-inactive'">
-              {{ row['isActive'] ? 'Actif' : 'Inactif' }}
+              {{ (row['isActive'] ? 'ADMIN.LISTS.ACTIVE' : 'ADMIN.LISTS.INACTIVE') | translate }}
             </span>
           </ng-template>
 
           <ng-template dafCell="_actions" let-row>
             <div class="cell-actions">
-              <daf-button class="icon-btn-edit" title="Modifier" [options]="{ size: 'sm', variant: 'primary', iconStart: 'edit' }"
+              <daf-button class="icon-btn-edit" [title]="'ADMIN.COMMON.EDIT' | translate" [options]="{ size: 'sm', variant: 'primary', iconStart: 'edit' }"
                 (onClick)="openEditValueModal(row['_source'])" />
               @if (row['isActive']) {
-                <daf-button class="icon-btn-delete" title="Désactiver" [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
+                <daf-button class="icon-btn-delete" [title]="'ADMIN.LISTS.DEACTIVATE' | translate" [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
                   (onClick)="deactivateValue(row['_source'])" />
               } @else {
-                <daf-button title="Réactiver" [options]="{ size: 'sm', variant: 'teal', iconStart: 'restart_alt' }"
+                <daf-button [title]="'ADMIN.LISTS.REACTIVATE' | translate" [options]="{ size: 'sm', variant: 'teal', iconStart: 'restart_alt' }"
                   (onClick)="reactivateValue(row['_source'])" />
               }
             </div>
@@ -172,9 +178,7 @@
         <div class="forex-info">
           <span class="info-icon">ℹ</span>
           <p>
-            Les taux convertissent les montants des lignes de coût vers EUR et CHF lors des calculs P&amp;L.
-            Le taux CHF est calculé automatiquement (<strong>EUR × 0,965</strong>) si non défini.
-            Les clés suivent le format <code>RATE_EUR_CODE</code> et <code>RATE_CHF_CODE</code>.
+            {{ 'ADMIN.FOREX.INFO_1' | translate }}<strong>{{ 'ADMIN.FOREX.INFO_STRONG' | translate }}</strong>{{ 'ADMIN.FOREX.INFO_2' | translate }}<code>RATE_EUR_CODE</code>{{ 'ADMIN.FOREX.INFO_MID' | translate }}<code>RATE_CHF_CODE</code>{{ 'ADMIN.FOREX.INFO_END' | translate }}
           </p>
         </div>
 
@@ -183,13 +187,13 @@
         }
 
         <div class="section-header">
-          <h3 class="section-header-title">Taux de change</h3>
-          <daf-button label="Ajouter" variant="teal"
+          <h3 class="section-header-title">{{ 'ADMIN.FOREX.SECTION_TITLE' | translate }}</h3>
+          <daf-button [label]="'ADMIN.COMMON.ADD' | translate" variant="teal"
             [options]="{ size: 'sm', iconStart: 'add' }"
             (onClick)="openCreateForexModal()" />
         </div>
 
-        <daf-data-table [columns]="forexColumns" [rows]="forexTableRows()" [config]="forexTableConfig()">
+        <daf-data-table [columns]="forexColumns()" [rows]="forexTableRows()" [config]="forexTableConfig()">
 
           <ng-template dafCell="code" let-row>
             <span class="code-pill">{{ row['code'] }}</span>
@@ -209,10 +213,10 @@
 
           <ng-template dafCell="_actions" let-row>
             <div class="cell-actions">
-              <daf-button class="icon-btn-edit" title="Modifier" [options]="{ size: 'sm', variant: 'primary', iconStart: 'edit' }"
+              <daf-button class="icon-btn-edit" [title]="'ADMIN.COMMON.EDIT' | translate" [options]="{ size: 'sm', variant: 'primary', iconStart: 'edit' }"
                 (onClick)="openEditForexModal(row['_source'])" />
               @if (row['_source'].eurParam) {
-                <daf-button class="icon-btn-delete" title="Suppr." [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
+                <daf-button class="icon-btn-delete" [title]="'ADMIN.FOREX.DELETE_SHORT' | translate" [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
                   (onClick)="deleteForexParam(row['_source'].eurParam)" />
               }
             </div>
@@ -240,14 +244,12 @@
         <div class="forex-info">
           <span class="info-icon">ℹ</span>
           <p>
-            Connectez une API de taux de change pour rafraîchir automatiquement les taux EUR et CHF.
-            <strong>Frankfurter</strong> (défaut) est gratuit et ne nécessite pas de clé API — il utilise les données ECB.
-            <strong>Fixer.io</strong> nécessite une clé API (plan gratuit disponible) mais ne met à jour que les taux EUR.
+            {{ 'ADMIN.FOREX_API.INFO_1' | translate }}<strong>{{ 'ADMIN.FOREX_API.STRONG_FRANKFURTER' | translate }}</strong>{{ 'ADMIN.FOREX_API.INFO_2' | translate }}<strong>{{ 'ADMIN.FOREX_API.STRONG_FIXER' | translate }}</strong>{{ 'ADMIN.FOREX_API.INFO_3' | translate }}
           </p>
         </div>
 
         @if (forexApiStatusLoading()) {
-          <div class="loading-state">Chargement de la configuration…</div>
+          <div class="loading-state">{{ 'ADMIN.FOREX_API.LOADING' | translate }}</div>
         }
 
         @if (!forexApiStatusLoading()) {
@@ -255,22 +257,22 @@
           <!-- Config card -->
           <daf-section-card>
             <div class="config-card-body">
-              <daf-section-title title="Configuration du fournisseur" />
+              <daf-section-title [title]="'ADMIN.FOREX_API.PROVIDER_CONFIG_TITLE' | translate" />
 
               <div class="config-stack">
                 <daf-radio-group
-                  [options]="forexProviderOptions"
+                  [options]="forexProviderOptions()"
                   [(selected)]="forexApiProvider"
-                  [config]="forexProviderConfig" />
+                  [config]="forexProviderConfig()" />
 
                 @if (forexApiProvider() === 'fixer') {
                   <daf-form-field
                     [options]="{
-                      label: 'Clé API Fixer',
+                      label: ('ADMIN.FOREX_API.KEY_LABEL' | translate),
                       type: 'password',
-                      placeholder: 'Votre clé API Fixer.io',
+                      placeholder: ('ADMIN.FOREX_API.KEY_PLACEHOLDER' | translate),
                       hint: forexApiStatus()?.hasApiKey
-                        ? 'Une clé est déjà configurée. Entrez une nouvelle valeur pour la remplacer.'
+                        ? ('ADMIN.FOREX_API.KEY_HINT' | translate)
                         : undefined
                     }"
                     [value]="forexApiKey()"
@@ -279,14 +281,14 @@
 
                 <daf-form-field
                   [options]="{
-                    label: 'Devises cibles',
-                    placeholder: 'TND,MAD,DZD  (laisser vide = auto-détection)',
-                    hint: 'Si vide, les devises sont détectées automatiquement depuis les taux existants (RATE_EUR_*).'
+                    label: ('ADMIN.FOREX_API.CURRENCIES_LABEL' | translate),
+                    placeholder: ('ADMIN.FOREX_API.CURRENCIES_PLACEHOLDER' | translate),
+                    hint: ('ADMIN.FOREX_API.CURRENCIES_HINT' | translate)
                   }"
                   [value]="forexApiCurrencies()"
                   (valueChange)="forexApiCurrencies.set($any($event) ?? '')" />
 
-                <daf-toggle [(checked)]="forexApiAutoRefresh" [options]="forexAutoRefreshOptions" />
+                <daf-toggle [(checked)]="forexApiAutoRefresh" [options]="forexAutoRefreshOptions()" />
 
                 @if (forexApiError()) {
                   <div class="banner-error">{{ forexApiError() }}</div>
@@ -296,7 +298,7 @@
                 }
 
                 <div class="config-actions">
-                  <daf-button label="Sauvegarder la configuration" variant="teal"
+                  <daf-button [label]="'ADMIN.FOREX_API.SAVE_CONFIG' | translate" variant="teal"
                     [options]="{ iconStart: 'save', loading: forexApiSaving(), disabled: forexApiSaving() }"
                     (onClick)="saveForexApiConfig()" />
                 </div>
@@ -307,28 +309,28 @@
           <!-- Status & manual refresh card -->
           <daf-section-card>
             <div class="config-card-body">
-              <daf-section-title title="Rafraîchissement manuel" />
+              <daf-section-title [title]="'ADMIN.FOREX_API.MANUAL_REFRESH_TITLE' | translate" />
 
               <div class="config-stack">
                 @if (forexApiStatus()?.lastRefreshAt) {
                   <div class="status-row">
-                    <span class="status-label">Dernier rafraîchissement</span>
+                    <span class="status-label">{{ 'ADMIN.FOREX_API.LAST_REFRESH' | translate }}</span>
                     <span class="status-value">{{ forexApiStatus()!.lastRefreshAt }}</span>
                     @if (forexApiStatus()!.lastRefreshStatus?.startsWith('success')) {
-                      <daf-badge label="OK" [options]="{ variant: 'success', size: 'sm' }" />
+                      <daf-badge [label]="'ADMIN.FOREX_API.BADGE_OK' | translate" [options]="{ variant: 'success', size: 'sm' }" />
                     } @else if (forexApiStatus()!.lastRefreshStatus?.startsWith('error')) {
-                      <daf-badge label="Erreur" [options]="{ variant: 'danger', size: 'sm' }" />
+                      <daf-badge [label]="'ADMIN.FOREX_API.BADGE_ERROR' | translate" [options]="{ variant: 'danger', size: 'sm' }" />
                     }
                   </div>
                   @if (forexApiStatus()!.lastRefreshStatus?.startsWith('error')) {
                     <p class="status-error-detail">{{ forexApiStatus()!.lastRefreshStatus!.substring(6) }}</p>
                   }
                 } @else {
-                  <p class="config-hint">Aucun rafraîchissement effectué.</p>
+                  <p class="config-hint">{{ 'ADMIN.FOREX_API.NO_REFRESH' | translate }}</p>
                 }
 
                 <div class="config-actions">
-                  <daf-button label="Rafraîchir les taux maintenant" variant="ghost"
+                  <daf-button [label]="'ADMIN.FOREX_API.REFRESH_NOW' | translate" variant="ghost"
                     [options]="{ iconStart: 'refresh', loading: forexRefreshing(), disabled: forexRefreshing() }"
                     (onClick)="triggerForexRefresh()" />
                 </div>
@@ -340,6 +342,13 @@
       </div>
     }
 
+    <!-- ── PERMISSIONS TAB (finance role/permission management, embedded) ─── -->
+    @if (activeTab() === 'permissions') {
+      <div class="tab-content">
+        <app-fact-roles-admin />
+      </div>
+    }
+
   }
 
   <!-- Add/edit modal body — Listes configurables -->
@@ -348,20 +357,26 @@
       @if (valueModalError()) {
         <div class="banner-error">{{ valueModalError() }}</div>
       }
-      <label class="form-label">Code</label>
+      <label class="form-label">{{ 'ADMIN.LISTS.FIELD_CODE' | translate }}</label>
       @if (valueModalMode() === 'create') {
-        <input class="inline-input" [(ngModel)]="valueForm.code"
-          placeholder="CODE" style="text-transform:uppercase">
+        <daf-form-field
+          [options]="{ placeholder: ('ADMIN.LISTS.PLACEHOLDER_CODE' | translate) }"
+          [value]="valueForm.code"
+          (valueChange)="valueForm.code = $any($event) ?? ''" />
       } @else {
         <span class="code-pill">{{ valueForm.code }}</span>
       }
-      <label class="form-label">Libellé FR</label>
-      <input class="inline-input" [(ngModel)]="valueForm.labelFr" placeholder="Libellé français">
-      <label class="form-label">Libellé EN</label>
-      <input class="inline-input" [(ngModel)]="valueForm.labelEn" placeholder="Libellé anglais">
+      <daf-form-field
+        [options]="{ label: ('ADMIN.LISTS.FIELD_LABEL_FR' | translate), placeholder: ('ADMIN.LISTS.PLACEHOLDER_LABEL_FR' | translate) }"
+        [value]="valueForm.labelFr"
+        (valueChange)="valueForm.labelFr = $any($event) ?? ''" />
+      <daf-form-field
+        [options]="{ label: ('ADMIN.LISTS.FIELD_LABEL_EN' | translate), placeholder: ('ADMIN.LISTS.PLACEHOLDER_LABEL_EN' | translate) }"
+        [value]="valueForm.labelEn"
+        (valueChange)="valueForm.labelEn = $any($event) ?? ''" />
       @if (valueModalMode() === 'create') {
         <label class="form-check">
-          <input type="checkbox" [(ngModel)]="valueForm.isDefault"> Valeur par défaut
+          <input type="checkbox" [(ngModel)]="valueForm.isDefault"> {{ 'ADMIN.LISTS.DEFAULT_VALUE' | translate }}
         </label>
       }
     </div>
@@ -373,19 +388,23 @@
       @if (forexModalError()) {
         <div class="banner-error">{{ forexModalError() }}</div>
       }
-      <label class="form-label">Devise</label>
+      <label class="form-label">{{ 'ADMIN.FOREX.FIELD_CODE' | translate }}</label>
       @if (forexModalMode() === 'create') {
-        <input class="inline-input" [(ngModel)]="forexForm.code"
-          placeholder="USD" style="text-transform:uppercase">
+        <daf-form-field
+          [options]="{ placeholder: ('ADMIN.FOREX.PLACEHOLDER_CODE' | translate) }"
+          [value]="forexForm.code"
+          (valueChange)="forexForm.code = $any($event) ?? ''" />
       } @else {
         <span class="code-pill">{{ forexForm.code }}</span>
       }
-      <label class="form-label">1 devise → EUR</label>
-      <input class="inline-input" [(ngModel)]="forexForm.eur"
-        type="number" step="0.000001" placeholder="0.000000">
-      <label class="form-label">1 devise → CHF (optionnel)</label>
-      <input class="inline-input" [(ngModel)]="forexForm.chf"
-        type="number" step="0.000001" placeholder="Optionnel (auto EUR × 0.965)">
+      <daf-form-field
+        [options]="{ label: ('ADMIN.FOREX.FIELD_EUR' | translate), type: 'number', placeholder: '0.000000' }"
+        [value]="forexForm.eur"
+        (valueChange)="forexForm.eur = $any($event) ?? ''" />
+      <daf-form-field
+        [options]="{ label: ('ADMIN.FOREX.FIELD_CHF' | translate), type: 'number', placeholder: ('ADMIN.FOREX.PLACEHOLDER_CHF' | translate) }"
+        [value]="forexForm.chf"
+        (valueChange)="forexForm.chf = $any($event) ?? ''" />
     </div>
   </ng-template>
 </div>

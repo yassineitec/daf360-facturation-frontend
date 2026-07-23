@@ -11,11 +11,11 @@
       </a>
       <div>
         <h1 style="font-size:1.4rem;font-weight:900;color:#0b1c30;margin:0">
-          @if (isEditMode()) { Modifier la ligne de coût } @else { Nouvelle ligne de coût }
+          @if (isEditMode()) { {{ 'COST.FORM.TITLE_EDIT' | translate }} } @else { {{ 'COST.FORM.TITLE_NEW' | translate }} }
         </h1>
         <p style="font-size:0.8rem;color:#44474c;margin:2px 0 0 0">
-          @if (isEditMode()) { Mise à jour de la ligne #{{ editId() }} }
-          @else { Saisie d'une dépense dans le circuit d'approbation }
+          @if (isEditMode()) { {{ 'COST.FORM.SUB_EDIT' | translate:{ id: editId() } }} }
+          @else { {{ 'COST.FORM.SUB_NEW' | translate }} }
         </p>
       </div>
     </div>
@@ -24,7 +24,7 @@
                 background:#006b5812;border:1px solid #006b5825">
       <span style="width:8px;height:8px;border-radius:50%;background:#006b58;
                    display:inline-block;animation:pulse 2s infinite"></span>
-      <span style="font-size:0.7rem;font-weight:900;color:#006b58;letter-spacing:.08em">BROUILLON AUTOMATISÉ</span>
+      <span style="font-size:0.7rem;font-weight:900;color:#006b58;letter-spacing:.08em">{{ 'COST.FORM.DRAFT_BADGE' | translate }}</span>
     </div>
   </div>
 
@@ -65,68 +65,43 @@
               <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">pin_drop</span>
             </div>
             <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Contexte</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Entité, catégorie et date de la dépense</p>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_CONTEXT_TITLE' | translate }}</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_CONTEXT_SUB' | translate }}</p>
             </div>
           </div>
           <!-- Fields -->
           <div style="display:flex;flex-direction:column;gap:1rem">
             <!-- Pays -->
             <div>
-              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
-                Pays / Entité <span style="color:#ba1a1a">*</span>
-              </label>
-              <select [ngModel]="paysId()" (ngModelChange)="onPaysChange($event)"
-                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                       cursor:pointer;appearance:auto">
-                <option [ngValue]="null">— Sélectionner un pays —</option>
-                @for (p of paysList(); track p.id) {
-                  <option [ngValue]="p.id">{{ p.frenchLabel }} ({{ p.isoCode }})</option>
-                }
-              </select>
+              <daf-select
+                [options]="paysOptions()"
+                [config]="{ label: ('COST.FORM.PAYS_LABEL' | translate), placeholder: ('COST.FORM.PAYS_PLACEHOLDER' | translate), required: true, searchable: true }"
+                [selected]="selArr(paysId())"
+                (selectedChange)="onPaysChange($event[0] ? +$event[0] : null)">
+              </daf-select>
             </div>
             <!-- Catégorie -->
             <div>
-              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
-                Catégorie de coût <span style="color:#ba1a1a">*</span>
-              </label>
-              <select [ngModel]="categoryId()"
-                (ngModelChange)="categoryId.set($event); onAmountOrCurrencyChange()"
-                [disabled]="!paysId()"
-                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                       cursor:pointer;opacity:1;appearance:auto">
-                <option [ngValue]="null">— Sélectionner une catégorie —</option>
-                @for (cat of filteredCategories(); track cat.id) {
-                  <option [ngValue]="cat.id">{{ cat.labelFr }}</option>
-                }
-              </select>
+              <daf-select
+                [options]="categoryOptions()"
+                [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true, disabled: !paysId() }"
+                [selected]="selArr(categoryId())"
+                (selectedChange)="categoryId.set($event[0] ? +$event[0] : null); onAmountOrCurrencyChange()">
+              </daf-select>
             </div>
             <!-- Date -->
             <div>
-              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
-                Date de transaction <span style="color:#ba1a1a">*</span>
-              </label>
-              <input type="date" [ngModel]="transactionDate()" (ngModelChange)="transactionDate.set($event)"
-                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                       box-sizing:border-box"/>
+              <daf-form-field
+                [options]="{ type: 'date', label: ('COST.FORM.DATE_LABEL' | translate), required: true }"
+                [(value)]="transactionDate">
+              </daf-form-field>
             </div>
             <!-- Description -->
             <div>
-              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
-                Description <span style="color:#ba1a1a">*</span>
-              </label>
-              <input type="text" [ngModel]="description()" (ngModelChange)="description.set($event)"
-                placeholder="Objet de la dépense..."
-                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                       box-sizing:border-box"/>
+              <daf-form-field
+                [options]="{ type: 'text', label: ('COST.FORM.DESCRIPTION_LABEL' | translate), placeholder: ('COST.FORM.DESCRIPTION_PLACEHOLDER' | translate), required: true }"
+                [(value)]="description">
+              </daf-form-field>
             </div>
           </div>
         </div>
@@ -141,46 +116,33 @@
               <span class="material-symbols-outlined" style="font-size:1.2rem;color:#d97706">payments</span>
             </div>
             <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Montants et devise</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Montant hors-taxes et devise locale</p>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_AMOUNT_TITLE' | translate }}</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_AMOUNT_SUB' | translate }}</p>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
             <!-- Montant HT -->
             <div>
-              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
-                Montant HT <span style="color:#ba1a1a">*</span>
-              </label>
-              <input type="number" min="0" step="0.01" [ngModel]="netAmountLocal()"
-                (ngModelChange)="netAmountLocal.set($event)" (blur)="onAmountOrCurrencyChange()"
-                placeholder="0.00"
-                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                       box-sizing:border-box"/>
+              <daf-form-field
+                [options]="{ type: 'number', label: ('COST.FORM.NET_LABEL' | translate), placeholder: '0.00', required: true }"
+                [value]="netAmountLocal()"
+                (valueChange)="netAmountLocal.set($event === null ? null : +$event); onAmountOrCurrencyChange()">
+              </daf-form-field>
             </div>
             <!-- Devise -->
             <div>
-              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">
-                Devise <span style="color:#ba1a1a">*</span>
-              </label>
-              <select [ngModel]="currencyId()"
-                (ngModelChange)="currencyId.set($event); onAmountOrCurrencyChange()"
-                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                       cursor:pointer;appearance:auto">
-                <option [ngValue]="null">—</option>
-                @for (c of currencies(); track c.id) {
-                  <option [ngValue]="c.id">{{ c.code }} — {{ c.labelFr }}</option>
-                }
-              </select>
+              <daf-select
+                [options]="currencyOptions()"
+                [config]="{ label: ('COST.FORM.CURRENCY_LABEL' | translate), placeholder: ('COST.FORM.CURRENCY_PLACEHOLDER' | translate), required: true }"
+                [selected]="selArr(currencyId())"
+                (selectedChange)="currencyId.set($event[0] ? +$event[0] : null); onAmountOrCurrencyChange()">
+              </daf-select>
             </div>
           </div>
           @if (currencies().length === 0 && paysId()) {
             <p style="font-size:.75rem;color:#44474c90;margin-top:.75rem">
               <span class="material-symbols-outlined" style="font-size:.875rem;vertical-align:middle">info</span>
-              Aucune devise configurée. Contactez l'administrateur.
+              {{ 'COST.FORM.NO_CURRENCY' | translate }}
             </p>
           }
         </div>
@@ -196,13 +158,13 @@
                 <span class="material-symbols-outlined" style="font-size:1.2rem;color:#1d4ed8">business</span>
               </div>
               <div>
-                <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Fournisseur</p>
-                <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Fournisseur lié à cette dépense</p>
+                <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_SUPPLIER_TITLE' | translate }}</p>
+                <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_SUPPLIER_SUB' | translate }}</p>
               </div>
             </div>
             <!-- Toggle Libre / Base -->
             <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:.75rem;color:#44474c">Libre</span>
+              <span style="font-size:.75rem;color:#44474c">{{ 'COST.FORM.TOGGLE_FREE' | translate }}</span>
               <button type="button"
                 (click)="useSupplierDb.set(!useSupplierDb()); supplierId.set(null); supplierNameFree.set(''); supplierQuery.set('')"
                 style="width:44px;height:24px;border-radius:999px;border:none;cursor:pointer;
@@ -212,7 +174,7 @@
                              border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s"
                       [style.left]="useSupplierDb() ? '22px' : '2px'"></span>
               </button>
-              <span style="font-size:.75rem;color:#44474c">Base</span>
+              <span style="font-size:.75rem;color:#44474c">{{ 'COST.FORM.TOGGLE_DB' | translate }}</span>
             </div>
           </div>
 
@@ -223,7 +185,7 @@
                 <span class="material-symbols-outlined" style="font-size:1.2rem;color:#44474c">search</span>
                 <input type="text" [value]="supplierQuery()"
                   (input)="onSupplierQueryChange($any($event.target).value)"
-                  placeholder="Chercher un fournisseur dans la base..."
+                  [placeholder]="'COST.FORM.SUPPLIER_SEARCH_PLACEHOLDER' | translate"
                   style="flex:1;background:transparent;border:none;outline:none;
                          font-size:.875rem;color:#0b1c30"/>
               </div>
@@ -248,16 +210,15 @@
                 <p style="font-size:.75rem;margin-top:6px;display:flex;align-items:center;
                            gap:4px;color:#006b58">
                   <span class="material-symbols-outlined" style="font-size:.875rem">check_circle</span>
-                  Fournisseur sélectionné (ID: {{ supplierId() }})
+                  {{ 'COST.FORM.SUPPLIER_SELECTED' | translate:{ id: supplierId() } }}
                 </p>
               }
             </div>
           } @else {
-            <input type="text" [ngModel]="supplierNameFree()" (ngModelChange)="supplierNameFree.set($event)"
-              placeholder="Nom du fournisseur (saisie libre)..."
-              style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                     background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                     box-sizing:border-box"/>
+            <daf-form-field
+              [options]="{ type: 'text', placeholder: ('COST.FORM.SUPPLIER_FREE_PLACEHOLDER' | translate) }"
+              [(value)]="supplierNameFree">
+            </daf-form-field>
           }
         </div>
 
@@ -271,22 +232,16 @@
               <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">work</span>
             </div>
             <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Affectation</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Rattachement à une affaire (optionnel)</p>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_ALLOC_TITLE' | translate }}</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_ALLOC_SUB' | translate }}</p>
             </div>
           </div>
-          <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                        letter-spacing:.08em;color:#44474c;margin-bottom:6px">Affaire</label>
-          <select [ngModel]="affaireId()" (ngModelChange)="affaireId.set($event)"
-            [disabled]="!paysId()"
-            style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                   background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                   cursor:pointer;appearance:auto">
-            <option [ngValue]="null">— Aucune affaire —</option>
-            @for (a of affaires(); track a.id) {
-              <option [ngValue]="a.id">{{ a.reference }} — {{ a.intitule }}</option>
-            }
-          </select>
+          <daf-select
+            [options]="affaireOptions()"
+            [config]="{ label: ('COST.FORM.AFFAIRE_LABEL' | translate), placeholder: ('COST.FORM.AFFAIRE_PLACEHOLDER' | translate), searchable: true, disabled: !paysId() }"
+            [selected]="selArr(affaireId())"
+            (selectedChange)="affaireId.set($event[0] ? +$event[0] : null)">
+          </daf-select>
         </div>
 
         <!-- SECTION 5 — Options avancées ────────────────────────────────────── -->
@@ -300,35 +255,26 @@
               <span class="material-symbols-outlined" style="font-size:1.2rem;color:#64748b">tune</span>
             </div>
             <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Options avancées</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">Type de coût et notes internes</p>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_ADV_TITLE' | translate }}</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_ADV_SUB' | translate }}</p>
             </div>
           </div>
           <div style="display:flex;flex-direction:column;gap:1rem">
             <!-- Type de coût -->
             <div>
-              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">Type de coût</label>
-              <select [ngModel]="costTypeId()" (ngModelChange)="costTypeId.set($event)"
-                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                       cursor:pointer;appearance:auto">
-                <option [ngValue]="null">— Non précisé —</option>
-                @for (t of costTypes(); track t.id) {
-                  <option [ngValue]="t.id">{{ t.labelFr }}</option>
-                }
-              </select>
+              <daf-select
+                [options]="costTypeOptions()"
+                [config]="{ label: ('COST.FORM.COST_TYPE_LABEL' | translate), placeholder: ('COST.FORM.COST_TYPE_PLACEHOLDER' | translate) }"
+                [selected]="selArr(costTypeId())"
+                (selectedChange)="costTypeId.set($event[0] ? +$event[0] : null)">
+              </daf-select>
             </div>
             <!-- Notes -->
             <div>
-              <label style="display:block;font-size:.7rem;font-weight:900;text-transform:uppercase;
-                            letter-spacing:.08em;color:#44474c;margin-bottom:6px">Notes internes</label>
-              <textarea rows="3" [ngModel]="notes()" (ngModelChange)="notes.set($event)"
-                placeholder="Commentaire ou précision..."
-                style="width:100%;padding:10px 16px;border-radius:12px;border:none;
-                       background:#eff4ff;color:#0b1c30;font-size:.875rem;outline:none;
-                       resize:none;box-sizing:border-box;font-family:inherit">
-              </textarea>
+              <daf-form-field
+                [options]="{ type: 'textarea', label: ('COST.FORM.NOTES_LABEL' | translate), placeholder: ('COST.FORM.NOTES_PLACEHOLDER' | translate), rows: 3 }"
+                [(value)]="notes">
+              </daf-form-field>
             </div>
           </div>
         </div>
@@ -345,15 +291,15 @@
                 <span class="material-symbols-outlined" style="font-size:1.2rem;color:#64748b">attach_file</span>
               </div>
               <div>
-                <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">Pièces jointes</p>
-                <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">PDF, JPEG, PNG — max 10 Mo par fichier</p>
+                <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_ATTACH_TITLE' | translate }}</p>
+                <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_ATTACH_SUB' | translate }}</p>
               </div>
             </div>
             <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;
                           border-radius:12px;border:1.5px dashed #bdc9c4;color:#44474c;
                           font-size:.8rem;font-weight:700;cursor:pointer">
               <span class="material-symbols-outlined" style="font-size:1rem">upload</span>
-              Ajouter
+              {{ 'COST.FORM.ADD' | translate }}
               <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png"
                 (change)="onFileSelected($event)" style="display:none"/>
             </label>
@@ -383,7 +329,7 @@
                         border:1.5px dashed #bdc9c4">
               <span class="material-symbols-outlined" style="font-size:2rem;display:block;
                            margin-bottom:4px;color:#bdc9c4">upload_file</span>
-              <p style="font-size:.75rem;color:#44474c80;margin:0">Aucun fichier sélectionné</p>
+              <p style="font-size:.75rem;color:#44474c80;margin:0">{{ 'COST.FORM.NO_FILES' | translate }}</p>
             </div>
           }
         </div>
@@ -404,12 +350,12 @@
               <span class="material-symbols-outlined" style="font-size:1.1rem;color:#4ade80">currency_exchange</span>
             </div>
             <p style="font-size:.7rem;font-weight:900;text-transform:uppercase;
-                      letter-spacing:.08em;color:#bdc9c4;margin:0">Conversion Forex</p>
+                      letter-spacing:.08em;color:#bdc9c4;margin:0">{{ 'COST.FORM.FOREX_TITLE' | translate }}</p>
           </div>
           <div style="padding:20px">
             @if (forexPreview(); as fx) {
               <div>
-                <p style="font-size:.7rem;color:rgba(189,201,196,.6);margin:0 0 2px 0">Montant local</p>
+                <p style="font-size:.7rem;color:rgba(189,201,196,.6);margin:0 0 2px 0">{{ 'COST.FORM.FOREX_LOCAL' | translate }}</p>
                 <p style="font-size:1.5rem;font-weight:900;color:white;margin:0 0 16px 0">
                   {{ fx.local | number:'1.0-2' }} {{ fx.deviseLocal }}
                 </p>
@@ -418,7 +364,7 @@
                   <!-- EUR rate -->
                   <div style="display:flex;justify-content:space-between;align-items:center;
                               padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.04)">
-                    <span style="font-size:.75rem;color:#bdc9c4">Taux EUR</span>
+                    <span style="font-size:.75rem;color:#bdc9c4">{{ 'COST.FORM.FOREX_RATE_EUR' | translate }}</span>
                     <span style="font-size:.875rem;font-weight:700;color:white">{{ fx.tauxEur | number:'1.4-4' }}</span>
                   </div>
                   <!-- EUR amount -->
@@ -432,7 +378,7 @@
                   <!-- CHF rate -->
                   <div style="display:flex;justify-content:space-between;align-items:center;
                               padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.04)">
-                    <span style="font-size:.75rem;color:#bdc9c4">Taux CHF</span>
+                    <span style="font-size:.75rem;color:#bdc9c4">{{ 'COST.FORM.FOREX_RATE_CHF' | translate }}</span>
                     <span style="font-size:.875rem;font-weight:700;color:white">{{ fx.tauxChf | number:'1.4-4' }}</span>
                   </div>
                   <!-- CHF amount -->
@@ -449,11 +395,11 @@
               <div style="display:flex;align-items:center;gap:8px;padding:1rem 0">
                 <span class="material-symbols-outlined" style="font-size:.875rem;color:#bdc9c4;
                              animation:spin 1s linear infinite">progress_activity</span>
-                <span style="font-size:.75rem;color:rgba(189,201,196,.6)">Calcul en cours…</span>
+                <span style="font-size:.75rem;color:rgba(189,201,196,.6)">{{ 'COST.FORM.FOREX_CALC' | translate }}</span>
               </div>
             } @else {
               <p style="font-size:.75rem;padding:1rem 0;color:rgba(189,201,196,.5);margin:0">
-                Saisissez un montant et sélectionnez une devise pour voir la conversion en EUR et CHF.
+                {{ 'COST.FORM.FOREX_HINT' | translate }}
               </p>
             }
           </div>
@@ -470,7 +416,7 @@
               <span class="material-symbols-outlined" style="font-size:1.1rem;color:#006b58">account_tree</span>
             </div>
             <p style="font-size:.7rem;font-weight:900;text-transform:uppercase;
-                      letter-spacing:.08em;color:#44474c;margin:0">Circuit d'approbation</p>
+                      letter-spacing:.08em;color:#44474c;margin:0">{{ 'COST.FORM.CIRCUIT_TITLE' | translate }}</p>
           </div>
           <div style="padding:20px">
             @if (circuitPreview(); as cp) {
@@ -491,21 +437,21 @@
                   <div style="display:flex;align-items:center;gap:6px;padding:8px 12px;
                               border-radius:10px;background:#f0fdf4">
                     <span class="material-symbols-outlined" style="font-size:1rem;color:#006b58">check_circle</span>
-                    <p style="font-size:.75rem;font-weight:500;color:#006b58;margin:0">Approbation automatique</p>
+                    <p style="font-size:.75rem;font-weight:500;color:#006b58;margin:0">{{ 'COST.FORM.CIRCUIT_AUTO' | translate }}</p>
                   </div>
                 }
                 @if (cp.dualApproval) {
                   <div style="display:flex;align-items:center;gap:6px;padding:8px 12px;
                               border-radius:10px;background:rgba(255,218,214,.3)">
                     <span class="material-symbols-outlined" style="font-size:1rem;color:#ba1a1a">group</span>
-                    <p style="font-size:.75rem;font-weight:500;color:#ba1a1a;margin:0">Double validation requise</p>
+                    <p style="font-size:.75rem;font-weight:500;color:#ba1a1a;margin:0">{{ 'COST.FORM.CIRCUIT_DUAL' | translate }}</p>
                   </div>
                 }
                 <!-- Approver roles — vertical stepper -->
                 @if (cp.approverRoles.length > 0) {
                   <div style="border-top:1px solid #f0f4f8;padding-top:12px">
                     <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
-                              letter-spacing:.08em;color:#44474c;margin:0 0 12px 0">Approbateurs</p>
+                              letter-spacing:.08em;color:#44474c;margin:0 0 12px 0">{{ 'COST.FORM.CIRCUIT_APPROVERS' | translate }}</p>
                     <div style="display:flex;flex-direction:column;gap:8px;
                                 padding-left:20px;border-left:2px solid #e2e8f0">
                       @for (role of cp.approverRoles; track role) {
@@ -525,13 +471,13 @@
               </div>
             } @else if (!previewLoading()) {
               <p style="font-size:.75rem;color:#44474c80;margin:0">
-                Le circuit sera calculé une fois le montant converti.
+                {{ 'COST.FORM.CIRCUIT_HINT' | translate }}
               </p>
             } @else {
               <div style="display:flex;align-items:center;gap:8px">
                 <span class="material-symbols-outlined" style="font-size:.875rem;color:#44474c;
                              animation:spin 1s linear infinite">progress_activity</span>
-                <span style="font-size:.75rem;color:#44474c80">Calcul…</span>
+                <span style="font-size:.75rem;color:#44474c80">{{ 'COST.FORM.CIRCUIT_CALC' | translate }}</span>
               </div>
             }
           </div>
@@ -542,20 +488,20 @@
                     border:1px solid #006b5830">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
             <span class="material-symbols-outlined" style="font-size:1rem;color:#006b58">lightbulb</span>
-            <p style="font-size:.75rem;font-weight:700;color:#006b58;margin:0">Bon à savoir</p>
+            <p style="font-size:.75rem;font-weight:700;color:#006b58;margin:0">{{ 'COST.FORM.HELP_TITLE' | translate }}</p>
           </div>
           <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
             <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
               <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
-              Le brouillon est sauvegardé sans envoyer au circuit.
+              {{ 'COST.FORM.HELP_1' | translate }}
             </li>
             <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
               <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
-              La soumission déclenche immédiatement le circuit d'approbation.
+              {{ 'COST.FORM.HELP_2' | translate }}
             </li>
             <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
               <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
-              Les pièces jointes sont attachées après sauvegarde.
+              {{ 'COST.FORM.HELP_3' | translate }}
             </li>
           </ul>
         </div>
@@ -583,13 +529,13 @@
             color:#44474c;border:1px solid #d1d5db;background:white;
             font-size:.875rem;font-weight:500;text-decoration:none;transition:all .2s">
     <span class="material-symbols-outlined" style="font-size:1rem">arrow_back</span>
-    Annuler
+    {{ 'COST.FORM.FOOT_CANCEL' | translate }}
   </a>
 
   <!-- Right actions -->
   <div style="display:flex;align-items:center;gap:.75rem">
     @if (!canSave()) {
-      <span style="font-size:.75rem;color:#44474c90">Remplissez les champs obligatoires pour continuer</span>
+      <span style="font-size:.75rem;color:#44474c90">{{ 'COST.FORM.FOOT_REQUIRED_HINT' | translate }}</span>
     }
     <!-- Save draft -->
     <button type="button" (click)="saveDraft()" [disabled]="!canSave() || isSaving()"
@@ -601,7 +547,7 @@
         <span class="material-symbols-outlined" style="font-size:.875rem;vertical-align:middle;
                animation:spin 1s linear infinite">progress_activity</span>
       } @else {
-        Enregistrer brouillon
+        {{ 'COST.FORM.FOOT_SAVE_DRAFT' | translate }}
       }
     </button>
     <!-- Submit -->
@@ -617,7 +563,7 @@
       } @else {
         <span class="material-symbols-outlined" style="font-size:1rem">send</span>
       }
-      Soumettre pour approbation
+      {{ 'COST.FORM.FOOT_SUBMIT' | translate }}
     </button>
   </div>
 

@@ -2,10 +2,9 @@
 
   <!-- Step heading -->
   <div class="origin-header">
-    <h2 class="origin-title">1. Origine de l'affaire</h2>
+    <h2 class="origin-title">{{ 'AFFAIRES.wizard.doc360.title' | translate }}</h2>
     <p class="origin-sub">
-      Lier un projet (Optionnel) — Recherchez un projet DOC360 ou Interco pour
-      importer automatiquement les données de base.
+      {{ 'AFFAIRES.wizard.doc360.sub' | translate }}
     </p>
   </div>
 
@@ -20,7 +19,7 @@
         <div class="selected-banner__meta">
           <span class="tag tag--teal">{{ draft.doc360ServerReference }}</span>
           @if (draft.doc360ErpReference) {
-            <span class="tag tag--purple">ERP: {{ draft.doc360ErpReference }}</span>
+            <span class="tag tag--purple">{{ 'AFFAIRES.wizard.doc360.erp' | translate:{ ref: draft.doc360ErpReference } }}</span>
           }
           @if (draft.doc360ClientName) {
             <span class="selected-banner__client">{{ draft.doc360ClientName }}</span>
@@ -36,7 +35,7 @@
   <!-- ── Search section ── -->
   @if (!draft.doc360ServerReference) {
     <div class="search-section">
-      <p class="search-label">Rechercher un projet existant</p>
+      <p class="search-label">{{ 'AFFAIRES.wizard.doc360.search_label' | translate }}</p>
 
       <div class="search-wrapper">
         <div class="search-field">
@@ -44,7 +43,7 @@
           <input
             class="search-input"
             type="text"
-            placeholder="Entrez le nom ou le code du projet…"
+            [placeholder]="'AFFAIRES.wizard.doc360.search_ph' | translate"
             [value]="searchQuery"
             (input)="onInput($any($event.target).value)"
             (focus)="showResultsNow()"
@@ -62,7 +61,7 @@
                 <div class="result-body">
                   <div class="result-ref">{{ p.serverReference }}</div>
                   <div class="result-name">{{ p.projectName }}</div>
-                  @if (p.erpReference) { <div class="result-erp">ERP: {{ p.erpReference }}</div> }
+                  @if (p.erpReference) { <div class="result-erp">{{ 'AFFAIRES.wizard.doc360.erp' | translate:{ ref: p.erpReference } }}</div> }
                   @if (p.clientName)   { <div class="result-client">{{ p.clientName }}</div> }
                 </div>
                 <span class="result-status">{{ p.status }}</span>
@@ -74,7 +73,7 @@
         @if (showResults() && results().length === 0 && searchQuery.length >= 2 && !isSearching()) {
           <div class="no-results">
             <span class="material-symbols-outlined">search_off</span>
-            Aucun projet trouvé pour « {{ searchQuery }} »
+            {{ 'AFFAIRES.wizard.doc360.no_results' | translate:{ query: searchQuery } }}
           </div>
         }
       </div>
@@ -90,8 +89,8 @@
       <div class="bento-icon bento-icon--teal">
         <span class="material-symbols-outlined">folder_supervised</span>
       </div>
-      <h3 class="bento-title">Projets DOC360</h3>
-      <p class="bento-desc">Accédez aux projets gérés directement dans le système central.</p>
+      <h3 class="bento-title">{{ 'AFFAIRES.wizard.doc360.bento_doc_title' | translate }}</h3>
+      <p class="bento-desc">{{ 'AFFAIRES.wizard.doc360.bento_doc_desc' | translate }}</p>
     </div>
 
     <div class="bento-card"
@@ -100,8 +99,8 @@
       <div class="bento-icon bento-icon--slate">
         <span class="material-symbols-outlined">hub</span>
       </div>
-      <h3 class="bento-title">Projets Interco</h3>
-      <p class="bento-desc">Liez des projets provenant de filiales ou de partenaires inter-compagnies.</p>
+      <h3 class="bento-title">{{ 'AFFAIRES.wizard.doc360.bento_interco_title' | translate }}</h3>
+      <p class="bento-desc">{{ 'AFFAIRES.wizard.doc360.bento_interco_desc' | translate }}</p>
     </div>
 
   </div>
@@ -112,8 +111,8 @@
       <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">info</span>
     </div>
     <div class="info-banner__body">
-      <span class="info-banner__title">Pas de projet à lier?</span>
-      Vous pouvez continuer et saisir les informations manuellement à l'étape suivante.
+      <span class="info-banner__title">{{ 'AFFAIRES.wizard.doc360.info_title' | translate }}</span>
+      {{ 'AFFAIRES.wizard.doc360.info_body' | translate }}
     </div>
   </div>
 

@@ -2,7 +2,8 @@ import { Component, Input, Output, EventEmitter, OnInit, inject, signal, compute
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { NgClass }     from '@angular/common';
-import { SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireService }     from '../../affaire.service';
 import { AffaireWizardService } from '../../affaire-wizard.service';
@@ -14,7 +15,7 @@ import { ListValueDto } from '../../../cost/cost.model';
 @Component({
   selector: 'app-wizard-step-responsables',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, NgClass, SelectComponent],
+  imports: [FormsModule, DecimalPipe, NgClass, SelectComponent, FormFieldComponent, TranslatePipe],
   templateUrl: './wizard-step-responsables.component.html',
   styleUrl: './wizard-step-responsables.component.scss',
 })
@@ -25,6 +26,7 @@ export class WizardStepResponsablesComponent implements OnInit {
   private readonly affaireSvc  = inject(AffaireService);
   private readonly wizardSvc   = inject(AffaireWizardService);
   private readonly listSvc     = inject(FactListService);
+  private readonly translate   = inject(TranslateService);
 
   allUsers          = signal<UserRefDto[]>([]);
   activites         = signal<ListValueDto[]>([]);
@@ -61,7 +63,10 @@ export class WizardStepResponsablesComponent implements OnInit {
   readonly disciplineOptions = computed<SelectOption[]>(() =>
     this.disciplines().map(d => ({ value: d.id + '|' + d.levelLabel, label: d.levelLabel })));
 
-  readonly selectConfig = { placeholder: '— Sélectionner —', searchable: true, fullWidth: true };
+  readonly selectConfig = computed(() => {
+    this.translate.currentLang();
+    return { placeholder: this.translate.instant('AFFAIRES.wizard.responsables.select_placeholder'), searchable: true, fullWidth: true };
+  });
 
   // daf-select emits string[]; bridge to the existing single-value handlers.
   onUserSelect(index: number, values: string[]): void {
@@ -86,7 +91,7 @@ export class WizardStepResponsablesComponent implements OnInit {
           const found = u.find(u2 => u2.id === r.userId);
           return {
             ...r,
-            userName: r.userName || found?.fullName || `Utilisateur #${r.userId}`,
+            userName: r.userName || found?.fullName || this.translate.instant('AFFAIRES.wizard.responsables.user_hash', { id: r.userId }),
             role: r.role || found?.roleName || '',
           };
         });
@@ -172,8 +177,8 @@ export class WizardStepResponsablesComponent implements OnInit {
     this.emit({ ...this.draft, responsables: updated });
   }
 
-  updateBudget(index: number, val: string): void {
-    const amount = val ? Number(val) : undefined;
+  updateBudget(index: number, val: string | number | null): void {
+    const amount = val === null || val === '' ? undefined : Number(val);
     const updated = this.draft.responsables.map((r, i) =>
       i === index ? { ...r, budgetAllocation: amount } : r
     );
@@ -214,8 +219,8 @@ export class WizardStepResponsablesComponent implements OnInit {
     this.emit({ ...this.draft, responsables: updated });
   }
 
-  onFreeDisciplineChange(index: number, text: string): void {
-    const trimmed = text.trim();
+  onFreeDisciplineChange(index: number, text: string | number | null): void {
+    const trimmed = (text === null ? '' : String(text)).trim();
     const updated = this.draft.responsables.map((r, i) =>
       i === index ? {
         ...r,

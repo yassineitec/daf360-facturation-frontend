@@ -4,35 +4,35 @@
     <div class="section-header">
       <span class="section-icon material-symbols-outlined">calendar_month</span>
       <div>
-        <div class="section-title">Dates de planification</div>
-        <div class="section-sub">Définissez les jalons temporels de l'affaire</div>
+        <div class="section-title">{{ 'AFFAIRES.wizard.planning.title' | translate }}</div>
+        <div class="section-sub">{{ 'AFFAIRES.wizard.planning.sub' | translate }}</div>
       </div>
     </div>
 
     <div class="field-grid">
 
       <div class="field">
-        <label class="field-label">Date de début de facturation *</label>
+        <label class="field-label">{{ 'AFFAIRES.wizard.planning.start_label' | translate }}</label>
         <daf-multi-date-picker
-          [config]="{ selectionMode: 'single', placeholder: 'jj/mm/aaaa', allowPastDays: true, allowWeekends: true, fullWidth: true }"
+          [config]="{ selectionMode: 'single', placeholder: ('AFFAIRES.wizard.planning.date_ph' | translate), allowPastDays: true, allowWeekends: true, fullWidth: true }"
           [(value)]="dateDebutFacturation" />
-        <div class="field-hint">Première date à partir de laquelle la facturation peut être émise</div>
+        <div class="field-hint">{{ 'AFFAIRES.wizard.planning.start_hint' | translate }}</div>
       </div>
 
       <div class="field">
-        <label class="field-label">Date de fin contractuelle</label>
+        <label class="field-label">{{ 'AFFAIRES.wizard.planning.end_label' | translate }}</label>
         <daf-multi-date-picker
-          [config]="{ selectionMode: 'single', placeholder: 'jj/mm/aaaa', allowPastDays: true, allowWeekends: true, fullWidth: true }"
+          [config]="{ selectionMode: 'single', placeholder: ('AFFAIRES.wizard.planning.date_ph' | translate), allowPastDays: true, allowWeekends: true, fullWidth: true }"
           [(value)]="dateFinContractuelle" />
-        <div class="field-hint">Échéance contractuelle finale de l'affaire</div>
+        <div class="field-hint">{{ 'AFFAIRES.wizard.planning.end_hint' | translate }}</div>
       </div>
 
       <div class="field">
-        <label class="field-label">Date de première échéance</label>
+        <label class="field-label">{{ 'AFFAIRES.wizard.planning.first_label' | translate }}</label>
         <daf-multi-date-picker
-          [config]="{ selectionMode: 'single', placeholder: 'jj/mm/aaaa', allowPastDays: true, allowWeekends: true, fullWidth: true }"
+          [config]="{ selectionMode: 'single', placeholder: ('AFFAIRES.wizard.planning.date_ph' | translate), allowPastDays: true, allowWeekends: true, fullWidth: true }"
           [(value)]="datePremireEcheance" />
-        <div class="field-hint">Date de la première facture émise</div>
+        <div class="field-hint">{{ 'AFFAIRES.wizard.planning.first_hint' | translate }}</div>
       </div>
 
     </div>
@@ -42,9 +42,9 @@
     <div class="timeline-preview">
       <span class="material-symbols-outlined">timeline</span>
       <div class="timeline-text">
-        Affaire active du
+        {{ 'AFFAIRES.wizard.planning.timeline_pre' | translate }}
         <strong>{{ draft.dateDebutFacturation | date:'dd/MM/yyyy' }}</strong>
-        au
+        {{ 'AFFAIRES.wizard.planning.timeline_to' | translate }}
         <strong>{{ draft.dateFinContractuelle | date:'dd/MM/yyyy' }}</strong>
       </div>
     </div>

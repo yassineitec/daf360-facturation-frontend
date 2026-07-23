@@ -1,8 +1,9 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 
-import { ButtonComponent } from '@khalilrebhiitec/daf360';
+import { ButtonComponent, SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 import { FactListService }    from '../../../../core/fact-list.service';
 import { AffaireDraftState }  from '../../affaire-wizard.model';
@@ -11,7 +12,7 @@ import { ListValueDto }       from '../../../cost/cost.model';
 @Component({
   selector: 'app-wizard-step-av',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, ButtonComponent],
+  imports: [FormsModule, DecimalPipe, ButtonComponent, SelectComponent, FormFieldComponent, TranslatePipe],
   templateUrl: './wizard-step-av.component.html',
   styleUrl: './wizard-step-av.component.scss',
 })
@@ -23,6 +24,22 @@ export class WizardStepAvComponent implements OnInit {
   private readonly listSvc = inject(FactListService);
 
   repartitionTypes = signal<ListValueDto[]>([]);
+
+  // daf-select option list for the repartition type picker.
+  readonly repartitionTypeOptions = computed<SelectOption[]>(() =>
+    this.repartitionTypes().map(t => ({ value: String(t.id), label: t.labelFr })));
+
+  // daf-select emits string[]; bridge back to the numeric model + total recompute.
+  onTypeChange(r: AffaireDraftState['repartitions'][0], values: string[]): void {
+    r.repartitionTypeId = values[0] ? Number(values[0]) : 0;
+    this.updateTotal();
+  }
+
+  // daf-form-field emits string | number | null; keep the numeric model + total recompute.
+  onPercentageChange(r: AffaireDraftState['repartitions'][0], v: string | number | null): void {
+    r.percentage = v === null || v === '' ? 0 : Number(v);
+    this.updateTotal();
+  }
 
   ngOnInit(): void {
     const paysId = Number(this.draft.paysId);

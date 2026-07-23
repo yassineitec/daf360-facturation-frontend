@@ -5,13 +5,13 @@
 <daf-side-nav
   [class.sidebar--open]="sidebarOpen()"
   [items]="navItems()"
-  [config]="sideNavConfig"
-  [activeRoute]="activeRoute()"
+  [config]="sideNavConfig()"
+  [activeRoute]="activeNavRoute()"
   (itemClick)="onNavClick($event)"
   (mouseleave)="closeSidebar()" />
 
 <!-- Mobile hamburger (visible only on small screens) -->
-<button class="mob-hamburger" (click)="toggleSidebar()" aria-label="Menu">
+<button class="mob-hamburger" (click)="toggleSidebar()" [attr.aria-label]="'FACTURATION.layout.MENU' | translate">
   <span class="material-symbols-outlined">menu</span>
 </button>
 

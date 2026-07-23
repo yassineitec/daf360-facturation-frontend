@@ -4,6 +4,7 @@ import {
 import {
   FormControl, FormGroup, ReactiveFormsModule, Validators,
 } from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -18,7 +19,7 @@ import {
 @Component({
   selector: 'app-cost-line-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TranslatePipe],
   templateUrl: './cost-line-form.component.html',
   styleUrl: './cost-line-form.component.scss',
 })
@@ -30,6 +31,7 @@ export class CostLineFormComponent implements OnInit {
 
   private readonly svc          = inject(CostService);
   private readonly factListSvc  = inject(FactListService);
+  private readonly translate    = inject(TranslateService);
   private readonly supplierSearch$ = new Subject<string>();
 
   categories      = signal<CostCategoryDto[]>([]);
@@ -82,7 +84,7 @@ export class CostLineFormComponent implements OnInit {
         notes:           this.costLine.notes ?? '',
       });
       if (this.costLine.supplierId) {
-        this.supplierDisplayName.set(this.costLine.supplierNameFree ?? `Fournisseur #${this.costLine.supplierId}`);
+        this.supplierDisplayName.set(this.costLine.supplierNameFree ?? this.translate.instant('COST.LINE_FORM.SUPPLIER_HASH', { id: this.costLine.supplierId }));
       } else if (this.costLine.supplierNameFree) {
         this.supplierDisplayName.set(this.costLine.supplierNameFree);
       }
@@ -184,12 +186,9 @@ export class CostLineFormComponent implements OnInit {
   }
 
   get previewLabel(): string {
-    return ({
-      L1: 'L1 — Auto-approuvé',
-      L2: 'L2 — Finance Manager',
-      L3: 'L3 — Country Director',
-      L4: 'L4 — Double approbation requise',
-    })[this.approvalPreview() ?? ''] ?? this.approvalPreview() ?? '';
+    const level = this.approvalPreview() ?? '';
+    const key = ({ L1: 'L1', L2: 'L2', L3: 'L3', L4: 'L4' } as Record<string, string>)[level];
+    return key ? this.translate.instant('COST.APPROVAL.LEVEL_' + key) : level;
   }
 
   updateApprovalPreview(amount: number | null): void {
@@ -245,7 +244,7 @@ export class CostLineFormComponent implements OnInit {
       next: result => { this.isSaving.set(false); this.saved.emit(result); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set(err.error?.message ?? err.error?.error ?? 'Une erreur est survenue.');
+        this.serverError.set(err.error?.message ?? err.error?.error ?? this.translate.instant('COST.LINE_FORM.GENERIC_ERROR'));
       },
     });
   }

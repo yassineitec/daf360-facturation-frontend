@@ -284,10 +284,10 @@
     </div>
     @if (approvalDecision !== 'APPROVE') {
       <div>
-        <label class="approval-label">{{ 'INVOICING.LIST.APPROVAL.COMMENT_LABEL' | translate }}</label>
-        <textarea class="approval-textarea" rows="3" [placeholder]="'INVOICING.LIST.APPROVAL.COMMENT_PLACEHOLDER' | translate"
+        <daf-form-field
+          [options]="{ label: ('INVOICING.LIST.APPROVAL.COMMENT_LABEL' | translate), type: 'textarea', rows: 3, placeholder: ('INVOICING.LIST.APPROVAL.COMMENT_PLACEHOLDER' | translate) }"
           [value]="approvalCommentSig()"
-          (input)="approvalCommentSig.set(getInputValue($event))"></textarea>
+          (valueChange)="approvalCommentSig.set($any($event) ?? '')" />
       </div>
     }
   </div>

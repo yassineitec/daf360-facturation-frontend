@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed, DestroyRef } from '@angula
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 import { SupplierService } from '../supplier.service';
 import { ClientService } from '../../clients/client.service';
@@ -9,22 +10,16 @@ import { PaysRefDto } from '../../affaires/affaire.model';
 
 type Step = 1 | 2 | 3;
 
-const STEPS = [
-  { title: 'Identification',        icon: 'badge'           },
-  { title: 'Informations fiscales', icon: 'receipt_long'    },
-  { title: 'Coordonnées bancaires', icon: 'account_balance' },
-];
-
-const STEP_TIPS = [
-  "Renseignez la raison sociale officielle et le pays d'enregistrement. Ces champs sont obligatoires.",
-  "Le numéro TVA intracommunautaire est requis pour les échanges soumis à la TVA. La TVA unique active le contrôle automatique de conformité.",
-  "L'IBAN est stocké de façon sécurisée et masqué par défaut. Il peut être révélé uniquement par un utilisateur autorisé.",
+const STEP_DEFS = [
+  { titleKey: 'SUPPLIERS.NEW.STEPS.IDENTIFICATION', tipKey: 'SUPPLIERS.NEW.TIPS.IDENTIFICATION', icon: 'badge'           },
+  { titleKey: 'SUPPLIERS.NEW.STEPS.FISCAL',         tipKey: 'SUPPLIERS.NEW.TIPS.FISCAL',         icon: 'receipt_long'    },
+  { titleKey: 'SUPPLIERS.NEW.STEPS.BANK',           tipKey: 'SUPPLIERS.NEW.TIPS.BANK',           icon: 'account_balance' },
 ];
 
 @Component({
   selector: 'app-supplier-new',
   standalone: true,
-  imports: [ReactiveFormsModule, CardComponent, ButtonComponent],
+  imports: [ReactiveFormsModule, CardComponent, ButtonComponent, TranslatePipe],
   templateUrl: './supplier-new.component.html',
   styleUrl:    './supplier-new.component.scss',
 })
@@ -35,6 +30,7 @@ export class SupplierNewComponent implements OnInit {
   private readonly route      = inject(ActivatedRoute);
   private readonly fb         = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly translate  = inject(TranslateService);
 
   step     = signal<Step>(1);
   isSaving = signal(false);
@@ -42,9 +38,15 @@ export class SupplierNewComponent implements OnInit {
   paysId   = signal(0);
   paysList = signal<PaysRefDto[]>([]);
 
-  readonly steps = STEPS;
+  readonly steps = computed(() => {
+    this.translate.currentLang();
+    return STEP_DEFS.map(s => ({ title: this.translate.instant(s.titleKey), icon: s.icon }));
+  });
 
-  readonly stepTip = computed(() => STEP_TIPS[this.step() - 1]);
+  readonly stepTip = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(STEP_DEFS[this.step() - 1].tipKey);
+  });
 
   readonly canGoNext = computed(() => {
     if (this.step() === 1) {
@@ -106,7 +108,7 @@ export class SupplierNewComponent implements OnInit {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
     const paysId = this.paysId();
-    if (!paysId) { this.saveError.set('Pays introuvable. Rechargez la page.'); return; }
+    if (!paysId) { this.saveError.set(this.translate.instant('SUPPLIERS.NEW.ERROR_PAYS')); return; }
 
     const v = this.form.getRawValue();
     this.isSaving.set(true);
@@ -123,7 +125,7 @@ export class SupplierNewComponent implements OnInit {
       notes:           v.notes?.trim()      || undefined,
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next:  () => { this.isSaving.set(false); this.router.navigate(['..'], { relativeTo: this.route }); },
-      error: err => { this.isSaving.set(false); this.saveError.set(err?.error?.message ?? 'Erreur lors de la création.'); },
+      error: err => { this.isSaving.set(false); this.saveError.set(err?.error?.message ?? this.translate.instant('SUPPLIERS.NEW.ERROR_CREATE')); },
     });
   }
 

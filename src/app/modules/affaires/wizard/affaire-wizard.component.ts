@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
 import { Observable, forkJoin, of }             from 'rxjs';
+import { TranslatePipe, TranslateService }       from '@ngx-translate/core';
 import { StepperStep, StepperConfig, CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireWizardService }          from '../affaire-wizard.service';
@@ -15,29 +16,14 @@ import { WizardStepResponsablesComponent } from './steps/wizard-step-responsable
 import { WizardStepPlanningComponent }   from './steps/wizard-step-planning.component';
 import { WizardStepRecapComponent }      from './steps/wizard-step-recap.component';
 
-const STEP_CARD_INFO = [
-  { title: 'Origine & Document',     sub: 'Associez un document DOC360 à cette affaire.',            icon: 'description'      },
-  { title: 'Informations générales', sub: 'Renseignez le client, l\'intitulé et le budget.',          icon: 'business_center'  },
-  { title: 'Mode de facturation',    sub: 'Définissez la méthode de facturation de l\'affaire.',      icon: 'receipt_long'     },
-  { title: 'Responsables & Budget',  sub: 'Affectez les responsables et leurs allocations.',          icon: 'group'            },
-  { title: 'Planning',               sub: 'Fixez les dates de début et de fin.',                      icon: 'calendar_month'   },
-  { title: 'Récapitulatif',          sub: 'Vérifiez toutes les informations avant activation.',       icon: 'fact_check'       },
-];
-
-const STEP_TIPS = [
-  'Liez un document DOC360 pour associer automatiquement les pièces contractuelles à l\'affaire.',
-  'Le client doit avoir un KYC validé. Le budget prévisionnel peut évoluer en cours de vie de l\'affaire.',
-  'Le mode de facturation ne peut plus être modifié après activation. Choisissez-le avec soin.',
-  'La somme des allocations responsables doit égaler exactement le budget prévisionnel.',
-  'La date de début de facturation déclenche la première émission. Elle peut être dans le futur.',
-  'Relisez chaque section avant l\'activation. Une affaire active peut être modifiée mais pas recréée.',
-];
+const STEP_ICONS = ['description', 'business_center', 'receipt_long', 'group', 'calendar_month', 'fact_check'];
 
 @Component({
   selector: 'app-affaire-wizard',
   standalone: true,
   imports: [
     RouterLink,
+    TranslatePipe,
     CardComponent,
     ButtonComponent,
     WizardStepDoc360Component,
@@ -57,6 +43,7 @@ export class AffaireWizardComponent implements OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly affaireSvc     = inject(AffaireService);
   private readonly userStore      = inject(UserStore);
+  private readonly translate      = inject(TranslateService);
 
   // Relative path back to the affaires list:
   // new  → mounted at affaires/new  → '..' = affaires/
@@ -67,22 +54,28 @@ export class AffaireWizardComponent implements OnInit {
   readonly id       = input<string>();   // bound from route :id via withComponentInputBinding()
   readonly editMode = signal(false);
 
-  readonly wizardSteps: StepperStep[] = [
-    { title: 'Origine' },
-    { title: 'Infos générales' },
-    { title: 'Facturation' },
-    { title: 'Responsables' },
-    { title: 'Planning' },
-    { title: 'Récapitulatif' },
-  ];
+  readonly wizardSteps = computed<StepperStep[]>(() => {
+    this.translate.currentLang();
+    return [
+      { title: this.translate.instant('AFFAIRES.wizard.shell.step.origine') },
+      { title: this.translate.instant('AFFAIRES.wizard.shell.step.infos') },
+      { title: this.translate.instant('AFFAIRES.wizard.shell.step.facturation') },
+      { title: this.translate.instant('AFFAIRES.wizard.shell.step.responsables') },
+      { title: this.translate.instant('AFFAIRES.wizard.shell.step.planning') },
+      { title: this.translate.instant('AFFAIRES.wizard.shell.step.recap') },
+    ];
+  });
 
-  readonly stepperConfig = computed((): StepperConfig => ({
-    nextLabel:   'Suivant',
-    prevLabel:   'Précédent',
-    cancelLabel: 'Annuler',
-    finishLabel: (this.editMode() && !this.resumeDraft()) ? 'Enregistrer' : 'Activer l\'affaire',
-    showCancel:  true,
-  }));
+  readonly stepperConfig = computed((): StepperConfig => {
+    this.translate.currentLang();
+    return {
+      nextLabel:   this.translate.instant('AFFAIRES.wizard.shell.next'),
+      prevLabel:   this.translate.instant('AFFAIRES.wizard.shell.prev'),
+      cancelLabel: this.translate.instant('AFFAIRES.wizard.shell.cancel'),
+      finishLabel: (this.editMode() && !this.resumeDraft()) ? this.translate.instant('AFFAIRES.wizard.shell.save') : this.translate.instant('AFFAIRES.wizard.shell.activate'),
+      showCancel:  true,
+    };
+  });
 
   currentStep = signal(1);
   draftId     = signal<number | null>(null);
@@ -109,46 +102,47 @@ export class AffaireWizardComponent implements OnInit {
 
   /** Returns a user-facing message listing missing fields for the current step, or null when valid. */
   readonly stepValidationError = computed((): string | null => {
+    this.translate.currentLang();
     const d = this.draft();
     switch (this.currentStep()) {
       case 2: {
         const missing: string[] = [];
-        if (!d.clientId)                                        missing.push('client');
-        else if (!d.clientKycDone)                              missing.push('validation KYC du client requise');
-        if (!d.intitule?.trim())                                missing.push('intitulé de l\'affaire');
-        if (!d.billingMode)                                     missing.push('mode de facturation');
-        if (!d.budgetPrevisionnel || d.budgetPrevisionnel <= 0) missing.push('budget prévisionnel (> 0)');
-        if (!d.contractCurrency?.trim())                        missing.push('devise du contrat');
-        return missing.length ? `Champs requis : ${missing.join(' · ')}.` : null;
+        if (!d.clientId)                                        missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.client'));
+        else if (!d.clientKycDone)                              missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.kyc'));
+        if (!d.intitule?.trim())                                missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.intitule'));
+        if (!d.billingMode)                                     missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.billing_mode'));
+        if (!d.budgetPrevisionnel || d.budgetPrevisionnel <= 0) missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.budget'));
+        if (!d.contractCurrency?.trim())                        missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.currency'));
+        return missing.length ? this.translate.instant('AFFAIRES.wizard.shell.val.required_fields', { fields: missing.join(' · ') }) : null;
       }
       case 3: {
         if (this.editMode() && d.billingModeLocked) return null;
-        if (!d.billingMode) return 'Sélectionnez un mode de facturation à l\'étape précédente.';
+        if (!d.billingMode) return this.translate.instant('AFFAIRES.wizard.shell.val.select_mode_prev');
         const budget = d.budgetPrevisionnel ?? 0;
         switch (d.billingMode) {
-          case 'AV':  return 'Répartition requise (total = 100 %) avec au moins un type sélectionné.';
-          case 'JAL':      return `Jalons requis avec labels et total = ${budget.toLocaleString('fr-FR')} ${d.contractCurrency}.`;
-          case 'TM':       return 'Au moins une ressource avec tarif > 0 requise.';
-          case 'CP':       return 'Sélectionnez au moins une catégorie de coût et définissez un taux de marge.';
-          case 'RMB':      return 'Sélectionnez au moins une catégorie de dépenses.';
-          case 'LIVRABLE': return 'Configurez au moins un livrable avant de continuer.';
+          case 'AV':  return this.translate.instant('AFFAIRES.wizard.shell.val.av');
+          case 'JAL':      return this.translate.instant('AFFAIRES.wizard.shell.val.jal', { budget: budget.toLocaleString('fr-FR'), currency: d.contractCurrency });
+          case 'TM':       return this.translate.instant('AFFAIRES.wizard.shell.val.tm');
+          case 'CP':       return this.translate.instant('AFFAIRES.wizard.shell.val.cp');
+          case 'RMB':      return this.translate.instant('AFFAIRES.wizard.shell.val.rmb');
+          case 'LIVRABLE': return this.translate.instant('AFFAIRES.wizard.shell.val.livrable');
           default:         return null;
         }
       }
       case 4: {
         const d4 = this.draft();
-        if (!d4.responsables.length) return 'Ajoutez au moins un responsable.';
-        if (!d4.responsables.some(r => r.isPrimary)) return 'Désignez un responsable principal.';
+        if (!d4.responsables.length) return this.translate.instant('AFFAIRES.wizard.shell.val.resp_add');
+        if (!d4.responsables.some(r => r.isPrimary)) return this.translate.instant('AFFAIRES.wizard.shell.val.resp_primary');
         if (!d4.responsables.every(r => r.userId > 0 && (r.budgetAllocation ?? 0) > 0))
-          return 'Chaque responsable doit avoir un utilisateur et une allocation > 0.';
+          return this.translate.instant('AFFAIRES.wizard.shell.val.resp_alloc');
         const total = d4.responsables.reduce((s, r) => s + (r.budgetAllocation ?? 0), 0);
         const budget = d4.budgetPrevisionnel ?? 0;
         return Math.abs(total - budget) >= 0.001
-          ? `Total des allocations (${total.toLocaleString('fr-FR')}) doit égaler le budget (${budget.toLocaleString('fr-FR')}).`
+          ? this.translate.instant('AFFAIRES.wizard.shell.val.resp_total', { total: total.toLocaleString('fr-FR'), budget: budget.toLocaleString('fr-FR') })
           : null;
       }
       case 5:
-        return d.dateDebutFacturation ? null : 'Date de début de facturation requise.';
+        return d.dateDebutFacturation ? null : this.translate.instant('AFFAIRES.wizard.shell.val.planning');
       default:
         return null;
     }
@@ -219,7 +213,7 @@ export class AffaireWizardComponent implements OnInit {
   goNext(): void {
     this.serverError.set(null);
     if (!this.canGoNext()) {
-      this.serverError.set(this.stepValidationError() ?? 'Veuillez compléter tous les champs obligatoires avant de continuer.');
+      this.serverError.set(this.stepValidationError() ?? this.translate.instant('AFFAIRES.wizard.shell.val.incomplete'));
       return;
     }
     switch (this.currentStep()) {
@@ -265,7 +259,7 @@ export class AffaireWizardComponent implements OnInit {
         this.isSaving.set(false);
       },
       error: () => {
-        this.serverError.set('Impossible de charger l\'affaire. Réessayez.');
+        this.serverError.set(this.translate.instant('AFFAIRES.wizard.shell.err.load'));
         this.isSaving.set(false);
       },
     });
@@ -290,7 +284,7 @@ export class AffaireWizardComponent implements OnInit {
         next: () => { this.isSaving.set(false); this.currentStep.set(3); },
         error: err => {
           this.isSaving.set(false);
-          this.serverError.set(err?.error?.rule ?? err?.error?.detail ?? err?.error?.message ?? 'Erreur lors de la mise à jour.');
+          this.serverError.set(err?.error?.rule ?? err?.error?.detail ?? err?.error?.message ?? this.translate.instant('AFFAIRES.wizard.shell.err.update'));
         },
       });
       return;
@@ -326,7 +320,7 @@ export class AffaireWizardComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set(err?.error?.rule ?? err?.error?.detail ?? err?.error?.message ?? 'Erreur lors de la création.');
+        this.serverError.set(err?.error?.rule ?? err?.error?.detail ?? err?.error?.message ?? this.translate.instant('AFFAIRES.wizard.shell.err.create'));
       },
     });
   }
@@ -388,7 +382,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(4); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
+        this.serverError.set(this.apiError(err, 'AFFAIRES.wizard.shell.err.config'));
       },
     });
   }
@@ -414,7 +408,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(5); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
+        this.serverError.set(this.apiError(err, 'AFFAIRES.wizard.shell.err.config'));
       },
     });
   }
@@ -433,7 +427,7 @@ export class AffaireWizardComponent implements OnInit {
       next: () => { this.isSaving.set(false); this.currentStep.set(6); },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set(this.apiError(err, 'Erreur de configuration.'));
+        this.serverError.set(this.apiError(err, 'AFFAIRES.wizard.shell.err.config'));
       },
     });
   }
@@ -457,7 +451,7 @@ export class AffaireWizardComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set(this.apiError(err, 'Erreur d\'activation.'));
+        this.serverError.set(this.apiError(err, 'AFFAIRES.wizard.shell.err.activate'));
       },
     });
   }
@@ -467,7 +461,8 @@ export class AffaireWizardComponent implements OnInit {
   }
 
   /** Reads the RFC-7807 `detail` from a facturation-service error (falls back to message). */
-  private apiError(err: unknown, fallback: string): string {
+  private apiError(err: unknown, fallbackKey: string): string {
+    const fallback = this.translate.instant(fallbackKey);
     // `rule` is the business-rule violation surfaced by the TM/livrable backend;
     // detail/message are the generic fallbacks.
     const e = err as { error?: { rule?: string; detail?: string; message?: string } };
@@ -479,26 +474,26 @@ export class AffaireWizardComponent implements OnInit {
     this.serverError.set(null); // clear API error when user edits — forces re-validation before retry
   }
 
-  readonly cardTitle = computed(() => STEP_CARD_INFO[this.currentStep() - 1].title);
-  readonly cardSub   = computed(() => STEP_CARD_INFO[this.currentStep() - 1].sub);
-  readonly cardIcon  = computed(() => STEP_CARD_INFO[this.currentStep() - 1].icon);
-  readonly stepTip   = computed(() => STEP_TIPS[this.currentStep() - 1]);
+  readonly cardTitle = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.card.t' + this.currentStep()); });
+  readonly cardSub   = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.card.s' + this.currentStep()); });
+  readonly cardIcon  = computed(() => STEP_ICONS[this.currentStep() - 1]);
+  readonly stepTip   = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.tips.' + this.currentStep()); });
 
   billingModeLabel(): string {
     switch (this.draft().billingMode) {
-      case 'AV':      return 'Avancement';
-      case 'JAL':     return 'Jalons';
-      case 'TM':      return 'Temps & Matériels';
-      case 'CP':      return 'Coût + Marge';
-      case 'RMB':     return 'Remboursement';
-      case 'LIVRABLE': return 'Livrables';
-      default:        return '—';
+      case 'AV':      return this.translate.instant('AFFAIRES.wizard.shell.mode.av');
+      case 'JAL':     return this.translate.instant('AFFAIRES.wizard.shell.mode.jal');
+      case 'TM':      return this.translate.instant('AFFAIRES.wizard.shell.mode.tm');
+      case 'CP':      return this.translate.instant('AFFAIRES.wizard.shell.mode.cp');
+      case 'RMB':     return this.translate.instant('AFFAIRES.wizard.shell.mode.rmb');
+      case 'LIVRABLE': return this.translate.instant('AFFAIRES.wizard.shell.mode.livrable');
+      default:        return this.translate.instant('AFFAIRES.wizard.shell.mode.none');
     }
   }
 
   formatBudget(): string {
     const d = this.draft();
-    if (!d.budgetPrevisionnel) return '—';
+    if (!d.budgetPrevisionnel) return this.translate.instant('AFFAIRES.wizard.shell.dash');
     return d.budgetPrevisionnel.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
       + ' ' + (d.contractCurrency ?? 'EUR');
   }

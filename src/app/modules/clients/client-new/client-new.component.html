@@ -10,12 +10,12 @@
       <div class="page-head">
         <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
           <button type="button" class="font-medium hover:underline transition-colors" (click)="goBack()">
-            Clients
+            {{ 'CLIENTS.NEW.BREADCRUMB_CLIENTS' | translate }}
           </button>
           <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span class="font-medium" style="color:#50717b">Nouveau Client</span>
+          <span class="font-medium" style="color:#50717b">{{ 'CLIENTS.NEW.BREADCRUMB_NEW' | translate }}</span>
         </nav>
-        <h1 class="text-[28px] font-bold text-on-surface leading-tight">Créer un nouveau client</h1>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ 'CLIENTS.NEW.TITLE' | translate }}</h1>
       </div>
 
       <!-- ── Form card ─────────────────────────────────────────────── -->
@@ -24,11 +24,11 @@
         <!-- Card head: icon + step title + sub -->
         <div class="card-head">
           <div class="card-head__icon">
-            <span class="material-symbols-outlined">{{ steps[currentStep() - 1].icon }}</span>
+            <span class="material-symbols-outlined">{{ steps()[currentStep() - 1].icon }}</span>
           </div>
           <div>
-            <h2 class="card-head__title">{{ steps[currentStep() - 1].title }}</h2>
-            <p class="card-head__sub">Étape {{ currentStep() }} sur {{ steps.length }}</p>
+            <h2 class="card-head__title">{{ steps()[currentStep() - 1].title }}</h2>
+            <p class="card-head__sub">{{ 'CLIENTS.NEW.STEP_COUNTER' | translate:{ current: currentStep(), total: steps().length } }}</p>
           </div>
         </div>
 
@@ -62,22 +62,22 @@
       <div class="panel-nav">
         @if (currentStep() > 1) {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Précédent', iconStart: 'arrow_back' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('CLIENTS.NEW.PREV' | translate), iconStart: 'arrow_back' }"
             (onClick)="goPrev()" />
         } @else {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Annuler', iconStart: 'close' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('CLIENTS.NEW.CANCEL' | translate), iconStart: 'close' }"
             (onClick)="goBack()" />
         }
-        @if (currentStep() < steps.length) {
+        @if (currentStep() < steps().length) {
           <daf-button class="panel-nav__next"
-            [options]="{ variant: 'teal', label: 'Suivant', iconEnd: 'arrow_forward', pill: true, fullWidth: true }"
+            [options]="{ variant: 'teal', label: ('CLIENTS.NEW.NEXT' | translate), iconEnd: 'arrow_forward', pill: true, fullWidth: true }"
             (onClick)="goNext()" />
         } @else {
           <daf-button class="panel-nav__next"
             [options]="{
               variant: 'teal',
-              label: 'Créer le client',
+              label: ('CLIENTS.NEW.CREATE' | translate),
               iconStart: 'person_add',
               pill: true,
               fullWidth: true,
@@ -91,12 +91,12 @@
       <!-- Progression -->
       <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
         <div class="panel-header">
-          <p class="panel__label">Progression</p>
+          <p class="panel__label">{{ 'CLIENTS.NEW.PROGRESS' | translate }}</p>
         </div>
 
         <div class="panel-body">
           <div class="step-list">
-            @for (step of steps; track $index; let i = $index) {
+            @for (step of steps(); track $index; let i = $index) {
               <div class="step-item"
                    [class.step-item--done]="currentStep() > i + 1"
                    [class.step-item--active]="currentStep() === i + 1">
@@ -118,24 +118,24 @@
       <!-- Résumé -->
       <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
         <div class="panel-header">
-          <p class="panel__label">Résumé</p>
+          <p class="panel__label">{{ 'CLIENTS.NEW.SUMMARY' | translate }}</p>
         </div>
         <div class="panel-body">
           <div class="summary-rows">
             <div class="summary-row">
-              <span class="summary-row__key">Nom</span>
+              <span class="summary-row__key">{{ 'CLIENTS.NEW.SUMMARY_NAME' | translate }}</span>
               <span class="summary-row__val">{{ formRef.clientName() || '—' }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-row__key">Secteur</span>
+              <span class="summary-row__key">{{ 'CLIENTS.NEW.SUMMARY_SECTOR' | translate }}</span>
               <span class="summary-row__val">{{ formRef.selectedSector()[0] || '—' }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-row__key">Ville</span>
+              <span class="summary-row__key">{{ 'CLIENTS.NEW.SUMMARY_CITY' | translate }}</span>
               <span class="summary-row__val">{{ formRef.city() || '—' }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-row__key">Devise</span>
+              <span class="summary-row__key">{{ 'CLIENTS.NEW.SUMMARY_CURRENCY' | translate }}</span>
               <span class="summary-row__val">{{ formRef.selectedCurrency()[0] || '—' }}</span>
             </div>
           </div>

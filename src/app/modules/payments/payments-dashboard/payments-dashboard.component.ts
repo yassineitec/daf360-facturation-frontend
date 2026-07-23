@@ -7,10 +7,11 @@ import {
   agingRowColor,
 } from '../payment.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   CardComponent, ButtonComponent, PaginationComponent,
   StatusBadgeComponent, BadgeVariant,
-  MultiDatePickerComponent, MetricCardComponent,
+  MultiDatePickerComponent, MetricCardComponent, FormFieldComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
 } from '@khalilrebhiitec/daf360';
 
@@ -18,16 +19,17 @@ import {
   selector: 'app-payments-dashboard',
   imports: [
     FormsModule, PermissionDirective, CardComponent, ButtonComponent, PaginationComponent,
-    StatusBadgeComponent, MultiDatePickerComponent, MetricCardComponent,
-    DataTableComponent, DafCellDirective,
+    StatusBadgeComponent, MultiDatePickerComponent, MetricCardComponent, FormFieldComponent,
+    DataTableComponent, DafCellDirective, TranslatePipe,
   ],
   templateUrl: './payments-dashboard.component.html',
   styleUrl:    './payments-dashboard.component.scss',
 })
 export class PaymentsDashboardComponent implements OnInit {
-  private readonly svc    = inject(PaymentService);
-  private readonly router = inject(Router);
-  private readonly route  = inject(ActivatedRoute);
+  private readonly svc       = inject(PaymentService);
+  private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   stats         = signal<PaymentsDashboardStats | null>(null);
   rows          = signal<AgingRow[]>([]);
@@ -46,31 +48,40 @@ export class PaymentsDashboardComponent implements OnInit {
   filterDateRange = signal<Date | Date[] | null>(null);
   overdueOnly     = false;
 
-  readonly dateRangeConfig = {
-    selectionMode: 'range' as const,
-    placeholder: 'Date ou plage de dates',
-    allowPastDays: true,
-    fullWidth: false,
-  };
+  readonly dateRangeConfig = computed(() => {
+    this.translate.currentLang();
+    return {
+      selectionMode: 'range' as const,
+      placeholder: this.translate.instant('PAYMENTS.DASHBOARD.FILTER.DATE_PH'),
+      allowPastDays: true,
+      fullWidth: false,
+    };
+  });
 
   readonly agingRowColor = agingRowColor;
 
-  readonly tableColumns: TableColumn[] = [
-    { key: 'clientNom',    label: 'Client',         type: 'custom' },
-    { key: 'invoice',      label: 'Facture',        type: 'custom' },
-    { key: 'montantTtc',   label: 'Montant TTC',    type: 'custom', align: 'right' },
-    { key: 'dateEcheance', label: 'Échéance',       type: 'custom' },
-    { key: 'joursRetard',  label: 'Jours retard',   type: 'custom', align: 'right' },
-    { key: 'reminder',     label: 'Statut relance', type: 'custom' },
-    { key: '_actions',     label: 'Actions',        type: 'custom', align: 'right' },
-  ];
+  readonly tableColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'clientNom',    label: this.translate.instant('PAYMENTS.DASHBOARD.TABLE.CLIENT'),          type: 'custom' },
+      { key: 'invoice',      label: this.translate.instant('PAYMENTS.DASHBOARD.TABLE.INVOICE'),         type: 'custom' },
+      { key: 'montantTtc',   label: this.translate.instant('PAYMENTS.DASHBOARD.TABLE.AMOUNT'),          type: 'custom', align: 'right' },
+      { key: 'dateEcheance', label: this.translate.instant('PAYMENTS.DASHBOARD.TABLE.DUE'),             type: 'custom' },
+      { key: 'joursRetard',  label: this.translate.instant('PAYMENTS.DASHBOARD.TABLE.DAYS_LATE'),       type: 'custom', align: 'right' },
+      { key: 'reminder',     label: this.translate.instant('PAYMENTS.DASHBOARD.TABLE.REMINDER_STATUS'), type: 'custom' },
+      { key: '_actions',     label: this.translate.instant('PAYMENTS.DASHBOARD.TABLE.ACTIONS'),         type: 'custom', align: 'right' },
+    ];
+  });
 
-  readonly tableConfig = computed<TableConfig>(() => ({
-    hoverable:    true,
-    loading:      this.loadingRows(),
-    emptyMessage: 'Aucune facture impayée trouvée.',
-    skeletonRows: 5,
-  }));
+  readonly tableConfig = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return {
+      hoverable:    true,
+      loading:      this.loadingRows(),
+      emptyMessage: this.translate.instant('PAYMENTS.DASHBOARD.TABLE.EMPTY'),
+      skeletonRows: 5,
+    };
+  });
 
   readonly tableRows = computed<TableRow[]>(() =>
     this.rows().map(row => ({ ...row, _raw: row }))
@@ -113,7 +124,7 @@ export class PaymentsDashboardComponent implements OnInit {
         this.loadingRows.set(false);
       },
       error: () => {
-        this.error.set('Impossible de charger les factures impayées.');
+        this.error.set(this.translate.instant('PAYMENTS.DASHBOARD.ERROR_LOAD'));
         this.loadingRows.set(false);
       },
     });
@@ -154,14 +165,14 @@ export class PaymentsDashboardComponent implements OnInit {
 
   reminderLabel(type: string | null): string {
     if (!type) return '—';
-    const labels: Record<string, string> = {
-      AVANT_ECHEANCE: 'Avant échéance',
-      JOUR_ECHEANCE:  'Jour J',
-      RELANCE_1:      '1re relance',
-      RELANCE_2:      '2e relance',
-      RELANCE_3:      '3e relance',
+    const keys: Record<string, string> = {
+      AVANT_ECHEANCE: 'PAYMENTS.DASHBOARD.REMINDER.AVANT_ECHEANCE',
+      JOUR_ECHEANCE:  'PAYMENTS.DASHBOARD.REMINDER.JOUR_ECHEANCE',
+      RELANCE_1:      'PAYMENTS.DASHBOARD.REMINDER.RELANCE_1',
+      RELANCE_2:      'PAYMENTS.DASHBOARD.REMINDER.RELANCE_2',
+      RELANCE_3:      'PAYMENTS.DASHBOARD.REMINDER.RELANCE_3',
     };
-    return labels[type] ?? type;
+    return keys[type] ? this.translate.instant(keys[type]) : type;
   }
 
   retardVariant(joursRetard: number): BadgeVariant {
