@@ -13,21 +13,23 @@ interface AppNavDef {
   labelKey: string;
   icon: string;
   route: string;
-  permission: string | null;
+  /** Any-of: the item shows if the user holds ≥1 of these (empty = always shown).
+   *  FACT_SUPER_ADMIN bypasses the check for every item. Mirrors app.routes.ts guards. */
+  permissions: string[];
 }
 
 const APP_NAV_DEFS: AppNavDef[] = [
-  { id: 'home',          labelKey: 'FACTURATION.layout.NAV.HOME',           icon: 'home',                 route: 'home',          permission: null },
-  { id: 'affaires',      labelKey: 'FACTURATION.layout.NAV.AFFAIRES',       icon: 'work',                 route: 'affaires',      permission: null },
-  { id: 'clients',       labelKey: 'FACTURATION.layout.NAV.CLIENTS',        icon: 'corporate_fare',       route: 'clients',       permission: null },
-  { id: 'invoicing',     labelKey: 'FACTURATION.layout.NAV.INVOICING',      icon: 'receipt_long',         route: 'invoicing',     permission: null },
-  { id: 'payments',      labelKey: 'FACTURATION.layout.NAV.PAYMENTS',       icon: 'credit_card',          route: 'payments',      permission: null },
-  { id: 'subcontracting',labelKey: 'FACTURATION.layout.NAV.SUBCONTRACTING', icon: 'group',                route: 'subcontracting',permission: null },
-  { id: 'cost',          labelKey: 'FACTURATION.layout.NAV.COST',           icon: 'payments',             route: 'cost',          permission: null },
-  { id: 'cost-approval', labelKey: 'FACTURATION.layout.NAV.COST_APPROVAL',  icon: 'price_check',          route: 'cost/approval', permission: null },
-  { id: 'suppliers',     labelKey: 'FACTURATION.layout.NAV.SUPPLIERS',      icon: 'storefront',           route: 'suppliers',     permission: null },
-  { id: 'reporting',     labelKey: 'FACTURATION.layout.NAV.REPORTING',      icon: 'bar_chart',            route: 'reporting',     permission: null },
-  { id: 'admin',         labelKey: 'FACTURATION.layout.NAV.ADMIN',          icon: 'admin_panel_settings', route: 'admin',         permission: null },
+  { id: 'home',          labelKey: 'FACTURATION.layout.NAV.HOME',           icon: 'home',                 route: 'home',          permissions: [] },
+  { id: 'affaires',      labelKey: 'FACTURATION.layout.NAV.AFFAIRES',       icon: 'work',                 route: 'affaires',      permissions: ['FACT_VIEW_AFFAIRE', 'FACT_MANAGE_AFFAIRE'] },
+  { id: 'clients',       labelKey: 'FACTURATION.layout.NAV.CLIENTS',        icon: 'corporate_fare',       route: 'clients',       permissions: ['FACT_VIEW_INVOICING', 'FACT_MANAGE_INVOICING'] },
+  { id: 'invoicing',     labelKey: 'FACTURATION.layout.NAV.INVOICING',      icon: 'receipt_long',         route: 'invoicing',     permissions: ['FACT_VIEW_INVOICING', 'FACT_MANAGE_INVOICING'] },
+  { id: 'payments',      labelKey: 'FACTURATION.layout.NAV.PAYMENTS',       icon: 'credit_card',          route: 'payments',      permissions: ['FACT_VIEW_PAYMENT', 'FACT_MANAGE_PAYMENT'] },
+  { id: 'subcontracting',labelKey: 'FACTURATION.layout.NAV.SUBCONTRACTING', icon: 'group',                route: 'subcontracting',permissions: ['FACT_VIEW_AFFAIRE', 'FACT_MANAGE_AFFAIRE'] },
+  { id: 'cost',          labelKey: 'FACTURATION.layout.NAV.COST',           icon: 'payments',             route: 'cost',          permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'] },
+  { id: 'cost-approval', labelKey: 'FACTURATION.layout.NAV.COST_APPROVAL',  icon: 'price_check',          route: 'cost/approval', permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'] },
+  { id: 'suppliers',     labelKey: 'FACTURATION.layout.NAV.SUPPLIERS',      icon: 'storefront',           route: 'suppliers',     permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST'] },
+  { id: 'reporting',     labelKey: 'FACTURATION.layout.NAV.REPORTING',      icon: 'bar_chart',            route: 'reporting',     permissions: [] },
+  { id: 'admin',         labelKey: 'FACTURATION.layout.NAV.ADMIN',          icon: 'admin_panel_settings', route: 'admin',         permissions: ['FACT_SUPER_ADMIN', 'FACT_ADMIN_COST'] },
 ];
 
 @Component({
@@ -86,10 +88,16 @@ export class FactShellComponent {
 
   readonly navItems = computed<NavItem[]>(() => {
     this.translate.currentLang();
-    return APP_NAV_DEFS.filter(
-      (def) => !def.permission || this.userStore.hasPermission(def.permission),
-    ).map((def) => ({ id: def.id, label: this.translate.instant(def.labelKey), icon: def.icon, route: def.route }));
+    return APP_NAV_DEFS.filter((def) => this.canSee(def.permissions))
+      .map((def) => ({ id: def.id, label: this.translate.instant(def.labelKey), icon: def.icon, route: def.route }));
   });
+
+  /** Any-of gate: empty = always; FACT_SUPER_ADMIN sees everything. */
+  private canSee(permissions: string[]): boolean {
+    if (permissions.length === 0) return true;
+    if (this.userStore.hasPermission('FACT_SUPER_ADMIN')) return true;
+    return permissions.some((p) => this.userStore.hasPermission(p));
+  }
 
   onNavClick(item: NavItem): void {
     this.closeSidebar();
