@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { NgClass }                                             from '@angular/common';
-import { FormsModule }                                        from '@angular/forms';
+import { TranslatePipe, TranslateService }                    from '@ngx-translate/core';
+import { SelectComponent, SelectOption, FormFieldComponent }  from '@khalilrebhiitec/daf360';
 import { BillingService, ExpenseDto }                         from '../billing.service';
 import { BillingLinesComponent }                              from '../billing-lines.component';
 import { AffaireDetail }                                      from '../../affaire.model';
@@ -8,10 +9,10 @@ import { UserStore }                                          from '../../../../
 import { FactListService }                                    from '../../../../core/fact-list.service';
 import { ListValueDto }                                       from '../../../cost/cost.model';
 
-const EXPENSE_STATUT: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  EN_ATTENTE: { label: 'En attente',  bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-  VALIDE:     { label: 'Validée',     bg: '#d1fae5', color: '#065f46', border: '#34d399' },
-  REFUSE:     { label: 'Refusée',     bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+const EXPENSE_STATUT: Record<string, { bg: string; color: string; border: string }> = {
+  EN_ATTENTE: { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  VALIDE:     { bg: '#d1fae5', color: '#065f46', border: '#34d399' },
+  REFUSE:     { bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
 };
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
@@ -20,7 +21,7 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
 @Component({
   selector: 'app-billing-rmb',
   standalone: true,
-  imports: [NgClass, FormsModule, BillingLinesComponent],
+  imports: [NgClass, TranslatePipe, BillingLinesComponent, SelectComponent, FormFieldComponent],
   template: `
 <div class="space-y-6">
 
@@ -29,40 +30,35 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
     <div class="bg-white border border-[#eceef0] rounded-xl p-5">
       <h3 class="text-sm font-semibold text-[#1d2b3e] flex items-center gap-2 mb-4">
         <span class="material-symbols-outlined text-base text-[#1a6b7c]">upload_file</span>
-        Soumettre une dépense
+        {{ 'AFFAIRES.billing.modes.rmb.submit_title' | translate }}
       </h3>
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Catégorie *</label>
-          <select [(ngModel)]="form.categorie"
-            class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30 bg-white">
-            <option value="">Sélectionner…</option>
-            @for (cat of categories(); track cat.id) {
-              <option [value]="cat.code">{{ cat.labelFr }}</option>
-            }
-          </select>
+          <daf-select
+            [options]="categoryOptions()"
+            [selected]="[form.categorie]"
+            [config]="{ label: ('AFFAIRES.billing.modes.rmb.categorie' | translate), placeholder: ('AFFAIRES.billing.modes.rmb.categorie_select' | translate), searchable: true, fullWidth: true }"
+            (selectedChange)="form.categorie = $event[0] ?? ''" />
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Montant ({{ affaire.devise }}) *</label>
-          <input type="number" [(ngModel)]="form.montant" min="0.01" step="0.01"
-            class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30"
-            placeholder="0.00" />
+          <daf-form-field
+            [options]="{ type: 'number', label: ('AFFAIRES.billing.modes.rmb.montant' | translate:{ devise: affaire.devise }), placeholder: '0.00', fullWidth: true }"
+            [value]="form.montant"
+            (valueChange)="form.montant = +($event ?? 0)" />
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Date de la dépense *</label>
-          <input type="date" [(ngModel)]="form.dateDepense"
-            class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30" />
+          <daf-form-field
+            [options]="{ type: 'date', label: ('AFFAIRES.billing.modes.rmb.date' | translate), fullWidth: true }"
+            [value]="form.dateDepense"
+            (valueChange)="form.dateDepense = $any($event ?? '')" />
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#44474c] mb-1">
-            Justificatif * <span class="font-normal text-[#64748b]">(JPEG, PNG, PDF — max 5 Mo)</span>
+            {{ 'AFFAIRES.billing.modes.rmb.justificatif' | translate }} <span class="font-normal text-[#64748b]">{{ 'AFFAIRES.billing.modes.rmb.justificatif_hint' | translate }}</span>
           </label>
           <label class="flex items-center gap-2 px-3 py-2 border border-[#eceef0] rounded-xl cursor-pointer
                         hover:border-[#1a6b7c] transition-colors text-sm text-[#64748b]">
@@ -70,7 +66,7 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
             @if (selectedFile()) {
               <span class="text-[#1d2b3e] truncate max-w-xs">{{ selectedFile()!.name }}</span>
             } @else {
-              Choisir un fichier…
+              {{ 'AFFAIRES.billing.modes.rmb.choose_file' | translate }}
             }
             <input #fileInput type="file" accept=".jpg,.jpeg,.png,.pdf"
               class="hidden" (change)="onFileChange($event)" />
@@ -81,11 +77,10 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
         </div>
 
         <div class="col-span-2">
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Commentaire</label>
-          <textarea [(ngModel)]="form.commentaire" rows="2" maxlength="500"
-            class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm resize-none
-                   focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30"
-            placeholder="Description de la dépense…"></textarea>
+          <daf-form-field
+            [options]="{ type: 'textarea', rows: 2, maxLength: 500, label: ('AFFAIRES.billing.modes.rmb.commentaire' | translate), placeholder: ('AFFAIRES.billing.modes.rmb.commentaire_placeholder' | translate), fullWidth: true }"
+            [value]="form.commentaire"
+            (valueChange)="form.commentaire = $any($event ?? '')" />
         </div>
       </div>
 
@@ -101,10 +96,10 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
           class="flex items-center gap-1.5 px-5 py-2 text-sm rounded-xl text-white font-medium transition-colors">
           @if (submitting()) {
             <span class="material-symbols-outlined text-base" style="animation: spin 1s linear infinite">progress_activity</span>
-            Envoi…
+            {{ 'AFFAIRES.billing.modes.rmb.submitting' | translate }}
           } @else {
             <span class="material-symbols-outlined text-base">send</span>
-            Soumettre
+            {{ 'AFFAIRES.billing.modes.rmb.submit' | translate }}
           }
         </button>
       </div>
@@ -116,31 +111,31 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
     <div class="flex items-center justify-between mb-3">
       <h4 class="text-sm font-semibold text-[#1d2b3e] flex items-center gap-1.5">
         <span class="material-symbols-outlined text-base text-[#1a6b7c]">list_alt</span>
-        Dépenses soumises
+        {{ 'AFFAIRES.billing.modes.rmb.list_title' | translate }}
       </h4>
       <button (click)="loadExpenses()" class="text-xs text-[#1a6b7c] hover:underline flex items-center gap-1">
-        <span class="material-symbols-outlined text-sm">refresh</span>Actualiser
+        <span class="material-symbols-outlined text-sm">refresh</span>{{ 'AFFAIRES.billing.modes.rmb.refresh' | translate }}
       </button>
     </div>
 
     @if (expLoading()) {
-      <div class="text-sm text-[#64748b] text-center py-6">Chargement…</div>
+      <div class="text-sm text-[#64748b] text-center py-6">{{ 'AFFAIRES.billing.modes.rmb.loading' | translate }}</div>
     } @else if (expenses().length === 0) {
       <div class="text-sm text-[#64748b] text-center py-6 border border-dashed border-[#eceef0] rounded-xl">
-        Aucune dépense soumise.
+        {{ 'AFFAIRES.billing.modes.rmb.empty' | translate }}
       </div>
     } @else {
       <div class="overflow-x-auto rounded-xl border border-[#eceef0]">
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-[#f8fafc] text-xs font-semibold text-[#64748b] uppercase tracking-wide">
-              <th class="px-4 py-3 text-left">Date</th>
-              <th class="px-4 py-3 text-left">Catégorie</th>
-              <th class="px-4 py-3 text-right">Montant</th>
-              <th class="px-4 py-3 text-left">Statut</th>
-              <th class="px-4 py-3 text-left">Justificatif</th>
+              <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.rmb.col_date' | translate }}</th>
+              <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.rmb.col_categorie' | translate }}</th>
+              <th class="px-4 py-3 text-right">{{ 'AFFAIRES.billing.modes.rmb.col_montant' | translate }}</th>
+              <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.rmb.col_statut' | translate }}</th>
+              <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.rmb.col_justificatif' | translate }}</th>
               @if (canRF()) {
-                <th class="px-4 py-3 text-left">Actions</th>
+                <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.rmb.col_actions' | translate }}</th>
               }
             </tr>
           </thead>
@@ -164,7 +159,7 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
                   @if (exp.justificatifUrl) {
                     <a [href]="exp.justificatifUrl" target="_blank" rel="noopener"
                       class="text-xs text-[#1a6b7c] hover:underline flex items-center gap-1">
-                      <span class="material-symbols-outlined text-sm">open_in_new</span>Voir
+                      <span class="material-symbols-outlined text-sm">open_in_new</span>{{ 'AFFAIRES.billing.modes.rmb.view' | translate }}
                     </a>
                   } @else {
                     <span class="text-xs text-[#64748b]">—</span>
@@ -177,12 +172,12 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
                         <button (click)="doValidateExp(exp.id)"
                           class="px-2 py-1 text-xs rounded-lg font-medium bg-[#d1fae5] text-[#065f46]
                                  hover:bg-[#a7f3d0] transition-colors">
-                          Valider
+                          {{ 'AFFAIRES.billing.modes.rmb.validate' | translate }}
                         </button>
                         <button (click)="openRefuseExp(exp.id)"
                           class="px-2 py-1 text-xs rounded-lg font-medium bg-[#fee2e2] text-[#991b1b]
                                  hover:bg-[#fecaca] transition-colors">
-                          Refuser
+                          {{ 'AFFAIRES.billing.modes.rmb.refuse' | translate }}
                         </button>
                       </div>
                     }
@@ -205,22 +200,22 @@ const MAX_FILE_SIZE  = 5 * 1024 * 1024; // 5 MB
   <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
     (click)="$event.target === $event.currentTarget && showRefuseModal.set(false)">
     <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-      <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">Motif de refus</h3>
-      <textarea [(ngModel)]="refuseMotif" rows="3" maxlength="500"
-        class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm resize-none
-               focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30"
-        placeholder="Raison du refus…"></textarea>
+      <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">{{ 'AFFAIRES.billing.modes.rmb.modal_refuse_title' | translate }}</h3>
+      <daf-form-field
+        [options]="{ type: 'textarea', rows: 3, maxLength: 500, placeholder: ('AFFAIRES.billing.modes.rmb.modal_refuse_placeholder' | translate), fullWidth: true }"
+        [value]="refuseMotif"
+        (valueChange)="refuseMotif = $any($event ?? '')" />
       <div class="flex justify-end gap-3 mt-4">
         <button (click)="showRefuseModal.set(false)"
           class="px-4 py-2 text-sm rounded-xl border border-[#eceef0] text-[#44474c] hover:bg-[#f8fafc]">
-          Annuler
+          {{ 'AFFAIRES.billing.modes.rmb.modal_cancel' | translate }}
         </button>
         <button (click)="doRefuseExp()"
           [ngClass]="refuseMotif.trim()
             ? 'bg-[#dc2626] hover:bg-[#b91c1c] cursor-pointer'
             : 'bg-[#c5c6cd] cursor-not-allowed'"
           class="px-4 py-2 text-sm rounded-xl text-white font-medium transition-colors">
-          Refuser
+          {{ 'AFFAIRES.billing.modes.rmb.modal_refuse_btn' | translate }}
         </button>
       </div>
     </div>
@@ -237,6 +232,7 @@ export class BillingRmbComponent implements OnInit {
   private readonly svc          = inject(BillingService);
   private readonly store        = inject(UserStore);
   private readonly factListSvc  = inject(FactListService);
+  private readonly translate    = inject(TranslateService);
 
   categories  = signal<ListValueDto[]>([]);
   expenses    = signal<ExpenseDto[]>([]);
@@ -256,6 +252,10 @@ export class BillingRmbComponent implements OnInit {
     dateDepense:  '',
     commentaire:  '',
   };
+
+  readonly categoryOptions = computed<SelectOption[]>(() =>
+    this.categories().map(c => ({ value: c.code, label: c.labelFr })),
+  );
 
   readonly canCP = computed(() => this.store.hasPermission('FACT_CHEF_PROJET'));
   readonly canRF = computed(() => this.store.hasPermission('FACT_VALIDATE_RF'));
@@ -281,12 +281,12 @@ export class BillingRmbComponent implements OnInit {
     this.fileError.set(null);
     if (!file) { this.selectedFile.set(null); return; }
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      this.fileError.set('Format non supporté. Utilisez JPEG, PNG ou PDF.');
+      this.fileError.set(this.translate.instant('AFFAIRES.billing.modes.rmb.err_format'));
       this.selectedFile.set(null);
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      this.fileError.set('Fichier trop volumineux (maximum 5 Mo).');
+      this.fileError.set(this.translate.instant('AFFAIRES.billing.modes.rmb.err_size'));
       this.selectedFile.set(null);
       return;
     }
@@ -316,7 +316,7 @@ export class BillingRmbComponent implements OnInit {
       },
       error: err => {
         this.submitting.set(false);
-        this.submitError.set(err?.error?.message ?? 'Erreur lors de la soumission.');
+        this.submitError.set(err?.error?.message ?? this.translate.instant('AFFAIRES.billing.modes.rmb.err_submit'));
       },
     });
   }
@@ -351,7 +351,9 @@ export class BillingRmbComponent implements OnInit {
   }
 
   expCfg(statut: string) {
-    return EXPENSE_STATUT[statut] ?? { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
+    const c = EXPENSE_STATUT[statut];
+    if (!c) return { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
+    return { ...c, label: this.translate.instant('AFFAIRES.billing.modes.rmb.status.' + statut) };
   }
 
   fmtAmt(v: number, devise = 'EUR'): string {

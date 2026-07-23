@@ -1,15 +1,16 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 
-import { ButtonComponent } from '@khalilrebhiitec/daf360';
+import { ButtonComponent, FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireDraftState } from '../../affaire-wizard.model';
 
 @Component({
   selector: 'app-wizard-step-jal',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, ButtonComponent],
+  imports: [FormsModule, DecimalPipe, ButtonComponent, FormFieldComponent, TranslatePipe],
   templateUrl: './wizard-step-jal.component.html',
   styleUrl: './wizard-step-jal.component.scss',
 })
@@ -41,6 +42,27 @@ export class WizardStepJalComponent implements OnInit {
       this.draft.jalons.reduce((sum, j) => sum + (Number(j.montant) || 0), 0) * 1000,
     ) / 1000;
     this.emit();
+  }
+
+  // daf-form-field emits string | number | null; keep the model types then recompute + emit.
+  onLabelChange(j: AffaireDraftState['jalons'][0], v: string | number | null): void {
+    j.label = v == null ? '' : String(v);
+    this.updateJalonTotal();
+  }
+
+  onMontantChange(j: AffaireDraftState['jalons'][0], v: string | number | null): void {
+    j.montant = v === null || v === '' ? 0 : Number(v);
+    this.updateJalonTotal();
+  }
+
+  onDateChange(j: AffaireDraftState['jalons'][0], v: string | number | null): void {
+    j.datePrevisionnelle = v == null || v === '' ? undefined : String(v);
+    this.updateJalonTotal();
+  }
+
+  onDescriptionChange(j: AffaireDraftState['jalons'][0], v: string | number | null): void {
+    j.description = v == null || v === '' ? undefined : String(v);
+    this.updateJalonTotal();
   }
 
   isBalanced(): boolean {

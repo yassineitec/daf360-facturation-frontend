@@ -5,6 +5,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Router } from '@angular/router';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { SupplierService }   from '../supplier.service';
 import { ClientService }     from '../../clients/client.service';
 import { PermissionDirective } from '../../../shared/permission.directive';
@@ -18,6 +19,7 @@ import {
   StatusBadgeComponent as DafBadgeComponent, BadgeOptions,
   CardComponent,
   FormFieldComponent,
+  SelectComponent, SelectOption,
   ModalService, ModalRef,
   ButtonComponent,
 } from '@khalilrebhiitec/daf360';
@@ -30,8 +32,8 @@ import { AffaireKpiCardComponent } from '../../affaires/components/affaire-kpi-c
     PermissionDirective,
     MetricCardComponent, DataTableComponent, DafCellDirective,
     PaginationComponent, ToolbarComponent,
-    DafBadgeComponent, CardComponent, FormFieldComponent,
-    ButtonComponent, AffaireKpiCardComponent,
+    DafBadgeComponent, CardComponent, FormFieldComponent, SelectComponent,
+    ButtonComponent, AffaireKpiCardComponent, TranslatePipe,
   ],
   templateUrl: './supplier-list.component.html',
   styleUrl:    './supplier-list.component.scss',
@@ -42,6 +44,7 @@ export class SupplierListComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly modal      = inject(ModalService);
   private readonly router     = inject(Router);
+  private readonly translate  = inject(TranslateService);
 
   private readonly search$ = new Subject<string>();
 
@@ -88,13 +91,20 @@ export class SupplierListComponent implements OnInit {
 
   readonly totalPagesCount = computed(() => this.suppliers()?.totalPages ?? 0);
 
-  readonly tableColumns: TableColumn[] = [
-    { key: 'code',   label: 'Code',   type: 'custom' },
-    { key: 'name',   label: 'Nom',    type: 'custom' },
-    { key: 'pays',   label: 'Pays',   type: 'text' },
-    { key: 'tva',    label: 'N° TVA', type: 'custom' },
-    { key: 'statut', label: 'Statut', type: 'custom', align: 'center' },
-  ];
+  readonly paysSelectOptions = computed<SelectOption[]>(() =>
+    this.paysList().map(p => ({ value: p.isoCode, label: `${p.isoCode} — ${p.frenchLabel}` }))
+  );
+
+  readonly tableColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'code',   label: this.translate.instant('SUPPLIERS.LIST.TABLE.CODE'),    type: 'custom' },
+      { key: 'name',   label: this.translate.instant('SUPPLIERS.LIST.TABLE.NAME'),    type: 'custom' },
+      { key: 'pays',   label: this.translate.instant('SUPPLIERS.LIST.TABLE.COUNTRY'), type: 'text' },
+      { key: 'tva',    label: this.translate.instant('SUPPLIERS.LIST.TABLE.TVA'),     type: 'custom' },
+      { key: 'statut', label: this.translate.instant('SUPPLIERS.LIST.TABLE.STATUS'),  type: 'custom', align: 'center' },
+    ];
+  });
 
   readonly tableRows = computed(() =>
     (this.suppliers()?.content ?? []).map(s => ({
@@ -111,7 +121,7 @@ export class SupplierListComponent implements OnInit {
   readonly tableConfig = computed<TableConfig>(() => ({
     hoverable:    true,
     loading:      this.isLoading(),
-    emptyMessage: 'Aucun fournisseur trouvé.',
+    emptyMessage: this.translate.instant('SUPPLIERS.LIST.TABLE.EMPTY'),
     skeletonRows: 5,
   }));
 
@@ -200,13 +210,13 @@ export class SupplierListComponent implements OnInit {
     const s = this.selectedSupplier();
     if (!s) return;
     this.toggleRef = this.modal.open({
-      title:           s.isActive ? 'Désactiver le fournisseur' : 'Réactiver le fournisseur',
+      title:           this.translate.instant(s.isActive ? 'SUPPLIERS.LIST.TOGGLE.DEACTIVATE_TITLE' : 'SUPPLIERS.LIST.TOGGLE.REACTIVATE_TITLE'),
       body:            this.toggleTpl,
       size:            'sm',
       closeOnBackdrop: true,
       buttons: [
-        { label: 'Annuler',   variant: 'secondary', action: r => r.close() },
-        { label: 'Confirmer', variant: 'primary', action: _r => this.confirmToggle() },
+        { label: this.translate.instant('SUPPLIERS.LIST.TOGGLE.CANCEL'),  variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('SUPPLIERS.LIST.TOGGLE.CONFIRM'), variant: 'primary', action: _r => this.confirmToggle() },
       ],
     });
   }
@@ -249,7 +259,7 @@ export class SupplierListComponent implements OnInit {
     this.createTouched.set(true);
     if (!this.createName() || !this.createPaysCode()) return;
     const paysId = this.paysId();
-    if (!paysId) { this.saveError.set('Pays introuvable. Rechargez la page.'); return; }
+    if (!paysId) { this.saveError.set(this.translate.instant('SUPPLIERS.LIST.ERROR_PAYS')); return; }
     this.isSaving.set(true);
     this.saveError.set(null);
     const dto: CreateSupplierRequest = {
@@ -273,7 +283,7 @@ export class SupplierListComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.saveError.set(err.error?.message ?? 'Erreur lors de la création.');
+        this.saveError.set(err.error?.message ?? this.translate.instant('SUPPLIERS.LIST.ERROR_CREATE'));
       },
     });
   }

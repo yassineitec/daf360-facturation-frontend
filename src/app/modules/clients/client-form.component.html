@@ -8,7 +8,7 @@
 <!-- ── Section 1 : Identification ──────────────────────────────────────────── -->
 @if (activeSection === 0 || activeSection === 1) {
 <div class="glass-card rounded-2xl p-6">
-  <p class="section-label">Identification</p>
+  <p class="section-label">{{ 'CLIENTS.FORM.SECTION_IDENTIFICATION' | translate }}</p>
 
   <div class="flex flex-col gap-4">
 
@@ -17,9 +17,9 @@
         [value]="clientName()"
         (valueChange)="clientName.set(asStr($event))"
         [options]="{
-          label: 'Nom du client',
+          label: ('CLIENTS.FORM.NAME_LABEL' | translate),
           type: 'text',
-          placeholder: 'Raison sociale',
+          placeholder: ('CLIENTS.FORM.NAME_PLACEHOLDER' | translate),
           required: true,
           maxLength: 255,
           error: clientNameError()
@@ -29,10 +29,10 @@
         [value]="clientCode()"
         (valueChange)="clientCode.set(asStr($event))"
         [options]="{
-          label: 'Code client',
+          label: ('CLIENTS.FORM.CODE_LABEL' | translate),
           type: 'text',
           placeholder: 'TN-CLI-NNNN',
-          hint: !isEditMode ? '(auto si vide)' : undefined,
+          hint: !isEditMode ? ('CLIENTS.FORM.CODE_HINT' | translate) : undefined,
           disabled: isEditMode,
           maxLength: 50
         }" />
@@ -47,14 +47,14 @@
       <daf-form-field
         [value]="taxId()"
         (valueChange)="taxId.set(asStr($event))"
-        [options]="{ label: 'N° fiscal / TVA', type: 'text', placeholder: 'MF-XXXXXXX', maxLength: 50 }" />
+        [options]="{ label: ('CLIENTS.FORM.TAX_ID_LABEL' | translate), type: 'text', placeholder: 'MF-XXXXXXX', maxLength: 50 }" />
     </div>
 
     <div class="w-1/2">
       <daf-form-field
         [value]="country()"
         (valueChange)="country.set(asStr($event))"
-        [options]="countryFieldOpts" />
+        [options]="countryFieldOpts()" />
     </div>
 
   </div>
@@ -64,38 +64,38 @@
 <!-- ── Section 2 : Contact & Coordonnées ───────────────────────────────────── -->
 @if (activeSection === 0 || activeSection === 2) {
 <div class="glass-card rounded-2xl p-6">
-  <p class="section-label">Contact &amp; Coordonnées</p>
+  <p class="section-label">{{ 'CLIENTS.FORM.SECTION_CONTACT' | translate }}</p>
 
   <div class="flex flex-col gap-4">
 
     <daf-form-field
       [value]="address()"
       (valueChange)="address.set(asStr($event))"
-      [options]="{ label: 'Adresse', type: 'text', placeholder: 'Rue, numéro…', maxLength: 255 }" />
+      [options]="{ label: ('CLIENTS.FORM.ADDRESS_LABEL' | translate), type: 'text', placeholder: ('CLIENTS.FORM.ADDRESS_PLACEHOLDER' | translate), maxLength: 255 }" />
 
     <div class="grid grid-cols-2 gap-4">
       <daf-form-field
         [value]="city()"
         (valueChange)="city.set(asStr($event))"
-        [options]="{ label: 'Ville', type: 'text', placeholder: 'Ville', maxLength: 100 }" />
+        [options]="{ label: ('CLIENTS.FORM.CITY_LABEL' | translate), type: 'text', placeholder: ('CLIENTS.FORM.CITY_PLACEHOLDER' | translate), maxLength: 100 }" />
 
       <daf-form-field
         [value]="postalCode()"
         (valueChange)="postalCode.set(asStr($event))"
-        [options]="{ label: 'Code postal', type: 'text', placeholder: '1000', maxLength: 20 }" />
+        [options]="{ label: ('CLIENTS.FORM.POSTAL_CODE_LABEL' | translate), type: 'text', placeholder: '1000', maxLength: 20 }" />
     </div>
 
     <div class="grid grid-cols-2 gap-4">
       <daf-form-field
         [value]="phone()"
         (valueChange)="phone.set(asStr($event))"
-        [options]="{ label: 'Téléphone', type: 'text', placeholder: '+216 XX XXX XXX', maxLength: 30 }" />
+        [options]="{ label: ('CLIENTS.FORM.PHONE_LABEL' | translate), type: 'text', placeholder: '+216 XX XXX XXX', maxLength: 30 }" />
 
       <daf-form-field
         [value]="email()"
         (valueChange)="email.set(asStr($event))"
         [options]="{
-          label: 'Email général',
+          label: ('CLIENTS.FORM.EMAIL_LABEL' | translate),
           type: 'email',
           placeholder: 'contact@société.com',
           maxLength: 150,
@@ -106,19 +106,19 @@
     <daf-form-field
       [value]="website()"
       (valueChange)="website.set(asStr($event))"
-      [options]="{ label: 'Site web', type: 'text', placeholder: 'https://www.société.com', maxLength: 200 }" />
+      [options]="{ label: ('CLIENTS.FORM.WEBSITE_LABEL' | translate), type: 'text', placeholder: 'https://www.société.com', maxLength: 200 }" />
 
     <daf-form-field
       [value]="contactName()"
       (valueChange)="contactName.set(asStr($event))"
-      [options]="{ label: 'Nom du contact principal', type: 'text', placeholder: 'Prénom Nom', maxLength: 150 }" />
+      [options]="{ label: ('CLIENTS.FORM.CONTACT_NAME_LABEL' | translate), type: 'text', placeholder: ('CLIENTS.FORM.CONTACT_NAME_PLACEHOLDER' | translate), maxLength: 150 }" />
 
     <div class="grid grid-cols-2 gap-4">
       <daf-form-field
         [value]="contactEmail()"
         (valueChange)="contactEmail.set(asStr($event))"
         [options]="{
-          label: 'Email contact',
+          label: ('CLIENTS.FORM.CONTACT_EMAIL_LABEL' | translate),
           type: 'email',
           placeholder: 'contact@société.com',
           maxLength: 150,
@@ -128,7 +128,7 @@
       <daf-form-field
         [value]="contactPhone()"
         (valueChange)="contactPhone.set(asStr($event))"
-        [options]="{ label: 'Tél. contact', type: 'text', placeholder: '+216 XX XXX XXX', maxLength: 30 }" />
+        [options]="{ label: ('CLIENTS.FORM.CONTACT_PHONE_LABEL' | translate), type: 'text', placeholder: '+216 XX XXX XXX', maxLength: 30 }" />
     </div>
 
   </div>
@@ -138,7 +138,7 @@
 <!-- ── Section 3 : Conditions commerciales ─────────────────────────────────── -->
 @if (activeSection === 0 || activeSection === 3) {
 <div class="glass-card rounded-2xl p-6">
-  <p class="section-label">Conditions commerciales</p>
+  <p class="section-label">{{ 'CLIENTS.FORM.SECTION_TERMS' | translate }}</p>
 
   <div class="flex flex-col gap-4">
 
@@ -147,22 +147,22 @@
         [value]="paymentTermsDays()"
         (valueChange)="paymentTermsDays.set(asStr($event))"
         [options]="{
-          label: 'Délai de paiement (jours)',
+          label: ('CLIENTS.FORM.PAYMENT_TERMS_LABEL' | translate),
           type: 'number',
           placeholder: '30',
           error: paymentTermsError()
         }" />
 
       <daf-select
-        [options]="currencyOptions"
+        [options]="currencyOptions()"
         [(selected)]="selectedCurrency"
-        [config]="currencySelectConfig" />
+        [config]="currencySelectConfig()" />
     </div>
 
     <daf-form-field
       [value]="notes()"
       (valueChange)="notes.set(asStr($event))"
-      [options]="{ label: 'Notes internes', type: 'textarea', placeholder: 'Informations complémentaires…', maxLength: 1000, rows: 3 }" />
+      [options]="{ label: ('CLIENTS.FORM.NOTES_LABEL' | translate), type: 'textarea', placeholder: ('CLIENTS.FORM.NOTES_PLACEHOLDER' | translate), maxLength: 1000, rows: 3 }" />
 
   </div>
 </div>
@@ -172,12 +172,12 @@
 @if (activeSection === 0) {
 <div class="actions-row">
   <daf-button
-    [options]="{ variant: 'ghost', label: 'Annuler' }"
+    [options]="{ variant: 'ghost', label: ('CLIENTS.FORM.CANCEL' | translate) }"
     (onClick)="cancel()" />
   <daf-button
     [options]="{
       variant: 'secondary',
-      label: isEditMode ? 'Enregistrer' : 'Créer le client',
+      label: isEditMode ? ('CLIENTS.FORM.SAVE' | translate) : ('CLIENTS.FORM.CREATE' | translate),
       iconStart: isEditMode ? 'save' : 'person_add',
       pill: true,
       loading: saving(),

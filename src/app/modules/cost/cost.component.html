@@ -1,11 +1,11 @@
 <div class="page-wrap">
 
   <!-- Page header -->
-  <app-page-header title="Gestion des coûts" subtitle="Lignes de coût, approbations et configuration" />
+  <app-page-header [title]="'COST.PAGE.TITLE' | translate" [subtitle]="'COST.PAGE.SUBTITLE' | translate" />
 
   <!-- Tab nav -->
   <div class="tab-nav">
-    @for (tab of tabs; track tab.id) {
+    @for (tab of tabs(); track tab.id) {
       <button class="tab-btn"
         [class.active]="activeTab() === tab.id"
         (click)="setTab(tab.id)">

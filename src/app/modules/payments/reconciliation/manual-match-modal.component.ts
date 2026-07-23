@@ -1,20 +1,21 @@
 import { Component, inject, input, output, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { FormFieldComponent } from '@khalilrebhiitec/daf360';
 import { ReconciliationService } from '../reconciliation.service';
 import { BankTransaction } from '../payment.model';
 import { InvoiceListItem } from '../../invoicing/invoice.model';
 
 @Component({
   selector: 'app-manual-match-modal',
-  imports: [FormsModule],
+  imports: [FormFieldComponent, TranslatePipe],
   template: `
 <div class="modal-backdrop" (click)="dismissed.emit()">
   <div class="modal-box" (click)="$event.stopPropagation()">
-    <h3 class="modal-title">Rapprochement manuel</h3>
+    <h3 class="modal-title">{{ 'PAYMENTS.MANUAL_MATCH.TITLE' | translate }}</h3>
 
     <div class="tx-summary">
-      <span class="tx-label">Virement</span>
+      <span class="tx-label">{{ 'PAYMENTS.MANUAL_MATCH.TX_LABEL' | translate }}</span>
       <span class="tx-detail">
         {{ formatAmount(tx().montant, tx().devise) }} — {{ tx().reference ?? tx().description ?? '—' }}
         ({{ formatDate(tx().transactionDate) }})
@@ -22,14 +23,14 @@ import { InvoiceListItem } from '../../invoicing/invoice.model';
     </div>
 
     <div class="search-section">
-      <label class="search-label">Rechercher une facture</label>
-      <input type="search" class="search-input" placeholder="Numéro facture, client, affaire…"
-        [value]="searchQuery()" (input)="onSearchInput($event)"
-        maxlength="100" autocomplete="off" />
+      <daf-form-field
+        [options]="{ type: 'search', label: ('PAYMENTS.MANUAL_MATCH.SEARCH_LABEL' | translate), placeholder: ('PAYMENTS.COMMON.SEARCH_PH' | translate), maxLength: 100, fullWidth: true }"
+        [value]="searchQuery()"
+        (valueChange)="onSearchInput($any($event) ?? '')" />
     </div>
 
     @if (searching()) {
-      <div class="search-hint">Recherche…</div>
+      <div class="search-hint">{{ 'PAYMENTS.COMMON.SEARCHING' | translate }}</div>
     }
 
     @if (results().length > 0) {
@@ -38,13 +39,13 @@ import { InvoiceListItem } from '../../invoicing/invoice.model';
           <div class="result-row" [class.selected]="selectedInvoice()?.id === inv.id"
             (click)="selectInvoice(inv)">
             <div class="result-main">
-              <span class="result-num">{{ inv.invoiceNumber ?? 'Brouillon' }}</span>
+              <span class="result-num">{{ inv.invoiceNumber ?? ('PAYMENTS.COMMON.DRAFT' | translate) }}</span>
               <span class="result-client">{{ inv.clientNom }}</span>
             </div>
             <div class="result-meta">
               <span class="result-amount">{{ formatAmount(inv.montantTtc, inv.devise) }}</span>
               @if (inv.dateEcheance) {
-                <span class="result-due">Éch. {{ formatDate(inv.dateEcheance) }}</span>
+                <span class="result-due">{{ 'PAYMENTS.COMMON.DUE_PREFIX' | translate }} {{ formatDate(inv.dateEcheance) }}</span>
               }
             </div>
           </div>
@@ -53,11 +54,11 @@ import { InvoiceListItem } from '../../invoicing/invoice.model';
     }
 
     @if (selectedInvoice()) {
-      <div class="selected-confirm">
-        Rapprocher avec <strong>{{ selectedInvoice()!.invoiceNumber ?? 'Brouillon' }}</strong>
-        — {{ selectedInvoice()!.clientNom }}
-        ({{ formatAmount(selectedInvoice()!.montantTtc, selectedInvoice()!.devise) }})
-      </div>
+      <div class="selected-confirm" [innerHTML]="'PAYMENTS.MANUAL_MATCH.SELECTED' | translate: {
+          invoice: selectedInvoice()!.invoiceNumber ?? ('PAYMENTS.COMMON.DRAFT' | translate),
+          client: selectedInvoice()!.clientNom,
+          amount: formatAmount(selectedInvoice()!.montantTtc, selectedInvoice()!.devise)
+        }"></div>
     }
 
     @if (serverError()) {
@@ -65,9 +66,9 @@ import { InvoiceListItem } from '../../invoicing/invoice.model';
     }
 
     <div class="modal-actions">
-      <button class="btn-cancel" [disabled]="saving()" (click)="dismissed.emit()">Annuler</button>
+      <button class="btn-cancel" [disabled]="saving()" (click)="dismissed.emit()">{{ 'PAYMENTS.COMMON.CANCEL' | translate }}</button>
       <button class="btn-confirm" [disabled]="saving() || !selectedInvoice()" (click)="confirm()">
-        {{ saving() ? 'Enregistrement…' : 'Confirmer le rapprochement' }}
+        {{ (saving() ? 'PAYMENTS.COMMON.SAVING' : 'PAYMENTS.MANUAL_MATCH.CONFIRM_BTN') | translate }}
       </button>
     </div>
   </div>
@@ -138,8 +139,9 @@ import { InvoiceListItem } from '../../invoicing/invoice.model';
   `],
 })
 export class ManualMatchModalComponent {
-  private readonly svc = inject(ReconciliationService);
-  private readonly search$ = new Subject<string>();
+  private readonly svc       = inject(ReconciliationService);
+  private readonly translate = inject(TranslateService);
+  private readonly search$   = new Subject<string>();
 
   tx        = input.required<BankTransaction>();
   dismissed = output<void>();
@@ -163,8 +165,7 @@ export class ManualMatchModalComponent {
     });
   }
 
-  onSearchInput(e: Event): void {
-    const q = (e.target as HTMLInputElement).value;
+  onSearchInput(q: string): void {
     this.searchQuery.set(q);
     this.selectedInvoice.set(null);
     if (q.trim().length >= 2) this.search$.next(q.trim());
@@ -184,7 +185,7 @@ export class ManualMatchModalComponent {
       next:  () => { this.saving.set(false); this.confirmed.emit(); },
       error: err => {
         this.saving.set(false);
-        this.serverError.set(err?.error?.message ?? 'Erreur lors du rapprochement.');
+        this.serverError.set(err?.error?.message ?? this.translate.instant('PAYMENTS.MANUAL_MATCH.ERROR'));
       },
     });
   }

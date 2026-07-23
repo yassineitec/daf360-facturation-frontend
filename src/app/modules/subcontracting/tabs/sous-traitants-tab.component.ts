@@ -1,15 +1,15 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { SubcontractingService } from '../subcontracting.service';
 import { SousTraitantDto, CreateSousTraitantRequest } from '../subcontracting.model';
 import {
-  DataTableComponent, DafCellDirective, TableColumn, TableConfig, BadgeOptions,
+  DataTableComponent, DafCellDirective, FormFieldComponent, TableColumn, TableConfig, BadgeOptions,
 } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-sous-traitants-tab',
-  imports: [FormsModule, PermissionDirective, DataTableComponent, DafCellDirective],
+  imports: [TranslatePipe, PermissionDirective, DataTableComponent, DafCellDirective, FormFieldComponent],
   templateUrl: './sous-traitants-tab.component.html',
   styleUrl: './sous-traitants-tab.component.scss',
 })
@@ -17,27 +17,35 @@ export class SousTraitantsTabComponent {
   paysId = input<number | null>(null);
 
   private readonly svc = inject(SubcontractingService);
+  private readonly translate = inject(TranslateService);
 
   list    = signal<SousTraitantDto[]>([]);
   loading = signal(false);
   error   = signal<string | null>(null);
 
-  readonly tableColumns: TableColumn[] = [
-    { key: 'name',         label: 'Nom',        type: 'custom' },
-    { key: 'contactEmail', label: 'Email',      type: 'custom' },
-    { key: 'contactPhone', label: 'Téléphone',  type: 'custom' },
-    { key: 'taxId',        label: 'N° Fiscal',  type: 'custom' },
-    { key: 'country',      label: 'Pays',       type: 'custom' },
-    { key: 'status',       label: 'Statut',     type: 'badge' },
-    { key: '_actions',     label: '',           type: 'custom', align: 'right', width: '80px' },
-  ];
+  readonly asStr = (v: string | number | null): string => (v == null ? '' : String(v));
+
+  readonly tableColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { key: 'name',         label: t('SUBCONTRACTING.ST.TABLE.NAME'),   type: 'custom' },
+      { key: 'contactEmail', label: t('SUBCONTRACTING.ST.TABLE.EMAIL'),  type: 'custom' },
+      { key: 'contactPhone', label: t('SUBCONTRACTING.ST.TABLE.PHONE'),  type: 'custom' },
+      { key: 'taxId',        label: t('SUBCONTRACTING.ST.TABLE.TAX_ID'), type: 'custom' },
+      { key: 'country',      label: t('SUBCONTRACTING.ST.TABLE.COUNTRY'),type: 'custom' },
+      { key: 'status',       label: t('SUBCONTRACTING.ST.TABLE.STATUS'), type: 'badge' },
+      { key: '_actions',     label: '',                                  type: 'custom', align: 'right', width: '80px' },
+    ];
+  });
 
   readonly tableConfig = computed<TableConfig>(() => ({
     hoverable: true,
   }));
 
-  readonly tableRows = computed(() =>
-    this.list().map(st => ({
+  readonly tableRows = computed(() => {
+    this.translate.currentLang();
+    return this.list().map(st => ({
       id:            st.id,
       name:          st.name,
       contactEmail:  st.contactEmail,
@@ -46,12 +54,12 @@ export class SousTraitantsTabComponent {
       country:       st.country,
       isActive:      st.isActive,
       status: {
-        label:   st.isActive ? 'Actif' : 'Inactif',
+        label:   this.translate.instant(st.isActive ? 'SUBCONTRACTING.ST.ACTIVE' : 'SUBCONTRACTING.ST.INACTIVE'),
         options: { variant: st.isActive ? 'success' : 'neutral', pill: true } as BadgeOptions,
       },
       _raw: st,
-    }))
-  );
+    }));
+  });
 
   showModal  = signal(false);
   editTarget = signal<SousTraitantDto | null>(null);
@@ -75,7 +83,7 @@ export class SousTraitantsTabComponent {
     this.error.set(null);
     this.svc.listSousTraitants(paysId).subscribe({
       next: l => { this.list.set(l); this.loading.set(false); },
-      error: () => { this.error.set('Impossible de charger les sous-traitants.'); this.loading.set(false); },
+      error: () => { this.error.set(this.translate.instant('SUBCONTRACTING.ST.ERROR_LOAD')); this.loading.set(false); },
     });
   }
 
@@ -120,7 +128,7 @@ export class SousTraitantsTabComponent {
       next: () => { this.saving.set(false); this.showModal.set(false); this.load(paysId); },
       error: err => {
         this.saving.set(false);
-        this.formError.set(err?.error?.message ?? 'Erreur lors de l\'enregistrement.');
+        this.formError.set(err?.error?.message ?? this.translate.instant('SUBCONTRACTING.ST.ERROR_SAVE'));
       },
     });
   }
@@ -142,7 +150,7 @@ export class SousTraitantsTabComponent {
       },
       error: err => {
         this.deleting.set(false);
-        this.error.set(err?.error?.message ?? 'Erreur lors de la suppression.');
+        this.error.set(err?.error?.message ?? this.translate.instant('SUBCONTRACTING.ST.ERROR_DELETE'));
         this.deleteTarget.set(null);
       },
     });

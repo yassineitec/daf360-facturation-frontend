@@ -2,6 +2,7 @@ import {
   Component, OnInit, inject, signal, computed, ViewChild, TemplateRef,
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import { ClientService } from '../../clients/client.service';
 import { PermissionDirective } from '../../../shared/permission.directive';
@@ -15,7 +16,7 @@ import { ModalService, ModalRef, BadgeOptions, ButtonComponent, CardComponent, S
 @Component({
   selector: 'app-cost-approval-queue',
   standalone: true,
-  imports: [PermissionDirective, SearchBarComponent, ButtonComponent, CardComponent, StatusBadgeComponent, FormFieldComponent],
+  imports: [PermissionDirective, SearchBarComponent, ButtonComponent, CardComponent, StatusBadgeComponent, FormFieldComponent, TranslatePipe],
   templateUrl: './cost-approval-queue.component.html',
   styleUrl: './cost-approval-queue.component.scss',
 })
@@ -25,6 +26,7 @@ export class CostApprovalQueueComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly modal     = inject(ModalService);
+  private readonly translate = inject(TranslateService);
 
   @ViewChild('approvalTpl') approvalTpl!: TemplateRef<any>;
   private approvalRef: ModalRef | null = null;
@@ -90,13 +92,13 @@ export class CostApprovalQueueComponent implements OnInit {
     this.approvalCommentSig.set('');
     this.modalError.set(null);
     this.approvalRef = this.modal.open({
-      title:           'Décision d\'approbation',
+      title:           this.translate.instant('COST.APPROVAL_QUEUE.MODAL_TITLE'),
       body:            this.approvalTpl,
       size:            'md',
       closeOnBackdrop: false,
       buttons: [
-        { label: 'Annuler',   variant: 'secondary', action: r => r.close() },
-        { label: 'Confirmer', variant: 'primary',   action: _r => this.submitApproval() },
+        { label: this.translate.instant('COST.APPROVAL_QUEUE.MODAL_CANCEL'),  variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('COST.APPROVAL_QUEUE.MODAL_CONFIRM'), variant: 'primary',   action: _r => this.submitApproval() },
       ],
     });
   }
@@ -108,7 +110,7 @@ export class CostApprovalQueueComponent implements OnInit {
 
     const comment = this.approvalCommentSig().trim();
     if (decision === 'reject' && !comment) {
-      this.modalError.set('Un commentaire est obligatoire en cas de refus.');
+      this.modalError.set(this.translate.instant('COST.APPROVAL_QUEUE.REJECT_COMMENT_REQUIRED'));
       return;
     }
 
@@ -128,7 +130,7 @@ export class CostApprovalQueueComponent implements OnInit {
       },
       error: err => {
         this.isSubmitting.set(false);
-        this.modalError.set(err.error?.message ?? 'Une erreur est survenue.');
+        this.modalError.set(err.error?.message ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR'));
       },
     });
   }
@@ -140,9 +142,9 @@ export class CostApprovalQueueComponent implements OnInit {
   }
 
   urgencyLabel(level: string | null): string {
-    if (!level || level === 'L1') return 'Basse';
-    if (level === 'L2') return 'Normal';
-    return 'Urgent';
+    if (!level || level === 'L1') return this.translate.instant('COST.URGENCY.LOW');
+    if (level === 'L2') return this.translate.instant('COST.URGENCY.NORMAL');
+    return this.translate.instant('COST.URGENCY.URGENT');
   }
 
   fmtDate(d: string | null): string {

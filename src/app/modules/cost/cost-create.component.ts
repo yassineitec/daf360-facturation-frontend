@@ -4,6 +4,7 @@ import {
 import { Router, ActivatedRoute } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { debounceTime } from 'rxjs/operators';
 
 import { CostService }     from './cost.service';
@@ -16,31 +17,12 @@ import {
 
 type CostStep = 1 | 2 | 3;
 
-const STEPS = [
-  {
-    icon:  'category',
-    title: 'Contexte',
-    sub:   'Catégorie, date et objet de la dépense',
-    tip:   'Sélectionnez la catégorie la plus précise pour faciliter le contrôle de gestion et l\'imputation comptable.',
-  },
-  {
-    icon:  'payments',
-    title: 'Montants',
-    sub:   'Montant HT, TVA, devise et mode de paiement',
-    tip:   'Vérifiez le taux de TVA applicable selon le pays d\'établissement du fournisseur.',
-  },
-  {
-    icon:  'store',
-    title: 'Fournisseur & Pièces jointes',
-    sub:   'Identification du fournisseur et justificatifs',
-    tip:   'Joignez systématiquement la facture originale pour assurer la déductibilité fiscale.',
-  },
-] as const;
+const STEP_ICONS = ['category', 'payments', 'store'] as const;
 
 @Component({
   selector: 'app-cost-create',
   standalone: true,
-  imports: [ReactiveFormsModule, DecimalPipe],
+  imports: [ReactiveFormsModule, DecimalPipe, TranslatePipe],
   templateUrl: './cost-create.component.html',
   styleUrl:    './cost-create.component.scss',
 })
@@ -51,6 +33,7 @@ export class CostCreateComponent implements OnInit {
   private readonly clientSvc   = inject(ClientService);
   private readonly router      = inject(Router);
   private readonly route       = inject(ActivatedRoute);
+  private readonly translate   = inject(TranslateService);
 
   categories      = signal<CostCategoryDto[]>([]);
   thresholds      = signal<CostApprovalThresholdDto[]>([]);
@@ -66,12 +49,34 @@ export class CostCreateComponent implements OnInit {
 
   // ── Stepper ──────────────────────────────────────────────────────────────
   step = signal<CostStep>(1);
-  readonly steps = STEPS;
+  readonly steps = computed(() => {
+    this.translate.currentLang();
+    return [
+      {
+        icon:  STEP_ICONS[0],
+        title: this.translate.instant('COST.CREATE.STEPS.CONTEXT.TITLE'),
+        sub:   this.translate.instant('COST.CREATE.STEPS.CONTEXT.SUB'),
+        tip:   this.translate.instant('COST.CREATE.STEPS.CONTEXT.TIP'),
+      },
+      {
+        icon:  STEP_ICONS[1],
+        title: this.translate.instant('COST.CREATE.STEPS.AMOUNTS.TITLE'),
+        sub:   this.translate.instant('COST.CREATE.STEPS.AMOUNTS.SUB'),
+        tip:   this.translate.instant('COST.CREATE.STEPS.AMOUNTS.TIP'),
+      },
+      {
+        icon:  STEP_ICONS[2],
+        title: this.translate.instant('COST.CREATE.STEPS.SUPPLIER.TITLE'),
+        sub:   this.translate.instant('COST.CREATE.STEPS.SUPPLIER.SUB'),
+        tip:   this.translate.instant('COST.CREATE.STEPS.SUPPLIER.TIP'),
+      },
+    ];
+  });
 
-  readonly stepTitle = computed(() => STEPS[this.step() - 1].title);
-  readonly stepSub   = computed(() => STEPS[this.step() - 1].sub);
-  readonly stepTip   = computed(() => STEPS[this.step() - 1].tip);
-  readonly stepIcon  = computed(() => STEPS[this.step() - 1].icon);
+  readonly stepTitle = computed(() => this.steps()[this.step() - 1].title);
+  readonly stepSub   = computed(() => this.steps()[this.step() - 1].sub);
+  readonly stepTip   = computed(() => this.steps()[this.step() - 1].tip);
+  readonly stepIcon  = computed(() => this.steps()[this.step() - 1].icon);
 
   readonly canGoNext = computed(() => {
     const s = this.step();
@@ -229,20 +234,18 @@ export class CostCreateComponent implements OnInit {
   }
 
   get approvalLabel(): string {
-    return ({
-      L1: 'L1 — Auto-approuvé',
-      L2: 'L2 — Finance Manager',
-      L3: 'L3 — Country Director',
-      L4: 'L4 — Double approbation requise',
-    })[this.approvalPreview() ?? ''] ?? '—';
+    const level = this.approvalPreview();
+    if (!level) return '—';
+    const key = ({ L1: 'L1', L2: 'L2', L3: 'L3', L4: 'L4' } as Record<string, string>)[level];
+    return key ? this.translate.instant('COST.APPROVAL.LEVEL_' + key) : '—';
   }
 
   get approvalSteps(): { label: string; role: string; state: 'done' | 'current' | 'pending' }[] {
     const level = this.approvalPreview();
     const all = [
-      { key: 'L2', label: 'ÉTAPE 1 : MANAGER',    role: 'Finance Manager' },
-      { key: 'L3', label: 'ÉTAPE 2 : DIRECTEUR',  role: 'Country Director' },
-      { key: 'L4', label: 'ÉTAPE FINALE : DUAL',  role: 'Double approbation' },
+      { key: 'L2', label: this.translate.instant('COST.CREATE.CIRCUIT.STEP1_LABEL'),      role: this.translate.instant('COST.CREATE.CIRCUIT.ROLE_MANAGER') },
+      { key: 'L3', label: this.translate.instant('COST.CREATE.CIRCUIT.STEP2_LABEL'),      role: this.translate.instant('COST.CREATE.CIRCUIT.ROLE_DIRECTOR') },
+      { key: 'L4', label: this.translate.instant('COST.CREATE.CIRCUIT.STEP_FINAL_LABEL'), role: this.translate.instant('COST.CREATE.CIRCUIT.ROLE_DUAL') },
     ];
     const idx = all.findIndex(s => s.key === level);
     return all.map((s, i) => ({
@@ -327,7 +330,7 @@ export class CostCreateComponent implements OnInit {
       error: err => {
         this.isSaving.set(false);
         this.isDraft.set(false);
-        this.serverError.set(err.error?.message ?? 'Une erreur est survenue.');
+        this.serverError.set(err.error?.message ?? this.translate.instant('COST.CREATE.GENERIC_ERROR'));
       },
     });
   }

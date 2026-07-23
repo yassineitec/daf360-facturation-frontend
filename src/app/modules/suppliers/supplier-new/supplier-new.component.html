@@ -10,12 +10,12 @@
       <div class="page-head">
         <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
           <button type="button" class="font-medium hover:underline transition-colors" (click)="cancel()">
-            Fournisseurs
+            {{ 'SUPPLIERS.NEW.BREADCRUMB_ROOT' | translate }}
           </button>
           <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span class="font-medium" style="color:#50717b">Nouveau Fournisseur</span>
+          <span class="font-medium" style="color:#50717b">{{ 'SUPPLIERS.NEW.BREADCRUMB_CURRENT' | translate }}</span>
         </nav>
-        <h1 class="text-[28px] font-bold text-on-surface leading-tight">Référencer un nouveau fournisseur</h1>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ 'SUPPLIERS.NEW.TITLE' | translate }}</h1>
       </div>
 
       <!-- ── Form card ─────────────────────────────────────────────── -->
@@ -24,11 +24,11 @@
         <!-- Card head -->
         <div class="card-head">
           <div class="card-head__icon">
-            <span class="material-symbols-outlined">{{ steps[step() - 1].icon }}</span>
+            <span class="material-symbols-outlined">{{ steps()[step() - 1].icon }}</span>
           </div>
           <div>
-            <h2 class="card-head__title">{{ steps[step() - 1].title }}</h2>
-            <p class="card-head__sub">Étape {{ step() }} sur {{ steps.length }}</p>
+            <h2 class="card-head__title">{{ steps()[step() - 1].title }}</h2>
+            <p class="card-head__sub">{{ 'SUPPLIERS.NEW.STEP_OF' | translate:{ current: step(), total: steps().length } }}</p>
           </div>
         </div>
 
@@ -41,29 +41,29 @@
               <div class="form-grid">
 
                 <div class="field field--full">
-                  <label for="sn-name">Raison sociale <span class="req">*</span></label>
+                  <label for="sn-name">{{ 'SUPPLIERS.NEW.COMPANY_NAME' | translate }} <span class="req">*</span></label>
                   <input id="sn-name" type="text" class="form-input" formControlName="name"
-                    maxlength="200" placeholder="Nom officiel du fournisseur"
+                    maxlength="200" [placeholder]="'SUPPLIERS.NEW.COMPANY_NAME_PLACEHOLDER' | translate"
                     [class.invalid]="form.controls['name'].invalid && form.controls['name'].touched" />
                   @if (form.controls['name'].invalid && form.controls['name'].touched) {
-                    <span class="error-msg">Ce champ est obligatoire.</span>
+                    <span class="error-msg">{{ 'SUPPLIERS.NEW.REQUIRED' | translate }}</span>
                   }
                 </div>
 
                 <div class="field field--full">
-                  <label for="sn-pays">Pays <span class="req">*</span></label>
+                  <label for="sn-pays">{{ 'SUPPLIERS.NEW.COUNTRY' | translate }} <span class="req">*</span></label>
                   <div class="form-select-wrap">
                     <select id="sn-pays" class="form-input" formControlName="paysCode"
                       (change)="onPaysChange($event)"
                       [class.invalid]="form.controls['paysCode'].invalid && form.controls['paysCode'].touched">
-                      <option value="">Sélectionner un pays…</option>
+                      <option value="">{{ 'SUPPLIERS.NEW.COUNTRY_SELECT' | translate }}</option>
                       @for (p of paysList(); track p.id) {
                         <option [value]="p.isoCode">{{ p.isoCode }} — {{ p.frenchLabel }}</option>
                       }
                     </select>
                   </div>
                   @if (form.controls['paysCode'].invalid && form.controls['paysCode'].touched) {
-                    <span class="error-msg">Ce champ est obligatoire.</span>
+                    <span class="error-msg">{{ 'SUPPLIERS.NEW.REQUIRED' | translate }}</span>
                   }
                 </div>
 
@@ -77,9 +77,9 @@
               <div class="form-grid">
 
                 <div class="field field--full">
-                  <label for="sn-tva">Numéro TVA</label>
+                  <label for="sn-tva">{{ 'SUPPLIERS.NEW.TVA' | translate }}</label>
                   <input id="sn-tva" type="text" class="form-input" formControlName="numeroTva"
-                    maxlength="50" placeholder="Ex: TN12345678" />
+                    maxlength="50" [placeholder]="'SUPPLIERS.NEW.TVA_PLACEHOLDER' | translate" />
                 </div>
 
                 <div class="field field--full">
@@ -91,8 +91,8 @@
                       </span>
                     </div>
                     <div>
-                      <span class="toggle-title">Activer TVA Unique</span>
-                      <span class="toggle-desc">Contrôle automatique de conformité TVA sur les factures entrantes</span>
+                      <span class="toggle-title">{{ 'SUPPLIERS.NEW.TVA_UNIQUE' | translate }}</span>
+                      <span class="toggle-desc">{{ 'SUPPLIERS.NEW.TVA_UNIQUE_DESC' | translate }}</span>
                     </div>
                   </label>
                 </div>
@@ -107,20 +107,20 @@
               <div class="form-grid">
 
                 <div class="field field--full">
-                  <label for="sn-iban">IBAN</label>
+                  <label for="sn-iban">{{ 'SUPPLIERS.NEW.IBAN' | translate }}</label>
                   <input id="sn-iban" type="text" class="form-input" formControlName="iban"
-                    maxlength="34" placeholder="FR76 3000 1234 5678…" />
+                    maxlength="34" [placeholder]="'SUPPLIERS.NEW.IBAN_PLACEHOLDER' | translate" />
                   <span class="field-hint">
                     <span class="material-symbols-outlined">lock</span>
-                    Stocké de façon sécurisée — masqué par défaut
+                    {{ 'SUPPLIERS.NEW.IBAN_HINT' | translate }}
                   </span>
                 </div>
 
                 <div class="field field--full">
-                  <label for="sn-notes">Notes internes</label>
+                  <label for="sn-notes">{{ 'SUPPLIERS.NEW.NOTES' | translate }}</label>
                   <textarea id="sn-notes" class="form-input" formControlName="notes"
                     rows="4" maxlength="1000"
-                    placeholder="Informations internes sur ce fournisseur…"></textarea>
+                    [placeholder]="'SUPPLIERS.NEW.NOTES_PLACEHOLDER' | translate"></textarea>
                 </div>
 
               </div>
@@ -148,11 +148,11 @@
       <div class="panel-nav">
         @if (step() > 1) {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Retour', iconStart: 'arrow_back' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('SUPPLIERS.NEW.BACK' | translate), iconStart: 'arrow_back' }"
             (onClick)="goPrev()" />
         } @else {
           <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: 'Annuler', iconStart: 'close' }"
+            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('SUPPLIERS.NEW.CANCEL' | translate), iconStart: 'close' }"
             (onClick)="cancel()" />
         }
         <daf-button class="panel-nav__next"
@@ -160,7 +160,7 @@
             variant: 'teal',
             pill: true,
             fullWidth: true,
-            label: step() === 3 ? 'Créer le fournisseur' : 'Suivant',
+            label: step() === 3 ? ('SUPPLIERS.NEW.CREATE' | translate) : ('SUPPLIERS.NEW.NEXT' | translate),
             iconEnd: step() < 3 ? 'arrow_forward' : undefined,
             iconStart: step() === 3 ? 'business' : undefined,
             loading: isSaving(),
@@ -172,12 +172,12 @@
       <!-- Progression -->
       <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
         <div class="panel-header">
-          <p class="panel__label">Progression</p>
+          <p class="panel__label">{{ 'SUPPLIERS.NEW.PROGRESS' | translate }}</p>
         </div>
 
         <div class="panel-body">
           <div class="step-list">
-            @for (s of steps; track $index; let i = $index) {
+            @for (s of steps(); track $index; let i = $index) {
               <div class="step-item"
                    [class.step-item--done]="step() > i + 1"
                    [class.step-item--active]="step() === i + 1">
@@ -199,27 +199,27 @@
       <!-- Résumé -->
       <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
         <div class="panel-header">
-          <p class="panel__label">Résumé</p>
+          <p class="panel__label">{{ 'SUPPLIERS.NEW.SUMMARY' | translate }}</p>
         </div>
         <div class="panel-body">
           <div class="summary-rows">
             <div class="summary-row">
-              <span class="summary-row__key">Raison sociale</span>
+              <span class="summary-row__key">{{ 'SUPPLIERS.NEW.SUMMARY_COMPANY' | translate }}</span>
               <span class="summary-row__val">{{ summaryName() }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-row__key">Pays</span>
+              <span class="summary-row__key">{{ 'SUPPLIERS.NEW.SUMMARY_COUNTRY' | translate }}</span>
               <span class="summary-row__val">{{ summaryPays() }}</span>
             </div>
             @if (step() > 1) {
               <div class="summary-row">
-                <span class="summary-row__key">N° TVA</span>
+                <span class="summary-row__key">{{ 'SUPPLIERS.NEW.SUMMARY_TVA' | translate }}</span>
                 <span class="summary-row__val">{{ summaryTva() }}</span>
               </div>
               @if (form.controls['tvaUniqueActive'].value) {
                 <div class="summary-row">
-                  <span class="summary-row__key">TVA Unique</span>
-                  <span class="summary-row__val summary-row__val--ok">Activée</span>
+                  <span class="summary-row__key">{{ 'SUPPLIERS.NEW.SUMMARY_TVA_UNIQUE' | translate }}</span>
+                  <span class="summary-row__val summary-row__val--ok">{{ 'SUPPLIERS.NEW.SUMMARY_ACTIVATED' | translate }}</span>
                 </div>
               }
             }

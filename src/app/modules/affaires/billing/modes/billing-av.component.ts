@@ -1,21 +1,22 @@
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { NgClass }                                             from '@angular/common';
-import { FormsModule }                                        from '@angular/forms';
+import { TranslatePipe, TranslateService }                    from '@ngx-translate/core';
+import { FormFieldComponent }                                 from '@khalilrebhiitec/daf360';
 import { BillingService, TauxAvancementDto }                  from '../billing.service';
 import { BillingLinesComponent }                              from '../billing-lines.component';
 import { AffaireDetail }                                      from '../../affaire.model';
 import { UserStore }                                          from '../../../../core/user.store';
 
-const TAUX_CFG: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  EN_ATTENTE: { label: 'En attente RF', bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-  VALIDE:     { label: 'Validé',        bg: '#d1fae5', color: '#065f46', border: '#34d399' },
-  REFUSE:     { label: 'Refusé',        bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+const TAUX_CFG: Record<string, { bg: string; color: string; border: string }> = {
+  EN_ATTENTE: { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  VALIDE:     { bg: '#d1fae5', color: '#065f46', border: '#34d399' },
+  REFUSE:     { bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
 };
 
 @Component({
   selector: 'app-billing-av',
   standalone: true,
-  imports: [NgClass, FormsModule, BillingLinesComponent],
+  imports: [NgClass, TranslatePipe, BillingLinesComponent, FormFieldComponent],
   template: `
 <div class="space-y-5">
 
@@ -23,14 +24,14 @@ const TAUX_CFG: Record<string, { label: string; bg: string; color: string; borde
   <div class="flex items-center justify-between">
     <h3 class="text-sm font-semibold text-[#1d2b3e] flex items-center gap-2">
       <span class="material-symbols-outlined text-base text-[#1a6b7c]">trending_up</span>
-      Taux d'avancement
+      {{ 'AFFAIRES.billing.modes.av.title' | translate }}
     </h3>
     @if (canCP()) {
       <button (click)="openSubmit()"
         class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl font-medium
                bg-[#1a6b7c] text-white hover:bg-[#134f5c] transition-colors">
         <span class="material-symbols-outlined text-sm">add</span>
-        Soumettre un taux
+        {{ 'AFFAIRES.billing.modes.av.submit_btn' | translate }}
       </button>
     }
   </div>
@@ -38,31 +39,31 @@ const TAUX_CFG: Record<string, { label: string; bg: string; color: string; borde
   @if (affaire.contractAmount) {
     <div class="inline-flex items-center gap-2 text-xs text-[#44474c] bg-[#f0f4f8] rounded-lg px-3 py-1.5">
       <span class="material-symbols-outlined text-sm text-[#1a6b7c]">info</span>
-      Montant du contrat :
+      {{ 'AFFAIRES.billing.modes.av.contract_amount' | translate }}
       <strong>{{ fmtAmt(affaire.contractAmount, affaire.devise) }}</strong>
-      · Taux précédent validé :
+      · {{ 'AFFAIRES.billing.modes.av.last_validated' | translate }}
       <strong>{{ lastValidated() }}%</strong>
     </div>
   }
 
   @if (loading()) {
-    <div class="text-sm text-[#64748b] text-center py-8">Chargement…</div>
+    <div class="text-sm text-[#64748b] text-center py-8">{{ 'AFFAIRES.billing.modes.av.loading' | translate }}</div>
   } @else if (history().length === 0) {
     <div class="text-sm text-[#64748b] text-center py-8 border border-dashed border-[#eceef0] rounded-xl">
-      Aucun taux soumis pour le moment.
+      {{ 'AFFAIRES.billing.modes.av.empty' | translate }}
     </div>
   } @else {
     <div class="overflow-x-auto rounded-xl border border-[#eceef0]">
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-[#f8fafc] text-xs font-semibold text-[#64748b] uppercase tracking-wide">
-            <th class="px-4 py-3 text-left">Date soumission</th>
-            <th class="px-4 py-3 text-right">Taux (%)</th>
-            <th class="px-4 py-3 text-right">Valeur calculée</th>
-            <th class="px-4 py-3 text-left">Statut</th>
-            <th class="px-4 py-3 text-left">Commentaire / Motif</th>
+            <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.av.col_date' | translate }}</th>
+            <th class="px-4 py-3 text-right">{{ 'AFFAIRES.billing.modes.av.col_taux' | translate }}</th>
+            <th class="px-4 py-3 text-right">{{ 'AFFAIRES.billing.modes.av.col_valeur' | translate }}</th>
+            <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.av.col_statut' | translate }}</th>
+            <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.av.col_comment' | translate }}</th>
             @if (canRF()) {
-              <th class="px-4 py-3 text-left">Actions RF</th>
+              <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.modes.av.col_actions_rf' | translate }}</th>
             }
           </tr>
         </thead>
@@ -90,19 +91,19 @@ const TAUX_CFG: Record<string, { label: string; bg: string; color: string; borde
                       <button (click)="doValidate(t)"
                         class="px-2 py-1 text-xs rounded-lg font-medium bg-[#d1fae5] text-[#065f46]
                                hover:bg-[#a7f3d0] transition-colors">
-                        Valider
+                        {{ 'AFFAIRES.billing.modes.av.validate' | translate }}
                       </button>
                       <button (click)="openRefuse(t)"
                         class="px-2 py-1 text-xs rounded-lg font-medium bg-[#fee2e2] text-[#991b1b]
                                hover:bg-[#fecaca] transition-colors">
-                        Refuser
+                        {{ 'AFFAIRES.billing.modes.av.refuse' | translate }}
                       </button>
                     </div>
                   } @else if (t.statut === 'VALIDE') {
                     <button (click)="doCreateLine(t.id)"
                       class="px-2 py-1 text-xs rounded-lg font-medium bg-[#e0e7ff] text-[#3730a3]
                              hover:bg-[#c7d2fe] transition-colors">
-                      Créer ligne
+                      {{ 'AFFAIRES.billing.modes.av.create_line' | translate }}
                     </button>
                   }
                 </td>
@@ -123,34 +124,31 @@ const TAUX_CFG: Record<string, { label: string; bg: string; color: string; borde
   <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
     (click)="$event.target === $event.currentTarget && showSubmitModal.set(false)">
     <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-      <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">Soumettre un taux d'avancement</h3>
+      <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">{{ 'AFFAIRES.billing.modes.av.modal_submit_title' | translate }}</h3>
       <div class="space-y-4">
         <div>
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Taux précédent validé</label>
+          <label class="block text-xs font-medium text-[#44474c] mb-1">{{ 'AFFAIRES.billing.modes.av.modal_last_validated' | translate }}</label>
           <div class="px-3 py-2 bg-[#f8fafc] border border-[#eceef0] rounded-xl text-sm text-[#64748b]">
             {{ lastValidated() }}%
           </div>
         </div>
         <div>
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Nouveau taux cumulé (%) *</label>
-          <input type="number" [(ngModel)]="newTaux"
-            [min]="lastValidated() + 0.1" max="100" step="0.1"
-            class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30"
-            placeholder="Ex: 50" />
+          <daf-form-field
+            [options]="{ type: 'number', label: ('AFFAIRES.billing.modes.av.modal_new_taux' | translate), placeholder: ('AFFAIRES.billing.modes.av.modal_new_taux_placeholder' | translate), fullWidth: true }"
+            [value]="newTaux"
+            (valueChange)="newTaux = +($event ?? 0)" />
           @if (affaire.contractAmount && newTaux > lastValidated()) {
             <p class="text-xs text-[#1a6b7c] mt-1">
-              Valeur incrémentale :
+              {{ 'AFFAIRES.billing.modes.av.modal_incremental' | translate }}
               <strong>{{ fmtAmt((newTaux - lastValidated()) / 100 * affaire.contractAmount, affaire.devise) }}</strong>
             </p>
           }
         </div>
         <div>
-          <label class="block text-xs font-medium text-[#44474c] mb-1">Commentaire</label>
-          <textarea [(ngModel)]="submitComment" rows="2" maxlength="500"
-            class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm resize-none
-                   focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30"
-            placeholder="Commentaire optionnel…"></textarea>
+          <daf-form-field
+            [options]="{ type: 'textarea', rows: 2, maxLength: 500, label: ('AFFAIRES.billing.modes.av.modal_comment' | translate), placeholder: ('AFFAIRES.billing.modes.av.modal_comment_placeholder' | translate), fullWidth: true }"
+            [value]="submitComment"
+            (valueChange)="submitComment = $any($event ?? '')" />
         </div>
         @if (submitError()) {
           <p class="text-xs text-[#dc2626]">{{ submitError() }}</p>
@@ -159,14 +157,14 @@ const TAUX_CFG: Record<string, { label: string; bg: string; color: string; borde
       <div class="flex justify-end gap-3 mt-5">
         <button (click)="showSubmitModal.set(false)"
           class="px-4 py-2 text-sm rounded-xl border border-[#eceef0] text-[#44474c] hover:bg-[#f8fafc]">
-          Annuler
+          {{ 'AFFAIRES.billing.modes.av.modal_cancel' | translate }}
         </button>
         <button (click)="doSubmitTaux()" [disabled]="!canSubmit() || submitting()"
           [ngClass]="canSubmit() && !submitting()
             ? 'bg-[#1a6b7c] hover:bg-[#134f5c] cursor-pointer'
             : 'bg-[#c5c6cd] cursor-not-allowed'"
           class="px-5 py-2 text-sm rounded-xl text-white font-medium transition-colors">
-          @if (submitting()) { Envoi… } @else { Soumettre }
+          @if (submitting()) { {{ 'AFFAIRES.billing.modes.av.modal_submitting' | translate }} } @else { {{ 'AFFAIRES.billing.modes.av.modal_submit' | translate }} }
         </button>
       </div>
     </div>
@@ -178,22 +176,22 @@ const TAUX_CFG: Record<string, { label: string; bg: string; color: string; borde
   <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
     (click)="$event.target === $event.currentTarget && showRefuseModal.set(false)">
     <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-      <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">Motif de refus</h3>
-      <textarea [(ngModel)]="refuseMotif" rows="3" maxlength="500"
-        class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm resize-none
-               focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30"
-        placeholder="Raison du refus…"></textarea>
+      <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">{{ 'AFFAIRES.billing.modes.av.modal_refuse_title' | translate }}</h3>
+      <daf-form-field
+        [options]="{ type: 'textarea', rows: 3, maxLength: 500, placeholder: ('AFFAIRES.billing.modes.av.modal_refuse_placeholder' | translate), fullWidth: true }"
+        [value]="refuseMotif"
+        (valueChange)="refuseMotif = $any($event ?? '')" />
       <div class="flex justify-end gap-3 mt-4">
         <button (click)="showRefuseModal.set(false)"
           class="px-4 py-2 text-sm rounded-xl border border-[#eceef0] text-[#44474c] hover:bg-[#f8fafc]">
-          Annuler
+          {{ 'AFFAIRES.billing.modes.av.modal_cancel' | translate }}
         </button>
         <button (click)="doRefuse()"
           [ngClass]="refuseMotif.trim()
             ? 'bg-[#dc2626] hover:bg-[#b91c1c] cursor-pointer'
             : 'bg-[#c5c6cd] cursor-not-allowed'"
           class="px-4 py-2 text-sm rounded-xl text-white font-medium transition-colors">
-          Refuser
+          {{ 'AFFAIRES.billing.modes.av.modal_refuse_btn' | translate }}
         </button>
       </div>
     </div>
@@ -204,8 +202,9 @@ const TAUX_CFG: Record<string, { label: string; bg: string; color: string; borde
 export class BillingAvComponent implements OnInit {
   @Input({ required: true }) affaire!: AffaireDetail;
 
-  private readonly svc   = inject(BillingService);
-  private readonly store = inject(UserStore);
+  private readonly svc       = inject(BillingService);
+  private readonly store     = inject(UserStore);
+  private readonly translate = inject(TranslateService);
 
   history         = signal<TauxAvancementDto[]>([]);
   loading         = signal(false);
@@ -259,7 +258,7 @@ export class BillingAvComponent implements OnInit {
       commentaire: this.submitComment.trim() || null,
     }).subscribe({
       next:  () => { this.submitting.set(false); this.showSubmitModal.set(false); this.load(); },
-      error: err => { this.submitting.set(false); this.submitError.set(err?.error?.message ?? 'Erreur.'); },
+      error: err => { this.submitting.set(false); this.submitError.set(err?.error?.message ?? this.translate.instant('AFFAIRES.billing.modes.av.err_generic')); },
     });
   }
 
@@ -285,7 +284,9 @@ export class BillingAvComponent implements OnInit {
   }
 
   tauxCfg(statut: string) {
-    return TAUX_CFG[statut] ?? { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
+    const c = TAUX_CFG[statut];
+    if (!c) return { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
+    return { ...c, label: this.translate.instant('AFFAIRES.billing.modes.av.status.' + statut) };
   }
 
   fmtAmt(v: number | null | undefined, devise = 'EUR'): string {

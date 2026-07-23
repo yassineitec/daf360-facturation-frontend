@@ -1,5 +1,6 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostLinesComponent }    from './tabs/cost-lines.component';
 import { ApprovalQueueComponent } from './tabs/approval-queue.component';
 import { CostConfigComponent }    from './tabs/cost-config.component';
@@ -19,21 +20,26 @@ type CostTab = 'lines' | 'approvals' | 'config';
     ApprovalQueueComponent,
     CostConfigComponent,
     CostImportPanelComponent,
+    TranslatePipe,
   ],
   templateUrl: './cost.component.html',
   styleUrl: './cost.component.scss',
 })
 export class CostComponent implements OnInit {
   private readonly clientSvc = inject(ClientService);
+  private readonly translate = inject(TranslateService);
 
   activeTab = signal<CostTab>('lines');
   paysId    = signal<number>(0);
 
-  readonly tabs: { id: CostTab; label: string }[] = [
-    { id: 'lines',     label: 'Lignes de coût' },
-    { id: 'approvals', label: 'Approbations' },
-    { id: 'config',    label: 'Configuration' },
-  ];
+  readonly tabs = computed<{ id: CostTab; label: string }[]>(() => {
+    this.translate.currentLang();
+    return [
+      { id: 'lines',     label: this.translate.instant('COST.TABS.LINES') },
+      { id: 'approvals', label: this.translate.instant('COST.TABS.APPROVALS') },
+      { id: 'config',    label: this.translate.instant('COST.TABS.CONFIG') },
+    ];
+  });
 
   ngOnInit(): void {
     this.clientSvc.getMyPays().subscribe({

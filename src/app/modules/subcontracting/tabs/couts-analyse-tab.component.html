@@ -6,10 +6,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="search-icon">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <input type="text" class="search-input" placeholder="Rechercher une affaire…"
+      <input type="text" class="search-input" placeholder="{{ 'SUBCONTRACTING.ANALYSIS.SEARCH_PLACEHOLDER' | translate }}"
              [(ngModel)]="searchQuery" (keyup)="onSearchKey($event)" />
       @if (selectedAffaire()) {
-        <button class="clear-btn" (click)="clearAffaire()" title="Effacer">
+        <button class="clear-btn" (click)="clearAffaire()" title="{{ 'SUBCONTRACTING.ANALYSIS.CLEAR' | translate }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -17,7 +17,7 @@
       }
     </div>
     <button class="btn-search" [disabled]="searching()" (click)="searchAffaires()">
-      @if (searching()) { … } @else { Analyser }
+      @if (searching()) { … } @else { {{ 'SUBCONTRACTING.ANALYSIS.ANALYZE' | translate }} }
     </button>
 
     @if (searchResults().length > 0) {
@@ -34,42 +34,42 @@
   </div>
 
   @if (!selectedAffaire()) {
-    <div class="empty-state">Sélectionnez une affaire pour analyser ses coûts de sous-traitance.</div>
+    <div class="empty-state">{{ 'SUBCONTRACTING.ANALYSIS.EMPTY' | translate }}</div>
   } @else if (loading()) {
-    <div class="empty-state"><div class="spinner"></div><span>Chargement…</span></div>
+    <div class="empty-state"><div class="spinner"></div><span>{{ 'SUBCONTRACTING.ANALYSIS.LOADING' | translate }}</span></div>
   } @else if (error()) {
     <div class="alert-error">{{ error() }}</div>
   } @else if (margin()) {
 
     <div class="margin-card glass-card">
       <div class="card-title-row">
-        <h2>Analyse de marge</h2>
+        <h2>{{ 'SUBCONTRACTING.ANALYSIS.TITLE' | translate }}</h2>
         <span class="aff-ref-chip">{{ selectedAffaire()!.reference }}</span>
       </div>
 
       <!-- KPI row -->
       <div class="kpi-row">
         <div class="kpi-block">
-          <span class="kpi-label">CA global</span>
+          <span class="kpi-label">{{ 'SUBCONTRACTING.ANALYSIS.KPI.CA' | translate }}</span>
           <span class="kpi-value">{{ fmt(margin()!.ca) }}</span>
         </div>
         <div class="kpi-block">
-          <span class="kpi-label">Coûts internes</span>
+          <span class="kpi-label">{{ 'SUBCONTRACTING.ANALYSIS.KPI.INTERNAL_COSTS' | translate }}</span>
           <span class="kpi-value">{{ fmt(margin()!.coutsInternes) }}</span>
         </div>
         <div class="kpi-block">
-          <span class="kpi-label">Coûts ST</span>
+          <span class="kpi-label">{{ 'SUBCONTRACTING.ANALYSIS.KPI.ST_COSTS' | translate }}</span>
           <span class="kpi-value kpi-value--warn">{{ fmt(margin()!.coutsST) }}</span>
         </div>
         <div class="kpi-block">
-          <span class="kpi-label">Marge brute</span>
+          <span class="kpi-label">{{ 'SUBCONTRACTING.ANALYSIS.KPI.GROSS_MARGIN' | translate }}</span>
           <span class="kpi-value" [class.kpi-value--positive]="margin()!.margeBrute > 0"
                                   [class.kpi-value--negative]="margin()!.margeBrute < 0">
             {{ fmt(margin()!.margeBrute) }}
           </span>
         </div>
         <div class="kpi-block kpi-block--highlight">
-          <span class="kpi-label">Taux marge</span>
+          <span class="kpi-label">{{ 'SUBCONTRACTING.ANALYSIS.KPI.MARGIN_RATE' | translate }}</span>
           <span class="kpi-value" [class.kpi-value--positive]="margin()!.margeBrutePct > 0"
                                   [class.kpi-value--negative]="margin()!.margeBrutePct < 0">
             {{ fmtPct(margin()!.margeBrutePct) }}
@@ -79,10 +79,10 @@
 
       <!-- Visual breakdown -->
       <div class="breakdown">
-        <h3>Répartition du CA</h3>
+        <h3>{{ 'SUBCONTRACTING.ANALYSIS.BREAKDOWN_TITLE' | translate }}</h3>
 
         <div class="bar-row">
-          <span class="bar-label">Marge brute</span>
+          <span class="bar-label">{{ 'SUBCONTRACTING.ANALYSIS.BAR.GROSS_MARGIN' | translate }}</span>
           <div class="bar-track">
             <div class="bar-fill bar-fill--teal"
                  [style.width.%]="barPct(margin()!.margeBrute, margin()!.ca)"></div>
@@ -91,7 +91,7 @@
         </div>
 
         <div class="bar-row">
-          <span class="bar-label">Coûts ST</span>
+          <span class="bar-label">{{ 'SUBCONTRACTING.ANALYSIS.BAR.ST_COSTS' | translate }}</span>
           <div class="bar-track">
             <div class="bar-fill bar-fill--orange"
                  [style.width.%]="barPct(margin()!.coutsST, margin()!.ca)"></div>
@@ -100,7 +100,7 @@
         </div>
 
         <div class="bar-row">
-          <span class="bar-label">Coûts internes</span>
+          <span class="bar-label">{{ 'SUBCONTRACTING.ANALYSIS.BAR.INTERNAL_COSTS' | translate }}</span>
           <div class="bar-track">
             <div class="bar-fill bar-fill--slate"
                  [style.width.%]="barPct(margin()!.coutsInternes, margin()!.ca)"></div>

@@ -4,8 +4,7 @@
   <div class="recap-banner">
     <span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1">check_circle</span>
     <p class="m-0">
-      Vérifiez les informations ci-dessous avant d'activer l'affaire.
-      Une fois activée, le mode de facturation sera verrouillé.
+      {{ 'AFFAIRES.wizard.recap.banner' | translate }}
     </p>
   </div>
 
@@ -13,32 +12,32 @@
   <div class="recap-card">
     <div class="recap-card-head">
       <span class="recap-section-letter">A</span>
-      <span class="recap-section-title">Informations générales</span>
+      <span class="recap-section-title">{{ 'AFFAIRES.wizard.recap.sec_a' | translate }}</span>
     </div>
     <div class="recap-grid">
 
       @if (draft.doc360ProjectName) {
         <div class="recap-field recap-field--full">
-          <p class="recap-label">Projet DOC360</p>
+          <p class="recap-label">{{ 'AFFAIRES.wizard.recap.doc360_project' | translate }}</p>
           <p class="recap-value">{{ draft.doc360ServerReference }} — {{ draft.doc360ProjectName }}</p>
           @if (draft.doc360ErpReference) {
-            <p class="recap-value recap-value--mono" style="font-size:12px">ERP : {{ draft.doc360ErpReference }}</p>
+            <p class="recap-value recap-value--mono" style="font-size:12px">{{ 'AFFAIRES.wizard.recap.erp' | translate:{ ref: draft.doc360ErpReference } }}</p>
           }
         </div>
       }
 
       <div class="recap-field">
-        <p class="recap-label">Client</p>
+        <p class="recap-label">{{ 'AFFAIRES.wizard.recap.client' | translate }}</p>
         <p class="recap-value">{{ draft.clientName ?? '—' }}</p>
       </div>
 
       <div class="recap-field">
-        <p class="recap-label">Intitulé</p>
+        <p class="recap-label">{{ 'AFFAIRES.wizard.recap.intitule' | translate }}</p>
         <p class="recap-value">{{ draft.intitule }}</p>
       </div>
 
       <div class="recap-field">
-        <p class="recap-label">Mode de facturation</p>
+        <p class="recap-label">{{ 'AFFAIRES.wizard.recap.billing_mode' | translate }}</p>
         <div class="recap-mode">
           <span class="material-symbols-outlined" style="font-size:16px;font-variation-settings:'FILL' 1">{{ getModeIcon() }}</span>
           {{ getModeLabelFr() }}
@@ -54,14 +53,14 @@
 
       @if (draft.reference) {
         <div class="recap-field">
-          <p class="recap-label">Référence</p>
+          <p class="recap-label">{{ 'AFFAIRES.wizard.recap.reference' | translate }}</p>
           <p class="recap-value recap-value--mono">{{ draft.reference }}</p>
         </div>
       }
 
       @if (draft.notes) {
         <div class="recap-field recap-field--full">
-          <p class="recap-label">Notes</p>
+          <p class="recap-label">{{ 'AFFAIRES.wizard.recap.notes' | translate }}</p>
           <p class="recap-value">{{ draft.notes }}</p>
         </div>
       }
@@ -74,7 +73,7 @@
     <div class="recap-card">
       <div class="recap-card-head">
         <span class="recap-section-letter">B</span>
-        <span class="recap-section-title">Responsables</span>
+        <span class="recap-section-title">{{ 'AFFAIRES.wizard.recap.sec_b' | translate }}</span>
       </div>
       <div class="recap-table-wrap">
         <daf-data-table
@@ -115,7 +114,7 @@
 
         @if (draft.budgetPrevisionnel) {
           <div class="recap-total-row">
-            <span class="recap-tfoot-label">Total alloué</span>
+            <span class="recap-tfoot-label">{{ 'AFFAIRES.wizard.recap.total_allocated' | translate }}</span>
             <span class="recap-tfoot-value">
               {{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}
             </span>
@@ -132,22 +131,22 @@
     <div class="recap-card">
       <div class="recap-card-head">
         <span class="recap-section-letter">C</span>
-        <span class="recap-section-title">Planification</span>
+        <span class="recap-section-title">{{ 'AFFAIRES.wizard.recap.sec_c' | translate }}</span>
       </div>
       <div class="recap-grid">
         <div class="recap-field">
-          <p class="recap-label">Date de début de facturation</p>
+          <p class="recap-label">{{ 'AFFAIRES.wizard.recap.start_date' | translate }}</p>
           <p class="recap-value">{{ draft.dateDebutFacturation | date:'dd/MM/yyyy' }}</p>
         </div>
         @if (draft.dateFinContractuelle) {
           <div class="recap-field">
-            <p class="recap-label">Date de fin contractuelle</p>
+            <p class="recap-label">{{ 'AFFAIRES.wizard.recap.end_date' | translate }}</p>
             <p class="recap-value">{{ draft.dateFinContractuelle | date:'dd/MM/yyyy' }}</p>
           </div>
         }
         @if (draft.datePremireEcheance) {
           <div class="recap-field">
-            <p class="recap-label">Première échéance</p>
+            <p class="recap-label">{{ 'AFFAIRES.wizard.recap.first_due' | translate }}</p>
             <p class="recap-value">{{ draft.datePremireEcheance | date:'dd/MM/yyyy' }}</p>
           </div>
         }
@@ -159,13 +158,13 @@
   <div class="recap-card">
     <div class="recap-card-head">
       <span class="recap-section-letter">D</span>
-      <span class="recap-section-title">Configuration — {{ draft.billingMode }}</span>
+      <span class="recap-section-title">{{ 'AFFAIRES.wizard.recap.config' | translate:{ mode: draft.billingMode } }}</span>
     </div>
     <div class="recap-table-wrap">
 
       @if (draft.billingMode === 'AV') {
         <daf-data-table
-          [columns]="repartitionsColumns"
+          [columns]="repartitionsColumns()"
           [rows]="repartitionsRows"
           [config]="tableConfig">
           <ng-template dafCell="percentage" let-row>
@@ -173,14 +172,14 @@
           </ng-template>
         </daf-data-table>
         <div class="recap-total-row">
-          <span class="recap-tfoot-label">Total</span>
+          <span class="recap-tfoot-label">{{ 'AFFAIRES.wizard.recap.total' | translate }}</span>
           <span class="recap-tfoot-value">{{ draft.repartitionTotal | number:'1.1-1' }} %</span>
         </div>
       }
 
       @if (draft.billingMode === 'JAL') {
         <daf-data-table
-          [columns]="jalonsColumns"
+          [columns]="jalonsColumns()"
           [rows]="jalonsRows"
           [config]="tableConfig">
 
@@ -201,20 +200,20 @@
 
         </daf-data-table>
         <div class="recap-total-row">
-          <span class="recap-tfoot-label">Total</span>
+          <span class="recap-tfoot-label">{{ 'AFFAIRES.wizard.recap.total' | translate }}</span>
           <span class="recap-tfoot-value">{{ draft.jalonTotal | number:'1.3-3' }} {{ draft.contractCurrency }}</span>
         </div>
       }
 
       @if (draft.billingMode === 'TM') {
         <daf-data-table
-          [columns]="ressourcesColumns"
+          [columns]="ressourcesColumns()"
           [rows]="ressourcesRows"
           [config]="tableConfig">
 
           <ng-template dafCell="collaborateur" let-row>
             <span class="recap-jalon-label">{{ row['userName'] }}</span>
-            <span class="resource-type-badge">{{ row['resourceType'] === 'INTERNAL' ? 'Interne' : 'Externe' }}</span>
+            <span class="resource-type-badge">{{ row['resourceType'] === 'INTERNAL' ? ('AFFAIRES.wizard.recap.internal' | translate) : ('AFFAIRES.wizard.recap.external' | translate) }}</span>
           </ng-template>
 
           <ng-template dafCell="rateType" let-row>
@@ -237,14 +236,14 @@
           <div class="cp-margin-kpi">
             <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">percent</span>
             <div>
-              <p class="recap-label">Taux de marge</p>
+              <p class="recap-label">{{ 'AFFAIRES.wizard.recap.margin_rate' | translate }}</p>
               <p class="cp-margin-value">{{ draft.marginRatePct | number:'1.2-2' }} %</p>
             </div>
           </div>
-          <p class="recap-label" style="margin-bottom:8px">{{ draft.eligibleCostCategoryIds.length }} catégorie(s) sélectionnée(s)</p>
+          <p class="recap-label" style="margin-bottom:8px">{{ 'AFFAIRES.wizard.recap.categories_selected' | translate:{ n: draft.eligibleCostCategoryIds.length } }}</p>
           <div class="badge-wrap">
             @for (id of draft.eligibleCostCategoryIds; track id) {
-              <span class="mode-badge">Catégorie #{{ id }}</span>
+              <span class="mode-badge">{{ 'AFFAIRES.wizard.recap.category_hash' | translate:{ id: id } }}</span>
             }
           </div>
         </div>
@@ -252,10 +251,10 @@
 
       @if (draft.billingMode === 'RMB') {
         <div class="cp-summary">
-          <p class="recap-label" style="margin-bottom:8px">{{ draft.eligibleExpenseCategoryIds.length }} catégorie(s) sélectionnée(s)</p>
+          <p class="recap-label" style="margin-bottom:8px">{{ 'AFFAIRES.wizard.recap.categories_selected' | translate:{ n: draft.eligibleExpenseCategoryIds.length } }}</p>
           <div class="badge-wrap">
             @for (id of draft.eligibleExpenseCategoryIds; track id) {
-              <span class="mode-badge">Catégorie #{{ id }}</span>
+              <span class="mode-badge">{{ 'AFFAIRES.wizard.recap.category_hash' | translate:{ id: id } }}</span>
             }
           </div>
         </div>

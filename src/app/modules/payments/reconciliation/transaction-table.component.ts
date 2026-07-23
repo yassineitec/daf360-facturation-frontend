@@ -1,89 +1,89 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, signal, computed } from '@angular/core';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { ReconciliationService } from '../reconciliation.service';
 import { BankTransaction, MATCH_STATUT_CONFIG } from '../payment.model';
 import { ConfirmMatchModalComponent } from './confirm-match-modal.component';
 import { ManualMatchModalComponent } from './manual-match-modal.component';
 import { PartialMatchModalComponent } from './partial-match-modal.component';
 import { AcompteModalComponent } from './acompte-modal.component';
+import { TableColumn, TableRow, TableConfig, DataTableComponent, DafCellDirective } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-transaction-table',
-  imports: [ConfirmMatchModalComponent, ManualMatchModalComponent, PartialMatchModalComponent, AcompteModalComponent],
+  imports: [ConfirmMatchModalComponent, ManualMatchModalComponent, PartialMatchModalComponent, AcompteModalComponent, TranslatePipe, DataTableComponent, DafCellDirective],
   template: `
 <div class="tx-table-wrap">
-  <table class="tx-table">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Référence</th>
-        <th>Description</th>
-        <th class="num-col">Montant</th>
-        <th>Statut</th>
-        <th>Facture proposée</th>
-        <th class="action-col">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      @if (transactions().length === 0) {
-        <tr>
-          <td colspan="7" class="empty-cell">
-            Aucune transaction. Importez un relevé bancaire pour commencer.
-          </td>
-        </tr>
-      }
-      @for (tx of transactions(); track tx.id) {
-        <tr class="tx-row" [class.tx-confirmed]="tx.statut === 'CONFIRMED'"
-          [class.tx-rejected]="tx.statut === 'REJECTED'"
-          [class.tx-partial]="tx.statut === 'PARTIALLY_MATCHED'"
-          [class.tx-acompte]="tx.statut === 'ACOMPTE'">
-          <td class="date-cell">{{ formatDate(tx.transactionDate) }}</td>
-          <td class="ref-cell">{{ tx.reference ?? '—' }}</td>
-          <td class="desc-cell">{{ tx.description ?? '—' }}</td>
-          <td class="num-col amount-cell">{{ formatAmount(tx.montant, tx.devise) }}</td>
-          <td class="statut-cell">
-            <span class="statut-badge"
-              [style.background]="statutConfig(tx.statut).bg"
-              [style.color]="statutConfig(tx.statut).color"
-              [style.border-color]="statutConfig(tx.statut).border">
-              {{ statutConfig(tx.statut).label }}
-            </span>
-            @if (tx.statut === 'PROPOSED' && tx.confidence !== null) {
-              <span class="confidence">{{ tx.confidence }}%</span>
-            }
-          </td>
-          <td class="invoice-cell">
-            @if (tx.proposedInvoiceNumber) {
-              <span class="prop-num">{{ tx.proposedInvoiceNumber }}</span>
-              @if (tx.proposedClientNom) {
-                <span class="prop-client">{{ tx.proposedClientNom }}</span>
-              }
-            } @else {
-              <span class="no-proposal">—</span>
-            }
-          </td>
-          <td class="action-col" (click)="$event.stopPropagation()">
-            @switch (tx.statut) {
-              @case ('PROPOSED') {
-                <div class="action-btns">
-                  <button class="btn-accept"  (click)="openConfirm(tx)">Confirmer</button>
-                  <button class="btn-partial" (click)="openPartial(tx)">Partiel</button>
-                  <button class="btn-reject"  (click)="rejectTx(tx)">Rejeter</button>
-                </div>
-              }
-              @case ('UNMATCHED') {
-                <div class="action-btns">
-                  <button class="btn-manual"  (click)="openManual(tx)">Rapprocher</button>
-                  <button class="btn-partial" (click)="openPartial(tx)">Partiel</button>
-                  <button class="btn-acompte" (click)="openAcompte(tx)">Acompte</button>
-                </div>
-              }
-              @default {}
-            }
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
+  <daf-data-table
+    [columns]="tableColumns()"
+    [rows]="tableRows()"
+    [config]="tableConfig()">
+
+    <ng-template dafCell="date" let-row>
+      <span class="date-cell">{{ formatDate(row['_raw'].transactionDate) }}</span>
+    </ng-template>
+
+    <ng-template dafCell="ref" let-row>
+      <span class="ref-cell">{{ row['_raw'].reference ?? '—' }}</span>
+    </ng-template>
+
+    <ng-template dafCell="desc" let-row>
+      <span class="desc-cell">{{ row['_raw'].description ?? '—' }}</span>
+    </ng-template>
+
+    <ng-template dafCell="amount" let-row>
+      <span class="amount-cell">{{ formatAmount(row['_raw'].montant, row['_raw'].devise) }}</span>
+    </ng-template>
+
+    <ng-template dafCell="status" let-row>
+      <span class="statut-cell">
+        <span class="statut-badge"
+          [style.background]="statutConfig(row['_raw'].statut).bg"
+          [style.color]="statutConfig(row['_raw'].statut).color"
+          [style.border-color]="statutConfig(row['_raw'].statut).border">
+          {{ statutLabelKey(row['_raw'].statut) | translate }}
+        </span>
+        @if (row['_raw'].statut === 'PROPOSED' && row['_raw'].confidence !== null) {
+          <span class="confidence">{{ row['_raw'].confidence }}%</span>
+        }
+      </span>
+    </ng-template>
+
+    <ng-template dafCell="invoice" let-row>
+      <span class="invoice-cell">
+        @if (row['_raw'].proposedInvoiceNumber) {
+          <span class="prop-num">{{ row['_raw'].proposedInvoiceNumber }}</span>
+          @if (row['_raw'].proposedClientNom) {
+            <span class="prop-client">{{ row['_raw'].proposedClientNom }}</span>
+          }
+        } @else {
+          <span class="no-proposal">—</span>
+        }
+      </span>
+    </ng-template>
+
+    <ng-template dafCell="actions" let-row>
+      <div class="action-col" (click)="$event.stopPropagation()">
+        @switch (row['_raw'].statut) {
+          @case ('PROPOSED') {
+            <div class="action-btns">
+              <button class="btn-accept"  (click)="openConfirm(row['_raw'])">{{ 'PAYMENTS.TX_TABLE.BTN.CONFIRM' | translate }}</button>
+              <button class="btn-partial" (click)="openPartial(row['_raw'])">{{ 'PAYMENTS.TX_TABLE.BTN.PARTIAL' | translate }}</button>
+              <button class="btn-reject"  (click)="rejectTx(row['_raw'])">{{ 'PAYMENTS.TX_TABLE.BTN.REJECT' | translate }}</button>
+            </div>
+          }
+          @case ('UNMATCHED') {
+            <div class="action-btns">
+              <button class="btn-manual"  (click)="openManual(row['_raw'])">{{ 'PAYMENTS.TX_TABLE.BTN.MATCH' | translate }}</button>
+              <button class="btn-partial" (click)="openPartial(row['_raw'])">{{ 'PAYMENTS.TX_TABLE.BTN.PARTIAL' | translate }}</button>
+              <button class="btn-acompte" (click)="openAcompte(row['_raw'])">{{ 'PAYMENTS.TX_TABLE.BTN.ACOMPTE' | translate }}</button>
+            </div>
+          }
+          @default {}
+        }
+      </div>
+    </ng-template>
+
+  </daf-data-table>
 </div>
 
 @if (actionError()) {
@@ -195,10 +195,37 @@ import { AcompteModalComponent } from './acompte-modal.component';
   `],
 })
 export class TransactionTableComponent {
-  private readonly svc = inject(ReconciliationService);
+  private readonly svc       = inject(ReconciliationService);
+  private readonly translate = inject(TranslateService);
 
   transactions = input.required<BankTransaction[]>();
   refreshNeeded = output<void>();
+
+  // ── Data table ───────────────────────────────────────────────────────────
+  readonly tableColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'date',    label: this.translate.instant('PAYMENTS.TX_TABLE.COL.DATE'),             type: 'custom' },
+      { key: 'ref',     label: this.translate.instant('PAYMENTS.TX_TABLE.COL.REF'),              type: 'custom' },
+      { key: 'desc',    label: this.translate.instant('PAYMENTS.TX_TABLE.COL.DESC'),             type: 'custom' },
+      { key: 'amount',  label: this.translate.instant('PAYMENTS.TX_TABLE.COL.AMOUNT'),           type: 'custom', align: 'right' },
+      { key: 'status',  label: this.translate.instant('PAYMENTS.TX_TABLE.COL.STATUS'),           type: 'custom' },
+      { key: 'invoice', label: this.translate.instant('PAYMENTS.TX_TABLE.COL.PROPOSED_INVOICE'), type: 'custom' },
+      { key: 'actions', label: this.translate.instant('PAYMENTS.TX_TABLE.COL.ACTIONS'),          type: 'custom', align: 'center', width: '210px' },
+    ];
+  });
+
+  readonly tableRows = computed<TableRow[]>(() =>
+    this.transactions().map(tx => ({ id: tx.id, _raw: tx }))
+  );
+
+  readonly tableConfig = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return {
+      hoverable:    true,
+      emptyMessage: this.translate.instant('PAYMENTS.TX_TABLE.EMPTY'),
+    };
+  });
 
   confirmTarget  = signal<BankTransaction | null>(null);
   manualTarget   = signal<BankTransaction | null>(null);
@@ -230,7 +257,7 @@ export class TransactionTableComponent {
     this.actionError.set(null);
     this.svc.rejectMatch(tx.id).subscribe({
       next:  () => this.refreshNeeded.emit(),
-      error: err => this.actionError.set(err?.error?.message ?? 'Erreur lors du rejet.'),
+      error: err => this.actionError.set(err?.error?.message ?? this.translate.instant('PAYMENTS.TX_TABLE.ERROR_REJECT')),
     });
   }
 
@@ -252,6 +279,10 @@ export class TransactionTableComponent {
 
   statutConfig(statut: string) {
     return MATCH_STATUT_CONFIG[statut] ?? MATCH_STATUT_CONFIG['UNMATCHED'];
+  }
+
+  statutLabelKey(statut: string): string {
+    return 'PAYMENTS.STATUT.' + (MATCH_STATUT_CONFIG[statut] ? statut : 'UNMATCHED');
   }
 
   formatAmount(v: number, devise = 'TND'): string {

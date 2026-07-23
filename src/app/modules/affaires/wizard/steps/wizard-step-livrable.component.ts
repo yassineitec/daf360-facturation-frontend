@@ -3,9 +3,10 @@ import {
   OnInit, inject, signal, computed,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
 
-import { ButtonComponent } from '@khalilrebhiitec/daf360';
+import { ButtonComponent, FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireDraftState }  from '../../affaire-wizard.model';
 import { LivrableService }    from '../../livrable.service';
@@ -22,7 +23,7 @@ interface DiscGroup {
 @Component({
   selector: 'app-wizard-step-livrable',
   standalone: true,
-  imports: [FormsModule, ButtonComponent],
+  imports: [FormsModule, ButtonComponent, FormFieldComponent, TranslatePipe],
   templateUrl: './wizard-step-livrable.component.html',
   styleUrl: './wizard-step-livrable.component.scss',
 })
@@ -33,6 +34,7 @@ export class WizardStepLivrableComponent implements OnInit {
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   private readonly svc = inject(LivrableService);
+  private readonly translate = inject(TranslateService);
 
   // ── Données ODS ───────────────────────────────────────────────────────────
   disciplines     = signal<DisciplineExtDto[]>([]);
@@ -100,9 +102,7 @@ export class WizardStepLivrableComponent implements OnInit {
 
     const hasRef = !!(this.draft.reference?.trim());
     if (!hasRef) {
-      this.serverError.set(
-        'Cette affaire n\'a pas de référence. La sélection de livrables nécessite une référence d\'affaire valide.'
-      );
+      this.serverError.set(this.translate.instant('AFFAIRES.wizard.livrable.err_no_ref'));
       return;
     }
 
@@ -118,7 +118,7 @@ export class WizardStepLivrableComponent implements OnInit {
       next: d => { this.disciplines.set(d); this.isLoadingDisc.set(false); },
       error: err => {
         this.isLoadingDisc.set(false);
-        this.serverError.set(err.error?.detail ?? err.error?.message ?? 'Erreur chargement disciplines.');
+        this.serverError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('AFFAIRES.wizard.livrable.err_disc_load'));
       },
     });
   }
@@ -228,11 +228,11 @@ export class WizardStepLivrableComponent implements OnInit {
       }));
 
     if (affectations.length === 0) {
-      this.serverError.set('Sélectionnez au moins un document.'); return;
+      this.serverError.set(this.translate.instant('AFFAIRES.wizard.livrable.err_select_doc')); return;
     }
     const invalid = affectations.find(a => !a.budget || a.budget <= 0);
     if (invalid) {
-      this.serverError.set(`Budget de "${invalid.documentNom}" doit être > 0.`); return;
+      this.serverError.set(this.translate.instant('AFFAIRES.wizard.livrable.err_budget_positive', { name: invalid.documentNom })); return;
     }
 
     this.isSaving.set(true);
@@ -246,12 +246,17 @@ export class WizardStepLivrableComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set(err.error?.detail ?? err.error?.message ?? 'Erreur lors de la sauvegarde.');
+        this.serverError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('AFFAIRES.wizard.livrable.err_save'));
       },
     });
   }
 
   // ── Mode AUTO ─────────────────────────────────────────────────────────────
+
+  /** daf-form-field bridge: coerce string|number|null → number|null for budgetGlobal signal. */
+  onBudgetGlobalChange(v: string | number | null): void {
+    this.budgetGlobal.set(v === null || v === '' ? null : Number(v));
+  }
 
   isDocSelectedAuto(docId: string): boolean {
     return this.selectedDocsAuto().has(docId);
@@ -275,10 +280,10 @@ export class WizardStepLivrableComponent implements OnInit {
     const group = this.selectedDisc();
     if (!group) return;
     if (!this.budgetGlobal() || this.budgetGlobal()! <= 0) {
-      this.serverError.set('Le budget global doit être > 0.'); return;
+      this.serverError.set(this.translate.instant('AFFAIRES.wizard.livrable.err_global_budget')); return;
     }
     if (this.selectedDocsAuto().size === 0) {
-      this.serverError.set('Sélectionnez au moins un document.'); return;
+      this.serverError.set(this.translate.instant('AFFAIRES.wizard.livrable.err_select_doc')); return;
     }
 
     this.isSaving.set(true);
@@ -298,7 +303,7 @@ export class WizardStepLivrableComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.serverError.set(err.error?.detail ?? err.error?.message ?? 'Erreur lors de la sauvegarde.');
+        this.serverError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('AFFAIRES.wizard.livrable.err_save'));
       },
     });
   }

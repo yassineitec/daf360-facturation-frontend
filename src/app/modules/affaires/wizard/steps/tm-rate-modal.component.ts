@@ -3,6 +3,7 @@ import {
   inject, signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ButtonComponent } from '@khalilrebhiitec/daf360';
 
@@ -13,7 +14,7 @@ import { UserRefDto }            from '../../affaire.model';
 @Component({
   selector: 'app-tm-rate-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent],
+  imports: [FormsModule, ButtonComponent, TranslatePipe],
   templateUrl: './tm-rate-modal.component.html',
   styleUrl: './tm-rate-modal.component.scss',
 })
@@ -27,6 +28,7 @@ export class TmRateModalComponent {
   @Output() closed    = new EventEmitter<void>();
 
   private readonly svc = inject(LivrableService);
+  private readonly translate = inject(TranslateService);
 
   step             = signal<1 | 2>(1);
   selectedUserIds  = signal<Set<number>>(new Set());
@@ -46,7 +48,7 @@ export class TmRateModalComponent {
 
   calculerTaux(): void {
     if (this.selectedUserIds().size === 0) {
-      this.serverError.set('Sélectionnez au moins un collaborateur.'); return;
+      this.serverError.set(this.translate.instant('AFFAIRES.wizard.tm.modal.err_select')); return;
     }
     this.isCalculating.set(true);
     this.serverError.set(null);
@@ -63,7 +65,7 @@ export class TmRateModalComponent {
       },
       error: err => {
         this.isCalculating.set(false);
-        this.serverError.set(err.error?.message ?? 'Erreur lors du calcul des taux.');
+        this.serverError.set(err.error?.message ?? this.translate.instant('AFFAIRES.wizard.tm.modal.err_calc'));
       },
     });
   }

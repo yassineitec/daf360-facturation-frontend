@@ -4,6 +4,7 @@ import {
 import { CommonModule }         from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule }          from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { takeUntilDestroyed }   from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, of, lastValueFrom } from 'rxjs';
 import { CostService }          from '../cost.service';
@@ -14,11 +15,12 @@ import {
   ListValueDto, ForexPreviewDto, CircuitPreviewDto,
   SupplierSearchItem, isManualSource, formatAmount,
 } from '../cost.model';
+import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-cost-form',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, TranslatePipe, SelectComponent, FormFieldComponent],
   templateUrl: './cost-form.component.html',
 })
 export class CostFormComponent implements OnInit {
@@ -27,6 +29,7 @@ export class CostFormComponent implements OnInit {
   private readonly router     = inject(Router);
   private readonly route      = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly translate  = inject(TranslateService);
 
   editId     = signal<number | null>(null);
   isEditMode = computed(() => this.editId() !== null);
@@ -63,6 +66,26 @@ export class CostFormComponent implements OnInit {
   private readonly supplierSearch$ = new Subject<string>();
 
   filteredCategories = computed(() => this.categories().filter(c => isManualSource(c)));
+
+  // ── daf-select option lists ─────────────────────────────────────────────────
+  paysOptions = computed<SelectOption[]>(() =>
+    this.paysList().map(p => ({ value: String(p.id), label: `${p.frenchLabel} (${p.isoCode})` }))
+  );
+  categoryOptions = computed<SelectOption[]>(() =>
+    this.filteredCategories().map(c => ({ value: String(c.id), label: c.labelFr }))
+  );
+  currencyOptions = computed<SelectOption[]>(() =>
+    this.currencies().map(c => ({ value: String(c.id), label: `${c.code} — ${c.labelFr}` }))
+  );
+  affaireOptions = computed<SelectOption[]>(() =>
+    this.affaires().map(a => ({ value: String(a.id), label: `${a.reference} — ${a.intitule}` }))
+  );
+  costTypeOptions = computed<SelectOption[]>(() =>
+    this.costTypes().map(t => ({ value: String(t.id), label: t.labelFr }))
+  );
+
+  /** Wrap a numeric id into the string[] shape daf-select's `selected` expects. */
+  selArr(id: number | null): string[] { return [id !== null ? String(id) : '']; }
 
   selectedCurrencyCode = computed(() =>
     this.currencies().find(c => c.id === this.currencyId())?.code ?? null
@@ -123,7 +146,7 @@ export class CostFormComponent implements OnInit {
       },
       error: () => {
         this.isPageLoading.set(false);
-        this.error.set('Impossible de charger cette ligne de coût.');
+        this.error.set(this.translate.instant('COST.FORM.LOAD_ERROR'));
       },
     });
   }
@@ -230,7 +253,7 @@ export class CostFormComponent implements OnInit {
           if (submit) {
             this.costSvc.submitCostLine(line.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
               next:  () => { this.isSaving.set(false); this.router.navigate(this.isEditMode() ? ['../..'] : ['..'], { relativeTo: this.route }); },
-              error: err => { this.isSaving.set(false); this.error.set(err.error?.message ?? 'Erreur lors de la soumission.'); },
+              error: err => { this.isSaving.set(false); this.error.set(err.error?.message ?? this.translate.instant('COST.FORM.SUBMIT_ERROR')); },
             });
           } else {
             this.isSaving.set(false);
@@ -240,15 +263,15 @@ export class CostFormComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.error.set(err.error?.message ?? 'Une erreur est survenue.');
+        this.error.set(err.error?.message ?? this.translate.instant('COST.FORM.GENERIC_ERROR'));
       },
     });
   }
 
   fmtFileSize(bytes: number): string {
-    if (bytes < 1024)     return `${bytes} o`;
-    if (bytes < 1048576)  return `${(bytes / 1024).toFixed(1)} Ko`;
-    return `${(bytes / 1048576).toFixed(1)} Mo`;
+    if (bytes < 1024)     return this.translate.instant('COST.FORM.UNIT_BYTES', { n: bytes });
+    if (bytes < 1048576)  return this.translate.instant('COST.FORM.UNIT_KB', { n: (bytes / 1024).toFixed(1) });
+    return this.translate.instant('COST.FORM.UNIT_MB', { n: (bytes / 1048576).toFixed(1) });
   }
 
   levelBg(level: string): string {

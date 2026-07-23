@@ -8,13 +8,13 @@
       <div class="page-head">
         <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
           <button type="button" class="font-medium hover:underline transition-colors" (click)="cancel()">
-            Coûts
+            {{ 'COST.CREATE.BREADCRUMB_ROOT' | translate }}
           </button>
           <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span class="font-medium" style="color:#50717b">Création de Coût</span>
+          <span class="font-medium" style="color:#50717b">{{ 'COST.CREATE.BREADCRUMB_CURRENT' | translate }}</span>
         </nav>
-        <h1 class="text-[28px] font-bold text-on-surface leading-tight">Saisie d'une nouvelle dépense</h1>
-        <p class="page-sub">Saisie d'une nouvelle dépense professionnelle pour validation.</p>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ 'COST.CREATE.HEADING' | translate }}</h1>
+        <p class="page-sub">{{ 'COST.CREATE.SUBHEADING' | translate }}</p>
       </div>
 
       <!-- Form card -->
@@ -28,7 +28,7 @@
           <div>
             <h2 class="card-head__title">{{ stepTitle() }}</h2>
             <p class="card-head__sub">{{ stepSub() }}</p>
-            <p class="card-head__counter">Étape {{ step() }} sur {{ steps.length }}</p>
+            <p class="card-head__counter">{{ 'COST.CREATE.STEP_COUNTER' | translate:{ current: step(), total: steps().length } }}</p>
           </div>
         </div>
 
@@ -48,42 +48,42 @@
               <div class="form-grid">
 
                 <div class="field-group">
-                  <label class="field-label">Catégorie *</label>
+                  <label class="field-label">{{ 'COST.CREATE.CATEGORY_LABEL' | translate }}</label>
                   <select class="field-input field-select" formControlName="categoryId"
                           [class.field-input--error]="isInvalid('categoryId')">
-                    <option [value]="null">Sélectionner une catégorie…</option>
+                    <option [value]="null">{{ 'COST.CREATE.CATEGORY_PLACEHOLDER' | translate }}</option>
                     @for (cat of categories(); track cat.id) {
                       <option [value]="cat.id">{{ cat.labelFr }}</option>
                     }
                   </select>
                   @if (isInvalid('categoryId')) {
-                    <span class="field-error">Catégorie requise</span>
+                    <span class="field-error">{{ 'COST.CREATE.CATEGORY_REQUIRED' | translate }}</span>
                   }
                 </div>
 
                 <div class="field-group">
-                  <label class="field-label">Date *</label>
+                  <label class="field-label">{{ 'COST.CREATE.DATE_LABEL' | translate }}</label>
                   <input class="field-input" type="date" formControlName="transactionDate"
                          [class.field-input--error]="isInvalid('transactionDate')">
                   @if (isInvalid('transactionDate')) {
-                    <span class="field-error">Date requise</span>
+                    <span class="field-error">{{ 'COST.CREATE.DATE_REQUIRED' | translate }}</span>
                   }
                 </div>
 
                 <div class="field-group field-group--full">
-                  <label class="field-label">Description *</label>
+                  <label class="field-label">{{ 'COST.CREATE.DESCRIPTION_LABEL' | translate }}</label>
                   <input class="field-input" type="text" formControlName="description"
-                         placeholder="Objet de la dépense…"
+                         [placeholder]="'COST.CREATE.DESCRIPTION_PLACEHOLDER' | translate"
                          [class.field-input--error]="isInvalid('description')">
                   @if (isInvalid('description')) {
-                    <span class="field-error">Description requise (min. 3 caractères)</span>
+                    <span class="field-error">{{ 'COST.CREATE.DESCRIPTION_REQUIRED' | translate }}</span>
                   }
                 </div>
 
                 <div class="field-group field-group--full">
-                  <label class="field-label">Type de coût</label>
+                  <label class="field-label">{{ 'COST.CREATE.COST_TYPE_LABEL' | translate }}</label>
                   <select class="field-input field-select" formControlName="costTypeId">
-                    <option [value]="null">Sélectionner…</option>
+                    <option [value]="null">{{ 'COST.CREATE.SELECT_PLACEHOLDER' | translate }}</option>
                     @for (t of costTypes(); track t.id) {
                       <option [value]="t.id">{{ t.labelFr }}</option>
                     }
@@ -95,7 +95,7 @@
               @if (strictScrutinyWarning) {
                 <div class="scrutiny-alert">
                   <span class="material-symbols-outlined">warning</span>
-                  <span>Cette catégorie nécessite une vérification renforcée. Un niveau d'approbation supplémentaire sera appliqué.</span>
+                  <span>{{ 'COST.CREATE.SCRUTINY_WARNING' | translate }}</span>
                 </div>
               }
             </div>
@@ -107,23 +107,23 @@
               <div class="form-grid">
 
                 <div class="field-group field-group--full">
-                  <label class="field-label">Montant HT *</label>
+                  <label class="field-label">{{ 'COST.CREATE.NET_AMOUNT_LABEL' | translate }}</label>
                   <input class="field-input amount-input" type="number" step="0.01" min="0"
                          formControlName="netAmountLocal" placeholder="0.00"
                          [class.field-input--error]="isInvalid('netAmountLocal')">
                   @if (isInvalid('netAmountLocal')) {
-                    <span class="field-error">Montant requis</span>
+                    <span class="field-error">{{ 'COST.CREATE.NET_AMOUNT_REQUIRED' | translate }}</span>
                   }
                 </div>
 
                 <div class="field-group">
-                  <label class="field-label">TVA</label>
+                  <label class="field-label">{{ 'COST.CREATE.VAT_LABEL' | translate }}</label>
                   <input class="field-input amount-input" type="number" step="0.01" min="0"
                          formControlName="vatAmountLocal" placeholder="0.00">
                 </div>
 
                 <div class="field-group">
-                  <label class="field-label">Montant TTC</label>
+                  <label class="field-label">{{ 'COST.CREATE.GROSS_LABEL' | translate }}</label>
                   <div class="amount-display">
                     <span class="amount-display__val">{{ grossAmount | number:'1.2-2' }}</span>
                     <span class="amount-display__unit">{{ selectedCurrency?.code || '—' }}</span>
@@ -131,23 +131,23 @@
                 </div>
 
                 <div class="field-group">
-                  <label class="field-label">Devise *</label>
+                  <label class="field-label">{{ 'COST.CREATE.CURRENCY_LABEL' | translate }}</label>
                   <select class="field-input field-select" formControlName="currencyId"
                           [class.field-input--error]="isInvalid('currencyId')">
-                    <option [value]="null">Sélectionner…</option>
+                    <option [value]="null">{{ 'COST.CREATE.SELECT_PLACEHOLDER' | translate }}</option>
                     @for (c of currencies(); track c.id) {
                       <option [value]="c.id">{{ c.code }} — {{ c.labelFr }}</option>
                     }
                   </select>
                   @if (isInvalid('currencyId')) {
-                    <span class="field-error">Devise requise</span>
+                    <span class="field-error">{{ 'COST.CREATE.CURRENCY_REQUIRED' | translate }}</span>
                   }
                 </div>
 
                 <div class="field-group">
-                  <label class="field-label">Mode de paiement</label>
+                  <label class="field-label">{{ 'COST.CREATE.PAYMENT_METHOD_LABEL' | translate }}</label>
                   <select class="field-input field-select" formControlName="paymentMethodId">
-                    <option [value]="null">Sélectionner…</option>
+                    <option [value]="null">{{ 'COST.CREATE.SELECT_PLACEHOLDER' | translate }}</option>
                     @for (p of paymentMethods(); track p.id) {
                       <option [value]="p.id">{{ p.labelFr }}</option>
                     }
@@ -160,7 +160,7 @@
               @if (approvalPreview()) {
                 <div class="approval-preview">
                   <span class="material-symbols-outlined">account_tree</span>
-                  <span>Circuit estimé :&nbsp;</span>
+                  <span>{{ 'COST.CREATE.APPROVAL_ESTIMATED' | translate }}&nbsp;</span>
                   <strong>{{ approvalLabel }}</strong>
                 </div>
               }
@@ -173,34 +173,34 @@
               <div class="form-grid">
 
                 <div class="field-group field-group--full">
-                  <label class="field-label">Fournisseur</label>
+                  <label class="field-label">{{ 'COST.CREATE.SUPPLIER_LABEL' | translate }}</label>
                   <input class="field-input" type="text" formControlName="supplierNameFree"
-                         placeholder="Nom du fournisseur…">
+                         [placeholder]="'COST.CREATE.SUPPLIER_PLACEHOLDER' | translate">
                 </div>
 
                 <div class="field-group field-group--full">
-                  <label class="field-label">Référence document / URL</label>
+                  <label class="field-label">{{ 'COST.CREATE.DOC_LABEL' | translate }}</label>
                   <input class="field-input" type="text" formControlName="documentUrl"
-                         placeholder="URL ou numéro de facture…">
+                         [placeholder]="'COST.CREATE.DOC_PLACEHOLDER' | translate">
                 </div>
 
                 <div class="field-group field-group--full">
-                  <label class="field-label">Commentaire / Notes</label>
+                  <label class="field-label">{{ 'COST.CREATE.NOTES_LABEL' | translate }}</label>
                   <textarea class="field-input field-textarea" formControlName="notes"
-                            rows="3" placeholder="Détails supplémentaires…"></textarea>
+                            rows="3" [placeholder]="'COST.CREATE.NOTES_PLACEHOLDER' | translate"></textarea>
                 </div>
 
                 <div class="field-group field-group--full">
-                  <label class="field-label">Récurrence</label>
+                  <label class="field-label">{{ 'COST.CREATE.RECURRENCE_LABEL' | translate }}</label>
                   <div class="recurrence-row">
                     <label class="toggle-label">
                       <input type="checkbox" formControlName="isRecurring" class="toggle-check">
                       <span class="toggle-track"></span>
-                      <span class="toggle-text">{{ form.get('isRecurring')!.value ? 'Oui' : 'Non' }}</span>
+                      <span class="toggle-text">{{ (form.get('isRecurring')!.value ? 'COST.CREATE.YES' : 'COST.CREATE.NO') | translate }}</span>
                     </label>
                     @if (form.get('isRecurring')!.value) {
                       <select class="field-input field-select" formControlName="recurrenceFrequencyId" style="flex:1">
-                        <option [value]="null">Fréquence…</option>
+                        <option [value]="null">{{ 'COST.CREATE.FREQUENCY_PLACEHOLDER' | translate }}</option>
                         @for (f of recurrenceFreqs(); track f.id) {
                           <option [value]="f.id">{{ f.labelFr }}</option>
                         }
@@ -218,18 +218,18 @@
                     <div class="pj-icon-wrap">
                       <span class="material-symbols-outlined">attach_file</span>
                     </div>
-                    <span class="pj-title">Pièces Jointes</span>
+                    <span class="pj-title">{{ 'COST.CREATE.ATTACHMENTS_TITLE' | translate }}</span>
                   </div>
                   <button class="pj-add-btn" type="button">
                     <span class="material-symbols-outlined">add_circle</span>
-                    Ajouter
+                    {{ 'COST.CREATE.ADD' | translate }}
                   </button>
                 </div>
                 <label class="pj-drop pj-drop--full">
                   <input type="file" accept=".pdf,.jpg,.jpeg,.png" hidden>
                   <span class="material-symbols-outlined pj-drop__icon">cloud_upload</span>
-                  <span class="pj-drop__label">GLISSER &amp; DÉPOSER</span>
-                  <span class="pj-drop__hint">PDF, JPG, PNG — max. 10 Mo</span>
+                  <span class="pj-drop__label">{{ 'COST.CREATE.DRAG_DROP' | translate }}</span>
+                  <span class="pj-drop__hint">{{ 'COST.CREATE.DRAG_HINT' | translate }}</span>
                 </label>
               </div>
             </div>
@@ -249,12 +249,12 @@
           @if (step() > 1) {
             <button class="btn-back-nav" type="button" (click)="goPrev()">
               <span class="material-symbols-outlined">arrow_back</span>
-              Précédent
+              {{ 'COST.CREATE.NAV_PREV' | translate }}
             </button>
           } @else {
             <button class="btn-cancel-nav" type="button" (click)="cancel()">
               <span class="material-symbols-outlined">close</span>
-              Annuler
+              {{ 'COST.CREATE.NAV_CANCEL' | translate }}
             </button>
           }
         </div>
@@ -262,7 +262,7 @@
           @if (step() === 3) {
             <button class="btn-draft-nav" type="button" (click)="saveDraft()" [disabled]="isSaving()">
               <span class="material-symbols-outlined">save</span>
-              Brouillon
+              {{ 'COST.CREATE.NAV_DRAFT' | translate }}
             </button>
           }
           <button class="btn-next-nav" type="button" (click)="goNext()"
@@ -270,7 +270,7 @@
             @if (isSaving() && !isDraft()) {
               <span class="material-symbols-outlined spin">progress_activity</span>
             }
-            {{ step() < 3 ? 'Suivant' : 'Soumettre' }}
+            {{ (step() < 3 ? 'COST.CREATE.NAV_NEXT' : 'COST.CREATE.NAV_SUBMIT') | translate }}
             <span class="material-symbols-outlined">{{ step() < 3 ? 'arrow_forward' : 'send' }}</span>
           </button>
         </div>
@@ -279,12 +279,12 @@
       <!-- Progression -->
       <div class="panel-card">
         <div class="panel-header">
-          <p class="panel__label">Progression</p>
+          <p class="panel__label">{{ 'COST.CREATE.PROGRESS' | translate }}</p>
         </div>
 
         <div class="panel-body">
           <div class="step-list">
-            @for (s of steps; track $index; let i = $index) {
+            @for (s of steps(); track $index; let i = $index) {
               <div class="step-item"
                    [class.step-item--done]="step() > i + 1"
                    [class.step-item--active]="step() === i + 1">
@@ -306,33 +306,33 @@
       <!-- Résumé -->
       <div class="panel-card">
         <div class="panel-header">
-          <p class="panel__label">Résumé</p>
+          <p class="panel__label">{{ 'COST.CREATE.SUMMARY' | translate }}</p>
         </div>
         <div class="panel-body">
           <div class="summary-rows">
             <div class="summary-row">
-              <span class="summary-row__key">Catégorie</span>
+              <span class="summary-row__key">{{ 'COST.CREATE.SUMMARY_CATEGORY' | translate }}</span>
               <span class="summary-row__val">{{ summaryCategory() }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-row__key">Date</span>
+              <span class="summary-row__key">{{ 'COST.CREATE.SUMMARY_DATE' | translate }}</span>
               <span class="summary-row__val">{{ summaryDate() }}</span>
             </div>
             @if (step() > 1) {
               <div class="summary-row">
-                <span class="summary-row__key">Montant TTC</span>
+                <span class="summary-row__key">{{ 'COST.CREATE.SUMMARY_GROSS' | translate }}</span>
                 <span class="summary-row__val summary-row__val--total">{{ summaryAmount() }}</span>
               </div>
               @if (approvalPreview()) {
                 <div class="summary-row">
-                  <span class="summary-row__key">Circuit</span>
+                  <span class="summary-row__key">{{ 'COST.CREATE.SUMMARY_CIRCUIT' | translate }}</span>
                   <span class="summary-row__val">{{ approvalPreview() }}</span>
                 </div>
               }
             }
             @if (step() > 2) {
               <div class="summary-row">
-                <span class="summary-row__key">Fournisseur</span>
+                <span class="summary-row__key">{{ 'COST.CREATE.SUMMARY_SUPPLIER' | translate }}</span>
                 <span class="summary-row__val">{{ summarySupplier() }}</span>
               </div>
             }
@@ -344,7 +344,7 @@
       <div class="tips-panel">
         <div class="tips-panel__head">
           <span class="material-symbols-outlined">lightbulb</span>
-          <span>Conseil</span>
+          <span>{{ 'COST.CREATE.TIP_TITLE' | translate }}</span>
         </div>
         <p class="tips-panel__text">{{ stepTip() }}</p>
       </div>

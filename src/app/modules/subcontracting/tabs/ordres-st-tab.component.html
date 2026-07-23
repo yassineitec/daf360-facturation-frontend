@@ -6,10 +6,10 @@
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <input type="text" class="search-input" placeholder="Rechercher une affaire (référence, intitulé)…"
+      <input type="text" class="search-input" placeholder="{{ 'SUBCONTRACTING.OST.SEARCH_PLACEHOLDER' | translate }}"
              [(ngModel)]="searchQuery" (keyup)="onSearchKey($event)" />
       @if (selectedAffaire()) {
-        <button class="clear-btn" (click)="clearAffaire()" title="Effacer">
+        <button class="clear-btn" (click)="clearAffaire()" title="{{ 'SUBCONTRACTING.OST.CLEAR' | translate }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -17,7 +17,7 @@
       }
     </div>
     <button class="btn-search" [disabled]="searching()" (click)="searchAffaires()">
-      @if (searching()) { … } @else { Rechercher }
+      @if (searching()) { … } @else { {{ 'SUBCONTRACTING.OST.SEARCH' | translate }} }
     </button>
 
     <!-- Search results dropdown -->
@@ -38,7 +38,7 @@
   </div>
 
   @if (!selectedAffaire()) {
-    <div class="empty-state">Sélectionnez une affaire pour afficher ses ordres de sous-traitance.</div>
+    <div class="empty-state">{{ 'SUBCONTRACTING.OST.SELECT_AFFAIRE' | translate }}</div>
   } @else {
 
     <!-- Affaire summary + create button -->
@@ -52,7 +52,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        Nouvel ordre ST
+        {{ 'SUBCONTRACTING.OST.NEW' | translate }}
       </button>
     </div>
 
@@ -61,9 +61,9 @@
     }
 
     @if (loading()) {
-      <div class="loading-state"><div class="spinner"></div><span>Chargement…</span></div>
+      <div class="loading-state"><div class="spinner"></div><span>{{ 'SUBCONTRACTING.OST.LOADING' | translate }}</span></div>
     } @else if (ordres().length === 0) {
-      <div class="empty-state">Aucun ordre de sous-traitance pour cette affaire.</div>
+      <div class="empty-state">{{ 'SUBCONTRACTING.OST.EMPTY' | translate }}</div>
     } @else {
       <div class="ost-cards">
         @for (o of ordres(); track o.id) {
@@ -87,8 +87,8 @@
             <!-- Budget bar -->
             <div class="budget-section">
               <div class="budget-labels">
-                <span>Réalisé: <strong>{{ amt(o.montantRealise, o.devise) }}</strong></span>
-                <span>Budget: <strong>{{ amt(o.montantBudget, o.devise) }}</strong></span>
+                <span>{{ 'SUBCONTRACTING.OST.REALIZED' | translate }} <strong>{{ amt(o.montantRealise, o.devise) }}</strong></span>
+                <span>{{ 'SUBCONTRACTING.OST.BUDGET' | translate }} <strong>{{ amt(o.montantBudget, o.devise) }}</strong></span>
               </div>
               <div class="budget-bar-track">
                 <div class="budget-bar-fill"
@@ -97,7 +97,7 @@
               </div>
               <div class="budget-pct" [class.over]="isOver(o)">
                 {{ budgetPct(o).toFixed(0) }}%
-                @if (isOver(o)) { <span class="alert-badge">⚠ Dépassement</span> }
+                @if (isOver(o)) { <span class="alert-badge">{{ 'SUBCONTRACTING.OST.OVERRUN' | translate }}</span> }
               </div>
             </div>
 
@@ -110,7 +110,7 @@
                   <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
                   <line x1="3" y1="18" x2="3.01" y2="18"/>
                 </svg>
-                Coûts
+                {{ 'SUBCONTRACTING.OST.COSTS' | translate }}
               </button>
 
               @if (o.statut !== 'CLOTURE') {
@@ -119,7 +119,7 @@
                     <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
                     <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
                   </svg>
-                  Statut
+                  {{ 'SUBCONTRACTING.OST.STATUS_BTN' | translate }}
                 </button>
               }
 
@@ -128,7 +128,7 @@
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
-                Modifier
+                {{ 'SUBCONTRACTING.OST.EDIT' | translate }}
               </button>
 
               <button class="btn-ghost" [disabled]="exporting() === o.id" (click)="exportCsv(o, $event)">
@@ -136,7 +136,7 @@
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
-                @if (exporting() === o.id) { Export… } @else { CSV }
+                @if (exporting() === o.id) { {{ 'SUBCONTRACTING.OST.EXPORTING' | translate }} } @else { {{ 'SUBCONTRACTING.OST.CSV' | translate }} }
               </button>
             </div>
           </div>
@@ -152,49 +152,58 @@
   <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showOstModal.set(false)">
     <div class="modal-box" role="dialog">
       <div class="modal-header">
-        <h2>{{ editOstTarget() ? 'Modifier l\'ordre' : 'Nouvel ordre ST' }}</h2>
+        <h2>{{ (editOstTarget() ? 'SUBCONTRACTING.OST.MODAL.EDIT_TITLE' : 'SUBCONTRACTING.OST.MODAL.NEW_TITLE') | translate }}</h2>
         <button class="close-btn" (click)="showOstModal.set(false)">&times;</button>
       </div>
       <div class="modal-body">
         @if (ostError()) { <div class="alert-error">{{ ostError() }}</div> }
         <div class="field">
-          <label for="ost-st">Sous-traitant *</label>
+          <label for="ost-st">{{ 'SUBCONTRACTING.OST.MODAL.SUBCONTRACTOR' | translate }}</label>
           @if (stLoading()) {
-            <span class="muted-sm">Chargement des sous-traitants…</span>
+            <span class="muted-sm">{{ 'SUBCONTRACTING.OST.MODAL.ST_LOADING' | translate }}</span>
           } @else if (stList().length === 0) {
-            <span class="muted-sm">Aucun sous-traitant actif pour cette entité.</span>
+            <span class="muted-sm">{{ 'SUBCONTRACTING.OST.MODAL.ST_EMPTY' | translate }}</span>
           } @else {
-            <select id="ost-st" [(ngModel)]="ostForm.sousTraitantId">
-              @for (st of stList(); track st.id) {
-                <option [value]="st.id">{{ st.name }}</option>
-              }
-            </select>
+            <daf-select
+              [options]="stOptions()"
+              [config]="{ searchable: true, fullWidth: true }"
+              [selected]="[ostForm.sousTraitantId ? ostForm.sousTraitantId.toString() : '']"
+              (selectedChange)="ostForm.sousTraitantId = $event[0] ? +$event[0] : 0" />
           }
         </div>
         <div class="field">
-          <label for="ost-perim">Périmètre *</label>
-          <input id="ost-perim" type="text" [(ngModel)]="ostForm.perimetre"
-                 placeholder="Description du périmètre de sous-traitance" maxlength="500" />
+          <daf-form-field
+            [value]="ostForm.perimetre"
+            (valueChange)="ostForm.perimetre = asStr($event)"
+            [options]="{ type: 'text', required: true, maxLength: 500,
+              label: ('SUBCONTRACTING.OST.MODAL.PERIMETER' | translate),
+              placeholder: ('SUBCONTRACTING.OST.MODAL.PERIMETER_PLACEHOLDER' | translate) }" />
         </div>
         <div class="field-row">
           <div class="field">
-            <label for="ost-budget">Montant budget *</label>
-            <input id="ost-budget" type="number" [(ngModel)]="ostForm.montantBudget" min="0" step="0.001" />
+            <daf-form-field
+              [value]="ostForm.montantBudget"
+              (valueChange)="ostForm.montantBudget = asNum($event)"
+              [options]="{ type: 'number', label: ('SUBCONTRACTING.OST.MODAL.BUDGET_AMOUNT' | translate) }" />
           </div>
           <div class="field">
-            <label for="ost-devise">Devise</label>
-            <input id="ost-devise" type="text" [(ngModel)]="ostForm.devise" maxlength="5" placeholder="TND" />
+            <daf-form-field
+              [value]="ostForm.devise"
+              (valueChange)="ostForm.devise = asStr($event)"
+              [options]="{ type: 'text', maxLength: 5, placeholder: 'TND', label: ('SUBCONTRACTING.OST.MODAL.CURRENCY' | translate) }" />
           </div>
           <div class="field">
-            <label for="ost-alerte">Seuil alerte (%)</label>
-            <input id="ost-alerte" type="number" [(ngModel)]="ostForm.alerteDepassementPct" min="0" max="100" step="1" />
+            <daf-form-field
+              [value]="ostForm.alerteDepassementPct"
+              (valueChange)="ostForm.alerteDepassementPct = asNum($event)"
+              [options]="{ type: 'number', label: ('SUBCONTRACTING.OST.MODAL.ALERT_THRESHOLD' | translate) }" />
           </div>
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" (click)="showOstModal.set(false)">Annuler</button>
+        <button class="btn-cancel" (click)="showOstModal.set(false)">{{ 'SUBCONTRACTING.OST.MODAL.CANCEL' | translate }}</button>
         <button class="btn-save" [disabled]="ostSaving() || !ostForm.perimetre.trim() || ostForm.montantBudget <= 0" (click)="saveOst()">
-          @if (ostSaving()) { Enregistrement… } @else { Enregistrer }
+          @if (ostSaving()) { {{ 'SUBCONTRACTING.OST.MODAL.SAVING' | translate }} } @else { {{ 'SUBCONTRACTING.OST.MODAL.SAVE' | translate }} }
         </button>
       </div>
     </div>
@@ -206,25 +215,24 @@
   <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showStatutModal.set(false)">
     <div class="modal-box modal-box--sm" role="dialog">
       <div class="modal-header">
-        <h2>Changer le statut</h2>
+        <h2>{{ 'SUBCONTRACTING.OST.STATUT_MODAL.TITLE' | translate }}</h2>
         <button class="close-btn" (click)="showStatutModal.set(false)">&times;</button>
       </div>
       <div class="modal-body">
         @if (statutError()) { <div class="alert-error">{{ statutError() }}</div> }
         <p class="ref-line">{{ statutTarget()?.referenceOst }}</p>
         <div class="field">
-          <label for="new-statut">Nouveau statut</label>
-          <select id="new-statut" [(ngModel)]="newStatut">
-            @for (t of validTransitions(); track t) {
-              <option [value]="t">{{ statLabel(t) }}</option>
-            }
-          </select>
+          <daf-select
+            [options]="statutOptions()"
+            [config]="{ label: ('SUBCONTRACTING.OST.STATUT_MODAL.NEW_STATUS' | translate), fullWidth: true }"
+            [selected]="[newStatut]"
+            (selectedChange)="newStatut = $event[0] || ''" />
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" (click)="showStatutModal.set(false)">Annuler</button>
+        <button class="btn-cancel" (click)="showStatutModal.set(false)">{{ 'SUBCONTRACTING.OST.STATUT_MODAL.CANCEL' | translate }}</button>
         <button class="btn-save" [disabled]="statutSaving() || !newStatut" (click)="submitStatut()">
-          @if (statutSaving()) { Traitement… } @else { Confirmer }
+          @if (statutSaving()) { {{ 'SUBCONTRACTING.OST.STATUT_MODAL.PROCESSING' | translate }} } @else { {{ 'SUBCONTRACTING.OST.STATUT_MODAL.CONFIRM' | translate }} }
         </button>
       </div>
     </div>
@@ -237,7 +245,7 @@
     <div class="drawer-panel" role="dialog">
       <div class="drawer-header">
         <div>
-          <h2 class="drawer-title">Coûts réalisés</h2>
+          <h2 class="drawer-title">{{ 'SUBCONTRACTING.OST.DRAWER.TITLE' | translate }}</h2>
           <span class="drawer-ref">{{ drawerOst()?.referenceOst }}</span>
         </div>
         <button class="close-btn" (click)="closeDrawer()">&times;</button>
@@ -245,11 +253,11 @@
 
       <div class="drawer-summary">
         <div class="summary-item">
-          <span>Budget</span>
+          <span>{{ 'SUBCONTRACTING.OST.DRAWER.BUDGET' | translate }}</span>
           <strong>{{ amt(drawerOst()?.montantBudget ?? null, drawerOst()?.devise) }}</strong>
         </div>
         <div class="summary-item">
-          <span>Réalisé</span>
+          <span>{{ 'SUBCONTRACTING.OST.DRAWER.REALIZED' | translate }}</span>
           <strong [class.over]="isOver(drawerOst()!)">
             {{ amt(drawerOst()?.montantRealise ?? null, drawerOst()?.devise) }}
           </strong>
@@ -258,9 +266,9 @@
 
       <div class="drawer-body">
         @if (coutsLoading()) {
-          <div class="loading-state"><div class="spinner"></div><span>Chargement…</span></div>
+          <div class="loading-state"><div class="spinner"></div><span>{{ 'SUBCONTRACTING.OST.DRAWER.LOADING' | translate }}</span></div>
         } @else if (coutsList().length === 0) {
-          <div class="empty-state-sm">Aucun coût enregistré.</div>
+          <div class="empty-state-sm">{{ 'SUBCONTRACTING.OST.DRAWER.EMPTY' | translate }}</div>
         } @else {
           <div class="couts-list">
             @for (c of coutsList(); track c.id) {
@@ -271,7 +279,7 @@
                 </div>
                 <span class="cout-amount">{{ amt(c.montant, c.devise) }}</span>
                 <button class="btn-icon btn-icon--danger" *appHasPermission="'FACT_MANAGE_ST'"
-                        title="Supprimer" (click)="removeCout(c)">
+                        title="{{ 'SUBCONTRACTING.OST.DRAWER.DELETE' | translate }}" (click)="removeCout(c)">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -291,37 +299,47 @@
           <button class="btn-primary" *appHasPermission="'FACT_MANAGE_ST'"
                   [disabled]="drawerOst()?.statut !== 'EN_COURS'"
                   (click)="showAddCout.set(true)">
-            Ajouter un coût
+            {{ 'SUBCONTRACTING.OST.DRAWER.ADD_COST' | translate }}
           </button>
           @if (drawerOst()?.statut !== 'EN_COURS') {
-            <span class="hint">L'ordre doit être EN_COURS pour ajouter des coûts.</span>
+            <span class="hint">{{ 'SUBCONTRACTING.OST.DRAWER.MUST_BE_ACTIVE' | translate }}</span>
           }
         } @else {
           <div class="add-cout-form">
             <div class="field-row">
               <div class="field">
-                <label>Montant *</label>
-                <input type="number" [(ngModel)]="coutForm.montant" min="0.001" step="0.001" placeholder="0.000" />
+                <daf-form-field
+                  [value]="coutForm.montant"
+                  (valueChange)="coutForm.montant = asNum($event)"
+                  [options]="{ type: 'number', placeholder: ('SUBCONTRACTING.OST.DRAWER.AMOUNT_PLACEHOLDER' | translate),
+                    label: ('SUBCONTRACTING.OST.DRAWER.AMOUNT' | translate) }" />
               </div>
               <div class="field">
-                <label>Devise</label>
-                <input type="text" [(ngModel)]="coutForm.devise" maxlength="5" placeholder="TND" />
+                <daf-form-field
+                  [value]="coutForm.devise"
+                  (valueChange)="coutForm.devise = asStr($event)"
+                  [options]="{ type: 'text', maxLength: 5, placeholder: 'TND', label: ('SUBCONTRACTING.OST.DRAWER.CURRENCY' | translate) }" />
               </div>
             </div>
             <div class="field-row">
               <div class="field">
-                <label>Date *</label>
-                <input type="date" [(ngModel)]="coutForm.dateCout" [max]="today" />
+                <daf-form-field
+                  [value]="coutForm.dateCout"
+                  (valueChange)="coutForm.dateCout = asStr($event)"
+                  [options]="{ type: 'date', label: ('SUBCONTRACTING.OST.DRAWER.DATE' | translate) }" />
               </div>
               <div class="field">
-                <label>Description</label>
-                <input type="text" [(ngModel)]="coutForm.description" placeholder="Libellé" maxlength="255" />
+                <daf-form-field
+                  [value]="coutForm.description"
+                  (valueChange)="coutForm.description = asStr($event)"
+                  [options]="{ type: 'text', maxLength: 255, placeholder: ('SUBCONTRACTING.OST.DRAWER.DESCRIPTION_PLACEHOLDER' | translate),
+                    label: ('SUBCONTRACTING.OST.DRAWER.DESCRIPTION' | translate) }" />
               </div>
             </div>
             <div class="add-cout-actions">
-              <button class="btn-cancel" (click)="showAddCout.set(false)">Annuler</button>
+              <button class="btn-cancel" (click)="showAddCout.set(false)">{{ 'SUBCONTRACTING.OST.DRAWER.CANCEL' | translate }}</button>
               <button class="btn-save" [disabled]="coutSaving() || !coutForm.montant || !coutForm.dateCout" (click)="addCout()">
-                @if (coutSaving()) { Ajout… } @else { Ajouter }
+                @if (coutSaving()) { {{ 'SUBCONTRACTING.OST.DRAWER.ADDING' | translate }} } @else { {{ 'SUBCONTRACTING.OST.DRAWER.ADD' | translate }} }
               </button>
             </div>
           </div>

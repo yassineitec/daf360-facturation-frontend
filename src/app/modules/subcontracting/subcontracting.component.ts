@@ -1,4 +1,6 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
+import { SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
 import { AffaireService } from '../affaires/affaire.service';
 import { PaysRefDto } from '../affaires/affaire.model';
 import { SousTraitantsTabComponent } from './tabs/sous-traitants-tab.component';
@@ -7,7 +9,7 @@ import { CoutsAnalyseTabComponent } from './tabs/couts-analyse-tab.component';
 
 @Component({
   selector: 'app-subcontracting',
-  imports: [SousTraitantsTabComponent, OrdresStTabComponent, CoutsAnalyseTabComponent],
+  imports: [TranslatePipe, SelectComponent, SousTraitantsTabComponent, OrdresStTabComponent, CoutsAnalyseTabComponent],
   templateUrl: './subcontracting.component.html',
   styleUrl: './subcontracting.component.scss',
 })
@@ -18,6 +20,9 @@ export class SubcontractingComponent implements OnInit {
   pays           = signal<PaysRefDto[]>([]);
   selectedPaysId = signal<number | null>(null);
 
+  readonly paysOptions = computed<SelectOption[]>(() =>
+    this.pays().map(p => ({ value: String(p.id), label: p.frenchLabel })));
+
   ngOnInit(): void {
     this.affaireSvc.getPays().subscribe(p => {
       this.pays.set(p);
@@ -25,8 +30,8 @@ export class SubcontractingComponent implements OnInit {
     });
   }
 
-  onPaysChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value;
+  onPaysSelect(values: string[]): void {
+    const val = values[0];
     this.selectedPaysId.set(val ? +val : null);
   }
 }

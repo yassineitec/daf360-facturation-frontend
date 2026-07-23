@@ -10,12 +10,12 @@
       <div class="page-head">
         <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
           <a class="font-medium hover:underline transition-colors" [routerLink]="cancelRoute()">
-            Affaires
+            {{ 'AFFAIRES.wizard.shell.breadcrumb_affaires' | translate }}
           </a>
           <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span class="font-medium" style="color:#50717b">{{ editMode() ? 'Modifier l\'affaire' : 'Nouvelle affaire' }}</span>
+          <span class="font-medium" style="color:#50717b">{{ (editMode() ? 'AFFAIRES.wizard.shell.title_edit' : 'AFFAIRES.wizard.shell.title_new') | translate }}</span>
         </nav>
-        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ editMode() ? 'Modifier l\'affaire' : 'Nouvelle affaire' }}</h1>
+        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ (editMode() ? 'AFFAIRES.wizard.shell.title_edit' : 'AFFAIRES.wizard.shell.title_new') | translate }}</h1>
       </div>
 
       <!-- ── Form card ────────────────────────────────────────────── -->
@@ -94,7 +94,7 @@
         @if (isSaving()) {
           <div class="saving-hint">
             <span class="material-symbols-outlined saving-spin">progress_activity</span>
-            <span>Enregistrement en cours…</span>
+            <span>{{ 'AFFAIRES.wizard.shell.saving' | translate }}</span>
           </div>
         }
 
@@ -105,7 +105,7 @@
         <div class="form-footer">
           <a [routerLink]="cancelRoute()" [queryParams]="{ statut: 'DRAFT' }" class="draft-link">
             <span class="material-symbols-outlined">history</span>
-            Reprendre une affaire en brouillon
+            {{ 'AFFAIRES.wizard.shell.resume_draft' | translate }}
           </a>
         </div>
       }
@@ -144,12 +144,12 @@
       <!-- Progression -->
       <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
         <div class="panel-header">
-          <p class="panel__label">Progression</p>
+          <p class="panel__label">{{ 'AFFAIRES.wizard.shell.progression' | translate }}</p>
         </div>
 
         <div class="panel-body">
           <div class="step-list">
-            @for (step of wizardSteps; track $index; let i = $index) {
+            @for (step of wizardSteps(); track $index; let i = $index) {
               <div class="step-item"
                    [class.step-item--done]="currentStep() > i + 1"
                    [class.step-item--active]="currentStep() === i + 1">
@@ -171,24 +171,24 @@
       <!-- Résumé -->
       <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
         <div class="panel-header">
-          <p class="panel__label">Résumé</p>
+          <p class="panel__label">{{ 'AFFAIRES.wizard.shell.summary' | translate }}</p>
         </div>
         <div class="panel-body">
           <div class="summary-rows">
             <div class="summary-row">
-              <span class="summary-row__key">Affaire</span>
+              <span class="summary-row__key">{{ 'AFFAIRES.wizard.shell.sum_affaire' | translate }}</span>
               <span class="summary-row__val">{{ draft().intitule || '—' }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-row__key">Client</span>
+              <span class="summary-row__key">{{ 'AFFAIRES.wizard.shell.sum_client' | translate }}</span>
               <span class="summary-row__val">{{ draft().clientName || '—' }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-row__key">Mode</span>
+              <span class="summary-row__key">{{ 'AFFAIRES.wizard.shell.sum_mode' | translate }}</span>
               <span class="summary-row__val">{{ billingModeLabel() }}</span>
             </div>
             <div class="summary-row">
-              <span class="summary-row__key">Budget</span>
+              <span class="summary-row__key">{{ 'AFFAIRES.wizard.shell.sum_budget' | translate }}</span>
               <span class="summary-row__val">{{ formatBudget() }}</span>
             </div>
           </div>

@@ -2,13 +2,14 @@ import {
   Component, inject, signal, Input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import { CostImportResult } from '../cost.model';
 
 @Component({
   selector: 'app-cost-import-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './cost-import-panel.component.html',
   styleUrl: './cost-import-panel.component.scss',
 })
@@ -16,6 +17,7 @@ export class CostImportPanelComponent {
   @Input() paysId!: number;
 
   private readonly svc = inject(CostService);
+  private readonly translate = inject(TranslateService);
 
   isDragging  = signal(false);
   isUploading = signal(false);
@@ -46,7 +48,7 @@ export class CostImportPanelComponent {
 
   selectFile(file: File): void {
     if (!file.name.endsWith('.csv')) {
-      this.serverError.set('Seuls les fichiers CSV sont acceptés.');
+      this.serverError.set(this.translate.instant('COST.IMPORT.ONLY_CSV'));
       return;
     }
     this.selectedFile.set(file);
@@ -70,7 +72,7 @@ export class CostImportPanelComponent {
         this.isUploading.set(false);
       },
       error: err => {
-        this.serverError.set(err.error?.message ?? 'Erreur lors de l\'import.');
+        this.serverError.set(err.error?.message ?? this.translate.instant('COST.IMPORT.IMPORT_ERROR'));
         this.isUploading.set(false);
       },
     });

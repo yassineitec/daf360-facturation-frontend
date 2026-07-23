@@ -4,10 +4,10 @@
     <!-- Header -->
     <div class="modal-header">
       <div>
-        <h2 class="modal-title">{{ isEditMode ? 'Modifier la ligne' : 'Nouvelle ligne de coût' }}</h2>
-        <p class="modal-sub">Renseignez les informations de la ligne</p>
+        <h2 class="modal-title">{{ (isEditMode ? 'COST.LINE_FORM.TITLE_EDIT' : 'COST.LINE_FORM.TITLE_NEW') | translate }}</h2>
+        <p class="modal-sub">{{ 'COST.LINE_FORM.SUB' | translate }}</p>
       </div>
-      <button class="modal-close" (click)="closed.emit()" aria-label="Fermer">✕</button>
+      <button class="modal-close" (click)="closed.emit()" [attr.aria-label]="'COST.LINE_FORM.CLOSE' | translate">✕</button>
     </div>
 
     <!-- Body -->
@@ -16,16 +16,16 @@
       <!-- SECTION 1 — Classification -->
       <div class="section">
         <h3 class="section-title">
-          <span class="section-num">1</span> Classification
+          <span class="section-num">1</span> {{ 'COST.LINE_FORM.SECTION1' | translate }}
         </h3>
         <div class="form-grid">
 
           <!-- Category -->
           <div class="field-full">
-            <label for="categoryId" class="field-label">Catégorie *</label>
+            <label for="categoryId" class="field-label">{{ 'COST.LINE_FORM.CATEGORY_LABEL' | translate }}</label>
             <select id="categoryId" formControlName="categoryId" class="field-select"
               [class.field-error]="isInvalid('categoryId')">
-              <option value="">Sélectionner une catégorie...</option>
+              <option value="">{{ 'COST.LINE_FORM.CATEGORY_PLACEHOLDER' | translate }}</option>
               @for (cat of categories(); track cat.id) {
                 <option [value]="cat.id">
                   {{ cat.categoryNumber.toString().padStart(2, '0') }} — {{ cat.labelFr }}
@@ -34,62 +34,62 @@
               }
             </select>
             @if (isInvalid('categoryId')) {
-              <p class="field-err-text">La catégorie est obligatoire.</p>
+              <p class="field-err-text">{{ 'COST.LINE_FORM.CATEGORY_REQUIRED' | translate }}</p>
             }
             @if (selectedCategory?.descriptionFr) {
               <p class="field-hint">{{ selectedCategory!.descriptionFr }}</p>
             }
             @if (strictScrutinyWarning) {
               <div class="warning-banner">
-                ⚠ Scrutin strict (cat. 12) — le niveau d'approbation est relevé d'un cran.
+                {{ 'COST.LINE_FORM.STRICT_WARNING' | translate }}
               </div>
             }
           </div>
 
           <!-- Transaction date -->
           <div class="field-half">
-            <label for="transactionDate" class="field-label">Date de transaction *</label>
+            <label for="transactionDate" class="field-label">{{ 'COST.LINE_FORM.DATE_LABEL' | translate }}</label>
             <input id="transactionDate" type="date" formControlName="transactionDate"
               class="field-input" [class.field-error]="isInvalid('transactionDate')">
             @if (isInvalid('transactionDate')) {
-              <p class="field-err-text">La date est obligatoire.</p>
+              <p class="field-err-text">{{ 'COST.LINE_FORM.DATE_REQUIRED' | translate }}</p>
             }
           </div>
 
           <!-- Period (auto-filled) -->
           <div class="field-half">
-            <label class="field-label">Période (auto)</label>
+            <label class="field-label">{{ 'COST.LINE_FORM.PERIOD_LABEL' | translate }}</label>
             <div class="field-readonly">
               @if (form.get('periodYear')!.value) {
                 {{ form.get('periodMonth')!.value }}/{{ form.get('periodYear')!.value }}
               } @else {
-                <span style="color:#94a3b8">Saisir une date</span>
+                <span style="color:#94a3b8">{{ 'COST.LINE_FORM.PERIOD_PLACEHOLDER' | translate }}</span>
               }
             </div>
           </div>
 
           <!-- Description -->
           <div class="field-full">
-            <label for="description" class="field-label">Description *</label>
+            <label for="description" class="field-label">{{ 'COST.LINE_FORM.DESCRIPTION_LABEL' | translate }}</label>
             <input id="description" type="text" formControlName="description"
-              placeholder="Ex: Prestation topographie..."
+              [placeholder]="'COST.LINE_FORM.DESCRIPTION_PLACEHOLDER' | translate"
               class="field-input" [class.field-error]="isInvalid('description')">
             @if (isInvalid('description')) {
-              <p class="field-err-text">La description est obligatoire (min 3 caractères).</p>
+              <p class="field-err-text">{{ 'COST.LINE_FORM.DESCRIPTION_REQUIRED' | translate }}</p>
             }
           </div>
 
           <!-- Cost type -->
           <div class="field-full">
-            <label for="costTypeId" class="field-label">Type de coût</label>
+            <label for="costTypeId" class="field-label">{{ 'COST.LINE_FORM.COST_TYPE_LABEL' | translate }}</label>
             <select id="costTypeId" formControlName="costTypeId" class="field-select">
-              <option [value]="null">Type de coût (optionnel)</option>
+              <option [value]="null">{{ 'COST.LINE_FORM.COST_TYPE_PLACEHOLDER' | translate }}</option>
               @for (v of costTypes(); track v.id) {
                 <option [value]="v.id">{{ v.labelFr }}</option>
               }
             </select>
             @if (costTypes().length === 0) {
-              <p class="field-warn-text">⚠ Aucun type configuré — contactez l'administrateur.</p>
+              <p class="field-warn-text">{{ 'COST.LINE_FORM.NO_COST_TYPE' | translate }}</p>
             }
           </div>
 
@@ -99,37 +99,37 @@
       <!-- SECTION 2 — Montant -->
       <div class="section">
         <h3 class="section-title">
-          <span class="section-num">2</span> Montant
+          <span class="section-num">2</span> {{ 'COST.LINE_FORM.SECTION2' | translate }}
         </h3>
         <div class="form-grid">
 
           <!-- Net amount -->
           <div class="field-half">
-            <label for="netAmountLocal" class="field-label">Montant HT *</label>
+            <label for="netAmountLocal" class="field-label">{{ 'COST.LINE_FORM.NET_LABEL' | translate }}</label>
             <input id="netAmountLocal" type="number" step="0.001" min="0.01"
               formControlName="netAmountLocal"
               placeholder="0.000"
               class="field-input" [class.field-error]="isInvalid('netAmountLocal')">
             @if (isInvalid('netAmountLocal')) {
-              <p class="field-err-text">Montant obligatoire (> 0).</p>
+              <p class="field-err-text">{{ 'COST.LINE_FORM.NET_REQUIRED' | translate }}</p>
             }
           </div>
 
           <!-- Currency -->
           <div class="field-half">
-            <label for="currencyId" class="field-label">Devise *</label>
+            <label for="currencyId" class="field-label">{{ 'COST.LINE_FORM.CURRENCY_LABEL' | translate }}</label>
             <select id="currencyId" formControlName="currencyId" class="field-select"
               [class.field-error]="isInvalid('currencyId')">
-              <option [value]="null">Devise...</option>
+              <option [value]="null">{{ 'COST.LINE_FORM.CURRENCY_PLACEHOLDER' | translate }}</option>
               @for (v of currencies(); track v.id) {
                 <option [value]="v.id">{{ v.code }} — {{ v.labelFr }}</option>
               }
             </select>
             @if (isInvalid('currencyId')) {
-              <p class="field-err-text">La devise est obligatoire.</p>
+              <p class="field-err-text">{{ 'COST.LINE_FORM.CURRENCY_REQUIRED' | translate }}</p>
             }
             @if (currencies().length === 0) {
-              <p class="field-warn-text">⚠ Aucune devise configurée.</p>
+              <p class="field-warn-text">{{ 'COST.LINE_FORM.NO_CURRENCY' | translate }}</p>
             }
           </div>
 
@@ -137,7 +137,7 @@
           @if (approvalPreview()) {
             <div class="field-full">
               <div class="approval-preview" [class]="previewBgClass">
-                <span class="preview-label-text">Niveau d'approbation estimé :</span>
+                <span class="preview-label-text">{{ 'COST.LINE_FORM.APPROVAL_ESTIMATED' | translate }}</span>
                 <span class="preview-badge" [class]="previewBgClass + '-badge'">{{ previewLabel }}</span>
               </div>
             </div>
@@ -149,20 +149,20 @@
       <!-- SECTION 3 — Justificatif -->
       <div class="section">
         <h3 class="section-title">
-          <span class="section-num">3</span> Justificatif &amp; options
+          <span class="section-num">3</span> {{ 'COST.LINE_FORM.SECTION3' | translate }}
         </h3>
         <div class="form-grid">
 
           <!-- Supplier autocomplete -->
           <div class="field-full" style="position:relative">
-            <label class="field-label">Fournisseur</label>
+            <label class="field-label">{{ 'COST.LINE_FORM.SUPPLIER_LABEL' | translate }}</label>
             <div style="position:relative">
               <input type="text"
                 [value]="supplierDisplayName()"
                 (input)="onSupplierInput($any($event.target).value)"
                 (focus)="showSupplierDrop.set(supplierSuggestions().length > 0)"
                 (blur)="onSupplierBlur()"
-                placeholder="Rechercher ou saisir un fournisseur..."
+                [placeholder]="'COST.LINE_FORM.SUPPLIER_PLACEHOLDER' | translate"
                 class="field-input"
                 autocomplete="off">
               @if (supplierDisplayName() && form.get('supplierId')!.value) {
@@ -173,9 +173,9 @@
               }
             </div>
             @if (isSearchingSupplier()) {
-              <p class="field-hint">Recherche en cours…</p>
+              <p class="field-hint">{{ 'COST.LINE_FORM.SEARCHING' | translate }}</p>
             } @else if (form.get('supplierId')!.value) {
-              <p class="field-hint" style="color:#065f46">✓ Fournisseur enregistré lié</p>
+              <p class="field-hint" style="color:#065f46">{{ 'COST.LINE_FORM.SUPPLIER_LINKED' | translate }}</p>
             }
             @if (showSupplierDrop()) {
               <div style="position:absolute;z-index:200;left:0;right:0;top:calc(100% + 2px);
@@ -200,9 +200,9 @@
 
           <!-- Notes -->
           <div class="field-full">
-            <label for="notes" class="field-label">Notes internes</label>
+            <label for="notes" class="field-label">{{ 'COST.LINE_FORM.NOTES_LABEL' | translate }}</label>
             <textarea id="notes" formControlName="notes"
-              placeholder="Notes optionnelles..."
+              [placeholder]="'COST.LINE_FORM.NOTES_PLACEHOLDER' | translate"
               class="field-textarea" rows="3"></textarea>
           </div>
 
@@ -212,7 +212,7 @@
       <!-- Server error -->
       @if (serverError()) {
         <div class="server-error">
-          <strong>Erreur :</strong> {{ serverError() }}
+          <strong>{{ 'COST.LINE_FORM.SERVER_ERROR_PREFIX' | translate }}</strong> {{ serverError() }}
         </div>
       }
 
@@ -221,11 +221,11 @@
     <!-- Footer -->
     <div class="modal-footer">
       <button type="button" class="btn-cancel" (click)="closed.emit()" [disabled]="isSaving()">
-        Annuler
+        {{ 'COST.LINE_FORM.CANCEL' | translate }}
       </button>
       <button type="button" class="btn-primary" (click)="saveForm()" [disabled]="isSaving()">
         @if (isSaving()) { <span class="spinner"></span> }
-        {{ isEditMode ? 'Enregistrer' : 'Créer la ligne' }}
+        {{ (isEditMode ? 'COST.LINE_FORM.SAVE' : 'COST.LINE_FORM.CREATE') | translate }}
       </button>
     </div>
 

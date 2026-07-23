@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 
 import { AffaireWizardService } from '../../affaire-wizard.service';
@@ -8,7 +9,7 @@ import { AffaireDraftState, ExternalProjectResult } from '../../affaire-wizard.m
 @Component({
   selector: 'app-wizard-step-doc360',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './wizard-step-doc360.component.html',
   styleUrl: './wizard-step-doc360.component.scss',
 })

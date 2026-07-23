@@ -3,15 +3,14 @@
   <!-- Header card: title + pays selector + tab nav -->
   <div class="sc-header glass-card">
     <div class="sc-title-row">
-      <h1 class="sc-title">Sous-traitance</h1>
+      <h1 class="sc-title">{{ 'SUBCONTRACTING.TITLE' | translate }}</h1>
       @if (pays().length > 0) {
         <div class="sc-pays">
-          <label for="pays-sel">Entité</label>
-          <select id="pays-sel" [value]="selectedPaysId()" (change)="onPaysChange($event)">
-            @for (p of pays(); track p.id) {
-              <option [value]="p.id">{{ p.frenchLabel }}</option>
-            }
-          </select>
+          <daf-select
+            [options]="paysOptions()"
+            [config]="{ label: ('SUBCONTRACTING.ENTITY' | translate), searchable: true }"
+            [selected]="[selectedPaysId() != null ? selectedPaysId()!.toString() : '']"
+            (selectedChange)="onPaysSelect($event)" />
         </div>
       }
     </div>
@@ -26,7 +25,7 @@
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
-        Sous-traitants
+        {{ 'SUBCONTRACTING.TABS.SUBCONTRACTORS' | translate }}
       </button>
       <button role="tab" class="tab-btn" [class.active]="activeTab() === 'ordres'"
               [attr.aria-selected]="activeTab() === 'ordres'"
@@ -35,7 +34,7 @@
           <rect x="2" y="7" width="20" height="14" rx="2"/>
           <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
         </svg>
-        Ordres ST
+        {{ 'SUBCONTRACTING.TABS.ORDERS' | translate }}
       </button>
       <button role="tab" class="tab-btn" [class.active]="activeTab() === 'analyse'"
               [attr.aria-selected]="activeTab() === 'analyse'"
@@ -45,7 +44,7 @@
           <line x1="12" y1="20" x2="12" y2="4"/>
           <line x1="6" y1="20" x2="6" y2="14"/>
         </svg>
-        Analyse des coûts
+        {{ 'SUBCONTRACTING.TABS.COST_ANALYSIS' | translate }}
       </button>
     </nav>
   </div>

@@ -3,13 +3,13 @@
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
   <div class="aq-header">
     <div>
-      <h3 class="aq-header__title">File d'approbation</h3>
-      <p class="aq-header__sub">Flux de travail consolidé pour les validations financières et RH.</p>
+      <h3 class="aq-header__title">{{ 'AFFAIRES.billing.approval.title' | translate }}</h3>
+      <p class="aq-header__sub">{{ 'AFFAIRES.billing.approval.subtitle' | translate }}</p>
     </div>
     <div class="aq-header__actions">
       <a routerLink="/fact/affaires" class="aq-back-btn">
         <span class="material-symbols-outlined">arrow_back</span>
-        Retour aux affaires
+        {{ 'AFFAIRES.billing.approval.back' | translate }}
       </a>
     </div>
   </div>
@@ -22,7 +22,7 @@
         <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
       </div>
       <div>
-        <p class="kpi-label">En attente RF</p>
+        <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_rf' | translate }}</p>
         <h4 class="kpi-value">{{ pendingTaux().length + pendingJalons().length }}</h4>
       </div>
     </div>
@@ -32,16 +32,16 @@
         <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">task_alt</span>
       </div>
       <div>
-        <p class="kpi-label">En attente DF</p>
+        <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_df' | translate }}</p>
         <h4 class="kpi-value">{{ pendingLines().length }}</h4>
       </div>
     </div>
 
     <div class="kpi-glass kpi-glass--perf">
       <div class="kpi-perf-content">
-        <p class="kpi-label">Historique des actions</p>
+        <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_history' | translate }}</p>
         <h4 class="kpi-value">{{ auditLog().length }}</h4>
-        <p class="kpi-perf-sub">Décisions enregistrées au total</p>
+        <p class="kpi-perf-sub">{{ 'AFFAIRES.billing.approval.kpi_history_sub' | translate }}</p>
       </div>
       <div class="kpi-icon-box kpi-icon-box--teal kpi-icon-box--lg">
         <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">history</span>
@@ -55,7 +55,7 @@
 
     <!-- Tab bar -->
     <div class="tabs-bar">
-      @for (tab of tabs; track tab.key) {
+      @for (tab of tabs(); track tab.key) {
         <button class="tab-btn" [class.tab-btn--active]="activeTab() === tab.key"
           (click)="setTab(tab.key)">
           <span class="material-symbols-outlined">{{ tab.icon }}</span>
@@ -83,12 +83,12 @@
         @if (rfLoading()) {
           <div class="tab-loading">
             <span class="material-symbols-outlined spin">progress_activity</span>
-            Chargement…
+            {{ 'AFFAIRES.billing.approval.loading' | translate }}
           </div>
         } @else if (pendingTaux().length === 0 && pendingJalons().length === 0) {
           <div class="tab-empty">
             <span class="material-symbols-outlined">check_circle</span>
-            <p>Aucun élément en attente de validation RF.</p>
+            <p>{{ 'AFFAIRES.billing.approval.empty_rf' | translate }}</p>
           </div>
         } @else {
 
@@ -96,11 +96,11 @@
           @if (pendingTaux().length > 0) {
             <div class="section-head">
               <span class="material-symbols-outlined">trending_up</span>
-              Taux d'avancement (AV) — {{ pendingTaux().length }}
+              {{ 'AFFAIRES.billing.approval.section_taux' | translate:{ count: pendingTaux().length } }}
             </div>
             <div class="table-wrap">
               <daf-data-table
-                [columns]="tauxColumns"
+                [columns]="tauxColumns()"
                 [rows]="tauxRows()"
                 [config]="tableConfig()">
 
@@ -127,11 +127,11 @@
                   <div class="action-btns">
                     <button class="act-btn act-btn--green" (click)="doValidateTaux(row['id'])">
                       <span class="material-symbols-outlined">check_circle</span>
-                      Valider
+                      {{ 'AFFAIRES.billing.approval.validate' | translate }}
                     </button>
                     <button class="act-btn act-btn--red" (click)="openRfRefuseModal(row['id'], 'taux')">
                       <span class="material-symbols-outlined">block</span>
-                      Refuser
+                      {{ 'AFFAIRES.billing.approval.refuse' | translate }}
                     </button>
                   </div>
                 </ng-template>
@@ -144,11 +144,11 @@
           @if (pendingJalons().length > 0) {
             <div class="section-head" [class.section-head--mt]="pendingTaux().length > 0">
               <span class="material-symbols-outlined">flag</span>
-              Jalons (JAL) — {{ pendingJalons().length }}
+              {{ 'AFFAIRES.billing.approval.section_jalons' | translate:{ count: pendingJalons().length } }}
             </div>
             <div class="table-wrap">
               <daf-data-table
-                [columns]="jalonColumns"
+                [columns]="jalonColumns()"
                 [rows]="jalonRows()"
                 [config]="tableConfig()">
 
@@ -171,11 +171,11 @@
                   <div class="action-btns">
                     <button class="act-btn act-btn--green" (click)="doValidateJalon(row['id'])">
                       <span class="material-symbols-outlined">check_circle</span>
-                      Valider
+                      {{ 'AFFAIRES.billing.approval.validate' | translate }}
                     </button>
                     <button class="act-btn act-btn--red" (click)="openRfRefuseModal(row['id'], 'jalon')">
                       <span class="material-symbols-outlined">block</span>
-                      Refuser
+                      {{ 'AFFAIRES.billing.approval.refuse' | translate }}
                     </button>
                   </div>
                 </ng-template>
@@ -193,17 +193,17 @@
         @if (dfLoading()) {
           <div class="tab-loading">
             <span class="material-symbols-outlined spin">progress_activity</span>
-            Chargement…
+            {{ 'AFFAIRES.billing.approval.loading' | translate }}
           </div>
         } @else if (pendingLines().length === 0) {
           <div class="tab-empty">
             <span class="material-symbols-outlined">check_circle</span>
-            <p>Aucune ligne en attente de validation DF.</p>
+            <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
           </div>
         } @else {
           <div class="table-wrap">
             <daf-data-table
-              [columns]="lineColumns"
+              [columns]="lineColumns()"
               [rows]="lineRows()"
               [config]="tableConfig()">
 
@@ -243,11 +243,11 @@
                 <div class="action-btns">
                   <button class="act-btn act-btn--green" (click)="doValidateDF(row['id'])">
                     <span class="material-symbols-outlined">check_circle</span>
-                    Valider
+                    {{ 'AFFAIRES.billing.approval.validate' | translate }}
                   </button>
                   <button class="act-btn act-btn--orange" (click)="openDfRetourModal(row['id'])">
                     <span class="material-symbols-outlined">undo</span>
-                    Retourner
+                    {{ 'AFFAIRES.billing.approval.return' | translate }}
                   </button>
                 </div>
               </ng-template>
@@ -263,17 +263,17 @@
         @if (histLoading()) {
           <div class="tab-loading">
             <span class="material-symbols-outlined spin">progress_activity</span>
-            Chargement…
+            {{ 'AFFAIRES.billing.approval.loading' | translate }}
           </div>
         } @else if (auditLog().length === 0) {
           <div class="tab-empty">
             <span class="material-symbols-outlined">history</span>
-            <p>Aucun historique disponible.</p>
+            <p>{{ 'AFFAIRES.billing.approval.empty_history' | translate }}</p>
           </div>
         } @else {
           <div class="table-wrap">
             <daf-data-table
-              [columns]="historyColumns"
+              [columns]="historyColumns()"
               [rows]="historyRows()"
               [config]="tableConfig()">
 
@@ -312,15 +312,15 @@
 @if (showRfRefuseModal()) {
   <div class="modal-backdrop" (click)="$event.target === $event.currentTarget && showRfRefuseModal.set(false)">
     <div class="modal-box">
-      <h3 class="modal-title">Motif de refus</h3>
-      <textarea class="modal-textarea" rows="3" maxlength="500" placeholder="Raison du refus…"
+      <h3 class="modal-title">{{ 'AFFAIRES.billing.approval.modal_refuse_title' | translate }}</h3>
+      <textarea class="modal-textarea" rows="3" maxlength="500" placeholder="{{ 'AFFAIRES.billing.approval.modal_refuse_placeholder' | translate }}"
         [(ngModel)]="rfRefuseMotif"></textarea>
       <div class="modal-footer">
-        <button class="modal-btn modal-btn--cancel" (click)="showRfRefuseModal.set(false)">Annuler</button>
+        <button class="modal-btn modal-btn--cancel" (click)="showRfRefuseModal.set(false)">{{ 'AFFAIRES.billing.approval.modal_cancel' | translate }}</button>
         <button class="modal-btn modal-btn--danger"
           [class.modal-btn--disabled]="!rfRefuseMotif.trim()"
           [disabled]="!rfRefuseMotif.trim()"
-          (click)="submitRfRefuse()">Refuser</button>
+          (click)="submitRfRefuse()">{{ 'AFFAIRES.billing.approval.modal_refuse_btn' | translate }}</button>
       </div>
     </div>
   </div>
@@ -330,15 +330,15 @@
 @if (showDfRetourModal()) {
   <div class="modal-backdrop" (click)="$event.target === $event.currentTarget && showDfRetourModal.set(false)">
     <div class="modal-box">
-      <h3 class="modal-title">Motif de retour</h3>
-      <textarea class="modal-textarea" rows="3" maxlength="500" placeholder="Raison du retour…"
+      <h3 class="modal-title">{{ 'AFFAIRES.billing.approval.modal_return_title' | translate }}</h3>
+      <textarea class="modal-textarea" rows="3" maxlength="500" placeholder="{{ 'AFFAIRES.billing.approval.modal_return_placeholder' | translate }}"
         [(ngModel)]="dfRetourMotif"></textarea>
       <div class="modal-footer">
-        <button class="modal-btn modal-btn--cancel" (click)="showDfRetourModal.set(false)">Annuler</button>
+        <button class="modal-btn modal-btn--cancel" (click)="showDfRetourModal.set(false)">{{ 'AFFAIRES.billing.approval.modal_cancel' | translate }}</button>
         <button class="modal-btn modal-btn--primary"
           [class.modal-btn--disabled]="!dfRetourMotif.trim()"
           [disabled]="!dfRetourMotif.trim()"
-          (click)="submitDfRetour()">Confirmer</button>
+          (click)="submitDfRetour()">{{ 'AFFAIRES.billing.approval.modal_confirm' | translate }}</button>
       </div>
     </div>
   </div>

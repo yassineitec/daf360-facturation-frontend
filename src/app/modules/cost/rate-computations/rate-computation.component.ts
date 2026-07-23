@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
 
 import { CostService } from '../cost.service';
@@ -14,13 +15,14 @@ import { PaysRefDto } from '../../affaires/affaire.model';
 @Component({
   selector: 'app-rate-computation',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   templateUrl: './rate-computation.component.html',
   styleUrl: './rate-computation.component.scss',
 })
 export class RateComputationComponent implements OnInit {
   private readonly svc       = inject(CostService);
   private readonly clientSvc = inject(ClientService);
+  private readonly translate = inject(TranslateService);
 
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);
@@ -49,20 +51,21 @@ export class RateComputationComponent implements OnInit {
 
   readonly STATUS_CONFIG = RATE_COMPUTATION_STATUS_CONFIG;
 
-  readonly PERIOD_TYPE_LABELS: Record<string, string> = {
-    ANNUAL:    'Annuel',
-    QUARTERLY: 'Trimestriel',
-    MONTHLY:   'Mensuel',
-  };
+  rateStatusLabel(status: string): string {
+    return this.translate.instant('COST.RATE.STATUS.' + status);
+  }
 
-  readonly MONTHS = [
-    { value: 1, label: 'Janvier' }, { value: 2, label: 'Février' },
-    { value: 3, label: 'Mars' },    { value: 4, label: 'Avril' },
-    { value: 5, label: 'Mai' },     { value: 6, label: 'Juin' },
-    { value: 7, label: 'Juillet' }, { value: 8, label: 'Août' },
-    { value: 9, label: 'Septembre' },{ value: 10, label: 'Octobre' },
-    { value: 11, label: 'Novembre' },{ value: 12, label: 'Décembre' },
-  ];
+  periodTypeLabel(type: string): string {
+    return this.translate.instant('COST.RATE.PERIOD.' + type);
+  }
+
+  readonly months = computed(() => {
+    this.translate.currentLang();
+    return Array.from({ length: 12 }, (_, i) => ({
+      value: i + 1,
+      label: this.translate.instant('COST.RATE.MONTHS.M' + (i + 1)),
+    }));
+  });
 
   ngOnInit(): void {
     this.isLoading.set(true);
@@ -77,12 +80,12 @@ export class RateComputationComponent implements OnInit {
           this.paysId.set(resolved);
           this.load();
         } else {
-          this.serverError.set('Aucun pays configuré.');
+          this.serverError.set(this.translate.instant('COST.RATE.NO_PAYS'));
           this.isLoading.set(false);
         }
       },
       error: () => {
-        this.serverError.set('Impossible de charger les pays.');
+        this.serverError.set(this.translate.instant('COST.RATE.LOAD_PAYS_ERROR'));
         this.isLoading.set(false);
       },
     });
@@ -105,7 +108,7 @@ export class RateComputationComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: err => {
-        this.serverError.set(err.error?.message ?? 'Erreur de chargement.');
+        this.serverError.set(err.error?.message ?? this.translate.instant('COST.RATE.LOAD_ERROR'));
         this.isLoading.set(false);
       },
     });
@@ -118,15 +121,15 @@ export class RateComputationComponent implements OnInit {
 
   create(): void {
     if (!this.newRecord.periodYear) {
-      this.createError.set('L\'année est requise.');
+      this.createError.set(this.translate.instant('COST.RATE.YEAR_REQUIRED'));
       return;
     }
     if (this.newRecord.periodType === 'QUARTERLY' && !this.newRecord.periodQuarter) {
-      this.createError.set('Le trimestre est requis.');
+      this.createError.set(this.translate.instant('COST.RATE.QUARTER_REQUIRED'));
       return;
     }
     if (this.newRecord.periodType === 'MONTHLY' && !this.newRecord.periodMonth) {
-      this.createError.set('Le mois est requis.');
+      this.createError.set(this.translate.instant('COST.RATE.MONTH_REQUIRED'));
       return;
     }
     this.isCreating.set(true);
@@ -153,7 +156,7 @@ export class RateComputationComponent implements OnInit {
         };
       },
       error: err => {
-        this.createError.set(err.error?.message ?? 'Erreur de création.');
+        this.createError.set(err.error?.message ?? this.translate.instant('COST.RATE.CREATE_ERROR'));
         this.isCreating.set(false);
       },
     });
@@ -168,7 +171,7 @@ export class RateComputationComponent implements OnInit {
         this.actionLoadingId.set(null);
       },
       error: err => {
-        this.actionError.set(err.error?.message ?? 'Erreur lors du calcul.');
+        this.actionError.set(err.error?.message ?? this.translate.instant('COST.RATE.COMPUTE_ERROR'));
         this.actionLoadingId.set(null);
       },
     });
@@ -183,16 +186,16 @@ export class RateComputationComponent implements OnInit {
         this.actionLoadingId.set(null);
       },
       error: err => {
-        this.actionError.set(err.error?.message ?? 'Erreur lors de la validation.');
+        this.actionError.set(err.error?.message ?? this.translate.instant('COST.RATE.VALIDATE_ERROR'));
         this.actionLoadingId.set(null);
       },
     });
   }
 
   periodLabel(rc: RateComputationDto): string {
-    if (rc.periodType === 'QUARTERLY') return `T${rc.periodQuarter} / ${rc.periodYear}`;
+    if (rc.periodType === 'QUARTERLY') return `${this.translate.instant('COST.RATE.QUARTER_SHORT')}${rc.periodQuarter} / ${rc.periodYear}`;
     if (rc.periodType === 'MONTHLY') {
-      const m = this.MONTHS.find(x => x.value === rc.periodMonth);
+      const m = this.months().find(x => x.value === rc.periodMonth);
       return `${m?.label ?? rc.periodMonth} ${rc.periodYear}`;
     }
     return `${rc.periodYear}`;

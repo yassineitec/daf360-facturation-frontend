@@ -1,6 +1,7 @@
 import {
   Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, inject, signal, computed,
 } from '@angular/core';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { ClientService }        from './client.service';
 import { ClientDetailDto, CreateClientRequest } from './client.model';
 import { FormFieldComponent, SelectComponent, SelectOption, ButtonComponent } from '@khalilrebhiitec/daf360';
@@ -16,16 +17,11 @@ const DEFAULT_SECTORS = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const CURRENCY_OPTIONS: SelectOption[] = [
-  { value: 'TND', label: 'TND — Dinar tunisien' },
-  { value: 'EGP', label: 'EGP — Livre égyptienne' },
-  { value: 'EUR', label: 'EUR — Euro' },
-  { value: 'USD', label: 'USD — Dollar américain' },
-];
+const CURRENCY_CODES = ['TND', 'EGP', 'EUR', 'USD'];
 
 @Component({
   selector: 'app-client-form',
-  imports: [FormFieldComponent, SelectComponent, ButtonComponent],
+  imports: [FormFieldComponent, SelectComponent, ButtonComponent, TranslatePipe],
   templateUrl: './client-form.component.html',
   styleUrl: './client-form.component.scss',
 })
@@ -37,6 +33,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
   @Output() closed = new EventEmitter<void>();
 
   private readonly svc = inject(ClientService);
+  private readonly translate = inject(TranslateService);
 
   // ── Form field signals ─────────────────────────────────────────────────────
   readonly clientName       = signal('');
@@ -70,45 +67,69 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly sectorSelectOptions = computed<SelectOption[]>(() =>
     this.sectors().map(s => ({ value: s, label: s }))
   );
-  readonly currencyOptions: SelectOption[] = CURRENCY_OPTIONS;
+  readonly currencyOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return CURRENCY_CODES.map(code => ({
+      value: code,
+      label: this.translate.instant(`CLIENTS.FORM.CURRENCY.${code}`),
+    }));
+  });
 
   // ── Select configs ─────────────────────────────────────────────────────────
-  readonly sectorSelectConfig = computed(() => ({
-    label: "Secteur d'activité",
-    placeholder: '— Sélectionner —',
-    fullWidth: true,
-    error: (this.touched() && !this.selectedSector()[0]) ? "Veuillez sélectionner un secteur d'activité." : undefined,
-  }));
-  readonly currencySelectConfig = { label: 'Devise par défaut', fullWidth: true };
-  readonly countryFieldOpts     = { label: "Pays d'origine", type: 'text' as const, placeholder: 'Ex : Tunisie, France…', maxLength: 100 };
+  readonly sectorSelectConfig = computed(() => {
+    this.translate.currentLang();
+    return {
+      label: this.translate.instant('CLIENTS.FORM.SECTOR_LABEL'),
+      placeholder: this.translate.instant('CLIENTS.FORM.SECTOR_PLACEHOLDER'),
+      fullWidth: true,
+      error: (this.touched() && !this.selectedSector()[0]) ? this.translate.instant('CLIENTS.FORM.SECTOR_REQUIRED') : undefined,
+    };
+  });
+  readonly currencySelectConfig = computed(() => {
+    this.translate.currentLang();
+    return { label: this.translate.instant('CLIENTS.FORM.CURRENCY_LABEL'), fullWidth: true };
+  });
+  readonly countryFieldOpts = computed(() => {
+    this.translate.currentLang();
+    return {
+      label: this.translate.instant('CLIENTS.FORM.COUNTRY_LABEL'),
+      type: 'text' as const,
+      placeholder: this.translate.instant('CLIENTS.FORM.COUNTRY_PLACEHOLDER'),
+      maxLength: 100,
+    };
+  });
 
   // ── Computed errors ────────────────────────────────────────────────────────
   readonly clientNameError = computed(() => {
     if (!this.touched()) return '';
+    this.translate.currentLang();
     const v = this.clientName().trim();
-    if (!v) return 'Champ requis.';
-    if (v.length < 2) return 'Minimum 2 caractères.';
+    if (!v) return this.translate.instant('CLIENTS.FORM.REQUIRED');
+    if (v.length < 2) return this.translate.instant('CLIENTS.FORM.MIN_LENGTH');
     return '';
   });
 
   readonly emailError = computed(() => {
     if (!this.touched()) return '';
+    this.translate.currentLang();
     const v = this.email();
-    if (v && !EMAIL_RE.test(v)) return 'Email invalide.';
+    if (v && !EMAIL_RE.test(v)) return this.translate.instant('CLIENTS.FORM.EMAIL_INVALID');
     return '';
   });
 
   readonly contactEmailError = computed(() => {
     if (!this.touched()) return '';
+    this.translate.currentLang();
     const v = this.contactEmail();
-    if (v && !EMAIL_RE.test(v)) return 'Email invalide.';
+    if (v && !EMAIL_RE.test(v)) return this.translate.instant('CLIENTS.FORM.EMAIL_INVALID');
     return '';
   });
 
   readonly paymentTermsError = computed(() => {
     if (!this.touched()) return '';
+    this.translate.currentLang();
     const n = Number(this.paymentTermsDays());
-    if (this.paymentTermsDays() !== '' && (n < 0 || n > 365)) return 'Entre 0 et 365 jours.';
+    if (this.paymentTermsDays() !== '' && (n < 0 || n > 365)) return this.translate.instant('CLIENTS.FORM.PAYMENT_TERMS_RANGE');
     return '';
   });
 
@@ -190,7 +211,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
       next: result => { this.saving.set(false); this.saved.emit(result); },
       error: err   => {
         this.saving.set(false);
-        this.serverError.set(err?.error?.message ?? 'Une erreur est survenue. Veuillez réessayer.');
+        this.serverError.set(err?.error?.message ?? this.translate.instant('CLIENTS.FORM.SERVER_ERROR'));
       },
     });
   }

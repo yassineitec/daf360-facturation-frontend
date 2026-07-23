@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { AffaireDraftState } from '../../affaire-wizard.model';
 import { WizardStepAvComponent }       from './wizard-step-av.component';
@@ -12,6 +13,7 @@ import { WizardStepLivrableComponent } from './wizard-step-livrable.component';
   selector: 'app-wizard-step-billing',
   standalone: true,
   imports: [
+    TranslatePipe,
     WizardStepAvComponent, WizardStepJalComponent,
     WizardStepTmComponent, WizardStepCpComponent, WizardStepRmbComponent,
     WizardStepLivrableComponent,

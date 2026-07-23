@@ -12,7 +12,7 @@
   }
 
   @if (isLoading()) {
-    <div class="loading-state">Chargement de la configuration...</div>
+    <div class="loading-state">{{ 'COST.CONFIG.LOADING' | translate }}</div>
   } @else if (serverError()) {
     <div class="banner-error">{{ serverError() }}</div>
   } @else {
@@ -20,9 +20,9 @@
     <!-- ── THRESHOLDS ──────────────────────────────────────────────────────── -->
     <section class="config-section">
       <div class="section-header">
-        <h3 class="section-title">Seuils d'approbation</h3>
+        <h3 class="section-title">{{ 'COST.CONFIG.THRESHOLDS_TITLE' | translate }}</h3>
         <button class="btn-add" (click)="showAddThreshold.set(!showAddThreshold())">
-          {{ showAddThreshold() ? '✕ Annuler' : '+ Ajouter' }}
+          {{ (showAddThreshold() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate }}
         </button>
       </div>
 
@@ -35,9 +35,9 @@
 
       <div class="table-wrap">
         <daf-data-table
-          [columns]="thresholdColumns"
+          [columns]="thresholdColumns()"
           [rows]="thresholdRows()"
-          [config]="thresholdTableConfig">
+          [config]="thresholdTableConfig()">
 
           <ng-template dafCell="level" let-row>
             @if (row['_isNew']) {
@@ -56,7 +56,7 @@
             @if (row['_isNew']) {
               <input class="inline-input" type="text"
                 [(ngModel)]="newThreshold.approverRoleCode"
-                placeholder="Code rôle (optionnel)">
+                [placeholder]="'COST.CONFIG.ROLE_PLACEHOLDER' | translate">
             } @else if (isThresholdEditing(row['id'])) {
               <input class="inline-input" type="text"
                 [value]="getEdit(row['id']).approverRoleCode ?? row['approverRoleCode']"
@@ -84,7 +84,7 @@
             @if (row['_isNew']) {
               <input class="inline-input text-right" type="number"
                 [(ngModel)]="newThreshold.maxAmountEur"
-                placeholder="∞ (vide)" min="0">
+                [placeholder]="'COST.CONFIG.MAX_PLACEHOLDER' | translate" min="0">
             } @else if (isThresholdEditing(row['id'])) {
               <input class="inline-input text-right" type="number"
                 [value]="getEdit(row['id']).maxAmountEur ?? row['maxAmountEur']"
@@ -109,8 +109,8 @@
                 </button>
                 <button class="btn-icon" (click)="cancelEdit(row['id'])">✕</button>
               } @else {
-                <button class="btn-icon" (click)="startEdit(row['_raw'])" title="Modifier">✏</button>
-                <button class="btn-icon btn-danger" (click)="deleteThreshold(row['id'])" title="Désactiver">🗑</button>
+                <button class="btn-icon" (click)="startEdit(row['_raw'])" [title]="'COST.CONFIG.EDIT' | translate">✏</button>
+                <button class="btn-icon btn-danger" (click)="deleteThreshold(row['id'])" [title]="'COST.CONFIG.DEACTIVATE' | translate">🗑</button>
               }
             </div>
           </ng-template>
@@ -122,9 +122,9 @@
     <!-- ── CATEGORIES ─────────────────────────────────────────────────────── -->
     <section class="config-section">
       <div class="section-header">
-        <h3 class="section-title">Catégories de coût</h3>
+        <h3 class="section-title">{{ 'COST.CONFIG.CATEGORIES_TITLE' | translate }}</h3>
         <button class="btn-add" (click)="showAddCategory.set(!showAddCategory())">
-          {{ showAddCategory() ? '✕ Annuler' : '+ Ajouter' }}
+          {{ (showAddCategory() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate }}
         </button>
       </div>
 
@@ -134,9 +134,9 @@
 
       <div class="table-wrap">
         <daf-data-table
-          [columns]="categoryColumns"
+          [columns]="categoryColumns()"
           [rows]="categoryRows()"
-          [config]="categoryTableConfig">
+          [config]="categoryTableConfig()">
 
           <ng-template dafCell="categoryNumber" let-row>
             @if (row['_isNew']) {
@@ -152,7 +152,7 @@
             @if (row['_isNew']) {
               <input class="inline-input" type="text"
                 [(ngModel)]="newCat.code"
-                placeholder="CODE" style="text-transform:uppercase">
+                [placeholder]="'COST.CONFIG.CODE_PLACEHOLDER' | translate" style="text-transform:uppercase">
             } @else {
               <span class="cell-secondary">{{ row['code'] }}</span>
             }
@@ -162,7 +162,7 @@
             @if (row['_isNew']) {
               <input class="inline-input" type="text"
                 [(ngModel)]="newCat.labelFr"
-                placeholder="Libellé FR *">
+                [placeholder]="'COST.CONFIG.LABEL_FR_PLACEHOLDER' | translate">
             } @else if (editingCategoryId() === row['id']) {
               <input class="inline-input" type="text"
                 [value]="categoryEditForm().labelFr ?? ''"
@@ -179,7 +179,7 @@
             @if (row['_isNew']) {
               <input class="inline-input" type="text"
                 [(ngModel)]="newCat.labelEn"
-                placeholder="Libellé EN *">
+                [placeholder]="'COST.CONFIG.LABEL_EN_PLACEHOLDER' | translate">
             } @else if (editingCategoryId() === row['id']) {
               <input class="inline-input" type="text"
                 [value]="categoryEditForm().labelEn ?? ''"
@@ -191,17 +191,17 @@
 
           <ng-template dafCell="source" let-row>
             @if (row['_isNew']) {
-              <span class="badge-manual">Manuel</span>
+              <span class="badge-manual">{{ 'COST.CONFIG.SOURCE_MANUAL' | translate }}</span>
             } @else if (editingCategoryId() === row['id']) {
               <input class="inline-input" type="text"
                 [value]="categoryEditForm().descriptionFr ?? ''"
                 (input)="patchCategoryForm('descriptionFr', $any($event.target).value)"
-                placeholder="Description FR (optionnel)">
+                [placeholder]="'COST.CONFIG.DESC_FR_PLACEHOLDER' | translate">
             } @else {
               @if (row['source'] === 'AUTO_PUSH') {
-                <span class="badge-auto-push" [title]="row['autoPushModule'] ?? ''">Auto-push</span>
+                <span class="badge-auto-push" [title]="row['autoPushModule'] ?? ''">{{ 'COST.CONFIG.SOURCE_AUTO_PUSH' | translate }}</span>
               } @else {
-                <span class="badge-manual">Manuel</span>
+                <span class="badge-manual">{{ 'COST.CONFIG.SOURCE_MANUAL' | translate }}</span>
               }
             }
           </ng-template>
@@ -230,7 +230,7 @@
             @if (row['_isNew'] || editingCategoryId() === row['id']) {
               <!-- not editable / not shown while editing, matches original -->
             } @else if (row['isStrictScrutiny']) {
-              <span class="icon-scrutiny" title="Contrôle renforcé">⚠</span>
+              <span class="icon-scrutiny" [title]="'COST.CONFIG.SCRUTINY_TITLE' | translate">⚠</span>
             } @else {
               <span class="cell-secondary">—</span>
             }
@@ -251,8 +251,8 @@
                 </button>
                 <button class="btn-icon" (click)="cancelCategoryEdit()">✕</button>
               } @else {
-                <button class="btn-icon" (click)="startEditCategory(row['_raw'])" title="Modifier libellé">✏</button>
-                <button class="btn-icon btn-danger" (click)="deleteCategory(row['id'])" title="Désactiver">🗑</button>
+                <button class="btn-icon" (click)="startEditCategory(row['_raw'])" [title]="'COST.CONFIG.EDIT_LABEL' | translate">✏</button>
+                <button class="btn-icon btn-danger" (click)="deleteCategory(row['id'])" [title]="'COST.CONFIG.DEACTIVATE' | translate">🗑</button>
               }
             </div>
           </ng-template>
@@ -263,13 +263,13 @@
 
     <!-- ── LIST MANAGEMENT ───────────────────────────────────────────────── -->
     <section class="config-section">
-      <h3 class="section-title">Valeurs de liste</h3>
+      <h3 class="section-title">{{ 'COST.CONFIG.LIST_VALUES_TITLE' | translate }}</h3>
 
       <div class="list-tabs">
         @for (tab of LIST_TABS; track tab) {
           <button class="list-tab" [class.active]="activeListTab() === tab"
             (click)="selectListTab(tab)">
-            {{ LIST_TAB_LABELS[tab] }}
+            {{ listTabLabel(tab) }}
           </button>
         }
       </div>
@@ -279,18 +279,18 @@
       }
 
       @if (listLoading()) {
-        <div class="loading-state">Chargement...</div>
+        <div class="loading-state">{{ 'COST.CONFIG.LIST_LOADING' | translate }}</div>
       } @else {
         <div class="table-wrap">
           <daf-data-table
-            [columns]="listValueColumns"
+            [columns]="listValueColumns()"
             [rows]="listValueRows()"
-            [config]="listValueTableConfig">
+            [config]="listValueTableConfig()">
 
             <ng-template dafCell="code" let-row>
               @if (row['_isNew']) {
                 <input class="inline-input" type="text"
-                  [(ngModel)]="newValue.code" placeholder="CODE">
+                  [(ngModel)]="newValue.code" [placeholder]="'COST.CONFIG.CODE_PLACEHOLDER' | translate">
               } @else {
                 <code class="code-pill">{{ row['code'] }}</code>
               }
@@ -299,7 +299,7 @@
             <ng-template dafCell="labelFr" let-row>
               @if (row['_isNew']) {
                 <input class="inline-input" type="text"
-                  [(ngModel)]="newValue.labelFr" placeholder="Libellé FR *">
+                  [(ngModel)]="newValue.labelFr" [placeholder]="'COST.CONFIG.LABEL_FR_PLACEHOLDER' | translate">
               } @else {
                 {{ row['labelFr'] }}
               }
@@ -308,7 +308,7 @@
             <ng-template dafCell="labelEn" let-row>
               @if (row['_isNew']) {
                 <input class="inline-input" type="text"
-                  [(ngModel)]="newValue.labelEn" placeholder="Libellé EN">
+                  [(ngModel)]="newValue.labelEn" [placeholder]="'COST.CONFIG.LABEL_EN_PLACEHOLDER_LV' | translate">
               } @else {
                 <span class="cell-secondary">{{ row['labelEn'] ?? '—' }}</span>
               }
@@ -336,7 +336,7 @@
                     @if (isCreating()) { … } @else { + }
                   </button>
                 } @else {
-                  <button class="btn-icon btn-danger" (click)="deactivate(row['id'])" title="Désactiver">✕</button>
+                  <button class="btn-icon btn-danger" (click)="deactivate(row['id'])" [title]="'COST.CONFIG.DEACTIVATE' | translate">✕</button>
                 }
               </div>
             </ng-template>

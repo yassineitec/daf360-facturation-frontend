@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { ButtonComponent } from '@khalilrebhiitec/daf360';
+import { ButtonComponent, SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 import { AffaireService }        from '../../affaire.service';
 import { FactListService }       from '../../../../core/fact-list.service';
@@ -14,7 +15,7 @@ import { TmRateModalComponent }  from './tm-rate-modal.component';
 @Component({
   selector: 'app-wizard-step-tm',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, TmRateModalComponent],
+  imports: [FormsModule, ButtonComponent, SelectComponent, FormFieldComponent, TmRateModalComponent, TranslatePipe],
   templateUrl: './wizard-step-tm.component.html',
   styleUrl: './wizard-step-tm.component.scss',
 })
@@ -25,10 +26,58 @@ export class WizardStepTmComponent implements OnInit {
 
   private readonly affaireSvc = inject(AffaireService);
   private readonly listSvc    = inject(FactListService);
+  private readonly translate  = inject(TranslateService);
 
   users      = signal<UserRefDto[]>([]);
   currencies = signal<ListValueDto[]>([]);
   showRateModal = signal(false);
+
+  // ── daf-select option lists ─────────────────────────────────────
+  readonly userOptions = computed<SelectOption[]>(() =>
+    this.users().map(u => ({ value: String(u.id), label: u.fullName })));
+
+  readonly resourceTypeOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: 'INTERNAL', label: this.translate.instant('AFFAIRES.wizard.tm.internal') },
+      { value: 'EXTERNAL', label: this.translate.instant('AFFAIRES.wizard.tm.external') },
+    ];
+  });
+
+  readonly rateTypeOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: 'DAILY',  label: this.translate.instant('AFFAIRES.wizard.tm.daily') },
+      { value: 'HOURLY', label: this.translate.instant('AFFAIRES.wizard.tm.hourly') },
+    ];
+  });
+
+  readonly currencyOptions = computed<SelectOption[]>(() =>
+    this.currencies().length
+      ? this.currencies().map(c => ({ value: c.code, label: c.code }))
+      : [{ value: 'EUR', label: 'EUR' }, { value: 'TND', label: 'TND' }]);
+
+  // ── daf-select / daf-form-field bridges (string[] | string|number|null → model) ──
+  onUserSelect(r: AffaireDraftState['ressources'][0], values: string[]): void {
+    const id = values[0] ? Number(values[0]) : 0;
+    r.userId = id;
+    this.onUserChange(r, id);
+  }
+
+  onRateAmountChange(r: AffaireDraftState['ressources'][0], v: string | number | null): void {
+    r.rateAmount = v === null || v === '' ? 0 : Number(v);
+    this.emitChange();
+  }
+
+  // NOTE: preserves original behaviour — intercompany input had no (ngModelChange), so it does NOT emit.
+  onIntercoChange(r: AffaireDraftState['ressources'][0], v: string | number | null): void {
+    r.tauxIntercompany = v === null || v === '' ? undefined : Number(v);
+  }
+
+  onCostChange(r: AffaireDraftState['ressources'][0], v: string | number | null): void {
+    r.costAmount = v === null || v === '' ? undefined : Number(v);
+    this.emitChange();
+  }
 
   ngOnInit(): void {
     this.affaireSvc.getUsers().subscribe(u => this.users.set(u));

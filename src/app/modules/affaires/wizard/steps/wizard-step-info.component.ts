@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FormFieldComponent } from '@khalilrebhiitec/daf360';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { FormFieldComponent, SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
 
 import { FactListService }        from '../../../../core/fact-list.service';
 import { ClientService }          from '../../../clients/client.service';
@@ -11,7 +12,7 @@ import { ListValueDto }           from '../../../cost/cost.model';
 @Component({
   selector: 'app-wizard-step-info',
   standalone: true,
-  imports: [FormsModule, FormFieldComponent],
+  imports: [FormsModule, FormFieldComponent, SelectComponent, TranslatePipe],
   templateUrl: './wizard-step-info.component.html',
   styleUrl: './wizard-step-info.component.scss',
 })
@@ -21,6 +22,7 @@ export class WizardStepInfoComponent implements OnInit {
 
   private readonly clientSvc = inject(ClientService);
   private readonly listSvc   = inject(FactListService);
+  private readonly translate = inject(TranslateService);
 
   readonly BILLING_MODES = BILLING_MODES;
 
@@ -30,6 +32,21 @@ export class WizardStepInfoComponent implements OnInit {
   clientFocused    = false;
   currencies       = signal<ListValueDto[]>([]);
   private clientHideTimer?: ReturnType<typeof setTimeout>;
+
+  // ── daf-select currency options (list from backend, else hardcoded fallback) ──
+  readonly currencyOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    const list = this.currencies();
+    if (list.length > 0) {
+      return list.map(c => ({ value: c.code, label: `${c.code} — ${c.labelFr}` }));
+    }
+    return [
+      { value: 'EUR', label: `EUR — ${this.translate.instant('AFFAIRES.wizard.info.cur_euro')}` },
+      { value: 'USD', label: `USD — ${this.translate.instant('AFFAIRES.wizard.info.cur_dollar')}` },
+      { value: 'TND', label: `TND — ${this.translate.instant('AFFAIRES.wizard.info.cur_tnd')}` },
+      { value: 'MAD', label: `MAD — ${this.translate.instant('AFFAIRES.wizard.info.cur_mad')}` },
+    ];
+  });
 
   // ── daf-form-field two-way bridges ────────────────────────────
   get intitule(): string | number | null   { return this.draft.intitule ?? null; }
@@ -61,8 +78,9 @@ export class WizardStepInfoComponent implements OnInit {
     this.emit();
   }
 
-  onBudgetChange(val: string): void {
-    this.draft = { ...this.draft, budgetPrevisionnel: val ? Number(val) : undefined };
+  onBudgetChange(val: string | number | null): void {
+    const amount = val === null || val === '' ? undefined : Number(val);
+    this.draft = { ...this.draft, budgetPrevisionnel: amount };
     this.emit();
   }
 
@@ -72,7 +90,7 @@ export class WizardStepInfoComponent implements OnInit {
   }
 
   budgetLabel(): string {
-    return this.draft.billingMode ? BUDGET_LABEL[this.draft.billingMode].label : 'Budget';
+    return this.draft.billingMode ? BUDGET_LABEL[this.draft.billingMode].label : this.translate.instant('AFFAIRES.wizard.info.budget_fallback');
   }
 
   budgetHint(): string {
@@ -128,7 +146,9 @@ export class WizardStepInfoComponent implements OnInit {
   // ── Client typeahead ───────────────────────────────────────────
 
   clientPlaceholder(): string {
-    return this.allClients().length === 0 ? 'Chargement des clients…' : 'Rechercher un client…';
+    return this.allClients().length === 0
+      ? this.translate.instant('AFFAIRES.wizard.info.loading_clients')
+      : this.translate.instant('AFFAIRES.wizard.info.search_client');
   }
 
   showAllClients(): void {

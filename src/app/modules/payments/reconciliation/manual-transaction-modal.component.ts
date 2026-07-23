@@ -1,5 +1,6 @@
 import { Component, inject, output, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
 import { ReconciliationService } from '../reconciliation.service';
 import { BankTransaction } from '../payment.model';
 
@@ -7,51 +8,49 @@ const DEVISES = ['TND', 'EUR', 'USD', 'GBP', 'CHF'];
 
 @Component({
   selector: 'app-manual-transaction-modal',
-  imports: [FormsModule],
+  imports: [SelectComponent, FormFieldComponent, TranslatePipe],
   template: `
 <div class="modal-backdrop" (click)="dismissed.emit()">
   <div class="modal-box" (click)="$event.stopPropagation()">
-    <h3 class="modal-title">Saisie manuelle d'une transaction</h3>
+    <h3 class="modal-title">{{ 'PAYMENTS.MANUAL_TX.TITLE' | translate }}</h3>
 
-    <div class="info-banner">
-      Utilisez ce formulaire pour enregistrer un virement non présent dans votre relevé bancaire.
-      La transaction sera créée avec le statut <strong>Non rapproché</strong> et soumise au matching automatique.
-    </div>
+    <div class="info-banner" [innerHTML]="'PAYMENTS.MANUAL_TX.INFO' | translate: { status: ('PAYMENTS.STATUT.UNMATCHED' | translate) }"></div>
 
     <div class="fields-grid">
       <div class="field-section">
-        <label class="field-label">Date <span class="required">*</span></label>
-        <input type="date" class="field-input" [(ngModel)]="form.transactionDate" />
+        <daf-form-field
+          [options]="{ type: 'date', label: ('PAYMENTS.MANUAL_TX.DATE' | translate), required: true, fullWidth: true }"
+          [(value)]="form.transactionDate" />
       </div>
 
       <div class="field-section amount-row">
         <div class="field-section" style="flex:1">
-          <label class="field-label">Montant <span class="required">*</span></label>
-          <input type="number" class="field-input" min="0.001" step="0.001"
-            placeholder="0.000" [(ngModel)]="form.amount" />
+          <daf-form-field
+            [options]="{ type: 'number', label: ('PAYMENTS.MANUAL_TX.AMOUNT' | translate), required: true, placeholder: '0.000', fullWidth: true }"
+            [value]="form.amount"
+            (valueChange)="form.amount = +($event ?? 0)" />
         </div>
         <div class="field-section" style="width:90px">
-          <label class="field-label">Devise</label>
-          <select class="field-select" [(ngModel)]="form.currency">
-            @for (d of devises; track d) {
-              <option [value]="d">{{ d }}</option>
-            }
-          </select>
+          <daf-select
+            [options]="currencyOptions"
+            [selected]="[form.currency]"
+            [config]="{ label: ('PAYMENTS.MANUAL_TX.CURRENCY' | translate), fullWidth: true }"
+            (selectedChange)="form.currency = $event[0] || 'TND'" />
         </div>
       </div>
 
       <div class="field-section full">
-        <label class="field-label">Référence <span class="optional">(facultatif)</span></label>
-        <input type="text" class="field-input" maxlength="255"
-          placeholder="Ex : VIR-2026-001, CHQ-123…"
-          [(ngModel)]="form.reference" />
+        <daf-form-field
+          [options]="{ label: ('PAYMENTS.MANUAL_TX.REFERENCE' | translate), placeholder: ('PAYMENTS.MANUAL_TX.REF_PH' | translate), maxLength: 255, fullWidth: true }"
+          [value]="form.reference"
+          (valueChange)="form.reference = ($event ?? '') + ''" />
       </div>
 
       <div class="field-section full">
-        <label class="field-label">Description <span class="optional">(facultatif)</span></label>
-        <textarea class="field-textarea" rows="2" maxlength="500"
-          placeholder="Ex : Acompte client Société XYZ…"
-          [(ngModel)]="form.description"></textarea>
+        <daf-form-field
+          [options]="{ type: 'textarea', label: ('PAYMENTS.MANUAL_TX.DESCRIPTION' | translate), placeholder: ('PAYMENTS.MANUAL_TX.DESC_PH' | translate), rows: 2, maxLength: 500, fullWidth: true }"
+          [value]="form.description"
+          (valueChange)="form.description = ($event ?? '') + ''" />
       </div>
     </div>
 
@@ -60,9 +59,9 @@ const DEVISES = ['TND', 'EUR', 'USD', 'GBP', 'CHF'];
     }
 
     <div class="modal-actions">
-      <button class="btn-cancel" [disabled]="saving()" (click)="dismissed.emit()">Annuler</button>
+      <button class="btn-cancel" [disabled]="saving()" (click)="dismissed.emit()">{{ 'PAYMENTS.COMMON.CANCEL' | translate }}</button>
       <button class="btn-confirm" [disabled]="saving() || !canSubmit()" (click)="submit()">
-        {{ saving() ? 'Enregistrement…' : 'Créer la transaction' }}
+        {{ (saving() ? 'PAYMENTS.COMMON.SAVING' : 'PAYMENTS.MANUAL_TX.CREATE_BTN') | translate }}
       </button>
     </div>
   </div>
@@ -124,12 +123,13 @@ const DEVISES = ['TND', 'EUR', 'USD', 'GBP', 'CHF'];
   `],
 })
 export class ManualTransactionModalComponent {
-  private readonly svc = inject(ReconciliationService);
+  private readonly svc       = inject(ReconciliationService);
+  private readonly translate = inject(TranslateService);
 
   dismissed = output<void>();
   confirmed = output<BankTransaction>();
 
-  readonly devises = DEVISES;
+  readonly currencyOptions: SelectOption[] = DEVISES.map(d => ({ value: d, label: d }));
 
   form = { transactionDate: '', amount: 0, currency: 'TND', reference: '', description: '' };
   saving      = signal(false);
@@ -153,7 +153,7 @@ export class ManualTransactionModalComponent {
       next:  tx  => { this.saving.set(false); this.confirmed.emit(tx); },
       error: err => {
         this.saving.set(false);
-        this.serverError.set(err?.error?.message ?? 'Erreur lors de la création de la transaction.');
+        this.serverError.set(err?.error?.message ?? this.translate.instant('PAYMENTS.MANUAL_TX.ERROR'));
       },
     });
   }

@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { FactListService }   from '../../../../core/fact-list.service';
 import { AffaireDraftState } from '../../affaire-wizard.model';
@@ -8,7 +9,7 @@ import { ListValueDto }      from '../../../cost/cost.model';
 @Component({
   selector: 'app-wizard-step-rmb',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './wizard-step-rmb.component.html',
   styleUrl: './wizard-step-rmb.component.scss',
 })
