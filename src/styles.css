@@ -100,20 +100,8 @@ body {
 .kpi-hbg-red   { background-color: #BA1A1A !important; }
 .kpi-hbg-amber { background-color: #653e00 !important; }
 
-/* ── Responsive sidebar: hide/show on mobile via global CSS ─────────────────
-   daf-side-nav renders a fixed inner div — must target from global CSS
-   because ViewEncapsulation blocks component-scoped ::ng-deep from reaching it. */
-@media (max-width: 768px) {
-  daf-side-nav > nav {
-    transform: translateX(-100%) !important;
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: none !important;
-  }
-  daf-side-nav.sidebar--open > nav {
-    transform: translateX(0) !important;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15) !important;
-  }
-}
+/* Mobile sidebar behaviour is now owned by daf-side-nav itself (fixed left rail
+   at sm+, fixed bottom bar below sm) — no global off-canvas drawer override. */
 
 /* ── Finance KPI metric-card color tokens ─────────────────────────────────── */
 .kpi-c-green  { color: #006b58 !important; }

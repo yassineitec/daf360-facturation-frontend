@@ -14,49 +14,8 @@
   box-sizing:  border-box;
 
   @media (max-width: 1024px) { padding: 1.5rem; }
-  @media (max-width: 768px)  { margin-left: 0; padding: 1rem 1rem 1rem 3.5rem; }
-  @media (max-width: 480px)  { padding: 1rem 0.75rem 1rem 3.5rem; }
-}
-
-// ── Mobile overlay backdrop ───────────────────────────────────────────────────
-.mob-overlay {
-  display:        none;
-  position:       fixed;
-  inset:          0;
-  z-index:        39;
-  background:     rgba(0, 0, 0, 0.45);
-  opacity:        0;
-  pointer-events: none;
-  transition:     opacity 0.28s ease;
-
-  @media (max-width: 768px) { display: block; }
-
-  &--open {
-    opacity:        1;
-    pointer-events: all;
-  }
-}
-
-// ── Hamburger toggle button ───────────────────────────────────────────────────
-.mob-hamburger {
-  display:       none;
-  position:      fixed;
-  top:           calc(var(--shell-header-h) + 10px);
-  left:          12px;
-  z-index:       50;
-  width:         36px;
-  height:        36px;
-  border-radius: 10px;
-  border:        1px solid rgba(0, 0, 0, 0.08);
-  background:    #fff;
-  box-shadow:    0 2px 8px rgba(0, 0, 0, 0.10);
-  cursor:        pointer;
-  align-items:   center;
-  justify-content: center;
-  transition:    background 0.2s;
-
-  .material-symbols-outlined { font-size: 20px; color: #1e293b; }
-  &:hover { background: #f1f5f9; }
-
-  @media (max-width: 768px) { display: flex; }
+  // daf-side-nav switches from a fixed left rail to a fixed bottom bar below its
+  // own `sm` breakpoint (640px): drop the sidebar gutter and clear the bottom bar.
+  @media (max-width: 640px)  { margin-left: 0; padding: 1rem; padding-bottom: 4.5rem; }
+  @media (max-width: 480px)  { padding: 1rem 0.75rem; padding-bottom: 4.5rem; }
 }

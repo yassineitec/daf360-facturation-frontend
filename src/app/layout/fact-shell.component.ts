@@ -73,11 +73,6 @@ export class FactShellComponent {
     return match ? match.route : '';
   });
 
-  readonly sidebarOpen = signal(false);
-
-  toggleSidebar(): void { this.sidebarOpen.update(v => !v); }
-  closeSidebar():  void { this.sidebarOpen.set(false); }
-
   readonly sideNavConfig = computed<SideNavConfig>(() => {
     this.translate.currentLang();
     return {
@@ -100,7 +95,6 @@ export class FactShellComponent {
   }
 
   onNavClick(item: NavItem): void {
-    this.closeSidebar();
     if (item.route) {
       this.router.navigate([item.route], { relativeTo: this.activatedRoute });
     }

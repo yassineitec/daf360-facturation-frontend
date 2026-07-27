@@ -1,19 +1,10 @@
-<!-- Mobile overlay backdrop -->
-<div class="mob-overlay" [class.mob-overlay--open]="sidebarOpen()" (click)="closeSidebar()"></div>
-
-<!-- Sidebar -->
+<!-- Sidebar — daf-side-nav owns its own responsive behaviour (fixed left rail
+     on desktop, fixed bottom bar on mobile), so no custom drawer/hamburger here. -->
 <daf-side-nav
-  [class.sidebar--open]="sidebarOpen()"
   [items]="navItems()"
   [config]="sideNavConfig()"
   [activeRoute]="activeNavRoute()"
-  (itemClick)="onNavClick($event)"
-  (mouseleave)="closeSidebar()" />
-
-<!-- Mobile hamburger (visible only on small screens) -->
-<button class="mob-hamburger" (click)="toggleSidebar()" [attr.aria-label]="'FACTURATION.layout.MENU' | translate">
-  <span class="material-symbols-outlined">menu</span>
-</button>
+  (itemClick)="onNavClick($event)" />
 
 <main class="shell-content">
   <router-outlet />
