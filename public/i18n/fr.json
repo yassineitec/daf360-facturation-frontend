@@ -483,7 +483,11 @@
         "STATUS": "Statut :",
         "ACTIVE": "Actifs",
         "INACTIVE": "Inactifs",
-        "KYC": "KYC Validé"
+        "KYC": "KYC Validé",
+        "FILTERS": "Filtres",
+        "PANEL_TITLE": "Filtrer les clients",
+        "APPLY": "Appliquer",
+        "CANCEL": "Annuler"
       },
       "SEARCH": "Nom, code, secteur…",
       "CARD": {
@@ -643,6 +647,9 @@
       "TABLE": {
         "SEARCH": "Rechercher par nom, référence…",
         "FILTERS": "Filtres",
+        "FILTER_TITLE": "Filtrer les affaires",
+        "FILTER_APPLY": "Appliquer",
+        "FILTER_CANCEL": "Annuler",
         "VIEW_GRID": "Vue grille",
         "VIEW_LIST": "Vue liste",
         "EMPTY": "Aucune affaire trouvée.",

@@ -483,7 +483,11 @@
         "STATUS": "Status:",
         "ACTIVE": "Active",
         "INACTIVE": "Inactive",
-        "KYC": "KYC Validated"
+        "KYC": "KYC Validated",
+        "FILTERS": "Filters",
+        "PANEL_TITLE": "Filter clients",
+        "APPLY": "Apply",
+        "CANCEL": "Cancel"
       },
       "SEARCH": "Name, code, sector…",
       "CARD": {
@@ -643,6 +647,9 @@
       "TABLE": {
         "SEARCH": "Search by name, reference…",
         "FILTERS": "Filters",
+        "FILTER_TITLE": "Filter projects",
+        "FILTER_APPLY": "Apply",
+        "FILTER_CANCEL": "Cancel",
         "VIEW_GRID": "Grid view",
         "VIEW_LIST": "List view",
         "EMPTY": "No projects found.",

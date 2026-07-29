@@ -3,20 +3,15 @@
 // Make host transparent so height:100% on .affaires-page resolves against shell-content
 :host { display: contents; }
 
+// Plain vertical stack, same as `.clients-page` — the `height: 100%` and the
+// `app-affaire-table { flex: 1 }` rule existed only to give the data table a
+// flex chain to fill; the card grid sizes to its content instead.
 .affaires-page {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  height: 100%;
 
   @media (max-width: 768px) { gap: 16px; }
-
-  app-affaire-table {
-    flex: 1;
-    min-height: 400px; // Safety: always visible even if flex chain breaks on mobile
-    display: flex;
-    flex-direction: column;
-  }
 }
 
 // ── Page header ───────────────────────────────────────────────────────────────
@@ -52,27 +47,6 @@
   }
 }
 
-// ── KPI grid ──────────────────────────────────────────────────────────────────
-.kpi-grid {
-  @include kpi-grid(4);
-
-  // Override mixin: 2 columns compact instead of 1 column stacked
-  @media (max-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-}
-
-// Compact card on mobile — reduce inner padding & sizes via ::ng-deep
-@media (max-width: 640px) {
-  ::ng-deep .kpi-grid app-affaire-kpi-card {
-    .kpi-card        { padding: 14px 14px 12px; min-height: 90px; }
-    .kpi-card__label { font-size: 9px; letter-spacing: 0.08em; }
-    .kpi-card__value { font-size: 1.2rem; }
-    .kpi-card__value--sm { font-size: 1rem; }
-    .kpi-card__trend { font-size: 0.7rem; }
-    .kpi-card__icon  { width: 26px; height: 26px; border-radius: 6px;
-      .kpi-mat-icon  { font-size: 15px !important; }
-    }
-  }
-}
+// KPI cards are now `daf-metric-card` in a Tailwind grid (see the template).
+// The former `.kpi-grid` rule and the `::ng-deep app-affaire-kpi-card` mobile
+// overrides went with it — the lib card carries its own responsive sizing.
