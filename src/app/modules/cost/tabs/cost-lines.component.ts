@@ -1,9 +1,8 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import {
-  CostLineDto, COST_STATUS_CONFIG, CostCategoryDto,
+  CostLineDto, CostLineStatus, COST_STATUS_CONFIG, CostCategoryDto,
 } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import {
@@ -16,6 +15,7 @@ import {
   CardComponent,
 } from '@khalilrebhiitec/daf360';
 import { AffaireKpiCardComponent } from '../../affaires/components/affaire-kpi-card.component';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 @Component({
   selector: 'app-cost-lines',
@@ -23,7 +23,8 @@ import { AffaireKpiCardComponent } from '../../affaires/components/affaire-kpi-c
   imports: [
     MetricCardComponent, DataTableComponent, DafCellDirective,
     PaginationComponent, ToolbarComponent, SelectComponent,
-    DafBadgeComponent, CardComponent, AffaireKpiCardComponent, TranslatePipe,
+    DafBadgeComponent, CardComponent, AffaireKpiCardComponent,
+    DisplayCurrencyPipe,
   ],
   templateUrl: './cost-lines.component.html',
   styleUrl: './cost-lines.component.scss',
@@ -33,7 +34,6 @@ export class CostLinesComponent implements OnInit {
   private readonly clientSvc = inject(ClientService);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
-  private readonly translate = inject(TranslateService);
 
   paysId = signal<number>(0);
   lines  = signal<CostLineDto[]>([]);
@@ -58,39 +58,30 @@ export class CostLinesComponent implements OnInit {
 
   readonly totalPagesCount = computed(() => Math.ceil(this.total() / this.size) || 1);
 
-  readonly statusSelectOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    return Object.keys(COST_STATUS_CONFIG)
-      .map(k => ({ value: k, label: this.translate.instant('COST.STATUS.' + k) }));
-  });
+  readonly statusSelectOptions: SelectOption[] = Object.entries(COST_STATUS_CONFIG)
+    .map(([k, v]) => ({ value: k, label: v.label }));
 
-  readonly tableColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    return [
-      { key: 'label',         label: this.translate.instant('COST.LINES.COL_DESCRIPTION'), type: 'custom' },
-      { key: 'categoryLabel', label: this.translate.instant('COST.LINES.COL_CATEGORY'),    type: 'text' },
-      { key: 'date',          label: this.translate.instant('COST.LINES.COL_DATE'),        type: 'text' },
-      { key: 'netAmountLocal',label: this.translate.instant('COST.LINES.COL_NET_AMOUNT'),  type: 'custom', align: 'right' },
-      { key: 'netAmountEur',  label: this.translate.instant('COST.LINES.COL_EUR'),         type: 'custom', align: 'right' },
-      { key: 'status',        label: this.translate.instant('COST.LINES.COL_STATUS'),      type: 'custom', align: 'center' },
-      { key: 'approvalLevel', label: this.translate.instant('COST.LINES.COL_APPROVAL'),    type: 'custom', align: 'center' },
-      { key: '_actions',      label: this.translate.instant('COST.LINES.COL_ACTIONS'),     type: 'custom', align: 'right', width: '80px' },
-    ];
-  });
+  readonly tableColumns: TableColumn[] = [
+    { key: 'label',         label: 'Description', type: 'custom' },
+    { key: 'categoryLabel', label: 'Catégorie',   type: 'text' },
+    { key: 'date',          label: 'Date',        type: 'text' },
+    { key: 'netAmountLocal',label: 'Montant HT',  type: 'custom', align: 'right' },
+    { key: 'netAmountEur',  label: 'EUR',         type: 'custom', align: 'right' },
+    { key: 'status',        label: 'Statut',      type: 'custom', align: 'center' },
+    { key: 'approvalLevel', label: 'Approbation', type: 'custom', align: 'center' },
+    { key: '_actions',      label: 'Actions',     type: 'custom', align: 'right', width: '80px' },
+  ];
 
   readonly tableConfig = computed<TableConfig>(() => ({
     hoverable:    true,
     loading:      this.isLoading(),
-    emptyMessage: this.translate.instant('COST.LINES.TABLE_EMPTY'),
+    emptyMessage: 'Aucune ligne de coût trouvée.',
     skeletonRows: 5,
   }));
 
-  readonly toolbarActions = computed<ToolbarAction[]>(() => {
-    this.translate.currentLang();
-    return [
-      { id: 'new', label: this.translate.instant('COST.LINES.NEW_LINE'), icon: 'add', position: 'right', variant: 'primary' },
-    ];
-  });
+  readonly toolbarActions: ToolbarAction[] = [
+    { id: 'new', label: 'Nouvelle ligne', icon: 'add', position: 'right', variant: 'primary' },
+  ];
 
   readonly tableRows = computed(() => {
     const q = this.searchText().toLowerCase().trim();
@@ -127,10 +118,10 @@ export class CostLinesComponent implements OnInit {
             error: () => {},
           });
         } else {
-          this.serverError.set(this.translate.instant('COST.LINES.NO_PAYS'));
+          this.serverError.set('Pays introuvable pour votre compte.');
         }
       },
-      error: () => this.serverError.set(this.translate.instant('COST.LINES.NO_PAYS_DETERMINE')),
+      error: () => this.serverError.set('Impossible de déterminer le pays.'),
     });
   }
 
@@ -150,7 +141,7 @@ export class CostLinesComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: err => {
-        this.serverError.set(err.error?.message ?? this.translate.instant('COST.LINES.LOAD_ERROR'));
+        this.serverError.set(err.error?.message ?? 'Impossible de charger les lignes.');
         this.isLoading.set(false);
       },
     });
@@ -168,13 +159,13 @@ export class CostLinesComponent implements OnInit {
     this.actionError.set(null);
     this.svc.submitCostLine(line.id).subscribe({
       next:  () => this.load(),
-      error: err => this.actionError.set(err.error?.message ?? this.translate.instant('COST.LINES.SUBMIT_ERROR')),
+      error: err => this.actionError.set(err.error?.message ?? 'Erreur lors de la soumission.'),
     });
   }
 
   getCategoryLabel(id: number | null): string {
     if (id == null) return '—';
-    return this.categoryMap().get(id) ?? this.translate.instant('COST.LINES.CAT_FALLBACK', { id });
+    return this.categoryMap().get(id) ?? `Cat. ${id}`;
   }
 
   canEdit(line: CostLineDto): boolean   { return line.status === 'DRAFT' || line.status === 'RETURNED'; }
@@ -195,7 +186,7 @@ export class CostLinesComponent implements OnInit {
   }
 
   statusLabel(s: string): string {
-    return this.translate.instant('COST.STATUS.' + s);
+    return COST_STATUS_CONFIG[s as CostLineStatus]?.label ?? s;
   }
 
   approvalBadgeOptions(level: string | null): BadgeOptions {

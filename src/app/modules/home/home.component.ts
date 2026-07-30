@@ -9,6 +9,7 @@ import { PaymentService }  from '../payments/payment.service';
 import { PaymentsDashboardStats } from '../payments/payment.model';
 import { InvoiceService }  from '../invoicing/invoice.service';
 import { InvoiceListItem, INVOICE_STATUT_CONFIG } from '../invoicing/invoice.model';
+import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 
 interface ModuleDef {
   path:        string;
@@ -74,7 +75,7 @@ const ACTIVITY_CONFIG: Record<string, { icon: string; cls: string }> = {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [TitleCasePipe, CardComponent, TranslatePipe],
+  imports: [TitleCasePipe, CardComponent, TranslatePipe, DisplayCurrencyPipe],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })

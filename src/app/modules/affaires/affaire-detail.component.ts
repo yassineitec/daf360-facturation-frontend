@@ -2,8 +2,7 @@ import { Component, OnInit, inject, signal, computed, input } from '@angular/cor
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { TableColumn, TableRow, TableConfig, DataTableComponent, DafCellDirective, FormFieldComponent } from '@khalilrebhiitec/daf360';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AffaireService } from './affaire.service';
 import { AffaireWizardService } from './affaire-wizard.service';
 import {
@@ -18,10 +17,11 @@ import { TsListComponent } from './ts/ts-list.component';
 import { TsFormComponent } from './ts/ts-form.component';
 import { AffaireOstComponent } from './ost/affaire-ost.component';
 import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.component';
+import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 
 @Component({
   selector: 'app-affaire-detail',
-  imports: [RouterLink, FormsModule, DecimalPipe, TranslatePipe, StatusBadgeComponent, PermissionDirective, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent, DataTableComponent, DafCellDirective, FormFieldComponent],
+  imports: [RouterLink, FormsModule, DecimalPipe, TranslatePipe, StatusBadgeComponent, PermissionDirective, TsListComponent, TsFormComponent, AffaireOstComponent, AfaireBillingTabComponent, DisplayCurrencyPipe],
   templateUrl: './affaire-detail.component.html',
   styleUrl: './affaire-detail.component.scss',
 })
@@ -34,7 +34,6 @@ export class AffaireDetailComponent implements OnInit {
   private readonly store     = inject(UserStore);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
-  private readonly translate = inject(TranslateService);
 
   affaire      = signal<AffaireDetail | null>(null);
   raf          = signal<RafDetailsDto | null>(null);
@@ -80,49 +79,6 @@ export class AffaireDetailComponent implements OnInit {
   });
 
   readonly affaireDevise = computed(() => this.affaire()?.devise || 'TND');
-
-  // ── Factures émises table ──────────────────────────────────────────────────
-  readonly invoicesColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    return [
-      { key: 'number', label: this.translate.instant('AFFAIRES.DETAIL.INVOICES.NUMBER'), type: 'custom' },
-      { key: 'type',   label: this.translate.instant('AFFAIRES.DETAIL.INVOICES.TYPE'),   type: 'custom' },
-      { key: 'emitted',label: this.translate.instant('AFFAIRES.DETAIL.INVOICES.EMITTED'),type: 'custom' },
-      { key: 'due',    label: this.translate.instant('AFFAIRES.DETAIL.INVOICES.DUE'),    type: 'custom' },
-      { key: 'amount', label: this.translate.instant('AFFAIRES.DETAIL.INVOICES.AMOUNT'), type: 'custom', align: 'right' },
-      { key: 'status', label: this.translate.instant('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'custom' },
-    ];
-  });
-
-  readonly invoicesRows = computed<TableRow[]>(() =>
-    this.invoices().map(inv => ({ id: inv.id, _raw: inv }))
-  );
-
-  readonly invoicesConfig = computed<TableConfig>(() => ({
-    hoverable:    false,
-    emptyMessage: this.translate.instant('AFFAIRES.DETAIL.SECTIONS.NO_INVOICES'),
-  }));
-
-  // ── Paiements reçus table ──────────────────────────────────────────────────
-  readonly paymentsColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    return [
-      { key: 'date',      label: this.translate.instant('AFFAIRES.DETAIL.PAYMENTS.DATE'),      type: 'custom' },
-      { key: 'invoice',   label: this.translate.instant('AFFAIRES.DETAIL.PAYMENTS.INVOICE'),   type: 'custom' },
-      { key: 'method',    label: this.translate.instant('AFFAIRES.DETAIL.PAYMENTS.METHOD'),    type: 'custom' },
-      { key: 'reference', label: this.translate.instant('AFFAIRES.DETAIL.PAYMENTS.REFERENCE'), type: 'custom' },
-      { key: 'amount',    label: this.translate.instant('AFFAIRES.DETAIL.PAYMENTS.AMOUNT'),    type: 'custom', align: 'right' },
-    ];
-  });
-
-  readonly paymentsRows = computed<TableRow[]>(() =>
-    this.payments().map(p => ({ id: p.id, _raw: p }))
-  );
-
-  readonly paymentsConfig = computed<TableConfig>(() => ({
-    hoverable:    false,
-    emptyMessage: this.translate.instant('AFFAIRES.DETAIL.SECTIONS.NO_PAYMENTS'),
-  }));
 
   ngOnInit(): void {
     this.loadAll();

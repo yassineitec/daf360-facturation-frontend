@@ -7,5 +7,11 @@
   (itemClick)="onNavClick($event)" />
 
 <main class="shell-content">
+  <div class="currency-bar">
+    <span class="currency-bar__label">Devise</span>
+    @for (c of currencies; track c) {
+      <button class="curr-chip" [class.curr-chip--active]="currSvc.selectedCurrency() === c" (click)="currSvc.setCurrency(c)">{{ c }}</button>
+    }
+  </div>
   <router-outlet />
 </main>

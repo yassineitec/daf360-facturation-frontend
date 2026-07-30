@@ -1,55 +1,55 @@
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { NgClass }                                             from '@angular/common';
 import { FormsModule }                                        from '@angular/forms';
-import { TranslatePipe, TranslateService }                    from '@ngx-translate/core';
 import { BillingService, BillingLineDto }                     from './billing.service';
 import { UserStore }                                          from '../../../core/user.store';
+import { DisplayCurrencyPipe }                               from '../../../shared/display-currency.pipe';
 
-const STATUT_CFG: Record<string, { bg: string; color: string; border: string }> = {
-  EN_ATTENTE_DF: { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-  VALIDE_DF:     { bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },
-  FACTURE:       { bg: '#d1fae5', color: '#065f46', border: '#34d399' },
-  A_VERIFIER:    { bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
-  RETOURNE:      { bg: '#ffedd5', color: '#9a3412', border: '#fdba74' },
-  ANNULE:        { bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+const STATUT_CFG: Record<string, { label: string; bg: string; color: string; border: string }> = {
+  EN_ATTENTE_DF: { label: 'En attente DF', bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  VALIDE_DF:     { label: 'Validé DF',     bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },
+  FACTURE:       { label: 'Facturé',       bg: '#d1fae5', color: '#065f46', border: '#34d399' },
+  A_VERIFIER:    { label: 'À vérifier',    bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
+  RETOURNE:      { label: 'Retourné',      bg: '#ffedd5', color: '#9a3412', border: '#fdba74' },
+  ANNULE:        { label: 'Annulé',        bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
 };
 
 @Component({
   selector: 'app-billing-lines',
   standalone: true,
-  imports: [NgClass, FormsModule, TranslatePipe],
+  imports: [NgClass, FormsModule, DisplayCurrencyPipe],
   template: `
 <div class="mt-6">
   <div class="flex items-center justify-between mb-3">
     <h4 class="text-sm font-semibold text-[#1d2b3e] flex items-center gap-1.5">
       <span class="material-symbols-outlined text-base text-[#1a6b7c]">receipt_long</span>
-      {{ 'AFFAIRES.billing.lines.title' | translate }}
+      Lignes de facturation
     </h4>
     <button (click)="load()" class="text-xs text-[#1a6b7c] hover:underline flex items-center gap-1">
-      <span class="material-symbols-outlined text-sm">refresh</span>{{ 'AFFAIRES.billing.lines.refresh' | translate }}
+      <span class="material-symbols-outlined text-sm">refresh</span>Actualiser
     </button>
   </div>
 
   @if (loading()) {
-    <div class="text-sm text-[#64748b] text-center py-6">{{ 'AFFAIRES.billing.lines.loading' | translate }}</div>
+    <div class="text-sm text-[#64748b] text-center py-6">Chargement…</div>
   } @else if (lines().length === 0) {
     <div class="text-sm text-[#64748b] text-center py-6 border border-dashed border-[#eceef0] rounded-xl">
-      {{ 'AFFAIRES.billing.lines.empty' | translate }}
+      Aucune ligne de facturation générée.
     </div>
   } @else {
     <div class="overflow-x-auto rounded-xl border border-[#eceef0]">
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-[#f8fafc] text-xs font-semibold text-[#64748b] uppercase tracking-wide">
-            <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.lines.col_reference' | translate }}</th>
-            <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.lines.col_periode' | translate }}</th>
-            <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.lines.col_date_billing' | translate }}</th>
-            <th class="px-4 py-3 text-right">{{ 'AFFAIRES.billing.lines.col_montant_ht' | translate }}</th>
-            <th class="px-4 py-3 text-right">{{ 'AFFAIRES.billing.lines.col_wip' | translate }}</th>
-            <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.lines.col_statut' | translate }}</th>
-            <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.lines.col_facture' | translate }}</th>
+            <th class="px-4 py-3 text-left">Référence</th>
+            <th class="px-4 py-3 text-left">Période</th>
+            <th class="px-4 py-3 text-left">Date facturation</th>
+            <th class="px-4 py-3 text-right">Montant HT</th>
+            <th class="px-4 py-3 text-right">WIP</th>
+            <th class="px-4 py-3 text-left">Statut</th>
+            <th class="px-4 py-3 text-left">Facture</th>
             @if (canDF()) {
-              <th class="px-4 py-3 text-left">{{ 'AFFAIRES.billing.lines.col_actions_df' | translate }}</th>
+              <th class="px-4 py-3 text-left">Actions DF</th>
             }
           </tr>
         </thead>
@@ -59,7 +59,7 @@ const STATUT_CFG: Record<string, { bg: string; color: string; border: string }> 
               <td class="px-4 py-3 font-mono text-xs text-[#44474c]">{{ line.reference }}</td>
               <td class="px-4 py-3 text-[#44474c]">{{ line.periode || '—' }}</td>
               <td class="px-4 py-3 text-[#44474c]">{{ fmtDate(line.dateBilling) }}</td>
-              <td class="px-4 py-3 text-right font-medium text-[#1d2b3e]">{{ fmtAmt(line.montantHt) }} {{ devise }}</td>
+              <td class="px-4 py-3 text-right font-medium text-[#1d2b3e]">{{ line.montantHt | displayCurrency : devise }}</td>
               <td class="px-4 py-3 text-right text-[#64748b]">{{ fmtAmt(line.wip) }}</td>
               <td class="px-4 py-3">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border"
@@ -77,17 +77,17 @@ const STATUT_CFG: Record<string, { bg: string; color: string; border: string }> 
                       <button (click)="doValidate(line.id)"
                         class="px-2 py-1 text-xs rounded-lg font-medium bg-[#d1fae5] text-[#065f46]
                                hover:bg-[#a7f3d0] transition-colors">
-                        {{ 'AFFAIRES.billing.lines.validate' | translate }}
+                        Valider
                       </button>
                       <button (click)="openModal(line.id, 'retour')"
                         class="px-2 py-1 text-xs rounded-lg font-medium bg-[#ffedd5] text-[#9a3412]
                                hover:bg-[#fed7aa] transition-colors">
-                        {{ 'AFFAIRES.billing.lines.return' | translate }}
+                        Retourner
                       </button>
                       <button (click)="openModal(line.id, 'annuler')"
                         class="px-2 py-1 text-xs rounded-lg font-medium bg-[#fee2e2] text-[#991b1b]
                                hover:bg-[#fecaca] transition-colors">
-                        {{ 'AFFAIRES.billing.lines.cancel_action' | translate }}
+                        Annuler
                       </button>
                     </div>
                   }
@@ -106,24 +106,24 @@ const STATUT_CFG: Record<string, { bg: string; color: string; border: string }> 
     (click)="$event.target === $event.currentTarget && showModal.set(false)">
     <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
       <h3 class="text-base font-semibold text-[#1d2b3e] mb-4">
-        {{ (modalMode() === 'retour' ? 'AFFAIRES.billing.lines.modal_title_return' : 'AFFAIRES.billing.lines.modal_title_cancel') | translate }}
+        {{ modalMode() === 'retour' ? 'Motif de retour' : "Motif d'annulation" }}
       </h3>
       <textarea [(ngModel)]="motif" rows="3" maxlength="500"
         class="w-full border border-[#eceef0] rounded-xl px-3 py-2 text-sm resize-none
                focus:outline-none focus:ring-2 focus:ring-[#1a6b7c]/30"
-        placeholder="{{ 'AFFAIRES.billing.lines.motif_placeholder' | translate }}"></textarea>
+        placeholder="Motif obligatoire…"></textarea>
       @if (modalError()) {
         <p class="text-xs text-[#dc2626] mt-1">{{ modalError() }}</p>
       }
       <div class="flex justify-end gap-3 mt-4">
         <button (click)="showModal.set(false)"
           class="px-4 py-2 text-sm rounded-xl border border-[#eceef0] text-[#44474c] hover:bg-[#f8fafc]">
-          {{ 'AFFAIRES.billing.lines.modal_cancel' | translate }}
+          Annuler
         </button>
         <button (click)="submitModal()"
           [ngClass]="motif.trim() ? 'bg-[#1a6b7c] hover:bg-[#134f5c] cursor-pointer' : 'bg-[#c5c6cd] cursor-not-allowed'"
           class="px-4 py-2 text-sm rounded-xl text-white font-medium transition-colors">
-          {{ 'AFFAIRES.billing.lines.confirm' | translate }}
+          Confirmer
         </button>
       </div>
     </div>
@@ -135,9 +135,8 @@ export class BillingLinesComponent implements OnInit {
   @Input({ required: true }) affaireId!: number;
   @Input() devise = 'EUR';
 
-  private readonly svc       = inject(BillingService);
-  private readonly store     = inject(UserStore);
-  private readonly translate = inject(TranslateService);
+  private readonly svc   = inject(BillingService);
+  private readonly store = inject(UserStore);
 
   lines      = signal<BillingLineDto[]>([]);
   loading    = signal(false);
@@ -161,9 +160,7 @@ export class BillingLinesComponent implements OnInit {
   }
 
   cfg(statut: string) {
-    const c = STATUT_CFG[statut];
-    if (!c) return { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
-    return { ...c, label: this.translate.instant('AFFAIRES.billing.status.' + statut) };
+    return STATUT_CFG[statut] ?? { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
   }
 
   doValidate(lineId: number): void {
@@ -179,13 +176,13 @@ export class BillingLinesComponent implements OnInit {
   }
 
   submitModal(): void {
-    if (!this.motif.trim()) { this.modalError.set(this.translate.instant('AFFAIRES.billing.lines.err_motif_required')); return; }
+    if (!this.motif.trim()) { this.modalError.set('Le motif est obligatoire.'); return; }
     const obs$ = this.modalMode() === 'retour'
       ? this.svc.returnDF(this.activeLineId, this.motif.trim())
       : this.svc.cancelLine(this.activeLineId, this.motif.trim());
     obs$.subscribe({
       next:  () => { this.showModal.set(false); this.load(); },
-      error: err => this.modalError.set(err?.error?.message ?? this.translate.instant('AFFAIRES.billing.lines.err_action')),
+      error: err => this.modalError.set(err?.error?.message ?? 'Erreur lors de l\'action.'),
     });
   }
 

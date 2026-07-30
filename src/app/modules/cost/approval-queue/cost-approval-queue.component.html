@@ -3,37 +3,35 @@
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
   <div class="ap-header">
     <div>
-      <h3 class="ap-header__title">{{ 'COST.APPROVAL_QUEUE.TITLE' | translate }}</h3>
-      <p class="ap-header__sub">{{ 'COST.APPROVAL_QUEUE.SUBTITLE' | translate }}</p>
+      <h3 class="ap-header__title">File d'approbation</h3>
+      <p class="ap-header__sub">Flux de travail consolidé pour les validations financières.</p>
     </div>
     <div class="ap-header__actions">
       <div class="ap-search-wrap" style="width: 280px">
         <app-search-bar
-          [placeholder]="'COST.APPROVAL_QUEUE.SEARCH_PLACEHOLDER' | translate"
+          placeholder="ID, titre, ou montant..."
           [value]="searchTerm()"
           (valueChange)="searchTerm.set($event)" />
       </div>
-      <daf-button [options]="{variant:'ghost', label:('COST.APPROVAL_QUEUE.FILTERS' | translate), iconStart:'tune'}" />
+      <daf-button [options]="{variant:'ghost', label:'Filtres', iconStart:'tune'}" />
     </div>
   </div>
 
   <!-- ── KPI Stats ─────────────────────────────────────────────────────────── -->
   <div class="kpi-grid">
 
-    <!-- En attente -->
     <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
       <div class="kpi-inner">
         <div class="kpi-icon-box kpi-icon-box--teal">
           <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
         </div>
         <div>
-          <p class="kpi-label">{{ 'COST.APPROVAL_QUEUE.KPI_PENDING' | translate }}</p>
+          <p class="kpi-label">En attente</p>
           <h4 class="kpi-value">{{ pendingCount() }}</h4>
         </div>
       </div>
     </daf-card>
 
-    <!-- Urgents -->
     <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
       <div class="kpi-inner">
         <div class="kpi-danger-bar"></div>
@@ -41,17 +39,16 @@
           <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">priority_high</span>
         </div>
         <div>
-          <p class="kpi-label">{{ 'COST.APPROVAL_QUEUE.KPI_URGENT' | translate }}</p>
+          <p class="kpi-label">Urgents</p>
           <h4 class="kpi-value">{{ urgentCount() }}</h4>
         </div>
       </div>
     </daf-card>
 
-    <!-- Performance sparkline -->
     <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}" class="kpi-perf-card">
       <div class="kpi-inner kpi-inner--perf">
         <div class="kpi-perf-content">
-          <p class="kpi-label">{{ 'COST.APPROVAL_QUEUE.KPI_PERF' | translate }}</p>
+          <p class="kpi-label">Performance d'approbation</p>
           <div class="kpi-perf-row">
             <h4 class="kpi-value">{{ avgHours }}h</h4>
             <span class="kpi-delta">
@@ -59,7 +56,7 @@
               {{ perfDelta }}%
             </span>
           </div>
-          <p class="kpi-perf-sub">{{ 'COST.APPROVAL_QUEUE.KPI_PERF_SUB' | translate }}</p>
+          <p class="kpi-perf-sub">Temps de traitement moyen hebdomadaire</p>
         </div>
         <div class="kpi-sparkline-wrap">
           <svg viewBox="0 0 200 60" preserveAspectRatio="none" width="100%" height="100%">
@@ -78,13 +75,22 @@
 
   </div>
 
-  <!-- ── Approval Grid ─────────────────────────────────────────────────────── -->
+  <!-- ── Hiring load error ──────────────────────────────────────────────────── -->
+  @if (hiringError()) {
+    <div class="hiring-error">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">error</span>
+      Approbations recrutement : {{ hiringError() }}
+    </div>
+  }
+
+  <!-- ── Unified approval grid ─────────────────────────────────────────────── -->
   <div class="ap-grid">
 
-    @if (isLoading()) {
+    <!-- Skeletons while either list is loading -->
+    @if (isLoading() || hiringLoading()) {
       @for (n of [1,2,3,4,5,6]; track n) {
         <div class="ap-card ap-card--skel">
-          <div class="skel" style="width:70px; height:22px; border-radius:8px; margin-bottom:20px;"></div>
+          <div class="skel" style="width:80px; height:22px; border-radius:8px; margin-bottom:20px;"></div>
           <div class="skel" style="height:14px; margin-bottom:8px;"></div>
           <div class="skel" style="width:80%; height:18px; margin-bottom:28px;"></div>
           <div class="skel" style="height:12px; margin-bottom:8px;"></div>
@@ -94,18 +100,19 @@
       }
     }
 
-    @if (!isLoading()) {
+    @if (!isLoading() && !hiringLoading()) {
+
+      <!-- ── Facturation cost cards ─────────────────────────────────────────── -->
       @for (cost of filteredCosts(); track cost.id) {
         <div class="ap-card">
 
-          <!-- Urgency badge positioned above card top edge -->
-          <div class="ap-badge-pos">
+          <div class="ap-badge-pos ap-badge-pos--row">
+            <span class="ap-type-chip">Facturation</span>
             <daf-badge
               [label]="urgencyLabel(cost.approvalLevelRequired)"
               [options]="urgencyBadgeOptions(cost.approvalLevelRequired)" />
           </div>
 
-          <!-- Card head -->
           <div class="ap-card__head">
             <div class="ap-card__icon">
               <span class="material-symbols-outlined">receipt_long</span>
@@ -117,33 +124,31 @@
             <div class="ap-card__dot ap-card__dot--{{ urgencyClass(cost.approvalLevelRequired) }}"></div>
           </div>
 
-          <!-- Details -->
           <div class="ap-card__details">
             <div class="ap-card__row">
-              <span class="ap-card__row-k">{{ 'COST.APPROVAL_QUEUE.PRIORITY' | translate }}</span>
+              <span class="ap-card__row-k">Priorité</span>
               <span class="ap-card__row-v">{{ urgencyLabel(cost.approvalLevelRequired) }}</span>
             </div>
             <div class="ap-card__row">
-              <span class="ap-card__row-k">{{ 'COST.APPROVAL_QUEUE.DATE' | translate }}</span>
+              <span class="ap-card__row-k">Date</span>
               <span class="ap-card__row-v">{{ fmtDate(cost.transactionDate) }}</span>
             </div>
             <div class="ap-card__amount-block">
-              <span class="ap-card__amount-lbl">{{ 'COST.APPROVAL_QUEUE.AMOUNT_TOTAL' | translate }}</span>
+              <span class="ap-card__amount-lbl">Montant Total</span>
               <span class="ap-card__amount">
-                {{ formatAmt(cost.netAmountEur ?? cost.netAmountLocal, cost.netAmountEur != null ? 'EUR' : (cost.currency ?? 'EUR')) }}
+                {{ (cost.netAmountEur ?? cost.netAmountLocal) | displayCurrency : (cost.netAmountEur != null ? 'EUR' : (cost.currency ?? 'TND')) }}
               </span>
             </div>
           </div>
 
-          <!-- Actions -->
           <div class="ap-card__actions">
             <daf-button
               *appHasPermission="'FACT_APPROVE_COST_L1'"
-              [options]="{variant:'teal', label:('COST.APPROVAL_QUEUE.APPROVE_REQUEST' | translate), iconStart:'check_circle', fullWidth:true}"
+              [options]="{variant:'teal', label:'Approuver la demande', iconStart:'check_circle', fullWidth:true}"
               (onClick)="openApprove(cost)" />
             <div class="ap-btn-row2">
               <daf-button class="ap-btn-compl"
-                [options]="{variant:'ghost', label:('COST.APPROVAL_QUEUE.COMPLEMENT' | translate), size:'sm', fullWidth:true}"
+                [options]="{variant:'ghost', label:'Complément', size:'sm', fullWidth:true}"
                 (onClick)="openApprove(cost)" />
               <daf-button
                 [options]="{variant:'danger', iconStart:'block', size:'sm'}"
@@ -154,12 +159,84 @@
         </div>
       }
 
-      @if (filteredCosts().length === 0) {
-        <div class="ap-empty">
-          <span class="material-symbols-outlined">pending_actions</span>
-          <p>{{ 'COST.APPROVAL_QUEUE.EMPTY' | translate }}</p>
+      <!-- ── Hiring salary cards ────────────────────────────────────────────── -->
+      @for (item of hiringPending(); track item.id) {
+        <div class="ap-card">
+
+          <div class="ap-badge-pos">
+            <span class="ap-type-chip ap-type-chip--hiring">Recrutement</span>
+          </div>
+
+          <div class="ap-card__head">
+            <div class="ap-card__icon ap-card__icon--hiring">
+              <span class="material-symbols-outlined">how_to_reg</span>
+            </div>
+            <div class="ap-card__meta">
+              <span class="ap-card__ref ap-card__ref--hiring">
+                {{ item.contractTypeCode }} · {{ item.fiscalYear }}
+              </span>
+              <h5 class="ap-card__title">{{ item.candidateFirstName }} {{ item.candidateLastName }}</h5>
+            </div>
+            <div class="ap-card__dot ap-card__dot--low"></div>
+          </div>
+
+          <div class="ap-card__details">
+            @if (item.appliedPosition) {
+              <div class="ap-card__row">
+                <span class="ap-card__row-k">Poste</span>
+                <span class="ap-card__row-v">{{ item.appliedPosition }}</span>
+              </div>
+            }
+            @if (item.candidateLocation) {
+              <div class="ap-card__row">
+                <span class="ap-card__row-k">Entité</span>
+                <span class="ap-card__row-v">{{ item.candidateLocation }}</span>
+              </div>
+            }
+            <div class="ap-card__row">
+              <span class="ap-card__row-k">Net (cible)</span>
+              <span class="ap-card__row-v">{{ hiringSnap(item).inputNet | displayCurrency : (hiringSnap(item).localCurrency ?? 'TND') }}</span>
+            </div>
+            <div class="ap-card__row">
+              <span class="ap-card__row-k">Brut estimé</span>
+              <span class="ap-card__row-v">{{ hiringSnap(item).gross | displayCurrency : (hiringSnap(item).localCurrency ?? 'TND') }}</span>
+            </div>
+            <div class="ap-card__row">
+              <span class="ap-card__row-k">Coût mensuel</span>
+              <span class="ap-card__row-v">{{ hiringSnap(item).loadedCost | displayCurrency : (hiringSnap(item).localCurrency ?? 'TND') }}</span>
+            </div>
+            <div class="ap-card__amount-block">
+              <span class="ap-card__amount-lbl">Coût annuel</span>
+              <span class="ap-card__amount">{{ hiringAnnualCost(item) | displayCurrency : (hiringSnap(item).localCurrency ?? 'TND') }}</span>
+            </div>
+          </div>
+
+          <div class="ap-card__actions">
+            <daf-button
+              [options]="{variant:'teal', label:'Approuver la demande', iconStart:'check_circle', fullWidth:true}"
+              (onClick)="openHiringApprove(item)" />
+            <div class="ap-btn-row2">
+              <a class="ap-candidate-link" [href]="'/rh/candidates/' + item.candidateId">
+                <span class="material-symbols-outlined">open_in_new</span>
+                Voir candidat
+              </a>
+              <daf-button
+                [options]="{variant:'danger', iconStart:'block', size:'sm'}"
+                (onClick)="openHiringReject(item)" />
+            </div>
+          </div>
+
         </div>
       }
+
+      <!-- Empty state: nothing at all -->
+      @if (filteredCosts().length === 0 && hiringPending().length === 0) {
+        <div class="ap-empty">
+          <span class="material-symbols-outlined">pending_actions</span>
+          <p>Aucune demande en attente.</p>
+        </div>
+      }
+
     }
 
   </div>
@@ -167,44 +244,37 @@
 </div>
 
 <!-- ── FAB ────────────────────────────────────────────────────────────────── -->
-<button class="ap-fab" (click)="navigateToNew()" [title]="'COST.APPROVAL_QUEUE.FAB' | translate">
+<button class="ap-fab" (click)="navigateToNew()" title="Nouvelle Demande">
   <span class="material-symbols-outlined">add</span>
-  <span class="ap-fab__tip">{{ 'COST.APPROVAL_QUEUE.FAB' | translate }}</span>
+  <span class="ap-fab__tip">Nouvelle Demande</span>
 </button>
 
-<!-- ── Approval modal template ────────────────────────────────────────────── -->
+<!-- ── Cost approval modal ────────────────────────────────────────────────── -->
 <ng-template #approvalTpl>
   <div class="modal-body">
 
     @if (selectedCost()) {
       <div class="modal-cost-summary">
-        <p class="modal-cost-ref">
-          {{ selectedCost()!.reference ?? ('COUT-' + selectedCost()!.id) }}
-        </p>
+        <p class="modal-cost-ref">{{ selectedCost()!.reference ?? ('COUT-' + selectedCost()!.id) }}</p>
         <p class="modal-cost-amount">
-          {{ formatAmt(
-              selectedCost()!.netAmountEur ?? selectedCost()!.netAmountLocal,
-              selectedCost()!.netAmountEur != null ? 'EUR' : (selectedCost()!.currency ?? 'EUR')
-            ) }}
+          {{ (selectedCost()!.netAmountEur ?? selectedCost()!.netAmountLocal) | displayCurrency : (selectedCost()!.netAmountEur != null ? 'EUR' : (selectedCost()!.currency ?? 'TND')) }}
         </p>
         <p class="modal-cost-label">{{ selectedCost()!.label ?? '—' }}</p>
       </div>
     }
 
     <div>
-      <label class="modal-field-label">{{ 'COST.APPROVAL_QUEUE.DECISION_LABEL' | translate }}</label>
+      <label class="modal-field-label">Décision *</label>
       <div class="decision-btns">
         <button class="decision-btn"
           [class.decision-btn--approve]="modalDecision() === 'approve'"
           (click)="modalDecision.set('approve')">
-          <span class="material-symbols-outlined">check_circle</span>
-          {{ 'COST.APPROVAL_QUEUE.APPROVE' | translate }}
+          <span class="material-symbols-outlined">check_circle</span> Approuver
         </button>
         <button class="decision-btn"
           [class.decision-btn--reject]="modalDecision() === 'reject'"
           (click)="modalDecision.set('reject')">
-          <span class="material-symbols-outlined">cancel</span>
-          {{ 'COST.APPROVAL_QUEUE.REJECT' | translate }}
+          <span class="material-symbols-outlined">cancel</span> Refuser
         </button>
       </div>
     </div>
@@ -213,17 +283,76 @@
       [value]="approvalCommentSig()"
       (valueChange)="approvalCommentSig.set($any($event) || '')"
       [options]="{
-        type: 'textarea',
-        label: ('COST.APPROVAL_QUEUE.COMMENT_LABEL' | translate),
-        rows: 3,
-        placeholder: modalDecision() === 'reject' ? ('COST.APPROVAL_QUEUE.COMMENT_REJECT_PLACEHOLDER' | translate) : ('COST.APPROVAL_QUEUE.COMMENT_OPT_PLACEHOLDER' | translate),
+        type: 'textarea', label: 'Commentaire', rows: 3,
+        placeholder: modalDecision() === 'reject' ? 'Motif du refus (obligatoire)…' : 'Commentaire optionnel…',
         required: modalDecision() === 'reject'
       }" />
 
     @if (modalError()) {
       <div class="modal-error">
-        <span class="material-symbols-outlined">error</span>
-        {{ modalError() }}
+        <span class="material-symbols-outlined">error</span>{{ modalError() }}
+      </div>
+    }
+
+  </div>
+</ng-template>
+
+<!-- ── Hiring approval modal ──────────────────────────────────────────────── -->
+<ng-template #hiringApprovalTpl>
+  <div class="modal-body">
+
+    @if (selectedHiring()) {
+      <div class="modal-cost-summary">
+        <p class="modal-cost-ref">
+          {{ selectedHiring()!.candidateFirstName }} {{ selectedHiring()!.candidateLastName }}
+          · {{ selectedHiring()!.contractTypeCode }}
+        </p>
+        <p class="modal-cost-amount">
+          {{ hiringSnap(selectedHiring()!).loadedCost | displayCurrency : (hiringSnap(selectedHiring()!).localCurrency ?? 'TND') }}
+        </p>
+        <p class="modal-cost-label">Coût chargé estimé</p>
+      </div>
+    }
+
+    <div>
+      <label class="modal-field-label">Décision *</label>
+      <div class="decision-btns">
+        <button class="decision-btn"
+          [class.decision-btn--approve]="hiringDecision() === 'approve'"
+          (click)="hiringDecision.set('approve')">
+          <span class="material-symbols-outlined">check_circle</span> Approuver
+        </button>
+        <button class="decision-btn"
+          [class.decision-btn--reject]="hiringDecision() === 'reject'"
+          (click)="hiringDecision.set('reject')">
+          <span class="material-symbols-outlined">cancel</span> Refuser
+        </button>
+      </div>
+    </div>
+
+    @if (hiringDecision() === 'reject') {
+      <daf-form-field
+        [value]="hiringContrePropSig() != null ? hiringContrePropSig()!.toString() : ''"
+        (valueChange)="hiringContrePropSig.set($any($event) ? +$any($event) : null)"
+        [options]="{
+          type: 'number', label: 'Salaire contre proposition',
+          placeholder: 'Montant net proposé par la direction…',
+          hint: 'Optionnel — écrase le salaire net RH du candidat si renseigné.'
+        }" />
+    }
+
+    <daf-form-field
+      [value]="hiringCommentSig()"
+      (valueChange)="hiringCommentSig.set($any($event) || '')"
+      [options]="{
+        type: 'textarea', label: 'Commentaire', rows: 3,
+        placeholder: hiringDecision() === 'reject' ? 'Motif du refus (obligatoire)…' : 'Commentaire optionnel…',
+        required: hiringDecision() === 'reject'
+      }" />
+
+    @if (hiringModalError()) {
+      <div class="modal-error">
+        <span class="material-symbols-outlined">error</span>{{ hiringModalError() }}
       </div>
     }
 

@@ -123,7 +123,7 @@
             <div class="ap-card__amount-block">
               <span class="ap-card__amount-lbl">{{ 'COST.QUEUE.AMOUNT_TOTAL' | translate }}</span>
               <span class="ap-card__amount">
-                {{ formatAmount(line.netAmountEur ?? line.netAmountLocal, line.netAmountEur != null ? 'EUR' : (line.currency ?? 'EUR')) }}
+                {{ (line.netAmountEur ?? line.netAmountLocal) | displayCurrency : (line.netAmountEur != null ? 'EUR' : (line.currency ?? 'TND')) }}
               </span>
             </div>
           </div>

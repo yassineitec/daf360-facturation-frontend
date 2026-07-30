@@ -3,12 +3,12 @@
   <!-- Header -->
   <div class="page-header">
     <div class="page-title">
-      <h1>{{ 'PAYMENTS.DASHBOARD.TITLE' | translate }}</h1>
-      <span class="page-subtitle">{{ 'PAYMENTS.DASHBOARD.SUBTITLE' | translate }}</span>
+      <h1>Paiements</h1>
+      <span class="page-subtitle">Suivi des encaissements et factures impayées</span>
     </div>
     <daf-button
       *appHasPermission="'FACT_BANK_RECONCILIATION'"
-      [options]="{variant:'secondary', label:('PAYMENTS.DASHBOARD.RECON_BTN' | translate), iconStart:'account_balance'}"
+      [options]="{variant:'secondary', label:'Rapprochement bancaire', iconStart:'account_balance'}"
       (onClick)="navigateToReconciliation()" />
   </div>
 
@@ -20,21 +20,21 @@
       }
     } @else if (stats()) {
       <daf-metric-card
-        [value]="formatAmount(stats()!.enAttenteMontant, stats()!.devise)"
-        [label]="'PAYMENTS.DASHBOARD.KPI.PENDING' | translate"
+        [value]="stats()!.enAttenteMontant | displayCurrency : stats()!.devise"
+        label="En attente de paiement"
         [options]="{ icon: 'hourglass_empty', iconColor: '#1d2b3e', iconBg: '#e8ecf2', valueColor: '#1d2b3e' }" />
       <daf-metric-card
         [value]="stats()!.enRetardCount"
-        [label]="'PAYMENTS.DASHBOARD.KPI.OVERDUE' | translate"
-        [delta]="{ value: formatAmount(stats()!.enRetardMontant, stats()!.devise), direction: 'down' }"
+        label="En retard"
+        [delta]="{ value: (stats()!.enRetardMontant | displayCurrency : stats()!.devise), direction: 'down' }"
         [options]="{ icon: 'warning', iconColor: '#DC2626', iconBg: '#fee2e2', valueColor: '#DC2626', deltaColor: '#DC2626' }" />
       <daf-metric-card
-        [value]="formatAmount(stats()!.encaisseThisMoisMontant, stats()!.devise)"
-        [label]="'PAYMENTS.DASHBOARD.KPI.COLLECTED_MONTH' | translate"
+        [value]="stats()!.encaisseThisMoisMontant | displayCurrency : stats()!.devise"
+        label="Encaissé ce mois"
         [options]="{ icon: 'payments', iconColor: '#2D5D6E', iconBg: '#e0f2f1', valueColor: '#2D5D6E' }" />
       <daf-metric-card
-        [value]="'PAYMENTS.DASHBOARD.DAYS' | translate: { n: stats()!.delaiMoyenPaiement }"
-        [label]="'PAYMENTS.DASHBOARD.KPI.AVG_DELAY' | translate"
+        [value]="stats()!.delaiMoyenPaiement + ' j'"
+        label="Délai moyen de paiement"
         [options]="{ icon: 'schedule', iconColor: '#4648d4', iconBg: '#eef2ff', valueColor: '#4648d4' }" />
     }
   </div>
@@ -43,36 +43,26 @@
   <daf-card [options]="{variant:'default',padding:'none',radius:'xl'}">
     <div class="filter-bar">
       <div class="filter-group">
-        <daf-form-field
-          [options]="{
-            type: 'number',
-            label: ('PAYMENTS.DASHBOARD.FILTER.AFFAIRE' | translate),
-            placeholder: ('PAYMENTS.DASHBOARD.FILTER.AFFAIRE_PH' | translate)
-          }"
-          [value]="filterAffaireId"
-          (valueChange)="filterAffaireId = $any($event) ?? ''; onFilterChange()" />
+        <label class="filter-label">Affaire</label>
+        <input type="number" class="filter-input" placeholder="ID affaire"
+          [(ngModel)]="filterAffaireId" (change)="onFilterChange()" min="1" />
       </div>
       <div class="filter-group">
-        <daf-form-field
-          [options]="{
-            type: 'number',
-            label: ('PAYMENTS.DASHBOARD.FILTER.CLIENT' | translate),
-            placeholder: ('PAYMENTS.DASHBOARD.FILTER.CLIENT_PH' | translate)
-          }"
-          [value]="filterClientId"
-          (valueChange)="filterClientId = $any($event) ?? ''; onFilterChange()" />
+        <label class="filter-label">Client</label>
+        <input type="number" class="filter-input" placeholder="ID client"
+          [(ngModel)]="filterClientId" (change)="onFilterChange()" min="1" />
       </div>
       <div class="filter-group">
-        <label class="filter-label">{{ 'PAYMENTS.DASHBOARD.FILTER.PERIOD' | translate }}</label>
+        <label class="filter-label">Période</label>
         <daf-multi-date-picker
           style="min-width: 240px"
-          [config]="dateRangeConfig()"
+          [config]="dateRangeConfig"
           [value]="filterDateRange()"
           (valueChange)="filterDateRange.set($event); onDateRangeChange()" />
       </div>
       <label class="filter-toggle">
         <input type="checkbox" [(ngModel)]="overdueOnly" (change)="onFilterChange()" />
-        <span>{{ 'PAYMENTS.DASHBOARD.FILTER.OVERDUE_ONLY' | translate }}</span>
+        <span>En retard uniquement</span>
       </label>
     </div>
   </daf-card>
@@ -85,7 +75,7 @@
   <!-- Aging table -->
   <daf-card [options]="{variant:'default',padding:'none',radius:'xl'}" class="table-wrap">
     <daf-data-table
-      [columns]="tableColumns()"
+      [columns]="tableColumns"
       [rows]="tableRows()"
       [config]="tableConfig()"
       (rowClick)="onRowClick($event)">
@@ -107,7 +97,7 @@
 
       <ng-template dafCell="montantTtc" let-row>
         <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])">
-          {{ formatAmount(row['montantTtc'], row['devise']) }}
+          {{ row['montantTtc'] | displayCurrency : row['devise'] }}
         </div>
       </ng-template>
 
@@ -121,7 +111,7 @@
         <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])">
           @if (row['joursRetard'] > 0) {
             <daf-badge
-              [label]="'PAYMENTS.DASHBOARD.DAYS' | translate: { n: row['joursRetard'] }"
+              [label]="row['joursRetard'] + ' j'"
               [options]="{ variant: retardVariant(row['joursRetard']), pill: true, size: 'sm' }" />
           } @else {
             <span class="on-time">—</span>
@@ -141,7 +131,7 @@
       <ng-template dafCell="_actions" let-row>
         <div class="row-bg" [style.background-color]="agingRowColor(row['joursRetard'])" (click)="$event.stopPropagation()">
           <daf-button
-            [options]="{variant:'ghost', label:('PAYMENTS.DASHBOARD.TABLE.VIEW' | translate), size:'sm'}"
+            [options]="{variant:'ghost', label:'Voir', size:'sm'}"
             (onClick)="navigateToInvoice(row['invoiceId'])" />
         </div>
       </ng-template>

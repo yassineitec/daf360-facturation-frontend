@@ -12,21 +12,21 @@
     <daf-card [options]="kpiOpts.collected">
       <div class="kpi-text">
         <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.COLLECTED_TITLE' | translate }}</p>
-        <p class="text-headline-lg text-on-surface font-bold kpi-c-green">{{ loadingStats() ? '…' : fmt(stats()?.encaisseThisMoisMontant, stats()?.devise) }}</p>
+        <p class="text-headline-lg text-on-surface font-bold kpi-c-green">{{ loadingStats() ? '…' : (stats()?.encaisseThisMoisMontant | displayCurrency : (stats()?.devise ?? 'TND')) }}</p>
       </div>
     </daf-card>
 
     <daf-card [options]="kpiOpts.pending">
       <div class="kpi-text">
         <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.PENDING_TITLE' | translate }}</p>
-        <p class="text-headline-lg text-on-surface font-bold">{{ loadingStats() ? '…' : fmt(stats()?.enAttenteMontant, stats()?.devise) }}</p>
+        <p class="text-headline-lg text-on-surface font-bold">{{ loadingStats() ? '…' : (stats()?.enAttenteMontant | displayCurrency : (stats()?.devise ?? 'TND')) }}</p>
       </div>
     </daf-card>
 
     <daf-card [options]="kpiOpts.overdue">
       <div class="kpi-text">
         <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.OVERDUE_TITLE' | translate }}</p>
-        <p class="text-headline-lg font-bold kpi-c-red">{{ loadingStats() ? '…' : fmt(stats()?.enRetardMontant, stats()?.devise) }}</p>
+        <p class="text-headline-lg font-bold kpi-c-red">{{ loadingStats() ? '…' : (stats()?.enRetardMontant | displayCurrency : (stats()?.devise ?? 'TND')) }}</p>
         @if (stats() && stats()!.enRetardCount > 0) {
           <p class="text-body-sm kpi-c-red">{{ stats()!.enRetardCount }} facture(s)</p>
         }

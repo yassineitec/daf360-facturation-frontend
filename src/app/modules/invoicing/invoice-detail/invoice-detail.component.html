@@ -30,10 +30,10 @@
         }
       </div>
       <div class="dh-amount-block">
-        <span class="dh-amount-ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</span>
+        <span class="dh-amount-ttc">{{ invoice()!.montantTtc | displayCurrency : invoice()!.devise }}</span>
         <span class="dh-amount-sub">
-          {{ formatAmount(invoice()!.montantHt, invoice()!.devise) }} HT +
-          {{ formatAmount(invoice()!.montantTva, invoice()!.devise) }} TVA
+          {{ invoice()!.montantHt | displayCurrency : invoice()!.devise }} HT +
+          {{ invoice()!.montantTva | displayCurrency : invoice()!.devise }} TVA
         </span>
       </div>
     </div>
@@ -57,13 +57,13 @@
 
     <daf-metric-card
       [label]="'INVOICING.DETAIL.KPI.BUDGET_TOTAL' | translate: { currency: invoice()!.devise }"
-      [value]="formatAmount(invoice()!.montantTtc, invoice()!.devise)"
-      [delta]="{ value: ('INVOICING.DETAIL.KPI.HT_PREFIX' | translate) + ' ' + formatAmount(invoice()!.montantHt, invoice()!.devise) }"
+      [value]="invoice()!.montantTtc | displayCurrency : invoice()!.devise"
+      [delta]="{ value: ('INVOICING.DETAIL.KPI.HT_PREFIX' | translate) + ' ' + (invoice()!.montantHt | displayCurrency : invoice()!.devise) }"
       [options]="{ icon: 'account_balance_wallet', iconColor: '#0f766e', iconBg: 'rgba(15,118,110,0.12)' }" />
 
     <daf-metric-card
       [label]="'INVOICING.DETAIL.KPI.REMAINING' | translate"
-      [value]="formatAmount(montantRestant(), invoice()!.devise)"
+      [value]="montantRestant() | displayCurrency : invoice()!.devise"
       [delta]="{ value: dueLabel() }"
       [options]="{ icon: 'payments', iconColor: '#16a34a', iconBg: 'rgba(22,163,74,0.12)' }" />
   </div>
@@ -91,7 +91,7 @@
             </ng-template>
 
             <ng-template dafCell="unitRate" let-row>
-              <span class="num muted">{{ formatAmount(row['unitRate']) }}</span>
+              <span class="num muted">{{ row['unitRate'] | displayCurrency : invoice()!.devise }}</span>
             </ng-template>
 
             <ng-template dafCell="vatRatePct" let-row>
@@ -99,11 +99,11 @@
             </ng-template>
 
             <ng-template dafCell="lineTotal" let-row>
-              <span class="num bold">{{ formatAmount(row['lineTotal']) }}</span>
+              <span class="num bold">{{ row['lineTotal'] | displayCurrency : invoice()!.devise }}</span>
             </ng-template>
 
             <ng-template dafCell="lineTtc" let-row>
-              <span class="num bold accent">{{ formatAmount(row['lineTtc']) }}</span>
+              <span class="num bold accent">{{ row['lineTtc'] | displayCurrency : invoice()!.devise }}</span>
             </ng-template>
 
             <ng-template dafCell="_actions" let-row>
@@ -118,8 +118,8 @@
             <div class="billing-tfoot">
               <span class="foot-label">{{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}</span>
               <span class="foot-amounts">
-                <span class="num foot-ht">{{ formatAmount(invoice()!.montantHt, invoice()!.devise) }}</span>
-                <span class="num foot-ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</span>
+                <span class="num foot-ht">{{ invoice()!.montantHt | displayCurrency : invoice()!.devise }}</span>
+                <span class="num foot-ttc">{{ invoice()!.montantTtc | displayCurrency : invoice()!.devise }}</span>
               </span>
             </div>
           }
@@ -131,12 +131,12 @@
             <div class="lm-row">
               <div class="lm-row__main">
                 <span class="lm-row__desc">{{ line.description }}</span>
-                <span class="lm-row__ttc">{{ formatAmount(lineTtc(line)) }}</span>
+                <span class="lm-row__ttc">{{ lineTtc(line) | displayCurrency : invoice()!.devise }}</span>
               </div>
               <div class="lm-row__meta">
-                <span class="lm-row__qty">{{ line.quantity }} × {{ formatAmount(line.unitRate) }}</span>
+                <span class="lm-row__qty">{{ line.quantity }} × {{ line.unitRate | displayCurrency : invoice()!.devise }}</span>
                 <span class="lm-row__tva">TVA {{ line.vatRatePct }}%</span>
-                <span class="lm-row__ht">HT {{ formatAmount(line.lineTotal) }}</span>
+                <span class="lm-row__ht">HT {{ line.lineTotal | displayCurrency : invoice()!.devise }}</span>
               </div>
             </div>
           }
@@ -146,8 +146,8 @@
           <div class="lm-total">
             <span class="lm-total__lbl">{{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}</span>
             <div>
-              <span class="lm-total__ht">{{ formatAmount(invoice()!.montantHt, invoice()!.devise) }} HT</span>
-              <span class="lm-total__ttc">{{ formatAmount(invoice()!.montantTtc, invoice()!.devise) }}</span>
+              <span class="lm-total__ht">{{ invoice()!.montantHt | displayCurrency : invoice()!.devise }} HT</span>
+              <span class="lm-total__ttc">{{ invoice()!.montantTtc | displayCurrency : invoice()!.devise }}</span>
             </div>
           </div>
         </div>

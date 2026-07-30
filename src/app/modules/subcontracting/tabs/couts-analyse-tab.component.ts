@@ -1,21 +1,20 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AffaireService } from '../../affaires/affaire.service';
 import { AffaireListItem } from '../../affaires/affaire.model';
 import { SubcontractingService } from '../subcontracting.service';
 import { MarginDto, fmtAmt } from '../subcontracting.model';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 @Component({
   selector: 'app-couts-analyse-tab',
-  imports: [FormsModule, TranslatePipe],
+  imports: [FormsModule, DisplayCurrencyPipe],
   templateUrl: './couts-analyse-tab.component.html',
   styleUrl: './couts-analyse-tab.component.scss',
 })
 export class CoutsAnalyseTabComponent {
   private readonly svc        = inject(SubcontractingService);
   private readonly affaireSvc = inject(AffaireService);
-  private readonly translate  = inject(TranslateService);
 
   searchQuery     = '';
   searchResults   = signal<AffaireListItem[]>([]);
@@ -59,7 +58,7 @@ export class CoutsAnalyseTabComponent {
     this.error.set(null);
     this.svc.getMargin(affaireId).subscribe({
       next: m => { this.margin.set(m); this.loading.set(false); },
-      error: () => { this.error.set(this.translate.instant('SUBCONTRACTING.ANALYSIS.ERROR')); this.loading.set(false); },
+      error: () => { this.error.set('Impossible de charger les données de marge.'); this.loading.set(false); },
     });
   }
 

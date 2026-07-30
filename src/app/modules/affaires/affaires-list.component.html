@@ -14,102 +14,51 @@
   </div>
 
   <!-- KPI Grid -->
-  <!-- Same grid + `daf-metric-card` as the clients board; colours are the exact
-       hexes the old `app-affaire-kpi-card` variants used. -->
-  <div class="grid grid-cols-4 gap-2 sm:gap-6">
-    <daf-metric-card
+  <div class="kpi-grid">
+    <app-affaire-kpi-card
       [label]="'AFFAIRES.LIST.KPI.ACTIVE' | translate"
+      icon="work"
       [value]="statsActives()"
-      [delta]="{ value: '+12%', direction: 'up' }"
-      [options]="{ icon: 'work', iconColor: 'text-[#006c49]', iconBg: 'bg-[rgba(108,248,187,0.30)]',
-                   valueColor: 'text-[#0b1c30]', deltaColor: 'text-[#006c49]' }" />
+      trend="+12%"
+      variant="green" />
 
-    <daf-metric-card
+    <app-affaire-kpi-card
       [label]="'AFFAIRES.LIST.KPI.RAF' | translate"
-      [value]="formatAmount(statsRafTotal())"
-      [delta]="{ value: 'TND', direction: 'neutral' }"
-      [options]="{ icon: 'account_balance_wallet', iconColor: 'text-[#00288e]', iconBg: 'bg-[rgba(221,225,255,0.30)]',
-                   valueColor: 'text-[#0b1c30]', deltaColor: 'text-[#64748b]' }" />
+      icon="account_balance_wallet"
+      [value]="statsRafTotal() | displayCurrency : 'TND'"
+      unit="TND"
+      variant="blue" />
 
-    <daf-metric-card
+    <app-affaire-kpi-card
       [label]="'AFFAIRES.LIST.KPI.BUDGET' | translate"
-      [value]="formatAmount(statsBudgetTotal())"
-      [delta]="{ value: 'TND', direction: 'neutral' }"
-      [options]="{ icon: 'payments', iconColor: 'text-[#4c2e00]', iconBg: 'bg-[rgba(255,221,184,0.30)]',
-                   valueColor: 'text-[#0b1c30]', deltaColor: 'text-[#64748b]' }" />
+      icon="payments"
+      [value]="statsBudgetTotal() | displayCurrency : 'TND'"
+      unit="TND"
+      variant="amber" />
 
-    <daf-metric-card
+    <app-affaire-kpi-card
       [label]="'AFFAIRES.LIST.KPI.PENDING' | translate"
+      icon="pause_circle"
       [value]="statsSuspendu()"
-      [delta]="{ value: 'AFFAIRES.LIST.KPI.UNITS' | translate, direction: 'down' }"
-      [options]="{ icon: 'pause_circle', iconColor: 'text-[#ba1a1a]', iconBg: 'bg-[rgba(255,218,214,0.30)]',
-                   valueColor: 'text-[#0b1c30]', deltaColor: 'text-[#ba1a1a]' }" />
+      [unit]="'AFFAIRES.LIST.KPI.UNITS' | translate"
+      variant="red" />
   </div>
 
-  <!-- Search & Filters — `daf-search-toolbar` from the library: it renders its
-       own glass card, the pill search input and the anchored filter panel
-       (statut / type as declarative fields), responsive on its own. -->
-  <daf-search-toolbar
-    [placeholder]="'AFFAIRES.LIST.TABLE.SEARCH' | translate"
-    [value]="searchText"
-    [debounce]="300"
-    (valueChange)="onSearchTextChange($event)"
-    [filterFields]="filterFields()"
-    [filterConfig]="filterConfig()"
-    (filterApply)="applyFilters($event)" />
-
-  <!-- Error -->
-  @if (error()) {
-    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-      <span class="material-symbols-outlined text-[18px]">error</span>
-      {{ error() }}
-    </div>
-  }
-
-  <!-- Affaire Cards Grid — free in the page, no container card -->
-  <div class="grid grid-cols-3 min-[420px]:grid-cols-2 xl:grid-cols-3 gap-5 max-[1100px]:gap-3.5">
-
-    @if (loading()) {
-      @for (i of [1,2,3,4,5,6]; track i) {
-        <div class="glass-card rounded-xl p-5 min-h-[200px] flex flex-col gap-4 pointer-events-none">
-          <div class="flex items-center gap-3.5">
-            <div class="w-11 h-11 rounded-lg bg-surface-container animate-pulse shrink-0"></div>
-            <div class="flex-1 flex flex-col gap-2">
-              <div class="h-3.5 w-2/3 rounded bg-surface-container animate-pulse"></div>
-              <div class="h-3.5 w-2/5 rounded bg-surface-container animate-pulse"></div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div class="h-16 rounded-lg bg-surface-container animate-pulse"></div>
-            <div class="h-16 rounded-lg bg-surface-container animate-pulse"></div>
-          </div>
-        </div>
-      }
-    } @else {
-      @for (card of affaireCards(); track card.id) {
-        <daf-entity-card
-          [options]="card.options"
-          (cardClick)="navigateToDetail(card.id)"
-          (viewClick)="navigateToDetail(card.id)" />
-      }
-      @empty {
-        <div class="col-span-full flex flex-col items-center justify-center gap-2 py-16 text-center">
-          <span class="material-symbols-outlined text-[48px] text-outline-variant"
-                style="font-variation-settings:'FILL' 1">business_center</span>
-          <p class="m-0 text-base font-bold text-on-surface-variant">
-            {{ 'AFFAIRES.LIST.TABLE.EMPTY' | translate }}
-          </p>
-        </div>
-      }
-    }
-
-  </div>
-
-  <!-- Pagination -->
-  <daf-pagination
+  <!-- Table -->
+  <app-affaire-table
+    [affaires]="affaires()"
+    [loading]="loading()"
+    [error]="error()"
+    [deletingId]="deletingId()"
+    [totalElements]="totalElements()"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
-    [totalElements]="totalElements()"
-    (pageChange)="goToPage($event)" />
+    [(searchText)]="searchText"
+    [(filterStatut)]="filterStatut"
+    [(filterType)]="filterType"
+    (rowClick)="navigateToDetail($event)"
+    (pageChange)="goToPage($event)"
+    (searchGo)="onSearch()"
+    (filterGo)="onFilterChange()" />
 
 </div>

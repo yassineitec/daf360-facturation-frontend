@@ -18,6 +18,7 @@ import {
   BadgeVariant, BadgeOptions,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
 } from '@khalilrebhiitec/daf360';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 @Component({
   selector: 'app-invoice-detail',
@@ -33,6 +34,7 @@ import {
     CardComponent, ButtonComponent, StepperComponent,
     StatusBadgeComponent, MetricCardComponent, SectionTitleComponent,
     DataTableComponent, DafCellDirective,
+    DisplayCurrencyPipe,
   ],
   templateUrl: './invoice-detail.component.html',
   styleUrl:    './invoice-detail.component.scss',

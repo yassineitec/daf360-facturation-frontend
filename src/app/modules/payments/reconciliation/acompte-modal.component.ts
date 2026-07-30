@@ -1,50 +1,53 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
 import { environment } from '../../../../environments/environment';
 import { ReconciliationService } from '../reconciliation.service';
 import { BankTransaction } from '../payment.model';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 interface ClientOption { id: number; nom: string; }
 
 @Component({
   selector: 'app-acompte-modal',
-  imports: [SelectComponent, FormFieldComponent, TranslatePipe],
+  imports: [FormsModule, DisplayCurrencyPipe],
   template: `
 <div class="modal-backdrop" (click)="dismissed.emit()">
   <div class="modal-box" (click)="$event.stopPropagation()">
-    <h3 class="modal-title">{{ 'PAYMENTS.ACOMPTE.TITLE' | translate }}</h3>
+    <h3 class="modal-title">Enregistrer comme acompte</h3>
 
     <div class="tx-summary">
-      <span class="tx-label">{{ 'PAYMENTS.ACOMPTE.TX_LABEL' | translate }}</span>
+      <span class="tx-label">Transaction</span>
       <span class="tx-detail">
-        {{ formatAmount(tx().montant, tx().devise) }} — {{ tx().reference ?? tx().description ?? '—' }}
+        {{ tx().montant | displayCurrency : tx().devise }} — {{ tx().reference ?? tx().description ?? '—' }}
         ({{ formatDate(tx().transactionDate) }})
       </span>
     </div>
 
     <div class="info-banner">
-      {{ 'PAYMENTS.ACOMPTE.INFO' | translate }}
+      Ce virement sera enregistré comme acompte client. Aucune facture ne sera liée — le montant
+      sera affecté au solde du client sélectionné.
     </div>
 
     <div class="field-section">
+      <label class="field-label">Client <span class="required">*</span></label>
       @if (loadingClients()) {
-        <label class="field-label">{{ 'PAYMENTS.ACOMPTE.CLIENT_LABEL' | translate }} <span class="required">*</span></label>
-        <div class="search-hint">{{ 'PAYMENTS.ACOMPTE.LOADING_CLIENTS' | translate }}</div>
+        <div class="search-hint">Chargement des clients…</div>
       } @else {
-        <daf-select
-          [options]="clientOptions()"
-          [selected]="selectedClientId ? [selectedClientId + ''] : []"
-          [config]="{ label: ('PAYMENTS.ACOMPTE.CLIENT_LABEL' | translate), placeholder: ('PAYMENTS.ACOMPTE.SELECT_CLIENT' | translate), required: true, searchable: true }"
-          (selectedChange)="selectedClientId = $event[0] ? +$event[0] : 0" />
+        <select class="field-select" [(ngModel)]="selectedClientId">
+          <option [ngValue]="0" disabled>Sélectionner un client…</option>
+          @for (c of clients(); track c.id) {
+            <option [ngValue]="c.id">{{ c.nom }}</option>
+          }
+        </select>
       }
     </div>
 
     <div class="field-section">
-      <daf-form-field
-        [options]="{ type: 'textarea', label: ('PAYMENTS.ACOMPTE.COMMENT_LABEL' | translate), placeholder: ('PAYMENTS.ACOMPTE.COMMENT_PH' | translate), rows: 2, maxLength: 500 }"
-        [(value)]="commentaire" />
+      <label class="field-label">Commentaire <span class="optional">(facultatif)</span></label>
+      <textarea class="field-textarea" rows="2" maxlength="500"
+        placeholder="Ex : acompte sur contrat XYZ…"
+        [(ngModel)]="commentaire"></textarea>
     </div>
 
     @if (serverError()) {
@@ -52,9 +55,9 @@ interface ClientOption { id: number; nom: string; }
     }
 
     <div class="modal-actions">
-      <button class="btn-cancel" [disabled]="saving()" (click)="dismissed.emit()">{{ 'PAYMENTS.COMMON.CANCEL' | translate }}</button>
+      <button class="btn-cancel" [disabled]="saving()" (click)="dismissed.emit()">Annuler</button>
       <button class="btn-confirm" [disabled]="saving() || !selectedClientId" (click)="confirm()">
-        {{ (saving() ? 'PAYMENTS.COMMON.SAVING' : 'PAYMENTS.ACOMPTE.CONFIRM_BTN') | translate }}
+        {{ saving() ? 'Enregistrement…' : 'Enregistrer l\'acompte' }}
       </button>
     </div>
   </div>
@@ -115,17 +118,14 @@ interface ClientOption { id: number; nom: string; }
   `],
 })
 export class AcompteModalComponent {
-  private readonly svc       = inject(ReconciliationService);
-  private readonly http      = inject(HttpClient);
-  private readonly translate = inject(TranslateService);
+  private readonly svc  = inject(ReconciliationService);
+  private readonly http = inject(HttpClient);
 
   tx        = input.required<BankTransaction>();
   dismissed = output<void>();
   confirmed = output<void>();
 
   clients       = signal<ClientOption[]>([]);
-  readonly clientOptions = computed<SelectOption[]>(() =>
-    this.clients().map(c => ({ value: c.id + '', label: c.nom })));
   loadingClients = signal(true);
   saving        = signal(false);
   serverError   = signal<string | null>(null);
@@ -152,7 +152,7 @@ export class AcompteModalComponent {
       next:  () => { this.saving.set(false); this.confirmed.emit(); },
       error: err => {
         this.saving.set(false);
-        this.serverError.set(err?.error?.message ?? this.translate.instant('PAYMENTS.ACOMPTE.ERROR'));
+        this.serverError.set(err?.error?.message ?? 'Erreur lors de l\'enregistrement de l\'acompte.');
       },
     });
   }

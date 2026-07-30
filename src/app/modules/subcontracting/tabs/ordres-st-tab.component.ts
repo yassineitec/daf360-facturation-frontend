@@ -1,9 +1,8 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { AffaireService } from '../../affaires/affaire.service';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { AffaireListItem } from '../../affaires/affaire.model';
 import { SubcontractingService } from '../subcontracting.service';
 import {
@@ -15,7 +14,7 @@ import {
 
 @Component({
   selector: 'app-ordres-st-tab',
-  imports: [FormsModule, TranslatePipe, SelectComponent, FormFieldComponent, PermissionDirective],
+  imports: [FormsModule, PermissionDirective, DisplayCurrencyPipe],
   templateUrl: './ordres-st-tab.component.html',
   styleUrl: './ordres-st-tab.component.scss',
 })
@@ -24,20 +23,6 @@ export class OrdresStTabComponent {
 
   private readonly svc       = inject(SubcontractingService);
   private readonly affaireSvc = inject(AffaireService);
-  private readonly translate  = inject(TranslateService);
-
-  readonly asStr = (v: string | number | null): string => (v == null ? '' : String(v));
-  readonly asNum = (v: string | number | null): number => (v == null || v === '' ? 0 : Number(v));
-
-  // daf-select options for the sous-traitant picker.
-  readonly stOptions = computed<SelectOption[]>(() =>
-    this.stList().map(s => ({ value: String(s.id), label: s.name })));
-
-  // daf-select options for the statut transition picker.
-  readonly statutOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    return this.validTransitions().map(t => ({ value: t, label: this.statLabel(t) }));
-  });
 
   // ── Affaire search ───────────────────────────────────────────────────
   searchQuery     = '';
@@ -127,7 +112,7 @@ export class OrdresStTabComponent {
     this.error.set(null);
     this.svc.listOSTByAffaire(affaireId).subscribe({
       next: l => { this.ordres.set(l); this.loading.set(false); },
-      error: () => { this.error.set(this.translate.instant('SUBCONTRACTING.OST.ERROR_LOAD')); this.loading.set(false); },
+      error: () => { this.error.set('Impossible de charger les ordres.'); this.loading.set(false); },
     });
   }
 
@@ -176,7 +161,7 @@ export class OrdresStTabComponent {
     const call$ = edit ? this.svc.updateOST(edit.id, req) : this.svc.createOST(affaire.id, req);
     call$.subscribe({
       next: () => { this.ostSaving.set(false); this.showOstModal.set(false); this.loadOrdres(affaire.id); },
-      error: err => { this.ostSaving.set(false); this.ostError.set(err?.error?.message ?? this.translate.instant('SUBCONTRACTING.OST.ERROR_SAVE')); },
+      error: err => { this.ostSaving.set(false); this.ostError.set(err?.error?.message ?? 'Erreur lors de l\'enregistrement.'); },
     });
   }
 
@@ -197,7 +182,7 @@ export class OrdresStTabComponent {
     this.statutSaving.set(true);
     this.svc.changerStatutOST(target.id, this.newStatut).subscribe({
       next: () => { this.statutSaving.set(false); this.showStatutModal.set(false); this.loadOrdres(affaire.id); },
-      error: err => { this.statutSaving.set(false); this.statutError.set(err?.error?.message ?? this.translate.instant('SUBCONTRACTING.OST.ERROR_GENERIC')); },
+      error: err => { this.statutSaving.set(false); this.statutError.set(err?.error?.message ?? 'Erreur.'); },
     });
   }
 
@@ -240,7 +225,7 @@ export class OrdresStTabComponent {
         this.reloadDrawer(ost);
         this.loadOrdres(affaire.id);
       },
-      error: err => { this.coutSaving.set(false); this.coutError.set(err?.error?.message ?? this.translate.instant('SUBCONTRACTING.OST.ERROR_ADD')); },
+      error: err => { this.coutSaving.set(false); this.coutError.set(err?.error?.message ?? 'Erreur lors de l\'ajout.'); },
     });
   }
 
@@ -278,11 +263,7 @@ export class OrdresStTabComponent {
 
   budgetPct(o: OSTDto): number { return ostBudgetPct(o); }
   isOver(o: OSTDto): boolean   { return ostIsOver(o); }
-  statLabel(s: string): string {
-    const key = `SUBCONTRACTING.OST.STATUT.${s}`;
-    const translated = this.translate.instant(key);
-    return translated === key ? (OST_STATUT_LABELS[s] ?? s) : translated;
-  }
+  statLabel(s: string): string { return OST_STATUT_LABELS[s] ?? s; }
   amt(v: number | null, d = 'TND'): string { return fmtAmt(v, d); }
   fmtDate(d: string): string   { return new Date(d).toLocaleDateString('fr-FR'); }
 
