@@ -8,7 +8,15 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+  <!-- Split per family because `display` is per-stylesheet: Manrope gets `swap`,
+       Material Symbols gets `block`. Under `swap` a ligature icon font paints the
+       ligature NAME in the fallback face, so icons render as the literal words
+       ("search", "grid_view") until the font loads; `block` keeps the slot
+       invisible instead. Keep in sync with daf360-shell/src/index.html. -->
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
 </head>
 <body style="font-family: 'Manrope', sans-serif;">
   <app-root></app-root>
