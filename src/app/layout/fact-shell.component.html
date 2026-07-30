@@ -2,8 +2,8 @@
      on desktop, fixed bottom bar on mobile), so no custom drawer/hamburger here. -->
 <daf-side-nav
   [items]="navItems()"
-  [config]="sideNavConfig()"
-  [activeRoute]="activeNavRoute()"
+  [config]="sideNavConfig"
+  [activeRoute]="activeRoute()"
   (itemClick)="onNavClick($event)" />
 
 <main class="shell-content">

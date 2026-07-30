@@ -9,11 +9,12 @@ import {
 import { ApproveModalComponent, ApproveAction } from '../modals/approve-modal.component';
 import { SearchBarComponent } from '../../../shared/search-bar.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-approval-queue',
   standalone: true,
-  imports: [ApproveModalComponent, SearchBarComponent, DisplayCurrencyPipe],
+  imports: [ApproveModalComponent, SearchBarComponent, DisplayCurrencyPipe, TranslatePipe],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
 })

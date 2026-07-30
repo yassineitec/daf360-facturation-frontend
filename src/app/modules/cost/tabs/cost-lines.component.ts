@@ -16,6 +16,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { AffaireKpiCardComponent } from '../../affaires/components/affaire-kpi-card.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-cost-lines',
@@ -24,7 +25,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
     MetricCardComponent, DataTableComponent, DafCellDirective,
     PaginationComponent, ToolbarComponent, SelectComponent,
     DafBadgeComponent, CardComponent, AffaireKpiCardComponent,
-    DisplayCurrencyPipe,
+    DisplayCurrencyPipe, TranslatePipe,
   ],
   templateUrl: './cost-lines.component.html',
   styleUrl: './cost-lines.component.scss',
