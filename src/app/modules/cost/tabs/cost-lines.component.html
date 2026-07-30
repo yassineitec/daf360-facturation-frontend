@@ -76,12 +76,12 @@
 
         <ng-template dafCell="netAmountLocal" let-row>
           <span class="font-bold text-on-surface">
-            {{ formatAmount(row['netAmountLocal'], row['currency'] ?? undefined) }}
+            {{ row['netAmountLocal'] | displayCurrency : (row['currency'] ?? 'TND') }}
           </span>
         </ng-template>
 
         <ng-template dafCell="netAmountEur" let-row>
-          <span class="text-on-surface-variant">{{ formatAmount(row['netAmountEur'], 'EUR') }}</span>
+          <span class="text-on-surface-variant">{{ row['netAmountEur'] | displayCurrency : 'EUR' }}</span>
         </ng-template>
 
         <ng-template dafCell="status" let-row>
@@ -181,10 +181,10 @@
           <div class="m-card__foot">
             <div class="m-card__amounts">
               <span class="m-card__amount-main">
-                {{ formatAmount(row['netAmountLocal'], row['currency'] ?? undefined) }}
+                {{ row['netAmountLocal'] | displayCurrency : (row['currency'] ?? 'TND') }}
               </span>
               <span class="m-card__amount-eur">
-                {{ formatAmount(row['netAmountEur'], 'EUR') }}
+                {{ row['netAmountEur'] | displayCurrency : 'EUR' }}
               </span>
             </div>
             <div class="m-card__actions" (click)="$event.stopPropagation()">

@@ -9,12 +9,13 @@ import {
   DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
 } from '@khalilrebhiitec/daf360';
 import { FilterPanelComponent } from '../../../shared/filter-panel/filter-panel.component';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 @Component({
   selector: 'app-affaire-table',
   imports: [
     FormsModule, UpperCasePipe, TranslatePipe, StatusBadgeComponent, CardComponent, SelectComponent,
-    FilterPanelComponent, ToolbarComponent, DataTableComponent, DafCellDirective,
+    FilterPanelComponent, ToolbarComponent, DataTableComponent, DafCellDirective, DisplayCurrencyPipe,
   ],
   templateUrl: './affaire-table.component.html',
   styleUrl: './affaire-table.component.scss',

@@ -5,17 +5,16 @@ import { ImportDropzoneComponent } from './import-dropzone.component';
 import { TransactionTableComponent } from './transaction-table.component';
 import { ManualTransactionModalComponent } from './manual-transaction-modal.component';
 import { PermissionDirective } from '../../../shared/permission.directive';
-import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 @Component({
   selector: 'app-reconciliation',
-  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective, TranslatePipe],
+  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective, DisplayCurrencyPipe],
   templateUrl: './reconciliation.component.html',
   styleUrl:    './reconciliation.component.scss',
 })
 export class ReconciliationComponent implements OnInit {
-  private readonly svc       = inject(ReconciliationService);
-  private readonly translate = inject(TranslateService);
+  private readonly svc = inject(ReconciliationService);
 
   imports            = signal<ImportSummary[]>([]);
   selectedImportId   = signal<number | null>(null);
@@ -48,7 +47,7 @@ export class ReconciliationComponent implements OnInit {
         }
       },
       error: () => {
-        this.errorImports.set(this.translate.instant('PAYMENTS.RECON.ERROR_IMPORTS'));
+        this.errorImports.set('Impossible de charger les imports.');
         this.loadingImports.set(false);
       },
     });
@@ -65,7 +64,7 @@ export class ReconciliationComponent implements OnInit {
     this.svc.getTransactions(importId).subscribe({
       next:  list => { this.transactions.set(list); this.loadingTx.set(false); },
       error: ()   => {
-        this.errorTx.set(this.translate.instant('PAYMENTS.RECON.ERROR_TX'));
+        this.errorTx.set('Impossible de charger les transactions.');
         this.loadingTx.set(false);
       },
     });

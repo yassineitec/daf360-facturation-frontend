@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { DisplayCurrencyPipe } from './display-currency.pipe';
 
 @Component({
   selector: 'app-raf-gauge',
@@ -7,9 +8,9 @@ import { Component, computed, input } from '@angular/core';
       <div class="gauge-header">
         <span class="gauge-label">RAF disponible</span>
         <span class="gauge-values">
-          <span [style.color]="barColor()">{{ formatAmount(raf()) }}</span>
+          <span [style.color]="barColor()">{{ raf() | displayCurrency : (devise() || 'TND') }}</span>
           <span class="gauge-sep"> / </span>
-          <span class="gauge-budget">{{ formatAmount(budget()) }}</span>
+          <span class="gauge-budget">{{ budget() | displayCurrency : (devise() || 'TND') }}</span>
         </span>
       </div>
       <div class="gauge-track">
@@ -27,7 +28,7 @@ import { Component, computed, input } from '@angular/core';
     </div>
   `,
   styleUrl: './raf-gauge.component.scss',
-  imports: [],
+  imports: [DisplayCurrencyPipe],
 })
 export class RafGaugeComponent {
   raf      = input.required<number>();

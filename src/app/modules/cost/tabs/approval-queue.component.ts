@@ -1,26 +1,25 @@
 import {
   Component, OnInit, inject, signal, computed,
 } from '@angular/core';
-import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import { ClientService } from '../../clients/client.service';
 import {
-  CostLineDto,
+  CostLineDto, COST_STATUS_CONFIG, CostLineStatus,
 } from '../cost.model';
 import { ApproveModalComponent, ApproveAction } from '../modals/approve-modal.component';
 import { SearchBarComponent } from '../../../shared/search-bar.component';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 @Component({
   selector: 'app-approval-queue',
   standalone: true,
-  imports: [ApproveModalComponent, SearchBarComponent, TranslatePipe],
+  imports: [ApproveModalComponent, SearchBarComponent, DisplayCurrencyPipe],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
 })
 export class ApprovalQueueComponent implements OnInit {
   private readonly svc       = inject(CostService);
   private readonly clientSvc = inject(ClientService);
-  private readonly translate = inject(TranslateService);
 
   paysId      = signal<number>(0);
   pending     = signal<CostLineDto[]>([]);
@@ -63,7 +62,7 @@ export class ApprovalQueueComponent implements OnInit {
     this.svc.getPendingApprovals(this.paysId()).subscribe({
       next: items => { this.pending.set(items); this.isLoading.set(false); },
       error: err  => {
-        this.serverError.set(err.error?.message ?? this.translate.instant('COST.QUEUE.LOAD_ERROR'));
+        this.serverError.set(err.error?.message ?? "Impossible de charger la file d'approbation.");
         this.isLoading.set(false);
       },
     });
@@ -85,13 +84,13 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   urgencyLabel(level: string | null): string {
-    if (!level || level === 'L1') return this.translate.instant('COST.URGENCY.LOW');
-    if (level === 'L2') return this.translate.instant('COST.URGENCY.NORMAL');
-    return this.translate.instant('COST.URGENCY.URGENT');
+    if (!level || level === 'L1') return 'Basse';
+    if (level === 'L2') return 'Normal';
+    return 'Urgent';
   }
 
   statusLabel(s: string): string {
-    return this.translate.instant('COST.STATUS.' + s);
+    return COST_STATUS_CONFIG[s as CostLineStatus]?.label ?? s;
   }
 
   formatAmount(amount: number | null | undefined, currency = 'EUR'): string {

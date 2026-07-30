@@ -3,14 +3,14 @@
   <!-- Toolbar -->
   <div class="ost-toolbar">
     <span class="ost-count">
-      @if (!loading()) { {{ 'AFFAIRES.ost.count' | translate:{ count: ordres().length } }} }
+      @if (!loading()) { {{ ordres().length }} ordre(s) ST }
     </span>
     @if (affaireStatut() === 'EN_COURS') {
       <button class="btn-primary" *appHasPermission="'FACT_MANAGE_ST'" (click)="openCreateOst()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        {{ 'AFFAIRES.ost.new_order' | translate }}
+        Nouvel ordre ST
       </button>
     }
   </div>
@@ -20,9 +20,9 @@
   }
 
   @if (loading()) {
-    <div class="ost-loading"><div class="spinner"></div><span>{{ 'AFFAIRES.ost.loading' | translate }}</span></div>
+    <div class="ost-loading"><div class="spinner"></div><span>Chargement…</span></div>
   } @else if (ordres().length === 0) {
-    <div class="ost-empty">{{ 'AFFAIRES.ost.empty' | translate }}</div>
+    <div class="ost-empty">Aucun ordre de sous-traitance associé à cette affaire.</div>
   } @else {
     <div class="ost-list">
       @for (o of ordres(); track o.id) {
@@ -50,21 +50,21 @@
               <span class="budget-pct" [class.over]="isOver(o)">{{ budgetPct(o).toFixed(0) }}%</span>
             </div>
             <div class="budget-amounts">
-              <span>{{ 'AFFAIRES.ost.realise' | translate }} <strong>{{ amt(o.montantRealise, o.devise) }}</strong></span>
-              <span>{{ 'AFFAIRES.ost.budget' | translate }} <strong>{{ amt(o.montantBudget, o.devise) }}</strong></span>
-              @if (isOver(o)) { <span class="over-badge">{{ 'AFFAIRES.ost.over_badge' | translate }}</span> }
+              <span>Réalisé: <strong>{{ o.montantRealise | displayCurrency : o.devise }}</strong></span>
+              <span>Budget: <strong>{{ o.montantBudget | displayCurrency : o.devise }}</strong></span>
+              @if (isOver(o)) { <span class="over-badge">⚠ Dépassement</span> }
             </div>
           </div>
 
           <div class="ost-row-actions">
-            <button class="btn-ghost" title="{{ 'AFFAIRES.ost.action_costs_title' | translate }}" (click)="openDrawer(o)">
+            <button class="btn-ghost" title="Voir les coûts" (click)="openDrawer(o)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                 <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
                 <line x1="8" y1="18" x2="21" y2="18"/>
                 <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
                 <line x1="3" y1="18" x2="3.01" y2="18"/>
               </svg>
-              {{ 'AFFAIRES.ost.action_costs' | translate }}
+              Coûts
             </button>
             @if (validTransitionsFor(o).length > 0) {
               <button class="btn-ghost" *appHasPermission="'FACT_MANAGE_ST'" (click)="openStatutModal(o)">
@@ -72,7 +72,7 @@
                   <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
                   <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
                 </svg>
-                {{ 'AFFAIRES.ost.action_status' | translate }}
+                Statut
               </button>
             }
             <button class="btn-ghost" *appHasPermission="'FACT_MANAGE_ST'" (click)="openEditOst(o)">
@@ -80,7 +80,7 @@
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
-              {{ 'AFFAIRES.ost.action_edit' | translate }}
+              Modifier
             </button>
           </div>
         </div>
@@ -99,58 +99,48 @@
   <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showOstModal.set(false)">
     <div class="modal-box" role="dialog">
       <div class="modal-header">
-        <h2>{{ (editOstTarget() ? 'AFFAIRES.ost.modal.edit_title' : 'AFFAIRES.ost.modal.create_title') | translate }}</h2>
+        <h2>{{ editOstTarget() ? 'Modifier l\'ordre' : 'Nouvel ordre ST' }}</h2>
         <button class="close-btn" (click)="showOstModal.set(false)">&times;</button>
       </div>
       <div class="modal-body">
         @if (ostError()) { <div class="alert-error">{{ ostError() }}</div> }
         <div class="field">
-          <label>{{ 'AFFAIRES.ost.modal.subcontractor' | translate }}</label>
+          <label>Sous-traitant *</label>
           @if (stLoading()) {
-            <span class="muted-sm">{{ 'AFFAIRES.ost.modal.st_loading' | translate }}</span>
+            <span class="muted-sm">Chargement…</span>
           } @else if (stList().length === 0) {
-            <span class="muted-sm">{{ 'AFFAIRES.ost.modal.st_empty' | translate }}</span>
+            <span class="muted-sm">Aucun sous-traitant actif pour cette entité.</span>
           } @else {
             <daf-select
               [options]="stOptions()"
-              [config]="stSelectConfig()"
+              [config]="stSelectConfig"
               [selected]="ostForm.sousTraitantId ? [ostForm.sousTraitantId.toString()] : []"
               (selectedChange)="onStSelect($event)" />
           }
         </div>
         <div class="field">
-          <daf-form-field
-            [value]="ostForm.perimetre"
-            (valueChange)="ostForm.perimetre = asStr($event)"
-            [options]="{ type: 'text', maxLength: 500,
-              label: ('AFFAIRES.ost.modal.perimeter' | translate),
-              placeholder: ('AFFAIRES.ost.modal.perimeter_placeholder' | translate) }" />
+          <label>Périmètre *</label>
+          <input type="text" [(ngModel)]="ostForm.perimetre" placeholder="Description du périmètre" maxlength="500" />
         </div>
         <div class="field-row">
           <div class="field">
-            <daf-form-field
-              [value]="ostForm.montantBudget"
-              (valueChange)="ostForm.montantBudget = asNum($event)"
-              [options]="{ type: 'number', label: ('AFFAIRES.ost.modal.budget_amount' | translate) }" />
+            <label>Montant budget *</label>
+            <input type="number" [(ngModel)]="ostForm.montantBudget" min="0" step="0.001" />
           </div>
           <div class="field">
-            <daf-form-field
-              [value]="ostForm.devise"
-              (valueChange)="ostForm.devise = asStr($event)"
-              [options]="{ type: 'text', maxLength: 5, placeholder: 'TND', label: ('AFFAIRES.ost.modal.currency' | translate) }" />
+            <label>Devise</label>
+            <input type="text" [(ngModel)]="ostForm.devise" maxlength="5" placeholder="TND" />
           </div>
           <div class="field">
-            <daf-form-field
-              [value]="ostForm.alerteDepassementPct"
-              (valueChange)="ostForm.alerteDepassementPct = asNum($event)"
-              [options]="{ type: 'number', label: ('AFFAIRES.ost.modal.alert_threshold' | translate) }" />
+            <label>Seuil alerte (%)</label>
+            <input type="number" [(ngModel)]="ostForm.alerteDepassementPct" min="0" max="100" step="1" />
           </div>
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" (click)="showOstModal.set(false)">{{ 'AFFAIRES.ost.modal.cancel' | translate }}</button>
+        <button class="btn-cancel" (click)="showOstModal.set(false)">Annuler</button>
         <button class="btn-save" [disabled]="ostSaving() || !ostForm.perimetre.trim() || ostForm.montantBudget <= 0" (click)="saveOst()">
-          @if (ostSaving()) { {{ 'AFFAIRES.ost.modal.saving' | translate }} } @else { {{ 'AFFAIRES.ost.modal.save' | translate }} }
+          @if (ostSaving()) { Enregistrement… } @else { Enregistrer }
         </button>
       </div>
     </div>
@@ -162,24 +152,25 @@
   <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showStatutModal.set(false)">
     <div class="modal-box modal-box--sm" role="dialog">
       <div class="modal-header">
-        <h2>{{ 'AFFAIRES.ost.status_modal.title' | translate }}</h2>
+        <h2>Changer le statut</h2>
         <button class="close-btn" (click)="showStatutModal.set(false)">&times;</button>
       </div>
       <div class="modal-body">
         @if (statutError()) { <div class="alert-error">{{ statutError() }}</div> }
         <p class="ref-line">{{ statutTarget()?.referenceOst }}</p>
         <div class="field">
-          <daf-select
-            [options]="statutOptions()"
-            [config]="{ label: ('AFFAIRES.ost.status_modal.new_status' | translate), fullWidth: true }"
-            [selected]="[newStatut]"
-            (selectedChange)="newStatut = $event[0] || ''" />
+          <label>Nouveau statut</label>
+          <select [(ngModel)]="newStatut">
+            @for (t of validTransitionsFor(statutTarget()!); track t) {
+              <option [value]="t">{{ statLabel(t) }}</option>
+            }
+          </select>
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" (click)="showStatutModal.set(false)">{{ 'AFFAIRES.ost.status_modal.cancel' | translate }}</button>
+        <button class="btn-cancel" (click)="showStatutModal.set(false)">Annuler</button>
         <button class="btn-save" [disabled]="statutSaving() || !newStatut" (click)="submitStatut()">
-          @if (statutSaving()) { {{ 'AFFAIRES.ost.status_modal.saving' | translate }} } @else { {{ 'AFFAIRES.ost.status_modal.confirm' | translate }} }
+          @if (statutSaving()) { Traitement… } @else { Confirmer }
         </button>
       </div>
     </div>
@@ -192,7 +183,7 @@
     <div class="drawer-panel" role="dialog">
       <div class="drawer-header">
         <div>
-          <h3 class="drawer-title">{{ 'AFFAIRES.ost.drawer.title' | translate }}</h3>
+          <h3 class="drawer-title">Coûts réalisés</h3>
           <span class="drawer-ref">{{ drawerOst()?.referenceOst }}</span>
         </div>
         <button class="close-btn" (click)="closeDrawer()">&times;</button>
@@ -200,22 +191,22 @@
 
       <div class="drawer-summary">
         <div class="sum-item">
-          <span>{{ 'AFFAIRES.ost.drawer.budget' | translate }}</span>
-          <strong>{{ amt(drawerOst()?.montantBudget ?? null, drawerOst()?.devise) }}</strong>
+          <span>Budget</span>
+          <strong>{{ (drawerOst()?.montantBudget ?? null) | displayCurrency : (drawerOst()?.devise ?? 'TND') }}</strong>
         </div>
         <div class="sum-item">
-          <span>{{ 'AFFAIRES.ost.drawer.realise' | translate }}</span>
+          <span>Réalisé</span>
           <strong [class.over]="drawerOst() && isOver(drawerOst()!)">
-            {{ amt(drawerOst()?.montantRealise ?? null, drawerOst()?.devise) }}
+            {{ (drawerOst()?.montantRealise ?? null) | displayCurrency : (drawerOst()?.devise ?? 'TND') }}
           </strong>
         </div>
       </div>
 
       <div class="drawer-body">
         @if (coutsLoading()) {
-          <div class="drawer-loading"><div class="spinner"></div><span>{{ 'AFFAIRES.ost.drawer.loading' | translate }}</span></div>
+          <div class="drawer-loading"><div class="spinner"></div><span>Chargement…</span></div>
         } @else if (coutsList().length === 0) {
-          <div class="drawer-empty">{{ 'AFFAIRES.ost.drawer.empty' | translate }}</div>
+          <div class="drawer-empty">Aucun coût enregistré.</div>
         } @else {
           @for (c of coutsList(); track c.id) {
             <div class="cout-row">
@@ -223,9 +214,9 @@
                 <span class="cout-date">{{ fmtDate(c.dateCout) }}</span>
                 <span class="cout-desc">{{ c.description || '—' }}</span>
               </div>
-              <span class="cout-amount">{{ amt(c.montant, c.devise) }}</span>
+              <span class="cout-amount">{{ c.montant | displayCurrency : c.devise }}</span>
               <button class="btn-icon btn-icon--danger" *appHasPermission="'FACT_MANAGE_ST'"
-                      title="{{ 'AFFAIRES.ost.drawer.delete_title' | translate }}" (click)="removeCout(c)">
+                      title="Supprimer" (click)="removeCout(c)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
                   <polyline points="3 6 5 6 21 6"/>
                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -243,46 +234,37 @@
           <button class="btn-primary" *appHasPermission="'FACT_MANAGE_ST'"
                   [disabled]="drawerOst()?.statut !== 'EN_COURS'"
                   (click)="showAddCout.set(true)">
-            {{ 'AFFAIRES.ost.drawer.add_cost' | translate }}
+            Ajouter un coût
           </button>
           @if (drawerOst()?.statut !== 'EN_COURS') {
-            <span class="hint">{{ 'AFFAIRES.ost.drawer.hint_en_cours' | translate }}</span>
+            <span class="hint">L'ordre doit être EN_COURS pour ajouter des coûts.</span>
           }
         } @else {
           <div class="add-form">
             <div class="field-row">
               <div class="field">
-                <daf-form-field
-                  [value]="coutForm.montant"
-                  (valueChange)="coutForm.montant = asNum($event)"
-                  [options]="{ type: 'number', label: ('AFFAIRES.ost.drawer.amount' | translate) }" />
+                <label>Montant *</label>
+                <input type="number" [(ngModel)]="coutForm.montant" min="0.001" step="0.001" />
               </div>
               <div class="field">
-                <daf-form-field
-                  [value]="coutForm.devise"
-                  (valueChange)="coutForm.devise = asStr($event)"
-                  [options]="{ type: 'text', maxLength: 5, placeholder: 'TND', label: ('AFFAIRES.ost.drawer.currency' | translate) }" />
+                <label>Devise</label>
+                <input type="text" [(ngModel)]="coutForm.devise" maxlength="5" placeholder="TND" />
               </div>
             </div>
             <div class="field-row">
               <div class="field">
-                <daf-form-field
-                  [value]="coutForm.dateCout"
-                  (valueChange)="coutForm.dateCout = asStr($event)"
-                  [options]="{ type: 'date', label: ('AFFAIRES.ost.drawer.date' | translate) }" />
+                <label>Date *</label>
+                <input type="date" [(ngModel)]="coutForm.dateCout" [max]="today" />
               </div>
               <div class="field">
-                <daf-form-field
-                  [value]="coutForm.description"
-                  (valueChange)="coutForm.description = asStr($event)"
-                  [options]="{ type: 'text', label: ('AFFAIRES.ost.drawer.description' | translate),
-                    placeholder: ('AFFAIRES.ost.drawer.description_placeholder' | translate) }" />
+                <label>Description</label>
+                <input type="text" [(ngModel)]="coutForm.description" placeholder="Libellé" />
               </div>
             </div>
             <div class="add-form-actions">
-              <button class="btn-cancel" (click)="showAddCout.set(false)">{{ 'AFFAIRES.ost.drawer.cancel' | translate }}</button>
+              <button class="btn-cancel" (click)="showAddCout.set(false)">Annuler</button>
               <button class="btn-save" [disabled]="coutSaving() || !coutForm.montant || !coutForm.dateCout" (click)="addCout()">
-                @if (coutSaving()) { {{ 'AFFAIRES.ost.drawer.adding' | translate }} } @else { {{ 'AFFAIRES.ost.drawer.add' | translate }} }
+                @if (coutSaving()) { Ajout… } @else { Ajouter }
               </button>
             </div>
           </div>
@@ -294,3 +276,4 @@
 
 </div>
 <!-- /appBodyPortal -->
+

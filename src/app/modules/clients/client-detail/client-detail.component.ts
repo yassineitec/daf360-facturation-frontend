@@ -8,11 +8,12 @@ import { ClientFormComponent }                                                 f
 import { ButtonComponent, StatusBadgeComponent, ModalService, ModalRef, BadgeOptions } from '@khalilrebhiitec/daf360';
 import { TranslatePipe }                                                        from '@ngx-translate/core';
 import { DecimalPipe }                                                          from '@angular/common';
+import { DisplayCurrencyPipe }                                                  from '../../../shared/display-currency.pipe';
 
 @Component({
   selector: 'app-client-detail',
   imports: [RouterLink, DecimalPipe, PermissionDirective, ClientFormComponent,
-            ButtonComponent, StatusBadgeComponent, TranslatePipe],
+            ButtonComponent, StatusBadgeComponent, TranslatePipe, DisplayCurrencyPipe],
   templateUrl: './client-detail.component.html',
   styleUrl:    './client-detail.component.scss',
 })

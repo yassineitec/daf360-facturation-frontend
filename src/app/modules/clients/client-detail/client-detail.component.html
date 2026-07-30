@@ -84,7 +84,7 @@
         </div>
         <div class="kpi-card__value-row">
           <span class="text-price-display">
-            {{ formatAmount(stats()?.totalInvoiced ?? null, client()!.defaultCurrency ?? 'TND') }}
+            {{ stats()?.totalInvoiced | displayCurrency : (client()!.defaultCurrency ?? 'TND') }}
           </span>
         </div>
         <div class="kpi-card__sub kpi-card__sub--primary">
@@ -353,7 +353,7 @@
               <span class="material-symbols-outlined text-light">paid</span>
               <div>
                 <p class="text-label-caps text-muted">Montant réglé</p>
-                <p class="text-body-sm">{{ formatAmount(stats()?.totalPaid ?? null, client()!.defaultCurrency ?? 'TND') }}</p>
+                <p class="text-body-sm">{{ stats()?.totalPaid | displayCurrency : (client()!.defaultCurrency ?? 'TND') }}</p>
               </div>
             </div>
             @if ((stats()?.pendingAmount ?? 0) > 0) {
@@ -362,7 +362,7 @@
                 <div>
                   <p class="text-label-caps" style="color:#d97706">En attente de règlement</p>
                   <p class="text-body-sm" style="color:#92400e;font-weight:600">
-                    {{ formatAmount(stats()!.pendingAmount, client()!.defaultCurrency ?? 'TND') }}
+                    {{ stats()!.pendingAmount | displayCurrency : (client()!.defaultCurrency ?? 'TND') }}
                   </p>
                 </div>
               </div>

@@ -14,53 +14,131 @@
   </div>
 
   <!-- ── KPI Cards ─────────────────────────────────────────────────────────── -->
-  <!-- Same grid + `daf-metric-card` as the RH reference page; icon/value/delta
-       colours are the exact hexes the old `.kpi-*` SCSS used. -->
-  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+  <section class="kpi-grid">
 
-    <daf-metric-card
-      [label]="'CLIENTS.LIST.KPI.TOTAL' | translate"
-      [value]="(statsTotal() | number) ?? '0'"
-      [delta]="{ value: 'CLIENTS.LIST.KPI.ALL_COUNTRIES' | translate, direction: 'up' }"
-      [options]="{ icon: 'group', iconColor: 'text-[#006b58]', iconBg: 'bg-[#006b58]/10',
-                   valueColor: 'text-[#006b58]', deltaColor: 'text-[#006b58]' }" />
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.TOTAL' | translate }}</span>
+          <div class="kpi-card__icon kpi-icon--primary">
+            <span class="material-symbols-outlined">group</span>
+          </div>
+        </div>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value kpi-value--primary">{{ statsTotal() | number }}</span>
+          <span class="kpi-card__trend kpi-trend--up">{{ 'CLIENTS.LIST.KPI.ALL_COUNTRIES' | translate }}</span>
+        </div>
+      </div>
+    </daf-card>
 
-    <daf-metric-card
-      [label]="'CLIENTS.LIST.KPI.KYC_DONE' | translate"
-      [value]="statsKycPct() + '%'"
-      [delta]="{ value: statsKycDone() + ' ' + ('CLIENTS.LIST.KPI.CLIENTS_SUFFIX' | translate), direction: 'up' }"
-      [options]="{ icon: 'verified', iconColor: 'text-[#006c49]', iconBg: 'bg-[#006c49]/10',
-                   valueColor: 'text-[#006c49]', deltaColor: 'text-[#006b58]' }" />
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.KYC_DONE' | translate }}</span>
+          <div class="kpi-card__icon kpi-icon--secondary">
+            <span class="material-symbols-outlined">verified</span>
+          </div>
+        </div>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value kpi-value--secondary">{{ statsKycPct() }}%</span>
+          <span class="kpi-card__trend kpi-trend--up">{{ statsKycDone() }} {{ 'CLIENTS.LIST.KPI.CLIENTS_SUFFIX' | translate }}</span>
+        </div>
+      </div>
+    </daf-card>
 
-    <daf-metric-card
-      [label]="'CLIENTS.LIST.KPI.TOTAL_CA' | translate"
-      [value]="formatAmount(statsTotalCA())"
-      [delta]="{ value: 'CLIENTS.LIST.KPI.CURRENT_PAGE' | translate, direction: 'neutral' }"
-      [options]="{ icon: 'payments', iconColor: 'text-[#855300]', iconBg: 'bg-[#855300]/10',
-                   valueColor: 'text-[#855300]', deltaColor: 'text-[#64748B]' }" />
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.TOTAL_CA' | translate }}</span>
+          <div class="kpi-card__icon kpi-icon--tertiary">
+            <span class="material-symbols-outlined">payments</span>
+          </div>
+        </div>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value kpi-card__value--sm kpi-value--tertiary">{{ statsTotalCA() | displayCurrency : 'TND' }}</span>
+          <span class="kpi-card__trend kpi-trend--neutral">{{ 'CLIENTS.LIST.KPI.CURRENT_PAGE' | translate }}</span>
+        </div>
+      </div>
+    </daf-card>
 
-    <daf-metric-card
-      [label]="'CLIENTS.LIST.KPI.ACTIVE' | translate"
-      [value]="statsActive()"
-      [delta]="{ value: 'CLIENTS.LIST.KPI.CURRENT_PAGE' | translate, direction: 'neutral' }"
-      [options]="{ icon: 'bolt', iconColor: 'text-[#00288e]', iconBg: 'bg-[#00288e]/10',
-                   valueColor: 'text-[#00288e]', deltaColor: 'text-[#64748B]' }" />
+    <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true}">
+      <div class="kpi-card">
+        <div class="kpi-card__top">
+          <span class="kpi-card__label">{{ 'CLIENTS.LIST.KPI.ACTIVE' | translate }}</span>
+          <div class="kpi-card__icon kpi-icon--blue">
+            <span class="material-symbols-outlined">bolt</span>
+          </div>
+        </div>
+        <div class="kpi-card__bottom">
+          <span class="kpi-card__value kpi-value--blue">{{ statsActive() }}</span>
+          <span class="kpi-card__trend kpi-trend--neutral">{{ 'CLIENTS.LIST.KPI.CURRENT_PAGE' | translate }}</span>
+        </div>
+      </div>
+    </daf-card>
 
   </section>
 
-  <!-- ── Search & Filters ─────────────────────────────────────────────────────
-       `daf-search-toolbar` from the library: it renders its own glass card, the
-       pill search input, and the anchored filter panel (country / sector /
-       status as declarative fields), and it is responsive on its own — so the
-       former hand-rolled bar and its mobile "Filtres" disclosure are gone. -->
-  <daf-search-toolbar
-    [placeholder]="'CLIENTS.LIST.SEARCH' | translate"
-    [value]="searchText"
-    [debounce]="300"
-    (valueChange)="onSearchTextChange($event)"
-    [filterFields]="filterFields()"
-    [filterConfig]="filterConfig()"
-    (filterApply)="applyFilters($event)" />
+  <!-- ── Filters & Search ─────────────────────────────────────────────────── -->
+  <daf-card [options]="{variant:'glass',padding:'none',radius:'xl'}">
+    <div class="filters-bar">
+
+      <div class="filters-bar__top">
+        <div class="search-wrap">
+          <app-search-bar
+            [placeholder]="'CLIENTS.LIST.SEARCH' | translate"
+            [value]="searchText"
+            (valueChange)="searchText = $event; onSearch()" />
+        </div>
+        <!-- Mobile-only: filters toggle -->
+        <button class="mob-filters-toggle" type="button" (click)="mobileFiltersOpen.set(!mobileFiltersOpen())">
+          <span class="material-symbols-outlined">tune</span>
+          <span class="mob-filters-toggle__lbl">Filtres</span>
+          @if (mobileFiltersOpen()) {
+            <span class="material-symbols-outlined mob-filters-toggle__arrow">expand_less</span>
+          } @else {
+            <span class="material-symbols-outlined mob-filters-toggle__arrow">expand_more</span>
+          }
+        </button>
+      </div>
+
+      <div class="filters-bar__extra" [class.filters-bar__extra--open]="mobileFiltersOpen()">
+
+        <div class="filters-bar__left">
+          <div class="filter-group">
+            <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.COUNTRY' | translate }}</span>
+            <daf-select
+              style="min-width: 160px"
+              [options]="paysSelectOptions()"
+              [selected]="paysSelected()"
+              [config]="{ fullWidth: false }"
+              (selectedChange)="onPaysSelectChange($event)" />
+          </div>
+
+          @if (sectors().length > 0) {
+            <div class="filter-group">
+              <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.SECTOR' | translate }}</span>
+              <daf-select
+                style="min-width: 160px"
+                [options]="sectorSelectOptions()"
+                [selected]="sectorSelected()"
+                [config]="{ fullWidth: false }"
+                (selectedChange)="onSectorSelectChange($event)" />
+            </div>
+          }
+        </div>
+
+        <div class="status-pills">
+          <span class="filter-label">{{ 'CLIENTS.LIST.FILTER.STATUS' | translate }}</span>
+          <button class="pill" [class.pill--active]="activeFilter() === 'all'"     (click)="resetStatusFilter()">{{ 'CLIENTS.LIST.FILTER.ALL' | translate }}</button>
+          <button class="pill" [class.pill--active]="activeFilter() === 'active'"  (click)="toggleIsActive(true)">{{ 'CLIENTS.LIST.FILTER.ACTIVE' | translate }}</button>
+          <button class="pill" [class.pill--active]="activeFilter() === 'pending'" (click)="toggleIsActive(false)">{{ 'CLIENTS.LIST.FILTER.INACTIVE' | translate }}</button>
+          <button class="pill" [class.pill--active]="activeFilter() === 'kyc'"     (click)="toggleIsKycDone(true)">{{ 'CLIENTS.LIST.FILTER.KYC' | translate }}</button>
+        </div>
+
+      </div>
+
+    </div>
+  </daf-card>
 
   <!-- ── Error ──────────────────────────────────────────────────────────────── -->
   @if (error()) {
@@ -92,11 +170,60 @@
         </daf-card>
       }
     } @else {
-      @for (card of clientCards(); track card.id) {
-        <daf-entity-card
-          [options]="card.options"
-          (cardClick)="navigateToDetail(card.id)"
-          (viewClick)="navigateToDetail(card.id)" />
+      @for (client of clients(); track client.id; let idx = $index) {
+        <daf-card [options]="{variant:'glass',padding:'none',radius:'xl',hoverable:true,clickable:true}"
+                  (click)="navigateToDetail(client.id)">
+          <div class="client-card">
+
+            <div class="client-card__header">
+              <div class="client-card__left">
+                <div [class]="'client-avatar client-avatar--' + avatarVariant(idx)">
+                  {{ initials(client.clientName) }}
+                </div>
+                <div>
+                  <h3 class="client-card__name">{{ client.clientName }}</h3>
+                  <p class="client-card__sector">{{ client.sector || client.country || '—' }}</p>
+                </div>
+              </div>
+              <div class="client-card__badges">
+                @if (client.isKycDone) {
+                  <span class="badge badge--kyc">
+                    <span class="material-symbols-outlined">verified</span> KYC
+                  </span>
+                }
+                @if (!client.isActive) {
+                  <span class="badge badge--inactive">{{ 'CLIENTS.LIST.CARD.INACTIVE' | translate }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="client-card__metrics">
+              <div class="metric-box">
+                <p class="metric-box__label">{{ 'CLIENTS.LIST.CARD.TOTAL_CA' | translate }}</p>
+                <p class="metric-box__value">{{ client.totalCA | displayCurrency : (client.defaultCurrency ?? 'TND') }}</p>
+              </div>
+              <div class="metric-box">
+                <p class="metric-box__label">{{ 'CLIENTS.LIST.CARD.ACTIVE_PROJECTS' | translate }}</p>
+                <p class="metric-box__value metric-box__value--accent">{{ client.activeAffaireCount }}</p>
+              </div>
+            </div>
+
+            <div class="client-card__footer">
+              <div class="client-card__meta">
+                @if (client.paymentTermsDays) {
+                  <span class="material-symbols-outlined meta-icon">schedule</span>
+                  <span class="meta-text">{{ 'CLIENTS.LIST.CARD.DELAY' | translate: { days: client.paymentTermsDays } }}</span>
+                } @else {
+                  <span class="meta-text">{{ client.clientCode }}</span>
+                }
+              </div>
+              <button class="link-btn" (click)="$event.stopPropagation(); navigateToDetail(client.id)">
+                {{ 'CLIENTS.LIST.CARD.SEE_FILE' | translate }}
+              </button>
+            </div>
+
+          </div>
+        </daf-card>
       }
       @empty {
         <div class="empty-state">

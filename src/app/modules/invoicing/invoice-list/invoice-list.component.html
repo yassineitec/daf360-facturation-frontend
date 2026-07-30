@@ -27,7 +27,7 @@
           </div>
         </div>
         <div>
-          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountTotal()) }}</p>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ amountTotal() | displayCurrency : 'TND' }}</p>
           <p class="text-[10px] font-bold mt-1 text-primary">{{ totalElements() }} {{ 'INVOICING.LIST.KPI.INVOICES_SUFFIX' | translate }}</p>
         </div>
       </div>
@@ -43,7 +43,7 @@
           </div>
         </div>
         <div>
-          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountEnAttente()) }}</p>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ amountEnAttente() | displayCurrency : 'TND' }}</p>
           <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnAttente() }} {{ 'INVOICING.LIST.KPI.PENDING_SUFFIX' | translate }}</p>
         </div>
       </div>
@@ -59,7 +59,7 @@
           </div>
         </div>
         <div>
-          <p class="text-[22px] font-black leading-tight text-danger">{{ formatAmount(amountEnRetard()) }}</p>
+          <p class="text-[22px] font-black leading-tight text-danger">{{ amountEnRetard() | displayCurrency : 'TND' }}</p>
           <p class="text-[10px] font-bold mt-1 text-danger">{{ statsEnRetard() }} {{ 'INVOICING.LIST.KPI.OVERDUE_SUFFIX' | translate }}</p>
         </div>
       </div>
@@ -75,7 +75,7 @@
           </div>
         </div>
         <div>
-          <p class="text-[22px] font-black leading-tight text-on-surface">{{ formatAmount(amountEnLitige()) }}</p>
+          <p class="text-[22px] font-black leading-tight text-on-surface">{{ amountEnLitige() | displayCurrency : 'TND' }}</p>
           <p class="text-[10px] font-bold mt-1 text-on-surface-variant">{{ statsEnLitige() }} {{ 'INVOICING.LIST.KPI.DISPUTED_SUFFIX' | translate }}</p>
         </div>
       </div>
@@ -182,7 +182,7 @@
           <p class="mob-row__title">{{ inv.clientNom || '—' }}</p>
           <div class="mob-row__foot">
             <span class="mob-row__date">{{ inv.affaireRef ?? (inv.dateEcheance ? formatDate(inv.dateEcheance) : formatDate(inv.dateEmission)) }}</span>
-            <span class="mob-row__amount">{{ formatAmount(inv.montantTtc, inv.devise) }}</span>
+            <span class="mob-row__amount">{{ inv.montantTtc | displayCurrency : inv.devise }}</span>
           </div>
         </div>
       }
@@ -209,7 +209,7 @@
         </ng-template>
 
         <ng-template dafCell="amount" let-row>
-          <span class="cell-amount">{{ formatAmount(row['_raw'].montantTtc, row['_raw'].devise) }}</span>
+          <span class="cell-amount">{{ row['_raw'].montantTtc | displayCurrency : row['_raw'].devise }}</span>
         </ng-template>
 
         <ng-template dafCell="statut" let-row>

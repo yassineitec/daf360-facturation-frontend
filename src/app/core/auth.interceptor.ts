@@ -21,6 +21,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const isPortalCall = req.url.startsWith(environment.portalUrl);
   const isFactApi    = req.url.startsWith(environment.factApiUrl);
+  const isHrApi      = req.url.startsWith(environment.hrApiUrl);
 
   if (isPortalCall) {
     return next(req.clone({ withCredentials: true })).pipe(
@@ -31,7 +32,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     );
   }
 
-  if (isFactApi) {
+  if (isFactApi || isHrApi) {
     return next(withToken(req, store.user()?.rhToken)).pipe(
       catchError(err => {
         if (err.status === 403) {

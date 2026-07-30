@@ -114,11 +114,10 @@
           <div class="mob-row__foot">
             <span class="mob-row__client">{{ a.clientName || '—' }}</span>
             <div class="mob-row__amounts">
-              <span class="mob-row__budget">{{ formatAmount(a.budgetPrevisionnel) }}</span>
-              <span class="mob-row__unit">TND</span>
+              <span class="mob-row__budget">{{ a.budgetPrevisionnel | displayCurrency : 'TND' }}</span>
               @if (a.rafDisponible != null) {
                 <span class="mob-row__raf" [style.color]="rafColor(a)">
-                  · RAF {{ formatAmount(a.rafDisponible) }}
+                  · RAF {{ a.rafDisponible | displayCurrency : 'TND' }}
                 </span>
               }
             </div>
@@ -179,15 +178,14 @@
                   <div class="aff-card__amount-block">
                     <span class="aff-card__amount-label">{{ 'AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL' | translate }}</span>
                     <span class="aff-card__amount">
-                      {{ formatAmount(a.budgetPrevisionnel) }}
-                      <span class="aff-card__amount-unit">TND</span>
+                      {{ a.budgetPrevisionnel | displayCurrency : 'TND' }}
                     </span>
                   </div>
                   @if (a.rafDisponible != null) {
                     <div class="aff-card__raf">
                       <span class="aff-card__raf-label">RAF</span>
                       <span class="aff-card__raf-val" [style.color]="rafColor(a)">
-                        {{ formatAmount(a.rafDisponible) }} TND
+                        {{ a.rafDisponible | displayCurrency : 'TND' }}
                       </span>
                     </div>
                   }
@@ -242,7 +240,7 @@
 
           <ng-template dafCell="budget" let-row>
             <div class="budget-cell">
-              <span class="budget-val">{{ formatAmount(row['budgetPrevisionnel']) }}</span>
+              <span class="budget-val">{{ row['budgetPrevisionnel'] | displayCurrency : 'TND' }}</span>
               <span class="material-symbols-outlined budget-icon"
                     [class.budget-icon--filled]="row['_raw'].budgetValide"
                     [style.color]="budgetIconColor(row['_raw'])">
@@ -253,7 +251,7 @@
 
           <ng-template dafCell="raf" let-row>
             <span class="raf-val" [style.color]="rafColor(row['_raw'])">
-              {{ formatAmount(row['rafDisponible'] ?? null) }}
+              {{ row['rafDisponible'] | displayCurrency : 'TND' }}
             </span>
           </ng-template>
 
