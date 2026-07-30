@@ -25,7 +25,7 @@
   <daf-toolbar
     [searchValue]="searchText()"
     [searchPlaceholder]="'COST.LINES.SEARCH_PLACEHOLDER' | translate"
-    [actions]="toolbarActions()"
+    [actions]="toolbarActions"
     (searchChange)="searchText.set($event)"
     (actionClick)="onToolbarAction($event)" />
 
@@ -34,7 +34,7 @@
     <div class="flex flex-wrap items-end gap-3 p-2">
       <div class="min-w-52">
         <daf-select
-          [options]="statusSelectOptions()"
+          [options]="statusSelectOptions"
           [selected]="statusFilterSel()"
           (selectedChange)="statusFilterSel.set($event); onStatusChange()"
           [config]="{ label: ('COST.LINES.STATUS_FILTER_LABEL' | translate), placeholder: ('COST.LINES.STATUS_FILTER_PLACEHOLDER' | translate), fullWidth: true }" />
@@ -58,7 +58,7 @@
   <div class="table-desktop">
     <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
       <daf-data-table
-        [columns]="tableColumns()"
+        [columns]="tableColumns"
         [rows]="tableRows()"
         [config]="tableConfig()"
         (rowClick)="onRowClick($event)">

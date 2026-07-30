@@ -6,10 +6,11 @@ import { TransactionTableComponent } from './transaction-table.component';
 import { ManualTransactionModalComponent } from './manual-transaction-modal.component';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-reconciliation',
-  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective, DisplayCurrencyPipe],
+  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective, DisplayCurrencyPipe, TranslatePipe],
   templateUrl: './reconciliation.component.html',
   styleUrl:    './reconciliation.component.scss',
 })
