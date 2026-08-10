@@ -1,129 +1,156 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, forkJoin, takeUntil } from 'rxjs';
-import { ClientService } from '../client.service';
-import { ClientListItemDto, ClientFilter } from '../client.model';
-import { PermissionDirective } from '../../../shared/permission.directive';
-import { SearchBarComponent } from '../../../shared/search-bar.component';
-import { PaysRefDto } from '../../affaires/affaire.model';
-import { UserStore } from '../../../core/user.store';
-import { CardComponent, PaginationComponent, ButtonComponent, SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import {
+  ButtonComponent, FilterField, FilterResult, MetricCardComponent, MetricCardOptions,
+  MetricDelta, PageComponent, PageHeaderComponent, PaginationComponent,
+  SearchToolbarComponent, SearchToolbarFilterConfig,
+} from '@khalilrebhiitec/daf360';
+import { ClientService } from '../client.service';
+import { ClientFilter, ClientListItemDto } from '../client.model';
+import { ClientsCardsSectionComponent } from './clients-cards-section.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+
+/** The four states the status filter can express, mapped to the two backend flags. */
+type StatusFilter = '' | 'active' | 'inactive' | 'kyc';
 
 @Component({
   selector: 'app-client-list',
-  imports: [FormsModule, DecimalPipe, PermissionDirective,
-            CardComponent, PaginationComponent, ButtonComponent, SearchBarComponent, SelectComponent, TranslatePipe, DisplayCurrencyPipe],
+  imports: [
+    TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
+    SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe,
+    ClientsCardsSectionComponent,
+  ],
+  host: { class: 'block' },
   templateUrl: './client-list.component.html',
-  styleUrl: './client-list.component.scss',
 })
-export class ClientListComponent implements OnInit, OnDestroy {
+export class ClientListComponent implements OnInit {
   private readonly svc            = inject(ClientService);
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
-  private readonly userStore      = inject(UserStore);
   private readonly translate      = inject(TranslateService);
-  private readonly destroy$       = new Subject<void>();
-  private readonly search$        = new Subject<string>();
 
-  readonly canViewAllClients = computed(() => this.userStore.hasPermission('FACT_VIEW_ALL_CLIENTS'));
+  clients       = signal<ClientListItemDto[]>([]);
+  error         = signal<string | null>(null);
+  totalElements = signal(0);
+  totalPages    = signal(0);
+  currentPage   = signal(0);
+  pageSize      = signal(20);
+  sectors       = signal<string[]>([]);
 
-  readonly mobileFiltersOpen = signal(false);
+  /** `firstLoad` drives the whole-page skeleton, `loading` only the card grid (§5). */
+  firstLoad = signal(true);
+  loading   = signal(false);
 
-  clients          = signal<ClientListItemDto[]>([]);
-  loading          = signal(false);
-  error            = signal<string | null>(null);
-  totalElements    = signal(0);
-  totalPages       = signal(0);
-  currentPage      = signal(0);
-  paysList         = signal<PaysRefDto[]>([]);
-  sectors          = signal<string[]>([]);
+  searchText   = signal('');
+  filterSector = signal('');
+  filterStatus = signal<StatusFilter>('');
 
-  searchText      = '';
-  filterPaysId    = 0;
-  filterIsActive  : boolean | null = null;
-  filterIsKycDone : boolean | null = null;
-  filterSector    = '';
-
-  readonly PAGE_SIZE = 20;
-
+  /** `totalElements` is the real result-set size, so this tile is not page-scoped. */
   readonly statsTotal   = computed(() => this.totalElements());
   readonly statsActive  = computed(() => this.clients().filter(c => c.isActive).length);
   readonly statsKycDone = computed(() => this.clients().filter(c => c.isKycDone).length);
-  readonly statsTotalCA = computed(() =>
-    this.clients().reduce((sum, c) => sum + (c.totalCA ?? 0), 0)
-  );
+  readonly statsTotalCA = computed(() => this.clients().reduce((sum, c) => sum + (c.totalCA ?? 0), 0));
   readonly statsKycPct  = computed(() => {
     const total = this.clients().length;
     return total === 0 ? 0 : Math.round((this.statsKycDone() / total) * 100);
   });
 
-  readonly activeFilter = computed(() => {
-    if (this.filterIsActive === true)  return 'active';
-    if (this.filterIsActive === false) return 'pending';
-    if (this.filterIsKycDone === true) return 'kyc';
-    return 'all';
+  /** Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4). */
+  readonly kpiTotal  : MetricCardOptions = { icon: 'group',    iconColor: 'text-primary',   iconBg: 'bg-primary/10'   };
+  readonly kpiKyc    : MetricCardOptions = { icon: 'verified', iconColor: 'text-secondary', iconBg: 'bg-secondary/10' };
+  readonly kpiCa     : MetricCardOptions = { icon: 'payments', iconColor: 'text-teal',      iconBg: 'bg-teal/10'      };
+  readonly kpiActive : MetricCardOptions = { icon: 'bolt',     iconColor: 'text-warning',   iconBg: 'bg-warning/10'   };
+
+  readonly deltaAllCountries = computed<MetricDelta>(() => {
+    this.translate.currentLang();
+    return { value: this.translate.instant('CLIENTS.LIST.KPI.ALL_COUNTRIES'), direction: 'neutral' };
   });
 
-  private readonly AVATAR_VARIANTS = ['primary', 'secondary', 'blue', 'tertiary', 'slate'] as const;
+  readonly deltaKyc = computed<MetricDelta>(() => {
+    this.translate.currentLang();
+    return {
+      value: `${this.statsKycDone()} ${this.translate.instant('CLIENTS.LIST.KPI.CLIENTS_SUFFIX')}`,
+      direction: 'neutral',
+    };
+  });
 
-  avatarVariant(index: number): string {
-    return this.AVATAR_VARIANTS[index % this.AVATAR_VARIANTS.length];
-  }
+  /** The CA and actifs tiles sum the page on screen — the endpoint returns no aggregates. */
+  readonly deltaCurrentPage = computed<MetricDelta>(() => {
+    this.translate.currentLang();
+    return { value: this.translate.instant('CLIENTS.LIST.KPI.CURRENT_PAGE'), direction: 'neutral' };
+  });
 
-  initials(name: string): string {
-    return name.split(/\s+/).map(w => w[0] ?? '').slice(0, 2).join('').toUpperCase();
-  }
+  /**
+   * Sector and status live *inside* the filter panel — never as loose selects or a
+   * pill row next to the search (§1).
+   *
+   * ⚠️ There is deliberately **no country filter**. `ClientService.getClients` does not
+   * send `paysId` at all (the list is not pays-scoped, which is what avoids the
+   * pays-isolation 403 on that endpoint), so the old "Pays" dropdown filtered nothing —
+   * it only cost two extra requests per page load to populate itself.
+   */
+  readonly filterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return [
+      {
+        name: 'sector',
+        label: t('CLIENTS.LIST.FILTER.SECTOR'),
+        type: 'select',
+        placeholder: t('CLIENTS.LIST.FILTER.ALL'),
+        options: this.sectors().map(s => ({ value: s, label: s })),
+      },
+      {
+        name: 'status',
+        label: t('CLIENTS.LIST.FILTER.STATUS'),
+        type: 'select',
+        placeholder: t('CLIENTS.LIST.FILTER.ALL'),
+        options: [
+          { value: 'active',   label: t('CLIENTS.LIST.FILTER.ACTIVE')   },
+          { value: 'inactive', label: t('CLIENTS.LIST.FILTER.INACTIVE') },
+          { value: 'kyc',      label: t('CLIENTS.LIST.FILTER.KYC')      },
+        ],
+      },
+    ];
+  });
+
+  /**
+   * `daf-filter` **seeds** `initialValues` once, in the panel's internal shape — a
+   * `select` is a `string[]` there and only normalises to a scalar on emit (§10b).
+   */
+  readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      title:        t('CLIENTS.LIST.FILTER.PANEL_TITLE'),
+      applyLabel:   t('CLIENTS.LIST.FILTER.APPLY'),
+      cancelLabel:  t('CLIENTS.LIST.FILTER.CANCEL'),
+      resetLabel:   t('CLIENTS.LIST.FILTER.RESET'),
+      triggerLabel: t('CLIENTS.LIST.FILTER.FILTERS'),
+      initialValues: {
+        sector: this.filterSector() ? [this.filterSector()] : [],
+        status: this.filterStatus() ? [this.filterStatus()] : [],
+      },
+    };
+  });
 
   ngOnInit(): void {
-    // Data is no longer scoped by pays — always load the full client list.
     this.loadSectors();
     this.load();
-
-    // Populate the country dropdown for display only; selecting a country no
-    // longer filters the data (pays is ignored server-side).
-    forkJoin({
-      pays:     this.svc.getPays(),
-      myPaysId: this.svc.getMyPays(),
-    }).subscribe(({ pays, myPaysId }) => {
-      this.paysList.set(pays);
-      if (pays.length > 0) {
-        const userPays = myPaysId != null
-          ? (pays.find(p => p.id === myPaysId) ?? pays[0])
-          : pays[0];
-        this.filterPaysId = userPays.id;
-      }
-    });
-
-    this.search$.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$),
-    ).subscribe(() => {
-      this.currentPage.set(0);
-      this.load();
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   load(): void {
     this.loading.set(true);
     this.error.set(null);
+    const status = this.filterStatus();
     const filter: ClientFilter = {
-      paysId:    this.filterPaysId || 0,
       page:      this.currentPage(),
-      size:      this.PAGE_SIZE,
-      search:    this.searchText.trim() || null,
-      isActive:  this.filterIsActive,
-      isKycDone: this.filterIsKycDone,
-      sector:    this.filterSector || null,
+      size:      this.pageSize(),
+      search:    this.searchText().trim() || null,
+      isActive:  status === 'active' ? true : status === 'inactive' ? false : null,
+      isKycDone: status === 'kyc' ? true : null,
+      sector:    this.filterSector() || null,
     };
     this.svc.getClients(filter).subscribe({
       next: res => {
@@ -131,10 +158,12 @@ export class ClientListComponent implements OnInit, OnDestroy {
         this.totalElements.set(res.totalElements);
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
+        this.firstLoad.set(false);
       },
       error: () => {
-        this.error.set('Impossible de charger les clients. Vérifiez votre connexion.');
+        this.error.set(this.translate.instant('CLIENTS.LIST.LOAD_ERROR'));
         this.loading.set(false);
+        this.firstLoad.set(false);
       },
     });
   }
@@ -143,59 +172,17 @@ export class ClientListComponent implements OnInit, OnDestroy {
     this.svc.getSectors().subscribe(s => this.sectors.set(s));
   }
 
-  onSearch(): void { this.search$.next(this.searchText); }
-
-  readonly paysSelectOptions = computed<SelectOption[]>(() => [
-    { value: '0', label: this.translate.instant('CLIENTS.LIST.FILTER.ALL') },
-    ...this.paysList().map(p => ({ value: String(p.id), label: p.frenchLabel })),
-  ]);
-
-  readonly sectorSelectOptions = computed<SelectOption[]>(() => [
-    { value: '', label: this.translate.instant('CLIENTS.LIST.FILTER.ALL') },
-    ...this.sectors().map(s => ({ value: s, label: s })),
-  ]);
-
-  readonly paysSelected   = computed(() => [String(this.filterPaysId)]);
-  readonly sectorSelected = computed(() => [this.filterSector]);
-
-  onPaysSelectChange(values: string[]): void {
-    this.filterPaysId = Number(values[0] ?? 0);
-    this.onPaysChange();
-  }
-
-  onSectorSelectChange(values: string[]): void {
-    this.filterSector = values[0] ?? '';
-    this.onFilterChange();
-  }
-
-  onPaysChange(): void {
-    this.currentPage.set(0);
-    this.filterSector = '';
-    this.loadSectors();
-    this.load();
-  }
-
-  onFilterChange(): void {
+  onSearchTextChange(value: string): void {
+    this.searchText.set(value);
     this.currentPage.set(0);
     this.load();
   }
 
-  resetStatusFilter(): void {
-    this.filterIsActive  = null;
-    this.filterIsKycDone = null;
-    this.onFilterChange();
-  }
-
-  toggleIsActive(val: boolean): void {
-    this.filterIsKycDone = null;
-    this.filterIsActive  = this.filterIsActive === val ? null : val;
-    this.onFilterChange();
-  }
-
-  toggleIsKycDone(val: boolean): void {
-    this.filterIsActive  = null;
-    this.filterIsKycDone = this.filterIsKycDone === val ? null : val;
-    this.onFilterChange();
+  applyFilters(result: FilterResult): void {
+    this.filterSector.set((result['sector'] as string | null) ?? '');
+    this.filterStatus.set(((result['status'] as string | null) ?? '') as StatusFilter);
+    this.currentPage.set(0);
+    this.load();
   }
 
   goToPage(page: number): void {
@@ -204,23 +191,18 @@ export class ClientListComponent implements OnInit, OnDestroy {
     this.load();
   }
 
+  /** `pageSizeChange` fires alone — the page decides to go back to the first page (§7). */
+  onPageSize(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(0);
+    this.load();
+  }
+
   goToNewClient(): void {
     this.router.navigate(['new'], { relativeTo: this.activatedRoute });
   }
 
-  navigateToDetail(id: number): void { this.router.navigate([id], { relativeTo: this.activatedRoute }); }
-
-  formatAmount(v: number | null, currency = 'TND'): string {
-    if (v === null || v === undefined) return '—';
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency,
-      minimumFractionDigits: 0, maximumFractionDigits: 0,
-    }).format(v);
-  }
-
-  get pages(): number[] {
-    const total = this.totalPages(), cur = this.currentPage();
-    const start = Math.max(0, cur - 2), end = Math.min(total - 1, cur + 2);
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  navigateToDetail(id: number): void {
+    this.router.navigate([id], { relativeTo: this.activatedRoute });
   }
 }

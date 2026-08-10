@@ -478,6 +478,9 @@
     "LIST": {
       "TITLE": "Client Management",
       "NEW_BTN": "New client",
+      "SUBTITLE": "Client portfolio: revenue, KYC and projects in progress.",
+      "LOADING": "Loading clients…",
+      "LOAD_ERROR": "Could not load the clients. Check your connection.",
       "KPI": {
         "TOTAL": "Total Clients",
         "ALL_COUNTRIES": "All countries",
@@ -488,25 +491,28 @@
         "ACTIVE": "Active Clients"
       },
       "FILTER": {
-        "COUNTRY": "Country:",
         "ALL": "All",
-        "SECTOR": "Sector:",
-        "STATUS": "Status:",
+        "SECTOR": "Sector",
+        "STATUS": "Status",
         "ACTIVE": "Active",
         "INACTIVE": "Inactive",
         "KYC": "KYC Validated",
         "FILTERS": "Filters",
         "PANEL_TITLE": "Filter clients",
         "APPLY": "Apply",
-        "CANCEL": "Cancel"
+        "CANCEL": "Cancel",
+        "RESET": "Reset"
       },
       "SEARCH": "Name, code, sector…",
       "CARD": {
         "TOTAL_CA": "Total Revenue",
         "ACTIVE_PROJECTS": "Active projects",
-        "DELAY": "{{days}} d delay",
-        "SEE_FILE": "View file →",
-        "INACTIVE": "Inactive"
+        "PAYMENT_TERMS": "Terms",
+        "COUNTRY": "Country",
+        "SEE_FILE": "View file",
+        "INACTIVE": "Inactive",
+        "KYC_DONE": "KYC Validated",
+        "KYC_PENDING": "KYC pending"
       },
       "EMPTY": {
         "TITLE": "No clients found",

@@ -478,6 +478,9 @@
     "LIST": {
       "TITLE": "Gestion des Clients",
       "NEW_BTN": "Nouveau client",
+      "SUBTITLE": "Portefeuille clients : chiffre d'affaires, KYC et affaires en cours.",
+      "LOADING": "Chargement des clients…",
+      "LOAD_ERROR": "Impossible de charger les clients. Vérifiez votre connexion.",
       "KPI": {
         "TOTAL": "Total Clients",
         "ALL_COUNTRIES": "Tous pays",
@@ -488,25 +491,28 @@
         "ACTIVE": "Clients Actifs"
       },
       "FILTER": {
-        "COUNTRY": "Pays :",
         "ALL": "Tous",
-        "SECTOR": "Secteur :",
-        "STATUS": "Statut :",
+        "SECTOR": "Secteur",
+        "STATUS": "Statut",
         "ACTIVE": "Actifs",
         "INACTIVE": "Inactifs",
         "KYC": "KYC Validé",
         "FILTERS": "Filtres",
         "PANEL_TITLE": "Filtrer les clients",
         "APPLY": "Appliquer",
-        "CANCEL": "Annuler"
+        "CANCEL": "Annuler",
+        "RESET": "Réinitialiser"
       },
       "SEARCH": "Nom, code, secteur…",
       "CARD": {
         "TOTAL_CA": "CA Total",
         "ACTIVE_PROJECTS": "Affaires actives",
-        "DELAY": "{{days}} j délai",
-        "SEE_FILE": "Voir le dossier →",
-        "INACTIVE": "Inactif"
+        "PAYMENT_TERMS": "Délai",
+        "COUNTRY": "Pays",
+        "SEE_FILE": "Voir le dossier",
+        "INACTIVE": "Inactif",
+        "KYC_DONE": "KYC Validé",
+        "KYC_PENDING": "KYC en attente"
       },
       "EMPTY": {
         "TITLE": "Aucun client trouvé",
