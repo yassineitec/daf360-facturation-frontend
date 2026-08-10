@@ -122,9 +122,12 @@
       "TITLE": "Facturation",
       "SUBTITLE": "Gérez vos émissions et suivis de factures clients.",
       "NEW_BTN": "Nouvelle facture",
+      "LOADING": "Chargement des factures…",
+      "LOAD_ERROR": "Impossible de charger les factures. Vérifiez votre connexion.",
       "KPI": {
         "TOTAL": "Total Facturé",
         "INVOICES_SUFFIX": "factures",
+        "CURRENT_PAGE": "page courante",
         "PENDING": "En attente",
         "PENDING_SUFFIX": "en attente",
         "OVERDUE": "En retard",
@@ -134,9 +137,32 @@
       },
       "SEARCH": "Rechercher client, facture, projet...",
       "FILTER": {
-        "DATE_FROM": "Émis depuis",
-        "DATE_TO": "Émis jusqu'à",
-        "EXPORT": "Export"
+        "ALL": "Tous",
+        "FILTERS": "Filtres",
+        "PANEL_TITLE": "Filtrer les factures",
+        "PERIOD": "Période d'émission",
+        "PERIOD_PLACEHOLDER": "Date ou plage de dates",
+        "RESET": "Réinitialiser"
+      },
+      "VIEW_GRID": "Vue grille",
+      "VIEW_LIST": "Vue liste",
+      "CARD": {
+        "HT": "Montant HT",
+        "DUE_DATE": "Échéance",
+        "TYPE": "Type",
+        "OVERDUE": "Retard"
+      },
+      "ACTIONS": {
+        "VIEW": "Voir la facture",
+        "APPROVE": "Valider la facture",
+        "EMIT": "Émettre la facture",
+        "MARK_SENT": "Marquer comme envoyée",
+        "PAYMENT": "Enregistrer un paiement"
+      },
+      "ERROR": {
+        "EMIT": "Erreur lors de l'émission.",
+        "MARK_SENT": "Erreur lors du marquage.",
+        "APPROVE": "Erreur lors de l'approbation."
       },
       "TABLE": {
         "REF": "Référence / Projet",

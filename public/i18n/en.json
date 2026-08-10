@@ -122,9 +122,12 @@
       "TITLE": "Invoicing",
       "SUBTITLE": "Manage your customer invoice issuance and tracking.",
       "NEW_BTN": "New invoice",
+      "LOADING": "Loading invoices…",
+      "LOAD_ERROR": "Could not load the invoices. Check your connection.",
       "KPI": {
         "TOTAL": "Total Invoiced",
         "INVOICES_SUFFIX": "invoices",
+        "CURRENT_PAGE": "current page",
         "PENDING": "Pending",
         "PENDING_SUFFIX": "pending",
         "OVERDUE": "Overdue",
@@ -134,9 +137,32 @@
       },
       "SEARCH": "Search client, invoice, project...",
       "FILTER": {
-        "DATE_FROM": "Issued from",
-        "DATE_TO": "Issued until",
-        "EXPORT": "Export"
+        "ALL": "All",
+        "FILTERS": "Filters",
+        "PANEL_TITLE": "Filter invoices",
+        "PERIOD": "Issue period",
+        "PERIOD_PLACEHOLDER": "Date or date range",
+        "RESET": "Reset"
+      },
+      "VIEW_GRID": "Grid view",
+      "VIEW_LIST": "List view",
+      "CARD": {
+        "HT": "Net amount",
+        "DUE_DATE": "Due date",
+        "TYPE": "Type",
+        "OVERDUE": "Overdue"
+      },
+      "ACTIONS": {
+        "VIEW": "View invoice",
+        "APPROVE": "Approve invoice",
+        "EMIT": "Issue invoice",
+        "MARK_SENT": "Mark as sent",
+        "PAYMENT": "Record a payment"
+      },
+      "ERROR": {
+        "EMIT": "Could not issue the invoice.",
+        "MARK_SENT": "Could not mark the invoice as sent.",
+        "APPROVE": "Could not submit the approval decision."
       },
       "TABLE": {
         "REF": "Reference / Project",
