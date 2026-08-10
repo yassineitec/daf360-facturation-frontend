@@ -1,63 +1,52 @@
-<div class="sc-page">
+<daf-page [loading]="firstLoad()" [kpis]="0" [loadingLabel]="'SUBCONTRACTING.TITLE' | translate">
 
-  <!-- Header card: title + pays selector + tab nav -->
-  <div class="sc-header glass-card">
-    <div class="sc-title-row">
-      <h1 class="sc-title">{{ 'SUBCONTRACTING.TITLE' | translate }}</h1>
-      @if (pays().length > 0) {
-        <div class="sc-pays">
-          <daf-select
-            [options]="paysOptions()"
-            [config]="{ label: ('SUBCONTRACTING.ENTITY' | translate), searchable: true }"
-            [selected]="[selectedPaysId() != null ? selectedPaysId()!.toString() : '']"
-            (selectedChange)="onPaysSelect($event)" />
-        </div>
+  <daf-page-header
+    [title]="'SUBCONTRACTING.TITLE' | translate"
+    [subtitle]="'SUBCONTRACTING.SUBTITLE' | translate">
+    <!-- ng-container is the static root: an element inside a structural directive or
+         @if lives in an embedded view, where <ng-content select="[pageActions]"> can
+         never match it (§10f). -->
+    <!-- The entity selector scopes the SUBCONTRACTORS DIRECTORY ONLY — the other two
+         tabs are affaire-scoped and ignore it. Showing it on all three made it read as
+         a page-wide filter that silently governed a third of the page. -->
+    <ng-container pageActions>
+      @if (activeTab() === 'st' && pays().length > 0) {
+        <daf-select
+          [options]="paysOptions()"
+          [config]="{ label: ('SUBCONTRACTING.ENTITY' | translate), searchable: true }"
+          [selected]="paysSelected()"
+          (selectedChange)="onPaysSelect($event)" />
       }
-    </div>
+    </ng-container>
+  </daf-page-header>
 
-    <nav class="sc-tab-nav" role="tablist">
-      <button role="tab" class="tab-btn" [class.active]="activeTab() === 'st'"
-              [attr.aria-selected]="activeTab() === 'st'"
-              (click)="activeTab.set('st')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        {{ 'SUBCONTRACTING.TABS.SUBCONTRACTORS' | translate }}
-      </button>
-      <button role="tab" class="tab-btn" [class.active]="activeTab() === 'ordres'"
-              [attr.aria-selected]="activeTab() === 'ordres'"
-              (click)="activeTab.set('ordres')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-          <rect x="2" y="7" width="20" height="14" rx="2"/>
-          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-        </svg>
-        {{ 'SUBCONTRACTING.TABS.ORDERS' | translate }}
-      </button>
-      <button role="tab" class="tab-btn" [class.active]="activeTab() === 'analyse'"
-              [attr.aria-selected]="activeTab() === 'analyse'"
-              (click)="activeTab.set('analyse')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-          <line x1="18" y1="20" x2="18" y2="10"/>
-          <line x1="12" y1="20" x2="12" y2="4"/>
-          <line x1="6" y1="20" x2="6" y2="14"/>
-        </svg>
-        {{ 'SUBCONTRACTING.TABS.COST_ANALYSIS' | translate }}
-      </button>
-    </nav>
-  </div>
+  <!-- daf-tabs is strip-only — the consumer renders the panel, which is what keeps the
+       per-tab work in this page. Active tab lives in ?tab= (§10f). -->
+  <daf-tabs #tabsRef
+    [tabs]="tabs()"
+    [active]="activeTab()"
+    (activeChange)="onTabChange($event)"
+    idPrefix="sc" />
 
-  <!-- Tab content -->
-  <div class="sc-body">
-    @if (activeTab() === 'st') {
-      <app-sous-traitants-tab [paysId]="selectedPaysId()" />
-    } @else if (activeTab() === 'ordres') {
-      <app-ordres-st-tab [paysId]="selectedPaysId()" />
-    } @else {
-      <app-couts-analyse-tab />
+  <div role="tabpanel"
+       [id]="tabsRef.panelId(activeTab())"
+       [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+       class="flex flex-col gap-8">
+
+    <!-- One line per tab saying what it holds and what scopes it. The three tabs are
+         three different levels (vendor directory → order on a project → margin on a
+         project) and nothing on screen used to say so. -->
+    <p class="flex items-start gap-2 rounded-xl bg-surface-container-low px-4 py-3
+              text-body-sm text-on-surface-variant">
+      <span class="material-symbols-outlined text-[18px] text-outline">info</span>
+      {{ tabIntro() }}
+    </p>
+
+    @switch (activeTab()) {
+      @case ('st')     { <app-sous-traitants-tab [paysId]="selectedPaysId()" /> }
+      @case ('ordres') { <app-ordres-st-tab      [paysId]="selectedPaysId()" /> }
+      @default         { <app-couts-analyse-tab /> }
     }
   </div>
 
-</div>
+</daf-page>

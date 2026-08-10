@@ -2039,7 +2039,12 @@
         "CLIENT_PH": "Client ID",
         "PERIOD": "Period",
         "DATE_PH": "Date or date range",
-        "OVERDUE_ONLY": "Overdue only"
+        "OVERDUE_ONLY": "Overdue only",
+        "PAGE_SEARCH_PH": "Filter this page (client, invoice, project)…",
+        "PANEL_TITLE": "Filter unpaid invoices",
+        "APPLY": "Apply",
+        "RESET": "Reset",
+        "FILTERS": "Filters"
       },
       "TABLE": {
         "CLIENT": "Client",
@@ -2058,11 +2063,14 @@
         "RELANCE_1": "1st reminder",
         "RELANCE_2": "2nd reminder",
         "RELANCE_3": "3rd reminder"
+      },
+      "LOADING": "Loading unpaid invoices…",
+      "VIEW_GRID": "Grid view",
+      "VIEW_LIST": "List view",
+      "CARD": {
+        "ON_TIME": "On time",
+        "LAST_REMINDER": "Last reminder"
       }
-    },
-    "LIST": {
-      "TITLE": "Payments",
-      "WIP": "Module under development."
     },
     "RECON": {
       "TITLE": "Bank reconciliation",
@@ -2192,10 +2200,6 @@
       "ORDERS": "ST Orders",
       "COST_ANALYSIS": "Cost analysis"
     },
-    "PLACEHOLDER": {
-      "TITLE": "Subcontracting",
-      "SUBTITLE": "Module under development."
-    },
     "ANALYSIS": {
       "SEARCH_PLACEHOLDER": "Search for a project…",
       "CLEAR": "Clear",
@@ -2205,7 +2209,7 @@
       "ERROR": "Unable to load margin data.",
       "TITLE": "Margin analysis",
       "KPI": {
-        "CA": "Total revenue",
+        "CA": "Collected revenue",
         "INTERNAL_COSTS": "Internal costs",
         "ST_COSTS": "ST costs",
         "GROSS_MARGIN": "Gross margin",
@@ -2216,7 +2220,9 @@
         "GROSS_MARGIN": "Gross margin",
         "ST_COSTS": "ST costs",
         "INTERNAL_COSTS": "Internal costs"
-      }
+      },
+      "CA_BASIS": "payments collected",
+      "INTERNAL_NOT_TRACKED": "Internal costs are not computed server-side yet — they are always 0, so the margin shown is collected payments minus subcontracting costs only."
     },
     "OST": {
       "STATUT": {
@@ -2256,7 +2262,8 @@
         "ALERT_THRESHOLD": "Alert threshold (%)",
         "CANCEL": "Cancel",
         "SAVING": "Saving…",
-        "SAVE": "Save"
+        "SAVE": "Save",
+        "REQUIRED": "Subcontractor, scope and budget amount are required."
       },
       "STATUT_MODAL": {
         "TITLE": "Change status",
@@ -2283,6 +2290,34 @@
         "CANCEL": "Cancel",
         "ADDING": "Adding…",
         "ADD": "Add"
+      },
+      "FILTER_PH": "Filter orders (reference, subcontractor, scope)…",
+      "OVERRUN_PLAIN": "Over budget",
+      "TABLE": {
+        "REF": "Reference",
+        "ST": "Subcontractor",
+        "STATUS": "Status"
+      },
+      "KPI": {
+        "ORDERS": "ST orders",
+        "BUDGET": "Total budget",
+        "REALIZED": "Total spent",
+        "OVERRUNS": "Over budget"
+      },
+      "CARD": {
+        "CONSUMED": "Consumed",
+        "THRESHOLD": "Alert threshold",
+        "ALERT": "Alert"
+      },
+      "COST_MODAL": {
+        "ADD": "Add a cost",
+        "AMOUNT": "Amount *",
+        "DATE": "Date *",
+        "DESCRIPTION": "Description",
+        "SAVE": "Save",
+        "REMOVE": "Remove",
+        "EMPTY": "No costs recorded.",
+        "CLOSE": "Close"
       }
     },
     "ST": {
@@ -2321,7 +2356,8 @@
         "COUNTRY_PLACEHOLDER": "e.g. Tunisia",
         "CANCEL": "Cancel",
         "SAVING": "Saving…",
-        "SAVE": "Save"
+        "SAVE": "Save",
+        "NAME_REQUIRED": "Name is required."
       },
       "DELETE": {
         "TITLE": "Confirm deactivation",
@@ -2331,7 +2367,25 @@
         "CANCEL": "Cancel",
         "DELETING": "Deleting…",
         "CONFIRM": "Deactivate"
+      },
+      "SEARCH_PH": "Search a subcontractor (name, email, tax id)…",
+      "VIEW_GRID": "Grid view",
+      "VIEW_LIST": "List view",
+      "FILTER_ALL": "All",
+      "FILTER_TITLE": "Filter subcontractors",
+      "FILTER_RESET": "Reset",
+      "KPI": {
+        "TOTAL": "Subcontractors",
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive",
+        "COUNTRIES": "Countries"
       }
+    },
+    "SUBTITLE": "Manage external providers: directory, subcontracting orders per project, and the resulting margin.",
+    "INTRO": {
+      "ST": "Directory of external providers approved for the selected entity. A subcontractor must exist here before it can receive an order.",
+      "ORDRES": "A subcontracting order commits a provider to a project, with a budget and an alert threshold. Pick the project first, then track the costs logged under each order.",
+      "ANALYSE": "Margin for one project: collected payments minus subcontracting costs. Pick a project to analyse it."
     }
   },
   "SUPPLIERS": {

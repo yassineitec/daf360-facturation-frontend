@@ -2039,7 +2039,12 @@
         "CLIENT_PH": "ID client",
         "PERIOD": "Période",
         "DATE_PH": "Date ou plage de dates",
-        "OVERDUE_ONLY": "En retard uniquement"
+        "OVERDUE_ONLY": "En retard uniquement",
+        "PAGE_SEARCH_PH": "Filtrer cette page (client, facture, affaire)…",
+        "PANEL_TITLE": "Filtrer les impayés",
+        "APPLY": "Appliquer",
+        "RESET": "Réinitialiser",
+        "FILTERS": "Filtres"
       },
       "TABLE": {
         "CLIENT": "Client",
@@ -2058,11 +2063,14 @@
         "RELANCE_1": "1re relance",
         "RELANCE_2": "2e relance",
         "RELANCE_3": "3e relance"
+      },
+      "LOADING": "Chargement des factures impayées…",
+      "VIEW_GRID": "Vue grille",
+      "VIEW_LIST": "Vue liste",
+      "CARD": {
+        "ON_TIME": "À échéance",
+        "LAST_REMINDER": "Dernière relance"
       }
-    },
-    "LIST": {
-      "TITLE": "Paiements",
-      "WIP": "Module en cours de développement."
     },
     "RECON": {
       "TITLE": "Rapprochement bancaire",
@@ -2192,10 +2200,6 @@
       "ORDERS": "Ordres ST",
       "COST_ANALYSIS": "Analyse des coûts"
     },
-    "PLACEHOLDER": {
-      "TITLE": "Sous-traitance",
-      "SUBTITLE": "Module en cours de développement."
-    },
     "ANALYSIS": {
       "SEARCH_PLACEHOLDER": "Rechercher une affaire…",
       "CLEAR": "Effacer",
@@ -2205,7 +2209,7 @@
       "ERROR": "Impossible de charger les données de marge.",
       "TITLE": "Analyse de marge",
       "KPI": {
-        "CA": "CA global",
+        "CA": "CA encaissé",
         "INTERNAL_COSTS": "Coûts internes",
         "ST_COSTS": "Coûts ST",
         "GROSS_MARGIN": "Marge brute",
@@ -2216,7 +2220,9 @@
         "GROSS_MARGIN": "Marge brute",
         "ST_COSTS": "Coûts ST",
         "INTERNAL_COSTS": "Coûts internes"
-      }
+      },
+      "CA_BASIS": "paiements encaissés",
+      "INTERNAL_NOT_TRACKED": "Les coûts internes ne sont pas encore calculés côté serveur : ils valent toujours 0, donc la marge affichée correspond aux encaissements moins les seuls coûts de sous-traitance."
     },
     "OST": {
       "STATUT": {
@@ -2256,7 +2262,8 @@
         "ALERT_THRESHOLD": "Seuil alerte (%)",
         "CANCEL": "Annuler",
         "SAVING": "Enregistrement…",
-        "SAVE": "Enregistrer"
+        "SAVE": "Enregistrer",
+        "REQUIRED": "Sous-traitant, périmètre et montant budget sont obligatoires."
       },
       "STATUT_MODAL": {
         "TITLE": "Changer le statut",
@@ -2283,6 +2290,34 @@
         "CANCEL": "Annuler",
         "ADDING": "Ajout…",
         "ADD": "Ajouter"
+      },
+      "FILTER_PH": "Filtrer les ordres (référence, sous-traitant, périmètre)…",
+      "OVERRUN_PLAIN": "Dépassement",
+      "TABLE": {
+        "REF": "Référence",
+        "ST": "Sous-traitant",
+        "STATUS": "Statut"
+      },
+      "KPI": {
+        "ORDERS": "Ordres ST",
+        "BUDGET": "Budget total",
+        "REALIZED": "Réalisé total",
+        "OVERRUNS": "Dépassements"
+      },
+      "CARD": {
+        "CONSUMED": "Consommé",
+        "THRESHOLD": "Seuil alerte",
+        "ALERT": "Alerte"
+      },
+      "COST_MODAL": {
+        "ADD": "Ajouter un coût",
+        "AMOUNT": "Montant *",
+        "DATE": "Date *",
+        "DESCRIPTION": "Description",
+        "SAVE": "Enregistrer",
+        "REMOVE": "Supprimer",
+        "EMPTY": "Aucun coût enregistré.",
+        "CLOSE": "Fermer"
       }
     },
     "ST": {
@@ -2321,7 +2356,8 @@
         "COUNTRY_PLACEHOLDER": "ex: Tunisie",
         "CANCEL": "Annuler",
         "SAVING": "Enregistrement…",
-        "SAVE": "Enregistrer"
+        "SAVE": "Enregistrer",
+        "NAME_REQUIRED": "Le nom est obligatoire."
       },
       "DELETE": {
         "TITLE": "Confirmer la désactivation",
@@ -2331,7 +2367,25 @@
         "CANCEL": "Annuler",
         "DELETING": "Suppression…",
         "CONFIRM": "Désactiver"
+      },
+      "SEARCH_PH": "Rechercher un sous-traitant (nom, email, n° fiscal)…",
+      "VIEW_GRID": "Vue grille",
+      "VIEW_LIST": "Vue liste",
+      "FILTER_ALL": "Tous",
+      "FILTER_TITLE": "Filtrer les sous-traitants",
+      "FILTER_RESET": "Réinitialiser",
+      "KPI": {
+        "TOTAL": "Sous-traitants",
+        "ACTIVE": "Actifs",
+        "INACTIVE": "Inactifs",
+        "COUNTRIES": "Pays représentés"
       }
+    },
+    "SUBTITLE": "Gérez les prestataires externes : annuaire, ordres de sous-traitance par affaire et marge résultante.",
+    "INTRO": {
+      "ST": "Annuaire des prestataires externes autorisés pour l'entité sélectionnée. Un sous-traitant doit exister ici avant de pouvoir recevoir un ordre.",
+      "ORDRES": "Un ordre ST engage un sous-traitant sur une affaire, avec un budget et un seuil d'alerte. Choisissez d'abord l'affaire, puis suivez les coûts saisis sous chaque ordre.",
+      "ANALYSE": "Marge d'une affaire : encaissements moins coûts de sous-traitance. Choisissez une affaire pour l'analyser."
     }
   },
   "SUPPLIERS": {

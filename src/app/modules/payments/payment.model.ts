@@ -90,10 +90,6 @@ export const MATCH_STATUT_CONFIG: Record<string, { label: string; bg: string; co
   ACOMPTE:           { label: 'Acompte',       bg: '#faf5ff', color: '#7c3aed', border: '#c4b5fd' },
 };
 
-export function agingRowColor(joursRetard: number): string {
-  if (joursRetard <= 0)  return '';
-  if (joursRetard <= 30) return '';
-  if (joursRetard <= 60) return '#fef3c7';
-  if (joursRetard <= 90) return '#ffedd5';
-  return '#fee2e2';
-}
+// `agingRowColor()` lived here and returned raw hex for a hand-rolled row tint that
+// the aging table painted onto a wrapper div inside every one of its seven cells.
+// Aging severity is now a badge variant — see `retardVariant` in `payments-display.ts`.
