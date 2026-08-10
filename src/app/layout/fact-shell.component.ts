@@ -6,7 +6,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { SideNavComponent } from '@khalilrebhiitec/daf360';
 import type { NavItem, SideNavConfig } from '@khalilrebhiitec/daf360';
 import { UserStore } from '../core/user.store';
-import { CurrencyDisplayService, SUPPORTED_CURRENCIES } from '../core/currency-display.service';
+import { CurrencySwitcherComponent } from '../shared/currency-switcher/currency-switcher.component';
 
 interface AppNavDef {
   id: string;
@@ -33,7 +33,7 @@ const APP_NAV_DEFS: AppNavDef[] = [
 @Component({
   selector: 'app-fact-shell',
   standalone: true,
-  imports: [RouterOutlet, SideNavComponent, CommonModule],
+  imports: [RouterOutlet, SideNavComponent, CommonModule, CurrencySwitcherComponent],
   templateUrl: './fact-shell.component.html',
   styleUrl: './fact-shell.component.scss',
 })
@@ -43,8 +43,8 @@ export class FactShellComponent {
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly injector       = inject(Injector);
 
-  readonly currSvc   = inject(CurrencyDisplayService);
-  readonly currencies = SUPPORTED_CURRENCIES;
+  // The display currency lives in `app-currency-switcher` now — the shell no longer
+  // owns the service or the currency list.
   // styles.css is injected + awaited by the shell (ensureRemoteStyles) before
   // this route activates — no runtime injection here.
 

@@ -1,64 +1,88 @@
-<div class="affaires-page">
+<daf-page [loading]="firstLoad()" [loadingLabel]="'AFFAIRES.LIST.LOADING' | translate">
 
-  <!-- Page Header -->
-  <div class="page-header">
-    <div class="flex items-center gap-3">
-      <span class="material-symbols-outlined text-[32px] text-[#79D7BE]"
-            style="font-variation-settings:'FILL' 1">business_center</span>
-      <h2 class="text-2xl font-bold text-on-surface">{{ 'AFFAIRES.LIST.TITLE' | translate }}</h2>
-    </div>
-    <daf-button class="new-btn-desktop" [options]="{variant:'teal', label: 'AFFAIRES.LIST.NEW_BTN' | translate, iconStart:'add'}" (onClick)="openNewForm()" />
-    <button class="new-btn-mobile" (click)="openNewForm()" aria-label="Nouvelle affaire">
-      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">add</span>
-    </button>
-  </div>
+  <daf-page-header
+    [title]="'AFFAIRES.LIST.TITLE' | translate"
+    [subtitle]="'AFFAIRES.LIST.SUBTITLE' | translate">
+    <daf-button pageActions
+      [options]="{ variant: 'teal', label: 'AFFAIRES.LIST.NEW_BTN' | translate, iconStart: 'add' }"
+      (onClick)="openNewForm()" />
+  </daf-page-header>
 
-  <!-- KPI Grid -->
-  <div class="kpi-grid">
-    <app-affaire-kpi-card
+  <!-- KPIs — one row, never wraps -->
+  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+    <daf-metric-card
       [label]="'AFFAIRES.LIST.KPI.ACTIVE' | translate"
-      icon="work"
       [value]="statsActives()"
-      trend="+12%"
-      variant="green" />
+      [delta]="kpiDelta()"
+      [options]="kpiActive" />
 
-    <app-affaire-kpi-card
+    <daf-metric-card
       [label]="'AFFAIRES.LIST.KPI.RAF' | translate"
-      icon="account_balance_wallet"
       [value]="statsRafTotal() | displayCurrency : 'TND'"
-      unit="TND"
-      variant="blue" />
+      [delta]="kpiDelta()"
+      [options]="kpiRaf" />
 
-    <app-affaire-kpi-card
+    <daf-metric-card
       [label]="'AFFAIRES.LIST.KPI.BUDGET' | translate"
-      icon="payments"
       [value]="statsBudgetTotal() | displayCurrency : 'TND'"
-      unit="TND"
-      variant="amber" />
+      [delta]="kpiDelta()"
+      [options]="kpiBudget" />
 
-    <app-affaire-kpi-card
+    <daf-metric-card
       [label]="'AFFAIRES.LIST.KPI.PENDING' | translate"
-      icon="pause_circle"
       [value]="statsSuspendu()"
-      [unit]="'AFFAIRES.LIST.KPI.UNITS' | translate"
-      variant="red" />
-  </div>
+      [delta]="kpiDelta()"
+      [options]="kpiPending" />
+  </section>
 
-  <!-- Table -->
-  <app-affaire-table
-    [affaires]="affaires()"
-    [loading]="loading()"
-    [error]="error()"
-    [deletingId]="deletingId()"
-    [totalElements]="totalElements()"
+  <!-- Search + filters + view toggle -->
+  <daf-search-toolbar
+    [placeholder]="'AFFAIRES.LIST.TABLE.SEARCH' | translate"
+    [value]="searchText()"
+    [debounce]="300"
+    (valueChange)="onSearchTextChange($event)"
+    [filterFields]="filterFields()"
+    [filterConfig]="filterConfig()"
+    (filterApply)="applyFilters($event)"
+    [views]="viewOptions()"
+    [view]="viewMode()"
+    (viewChange)="viewMode.set($any($event))" />
+
+  @if (error()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Content sits free in the page — no outer container card -->
+  @if (viewMode() === 'grid') {
+    <app-affaires-cards-section
+      [affaires]="affaires()"
+      [loading]="loading()"
+      [skeletonCount]="pageSize()"
+      [emptyMessage]="'AFFAIRES.LIST.TABLE.EMPTY' | translate"
+      (open)="navigateToDetail($event)" />
+  } @else {
+    <app-affaires-table-section
+      [affaires]="affaires()"
+      [loading]="loading()"
+      [pageSize]="pageSize()"
+      [emptyMessage]="'AFFAIRES.LIST.TABLE.EMPTY' | translate"
+      (open)="navigateToDetail($event)" />
+  }
+
+  <daf-pagination
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
-    [(searchText)]="searchText"
-    [(filterStatut)]="filterStatut"
-    [(filterType)]="filterType"
-    (rowClick)="navigateToDetail($event)"
+    [totalElements]="totalElements()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[10, 20, 50, 100]"
+    [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+    [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+    [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+    [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
     (pageChange)="goToPage($event)"
-    (searchGo)="onSearch()"
-    (filterGo)="onFilterChange()" />
+    (pageSizeChange)="onPageSize($event)" />
 
-</div>
+</daf-page>

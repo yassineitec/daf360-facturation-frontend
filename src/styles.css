@@ -9,16 +9,44 @@
 @source inline("{col-span-1,col-span-2,col-span-3,col-span-4,col-span-5,col-span-6,col-span-7,col-span-8,col-span-9,col-span-10,col-span-11,col-span-12}");
 @source inline("{lg:col-span-1,lg:col-span-2,lg:col-span-3,lg:col-span-4,lg:col-span-5,lg:col-span-6,lg:col-span-7,lg:col-span-8,lg:col-span-9,lg:col-span-10,lg:col-span-11,lg:col-span-12}");
 @source inline("{md:grid-cols-1,md:grid-cols-2,md:grid-cols-3,md:grid-cols-4,lg:grid-cols-1,lg:grid-cols-2,lg:grid-cols-3,lg:grid-cols-4}");
+@source inline("{sm:grid-cols-1,sm:grid-cols-2,sm:grid-cols-3,sm:grid-cols-4,xl:grid-cols-1,xl:grid-cols-2,xl:grid-cols-3,xl:grid-cols-4}");
 @source inline("{ml-0,ml-64,pt-16,min-h-screen,overflow-y-auto,overflow-hidden}");
 @source inline("{text-primary,text-secondary,text-teal,text-on-surface,text-on-surface-variant,text-outline,text-error,text-danger,text-success}");
 @source inline("{bg-primary,bg-secondary,bg-teal,bg-surface,bg-surface-container,bg-surface-container-lowest,bg-surface-container-high,bg-background,bg-error,bg-danger}");
 @source inline("{border-primary,border-secondary,border-outline,border-outline-variant,border-error}");
 
+/* Colour names the LIB doesn't declare must be registered here, in @theme — not in
+   :root below. Tailwind v4 generates `bg-x`/`text-x`/`border-x` only for colours in
+   the theme namespace; a :root declaration merely sets the value of an already-
+   registered token. Overriding a lib token (--color-background, --color-on-surface …)
+   in :root works for exactly that reason, and is why those overrides below are fine.
+
+   The lib ships --color-error-container and --color-on-error-container but NO
+   --color-error, so `bg-error` / `text-error` / `border-error` resolve to nothing and
+   render uncoloured. Listing them in @source inline() above cannot help: that forces
+   class DETECTION, it can't invent a utility whose colour the theme never registered. */
+@theme {
+  --color-error: var(--color-danger);
+}
+
 /* Compatibility shim: legacy variable names still referenced by component
    styles, aliased to the closest @khalilrebhiitec/daf360 token so nothing
    resolves to nothing. Remove each line as its components are migrated to
-   the lib's own token names directly. */
+   the lib's own token names directly.
+
+   ⚠️ The three brand overrides below are duplicated VERBATIM in daf360-shell,
+   daf360-rh-frontend and daf360-payroll-frontend. Every remote's styles.css is
+   loaded into the shell's single document, so the last :root to load wins — if
+   the four blocks disagree, the whole app's text/background colour changes
+   depending on which remote you happened to navigate through. Change one, change
+   all four. */
 :root {
+  /* The Finance module's own component SCSS hardcodes $on-surface: #0b1c30, and the
+     standalone facturation shell hardcodes #f8f9fb as the page background. Point the
+     lib tokens at both so `text-on-surface` / `bg-background` match the hand-written
+     values instead of sitting 2 shades off them (lib defaults: #191c1e / #f2f4f6). */
+  --color-on-surface:                #0b1c30;
+  --color-background:                #f8f9fb;
   /* Lib bug: --color-teal-light (#1C4E5C) is actually DARKER than
      --color-teal (#2D5D6E), so daf-button's variant="teal" hover state
      (hover:bg-teal-light) barely changes anything visible instead of
@@ -31,7 +59,6 @@
   --color-border:                    var(--color-outline-variant);
   --color-bg:                        var(--color-background);
   --color-bg-secondary:              var(--color-surface-container-low);
-  --color-error:                     var(--color-danger);
   --color-primary-hover:             var(--color-primary);
   --color-primary-dark:              var(--color-primary);
   --color-primary-light:             var(--color-teal-light);

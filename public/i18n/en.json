@@ -1,4 +1,15 @@
 {
+  "COMMON": {
+    "CURRENCY": {
+      "TITLE": "Display currency"
+    },
+    "PAGINATION": {
+      "PER_PAGE": "per page",
+      "SUMMARY": "{start}–{end} of {total}",
+      "FIRST": "First page",
+      "LAST": "Last page"
+    }
+  },
   "FACTURATION": {
     "TITLE": "Billing",
     "DASHBOARD": "Dashboard",
@@ -637,12 +648,18 @@
     "LIST": {
       "TITLE": "Projects",
       "NEW_BTN": "New project",
+      "SUBTITLE": "Portfolio tracking: budget, remaining and status of every project.",
+      "LOADING": "Loading projects…",
+      "LOAD_ERROR": "Could not load the projects. Check your connection.",
+      "FILTER_ALL": "All",
+      "FILTER_RESET": "Reset",
       "KPI": {
         "ACTIVE": "Active projects",
         "RAF": "Total remaining",
         "BUDGET": "Total budget",
         "PENDING": "Suspended",
-        "UNITS": "projects"
+        "UNITS": "projects",
+        "CURRENT_PAGE": "current page"
       },
       "TABLE": {
         "SEARCH": "Search by name, reference…",

@@ -7,11 +7,10 @@
   (itemClick)="onNavClick($event)" />
 
 <main class="shell-content">
-  <div class="currency-bar">
-    <span class="currency-bar__label">Devise</span>
-    @for (c of currencies; track c) {
-      <button class="curr-chip" [class.curr-chip--active]="currSvc.selectedCurrency() === c" (click)="currSvc.setCurrency(c)">{{ c }}</button>
-    }
-  </div>
   <router-outlet />
 </main>
+
+<!-- Display-currency switcher. At the shell root, not inside <main>: it is
+     position: fixed, and an ancestor with a transform/filter/backdrop-filter would
+     become its containing block and pin it to that box instead of the viewport. -->
+<app-currency-switcher />

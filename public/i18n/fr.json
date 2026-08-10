@@ -1,4 +1,15 @@
 {
+  "COMMON": {
+    "CURRENCY": {
+      "TITLE": "Devise d'affichage"
+    },
+    "PAGINATION": {
+      "PER_PAGE": "par page",
+      "SUMMARY": "{start}–{end} sur {total}",
+      "FIRST": "Première page",
+      "LAST": "Dernière page"
+    }
+  },
   "FACTURATION": {
     "TITLE": "Facturation",
     "DASHBOARD": "Tableau de bord",
@@ -637,12 +648,18 @@
     "LIST": {
       "TITLE": "Affaires",
       "NEW_BTN": "Nouvelle affaire",
+      "SUBTITLE": "Suivi du portefeuille : budget, RAF et statut de chaque affaire.",
+      "LOADING": "Chargement des affaires…",
+      "LOAD_ERROR": "Impossible de charger les affaires. Vérifiez votre connexion.",
+      "FILTER_ALL": "Toutes",
+      "FILTER_RESET": "Réinitialiser",
       "KPI": {
         "ACTIVE": "Affaires actives",
         "RAF": "RAF total",
         "BUDGET": "Budget total",
         "PENDING": "En attente",
-        "UNITS": "affaires"
+        "UNITS": "affaires",
+        "CURRENT_PAGE": "page courante"
       },
       "TABLE": {
         "SEARCH": "Rechercher par nom, référence…",
