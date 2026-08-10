@@ -1565,10 +1565,6 @@
       "TITLE": "Cost management",
       "SUBTITLE": "Cost lines, approvals and configuration"
     },
-    "LIST_PLACEHOLDER": {
-      "TITLE": "Costs",
-      "SUB": "Module under development."
-    },
     "URGENCY": {
       "LOW": "Low",
       "NORMAL": "Normal",
@@ -2003,7 +1999,13 @@
       "NO_PAYS_DETERMINE": "Unable to determine the country.",
       "LOAD_ERROR": "Unable to load lines.",
       "SUBMIT_ERROR": "Error while submitting.",
-      "CAT_FALLBACK": "Cat. {{id}}"
+      "CAT_FALLBACK": "Cat. {{id}}",
+      "VIEW_GRID": "Grid view",
+      "VIEW_LIST": "List view",
+      "FILTERS": "Filters",
+      "FILTER_APPLY": "Apply",
+      "FILTER_CANCEL": "Cancel",
+      "FILTER_RESET": "Reset"
     }
   },
   "REPORTING": {

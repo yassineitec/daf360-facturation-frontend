@@ -1,220 +1,78 @@
-<div class="costs-page">
+<div class="flex flex-col gap-8">
 
-  <!-- KPI cards -->
-  <div class="kpi-grid">
-    <app-affaire-kpi-card
+  <!-- KPIs — counted over the page on screen, which is what the list endpoint returns -->
+  <section class="grid grid-cols-3 gap-2 sm:gap-6">
+    <daf-metric-card
       [label]="'COST.LINES.KPI_DRAFTS' | translate"
-      icon="edit_note"
       [value]="draftCount()"
-      variant="blue" />
-
-    <app-affaire-kpi-card
+      [options]="kpiDrafts" />
+    <daf-metric-card
       [label]="'COST.LINES.KPI_PENDING' | translate"
-      icon="pending_actions"
       [value]="pendingCount()"
-      variant="amber" />
-
-    <app-affaire-kpi-card
+      [options]="kpiPending" />
+    <daf-metric-card
       [label]="'COST.LINES.KPI_APPROVED' | translate"
-      icon="check_circle"
       [value]="approvedCount()"
-      variant="green" />
-  </div>
+      [options]="kpiApproved" />
+  </section>
 
-  <!-- Toolbar: search + new button -->
-  <daf-toolbar
-    [searchValue]="searchText()"
-    [searchPlaceholder]="'COST.LINES.SEARCH_PLACEHOLDER' | translate"
-    [actions]="toolbarActions"
-    (searchChange)="searchText.set($event)"
-    (actionClick)="onToolbarAction($event)" />
+  <!-- Search + status filter + view toggle. The status filter re-fetches (the endpoint
+       takes it); the search is a projection of the loaded page. -->
+  <daf-search-toolbar
+    [placeholder]="'COST.LINES.SEARCH_PLACEHOLDER' | translate"
+    [value]="searchText()"
+    [debounce]="200"
+    (valueChange)="searchText.set($event)"
+    [filterFields]="filterFields()"
+    [filterConfig]="filterConfig()"
+    (filterApply)="applyFilters($event)"
+    [views]="viewOptions()"
+    [view]="viewMode()"
+    (viewChange)="viewMode.set($any($event))">
+    <daf-button
+      [options]="{ variant: 'teal', label: 'COST.LINES.NEW_LINE' | translate, iconStart: 'add' }"
+      (onClick)="openCreate()" />
+  </daf-search-toolbar>
 
-  <!-- Status filter -->
-  <daf-card [options]="{ padding: 'sm', variant: 'default', radius: 'lg' }">
-    <div class="flex flex-wrap items-end gap-3 p-2">
-      <div class="min-w-52">
-        <daf-select
-          [options]="statusSelectOptions"
-          [selected]="statusFilterSel()"
-          (selectedChange)="statusFilterSel.set($event); onStatusChange()"
-          [config]="{ label: ('COST.LINES.STATUS_FILTER_LABEL' | translate), placeholder: ('COST.LINES.STATUS_FILTER_PLACEHOLDER' | translate), fullWidth: true }" />
-      </div>
-    </div>
-  </daf-card>
-
-  <!-- Error banners -->
-  @if (serverError()) {
-    <div class="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-      {{ serverError() }}
-    </div>
-  }
-  @if (actionError()) {
-    <div class="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-      {{ actionError() }}
+  @if (serverError() || actionError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ serverError() ?? actionError() }}
     </div>
   }
 
-  <!-- ══ DESKTOP — Data table (hidden on mobile) ══ -->
-  <div class="table-desktop">
-    <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
-      <daf-data-table
-        [columns]="tableColumns"
-        [rows]="tableRows()"
-        [config]="tableConfig()"
-        (rowClick)="onRowClick($event)">
+  <!-- Content sits free in the page — no outer container card -->
+  @if (viewMode() === 'grid') {
+    <app-cost-lines-cards-section
+      [lines]="visibleLines()"
+      [categoryFor]="categoryFor"
+      [loading]="isLoading()"
+      [skeletonCount]="size()"
+      [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
+      (edit)="openEdit($event)"
+      (submitLine)="submitLine($event)" />
+  } @else {
+    <app-cost-lines-table-section
+      [lines]="visibleLines()"
+      [categoryFor]="categoryFor"
+      [loading]="isLoading()"
+      [pageSize]="size()"
+      [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
+      (edit)="openEdit($event)"
+      (submitLine)="submitLine($event)" />
+  }
 
-        <ng-template dafCell="label" let-row>
-          <div>
-            <p class="font-semibold text-on-surface text-sm truncate max-w-56">
-              {{ row['label'] ?? '—' }}
-            </p>
-            @if (row['reference']) {
-              <p class="font-mono text-xs text-outline mt-0.5">{{ row['reference'] }}</p>
-            }
-          </div>
-        </ng-template>
+  <daf-pagination
+    [currentPage]="page()"
+    [totalPages]="totalPagesCount()"
+    [totalElements]="total()"
+    [pageSize]="size()"
+    [pageSizeOptions]="[10, 25, 50, 100]"
+    [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+    [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+    [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+    [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+    (pageChange)="goToPage($event)"
+    (pageSizeChange)="onPageSize($event)" />
 
-        <ng-template dafCell="netAmountLocal" let-row>
-          <span class="font-bold text-on-surface">
-            {{ row['netAmountLocal'] | displayCurrency : (row['currency'] ?? 'TND') }}
-          </span>
-        </ng-template>
-
-        <ng-template dafCell="netAmountEur" let-row>
-          <span class="text-on-surface-variant">{{ row['netAmountEur'] | displayCurrency : 'EUR' }}</span>
-        </ng-template>
-
-        <ng-template dafCell="status" let-row>
-          <daf-badge
-            [label]="statusLabel(row['status'])"
-            [options]="statusBadgeOptions(row['status'])" />
-        </ng-template>
-
-        <ng-template dafCell="approvalLevel" let-row>
-          @if (row['approvalLevel']) {
-            <daf-badge
-              [label]="row['approvalLevel']"
-              [options]="approvalBadgeOptions(row['approvalLevel'])" />
-          } @else {
-            <span class="text-outline">—</span>
-          }
-        </ng-template>
-
-        <ng-template dafCell="_actions" let-row>
-          <div class="flex justify-end gap-1" (click)="$event.stopPropagation()">
-            @if (row['_canEdit']) {
-              <button class="action-icon-btn" [title]="'COST.LINES.EDIT' | translate" (click)="openEdit(row['_raw'])">
-                <span class="material-symbols-outlined">edit</span>
-              </button>
-            }
-            @if (row['_canSubmit']) {
-              <button class="action-icon-btn action-icon-btn--teal" [title]="'COST.LINES.SUBMIT' | translate"
-                (click)="submitLine(row['_raw'])">
-                <span class="material-symbols-outlined">send</span>
-              </button>
-            }
-          </div>
-        </ng-template>
-
-      </daf-data-table>
-
-      @if (totalPagesCount() > 1) {
-        <daf-pagination
-          [currentPage]="page()"
-          [totalPages]="totalPagesCount()"
-          [totalElements]="total()"
-          (pageChange)="goToPage($event)" />
-      }
-    </daf-card>
-  </div>
-
-  <!-- ══ MOBILE — Card list (hidden on desktop) ══ -->
-  <div class="mobile-list">
-
-    @if (isLoading()) {
-      @for (_ of [1,2,3,4,5]; track $index) {
-        <div class="m-card m-card--skeleton"></div>
-      }
-    } @else if (tableRows().length === 0) {
-      <div class="m-empty">
-        <span class="material-symbols-outlined">receipt_long</span>
-        <p>{{ 'COST.LINES.TABLE_EMPTY' | translate }}</p>
-      </div>
-    } @else {
-      @for (row of tableRows(); track row['id']) {
-        <div class="m-card" (click)="onRowClick(row)">
-
-          <!-- Head: description + statut -->
-          <div class="m-card__head">
-            <div class="m-card__title-block">
-              <span class="m-card__label">{{ row['label'] ?? '—' }}</span>
-              @if (row['reference']) {
-                <span class="m-card__ref">{{ row['reference'] }}</span>
-              }
-            </div>
-            <daf-badge
-              [label]="statusLabel(row['status'])"
-              [options]="statusBadgeOptions(row['status'])" />
-          </div>
-
-          <!-- Body: meta infos -->
-          <div class="m-card__body">
-            <div class="m-card__meta">
-              <span class="material-symbols-outlined">category</span>
-              <span>{{ row['categoryLabel'] }}</span>
-            </div>
-            <div class="m-card__meta">
-              <span class="material-symbols-outlined">calendar_today</span>
-              <span>{{ row['date'] }}</span>
-            </div>
-            @if (row['approvalLevel']) {
-              <div class="m-card__meta">
-                <span class="material-symbols-outlined">account_tree</span>
-                <daf-badge
-                  [label]="row['approvalLevel']"
-                  [options]="approvalBadgeOptions(row['approvalLevel'])" />
-              </div>
-            }
-          </div>
-
-          <!-- Foot: montant + actions -->
-          <div class="m-card__foot">
-            <div class="m-card__amounts">
-              <span class="m-card__amount-main">
-                {{ row['netAmountLocal'] | displayCurrency : (row['currency'] ?? 'TND') }}
-              </span>
-              <span class="m-card__amount-eur">
-                {{ row['netAmountEur'] | displayCurrency : 'EUR' }}
-              </span>
-            </div>
-            <div class="m-card__actions" (click)="$event.stopPropagation()">
-              @if (row['_canEdit']) {
-                <button class="action-icon-btn" [title]="'COST.LINES.EDIT' | translate" (click)="openEdit(row['_raw'])">
-                  <span class="material-symbols-outlined">edit</span>
-                </button>
-              }
-              @if (row['_canSubmit']) {
-                <button class="action-icon-btn action-icon-btn--teal" [title]="'COST.LINES.SUBMIT' | translate"
-                  (click)="submitLine(row['_raw'])">
-                  <span class="material-symbols-outlined">send</span>
-                </button>
-              }
-            </div>
-          </div>
-
-        </div>
-      }
-
-      <!-- Pagination mobile -->
-      @if (totalPagesCount() > 1) {
-        <daf-pagination
-          [currentPage]="page()"
-          [totalPages]="totalPagesCount()"
-          [totalElements]="total()"
-          (pageChange)="goToPage($event)" />
-      }
-    }
-
-  </div><!-- /mobile-list -->
-
-</div><!-- /costs-page -->
+</div>

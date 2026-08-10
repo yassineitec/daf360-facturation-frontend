@@ -1565,10 +1565,6 @@
       "TITLE": "Gestion des coûts",
       "SUBTITLE": "Lignes de coût, approbations et configuration"
     },
-    "LIST_PLACEHOLDER": {
-      "TITLE": "Coûts",
-      "SUB": "Module en cours de développement."
-    },
     "URGENCY": {
       "LOW": "Basse",
       "NORMAL": "Normal",
@@ -2003,7 +1999,13 @@
       "NO_PAYS_DETERMINE": "Impossible de déterminer le pays.",
       "LOAD_ERROR": "Impossible de charger les lignes.",
       "SUBMIT_ERROR": "Erreur lors de la soumission.",
-      "CAT_FALLBACK": "Cat. {{id}}"
+      "CAT_FALLBACK": "Cat. {{id}}",
+      "VIEW_GRID": "Vue grille",
+      "VIEW_LIST": "Vue liste",
+      "FILTERS": "Filtres",
+      "FILTER_APPLY": "Appliquer",
+      "FILTER_CANCEL": "Annuler",
+      "FILTER_RESET": "Réinitialiser"
     }
   },
   "REPORTING": {

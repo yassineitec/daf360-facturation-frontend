@@ -1,166 +1,58 @@
-<div class="aq-wrap">
+<div class="flex flex-col gap-8">
 
-  <!-- ── KPI Stats ───────────────────────────────────────────────────────── -->
-  <div class="kpi-grid">
+  <!-- KPIs — the queue arrives in one call, so these count the whole queue -->
+  <section class="grid grid-cols-2 gap-2 sm:gap-6">
+    <daf-metric-card
+      [label]="'COST.QUEUE.KPI_PENDING' | translate"
+      [value]="pendingCount()"
+      [options]="kpiPending" />
+    <daf-metric-card
+      [label]="'COST.QUEUE.KPI_URGENT' | translate"
+      [value]="urgentCount()"
+      [options]="kpiUrgent" />
+  </section>
 
-    <div class="kpi-glass">
-      <div class="kpi-icon-box kpi-icon-box--teal">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
-      </div>
-      <div>
-        <p class="kpi-label">{{ 'COST.QUEUE.KPI_PENDING' | translate }}</p>
-        <h4 class="kpi-value">{{ pendingCount() }}</h4>
-      </div>
-    </div>
+  <!-- Search is a projection of the queue already on screen; the refresh action
+       re-fetches it. -->
+  <daf-search-toolbar
+    [placeholder]="'COST.QUEUE.SEARCH_PLACEHOLDER' | translate"
+    [value]="searchQuery()"
+    [debounce]="200"
+    (valueChange)="searchQuery.set($event)"
+    [actions]="toolbarActions()"
+    (action)="onToolbarAction($event)"
+    [views]="viewOptions()"
+    [view]="viewMode()"
+    (viewChange)="viewMode.set($any($event))" />
 
-    <div class="kpi-glass kpi-glass--danger">
-      <div class="kpi-danger-bar"></div>
-      <div class="kpi-icon-box kpi-icon-box--danger">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">priority_high</span>
-      </div>
-      <div>
-        <p class="kpi-label">{{ 'COST.QUEUE.KPI_URGENT' | translate }}</p>
-        <h4 class="kpi-value">{{ urgentCount() }}</h4>
-      </div>
-    </div>
-
-    <div class="kpi-glass kpi-glass--perf">
-      <div class="kpi-perf-content">
-        <p class="kpi-label">{{ 'COST.QUEUE.KPI_PERF' | translate }}</p>
-        <div class="kpi-perf-row">
-          <h4 class="kpi-value">4.2h</h4>
-          <span class="kpi-delta">
-            <span class="material-symbols-outlined">trending_down</span>
-            12%
-          </span>
-        </div>
-        <p class="kpi-perf-sub">{{ 'COST.QUEUE.KPI_PERF_SUB' | translate }}</p>
-      </div>
-      <div class="kpi-sparkline-wrap">
-        <svg viewBox="0 0 200 60" preserveAspectRatio="none" width="100%" height="100%">
-          <defs>
-            <linearGradient id="aq-grad" x1="0%" x2="0%" y1="0%" y2="100%">
-              <stop offset="0%" stop-color="#006b58" />
-              <stop offset="100%" stop-color="transparent" />
-            </linearGradient>
-          </defs>
-          <path class="sp-line" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35" />
-          <path class="sp-fill" d="M0,50 Q20,45 40,55 T80,30 T120,40 T160,15 T200,35 V60 H0 Z" />
-        </svg>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── Search + Refresh ─────────────────────────────────────────────────── -->
-  <div class="aq-toolbar">
-    <div class="aq-search-wrap">
-      <app-search-bar
-        [placeholder]="'COST.QUEUE.SEARCH_PLACEHOLDER' | translate"
-        [value]="searchQuery()"
-        (valueChange)="searchQuery.set($event)" />
-    </div>
-    <button class="aq-refresh-btn" (click)="load()" [title]="'COST.QUEUE.REFRESH' | translate">
-      <span class="material-symbols-outlined">refresh</span>
-    </button>
-  </div>
-
-  <!-- ── Error banner ──────────────────────────────────────────────────────── -->
   @if (serverError()) {
-    <div class="aq-error">
-      <span class="material-symbols-outlined">error</span>
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
       {{ serverError() }}
     </div>
   }
 
-  <!-- ── Cards grid ────────────────────────────────────────────────────────── -->
-  <div class="ap-grid">
-
-    @if (isLoading()) {
-      @for (n of [1,2,3,4,5,6]; track n) {
-        <div class="ap-card ap-card--skel">
-          <div class="skel" style="width:70px;height:22px;border-radius:8px;margin-bottom:20px;"></div>
-          <div class="skel" style="width:100%;height:14px;margin-bottom:8px;"></div>
-          <div class="skel" style="width:80%;height:18px;margin-bottom:28px;"></div>
-          <div class="skel" style="width:100%;height:12px;margin-bottom:8px;"></div>
-          <div class="skel" style="width:100%;height:12px;margin-bottom:24px;"></div>
-          <div class="skel" style="width:100%;height:44px;border-radius:16px;"></div>
-        </div>
-      }
-    }
-
-    @if (!isLoading()) {
-      @for (line of filteredPending(); track line.id) {
-        <div class="ap-card">
-
-          <!-- Urgency pill -->
-          <div class="ap-urgency ap-urgency--{{ urgencyClass(line.approvalLevelRequired) }}">
-            {{ urgencyLabel(line.approvalLevelRequired) }}
-          </div>
-
-          <!-- Card head -->
-          <div class="ap-card__head">
-            <div class="ap-card__icon">
-              <span class="material-symbols-outlined">receipt_long</span>
-            </div>
-            <div class="ap-card__meta">
-              <span class="ap-card__ref">{{ line.reference ?? ('COUT-' + line.id) }}</span>
-              <h5 class="ap-card__title">{{ line.label || '—' }}</h5>
-            </div>
-            <div class="ap-card__dot ap-card__dot--{{ urgencyClass(line.approvalLevelRequired) }}"></div>
-          </div>
-
-          <!-- Details -->
-          <div class="ap-card__details">
-            <div class="ap-card__row">
-              <span class="ap-card__row-k">{{ 'COST.QUEUE.STATUS' | translate }}</span>
-              <span class="ap-card__row-v">{{ statusLabel(line.status) }}</span>
-            </div>
-            <div class="ap-card__row">
-              <span class="ap-card__row-k">{{ 'COST.QUEUE.DATE' | translate }}</span>
-              <span class="ap-card__row-v">{{ formatDate(line.transactionDate) }}</span>
-            </div>
-            <div class="ap-card__amount-block">
-              <span class="ap-card__amount-lbl">{{ 'COST.QUEUE.AMOUNT_TOTAL' | translate }}</span>
-              <span class="ap-card__amount">
-                {{ (line.netAmountEur ?? line.netAmountLocal) | displayCurrency : (line.netAmountEur != null ? 'EUR' : (line.currency ?? 'TND')) }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Actions -->
-          <div class="ap-card__actions">
-            <button class="ap-btn-approve" (click)="openModal(line, 'approve')">
-              <span class="material-symbols-outlined">check_circle</span>
-              <span>{{ 'COST.QUEUE.APPROVE_REQUEST' | translate }}</span>
-            </button>
-            <div class="ap-btn-row2">
-              <button class="ap-btn-return" (click)="openModal(line, 'return')">
-                <span class="material-symbols-outlined">undo</span>
-                {{ 'COST.QUEUE.RETURN' | translate }}
-              </button>
-              <button class="ap-btn-reject" (click)="openModal(line, 'reject')" [title]="'COST.QUEUE.REJECT_TITLE' | translate">
-                <span class="material-symbols-outlined">block</span>
-              </button>
-            </div>
-          </div>
-
-        </div>
-      }
-
-      @if (filteredPending().length === 0) {
-        <div class="ap-empty">
-          <span class="material-symbols-outlined">pending_actions</span>
-          <p>{{ 'COST.QUEUE.EMPTY' | translate }}</p>
-        </div>
-      }
-    }
-
-  </div>
+  @if (viewMode() === 'grid') {
+    <app-approval-queue-cards-section
+      [pending]="filteredPending()"
+      [loading]="isLoading()"
+      [emptyMessage]="'COST.QUEUE.EMPTY' | translate"
+      (approve)="openModal($event, 'approve')"
+      (returnLine)="openModal($event, 'return')"
+      (reject)="openModal($event, 'reject')" />
+  } @else {
+    <app-approval-queue-table-section
+      [pending]="filteredPending()"
+      [loading]="isLoading()"
+      [emptyMessage]="'COST.QUEUE.EMPTY' | translate"
+      (approve)="openModal($event, 'approve')"
+      (returnLine)="openModal($event, 'return')"
+      (reject)="openModal($event, 'reject')" />
+  }
 
 </div>
 
-<!-- Approve modal -->
+<!-- Modal at the root, outside any glass card (§10e) -->
 @if (modalLine()) {
   <app-approve-modal
     [costLine]="modalLine()!"
