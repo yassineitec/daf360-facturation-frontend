@@ -90,6 +90,13 @@
   white-space: nowrap;
   &:disabled { opacity: 0.5; cursor: default; }
   & + & { margin-left: 6px; }
+  &--ghost {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; padding: 0;
+    background: #f1f5f9; color: #475569; vertical-align: middle;
+    .material-symbols-outlined { font-size: 17px; }
+    &:hover:not(:disabled) { background: #e2e8f0; color: #0f172a; }
+  }
   &--blue   { background: #dbeafe; color: #1d4ed8; &:hover:not(:disabled) { background: #bfdbfe; } }
   &--indigo { background: #e0e7ff; color: #3730a3; &:hover:not(:disabled) { background: #c7d2fe; } }
 }

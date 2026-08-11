@@ -39,6 +39,9 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
                   <td><span class="ts-badge" [style.background]="tsConfig(ts.statut).bg" [style.color]="tsConfig(ts.statut).color" [style.border-color]="tsConfig(ts.statut).border">{{ tsConfig(ts.statut).label }}</span></td>
                   <td>{{ formatDate(ts.integreAuBudgetAt) }}</td>
                   <td class="actions-cell">
+                    <button class="action-btn action-btn--ghost" (click)="view.emit(ts)" title="Consulter">
+                      <span class="material-symbols-outlined">visibility</span>
+                    </button>
                     @if (canValidateTechnique(ts)) {
                       <button class="action-btn action-btn--blue" (click)="openValidation(ts, 'technique')" [disabled]="actionLoading()">
                         Valider Techn.
@@ -72,6 +75,8 @@ export class TsListComponent {
   list        = input.required<TsDto[]>();
   updated     = output<void>();
   openNewForm = output<void>();
+  /** Row consultation is owned by the page, which renders the shared read-only modal. */
+  view        = output<TsDto>();
 
   private readonly svc   = inject(AffaireService);
   private readonly store = inject(UserStore);

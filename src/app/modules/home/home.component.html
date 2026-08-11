@@ -1,117 +1,101 @@
-<div class="home-page">
+<!-- Accueil finance — forme canonique du playbook §1 : daf-page + daf-page-header, puis
+     des sections libres dans la page. Aucune feuille de style locale.
 
-  <!-- ── Greeting ──────────────────────────────────────────────────────────── -->
-  <div class="greeting-block">
-    <h3 class="font-headline-xl text-headline-xl font-extrabold text-slate-800">{{ 'HOME.GREETING' | translate: { name: firstName() } }}</h3>
-    <p class="font-body-md text-body-md text-slate-500 mt-1">{{ today | titlecase }}</p>
-  </div>
+     Le titre suit la home RH : `title` = le nom de la page, `subtitle` = la salutation.
+     Le playbook impose un seul `h1` par page et il vient de daf-page-header — l'ancien
+     bloc `<h3>Bonjour…</h3>` + date était un second titre hors hiérarchie.
 
-  <!-- ── KPI Cards ─────────────────────────────────────────────────────────── -->
-  <div class="kpi-section">
+     Les cartes de modules viennent de `HOME_MODULES`, la MÊME liste que la barre
+     latérale (`finance-modules.ts`) : même ordre, mêmes libellés, mêmes icônes. Les
+     sous-entrées (Approbation Coûts) n'apparaissent pas ici : l'accueil est une grille de
+     modules de premier niveau, la navigation fine est le rôle de la barre.
 
-    <daf-card [options]="kpiOpts.collected">
-      <div class="kpi-text">
-        <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.COLLECTED_TITLE' | translate }}</p>
-        <p class="text-headline-lg text-on-surface font-bold kpi-c-green">{{ loadingStats() ? '…' : (stats()?.encaisseThisMoisMontant | displayCurrency : (stats()?.devise ?? 'TND')) }}</p>
-      </div>
-    </daf-card>
+     « Activité récente » est dans un daf-drawer, avec son onglet de bord. -->
+<daf-page [loading]="firstLoad()" [loadingLabel]="'HOME.LOADING' | translate">
 
-    <daf-card [options]="kpiOpts.pending">
-      <div class="kpi-text">
-        <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.PENDING_TITLE' | translate }}</p>
-        <p class="text-headline-lg text-on-surface font-bold">{{ loadingStats() ? '…' : (stats()?.enAttenteMontant | displayCurrency : (stats()?.devise ?? 'TND')) }}</p>
-      </div>
-    </daf-card>
+  <daf-page-header
+    [title]="'HOME.TITLE' | translate"
+    [subtitle]="'HOME.GREETING' | translate: { name: firstName() }" />
 
-    <daf-card [options]="kpiOpts.overdue">
-      <div class="kpi-text">
-        <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.OVERDUE_TITLE' | translate }}</p>
-        <p class="text-headline-lg font-bold kpi-c-red">{{ loadingStats() ? '…' : (stats()?.enRetardMontant | displayCurrency : (stats()?.devise ?? 'TND')) }}</p>
-        @if (stats() && stats()!.enRetardCount > 0) {
-          <p class="text-body-sm kpi-c-red">{{ stats()!.enRetardCount }} facture(s)</p>
-        }
-      </div>
-    </daf-card>
+  <!-- KPI — daf-metric-card, une rangée qui ne casse pas (§1). -->
+  <section style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+    @for (k of kpiTiles(); track k.label) {
+      <daf-metric-card
+        style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+        [label]="k.label | translate"
+        [value]="k.value"
+        [delta]="k.delta"
+        [options]="k.options" />
+    }
+  </section>
 
-    <daf-card [options]="kpiOpts.dso">
-      <div class="kpi-text">
-        <p class="text-body-sm text-on-surface-variant leading-relaxed kpi-label">{{ 'HOME.KPI.DSO_TITLE' | translate }}</p>
-        <p class="text-headline-lg font-bold kpi-c-amber">{{ loadingStats() ? '…' : (stats()?.delaiMoyenPaiement != null ? stats()!.delaiMoyenPaiement.toFixed(0) + ' j' : '—') }}</p>
-      </div>
-    </daf-card>
+  <!-- Modules — même source que la barre latérale.
 
-  </div>
-
-  <!-- ── Module Cards Grid ─────────────────────────────────────────────────── -->
-  <div class="modules-grid">
-
-    @for (mod of visibleModules(); track mod.path) {
+       Quatre par ligne, comme l'ancienne mise en page, et chaque module peut en prendre
+       deux parts via `homeSpan` (voir SPAN_FLEX pour le calcul avec la gouttière). En flex,
+       jamais en grid : `flex-grow: 0` pour que la dernière ligne ne s'étire pas, et le
+       `min-width` fait le repli à 3 puis 2 par ligne sans media query.
+       ⚠️ Le `gap` de cette rangée et le calcul de SPAN_FLEX doivent rester d'accord. -->
+  <section style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+    @for (m of moduleCards(); track m.id) {
       <daf-card
-        class="mod-card"
-        [class.mod-card--wide]="mod.wide"
-        [options]="moduleCardOpts[mod.path]"
-        (cardClick)="navigateTo(mod.path)">
+        [style.flex]="m.flex"
+        style="min-width:220px; height:auto; display:flex; flex-direction:column"
+        [options]="m.options"
+        (cardClick)="navigateTo(m.route)">
 
-        @if (mod.path === 'invoicing' && (pendingCount() ?? 0) > 0) {
-          <p class="mod-stat">{{ 'HOME.MODULES.TO_VALIDATE' | translate: { count: pendingCount() } }}</p>
+        @if (m.id === 'invoicing' && (pendingCount() ?? 0) > 0) {
+          <p class="text-body-sm font-bold text-warning">
+            {{ 'HOME.MODULES.TO_VALIDATE' | translate: { count: pendingCount() } }}
+          </p>
         }
-
       </daf-card>
     }
+  </section>
 
-  </div>
+</daf-page>
 
-  <!-- ── Activité Récente ───────────────────────────────────────────────────── -->
-  <div class="activity-wrap">
+<!-- Activité récente — à la racine de la page (§10e) : le panneau est `position: fixed`
+     et la variante glass de daf-card deviendrait son bloc conteneur. -->
+<daf-drawer [(open)]="activityDrawerOpen" [config]="activityDrawerConfig()">
 
-    <div class="activity-inner">
-      <div class="flex justify-between items-center mb-6">
-        <h5 class="font-title-md text-title-md text-on-surface">{{ 'HOME.ACTIVITY.TITLE' | translate }}</h5>
-        <button class="activity-link" (click)="navigateTo('invoicing')">
-          {{ 'HOME.ACTIVITY.VIEW_ALL' | translate }} <span class="material-symbols-outlined">open_in_new</span>
-        </button>
-      </div>
-
-      @if (loadingActivity()) {
-        <div class="act-skeleton">
-          @for (i of [1,2,3,4]; track i) {
-            <div class="act-skeleton__row">
-              <div class="sk sk-circle"></div>
-              <div class="sk-lines">
-                <div class="sk sk-line sk-line--lg"></div>
-                <div class="sk sk-line sk-line--sm"></div>
-              </div>
-              <div class="sk sk-amount"></div>
-            </div>
-          }
-        </div>
-      } @else if (recentActivity().length === 0) {
-        <div class="act-empty">
-          <span class="material-symbols-outlined">inbox</span>
-          <p>{{ 'HOME.ACTIVITY.EMPTY' | translate }}</p>
-        </div>
-      } @else {
-        <div class="act-list">
-          @for (item of recentActivity(); track item.invoice.id) {
-            <div class="act-item" (click)="navigateToInvoice(item.invoice.id)">
-              <div [class]="'act-icon ' + item.iconClass">
-                <span class="material-symbols-outlined">{{ item.icon }}</span>
-              </div>
-              <div class="act-item__body">
-                <p class="act-item__title">{{ item.title }}</p>
-                <p class="act-item__sub">{{ item.sub }}</p>
-              </div>
-              @if (item.amount) {
-                <span class="act-item__amount">{{ item.amount }}</span>
-              } @else {
-                <span class="material-symbols-outlined act-item__more">more_vert</span>
-              }
-            </div>
-          }
+  <section class="flex flex-col gap-4">
+    @if (loadingActivity()) {
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="flex items-center gap-3">
+          <daf-skeleton variant="circle" width="36px" height="36px" />
+          <div class="flex flex-1 flex-col gap-2">
+            <daf-skeleton variant="text" width="70%" height="12px" />
+            <daf-skeleton variant="text" width="40%" height="10px" />
+          </div>
         </div>
       }
-    </div>
+    } @else if (recentActivity().length === 0) {
+      <p class="py-6 text-center text-body-md text-on-surface-variant">
+        {{ 'HOME.ACTIVITY.EMPTY' | translate }}
+      </p>
+    } @else {
+      @for (item of recentActivity(); track item.invoice.id) {
+        <button type="button"
+                class="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-surface-container"
+                (click)="openInvoice(item.invoice.id)">
+          <span class="material-symbols-outlined text-headline-md" [class]="item.toneClass">
+            {{ item.icon }}
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-body-md font-bold text-on-surface">{{ item.title }}</span>
+            <span class="block text-body-sm text-on-surface-variant">{{ item.sub }}</span>
+          </span>
+          @if (item.amount) {
+            <span class="text-body-md font-bold text-on-surface">{{ item.amount }}</span>
+          }
+        </button>
+      }
+    }
 
-  </div>
+    <daf-button
+      [options]="{ variant: 'ghost', size: 'sm', label: 'HOME.ACTIVITY.VIEW_ALL' | translate, iconEnd: 'arrow_forward' }"
+      (onClick)="navigateTo('invoicing'); activityDrawerOpen.set(false)" />
+  </section>
 
-</div>
+</daf-drawer>

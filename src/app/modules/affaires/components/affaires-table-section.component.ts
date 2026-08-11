@@ -48,6 +48,12 @@ export class AffairesTableSectionComponent {
   emptyMessage = input('');
   /** Current page size — the skeleton draws that many rows, capped at 20 (§6b rule 7). */
   pageSize     = input(20);
+  /**
+   * Photos RH des responsables, par `userId`. La page les résout en un seul appel groupé
+   * pour toute la page de résultats : la section reste sans état, elle ne fait que lire
+   * (UI-PLAYBOOK §8b). Vide par défaut, donc la colonne affiche les initiales.
+   */
+  avatarUrls   = input<Map<number, string>>(new Map());
 
   /** A row click opens the affaire; the trailing `view` action means the same thing. */
   readonly open = output<number>();
@@ -82,6 +88,11 @@ export class AffairesTableSectionComponent {
         responsable: {
           name:     a.responsableFullName ?? '—',
           initials: initials(a.responsableFullName),
+          // La photo RH du responsable. La cellule `avatar` de la lib affiche `avatar`
+          // quand il est là et retombe sur `initials` sinon, donc une affaire dont le
+          // responsable n'a pas de photo (ou pas de profil RH) reste correcte sans
+          // traitement particulier ici.
+          avatar:   a.responsableUserId ? this.avatarUrls().get(a.responsableUserId) : undefined,
           subtitle: a.billingMode ?? undefined,
         } satisfies AvatarCell,
         type:      typeLabel(a.typeAffaire),

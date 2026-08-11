@@ -11,6 +11,7 @@ import { AffaireFilter, AffaireListItem, STATUT_LABELS, TYPE_LABELS } from './af
 import { AffairesCardsSectionComponent } from './components/affaires-cards-section.component';
 import { AffairesTableSectionComponent } from './components/affaires-table-section.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
+import { EmployeeAvatarService } from '../../core/employee-avatar.service';
 
 type ViewMode = 'grid' | 'list';
 
@@ -32,6 +33,10 @@ export class AffairesListComponent implements OnInit {
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly translate      = inject(TranslateService);
+  private readonly avatarSvc      = inject(EmployeeAvatarService);
+
+  /** Photos RH des responsables de la page courante, par `userId`. */
+  readonly avatarUrls = signal<Map<number, string>>(new Map());
 
   affaires      = signal<AffaireListItem[]>([]);
   error         = signal<string | null>(null);
@@ -138,6 +143,30 @@ export class AffairesListComponent implements OnInit {
     this.load();
   }
 
+  /**
+   * Les photos des responsables de la page affichée, en **un seul appel groupé** : ids
+   * dédupliqués (le même manager revient sur plusieurs affaires) et service qui mémorise
+   * en session, donc changer de page ou revenir ne redemande que ce qui manque.
+   *
+   * Sans `error` : le service ne rejette jamais, et une photo absente se dégrade en
+   * initiales — il n'y a rien à signaler à l'utilisateur.
+   */
+  private loadResponsableAvatars(rows: AffaireListItem[]): void {
+    const ids = [...new Set(rows.map(a => a.responsableUserId).filter((id): id is number => !!id))];
+    if (ids.length === 0) { this.avatarUrls.set(new Map()); return; }
+
+    this.avatarSvc.resolve(ids).subscribe({
+      next: avatars => {
+        const urls = new Map<number, string>();
+        for (const a of avatars) {
+          const url = this.avatarSvc.photoUrl(a);
+          if (url) urls.set(a.userId, url);
+        }
+        this.avatarUrls.set(urls);
+      },
+    });
+  }
+
   load(): void {
     this.loading.set(true);
     this.error.set(null);
@@ -155,6 +184,7 @@ export class AffairesListComponent implements OnInit {
         this.totalPages.set(res.totalPages);
         this.loading.set(false);
         this.firstLoad.set(false);
+        this.loadResponsableAvatars(res.content);
       },
       error: () => {
         this.error.set(this.translate.instant('AFFAIRES.LIST.LOAD_ERROR'));

@@ -82,11 +82,32 @@ export interface RafDetailsDto {
   alerteActive:       boolean;
 }
 
+/**
+ * `GET /affaires/{id}/kpis`. **Aligné champ pour champ sur le record backend**
+ * `AffaireKpisDto` — il ne l'était pas : l'interface déclarait `caEncaisse` et
+ * `rafDisponible`, deux noms que le backend n'envoie jamais (`ca` et `raf`), donc la
+ * tuile « CA encaissé » lisait `undefined` et restait vide en permanence.
+ *
+ * Trois champs valent 0 en dur côté serveur aujourd'hui, ce n'est pas une donnée
+ * manquante mais un calcul non implémenté : `wip`, `coutsInternes` (placeholder
+ * timesheet, donc `margeBrute` = ca − sous-traitance) et `tauxAvancement`.
+ */
 export interface AffaireKpisDto {
-  caEncaisse:   number;
-  rafDisponible:number;
-  wip:          number;
-  margeBrutePct:number;
+  affaireId:                  number;
+  reference:                  string;
+  /** Encaissé : somme des paiements reçus sur les factures de l'affaire. */
+  ca:                         number;
+  /** Toujours 0 côté backend. */
+  wip:                        number;
+  raf:                        number;
+  /** Toujours 0 côté backend (placeholder timesheet). */
+  coutsInternes:              number;
+  coutsExternesSousTraitance: number;
+  margeBrute:                 number;
+  /** % de `ca`, pas du budget — et 0 dès que `ca` vaut 0. */
+  margeBrutePct:              number;
+  /** Toujours 0 côté backend. */
+  tauxAvancement:             number;
 }
 
 export interface TsDto {

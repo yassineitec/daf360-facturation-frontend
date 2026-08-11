@@ -1,671 +1,585 @@
-<div class="detail-page">
+<!-- Fiche affaire — page 100 % composants lib (UI-PLAYBOOK §10f).
+     Aucune feuille de style locale : composants lib, tokens de couleur et échelle
+     typographique de la lib (text-label-caps / text-body-* / text-headline-*).
 
-  @if (loading()) {
-    <div class="state-box">
-      <div class="spinner"></div>
-      <span class="text-body-md text-muted">{{ 'AFFAIRES.DETAIL.LOADING' | translate }}</span>
+     Structure, deux colonnes :
+       GAUCHE (30 %, sticky)  le h1 de la page (daf-page-header, size="md", sans bouton)
+                              puis la carte d'informations, actions en pied de section.
+       DROITE (70 %)          les 4 KPI (daf-metric-card), daf-tabs et ses panneaux, puis
+                              en bas Progression facturation (anneau) et Répartition RAF.
+     Traçabilité et alertes vivent dans le drawer, l'alerte en tête de panneau ; le rappel
+     panneau fermé est `DrawerConfig.signal` (4.18.0), le point porté par l'onglet de bord.
+
+     ⚠️ FLEX UNIQUEMENT, jamais de grid. La recette est la même pour TOUTE rangée de
+     cartes, et les trois morceaux sont solidaires — en enlever un casse soit la largeur,
+     soit la hauteur :
+
+       1. la RANGÉE : `display:flex; flex-wrap:wrap; gap:…; align-items:stretch`
+          → stretch donne à chaque hôte la hauteur de la plus haute carte de la ligne ;
+       2. chaque HÔTE de carte : `flex:1 1 Npx; display:flex; flex-direction:column`
+          → même base + même grow partout = largeurs égales et ligne entièrement
+            occupée ; et **`column` est obligatoire** : en direction `row` l'axe
+            principal est horizontal, donc la carte interne se dimensionne sur son
+            CONTENU et n'occupe pas la largeur de sa cellule. En `column` c'est le
+            cross-axis (horizontal) qui l'étire ;
+       3. `[options]="{ fullHeight: true }"` + **`height:auto`** sur l'hôte.
+          `fullHeight` fait poser à la lib un `h-full` sur DEUX éléments : l'hôte et la
+          carte interne. Celui de la carte est indispensable. Celui de l'hôte est un
+          piège, et c'est LA cause des cartes de hauteurs différentes :
+            · `align-self:stretch` ne s'applique qu'à un élément dont la taille
+              transversale vaut `auto` ; avec `height:100%` posé dessus, l'hôte n'est
+              plus étirable ;
+            · et ce `height:100%` se résout contre une rangée de hauteur indéfinie,
+              donc retombe sur `auto` → chaque carte garde la hauteur de son contenu.
+          Le `height:auto` inline l'emporte sur la classe et rend l'hôte à nouveau
+          étirable, sans toucher au `h-full` de la carte interne, qui se résout alors
+          contre une hauteur d'hôte devenue définie.
+
+     Le `min-height` sur chaque hôte n'est qu'un plancher commun par rangée, pour que
+     des contenus très inégaux ne donnent pas une rangée écrasée.
+
+     Lib 4.18.0 : le point d'alerte de l'onglet du drawer est DrawerConfig.signal.
+     Lib 4.17.0 : l'anneau est daf-gauge, le graphique daf-bar-chart, la pile d'avatars
+     daf-avatar-group, les tuiles reposent sur daf-section-card [options]="{fullHeight}"
+     et les actions de ligne sur config.actions — plus aucune colonne dafCell projetée.
+
+     ⚠️ Les `style="…"` de ce fichier sont volontaires et limités au SQUELETTE (les deux
+     colonnes, la colonne sticky, les rangées de tuiles, l'en-tête du graphique). Le
+     styles.css d'un remote ne contient que les classes que Tailwind a déjà vues : une
+     classe neuve pour l'app (`lg:flex-row`, `lg:col-span-3`, `lg:w-[30%]`…) n'existe pas
+     dans le CSS servi tant que le remote n'est pas reconstruit, et la page retombe alors
+     en une seule colonne. Le layout ne doit pas dépendre de ça. Le reste (couleurs, typo,
+     espacements internes) reste en classes lib, force-listées via @source inline(). -->
+
+<daf-page [loading]="firstLoad()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
+          [loadingLabel]="'AFFAIRES.DETAIL.LOADING' | translate">
+
+  @if (error() || actionError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+      <span class="material-symbols-outlined text-headline-md">error</span>
+      {{ error() ?? actionError() }}
     </div>
-  } @else if (error()) {
-    <div class="state-box">
-      <span class="material-symbols-outlined state-icon">error_outline</span>
-      <p class="text-body-md text-muted">{{ error() }}</p>
-      <button class="btn-retry" (click)="loadAll()">{{ 'AFFAIRES.DETAIL.RETRY' | translate }}</button>
-    </div>
-  } @else if (affaire()) {
+  }
 
-    <!-- ── Page Header ─────────────────────────────────────────────────────── -->
-    <header class="page-header">
-      <button class="back-btn" (click)="goBack()">
-        <span class="material-symbols-outlined">arrow_back</span>
-      </button>
-      <div class="hd-titles">
-        <div class="hd-title-row">
-          <h1 class="text-headline-xl">{{ affaire()!.intitule }} — {{ affaire()!.reference }}</h1>
-          <app-status-badge [status]="affaire()!.statut" />
-          @if (!affaire()!.budgetValide) {
-            <span class="badge-warn">{{ 'AFFAIRES.DETAIL.BUDGET_NOT_VALIDATED' | translate }}</span>
-          }
-        </div>
-        <p class="text-body-sm text-muted">
-          {{ 'AFFAIRES.DETAIL.LAST_UPDATE' | translate }} {{ formatDate(affaire()!.updatedAt ?? affaire()!.createdAt) }}
-        </p>
-      </div>
-    </header>
+  @if (affaire(); as aff) {
+    <!-- Deux colonnes en FLEX, portées par des styles inline plutôt que par des classes :
+         le styles.css d'un remote ne contient que les classes que Tailwind a déjà vues, donc
+         une classe neuve pour l'app n'existe pas dans le CSS servi tant que le remote n'est
+         pas reconstruit — et la page retombe en une seule colonne. flex-wrap + min-width
+         donnent le repli mobile sans media query, donc sans dépendre d'aucune classe. -->
+    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
 
-    @if (actionError()) {
-      <div class="action-error-bar text-body-sm">{{ actionError() }}</div>
-    }
+      <!-- ══════════════════════════════════════════════════════════════════════
+           COLONNE GAUCHE (30 %, sticky) — le titre de page, puis la carte
+           d'informations dont les actions ferment la section.
+           ══════════════════════════════════════════════════════════════════ -->
+      <div style="flex:0 1 30%; min-width:320px">
+        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
 
-    <!-- ── KPI Grid ────────────────────────────────────────────────────────── -->
-    <div class="kpi-grid">
+          <!-- Le h1 de la page vit ici. size="md" (et headerSize="md" sur daf-page, les deux
+               doivent concorder) : le playbook §2b réserve précisément `md` à un en-tête
+               placé dans un panneau ou dans une colonne d'un split — `hero` monte à 32 px
+               et déborderait une colonne de 30 %. Aucun bouton projeté : ils sont en pied
+               de la carte ci-dessous, ce qui supprime définitivement le retour à la ligne de
+               la rangée titre/actions. -->
+          <daf-page-header
+            size="md"
+            [title]="aff.intitule"
+            [subtitle]="headerSubtitle()"
+            [badges]="headerBadges()"
+            [breadcrumbs]="breadcrumbs()"
+            [breadcrumbLabel]="'AFFAIRES.DETAIL.BREADCRUMB_ARIA' | translate" />
+          <daf-section-card>
 
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.KPI.CA' | translate }}</p>
-          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">account_balance_wallet</span>
-        </div>
-        <div class="kpi-card__value-row">
-          <span class="text-price-display">{{ kpis()?.caEncaisse | displayCurrency : affaireDevise() }}</span>
-        </div>
-        <div class="kpi-card__sub kpi-card__sub--primary">
-          <span class="material-symbols-outlined">trending_up</span>
-          <span>{{ 'AFFAIRES.DETAIL.KPI.CA_SUB' | translate }}</span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.KPI.RAF' | translate }}</p>
-          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--secondary">request_quote</span>
-        </div>
-        <div class="kpi-card__value-row">
-          <span class="text-price-display">{{ raf()?.rafDisponible | displayCurrency : affaireDevise() }}</span>
-        </div>
-        @if (raf() && raf()!.budgetPrevisionnel > 0) {
-          <div class="kpi-card__progress">
-            <div class="kpi-card__progress-row">
-              <span class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.KPI.RAF_USAGE' | translate }}</span>
-              <span class="text-body-sm text-secondary">
-                {{ ((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 | number:'1.0-0') }}%
-              </span>
-            </div>
-            <div class="kpi-bar">
-              <div class="kpi-bar__fill kpi-bar__fill--secondary"
-                   [style.width.%]="(1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100"></div>
-            </div>
-          </div>
-        }
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.KPI.WIP' | translate }}</p>
-          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--tertiary">pending_actions</span>
-        </div>
-        <div class="kpi-card__value-row">
-          <span class="text-price-display">{{ kpis()?.wip | displayCurrency : affaireDevise() }}</span>
-        </div>
-        <div class="kpi-card__sub kpi-card__sub--tertiary">
-          <span class="material-symbols-outlined">schedule</span>
-          <span>{{ 'AFFAIRES.DETAIL.KPI.WIP_SUB' | translate }}</span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.KPI.MARGIN' | translate }}</p>
-          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">analytics</span>
-        </div>
-        <div class="kpi-card__value-row">
-          <span class="text-price-display">{{ formatPct(kpis()?.margeBrutePct ?? null) }}</span>
-        </div>
-        <div class="kpi-card__sub kpi-card__sub--primary">
-          <span class="material-symbols-outlined">target</span>
-          <span>{{ 'AFFAIRES.DETAIL.KPI.MARGIN_TARGET' | translate }}</span>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ── RAF Tracking ────────────────────────────────────────────────────── -->
-    @if (raf() && raf()!.budgetPrevisionnel > 0) {
-      <div class="glass-card raf-section">
-        <div class="raf-section__header">
-          <h2 class="text-title-md">{{ 'AFFAIRES.DETAIL.RAF_SECTION.TITLE' | translate }}</h2>
-          <span class="text-body-sm text-primary" style="font-weight:700">
-            {{ 'AFFAIRES.DETAIL.RAF_SECTION.BUDGET_TOTAL' | translate }} {{ raf()!.budgetPrevisionnel | displayCurrency : affaireDevise() }}
-          </span>
-        </div>
-        <div class="raf-bars">
-          <div class="raf-bar-item">
-            <div class="raf-bar-item__label">
-              <span class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.RAF_SECTION.INVOICED' | translate }}</span>
-              <span class="text-label-bold text-primary">
-                {{ (raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
-              </span>
-            </div>
-            <div class="kpi-bar">
-              <div class="kpi-bar__fill kpi-bar__fill--primary"
-                   [style.width.%]="raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100"></div>
-            </div>
-          </div>
-          <div class="raf-bar-item">
-            <div class="raf-bar-item__label">
-              <span class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.RAF_SECTION.TS_INTEGRATED' | translate }}</span>
-              <span class="text-label-bold text-secondary">
-                {{ (raf()!.montantTsIntegres / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
-              </span>
-            </div>
-            <div class="kpi-bar">
-              <div class="kpi-bar__fill kpi-bar__fill--secondary"
-                   [style.width.%]="raf()!.montantTsIntegres / raf()!.budgetPrevisionnel * 100"></div>
-            </div>
-          </div>
-          <div class="raf-bar-item">
-            <div class="raf-bar-item__label">
-              <span class="text-label-bold text-muted">{{ 'AFFAIRES.DETAIL.RAF_SECTION.REMAINING' | translate }}</span>
-              <span class="text-label-bold text-light">
-                {{ (raf()!.rafDisponible / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
-              </span>
-            </div>
-            <div class="kpi-bar">
-              <div class="kpi-bar__fill kpi-bar__fill--light"
-                   [style.width.%]="raf()!.rafDisponible / raf()!.budgetPrevisionnel * 100"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- ── Main Layout ────────────────────────────────────────────────────── -->
-    <div class="detail-layout">
-
-      <!-- ══ LEFT COLUMN ══ -->
-      <div class="detail-main">
-
-        <!-- Informations Générales -->
-        <section class="glass-card section-card">
-          <h2 class="section-card__title text-title-md" style="margin-bottom:20px">
-            <span class="material-symbols-outlined text-primary">info</span>
-            {{ 'AFFAIRES.DETAIL.INFO.TITLE' | translate }}
-          </h2>
-          <div class="info-grid-2col">
-            <div class="info-field">
-              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.CLIENT' | translate }}</p>
-              <p class="text-body-md">{{ affaire()!.clientName || '—' }}</p>
-            </div>
-            <div class="info-field">
-              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.MANAGER' | translate }}</p>
-              <p class="text-body-md">{{ affaire()!.responsableFullName || '—' }}</p>
-            </div>
-            <div class="info-field">
-              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.BILLING_MODE' | translate }}</p>
-              <p class="text-body-md">{{ affaire()!.billingMode || '—' }}</p>
-            </div>
-            <div class="info-field">
-              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.CURRENCY' | translate }}</p>
-              <p class="text-body-md">{{ affaireDevise() }}</p>
-            </div>
-            <div class="info-field">
-              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.PERIOD' | translate }}</p>
-              <p class="text-body-md">{{ formatDate(affaire()!.dateDebut) }} — {{ formatDate(affaire()!.dateFin) }}</p>
-            </div>
-            <div class="info-field">
-              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.ENGAGEMENT' | translate }}</p>
-              <p class="text-body-md">{{ typeLabel() }}</p>
-            </div>
-            <div class="info-field">
-              <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.BUDGET_VALIDATED' | translate }}</p>
-              <p class="text-body-md" [style.color]="affaire()!.budgetValide ? '#006c49' : '#d97706'">
-                {{ affaire()!.budgetValide ? ('AFFAIRES.DETAIL.INFO.YES' | translate) : ('AFFAIRES.DETAIL.INFO.NO' | translate) }}
-              </p>
-            </div>
-            @if (affaire()!.doc360Ref) {
-              <div class="info-field">
-                <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.DOC360' | translate }}</p>
-                <p class="text-body-md text-primary info-ref">{{ affaire()!.doc360Ref }}</p>
-              </div>
-            }
-            @if (affaire()!.erpReference) {
-              <div class="info-field">
-                <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.ERP_REF' | translate }}</p>
-                <p class="text-body-md text-primary info-ref">{{ affaire()!.erpReference }}</p>
-              </div>
-            }
-            @if (affaire()!.notes) {
-              <div class="info-field info-field--full">
-                <p class="text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.INFO.NOTES' | translate }}</p>
-                <p class="text-body-md info-notes">{{ affaire()!.notes }}</p>
-              </div>
-            }
-          </div>
-        </section>
-
-        <!-- Budget & TS -->
-        <section class="glass-card collapsible">
-          <button class="collapsible__header" (click)="toggleSection('ts')"
-                  [attr.aria-expanded]="isOpen('ts')">
-            <h2 class="text-title-md section-card__title">
-              <span class="material-symbols-outlined text-primary">add_task</span>
-              {{ 'AFFAIRES.DETAIL.SECTIONS.BUDGET_TS' | translate }}
-              @if (tsList().length > 0) {
-                <span class="section-count">{{ tsList().length }}</span>
-              }
-            </h2>
-            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('ts')">expand_more</span>
-          </button>
-          @if (isOpen('ts')) {
-            <div class="collapsible__body">
-              <div class="section-card__header" style="padding: 0 0 16px;">
-                <span></span>
-                <button class="btn-primary" *appHasPermission="'FACT_CREATE_TS'" (click)="openTsForm(); $event.stopPropagation()">
-                  <span class="material-symbols-outlined">add</span>
-                  {{ 'AFFAIRES.DETAIL.SECTIONS.NEW_TS' | translate }}
-                </button>
-              </div>
-              <div class="ts-table-wrap">
-                <app-ts-list
-                  [affaireId]="numId"
-                  [list]="tsList()"
-                  (openNewForm)="openTsForm()"
-                  (updated)="loadTs(); loadRaf()" />
-              </div>
-            </div>
-          }
-        </section>
-
-        <!-- Sous-traitance -->
-        @if (affaire()) {
-          <section class="glass-card collapsible">
-            <button class="collapsible__header" (click)="toggleSection('soustraitance')"
-                    [attr.aria-expanded]="isOpen('soustraitance')">
-              <h2 class="text-title-md section-card__title">
-                <span class="material-symbols-outlined text-primary">engineering</span>
-                {{ 'AFFAIRES.DETAIL.SECTIONS.SUBCONTRACTING' | translate }}
-              </h2>
-              <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('soustraitance')">expand_more</span>
-            </button>
-            @if (isOpen('soustraitance')) {
-              <div class="collapsible__body">
-                <app-affaire-ost
-                  [affaireId]="numId"
-                  [paysId]="affaire()!.paysId"
-                  [devise]="affaireDevise()"
-                  [affaireStatut]="affaire()!.statut" />
-              </div>
-            }
-          </section>
-        }
-
-        <!-- Facturation -->
-        @if (affaire()!.billingMode) {
-          <section class="glass-card collapsible">
-            <button class="collapsible__header" (click)="toggleSection('facturation')"
-                    [attr.aria-expanded]="isOpen('facturation')">
-              <h2 class="text-title-md section-card__title">
-                <span class="material-symbols-outlined text-primary">receipt_long</span>
-                {{ 'AFFAIRES.DETAIL.SECTIONS.BILLING' | translate }}
-                <span class="badge-billing">{{ affaire()!.billingMode }}</span>
-              </h2>
-              <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('facturation')">expand_more</span>
-            </button>
-            @if (isOpen('facturation')) {
-              <div class="collapsible__body">
-                <app-affaire-billing-tab [affaire]="affaire()!" />
-              </div>
-            }
-          </section>
-        }
-
-        <!-- Factures émises -->
-        <section class="glass-card collapsible">
-          <button class="collapsible__header" (click)="toggleSection('factures')"
-                  [attr.aria-expanded]="isOpen('factures')">
-            <h2 class="text-title-md section-card__title">
-              <span class="material-symbols-outlined text-primary">receipt</span>
-              {{ 'AFFAIRES.DETAIL.SECTIONS.INVOICES' | translate }}
-              @if (invoices().length > 0) {
-                <span class="section-count">{{ invoices().length }}</span>
-              }
-            </h2>
-            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('factures')">expand_more</span>
-          </button>
-          @if (isOpen('factures')) {
-            <div class="collapsible__body">
-              @if (invoices().length === 0) {
-                <p class="fp-empty text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.SECTIONS.NO_INVOICES' | translate }}</p>
-              } @else {
-                <div class="fp-table-wrap">
-                  <table class="fp-table">
-                    <thead>
-                      <tr>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.NUMBER' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.TYPE' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.EMITTED' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.DUE' | translate }}</th>
-                        <th class="num">{{ 'AFFAIRES.DETAIL.INVOICES.AMOUNT' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.INVOICES.STATUS' | translate }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (inv of invoices(); track inv.id) {
-                        <tr>
-                          <td class="fp-ref">{{ inv.invoiceNumber || '—' }}</td>
-                          <td>{{ inv.invoiceType || '—' }}</td>
-                          <td>{{ formatDate(inv.dateEmission) }}</td>
-                          <td>{{ formatDate(inv.dateEcheance) }}</td>
-                          <td class="num">{{ inv.montantTtc | displayCurrency : (inv.devise || affaireDevise()) }}</td>
-                          <td><span class="fp-badge">{{ inv.statut || '—' }}</span></td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
+            <!-- Informations générales -->
+            <div class="flex flex-col gap-5 p-6">
+              @for (f of identityLeadFields(); track f.label) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ f.label | translate }}
+                  </p>
+                  <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
                 </div>
               }
-            </div>
-          }
-        </section>
 
-        <!-- Paiements reçus -->
-        <section class="glass-card collapsible">
-          <button class="collapsible__header" (click)="toggleSection('paiements')"
-                  [attr.aria-expanded]="isOpen('paiements')">
-            <h2 class="text-title-md section-card__title">
-              <span class="material-symbols-outlined text-primary">payments</span>
-              {{ 'AFFAIRES.DETAIL.SECTIONS.PAYMENTS' | translate }}
-              @if (payments().length > 0) {
-                <span class="section-count">{{ payments().length }}</span>
-              }
-            </h2>
-            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('paiements')">expand_more</span>
-          </button>
-          @if (isOpen('paiements')) {
-            <div class="collapsible__body">
-              @if (payments().length === 0) {
-                <p class="fp-empty text-body-sm text-muted">{{ 'AFFAIRES.DETAIL.SECTIONS.NO_PAYMENTS' | translate }}</p>
-              } @else {
-                <div class="fp-table-wrap">
-                  <table class="fp-table">
-                    <thead>
-                      <tr>
-                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.DATE' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.INVOICE' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.METHOD' | translate }}</th>
-                        <th>{{ 'AFFAIRES.DETAIL.PAYMENTS.REFERENCE' | translate }}</th>
-                        <th class="num">{{ 'AFFAIRES.DETAIL.PAYMENTS.AMOUNT' | translate }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (p of payments(); track p.id) {
-                        <tr>
-                          <td>{{ formatDate(p.paymentDate) }}</td>
-                          <td class="fp-ref">{{ p.invoiceNumber || '—' }}</td>
-                          <td>{{ p.paymentMethod || '—' }}</td>
-                          <td>{{ p.bankReference || '—' }}</td>
-                          <td class="num">{{ p.amountLocal | displayCurrency : (p.currency || affaireDevise()) }}</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              }
-            </div>
-          }
-        </section>
-
-        <!-- ── Indicateurs de Pilotage ──────────────────────────────────── -->
-        @if (raf() && raf()!.budgetPrevisionnel > 0) {
-          <section class="indicateurs-section">
-            <h2 class="indicateurs-title">{{ 'AFFAIRES.DETAIL.INDICATORS.TITLE' | translate }}</h2>
-            <div class="indicateurs-grid">
-
-              <div class="indicateur-card">
-                <p class="indicateur-card__label">{{ 'AFFAIRES.DETAIL.INDICATORS.BILLING_RATE' | translate }}</p>
-                <div class="gauge-wrap">
-                  <svg width="64" height="64" style="transform:rotate(-90deg)">
-                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="#e5e7eb" stroke-width="4"></circle>
-                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="#006b58" stroke-width="4"
-                            stroke-dasharray="175"
-                            [attr.stroke-dashoffset]="gaugeOffset(raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100)"></circle>
-                  </svg>
-                  <span class="gauge-label">
-                    {{ (raf()!.totalFacturesEmises / raf()!.budgetPrevisionnel * 100 | number:'1.0-0') }}%
-                  </span>
-                </div>
-              </div>
-
-              <div class="indicateur-card">
-                <p class="indicateur-card__label">{{ 'AFFAIRES.DETAIL.INDICATORS.CONSUMPTION_RATE' | translate }}</p>
-                <div class="gauge-wrap">
-                  <svg width="64" height="64" style="transform:rotate(-90deg)">
-                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="#e5e7eb" stroke-width="4"></circle>
-                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="#006c49" stroke-width="4"
-                            stroke-dasharray="175"
-                            [attr.stroke-dashoffset]="gaugeOffset((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100)"></circle>
-                  </svg>
-                  <span class="gauge-label">
-                    {{ ((1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 | number:'1.0-0') }}%
-                  </span>
-                </div>
-              </div>
-
-              <div class="indicateur-card" style="justify-content:center">
-                <p class="indicateur-card__label">{{ 'AFFAIRES.DETAIL.INDICATORS.BUDGET_CONSUMED' | translate }}</p>
-                <p class="indicateur-card__value-big">
-                  {{ (raf()!.budgetPrevisionnel - raf()!.rafDisponible) | displayCurrency : affaireDevise() }}
-                </p>
-                <p class="indicateur-card__value-sub">
-                  {{ 'AFFAIRES.DETAIL.INDICATORS.ON' | translate }} {{ raf()!.budgetPrevisionnel | displayCurrency : affaireDevise() }}
-                </p>
-              </div>
-
-              <div class="indicateur-card" style="justify-content:center">
-                <p class="indicateur-card__label">{{ 'AFFAIRES.DETAIL.INDICATORS.EVOLUTION' | translate }}</p>
-                <div class="mini-bars">
-                  <div class="bar" style="height:50%"></div>
-                  <div class="bar bar--filled" style="height:65%"></div>
-                  <div class="bar" style="height:100%"></div>
-                  <div class="bar bar--filled" style="height:80%"></div>
-                  <div class="bar" style="height:35%"></div>
-                </div>
-              </div>
-
-            </div>
-          </section>
-        }
-
-      </div><!-- /detail-main -->
-
-      <!-- ══ RIGHT COLUMN ══ -->
-      <div class="detail-sidebar">
-
-        <!-- Changement de Statut -->
-        <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
-          <h2 class="text-title-md" style="margin-bottom:16px">{{ 'AFFAIRES.DETAIL.SIDEBAR.STATUS_CHANGE' | translate }}</h2>
-          <div class="statut-grid">
-            @for (s of ALL_STATUTS; track s) {
-              <button class="statut-btn"
-                      [class.statut-btn--active]="affaire()!.statut === s"
-                      [disabled]="affaire()!.statut === s || !canTransitionTo(s)"
-                      (click)="targetStatut.set(s); motif.set(''); showStatutModal.set(true)">
-                <div class="statut-btn__icon">
-                  <span class="material-symbols-outlined" [class.icon-filled]="affaire()!.statut === s">
-                    {{ statutIcon(s) }}
-                  </span>
-                </div>
-                <span class="text-label-bold">{{ statutLabel(s) | translate }}</span>
-                @if (affaire()!.statut === s) {
-                  <div class="statut-btn__check">
-                    <span class="material-symbols-outlined">check</span>
+              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+                @for (f of identityGridFields(); track f.label) {
+                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
                   </div>
                 }
-              </button>
-            }
-          </div>
-        </section>
+              </div>
 
-        <!-- Validation budget -->
-        @if (!affaire()!.budgetValide) {
-          <section class="glass-card section-card budget-valid-section" *appHasPermission="'FACT_VALIDER_BUDGET'">
-            <h2 class="text-title-md">{{ 'AFFAIRES.DETAIL.SIDEBAR.VALIDATE_BUDGET' | translate }}</h2>
-            <p class="text-body-sm text-muted">
-              {{ 'AFFAIRES.DETAIL.SIDEBAR.BUDGET_PENDING' | translate: { amount: formatAmount(affaire()!.budgetPrevisionnel, affaireDevise()) } }}
-            </p>
-            <button class="btn-full btn-full--primary" [disabled]="budgetLoading()" (click)="validerBudget()">
-              @if (budgetLoading()) {
-                {{ 'AFFAIRES.DETAIL.SIDEBAR.VALIDATING' | translate }}
-              } @else {
-                {{ 'AFFAIRES.DETAIL.SIDEBAR.VALIDATE_BTN' | translate }}
+              @if (aff.notes) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ 'AFFAIRES.DETAIL.INFO.NOTES' | translate }}
+                  </p>
+                  <p class="whitespace-pre-wrap text-body-sm leading-relaxed text-on-surface-variant">{{ aff.notes }}</p>
+                </div>
               }
-            </button>
-          </section>
-        }
-
-        <!-- Compléter le brouillon -->
-        @if (affaire()!.statut === 'DRAFT') {
-          <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
-            <h2 class="text-title-md" style="margin-bottom:14px">{{ 'AFFAIRES.DETAIL.SIDEBAR.COMPLETE_DRAFT_TITLE' | translate }}</h2>
-            <div class="quick-links">
-              <button class="quick-link" (click)="openEdit()">
-                <div class="quick-link__left">
-                  <span class="material-symbols-outlined text-primary">edit_note</span>
-                  <span class="text-label-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.COMPLETE_DRAFT_BTN' | translate }}</span>
-                </div>
-                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
-              </button>
             </div>
-          </section>
-        }
 
-        <!-- Modifier l'affaire -->
-        @if (affaire()!.statut === 'EN_COURS' || affaire()!.statut === 'SUSPENDUE') {
-          <section class="glass-card section-card" *appHasPermission="'FACT_UPDATE_AFFAIRE'">
-            <h2 class="text-title-md" style="margin-bottom:14px">{{ 'AFFAIRES.DETAIL.SIDEBAR.EDIT_TITLE' | translate }}</h2>
-            <div class="quick-links">
-              <button class="quick-link" (click)="openEdit()">
-                <div class="quick-link__left">
-                  <span class="material-symbols-outlined text-primary">person_check</span>
-                  <span class="text-label-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.EDIT_MANAGERS' | translate }}</span>
+            <!-- Actions en pied de section. Chaque bouton porte `flex:1 1 45%` + `fullWidth` :
+                 deux par ligne, largeurs égales, et la dernière ligne s'étire au lieu de
+                 laisser un demi-vide. Sans base flex, des libellés de longueurs différentes
+                 donnent un pavé en escalier. -->
+            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
+                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+              <daf-button
+                style="flex:1 1 45%"
+                [options]="{ variant: 'teal', size: 'sm', fullWidth: true, label: 'AFFAIRES.DETAIL.SIDEBAR.NEW_INVOICE' | translate, iconStart: 'add' }"
+                (onClick)="goToInvoicing()" />
+
+              <daf-button *appHasPermission="'FACT_CREATE_TS'"
+                style="flex:1 1 45%"
+                [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, label: 'AFFAIRES.DETAIL.ACTIONS.NEW_TS' | translate, iconStart: 'post_add' }"
+                (onClick)="openTsForm()" />
+
+              <daf-button *appHasPermission="'FACT_UPDATE_AFFAIRE'"
+                style="flex:1 1 45%"
+                [options]="editButtonOptions()"
+                (onClick)="openEdit()" />
+
+              <daf-button *appHasPermission="'FACT_UPDATE_AFFAIRE'"
+                style="flex:1 1 45%"
+                [options]="statusButtonOptions()"
+                (onClick)="openStatutModal()" />
+
+              @if (!aff.budgetValide) {
+                <!-- Pleine largeur : c'est la cinquième, elle serait seule sur sa ligne. -->
+                <div style="flex:1 1 100%">
+                  <daf-button *appHasPermission="'FACT_VALIDER_BUDGET'"
+                    [options]="validateBudgetOptions()"
+                    (onClick)="validerBudget()" />
                 </div>
-                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
-              </button>
-              <button class="quick-link" (click)="openEdit()">
-                <div class="quick-link__left">
-                  <span class="material-symbols-outlined text-primary">calendar_month</span>
-                  <span class="text-label-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.EDIT_PLANNING' | translate }}</span>
-                </div>
-                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
-              </button>
-              <button class="quick-link" (click)="openEdit()">
-                <div class="quick-link__left">
-                  <span class="material-symbols-outlined text-primary">description</span>
-                  <span class="text-label-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.EDIT_INFO' | translate }}</span>
-                </div>
-                <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
-              </button>
+              }
             </div>
-          </section>
-        }
 
-        <!-- Actions Rapides -->
-        <section class="glass-card section-card">
-          <h2 class="text-title-md" style="margin-bottom:14px">{{ 'AFFAIRES.DETAIL.SIDEBAR.ACTIONS_TITLE' | translate }}</h2>
-          <div class="action-btns">
-            <a class="btn-full btn-full--primary" [routerLink]="['../../invoicing']" [queryParams]="{ affaire: numId }">
-              <span class="material-symbols-outlined">add_card</span>
-              {{ 'AFFAIRES.DETAIL.SIDEBAR.NEW_INVOICE' | translate }}
-            </a>
-            <a class="btn-full btn-full--outline-secondary" [routerLink]="['../../payments']" [queryParams]="{ affaire: numId }">
-              <span class="material-symbols-outlined">payments</span>
-              {{ 'AFFAIRES.DETAIL.SIDEBAR.VIEW_PAYMENTS' | translate }}
-            </a>
-            <a class="btn-full btn-full--outline-primary" [routerLink]="['../../invoicing']" [queryParams]="{ affaire: numId }">
-              <span class="material-symbols-outlined">receipt_long</span>
-              {{ 'AFFAIRES.DETAIL.SIDEBAR.VIEW_INVOICES' | translate }}
-            </a>
-          </div>
-        </section>
+          </daf-section-card>
+        </div>
+      </div>
 
-        <!-- Traçabilité & Alertes -->
-        <section class="glass-card section-card tracability">
-          <h2 class="text-title-md" style="margin-bottom:16px">{{ 'AFFAIRES.DETAIL.SIDEBAR.TRACEABILITY' | translate }}</h2>
-          <div class="trace-list">
-            <div class="trace-item">
-              <span class="material-symbols-outlined text-light">history</span>
-              <div>
-                <p class="text-label-caps text-muted">{{ 'AFFAIRES.DETAIL.SIDEBAR.CREATED_AT' | translate }}</p>
-                <p class="text-body-sm">{{ formatDate(affaire()!.createdAt) }}</p>
-              </div>
-            </div>
-            @if (affaire()!.updatedAt) {
-              <div class="trace-item">
-                <span class="material-symbols-outlined text-light">edit_note</span>
-                <div>
-                  <p class="text-label-caps text-muted">{{ 'AFFAIRES.DETAIL.SIDEBAR.LAST_MODIFIED' | translate }}</p>
-                  <p class="text-body-sm">{{ formatDate(affaire()!.updatedAt) }}</p>
+      <!-- ══════════════════════════════════════════════════════════════════════
+           COLONNE DROITE (70 %) — les 4 indicateurs, les onglets, puis les deux
+           anneaux/RAF en bas de page. Traçabilité et alertes sont dans le drawer.
+           ══════════════════════════════════════════════════════════════════ -->
+      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+
+        <!-- Les 4 indicateurs sur daf-metric-card, le composant KPI de la lib. Sa racine
+             porte déjà `h-full flex flex-col justify-between`, donc les cartes se règlent
+             sur la plus haute. La rangée est une GRILLE `repeat(auto-fit,minmax(...,1fr))` :
+             des colonnes en `1fr` sont égales par construction, là où `flex:1 1 0` peut être
+             débordé par le `min-width` d'un item. Le repli reste sans media query. -->
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+          @for (k of kpiTiles(); track k.label) {
+            <daf-metric-card
+              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+              [label]="k.label | translate"
+              [value]="k.value"
+              [delta]="k.delta"
+              [options]="k.options" />
+          }
+        </div>
+
+        <daf-tabs #tabsRef
+          variant="underline"
+          [tabs]="tabs()"
+          [active]="activeTab()"
+          (activeChange)="activeTab.set($event)"
+          [tabsLabel]="'AFFAIRES.DETAIL.TABS_ARIA' | translate"
+          idPrefix="affaire-detail" />
+
+        <div role="tabpanel"
+             [id]="tabsRef.panelId(activeTab())"
+             [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+             class="flex flex-col gap-6">
+
+          <!-- ── Vue générale ─────────────────────────────────────────── -->
+          @if (activeTab() === 'overview') {
+
+            <!-- Rangée KPI — 3 tuiles, comme la maquette, en GRILLE : `1fr` par colonne donne
+                 des largeurs strictement égales (un `flex-basis` peut être débordé par le
+                 contenu ou le min-width), `auto-fit` + `minmax` donnent le repli sans media
+                 query, et les items de grille s'étirent — donc même hauteur. `display:flex`
+                 sur l'hôte pour que la carte interne remplisse la cellule. -->
+            <section style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+
+              <!-- Santé du projet -->
+              <daf-section-card style="flex:1 1 240px; min-height:210px; height:auto; display:flex; flex-direction:column"
+                                [options]="{ fullHeight: true }">
+                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'AFFAIRES.DETAIL.OVERVIEW.HEALTH_TITLE' | translate }}
+                    </p>
+                    <daf-badge [label]="healthBadge().label" [options]="healthBadge()" />
+                  </div>
+                  <!-- L'anneau de la maquette, enfin : daf-gauge (4.17.0) remplace le
+                       gros pourcentage + barre qui tenait lieu de placeholder. -->
+                  <div class="flex items-center justify-center">
+                    <daf-gauge [value]="billingPct()" [options]="healthGaugeOptions()" />
+                  </div>
                 </div>
-              </div>
-            }
-            <div class="trace-item">
-              <span class="material-symbols-outlined text-light">tune</span>
-              <div>
-                <p class="text-label-caps text-muted">{{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_THRESHOLD' | translate }}</p>
-                <p class="text-body-sm">{{ affaire()!.rafAlerteSeuilPct }}%</p>
-              </div>
-            </div>
-          </div>
+              </daf-section-card>
 
-          @if (raf() && raf()!.budgetPrevisionnel > 0 &&
-               (1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100 >= affaire()!.rafAlerteSeuilPct) {
-            <div class="raf-alert">
-              <div class="raf-alert__header">
-                <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">warning</span>
-                <span class="text-label-bold" style="color:#d97706">{{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_ALERT_TITLE' | translate }}</span>
+              <!-- Consommation budget -->
+              <daf-section-card style="flex:1 1 240px; min-height:210px; height:auto; display:flex; flex-direction:column"
+                                [options]="{ fullHeight: true }">
+                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'AFFAIRES.DETAIL.INDICATORS.CONSUMPTION_RATE' | translate }}
+                    </p>
+                    <span class="material-symbols-outlined text-headline-lg text-tertiary">monetization_on</span>
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    <div class="flex items-end justify-between gap-2">
+                      <span class="text-headline-xl font-extrabold leading-none text-on-surface">
+                        {{ consumptionPct() | number:'1.0-0' }}%
+                      </span>
+                      <span class="text-label-caps font-bold text-on-surface-variant">
+                        {{ consumedAmount() | displayCurrency : affaireDevise() }}
+                        / {{ budgetTotal() | displayCurrency : affaireDevise() }}
+                      </span>
+                    </div>
+                    <daf-progress-bar [value]="consumptionPct()" [options]="consumptionBarOptions()" />
+                  </div>
+                </div>
+              </daf-section-card>
+
+              <!-- Équipe projet -->
+              <daf-section-card style="flex:1 1 240px; min-height:210px; height:auto; display:flex; flex-direction:column"
+                                [options]="{ fullHeight: true }">
+                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'AFFAIRES.DETAIL.OVERVIEW.TEAM_TITLE' | translate }}
+                    </p>
+                    <span class="material-symbols-outlined text-headline-lg text-outline">groups</span>
+                  </div>
+                  @if (team().length === 0) {
+                    <p class="text-body-md text-on-surface-variant">
+                      {{ 'AFFAIRES.DETAIL.OVERVIEW.NO_TEAM' | translate }}
+                    </p>
+                  } @else {
+                    <!-- daf-avatar-group (4.17.0) : pile chevauchée + « +N », initiales
+                         dérivées par la lib et repli automatique si la photo échoue —
+                         ce qui remplace le markup à la main ET le handler onAvatarError. -->
+                    <div class="flex items-center gap-4">
+                      <daf-avatar-group [members]="team()" size="md" [max]="4" />
+                      <div class="min-w-0">
+                        <p class="text-body-md font-bold text-on-surface">
+                          {{ 'AFFAIRES.DETAIL.OVERVIEW.TEAM_COUNT' | translate: { count: team().length } }}
+                        </p>
+                        <p class="truncate text-body-sm text-on-surface-variant">{{ team()[0].name }}</p>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </daf-section-card>
+            </section>
+
+            <!-- Facturation mensuelle — panneau graphique : en-tête (titre + légende
+                 + total cumulé) puis une barre par mois. La lib n'a pas de composant
+                 graphique : voir la note de livraison (barres horizontales au lieu
+                 des colonnes verticales de la maquette). -->
+            <daf-section-card>
+              <div class="flex flex-col gap-6 p-6">
+                <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between">
+                  <div>
+                    <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">
+                      {{ 'AFFAIRES.DETAIL.OVERVIEW.CHART_TITLE' | translate: { year: chartYear() } }}
+                    </p>
+                    <p class="mt-1 text-body-sm text-on-surface-variant">
+                      {{ 'AFFAIRES.DETAIL.OVERVIEW.CHART_SUB' | translate }}
+                    </p>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-6">
+                    <span class="flex items-center gap-2 text-label-caps font-bold text-on-surface-variant">
+                      <span class="h-2.5 w-2.5 rounded-full bg-tertiary"></span>
+                      {{ 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_REAL' | translate }}
+                    </span>
+                    @if (monthlyTarget() > 0) {
+                      <span class="text-label-caps font-bold text-on-surface-variant">
+                        {{ 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_TARGET' | translate }} :
+                        {{ monthlyTarget() | displayCurrency : affaireDevise() }}
+                      </span>
+                    }
+                    <div class="border-l border-outline-variant/30 pl-6 text-right">
+                      <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                        {{ 'AFFAIRES.DETAIL.OVERVIEW.CUMUL' | translate }}
+                      </p>
+                      <p class="text-headline-md font-extrabold text-on-surface">
+                        {{ chartTotal() | displayCurrency : affaireDevise() }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Colonnes verticales + ligne d'objectif pointillée + axe des mois :
+                     daf-bar-chart (4.17.0) remplace les 12 daf-progress-bar horizontales.
+                     Le composant dessine aussi l'état vide, d'où le retrait du @else. -->
+                <daf-bar-chart [bars]="monthlyBars()" [options]="monthlyChartOptions()" />
               </div>
-              <p class="text-body-sm" style="color:#744800; margin:4px 0 0">
-                {{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_ALERT_TEXT' | translate: { pct: affaire()!.rafAlerteSeuilPct } }}
+            </daf-section-card>
+
+          }
+
+          <!-- ── Budget & TS ──────────────────────────────────────────── -->
+          @if (activeTab() === 'ts') {
+            <daf-search-toolbar
+              [placeholder]="'AFFAIRES.DETAIL.TOOLBAR.SEARCH_TS' | translate"
+              [value]="tsSearch()"
+              [debounce]="300"
+              (valueChange)="tsSearch.set($event)"
+              [filterFields]="tsFilterFields()"
+              [filterConfig]="filterConfig()"
+              (filterApply)="tsStatut.set(asFilterValue($event, 'statut'))"
+              (filterReset)="tsStatut.set('')"
+              [actions]="tsToolbarActions()"
+              (action)="onTsToolbarAction($event)" />
+
+            <!-- Actions sur config.actions : `TableAction.hidden` (4.17.0) rend les
+                 validations conditionnelles sans colonne projetée (§6b rule 4). -->
+            <daf-data-table [columns]="tsColumns()" [rows]="tsRows()" [config]="tsConfig()" />
+          }
+
+          <!-- ── Facturation (mode) ───────────────────────────────────── -->
+          @if (activeTab() === 'billing' && aff.billingMode) {
+            <app-affaire-billing-tab [affaire]="aff" />
+          }
+
+          <!-- ── Factures ─────────────────────────────────────────────── -->
+          @if (activeTab() === 'factures') {
+            <daf-search-toolbar
+              [placeholder]="'AFFAIRES.DETAIL.TOOLBAR.SEARCH_INVOICE' | translate"
+              [value]="invoiceSearch()"
+              [debounce]="300"
+              (valueChange)="invoiceSearch.set($event)"
+              [filterFields]="invoiceFilterFields()"
+              [filterConfig]="filterConfig()"
+              (filterApply)="invoiceStatut.set(asFilterValue($event, 'statut'))"
+              (filterReset)="invoiceStatut.set('')"
+              [actions]="invoiceToolbarActions()"
+              (action)="onInvoiceToolbarAction($event)" />
+
+            <daf-data-table [columns]="invoiceColumns()" [rows]="invoiceRows()" [config]="invoiceConfig()" />
+          }
+
+          <!-- ── Paiements ────────────────────────────────────────────── -->
+          @if (activeTab() === 'paiements') {
+            <daf-search-toolbar
+              [placeholder]="'AFFAIRES.DETAIL.TOOLBAR.SEARCH_PAYMENT' | translate"
+              [value]="paymentSearch()"
+              [debounce]="300"
+              (valueChange)="paymentSearch.set($event)"
+              [filterFields]="paymentFilterFields()"
+              [filterConfig]="filterConfig()"
+              (filterApply)="paymentMethod.set(asFilterValue($event, 'method'))"
+              (filterReset)="paymentMethod.set('')"
+              [actions]="paymentToolbarActions()"
+              (action)="onPaymentToolbarAction($event)" />
+
+            <daf-data-table [columns]="paymentColumns()" [rows]="paymentRows()" [config]="paymentConfig()" />
+          }
+
+        </div>
+
+        <!-- Bas de page : Progression facturation (anneau) et Répartition RAF se partagent la largeur
+             à parts égales : même base flex, `fullHeight` pour que les deux cartes aient
+             la même hauteur quel que soit leur contenu. -->
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+
+          <daf-section-card style="flex:1 1 300px; min-height:300px; height:auto; display:flex; flex-direction:column" [options]="{ fullHeight: true }">
+            <div class="flex flex-col gap-4 p-6" style="height:100%">
+              <div class="flex items-baseline justify-between gap-2">
+                <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                  {{ 'AFFAIRES.DETAIL.IDENTITY.BILLING_PROGRESS' | translate }}
+                </p>
+              </div>
+              <div class="flex flex-1 items-center justify-center">
+                <daf-gauge [value]="billingPct()" [options]="billingGaugeOptions()" />
+              </div>
+              <p class="text-center text-body-sm font-semibold text-on-surface-variant">
+                {{ raf()?.totalFacturesEmises | displayCurrency : affaireDevise() }}
+                / {{ budgetTotal() | displayCurrency : affaireDevise() }}
               </p>
-              <div class="raf-alert__bar">
-                <div class="raf-alert__fill"
-                     [style.width.%]="(1 - raf()!.rafDisponible / raf()!.budgetPrevisionnel) * 100"></div>
+            </div>
+          </daf-section-card>
+
+          <daf-section-card style="flex:1 1 300px; min-height:300px; height:auto; display:flex; flex-direction:column" [options]="{ fullHeight: true }">
+            <div class="flex flex-col gap-5 p-6" style="height:100%">
+              <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                  {{ 'AFFAIRES.DETAIL.RAF_SECTION.TITLE' | translate }}
+                </p>
+                <p class="text-body-sm font-bold text-primary">
+                  {{ budgetTotal() | displayCurrency : affaireDevise() }}
+                </p>
+              </div>
+              <div class="flex flex-1 flex-col justify-center gap-4">
+                <daf-progress-bar [label]="billingBarLabel()" [value]="billingPct()" [options]="billingBarOptions()" />
+                <daf-progress-bar [label]="tsBarLabel()" [value]="tsIntegratedPct()" [options]="tsBarOptions" />
+                <daf-progress-bar [label]="rafBarLabel()" [value]="rafAvailablePct()" [options]="rafBarOptions" />
               </div>
             </div>
-          }
-        </section>
-
-      </div><!-- /detail-sidebar -->
-
-    </div><!-- /detail-layout -->
-
-  }<!-- /affaire block -->
-
-</div><!-- /detail-page -->
-
-<!-- ── Modal changement de statut ──────────────────────────────────────── -->
-@if (showStatutModal()) {
-  <div class="modal-overlay" (click)="$event.target === $event.currentTarget && showStatutModal.set(false)">
-    <div class="modal-box" role="dialog" aria-labelledby="statut-modal-title">
-      <div class="modal-header">
-        <h2 class="text-title-md" id="statut-modal-title">{{ 'AFFAIRES.DETAIL.MODAL.STATUS_TITLE' | translate }}</h2>
-        <button class="close-btn" (click)="showStatutModal.set(false)" aria-label="Fermer">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="field">
-          <label class="text-label-bold">{{ 'AFFAIRES.DETAIL.MODAL.NEW_STATUS' | translate }}</label>
-          <div class="statut-radio-group">
-            @for (s of availableTransitions(); track s) {
-              <label class="statut-radio" [class.statut-radio--selected]="targetStatut() === s">
-                <input type="radio" name="new-statut" [value]="s"
-                       [ngModel]="targetStatut()" (ngModelChange)="targetStatut.set($event)" />
-                {{ statutLabel(s) | translate }}
-              </label>
-            }
-          </div>
+          </daf-section-card>
         </div>
-        <div class="field">
-          <label class="text-label-bold" for="motif">{{ 'AFFAIRES.DETAIL.MODAL.REASON' | translate }}</label>
-          <textarea id="motif" [ngModel]="motif()" (ngModelChange)="motif.set($event)"
-                    rows="3" maxlength="500"
-                    [placeholder]="'AFFAIRES.DETAIL.MODAL.REASON_PLACEHOLDER' | translate"></textarea>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" (click)="showStatutModal.set(false)">{{ 'AFFAIRES.DETAIL.MODAL.CANCEL' | translate }}</button>
-        <button class="btn-confirm" [disabled]="actionLoading()" (click)="submitStatut()">
-          @if (actionLoading()) {
-            {{ 'AFFAIRES.DETAIL.MODAL.PROCESSING' | translate }}
-          } @else {
-            {{ 'AFFAIRES.DETAIL.MODAL.CONFIRM' | translate }}
-          }
-        </button>
+
       </div>
     </div>
-  </div>
-}
+  }
 
-<!-- ── TS Form modal ────────────────────────────────────────────────────── -->
+</daf-page>
+
+<!-- ══ Drawer : échéances + activité — à la racine de la page (§10e) ══ -->
+<daf-drawer [(open)]="activityDrawerOpen" [config]="activityDrawerConfig()">
+
+  <!-- L'ALERTE EN PREMIER, avant les échéances : c'est la seule chose du panneau qui
+       demande une action, et elle est la raison pour laquelle l'utilisateur a été
+       rappelé ici. Le bandeau porte `role="alert"` — le contenu du drawer n'est monté
+       qu'à l'ouverture, donc l'annonce tombe au bon moment, à l'ouverture, et pas au
+       chargement de la page.
+       Panneau fermé, le rappel est le point rouge de l'onglet de bord
+       (`DrawerConfig.signal`, 4.18.0). -->
+  @if (rafAlertActive()) {
+    <section class="flex flex-col gap-3 rounded-xl bg-danger/10 px-4 py-4" role="alert">
+      <div class="flex items-center gap-2 text-danger">
+        <span class="material-symbols-outlined text-headline-lg">warning</span>
+        <span class="text-body-md font-bold">{{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_ALERT_TITLE' | translate }}</span>
+      </div>
+
+      <p class="text-body-sm text-on-surface-variant">
+        {{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_ALERT_TEXT' | translate: { pct: affaire()?.rafAlerteSeuilPct } }}
+      </p>
+
+      <!-- Le chiffre qui déclenche l'alerte, pour ne pas obliger à aller le chercher. -->
+      <div style="display:flex; flex-wrap:wrap; gap:1rem">
+        <div class="flex flex-col gap-1" style="flex:1 1 45%">
+          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+            {{ 'AFFAIRES.DETAIL.INDICATORS.CONSUMPTION_RATE' | translate }}
+          </span>
+          <span class="text-headline-md font-extrabold text-danger">{{ consumptionPct() | number:'1.0-0' }}%</span>
+        </div>
+        <div class="flex flex-col gap-1" style="flex:1 1 45%">
+          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+            {{ 'AFFAIRES.DETAIL.SIDEBAR.RAF_THRESHOLD' | translate }}
+          </span>
+          <span class="text-headline-md font-extrabold text-on-surface">{{ affaire()?.rafAlerteSeuilPct }}%</span>
+        </div>
+      </div>
+
+      <daf-progress-bar [value]="consumptionPct()" [options]="alertBarOptions" />
+
+      <daf-button
+        [options]="{ variant: 'secondary', size: 'sm', label: 'AFFAIRES.DETAIL.OVERVIEW.SEE_INVOICES' | translate, iconEnd: 'arrow_forward' }"
+        (onClick)="activeTab.set('factures'); activityDrawerOpen.set(false)" />
+    </section>
+  }
+
+  <section class="flex flex-col gap-4">
+    <p class="text-body-md font-bold text-on-surface">{{ 'AFFAIRES.DETAIL.OVERVIEW.DEADLINES_TITLE' | translate }}</p>
+    <daf-data-table [columns]="deadlineColumns()" [rows]="deadlineRows()" [config]="deadlineConfig()" />
+    <daf-button
+      [options]="{ variant: 'ghost', size: 'sm', label: 'AFFAIRES.DETAIL.OVERVIEW.SEE_INVOICES' | translate, iconEnd: 'arrow_forward' }"
+      (onClick)="activeTab.set('factures'); activityDrawerOpen.set(false)" />
+  </section>
+
+  <!-- Traçabilité & alertes : déplacée ici depuis la colonne droite. L'alerte RAF étant
+       maintenant derrière un panneau fermé, le rappel visible est la pastille « Alerte RAF »
+       posée sur le titre de la page (voir headerBadges) — daf-drawer n'expose rien pour
+       marquer son onglet de bord. -->
+  <section class="flex flex-col gap-4">
+    <p class="text-body-md font-bold text-on-surface">
+      {{ 'AFFAIRES.DETAIL.SIDEBAR.TRACEABILITY' | translate }}
+    </p>
+
+
+    @for (f of traceFields(); track f.label) {
+      <div class="flex items-baseline justify-between gap-3">
+        <span class="text-body-sm text-on-surface-variant">{{ f.label | translate }}</span>
+        <span class="text-body-md font-bold text-on-surface">{{ f.value }}</span>
+      </div>
+    }
+  </section>
+
+  <section class="flex flex-col gap-4">
+    <p class="text-body-md font-bold text-on-surface">{{ 'AFFAIRES.DETAIL.OVERVIEW.ACTIVITY_TITLE' | translate }}</p>
+    @if (activities().length === 0) {
+      <p class="text-body-md text-on-surface-variant">{{ 'AFFAIRES.DETAIL.OVERVIEW.NO_ACTIVITY' | translate }}</p>
+    } @else {
+      @for (a of activities(); track a.id; let first = $first) {
+        <div class="flex gap-3">
+          <span class="material-symbols-outlined text-headline-md"
+                [class]="first ? 'text-tertiary' : 'text-outline'">{{ a.icon }}</span>
+          <div class="min-w-0">
+            <p class="text-body-md font-bold text-on-surface">{{ a.titleKey | translate: a.params }}</p>
+            <p class="text-body-sm text-on-surface-variant">{{ a.sub }}</p>
+          </div>
+        </div>
+      }
+    }
+  </section>
+
+</daf-drawer>
+
+<!-- ══ Corps de modales (rendus par daf-modal via ModalService) ══ -->
+<ng-template #rowDetailTpl>
+  <div class="flex flex-col">
+    @for (f of modalRow()?.fields ?? []; track f.label) {
+      <div class="flex items-baseline justify-between gap-4 border-b border-outline-variant/30 py-2 last:border-0">
+        <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+          {{ f.label | translate }}
+        </span>
+        <span class="text-right text-body-md font-bold text-on-surface">{{ f.value }}</span>
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #statutTpl>
+  <div class="flex flex-col gap-5">
+    <daf-radio-group
+      [options]="statutRadioOptions()"
+      [config]="{ label: 'AFFAIRES.DETAIL.MODAL.NEW_STATUS' | translate, layout: 'vertical' }"
+      [selected]="targetStatut()"
+      (selectedChange)="targetStatut.set($event)" />
+
+    <daf-form-field
+      [options]="motifFieldOptions()"
+      [value]="motif()"
+      (valueChange)="motif.set($any($event) ?? '')" />
+
+    @if (modalError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+        <span class="material-symbols-outlined text-headline-md">error</span>{{ modalError() }}
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #tsValidationTpl>
+  <div class="flex flex-col gap-5">
+    <p class="text-body-md text-on-surface-variant">{{ tsValidationSummary() }}</p>
+
+    <daf-form-field
+      [options]="tsNotesFieldOptions()"
+      [value]="tsNotes()"
+      (valueChange)="tsNotes.set($any($event) ?? '')" />
+
+    @if (modalError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+        <span class="material-symbols-outlined text-headline-md">error</span>{{ modalError() }}
+      </div>
+    }
+  </div>
+</ng-template>
+
+<!-- Création d'un TS — composant applicatif existant, hors périmètre de cette passe -->
 @if (showTsForm()) {
   <app-ts-form [affaireId]="numId" (closed)="onTsFormClosed($event)" />
 }

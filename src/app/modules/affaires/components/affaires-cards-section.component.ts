@@ -3,9 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import {
-  STATUT_ENTITY_STATUS, initials, rafAlert, typeLabel,
-} from '../affaire-display';
+import { STATUT_ENTITY_STATUS, typeLabel } from '../affaire-display';
 
 /**
  * Card view of `/finance/affaires` — one `daf-entity-card` per affaire.
@@ -81,12 +79,8 @@ export class AffairesCardsSectionComponent {
       options: {
         variant: 'glass',
         clickable: true,
-        image: {
-          initials: initials(a.intitule),
-          // Complete literal class (§3). Red avatar tile is the only urgency cue an
-          // entity-card can carry — it has a single status slot and no danger variant.
-          badgeBg: rafAlert(a) ? 'bg-danger' : undefined,
-        },
+        // No `image`: since lib 4.16 an omitted image renders no avatar badge at all and
+        // the title takes the full card width — which is what these cards want.
         metadata: {
           title:       a.intitule,
           subtitle:    `${a.reference} · ${typeLabel(a.typeAffaire)}`,

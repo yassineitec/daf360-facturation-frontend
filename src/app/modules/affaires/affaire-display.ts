@@ -57,11 +57,6 @@ export const RAF_TONE_CLASS: Record<RafTone, string> = {
   unknown: 'text-on-surface-variant',
 };
 
-/** An affaire whose RAF has crossed its own alert threshold. */
-export function rafAlert(a: AffaireListItem): boolean {
-  return rafTone(a) === 'danger';
-}
-
 export function typeLabel(type: string): string {
   return TYPE_LABELS[type] ?? type;
 }

@@ -1,7 +1,13 @@
 {
   "COMMON": {
     "CURRENCY": {
-      "TITLE": "Devise d'affichage"
+      "TITLE": "Devise d'affichage",
+      "NAMES": {
+        "EUR": "Euro",
+        "USD": "Dollar US",
+        "TND": "Dinar tunisien",
+        "EGP": "Livre égyptienne"
+      }
     },
     "PAGINATION": {
       "PER_PAGE": "par page",
@@ -32,7 +38,7 @@
         "COST": "Coûts",
         "COST_APPROVAL": "Approbation Coûts",
         "SUPPLIERS": "Fournisseurs",
-        "REPORTING": "Reporting",
+        "REPORTING": "P&L",
         "ADMIN": "Administration"
       },
       "SECTION": "FINANCE",
@@ -101,8 +107,8 @@
         "STAT": "-2.4% vs Budget"
       },
       "REPORTING": {
-        "LABEL": "Reporting",
-        "DESC": "Dashboards financiers, KPIs et analyse de profitabilité.",
+        "LABEL": "P&L",
+        "DESC": "Compte de résultat par affaire, marges et analyse de profitabilité.",
         "STAT": "Nouveau rapport prêt"
       },
       "ADMIN": {
@@ -114,8 +120,12 @@
     "ACTIVITY": {
       "TITLE": "Activité Récente",
       "VIEW_ALL": "Voir tout",
-      "EMPTY": "Aucune activité récente"
-    }
+      "EMPTY": "Aucune activité récente",
+      "INVOICE": "Facture {{ref}} — {{client}}",
+      "DRAFT_REF": "(brouillon)"
+    },
+    "TITLE": "Tableau de bord",
+    "LOADING": "Chargement du tableau de bord…"
   },
   "INVOICING": {
     "LIST": {
@@ -732,8 +742,94 @@
     "DETAIL": {
       "LOADING": "Chargement de l'affaire…",
       "RETRY": "Réessayer",
+      "INVALID_ID": "Identifiant d'affaire invalide.",
+      "LOAD_ERROR": "Impossible de charger l'affaire.",
+      "BUDGET_ERROR": "Erreur lors de la validation du budget.",
+      "STATUS_ERROR": "Erreur lors du changement de statut.",
+      "BREADCRUMB_ARIA": "Fil d'Ariane",
+      "TABS_ARIA": "Sections de l'affaire",
+      "TS": {
+        "VALIDATE_TECH": "Validation technique",
+        "VALIDATE_COMM": "Validation commerciale",
+        "NOTES": "Notes de validation",
+        "VALIDATE_ERROR": "Erreur lors de la validation du TS."
+      },
       "BUDGET_NOT_VALIDATED": "Budget non validé",
       "LAST_UPDATE": "Mise à jour le",
+      "BACK_TO_LIST": "Affaires",
+      "TABS": {
+        "OVERVIEW": "Vue générale",
+        "BUDGET_TS": "Budget & TS",
+        "BILLING": "Facturation",
+        "INVOICES": "Factures",
+        "PAYMENTS": "Paiements"
+      },
+      "ACTIONS": {
+        "NEW_TS": "Nouveau TS",
+        "EDIT": "Modifier",
+        "STATUS": "Statut",
+        "VALIDATE_BUDGET": "Valider le budget"
+      },
+      "IDENTITY": {
+        "BILLING_PROGRESS": "Progression facturation"
+      },
+      "HEALTH": {
+        "LABEL": "Santé",
+        "OPTIMAL": "Optimale",
+        "WATCH": "Vigilance",
+        "CRITICAL": "Critique",
+        "UNKNOWN": "Non évaluée"
+      },
+      "TOOLBAR": {
+        "SEARCH_TS": "Rechercher un TS…",
+        "SEARCH_INVOICE": "Rechercher une facture…",
+        "SEARCH_PAYMENT": "Rechercher un paiement…",
+        "ALL_STATUSES": "Tous les statuts",
+        "ALL_METHODS": "Toutes les méthodes",
+        "COUNT": "{{shown}} / {{total}}",
+        "EXPORT": "Exporter",
+        "FILTERS": "Filtres",
+        "APPLY": "Appliquer",
+        "RESET": "Réinitialiser",
+        "ACTIONS": "Actions",
+        "VIEW": "Consulter",
+        "EDIT": "Modifier",
+        "EDIT_LOCKED": "Non modifiable à ce statut",
+        "NO_MATCH": "Aucune ligne ne correspond au filtre."
+      },
+      "OVERVIEW": {
+        "HEALTH_TITLE": "Santé du projet",
+        "NO_TS": "Aucun TS enregistré pour cette affaire.",
+        "TEAM_TITLE": "Équipe projet",
+        "TEAM_COUNT": "{{count}} membre(s)",
+        "NO_TEAM": "Aucun responsable affecté",
+        "DRAWER_BTN": "Échéances & activité",
+        "DRAWER_TITLE": "Échéances & activité",
+        "CHART_TITLE": "Facturation mensuelle ({{year}})",
+        "CHART_SUB": "Évolution des montants facturés vs objectif",
+        "LEGEND_REAL": "Réel",
+        "LEGEND_TARGET": "Objectif mensuel",
+        "CUMUL": "Total cumulé",
+        "NO_CHART_DATA": "Aucune facture émise à afficher pour le moment.",
+        "DEADLINES_TITLE": "Prochaines échéances",
+        "SEE_INVOICES": "Voir les factures",
+        "TASK": "Échéance / Étape",
+        "PRIORITY": "Priorité",
+        "PRIORITY_HIGH": "Haute",
+        "PRIORITY_MEDIUM": "Moyenne",
+        "PRIORITY_STANDARD": "Standard",
+        "NO_DEADLINES": "Aucune échéance à venir.",
+        "DEADLINE_INVOICE": "Règlement facture {{ref}}",
+        "DEADLINE_END": "Clôture de l'affaire",
+        "ACTIVITY_TITLE": "Activités récentes",
+        "NO_ACTIVITY": "Aucune activité enregistrée.",
+        "ACT_PAYMENT": "Paiement reçu — {{ref}}",
+        "ACT_INVOICE": "Facture {{ref}} émise",
+        "ACT_TS_CREATED": "TS {{ref}} créé",
+        "ACT_TS_INTEGRATED": "TS {{ref}} intégré au budget",
+        "ACT_UPDATED": "Affaire mise à jour",
+        "ACT_CREATED": "Affaire créée"
+      },
       "KPI": {
         "CA": "CA Encaissé",
         "CA_SUB": "Chiffre d'affaires réel",
@@ -769,7 +865,6 @@
       "SECTIONS": {
         "BUDGET_TS": "Budget & Travail Supplémentaire",
         "NEW_TS": "Nouvel TS",
-        "SUBCONTRACTING": "Sous-traitance",
         "BILLING": "Facturation",
         "STUB": "Section en cours de développement.",
         "INVOICES": "Factures émises",
@@ -830,7 +925,17 @@
         "REASON_PLACEHOLDER": "Raison du changement de statut…",
         "CANCEL": "Annuler",
         "PROCESSING": "Traitement…",
-        "CONFIRM": "Confirmer"
+        "CONFIRM": "Confirmer",
+        "CLOSE": "Fermer",
+        "INVOICE_TITLE": "Facture",
+        "PAYMENT_TITLE": "Paiement",
+        "TS_TITLE": "TS",
+        "TS_INTITULE": "Intitulé",
+        "TS_PERIMETRE": "Périmètre",
+        "TS_IMPACT": "Impact budgétaire",
+        "TS_INTEGRATED_AT": "Intégré le",
+        "OPEN_INVOICE": "Ouvrir la facture",
+        "OPEN_PAYMENTS": "Ouvrir le module Paiements"
       }
     },
     "wizard": {
@@ -1741,8 +1846,6 @@
       "FILTERS": "Filtres",
       "KPI_PENDING": "En attente",
       "KPI_URGENT": "Urgents",
-      "KPI_PERF": "Performance d'approbation",
-      "KPI_PERF_SUB": "Temps de traitement moyen hebdomadaire",
       "PRIORITY": "Priorité",
       "DATE": "Date",
       "AMOUNT_TOTAL": "Montant Total",
@@ -1760,7 +1863,24 @@
       "COMMENT_REJECT_PLACEHOLDER": "Motif du refus (obligatoire)…",
       "COMMENT_OPT_PLACEHOLDER": "Commentaire optionnel…",
       "REJECT_COMMENT_REQUIRED": "Un commentaire est obligatoire en cas de refus.",
-      "GENERIC_ERROR": "Une erreur est survenue."
+      "GENERIC_ERROR": "Une erreur est survenue.",
+      "KIND": "Type",
+      "KIND_COST": "Facturation",
+      "KIND_HIRING": "Recrutement",
+      "REFERENCE": "Référence",
+      "VIEW_CANDIDATE": "Voir le candidat",
+      "FILTER_ALL": "Tous",
+      "SPLIT": "{{costs}} facturation · {{hiring}} recrutement",
+      "HIRING_ERROR_PREFIX": "Approbations recrutement :",
+      "HIRING_MODAL_TITLE": "Décision — coût salarial",
+      "LOADED_COST": "Coût chargé estimé",
+      "POSITION": "Poste",
+      "ENTITY": "Entité",
+      "MONTHLY_COST": "Coût mensuel",
+      "ANNUAL_COST": "Coût annuel",
+      "COUNTER_OFFER": "Salaire contre proposition",
+      "COUNTER_OFFER_PH": "Montant net proposé par la direction…",
+      "COUNTER_OFFER_HINT": "Optionnel — écrase le salaire net RH du candidat si renseigné."
     },
     "IMPORT": {
       "TITLE": "Import CSV",
@@ -2009,7 +2129,7 @@
     }
   },
   "REPORTING": {
-    "TITLE": "Reporting",
+    "TITLE": "P&L",
     "WIP": "Module en cours de développement."
   },
   "PAYMENTS": {

@@ -1,7 +1,13 @@
 {
   "COMMON": {
     "CURRENCY": {
-      "TITLE": "Display currency"
+      "TITLE": "Display currency",
+      "NAMES": {
+        "EUR": "Euro",
+        "USD": "US Dollar",
+        "TND": "Tunisian Dinar",
+        "EGP": "Egyptian Pound"
+      }
     },
     "PAGINATION": {
       "PER_PAGE": "per page",
@@ -32,7 +38,7 @@
         "COST": "Costs",
         "COST_APPROVAL": "Cost Approval",
         "SUPPLIERS": "Suppliers",
-        "REPORTING": "Reporting",
+        "REPORTING": "P&L",
         "ADMIN": "Administration"
       },
       "SECTION": "FINANCE",
@@ -101,8 +107,8 @@
         "STAT": "-2.4% vs Budget"
       },
       "REPORTING": {
-        "LABEL": "Reporting",
-        "DESC": "Financial dashboards, KPIs and profitability analysis.",
+        "LABEL": "P&L",
+        "DESC": "Profit & loss per project, margins and profitability analysis.",
         "STAT": "New report ready"
       },
       "ADMIN": {
@@ -114,8 +120,12 @@
     "ACTIVITY": {
       "TITLE": "Recent Activity",
       "VIEW_ALL": "View all",
-      "EMPTY": "No recent activity"
-    }
+      "EMPTY": "No recent activity",
+      "INVOICE": "Invoice {{ref}} — {{client}}",
+      "DRAFT_REF": "(draft)"
+    },
+    "TITLE": "Dashboard",
+    "LOADING": "Loading dashboard…"
   },
   "INVOICING": {
     "LIST": {
@@ -732,8 +742,94 @@
     "DETAIL": {
       "LOADING": "Loading project…",
       "RETRY": "Retry",
+      "INVALID_ID": "Invalid project id.",
+      "LOAD_ERROR": "Could not load the project.",
+      "BUDGET_ERROR": "Budget validation failed.",
+      "STATUS_ERROR": "Status change failed.",
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "TABS_ARIA": "Project sections",
+      "TS": {
+        "VALIDATE_TECH": "Technical validation",
+        "VALIDATE_COMM": "Commercial validation",
+        "NOTES": "Validation notes",
+        "VALIDATE_ERROR": "Additional-work validation failed."
+      },
       "BUDGET_NOT_VALIDATED": "Budget not validated",
       "LAST_UPDATE": "Updated on",
+      "BACK_TO_LIST": "Projects",
+      "TABS": {
+        "OVERVIEW": "Overview",
+        "BUDGET_TS": "Budget & AW",
+        "BILLING": "Billing",
+        "INVOICES": "Invoices",
+        "PAYMENTS": "Payments"
+      },
+      "ACTIONS": {
+        "NEW_TS": "New additional work",
+        "EDIT": "Edit",
+        "STATUS": "Status",
+        "VALIDATE_BUDGET": "Validate budget"
+      },
+      "IDENTITY": {
+        "BILLING_PROGRESS": "Billing progress"
+      },
+      "HEALTH": {
+        "LABEL": "Health",
+        "OPTIMAL": "Optimal",
+        "WATCH": "Watch",
+        "CRITICAL": "Critical",
+        "UNKNOWN": "Not rated"
+      },
+      "TOOLBAR": {
+        "SEARCH_TS": "Search additional work…",
+        "SEARCH_INVOICE": "Search an invoice…",
+        "SEARCH_PAYMENT": "Search a payment…",
+        "ALL_STATUSES": "All statuses",
+        "ALL_METHODS": "All methods",
+        "COUNT": "{{shown}} / {{total}}",
+        "EXPORT": "Export",
+        "FILTERS": "Filters",
+        "APPLY": "Apply",
+        "RESET": "Reset",
+        "ACTIONS": "Actions",
+        "VIEW": "View",
+        "EDIT": "Edit",
+        "EDIT_LOCKED": "Not editable at this status",
+        "NO_MATCH": "No row matches the filter."
+      },
+      "OVERVIEW": {
+        "HEALTH_TITLE": "Project health",
+        "NO_TS": "No additional work recorded for this project.",
+        "TEAM_TITLE": "Project team",
+        "TEAM_COUNT": "{{count}} member(s)",
+        "NO_TEAM": "No manager assigned",
+        "DRAWER_BTN": "Deadlines & activity",
+        "DRAWER_TITLE": "Deadlines & activity",
+        "CHART_TITLE": "Monthly billing ({{year}})",
+        "CHART_SUB": "Invoiced amounts vs target",
+        "LEGEND_REAL": "Actual",
+        "LEGEND_TARGET": "Monthly target",
+        "CUMUL": "Cumulated total",
+        "NO_CHART_DATA": "No issued invoice to display yet.",
+        "DEADLINES_TITLE": "Upcoming deadlines",
+        "SEE_INVOICES": "View invoices",
+        "TASK": "Deadline / Step",
+        "PRIORITY": "Priority",
+        "PRIORITY_HIGH": "High",
+        "PRIORITY_MEDIUM": "Medium",
+        "PRIORITY_STANDARD": "Standard",
+        "NO_DEADLINES": "No upcoming deadline.",
+        "DEADLINE_INVOICE": "Invoice {{ref}} payment",
+        "DEADLINE_END": "Project closure",
+        "ACTIVITY_TITLE": "Recent activity",
+        "NO_ACTIVITY": "No activity recorded.",
+        "ACT_PAYMENT": "Payment received — {{ref}}",
+        "ACT_INVOICE": "Invoice {{ref}} issued",
+        "ACT_TS_CREATED": "Additional work {{ref}} created",
+        "ACT_TS_INTEGRATED": "Additional work {{ref}} added to budget",
+        "ACT_UPDATED": "Project updated",
+        "ACT_CREATED": "Project created"
+      },
       "KPI": {
         "CA": "Collected Revenue",
         "CA_SUB": "Actual revenue",
@@ -769,7 +865,6 @@
       "SECTIONS": {
         "BUDGET_TS": "Budget & Additional Work",
         "NEW_TS": "New Additional Work",
-        "SUBCONTRACTING": "Subcontracting",
         "BILLING": "Billing",
         "STUB": "Section under development.",
         "INVOICES": "Issued invoices",
@@ -830,7 +925,17 @@
         "REASON_PLACEHOLDER": "Reason for status change…",
         "CANCEL": "Cancel",
         "PROCESSING": "Processing…",
-        "CONFIRM": "Confirm"
+        "CONFIRM": "Confirm",
+        "CLOSE": "Close",
+        "INVOICE_TITLE": "Invoice",
+        "PAYMENT_TITLE": "Payment",
+        "TS_TITLE": "Additional work",
+        "TS_INTITULE": "Title",
+        "TS_PERIMETRE": "Scope",
+        "TS_IMPACT": "Budget impact",
+        "TS_INTEGRATED_AT": "Added to budget on",
+        "OPEN_INVOICE": "Open the invoice",
+        "OPEN_PAYMENTS": "Open the Payments module"
       }
     },
     "wizard": {
@@ -1741,8 +1846,6 @@
       "FILTERS": "Filters",
       "KPI_PENDING": "Pending",
       "KPI_URGENT": "Urgent",
-      "KPI_PERF": "Approval performance",
-      "KPI_PERF_SUB": "Average weekly processing time",
       "PRIORITY": "Priority",
       "DATE": "Date",
       "AMOUNT_TOTAL": "Total Amount",
@@ -1760,7 +1863,24 @@
       "COMMENT_REJECT_PLACEHOLDER": "Reason for rejection (required)…",
       "COMMENT_OPT_PLACEHOLDER": "Optional comment…",
       "REJECT_COMMENT_REQUIRED": "A comment is required in case of rejection.",
-      "GENERIC_ERROR": "An error occurred."
+      "GENERIC_ERROR": "An error occurred.",
+      "KIND": "Type",
+      "KIND_COST": "Billing",
+      "KIND_HIRING": "Recruitment",
+      "REFERENCE": "Reference",
+      "VIEW_CANDIDATE": "View candidate",
+      "FILTER_ALL": "All",
+      "SPLIT": "{{costs}} billing · {{hiring}} recruitment",
+      "HIRING_ERROR_PREFIX": "Recruitment approvals:",
+      "HIRING_MODAL_TITLE": "Decision — salary cost",
+      "LOADED_COST": "Estimated loaded cost",
+      "POSITION": "Position",
+      "ENTITY": "Entity",
+      "MONTHLY_COST": "Monthly cost",
+      "ANNUAL_COST": "Annual cost",
+      "COUNTER_OFFER": "Counter-offer salary",
+      "COUNTER_OFFER_PH": "Net amount proposed by management…",
+      "COUNTER_OFFER_HINT": "Optional — overrides the candidate HR net salary when set."
     },
     "IMPORT": {
       "TITLE": "CSV Import",
@@ -2009,7 +2129,7 @@
     }
   },
   "REPORTING": {
-    "TITLE": "Reporting",
+    "TITLE": "P&L",
     "WIP": "Module under development."
   },
   "PAYMENTS": {

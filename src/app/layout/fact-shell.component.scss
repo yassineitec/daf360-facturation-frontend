@@ -37,9 +37,9 @@
   }
 }
 
-// The sticky full-width "Devise" chip bar that used to live here is now
-// `app-currency-switcher` — a fixed FAB at the bottom-right, built on lib tokens
-// instead of the eight raw hex values this block carried.
+// The sticky full-width "Devise" chip bar that used to live here is now a
+// `daf-radial-menu` picker pinned bottom-right — zero CSS of ours, Tailwind
+// utilities from the lib instead of the eight raw hex values this block carried.
 
 // ── Hamburger toggle button ───────────────────────────────────────────────────
 .mob-hamburger {

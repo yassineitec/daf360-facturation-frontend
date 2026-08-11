@@ -15,6 +15,34 @@
 @source inline("{bg-primary,bg-secondary,bg-teal,bg-surface,bg-surface-container,bg-surface-container-lowest,bg-surface-container-high,bg-background,bg-error,bg-danger}");
 @source inline("{border-primary,border-secondary,border-outline,border-outline-variant,border-error}");
 
+/* Fiche affaire (/finance/affaires/:id) — layout, surfaces et échelle typographique.
+   Ces classes n'existaient dans AUCUN template de cette app avant la migration de la
+   page sur les composants lib, donc elles étaient absentes du styles.css compilé : la
+   page s'affichait en une seule colonne, sans gouttières ni tuiles teintées, tant que
+   le remote n'était pas reconstruit. Les lister ici les rend indépendantes du scan. */
+@source inline("{lg:grid-cols-10,lg:sticky,lg:top-6}");
+@source inline("{md:flex-row,md:items-center,md:justify-between}");
+@source inline("{text-label-caps,text-body-sm,text-body-md,text-headline-md,text-headline-lg,text-headline-xl}");
+@source inline("{bg-surface-container-low,bg-tertiary,bg-warning/10,bg-danger/10,bg-primary/10,bg-teal/10,bg-secondary/10}");
+@source inline("{text-on-primary,text-warning,text-tertiary,text-outline,border-outline-variant/30}");
+@source inline("{whitespace-pre-wrap,truncate,border-t,-ml-2,first:ml-0,leading-none,leading-tight,leading-relaxed,tracking-widest,tracking-tight}");
+
+/* `DrawerConfig.signal` (lib 4.18.0) — le point/pastille posé sur l'onglet de bord du
+   drawer. Ces utilitaires n'apparaissent NULLE PART dans les templates de cette app :
+   ils ne viennent que du bundle de la lib. Sans eux, le `<span>` du marqueur est bien
+   dans le DOM mais sans taille ni position — donc invisible, ce qui se lit comme « le
+   signal ne réagit pas ». Les décalages négatifs au pas 1.5 et `animate-pulse` sont les
+   trois qu'aucun template d'ici n'utilise. */
+@source inline("{-top-1.5,-left-1.5,-right-1.5,h-2.5,w-2.5,motion-safe:animate-pulse}");
+@source inline("{h-[18px],min-w-[18px],text-[10px],bg-outline,text-on-tertiary-container}");
+
+/* `daf-avatar` / `daf-avatar-group` (lib 4.17.0) — la boîte ronde et le recadrage de la
+   photo. `object-cover` est le plus important : sans lui l'image garde son ratio naturel
+   et débord au lieu d'être recadrée dans le cercle. Les tailles de boîte (h-6/8/10/16)
+   et le ring de la pile ne sont utilisés par aucun template d'ici. */
+@source inline("{object-cover,select-none,ring-surface-container-lowest}");
+@source inline("{h-6,w-6,h-8,w-8,h-10,w-10,h-16,w-16}");
+
 /* Colour names the LIB doesn't declare must be registered here, in @theme — not in
    :root below. Tailwind v4 generates `bg-x`/`text-x`/`border-x` only for colours in
    the theme namespace; a :root declaration merely sets the value of an already-
