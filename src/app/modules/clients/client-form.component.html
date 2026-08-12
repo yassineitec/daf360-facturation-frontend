@@ -51,10 +51,14 @@
     </div>
 
     <div class="w-1/2">
-      <daf-form-field
-        [value]="country()"
-        (valueChange)="country.set(asStr($event))"
-        [options]="countryFieldOpts()" />
+      <!-- Pays du client : une liste issue du référentiel `pays_ref`, plus une saisie
+           libre — on ne peut pas contrôler l'orthographe d'un pays tapé à la main, et
+           la valeur sert ensuite de filtre et d'étiquette dans la liste. -->
+      <daf-select
+        [options]="countryOptions()"
+        [config]="countrySelectConfig()"
+        [selected]="country() ? [country()] : []"
+        (selectedChange)="country.set($event[0] ?? '')" />
     </div>
 
   </div>

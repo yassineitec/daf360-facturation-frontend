@@ -1,89 +1,17 @@
 @import '../../../shared/design-tokens';
-
 $tertiary:     var(--color-tertiary);
 $tertiary-hex: #00c1ad;
 
-:host { display: contents; }
+:host { display: block; }
 
-// ── Page wrapper ───────────────────────────────────────────────────────────────
-.wizard-page {
-  padding: 0 0 32px;
-  box-sizing: border-box;
-  min-height: calc(100vh - var(--shell-header-h, 64px) - 4rem);
-  display: flex;
-  flex-direction: column;
-}
+// Le squelette de page, le h1, le fil d'Ariane, la colonne de droite et la
+// progression verticale appartiennent maintenant a daf-page / daf-page-header /
+// daf-stepper : .wizard-page, .wizard-layout, .form-area, .page-head, .breadcrumb*,
+// .page-sub, .nav-footer, .nav-actions, .sidebar, .panel-*, .step-list, .step-item,
+// .summary-* et .tips-panel sont partis avec le balisage maison qu'elles habillaient.
+// (.step-enter aussi : son animation d'entree n'avait plus de porteur.)
+// Ne reste que la carte de formulaire et son contenu, que la lib ne fournit pas.
 
-// ── Two-column grid ────────────────────────────────────────────────────────────
-.wizard-layout {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 20px;
-  width: 100%;
-  align-items: start;
-}
-
-// ── LEFT — form area ───────────────────────────────────────────────────────────
-.form-area {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  min-width: 0;
-}
-
-// ── Page head ─────────────────────────────────────────────────────────────────
-.page-head {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  margin-bottom: 4px;
-
-  h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--color-on-surface);
-    line-height: 1.25;
-    margin: 0;
-  }
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.breadcrumb__parent {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #64748b;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-  text-decoration: none;
-  transition: color 0.15s;
-
-  &:hover { color: #0b1c30; text-decoration: underline; }
-}
-
-.breadcrumb__current {
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: #0b1c30;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-
-.page-sub {
-  font-size: 0.8125rem;
-  color: #64748b;
-  margin: 0;
-}
-
-// ── Form card ─────────────────────────────────────────────────────────────────
 .form-card {
   background: $surface;
   border-radius: $radius-lg;
@@ -91,7 +19,6 @@ $tertiary-hex: #00c1ad;
   box-shadow: $shadow-card;
 }
 
-// ── Card head ─────────────────────────────────────────────────────────────────
 .card-head {
   display: flex;
   align-items: center;
@@ -141,248 +68,10 @@ $tertiary-hex: #00c1ad;
   }
 }
 
-// ── Step body ─────────────────────────────────────────────────────────────────
 .step-body {
   padding: 36px 40px;
 
   @media (max-width: 1100px) { padding: 28px 32px; }
   @media (max-width: 768px)  { padding: 16px; }
   @media (max-width: 480px)  { padding: 12px; }
-}
-
-
-// ── Step enter animation ───────────────────────────────────────────────────────
-@keyframes stepEnter {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0);    }
-}
-
-.step-enter {
-  animation: stepEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-// ── Navigation footer ─────────────────────────────────────────────────────────
-.nav-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid $border-soft;
-  margin-bottom: 4px;
-
-  @media (max-width: 768px) { padding: 14px 16px; }
-  @media (max-width: 480px) { padding: 12px; }
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-// ── RIGHT — sidebar ────────────────────────────────────────────────────────────
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: sticky;
-  top: 24px;
-  padding-top: 72px;
-}
-
-// ── Panel nav buttons ─────────────────────────────────────────────────────────
-.panel-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 0;
-
-  .panel-nav__back { flex: 1; }
-  .panel-nav__next { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex: 1; }
-}
-
-// ── Panel header / body ───────────────────────────────────────────────────────
-.panel-header {
-  padding: 14px 20px;
-  border-bottom: 1px solid $border-soft;
-  background: $surface-low;
-  border-radius: $radius-lg $radius-lg 0 0;
-}
-
-.panel-body {
-  padding: 20px;
-}
-
-.panel__label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: $tertiary;
-  margin: 0;
-}
-
-// ── Progression — vertical step list ─────────────────────────────────────────
-.step-list {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 17px;
-    top: 36px;
-    bottom: 36px;
-    width: 2px;
-    background: $border;
-    border-radius: 2px;
-  }
-}
-
-.step-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 8px 0;
-  position: relative;
-  z-index: 1;
-
-  &--active {
-    .step-num {
-      background: $tertiary;
-      color: #fff;
-      border-color: $tertiary;
-      box-shadow: 0 0 0 4px rgba($tertiary-hex, 0.18), 0 4px 12px rgba($tertiary-hex, 0.32);
-    }
-    .step-label { color: $tertiary; font-weight: 700; }
-  }
-
-  &--done {
-    .step-num {
-      background: $tertiary;
-      color: #fff;
-      border-color: $tertiary;
-      box-shadow: none;
-    }
-    .step-label { color: $text-muted; }
-  }
-}
-
-.step-num {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: $surface-mid;
-  border: 2px solid $border;
-  color: $text-muted;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-
-  .material-symbols-outlined { font-size: 16px; }
-}
-
-.step-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: $text-light;
-  transition: color 0.2s;
-  line-height: 1.3;
-}
-
-// ── Résumé rows ───────────────────────────────────────────────────────────────
-.summary-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-
-  &__key {
-    font-size: 12px;
-    color: #94a3b8;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  &__val {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #0b1c30;
-    text-align: right;
-    word-break: break-word;
-    max-width: 200px;
-
-    &--total {
-      color: $tertiary;
-      font-size: 13.5px;
-    }
-  }
-}
-
-// ── Tips panel ────────────────────────────────────────────────────────────────
-.tips-panel {
-  background: rgba(#FFF8E1, 0.9);
-  border: 1px solid rgba(#F59E0B, 0.3);
-  border-radius: 14px;
-  padding: 16px 18px;
-
-  &__head {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #92400E;
-    margin-bottom: 10px;
-
-    .material-symbols-outlined { font-size: 16px; color: #F59E0B; }
-  }
-
-  &__text {
-    font-size: 12.5px;
-    color: #78350F;
-    line-height: 1.65;
-    margin: 0;
-  }
-}
-
-// ── Responsive ────────────────────────────────────────────────────────────────
-@media (max-width: 1100px) {
-  .wizard-layout { grid-template-columns: 1fr 260px; gap: 16px; }
-}
-
-@media (max-width: 768px) {
-  .wizard-page   { padding: 0 0 24px; min-height: 0; }
-  .wizard-layout { grid-template-columns: 1fr; gap: 16px; }
-
-  .sidebar {
-    position: static;
-    daf-card { display: none; }
-    .tips-panel { display: block; }
-  }
-
-  .page-head { margin-bottom: 6px; }
-  .breadcrumb__current { font-size: 1.1rem; }
-  .page-sub { font-size: 0.75rem; }
-}
-
-@media (max-width: 480px) {
-  .step-body  { padding: 12px; }
-  .nav-footer { padding: 12px; }
-  .card-head  { padding: 12px; }
 }

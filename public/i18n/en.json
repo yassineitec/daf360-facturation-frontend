@@ -234,12 +234,31 @@
         "CONDITIONS": "Conditions",
         "BDC": "PO",
         "PAID_ON": "Paid on",
-        "NOTES": "Notes"
+        "NOTES": "Notes",
+        "CLIENT": "Client",
+        "AFFAIRE": "Project",
+        "TS": "Additional works",
+        "CREATED_AT": "Created on",
+        "UPDATED_AT": "Last modified",
+        "HT": "net"
+      },
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "TABS_ARIA": "Invoice sections",
+      "LOAD_ERROR": "Could not load the invoice.",
+      "ACTION_ERROR": "The operation failed.",
+      "CANCEL": "Cancel",
+      "CONFIRM": "Confirm",
+      "TABS": {
+        "REMINDERS": "Reminders",
+        "TRACE": "Timeline"
+      },
+      "ACTIONS": {
+        "SEE_AFFAIRE": "View project"
       }
     },
     "NEW": {
       "TITLE": "New invoice",
-      "SUBTITLE": "Follow the steps to create and submit your invoice",
+      "SUBTITLE": "Build the invoice, step by step.",
       "STEP_OF": "Step {{step}} of {{total}}",
       "BACK": "Back",
       "CANCEL": "Cancel",
@@ -256,7 +275,8 @@
         "TYPE": "Type",
         "LINES": "Lines",
         "TOTAL_TTC": "Total incl. tax",
-        "TIP": "Tip"
+        "TIP": "Tip",
+        "LINES_COUNT": "{{count}} line(s)"
       },
       "STEPS": {
         "AFFAIRE": "Project & Client",
@@ -291,7 +311,9 @@
         "LINES": "Add each service with its quantity, unit price ex. tax and applicable VAT rate.",
         "CONDITIONS": "Set the due date, payment terms and purchase order if required for this billing type.",
         "RECAP": "Review all information before submitting or saving as a draft to come back later."
-      }
+      },
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "BREADCRUMB_LIST": "Invoicing"
     },
     "STATUS": {
       "DRAFT": "Draft",
@@ -325,8 +347,17 @@
         "EMIT_CREDIT": "Issue credit note",
         "CREDIT_DONE": "Credit issued ✓",
         "RESOLVE": "Resolve dispute",
-        "CANCELLED": "Cancelled"
-      }
+        "CANCELLED": "Cancelled",
+        "RETURN": "Return to sender",
+        "DISPUTE": "Open a dispute"
+      },
+      "COMMENT": "Comment",
+      "RETURN_TITLE": "Return the invoice",
+      "RETURN_COMMENT": "Reason for returning",
+      "DISPUTE_TITLE": "Open a dispute",
+      "DISPUTE_REASON": "Dispute reason (required)",
+      "RESOLVE_TITLE": "Resolve the dispute",
+      "RESOLVE_NOTES": "Resolution note"
     },
     "STEP_AFFAIRE": {
       "AFFAIRE_LABEL": "Project",
@@ -811,7 +842,10 @@
           "CLOTUREE": "Closed",
           "ARCHIVEE": "Archived"
         }
-      }
+      },
+      "CLIENT_FILTER": "Projects for {{client}}",
+      "CLIENT_FILTER_FALLBACK": "the selected client",
+      "CLIENT_FILTER_CLEAR": "Show all projects"
     },
     "DETAIL": {
       "LOADING": "Loading project…",

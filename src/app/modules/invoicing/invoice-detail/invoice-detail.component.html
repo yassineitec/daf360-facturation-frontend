@@ -1,240 +1,234 @@
-@if (loading()) {
-  <div class="loading-state">
-    <span class="material-symbols-outlined spin">progress_activity</span>
-    {{ 'INVOICING.DETAIL.LOADING' | translate }}
-  </div>
-} @else if (error()) {
-  <div class="error-banner">
-    <span class="material-symbols-outlined">error</span>
-    {{ error() }}
-  </div>
-} @else if (invoice()) {
+<!-- Fiche facture — même squelette que la fiche affaire et la fiche client.
+     Aucune feuille de style locale : composants de la lib, jetons de couleur et échelle
+     typographique de la lib. Ont disparu : la page `.detail-page`, les 743 lignes de
+     SCSS, le `app-page-header` maison, la grille KPI à la main, la double table
+     bureau/mobile et la barre de cycle de vie en pied de page.
 
-<div class="detail-page">
+     Structure, deux colonnes :
+       GAUCHE (30 %, sticky)  le h1 (daf-page-header, size="md"), la carte d'informations,
+                              et les actions du cycle de vie en pied de carte.
+       DROITE (70 %)          les 3 indicateurs, puis daf-tabs et ses panneaux.
 
-  <!-- ── Header ────────────────────────────────────────────────────────────── -->
-  <app-page-header
-    [title]="invoice()!.invoiceNumber ?? ('INVOICING.DETAIL.DRAFT_TITLE' | translate)"
-    [subtitle]="invoice()!.clientNom + (invoice()!.affaireRef ? ' · ' + invoice()!.affaireRef : '')"
-    backLink="/fact/invoicing"
-    [backLabel]="'INVOICING.DETAIL.BACK' | translate">
-    <div actions class="dh-header-right">
-      <div class="dh-pills">
-        <daf-badge
-          [label]="statutConfig().label | translate"
-          [options]="{ variant: statusVariant(), pill: true, size: 'md' }" />
-        @if (isOverdue()) {
-          <daf-badge
-            [label]="'INVOICING.DETAIL.OVERDUE' | translate"
-            [options]="{ variant: 'danger', pill: true, size: 'md', icon: 'schedule' }" />
-        }
-      </div>
-      <div class="dh-amount-block">
-        <span class="dh-amount-ttc">{{ invoice()!.montantTtc | displayCurrency : invoice()!.devise }}</span>
-        <span class="dh-amount-sub">
-          {{ invoice()!.montantHt | displayCurrency : invoice()!.devise }} HT +
-          {{ invoice()!.montantTva | displayCurrency : invoice()!.devise }} TVA
-        </span>
-      </div>
-    </div>
-  </app-page-header>
+     ⚠️ FLEX en style inline, jamais de grid ni de classe de point de rupture : le
+     styles.css d'un remote ne contient que les classes que Tailwind a déjà vues. -->
 
-  @if (actionError()) {
-    <div class="action-error-bar">
-      <span class="material-symbols-outlined">warning</span>
-      {{ actionError() }}
+<daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
+          [loadingLabel]="'INVOICING.DETAIL.LOADING' | translate">
+
+  @if (error() || actionError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+      <span class="material-symbols-outlined text-headline-md">error</span>
+      {{ error() ?? actionError() }}
     </div>
   }
 
-  <!-- ── KPI Grid ───────────────────────────────────────────────────────────── -->
-  <!-- ── KPI Grid (daf-metric-card) ────────────────────────────────────────── -->
-  <div class="kpi-grid">
-    <daf-metric-card
-      [label]="'INVOICING.DETAIL.KPI.BILLING_PROGRESS' | translate"
-      [value]="billingProgress() + '%'"
-      [delta]="{ value: (statutConfig().label | translate) }"
-      [options]="{ icon: 'trending_up', iconColor: '#475569', iconBg: 'rgba(100,116,139,0.12)' }" />
+  @if (invoice(); as inv) {
+    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
 
-    <daf-metric-card
-      [label]="'INVOICING.DETAIL.KPI.BUDGET_TOTAL' | translate: { currency: invoice()!.devise }"
-      [value]="invoice()!.montantTtc | displayCurrency : invoice()!.devise"
-      [delta]="{ value: ('INVOICING.DETAIL.KPI.HT_PREFIX' | translate) + ' ' + (invoice()!.montantHt | displayCurrency : invoice()!.devise) }"
-      [options]="{ icon: 'account_balance_wallet', iconColor: '#0f766e', iconBg: 'rgba(15,118,110,0.12)' }" />
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE GAUCHE (30 %, sticky) — identité et cycle de vie
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:0 1 30%; min-width:320px">
+        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
 
-    <daf-metric-card
-      [label]="'INVOICING.DETAIL.KPI.REMAINING' | translate"
-      [value]="montantRestant() | displayCurrency : invoice()!.devise"
-      [delta]="{ value: dueLabel() }"
-      [options]="{ icon: 'payments', iconColor: '#16a34a', iconBg: 'rgba(22,163,74,0.12)' }" />
-  </div>
+          <daf-page-header
+            size="md"
+            [title]="inv.invoiceNumber ?? ('INVOICING.DETAIL.DRAFT_TITLE' | translate)"
+            [subtitle]="headerSubtitle()"
+            [badges]="headerBadges()"
+            [breadcrumbs]="breadcrumbs()"
+            [breadcrumbLabel]="'INVOICING.DETAIL.BREADCRUMB_ARIA' | translate" />
 
-  <!-- ── Body grid ──────────────────────────────────────────────────────────── -->
-  <div class="body-grid">
+          <daf-section-card>
 
-    <div class="body-main">
+            <div class="flex flex-col gap-5 p-6">
+              @for (f of identityLeadFields(); track f.label) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ f.label | translate }}
+                  </p>
+                  <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                </div>
+              }
 
-      <!-- Billing lines -->
-      <daf-card [options]="{ variant: 'default', padding: 'none', radius: 'xl' }">
-        <div class="table-card__header">
-          <daf-section-title [title]="'INVOICING.DETAIL.LINES.TITLE' | translate" />
-        </div>
-
-        <!-- Desktop table -->
-        <div class="table-scroll table-desktop">
-          <daf-data-table
-            [columns]="lineTableColumns()"
-            [rows]="lineTableRows()"
-            [config]="lineTableConfig()">
-
-            <ng-template dafCell="description" let-row>
-              <span class="line-desc">{{ row['description'] }}</span>
-            </ng-template>
-
-            <ng-template dafCell="unitRate" let-row>
-              <span class="num muted">{{ row['unitRate'] | displayCurrency : invoice()!.devise }}</span>
-            </ng-template>
-
-            <ng-template dafCell="vatRatePct" let-row>
-              <span class="num muted">{{ row['vatRatePct'] }}%</span>
-            </ng-template>
-
-            <ng-template dafCell="lineTotal" let-row>
-              <span class="num bold">{{ row['lineTotal'] | displayCurrency : invoice()!.devise }}</span>
-            </ng-template>
-
-            <ng-template dafCell="lineTtc" let-row>
-              <span class="num bold accent">{{ row['lineTtc'] | displayCurrency : invoice()!.devise }}</span>
-            </ng-template>
-
-            <ng-template dafCell="_actions" let-row>
-              <button class="edit-btn" title="Modifier">
-                <span class="material-symbols-outlined">edit_square</span>
-              </button>
-            </ng-template>
-
-          </daf-data-table>
-
-          @if (invoice()!.lines.length > 0) {
-            <div class="billing-tfoot">
-              <span class="foot-label">{{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}</span>
-              <span class="foot-amounts">
-                <span class="num foot-ht">{{ invoice()!.montantHt | displayCurrency : invoice()!.devise }}</span>
-                <span class="num foot-ttc">{{ invoice()!.montantTtc | displayCurrency : invoice()!.devise }}</span>
-              </span>
-            </div>
-          }
-        </div>
-
-        <!-- Mobile lines list -->
-        <div class="lines-mobile">
-          @for (line of invoice()!.lines; track line.id ?? $index) {
-            <div class="lm-row">
-              <div class="lm-row__main">
-                <span class="lm-row__desc">{{ line.description }}</span>
-                <span class="lm-row__ttc">{{ lineTtc(line) | displayCurrency : invoice()!.devise }}</span>
+              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+                @for (f of identityGridFields(); track f.label) {
+                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                  </div>
+                }
               </div>
-              <div class="lm-row__meta">
-                <span class="lm-row__qty">{{ line.quantity }} × {{ line.unitRate | displayCurrency : invoice()!.devise }}</span>
-                <span class="lm-row__tva">TVA {{ line.vatRatePct }}%</span>
-                <span class="lm-row__ht">HT {{ line.lineTotal | displayCurrency : invoice()!.devise }}</span>
-              </div>
+
+              @if (inv.notes) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ 'INVOICING.DETAIL.INFO.NOTES' | translate }}
+                  </p>
+                  <p class="whitespace-pre-wrap text-body-sm leading-relaxed text-on-surface-variant">{{ inv.notes }}</p>
+                </div>
+              }
             </div>
-          }
-          @empty {
-            <p class="empty-cell">{{ 'INVOICING.DETAIL.LINES.EMPTY' | translate }}</p>
-          }
-          <div class="lm-total">
-            <span class="lm-total__lbl">{{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}</span>
-            <div>
-              <span class="lm-total__ht">{{ invoice()!.montantHt | displayCurrency : invoice()!.devise }} HT</span>
-              <span class="lm-total__ttc">{{ invoice()!.montantTtc | displayCurrency : invoice()!.devise }}</span>
+
+            <!-- Cycle de vie : l'action suivante est nommée, plutôt que cachée derrière
+                 le « Suivant » d'un rail d'étapes. Le rail disait où l'on est, pas ce que
+                 le clic allait faire — et l'étape du parcours est déjà portée par la
+                 pastille de statut et l'indicateur de progression. -->
+            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
+                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+
+              @if (primaryAction(); as action) {
+                <div style="flex:1 1 100%">
+                  <daf-button [options]="action.options" (onClick)="runPrimaryAction()" />
+                </div>
+              }
+
+              @if (canReturn()) {
+                <daf-button
+                  style="flex:1 1 45%"
+                  [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'undo',
+                               label: 'INVOICING.LIFECYCLE.ACTIONS.RETURN' | translate }"
+                  (onClick)="openReturnModal()" />
+              }
+
+              @if (canDispute()) {
+                <daf-button
+                  style="flex:1 1 45%"
+                  [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'gavel',
+                               label: 'INVOICING.LIFECYCLE.ACTIONS.DISPUTE' | translate }"
+                  (onClick)="openDisputeModal()" />
+              }
+
+              <daf-button
+                style="flex:1 1 45%"
+                [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'business_center',
+                             label: 'INVOICING.DETAIL.ACTIONS.SEE_AFFAIRE' | translate,
+                             disabled: !inv.affaireId }"
+                (onClick)="goToAffaire()" />
             </div>
-          </div>
+
+          </daf-section-card>
         </div>
-
-      </daf-card>
-
-    </div><!-- /body-main -->
-
-    <!-- Aside: Informations + Reminders -->
-    <div class="body-aside">
-
-      <daf-card [options]="{ variant: 'default', padding: 'lg', radius: 'xl' }">
-        <daf-section-title [title]="'INVOICING.DETAIL.INFO.TITLE' | translate" />
-        <div class="info-grid">
-          <div class="info-row">
-            <span class="info-label">{{ 'INVOICING.DETAIL.INFO.TYPE' | translate }}</span>
-            <span class="info-val">{{ invoice()!.invoiceType }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">{{ 'INVOICING.DETAIL.INFO.CURRENCY' | translate }}</span>
-            <span class="info-val">{{ invoice()!.devise }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">{{ 'INVOICING.DETAIL.INFO.ISSUE_DATE' | translate }}</span>
-            <span class="info-val">{{ formatDate(invoice()!.dateEmission) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">{{ 'INVOICING.DETAIL.INFO.DUE_DATE' | translate }}</span>
-            <span class="info-val" [class.overdue-val]="isOverdue()">{{ formatDate(invoice()!.dateEcheance) }}</span>
-          </div>
-          @if (invoice()!.conditionsPaiement) {
-            <div class="info-row">
-              <span class="info-label">{{ 'INVOICING.DETAIL.INFO.CONDITIONS' | translate }}</span>
-              <span class="info-val">{{ invoice()!.conditionsPaiement }}</span>
-            </div>
-          }
-          @if (invoice()!.bonDeCommande) {
-            <div class="info-row">
-              <span class="info-label">{{ 'INVOICING.DETAIL.INFO.BDC' | translate }}</span>
-              <span class="info-val">{{ invoice()!.bonDeCommande }}</span>
-            </div>
-          }
-          @if (invoice()!.datePaiementFinal) {
-            <div class="info-row">
-              <span class="info-label">{{ 'INVOICING.DETAIL.INFO.PAID_ON' | translate }}</span>
-              <span class="info-val">{{ formatDate(invoice()!.datePaiementFinal) }}</span>
-            </div>
-          }
-          @if (invoice()!.notes) {
-            <div class="info-row info-row--col">
-              <span class="info-label">{{ 'INVOICING.DETAIL.INFO.NOTES' | translate }}</span>
-              <span class="info-val info-val--notes">{{ invoice()!.notes }}</span>
-            </div>
-          }
-        </div>
-      </daf-card>
-
-      <!-- Reminders -->
-      <div class="reminders-wrap">
-        <app-reminders-panel
-          [invoiceId]="invoice()!.id"
-          [remindersActive]="invoice()!.remindersActive" />
       </div>
 
-    </div><!-- /body-aside -->
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE DROITE (70 %) — indicateurs puis onglets
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
 
-  </div><!-- /body-grid -->
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+          @for (k of kpiTiles(); track k.label) {
+            <daf-metric-card
+              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+              [label]="k.label | translate"
+              [value]="k.value"
+              [delta]="k.delta"
+              [options]="k.options" />
+          }
+        </div>
 
-  <!-- ── Lifecycle & actions (daf-stepper) — page footer ───────────────────── -->
-  <div class="lifecycle-bar">
-    <daf-stepper
-      [steps]="lifecycleSteps()"
-      [currentStep]="detailStep()"
-      [stepValid]="lifecycleStepValid()"
-      [config]="lifecycleConfig()"
-      (nextClick)="onStepperNext()"
-      (prevClick)="onStepperPrev()"
-      (finishClick)="onStepperFinish()" />
-  </div>
+        <daf-tabs #tabsRef
+          variant="underline"
+          [tabs]="tabs()"
+          [active]="activeTab()"
+          (activeChange)="activeTab.set($event)"
+          [tabsLabel]="'INVOICING.DETAIL.TABS_ARIA' | translate"
+          idPrefix="invoice-detail" />
 
-</div><!-- /detail-page -->
-}
+        <div role="tabpanel"
+             [id]="tabsRef.panelId(activeTab())"
+             [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+             class="flex flex-col gap-6">
 
-<!-- ── Modals ──────────────────────────────────────────────────────────────── -->
+          <!-- ── Lignes ───────────────────────────────────────────────── -->
+          @if (activeTab() === 'lines') {
+            <!-- Une seule table : `daf-data-table` gère déjà son propre défilement
+                 horizontal, ce qui remplace la version « mobile » en cartes qui
+                 dupliquait chaque montant dans un second balisage. -->
+            <daf-data-table
+              [columns]="lineTableColumns()"
+              [rows]="lineTableRows()"
+              [config]="lineTableConfig()">
+
+              <ng-template dafCell="description" let-row>
+                <span class="text-body-md font-semibold text-on-surface">{{ row['description'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="unitRate" let-row>
+                <span class="text-body-md text-on-surface-variant">{{ row['unitRate'] | displayCurrency : inv.devise }}</span>
+              </ng-template>
+
+              <ng-template dafCell="vatRatePct" let-row>
+                <span class="text-body-md text-on-surface-variant">{{ row['vatRatePct'] }} %</span>
+              </ng-template>
+
+              <ng-template dafCell="lineTotal" let-row>
+                <span class="text-body-md font-bold text-on-surface">{{ row['lineTotal'] | displayCurrency : inv.devise }}</span>
+              </ng-template>
+
+              <ng-template dafCell="lineTtc" let-row>
+                <span class="text-body-md font-extrabold text-primary">{{ row['lineTtc'] | displayCurrency : inv.devise }}</span>
+              </ng-template>
+
+            </daf-data-table>
+
+            @if (inv.lines.length > 0) {
+              <div class="flex flex-wrap items-baseline justify-end gap-6 rounded-xl bg-surface-container px-6 py-4">
+                <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                  {{ 'INVOICING.DETAIL.LINES.GRAND_TOTAL' | translate }}
+                </span>
+                <span class="text-body-md font-bold text-on-surface-variant">
+                  {{ inv.montantHt | displayCurrency : inv.devise }} {{ 'INVOICING.DETAIL.INFO.HT' | translate }}
+                </span>
+                <span class="text-headline-md font-extrabold text-primary">
+                  {{ inv.montantTtc | displayCurrency : inv.devise }}
+                </span>
+              </div>
+            }
+          }
+
+          <!-- ── Relances ─────────────────────────────────────────────── -->
+          @if (activeTab() === 'reminders') {
+            <app-reminders-panel
+              [invoiceId]="inv.id"
+              [remindersActive]="inv.remindersActive" />
+          }
+
+          <!-- ── Suivi ────────────────────────────────────────────────── -->
+          @if (activeTab() === 'trace') {
+            <daf-section-card>
+              <div class="flex flex-col gap-4 p-6">
+                @for (f of traceFields(); track f.label) {
+                  <div class="flex items-baseline justify-between gap-3">
+                    <span class="text-body-sm text-on-surface-variant">{{ f.label | translate }}</span>
+                    <span class="text-body-md font-bold text-on-surface">{{ f.value }}</span>
+                  </div>
+                }
+              </div>
+            </daf-section-card>
+          }
+
+        </div>
+      </div>
+    </div>
+  }
+
+</daf-page>
+
+<!-- ══ Modales — à la racine de la page (§10e) ══ -->
 @if (showPaymentModal() && invoice()) {
   <app-payment-modal [invoice]="invoice()!" (closed)="onPaymentClosed($event)" />
 }
 @if (showCreditNote() && invoice()) {
   <app-credit-note-modal [invoice]="invoice()!" (closed)="onCreditNoteClosed($event)" />
 }
+
+<!-- Corps de modale : commentaire de retour / motif de litige / note de résolution -->
+<ng-template #commentTpl>
+  <daf-form-field
+    [options]="commentFieldOptions()"
+    [value]="commentText()"
+    (valueChange)="commentText.set($any($event) ?? '')" />
+</ng-template>

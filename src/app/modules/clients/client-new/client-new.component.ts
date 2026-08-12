@@ -152,9 +152,25 @@ export class ClientNewComponent implements OnInit {
     return null;
   });
 
+  /**
+   * L'ENTITÉ propriétaire du client (`clients.pays_id`) — à ne pas confondre avec le
+   * pays du client lui-même, qui est un champ du formulaire.
+   *
+   * ⚠️ Elle valait `pays[0].id` : le PREMIER pays du référentiel, quel que soit
+   * l'utilisateur. Tout client créé était donc rattaché à la même entité (la Tunisie,
+   * première de la table), y compris depuis un compte égyptien ou français — et comme
+   * `updateClient` ne touche jamais `pays_id`, l'erreur était définitive.
+   *
+   * On prend l'entité de l'utilisateur connecté, comme le fait l'assistant d'affaire.
+   * Le repli sur le premier pays ne sert que si `/ref/me` échoue, pour ne pas bloquer
+   * la création.
+   */
   ngOnInit(): void {
-    this.svc.getPays().subscribe(pays => {
-      if (pays.length > 0) this.paysId.set(pays[0].id);
+    this.svc.getMyPays().subscribe(myPays => {
+      if (myPays) { this.paysId.set(myPays); return; }
+      this.svc.getPays().subscribe(pays => {
+        if (pays.length > 0) this.paysId.set(pays[0].id);
+      });
     });
   }
 

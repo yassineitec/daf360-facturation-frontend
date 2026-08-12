@@ -420,8 +420,19 @@ export class ClientDetailComponent implements OnInit {
     this.router.navigate(['../../invoicing', 'new'], { relativeTo: this.route });
   }
 
+  /**
+   * « Voir les affaires » ouvre la liste RESTREINTE à ce client — elle y arrivait sans
+   * filtre, donc sur les affaires de tout le monde, ce qui n'avait rien à voir avec le
+   * chiffre affiché juste au-dessus. Le nom accompagne l'id pour que le bandeau de
+   * contexte de la liste puisse le nommer sans requête supplémentaire.
+   */
   goToAffaires(): void {
-    this.router.navigate(['../../affaires'], { relativeTo: this.route });
+    const c = this.client();
+    if (!c) return;
+    this.router.navigate(['../../affaires'], {
+      relativeTo: this.route,
+      queryParams: { clientId: c.id, client: c.clientName },
+    });
   }
 
   // ═══ Rendu ════════════════════════════════════════════════════════════════

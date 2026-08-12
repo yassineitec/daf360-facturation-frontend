@@ -82,18 +82,18 @@
                              label: 'CLIENTS.DETAIL.ACTIONS.NEW_INVOICE' | translate }"
                 (onClick)="goToInvoicing()" />
 
-              <daf-button *appHasPermission="'FACT_MANAGE_CLIENTS'"
+              <daf-button *appHasPermission="'FACT_MANAGE_INVOICING'"
                 style="flex:1 1 45%"
                 [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'edit_note',
                              label: 'CLIENTS.DETAIL.ACTIONS.EDIT' | translate }"
                 (onClick)="openEditModal()" />
 
-              <daf-button *appHasPermission="'FACT_VALIDATE_KYC'"
+              <daf-button *appHasPermission="'FACT_MANAGE_INVOICING'"
                 style="flex:1 1 45%"
                 [options]="kycButtonOptions()"
                 (onClick)="toggleKyc()" />
 
-              <daf-button *appHasPermission="'FACT_MANAGE_CLIENTS'"
+              <daf-button *appHasPermission="'FACT_MANAGE_INVOICING'"
                 style="flex:1 1 45%"
                 [options]="activationButtonOptions()"
                 (onClick)="toggleActivation()" />

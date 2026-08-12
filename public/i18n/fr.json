@@ -234,12 +234,31 @@
         "CONDITIONS": "Conditions",
         "BDC": "BDC",
         "PAID_ON": "Payée le",
-        "NOTES": "Notes"
+        "NOTES": "Notes",
+        "CLIENT": "Client",
+        "AFFAIRE": "Affaire",
+        "TS": "Travaux supplémentaires",
+        "CREATED_AT": "Créée le",
+        "UPDATED_AT": "Dernière modification",
+        "HT": "HT"
+      },
+      "BREADCRUMB_ARIA": "Fil d'Ariane",
+      "TABS_ARIA": "Sections de la facture",
+      "LOAD_ERROR": "Impossible de charger la facture.",
+      "ACTION_ERROR": "L'opération a échoué.",
+      "CANCEL": "Annuler",
+      "CONFIRM": "Confirmer",
+      "TABS": {
+        "REMINDERS": "Relances",
+        "TRACE": "Suivi"
+      },
+      "ACTIONS": {
+        "SEE_AFFAIRE": "Voir l'affaire"
       }
     },
     "NEW": {
       "TITLE": "Nouvelle facture",
-      "SUBTITLE": "Suivez les étapes pour créer et soumettre votre facture",
+      "SUBTITLE": "Composez la facture, étape par étape.",
       "STEP_OF": "Étape {{step}} sur {{total}}",
       "BACK": "Retour",
       "CANCEL": "Annuler",
@@ -256,7 +275,8 @@
         "TYPE": "Type",
         "LINES": "Lignes",
         "TOTAL_TTC": "Total TTC",
-        "TIP": "Conseil"
+        "TIP": "Conseil",
+        "LINES_COUNT": "{{count}} ligne(s)"
       },
       "STEPS": {
         "AFFAIRE": "Affaire & Client",
@@ -291,7 +311,9 @@
         "LINES": "Ajoutez chaque prestation avec sa quantité, son prix unitaire HT et le taux de TVA applicable.",
         "CONDITIONS": "Définissez l'échéance, les conditions de paiement et le bon de commande si le type de facturation l'exige.",
         "RECAP": "Vérifiez toutes les informations avant de soumettre ou d'enregistrer en brouillon pour y revenir plus tard."
-      }
+      },
+      "BREADCRUMB_ARIA": "Fil d'Ariane",
+      "BREADCRUMB_LIST": "Facturation"
     },
     "STATUS": {
       "DRAFT": "Brouillon",
@@ -325,8 +347,17 @@
         "EMIT_CREDIT": "Émettre un avoir",
         "CREDIT_DONE": "Avoir émis ✓",
         "RESOLVE": "Résoudre le litige",
-        "CANCELLED": "Annulée"
-      }
+        "CANCELLED": "Annulée",
+        "RETURN": "Retourner à l'émetteur",
+        "DISPUTE": "Ouvrir un litige"
+      },
+      "COMMENT": "Commentaire",
+      "RETURN_TITLE": "Retourner la facture",
+      "RETURN_COMMENT": "Motif du retour",
+      "DISPUTE_TITLE": "Ouvrir un litige",
+      "DISPUTE_REASON": "Motif du litige (obligatoire)",
+      "RESOLVE_TITLE": "Résoudre le litige",
+      "RESOLVE_NOTES": "Note de résolution"
     },
     "STEP_AFFAIRE": {
       "AFFAIRE_LABEL": "Affaire",
@@ -811,7 +842,10 @@
           "CLOTUREE": "Clôturée",
           "ARCHIVEE": "Archivée"
         }
-      }
+      },
+      "CLIENT_FILTER": "Affaires du client {{client}}",
+      "CLIENT_FILTER_FALLBACK": "sélectionné",
+      "CLIENT_FILTER_CLEAR": "Voir toutes les affaires"
     },
     "DETAIL": {
       "LOADING": "Chargement de l'affaire…",

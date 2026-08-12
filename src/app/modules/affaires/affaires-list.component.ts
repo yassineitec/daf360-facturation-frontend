@@ -66,6 +66,16 @@ export class AffairesListComponent implements OnInit {
   viewMode     = signal<ViewMode>('grid');
 
   /**
+   * Restriction à un client, passée en `?clientId=` — c'est ce que suit « Voir les
+   * affaires » depuis une fiche client. Elle n'est PAS dans le panneau de filtres :
+   * elle vient du lien d'arrivée, et un filtre invisible dans le panneau donnerait une
+   * liste tronquée sans explication. D'où le bandeau de contexte, avec son bouton pour
+   * revenir à la liste complète.
+   */
+  filterClientId = signal<number | null>(null);
+  clientName     = signal<string | null>(null);
+
+  /**
    * ⚠️ Every tile below is computed from the page currently on screen, not from the
    * whole result set — the list endpoint returns one page and no aggregates. The
    * "page courante" delta says so rather than letting "Budget total" read as the
@@ -147,6 +157,14 @@ export class AffairesListComponent implements OnInit {
     // Honor a ?statut= filter passed in (e.g. "Reprendre un brouillon" → statut=DRAFT).
     const statut = this.activatedRoute.snapshot.queryParamMap.get('statut');
     if (statut) this.filterStatut.set(statut);
+
+    // ?clientId= — arrivée depuis une fiche client. Le nom affiché dans le bandeau vient
+    // du paramètre `client`, pour ne pas déclencher un appel de plus juste pour un libellé.
+    const clientId = Number(this.activatedRoute.snapshot.queryParamMap.get('clientId'));
+    if (Number.isFinite(clientId) && clientId > 0) {
+      this.filterClientId.set(clientId);
+      this.clientName.set(this.activatedRoute.snapshot.queryParamMap.get('client'));
+    }
     this.svc.getPays().subscribe(list =>
       this.paysLabels.set(new Map(list.map(p => [p.id, p.frenchLabel]))));
     this.load();
@@ -180,11 +198,12 @@ export class AffairesListComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     const filter: AffaireFilter = {
-      page:   this.currentPage(),
-      size:   this.pageSize(),
-      search: this.searchText().trim() || null,
-      statut: this.filterStatut()      || null,
-      type:   this.filterType()        || null,
+      page:     this.currentPage(),
+      size:     this.pageSize(),
+      search:   this.searchText().trim() || null,
+      statut:   this.filterStatut()      || null,
+      type:     this.filterType()        || null,
+      clientId: this.filterClientId(),
     };
     this.svc.getAffaires(filter).subscribe({
       next: res => {
@@ -226,6 +245,20 @@ export class AffairesListComponent implements OnInit {
   onPageSize(size: number): void {
     this.pageSize.set(size);
     this.currentPage.set(0);
+    this.load();
+  }
+
+  /** Retire la restriction client et recharge la liste complète. */
+  clearClientFilter(): void {
+    this.filterClientId.set(null);
+    this.clientName.set(null);
+    this.currentPage.set(0);
+    // L'URL est nettoyée aussi : un rechargement de page ne doit pas ramener le filtre.
+    this.router.navigate([], {
+      relativeTo: this.activatedRoute,
+      queryParams: { clientId: null, client: null },
+      queryParamsHandling: 'merge',
+    });
     this.load();
   }
 

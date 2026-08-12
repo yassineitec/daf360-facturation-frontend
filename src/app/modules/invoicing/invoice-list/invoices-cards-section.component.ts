@@ -5,9 +5,10 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { INVOICE_STATUT_CONFIG, InvoiceListItem } from '../invoice.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { enumLabel } from '../../../shared/enum-labels';
 import {
   STATUT_ENTITY_STATUS, canApprove, canEmit, canMarkSent, canRecordPayment,
-  formatDate, initials, isOverdue, overdueDays,
+  formatDate, isOverdue, overdueDays,
 } from '../invoice-display';
 
 /**
@@ -90,13 +91,10 @@ export class InvoicesCardsSectionComponent {
         options: {
           variant: 'glass',
           clickable: true,
-          image: {
-            initials: initials(inv.clientNom),
-            // Complete literal class (§3). The card has one status slot and no danger
-            // look, so a red avatar tile is the only urgency cue available — the same
-            // trick /rh/it-provisioning uses for an overdue file.
-            badgeBg: overdue ? 'bg-danger' : undefined,
-          },
+          // Pas d'image : comme les cartes d'affaire et de client, une image omise ne
+          // dessine aucune pastille et le titre prend toute la largeur. Le retard reste
+          // signale par sa propre metrique, libellee — la pastille rouge le disait une
+          // seconde fois.
           metadata: {
             title:       inv.invoiceNumber || t('INVOICING.LIST.TABLE.DRAFT'),
             subtitle:    [inv.clientNom, inv.affaireRef].filter(Boolean).join(' · '),
@@ -112,7 +110,7 @@ export class InvoicesCardsSectionComponent {
               // Swaps the type metric out for the delay, so an overdue card says so
               // twice — red tile and a labelled figure.
               ? { label: t('INVOICING.LIST.CARD.OVERDUE'), value: this.translate.instant('INVOICING.LIST.TABLE.OVERDUE_DAYS', { days: overdueDays(inv) }) }
-              : { label: t('INVOICING.LIST.CARD.TYPE'),    value: inv.invoiceType ?? '—' },
+              : { label: t('INVOICING.LIST.CARD.TYPE'),    value: enumLabel(this.translate, 'INVOICE_TYPE', inv.invoiceType) },
           ],
           actions: this.actionsFor(inv, t),
           viewLabel: t('INVOICING.LIST.ACTIONS.VIEW'),

@@ -1,187 +1,116 @@
-<div class="wizard-page">
-  <div class="wizard-layout">
+<!-- Assistant « Nouvelle facture » — même squelette que les assistants d'affaire et de
+     client : `daf-page` porte le rythme vertical, `daf-page-header` le h1, le fil
+     d'Ariane et le résumé de la saisie en pastilles, et la barre d'actions du bas porte
+     la progression. Plus de `.wizard-page` / `.page-head` / `.sidebar` maison.
 
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- LEFT — form area                                              -->
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <div class="form-area">
+     La barre est `sticky` et vit DANS `daf-page` : le conteneur de défilement est
+     `.shell-content`, qui porte la marge de la barre latérale ; une barre `fixed` se
+     calerait sur la fenêtre et se retrouverait décentrée par rapport au formulaire. -->
 
-      <!-- ── Page header ───────────────────────────────────────────── -->
-      <div class="page-head">
-        <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
-          <button type="button" class="font-medium hover:underline transition-colors" (click)="cancel()">
-            Facturation
-          </button>
-          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span class="font-medium" style="color:#50717b">{{ 'INVOICING.NEW.TITLE' | translate }}</span>
-        </nav>
-        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ 'INVOICING.NEW.TITLE' | translate }}</h1>
+<daf-page [kpis]="0" [breadcrumbs]="true">
+
+  <daf-page-header
+    [title]="'INVOICING.NEW.TITLE' | translate"
+    [subtitle]="pageSubtitle()"
+    [badges]="headerBadges()"
+    [breadcrumbs]="breadcrumbs()"
+    [breadcrumbLabel]="'INVOICING.NEW.BREADCRUMB_ARIA' | translate" />
+
+  <div style="display:flex; flex-direction:column; gap:1rem">
+
+    <div class="form-card">
+
+      <!-- Titre de l'étape courante -->
+      <div class="card-head">
+        <div class="card-head__icon">
+          <span class="material-symbols-outlined">{{ steps()[step() - 1].icon }}</span>
+        </div>
+        <div>
+          <h2 class="card-head__title">{{ stepTitle() }}</h2>
+          <p class="card-head__sub">{{ stepSub() }}</p>
+        </div>
       </div>
 
-      <!-- ── Form card ─────────────────────────────────────────────── -->
-      <div class="form-card">
-
-        <!-- Card head: icon + step title -->
-        <div class="card-head">
-          <div class="card-head__icon">
-            <span class="material-symbols-outlined">{{ steps()[step() - 1].icon }}</span>
-          </div>
-          <div>
-            <h2 class="card-head__title">{{ stepTitle() }}</h2>
-            <p class="card-head__sub">{{ stepSub() }}</p>
-            <p class="card-head__counter">
-              {{ 'INVOICING.NEW.STEP_OF' | translate: { step: step(), total: steps().length } }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Step body -->
-        <div class="step-body">
-          @if (step() === 1) {
-            <div class="step-enter">
-              <app-step-affaire
-                [showActions]="false"
-                (nextStep)="onAffaireDone($event)"
-                (cancel)="cancel()" />
-            </div>
-          }
-          @if (step() === 2 && affaireValue()) {
-            <div class="step-enter">
-              <app-step-lines
-                [showActions]="false"
-                [affaireData]="affaireValue()!"
-                (prevStep)="goPrev()"
-                (nextStep)="onLinesDone($event)" />
-            </div>
-          }
-          @if (step() === 3 && affaireValue() && linesValue()) {
-            <div class="step-enter">
-              <app-step-conditions
-                [showActions]="false"
-                [affaireData]="affaireValue()!"
-                [linesData]="linesValue()!"
-                (prevStep)="goPrev()"
-                (nextStep)="onConditionsDone($event)" />
-            </div>
-          }
-          @if (step() === 4 && affaireValue() && linesValue() && conditionsValue()) {
-            <div class="step-enter">
-              <app-step-recap
-                [showActions]="false"
-                [affaireData]="affaireValue()!"
-                [linesData]="linesValue()!"
-                [conditionsData]="conditionsValue()!"
-                (prevStep)="goPrev()" />
-            </div>
-          }
-        </div>
-
-      </div><!-- /form-card -->
-    </div><!-- /form-area -->
-
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- RIGHT — sidebar                                               -->
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <aside class="sidebar">
-
-      <!-- Boutons navigation -->
-      <div class="panel-nav">
-        @if (step() > 1) {
-          <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('INVOICING.NEW.BACK' | translate), iconStart: 'arrow_back' }"
-            (onClick)="goPrev()" />
-        } @else {
-          <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('INVOICING.NEW.CANCEL' | translate), iconStart: 'close' }"
-            (onClick)="cancel()" />
+      <div class="step-body">
+        @if (step() === 1) {
+          <app-step-affaire
+            [showActions]="false"
+            (nextStep)="onAffaireDone($event)"
+            (cancel)="cancel()" />
         }
-        <div class="panel-nav__next">
-          @if (step() === 4) {
-            <daf-button
-              [options]="{
-                variant: 'ghost',
-                label: isSaving() ? ('INVOICING.NEW.SAVING' | translate) : ('INVOICING.NEW.DRAFT' | translate),
-                iconStart: 'save',
-                disabled: isSaving()
-              }"
-              (onClick)="saveDraft()" />
-          }
-          <daf-button
-            [options]="{
-              variant: 'teal',
-              pill: true,
-              fullWidth: true,
-              label: step() === 4 ? ('INVOICING.NEW.SUBMIT' | translate) : ('INVOICING.NEW.NEXT' | translate),
-              iconEnd: step() < 4 ? 'arrow_forward' : 'send',
-              loading: isSaving(),
-              disabled: !canGoNext() || isSaving()
-            }"
-            (onClick)="goNext()" />
-        </div>
+        @if (step() === 2 && affaireValue()) {
+          <app-step-lines
+            [showActions]="false"
+            [affaireData]="affaireValue()!"
+            (prevStep)="goPrev()"
+            (nextStep)="onLinesDone($event)" />
+        }
+        @if (step() === 3 && affaireValue() && linesValue()) {
+          <app-step-conditions
+            [showActions]="false"
+            [affaireData]="affaireValue()!"
+            [linesData]="linesValue()!"
+            (prevStep)="goPrev()"
+            (nextStep)="onConditionsDone($event)" />
+        }
+        @if (step() === 4 && affaireValue() && linesValue() && conditionsValue()) {
+          <app-step-recap
+            [showActions]="false"
+            [affaireData]="affaireValue()!"
+            [linesData]="linesValue()!"
+            [conditionsData]="conditionsValue()!"
+            (prevStep)="goPrev()" />
+        }
       </div>
 
-      <!-- Progression -->
-      <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
-        <div class="panel-header">
-          <p class="panel__label">{{ 'INVOICING.NEW.SIDEBAR.PROGRESS' | translate }}</p>
-        </div>
+    </div><!-- /form-card -->
 
-        <div class="panel-body">
-          <div class="step-list">
-            @for (s of steps(); track $index; let i = $index) {
-              <div class="step-item"
-                   [class.step-item--done]="step() > i + 1"
-                   [class.step-item--active]="step() === i + 1">
-                <div class="step-num">
-                  @if (step() > i + 1) {
-                    <span class="material-symbols-outlined"
-                          style="font-variation-settings:'FILL' 1;font-size:16px">check</span>
-                  } @else {
-                    {{ i + 1 }}
-                  }
-                </div>
-                <span class="step-label">{{ s.title }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </daf-card>
+  </div>
 
-      <!-- Résumé -->
-      <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
-        <div class="panel-header">
-          <p class="panel__label">{{ 'INVOICING.NEW.SIDEBAR.SUMMARY' | translate }}</p>
-        </div>
-        <div class="panel-body">
-          <div class="summary-rows">
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'INVOICING.NEW.SIDEBAR.AFFAIRE' | translate }}</span>
-              <span class="summary-row__val">{{ summaryAffaire() }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'INVOICING.NEW.SIDEBAR.CLIENT' | translate }}</span>
-              <span class="summary-row__val">{{ summaryClient() }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'INVOICING.NEW.SIDEBAR.TYPE' | translate }}</span>
-              <span class="summary-row__val">{{ summaryType() }}</span>
-            </div>
-            @if (step() > 2) {
-              <div class="summary-row">
-                <span class="summary-row__key">{{ 'INVOICING.NEW.SIDEBAR.LINES' | translate }}</span>
-                <span class="summary-row__val">{{ summaryLines() }}</span>
-              </div>
-              <div class="summary-row">
-                <span class="summary-row__key">{{ 'INVOICING.NEW.SIDEBAR.TOTAL_TTC' | translate }}</span>
-                <span class="summary-row__val summary-row__val--total">{{ summaryTotal() }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </daf-card>
+  <!-- ══════════════════════════════════════════════════════════════════════
+       BARRE D'ACTIONS — progression + navigation, comme les deux autres
+       assistants. `daf-stepper` en `chrome: 'header-only'` : le rail seul.
+       ══════════════════════════════════════════════════════════════════ -->
+  <div class="action-bar rounded-xl border border-outline-variant bg-surface-container-lowest
+              p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
+       style="position:sticky; bottom:1rem; z-index:40; display:flex; flex-wrap:wrap;
+              align-items:center; justify-content:space-between; gap:1rem">
 
+    <div style="flex:1 1 320px; min-width:0">
+      <daf-stepper
+        orientation="horizontal"
+        [steps]="stepperSteps()"
+        [currentStep]="step() - 1"
+        [config]="stepperConfig()"
+        (stepClick)="onStepClick($event)" />
+    </div>
 
-    </aside><!-- /sidebar -->
+    <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
+      @if (step() > 1) {
+        <daf-button
+          [options]="{ variant: 'ghost', pill: true, iconStart: 'arrow_back',
+                       label: 'INVOICING.NEW.BACK' | translate }"
+          (onClick)="goPrev()" />
+      } @else {
+        <daf-button
+          [options]="{ variant: 'ghost', pill: true, iconStart: 'close',
+                       label: 'INVOICING.NEW.CANCEL' | translate }"
+          (onClick)="cancel()" />
+      }
 
-  </div><!-- /wizard-layout -->
-</div><!-- /wizard-page -->
+      <!-- « Enregistrer le brouillon » n'apparaît qu'au récapitulatif : avant, la
+           facture n'a pas encore ses lignes et il n'y a rien à enregistrer. -->
+      @if (step() === 4) {
+        <daf-button
+          [options]="{ variant: 'secondary', pill: true, iconStart: 'save',
+                       label: (isSaving() ? 'INVOICING.NEW.SAVING' : 'INVOICING.NEW.DRAFT') | translate,
+                       disabled: isSaving() }"
+          (onClick)="saveDraft()" />
+      }
+
+      <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
+    </div>
+
+  </div>
+
+</daf-page>

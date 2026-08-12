@@ -10,6 +10,7 @@ import { ClientService } from '../client.service';
 import { ClientFilter, ClientListItemDto } from '../client.model';
 import { ClientsCardsSectionComponent } from './clients-cards-section.component';
 import { ClientsTableSectionComponent } from './clients-table-section.component';
+import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 /** The four states the status filter can express, mapped to the two backend flags. */
@@ -23,7 +24,7 @@ type ViewMode = 'grid' | 'list';
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe,
-    ClientsCardsSectionComponent, ClientsTableSectionComponent,
+    ClientsCardsSectionComponent, ClientsTableSectionComponent, PermissionDirective,
   ],
   host: { class: 'block' },
   templateUrl: './client-list.component.html',

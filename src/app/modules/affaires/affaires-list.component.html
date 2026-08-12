@@ -48,6 +48,19 @@
     [view]="viewMode()"
     (viewChange)="viewMode.set($any($event))" />
 
+  <!-- Bandeau de contexte quand la liste est restreinte à un client (arrivée depuis sa
+       fiche) : sans lui, l'utilisateur verrait une liste amputée sans savoir pourquoi. -->
+  @if (filterClientId()) {
+    <div class="flex flex-wrap items-center gap-3 rounded-xl bg-primary/10 px-4 py-3 text-body-md text-on-surface">
+      <span class="material-symbols-outlined text-headline-lg text-primary">filter_alt</span>
+      <span>{{ 'AFFAIRES.LIST.CLIENT_FILTER' | translate: { client: clientName() ?? ('AFFAIRES.LIST.CLIENT_FILTER_FALLBACK' | translate) } }}</span>
+      <daf-button
+        [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close',
+                     label: 'AFFAIRES.LIST.CLIENT_FILTER_CLEAR' | translate }"
+        (onClick)="clearClientFilter()" />
+    </div>
+  }
+
   @if (error()) {
     <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
       <span class="material-symbols-outlined text-[18px]">error</span>

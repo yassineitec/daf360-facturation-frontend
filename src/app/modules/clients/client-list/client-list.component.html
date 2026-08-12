@@ -3,7 +3,10 @@
   <daf-page-header
     [title]="'CLIENTS.LIST.TITLE' | translate"
     [subtitle]="'CLIENTS.LIST.SUBTITLE' | translate">
-    <daf-button pageActions
+    <!-- La création exige `FACT_MANAGE_INVOICING` côté API : sans cette garde, un compte
+         en lecture seule voyait le bouton et n'apprenait son refus qu'après avoir rempli
+         les trois étapes de l'assistant. -->
+    <daf-button pageActions *appHasPermission="'FACT_MANAGE_INVOICING'"
       [options]="{ variant: 'teal', label: 'CLIENTS.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="goToNewClient()" />
   </daf-page-header>

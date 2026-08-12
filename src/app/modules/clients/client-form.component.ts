@@ -4,6 +4,7 @@ import {
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { ClientService }        from './client.service';
 import { ClientDetailDto, CreateClientRequest } from './client.model';
+import { PaysRefDto } from '../affaires/affaire.model';
 import { FormFieldComponent, SelectComponent, SelectOption, ButtonComponent } from '@khalilrebhiitec/daf360';
 
 const DEFAULT_SECTORS = [
@@ -62,6 +63,8 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly sectors        = signal<string[]>([]);
   readonly loadingSectors = signal(false);
   readonly touched        = signal(false);
+  /** Référentiel des pays, pour la liste déroulante « Pays ». */
+  readonly paysList       = signal<PaysRefDto[]>([]);
 
   // ── Select options ─────────────────────────────────────────────────────────
   readonly sectorSelectOptions = computed<SelectOption[]>(() =>
@@ -89,13 +92,37 @@ export class ClientFormComponent implements OnInit, OnChanges {
     this.translate.currentLang();
     return { label: this.translate.instant('CLIENTS.FORM.CURRENCY_LABEL'), fullWidth: true };
   });
-  readonly countryFieldOpts = computed(() => {
+  /**
+   * Pays du client, alimenté par le référentiel `pays_ref` (`/ref/pays`) — le seul
+   * référentiel de pays de la base ; il n'existe pas de liste configurable « COUNTRY ».
+   *
+   * ⚠️ À ne pas confondre avec `paysId`, qui est l'ENTITÉ ITEC propriétaire du client :
+   * un client français peut très bien appartenir à l'entité tunisienne. Les deux sont
+   * distincts en base (`clients.pays_id` et `clients.country`) et le restent ici : ce
+   * champ n'écrit que `country`.
+   *
+   * La valeur stockée est le libellé (et non l'id) parce que la colonne est un
+   * `VARCHAR(100)` : les clients existants portent déjà des libellés, et la liste les
+   * affiche tels quels.
+   */
+  readonly countryOptions = computed<SelectOption[]>(() => {
+    const list = this.paysList().map(p => ({ value: p.frenchLabel, label: p.frenchLabel }));
+    // Un pays déjà enregistré mais absent du référentiel resterait invisible dans la
+    // liste, et l'édition l'effacerait en silence : on l'ajoute en tête.
+    const current = this.country();
+    if (current && !list.some(o => o.value === current)) {
+      list.unshift({ value: current, label: current });
+    }
+    return list;
+  });
+
+  readonly countrySelectConfig = computed(() => {
     this.translate.currentLang();
     return {
       label: this.translate.instant('CLIENTS.FORM.COUNTRY_LABEL'),
-      type: 'text' as const,
       placeholder: this.translate.instant('CLIENTS.FORM.COUNTRY_PLACEHOLDER'),
-      maxLength: 100,
+      searchable: true,
+      fullWidth: true,
     };
   });
 
@@ -152,6 +179,8 @@ export class ClientFormComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
+    this.svc.getPays().subscribe(list => this.paysList.set(list));
+
     const c = this.client;
     if (c) {
       this.clientName.set(c.clientName ?? '');
