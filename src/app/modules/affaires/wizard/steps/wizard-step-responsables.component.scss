@@ -17,7 +17,13 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+
+  // Le texte pousse l'action d'ajout au bord droit ; `align-self: center` la garde
+  // alignée sur le titre et non sur le sous-titre.
+  &__text { flex: 1 1 auto; min-width: 0; }
+  daf-button { align-self: center; flex-shrink: 0; }
 }
+
 .section-icon {
   font-size: 22px;
   color: #1a6b7c;
@@ -258,6 +264,15 @@
   color: #64748b;
   margin: 0;
 }
+// Le total et l'action de répartition forment un bloc à droite de la barre : l'action est
+// ainsi collée à la valeur qu'elle rééquilibre.
+.budget-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.budget-bar-head { min-width: 0; }
 .budget-bar-total { text-align: right; }
 .budget-bar-total-label { font-size: 11px; color: #94a3b8; margin: 0 0 2px; }
 .budget-bar-total-value { font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; }

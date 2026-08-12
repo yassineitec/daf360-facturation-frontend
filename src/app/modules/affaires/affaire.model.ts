@@ -10,7 +10,15 @@ export type AffaireStatut = 'EN_COURS' | 'SUSPENDUE' | 'CLOTUREE' | 'ARCHIVEE';
 export type AffaireType    = 'FORFAIT' | 'REGIE' | 'LUMP_SUM';
 export type TsStatut       = 'CREATED' | 'VALID_TECHNIQUE' | 'VALID_COMMERCIALE' | 'INTEGRE' | 'FACTURE' | 'ANNULE';
 
-// Affaire-scoped invoice row (subset of the backend InvoiceResponseDto).
+/**
+ * Ligne de facture vue depuis l'affaire.
+ *
+ * L'endpoint `/invoices` renvoie déjà `InvoiceResponseDto` en entier : les champs
+ * ajoutés ici étaient donc **déjà sur le réseau**, simplement non déclarés, donc
+ * invisibles. Ils portent l'essentiel de ce qu'on vient chercher en ouvrant une
+ * facture : à qui, sur quelle période, quel HT et quelle TVA, où elle en est de son
+ * parcours (soumise → émise → envoyée), et pourquoi s'il y a un avoir ou un litige.
+ */
 export interface AffaireInvoiceItem {
   id:            number;
   invoiceNumber: string | null;
@@ -20,6 +28,25 @@ export interface AffaireInvoiceItem {
   statut:        string | null;
   dateEmission:  string | null;
   dateEcheance:  string | null;
+
+  // ── Ajoutés : déjà servis par l'API, jamais affichés ──────────────────────
+  clientNom?:          string | null;
+  billingMode?:        string | null;
+  montantHt?:          number | null;
+  montantTva?:         number | null;
+  /** Période couverte — porteuse de sens pour une situation ou un acompte. */
+  periodFrom?:         string | null;
+  periodTo?:           string | null;
+  /** Taux d'avancement facturé (mode AV). */
+  progressPct?:        number | null;
+  submittedAt?:        string | null;
+  sentAt?:             string | null;
+  /** Renseigné sur un avoir : sans lui, un avoir est un montant négatif sans raison. */
+  creditNoteReason?:   string | null;
+  linkedInvoiceId?:    number | null;
+  disputeOpenedAt?:    string | null;
+  disputeResolvedAt?:  string | null;
+  notes?:              string | null;
 }
 
 // Affaire-scoped payment row (backend PaymentResponseDto).

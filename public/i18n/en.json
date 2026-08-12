@@ -343,9 +343,10 @@
       "BILLING_MODES": {
         "TM": "TM — Time & Materials",
         "CP": "CP — Cost Plus",
-        "AV": "AV — Progress",
+        "AV": "AV — Fixed price",
         "JAL": "JAL — Milestones",
-        "RMB": "RMB — Reimbursement"
+        "RMB": "RMB — Reimbursement",
+        "LIVRABLE": "LIVRABLE — Deliverables"
       },
       "TYPE_LABEL": "Invoice type *",
       "TYPE_SELECT": "Select a type…",
@@ -728,7 +729,8 @@
           "TYPE": "Type",
           "BUDGET": "Budget",
           "RAF": "Remaining",
-          "STATUS": "Status"
+          "STATUS": "Status",
+          "PAYS": "Country"
         },
         "STATUS": {
           "DRAFT": "Draft",
@@ -752,7 +754,11 @@
         "VALIDATE_TECH": "Technical validation",
         "VALIDATE_COMM": "Commercial validation",
         "NOTES": "Validation notes",
-        "VALIDATE_ERROR": "Additional-work validation failed."
+        "VALIDATE_ERROR": "Additional-work validation failed.",
+        "VALID_TECH_AT": "Technical approval",
+        "VALID_TECH_NOTES": "Technical note",
+        "VALID_COMM_AT": "Commercial approval",
+        "VALID_COMM_NOTES": "Commercial note"
       },
       "BUDGET_NOT_VALIDATED": "Budget not validated",
       "LAST_UPDATE": "Updated on",
@@ -768,7 +774,8 @@
         "NEW_TS": "New additional work",
         "EDIT": "Edit",
         "STATUS": "Status",
-        "VALIDATE_BUDGET": "Validate budget"
+        "VALIDATE_BUDGET": "Validate budget",
+        "EXPENSES": "Reimbursable expenses"
       },
       "IDENTITY": {
         "BILLING_PROGRESS": "Billing progress"
@@ -860,7 +867,8 @@
         "NO": "No",
         "DOC360": "DOC360 ref.",
         "ERP_REF": "ERP ref.",
-        "NOTES": "Notes"
+        "NOTES": "Notes",
+        "PAYS": "Country of origin"
       },
       "SECTIONS": {
         "BUDGET_TS": "Budget & Additional Work",
@@ -878,7 +886,15 @@
         "EMITTED": "Issued",
         "DUE": "Due",
         "AMOUNT": "Amount incl. tax",
-        "STATUS": "Status"
+        "STATUS": "Status",
+        "AMOUNT_HT": "Net amount",
+        "AMOUNT_TVA": "VAT",
+        "PERIOD": "Covered period",
+        "PROGRESS": "Invoiced progress",
+        "SUBMITTED": "Submitted on",
+        "SENT": "Sent on",
+        "CREDIT_REASON": "Credit note reason",
+        "DISPUTE": "Dispute (opened → resolved)"
       },
       "PAYMENTS": {
         "DATE": "Date",
@@ -935,7 +951,8 @@
         "TS_IMPACT": "Budget impact",
         "TS_INTEGRATED_AT": "Added to budget on",
         "OPEN_INVOICE": "Open the invoice",
-        "OPEN_PAYMENTS": "Open the Payments module"
+        "OPEN_PAYMENTS": "Open the Payments module",
+        "EXPENSES_TITLE": "Project reimbursable expenses"
       }
     },
     "wizard": {
@@ -946,11 +963,6 @@
         "saving": "Saving…",
         "resume_draft": "Resume a draft project",
         "progression": "Progress",
-        "summary": "Summary",
-        "sum_affaire": "Project",
-        "sum_client": "Client",
-        "sum_mode": "Mode",
-        "sum_budget": "Budget",
         "next": "Next",
         "prev": "Previous",
         "cancel": "Cancel",
@@ -988,12 +1000,11 @@
           "recap": "Summary"
         },
         "mode": {
-          "av": "Progress",
-          "jal": "Milestones",
-          "tm": "Time & Materials",
-          "cp": "Cost + Margin",
-          "rmb": "Reimbursement",
-          "livrable": "Deliverables",
+          "AV": "Fixed price",
+          "TM": "Time & Materials",
+          "CP": "Cost + Margin",
+          "RMB": "Reimbursement",
+          "LIVRABLE": "Deliverables",
           "none": "—"
         },
         "val": {
@@ -1005,8 +1016,7 @@
           "currency": "contract currency",
           "required_fields": "Required fields: {{fields}}.",
           "select_mode_prev": "Select a billing mode in the previous step.",
-          "av": "Breakdown required (total = 100%) with at least one type selected.",
-          "jal": "Milestones required with labels and total = {{budget}} {{currency}}.",
+          "av": "A split is required (total = 100%) with at least one type selected.",
           "tm": "At least one resource with a rate > 0 is required.",
           "cp": "Select at least one cost category and set a margin rate.",
           "rmb": "Select at least one expense category.",
@@ -1016,7 +1026,8 @@
           "resp_alloc": "Each manager must have a user and an allocation > 0.",
           "resp_total": "Total allocations ({{total}}) must equal the budget ({{budget}}).",
           "planning": "Billing start date required.",
-          "incomplete": "Please complete all required fields before continuing."
+          "incomplete": "Please complete all required fields before continuing.",
+          "pays": "country of origin"
         },
         "err": {
           "load": "Unable to load the project. Try again.",
@@ -1024,7 +1035,10 @@
           "create": "Error while creating.",
           "config": "Configuration error.",
           "activate": "Activation error."
-        }
+        },
+        "loading": "Loading the project…",
+        "breadcrumb_aria": "Breadcrumb",
+        "subtitle_new": "Fill in the project details, step by step."
       },
       "info": {
         "doc360_linked": "Linked to DOC360 project",
@@ -1054,7 +1068,51 @@
         "cur_euro": "Euro",
         "cur_dollar": "Dollar",
         "cur_tnd": "Tunisian Dinar",
-        "cur_mad": "Moroccan Dirham"
+        "cur_mad": "Moroccan Dirham",
+        "pays_label": "Country of origin",
+        "pays_ph": "Select the country",
+        "pays_hint": "Drives the project reference sequence. Cannot be changed afterwards.",
+        "pays_locked": "set at creation",
+        "modes": {
+          "AV": {
+            "label": "Fixed price",
+            "desc": "Billed on the completion rate approved each month by the project manager."
+          },
+          "TM": {
+            "label": "Time & Materials",
+            "desc": "Billed on approved timesheet hours × the contractual rate of each resource."
+          },
+          "CP": {
+            "label": "Cost-Plus",
+            "desc": "Actual costs billed with a contractual margin rate on top."
+          },
+          "LIVRABLE": {
+            "label": "Document deliverables",
+            "desc": "Billing triggered when deliverables defined per discipline and WBS are approved."
+          }
+        },
+        "budget": {
+          "AV": {
+            "label": "Contract amount",
+            "hint": "Total contract amount. The CTR/BPE/TQC split is applied to this amount."
+          },
+          "TM": {
+            "label": "Estimated budget",
+            "hint": "Estimated envelope. Actual billing is based on approved hours × contractual rates."
+          },
+          "CP": {
+            "label": "Estimated budget",
+            "hint": "Estimated envelope. Actual billing is based on actual costs + margin rate."
+          },
+          "RMB": {
+            "label": "Estimated budget",
+            "hint": "Estimated reimbursement envelope. Actual billing is based on approved expenses."
+          },
+          "LIVRABLE": {
+            "label": "Contract amount",
+            "hint": "Total contract amount. Configured deliverables (per discipline/WBS) are attached to it."
+          }
+        }
       },
       "doc360": {
         "title": "1. Project origin",
@@ -1082,19 +1140,8 @@
         "total": "Total",
         "warn_exact": "The sum must be exactly 100%.",
         "warn_missing": "{{n}}% missing.",
-        "warn_excess": "Excess of {{n}}%."
-      },
-      "jal": {
-        "info_pre": "The sum of the milestone amounts must equal the",
-        "info_contract": "contract amount",
-        "badge": "Milestone {{n}}",
-        "label_ph": "Milestone label *",
-        "amount_ph": "Amount *",
-        "desc_ph": "Description (optional)",
-        "add": "Add a milestone",
-        "total_jalons": "Milestone total",
-        "contract_amount": "Contract amount",
-        "warning": "The sum of the milestones must equal the contract amount."
+        "warn_excess": "Excess of {{n}}%.",
+        "rows_title": "CTR / BPE / TQC split"
       },
       "tm": {
         "info": "Select the staff members and set their billing rates. Rates will be locked after the first invoice.",
@@ -1147,7 +1194,8 @@
           "validate": "Validate and pre-fill",
           "err_select": "Select at least one staff member.",
           "err_calc": "Error while calculating the rates."
-        }
+        },
+        "rows_title": "Assigned resources"
       },
       "cp": {
         "margin_title": "Contractual margin rate",
@@ -1283,7 +1331,9 @@
         "col_rate": "Rate",
         "col_internal_cost": "Internal cost",
         "type_id_hash": "Type ID #{{id}}",
-        "user_hash": "User #{{id}}"
+        "user_hash": "User #{{id}}",
+        "pays": "Country of origin",
+        "livrable_configured": "Deliverables were configured in the \"Billing mode\" step."
       }
     },
     "form": {
@@ -1653,6 +1703,46 @@
           "err_size": "File too large (maximum 5 MB).",
           "err_submit": "Error during submission."
         }
+      }
+    },
+    "EXPENSES": {
+      "TAB": "Expenses",
+      "FORM": {
+        "CATEGORY": "Expense category",
+        "CATEGORY_PH": "Select a category",
+        "AMOUNT": "Amount",
+        "CURRENCY": "Currency",
+        "DATE": "Expense date",
+        "RECEIPT": "Receipt",
+        "RECEIPT_REQUIRED_HINT": "Required for this category — JPEG, PNG or PDF, 5 MB max.",
+        "RECEIPT_OPTIONAL_HINT": "Optional for this category — JPEG, PNG or PDF, 5 MB max.",
+        "COMMENT": "Comment",
+        "COMMENT_PH": "Describe the expense…",
+        "SUBMIT": "Submit expense",
+        "ERR_SUBMIT": "Could not submit the expense.",
+        "DATE_PH": "Select a date"
+      },
+      "HISTORY": {
+        "SEARCH": "Search an expense…",
+        "FILTERS": "Filters",
+        "APPLY": "Apply",
+        "CANCEL": "Cancel",
+        "RESET": "Reset",
+        "CONFIRM": "Confirm",
+        "ALL": "All",
+        "COL_DATE": "Date",
+        "COL_CATEGORY": "Category",
+        "COL_AMOUNT": "Amount",
+        "COL_RECEIPT": "Receipt",
+        "COL_STATUS": "Status",
+        "COL_REASON": "Reason",
+        "NO_RECEIPT": "None",
+        "EMPTY": "No expense submitted on this project.",
+        "VALIDATE": "Approve expense",
+        "REFUSE": "Reject expense",
+        "REFUSE_TITLE": "Reject expense",
+        "REASON_LABEL": "Rejection reason",
+        "REASON_PH": "Explain the rejection…"
       }
     }
   },
@@ -2697,7 +2787,12 @@
       "ERR_LOAD": "Loading error.",
       "ERR_GENERIC": "Error.",
       "DEACTIVATE_TITLE": "Deactivate value",
-      "DEACTIVATE_CONFIRM": "Deactivate value \"{{code}}\"?"
+      "DEACTIVATE_CONFIRM": "Deactivate value \"{{code}}\"?",
+      "COL_RECEIPT": "Receipt",
+      "RECEIPT_YES": "Required",
+      "RECEIPT_NO": "Optional",
+      "RECEIPT_REQUIRED": "Receipt required",
+      "RECEIPT_HINT": "When checked, submitting an expense in this category will require an attachment."
     },
     "FOREX": {
       "INFO_1": "Rates convert cost line amounts to EUR and CHF during P&L calculations. The CHF rate is calculated automatically (",
@@ -2758,6 +2853,113 @@
       "SUCCESS_SAVED": "Configuration saved.",
       "ERR_SAVE": "Save error.",
       "ERR_REFRESH": "Error during refresh."
+    }
+  },
+  "ENUMS": {
+    "AFFAIRE_STATUT": {
+      "DRAFT": "Draft",
+      "CONFIGURED": "Configured",
+      "EN_COURS": "In progress",
+      "SUSPENDUE": "Suspended",
+      "CLOTUREE": "Closed",
+      "ARCHIVEE": "Archived"
+    },
+    "INVOICE_STATUT": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "APPROVED": "Approved",
+      "EMITTED": "Issued",
+      "SENT": "Sent",
+      "PARTIALLY_PAID": "Partially paid",
+      "PAID": "Paid",
+      "RETURNED": "Returned",
+      "DISPUTED": "Disputed",
+      "CANCELLED": "Cancelled",
+      "CREDIT_NOTED": "Credit noted"
+    },
+    "INVOICE_TYPE": {
+      "ACOMPTE": "Down payment",
+      "SITUATION": "Progress invoice",
+      "FINALE": "Final invoice",
+      "AVOIR": "Credit note",
+      "PROFORMA": "Proforma"
+    },
+    "TS_STATUT": {
+      "CREATED": "Created",
+      "VALID_TECHNIQUE": "Technically approved",
+      "VALID_COMMERCIALE": "Commercially approved",
+      "INTEGRE": "Added to budget",
+      "FACTURE": "Invoiced",
+      "ANNULE": "Cancelled"
+    },
+    "EXPENSE_STATUT": {
+      "EN_ATTENTE": "Pending",
+      "VALIDE": "Approved",
+      "REJETE": "Rejected",
+      "INTEGRE": "Integrated"
+    },
+    "BILLING_LINE_STATUT": {
+      "BROUILLON": "Draft",
+      "EN_ATTENTE_RF": "Pending finance manager",
+      "VALIDE_RF": "Approved by finance manager",
+      "EN_ATTENTE_DF": "Pending finance director",
+      "VALIDE_DF": "Approved by finance director",
+      "FACTURE": "Invoiced",
+      "A_VERIFIER": "To review",
+      "RETOURNE": "Returned",
+      "ANNULE": "Cancelled"
+    },
+    "BILLING_LOT_STATUT": {
+      "EN_ATTENTE_MANAGER": "Pending manager",
+      "VALIDE_MANAGER": "Approved by manager",
+      "EN_ATTENTE_RF": "Pending finance manager",
+      "VALIDE_RF": "Approved by finance manager",
+      "EN_ATTENTE_DF": "Pending finance director",
+      "VALIDE_DF": "Approved by finance director",
+      "FACTURE": "Invoiced",
+      "RETOURNE": "Returned",
+      "ANNULE": "Cancelled"
+    },
+    "JALON_STATUT": {
+      "A_FACTURER": "To invoice",
+      "EN_COURS": "In progress",
+      "EN_ATTENTE_VALIDATION": "Pending approval",
+      "FACTURE": "Invoiced",
+      "ANNULE": "Cancelled"
+    },
+    "BILLING_MODE": {
+      "AV": "Fixed price",
+      "JAL": "Milestones",
+      "TM": "Time & Materials",
+      "CP": "Cost + Margin",
+      "RMB": "Reimbursement",
+      "LIVRABLE": "Deliverables"
+    },
+    "BILLING_PERIOD": {
+      "MONTHLY": "Monthly",
+      "QUARTERLY": "Quarterly",
+      "YEARLY": "Yearly",
+      "ON_DEMAND": "On demand"
+    },
+    "PAYMENT_METHOD": {
+      "BANK_TRANSFER": "Bank transfer",
+      "CHECK": "Cheque",
+      "CASH": "Cash",
+      "CARD": "Card",
+      "DIRECT_DEBIT": "Direct debit",
+      "OTHER": "Other"
+    },
+    "RESOURCE_TYPE": {
+      "INTERNAL": "Internal",
+      "EXTERNAL": "External"
+    },
+    "RATE_TYPE": {
+      "DAILY": "Daily",
+      "HOURLY": "Hourly"
+    },
+    "MODE_AFFECTATION": {
+      "MANUEL": "Manual",
+      "AUTO": "Automatic"
     }
   }
 }

@@ -1,8 +1,12 @@
 import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
-import { Observable, forkJoin, of }             from 'rxjs';
+import { Observable, forkJoin }                 from 'rxjs';
 import { TranslatePipe, TranslateService }       from '@ngx-translate/core';
-import { StepperStep, StepperConfig, CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
+import {
+  StepperStep, StepperConfig, StepperComponent, ButtonComponent,
+  PageComponent, PageHeaderComponent,
+} from '@khalilrebhiitec/daf360';
+import type { BreadcrumbItem, PageHeaderBadge } from '@khalilrebhiitec/daf360';
 
 import { AffaireWizardService }          from '../affaire-wizard.service';
 import { AffaireDraftState, mapDraftToState } from '../affaire-wizard.model';
@@ -18,13 +22,18 @@ import { WizardStepRecapComponent }      from './steps/wizard-step-recap.compone
 
 const STEP_ICONS = ['description', 'business_center', 'receipt_long', 'group', 'calendar_month', 'fact_check'];
 
+/** Modes ayant encore un endpoint `PATCH /config/{mode}` à l'étape 3. */
+const CONFIGURABLE_MODES = new Set<string>(['AV', 'TM', 'CP', 'RMB']);
+
 @Component({
   selector: 'app-affaire-wizard',
   standalone: true,
   imports: [
     RouterLink,
     TranslatePipe,
-    CardComponent,
+    PageComponent,
+    PageHeaderComponent,
+    StepperComponent,
     ButtonComponent,
     WizardStepDoc360Component,
     WizardStepInfoComponent,
@@ -54,6 +63,11 @@ export class AffaireWizardComponent implements OnInit {
   readonly id       = input<string>();   // bound from route :id via withComponentInputBinding()
   readonly editMode = signal(false);
 
+  /**
+   * Les six étapes, dans l'ordre des numéros portés par `currentStep` (1-based).
+   * `firstStep()` dit laquelle est la première ATTEIGNABLE : en édition l'origine
+   * DOC360 n'a plus de sens, l'assistant démarre donc à « Infos générales ».
+   */
   readonly wizardSteps = computed<StepperStep[]>(() => {
     this.translate.currentLang();
     return [
@@ -66,6 +80,20 @@ export class AffaireWizardComponent implements OnInit {
     ];
   });
 
+  /** Numéro (1-based) de la première étape atteignable. */
+  readonly firstStep = computed(() => this.editMode() ? 2 : 1);
+
+  /**
+   * Ce que la barre affiche : les étapes réellement atteignables. En édition, l'étape
+   * 1 est retirée du rail plutôt que grisée — un rail qui montre une étape à laquelle
+   * on ne peut pas aller n'aide personne.
+   */
+  readonly stepperSteps = computed<StepperStep[]>(() =>
+    this.wizardSteps().slice(this.firstStep() - 1));
+
+  /** Le rail est 0-based et peut être tronqué en tête : d'où le décalage. */
+  readonly stepperIndex = computed(() => this.currentStep() - this.firstStep());
+
   readonly stepperConfig = computed((): StepperConfig => {
     this.translate.currentLang();
     return {
@@ -74,8 +102,81 @@ export class AffaireWizardComponent implements OnInit {
       cancelLabel: this.translate.instant('AFFAIRES.wizard.shell.cancel'),
       finishLabel: (this.editMode() && !this.resumeDraft()) ? this.translate.instant('AFFAIRES.wizard.shell.save') : this.translate.instant('AFFAIRES.wizard.shell.activate'),
       showCancel:  true,
+      // Le rail est une bande de progression : la navigation reste dans la barre.
+      chrome: 'header-only',
+      // Retour en arrière au clic — mais jamais de saut en avant : chaque « Suivant »
+      // enregistre l'étape courante, sauter dessus laisserait le brouillon incomplet.
+      clickableSteps: true,
+      stepperLabel: this.translate.instant('AFFAIRES.wizard.shell.progression'),
     };
   });
+
+  /** `index` est relatif au rail tronqué — on le ramène en numéro d'étape. */
+  onStepClick(index: number): void {
+    const target = index + this.firstStep();
+    if (target < this.currentStep()) {
+      this.serverError.set(null);
+      this.currentStep.set(target);
+    }
+  }
+
+  // ── En-tête de page ────────────────────────────────────────────────────
+
+  readonly pageTitle = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(this.editMode()
+      ? 'AFFAIRES.wizard.shell.title_edit'
+      : 'AFFAIRES.wizard.shell.title_new');
+  });
+
+  /** Le sous-titre porte la référence dès qu'elle existe : c'est ce qu'on cherche des yeux. */
+  readonly pageSubtitle = computed(() => {
+    this.translate.currentLang();
+    const d = this.draft();
+    return [d.reference, d.intitule].filter(Boolean).join(' · ')
+      || this.translate.instant('AFFAIRES.wizard.shell.subtitle_new');
+  });
+
+  /**
+   * Le résumé de l'affaire en cours de saisie, en pastilles sur le titre — ce qui a
+   * remplacé la carte « Résumé » de la colonne de droite (et donc la colonne elle-même,
+   * le formulaire prenant toute la largeur).
+   *
+   * Une valeur non encore saisie ne produit PAS de pastille vide : une pastille
+   * « Client — » n'apprend rien et occupe la ligne. La rangée se remplit donc au fil des
+   * étapes, ce qui est aussi ce qui la rend lisible d'un coup d'œil.
+   *
+   * Le mode et le budget sont teintés (ils portent l'engagement financier), le reste
+   * reste neutre pour que la rangée ne devienne pas un arc-en-ciel.
+   */
+  readonly headerBadges = computed<PageHeaderBadge[]>(() => {
+    this.translate.currentLang();
+    const d = this.draft();
+    const badges: PageHeaderBadge[] = [];
+
+    if (d.paysLabel)   badges.push({ label: d.paysLabel,   icon: 'public',      variant: 'neutral' });
+    if (d.clientName)  badges.push({ label: d.clientName,  icon: 'business',    variant: 'neutral' });
+    if (d.billingMode) badges.push({ label: this.billingModeLabel(), icon: 'receipt_long', variant: 'teal' });
+    if (d.budgetPrevisionnel) {
+      badges.push({ label: this.formatBudget(), icon: 'payments', variant: 'secondary' });
+    }
+    return badges;
+  });
+
+  readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    this.translate.currentLang();
+    return [
+      { label: this.translate.instant('AFFAIRES.wizard.shell.breadcrumb_affaires'), link: this.cancelRoute() },
+      { label: this.pageTitle() },
+    ];
+  });
+
+  /**
+   * Squelette pleine page réservé au chargement initial d'un brouillon existant (§5).
+   * Signal explicite, et non `draftId() === null` : sur échec de chargement il n'y a
+   * jamais d'id, et la page resterait en squelette au lieu d'afficher l'erreur.
+   */
+  readonly isLoading = signal(false);
 
   currentStep = signal(1);
   draftId     = signal<number | null>(null);
@@ -107,6 +208,7 @@ export class AffaireWizardComponent implements OnInit {
     switch (this.currentStep()) {
       case 2: {
         const missing: string[] = [];
+        if (!d.paysId)                                          missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.pays'));
         if (!d.clientId)                                        missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.client'));
         else if (!d.clientKycDone)                              missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.kyc'));
         if (!d.intitule?.trim())                                missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.intitule'));
@@ -118,12 +220,11 @@ export class AffaireWizardComponent implements OnInit {
       case 3: {
         if (this.editMode() && d.billingModeLocked) return null;
         if (!d.billingMode) return this.translate.instant('AFFAIRES.wizard.shell.val.select_mode_prev');
-        const budget = d.budgetPrevisionnel ?? 0;
         switch (d.billingMode) {
-          case 'AV':  return this.translate.instant('AFFAIRES.wizard.shell.val.av');
-          case 'JAL':      return this.translate.instant('AFFAIRES.wizard.shell.val.jal', { budget: budget.toLocaleString('fr-FR'), currency: d.contractCurrency });
+          case 'AV':       return this.translate.instant('AFFAIRES.wizard.shell.val.av');
           case 'TM':       return this.translate.instant('AFFAIRES.wizard.shell.val.tm');
           case 'CP':       return this.translate.instant('AFFAIRES.wizard.shell.val.cp');
+          // Plus proposé à la création — une affaire RMB existante reste configurable.
           case 'RMB':      return this.translate.instant('AFFAIRES.wizard.shell.val.rmb');
           case 'LIVRABLE': return this.translate.instant('AFFAIRES.wizard.shell.val.livrable');
           default:         return null;
@@ -157,7 +258,7 @@ export class AffaireWizardComponent implements OnInit {
 
       case 2:
         return !!(
-          d.clientId && d.clientKycDone && d.intitule?.trim() &&
+          d.paysId && d.clientId && d.clientKycDone && d.intitule?.trim() &&
           d.billingMode && d.budgetPrevisionnel && d.budgetPrevisionnel > 0 &&
           d.contractCurrency?.trim()
         );
@@ -165,15 +266,10 @@ export class AffaireWizardComponent implements OnInit {
       case 3: {
         if (this.editMode() && d.billingModeLocked) return true;
         if (!d.billingMode) return false;
-        const budget = d.budgetPrevisionnel ?? 0;
         switch (d.billingMode) {
           case 'AV':
             return d.repartitionTotal === 100 && d.repartitions.length > 0
                    && d.repartitions.every(r => r.repartitionTypeId > 0);
-          case 'JAL': {
-            const balanced = budget > 0 && Math.abs(d.jalonTotal - budget) < 0.001;
-            return d.jalons.length > 0 && d.jalons.every(j => j.label.trim()) && balanced;
-          }
           case 'TM':
             return d.ressources.length > 0 && d.ressources.every(r => r.userId > 0 && r.rateAmount > 0);
           case 'CP':
@@ -227,8 +323,7 @@ export class AffaireWizardComponent implements OnInit {
   }
 
   goPrev(): void {
-    const minStep = this.editMode() ? 2 : 1;
-    if (this.currentStep() > minStep) this.currentStep.update(s => s - 1);
+    if (this.currentStep() > this.firstStep()) this.currentStep.update(s => s - 1);
   }
 
   ngOnInit(): void {
@@ -236,11 +331,17 @@ export class AffaireWizardComponent implements OnInit {
     if (rawId) {
       this.editMode.set(true);
       this.loadExistingDraft(Number(rawId));
+      return;
     }
+    // Création : le pays du créateur est le cas de très loin le plus fréquent, donc il
+    // est proposé d'emblée — l'étape reste modifiable tant que l'affaire n'existe pas.
+    const paysId = this.userStore.user()?.paysId;
+    if (paysId) this.draft.update(d => ({ ...d, paysId }));
   }
 
   private loadExistingDraft(id: number): void {
     this.isSaving.set(true);
+    this.isLoading.set(true);
     forkJoin({
       draft:  this.wizardService.loadDraft(id) as Observable<any>,
       detail: this.affaireSvc.getAffaire(id),
@@ -257,10 +358,12 @@ export class AffaireWizardComponent implements OnInit {
         this.draftId.set(id);
         this.currentStep.set(2);
         this.isSaving.set(false);
+        this.isLoading.set(false);
       },
       error: () => {
         this.serverError.set(this.translate.instant('AFFAIRES.wizard.shell.err.load'));
         this.isSaving.set(false);
+        this.isLoading.set(false);
       },
     });
   }
@@ -294,6 +397,7 @@ export class AffaireWizardComponent implements OnInit {
     const d = this.draft();
     this.wizardService.createDraft({
       refId:                 this.userStore.user()?.userId,
+      paysId:                d.paysId || null,
       clientId:              d.clientId,
       intitule:              d.intitule.trim(),
       reference:             d.reference?.trim()    || null,
@@ -301,7 +405,9 @@ export class AffaireWizardComponent implements OnInit {
       doc360Ref:             d.doc360Ref?.trim()    || null,
       doc360ServerReference: d.doc360ServerReference || null,
       erpReference:          d.doc360ErpReference?.trim() || null,
-      billingMode:           d.billingMode === 'LIVRABLE' ? 'JAL' : (d.billingMode || null),
+      // LIVRABLE part enfin sous son propre code : le backend le refusait (regex du
+      // DTO limitée à AV|JAL|TM|CP|RMB), d'où l'ancien détour par JAL.
+      billingMode:           d.billingMode || null,
       budgetPrevisionnel:    d.budgetPrevisionnel   ?? null,
       contractCurrency:      d.contractCurrency     || 'EUR',
       billingPeriod:         d.billingPeriod        || 'MONTHLY',
@@ -311,7 +417,9 @@ export class AffaireWizardComponent implements OnInit {
         this.draft.update(prev => ({
           ...prev,
           id:                 result['id']                 as number,
-          paysId:             result['paysId']             as number  ?? 0,
+          // Le serveur a le dernier mot sur le pays : si le champ est resté vide il
+          // le déduit du créateur, et l'étape doit refléter ce qui a été enregistré.
+          paysId:             result['paysId']             as number  ?? prev.paysId,
           contractAmount:     result['contractAmount']     as number  ?? undefined,
           budgetPrevisionnel: result['budgetPrevisionnel'] as number  ?? prev.budgetPrevisionnel,
         }));
@@ -339,8 +447,11 @@ export class AffaireWizardComponent implements OnInit {
     const d    = this.draft();
     const mode = d.billingMode!;
 
-    // LIVRABLE: livrables already saved directly by the component — just advance
-    if (mode === 'LIVRABLE') {
+    // LIVRABLE: livrables already saved directly by the component — just advance.
+    // Idem pour un mode qui n'a plus d'endpoint de configuration (brouillon 'JAL'
+    // d'avant le passage à LIVRABLE) : rien à enregistrer, on laisse l'utilisateur
+    // finir son brouillon plutôt que de le bloquer sur une étape sans issue.
+    if (mode === 'LIVRABLE' || !CONFIGURABLE_MODES.has(mode)) {
       this.currentStep.set(4);
       return;
     }
@@ -356,8 +467,6 @@ export class AffaireWizardComponent implements OnInit {
               percentage: r.percentage,
             })),
           });
-        case 'JAL':
-          return this.wizardService.configureJAL(id, { jalons: d.jalons });
         case 'TM':
           return this.wizardService.configureTM(id, {
             ressources: d.ressources.map(r => ({
@@ -477,18 +586,18 @@ export class AffaireWizardComponent implements OnInit {
   readonly cardTitle = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.card.t' + this.currentStep()); });
   readonly cardSub   = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.card.s' + this.currentStep()); });
   readonly cardIcon  = computed(() => STEP_ICONS[this.currentStep() - 1]);
-  readonly stepTip   = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.tips.' + this.currentStep()); });
 
+  /**
+   * Le nom du mode dans le résumé. Une seule clé par code (`…shell.mode.AV`), donc
+   * un mode ajouté demain n'a plus à être branché ici — et un mode hérité qui n'est
+   * plus proposé (RMB, ou un vieux JAL) garde quand même un libellé lisible.
+   */
   billingModeLabel(): string {
-    switch (this.draft().billingMode) {
-      case 'AV':      return this.translate.instant('AFFAIRES.wizard.shell.mode.av');
-      case 'JAL':     return this.translate.instant('AFFAIRES.wizard.shell.mode.jal');
-      case 'TM':      return this.translate.instant('AFFAIRES.wizard.shell.mode.tm');
-      case 'CP':      return this.translate.instant('AFFAIRES.wizard.shell.mode.cp');
-      case 'RMB':     return this.translate.instant('AFFAIRES.wizard.shell.mode.rmb');
-      case 'LIVRABLE': return this.translate.instant('AFFAIRES.wizard.shell.mode.livrable');
-      default:        return this.translate.instant('AFFAIRES.wizard.shell.mode.none');
-    }
+    const mode = this.draft().billingMode;
+    if (!mode) return this.translate.instant('AFFAIRES.wizard.shell.mode.none');
+    const key   = `AFFAIRES.wizard.shell.mode.${mode}`;
+    const label = this.translate.instant(key);
+    return label === key ? mode : label;
   }
 
   formatBudget(): string {

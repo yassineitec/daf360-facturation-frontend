@@ -1,27 +1,36 @@
-<div class="wizard-page">
-  <div class="wizard-layout">
+<!-- Assistant « Nouvelle affaire » — sur le squelette de page maison (UI-PLAYBOOK §1) :
+     `daf-page` porte le rythme vertical et l'état de chargement, `daf-page-header`
+     porte le h1 et le fil d'Ariane. Plus de `.wizard-page` / `.page-head` maison, donc
+     l'assistant s'aligne enfin sur la liste et la fiche affaire.
 
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- LEFT — form area                                              -->
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <div class="form-area">
+     `kpis="0"` : pas de rangée d'indicateurs, le squelette de premier chargement ne doit
+     pas en dessiner. Aucun `icon` sur l'en-tête — jamais, sur aucune page.
 
-      <!-- ── Page header ───────────────────────────────────────────── -->
-      <div class="page-head">
-        <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
-          <a class="font-medium hover:underline transition-colors" [routerLink]="cancelRoute()">
-            {{ 'AFFAIRES.wizard.shell.breadcrumb_affaires' | translate }}
-          </a>
-          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span class="font-medium" style="color:#50717b">{{ (editMode() ? 'AFFAIRES.wizard.shell.title_edit' : 'AFFAIRES.wizard.shell.title_new') | translate }}</span>
-        </nav>
-        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ (editMode() ? 'AFFAIRES.wizard.shell.title_edit' : 'AFFAIRES.wizard.shell.title_new') | translate }}</h1>
-      </div>
+     La barre d'actions est en bas d'écran et vit À LA RACINE du composant, hors de
+     `daf-page` : elle est `position: fixed` et n'importe quel ancêtre portant
+     transform / filter / backdrop-filter deviendrait son bloc conteneur (§10e). -->
 
-      <!-- ── Form card ────────────────────────────────────────────── -->
+<daf-page [loading]="isLoading()" [kpis]="0" [breadcrumbs]="true"
+          [loadingLabel]="'AFFAIRES.wizard.shell.loading' | translate">
+
+  <!-- Le résumé de la saisie vit dans les pastilles du titre : pays, client, mode et
+       montant. C'est ce qui a remplacé la carte « Résumé » de la colonne de droite —
+       et donc la colonne, le formulaire occupant désormais toute la largeur. -->
+  <daf-page-header
+    [title]="pageTitle()"
+    [subtitle]="pageSubtitle()"
+    [badges]="headerBadges()"
+    [breadcrumbs]="breadcrumbs()"
+    [breadcrumbLabel]="'AFFAIRES.wizard.shell.breadcrumb_aria' | translate" />
+
+  <!-- Une seule colonne depuis que le résumé est passé en pastilles de titre. Aucun
+       rembourrage bas : la barre d'actions est `sticky`, elle occupe sa propre place
+       en fin de flux et ne recouvre donc jamais le dernier champ. -->
+  <div style="display:flex; flex-direction:column; gap:1rem">
+
       <div class="form-card">
 
-        <!-- Card head: icon + step title + sub -->
+        <!-- Titre de l'étape courante -->
         <div class="card-head">
           <div class="card-head__icon">
             <span class="material-symbols-outlined">{{ cardIcon() }}</span>
@@ -32,7 +41,7 @@
           </div>
         </div>
 
-        <!-- Step body -->
+        <!-- Corps de l'étape -->
         <div class="step-body">
 
           @if (currentStep() === 1) {
@@ -44,6 +53,7 @@
           @if (currentStep() === 2) {
             <app-wizard-step-info
               [draft]="draft()"
+              [paysLocked]="editMode()"
               (draftChange)="onDraftChange($event)" />
           }
 
@@ -74,7 +84,7 @@
 
         </div><!-- /step-body -->
 
-        <!-- Validation hint -->
+        <!-- Ce qui manque pour continuer -->
         @if (!canGoNext() && !isSaving() && currentStep() !== 1) {
           <div class="validation-hint">
             <span class="material-symbols-outlined">info</span>
@@ -82,7 +92,6 @@
           </div>
         }
 
-        <!-- Error banner -->
         @if (serverError()) {
           <div class="error-banner">
             <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">error</span>
@@ -90,7 +99,6 @@
           </div>
         }
 
-        <!-- Saving indicator -->
         @if (isSaving()) {
           <div class="saving-hint">
             <span class="material-symbols-outlined saving-spin">progress_activity</span>
@@ -100,7 +108,6 @@
 
       </div><!-- /form-card -->
 
-      <!-- Brouillon footer -->
       @if (!editMode()) {
         <div class="form-footer">
           <a [routerLink]="cancelRoute()" [queryParams]="{ statut: 'DRAFT' }" class="draft-link">
@@ -110,92 +117,60 @@
         </div>
       }
 
-    </div><!-- /form-area -->
+  </div>
 
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- RIGHT — sidebar (progression + résumé + conseil)            -->
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <aside class="sidebar">
+  <!-- ══════════════════════════════════════════════════════════════════════
+       BARRE D'ACTIONS — progression + navigation
+       `position: sticky` et NON `fixed`, et à l'INTÉRIEUR de daf-page : le
+       conteneur de défilement est `.shell-content`, qui porte la marge gauche de
+       la barre latérale (256 px) et les gouttières de la page. Une barre `fixed`
+       se cale sur la fenêtre, donc elle passait sous la barre latérale et se
+       retrouvait décentrée par rapport au formulaire. En `sticky`, elle est un
+       enfant du flux : elle prend exactement la largeur de la colonne de contenu,
+       s'aligne au pixel sur la carte de formulaire, et suit toute seule le repli
+       de la barre latérale en dessous de 768 px — sans une seule media query.
+       Elle occupe aussi sa place en fin de flux, ce qui remplace le rembourrage
+       bas artificiel qu'il fallait ajouter pour dégager une barre `fixed`.
+       `daf-stepper` en `chrome: 'header-only'` : le rail et rien d'autre, comme
+       `daf-tabs` est une bande sans panneau — la navigation reste à nous.
+       ══════════════════════════════════════════════════════════════════ -->
+  <div class="action-bar rounded-xl border border-outline-variant bg-surface-container-lowest
+              p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
+       style="position:sticky; bottom:1rem; z-index:40; display:flex; flex-wrap:wrap;
+              align-items:center; justify-content:space-between; gap:1rem">
 
-      <!-- Boutons navigation -->
-      <div class="panel-nav">
-        @if (currentStep() > (editMode() ? 2 : 1)) {
-          <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
-            (onClick)="goPrev()" />
-        } @else {
-          <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: stepperConfig().cancelLabel, iconStart: 'close' }"
-            (onClick)="cancelWizard()" />
-        }
-        <daf-button class="panel-nav__next"
-          [options]="{
-            variant: 'teal',
-            pill: true,
-            fullWidth: true,
-            label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
-            iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
-            loading: isSaving(),
-            disabled: !canGoNext() || isSaving()
-          }"
-          (onClick)="goNext()" />
-      </div>
+    <!-- Rail : cliquable en arrière uniquement (voir onStepClick) -->
+    <div style="flex:1 1 320px; min-width:0">
+      <daf-stepper
+        orientation="horizontal"
+        [steps]="stepperSteps()"
+        [currentStep]="stepperIndex()"
+        [config]="stepperConfig()"
+        (stepClick)="onStepClick($event)" />
+    </div>
 
-      <!-- Progression -->
-      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
-        <div class="panel-header">
-          <p class="panel__label">{{ 'AFFAIRES.wizard.shell.progression' | translate }}</p>
-        </div>
+    <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
+      @if (currentStep() > firstStep()) {
+        <daf-button
+          [options]="{ variant: 'ghost', pill: true, label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
+          (onClick)="goPrev()" />
+      } @else {
+        <daf-button
+          [options]="{ variant: 'ghost', pill: true, label: stepperConfig().cancelLabel, iconStart: 'close' }"
+          (onClick)="cancelWizard()" />
+      }
+      <daf-button
+        [options]="{
+          variant: 'teal',
+          pill: true,
+          label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
+          iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
+          loading: isSaving(),
+          disabled: !canGoNext() || isSaving()
+        }"
+        (onClick)="goNext()" />
+    </div>
 
-        <div class="panel-body">
-          <div class="step-list">
-            @for (step of wizardSteps(); track $index; let i = $index) {
-              <div class="step-item"
-                   [class.step-item--done]="currentStep() > i + 1"
-                   [class.step-item--active]="currentStep() === i + 1">
-                <div class="step-num">
-                  @if (currentStep() > i + 1) {
-                    <span class="material-symbols-outlined"
-                          style="font-variation-settings:'FILL' 1;font-size:16px">check</span>
-                  } @else {
-                    {{ i + 1 }}
-                  }
-                </div>
-                <span class="step-label">{{ step.title }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </daf-card>
+  </div>
 
-      <!-- Résumé -->
-      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
-        <div class="panel-header">
-          <p class="panel__label">{{ 'AFFAIRES.wizard.shell.summary' | translate }}</p>
-        </div>
-        <div class="panel-body">
-          <div class="summary-rows">
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'AFFAIRES.wizard.shell.sum_affaire' | translate }}</span>
-              <span class="summary-row__val">{{ draft().intitule || '—' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'AFFAIRES.wizard.shell.sum_client' | translate }}</span>
-              <span class="summary-row__val">{{ draft().clientName || '—' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'AFFAIRES.wizard.shell.sum_mode' | translate }}</span>
-              <span class="summary-row__val">{{ billingModeLabel() }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'AFFAIRES.wizard.shell.sum_budget' | translate }}</span>
-              <span class="summary-row__val">{{ formatBudget() }}</span>
-            </div>
-          </div>
-        </div>
-      </daf-card>
-
-    </aside><!-- /sidebar -->
-
-  </div><!-- /wizard-layout -->
-</div><!-- /wizard-page -->
+</daf-page>

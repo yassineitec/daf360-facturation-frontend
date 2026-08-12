@@ -12,7 +12,6 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { SupplierDto, SupplierStatsDto, CreateSupplierRequest, PageResponse } from '../supplier.model';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import {
-  MetricCardComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
   PaginationComponent,
   ToolbarComponent, ToolbarAction,
@@ -30,7 +29,7 @@ import { AffaireKpiCardComponent } from '../../affaires/components/affaire-kpi-c
   standalone: true,
   imports: [
     PermissionDirective,
-    MetricCardComponent, DataTableComponent, DafCellDirective,
+    DataTableComponent, DafCellDirective,
     PaginationComponent, ToolbarComponent,
     DafBadgeComponent, CardComponent, FormFieldComponent, SelectComponent,
     ButtonComponent, AffaireKpiCardComponent, TranslatePipe,

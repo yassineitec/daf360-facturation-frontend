@@ -139,6 +139,14 @@
                 [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, label: 'AFFAIRES.DETAIL.ACTIONS.NEW_TS' | translate, iconStart: 'post_add' }"
                 (onClick)="openTsForm()" />
 
+              <!-- Frais remboursables : ce n'est plus un mode de facturation mais une
+                   action de la fiche, disponible sur TOUTE affaire quel que soit son
+                   mode — d'où sa place ici, à côté de « Nouvelle facture ». -->
+              <daf-button
+                style="flex:1 1 45%"
+                [options]="expensesButtonOptions()"
+                (onClick)="openExpenses()" />
+
               <daf-button *appHasPermission="'FACT_UPDATE_AFFAIRE'"
                 style="flex:1 1 45%"
                 [options]="editButtonOptions()"
@@ -370,6 +378,11 @@
             <daf-data-table [columns]="invoiceColumns()" [rows]="invoiceRows()" [config]="invoiceConfig()" />
           }
 
+          <!-- ── Frais remboursables ──────────────────────────────────── -->
+          @if (activeTab() === 'frais') {
+            <app-expense-history [affaire]="aff" />
+          }
+
           <!-- ── Paiements ────────────────────────────────────────────── -->
           @if (activeTab() === 'paiements') {
             <daf-search-toolbar
@@ -528,6 +541,22 @@
 </daf-drawer>
 
 <!-- ══ Corps de modales (rendus par daf-modal via ModalService) ══ -->
+
+<!-- Frais remboursables — le panneau existant, ouvert depuis la carte d'identité.
+     `@if` sur l'affaire : le corps n'est instancié qu'à l'ouverture de la modale,
+     donc au moment où l'affaire est forcément chargée. -->
+<ng-template #expensesTpl>
+  @if (affaire(); as aff) {
+    <!-- Le FORMULAIRE seul : la modale ne contient qu'une section. L'historique a son
+         propre onglet, il n'a rien à faire dans une fenêtre de saisie.
+         `showSubmit=false` : les actions sont dans le pied de la modale, alignées sur une
+         seule ligne comme celles des autres modales de la page. -->
+    <app-expense-form #expenseForm
+      [affaire]="aff"
+      [showSubmit]="false"
+      (submitted)="onExpenseSubmitted()" />
+  }
+</ng-template>
 <ng-template #rowDetailTpl>
   <div class="flex flex-col">
     @for (f of modalRow()?.fields ?? []; track f.label) {
@@ -580,6 +609,11 @@
 </ng-template>
 
 <!-- Création d'un TS — composant applicatif existant, hors périmètre de cette passe -->
-@if (showTsForm()) {
-  <app-ts-form [affaireId]="numId" (closed)="onTsFormClosed($event)" />
-}
+<!-- Corps du formulaire TS — rendu par `daf-modal` via ModalService, comme les autres
+     modales de la page. Le composant ne dessine plus sa propre fenêtre. -->
+<ng-template #tsFormTpl>
+  <app-ts-form #tsForm
+    [affaireId]="numId"
+    [defaultDevise]="affaireDevise()"
+    (closed)="onTsFormClosed($event)" />
+</ng-template>

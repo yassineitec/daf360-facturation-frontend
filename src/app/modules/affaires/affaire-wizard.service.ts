@@ -19,10 +19,6 @@ export class AffaireWizardService {
     return this.http.patch(`${this.base}/${id}/config/av`, dto, { withCredentials: true });
   }
 
-  configureJAL(id: number, dto: unknown): Observable<unknown> {
-    return this.http.patch(`${this.base}/${id}/config/jal`, dto, { withCredentials: true });
-  }
-
   configureTM(id: number, dto: unknown): Observable<unknown> {
     return this.http.patch(`${this.base}/${id}/config/tm`, dto, { withCredentials: true });
   }

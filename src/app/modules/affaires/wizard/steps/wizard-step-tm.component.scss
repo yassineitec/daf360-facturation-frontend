@@ -6,6 +6,23 @@
   gap: 16px;
 }
 
+// ── En-tête de section (titre + action d'ajout) ─────────────────────────
+.section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  &__title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #44474c;
+  }
+}
+
+
 // ── Info banner ────────────────────────────────────────────────────────
 .info-banner {
   display: flex;
@@ -54,6 +71,12 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+
+  // `daf-form-field` n'a pas de classe d'hôte : son hôte reste `display: inline` et se
+  // réduit à son contenu, donc le `fullWidth` des options (qui ne touche que le champ
+  // interne) n'a rien à quoi s'étirer. En bloc, la cellule de grille lui donne enfin sa
+  // largeur. `daf-select` est déjà en bloc.
+  daf-form-field { display: block; width: 100%; }
 }
 
 .resource-col-2 { grid-column: span 2; }

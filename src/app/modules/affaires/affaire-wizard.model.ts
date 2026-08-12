@@ -1,92 +1,75 @@
-export type BillingMode = 'AV' | 'JAL' | 'TM' | 'CP' | 'RMB' | 'LIVRABLE';
+/**
+ * `RMB` n'est plus un mode proposé à la création — les frais remboursables sont
+ * devenus une action de la fiche affaire, pas un mode de facturation. Le code reste
+ * dans l'union parce que des affaires existantes le portent encore et doivent
+ * pouvoir être rouvertes dans l'assistant (voir BILLING_MODES).
+ *
+ * `JAL` a disparu : il ne servait plus qu'à héberger le mode LIVRABLE, que le
+ * backend refusait jusqu'ici (regex du DTO de brouillon). LIVRABLE est maintenant
+ * persisté sous son propre code.
+ */
+export type BillingMode = 'AV' | 'TM' | 'CP' | 'RMB' | 'LIVRABLE';
 
 export interface BillingModeOption {
   code: BillingMode;
-  labelFr: string;
-  labelEn: string;
-  description: string;
+  /** Clé i18n du nom du mode — jamais un libellé en dur : le choix se lit dans les deux langues. */
+  labelKey: string;
+  /** Clé i18n de la phrase explicative sous le nom. */
+  descKey: string;
   icon: string;
   requiresContractAmount: boolean;
 }
 
+/**
+ * Les modes RÉELLEMENT proposés à l'étape 2. `RMB` n'y est plus (action de la fiche
+ * affaire) et `JAL` non plus (remplacé par LIVRABLE) — mais les deux restent gérés
+ * partout ailleurs dans l'assistant pour les affaires déjà enregistrées avec.
+ */
 export const BILLING_MODES: BillingModeOption[] = [
   {
     code: 'AV',
-    labelFr: 'Facturation à l\'avancement',
-    labelEn: 'Progress Billing',
-    description: 'Facturation selon le taux d\'avancement validé chaque mois par le Chef de Projet.',
+    labelKey: 'AFFAIRES.wizard.info.modes.AV.label',
+    descKey:  'AFFAIRES.wizard.info.modes.AV.desc',
     icon: 'trending_up',
     requiresContractAmount: true,
   },
   {
     code: 'TM',
-    labelFr: 'Régie Time & Materials',
-    labelEn: 'Time & Materials',
-    description: 'Facturation basée sur les heures validées en timesheet × taux contractuels par ressource.',
+    labelKey: 'AFFAIRES.wizard.info.modes.TM.label',
+    descKey:  'AFFAIRES.wizard.info.modes.TM.desc',
     icon: 'schedule',
     requiresContractAmount: false,
   },
   {
     code: 'CP',
-    labelFr: 'Cost-Plus',
-    labelEn: 'Cost-Plus',
-    description: 'Facturation des coûts réels majorés d\'un taux de marge contractuel.',
+    labelKey: 'AFFAIRES.wizard.info.modes.CP.label',
+    descKey:  'AFFAIRES.wizard.info.modes.CP.desc',
     icon: 'add_circle',
     requiresContractAmount: false,
   },
   {
-    code: 'RMB',
-    labelFr: 'Remboursable',
-    labelEn: 'Reimbursable',
-    description: 'Refacturation des frais remboursables validés par le manager.',
-    icon: 'receipt',
-    requiresContractAmount: false,
-  },
-  {
     code: 'LIVRABLE',
-    labelFr: 'Livrables documentaires',
-    labelEn: 'Deliverables',
-    description: 'Facturation déclenchée à la validation de livrables documentaires définis par discipline et WBS.',
+    labelKey: 'AFFAIRES.wizard.info.modes.LIVRABLE.label',
+    descKey:  'AFFAIRES.wizard.info.modes.LIVRABLE.desc',
     icon: 'task',
     requiresContractAmount: true,
   },
 ];
 
-export const BUDGET_LABEL: Record<BillingMode, { label: string; hint: string }> = {
-  AV:  {
-    label: 'Montant contractuel',
-    hint:  'Montant total du contrat. La somme des répartitions CTR/BPE/TQC sera appliquée sur ce montant.',
-  },
-  JAL: {
-    label: 'Montant contractuel',
-    hint:  'Montant total du contrat. La somme des jalons doit être égale à ce montant.',
-  },
-  TM:  {
-    label: 'Budget prévisionnel',
-    hint:  'Enveloppe budgétaire estimée. La facturation réelle est basée sur les heures validées × taux contractuels.',
-  },
-  CP:  {
-    label: 'Budget prévisionnel',
-    hint:  'Enveloppe budgétaire estimée. La facturation réelle est basée sur les coûts réels + taux de marge.',
-  },
-  RMB: {
-    label: 'Budget prévisionnel',
-    hint:  'Enveloppe de remboursements estimée. La facturation réelle est basée sur les frais validés.',
-  },
-  LIVRABLE: {
-    label: 'Montant contractuel',
-    hint:  'Montant total du contrat. Les livrables configurés (par discipline/WBS) seront rattachés à ce montant.',
-  },
+/**
+ * Libellé et aide du champ montant, par mode — en clés i18n. `RMB` y figure encore :
+ * une affaire RMB existante rouverte dans l'assistant doit afficher son champ budget.
+ */
+export const BUDGET_LABEL: Record<BillingMode, { labelKey: string; hintKey: string }> = {
+  AV:       { labelKey: 'AFFAIRES.wizard.info.budget.AV.label',       hintKey: 'AFFAIRES.wizard.info.budget.AV.hint'       },
+  TM:       { labelKey: 'AFFAIRES.wizard.info.budget.TM.label',       hintKey: 'AFFAIRES.wizard.info.budget.TM.hint'       },
+  CP:       { labelKey: 'AFFAIRES.wizard.info.budget.CP.label',       hintKey: 'AFFAIRES.wizard.info.budget.CP.hint'       },
+  RMB:      { labelKey: 'AFFAIRES.wizard.info.budget.RMB.label',      hintKey: 'AFFAIRES.wizard.info.budget.RMB.hint'      },
+  LIVRABLE: { labelKey: 'AFFAIRES.wizard.info.budget.LIVRABLE.label', hintKey: 'AFFAIRES.wizard.info.budget.LIVRABLE.hint' },
 };
 
-export const WIZARD_STEPS_LABELS = [
-  'Recherche DOC360',
-  'Informations',
-  'Mode de facturation',
-  'Responsables & Budget',
-  'Planification',
-  'Récapitulatif',
-];
+/** Les modes dont le montant saisi est un **montant contractuel** et non une enveloppe. */
+export const CONTRACTUAL_MODES: ReadonlySet<BillingMode> = new Set<BillingMode>(['AV', 'LIVRABLE']);
 
 // ── DTOs matching backend ──────────────────────────────────────────────────────
 
@@ -121,8 +104,11 @@ export interface ResponsableItem {
 export interface AffaireDraftState {
   id?: number;
 
-  // paysId — NOT shown in UI; populated from backend response after draft creation
+  // Step 2 — Pays d'origine de l'affaire. Saisi à la création (il détermine la
+  // séquence de référence `AFF-<année>-<n>` et l'unicité `(référence, pays)`), puis
+  // en lecture seule : le changer après coup casserait les deux.
   paysId: number;
+  paysLabel?: string;
 
   // Step 1 — DOC360 project (optional)
   doc360ProjectName?: string;

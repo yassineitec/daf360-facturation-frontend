@@ -8,7 +8,10 @@ import { environment }         from '../../../../environments/environment';
 export type TauxStatut       = 'EN_ATTENTE' | 'VALIDE' | 'REFUSE';
 export type BillingLineStatut= 'EN_ATTENTE_DF' | 'VALIDE_DF' | 'FACTURE' | 'A_VERIFIER' | 'RETOURNE' | 'ANNULE';
 export type JalonStatut      = 'A_FACTURER' | 'EN_ATTENTE_VALIDATION' | 'FACTURE' | 'ANNULE';
-export type ExpenseStatut    = 'EN_ATTENTE' | 'VALIDE' | 'REFUSE';
+// Les quatre valeurs de la contrainte `CK_Expense_Statut`. `REFUSE` n'existe pas en
+// base — c'est `REJETE` — et le code le cherchait donc en vain : un frais rejeté
+// n'était jamais reconnu et son statut s'affichait brut.
+export type ExpenseStatut    = 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'INTEGRE';
 
 // ── Core DTOs ─────────────────────────────────────────────────────────────────
 
@@ -48,16 +51,33 @@ export interface JalonDto {
   statut:    JalonStatut;
 }
 
+/**
+ * Aligné champ pour champ sur `ExpenseItemDto` du backend — il ne l'était pas.
+ *
+ * L'interface déclarait `categorie`, `dateDepense` et `soumisAt`, trois noms que le
+ * serveur n'envoie jamais (`expenseCategoryId`, `expenseDate`, `createdAt`) : la
+ * catégorie, la date et l'horodatage étaient donc systématiquement vides dans le
+ * tableau des frais. Les champs de validation et de rejet, eux, n'étaient pas déclarés
+ * du tout, alors qu'ils portent l'essentiel de l'historique.
+ */
 export interface ExpenseDto {
-  id:              number;
-  affaireId:       number;
-  categorie:       string;
-  montant:         number;
-  dateDepense:     string;
-  statut:          ExpenseStatut;
-  justificatifUrl: string | null;
-  commentaire:     string | null;
-  soumisAt:        string;
+  id:                number;
+  affaireId:         number;
+  userId:            number;
+  expenseCategoryId: number;
+  montant:           number;
+  devise:            string;
+  expenseDate:       string;
+  commentaire:       string | null;
+  /** Null depuis que le justificatif dépend de la catégorie (V32/V33). */
+  justificatifUrl:   string | null;
+  justificatifName:  string | null;
+  statut:            ExpenseStatut;
+  billingLotId:      number | null;
+  motifRejet:        string | null;
+  validatedBy:       number | null;
+  validatedAt:       string | null;
+  createdAt:         string;
 }
 
 export interface AuditLogEntryDto {

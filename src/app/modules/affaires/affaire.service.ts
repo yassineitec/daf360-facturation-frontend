@@ -1,6 +1,6 @@
 import { Injectable, inject }          from '@angular/core';
 import { HttpClient, HttpParams }       from '@angular/common/http';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay } from 'rxjs';
 
 export interface EmployeeCostRates {
   cost: number | null;
@@ -136,9 +136,23 @@ export class AffaireService {
     );
   }
 
+  /**
+   * Référentiel des pays, mémorisé pour la session.
+   *
+   * Il est lu par l'assistant, la liste (une ligne sur deux affiche un pays) et la fiche
+   * affaire : sans `shareReplay`, chaque écran — et chaque changement de page de la liste —
+   * relancerait le même appel pour une table qui ne bouge pas. `catchError` est DANS le
+   * pipe partagé pour qu'un échec ne fige pas un cache vide indéfiniment... voir plus bas.
+   */
+  private paysCache$?: Observable<PaysRefDto[]>;
+
   getPays(): Observable<PaysRefDto[]> {
-    return this.http.get<PaysRefDto[]>(`${this.base}/ref/pays`).pipe(
-      catchError(() => of([] as PaysRefDto[])),
+    // Sur échec on ne mémorise rien : le prochain appelant retentera, au lieu de garder
+    // une liste vide pour toute la session (les libellés de pays ne reviendraient jamais).
+    this.paysCache$ ??= this.http.get<PaysRefDto[]>(`${this.base}/ref/pays`).pipe(
+      catchError(() => { this.paysCache$ = undefined; return of([] as PaysRefDto[]); }),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+    return this.paysCache$;
   }
 }

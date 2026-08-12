@@ -59,6 +59,7 @@
   @if (viewMode() === 'grid') {
     <app-affaires-cards-section
       [affaires]="affaires()"
+      [paysLabels]="paysLabels()"
       [loading]="loading()"
       [skeletonCount]="pageSize()"
       [emptyMessage]="'AFFAIRES.LIST.TABLE.EMPTY' | translate"
@@ -67,6 +68,7 @@
     <app-affaires-table-section
       [affaires]="affaires()"
       [avatarUrls]="avatarUrls()"
+      [paysLabels]="paysLabels()"
       [loading]="loading()"
       [pageSize]="pageSize()"
       [emptyMessage]="'AFFAIRES.LIST.TABLE.EMPTY' | translate"

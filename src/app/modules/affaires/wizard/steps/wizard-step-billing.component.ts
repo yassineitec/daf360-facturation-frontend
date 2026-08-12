@@ -3,7 +3,6 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AffaireDraftState } from '../../affaire-wizard.model';
 import { WizardStepAvComponent }       from './wizard-step-av.component';
-import { WizardStepJalComponent }      from './wizard-step-jal.component';
 import { WizardStepTmComponent }       from './wizard-step-tm.component';
 import { WizardStepCpComponent }       from './wizard-step-cp.component';
 import { WizardStepRmbComponent }      from './wizard-step-rmb.component';
@@ -14,7 +13,7 @@ import { WizardStepLivrableComponent } from './wizard-step-livrable.component';
   standalone: true,
   imports: [
     TranslatePipe,
-    WizardStepAvComponent, WizardStepJalComponent,
+    WizardStepAvComponent,
     WizardStepTmComponent, WizardStepCpComponent, WizardStepRmbComponent,
     WizardStepLivrableComponent,
   ],

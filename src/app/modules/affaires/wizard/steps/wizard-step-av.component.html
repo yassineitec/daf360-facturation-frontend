@@ -11,6 +11,16 @@
     </p>
   </div>
 
+  <!-- En-tête de section : l'ajout y vit, atteignable quelle que soit la longueur de la
+       liste. La bande fine en fin de liste le double là où finit la saisie. -->
+  <div class="section-bar">
+    <span class="section-bar__title">{{ 'AFFAIRES.wizard.av.rows_title' | translate }}</span>
+    <daf-button
+      [options]="{ variant: 'secondary', size: 'sm', iconStart: 'add',
+                   label: 'AFFAIRES.wizard.av.add' | translate }"
+      (onClick)="addRow()" />
+  </div>
+
   <!-- Repartition rows -->
   @for (r of draft.repartitions; track $index; let i = $index) {
     <div class="rep-row">
@@ -30,8 +40,6 @@
       <daf-button [options]="{variant: 'danger', size: 'sm', iconStart: 'close'}" (onClick)="removeRow(i)"></daf-button>
     </div>
   }
-
-  <daf-button [options]="{variant: 'ghost', iconStart: 'add', label: ('AFFAIRES.wizard.av.add' | translate), fullWidth: true}" (onClick)="addRow()"></daf-button>
 
   @if (draft.repartitions.length > 0) {
     <div class="total-indicator"

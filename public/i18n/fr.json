@@ -343,9 +343,10 @@
       "BILLING_MODES": {
         "TM": "TM — Temps & Matériaux",
         "CP": "CP — Coût Plus",
-        "AV": "AV — Avancement",
+        "AV": "AV — Forfaitaire",
         "JAL": "JAL — Jalons",
-        "RMB": "RMB — Remboursement"
+        "RMB": "RMB — Remboursement",
+        "LIVRABLE": "LIVRABLE — Livrables"
       },
       "TYPE_LABEL": "Type de facture *",
       "TYPE_SELECT": "Sélectionner le type…",
@@ -728,7 +729,8 @@
           "TYPE": "Type",
           "BUDGET": "Budget",
           "RAF": "RAF",
-          "STATUS": "Statut"
+          "STATUS": "Statut",
+          "PAYS": "Pays"
         },
         "STATUS": {
           "DRAFT": "Brouillon",
@@ -752,7 +754,11 @@
         "VALIDATE_TECH": "Validation technique",
         "VALIDATE_COMM": "Validation commerciale",
         "NOTES": "Notes de validation",
-        "VALIDATE_ERROR": "Erreur lors de la validation du TS."
+        "VALIDATE_ERROR": "Erreur lors de la validation du TS.",
+        "VALID_TECH_AT": "Validation technique",
+        "VALID_TECH_NOTES": "Note technique",
+        "VALID_COMM_AT": "Validation commerciale",
+        "VALID_COMM_NOTES": "Note commerciale"
       },
       "BUDGET_NOT_VALIDATED": "Budget non validé",
       "LAST_UPDATE": "Mise à jour le",
@@ -768,7 +774,8 @@
         "NEW_TS": "Nouveau TS",
         "EDIT": "Modifier",
         "STATUS": "Statut",
-        "VALIDATE_BUDGET": "Valider le budget"
+        "VALIDATE_BUDGET": "Valider le budget",
+        "EXPENSES": "Frais remboursables"
       },
       "IDENTITY": {
         "BILLING_PROGRESS": "Progression facturation"
@@ -860,7 +867,8 @@
         "NO": "Non",
         "DOC360": "Réf. DOC360",
         "ERP_REF": "Réf. ERP",
-        "NOTES": "Notes"
+        "NOTES": "Notes",
+        "PAYS": "Pays d'origine"
       },
       "SECTIONS": {
         "BUDGET_TS": "Budget & Travail Supplémentaire",
@@ -878,7 +886,15 @@
         "EMITTED": "Émission",
         "DUE": "Échéance",
         "AMOUNT": "Montant TTC",
-        "STATUS": "Statut"
+        "STATUS": "Statut",
+        "AMOUNT_HT": "Montant HT",
+        "AMOUNT_TVA": "TVA",
+        "PERIOD": "Période couverte",
+        "PROGRESS": "Avancement facturé",
+        "SUBMITTED": "Soumise le",
+        "SENT": "Envoyée le",
+        "CREDIT_REASON": "Motif de l'avoir",
+        "DISPUTE": "Litige (ouvert → résolu)"
       },
       "PAYMENTS": {
         "DATE": "Date",
@@ -935,7 +951,8 @@
         "TS_IMPACT": "Impact budgétaire",
         "TS_INTEGRATED_AT": "Intégré le",
         "OPEN_INVOICE": "Ouvrir la facture",
-        "OPEN_PAYMENTS": "Ouvrir le module Paiements"
+        "OPEN_PAYMENTS": "Ouvrir le module Paiements",
+        "EXPENSES_TITLE": "Frais remboursables de l'affaire"
       }
     },
     "wizard": {
@@ -946,11 +963,6 @@
         "saving": "Enregistrement en cours…",
         "resume_draft": "Reprendre une affaire en brouillon",
         "progression": "Progression",
-        "summary": "Résumé",
-        "sum_affaire": "Affaire",
-        "sum_client": "Client",
-        "sum_mode": "Mode",
-        "sum_budget": "Budget",
         "next": "Suivant",
         "prev": "Précédent",
         "cancel": "Annuler",
@@ -988,12 +1000,11 @@
           "recap": "Récapitulatif"
         },
         "mode": {
-          "av": "Avancement",
-          "jal": "Jalons",
-          "tm": "Temps & Matériels",
-          "cp": "Coût + Marge",
-          "rmb": "Remboursement",
-          "livrable": "Livrables",
+          "AV": "Forfaitaire",
+          "TM": "Temps & Matériels",
+          "CP": "Coût + Marge",
+          "RMB": "Remboursement",
+          "LIVRABLE": "Livrables",
           "none": "—"
         },
         "val": {
@@ -1006,7 +1017,6 @@
           "required_fields": "Champs requis : {{fields}}.",
           "select_mode_prev": "Sélectionnez un mode de facturation à l'étape précédente.",
           "av": "Répartition requise (total = 100 %) avec au moins un type sélectionné.",
-          "jal": "Jalons requis avec labels et total = {{budget}} {{currency}}.",
           "tm": "Au moins une ressource avec tarif > 0 requise.",
           "cp": "Sélectionnez au moins une catégorie de coût et définissez un taux de marge.",
           "rmb": "Sélectionnez au moins une catégorie de dépenses.",
@@ -1016,7 +1026,8 @@
           "resp_alloc": "Chaque responsable doit avoir un utilisateur et une allocation > 0.",
           "resp_total": "Total des allocations ({{total}}) doit égaler le budget ({{budget}}).",
           "planning": "Date de début de facturation requise.",
-          "incomplete": "Veuillez compléter tous les champs obligatoires avant de continuer."
+          "incomplete": "Veuillez compléter tous les champs obligatoires avant de continuer.",
+          "pays": "pays d'origine"
         },
         "err": {
           "load": "Impossible de charger l'affaire. Réessayez.",
@@ -1024,7 +1035,10 @@
           "create": "Erreur lors de la création.",
           "config": "Erreur de configuration.",
           "activate": "Erreur d'activation."
-        }
+        },
+        "loading": "Chargement de l'affaire…",
+        "breadcrumb_aria": "Fil d'Ariane",
+        "subtitle_new": "Renseignez les informations de l'affaire, étape par étape."
       },
       "info": {
         "doc360_linked": "Lié au projet DOC360",
@@ -1054,7 +1068,51 @@
         "cur_euro": "Euro",
         "cur_dollar": "Dollar",
         "cur_tnd": "Dinar tunisien",
-        "cur_mad": "Dirham marocain"
+        "cur_mad": "Dirham marocain",
+        "pays_label": "Pays d'origine",
+        "pays_ph": "Sélectionnez le pays",
+        "pays_hint": "Détermine la séquence de référence de l'affaire. Non modifiable ensuite.",
+        "pays_locked": "défini à la création",
+        "modes": {
+          "AV": {
+            "label": "Forfaitaire",
+            "desc": "Facturation selon le taux d'avancement validé chaque mois par le Chef de Projet."
+          },
+          "TM": {
+            "label": "Régie Time & Materials",
+            "desc": "Facturation basée sur les heures validées en timesheet × taux contractuels par ressource."
+          },
+          "CP": {
+            "label": "Cost-Plus",
+            "desc": "Facturation des coûts réels majorés d'un taux de marge contractuel."
+          },
+          "LIVRABLE": {
+            "label": "Livrables documentaires",
+            "desc": "Facturation déclenchée à la validation de livrables définis par discipline et WBS."
+          }
+        },
+        "budget": {
+          "AV": {
+            "label": "Montant contractuel",
+            "hint": "Montant total du contrat. La somme des répartitions CTR/BPE/TQC sera appliquée sur ce montant."
+          },
+          "TM": {
+            "label": "Budget prévisionnel",
+            "hint": "Enveloppe budgétaire estimée. La facturation réelle est basée sur les heures validées × taux contractuels."
+          },
+          "CP": {
+            "label": "Budget prévisionnel",
+            "hint": "Enveloppe budgétaire estimée. La facturation réelle est basée sur les coûts réels + taux de marge."
+          },
+          "RMB": {
+            "label": "Budget prévisionnel",
+            "hint": "Enveloppe de remboursements estimée. La facturation réelle est basée sur les frais validés."
+          },
+          "LIVRABLE": {
+            "label": "Montant contractuel",
+            "hint": "Montant total du contrat. Les livrables configurés (par discipline/WBS) seront rattachés à ce montant."
+          }
+        }
       },
       "doc360": {
         "title": "1. Origine de l'affaire",
@@ -1082,19 +1140,8 @@
         "total": "Total",
         "warn_exact": "La somme doit être exactement 100 %.",
         "warn_missing": "Il manque {{n}} %.",
-        "warn_excess": "L'excédent est de {{n}} %."
-      },
-      "jal": {
-        "info_pre": "La somme des montants des jalons doit être égale au",
-        "info_contract": "montant contractuel",
-        "badge": "Jalon {{n}}",
-        "label_ph": "Libellé du jalon *",
-        "amount_ph": "Montant *",
-        "desc_ph": "Description (optionnel)",
-        "add": "Ajouter un jalon",
-        "total_jalons": "Total jalons",
-        "contract_amount": "Montant contractuel",
-        "warning": "La somme des jalons doit être égale au montant du contrat."
+        "warn_excess": "L'excédent est de {{n}} %.",
+        "rows_title": "Répartition CTR / BPE / TQC"
       },
       "tm": {
         "info": "Sélectionnez les collaborateurs et définissez leurs taux de facturation. Les taux seront verrouillés après la première facturation.",
@@ -1147,7 +1194,8 @@
           "validate": "Valider et pré-remplir",
           "err_select": "Sélectionnez au moins un collaborateur.",
           "err_calc": "Erreur lors du calcul des taux."
-        }
+        },
+        "rows_title": "Ressources affectées"
       },
       "cp": {
         "margin_title": "Taux de marge contractuel",
@@ -1283,7 +1331,9 @@
         "col_rate": "Taux",
         "col_internal_cost": "Coût interne",
         "type_id_hash": "Type ID #{{id}}",
-        "user_hash": "User #{{id}}"
+        "user_hash": "User #{{id}}",
+        "pays": "Pays d'origine",
+        "livrable_configured": "Les livrables ont été configurés à l'étape « Mode de facturation »."
       }
     },
     "form": {
@@ -1653,6 +1703,46 @@
           "err_size": "Fichier trop volumineux (maximum 5 Mo).",
           "err_submit": "Erreur lors de la soumission."
         }
+      }
+    },
+    "EXPENSES": {
+      "TAB": "Frais",
+      "FORM": {
+        "CATEGORY": "Catégorie de frais",
+        "CATEGORY_PH": "Sélectionnez une catégorie",
+        "AMOUNT": "Montant",
+        "CURRENCY": "Devise",
+        "DATE": "Date de la dépense",
+        "RECEIPT": "Justificatif",
+        "RECEIPT_REQUIRED_HINT": "Obligatoire pour cette catégorie — JPEG, PNG ou PDF, 5 Mo maximum.",
+        "RECEIPT_OPTIONAL_HINT": "Facultatif pour cette catégorie — JPEG, PNG ou PDF, 5 Mo maximum.",
+        "COMMENT": "Commentaire",
+        "COMMENT_PH": "Description de la dépense…",
+        "SUBMIT": "Soumettre le frais",
+        "ERR_SUBMIT": "Erreur lors de la soumission du frais.",
+        "DATE_PH": "Sélectionnez une date"
+      },
+      "HISTORY": {
+        "SEARCH": "Rechercher un frais…",
+        "FILTERS": "Filtres",
+        "APPLY": "Appliquer",
+        "CANCEL": "Annuler",
+        "RESET": "Réinitialiser",
+        "CONFIRM": "Confirmer",
+        "ALL": "Tous",
+        "COL_DATE": "Date",
+        "COL_CATEGORY": "Catégorie",
+        "COL_AMOUNT": "Montant",
+        "COL_RECEIPT": "Justificatif",
+        "COL_STATUS": "Statut",
+        "COL_REASON": "Motif",
+        "NO_RECEIPT": "Aucun",
+        "EMPTY": "Aucun frais soumis sur cette affaire.",
+        "VALIDATE": "Valider le frais",
+        "REFUSE": "Refuser le frais",
+        "REFUSE_TITLE": "Refuser le frais",
+        "REASON_LABEL": "Motif du refus",
+        "REASON_PH": "Expliquez le motif du refus…"
       }
     }
   },
@@ -2697,7 +2787,12 @@
       "ERR_LOAD": "Erreur de chargement.",
       "ERR_GENERIC": "Erreur.",
       "DEACTIVATE_TITLE": "Désactiver la valeur",
-      "DEACTIVATE_CONFIRM": "Désactiver la valeur \"{{code}}\" ?"
+      "DEACTIVATE_CONFIRM": "Désactiver la valeur \"{{code}}\" ?",
+      "COL_RECEIPT": "Justificatif",
+      "RECEIPT_YES": "Exigé",
+      "RECEIPT_NO": "Facultatif",
+      "RECEIPT_REQUIRED": "Justificatif obligatoire",
+      "RECEIPT_HINT": "Si coché, la saisie d'un frais de cette catégorie exigera une pièce jointe."
     },
     "FOREX": {
       "INFO_1": "Les taux convertissent les montants des lignes de coût vers EUR et CHF lors des calculs P&L. Le taux CHF est calculé automatiquement (",
@@ -2758,6 +2853,113 @@
       "SUCCESS_SAVED": "Configuration sauvegardée.",
       "ERR_SAVE": "Erreur de sauvegarde.",
       "ERR_REFRESH": "Erreur lors du rafraîchissement."
+    }
+  },
+  "ENUMS": {
+    "AFFAIRE_STATUT": {
+      "DRAFT": "Brouillon",
+      "CONFIGURED": "Configurée",
+      "EN_COURS": "En cours",
+      "SUSPENDUE": "Suspendue",
+      "CLOTUREE": "Clôturée",
+      "ARCHIVEE": "Archivée"
+    },
+    "INVOICE_STATUT": {
+      "DRAFT": "Brouillon",
+      "SUBMITTED": "Soumise",
+      "APPROVED": "Approuvée",
+      "EMITTED": "Émise",
+      "SENT": "Envoyée",
+      "PARTIALLY_PAID": "Partiellement payée",
+      "PAID": "Payée",
+      "RETURNED": "Retournée",
+      "DISPUTED": "En litige",
+      "CANCELLED": "Annulée",
+      "CREDIT_NOTED": "Avoir émis"
+    },
+    "INVOICE_TYPE": {
+      "ACOMPTE": "Acompte",
+      "SITUATION": "Situation",
+      "FINALE": "Facture finale",
+      "AVOIR": "Avoir",
+      "PROFORMA": "Proforma"
+    },
+    "TS_STATUT": {
+      "CREATED": "Créé",
+      "VALID_TECHNIQUE": "Validé technique",
+      "VALID_COMMERCIALE": "Validé commercial",
+      "INTEGRE": "Intégré au budget",
+      "FACTURE": "Facturé",
+      "ANNULE": "Annulé"
+    },
+    "EXPENSE_STATUT": {
+      "EN_ATTENTE": "En attente",
+      "VALIDE": "Validé",
+      "REJETE": "Rejeté",
+      "INTEGRE": "Intégré"
+    },
+    "BILLING_LINE_STATUT": {
+      "BROUILLON": "Brouillon",
+      "EN_ATTENTE_RF": "En attente Resp. financier",
+      "VALIDE_RF": "Validée Resp. financier",
+      "EN_ATTENTE_DF": "En attente Dir. financière",
+      "VALIDE_DF": "Validée Dir. financière",
+      "FACTURE": "Facturée",
+      "A_VERIFIER": "À vérifier",
+      "RETOURNE": "Retournée",
+      "ANNULE": "Annulée"
+    },
+    "BILLING_LOT_STATUT": {
+      "EN_ATTENTE_MANAGER": "En attente manager",
+      "VALIDE_MANAGER": "Validé manager",
+      "EN_ATTENTE_RF": "En attente Resp. financier",
+      "VALIDE_RF": "Validé Resp. financier",
+      "EN_ATTENTE_DF": "En attente Dir. financière",
+      "VALIDE_DF": "Validé Dir. financière",
+      "FACTURE": "Facturé",
+      "RETOURNE": "Retourné",
+      "ANNULE": "Annulé"
+    },
+    "JALON_STATUT": {
+      "A_FACTURER": "À facturer",
+      "EN_COURS": "En cours",
+      "EN_ATTENTE_VALIDATION": "En attente de validation",
+      "FACTURE": "Facturé",
+      "ANNULE": "Annulé"
+    },
+    "BILLING_MODE": {
+      "AV": "Forfaitaire",
+      "JAL": "Jalons",
+      "TM": "Temps & Matériels",
+      "CP": "Coût + Marge",
+      "RMB": "Remboursement",
+      "LIVRABLE": "Livrables"
+    },
+    "BILLING_PERIOD": {
+      "MONTHLY": "Mensuelle",
+      "QUARTERLY": "Trimestrielle",
+      "YEARLY": "Annuelle",
+      "ON_DEMAND": "À la demande"
+    },
+    "PAYMENT_METHOD": {
+      "BANK_TRANSFER": "Virement bancaire",
+      "CHECK": "Chèque",
+      "CASH": "Espèces",
+      "CARD": "Carte bancaire",
+      "DIRECT_DEBIT": "Prélèvement",
+      "OTHER": "Autre"
+    },
+    "RESOURCE_TYPE": {
+      "INTERNAL": "Interne",
+      "EXTERNAL": "Externe"
+    },
+    "RATE_TYPE": {
+      "DAILY": "Journalier",
+      "HOURLY": "Horaire"
+    },
+    "MODE_AFFECTATION": {
+      "MANUEL": "Manuel",
+      "AUTO": "Automatique"
     }
   }
 }

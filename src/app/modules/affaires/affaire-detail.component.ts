@@ -21,15 +21,20 @@ import { AffaireService } from './affaire.service';
 import { AffaireWizardService } from './affaire-wizard.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto,
-  AffaireInvoiceItem, AffairePaymentItem,
-  STATUT_TRANSITIONS, STATUT_LABELS, TYPE_LABELS, TS_STATUT_CONFIG,
+  AffaireInvoiceItem, AffairePaymentItem, PaysRefDto,
+  STATUT_TRANSITIONS, STATUT_LABELS, TYPE_LABELS,
 } from './affaire.model';
 import { UserStore } from '../../core/user.store';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
 import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.component';
+import { ExpenseFormComponent } from './billing/modes/expense-form.component';
+import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 import { STATUT_BADGE_VARIANT } from './affaire-display';
+import {
+  INVOICE_STATUT_BADGE, TS_STATUT_BADGE, enumLabel,
+} from '../../shared/enum-labels';
 import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avatar.service';
 
 /** A read-only label/value pair. `label` is always a translation key. */
@@ -82,6 +87,9 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
     GaugeComponent, BarChartComponent, AvatarGroupComponent,
     TsFormComponent, AfaireBillingTabComponent,
+    // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
+    // « Frais remboursables », l'historique dans l'onglet « Frais ».
+    ExpenseFormComponent, ExpenseHistoryComponent,
   ],
   // Injected to format amounts inside computeds (table rows, CSV, bar labels), so it
   // has to be provided — the pipe is only ambient in a template.
@@ -105,6 +113,13 @@ export class AffaireDetailComponent implements OnInit {
   private readonly rowDetailTpl   = viewChild.required<TemplateRef<unknown>>('rowDetailTpl');
   private readonly statutTpl      = viewChild.required<TemplateRef<unknown>>('statutTpl');
   private readonly tsValidationTpl = viewChild.required<TemplateRef<unknown>>('tsValidationTpl');
+  private readonly expensesTpl    = viewChild.required<TemplateRef<unknown>>('expensesTpl');
+  private readonly tsFormTpl      = viewChild.required<TemplateRef<unknown>>('tsFormTpl');
+  /** Le corps du formulaire TS : la modale délègue Confirmer / Annuler à ses méthodes. */
+  private readonly tsForm         = viewChild<TsFormComponent>('tsForm');
+  /** Idem pour le formulaire de frais remboursable. */
+  private readonly expenseForm    = viewChild<ExpenseFormComponent>('expenseForm');
+  private tsFormModalRef: { close: () => void } | null = null;
 
   affaire  = signal<AffaireDetail | null>(null);
   raf      = signal<RafDetailsDto | null>(null);
@@ -125,7 +140,8 @@ export class AffaireDetailComponent implements OnInit {
   activeTab          = signal<string>('overview');
   activityDrawerOpen = signal(false);
   budgetLoading      = signal(false);
-  showTsForm         = signal(false);
+  // `showTsForm` a disparu avec la fenêtre maison : la modale TS est portée par
+  // ModalService, dont la référence suffit à savoir si elle est ouverte.
 
   // Statut modal
   targetStatut = signal('');
@@ -152,6 +168,27 @@ export class AffaireDetailComponent implements OnInit {
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
   readonly affaireDevise = computed(() => this.affaire()?.devise || 'TND');
+
+  /**
+   * Le libellé lisible d'un code technique (`ENUMS.<domaine>.<code>`).
+   *
+   * La page affichait ses énumérations brutes — `EN_ATTENTE_RF`, `CREDIT_NOTED`,
+   * `BANK_TRANSFER` — ou passait par des tables locales aux couleurs en dur. Tout
+   * converge maintenant vers `shared/enum-labels`, donc un statut se lit pareil dans un
+   * tableau, une pastille et un export.
+   */
+  private enumText(domain: string, code: string | null | undefined): string {
+    return enumLabel(this.translate, domain, code);
+  }
+
+  /**
+   * Le pays de l'affaire. La fiche ne reçoit qu'un `paysId` ; le référentiel est chargé
+   * une fois et mémorisé pour la session par le service, donc l'afficher ici ne coûte
+   * aucun appel supplémentaire quand on vient de la liste.
+   */
+  private readonly paysList = signal<PaysRefDto[]>([]);
+  readonly paysLabel = computed(() =>
+    this.paysList().find(p => p.id === this.affaire()?.paysId)?.frenchLabel ?? '—');
 
   readonly typeLabel = computed(() => {
     const a = this.affaire();
@@ -236,6 +273,19 @@ export class AffaireDetailComponent implements OnInit {
     disabled:  this.availableTransitions().length === 0,
   }));
 
+  /**
+   * « Frais remboursables ». Sans garde de permission : le panneau ouvert applique
+   * déjà les siennes, et RMB n'étant plus un mode de facturation, l'action doit être
+   * proposée sur toute affaire — pas seulement sur celles qui portaient ce mode.
+   */
+  readonly expensesButtonOptions = computed<ButtonOptions>(() => ({
+    variant:   'secondary',
+    size:      'sm',
+    fullWidth: true,
+    iconStart: 'receipt_long',
+    label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.EXPENSES'),
+  }));
+
   readonly validateBudgetOptions = computed<ButtonOptions>(() => ({
     variant:   'primary',
     size:      'sm',
@@ -263,8 +313,9 @@ export class AffaireDetailComponent implements OnInit {
     const a = this.affaire();
     if (!a) return [];
     const fields: DetailField[] = [
+      { label: 'AFFAIRES.DETAIL.INFO.PAYS',         value: this.paysLabel() },
       { label: 'AFFAIRES.DETAIL.INFO.CURRENCY',     value: this.affaireDevise() },
-      { label: 'AFFAIRES.DETAIL.INFO.BILLING_MODE', value: a.billingMode ?? '—' },
+      { label: 'AFFAIRES.DETAIL.INFO.BILLING_MODE', value: this.enumText('BILLING_MODE', a.billingMode) },
       { label: 'AFFAIRES.DETAIL.INFO.ENGAGEMENT',   value: this.typeLabel() },
       {
         label: 'AFFAIRES.DETAIL.INFO.BUDGET_VALIDATED',
@@ -624,6 +675,9 @@ export class AffaireDetailComponent implements OnInit {
     tabs.push(
       { id: 'factures',  label: t('AFFAIRES.DETAIL.TABS.INVOICES'), count: this.invoices().length },
       { id: 'paiements', label: t('AFFAIRES.DETAIL.TABS.PAYMENTS'), count: this.payments().length },
+      // Frais remboursables : présent sur TOUTE affaire, quel que soit le mode de
+      // facturation — les frais ne sont plus un mode mais une opération de la fiche.
+      { id: 'frais',     label: t('AFFAIRES.EXPENSES.TAB') },
     );
     return tabs;
   });
@@ -661,7 +715,7 @@ export class AffaireDetailComponent implements OnInit {
     label:   this.translate.instant('AFFAIRES.DETAIL.INVOICES.STATUS'),
     type:    'select',
     options: [...new Set(this.tsList().map(t => t.statut))].sort()
-      .map(value => ({ value, label: TS_STATUT_CONFIG[value]?.label ?? value })),
+      .map(value => ({ value, label: this.enumText('TS_STATUT', value) })),
   }]);
 
   readonly invoiceFilterFields = computed<FilterField[]>(() => [{
@@ -669,7 +723,7 @@ export class AffaireDetailComponent implements OnInit {
     label:   this.translate.instant('AFFAIRES.DETAIL.INVOICES.STATUS'),
     type:    'select',
     options: [...new Set(this.invoices().map(i => i.statut).filter((s): s is string => !!s))]
-      .sort().map(value => ({ value, label: value })),
+      .sort().map(value => ({ value, label: this.enumText('INVOICE_STATUT', value) })),
   }]);
 
   readonly paymentFilterFields = computed<FilterField[]>(() => [{
@@ -677,7 +731,7 @@ export class AffaireDetailComponent implements OnInit {
     label:   this.translate.instant('AFFAIRES.DETAIL.PAYMENTS.METHOD'),
     type:    'select',
     options: [...new Set(this.payments().map(p => p.paymentMethod).filter((m): m is string => !!m))]
-      .sort().map(value => ({ value, label: value })),
+      .sort().map(value => ({ value, label: this.enumText('PAYMENT_METHOD', value) })),
   }]);
 
   /** `daf-filter` renders a select as `string[]` internally and emits a scalar — normalise both. */
@@ -733,8 +787,8 @@ export class AffaireDetailComponent implements OnInit {
     reference: ts.referenceTs,
     intitule:  ts.intitule,
     montant:   this.currency.transform(ts.montantEstime, ts.devise || this.affaireDevise()),
-    statut:    { label: TS_STATUT_CONFIG[ts.statut]?.label ?? ts.statut,
-                 options: { variant: 'neutral', dot: true } } satisfies BadgeCell,
+    statut:    { label: this.enumText('TS_STATUT', ts.statut),
+                 options: { variant: TS_STATUT_BADGE[ts.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
     integre:   this.formatDate(ts.integreAuBudgetAt),
     _source:   ts,
   })));
@@ -762,12 +816,14 @@ export class AffaireDetailComponent implements OnInit {
 
   readonly invoiceRows = computed<TableRow[]>(() => this.filteredInvoices().map(inv => ({
     numero:   inv.invoiceNumber ?? '—',
-    type:     inv.invoiceType ?? '—',
+    type:     this.enumText('INVOICE_TYPE', inv.invoiceType),
     emission: this.formatDate(inv.dateEmission),
     echeance: this.formatDate(inv.dateEcheance),
     montant:  this.currency.transform(inv.montantTtc, inv.devise || this.affaireDevise()),
-    statut:   { label: inv.statut ?? '—',
-                options: { variant: 'neutral', dot: true } } satisfies BadgeCell,
+    // Statut lisible ET coloré : la pastille était neutre pour tous les statuts, donc
+    // « Payée » et « En litige » se présentaient exactement pareil.
+    statut:   { label: this.enumText('INVOICE_STATUT', inv.statut),
+                options: { variant: INVOICE_STATUT_BADGE[inv.statut ?? ''] ?? 'neutral', dot: true } } satisfies BadgeCell,
     _editable: this.canEditInvoice(inv),
     _source:   inv,
   })));
@@ -795,7 +851,7 @@ export class AffaireDetailComponent implements OnInit {
   readonly paymentRows = computed<TableRow[]>(() => this.filteredPayments().map(p => ({
     date:    this.formatDate(p.paymentDate),
     facture: p.invoiceNumber ?? '—',
-    methode: p.paymentMethod ?? '—',
+    methode: this.enumText('PAYMENT_METHOD', p.paymentMethod),
     ref:     p.bankReference ?? '—',
     montant: this.currency.transform(p.amountLocal, p.currency || this.affaireDevise()),
     _source: p,
@@ -1021,7 +1077,10 @@ export class AffaireDetailComponent implements OnInit {
     return a ? (STATUT_TRANSITIONS[a.statut] ?? []) : [];
   });
 
-  ngOnInit(): void { this.loadAll(); }
+  ngOnInit(): void {
+    this.svc.getPays().subscribe(list => this.paysList.set(list));
+    this.loadAll();
+  }
 
   loadAll(): void {
     const id = this.numId;
@@ -1098,6 +1157,49 @@ export class AffaireDetailComponent implements OnInit {
         this.actionError.set(err?.error?.message ?? this.translate.instant('AFFAIRES.DETAIL.BUDGET_ERROR'));
       },
     });
+  }
+
+  /**
+   * Saisie d'un frais remboursable, dans une modale de taille moyenne : elle ne contient
+   * que le formulaire, donc elle n'a pas besoin de la largeur d'un tableau.
+   */
+  private expensesModalRef: { close: () => void } | null = null;
+
+  openExpenses(): void {
+    this.expensesModalRef = this.modals.open({
+      title: this.translate.instant('AFFAIRES.DETAIL.MODAL.EXPENSES_TITLE'),
+      icon:  'receipt_long',
+      size:  'md',
+      body:  this.expensesTpl(),
+      // Annuler / Soumettre côte à côte dans le pied, comme les modales de statut et de
+      // validation TS. Le formulaire n'a plus de bouton à lui.
+      buttons: [
+        {
+          label: this.translate.instant('AFFAIRES.DETAIL.MODAL.CANCEL'),
+          variant: 'secondary',
+          action: r => { this.expenseForm()?.cancel(); r.close(); },
+        },
+        {
+          label: this.translate.instant('AFFAIRES.EXPENSES.FORM.SUBMIT'),
+          variant: 'primary',
+          // Pas de `r.close()` ici : `submit()` est asynchrone et c'est `(submitted)` qui
+          // ferme, une fois l'enregistrement confirmé. Fermer tout de suite masquerait
+          // une erreur serveur et laisserait croire que le frais est enregistré.
+          action: () => { this.expenseForm()?.submit(); },
+        },
+      ],
+    });
+  }
+
+  /**
+   * Après enregistrement : on ferme et on bascule sur l'onglet « Frais », où la ligne
+   * qui vient d'être créée est visible. Rester dans un formulaire vidé ne dit pas si
+   * l'enregistrement a abouti.
+   */
+  onExpenseSubmitted(): void {
+    this.expensesModalRef?.close();
+    this.expensesModalRef = null;
+    this.activeTab.set('frais');
   }
 
   openStatutModal(): void {
@@ -1239,19 +1341,52 @@ export class AffaireDetailComponent implements OnInit {
     });
   }
 
+  /**
+   * Détail d'une facture. Les champs optionnels ne sont ajoutés que s'ils portent une
+   * valeur : une ligne « Motif d'avoir — » sur une facture ordinaire, ou une période
+   * vide sur un acompte, allongent la fenêtre sans rien apprendre.
+   */
   openInvoiceView(inv: AffaireInvoiceItem): void {
     const devise = inv.devise || this.affaireDevise();
+    const fields: DetailField[] = [
+      { label: 'AFFAIRES.DETAIL.INVOICES.TYPE',    value: this.enumText('INVOICE_TYPE', inv.invoiceType) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.STATUS',  value: this.enumText('INVOICE_STATUT', inv.statut) },
+      { label: 'AFFAIRES.DETAIL.INFO.CLIENT',      value: inv.clientNom ?? this.affaire()?.clientName ?? '—' },
+    ];
+    if (inv.billingMode) {
+      fields.push({ label: 'AFFAIRES.DETAIL.INFO.BILLING_MODE', value: this.enumText('BILLING_MODE', inv.billingMode) });
+    }
+    if (inv.periodFrom || inv.periodTo) {
+      fields.push({ label: 'AFFAIRES.DETAIL.INVOICES.PERIOD',
+                    value: `${this.formatDate(inv.periodFrom)} — ${this.formatDate(inv.periodTo)}` });
+    }
+    if (inv.progressPct != null) {
+      fields.push({ label: 'AFFAIRES.DETAIL.INVOICES.PROGRESS', value: `${inv.progressPct} %` });
+    }
+    fields.push(
+      { label: 'AFFAIRES.DETAIL.INVOICES.AMOUNT_HT',  value: this.money(inv.montantHt ?? null, devise) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.AMOUNT_TVA', value: this.money(inv.montantTva ?? null, devise) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.AMOUNT',     value: this.money(inv.montantTtc, devise) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.SUBMITTED',  value: this.formatDate(inv.submittedAt) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.EMITTED',    value: this.formatDate(inv.dateEmission) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.SENT',       value: this.formatDate(inv.sentAt) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.DUE',        value: this.formatDate(inv.dateEcheance) },
+    );
+    if (inv.creditNoteReason) {
+      fields.push({ label: 'AFFAIRES.DETAIL.INVOICES.CREDIT_REASON', value: inv.creditNoteReason });
+    }
+    if (inv.disputeOpenedAt) {
+      fields.push({ label: 'AFFAIRES.DETAIL.INVOICES.DISPUTE',
+                    value: `${this.formatDate(inv.disputeOpenedAt)} → ${this.formatDate(inv.disputeResolvedAt)}` });
+    }
+    if (inv.notes) {
+      fields.push({ label: 'AFFAIRES.DETAIL.INFO.NOTES', value: inv.notes });
+    }
+
     this.openRowModal({
       titleKey: 'AFFAIRES.DETAIL.MODAL.INVOICE_TITLE',
       ref:      inv.invoiceNumber ?? `#${inv.id}`,
-      fields: [
-        { label: 'AFFAIRES.DETAIL.INVOICES.TYPE',    value: inv.invoiceType ?? '—' },
-        { label: 'AFFAIRES.DETAIL.INVOICES.STATUS',  value: inv.statut ?? '—' },
-        { label: 'AFFAIRES.DETAIL.INVOICES.EMITTED', value: this.formatDate(inv.dateEmission) },
-        { label: 'AFFAIRES.DETAIL.INVOICES.DUE',     value: this.formatDate(inv.dateEcheance) },
-        { label: 'AFFAIRES.DETAIL.INVOICES.AMOUNT',  value: this.money(inv.montantTtc, devise) },
-        { label: 'AFFAIRES.DETAIL.INFO.CURRENCY',    value: devise },
-      ],
+      fields,
       openAction: { labelKey: 'AFFAIRES.DETAIL.MODAL.OPEN_INVOICE', run: () => this.goToInvoice(inv.id) },
     });
   }
@@ -1264,7 +1399,7 @@ export class AffaireDetailComponent implements OnInit {
       fields: [
         { label: 'AFFAIRES.DETAIL.PAYMENTS.DATE',      value: this.formatDate(p.paymentDate) },
         { label: 'AFFAIRES.DETAIL.PAYMENTS.INVOICE',   value: p.invoiceNumber ?? '—' },
-        { label: 'AFFAIRES.DETAIL.PAYMENTS.METHOD',    value: p.paymentMethod ?? '—' },
+        { label: 'AFFAIRES.DETAIL.PAYMENTS.METHOD',    value: this.enumText('PAYMENT_METHOD', p.paymentMethod) },
         { label: 'AFFAIRES.DETAIL.PAYMENTS.REFERENCE', value: p.bankReference ?? '—' },
         { label: 'AFFAIRES.DETAIL.PAYMENTS.AMOUNT',    value: this.money(p.amountLocal, devise) },
         { label: 'AFFAIRES.DETAIL.SIDEBAR.CREATED_AT', value: this.formatDate(p.recordedAt) },
@@ -1274,21 +1409,34 @@ export class AffaireDetailComponent implements OnInit {
     });
   }
 
+  /**
+   * Détail d'un TS. Les deux validations sont montrées avec leur date ET leur note :
+   * c'est l'historique de la décision, et c'est ce qu'on vient vérifier. Les notes
+   * n'apparaissent que lorsqu'elles existent.
+   */
   openTsView(ts: TsDto): void {
-    this.openRowModal({
-      titleKey: 'AFFAIRES.DETAIL.MODAL.TS_TITLE',
-      ref:      ts.referenceTs,
-      fields: [
-        { label: 'AFFAIRES.DETAIL.MODAL.TS_INTITULE',      value: ts.intitule },
-        { label: 'AFFAIRES.DETAIL.INVOICES.AMOUNT',        value: this.money(ts.montantEstime, ts.devise || this.affaireDevise()) },
-        { label: 'AFFAIRES.DETAIL.INVOICES.STATUS',        value: TS_STATUT_CONFIG[ts.statut]?.label ?? ts.statut },
-        { label: 'AFFAIRES.DETAIL.MODAL.TS_PERIMETRE',     value: ts.perimetre ?? '—' },
-        { label: 'AFFAIRES.DETAIL.MODAL.TS_IMPACT',        value: ts.impactBudgetaire ?? '—' },
-        { label: 'AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT', value: this.formatDate(ts.integreAuBudgetAt) },
-        { label: 'AFFAIRES.DETAIL.SIDEBAR.CREATED_AT',     value: this.formatDate(ts.createdAt) },
-        { label: 'AFFAIRES.DETAIL.INFO.NOTES',             value: ts.description ?? '—' },
-      ],
-    });
+    const fields: DetailField[] = [
+      { label: 'AFFAIRES.DETAIL.MODAL.TS_INTITULE',      value: ts.intitule },
+      { label: 'AFFAIRES.DETAIL.INVOICES.AMOUNT',        value: this.money(ts.montantEstime, ts.devise || this.affaireDevise()) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.STATUS',        value: this.enumText('TS_STATUT', ts.statut) },
+      { label: 'AFFAIRES.DETAIL.MODAL.TS_PERIMETRE',     value: ts.perimetre ?? '—' },
+      { label: 'AFFAIRES.DETAIL.MODAL.TS_IMPACT',        value: ts.impactBudgetaire ?? '—' },
+      { label: 'AFFAIRES.DETAIL.TS.VALID_TECH_AT',       value: this.formatDate(ts.validTechniqueAt) },
+    ];
+    if (ts.validTechniqueNotes) {
+      fields.push({ label: 'AFFAIRES.DETAIL.TS.VALID_TECH_NOTES', value: ts.validTechniqueNotes });
+    }
+    fields.push({ label: 'AFFAIRES.DETAIL.TS.VALID_COMM_AT', value: this.formatDate(ts.validCommercialeAt) });
+    if (ts.validCommercialeNotes) {
+      fields.push({ label: 'AFFAIRES.DETAIL.TS.VALID_COMM_NOTES', value: ts.validCommercialeNotes });
+    }
+    fields.push(
+      { label: 'AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT', value: this.formatDate(ts.integreAuBudgetAt) },
+      { label: 'AFFAIRES.DETAIL.SIDEBAR.CREATED_AT',     value: this.formatDate(ts.createdAt) },
+      { label: 'AFFAIRES.DETAIL.INFO.NOTES',             value: ts.description ?? '—' },
+    );
+
+    this.openRowModal({ titleKey: 'AFFAIRES.DETAIL.MODAL.TS_TITLE', ref: ts.referenceTs, fields });
   }
 
   // ── Édition d'une ligne ──────────────────────────────────────────────────
@@ -1310,10 +1458,46 @@ export class AffaireDetailComponent implements OnInit {
   // Plus de `goBack()` : le retour à la liste est le lien du fil d'Ariane. La méthode
   // pointait `['../..']` (soit `/finance`) et écrasait ce lien.
   openEdit():     void { this.router.navigate(['edit'],   { relativeTo: this.route }); }
-  openTsForm():   void { this.showTsForm.set(true); }
 
+  /**
+   * Nouveau TS — le corps du formulaire dans une `daf-modal`, avec le bouton de
+   * confirmation de la modale plutôt qu'un pied de page interne.
+   *
+   * `submit()` renvoie `false` quand la saisie est incomplète : la fenêtre reste alors
+   * ouverte sur ses messages d'erreur, au lieu de se refermer en silence.
+   */
+  openTsForm(): void {
+    this.tsFormModalRef = this.modals.open({
+      title: this.translate.instant('AFFAIRES.ts.form.title'),
+      icon:  'post_add',
+      size:  'md',
+      body:  this.tsFormTpl(),
+      buttons: [
+        {
+          label: this.translate.instant('AFFAIRES.ts.actions.cancel'),
+          variant: 'secondary',
+          action: r => { this.tsForm()?.cancel(); r.close(); },
+        },
+        {
+          label: this.translate.instant('AFFAIRES.ts.form.create'),
+          variant: 'primary',
+          action: () => { this.tsForm()?.submit(); },
+        },
+      ],
+    });
+  }
+
+  /**
+   * « Nouvelle facture » ouvre l'ASSISTANT de création, affaire déjà sélectionnée — et
+   * non plus la liste des factures filtrée, qui obligeait à recliquer sur « Nouvelle
+   * facture » puis à rechercher l'affaire qu'on venait de quitter.
+   * `step-affaire` lit `?affaire=` et joue sa propre sélection (RAF, mode, TS compris).
+   */
   goToInvoicing(): void {
-    this.router.navigate(['../../invoicing'], { relativeTo: this.route, queryParams: { affaire: this.numId } });
+    this.router.navigate(['../../invoicing', 'new'], {
+      relativeTo: this.route,
+      queryParams: { affaire: this.numId },
+    });
   }
 
   private goToInvoice(id: number): void {
@@ -1325,7 +1509,8 @@ export class AffaireDetailComponent implements OnInit {
   }
 
   onTsFormClosed(saved: boolean): void {
-    this.showTsForm.set(false);
+    this.tsFormModalRef?.close();
+    this.tsFormModalRef = null;
     if (saved) { this.loadTs(); this.loadRaf(); }
   }
 
@@ -1340,7 +1525,7 @@ export class AffaireDetailComponent implements OnInit {
        t('AFFAIRES.DETAIL.INVOICES.STATUS'), t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT')],
       this.filteredTs().map(ts => [
         ts.referenceTs, ts.intitule, ts.montantEstime, ts.devise,
-        TS_STATUT_CONFIG[ts.statut]?.label ?? ts.statut, this.formatDate(ts.integreAuBudgetAt),
+        this.enumText('TS_STATUT', ts.statut), this.formatDate(ts.integreAuBudgetAt),
       ]),
     );
   }
@@ -1402,7 +1587,10 @@ export class AffaireDetailComponent implements OnInit {
     return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v) + '%';
   }
 
-  formatDate(d: string | null): string {
+  // `undefined` admis en plus de `null` : les champs de facture ajoutés au modèle sont
+  // optionnels (`periodFrom?`, `sentAt?`…), et une date absente s'affiche « — » dans les
+  // deux cas. Élargir la signature évite de semer des `?? null` sur chaque appel.
+  formatDate(d: string | null | undefined): string {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   }

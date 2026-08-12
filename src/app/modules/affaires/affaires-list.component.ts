@@ -38,6 +38,13 @@ export class AffairesListComponent implements OnInit {
   /** Photos RH des responsables de la page courante, par `userId`. */
   readonly avatarUrls = signal<Map<number, string>>(new Map());
 
+  /**
+   * Libellés des pays par id. Le endpoint de liste ne renvoie que `paysId` ; le
+   * référentiel est petit, immuable et mémorisé pour la session par `AffaireService`,
+   * donc une seule requête sert la liste entière, les deux vues et les changements de page.
+   */
+  readonly paysLabels = signal<Map<number, string>>(new Map());
+
   affaires      = signal<AffaireListItem[]>([]);
   error         = signal<string | null>(null);
   totalElements = signal(0);
@@ -140,6 +147,8 @@ export class AffairesListComponent implements OnInit {
     // Honor a ?statut= filter passed in (e.g. "Reprendre un brouillon" → statut=DRAFT).
     const statut = this.activatedRoute.snapshot.queryParamMap.get('statut');
     if (statut) this.filterStatut.set(statut);
+    this.svc.getPays().subscribe(list =>
+      this.paysLabels.set(new Map(list.map(p => [p.id, p.frenchLabel]))));
     this.load();
   }
 

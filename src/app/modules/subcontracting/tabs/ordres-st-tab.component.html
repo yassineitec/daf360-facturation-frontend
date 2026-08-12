@@ -225,7 +225,7 @@
         [options]="stOptions()"
         [config]="{ label: ('SUBCONTRACTING.OST.MODAL.SUBCONTRACTOR' | translate), fullWidth: true }"
         [selected]="[ostForm.sousTraitantId ? ostForm.sousTraitantId.toString() : '']"
-        (selectedChange)="ostForm.sousTraitantId = +($event[0] ?? 0)" />
+        (selectedChange)="ostForm.sousTraitantId = +$event[0]" />
     }
 
     <daf-form-field
@@ -262,6 +262,6 @@
       [options]="transitionOptions()"
       [config]="{ label: ('SUBCONTRACTING.OST.STATUT_MODAL.NEW_STATUS' | translate), fullWidth: true }"
       [selected]="newStatut() ? [newStatut()] : []"
-      (selectedChange)="newStatut.set($event[0] ?? '')" />
+      (selectedChange)="newStatut.set($event[0])" />
   </div>
 </ng-template>

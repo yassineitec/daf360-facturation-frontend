@@ -22,13 +22,6 @@
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-av>
         }
-        @case ('JAL') {
-          <app-wizard-step-jal
-            [draft]="draft"
-            [locked]="locked"
-            (draftChange)="onSubDraftChange($event)">
-          </app-wizard-step-jal>
-        }
         @case ('TM') {
           <app-wizard-step-tm
             [draft]="draft"

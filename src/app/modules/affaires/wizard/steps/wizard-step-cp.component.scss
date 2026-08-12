@@ -52,6 +52,11 @@
   display: flex;
   align-items: center;
   gap: 12px;
+
+  // Hôte `daf-form-field` en inline par défaut (pas de classe d'hôte côté lib) : sans
+  // ces deux propriétés le champ se réduit à son contenu et le taux de marge s'affiche
+  // dans une case minuscule au milieu d'une carte pleine largeur.
+  daf-form-field { display: block; flex: 1 1 auto; min-width: 0; }
 }
 
 .margin-input {

@@ -249,7 +249,13 @@
 // ── Billing mode grid ──────────────────────────────────────────────────
 .billing-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  // `auto-fit` et non `repeat(5, 1fr)` : les modes proposés ne sont plus que quatre
+  // depuis le retrait de RMB, et la cinquième colonne vide laissait la rangée à 80 % de
+  // la largeur. Ainsi la rangée se répartit toujours sur le nombre réel de cartes, et un
+  // mode ajouté ou retiré demain n'oblige plus à retoucher ce chiffre.
+  // `minmax(0, 1fr)` (et non `auto`) pour que le texte long d'une carte ne l'élargisse
+  // pas au détriment des autres.
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 12px;
 }
 

@@ -7,6 +7,15 @@
     </p>
   </div>
 
+  <!-- En-tête de section : point d'ajout stable, doublé par la bande en fin de liste. -->
+  <div class="section-bar">
+    <span class="section-bar__title">{{ 'AFFAIRES.wizard.tm.rows_title' | translate }}</span>
+    <daf-button
+      [options]="{ variant: 'secondary', size: 'sm', iconStart: 'person_add',
+                   label: 'AFFAIRES.wizard.tm.add' | translate }"
+      (onClick)="addRessource()" />
+  </div>
+
   @for (r of draft.ressources; track $index; let i = $index) {
     <div class="item-card">
       <div class="item-card-header">
@@ -88,8 +97,6 @@
       </div>
     </div>
   }
-
-  <daf-button [options]="{variant: 'ghost', iconStart: 'person_add', label: ('AFFAIRES.wizard.tm.add' | translate), fullWidth: true}" (onClick)="addRessource()"></daf-button>
 
   @if (!locked && draft.id && draft.paysId) {
     <div class="auto-rate-row">

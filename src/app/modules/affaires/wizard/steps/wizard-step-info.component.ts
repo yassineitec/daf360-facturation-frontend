@@ -1,12 +1,19 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject, signal, computed } from '@angular/core';
+import {
+  Component, Input, Output, EventEmitter, OnInit, DestroyRef, inject, signal, computed,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormFieldComponent, SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
 
+import { AffaireService }         from '../../affaire.service';
 import { FactListService }        from '../../../../core/fact-list.service';
 import { ClientService }          from '../../../clients/client.service';
-import { AffaireDraftState, BillingMode, BILLING_MODES, BUDGET_LABEL } from '../../affaire-wizard.model';
+import {
+  AffaireDraftState, BillingMode, BILLING_MODES, BUDGET_LABEL, CONTRACTUAL_MODES,
+} from '../../affaire-wizard.model';
 import { ClientDropdownItemDto }  from '../../../clients/client.model';
+import { PaysRefDto }             from '../../affaire.model';
 import { ListValueDto }           from '../../../cost/cost.model';
 
 @Component({
@@ -18,15 +25,25 @@ import { ListValueDto }           from '../../../cost/cost.model';
 })
 export class WizardStepInfoComponent implements OnInit {
   @Input() draft!: AffaireDraftState;
+  /**
+   * Le pays est figé dès que l'affaire existe : il porte la séquence de référence
+   * (`AFF-<année>-<n>` comptée par pays) et l'unicité `(référence, pays)`. Le changer
+   * après coup casserait les deux, donc l'assistant l'affiche en lecture seule en
+   * mode édition plutôt que de laisser croire que c'est modifiable.
+   */
+  @Input() paysLocked = false;
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   private readonly clientSvc = inject(ClientService);
+  private readonly affaireSvc = inject(AffaireService);
   private readonly listSvc   = inject(FactListService);
   private readonly translate = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly BILLING_MODES = BILLING_MODES;
 
   allClients       = signal<ClientDropdownItemDto[]>([]);
+  paysList         = signal<PaysRefDto[]>([]);
   clientResults    = signal<ClientDropdownItemDto[]>([]);
   clientInputValue = signal('');
   clientFocused    = false;
@@ -58,17 +75,60 @@ export class WizardStepInfoComponent implements OnInit {
   get notes(): string | number | null      { return this.draft.notes ?? null; }
   set notes(v: string | number | null)     { this.draft.notes = (v as string) || undefined; }
 
+  /** Pays d'origine de l'affaire — référentiel `/ref/pays`. */
+  readonly paysOptions = computed<SelectOption[]>(() =>
+    this.paysList().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
+
+  /** Ce que montre la ligne en lecture seule quand le pays est figé. */
+  paysDisplay(): string {
+    return this.draft.paysLabel
+      ?? this.paysList().find(p => p.id === this.draft.paysId)?.frenchLabel
+      ?? this.translate.instant('AFFAIRES.wizard.shell.dash');
+  }
+
+  /**
+   * ⚠️ `takeUntilDestroyed` sur les trois appels, et c'est indispensable pour DEUX
+   * d'entre eux : leurs réponses ne se contentent pas de remplir une liste, elles
+   * **réémettent le brouillon** (`draftChange`).
+   *
+   * Sans cette garde, la réponse arrivée après un « Suivant » écrasait le brouillon du
+   * parent avec l'instantané de l'étape 2 — celui d'AVANT la fusion des champs renvoyés
+   * par la création (`id`, `paysId`, `budgetPrevisionnel` recalculés côté serveur). Le
+   * budget de l'étape 2 semblait donc « changer » tout seul entre les étapes, et l'id du
+   * brouillon pouvait repartir à `undefined`. Le composant est détruit par le `@if` de
+   * l'étape, mais la souscription HTTP, elle, survivait.
+   */
   ngOnInit(): void {
     this.clientInputValue.set(this.draft.clientName ?? '');
-    this.listSvc.getListValues('CURRENCY', 0).subscribe(c => this.currencies.set(c));
-    this.clientSvc.getDropdown(0).subscribe(clients => {
-      this.allClients.set(clients);
-      if (this.draft.doc360ClientName) {
-        this.prefillFromDoc360(clients);
-      } else if (this.draft.clientId && this.draft.clientName) {
-        this.clientInputValue.set(this.draft.clientName);
-      }
-    });
+
+    this.listSvc.getListValues('CURRENCY', 0)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(c => this.currencies.set(c));
+
+    this.affaireSvc.getPays()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => {
+        this.paysList.set(list);
+        // Le libellé sert au récapitulatif et à la ligne verrouillée : il est résolu ici
+        // une fois la liste connue, que le pays vienne de la saisie ou du brouillon relu.
+        const current = list.find(p => p.id === this.draft.paysId);
+        if (current && this.draft.paysLabel !== current.frenchLabel) {
+          this.draft = { ...this.draft, paysLabel: current.frenchLabel };
+          this.draftChange.emit(this.draft);
+        }
+      });
+
+    this.clientSvc.getDropdown(0)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(clients => {
+        this.allClients.set(clients);
+        if (this.draft.doc360ClientName) {
+          // Émet aussi le brouillon (préremplissage DOC360) — même exposition.
+          this.prefillFromDoc360(clients);
+        } else if (this.draft.clientId && this.draft.clientName) {
+          this.clientInputValue.set(this.draft.clientName);
+        }
+      });
   }
 
   // ── Billing mode & budget ───────────────────────────────────────
@@ -89,16 +149,27 @@ export class WizardStepInfoComponent implements OnInit {
     this.emit();
   }
 
+  onPaysChange(values: string[]): void {
+    const id = Number(values[0]);
+    const pays = this.paysList().find(p => p.id === id);
+    this.draft = { ...this.draft, paysId: id || 0, paysLabel: pays?.frenchLabel };
+    this.emit();
+  }
+
   budgetLabel(): string {
-    return this.draft.billingMode ? BUDGET_LABEL[this.draft.billingMode].label : this.translate.instant('AFFAIRES.wizard.info.budget_fallback');
+    const mode = this.draft.billingMode;
+    return mode && BUDGET_LABEL[mode]
+      ? this.translate.instant(BUDGET_LABEL[mode].labelKey)
+      : this.translate.instant('AFFAIRES.wizard.info.budget_fallback');
   }
 
   budgetHint(): string {
-    return this.draft.billingMode ? BUDGET_LABEL[this.draft.billingMode].hint : '';
+    const mode = this.draft.billingMode;
+    return mode && BUDGET_LABEL[mode] ? this.translate.instant(BUDGET_LABEL[mode].hintKey) : '';
   }
 
   isContractualMode(): boolean {
-    return this.draft.billingMode === 'AV' || this.draft.billingMode === 'JAL';
+    return !!this.draft.billingMode && CONTRACTUAL_MODES.has(this.draft.billingMode);
   }
 
   // ── DOC360 pre-fill ────────────────────────────────────────────

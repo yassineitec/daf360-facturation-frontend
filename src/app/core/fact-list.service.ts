@@ -52,12 +52,15 @@ export class FactListService {
   createListValue(typeCode: string, body: {
     typeCode: string; paysId: number; code: string;
     labelFr: string; labelEn?: string; displayOrder?: number; isDefault?: boolean;
+    /** Justificatif obligatoire — n'a de sens que pour EXPENSE_CATEGORY. */
+    requiresReceipt?: boolean;
   }): Observable<ListValueDto> {
     return this.http.post<ListValueDto>(`${this.base}/admin/lists/${typeCode}/values`, body);
   }
 
   updateListValue(id: number, paysId: number, body: {
     labelFr?: string; labelEn?: string; isDefault?: boolean; isActive?: boolean;
+    requiresReceipt?: boolean;
   }): Observable<ListValueDto> {
     const params = new HttpParams().set('pays', String(paysId));
     return this.http.patch<ListValueDto>(`${this.base}/admin/lists/values/${id}`, body, { params });

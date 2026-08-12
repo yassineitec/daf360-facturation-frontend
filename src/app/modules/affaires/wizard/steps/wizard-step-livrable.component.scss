@@ -290,6 +290,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
+
+  // Hôte `daf-form-field` en inline par défaut côté lib : sans cette règle le budget
+  // global se saisit dans une case réduite à son contenu.
+  daf-form-field { display: block; flex: 1 1 auto; min-width: 0; max-width: 320px; }
 }
 
 .auto-header-row {

@@ -64,16 +64,33 @@ export class AdminListComponent implements OnInit {
     size:          'sm',
   };
 
+  /**
+   * Le type de liste dont les valeurs portent une règle de justificatif. La colonne et le
+   * champ correspondants n'apparaissent que pour lui : ailleurs, `requiresReceipt` est
+   * `null` et une colonne toujours vide n'apprendrait rien.
+   */
+  private static readonly RECEIPT_RULE_TYPE = 'EXPENSE_CATEGORY';
+
+  readonly showsReceiptRule = computed(() =>
+    this.activeListType() === AdminListComponent.RECEIPT_RULE_TYPE);
+
   readonly listColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return [
+    const cols: TableColumn[] = [
       { key: 'code',      label: this.translate.instant('ADMIN.LISTS.COL_CODE'),      width: '120px' },
       { key: 'labelFr',   label: this.translate.instant('ADMIN.LISTS.COL_LABEL_FR') },
       { key: 'labelEn',   label: this.translate.instant('ADMIN.LISTS.COL_LABEL_EN') },
+    ];
+    if (this.showsReceiptRule()) {
+      cols.push({ key: 'requiresReceipt', label: this.translate.instant('ADMIN.LISTS.COL_RECEIPT'),
+                  align: 'center', width: '130px' });
+    }
+    cols.push(
       { key: 'isDefault', label: this.translate.instant('ADMIN.LISTS.COL_DEFAULT'),   align: 'center', width: '90px' },
       { key: 'isActive',  label: this.translate.instant('ADMIN.LISTS.COL_STATUS'),    align: 'center', width: '90px' },
       { key: '_actions',  label: this.translate.instant('ADMIN.COMMON.ACTIONS'),      align: 'right',  width: '150px' },
-    ];
+    );
+    return cols;
   });
 
   readonly forexColumns = computed<TableColumn[]>(() => {
@@ -123,7 +140,9 @@ export class AdminListComponent implements OnInit {
   readonly listRows = computed<TableRow[]>(() =>
     this.pagedListValues().map(v => ({
       id: v.id, code: v.code, labelFr: v.labelFr, labelEn: v.labelEn,
-      isDefault: v.isDefault, isActive: v.isActive, _source: v,
+      isDefault: v.isDefault, isActive: v.isActive,
+      requiresReceipt: v.requiresReceipt === true,
+      _source: v,
     })),
   );
 
@@ -193,8 +212,8 @@ export class AdminListComponent implements OnInit {
   valueModalError  = signal<string | null>(null);
   private valueModalRef: ModalRef | null = null;
   private editingValue: ListValueDto | null = null;
-  valueForm: { code: string; labelFr: string; labelEn: string; isDefault: boolean } =
-    { code: '', labelFr: '', labelEn: '', isDefault: false };
+  valueForm: { code: string; labelFr: string; labelEn: string; isDefault: boolean; requiresReceipt: boolean } =
+    { code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false };
 
   // ── Forex tab ─────────────────────────────────────────────────────────────
   allParams    = signal<ParameterSetDto[]>([]);
@@ -294,7 +313,7 @@ export class AdminListComponent implements OnInit {
   openCreateValueModal(): void {
     this.valueModalMode.set('create');
     this.editingValue = null;
-    this.valueForm = { code: '', labelFr: '', labelEn: '', isDefault: false };
+    this.valueForm = { code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false };
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_ADD'));
   }
@@ -302,7 +321,7 @@ export class AdminListComponent implements OnInit {
   openEditValueModal(v: ListValueDto): void {
     this.valueModalMode.set('edit');
     this.editingValue = v;
-    this.valueForm = { code: v.code, labelFr: v.labelFr, labelEn: v.labelEn ?? '', isDefault: v.isDefault };
+    this.valueForm = { code: v.code, labelFr: v.labelFr, labelEn: v.labelEn ?? '', isDefault: v.isDefault, requiresReceipt: v.requiresReceipt === true };
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_EDIT', { code: v.code }));
   }
@@ -343,6 +362,8 @@ export class AdminListComponent implements OnInit {
         typeCode, paysId, code, labelFr,
         labelEn: labelEn || undefined,
         isDefault: this.valueForm.isDefault,
+        // Non envoye pour les autres types : la colonne reste NULL (= non applicable).
+        ...(this.showsReceiptRule() ? { requiresReceipt: this.valueForm.requiresReceipt } : {}),
       }).subscribe({
         next: created => {
           this.listValues.update(list => [...list, created]);
@@ -362,7 +383,10 @@ export class AdminListComponent implements OnInit {
       }
       this.valueModalSaving.set(true);
       this.valueModalError.set(null);
-      this.factListSvc.updateListValue(v.id, paysId, { labelFr, labelEn }).subscribe({
+      this.factListSvc.updateListValue(v.id, paysId, {
+        labelFr, labelEn,
+        ...(this.showsReceiptRule() ? { requiresReceipt: this.valueForm.requiresReceipt } : {}),
+      }).subscribe({
         next: updated => {
           // v.id and updated.id may differ when a global value was overridden with a country copy
           this.listValues.update(list => [...list.filter(x => x.id !== v.id), updated]);

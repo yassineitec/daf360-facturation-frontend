@@ -136,14 +136,14 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
     // Sur deux parts, comme dans l'ancienne mise en page (`wide: true`).
     homeSpan: 2,
   },
-  {
-    id: 'subcontracting',
-    route: 'subcontracting',
-    icon: 'group',
-    tone: 'teal',
-    labelKey: 'FACTURATION.layout.NAV.SUBCONTRACTING',
-    descKey: 'HOME.MODULES.SUBCONTRACTING.DESC',
-  },
+  // {
+  //   id: 'subcontracting',
+  //   route: 'subcontracting',
+  //   icon: 'group',
+  //   tone: 'teal',
+  //   labelKey: 'FACTURATION.layout.NAV.SUBCONTRACTING',
+  //   descKey: 'HOME.MODULES.SUBCONTRACTING.DESC',
+  // },
   {
     id: 'suppliers',
     route: 'suppliers',

@@ -35,6 +35,29 @@
         </daf-form-field>
       </div>
 
+      <!-- Pays d'origine — figé dès que l'affaire existe (séquence de référence par pays) -->
+      <div class="field">
+        @if (paysLocked) {
+          <label class="field-label">{{ 'AFFAIRES.wizard.info.pays_label' | translate }}</label>
+          <div class="readonly-ref">
+            <span class="material-symbols-outlined readonly-ref-icon">lock</span>
+            <span class="readonly-ref-value">{{ paysDisplay() }}</span>
+            <span class="readonly-ref-source">{{ 'AFFAIRES.wizard.info.pays_locked' | translate }}</span>
+          </div>
+        } @else {
+          <daf-select
+            [options]="paysOptions()"
+            [config]="{
+              label: ('AFFAIRES.wizard.info.pays_label' | translate),
+              placeholder: ('AFFAIRES.wizard.info.pays_ph' | translate),
+              required: true, searchable: true, fullWidth: true
+            }"
+            [selected]="draft.paysId ? [draft.paysId.toString()] : []"
+            (selectedChange)="onPaysChange($event)" />
+          <p class="field-hint">{{ 'AFFAIRES.wizard.info.pays_hint' | translate }}</p>
+        }
+      </div>
+
       <!-- Client typeahead -->
       <div class="field">
         <label class="field-label">
@@ -111,8 +134,8 @@
           [attr.data-mode]="mode.code"
           (click)="selectMode(mode.code)">
           <span class="mode-icon material-symbols-outlined">{{ mode.icon }}</span>
-          <span class="mode-name">{{ mode.code }}</span>
-          <span class="mode-desc">{{ mode.labelFr }}</span>
+          <span class="mode-name">{{ mode.labelKey | translate }}</span>
+          <span class="mode-desc">{{ mode.descKey | translate }}</span>
         </button>
       }
     </div>
@@ -136,7 +159,7 @@
               [options]="currencyOptions()"
               [config]="{ label: ('AFFAIRES.wizard.info.currency_label' | translate), fullWidth: true }"
               [selected]="draft.contractCurrency ? [draft.contractCurrency] : []"
-              (selectedChange)="onCurrencyChange($event[0] ?? '')" />
+              (selectedChange)="onCurrencyChange($event[0])" />
           </div>
           <p class="field-hint field-full" style="margin:0">{{ budgetHint() }}</p>
         </div>

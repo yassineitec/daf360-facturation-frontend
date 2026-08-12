@@ -3,7 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { NgClass }     from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
+import {
+  SelectComponent, SelectOption, FormFieldComponent, ButtonComponent,
+} from '@khalilrebhiitec/daf360';
 
 import { AffaireService }     from '../../affaire.service';
 import { AffaireWizardService } from '../../affaire-wizard.service';
@@ -15,7 +17,10 @@ import { ListValueDto } from '../../../cost/cost.model';
 @Component({
   selector: 'app-wizard-step-responsables',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, NgClass, SelectComponent, FormFieldComponent, TranslatePipe],
+  imports: [
+    FormsModule, DecimalPipe, NgClass,
+    SelectComponent, FormFieldComponent, ButtonComponent, TranslatePipe,
+  ],
   templateUrl: './wizard-step-responsables.component.html',
   styleUrl: './wizard-step-responsables.component.scss',
 })
@@ -35,23 +40,34 @@ export class WizardStepResponsablesComponent implements OnInit {
   isDisciplineAvail = signal(true);
 
   // ── Budget tracking ────────────────────────────────────────────
-  totalAllocated = computed(() =>
-    this.draft.responsables.reduce((sum, r) => sum + (r.budgetAllocation ?? 0), 0)
-  );
+  //
+  // ⚠️ Des MÉTHODES, pas des `computed()`. `draft` est un `@Input()` — un objet nu,
+  // pas un signal — donc un `computed()` qui le lit ne déclare AUCUNE dépendance
+  // réactive : il s'évalue une seule fois et garde ce résultat pour toujours.
+  // C'est ce qui faisait mentir tout le bloc budget de l'étape : `totalAllocated`
+  // restait figé à sa première valeur (0, la liste étant encore vide au premier
+  // rendu) et `budgetRemaining` au budget entier, donc la barre, le statut et les
+  // libellés « alloué / restant » affichaient toujours moins que ce qui était saisi
+  // — et `addRow()` redonnait le budget complet à chaque nouvelle ligne.
+  // En méthode, la valeur est recalculée à chaque cycle de détection, ce qui est
+  // exactement le comportement voulu ici.
+  totalAllocated(): number {
+    return this.draft.responsables.reduce((sum, r) => sum + (r.budgetAllocation ?? 0), 0);
+  }
 
-  budgetRemaining = computed(() =>
-    (this.draft.budgetPrevisionnel ?? 0) - this.totalAllocated()
-  );
+  budgetRemaining(): number {
+    return (this.draft.budgetPrevisionnel ?? 0) - this.totalAllocated();
+  }
 
-  budgetMatchesProject = computed(() =>
-    Math.abs(this.budgetRemaining()) < 0.001
-  );
+  budgetMatchesProject(): boolean {
+    return Math.abs(this.budgetRemaining()) < 0.001;
+  }
 
-  barWidthPct = computed(() => {
+  barWidthPct(): number {
     const budget = this.draft.budgetPrevisionnel ?? 0;
     if (!budget) return 0;
     return Math.min(100, (this.totalAllocated() / budget) * 100);
-  });
+  }
 
   // ── daf-select option lists + config ───────────────────────────
   readonly userOptions = computed<SelectOption[]>(() =>

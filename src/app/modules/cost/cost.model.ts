@@ -14,6 +14,12 @@ export interface ListValueDto {
   isDefault: boolean;
   isActive: boolean;
   metadata: string | null;
+  /**
+   * Justificatif obligatoire — porté uniquement par les valeurs `EXPENSE_CATEGORY`
+   * (frais remboursables). `null` sur tout autre type de liste, et traité comme
+   * « non exigé » : une catégorie sans règle explicite ne bloque pas la saisie.
+   */
+  requiresReceipt?: boolean | null;
 }
 
 export interface ListTypeDto {

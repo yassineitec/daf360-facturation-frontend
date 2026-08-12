@@ -4,13 +4,18 @@ import {
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TranslateService } from '@ngx-translate/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { InvoiceService } from '../../invoice.service';
 import { AffaireListItem, RafDetailsDto, TsDto } from '../../../affaires/affaire.model';
 import { AffaireService } from '../../../affaires/affaire.service';
 import { SelectComponent } from '@khalilrebhiitec/daf360';
 
-const VALID_BILLING_MODES = new Set(['AV', 'JAL', 'TM', 'CP', 'RMB']);
+// `LIVRABLE` était absent : le mode existait mais était enregistré sous `JAL`, donc
+// il passait par inadvertance. Maintenant qu'il est persisté sous son propre code, son
+// absence ici rendrait toute affaire « livrables » non facturable. `JAL` reste accepté
+// tant que des affaires antérieures à la migration le portent.
+const VALID_BILLING_MODES = new Set(['AV', 'JAL', 'TM', 'CP', 'RMB', 'LIVRABLE']);
 
 export interface StepAffaireValue {
   affaireId:   number | null;
@@ -157,6 +162,7 @@ export interface StepAffaireValue {
 export class StepAffaireComponent implements OnInit {
   private readonly invSvc    = inject(InvoiceService);
   private readonly affSvc    = inject(AffaireService);
+  private readonly route     = inject(ActivatedRoute);
   private readonly fb        = inject(FormBuilder);
   private readonly translate = inject(TranslateService);
 
@@ -170,9 +176,9 @@ export class StepAffaireComponent implements OnInit {
   readonly billingModeOptions = [
     { value: 'TM',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.TM')  },
     { value: 'CP',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.CP')  },
-    { value: 'AV',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.AV')  },
-    { value: 'JAL', label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.JAL') },
-    { value: 'RMB', label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.RMB') },
+    { value: 'AV',       label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.AV')       },
+    { value: 'LIVRABLE', label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.LIVRABLE') },
+    { value: 'RMB',      label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.RMB')      },
   ];
 
   readonly typeSelectConfig    = { placeholder: this.translate.instant('INVOICING.STEP_AFFAIRE.TYPE_SELECT'), multiple: false, searchable: false, fullWidth: true };
@@ -239,6 +245,31 @@ export class StepAffaireComponent implements OnInit {
     ).subscribe({
       next:  r => { this.searchResults.set(r); this.searching.set(false); },
       error: () => this.searching.set(false),
+    });
+
+    this.preselectFromQuery();
+  }
+
+  /**
+   * `?affaire=<id>` — le bouton « Nouvelle facture » de la fiche affaire arrive ici avec
+   * l'affaire déjà choisie.
+   *
+   * On passe par `selectAffaire()` plutôt que de poser l'id dans le formulaire : c'est
+   * cette méthode qui déduit le mode de facturation, charge le RAF et la liste des TS.
+   * Poser l'id seul donnerait un écran à moitié rempli, sans contrôle de RAF — donc une
+   * facture créable sur une affaire sans reste à facturer.
+   *
+   * Un id inconnu (affaire supprimée, lien recopié) est ignoré en silence : l'étape
+   * s'ouvre alors sur sa recherche habituelle, ce qui est exactement le repli utile.
+   */
+  private preselectFromQuery(): void {
+    const raw = this.route.snapshot.queryParamMap.get('affaire');
+    const id  = Number(raw);
+    if (!raw || !Number.isFinite(id) || id <= 0) return;
+
+    this.affSvc.getAffaire(id).subscribe({
+      next:  a => this.selectAffaire(a),
+      error: () => { /* affaire introuvable : on laisse la recherche libre */ },
     });
   }
 

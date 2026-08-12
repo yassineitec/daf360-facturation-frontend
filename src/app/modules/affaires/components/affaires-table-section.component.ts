@@ -54,6 +54,8 @@ export class AffairesTableSectionComponent {
    * (UI-PLAYBOOK §8b). Vide par défaut, donc la colonne affiche les initiales.
    */
   avatarUrls   = input<Map<number, string>>(new Map());
+  /** Libellés des pays par id — le endpoint de liste ne renvoie que `paysId`. */
+  paysLabels   = input<Map<number, string>>(new Map());
 
   /** A row click opens the affaire; the trailing `view` action means the same thing. */
   readonly open = output<number>();
@@ -65,6 +67,7 @@ export class AffairesTableSectionComponent {
       { key: 'reference',   label: t('AFFAIRES.LIST.TABLE.HEADERS.REF'),     type: 'text'   },
       { key: 'intitule',    label: t('AFFAIRES.LIST.TABLE.HEADERS.TITLE'),   type: 'text'   },
       { key: 'client',      label: t('AFFAIRES.LIST.TABLE.HEADERS.CLIENT'),  type: 'text'   },
+      { key: 'pays',        label: t('AFFAIRES.LIST.TABLE.HEADERS.PAYS'),    type: 'text'   },
       { key: 'responsable', label: t('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'), type: 'avatar' },
       { key: 'type',        label: t('AFFAIRES.LIST.TABLE.HEADERS.TYPE'),    type: 'text'   },
       { key: 'budget',      label: t('AFFAIRES.LIST.TABLE.HEADERS.BUDGET'),  type: 'text', align: 'right' },
@@ -85,6 +88,7 @@ export class AffairesTableSectionComponent {
         reference:   a.reference,
         intitule:    a.intitule,
         client:      a.clientName ?? '—',
+        pays:        this.paysLabels().get(a.paysId) ?? '—',
         responsable: {
           name:     a.responsableFullName ?? '—',
           initials: initials(a.responsableFullName),

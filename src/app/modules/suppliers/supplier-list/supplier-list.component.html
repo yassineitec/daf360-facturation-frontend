@@ -368,7 +368,7 @@
           required: true,
           searchable: true
         }"
-        (selectedChange)="onPaysCodeChange($event[0] ?? '')" />
+        (selectedChange)="onPaysCodeChange($event[0])" />
       @if (createTouched() && !createPaysCode()) {
         <p class="text-xs text-danger mt-1 m-0">{{ 'SUPPLIERS.LIST.CREATE.REQUIRED' | translate }}</p>
       }

@@ -53,6 +53,8 @@ export class AffairesCardsSectionComponent {
   private readonly currency  = inject(DisplayCurrencyPipe);
 
   affaires     = input.required<AffaireListItem[]>();
+  /** Libellés des pays par id — résolus par la page, la section reste sans état (§8b). */
+  paysLabels   = input<Map<number, string>>(new Map());
   loading      = input(false);
   emptyMessage = input('');
   /** Placeholder count while the first page of a re-fetch is in flight. */
@@ -82,8 +84,13 @@ export class AffairesCardsSectionComponent {
         // No `image`: since lib 4.16 an omitted image renders no avatar badge at all and
         // the title takes the full card width — which is what these cards want.
         metadata: {
-          title:       a.intitule,
-          subtitle:    `${a.reference} · ${typeLabel(a.typeAffaire)}`,
+          title: a.intitule,
+          // Le pays rejoint le sous-titre plutôt que les indicateurs : `daf-entity-card`
+          // n'a pas de emplacement à pastilles (seuls `title`, `subtitle` et la puce de
+          // statut, déjà prise par le statut de l'affaire), et la carte doit rester à
+          // QUATRE indicateurs. Le sous-titre est justement la ligne d'identification.
+          subtitle: [a.reference, typeLabel(a.typeAffaire), this.paysLabels().get(a.paysId)]
+            .filter(Boolean).join(' · '),
           status:      STATUT_ENTITY_STATUS[a.statut] ?? 'active',
           statusLabel: t(`AFFAIRES.LIST.TABLE.STATUS.${a.statut}`),
         },

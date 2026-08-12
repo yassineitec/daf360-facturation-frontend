@@ -2,12 +2,20 @@
 
   <!-- ── SECTION: Responsables ─────────────────────────────────── -->
   <div class="step-section">
+    <!-- L'ajout vit dans l'en-tête de section : c'est le point d'entrée stable de la
+         liste, atteignable sans dépendre de sa longueur. Une bande fine en fin de liste
+         le double là où le curseur finit (voir plus bas) — l'un pour la découverte,
+         l'autre pour l'enchaînement de saisie. -->
     <div class="section-header">
       <span class="section-icon material-symbols-outlined">group</span>
-      <div>
+      <div class="section-header__text">
         <div class="section-title">{{ 'AFFAIRES.wizard.responsables.title' | translate }} *</div>
         <div class="section-sub">{{ 'AFFAIRES.wizard.responsables.sub' | translate }}</div>
       </div>
+      <daf-button
+        [options]="{ variant: 'secondary', size: 'sm', iconStart: 'add',
+                     label: 'AFFAIRES.wizard.responsables.add_row' | translate }"
+        (onClick)="addRow()" />
     </div>
 
     <!-- Budget overview bar -->
@@ -19,7 +27,7 @@
           'budget-bar-card--over':  !budgetMatchesProject() && budgetRemaining() < 0
         }">
         <div class="budget-bar-top">
-          <div>
+          <div class="budget-bar-head">
             <p class="budget-bar-label">{{ 'AFFAIRES.wizard.responsables.budget_alloc_label' | translate }}</p>
             <p class="budget-bar-status">
               @if (budgetMatchesProject()) {
@@ -31,11 +39,21 @@
               }
             </p>
           </div>
-          <div class="budget-bar-total">
-            <p class="budget-bar-total-label">{{ 'AFFAIRES.wizard.responsables.total_budget_label' | translate }}</p>
-            <p class="budget-bar-total-value">
-              {{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}
-            </p>
+          <div class="budget-bar-right">
+            <div class="budget-bar-total">
+              <p class="budget-bar-total-label">{{ 'AFFAIRES.wizard.responsables.total_budget_label' | translate }}</p>
+              <p class="budget-bar-total-value">
+                {{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}
+              </p>
+            </div>
+            <!-- « Répartir équitablement » agit sur CETTE barre : sa place est ici, et non
+                 sous le bouton d'ajout où elle passait pour une seconde action d'ajout. -->
+            @if (draft.responsables.length > 1) {
+              <daf-button
+                [options]="{ variant: 'ghost', size: 'sm', iconStart: 'balance',
+                             label: 'AFFAIRES.wizard.responsables.distribute' | translate }"
+                (onClick)="distributeEvenly()" />
+            }
           </div>
         </div>
         <div class="budget-track">
@@ -186,21 +204,9 @@
       </div>
     }
 
-    <!-- Add row button -->
-    <button class="btn-add-row" type="button" (click)="addRow()">
-      <span class="material-symbols-outlined">add</span>
-      {{ 'AFFAIRES.wizard.responsables.add_row' | translate }}
-    </button>
+    <!-- Pas de second point d'ajout sous la liste : l'ajout vit uniquement dans
+         l'en-tête de section. -->
 
-    <!-- Action buttons -->
-    <div class="resp-actions-row">
-      @if (draft.responsables.length > 1 && draft.budgetPrevisionnel) {
-        <button class="btn-distribute" type="button" (click)="distributeEvenly()">
-          <span class="material-symbols-outlined">equal</span>
-          {{ 'AFFAIRES.wizard.responsables.distribute' | translate }}
-        </button>
-      }
-    </div>
 
     <!-- Budget mismatch error banner -->
     @if (!budgetMatchesProject() && draft.responsables.length > 0 && totalAllocated() > 0) {
