@@ -1,149 +1,92 @@
-<div class="wizard-page">
-  <div class="wizard-layout">
+<!-- Assistant « Nouveau client » — même squelette que l'assistant d'affaire :
+     `daf-page` porte le rythme vertical, `daf-page-header` le h1, le fil d'Ariane et le
+     résumé de la saisie en pastilles, et la barre d'actions du bas porte la progression.
+     Plus de `.wizard-page` / `.page-head` / `.sidebar` maison.
 
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- LEFT — form area                                              -->
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <div class="form-area">
+     La barre est `sticky` et vit DANS `daf-page` : le conteneur de défilement est
+     `.shell-content`, qui porte la marge de la barre latérale ; une barre `fixed` se
+     calerait sur la fenêtre et se retrouverait décentrée par rapport au formulaire. -->
 
-      <!-- ── Page header ───────────────────────────────────────────── -->
-      <div class="page-head">
-        <nav class="flex items-center gap-1 text-[13px] text-on-surface-variant mb-1">
-          <button type="button" class="font-medium hover:underline transition-colors" (click)="goBack()">
-            {{ 'CLIENTS.NEW.BREADCRUMB_CLIENTS' | translate }}
-          </button>
-          <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span class="font-medium" style="color:#50717b">{{ 'CLIENTS.NEW.BREADCRUMB_NEW' | translate }}</span>
-        </nav>
-        <h1 class="text-[28px] font-bold text-on-surface leading-tight">{{ 'CLIENTS.NEW.TITLE' | translate }}</h1>
+<daf-page [kpis]="0" [breadcrumbs]="true">
+
+  <daf-page-header
+    [title]="'CLIENTS.NEW.TITLE' | translate"
+    [subtitle]="pageSubtitle()"
+    [badges]="headerBadges()"
+    [breadcrumbs]="breadcrumbs()"
+    [breadcrumbLabel]="'CLIENTS.NEW.BREADCRUMB_ARIA' | translate" />
+
+  <div style="display:flex; flex-direction:column; gap:1rem">
+
+    <div class="form-card">
+
+      <!-- Titre de l'étape courante -->
+      <div class="card-head">
+        <div class="card-head__icon">
+          <span class="material-symbols-outlined">{{ steps()[currentStep() - 1].icon }}</span>
+        </div>
+        <div>
+          <h2 class="card-head__title">{{ steps()[currentStep() - 1].title }}</h2>
+          <p class="card-head__sub">
+            {{ 'CLIENTS.NEW.STEP_COUNTER' | translate:{ current: currentStep(), total: steps().length } }}
+          </p>
+        </div>
       </div>
 
-      <!-- ── Form card ─────────────────────────────────────────────── -->
-      <div class="form-card">
-
-        <!-- Card head: icon + step title + sub -->
-        <div class="card-head">
-          <div class="card-head__icon">
-            <span class="material-symbols-outlined">{{ steps()[currentStep() - 1].icon }}</span>
-          </div>
-          <div>
-            <h2 class="card-head__title">{{ steps()[currentStep() - 1].title }}</h2>
-            <p class="card-head__sub">{{ 'CLIENTS.NEW.STEP_COUNTER' | translate:{ current: currentStep(), total: steps().length } }}</p>
-          </div>
-        </div>
-
-        <!-- Step body -->
-        <div class="step-body">
-          <app-client-form
-            #formRef
-            [paysId]="paysId()"
-            [activeSection]="currentStep()"
-            (saved)="onSaved($event)"
-            (closed)="goBack()" />
-        </div>
-
-        <!-- Validation hint -->
-        @if (!canGoNext() && currentStep() === 1) {
-          <div class="validation-hint">
-            <span class="material-symbols-outlined">info</span>
-            <span>{{ stepValidationError() }}</span>
-          </div>
-        }
-
-      </div><!-- /form-card -->
-    </div><!-- /form-area -->
-
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- RIGHT — sidebar                                               -->
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <aside class="sidebar">
-
-      <!-- Boutons navigation -->
-      <div class="panel-nav">
-        @if (currentStep() > 1) {
-          <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('CLIENTS.NEW.PREV' | translate), iconStart: 'arrow_back' }"
-            (onClick)="goPrev()" />
-        } @else {
-          <daf-button class="panel-nav__back"
-            [options]="{ variant: 'ghost', pill: true, fullWidth: true, label: ('CLIENTS.NEW.CANCEL' | translate), iconStart: 'close' }"
-            (onClick)="goBack()" />
-        }
-        @if (currentStep() < steps().length) {
-          <daf-button class="panel-nav__next"
-            [options]="{ variant: 'teal', label: ('CLIENTS.NEW.NEXT' | translate), iconEnd: 'arrow_forward', pill: true, fullWidth: true }"
-            (onClick)="goNext()" />
-        } @else {
-          <daf-button class="panel-nav__next"
-            [options]="{
-              variant: 'teal',
-              label: ('CLIENTS.NEW.CREATE' | translate),
-              iconStart: 'person_add',
-              pill: true,
-              fullWidth: true,
-              loading: isSaving(),
-              disabled: isSaving()
-            }"
-            (onClick)="goNext()" />
-        }
+      <div class="step-body">
+        <app-client-form
+          #formRef
+          [paysId]="paysId()"
+          [activeSection]="currentStep()"
+          (saved)="onSaved($event)"
+          (closed)="goBack()" />
       </div>
 
-      <!-- Progression -->
-      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
-        <div class="panel-header">
-          <p class="panel__label">{{ 'CLIENTS.NEW.PROGRESS' | translate }}</p>
+      @if (!canGoNext() && currentStep() === 1) {
+        <div class="validation-hint">
+          <span class="material-symbols-outlined">info</span>
+          <span>{{ stepValidationError() }}</span>
         </div>
+      }
 
-        <div class="panel-body">
-          <div class="step-list">
-            @for (step of steps(); track $index; let i = $index) {
-              <div class="step-item"
-                   [class.step-item--done]="currentStep() > i + 1"
-                   [class.step-item--active]="currentStep() === i + 1">
-                <div class="step-num">
-                  @if (currentStep() > i + 1) {
-                    <span class="material-symbols-outlined"
-                          style="font-variation-settings:'FILL' 1;font-size:16px">check</span>
-                  } @else {
-                    {{ i + 1 }}
-                  }
-                </div>
-                <span class="step-label">{{ step.title }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </daf-card>
+    </div><!-- /form-card -->
 
-      <!-- Résumé -->
-      <daf-card [options]="{variant:'glass', padding:'none', radius:'xl'}">
-        <div class="panel-header">
-          <p class="panel__label">{{ 'CLIENTS.NEW.SUMMARY' | translate }}</p>
-        </div>
-        <div class="panel-body">
-          <div class="summary-rows">
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'CLIENTS.NEW.SUMMARY_NAME' | translate }}</span>
-              <span class="summary-row__val">{{ formRef.clientName() || '—' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'CLIENTS.NEW.SUMMARY_SECTOR' | translate }}</span>
-              <span class="summary-row__val">{{ formRef.selectedSector()[0] || '—' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'CLIENTS.NEW.SUMMARY_CITY' | translate }}</span>
-              <span class="summary-row__val">{{ formRef.city() || '—' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row__key">{{ 'CLIENTS.NEW.SUMMARY_CURRENCY' | translate }}</span>
-              <span class="summary-row__val">{{ formRef.selectedCurrency()[0] || '—' }}</span>
-            </div>
-          </div>
-        </div>
-      </daf-card>
+  </div>
 
+  <!-- ══════════════════════════════════════════════════════════════════════
+       BARRE D'ACTIONS — progression + navigation, comme l'assistant d'affaire.
+       `daf-stepper` en `chrome: 'header-only'` : le rail seul, la navigation
+       reste à nous.
+       ══════════════════════════════════════════════════════════════════ -->
+  <div class="action-bar rounded-xl border border-outline-variant bg-surface-container-lowest
+              p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
+       style="position:sticky; bottom:1rem; z-index:40; display:flex; flex-wrap:wrap;
+              align-items:center; justify-content:space-between; gap:1rem">
 
-    </aside><!-- /sidebar -->
+    <div style="flex:1 1 320px; min-width:0">
+      <daf-stepper
+        orientation="horizontal"
+        [steps]="stepperSteps()"
+        [currentStep]="currentStep() - 1"
+        [config]="stepperConfig()"
+        (stepClick)="onStepClick($event)" />
+    </div>
 
-  </div><!-- /wizard-layout -->
-</div><!-- /wizard-page -->
+    <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
+      @if (currentStep() > 1) {
+        <daf-button
+          [options]="{ variant: 'ghost', pill: true, iconStart: 'arrow_back',
+                       label: 'CLIENTS.NEW.PREV' | translate }"
+          (onClick)="goPrev()" />
+      } @else {
+        <daf-button
+          [options]="{ variant: 'ghost', pill: true, iconStart: 'close',
+                       label: 'CLIENTS.NEW.CANCEL' | translate }"
+          (onClick)="goBack()" />
+      }
+      <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
+    </div>
+
+  </div>
+
+</daf-page>

@@ -1,23 +1,41 @@
-import { Component, OnInit, inject, signal, computed, viewChild } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import {
+  ButtonComponent, ButtonOptions, PageComponent, PageHeaderComponent, StepperComponent,
+} from '@khalilrebhiitec/daf360';
+import type {
+  BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
+} from '@khalilrebhiitec/daf360';
+
 import { ClientService } from '../client.service';
 import { ClientDetailDto } from '../client.model';
 import { ClientFormComponent } from '../client-form.component';
-import { CardComponent, ButtonComponent } from '@khalilrebhiitec/daf360';
 
 const STEP_ICONS = ['badge', 'contacts', 'receipt_long'];
 
+/**
+ * Assistant « Nouveau client » — aligné sur l'assistant d'affaire.
+ *
+ * Ce qui a disparu : la page `.wizard-page` maison et ses 377 lignes de SCSS, la colonne
+ * de droite (navigation + progression verticale + résumé) et le fil d'Ariane bricolé.
+ * La progression est passée dans la barre d'actions du bas (`daf-stepper` en rail seul),
+ * le résumé de la saisie dans les pastilles du titre, et le formulaire occupe toute la
+ * largeur.
+ */
 @Component({
   selector: 'app-client-new',
-  imports: [ClientFormComponent, CardComponent, ButtonComponent, TranslatePipe],
+  imports: [
+    TranslatePipe, ClientFormComponent,
+    PageComponent, PageHeaderComponent, StepperComponent, ButtonComponent,
+  ],
   templateUrl: './client-new.component.html',
   styleUrl: './client-new.component.scss',
 })
 export class ClientNewComponent implements OnInit {
-  private readonly svc    = inject(ClientService);
-  private readonly router = inject(Router);
-  private readonly route  = inject(ActivatedRoute);
+  private readonly svc       = inject(ClientService);
+  private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
 
   readonly paysId      = signal(0);
@@ -33,11 +51,89 @@ export class ClientNewComponent implements OnInit {
     }));
   });
 
-  readonly stepTip   = computed(() => {
+  // ── Barre d'actions ─────────────────────────────────────────────────────
+
+  readonly stepperSteps = computed<StepperStep[]>(() =>
+    this.steps().map(s => ({ title: s.title })));
+
+  readonly stepperConfig = computed<StepperConfig>(() => {
     this.translate.currentLang();
-    return this.translate.instant(`CLIENTS.NEW.TIPS.${this.currentStep() - 1}`);
+    return {
+      nextLabel:   this.translate.instant('CLIENTS.NEW.NEXT'),
+      prevLabel:   this.translate.instant('CLIENTS.NEW.PREV'),
+      cancelLabel: this.translate.instant('CLIENTS.NEW.CANCEL'),
+      finishLabel: this.translate.instant('CLIENTS.NEW.CREATE'),
+      // Rail seul : la navigation vit dans la barre, à droite.
+      chrome: 'header-only',
+      clickableSteps: true,
+      stepperLabel: this.translate.instant('CLIENTS.NEW.PROGRESS'),
+    };
   });
-  readonly isSaving  = computed(() => this.formRef()?.saving() ?? false);
+
+  /**
+   * Retour en arrière au clic sur le rail, jamais de saut en avant : l'étape 1 porte les
+   * champs obligatoires, la franchir sans les remplir mènerait à un enregistrement
+   * refusé au dernier écran.
+   */
+  onStepClick(index: number): void {
+    const target = index + 1;
+    if (target < this.currentStep()) this.currentStep.set(target);
+  }
+
+  readonly nextButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    const last = this.currentStep() === this.steps().length;
+    return {
+      variant: 'teal',
+      pill: true,
+      label: this.translate.instant(last ? 'CLIENTS.NEW.CREATE' : 'CLIENTS.NEW.NEXT'),
+      iconStart: last ? 'person_add' : undefined,
+      iconEnd:   last ? undefined : 'arrow_forward',
+      loading:  this.isSaving(),
+      disabled: this.isSaving(),
+    };
+  });
+
+  // ── En-tête ─────────────────────────────────────────────────────────────
+
+  readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    this.translate.currentLang();
+    return [
+      { label: this.translate.instant('CLIENTS.NEW.BREADCRUMB_CLIENTS'), link: ['..'] },
+      { label: this.translate.instant('CLIENTS.NEW.BREADCRUMB_NEW') },
+    ];
+  });
+
+  readonly pageSubtitle = computed(() => {
+    this.translate.currentLang();
+    return this.formRef()?.clientName()?.trim()
+      || this.translate.instant('CLIENTS.NEW.SUBTITLE');
+  });
+
+  /**
+   * Le résumé de la saisie, en pastilles sur le titre — ce qui a remplacé la carte
+   * « Résumé » de la colonne de droite. Une valeur non saisie ne produit pas de pastille
+   * vide : la rangée se remplit au fil des étapes.
+   */
+  readonly headerBadges = computed<PageHeaderBadge[]>(() => {
+    const f = this.formRef();
+    if (!f) return [];
+    this.translate.currentLang();
+    const badges: PageHeaderBadge[] = [];
+
+    const sector   = f.selectedSector()[0];
+    const city     = f.city()?.trim();
+    const currency = f.selectedCurrency()[0];
+
+    if (sector)   badges.push({ label: sector,   icon: 'category', variant: 'neutral' });
+    if (city)     badges.push({ label: city,     icon: 'place',    variant: 'neutral' });
+    if (currency) badges.push({ label: currency, icon: 'payments', variant: 'secondary' });
+    return badges;
+  });
+
+  // ── Navigation ──────────────────────────────────────────────────────────
+
+  readonly isSaving = computed(() => this.formRef()?.saving() ?? false);
 
   readonly canGoNext = computed(() => {
     const form = this.formRef();
@@ -63,7 +159,7 @@ export class ClientNewComponent implements OnInit {
   }
 
   goNext(): void {
-    if (this.currentStep() < 3) {
+    if (this.currentStep() < this.steps().length) {
       if (!this.canGoNext()) {
         this.formRef()?.touched.set(true);
         return;

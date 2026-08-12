@@ -4,22 +4,26 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, FilterField, FilterResult, MetricCardComponent, MetricCardOptions,
   MetricDelta, PageComponent, PageHeaderComponent, PaginationComponent,
-  SearchToolbarComponent, SearchToolbarFilterConfig,
+  SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { ClientService } from '../client.service';
 import { ClientFilter, ClientListItemDto } from '../client.model';
 import { ClientsCardsSectionComponent } from './clients-cards-section.component';
+import { ClientsTableSectionComponent } from './clients-table-section.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 /** The four states the status filter can express, mapped to the two backend flags. */
 type StatusFilter = '' | 'active' | 'inactive' | 'kyc';
+
+/** Meme bascule que la liste des affaires : cartes ou tableau. */
+type ViewMode = 'grid' | 'list';
 
 @Component({
   selector: 'app-client-list',
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe,
-    ClientsCardsSectionComponent,
+    ClientsCardsSectionComponent, ClientsTableSectionComponent,
   ],
   host: { class: 'block' },
   templateUrl: './client-list.component.html',
@@ -45,6 +49,7 @@ export class ClientListComponent implements OnInit {
   searchText   = signal('');
   filterSector = signal('');
   filterStatus = signal<StatusFilter>('');
+  viewMode     = signal<ViewMode>('grid');
 
   /** `totalElements` is the real result-set size, so this tile is not page-scoped. */
   readonly statsTotal   = computed(() => this.totalElements());
@@ -90,6 +95,15 @@ export class ClientListComponent implements OnInit {
    * pays-isolation 403 on that endpoint), so the old "Pays" dropdown filtered nothing —
    * it only cost two extra requests per page load to populate itself.
    */
+  /** Cartes ou tableau — mêmes icônes et mêmes intitulés que la liste des affaires. */
+  readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { id: 'grid', icon: 'grid_view',  tooltip: this.translate.instant('CLIENTS.LIST.VIEW_GRID') },
+      { id: 'list', icon: 'table_rows', tooltip: this.translate.instant('CLIENTS.LIST.VIEW_LIST') },
+    ];
+  });
+
   readonly filterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);

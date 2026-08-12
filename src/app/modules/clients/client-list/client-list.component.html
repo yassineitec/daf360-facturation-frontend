@@ -35,7 +35,7 @@
       [options]="kpiActive" />
   </section>
 
-  <!-- Search + filters -->
+  <!-- Search + filters + view toggle -->
   <daf-search-toolbar
     [placeholder]="'CLIENTS.LIST.SEARCH' | translate"
     [value]="searchText()"
@@ -43,7 +43,10 @@
     (valueChange)="onSearchTextChange($event)"
     [filterFields]="filterFields()"
     [filterConfig]="filterConfig()"
-    (filterApply)="applyFilters($event)" />
+    (filterApply)="applyFilters($event)"
+    [views]="viewOptions()"
+    [view]="viewMode()"
+    (viewChange)="viewMode.set($any($event))" />
 
   @if (error()) {
     <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -53,13 +56,22 @@
   }
 
   <!-- Content sits free in the page — no outer container card -->
-  <app-clients-cards-section
-    [clients]="clients()"
-    [loading]="loading()"
-    [skeletonCount]="pageSize()"
-    [emptyTitle]="'CLIENTS.LIST.EMPTY.TITLE' | translate"
-    [emptyDescription]="'CLIENTS.LIST.EMPTY.DESC' | translate"
-    (open)="navigateToDetail($event)" />
+  @if (viewMode() === 'grid') {
+    <app-clients-cards-section
+      [clients]="clients()"
+      [loading]="loading()"
+      [skeletonCount]="pageSize()"
+      [emptyTitle]="'CLIENTS.LIST.EMPTY.TITLE' | translate"
+      [emptyDescription]="'CLIENTS.LIST.EMPTY.DESC' | translate"
+      (open)="navigateToDetail($event)" />
+  } @else {
+    <app-clients-table-section
+      [clients]="clients()"
+      [loading]="loading()"
+      [pageSize]="pageSize()"
+      [emptyMessage]="'CLIENTS.LIST.EMPTY.TITLE' | translate"
+      (open)="navigateToDetail($event)" />
+  }
 
   <daf-pagination
     [currentPage]="currentPage()"

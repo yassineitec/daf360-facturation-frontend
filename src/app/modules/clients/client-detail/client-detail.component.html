@@ -1,401 +1,263 @@
-<div class="detail-page">
+<!-- Fiche client — même squelette que la fiche affaire (UI-PLAYBOOK §10f).
+     Aucune feuille de style locale : composants de la lib, jetons de couleur et échelle
+     typographique de la lib. Les 337 lignes de SCSS maison, la page en `.detail-page`,
+     le bouton retour bricolé, le spinner et les cartes KPI à la main ont disparu.
 
-  @if (isLoading()) {
-    <div class="state-box">
-      <div class="spinner"></div>
-      <span class="text-body-md text-muted">Chargement du client…</span>
+     Structure, deux colonnes :
+       GAUCHE (30 %, sticky)  le h1 de la page (daf-page-header, size="md", sans bouton)
+                              puis la carte d'informations, actions en pied de section.
+       DROITE (70 %)          les 4 KPI (daf-metric-card), daf-tabs et ses panneaux.
+
+     ⚠️ FLEX en style inline, jamais de grid ni de classe de point de rupture : le
+     styles.css d'un remote ne contient que les classes que Tailwind a déjà vues, donc une
+     classe neuve n'existe pas dans le CSS servi tant que le remote n'est pas reconstruit,
+     et la page retomberait en une seule colonne. Même recette que la fiche affaire. -->
+
+<daf-page [loading]="isLoading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
+          [loadingLabel]="'CLIENTS.DETAIL.LOADING' | translate">
+
+  @if (actionError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+      <span class="material-symbols-outlined text-headline-md">error</span>
+      {{ actionError() }}
     </div>
-  } @else if (!client() && actionError()) {
-    <div class="state-box">
-      <span class="material-symbols-outlined state-icon">error_outline</span>
-      <p class="text-body-md text-muted">{{ actionError() }}</p>
-      <button class="btn-retry" (click)="retryLoad()">Réessayer</button>
-    </div>
-  } @else if (client()) {
-
-    <!-- ── Page Header ──────────────────────────────────────────────────────── -->
-    <header class="page-header">
-      <button class="back-btn" (click)="goBack()">
-        <span class="material-symbols-outlined">arrow_back</span>
-      </button>
-      <div class="hd-titles">
-        <div class="hd-title-row">
-          <span class="client-code">{{ client()!.clientCode }}</span>
-          <h1 class="text-headline-xl">{{ client()!.clientName }}</h1>
-          <daf-badge
-            [label]="client()!.isKycDone ? 'KYC Validé' : 'KYC En attente'"
-            [options]="kycBadgeOptions()" />
-          @if (!client()!.isActive) {
-            <daf-badge label="Inactif" [options]="{ variant: 'neutral', pill: true, size: 'sm' }" />
-          }
-        </div>
-        <p class="text-body-sm text-muted">
-          {{ client()!.paysLabel ?? '' }}
-          @if (client()!.sector) { · {{ client()!.sector }} }
-          · Délai paiement {{ client()!.paymentTermsDays ?? '—' }}j
-          · {{ client()!.defaultCurrency ?? 'TND' }}
-        </p>
-      </div>
-      <daf-button
-        *appHasPermission="'FACT_MANAGE_CLIENTS'"
-        [options]="{ variant: 'ghost', label: 'Modifier', iconStart: 'edit' }"
-        (onClick)="openEditModal()" />
-    </header>
-
-    @if (actionError()) {
-      <div class="action-error-bar text-body-sm">{{ actionError() }}</div>
-    }
-
-    <!-- ── KPI Grid ─────────────────────────────────────────────────────────── -->
-    <div class="kpi-grid">
-
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">Total projets</p>
-          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">business_center</span>
-        </div>
-        <div class="kpi-card__value-row">
-          <span class="text-price-display">{{ stats()?.totalAffaires ?? '—' }}</span>
-        </div>
-        <div class="kpi-card__sub kpi-card__sub--primary">
-          <span class="material-symbols-outlined">folder_open</span>
-          <span>Affaires associées</span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">Projets actifs</p>
-          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--secondary">play_circle</span>
-        </div>
-        <div class="kpi-card__value-row">
-          <span class="text-price-display">{{ stats()?.activeAffaires ?? '—' }}</span>
-        </div>
-        <div class="kpi-card__sub kpi-card__sub--secondary">
-          <span class="material-symbols-outlined">trending_up</span>
-          <span>En cours</span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">Total facturé</p>
-          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--primary">receipt_long</span>
-        </div>
-        <div class="kpi-card__value-row">
-          <span class="text-price-display">
-            {{ stats()?.totalInvoiced | displayCurrency : (client()!.defaultCurrency ?? 'TND') }}
-          </span>
-        </div>
-        <div class="kpi-card__sub kpi-card__sub--primary">
-          <span class="material-symbols-outlined">account_balance_wallet</span>
-          <span>Chiffre d'affaires cumulé</span>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-card__top">
-          <p class="text-label-bold text-muted">Délai moyen paiement</p>
-          <span class="material-symbols-outlined kpi-card__icon kpi-card__icon--tertiary">schedule</span>
-        </div>
-        <div class="kpi-card__value-row">
-          <span class="text-price-display">
-            {{ stats()?.averagePaymentDelayDays != null ? (stats()!.averagePaymentDelayDays | number:'1.0-0') + 'j' : '—' }}
-          </span>
-        </div>
-        <div class="kpi-card__sub kpi-card__sub--tertiary">
-          <span class="material-symbols-outlined">hourglass_top</span>
-          <span>Délai contractuel {{ client()!.paymentTermsDays ?? '—' }}j</span>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ── Main Layout ───────────────────────────────────────────────────────── -->
-    <div class="detail-layout">
-
-      <!-- ══ LEFT COLUMN ══ -->
-      <div class="detail-main">
-
-        <!-- Informations générales -->
-        <section class="glass-card section-card">
-          <h2 class="section-card__title text-title-md" style="margin-bottom:20px">
-            <span class="material-symbols-outlined text-primary">info</span>
-            Informations générales
-          </h2>
-          <div class="info-grid-2col">
-            <div class="info-field">
-              <p class="text-body-sm text-muted">Code client</p>
-              <p class="text-body-md info-ref">{{ client()!.clientCode }}</p>
-            </div>
-            @if (client()!.taxId) {
-              <div class="info-field">
-                <p class="text-body-sm text-muted">Matricule fiscal</p>
-                <p class="text-body-md info-ref">{{ client()!.taxId }}</p>
-              </div>
-            }
-            @if (client()!.sector) {
-              <div class="info-field">
-                <p class="text-body-sm text-muted">Secteur</p>
-                <p class="text-body-md">{{ client()!.sector }}</p>
-              </div>
-            }
-            @if (client()!.country) {
-              <div class="info-field">
-                <p class="text-body-sm text-muted">Pays</p>
-                <p class="text-body-md">{{ client()!.country }}</p>
-              </div>
-            }
-            <div class="info-field">
-              <p class="text-body-sm text-muted">Délai de paiement</p>
-              <p class="text-body-md">{{ client()!.paymentTermsDays ?? '—' }} jours</p>
-            </div>
-            <div class="info-field">
-              <p class="text-body-sm text-muted">Devise</p>
-              <p class="text-body-md">{{ client()!.defaultCurrency ?? 'TND' }}</p>
-            </div>
-            @if (client()!.address || client()!.city) {
-              <div class="info-field info-field--full">
-                <p class="text-body-sm text-muted">Adresse</p>
-                <p class="text-body-md">
-                  {{ formattedAddress() }}
-                </p>
-              </div>
-            }
-            @if (client()!.notes) {
-              <div class="info-field info-field--full">
-                <p class="text-body-sm text-muted">Notes</p>
-                <p class="text-body-md info-notes">{{ client()!.notes }}</p>
-              </div>
-            }
-          </div>
-        </section>
-
-        <!-- Contact -->
-        <section class="glass-card collapsible">
-          <button class="collapsible__header" (click)="toggleSection('contact')"
-                  [attr.aria-expanded]="isOpen('contact')">
-            <h2 class="text-title-md section-card__title">
-              <span class="material-symbols-outlined text-primary">person</span>
-              Contact
-            </h2>
-            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('contact')">expand_more</span>
-          </button>
-          @if (isOpen('contact')) {
-            <div class="collapsible__body">
-              <div class="info-grid-2col">
-                <div class="info-field">
-                  <p class="text-body-sm text-muted">Nom du contact</p>
-                  <p class="text-body-md">{{ client()!.contactName || '—' }}</p>
-                </div>
-                <div class="info-field">
-                  <p class="text-body-sm text-muted">Téléphone contact</p>
-                  <p class="text-body-md">{{ client()!.contactPhone || '—' }}</p>
-                </div>
-                @if (client()!.contactEmail) {
-                  <div class="info-field">
-                    <p class="text-body-sm text-muted">Email contact</p>
-                    <a [href]="'mailto:' + client()!.contactEmail" class="info-link">{{ client()!.contactEmail }}</a>
-                  </div>
-                }
-                @if (client()!.email) {
-                  <div class="info-field">
-                    <p class="text-body-sm text-muted">Email général</p>
-                    <a [href]="'mailto:' + client()!.email" class="info-link">{{ client()!.email }}</a>
-                  </div>
-                }
-                @if (client()!.phone) {
-                  <div class="info-field">
-                    <p class="text-body-sm text-muted">Téléphone</p>
-                    <p class="text-body-md">{{ client()!.phone }}</p>
-                  </div>
-                }
-                @if (client()!.website) {
-                  <div class="info-field">
-                    <p class="text-body-sm text-muted">Site web</p>
-                    <a [href]="client()!.website!" target="_blank" rel="noopener noreferrer" class="info-link">
-                      {{ client()!.website }}
-                    </a>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </section>
-
-        <!-- Projets liés -->
-        <section class="glass-card collapsible">
-          <button class="collapsible__header" (click)="toggleSection('projets')"
-                  [attr.aria-expanded]="isOpen('projets')">
-            <h2 class="text-title-md section-card__title">
-              <span class="material-symbols-outlined text-primary">business_center</span>
-              Projets liés
-              @if ((stats()?.totalAffaires ?? 0) > 0) {
-                <span class="section-count">{{ stats()!.totalAffaires }}</span>
-              }
-            </h2>
-            <span class="material-symbols-outlined chevron" [class.chevron--open]="isOpen('projets')">expand_more</span>
-          </button>
-          @if (isOpen('projets')) {
-            <div class="collapsible__body">
-              <div class="quick-links" style="margin-bottom:16px">
-                <a [routerLink]="['../../affaires']" class="quick-link">
-                  <div class="quick-link__left">
-                    <span class="material-symbols-outlined text-primary">folder_open</span>
-                    <span class="text-label-bold">Voir toutes les affaires</span>
-                  </div>
-                  <span class="material-symbols-outlined quick-link__arrow">chevron_right</span>
-                </a>
-              </div>
-              <div class="projects-summary">
-                <div class="proj-stat">
-                  <span class="proj-stat__val">{{ stats()?.totalAffaires ?? 0 }}</span>
-                  <span class="proj-stat__lbl text-body-sm text-muted">Total</span>
-                </div>
-                <div class="proj-stat">
-                  <span class="proj-stat__val" style="color:#006b58">{{ stats()?.activeAffaires ?? 0 }}</span>
-                  <span class="proj-stat__lbl text-body-sm text-muted">En cours</span>
-                </div>
-                <div class="proj-stat">
-                  <span class="proj-stat__val">{{ (stats()?.totalAffaires ?? 0) - (stats()?.activeAffaires ?? 0) }}</span>
-                  <span class="proj-stat__lbl text-body-sm text-muted">Terminés</span>
-                </div>
-              </div>
-            </div>
-          }
-        </section>
-
-      </div><!-- /detail-main -->
-
-      <!-- ══ RIGHT COLUMN ══ -->
-      <div class="detail-sidebar">
-
-        <!-- KYC -->
-        <section class="glass-card section-card">
-          <h2 class="text-title-md" style="margin-bottom:14px">
-            <span class="material-symbols-outlined text-primary" style="vertical-align:middle;margin-right:6px;font-size:20px">verified_user</span>
-            Validation KYC
-          </h2>
-          @if (client()!.isKycDone) {
-            <div class="kyc-ok">
-              <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;color:#006b58;font-size:28px">check_circle</span>
-              <div>
-                <p class="text-label-bold" style="color:#006b58">Validé le {{ formatDate(client()!.kycApprovedAt) }}</p>
-                @if (client()!.kycApprovedByName) {
-                  <p class="text-body-sm text-muted">Par {{ client()!.kycApprovedByName }}</p>
-                }
-              </div>
-            </div>
-            <daf-button
-              *appHasPermission="'FACT_VALIDATE_KYC'"
-              [options]="{ variant: 'ghost', label: 'Révoquer le KYC', iconStart: 'lock_open', fullWidth: true }"
-              (onClick)="revokeKyc()" />
-          } @else {
-            <p class="text-body-sm text-muted" style="margin-bottom:14px;line-height:1.6">
-              Ce client n'a pas encore été validé KYC. La validation est requise avant d'émettre des factures.
-            </p>
-            <daf-button
-              *appHasPermission="'FACT_VALIDATE_KYC'"
-              [options]="{ variant: 'teal', label: 'Valider le KYC', iconStart: 'verified_user', fullWidth: true }"
-              (onClick)="validateKyc()" />
-          }
-        </section>
-
-        <!-- Actions rapides -->
-        <section class="glass-card section-card">
-          <h2 class="text-title-md" style="margin-bottom:14px">Actions rapides</h2>
-          <div class="action-btns">
-            <a class="btn-full btn-full--primary" [routerLink]="['../../invoicing']">
-              <span class="material-symbols-outlined">add_card</span>
-              Nouvelle facture
-            </a>
-            <a class="btn-full btn-full--outline-secondary" [routerLink]="['../../payments']">
-              <span class="material-symbols-outlined">payments</span>
-              Voir les paiements
-            </a>
-            <a class="btn-full btn-full--outline-primary" [routerLink]="['../../invoicing']">
-              <span class="material-symbols-outlined">receipt_long</span>
-              Voir les factures
-            </a>
-          </div>
-        </section>
-
-        <!-- Traçabilité -->
-        <section class="glass-card section-card tracability">
-          <h2 class="text-title-md" style="margin-bottom:16px">Traçabilité</h2>
-          <div class="trace-list">
-            <div class="trace-item">
-              <span class="material-symbols-outlined text-light">history</span>
-              <div>
-                <p class="text-label-caps text-muted">Créé le</p>
-                <p class="text-body-sm">{{ formatDate(client()!.createdAt) }}</p>
-              </div>
-            </div>
-            @if (client()!.updatedAt) {
-              <div class="trace-item">
-                <span class="material-symbols-outlined text-light">edit_note</span>
-                <div>
-                  <p class="text-label-caps text-muted">Dernière modification</p>
-                  <p class="text-body-sm">{{ formatDate(client()!.updatedAt) }}</p>
-                </div>
-              </div>
-            }
-            @if (stats()?.lastActivityDate) {
-              <div class="trace-item">
-                <span class="material-symbols-outlined text-light">event</span>
-                <div>
-                  <p class="text-label-caps text-muted">Dernière activité</p>
-                  <p class="text-body-sm">{{ formatDate(stats()!.lastActivityDate) }}</p>
-                </div>
-              </div>
-            }
-            <div class="trace-item">
-              <span class="material-symbols-outlined text-light">paid</span>
-              <div>
-                <p class="text-label-caps text-muted">Montant réglé</p>
-                <p class="text-body-sm">{{ stats()?.totalPaid | displayCurrency : (client()!.defaultCurrency ?? 'TND') }}</p>
-              </div>
-            </div>
-            @if ((stats()?.pendingAmount ?? 0) > 0) {
-              <div class="trace-item">
-                <span class="material-symbols-outlined" style="color:#d97706">hourglass_top</span>
-                <div>
-                  <p class="text-label-caps" style="color:#d97706">En attente de règlement</p>
-                  <p class="text-body-sm" style="color:#92400e;font-weight:600">
-                    {{ stats()!.pendingAmount | displayCurrency : (client()!.defaultCurrency ?? 'TND') }}
-                  </p>
-                </div>
-              </div>
-            }
-          </div>
-        </section>
-
-        <!-- Désactiver / Réactiver -->
-        @if (client()!.isActive && (stats()?.activeAffaires ?? 0) === 0) {
-          <daf-button
-            *appHasPermission="'FACT_MANAGE_CLIENTS'"
-            [options]="{ variant: 'danger', label: 'Désactiver ce client', iconStart: 'person_off', fullWidth: true }"
-            (onClick)="deactivateClient()" />
-        }
-        @if (!client()!.isActive) {
-          <daf-button
-            *appHasPermission="'FACT_MANAGE_CLIENTS'"
-            [options]="{ variant: 'ghost', label: 'Réactiver ce client', iconStart: 'person_check', fullWidth: true }"
-            (onClick)="reactivateClient()" />
-        }
-
-      </div><!-- /detail-sidebar -->
-
-    </div><!-- /detail-layout -->
-
-    <!-- Edit modal template -->
-    <ng-template #editFormTpl>
-      <app-client-form
-        [client]="client()!"
-        [paysId]="client()!.paysId"
-        (saved)="onClientSaved($event)"
-        (closed)="onEditFormClosed()" />
-    </ng-template>
-
   }
-</div>
+
+  @if (client(); as c) {
+    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE GAUCHE (30 %, sticky) — identité et actions
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:0 1 30%; min-width:320px">
+        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
+
+          <daf-page-header
+            size="md"
+            [title]="c.clientName"
+            [subtitle]="headerSubtitle()"
+            [badges]="headerBadges()"
+            [breadcrumbs]="breadcrumbs()"
+            [breadcrumbLabel]="'CLIENTS.DETAIL.BREADCRUMB_ARIA' | translate" />
+
+          <daf-section-card>
+
+            <div class="flex flex-col gap-5 p-6">
+              @for (f of identityLeadFields(); track f.label) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ f.label | translate }}
+                  </p>
+                  <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                </div>
+              }
+
+              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+                @for (f of identityGridFields(); track f.label) {
+                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                  </div>
+                }
+              </div>
+
+              @if (c.notes) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ 'CLIENTS.DETAIL.INFO.NOTES' | translate }}
+                  </p>
+                  <p class="whitespace-pre-wrap text-body-sm leading-relaxed text-on-surface-variant">{{ c.notes }}</p>
+                </div>
+              }
+            </div>
+
+            <!-- Actions en pied de section, deux par ligne — comme la fiche affaire. -->
+            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
+                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+              <daf-button
+                style="flex:1 1 45%"
+                [options]="{ variant: 'teal', size: 'sm', fullWidth: true, iconStart: 'add_card',
+                             label: 'CLIENTS.DETAIL.ACTIONS.NEW_INVOICE' | translate }"
+                (onClick)="goToInvoicing()" />
+
+              <daf-button *appHasPermission="'FACT_MANAGE_CLIENTS'"
+                style="flex:1 1 45%"
+                [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'edit_note',
+                             label: 'CLIENTS.DETAIL.ACTIONS.EDIT' | translate }"
+                (onClick)="openEditModal()" />
+
+              <daf-button *appHasPermission="'FACT_VALIDATE_KYC'"
+                style="flex:1 1 45%"
+                [options]="kycButtonOptions()"
+                (onClick)="toggleKyc()" />
+
+              <daf-button *appHasPermission="'FACT_MANAGE_CLIENTS'"
+                style="flex:1 1 45%"
+                [options]="activationButtonOptions()"
+                (onClick)="toggleActivation()" />
+            </div>
+
+          </daf-section-card>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE DROITE (70 %) — indicateurs puis onglets
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+          @for (k of kpiTiles(); track k.label) {
+            <daf-metric-card
+              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+              [label]="k.label | translate"
+              [value]="k.value"
+              [delta]="k.delta"
+              [options]="k.options" />
+          }
+        </div>
+
+        <daf-tabs #tabsRef
+          variant="underline"
+          [tabs]="tabs()"
+          [active]="activeTab()"
+          (activeChange)="activeTab.set($event)"
+          [tabsLabel]="'CLIENTS.DETAIL.TABS_ARIA' | translate"
+          idPrefix="client-detail" />
+
+        <div role="tabpanel"
+             [id]="tabsRef.panelId(activeTab())"
+             [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+             class="flex flex-col gap-6">
+
+          <!-- ── Vue générale ─────────────────────────────────────────── -->
+          @if (activeTab() === 'overview') {
+
+            <section style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+
+              <!-- Validation KYC -->
+              <daf-section-card style="flex:1 1 280px; min-height:200px; height:auto; display:flex; flex-direction:column"
+                                [options]="{ fullHeight: true }">
+                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'CLIENTS.DETAIL.KYC.TITLE' | translate }}
+                    </p>
+                    <span class="material-symbols-outlined text-headline-lg"
+                          [class]="c.isKycDone ? 'text-success' : 'text-warning'">verified_user</span>
+                  </div>
+
+                  @if (c.isKycDone) {
+                    <div class="flex flex-col gap-1">
+                      <p class="text-body-md font-bold text-success">
+                        {{ 'CLIENTS.DETAIL.KYC.VALIDATED_ON' | translate: { date: formatDate(c.kycApprovedAt) } }}
+                      </p>
+                      @if (c.kycApprovedByName) {
+                        <p class="text-body-sm text-on-surface-variant">
+                          {{ 'CLIENTS.DETAIL.KYC.BY' | translate: { name: c.kycApprovedByName } }}
+                        </p>
+                      }
+                    </div>
+                  } @else {
+                    <p class="text-body-sm leading-relaxed text-on-surface-variant">
+                      {{ 'CLIENTS.DETAIL.KYC.PENDING_HINT' | translate }}
+                    </p>
+                  }
+                </div>
+              </daf-section-card>
+
+              <!-- Projets liés -->
+              <daf-section-card style="flex:1 1 280px; min-height:200px; height:auto; display:flex; flex-direction:column"
+                                [options]="{ fullHeight: true }">
+                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'CLIENTS.DETAIL.PROJECTS.TITLE' | translate }}
+                    </p>
+                    <span class="material-symbols-outlined text-headline-lg text-outline">business_center</span>
+                  </div>
+
+                  <div style="display:flex; flex-wrap:wrap; gap:1rem">
+                    @for (s of projectStats(); track s.label) {
+                      <div class="flex flex-col gap-1" style="flex:1 1 30%">
+                        <span class="text-headline-md font-extrabold leading-none" [class]="s.tone">{{ s.value }}</span>
+                        <span class="text-body-sm text-on-surface-variant">{{ s.label | translate }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  <daf-button
+                    [options]="{ variant: 'ghost', size: 'sm', iconEnd: 'arrow_forward',
+                                 label: 'CLIENTS.DETAIL.PROJECTS.SEE_ALL' | translate }"
+                    (onClick)="goToAffaires()" />
+                </div>
+              </daf-section-card>
+            </section>
+
+            <!-- Recouvrement : facturé / encaissé / en attente -->
+            <daf-section-card>
+              <div class="flex flex-col gap-5 p-6">
+                <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                  {{ 'CLIENTS.DETAIL.COLLECTION.TITLE' | translate }}
+                </p>
+                <daf-progress-bar [label]="paidBarLabel()" [value]="paidPct()" [options]="paidBarOptions" />
+                <daf-progress-bar [label]="pendingBarLabel()" [value]="pendingPct()" [options]="pendingBarOptions" />
+                @if (stats()?.averagePaymentDelayDays != null) {
+                  <p class="text-body-sm text-on-surface-variant">
+                    {{ 'CLIENTS.DETAIL.COLLECTION.AVG_DELAY' | translate:
+                       { days: stats()!.averagePaymentDelayDays } }}
+                  </p>
+                }
+              </div>
+            </daf-section-card>
+          }
+
+          <!-- ── Contact ──────────────────────────────────────────────── -->
+          @if (activeTab() === 'contact') {
+            <daf-section-card>
+              <div class="flex flex-col gap-5 p-6">
+                @for (f of contactFields(); track f.label) {
+                  <div class="flex flex-col gap-1">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                  </div>
+                }
+              </div>
+            </daf-section-card>
+          }
+
+          <!-- ── Traçabilité ──────────────────────────────────────────── -->
+          @if (activeTab() === 'trace') {
+            <daf-section-card>
+              <div class="flex flex-col gap-4 p-6">
+                @for (f of traceFields(); track f.label) {
+                  <div class="flex items-baseline justify-between gap-3">
+                    <span class="text-body-sm text-on-surface-variant">{{ f.label | translate }}</span>
+                    <span class="text-body-md font-bold text-on-surface">{{ f.value }}</span>
+                  </div>
+                }
+              </div>
+            </daf-section-card>
+          }
+
+        </div>
+      </div>
+    </div>
+  }
+
+</daf-page>
+
+<!-- ══ Corps de modales (rendus par daf-modal via ModalService) ══ -->
+<ng-template #editFormTpl>
+  @if (client(); as c) {
+    <app-client-form
+      [client]="c"
+      [paysId]="c.paysId"
+      (saved)="onClientSaved($event)"
+      (closed)="onEditFormClosed()" />
+  }
+</ng-template>

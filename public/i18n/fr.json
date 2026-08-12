@@ -554,6 +554,14 @@
       "EMPTY": {
         "TITLE": "Aucun client trouvé",
         "DESC": "Modifiez vos filtres ou ajoutez un nouveau client."
+      },
+      "VIEW_GRID": "Vue cartes",
+      "VIEW_LIST": "Vue tableau",
+      "TABLE": {
+        "CODE": "Code",
+        "NAME": "Client",
+        "SECTOR": "Secteur",
+        "STATE": "État"
       }
     },
     "DETAIL": {
@@ -568,27 +576,33 @@
         "SECTION_TITLE": "Validation KYC",
         "VALIDATED": "KYC validé",
         "PENDING": "KYC en attente",
-        "VALIDATED_ON": "Validé le",
-        "BY": "Par :",
+        "VALIDATED_ON": "Validé le {{date}}",
+        "BY": "Par {{name}}",
         "REVOKE": "Révoquer le KYC",
         "PENDING_TEXT": "Ce client n'a pas encore été validé KYC. Sans cette validation, aucune facture ne pourra lui être émise.",
-        "VALIDATE_BTN": "Valider le KYC"
+        "VALIDATE_BTN": "Valider le KYC",
+        "TITLE": "Validation KYC",
+        "PENDING_HINT": "Ce client n'a pas encore été validé KYC. La validation est requise avant d'émettre des factures."
       },
       "INFO": {
         "TITLE": "Informations générales",
         "CODE": "Code client",
-        "TAX_ID": "N° fiscal",
+        "TAX_ID": "Identifiant fiscal",
         "SECTOR": "Secteur",
         "COUNTRY": "Pays",
         "ADDRESS": "Adresse",
         "PHONE": "Téléphone",
         "EMAIL": "Email",
-        "WEBSITE": "Site web"
+        "WEBSITE": "Site web",
+        "CURRENCY": "Devise",
+        "PAYMENT_TERMS": "Délai de paiement",
+        "NOTES": "Notes",
+        "DAYS": "{{days}} jours"
       },
       "CONTACT": {
         "TITLE": "Contact principal",
-        "NAME": "Nom",
-        "EMAIL": "Email",
+        "NAME": "Interlocuteur",
+        "EMAIL": "E-mail",
         "PHONE": "Téléphone",
         "EMAIL_GENERAL": "Email général",
         "WEBSITE": "Site web",
@@ -598,21 +612,77 @@
         "TOTAL_PROJECTS": "Total affaires",
         "ACTIVE_PROJECTS": "Affaires actives",
         "TOTAL_INVOICED": "Total facturé",
-        "AVG_DELAY": "Délai paiement moy."
+        "AVG_DELAY": "Délai paiement moy.",
+        "PROJECTS": "Projets",
+        "ACTIVE_COUNT": "{{count}} en cours",
+        "INVOICED": "Total facturé",
+        "PAID": "Encaissé",
+        "PENDING": "En attente"
       },
       "PROJECTS": {
-        "TITLE": "Affaires",
-        "SEE_ALL": "Voir toutes les affaires de ce client"
+        "TITLE": "Projets liés",
+        "SEE_ALL": "Voir les affaires",
+        "TOTAL": "Total",
+        "ACTIVE": "En cours",
+        "DONE": "Terminés"
       },
       "ACTIONS": {
         "TITLE": "Actions rapides",
         "INVOICES": "Voir les factures",
-        "PAYMENTS": "Suivi des paiements"
+        "PAYMENTS": "Suivi des paiements",
+        "NEW_INVOICE": "Nouvelle facture",
+        "EDIT": "Modifier",
+        "VALIDATE_KYC": "Valider le KYC",
+        "REVOKE_KYC": "Révoquer le KYC",
+        "DEACTIVATE": "Désactiver",
+        "REACTIVATE": "Réactiver"
       },
       "CREATED_AT": "Créé le",
       "UPDATED_AT": "Modifié le",
       "DEACTIVATE": "Désactiver ce client",
-      "REACTIVATE": "Réactiver ce client"
+      "REACTIVATE": "Réactiver ce client",
+      "LOAD_ERROR": "Impossible de charger le client.",
+      "BACK_TO_LIST": "Clients",
+      "BREADCRUMB_ARIA": "Fil d'Ariane",
+      "TABS_ARIA": "Sections de la fiche client",
+      "BADGE": {
+        "PAYMENT_TERMS": "Délai {{days}} j"
+      },
+      "TABS": {
+        "OVERVIEW": "Vue générale",
+        "CONTACT": "Contact",
+        "TRACE": "Traçabilité"
+      },
+      "COLLECTION": {
+        "TITLE": "Recouvrement",
+        "PAID": "Encaissé",
+        "PENDING": "En attente",
+        "AVG_DELAY": "Délai moyen de paiement constaté : {{days}} jours."
+      },
+      "TRACE": {
+        "CREATED_AT": "Créé le",
+        "UPDATED_AT": "Dernière modification",
+        "KYC_AT": "KYC validé le",
+        "KYC_BY": "KYC validé par",
+        "LAST_ACTIVITY": "Dernière activité"
+      },
+      "MODAL": {
+        "EDIT_TITLE": "Modifier {{name}}",
+        "CANCEL": "Annuler",
+        "CONFIRM": "Confirmer"
+      },
+      "CONFIRM": {
+        "REVOKE_KYC_TITLE": "Révoquer le KYC",
+        "REVOKE_KYC_BODY": "Révoquer la validation KYC de ce client ? Aucune facture ne pourra plus être émise tant qu’il n’est pas revalidé.",
+        "DEACTIVATE_TITLE": "Désactiver le client",
+        "DEACTIVATE_BODY": "Désactiver ce client ? Cette action est réversible."
+      },
+      "ERR": {
+        "KYC_VALIDATE": "Erreur lors de la validation KYC.",
+        "KYC_REVOKE": "Erreur lors de la révocation KYC.",
+        "DEACTIVATE": "Erreur lors de la désactivation.",
+        "REACTIVATE": "Erreur lors de la réactivation."
+      }
     },
     "FORM": {
       "SECTION_IDENTIFICATION": "Identification",
@@ -684,7 +754,9 @@
       "SUMMARY_NAME": "Nom",
       "SUMMARY_SECTOR": "Secteur",
       "SUMMARY_CITY": "Ville",
-      "SUMMARY_CURRENCY": "Devise"
+      "SUMMARY_CURRENCY": "Devise",
+      "BREADCRUMB_ARIA": "Fil d'Ariane",
+      "SUBTITLE": "Renseignez les informations du client, étape par étape."
     }
   },
   "AFFAIRES": {

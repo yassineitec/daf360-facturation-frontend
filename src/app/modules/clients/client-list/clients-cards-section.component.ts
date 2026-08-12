@@ -3,6 +3,9 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { ClientListItemDto } from '../client.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+// Les etats et leurs libelles viennent du meme fichier que ceux du tableau : les deux
+// vues ne peuvent plus diverger (cf. client-display.ts).
+import { CLIENT_STATE_ENTITY, CLIENT_STATE_LABEL, clientState } from '../client-display';
 
 /**
  * Card view of `/finance/clients` — one `daf-entity-card` per client.
@@ -75,14 +78,17 @@ export class ClientsCardsSectionComponent {
       options: {
         variant: 'glass',
         clickable: true,
-        image: { initials: initials(c.clientName) },
+        // Pas d'`image` : depuis la 4.16, une image omise ne dessine aucune pastille
+        // d'avatar et le titre prend toute la largeur de la carte — exactement ce que
+        // font les cartes d'affaires, avec lesquelles cette liste doit s'accorder.
         metadata: {
           title:    c.clientName,
           subtitle: [c.clientCode, c.sector ?? c.country].filter(Boolean).join(' · '),
           // The card has ONE status slot and the client carries two flags, so the
           // exception wins (UI-PLAYBOOK §6): inactive beats KYC. An active client
           // then splits on KYC — validated (green) vs awaiting (warning).
-          ...statusOf(c, t),
+          status:      CLIENT_STATE_ENTITY[clientState(c)],
+          statusLabel: t(CLIENT_STATE_LABEL[clientState(c)]),
         },
         metricsColumns: 2,
         metrics: [
@@ -97,16 +103,4 @@ export class ClientsCardsSectionComponent {
   });
 }
 
-/** Status slot + its precise label. Extracted so the mapping reads as one decision. */
-function statusOf(
-  c: ClientListItemDto,
-  t: (key: string) => string,
-): { status: 'active' | 'inactive' | 'pending'; statusLabel: string } {
-  if (!c.isActive)  return { status: 'inactive', statusLabel: t('CLIENTS.LIST.CARD.INACTIVE') };
-  if (c.isKycDone)  return { status: 'active',   statusLabel: t('CLIENTS.LIST.CARD.KYC_DONE') };
-  return { status: 'pending', statusLabel: t('CLIENTS.LIST.CARD.KYC_PENDING') };
-}
 
-function initials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '—';
-}

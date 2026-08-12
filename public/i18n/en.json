@@ -554,10 +554,18 @@
       "EMPTY": {
         "TITLE": "No clients found",
         "DESC": "Adjust your filters or add a new client."
+      },
+      "VIEW_GRID": "Card view",
+      "VIEW_LIST": "Table view",
+      "TABLE": {
+        "CODE": "Code",
+        "NAME": "Client",
+        "SECTOR": "Sector",
+        "STATE": "Status"
       }
     },
     "DETAIL": {
-      "LOADING": "Loading client…",
+      "LOADING": "Loading the client…",
       "RETRY": "Retry",
       "EDIT": "Edit",
       "INACTIVE": "Inactive",
@@ -568,11 +576,13 @@
         "SECTION_TITLE": "KYC Validation",
         "VALIDATED": "KYC validated",
         "PENDING": "KYC pending",
-        "VALIDATED_ON": "Validated on",
-        "BY": "By:",
+        "VALIDATED_ON": "Approved on {{date}}",
+        "BY": "By {{name}}",
         "REVOKE": "Revoke KYC",
         "PENDING_TEXT": "This client has not yet been KYC validated. Without this validation, no invoice can be issued to them.",
-        "VALIDATE_BTN": "Validate KYC"
+        "VALIDATE_BTN": "Validate KYC",
+        "TITLE": "KYC approval",
+        "PENDING_HINT": "This client has not been KYC-approved yet. Approval is required before any invoice can be issued."
       },
       "INFO": {
         "TITLE": "General information",
@@ -583,11 +593,15 @@
         "ADDRESS": "Address",
         "PHONE": "Phone",
         "EMAIL": "Email",
-        "WEBSITE": "Website"
+        "WEBSITE": "Website",
+        "CURRENCY": "Currency",
+        "PAYMENT_TERMS": "Payment terms",
+        "NOTES": "Notes",
+        "DAYS": "{{days}} days"
       },
       "CONTACT": {
         "TITLE": "Main contact",
-        "NAME": "Name",
+        "NAME": "Contact person",
         "EMAIL": "Email",
         "PHONE": "Phone",
         "EMAIL_GENERAL": "General email",
@@ -598,21 +612,77 @@
         "TOTAL_PROJECTS": "Total projects",
         "ACTIVE_PROJECTS": "Active projects",
         "TOTAL_INVOICED": "Total invoiced",
-        "AVG_DELAY": "Avg. payment delay"
+        "AVG_DELAY": "Avg. payment delay",
+        "PROJECTS": "Projects",
+        "ACTIVE_COUNT": "{{count}} in progress",
+        "INVOICED": "Total invoiced",
+        "PAID": "Collected",
+        "PENDING": "Outstanding"
       },
       "PROJECTS": {
-        "TITLE": "Projects",
-        "SEE_ALL": "View all projects for this client"
+        "TITLE": "Related projects",
+        "SEE_ALL": "View projects",
+        "TOTAL": "Total",
+        "ACTIVE": "In progress",
+        "DONE": "Completed"
       },
       "ACTIONS": {
         "TITLE": "Quick actions",
         "INVOICES": "View invoices",
-        "PAYMENTS": "Payment tracking"
+        "PAYMENTS": "Payment tracking",
+        "NEW_INVOICE": "New invoice",
+        "EDIT": "Edit",
+        "VALIDATE_KYC": "Approve KYC",
+        "REVOKE_KYC": "Revoke KYC",
+        "DEACTIVATE": "Deactivate",
+        "REACTIVATE": "Reactivate"
       },
       "CREATED_AT": "Created on",
       "UPDATED_AT": "Modified on",
       "DEACTIVATE": "Deactivate this client",
-      "REACTIVATE": "Reactivate this client"
+      "REACTIVATE": "Reactivate this client",
+      "LOAD_ERROR": "Could not load the client.",
+      "BACK_TO_LIST": "Clients",
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "TABS_ARIA": "Client record sections",
+      "BADGE": {
+        "PAYMENT_TERMS": "{{days}} d terms"
+      },
+      "TABS": {
+        "OVERVIEW": "Overview",
+        "CONTACT": "Contact",
+        "TRACE": "Audit trail"
+      },
+      "COLLECTION": {
+        "TITLE": "Collection",
+        "PAID": "Collected",
+        "PENDING": "Outstanding",
+        "AVG_DELAY": "Observed average payment delay: {{days}} days."
+      },
+      "TRACE": {
+        "CREATED_AT": "Created on",
+        "UPDATED_AT": "Last modified",
+        "KYC_AT": "KYC approved on",
+        "KYC_BY": "KYC approved by",
+        "LAST_ACTIVITY": "Last activity"
+      },
+      "MODAL": {
+        "EDIT_TITLE": "Edit {{name}}",
+        "CANCEL": "Cancel",
+        "CONFIRM": "Confirm"
+      },
+      "CONFIRM": {
+        "REVOKE_KYC_TITLE": "Revoke KYC",
+        "REVOKE_KYC_BODY": "Revoke this client’s KYC approval? No invoice can be issued until it is approved again.",
+        "DEACTIVATE_TITLE": "Deactivate client",
+        "DEACTIVATE_BODY": "Deactivate this client? This can be undone."
+      },
+      "ERR": {
+        "KYC_VALIDATE": "Could not approve KYC.",
+        "KYC_REVOKE": "Could not revoke KYC.",
+        "DEACTIVATE": "Could not deactivate the client.",
+        "REACTIVATE": "Could not reactivate the client."
+      }
     },
     "FORM": {
       "SECTION_IDENTIFICATION": "Identification",
@@ -684,7 +754,9 @@
       "SUMMARY_NAME": "Name",
       "SUMMARY_SECTOR": "Industry",
       "SUMMARY_CITY": "City",
-      "SUMMARY_CURRENCY": "Currency"
+      "SUMMARY_CURRENCY": "Currency",
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "SUBTITLE": "Fill in the client details, step by step."
     }
   },
   "AFFAIRES": {
