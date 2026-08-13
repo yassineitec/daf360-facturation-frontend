@@ -664,9 +664,10 @@
         "NEW_INVOICE": "New invoice",
         "EDIT": "Edit",
         "VALIDATE_KYC": "Approve KYC",
+        "EDIT_LONG": "Edit client",
         "REVOKE_KYC": "Revoke KYC",
-        "DEACTIVATE": "Deactivate",
-        "REACTIVATE": "Reactivate"
+        "DEACTIVATE": "Block client",
+        "REACTIVATE": "Reactivate client"
       },
       "CREATED_AT": "Created on",
       "UPDATED_AT": "Modified on",
@@ -774,6 +775,10 @@
       "VALIDATION_REQUIRED": "Required fields: client name · industry.",
       "BREADCRUMB_CLIENTS": "Clients",
       "BREADCRUMB_NEW": "New Client",
+      "BREADCRUMB_EDIT": "Edit client",
+      "TITLE_EDIT": "Edit client",
+      "SAVE": "Save",
+      "LOAD_ERROR": "Could not load this client. Please try again.",
       "TITLE": "Create a new client",
       "STEP_COUNTER": "Step {{current}} of {{total}}",
       "PREV": "Previous",
@@ -877,6 +882,11 @@
         "PAYMENTS": "Payments"
       },
       "ACTIONS": {
+        "QUICK_TITLE": "Quick actions",
+        "TIME_TITLE": "Log time",
+        "EXPENSES_TITLE": "Add expenses",
+        "STATUS_CHANGE": "Change the project status",
+        "EDIT_LONG": "Edit project",
         "NEW_TS": "New additional work",
         "EDIT": "Edit",
         "STATUS": "Status",

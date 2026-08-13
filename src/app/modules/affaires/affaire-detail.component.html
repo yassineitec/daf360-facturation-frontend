@@ -123,47 +123,88 @@
               }
             </div>
 
-            <!-- Actions en pied de section. Chaque bouton porte `flex:1 1 45%` + `fullWidth` :
-                 deux par ligne, largeurs égales, et la dernière ligne s'étire au lieu de
-                 laisser un demi-vide. Sans base flex, des libellés de longueurs différentes
-                 donnent un pavé en escalier. -->
-            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
-                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+            <!-- ══════════════════════════════════════════════════════════════
+                 CENTRE D'ACTIONS — trois niveaux, trois traitements visuels.
+                 Les cinq actions étaient auparavant cinq `daf-button` de même
+                 taille dans une grille 2 × 3 : « Statut » pesait donc autant que
+                 « Nouvelle facture », et rien ne disait par où commencer.
+                 ══════════════════════════════════════════════════════════════ -->
+            <div class="flex flex-col gap-3 border-t border-outline-variant/30 bg-surface-container p-6">
+
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'AFFAIRES.DETAIL.ACTIONS.QUICK_TITLE' | translate }}
+              </p>
+
+              <!-- 1. Action principale — `daf-button` en `variant: 'primary'`, `size: 'lg'`
+                   et `fullWidth`. La hiérarchie ne repose plus sur du balisage maison mais
+                   sur les échelons de la lib : `lg` (16 px, py-3) contre `sm` (12 px, py-2)
+                   pour les deux actions suivantes, soit un écart lisible d'un coup d'œil. -->
               <daf-button
-                style="flex:1 1 45%"
-                [options]="{ variant: 'teal', size: 'sm', fullWidth: true, label: 'AFFAIRES.DETAIL.SIDEBAR.NEW_INVOICE' | translate, iconStart: 'add' }"
+                [options]="newInvoiceOptions()"
                 (onClick)="goToInvoicing()" />
 
-              <daf-button *appHasPermission="'FACT_CREATE_TS'"
-                style="flex:1 1 45%"
-                [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, label: 'AFFAIRES.DETAIL.ACTIONS.NEW_TS' | translate, iconStart: 'post_add' }"
-                (onClick)="openTsForm()" />
+              <!-- 2. Actions opérationnelles — deux `daf-button` `size: 'sm'` sur UNE ligne,
+                   à largeurs égales (`grid-cols-2` + `fullWidth` : c'est la cellule qui
+                   décide de la largeur, pas la longueur du libellé). -->
+              <div class="grid grid-cols-2 gap-2">
+                <daf-button *appHasPermission="'FACT_CREATE_TS'"
+                  [options]="timeButtonOptions()"
+                  (onClick)="openTsForm()" />
 
-              <!-- Frais remboursables : ce n'est plus un mode de facturation mais une
-                   action de la fiche, disponible sur TOUTE affaire quel que soit son
-                   mode — d'où sa place ici, à côté de « Nouvelle facture ». -->
-              <daf-button
-                style="flex:1 1 45%"
-                [options]="expensesButtonOptions()"
-                (onClick)="openExpenses()" />
+                <!-- Frais : ce n'est plus un mode de facturation mais une action de la
+                     fiche, disponible sur TOUTE affaire quel que soit son mode. -->
+                <daf-button
+                  [options]="expenseButtonOptions()"
+                  (onClick)="openExpenses()" />
+              </div>
 
-              <daf-button *appHasPermission="'FACT_UPDATE_AFFAIRE'"
-                style="flex:1 1 45%"
-                [options]="editButtonOptions()"
-                (onClick)="openEdit()" />
+              <!-- 3. Actions de gestion — rangée de pied sous un filet. Pas de fond, pas
+                   de bordure : ce sont les actions qu'on cherche quand on les cherche, pas
+                   celles qu'on propose. `py-2` garantit une cible tactile d'au moins 40 px
+                   malgré la petite typographie. -->
+              <div *appHasPermission="'FACT_UPDATE_AFFAIRE'"
+                   class="mt-1 flex flex-wrap items-center justify-between gap-2
+                          border-t border-outline-variant/30 pt-3">
 
-              <daf-button *appHasPermission="'FACT_UPDATE_AFFAIRE'"
-                style="flex:1 1 45%"
-                [options]="statusButtonOptions()"
-                (onClick)="openStatutModal()" />
+                <button type="button"
+                        class="group flex items-center gap-1.5 rounded-lg px-2 py-2 text-body-sm
+                               font-semibold text-on-surface-variant transition-colors
+                               hover:bg-surface-container-high hover:text-on-surface
+                               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        (click)="openEdit()">
+                  <span class="material-symbols-outlined text-base">edit_note</span>
+                  {{ editLabel() }}
+                </button>
+
+                <!-- Le statut COURANT plutôt qu'un bouton « Statut » : l'information est
+                     lue avant l'interaction. Sans transition possible, la pastille reste
+                     affichée mais hors du bouton — un bouton désactivé qui montre une
+                     donnée utile invite au clic pour rien. -->
+                @if (canChangeStatus()) {
+                  <button type="button"
+                          class="group flex items-center gap-1.5 rounded-lg px-2 py-2
+                                 transition-colors hover:bg-surface-container-high
+                                 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          [title]="'AFFAIRES.DETAIL.ACTIONS.STATUS_CHANGE' | translate"
+                          (click)="openStatutModal()">
+                    <daf-badge [label]="statusChipLabel()" [options]="statusChipOptions()" />
+                    <span class="material-symbols-outlined text-base text-outline
+                                 transition-transform duration-200
+                                 group-hover:translate-x-0.5">chevron_right</span>
+                  </button>
+                } @else {
+                  <span class="px-2 py-2">
+                    <daf-badge [label]="statusChipLabel()" [options]="statusChipOptions()" />
+                  </span>
+                }
+              </div>
 
               @if (!aff.budgetValide) {
-                <!-- Pleine largeur : c'est la cinquième, elle serait seule sur sa ligne. -->
-                <div style="flex:1 1 100%">
-                  <daf-button *appHasPermission="'FACT_VALIDER_BUDGET'"
-                    [options]="validateBudgetOptions()"
-                    (onClick)="validerBudget()" />
-                </div>
+                <!-- Validation du budget : action exceptionnelle et bloquante, donc hors
+                     hiérarchie — elle disparaît dès qu'elle est faite. -->
+                <daf-button *appHasPermission="'FACT_VALIDER_BUDGET'"
+                  [options]="validateBudgetOptions()"
+                  (onClick)="validerBudget()" />
               }
             </div>
 

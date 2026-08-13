@@ -206,6 +206,61 @@ $deep-blue:  #164B60;
   min-width: 0;
 }
 
+// ── Actions de la barre : du texte, pas des boutons dessinés ─────────────────
+//
+// `color` est posé sur le BOUTON et l'icône n'en déclare aucune : les symboles Material
+// héritent de `currentColor`, donc le libellé et l'icône changent forcément ensemble au
+// survol. C'était la demande — et c'est aussi ce qui évite qu'ils se désynchronisent le
+// jour où l'un des deux tons est retouché.
+//
+// La couleur de survol reprend `--color-teal`, la teinte interactive de l'application
+// (celle du rail, des liens de tableau et de l'ancien bouton `teal` de cette barre).
+.footer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  transition: color 0.15s;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &:hover:not(:disabled) { color: var(--color-teal); }
+
+  // L'anneau de focus reste, lui : sans fond ni bordure, c'est le seul repère du
+  // parcours au clavier.
+  &:focus-visible {
+    outline: 2px solid var(--color-teal);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    color: var(--color-outline);
+    cursor: not-allowed;
+  }
+}
+
+// L'action « suivante » porte son icône APRÈS le libellé (l'ordre vient du gabarit) ;
+// rien à inverser ici, seule la graisse la distingue de l'action de retour.
+.footer-action--forward {
+  font-weight: 700;
+}
+
+.footer-action__spin {
+  animation: footer-action-spin 1s linear infinite;
+}
+
+@keyframes footer-action-spin {
+  to { transform: rotate(360deg); }
+}
+
 // Sous 720 px, le rail passe SOUS les deux boutons plutôt que d'être coincé entre eux :
 // en repli naturel il aurait emmené « Suivant » seul sur une deuxième ligne, ce qui
 // éloigne les deux boutons de navigation l'un de l'autre sans rien gagner.

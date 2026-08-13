@@ -1,8 +1,8 @@
-@if (serverError()) {
-  <div class="error-banner">
-    <span class="material-symbols-outlined">error</span>
-    {{ serverError() }}
-  </div>
+<!-- `daf-field-message` : la ligne d'erreur de la lib, à la place du `.error-banner`
+     maison. C'est le SEUL endroit où l'erreur d'enregistrement s'affiche — l'assistant qui
+     héberge ce formulaire ne la reprend pas. -->
+@if (serverError(); as err) {
+  <daf-field-message [error]="err" />
 }
 
 <!-- ── Section 1 : Identification ──────────────────────────────────────────── -->
@@ -58,7 +58,7 @@
         [options]="countryOptions()"
         [config]="countrySelectConfig()"
         [selected]="country() ? [country()] : []"
-        (selectedChange)="country.set($event[0] ?? '')" />
+        (selectedChange)="country.set($event[0])" />
     </div>
 
   </div>

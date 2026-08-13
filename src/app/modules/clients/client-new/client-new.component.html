@@ -3,14 +3,13 @@
      résumé de la saisie en pastilles, et la barre d'actions du bas porte la progression.
      Plus de `.wizard-page` / `.page-head` / `.sidebar` maison.
 
-     La barre est `sticky` et vit DANS `daf-page` : le conteneur de défilement est
-     `.shell-content`, qui porte la marge de la barre latérale ; une barre `fixed` se
-     calerait sur la fenêtre et se retrouverait décentrée par rapport au formulaire. -->
+     Il sert AUSSI la modification (`clients/:id/edit`) : le formulaire est le même
+     composant, il reçoit simplement le client à modifier. -->
 
-<daf-page [kpis]="0" [breadcrumbs]="true">
+<daf-page [loading]="isLoading()" [kpis]="0" [breadcrumbs]="true">
 
   <daf-page-header
-    [title]="'CLIENTS.NEW.TITLE' | translate"
+    [title]="pageTitle()"
     [subtitle]="pageSubtitle()"
     [badges]="headerBadges()"
     [breadcrumbs]="breadcrumbs()"
@@ -34,18 +33,36 @@
       </div>
 
       <div class="step-body">
-        <app-client-form
-          #formRef
-          [paysId]="paysId()"
-          [activeSection]="currentStep()"
-          (saved)="onSaved($event)"
-          (closed)="goBack()" />
+        <!-- `client` : c'est cette entrée qui préremplit tous les champs en édition.
+             `@if` sur le chargement, sinon le formulaire s'initialiserait vide avant
+             l'arrivée du client et `ngOnInit` ne rejoue pas. -->
+        @if (!editMode() || editClient()) {
+          <app-client-form
+            #formRef
+            [client]="editClient() ?? undefined"
+            [paysId]="paysId()"
+            [activeSection]="currentStep()"
+            (saved)="onSaved($event)"
+            (closed)="goBack()" />
+        }
       </div>
 
+      <!-- Erreurs et rappels de saisie : `daf-field-message`, la ligne de message de la
+           lib (icône + ton `danger`, `role="alert"` / `aria-live`) — plus de bandeau
+           maison à re-styler page par page. -->
+      @if (loadError()) {
+        <div class="step-message">
+          <daf-field-message [error]="loadError()!" />
+        </div>
+      }
+
+      <!-- L'erreur d'enregistrement n'est PAS reprise ici : `app-client-form` l'affiche
+           déjà en tête de ses champs, et la répéter en pied de carte donnerait deux fois
+           le même message à l'écran. -->
+
       @if (!canGoNext() && currentStep() === 1) {
-        <div class="validation-hint">
-          <span class="material-symbols-outlined">info</span>
-          <span>{{ stepValidationError() }}</span>
+        <div class="step-message">
+          <daf-field-message [hint]="stepValidationError()!" />
         </div>
       }
 
@@ -54,39 +71,56 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       BARRE D'ACTIONS — progression + navigation, comme l'assistant d'affaire.
-       `daf-stepper` en `chrome: 'header-only'` : le rail seul, la navigation
-       reste à nous.
+       BARRE D'ACTIONS — identique à celle de l'assistant d'affaire : dalle
+       `daf-card variant: 'floating'` (sans bordure), rail ENTRE les deux
+       boutons, boutons `size: 'sm'`. Le placement vit dans `.action-bar`.
        ══════════════════════════════════════════════════════════════════ -->
-  <div class="action-bar rounded-xl border border-outline-variant bg-surface-container-lowest
-              p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
-       style="position:sticky; bottom:1rem; z-index:40; display:flex; flex-wrap:wrap;
-              align-items:center; justify-content:space-between; gap:1rem">
+  <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
+    <div class="action-bar__inner">
 
-    <div style="flex:1 1 320px; min-width:0">
-      <daf-stepper
-        orientation="horizontal"
-        [steps]="stepperSteps()"
-        [currentStep]="currentStep() - 1"
-        [config]="stepperConfig()"
-        (stepClick)="onStepClick($event)" />
+      <!-- Actions de texte et non `daf-button`, comme l'assistant d'affaire : la barre est
+           un chrome de navigation. Gris au repos, libellé ET icône passent ensemble à la
+           couleur interactive au survol (l'icône hérite de `currentColor`). -->
+      <div class="action-bar__side">
+        @if (currentStep() > 1) {
+          <button type="button" class="footer-action" (click)="goPrev()">
+            <span class="material-symbols-outlined">arrow_back</span>
+            {{ 'CLIENTS.NEW.PREV' | translate }}
+          </button>
+        } @else {
+          <button type="button" class="footer-action" (click)="goBack()">
+            <span class="material-symbols-outlined">close</span>
+            {{ 'CLIENTS.NEW.CANCEL' | translate }}
+          </button>
+        }
+      </div>
+
+      <div class="action-bar__rail">
+        <daf-stepper
+          orientation="horizontal"
+          [steps]="stepperSteps()"
+          [currentStep]="currentStep() - 1"
+          [config]="stepperConfig()"
+          (stepClick)="onStepClick($event)" />
+      </div>
+
+      <div class="action-bar__side action-bar__side--end">
+        <button type="button"
+                class="footer-action footer-action--forward"
+                [disabled]="isSaving()"
+                (click)="goNext()">
+          {{ nextLabel() }}
+          @if (isSaving()) {
+            <span class="material-symbols-outlined footer-action__spin">progress_activity</span>
+          } @else if (currentStep() < steps().length) {
+            <span class="material-symbols-outlined">arrow_forward</span>
+          } @else {
+            <span class="material-symbols-outlined">{{ editMode() ? 'save' : 'person_add' }}</span>
+          }
+        </button>
+      </div>
+
     </div>
-
-    <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
-      @if (currentStep() > 1) {
-        <daf-button
-          [options]="{ variant: 'ghost', pill: true, iconStart: 'arrow_back',
-                       label: 'CLIENTS.NEW.PREV' | translate }"
-          (onClick)="goPrev()" />
-      } @else {
-        <daf-button
-          [options]="{ variant: 'ghost', pill: true, iconStart: 'close',
-                       label: 'CLIENTS.NEW.CANCEL' | translate }"
-          (onClick)="goBack()" />
-      }
-      <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
-    </div>
-
-  </div>
+  </daf-card>
 
 </daf-page>

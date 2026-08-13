@@ -16,11 +16,11 @@
 <daf-page [loading]="isLoading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
           [loadingLabel]="'CLIENTS.DETAIL.LOADING' | translate">
 
-  @if (actionError()) {
-    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
-      <span class="material-symbols-outlined text-headline-md">error</span>
-      {{ actionError() }}
-    </div>
+  <!-- `daf-field-message` : la ligne de message de la lib (icône + ton `danger`,
+       `role="alert"` / `aria-live`), à la place du bandeau maison que chaque page
+       re-dessinait à sa façon. -->
+  @if (actionError(); as err) {
+    <daf-field-message [error]="err" />
   }
 
   @if (client(); as c) {
@@ -73,30 +73,61 @@
               }
             </div>
 
-            <!-- Actions en pied de section, deux par ligne — comme la fiche affaire. -->
-            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
-                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+            <!-- ══════════════════════════════════════════════════════════════
+                 CENTRE D'ACTIONS — même hiérarchie que la fiche affaire :
+                 une action principale pleine largeur, les actions
+                 opérationnelles en dessous, la gestion dans une rangée de pied
+                 sous un filet. Les quatre actions étaient auparavant quatre
+                 boutons de même taille dans une grille 2 × 2.
+                 ══════════════════════════════════════════════════════════════ -->
+            <div class="flex flex-col gap-3 border-t border-outline-variant/30 bg-surface-container p-6">
+
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'CLIENTS.DETAIL.ACTIONS.TITLE' | translate }}
+              </p>
+
+              <!-- 1. Action principale : facturer le client. -->
               <daf-button
-                style="flex:1 1 45%"
-                [options]="{ variant: 'teal', size: 'sm', fullWidth: true, iconStart: 'add_card',
-                             label: 'CLIENTS.DETAIL.ACTIONS.NEW_INVOICE' | translate }"
+                [options]="newInvoiceOptions()"
                 (onClick)="goToInvoicing()" />
 
+              <!-- 2. Action opérationnelle : le KYC. Seule sur sa ligne — c'est la seule
+                   action de ce niveau sur un client, l'accompagner d'une demi-largeur vide
+                   ne dirait rien. Son urgence est déjà portée par la carte « Validation
+                   KYC » ci-contre, qui passe en `warning` tant qu'il manque. -->
               <daf-button *appHasPermission="'FACT_MANAGE_INVOICING'"
-                style="flex:1 1 45%"
-                [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'edit_note',
-                             label: 'CLIENTS.DETAIL.ACTIONS.EDIT' | translate }"
-                (onClick)="openEditModal()" />
-
-              <daf-button *appHasPermission="'FACT_MANAGE_INVOICING'"
-                style="flex:1 1 45%"
                 [options]="kycButtonOptions()"
                 (onClick)="toggleKyc()" />
 
-              <daf-button *appHasPermission="'FACT_MANAGE_INVOICING'"
-                style="flex:1 1 45%"
-                [options]="activationButtonOptions()"
-                (onClick)="toggleActivation()" />
+              <!-- 3. Actions de gestion — rangée de pied. Les deux actions sont NOMMÉES :
+                   la pastille d'état qui occupait la place à droite disait « KYC en
+                   attente » là où l'on cherchait le bouton pour bloquer le client, et
+                   l'état est déjà lisible deux fois sur la page (pastille du titre, carte
+                   « Validation KYC »). `py-2` garantit une cible d'au moins 40 px. -->
+              <div *appHasPermission="'FACT_MANAGE_INVOICING'"
+                   class="mt-1 flex flex-wrap items-center justify-between gap-2
+                          border-t border-outline-variant/30 pt-3">
+
+                <button type="button"
+                        class="flex items-center gap-1.5 rounded-lg px-2 py-2 text-body-sm
+                               font-semibold text-on-surface-variant transition-colors
+                               hover:bg-surface-container-high hover:text-on-surface
+                               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        (click)="openEdit()">
+                  <span class="material-symbols-outlined text-base">edit_note</span>
+                  {{ 'CLIENTS.DETAIL.ACTIONS.EDIT_LONG' | translate }}
+                </button>
+
+                <button type="button"
+                        class="flex items-center gap-1.5 rounded-lg px-2 py-2 text-body-sm
+                               font-semibold text-on-surface-variant transition-colors
+                               hover:bg-surface-container-high hover:text-on-surface
+                               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        (click)="toggleActivation()">
+                  <span class="material-symbols-outlined text-base">{{ activationIcon() }}</span>
+                  {{ activationTitle() }}
+                </button>
+              </div>
             </div>
 
           </daf-section-card>
@@ -150,14 +181,20 @@
                   </div>
 
                   @if (c.isKycDone) {
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-2">
                       <p class="text-body-md font-bold text-success">
                         {{ 'CLIENTS.DETAIL.KYC.VALIDATED_ON' | translate: { date: formatDate(c.kycApprovedAt) } }}
                       </p>
-                      @if (c.kycApprovedByName) {
-                        <p class="text-body-sm text-on-surface-variant">
-                          {{ 'CLIENTS.DETAIL.KYC.BY' | translate: { name: c.kycApprovedByName } }}
-                        </p>
+                      <!-- Le validateur avec sa pastille : c'est une personne, et la
+                           validation KYC est l'acte que l'on veut pouvoir imputer d'un coup
+                           d'œil. `daf-avatar` porte déjà les initiales et l'infobulle. -->
+                      @if (kycApprover(); as approver) {
+                        <div class="flex items-center gap-2">
+                          <daf-avatar [data]="approver" size="xs" />
+                          <p class="text-body-sm text-on-surface-variant">
+                            {{ 'CLIENTS.DETAIL.KYC.BY' | translate: { name: approver.name } }}
+                          </p>
+                        </div>
                       }
                     </div>
                   } @else {
@@ -251,13 +288,5 @@
 
 </daf-page>
 
-<!-- ══ Corps de modales (rendus par daf-modal via ModalService) ══ -->
-<ng-template #editFormTpl>
-  @if (client(); as c) {
-    <app-client-form
-      [client]="c"
-      [paysId]="c.paysId"
-      (saved)="onClientSaved($event)"
-      (closed)="onEditFormClosed()" />
-  }
-</ng-template>
+<!-- Plus de modale d'édition ici : la modification passe par `clients/:id/edit`, qui
+     réutilise l'assistant de création préremplli. -->

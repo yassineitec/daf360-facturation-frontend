@@ -3,15 +3,16 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  AvatarGroupComponent, BarChartComponent, ButtonComponent, ButtonOptions, DataTableComponent,
-  MetricCardComponent,
+  AvatarGroupComponent, BarChartComponent, ButtonComponent, ButtonOptions,
+  DataTableComponent, MetricCardComponent,
   DrawerComponent, FormFieldComponent, FormFieldOptions, GaugeComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
   RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, StatusBadgeComponent,
   TabsComponent,
 } from '@khalilrebhiitec/daf360';
 import type {
-  AvatarData, BadgeCell, BarChartBar, BarChartOptions, BreadcrumbItem, DrawerConfig,
+  AvatarData, BadgeCell, BadgeOptions, BarChartBar, BarChartOptions, BreadcrumbItem,
+  DrawerConfig,
   MetricCardOptions, MetricDelta,
   FilterField, FilterResult, GaugeOptions, PageHeaderBadge, RadioOption,
   SearchToolbarFilterConfig, TabItem, TableAction, TableColumn, TableConfig, TableRow,
@@ -245,41 +246,98 @@ export class AffaireDetailComponent implements OnInit {
     ];
   });
 
-  // `fullWidth` sur les trois : ils vivent dans une grille 2 colonnes en pied de la carte
-  // d'informations, c'est donc la cellule qui doit décider de la largeur, pas le libellé.
-  readonly editButtonOptions = computed<ButtonOptions>(() => ({
-    variant:   'secondary',
-    size:      'sm',
-    fullWidth: true,
-    iconStart: 'edit_note',
-    // Libellé court : c'est une des trois actions qui doivent tenir sur la ligne de titre.
-    label: this.translate.instant(this.affaire()?.statut === 'DRAFT'
-      ? 'AFFAIRES.DETAIL.SIDEBAR.COMPLETE_DRAFT_BTN'
-      : 'AFFAIRES.DETAIL.ACTIONS.EDIT'),
-  }));
+  // ═══ Centre d'actions ═════════════════════════════════════════════════════
+  //
+  // Trois niveaux de hiérarchie, trois traitements visuels — et non cinq boutons de
+  // même poids comme avant, où « Statut » criait aussi fort que « Nouvelle facture » :
+  //
+  //   1. Émettre une facture      → appel à l'action pleine largeur, teinté marque
+  //   2. Saisir temps / frais     → deux tuiles `daf-card` identiques, surface claire
+  //   3. Modifier / Statut        → rangée de pied discrète, sous un filet
+  //
+  // Le libellé de l'étape 1 reste « Nouvelle facture » : c'est le vocabulaire du module
+  // Facturation, le renommer ici désaccorderait la fiche et l'écran d'arrivée.
 
-  // Boutons de la carte d'identité : `size: 'sm'`, ils vivent dans une colonne de 30 %.
-  readonly statusButtonOptions = computed<ButtonOptions>(() => ({
-    variant:   'secondary',
-    size:      'sm',
-    fullWidth: true,
-    iconStart: 'swap_horiz',
-    label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.STATUS'),
-    disabled:  this.availableTransitions().length === 0,
-  }));
+  /** Libellé de l'action de modification — un brouillon se « complète », il ne se corrige pas. */
+  readonly editLabel = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(this.affaire()?.statut === 'DRAFT'
+      ? 'AFFAIRES.DETAIL.SIDEBAR.COMPLETE_DRAFT_BTN'
+      : 'AFFAIRES.DETAIL.ACTIONS.EDIT_LONG');
+  });
 
   /**
-   * « Frais remboursables ». Sans garde de permission : le panneau ouvert applique
-   * déjà les siennes, et RMB n'étant plus un mode de facturation, l'action doit être
-   * proposée sur toute affaire — pas seulement sur celles qui portaient ce mode.
+   * L'action principale : `variant: 'primary'` (la teinte marque), `size: 'lg'` et
+   * `fullWidth`. La flèche de fin porte l'affordance « ça mène ailleurs » — cliquer
+   * quitte la fiche pour l'écran Facturation ; la lib l'anime déjà au survol.
    */
-  readonly expensesButtonOptions = computed<ButtonOptions>(() => ({
-    variant:   'secondary',
-    size:      'sm',
-    fullWidth: true,
-    iconStart: 'receipt_long',
-    label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.EXPENSES'),
+  readonly newInvoiceOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant:   'primary',
+      size:      'lg',
+      fullWidth: true,
+      iconStart: 'receipt',
+      iconEnd:   'arrow_forward',
+      label:     this.translate.instant('AFFAIRES.DETAIL.SIDEBAR.NEW_INVOICE'),
+    };
+  });
+
+  /**
+   * Les deux actions opérationnelles : mêmes options à l'icône et au libellé près, donc
+   * même hauteur et même poids visuel. `size: 'sm'` contre le `lg` de l'action principale,
+   * et `variant: 'secondary'` contre `primary` : l'écart de hiérarchie tient aux deux
+   * échelons de la lib, sans style maison.
+   *
+   * `fullWidth` : la largeur vient de la cellule de grille, sinon deux libellés de
+   * longueurs différentes donnent deux boutons de largeurs différentes sur la même ligne.
+   */
+  readonly timeButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant:   'secondary',
+      size:      'sm',
+      fullWidth: true,
+      iconStart: 'schedule',
+      label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.TIME_TITLE'),
+    };
+  });
+
+  /**
+   * « Ajouter des frais ». Sans garde de permission : le panneau ouvert applique déjà les
+   * siennes, et RMB n'étant plus un mode de facturation, l'action doit être proposée sur
+   * toute affaire — pas seulement sur celles qui portaient ce mode.
+   */
+  readonly expenseButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant:   'secondary',
+      size:      'sm',
+      fullWidth: true,
+      iconStart: 'receipt_long',
+      label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.EXPENSES_TITLE'),
+    };
+  });
+
+  /**
+   * La pastille de statut de la rangée de pied. Même variante et même point coloré que la
+   * pastille de l'en-tête de page : c'est le même statut, il ne peut pas se présenter de
+   * deux façons sur la même page.
+   */
+  readonly statusChipOptions = computed<BadgeOptions>(() => ({
+    variant: STATUT_BADGE_VARIANT[this.affaire()?.statut ?? ''] ?? 'neutral',
+    size:    'sm',
+    dot:     true,
   }));
+
+  readonly statusChipLabel = computed(() => {
+    this.translate.currentLang();
+    const s = this.affaire()?.statut ?? '';
+    return this.translate.instant(STATUT_LABELS[s] ?? s);
+  });
+
+  /** Aucune transition possible = rien à ouvrir : la rangée montre le statut sans être cliquable. */
+  readonly canChangeStatus = computed(() => this.availableTransitions().length > 0);
 
   readonly validateBudgetOptions = computed<ButtonOptions>(() => ({
     variant:   'primary',

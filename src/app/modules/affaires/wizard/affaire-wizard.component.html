@@ -137,22 +137,28 @@
        ce que la barre dessinait à la main avec une ombre Tailwind littérale.
        ══════════════════════════════════════════════════════════════════ -->
   <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
-    <!-- Retour — rail — Suivant. Le rail est ENTRE les deux boutons : la progression se lit
-         au centre, et chaque bouton reste du côté où il emmène. `pill: false` (par défaut)
-         et `size: 'sm'` : la barre est un chrome de navigation, pas l'action principale
-         d'une page — deux gélules de taille moyenne y pesaient plus lourd que le rail
-         qu'elles accompagnent. -->
+    <!-- Retour — rail — Suivant. Le rail est ENTRE les deux actions : la progression se lit
+         au centre, et chaque action reste du côté où elle emmène.
+
+         Pas de `daf-button` ici, et c'est délibéré : un bouton dessiné (fond, bordure,
+         ombre) dans une barre qui n'est déjà qu'un chrome de navigation entrait en
+         concurrence avec le rail qu'il accompagne. Ce sont des actions de texte, gris au
+         repos ; au survol, le libellé ET l'icône passent ensemble à la couleur
+         interactive — l'icône hérite de `currentColor`, donc les deux ne peuvent pas
+         diverger. -->
     <div class="action-bar__inner">
 
       <div class="action-bar__side">
         @if (currentStep() > firstStep()) {
-          <daf-button
-            [options]="{ variant: 'ghost', size: 'sm', label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
-            (onClick)="goPrev()" />
+          <button type="button" class="footer-action" (click)="goPrev()">
+            <span class="material-symbols-outlined">arrow_back</span>
+            {{ stepperConfig().prevLabel }}
+          </button>
         } @else {
-          <daf-button
-            [options]="{ variant: 'ghost', size: 'sm', label: stepperConfig().cancelLabel, iconStart: 'close' }"
-            (onClick)="cancelWizard()" />
+          <button type="button" class="footer-action" (click)="cancelWizard()">
+            <span class="material-symbols-outlined">close</span>
+            {{ stepperConfig().cancelLabel }}
+          </button>
         }
       </div>
 
@@ -167,16 +173,21 @@
       </div>
 
       <div class="action-bar__side action-bar__side--end">
-        <daf-button
-          [options]="{
-            variant: 'teal',
-            size: 'sm',
-            label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
-            iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
-            loading: isSaving(),
-            disabled: !canGoNext() || isSaving()
-          }"
-          (onClick)="goNext()" />
+        <!-- `disabled` réel et non seulement grisé : l'étape suivante ne doit pas pouvoir
+             être déclenchée au clavier tant que l'étape courante est incomplète. -->
+        <button type="button"
+                class="footer-action footer-action--forward"
+                [disabled]="!canGoNext() || isSaving()"
+                (click)="goNext()">
+          {{ currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel }}
+          @if (isSaving()) {
+            <span class="material-symbols-outlined footer-action__spin">progress_activity</span>
+          } @else if (currentStep() < 6) {
+            <span class="material-symbols-outlined">arrow_forward</span>
+          } @else {
+            <span class="material-symbols-outlined">check</span>
+          }
+        </button>
       </div>
 
     </div>

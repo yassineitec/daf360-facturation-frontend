@@ -1,16 +1,17 @@
 import {
-  Component, OnInit, TemplateRef, computed, inject, signal, viewChild,
+  Component, OnInit, computed, inject, signal,
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  ButtonComponent, ButtonOptions, MetricCardComponent, ModalRef, ModalService,
+  AvatarComponent, ButtonComponent, ButtonOptions, FieldMessageComponent,
+  MetricCardComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, SectionCardComponent,
   TabsComponent,
 } from '@khalilrebhiitec/daf360';
 import type {
-  BreadcrumbItem, MetricCardOptions, MetricDelta, PageHeaderBadge,
+  AvatarData, BreadcrumbItem, MetricCardOptions, MetricDelta, PageHeaderBadge,
   ProgressBarOptions, TabItem,
 } from '@khalilrebhiitec/daf360';
 
@@ -18,7 +19,6 @@ import { ClientService } from '../client.service';
 import { ClientDetailDto, ClientStatsDto } from '../client.model';
 import { CLIENT_STATE_BADGE, CLIENT_STATE_LABEL, clientState } from '../client-display';
 import { PermissionDirective } from '../../../shared/permission.directive';
-import { ClientFormComponent } from '../client-form.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
@@ -45,9 +45,10 @@ interface KpiTile {
 @Component({
   selector: 'app-client-detail',
   imports: [
-    TranslatePipe, PermissionDirective, ClientFormComponent,
+    TranslatePipe, PermissionDirective,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
-    MetricCardComponent, ProgressBarComponent, ButtonComponent,
+    MetricCardComponent, ProgressBarComponent, ButtonComponent, AvatarComponent,
+    FieldMessageComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './client-detail.component.html',
@@ -60,8 +61,6 @@ export class ClientDetailComponent implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
 
-  private readonly editFormTpl = viewChild.required<TemplateRef<unknown>>('editFormTpl');
-  private editModalRef?: ModalRef;
 
   client      = signal<ClientDetailDto | null>(null);
   stats       = signal<ClientStatsDto | null>(null);
@@ -75,8 +74,11 @@ export class ClientDetailComponent implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.params['id']);
     this.clientId = id;
+    // `?edit=true` renvoyait vers une modale ; la modification vit maintenant dans
+    // l'assistant, donc l'ancien lien redirige plutôt que d'ouvrir un second formulaire.
     if (this.route.snapshot.queryParams['edit'] === 'true') {
-      setTimeout(() => this.openEditModal());
+      this.openEdit();
+      return;
     }
     this.loadClient(id);
   }
@@ -180,10 +182,36 @@ export class ClientDetailComponent implements OnInit {
 
   // ═══ Boutons d'action ═════════════════════════════════════════════════════
 
+  // ═══ Centre d'actions ═════════════════════════════════════════════════════
+  //
+  // Trois niveaux, comme la fiche affaire : l'action principale (facturer), l'action
+  // opérationnelle (le KYC), puis la gestion (modifier, activer/désactiver) dans une
+  // rangée de pied. Avant, les quatre étaient quatre boutons `sm` de même poids.
+
+  /** L'action principale : `primary`, `lg`, pleine largeur, flèche de sortie. */
+  readonly newInvoiceOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant:   'primary',
+      size:      'lg',
+      fullWidth: true,
+      iconStart: 'add_card',
+      iconEnd:   'arrow_forward',
+      label:     this.translate.instant('CLIENTS.DETAIL.ACTIONS.NEW_INVOICE'),
+    };
+  });
+
+  /**
+   * Le KYC reste en `secondary` même quand il manque, alors qu'il passait en `primary`
+   * avant : avec un appel à l'action principal juste au-dessus, deux boutons teintés
+   * marque se disputaient le regard. L'urgence est portée par la carte « Validation KYC »,
+   * qui passe en `warning` tant que la validation n'est pas faite.
+   */
   readonly kycButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
     const done = this.client()?.isKycDone === true;
     return {
-      variant:   done ? 'secondary' : 'primary',
+      variant:   'secondary',
       size:      'sm',
       fullWidth: true,
       iconStart: done ? 'lock_open' : 'verified_user',
@@ -193,18 +221,19 @@ export class ClientDetailComponent implements OnInit {
     };
   });
 
-  readonly activationButtonOptions = computed<ButtonOptions>(() => {
-    const active = this.client()?.isActive === true;
-    return {
-      variant:   'secondary',
-      size:      'sm',
-      fullWidth: true,
-      iconStart: active ? 'block' : 'restart_alt',
-      label: this.translate.instant(active
-        ? 'CLIENTS.DETAIL.ACTIONS.DEACTIVATE'
-        : 'CLIENTS.DETAIL.ACTIONS.REACTIVATE'),
-    };
+  /**
+   * L'action de blocage est NOMMÉE, pas déduite d'une pastille d'état : « Bloquer le
+   * client » / « Réactiver le client ». L'état, lui, se lit déjà sur la pastille du titre
+   * et sur la carte « Validation KYC ».
+   */
+  readonly activationTitle = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(this.client()?.isActive
+      ? 'CLIENTS.DETAIL.ACTIONS.DEACTIVATE'
+      : 'CLIENTS.DETAIL.ACTIONS.REACTIVATE');
   });
+
+  readonly activationIcon = computed(() => this.client()?.isActive ? 'block' : 'restart_alt');
 
   // ═══ Indicateurs ══════════════════════════════════════════════════════════
 
@@ -275,6 +304,17 @@ export class ClientDetailComponent implements OnInit {
     ];
   });
 
+  /**
+   * Le validateur KYC en données d'avatar, ou `null` quand le nom n'est pas résolu.
+   *
+   * `computed` et non un objet construit dans le gabarit : `data` est une entrée signal,
+   * un littéral inline changerait d'identité à chaque cycle de détection.
+   */
+  readonly kycApprover = computed<AvatarData | null>(() => {
+    const name = this.client()?.kycApprovedByName?.trim();
+    return name ? { name } : null;
+  });
+
   readonly traceFields = computed<DetailField[]>(() => {
     const c = this.client();
     const s = this.stats();
@@ -329,22 +369,14 @@ export class ClientDetailComponent implements OnInit {
 
   // ═══ Actions ══════════════════════════════════════════════════════════════
 
-  openEditModal(): void {
-    this.editModalRef = this.modal.open({
-      title: this.translate.instant('CLIENTS.DETAIL.MODAL.EDIT_TITLE',
-        { name: this.client()?.clientName ?? '' }),
-      icon:            'edit',
-      size:            'lg',
-      closeOnBackdrop: false,
-      body:            this.editFormTpl(),
-    });
-  }
-
-  onEditFormClosed(): void { this.editModalRef?.close(); }
-
-  onClientSaved(updated: ClientDetailDto): void {
-    this.client.set(updated);
-    this.editModalRef?.close();
+  /**
+   * La modification ouvre l'assistant (`clients/:id/edit`), qui réutilise le formulaire de
+   * création préremplli — comme pour les affaires. Elle vivait dans une modale `lg` : le
+   * même formulaire y était comprimé sans progression par étapes, et la fiche devait
+   * maintenir un `ng-template`, une `ModalRef` et trois gestionnaires pour l'accueillir.
+   */
+  openEdit(): void {
+    this.router.navigate(['edit'], { relativeTo: this.route });
   }
 
   /**

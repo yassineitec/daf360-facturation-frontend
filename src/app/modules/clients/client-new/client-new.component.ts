@@ -1,8 +1,9 @@
-import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
-  ButtonComponent, ButtonOptions, PageComponent, PageHeaderComponent, StepperComponent,
+  CardComponent, FieldMessageComponent,
+  PageComponent, PageHeaderComponent, StepperComponent,
 } from '@khalilrebhiitec/daf360';
 import type {
   BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
@@ -27,7 +28,8 @@ const STEP_ICONS = ['badge', 'contacts', 'receipt_long'];
   selector: 'app-client-new',
   imports: [
     TranslatePipe, ClientFormComponent,
-    PageComponent, PageHeaderComponent, StepperComponent, ButtonComponent,
+    PageComponent, PageHeaderComponent, StepperComponent,
+    CardComponent, FieldMessageComponent,
   ],
   templateUrl: './client-new.component.html',
   styleUrl: './client-new.component.scss',
@@ -41,7 +43,34 @@ export class ClientNewComponent implements OnInit {
   readonly paysId      = signal(0);
   readonly currentStep = signal(1);
 
+  /**
+   * Mode édition : l'assistant sert aussi `clients/:id/edit`, exactement comme
+   * l'assistant d'affaire sert `affaires/:id/edit`. Le formulaire est le même composant,
+   * il reçoit simplement le client à modifier — la modale d'édition de la fiche client
+   * (huit champs empilés, un formulaire de plus à maintenir) n'a plus de raison d'être.
+   */
+  readonly editMode   = signal(false);
+  readonly editClient = signal<ClientDetailDto | null>(null);
+  readonly isLoading  = signal(false);
+
+  /** Erreur de chargement du client à modifier. */
+  readonly loadError = signal<string | null>(null);
+
   readonly formRef = viewChild(ClientFormComponent);
+
+  /**
+   * Étape la plus avancée atteinte : c'est elle qui dit ce qui est cliquable dans le rail,
+   * et non `currentStep` — revenir à l'étape 1 ne doit pas re-verrouiller la 2 et la 3.
+   * En édition, tout est ouvert d'emblée : le client existe, on vient corriger une section.
+   */
+  readonly maxStepReached = signal(1);
+
+  constructor() {
+    effect(() => {
+      const step = this.currentStep();
+      if (step > this.maxStepReached()) this.maxStepReached.set(step);
+    });
+  }
 
   readonly steps = computed(() => {
     this.translate.currentLang();
@@ -54,7 +83,11 @@ export class ClientNewComponent implements OnInit {
   // ── Barre d'actions ─────────────────────────────────────────────────────
 
   readonly stepperSteps = computed<StepperStep[]>(() =>
-    this.steps().map(s => ({ title: s.title })));
+    this.steps().map((s, i) => ({
+      title:     s.title,
+      completed: i + 1 < this.maxStepReached(),
+      disabled:  i + 1 > this.maxStepReached(),
+    })));
 
   readonly stepperConfig = computed<StepperConfig>(() => {
     this.translate.currentLang();
@@ -62,51 +95,62 @@ export class ClientNewComponent implements OnInit {
       nextLabel:   this.translate.instant('CLIENTS.NEW.NEXT'),
       prevLabel:   this.translate.instant('CLIENTS.NEW.PREV'),
       cancelLabel: this.translate.instant('CLIENTS.NEW.CANCEL'),
-      finishLabel: this.translate.instant('CLIENTS.NEW.CREATE'),
+      finishLabel: this.translate.instant(
+        this.editMode() ? 'CLIENTS.NEW.SAVE' : 'CLIENTS.NEW.CREATE'),
       // Rail seul : la navigation vit dans la barre, à droite.
       chrome: 'header-only',
       clickableSteps: true,
+      // Rail dense : le nom de l'étape est déjà imprimé en titre dans la carte au-dessus.
+      labelDensity: 'quiet',
       stepperLabel: this.translate.instant('CLIENTS.NEW.PROGRESS'),
     };
   });
 
   /**
-   * Retour en arrière au clic sur le rail, jamais de saut en avant : l'étape 1 porte les
-   * champs obligatoires, la franchir sans les remplir mènerait à un enregistrement
-   * refusé au dernier écran.
+   * Navigation libre sur tout ce qui a DÉJÀ été franchi. Les étapes jamais atteintes
+   * restent verrouillées : l'étape 1 porte les champs obligatoires, la sauter mènerait à
+   * un enregistrement refusé au dernier écran.
    */
   onStepClick(index: number): void {
     const target = index + 1;
-    if (target < this.currentStep()) this.currentStep.set(target);
+    if (target !== this.currentStep() && target <= this.maxStepReached()) {
+      this.currentStep.set(target);
+    }
   }
 
-  readonly nextButtonOptions = computed<ButtonOptions>(() => {
+  /** Libellé de l'action « avancer » : suivant, créer, ou enregistrer en édition. */
+  readonly nextLabel = computed(() => {
     this.translate.currentLang();
-    const last = this.currentStep() === this.steps().length;
-    return {
-      variant: 'teal',
-      pill: true,
-      label: this.translate.instant(last ? 'CLIENTS.NEW.CREATE' : 'CLIENTS.NEW.NEXT'),
-      iconStart: last ? 'person_add' : undefined,
-      iconEnd:   last ? undefined : 'arrow_forward',
-      loading:  this.isSaving(),
-      disabled: this.isSaving(),
-    };
+    if (this.currentStep() < this.steps().length) {
+      return this.translate.instant('CLIENTS.NEW.NEXT');
+    }
+    return this.translate.instant(this.editMode() ? 'CLIENTS.NEW.SAVE' : 'CLIENTS.NEW.CREATE');
   });
 
   // ── En-tête ─────────────────────────────────────────────────────────────
 
+  /** `..` en création (clients/new), `../..` en édition (clients/:id/edit). */
+  readonly listRoute = computed(() => this.editMode() ? ['../..'] : ['..']);
+
+  readonly pageTitle = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(this.editMode() ? 'CLIENTS.NEW.TITLE_EDIT' : 'CLIENTS.NEW.TITLE');
+  });
+
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
     return [
-      { label: this.translate.instant('CLIENTS.NEW.BREADCRUMB_CLIENTS'), link: ['..'] },
-      { label: this.translate.instant('CLIENTS.NEW.BREADCRUMB_NEW') },
+      { label: this.translate.instant('CLIENTS.NEW.BREADCRUMB_CLIENTS'), link: this.listRoute() },
+      { label: this.editMode()
+          ? this.translate.instant('CLIENTS.NEW.BREADCRUMB_EDIT')
+          : this.translate.instant('CLIENTS.NEW.BREADCRUMB_NEW') },
     ];
   });
 
   readonly pageSubtitle = computed(() => {
     this.translate.currentLang();
     return this.formRef()?.clientName()?.trim()
+      || this.editClient()?.clientName?.trim()
       || this.translate.instant('CLIENTS.NEW.SUBTITLE');
   });
 
@@ -166,11 +210,37 @@ export class ClientNewComponent implements OnInit {
    * la création.
    */
   ngOnInit(): void {
+    const rawId = this.route.snapshot.params['id'];
+    if (rawId) {
+      this.editMode.set(true);
+      // Le client existe : toutes les étapes sont franchies, le rail est ouvert.
+      this.maxStepReached.set(this.steps().length);
+      this.loadClient(Number(rawId));
+      // `paysId` n'est pas utilisé en édition (`updateClient` ne touche pas `pays_id`),
+      // mais le formulaire l'exige en entrée : on le prend du client chargé.
+      return;
+    }
     this.svc.getMyPays().subscribe(myPays => {
       if (myPays) { this.paysId.set(myPays); return; }
       this.svc.getPays().subscribe(pays => {
         if (pays.length > 0) this.paysId.set(pays[0].id);
       });
+    });
+  }
+
+  private loadClient(id: number): void {
+    this.isLoading.set(true);
+    this.loadError.set(null);
+    this.svc.getClient(id).subscribe({
+      next: client => {
+        this.editClient.set(client);
+        this.paysId.set(client.paysId);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.loadError.set(this.translate.instant('CLIENTS.NEW.LOAD_ERROR'));
+        this.isLoading.set(false);
+      },
     });
   }
 
@@ -190,10 +260,16 @@ export class ClientNewComponent implements OnInit {
     if (this.currentStep() > 1) this.currentStep.update(s => s - 1);
   }
 
+  /** Création comme édition, on repart sur la fiche du client enregistré. */
   onSaved(client: ClientDetailDto): void {
-    this.router.navigate(['..', client.id], { relativeTo: this.route });
+    this.router.navigate([...this.listRoute(), client.id], { relativeTo: this.route });
   }
 
+  /**
+   * `..` sert les deux cas sans condition : depuis `clients/new` il mène à la liste,
+   * depuis `clients/:id/edit` à la fiche du client — dans les deux cas, l'écran d'où
+   * l'on vient.
+   */
   goBack(): void {
     this.router.navigate(['..'], { relativeTo: this.route });
   }

@@ -2,7 +2,8 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  ButtonComponent, FilterField, FilterResult, MetricCardComponent, MetricCardOptions,
+  ButtonComponent, FieldMessageComponent, FilterField, FilterResult, MetricCardComponent,
+  MetricCardOptions,
   MetricDelta, PageComponent, PageHeaderComponent, PaginationComponent,
   SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
@@ -23,7 +24,7 @@ type ViewMode = 'grid' | 'list';
   selector: 'app-client-list',
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
-    SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe,
+    SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe, FieldMessageComponent,
     ClientsCardsSectionComponent, ClientsTableSectionComponent, PermissionDirective,
   ],
   host: { class: 'block' },

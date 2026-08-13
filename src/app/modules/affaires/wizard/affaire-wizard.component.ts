@@ -3,7 +3,7 @@ import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
 import { Observable, forkJoin }                 from 'rxjs';
 import { TranslatePipe, TranslateService }       from '@ngx-translate/core';
 import {
-  StepperStep, StepperConfig, StepperComponent, ButtonComponent,
+  StepperStep, StepperConfig, StepperComponent,
   CardComponent, PageComponent, PageHeaderComponent,
 } from '@khalilrebhiitec/daf360';
 import type { BreadcrumbItem, PageHeaderBadge } from '@khalilrebhiitec/daf360';
@@ -34,7 +34,6 @@ const CONFIGURABLE_MODES = new Set<string>(['AV', 'TM', 'CP', 'RMB']);
     PageComponent,
     PageHeaderComponent,
     StepperComponent,
-    ButtonComponent,
     CardComponent,
     WizardStepDoc360Component,
     WizardStepInfoComponent,

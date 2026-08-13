@@ -664,9 +664,10 @@
         "NEW_INVOICE": "Nouvelle facture",
         "EDIT": "Modifier",
         "VALIDATE_KYC": "Valider le KYC",
+        "EDIT_LONG": "Modifier le client",
         "REVOKE_KYC": "Révoquer le KYC",
-        "DEACTIVATE": "Désactiver",
-        "REACTIVATE": "Réactiver"
+        "DEACTIVATE": "Bloquer le client",
+        "REACTIVATE": "Réactiver le client"
       },
       "CREATED_AT": "Créé le",
       "UPDATED_AT": "Modifié le",
@@ -774,6 +775,10 @@
       "VALIDATION_REQUIRED": "Champs requis : nom du client · secteur d'activité.",
       "BREADCRUMB_CLIENTS": "Clients",
       "BREADCRUMB_NEW": "Nouveau Client",
+      "BREADCRUMB_EDIT": "Modifier le client",
+      "TITLE_EDIT": "Modifier le client",
+      "SAVE": "Enregistrer",
+      "LOAD_ERROR": "Impossible de charger ce client. Réessayez.",
       "TITLE": "Créer un nouveau client",
       "STEP_COUNTER": "Étape {{current}} sur {{total}}",
       "PREV": "Précédent",
@@ -877,6 +882,11 @@
         "PAYMENTS": "Paiements"
       },
       "ACTIONS": {
+        "QUICK_TITLE": "Actions rapides",
+        "TIME_TITLE": "Saisir du temps",
+        "EXPENSES_TITLE": "Ajouter des frais",
+        "STATUS_CHANGE": "Changer le statut de l'affaire",
+        "EDIT_LONG": "Modifier l'affaire",
         "NEW_TS": "Nouveau TS",
         "EDIT": "Modifier",
         "STATUS": "Statut",

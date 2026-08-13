@@ -51,11 +51,9 @@
     [view]="viewMode()"
     (viewChange)="viewMode.set($any($event))" />
 
-  @if (error()) {
-    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-      <span class="material-symbols-outlined text-[18px]">error</span>
-      {{ error() }}
-    </div>
+  <!-- `daf-field-message` : la ligne de message de la lib, la même sur toutes les pages. -->
+  @if (error(); as err) {
+    <daf-field-message [error]="err" />
   }
 
   <!-- Content sits free in the page — no outer container card -->

@@ -60,18 +60,103 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   padding: 28px 32px;
 }
 
-.validation-hint {
-  margin: 0 32px 12px;
-  padding: 10px 14px;
-  background: rgba($tertiary-hex, 0.06);
-  border: 1px solid rgba($tertiary-hex, 0.20);
-  border-radius: 10px;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 12.5px;
-  color: #007a6e;
-  line-height: 1.5;
+// Gouttière des messages de pied de carte. Le message lui-même est `daf-field-message` :
+// il porte son icône, son ton et son `mt-1`, il ne reste ici que l'alignement sur le
+// rembourrage horizontal du corps de l'étape.
+.step-message {
+  padding: 0 32px 16px;
+}
 
-  .material-symbols-outlined { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+// ── Barre d'actions ──────────────────────────────────────────────────────────
+// Reprise à l'identique de l'assistant d'affaire : `daf-card variant: 'floating'` porte le
+// fond, l'ombre et l'arrondi ; l'hôte ne garde que le placement. `display: block`
+// explicite — un composant Angular est `inline` par défaut et `max-width` ne mordrait pas.
+.action-bar {
+  display: block;
+  position: sticky;
+  bottom: 1rem;
+  z-index: 40;
+  width: 100%;
+  max-width: 820px;
+  margin-inline: auto;
+}
+
+// Bouton — rail — bouton. Les flancs prennent la largeur de leur libellé et rien de plus,
+// c'est le rail qui absorbe le reste : il est la pièce large de la barre.
+.action-bar__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.action-bar__side {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+
+  &--end { justify-content: flex-end; }
+}
+
+.action-bar__rail {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// Sous 720 px, le rail passe SOUS les deux boutons plutôt que d'emmener « Suivant » seul
+// sur une deuxième ligne.
+@media (max-width: 720px) {
+  .action-bar__rail {
+    order: 1;
+    flex-basis: 100%;
+  }
+  .action-bar__side { flex: 1 1 auto; }
+}
+
+// ── Actions de la barre : du texte, pas des boutons dessinés ─────────────────
+// Copie conforme de l'assistant d'affaire. `color` vit sur le BOUTON et l'icône n'en
+// déclare aucune : les symboles Material héritent de `currentColor`, donc le libellé et
+// l'icône passent ensemble à la couleur interactive au survol.
+.footer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  transition: color 0.15s;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &:hover:not(:disabled) { color: var(--color-teal); }
+
+  // Sans fond ni bordure, l'anneau de focus est le seul repère au clavier.
+  &:focus-visible {
+    outline: 2px solid var(--color-teal);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    color: var(--color-outline);
+    cursor: not-allowed;
+  }
+}
+
+.footer-action--forward {
+  font-weight: 700;
+}
+
+.footer-action__spin {
+  animation: footer-action-spin 1s linear infinite;
+}
+
+@keyframes footer-action-spin {
+  to { transform: rotate(360deg); }
 }

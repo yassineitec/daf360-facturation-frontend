@@ -5,7 +5,9 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { ClientService }        from './client.service';
 import { ClientDetailDto, CreateClientRequest } from './client.model';
 import { PaysRefDto } from '../affaires/affaire.model';
-import { FormFieldComponent, SelectComponent, SelectOption, ButtonComponent } from '@khalilrebhiitec/daf360';
+import {
+  ButtonComponent, FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
+} from '@khalilrebhiitec/daf360';
 
 const DEFAULT_SECTORS = [
   'Agriculture', 'Agroalimentaire', 'BTP & Construction', 'Commerce de détail',
@@ -22,7 +24,9 @@ const CURRENCY_CODES = ['TND', 'EGP', 'EUR', 'USD'];
 
 @Component({
   selector: 'app-client-form',
-  imports: [FormFieldComponent, SelectComponent, ButtonComponent, TranslatePipe],
+  imports: [
+    FormFieldComponent, SelectComponent, ButtonComponent, FieldMessageComponent, TranslatePipe,
+  ],
   templateUrl: './client-form.component.html',
   styleUrl: './client-form.component.scss',
 })

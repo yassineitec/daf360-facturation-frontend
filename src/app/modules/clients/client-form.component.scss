@@ -33,20 +33,8 @@
   margin: 0 0 16px;
 }
 
-// ── Error banner ──────────────────────────────────────────────────────────────
-.error-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-
-  .material-symbols-outlined { font-size: 1rem; }
-}
+// Plus de `.error-banner` maison : l'erreur passe par `daf-field-message`, qui porte son
+// icône, son ton `danger` et son `role="alert"`.
 
 // ── Boutons ───────────────────────────────────────────────────────────────────
 .actions-row {

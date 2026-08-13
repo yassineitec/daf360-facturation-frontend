@@ -1,7 +1,7 @@
 import {
   ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal,
 } from '@angular/core';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 import { FormFieldComponent, SelectComponent } from '@khalilrebhiitec/daf360';
 import type { SelectOption } from '@khalilrebhiitec/daf360';
 
@@ -26,7 +26,7 @@ import { ListValueDto } from '../../cost/cost.model';
   selector: 'app-ts-form',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, FormFieldComponent, SelectComponent],
+  imports: [FormFieldComponent, SelectComponent],
   host: { class: 'block' },
   template: `
     <div class="flex flex-col gap-4">
@@ -48,7 +48,7 @@ import { ListValueDto } from '../../cost/cost.model';
           [options]="currencyOptions()"
           [config]="currencyConfig()"
           [selected]="[devise()]"
-          (selectedChange)="devise.set($event[0] ?? devise())" />
+          (selectedChange)="devise.set($event[0])" />
       </div>
 
       <daf-form-field
