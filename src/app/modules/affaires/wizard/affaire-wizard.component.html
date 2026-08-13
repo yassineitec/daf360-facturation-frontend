@@ -133,44 +133,48 @@
        bas artificiel qu'il fallait ajouter pour dégager une barre `fixed`.
        `daf-stepper` en `chrome: 'header-only'` : le rail et rien d'autre, comme
        `daf-tabs` est une bande sans panneau — la navigation reste à nous.
+       `daf-card` en `variant: 'floating'` (lib 4.19) : la dalle surélevée sans bordure,
+       ce que la barre dessinait à la main avec une ombre Tailwind littérale.
        ══════════════════════════════════════════════════════════════════ -->
-  <div class="action-bar rounded-xl border border-outline-variant bg-surface-container-lowest
-              p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
-       style="position:sticky; bottom:1rem; z-index:40; display:flex; flex-wrap:wrap;
-              align-items:center; justify-content:space-between; gap:1rem">
+  <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
+    <div class="action-bar__inner">
 
-    <!-- Rail : cliquable en arrière uniquement (voir onStepClick) -->
-    <div style="flex:1 1 320px; min-width:0">
-      <daf-stepper
-        orientation="horizontal"
-        [steps]="stepperSteps()"
-        [currentStep]="stepperIndex()"
-        [config]="stepperConfig()"
-        (stepClick)="onStepClick($event)" />
-    </div>
+      <!-- Rail : cliquable sur tout ce qui a déjà été franchi (voir onStepClick) -->
+      <div style="flex:1 1 280px; min-width:0">
+        <daf-stepper
+          orientation="horizontal"
+          [steps]="stepperSteps()"
+          [currentStep]="stepperIndex()"
+          [config]="stepperConfig()"
+          (stepClick)="onStepClick($event)" />
+      </div>
 
-    <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
-      @if (currentStep() > firstStep()) {
+      <!-- `pill: false` (par défaut) et `size: 'sm'` : la barre est un chrome de navigation,
+           pas l'action principale d'une page — deux gélules de taille moyenne y pesaient
+           plus lourd que le rail qu'elles accompagnent. -->
+      <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
+        @if (currentStep() > firstStep()) {
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm', label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
+            (onClick)="goPrev()" />
+        } @else {
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm', label: stepperConfig().cancelLabel, iconStart: 'close' }"
+            (onClick)="cancelWizard()" />
+        }
         <daf-button
-          [options]="{ variant: 'ghost', pill: true, label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
-          (onClick)="goPrev()" />
-      } @else {
-        <daf-button
-          [options]="{ variant: 'ghost', pill: true, label: stepperConfig().cancelLabel, iconStart: 'close' }"
-          (onClick)="cancelWizard()" />
-      }
-      <daf-button
-        [options]="{
-          variant: 'teal',
-          pill: true,
-          label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
-          iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
-          loading: isSaving(),
-          disabled: !canGoNext() || isSaving()
-        }"
-        (onClick)="goNext()" />
-    </div>
+          [options]="{
+            variant: 'teal',
+            size: 'sm',
+            label: currentStep() === 6 ? stepperConfig().finishLabel : stepperConfig().nextLabel,
+            iconEnd: currentStep() < 6 ? 'arrow_forward' : undefined,
+            loading: isSaving(),
+            disabled: !canGoNext() || isSaving()
+          }"
+          (onClick)="goNext()" />
+      </div>
 
-  </div>
+    </div>
+  </daf-card>
 
 </daf-page>

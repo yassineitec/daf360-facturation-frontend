@@ -7,18 +7,22 @@
 }
 
 // ── Info banner ────────────────────────────────────────────────────────
+// Note de bas de champ, pas un message d'état : 12 px, texte gris, et l'icône seule
+// porte la couleur (rouge) pour signaler la contrainte des 100 %.
 .info-banner {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 14px 16px;
-  background: #f0f4ff;
-  border-radius: 12px;
-  font-size: 13px;
-  color: #1d2b3e;
-  line-height: 1.6;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f7f8fa;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.55;
 
-  .material-symbols-outlined { color: #4648d4; flex-shrink: 0; margin-top: 1px; }
+  strong { color: #44474c; font-weight: 600; }
+
+  .material-symbols-outlined { color: #ba1a1a; flex-shrink: 0; margin-top: 1px; }
 }
 
 // ── En-tête de section (titre + action d'ajout) ────────────────────────
@@ -46,33 +50,60 @@
 // rétrécie. `daf-select` est en `block`, mais dans une rangée flex un bloc ne s'étire pas
 // non plus sans `flex`. D'où les deux règles ci-dessous : c'est ce qui laissait les
 // champs de l'étape 3 étroits alors que la carte occupe toute la largeur.
+.rep-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px;
+}
+
 .rep-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 16px;
+  padding: 16px 18px;
   background: #ffffff;
   border: 1px solid #eceef0;
   border-radius: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
 
   // Le type de répartition prend tout l'espace restant.
   > daf-select { flex: 1 1 auto; min-width: 0; }
+
+  &:hover {
+    border-color: #dfe3e8;
+    box-shadow: 0 2px 10px -4px rgba(16, 24, 40, 0.12);
+  }
+
+  // La suppression n'apparaît qu'au survol de SA ligne — mais garde sa place en
+  // permanence, sinon les champs sauteraient sous le curseur. Le focus clavier la
+  // révèle aussi, sans quoi elle serait inatteignable au Tab.
+  &:hover .rep-row__remove,
+  .rep-row__remove:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
-.pct-field {
+// Largeur FIXE, et non `auto` : la même colonne sert de gouttière vide sur la ligne de
+// total, où il n'y a aucun bouton à mesurer. En `auto` le total se décalerait de la
+// largeur du bouton et ne tomberait plus sous le champ de pourcentage.
+.rep-row__remove {
+  flex: 0 0 50px;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  // Assez large pour un pourcentage à deux décimales, sans manger la ligne.
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+// Colonne du pourcentage. Ne reste ici que la LARGEUR : le centrage du chiffre et le
+// symbole « % » sont passés en options de `daf-form-field` (`align`, `suffixText`).
+.pct-field {
+  // Assez large pour un pourcentage à deux décimales et son unité, sans manger la ligne.
   flex: 0 0 150px;
 
-  daf-form-field { display: block; flex: 1 1 auto; min-width: 0; }
-}
-
-.pct-symbol {
-  font-size: 13px;
-  font-weight: 600;
-  color: #44474c;
+  daf-form-field { display: block; min-width: 0; }
 }
 
 // ── Inputs ─────────────────────────────────────────────────────────────
@@ -109,32 +140,48 @@
   &:focus { border-color: #4648d4; box-shadow: 0 0 0 3px rgba(70,72,212,0.10); }
 }
 
-// ── Total indicator ────────────────────────────────────────────────────
-// Bandeau pleine largeur, comme les lignes qu'il totalise — seule la typographie a été
-// réduite : c'est un indicateur de contrôle, il n'a pas besoin d'un chiffre de 20 px.
-.total-indicator {
+// ── Total ──────────────────────────────────────────────────────────────
+// Ce n'est plus un bandeau : c'est la dernière ligne de la même grille. Mêmes gouttières
+// et mêmes largeurs de colonne que `.rep-row` — d'où le rembourrage horizontal identique
+// (18 px) alors qu'il n'y a ni fond ni bordure sur la ligne elle-même. Le libellé est
+// aligné à droite : il finit donc au bord droit de la colonne « type de répartition »,
+// juste avant le chiffre.
+.total-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 18px;
-  border-radius: 12px;
+  gap: 16px;
+  // 18 px de rembourrage + 1 px de bordure : les lignes en ont une, celle-ci non, et sans
+  // ce pixel la colonne du total tomberait décalée d'un pixel sous celle des champs.
+  // Le `+2` reprend en plus le rembourrage latéral de `.rep-list`.
+  padding: 2px 21px;
 
-  &.ok    { background: #d1fae5; }
-  &.error { background: #fee2e2; }
+  .total-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+  }
 }
 
-.total-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #44474c;
-}
+// Aucun fond : la bordure et le chiffre portent seuls l'état. La largeur reprend celle
+// de `.pct-field` pour tomber pile sous le champ de pourcentage.
+.total-box {
+  flex: 0 0 150px;
+  padding: 8px 10px;
+  border: 1.5px solid;
+  border-radius: 10px;
+  background: transparent;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 
-.total-value {
-  font-size: 15px;
-  font-weight: 900;
-
-  .ok &    { color: #065f46; }
-  .error & { color: #991b1b; }
+  &.ok    { border-color: #0f9d6e; color: #0f7a56; }
+  &.error { border-color: #ba1a1a; color: #ba1a1a; }
 }
 
 // ── Warning ────────────────────────────────────────────────────────────
@@ -142,6 +189,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  padding-inline: 21px;   // même retrait que `.total-row`, juste au-dessus
   font-size: 13px;
   color: #ba1a1a;
   margin: 0;

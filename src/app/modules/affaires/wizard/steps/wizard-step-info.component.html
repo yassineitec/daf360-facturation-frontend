@@ -143,7 +143,9 @@
     @if (draft.billingMode) {
       <div class="contract-box" [class.contract-box--budget]="!isContractualMode()">
         <div class="contract-box-header">
-          <span class="material-symbols-outlined">{{ isContractualMode() ? 'payments' : 'savings' }}</span>
+          <!-- `account_balance_wallet` et non `savings` : la tirelire ne dit rien d'un
+               budget prévisionnel d'affaire, elle évoque de l'épargne personnelle. -->
+          <span class="material-symbols-outlined">{{ isContractualMode() ? 'payments' : 'account_balance_wallet' }}</span>
           {{ budgetLabel() }} *
         </div>
         <div class="field-grid" style="padding: 20px">

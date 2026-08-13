@@ -11,7 +11,9 @@
     <div class="mode-config">
       <div class="mode-config-header">
         <span class="material-symbols-outlined">tune</span>
-        {{ 'AFFAIRES.wizard.billing.config' | translate:{ mode: draft.billingMode } }}
+        <!-- Le code du mode (« AV ») ne dit rien à qui n'a pas la table en tête : c'est le
+             libellé métier qui est affiché, le code ne survit que dans le brouillon. -->
+        {{ 'AFFAIRES.wizard.billing.config' | translate:{ mode: (modeConfigKey() | translate) } }}
       </div>
 
       @switch (draft.billingMode) {

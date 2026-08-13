@@ -143,6 +143,12 @@
           <p class="recap-label">{{ 'AFFAIRES.wizard.recap.start_date' | translate }}</p>
           <p class="recap-value">{{ draft.dateDebutFacturation | date:'dd/MM/yyyy' }}</p>
         </div>
+        @if (draft.dureeMois) {
+          <div class="recap-field">
+            <p class="recap-label">{{ 'AFFAIRES.wizard.recap.duration' | translate }}</p>
+            <p class="recap-value">{{ 'AFFAIRES.wizard.recap.duration_months' | translate:{ n: draft.dureeMois } }}</p>
+          </div>
+        }
         @if (draft.dateFinContractuelle) {
           <div class="recap-field">
             <p class="recap-label">{{ 'AFFAIRES.wizard.recap.end_date' | translate }}</p>

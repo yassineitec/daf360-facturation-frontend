@@ -1,10 +1,10 @@
-import { Component, OnInit, inject, signal, computed, input } from '@angular/core';
+import { Component, OnInit, effect, inject, signal, computed, input } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
 import { Observable, forkJoin }                 from 'rxjs';
 import { TranslatePipe, TranslateService }       from '@ngx-translate/core';
 import {
   StepperStep, StepperConfig, StepperComponent, ButtonComponent,
-  PageComponent, PageHeaderComponent,
+  CardComponent, PageComponent, PageHeaderComponent,
 } from '@khalilrebhiitec/daf360';
 import type { BreadcrumbItem, PageHeaderBadge } from '@khalilrebhiitec/daf360';
 
@@ -35,6 +35,7 @@ const CONFIGURABLE_MODES = new Set<string>(['AV', 'TM', 'CP', 'RMB']);
     PageHeaderComponent,
     StepperComponent,
     ButtonComponent,
+    CardComponent,
     WizardStepDoc360Component,
     WizardStepInfoComponent,
     WizardStepBillingComponent,
@@ -53,6 +54,13 @@ export class AffaireWizardComponent implements OnInit {
   private readonly affaireSvc     = inject(AffaireService);
   private readonly userStore      = inject(UserStore);
   private readonly translate      = inject(TranslateService);
+
+  constructor() {
+    effect(() => {
+      const step = this.currentStep();
+      if (step > this.maxStepReached()) this.maxStepReached.set(step);
+    });
+  }
 
   // Relative path back to the affaires list:
   // new  → mounted at affaires/new  → '..' = affaires/
@@ -89,7 +97,15 @@ export class AffaireWizardComponent implements OnInit {
    * on ne peut pas aller n'aide personne.
    */
   readonly stepperSteps = computed<StepperStep[]>(() =>
-    this.wizardSteps().slice(this.firstStep() - 1));
+    this.wizardSteps().slice(this.firstStep() - 1).map((s, i) => ({
+      ...s,
+      // Une étape déjà franchie est marquée terminée ET reste atteignable ; celles qu'on
+      // n'a pas encore vues sont désactivées, ce qui bloque le saut en avant au niveau du
+      // rail lui-même plutôt que dans `onStepClick` (un bouton cliquable qui ne fait rien
+      // reste focusable et annoncé comme actionnable).
+      completed: i + this.firstStep() < this.maxStepReached(),
+      disabled:  i + this.firstStep() > this.maxStepReached(),
+    })));
 
   /** Le rail est 0-based et peut être tronqué en tête : d'où le décalage. */
   readonly stepperIndex = computed(() => this.currentStep() - this.firstStep());
@@ -104,8 +120,13 @@ export class AffaireWizardComponent implements OnInit {
       showCancel:  true,
       // Le rail est une bande de progression : la navigation reste dans la barre.
       chrome: 'header-only',
-      // Retour en arrière au clic — mais jamais de saut en avant : chaque « Suivant »
-      // enregistre l'étape courante, sauter dessus laisserait le brouillon incomplet.
+      // Rail dense : le nom de l'étape est déjà imprimé en titre dans la carte juste
+      // au-dessus, en capitales gras il lui faisait concurrence au lieu de l'accompagner.
+      labelDensity: 'quiet',
+      // Navigation libre sur tout ce qui a DÉJÀ été franchi (`maxStepReached`) : chaque
+      // « Suivant » a enregistré son étape, revenir dessus puis repartir en avant ne perd
+      // rien. Seules les étapes jamais atteintes restent verrouillées — sauter dessus
+      // laisserait le brouillon incomplet.
       clickableSteps: true,
       stepperLabel: this.translate.instant('AFFAIRES.wizard.shell.progression'),
     };
@@ -114,7 +135,7 @@ export class AffaireWizardComponent implements OnInit {
   /** `index` est relatif au rail tronqué — on le ramène en numéro d'étape. */
   onStepClick(index: number): void {
     const target = index + this.firstStep();
-    if (target < this.currentStep()) {
+    if (target !== this.currentStep() && target <= this.maxStepReached()) {
       this.serverError.set(null);
       this.currentStep.set(target);
     }
@@ -179,6 +200,16 @@ export class AffaireWizardComponent implements OnInit {
   readonly isLoading = signal(false);
 
   currentStep = signal(1);
+
+  /**
+   * Étape la plus avancée jamais atteinte. C'est elle, et non `currentStep`, qui dit ce
+   * qui est cliquable dans le rail : une fois l'étape 4 franchie, revenir à l'étape 2 ne
+   * doit pas re-verrouiller 3 et 4. Un `effect` la relève à chaque changement d'étape,
+   * plutôt qu'un `goToStep()` qu'il faudrait penser à appeler dans les huit endroits qui
+   * font `currentStep.set(...)`.
+   */
+  readonly maxStepReached = signal(1);
+
   draftId     = signal<number | null>(null);
   isSaving    = signal(false);
   serverError = signal<string | null>(null);
@@ -243,7 +274,9 @@ export class AffaireWizardComponent implements OnInit {
           : null;
       }
       case 5:
-        return d.dateDebutFacturation ? null : this.translate.instant('AFFAIRES.wizard.shell.val.planning');
+        return (d.dateDebutFacturation && (d.dureeMois ?? 0) > 0)
+          ? null
+          : this.translate.instant('AFFAIRES.wizard.shell.val.planning');
       default:
         return null;
     }
@@ -296,7 +329,7 @@ export class AffaireWizardComponent implements OnInit {
       }
 
       case 5:
-        return !!d.dateDebutFacturation;
+        return !!d.dateDebutFacturation && (d.dureeMois ?? 0) > 0;
 
       case 6:
         return true; // recap — activate button enabled always
@@ -357,6 +390,10 @@ export class AffaireWizardComponent implements OnInit {
         this.resumeDraft.set(detail.statut === 'DRAFT');
         this.draftId.set(id);
         this.currentStep.set(2);
+        // Une affaire déjà active a franchi toutes les étapes : le rail est entièrement
+        // ouvert, on vient éditer une section précise et non re-dérouler l'assistant. Un
+        // brouillon repris, lui, garde la progression pas à pas.
+        if (detail.statut !== 'DRAFT') this.maxStepReached.set(this.wizardSteps().length);
         this.isSaving.set(false);
         this.isLoading.set(false);
       },
@@ -530,6 +567,9 @@ export class AffaireWizardComponent implements OnInit {
     this.isSaving.set(true);
     this.wizardService.configurePlanning(id, {
       dateDebutFacturation:  d.dateDebutFacturation,
+      dureeMois:             d.dureeMois ?? null,
+      // Dérivée de (début + durée) côté formulaire, mais transmise quand même : le
+      // serveur la recalcule et la stocke, le client n'est pas la source de vérité.
       dateFinContractuelle:  d.dateFinContractuelle ?? null,
       datePremireEcheance:   d.datePremireEcheance  ?? null,
     }).subscribe({

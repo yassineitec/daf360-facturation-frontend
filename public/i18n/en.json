@@ -1076,7 +1076,7 @@
         "activate": "Activate project",
         "dash": "—",
         "card": {
-          "t1": "Origin & Document",
+          "t1": "Origin",
           "t2": "General information",
           "t3": "Billing mode",
           "t4": "Managers & Budget",
@@ -1131,9 +1131,9 @@
           "resp_primary": "Designate a primary manager.",
           "resp_alloc": "Each manager must have a user and an allocation > 0.",
           "resp_total": "Total allocations ({{total}}) must equal the budget ({{budget}}).",
-          "planning": "Billing start date required.",
+          "planning": "Billing start date and contract duration (in months) are required.",
           "incomplete": "Please complete all required fields before continuing.",
-          "pays": "country of origin"
+          "pays": "parent entity"
         },
         "err": {
           "load": "Unable to load the project. Try again.",
@@ -1175,8 +1175,8 @@
         "cur_dollar": "Dollar",
         "cur_tnd": "Tunisian Dinar",
         "cur_mad": "Moroccan Dirham",
-        "pays_label": "Country of origin",
-        "pays_ph": "Select the country",
+        "pays_label": "Parent entity",
+        "pays_ph": "Select the parent entity",
         "pays_hint": "Drives the project reference sequence. Cannot be changed afterwards.",
         "pays_locked": "set at creation",
         "modes": {
@@ -1236,13 +1236,21 @@
       },
       "billing": {
         "locked": "The billing mode is locked and cannot be changed.",
-        "config": "Configuration — {{mode}}"
+        "config": "Configuration — {{mode}}",
+        "mode_config": {
+          "AV": "contractual breakdown",
+          "TM": "Time & Materials",
+          "CP": "cost-plus",
+          "RMB": "reimbursable expenses",
+          "LIVRABLE": "document deliverables"
+        }
       },
       "av": {
         "sum_prefix": "The sum of the percentages must equal",
         "calc_basis": "Billing will be calculated based on the contract amount of",
         "type_ph": "Breakdown type *",
-        "add": "Add a breakdown type",
+        "add": "Add a breakdown",
+        "remove": "Remove this breakdown",
         "total": "Total",
         "warn_exact": "The sum must be exactly 100%.",
         "warn_missing": "{{n}}% missing.",
@@ -1322,10 +1330,14 @@
         "sub": "Define the project's time milestones",
         "start_label": "Billing start date *",
         "start_hint": "First date from which billing can be issued",
+        "duration_label": "Contract duration *",
+        "duration_unit": "months",
+        "duration_hint": "Expressed in months. Drives the contractual end date.",
         "end_label": "Contractual end date",
-        "end_hint": "Final contractual deadline of the project",
-        "first_label": "First due date",
-        "first_hint": "Date of the first invoice issued",
+        "end_hint": "Calculated automatically: billing start + duration.",
+        "end_auto": "calculated",
+        "first_label": "Billing closing date",
+        "first_hint": "Last date on which an invoice can be issued for the project",
         "date_ph": "dd/mm/yyyy",
         "timeline_pre": "Project active from",
         "timeline_to": "to"
@@ -1414,8 +1426,10 @@
         "total_allocated": "Total allocated",
         "sec_c": "Scheduling",
         "start_date": "Billing start date",
+        "duration": "Contract duration",
+        "duration_months": "{{n}} months",
         "end_date": "Contractual end date",
-        "first_due": "First due date",
+        "first_due": "Billing closing date",
         "config": "Configuration — {{mode}}",
         "total": "Total",
         "internal": "Internal",
@@ -1438,7 +1452,7 @@
         "col_internal_cost": "Internal cost",
         "type_id_hash": "Type ID #{{id}}",
         "user_hash": "User #{{id}}",
-        "pays": "Country of origin",
+        "pays": "Parent entity",
         "livrable_configured": "Deliverables were configured in the \"Billing mode\" step."
       }
     },

@@ -158,6 +158,11 @@ export interface AffaireDraftState {
 
   // Step 5 — Planification
   dateDebutFacturation?: string;
+  /**
+   * Durée du contrat EN MOIS. Saisie, persistée, et c'est elle qui produit
+   * `dateFinContractuelle` — laquelle n'est plus saisissable directement.
+   */
+  dureeMois?: number;
   dateFinContractuelle?: string;
   datePremireEcheance?: string;
 }
@@ -223,6 +228,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     marginRatePct:               dto.cpMarginRatePct != null ? Number(dto.cpMarginRatePct) : undefined,
     responsables,
     dateDebutFacturation:        dto.dateDebutFacturation,
+    dureeMois:                   dto.dureeMois ?? undefined,
     dateFinContractuelle:        dto.dateFinContractuelle,
     datePremireEcheance:         dto.datePremireEcheance,
   };

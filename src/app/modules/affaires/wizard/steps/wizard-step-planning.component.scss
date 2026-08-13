@@ -14,10 +14,14 @@
 .section-title { font-size: 15px; font-weight: 600; color: #0f172a; }
 .section-sub { font-size: 13px; color: #64748b; margin-top: 2px; }
 
+// Quatre champs depuis que la durée est saisie : deux colonnes tiennent mieux qu'une
+// rangée de quatre, où chaque libellé passerait sur deux lignes.
 .field-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+
+  @media (max-width: 720px) { grid-template-columns: minmax(0, 1fr); }
 }
 
 .field-label {
@@ -28,6 +32,41 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 8px;
+
+  // Pastille « calculée » : dit pourquoi le champ ne se saisit pas, à l'endroit exact
+  // où l'on essaierait de cliquer.
+  &__auto {
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+// Valeur dérivée : même gabarit que les champs voisins pour que la grille reste
+// régulière, mais fond gris et curseur par défaut — rien à y saisir.
+.readonly-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+
+  .material-symbols-outlined { font-size: 18px; color: #1a6b7c; }
+
+  &--empty { color: #94a3b8; font-weight: 400; }
 }
 
 .date-field-wrap {

@@ -1,7 +1,7 @@
 <div class="step-form">
 
   <div class="info-banner">
-    <span class="material-symbols-outlined" style="font-size:18px">info</span>
+    <span class="material-symbols-outlined" style="font-size:16px">info</span>
     <p class="m-0">
       {{ 'AFFAIRES.wizard.av.sum_prefix' | translate }} <strong>100 %</strong>.
       @if (draft.budgetPrevisionnel) {
@@ -21,32 +21,49 @@
       (onClick)="addRow()" />
   </div>
 
-  <!-- Repartition rows -->
-  @for (r of draft.repartitions; track $index; let i = $index) {
-    <div class="rep-row">
-      <daf-select
-        [options]="repartitionTypeOptions()"
-        [config]="{ placeholder: ('AFFAIRES.wizard.av.type_ph' | translate), fullWidth: true }"
-        [selected]="r.repartitionTypeId ? [r.repartitionTypeId.toString()] : []"
-        (selectedChange)="onTypeChange(r, $event)" />
-      <div class="pct-field">
-        <daf-form-field
-          [options]="{ type: 'number' }"
-          [value]="r.percentage"
-          (valueChange)="onPercentageChange(r, $event)">
-        </daf-form-field>
-        <span class="pct-symbol">%</span>
+  <!-- Repartition rows.
+       La colonne de suppression existe TOUJOURS (`rep-row__remove`), même quand le bouton
+       est invisible : la révéler au survol en la faisant apparaître dans le flux
+       décalerait les deux champs sous le curseur à chaque passage. Elle réserve donc sa
+       place et seule l'opacité change. -->
+  <div class="rep-list">
+    @for (r of draft.repartitions; track $index; let i = $index) {
+      <div class="rep-row">
+        <daf-select
+          [options]="repartitionTypeOptions()"
+          [config]="{ placeholder: ('AFFAIRES.wizard.av.type_ph' | translate), fullWidth: true }"
+          [selected]="r.repartitionTypeId ? [r.repartitionTypeId.toString()] : []"
+          (selectedChange)="onTypeChange(r, $event)" />
+        <!-- `align` + `suffixText` (lib 4.19) : le « % » vit DANS le champ, plus dans un
+             span à côté qu'il fallait re-styler à la main sur chaque page. -->
+        <div class="pct-field">
+          <daf-form-field
+            [options]="{ type: 'number', align: 'center', suffixText: '%' }"
+            [value]="r.percentage"
+            (valueChange)="onPercentageChange(r, $event)" />
+        </div>
+        <div class="rep-row__remove">
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close',
+                         title: ('AFFAIRES.wizard.av.remove' | translate) }"
+            (onClick)="removeRow(i)" />
+        </div>
       </div>
-      <daf-button [options]="{variant: 'danger', size: 'sm', iconStart: 'close'}" (onClick)="removeRow(i)"></daf-button>
-    </div>
-  }
+    }
+  </div>
 
+  <!-- Total — aligné sur la grille des lignes : le libellé finit au bord droit de la
+       colonne « type de répartition », le chiffre tombe exactement sous le champ de
+       pourcentage. Pas de fond : seuls la bordure et le texte portent la couleur. -->
   @if (draft.repartitions.length > 0) {
-    <div class="total-indicator"
-      [class.ok]="draft.repartitionTotal === 100"
-      [class.error]="draft.repartitionTotal !== 100">
+    <div class="total-row">
       <span class="total-label">{{ 'AFFAIRES.wizard.av.total' | translate }}</span>
-      <span class="total-value">{{ draft.repartitionTotal | number:'1.1-1' }} %</span>
+      <div class="total-box"
+           [class.ok]="draft.repartitionTotal === 100"
+           [class.error]="draft.repartitionTotal !== 100">
+        {{ draft.repartitionTotal | number:'1.1-1' }} %
+      </div>
+      <div class="rep-row__remove" aria-hidden="true"></div>
     </div>
 
     @if (draft.repartitionTotal !== 100) {

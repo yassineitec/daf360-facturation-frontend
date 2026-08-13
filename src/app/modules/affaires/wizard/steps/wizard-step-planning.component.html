@@ -19,11 +19,30 @@
         <div class="field-hint">{{ 'AFFAIRES.wizard.planning.start_hint' | translate }}</div>
       </div>
 
+      <!-- La durée est la SAISIE, la fin contractuelle n'en est que la conséquence : c'est
+           la durée qui est négociée et qui est stockée, la date de fin se recalcule. -->
       <div class="field">
-        <label class="field-label">{{ 'AFFAIRES.wizard.planning.end_label' | translate }}</label>
-        <daf-multi-date-picker
-          [config]="{ selectionMode: 'single', placeholder: ('AFFAIRES.wizard.planning.date_ph' | translate), allowPastDays: true, allowWeekends: true, fullWidth: true }"
-          [(value)]="dateFinContractuelle" />
+        <label class="field-label">{{ 'AFFAIRES.wizard.planning.duration_label' | translate }}</label>
+        <!-- L'unité est DANS le champ (`suffixText`, lib 4.19) : c'est là qu'on la cherche
+             en saisissant, et le libellé n'a plus à la répéter entre parenthèses. -->
+        <daf-form-field
+          [options]="{ type: 'number', placeholder: '12', suffixText: ('AFFAIRES.wizard.planning.duration_unit' | translate), fullWidth: true }"
+          [value]="dureeMois"
+          (valueChange)="onDureeChange($event)" />
+        <div class="field-hint">{{ 'AFFAIRES.wizard.planning.duration_hint' | translate }}</div>
+      </div>
+
+      <!-- Champ figé et non un sélecteur désactivé : un calendrier qui s'ouvre pour ne
+           rien laisser choisir est plus déroutant qu'une valeur en lecture seule. -->
+      <div class="field">
+        <label class="field-label">
+          {{ 'AFFAIRES.wizard.planning.end_label' | translate }}
+          <span class="field-label__auto">{{ 'AFFAIRES.wizard.planning.end_auto' | translate }}</span>
+        </label>
+        <div class="readonly-date" [class.readonly-date--empty]="!dateFinDisplay">
+          <span class="material-symbols-outlined">event_available</span>
+          <span>{{ dateFinDisplay ? (dateFinDisplay | date:'dd/MM/yyyy') : '—' }}</span>
+        </div>
         <div class="field-hint">{{ 'AFFAIRES.wizard.planning.end_hint' | translate }}</div>
       </div>
 

@@ -120,7 +120,7 @@ export class BillingService {
 
   getTauxHistory(affaireId: number): Observable<TauxAvancementDto[]> {
     return this.http.get<TauxAvancementDto[]>(
-      `${this.base}/affaires/${affaireId}/taux-avancement`, this.opts);
+      `${this.base}/billing/av/${affaireId}/taux`, this.opts);
   }
 
   submitTaux(affaireId: number, body: { taux: number; commentaire?: string | null }): Observable<TauxAvancementDto> {
@@ -130,19 +130,19 @@ export class BillingService {
 
   validateTaux(tauxId: number): Observable<TauxAvancementDto> {
     return this.http.post<TauxAvancementDto>(
-      `${this.base}/billing/taux/${tauxId}/validate`, {}, this.opts);
+      `${this.base}/billing/av/taux/${tauxId}/validate`, {}, this.opts);
   }
 
   refuseTaux(tauxId: number, motif: string): Observable<TauxAvancementDto> {
     return this.http.post<TauxAvancementDto>(
-      `${this.base}/billing/taux/${tauxId}/refuse`, { motif }, this.opts);
+      `${this.base}/billing/av/taux/${tauxId}/refuse`, { motif }, this.opts);
   }
 
   // ── Jalons (JAL) ──────────────────────────────────────────────────────────
 
   getJalons(affaireId: number): Observable<JalonDto[]> {
     return this.http.get<JalonDto[]>(
-      `${this.base}/affaires/${affaireId}/jalons`, this.opts);
+      `${this.base}/billing/jal/${affaireId}/jalons`, this.opts);
   }
 
   submitJalon(jalonId: number): Observable<JalonDto> {
@@ -152,12 +152,12 @@ export class BillingService {
 
   validateJalon(jalonId: number): Observable<JalonDto> {
     return this.http.post<JalonDto>(
-      `${this.base}/billing/jalons/${jalonId}/validate`, {}, this.opts);
+      `${this.base}/billing/jal/jalons/${jalonId}/validate`, {}, this.opts);
   }
 
   refuseJalon(jalonId: number, motif: string): Observable<JalonDto> {
     return this.http.post<JalonDto>(
-      `${this.base}/billing/jalons/${jalonId}/refuse`, { motif }, this.opts);
+      `${this.base}/billing/jal/jalons/${jalonId}/refuse`, { motif }, this.opts);
   }
 
   // ── Billing Lines ──────────────────────────────────────────────────────────
@@ -184,39 +184,41 @@ export class BillingService {
 
   validateDF(lineId: number): Observable<BillingLineDto> {
     return this.http.post<BillingLineDto>(
-      `${this.base}/billing/lines/${lineId}/validate-df`, {}, this.opts);
+      `${this.base}/billing/df/lines/${lineId}/validate`, {}, this.opts);
   }
 
   returnDF(lineId: number, motif: string): Observable<BillingLineDto> {
     return this.http.post<BillingLineDto>(
-      `${this.base}/billing/lines/${lineId}/return-df`, { motif }, this.opts);
+      `${this.base}/billing/df/lines/${lineId}/return`,
+      { actionType: 'RETOURNE', motif }, this.opts);
   }
 
   cancelLine(lineId: number, motif: string): Observable<BillingLineDto> {
     return this.http.post<BillingLineDto>(
-      `${this.base}/billing/lines/${lineId}/cancel`, { motif }, this.opts);
+      `${this.base}/billing/df/lines/${lineId}/return`,
+      { actionType: 'ANNULE', motif }, this.opts);
   }
 
   // ── Expenses (RMB) ─────────────────────────────────────────────────────────
 
   submitExpense(affaireId: number, formData: FormData): Observable<ExpenseDto> {
     return this.http.post<ExpenseDto>(
-      `${this.base}/affaires/${affaireId}/expenses`, formData, this.opts);
+      `${this.base}/billing/rmb/${affaireId}/expenses`, formData, this.opts);
   }
 
   getExpenses(affaireId: number): Observable<ExpenseDto[]> {
     return this.http.get<ExpenseDto[]>(
-      `${this.base}/affaires/${affaireId}/expenses`, this.opts);
+      `${this.base}/billing/rmb/${affaireId}/expenses`, this.opts);
   }
 
   validateExpense(expenseId: number): Observable<ExpenseDto> {
     return this.http.post<ExpenseDto>(
-      `${this.base}/billing/expenses/${expenseId}/validate`, {}, this.opts);
+      `${this.base}/billing/rmb/expenses/${expenseId}/validate`, {}, this.opts);
   }
 
   refuseExpense(expenseId: number, motif: string): Observable<ExpenseDto> {
     return this.http.post<ExpenseDto>(
-      `${this.base}/billing/expenses/${expenseId}/refuse`, { motif }, this.opts);
+      `${this.base}/billing/rmb/expenses/${expenseId}/reject`, { motif }, this.opts);
   }
 
   // ── Approval Queues ────────────────────────────────────────────────────────

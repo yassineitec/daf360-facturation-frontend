@@ -55,7 +55,9 @@ export class CoutsAnalyseTabComponent {
     const negative = (this.margin()?.margeBrute ?? 0) < 0;
     return negative
       ? { icon: 'trending_down', iconColor: 'text-danger', iconBg: 'bg-danger/10', valueColor: 'text-danger' }
-      : { icon: 'savings',       iconColor: 'text-teal',   iconBg: 'bg-teal/10',   valueColor: 'text-teal'   };
+      // `trending_up` fait la paire avec `trending_down` de la branche négative — une marge
+      // positive est une variation, pas une tirelire.
+      : { icon: 'trending_up',   iconColor: 'text-teal',   iconBg: 'bg-teal/10',   valueColor: 'text-teal'   };
   });
 
   searchAffaires(): void {

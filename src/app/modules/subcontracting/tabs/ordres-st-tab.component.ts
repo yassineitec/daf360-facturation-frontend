@@ -78,7 +78,7 @@ export class OrdresStTabComponent {
 
   /** Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4). */
   readonly kpiOrders   : MetricCardOptions = { icon: 'assignment', iconColor: 'text-primary',   iconBg: 'bg-primary/10'   };
-  readonly kpiBudget   : MetricCardOptions = { icon: 'savings',    iconColor: 'text-secondary', iconBg: 'bg-secondary/10' };
+  readonly kpiBudget   : MetricCardOptions = { icon: 'account_balance_wallet', iconColor: 'text-secondary', iconBg: 'bg-secondary/10' };
   readonly kpiRealized : MetricCardOptions = { icon: 'payments',   iconColor: 'text-teal',      iconBg: 'bg-teal/10'      };
   readonly kpiOverruns : MetricCardOptions = {
     icon: 'warning', iconColor: 'text-danger', iconBg: 'bg-danger/10', valueColor: 'text-danger',

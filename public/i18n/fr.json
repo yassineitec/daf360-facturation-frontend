@@ -1076,7 +1076,7 @@
         "activate": "Activer l'affaire",
         "dash": "—",
         "card": {
-          "t1": "Origine & Document",
+          "t1": "Origine",
           "t2": "Informations générales",
           "t3": "Mode de facturation",
           "t4": "Responsables & Budget",
@@ -1131,9 +1131,9 @@
           "resp_primary": "Désignez un responsable principal.",
           "resp_alloc": "Chaque responsable doit avoir un utilisateur et une allocation > 0.",
           "resp_total": "Total des allocations ({{total}}) doit égaler le budget ({{budget}}).",
-          "planning": "Date de début de facturation requise.",
+          "planning": "Date de début de facturation et durée du contrat (en mois) requises.",
           "incomplete": "Veuillez compléter tous les champs obligatoires avant de continuer.",
-          "pays": "pays d'origine"
+          "pays": "entité mère"
         },
         "err": {
           "load": "Impossible de charger l'affaire. Réessayez.",
@@ -1175,8 +1175,8 @@
         "cur_dollar": "Dollar",
         "cur_tnd": "Dinar tunisien",
         "cur_mad": "Dirham marocain",
-        "pays_label": "Pays d'origine",
-        "pays_ph": "Sélectionnez le pays",
+        "pays_label": "Entité mère",
+        "pays_ph": "Sélectionnez l'entité mère",
         "pays_hint": "Détermine la séquence de référence de l'affaire. Non modifiable ensuite.",
         "pays_locked": "défini à la création",
         "modes": {
@@ -1236,13 +1236,21 @@
       },
       "billing": {
         "locked": "Le mode de facturation est verrouillé et ne peut pas être modifié.",
-        "config": "Configuration — {{mode}}"
+        "config": "Configuration — {{mode}}",
+        "mode_config": {
+          "AV": "répartition contractuelle",
+          "TM": "régie Time & Materials",
+          "CP": "coûts majorés (Cost-Plus)",
+          "RMB": "frais remboursables",
+          "LIVRABLE": "livrables documentaires"
+        }
       },
       "av": {
         "sum_prefix": "La somme des pourcentages doit être égale à",
         "calc_basis": "La facturation sera calculée sur la base du montant contractuel de",
         "type_ph": "Type de répartition *",
-        "add": "Ajouter un type de répartition",
+        "add": "Ajouter une répartition",
+        "remove": "Supprimer cette répartition",
         "total": "Total",
         "warn_exact": "La somme doit être exactement 100 %.",
         "warn_missing": "Il manque {{n}} %.",
@@ -1322,10 +1330,14 @@
         "sub": "Définissez les jalons temporels de l'affaire",
         "start_label": "Date de début de facturation *",
         "start_hint": "Première date à partir de laquelle la facturation peut être émise",
+        "duration_label": "Durée du contrat *",
+        "duration_unit": "mois",
+        "duration_hint": "Exprimée en mois. Détermine la date de fin contractuelle.",
         "end_label": "Date de fin contractuelle",
-        "end_hint": "Échéance contractuelle finale de l'affaire",
-        "first_label": "Date de première échéance",
-        "first_hint": "Date de la première facture émise",
+        "end_hint": "Calculée automatiquement : début de facturation + durée.",
+        "end_auto": "calculée",
+        "first_label": "Date de clôture de facturation",
+        "first_hint": "Dernière date à laquelle une facture peut être émise sur l'affaire",
         "date_ph": "jj/mm/aaaa",
         "timeline_pre": "Affaire active du",
         "timeline_to": "au"
@@ -1414,8 +1426,10 @@
         "total_allocated": "Total alloué",
         "sec_c": "Planification",
         "start_date": "Date de début de facturation",
+        "duration": "Durée du contrat",
+        "duration_months": "{{n}} mois",
         "end_date": "Date de fin contractuelle",
-        "first_due": "Première échéance",
+        "first_due": "Clôture de facturation",
         "config": "Configuration — {{mode}}",
         "total": "Total",
         "internal": "Interne",
@@ -1438,7 +1452,7 @@
         "col_internal_cost": "Coût interne",
         "type_id_hash": "Type ID #{{id}}",
         "user_hash": "User #{{id}}",
-        "pays": "Pays d'origine",
+        "pays": "Entité mère",
         "livrable_configured": "Les livrables ont été configurés à l'étape « Mode de facturation »."
       }
     },

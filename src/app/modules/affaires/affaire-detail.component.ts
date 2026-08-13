@@ -22,7 +22,7 @@ import { AffaireWizardService } from './affaire-wizard.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto,
   AffaireInvoiceItem, AffairePaymentItem, PaysRefDto,
-  STATUT_TRANSITIONS, STATUT_LABELS, TYPE_LABELS,
+  STATUT_TRANSITIONS, STATUT_LABELS,
 } from './affaire.model';
 import { UserStore } from '../../core/user.store';
 import { PermissionDirective } from '../../shared/permission.directive';
@@ -190,11 +190,6 @@ export class AffaireDetailComponent implements OnInit {
   readonly paysLabel = computed(() =>
     this.paysList().find(p => p.id === this.affaire()?.paysId)?.frenchLabel ?? '—');
 
-  readonly typeLabel = computed(() => {
-    const a = this.affaire();
-    return a ? (TYPE_LABELS[a.typeAffaire] ?? a.typeAffaire) : '';
-  });
-
   readonly headerSubtitle = computed(() => {
     const a = this.affaire();
     if (!a) return '';
@@ -315,8 +310,11 @@ export class AffaireDetailComponent implements OnInit {
     const fields: DetailField[] = [
       { label: 'AFFAIRES.DETAIL.INFO.PAYS',         value: this.paysLabel() },
       { label: 'AFFAIRES.DETAIL.INFO.CURRENCY',     value: this.affaireDevise() },
+      // Pas de « type d'engagement » ici : `typeAffaire` n'est jamais renseigné par
+      // l'assistant (il retombe systématiquement sur FORFAIT côté service), la ligne
+      // affichait donc toujours la même valeur juste à côté du mode de facturation, qui
+      // est la vraie information contractuelle.
       { label: 'AFFAIRES.DETAIL.INFO.BILLING_MODE', value: this.enumText('BILLING_MODE', a.billingMode) },
-      { label: 'AFFAIRES.DETAIL.INFO.ENGAGEMENT',   value: this.typeLabel() },
       {
         label: 'AFFAIRES.DETAIL.INFO.BUDGET_VALIDATED',
         value: this.translate.instant(a.budgetValide
