@@ -1,20 +1,20 @@
 <div class="step-form">
 
-  <div class="info-banner">
-    <span class="material-symbols-outlined" style="font-size:16px">info</span>
-    <p class="m-0">
-      {{ 'AFFAIRES.wizard.av.sum_prefix' | translate }} <strong>100 %</strong>.
-      @if (draft.budgetPrevisionnel) {
-        {{ 'AFFAIRES.wizard.av.calc_basis' | translate }}
-        <strong>{{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}</strong>.
-      }
-    </p>
-  </div>
-
-  <!-- En-tête de section : l'ajout y vit, atteignable quelle que soit la longueur de la
-       liste. La bande fine en fin de liste le double là où finit la saisie. -->
+  <!-- Une seule bande : la règle des 100 % à gauche, l'ajout à droite. Les deux tenaient
+       deux lignes pour une note et un bouton, alors que la bande de titre de section a
+       disparu (la carte de l'étape annonce déjà « Configuration — répartition
+       contractuelle »). -->
   <div class="section-bar">
-    <span class="section-bar__title">{{ 'AFFAIRES.wizard.av.rows_title' | translate }}</span>
+    <p class="info-note">
+      <span class="material-symbols-outlined">info</span>
+      <span>
+        {{ 'AFFAIRES.wizard.av.sum_prefix' | translate }} <strong>100 %</strong>.
+        @if (draft.budgetPrevisionnel) {
+          {{ 'AFFAIRES.wizard.av.calc_basis' | translate }}
+          <strong>{{ draft.budgetPrevisionnel | number:'1.3-3' }} {{ draft.contractCurrency }}</strong>.
+        }
+      </span>
+    </p>
     <daf-button
       [options]="{ variant: 'secondary', size: 'sm', iconStart: 'add',
                    label: 'AFFAIRES.wizard.av.add' | translate }"
@@ -42,9 +42,11 @@
             [value]="r.percentage"
             (valueChange)="onPercentageChange(r, $event)" />
         </div>
+        <!-- `delete` en variante `danger` : la même suppression que dans les tableaux de
+             l'application (admin/listes, sous-traitants), pas une croix de fermeture. -->
         <div class="rep-row__remove">
           <daf-button
-            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close',
+            [options]="{ variant: 'danger', size: 'sm', iconStart: 'delete',
                          title: ('AFFAIRES.wizard.av.remove' | translate) }"
             (onClick)="removeRow(i)" />
         </div>

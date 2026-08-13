@@ -7,9 +7,9 @@
     </p>
   </div>
 
-  <!-- En-tête de section : point d'ajout stable, doublé par la bande en fin de liste. -->
+  <!-- Point d'ajout stable, sans titre de section : la carte de l'étape annonce déjà le
+       mode configuré. -->
   <div class="section-bar">
-    <span class="section-bar__title">{{ 'AFFAIRES.wizard.tm.rows_title' | translate }}</span>
     <daf-button
       [options]="{ variant: 'secondary', size: 'sm', iconStart: 'person_add',
                    label: 'AFFAIRES.wizard.tm.add' | translate }"
@@ -20,7 +20,11 @@
     <div class="item-card">
       <div class="item-card-header">
         <div class="item-badge item-badge--tm">{{ 'AFFAIRES.wizard.tm.badge' | translate:{ n: i + 1 } }}</div>
-        <daf-button [options]="{variant: 'danger', size: 'sm', iconStart: 'close'}" (onClick)="removeRessource(i)"></daf-button>
+        <!-- `delete`, comme dans les tableaux de l'application — pas une croix. -->
+        <daf-button
+          [options]="{ variant: 'danger', size: 'sm', iconStart: 'delete',
+                       title: ('AFFAIRES.wizard.tm.remove' | translate) }"
+          (onClick)="removeRessource(i)" />
       </div>
 
       <div class="resource-grid">

@@ -161,6 +161,9 @@ $deep-blue:  #164B60;
 // La dalle : `daf-card` porte le fond, l'ombre et l'arrondi (variant 'floating'), l'hôte
 // ne garde que le placement. `display: block` explicite — un composant Angular est
 // `inline` par défaut, et `max-width` ne mord pas sur une boîte inline.
+// 820 px : la barre reste une dalle compacte sous le formulaire, elle ne s'étire pas à la
+// largeur de la page. C'est la répartition interne — le rail prend tout ce que les boutons
+// ne réclament pas — qui donne au rail la place qu'il lui manquait, pas la largeur totale.
 .action-bar {
   display: block;
   position: sticky;
@@ -171,17 +174,47 @@ $deep-blue:  #164B60;
   margin-inline: auto;
 }
 
+// Trois colonnes : bouton — rail — bouton.
+//
+// Aucun `padding-right` : la barre est centrée et limitée en largeur, elle ne court plus
+// jusqu'au bord droit, donc rien à dégager pour le disque du menu radial.
 .action-bar__inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
+}
 
-  // 56 px de disque du menu radial + 32 px de marge du shell + une respiration : le
-  // rembourrage vit sur la rangée et non sur la carte, dont le `padding` est piloté par
-  // `daf-card`.
-  @media (min-width: 640px) { padding-right: 6rem; }
+// Les boutons prennent la largeur de leur libellé et RIEN de plus. Ils portaient
+// `flex: 1 1 auto` pour centrer optiquement le rail entre eux, mais ils s'appropriaient
+// ainsi l'espace dont le rail a besoin : c'est lui la pièce large de la barre, et les
+// libellés d'étapes se chevauchaient. Le rail reste visuellement au centre parce qu'il
+// répartit ses propres étapes sur toute sa largeur.
+.action-bar__side {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+
+  &--end { justify-content: flex-end; }
+}
+
+// `min-width: 0` indispensable : sans lui, la largeur minimale de contenu du rail
+// l'empêcherait de se réduire et ferait déborder la barre au lieu de replier les colonnes.
+.action-bar__rail {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// Sous 720 px, le rail passe SOUS les deux boutons plutôt que d'être coincé entre eux :
+// en repli naturel il aurait emmené « Suivant » seul sur une deuxième ligne, ce qui
+// éloigne les deux boutons de navigation l'un de l'autre sans rien gagner.
+@media (max-width: 720px) {
+  .action-bar__rail {
+    order: 1;
+    flex-basis: 100%;
+  }
+  .action-bar__side { flex: 1 1 auto; }
 }
 
 // ── Responsive ───────────────────────────────────────────────────────────────

@@ -1254,8 +1254,7 @@
         "total": "Total",
         "warn_exact": "The sum must be exactly 100%.",
         "warn_missing": "{{n}}% missing.",
-        "warn_excess": "Excess of {{n}}%.",
-        "rows_title": "CTR / BPE / TQC split"
+        "warn_excess": "Excess of {{n}}%."
       },
       "tm": {
         "info": "Select the staff members and set their billing rates. Rates will be locked after the first invoice.",
@@ -1309,7 +1308,7 @@
           "err_select": "Select at least one staff member.",
           "err_calc": "Error while calculating the rates."
         },
-        "rows_title": "Assigned resources"
+        "remove": "Remove this resource"
       },
       "cp": {
         "margin_title": "Contractual margin rate",

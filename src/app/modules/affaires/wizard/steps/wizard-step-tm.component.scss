@@ -7,19 +7,13 @@
 }
 
 // ── En-tête de section (titre + action d'ajout) ─────────────────────────
+// Plus de titre à cadrer à gauche : la bande ne porte que l'action d'ajout, alignée à
+// droite comme sur les autres modes.
 .section-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
-
-  &__title {
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #44474c;
-  }
 }
 
 

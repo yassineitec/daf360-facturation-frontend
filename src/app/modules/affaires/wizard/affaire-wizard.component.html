@@ -137,22 +137,14 @@
        ce que la barre dessinait à la main avec une ombre Tailwind littérale.
        ══════════════════════════════════════════════════════════════════ -->
   <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
+    <!-- Retour — rail — Suivant. Le rail est ENTRE les deux boutons : la progression se lit
+         au centre, et chaque bouton reste du côté où il emmène. `pill: false` (par défaut)
+         et `size: 'sm'` : la barre est un chrome de navigation, pas l'action principale
+         d'une page — deux gélules de taille moyenne y pesaient plus lourd que le rail
+         qu'elles accompagnent. -->
     <div class="action-bar__inner">
 
-      <!-- Rail : cliquable sur tout ce qui a déjà été franchi (voir onStepClick) -->
-      <div style="flex:1 1 280px; min-width:0">
-        <daf-stepper
-          orientation="horizontal"
-          [steps]="stepperSteps()"
-          [currentStep]="stepperIndex()"
-          [config]="stepperConfig()"
-          (stepClick)="onStepClick($event)" />
-      </div>
-
-      <!-- `pill: false` (par défaut) et `size: 'sm'` : la barre est un chrome de navigation,
-           pas l'action principale d'une page — deux gélules de taille moyenne y pesaient
-           plus lourd que le rail qu'elles accompagnent. -->
-      <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
+      <div class="action-bar__side">
         @if (currentStep() > firstStep()) {
           <daf-button
             [options]="{ variant: 'ghost', size: 'sm', label: stepperConfig().prevLabel, iconStart: 'arrow_back' }"
@@ -162,6 +154,19 @@
             [options]="{ variant: 'ghost', size: 'sm', label: stepperConfig().cancelLabel, iconStart: 'close' }"
             (onClick)="cancelWizard()" />
         }
+      </div>
+
+      <!-- Rail : cliquable sur tout ce qui a déjà été franchi (voir onStepClick) -->
+      <div class="action-bar__rail">
+        <daf-stepper
+          orientation="horizontal"
+          [steps]="stepperSteps()"
+          [currentStep]="stepperIndex()"
+          [config]="stepperConfig()"
+          (stepClick)="onStepClick($event)" />
+      </div>
+
+      <div class="action-bar__side action-bar__side--end">
         <daf-button
           [options]="{
             variant: 'teal',

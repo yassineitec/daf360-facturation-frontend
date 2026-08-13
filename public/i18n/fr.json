@@ -1254,8 +1254,7 @@
         "total": "Total",
         "warn_exact": "La somme doit être exactement 100 %.",
         "warn_missing": "Il manque {{n}} %.",
-        "warn_excess": "L'excédent est de {{n}} %.",
-        "rows_title": "Répartition CTR / BPE / TQC"
+        "warn_excess": "L'excédent est de {{n}} %."
       },
       "tm": {
         "info": "Sélectionnez les collaborateurs et définissez leurs taux de facturation. Les taux seront verrouillés après la première facturation.",
@@ -1309,7 +1308,7 @@
           "err_select": "Sélectionnez au moins un collaborateur.",
           "err_calc": "Erreur lors du calcul des taux."
         },
-        "rows_title": "Ressources affectées"
+        "remove": "Supprimer cette ressource"
       },
       "cp": {
         "margin_title": "Taux de marge contractuel",

@@ -1,46 +1,65 @@
 :host { display: block; }
 
+// Un SEUL rembourrage pour toutes les boîtes de l'étape : bandeau d'information, lignes de
+// répartition, ligne de total, message d'avertissement. C'est ce qui fait que les bords
+// gauches s'alignent et que la colonne du pourcentage tombe au même endroit d'une boîte à
+// l'autre — chaque valeur ad hoc réintroduisait un décalage de quelques pixels.
+$box-pad-y: 14px;
+$box-pad-x: 16px;
+// Gouttière entre les colonnes d'une ligne, reprise à l'identique par la ligne de total.
+$col-gap:   16px;
+// Largeur de la colonne du pourcentage, et donc de la boîte de total qui tombe dessous.
+$pct-col:   150px;
+// Largeur de la colonne de suppression : fixe, pour servir de gouttière vide sur la ligne
+// de total où il n'y a aucun bouton à mesurer.
+$del-col:   50px;
+
 .step-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
-// ── Info banner ────────────────────────────────────────────────────────
-// Note de bas de champ, pas un message d'état : 12 px, texte gris, et l'icône seule
-// porte la couleur (rouge) pour signaler la contrainte des 100 %.
-.info-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #f7f8fa;
-  border-radius: 10px;
-  font-size: 12px;
-  color: #6b7280;
-  line-height: 1.55;
-
-  strong { color: #44474c; font-weight: 600; }
-
-  .material-symbols-outlined { color: #ba1a1a; flex-shrink: 0; margin-top: 1px; }
-}
-
-// ── En-tête de section (titre + action d'ajout) ────────────────────────
+// ── Bande d'en-tête : note à gauche, action d'ajout à droite ────────────
+// Plus de titre « Répartition CTR / BPE / TQC » : la carte de l'étape annonce déjà
+// « Configuration — répartition contractuelle », et l'énumération des trois codes vieillit
+// mal (le référentiel des types est paramétrable, il n'est pas figé sur ces trois-là).
 .section-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding-inline: $box-pad-x;
 
-  &__title {
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #44474c;
-  }
+  // Le bouton ne se comprime jamais : c'est la note qui cède la place et passe sur deux
+  // lignes si la carte devient étroite.
+  > daf-button { flex: 0 0 auto; }
 }
 
+// Note de règle, pas un message d'état : 8 px (le plancher de lisibilité que nous nous
+// donnons), texte gris, et l'icône seule porte la couleur (rouge) pour signaler la
+// contrainte des 100 %. Ni fond ni bordure — c'est une légende, pas un bandeau.
+.info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
+
+  strong { color: #44474c; font-weight: 600; }
+
+  // L'icône ne suit PAS la taille du texte : à 8 px elle deviendrait un point illisible.
+  .material-symbols-outlined {
+    font-size: 14px;
+    color: #ba1a1a;
+    flex-shrink: 0;
+    margin-top: -1px;
+  }
+}
 
 // ── Row ────────────────────────────────────────────────────────────────
 //
@@ -54,17 +73,16 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 4px 2px;
 }
 
 .rep-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
+  gap: $col-gap;
+  padding: $box-pad-y $box-pad-x;
   background: #ffffff;
   border: 1px solid #eceef0;
-  border-radius: 14px;
+  border-radius: 12px;
   transition: border-color 0.15s, box-shadow 0.15s;
 
   // Le type de répartition prend tout l'espace restant.
@@ -85,11 +103,8 @@
   }
 }
 
-// Largeur FIXE, et non `auto` : la même colonne sert de gouttière vide sur la ligne de
-// total, où il n'y a aucun bouton à mesurer. En `auto` le total se décalerait de la
-// largeur du bouton et ne tomberait plus sous le champ de pourcentage.
 .rep-row__remove {
-  flex: 0 0 50px;
+  flex: 0 0 $del-col;
   display: flex;
   justify-content: center;
   opacity: 0;
@@ -100,60 +115,23 @@
 // Colonne du pourcentage. Ne reste ici que la LARGEUR : le centrage du chiffre et le
 // symbole « % » sont passés en options de `daf-form-field` (`align`, `suffixText`).
 .pct-field {
-  // Assez large pour un pourcentage à deux décimales et son unité, sans manger la ligne.
-  flex: 0 0 150px;
+  flex: 0 0 $pct-col;
 
   daf-form-field { display: block; min-width: 0; }
 }
 
-// ── Inputs ─────────────────────────────────────────────────────────────
-.form-select {
-  flex: 1;
-  padding: 9px 12px;
-  border: 1.5px solid #eceef0;
-  border-radius: 10px;
-  font-size: 14px;
-  color: #1d2b3e;
-  background: #ffffff;
-  outline: none;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-
-  &:focus { border-color: #4648d4; box-shadow: 0 0 0 3px rgba(70,72,212,0.10); }
-}
-
-.form-input-pct {
-  width: 72px;
-  padding: 9px 10px;
-  border: 1.5px solid #eceef0;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d2b3e;
-  background: #ffffff;
-  outline: none;
-  text-align: center;
-  font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
-
-  &:focus { border-color: #4648d4; box-shadow: 0 0 0 3px rgba(70,72,212,0.10); }
-}
-
 // ── Total ──────────────────────────────────────────────────────────────
-// Ce n'est plus un bandeau : c'est la dernière ligne de la même grille. Mêmes gouttières
-// et mêmes largeurs de colonne que `.rep-row` — d'où le rembourrage horizontal identique
-// (18 px) alors qu'il n'y a ni fond ni bordure sur la ligne elle-même. Le libellé est
-// aligné à droite : il finit donc au bord droit de la colonne « type de répartition »,
-// juste avant le chiffre.
+// Dernière ligne de la même grille : mêmes rembourrage, gouttière et largeurs de colonne
+// que `.rep-row`. La bordure transparente n'est pas décorative — sans elle, la boîte du
+// modèle serait plus étroite d'un pixel de chaque côté et le total ne tomberait plus pile
+// sous le champ de pourcentage. Le libellé est aligné à droite : il finit donc au bord
+// droit de la colonne « type de répartition », juste avant le chiffre.
 .total-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  // 18 px de rembourrage + 1 px de bordure : les lignes en ont une, celle-ci non, et sans
-  // ce pixel la colonne du total tomberait décalée d'un pixel sous celle des champs.
-  // Le `+2` reprend en plus le rembourrage latéral de `.rep-list`.
-  padding: 2px 21px;
+  gap: $col-gap;
+  padding: $box-pad-y $box-pad-x;
+  border: 1px solid transparent;
 
   .total-label {
     flex: 1 1 auto;
@@ -167,10 +145,9 @@
   }
 }
 
-// Aucun fond : la bordure et le chiffre portent seuls l'état. La largeur reprend celle
-// de `.pct-field` pour tomber pile sous le champ de pourcentage.
+// Aucun fond : la bordure et le chiffre portent seuls l'état.
 .total-box {
-  flex: 0 0 150px;
+  flex: 0 0 $pct-col;
   padding: 8px 10px;
   border: 1.5px solid;
   border-radius: 10px;
@@ -189,7 +166,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding-inline: 21px;   // même retrait que `.total-row`, juste au-dessus
+  padding: $box-pad-y $box-pad-x;
+  border: 1px solid transparent;
   font-size: 13px;
   color: #ba1a1a;
   margin: 0;
