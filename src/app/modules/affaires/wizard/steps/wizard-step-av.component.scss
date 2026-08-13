@@ -14,31 +14,37 @@ $pct-col:   150px;
 // de total où il n'y a aucun bouton à mesurer.
 $del-col:   50px;
 
+// Retrait extérieur du corps de l'étape. Il n'y en avait AUCUN : le contenu était collé
+// aux bords de `.mode-config`, et la note d'information partait 4 px à gauche du titre
+// « Configuration — … » de l'en-tête juste au-dessus. Le 20 px horizontal reprend
+// exactement celui de `.mode-config-header`, donc les deux s'alignent.
 .step-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: $box-pad-y 20px;
 }
 
 // ── Bande d'en-tête : note à gauche, action d'ajout à droite ────────────
 // Plus de titre « Répartition CTR / BPE / TQC » : la carte de l'étape annonce déjà
 // « Configuration — répartition contractuelle », et l'énumération des trois codes vieillit
 // mal (le référentiel des types est paramétrable, il n'est pas figé sur ces trois-là).
+// Le retrait horizontal vient désormais de `.step-form` : le redoubler ici décalait la
+// note par rapport aux lignes qu'elle introduit.
 .section-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-inline: $box-pad-x;
 
   // Le bouton ne se comprime jamais : c'est la note qui cède la place et passe sur deux
   // lignes si la carte devient étroite.
   > daf-button { flex: 0 0 auto; }
 }
 
-// Note de règle, pas un message d'état : 8 px (le plancher de lisibilité que nous nous
-// donnons), texte gris, et l'icône seule porte la couleur (rouge) pour signaler la
-// contrainte des 100 %. Ni fond ni bordure — c'est une légende, pas un bandeau.
+// Note de règle, pas un message d'état : texte gris, et l'icône seule porte la couleur
+// (rouge) pour signaler la contrainte des 100 %. Ni fond ni bordure — c'est une légende,
+// pas un bandeau.
 .info-note {
   display: flex;
   align-items: flex-start;
@@ -52,12 +58,17 @@ $del-col:   50px;
 
   strong { color: #44474c; font-weight: 600; }
 
-  // L'icône ne suit PAS la taille du texte : à 8 px elle deviendrait un point illisible.
+  // `line-height` ALIGNÉ sur celui du texte (1.5 × 14 px = 21 px), et plus de `margin-top`
+  // négatif : le glyphe fait 20 px pour un texte de 14 px, donc sa propre boîte de ligne
+  // était plus haute que la première ligne de texte et le poussait vers le haut. En lui
+  // donnant la hauteur d'UNE ligne de texte, `flex-start` le centre dans cette ligne — il
+  // reste sur la même ligne que le début du message, y compris quand celui-ci passe sur
+  // deux lignes.
   .material-symbols-outlined {
-    font-size: 14px;
+    font-size: 20px;
+    line-height: 21px;
     color: #ba1a1a;
     flex-shrink: 0;
-    margin-top: -1px;
   }
 }
 
@@ -162,12 +173,13 @@ $del-col:   50px;
 }
 
 // ── Warning ────────────────────────────────────────────────────────────
+// Message, pas une ligne de la grille : il s'aligne sur le bord du corps de l'étape (donc
+// sur la note du haut), et non sur le rembourrage intérieur des lignes de répartition.
 .warning-msg {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: $box-pad-y $box-pad-x;
-  border: 1px solid transparent;
+  padding: 0;
   font-size: 13px;
   color: #ba1a1a;
   margin: 0;
