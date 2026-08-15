@@ -123,13 +123,22 @@ export const routes: Routes = [
           import('./modules/suppliers/suppliers.routes').then(m => m.SUPPLIERS_ROUTES),
       },
       {
+        // Trésorerie prévisionnelle. Adossée au même droit que le recouvrement : elle
+        // n'agrège que des créances et des engagements déjà lisibles ailleurs, et
+        // `TreasuryController` applique exactement le même garde côté service.
+        path: 'tresorerie',
+        canActivate: [permissionGuard],
+        data: { permissions: ['FACT_VIEW_PAYMENT', 'FACT_MANAGE_PAYMENT'] },
+        loadChildren: () =>
+          import('./modules/treasury/treasury.routes').then(m => m.TREASURY_ROUTES),
+      },
+      {
         path: 'home',
         loadComponent: () =>
           import('./modules/home/home.component').then(m => m.HomeComponent),
       },
       { path: 'fournisseurs', redirectTo: 'suppliers', pathMatch: 'full' },
       { path: 'recouvrement', redirectTo: 'payments',  pathMatch: 'full' },
-      { path: 'tresorerie',   redirectTo: 'home',      pathMatch: 'full' },
       { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
   },

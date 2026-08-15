@@ -119,16 +119,15 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
       },
     ],
   },
-  // Sans écran : sa route est un `redirectTo: 'home'`. Elle reste une carte d'accueil
-  // (elle annonce le périmètre à venir) et est écartée de la barre par
-  // `isNavigableRoute` — pas par un drapeau posé à la main, pour qu'elle y entre d'elle-
-  // même le jour où la route existera.
+  // Elle a désormais un écran : `isNavigableRoute` la laisse entrer dans la barre d'elle-
+  // même, sans drapeau à poser ici — c'était tout l'intérêt de dériver la barre de la
+  // config de route plutôt que d'une seconde liste.
   {
     id: 'tresorerie',
     route: 'tresorerie',
     icon: 'account_balance_wallet',
     tone: 'primary',
-    labelKey: 'HOME.MODULES.TREASURY.LABEL',
+    labelKey: 'FACTURATION.layout.NAV.TREASURY',
     descKey: 'HOME.MODULES.TREASURY.DESC',
     // Sur deux parts, comme dans l'ancienne mise en page (`wide: true`).
     homeSpan: 2,

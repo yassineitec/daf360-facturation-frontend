@@ -34,6 +34,7 @@
         "CLIENTS": "Clients",
         "INVOICING": "Factures",
         "RECOVERY": "Recouvrement",
+        "TREASURY": "Trésorerie",
         "SUBCONTRACTING": "Sous-traitance",
         "COST": "Coûts",
         "COST_APPROVAL": "Approbation Coûts",
@@ -3148,5 +3149,51 @@
       "MANUEL": "Manuel",
       "AUTO": "Automatique"
     }
+  },
+  "TREASURY": {
+    "TITLE": "Trésorerie prévisionnelle",
+    "SUBTITLE": "Flux attendus mois par mois : ce qui doit rentrer, ce qui doit sortir",
+    "LOADING": "Calcul de la projection de trésorerie…",
+    "ERROR_LOAD": "Impossible de calculer la projection de trésorerie.",
+    "HORIZON": {
+      "MONTHS": "{{n}} mois"
+    },
+    "KPI": {
+      "OVERDUE_IN": "Créances échues",
+      "OVERDUE_OUT_DELTA": "{{amount}} d'engagements échus",
+      "EXPECTED_IN": "Encaissements attendus",
+      "OF_WHICH_MILESTONES": "dont {{amount}} de jalons",
+      "EXPECTED_OUT": "Décaissements engagés",
+      "LOW_POINT": "Point bas cumulé"
+    },
+    "CHART": {
+      "IN_TITLE": "Encaissements par mois",
+      "OUT_TITLE": "Décaissements par mois",
+      "IN_ARIA": "Encaissements attendus par mois sur l'horizon",
+      "OUT_ARIA": "Décaissements engagés par mois sur l'horizon",
+      "EMPTY": "Aucun flux sur cet horizon."
+    },
+    "TABLE": {
+      "PERIOD": "Période",
+      "INVOICES": "Factures",
+      "MILESTONES": "Jalons",
+      "OUT": "Décaissements",
+      "NET": "Net",
+      "CUMUL": "Cumulé",
+      "OVERDUE_ROW": "Déjà échu",
+      "LOW_POINT_TAG": "Point bas",
+      "EMPTY": "Aucune échéance sur cet horizon."
+    },
+    "FLOWS": {
+      "TOP_IN": "Principaux encaissements attendus",
+      "TOP_OUT": "Principaux décaissements engagés",
+      "COUNTERPARTY": "Tiers",
+      "DUE": "Échéance",
+      "AMOUNT": "Montant",
+      "FORECAST": "jalon prévisionnel",
+      "EMPTY_IN": "Aucun encaissement attendu sur cet horizon.",
+      "EMPTY_OUT": "Aucun décaissement engagé sur cet horizon."
+    },
+    "DISCLAIMER": "Projection de flux, pas un solde bancaire : le module ne porte aucune position de trésorerie d'ouverture, le cumulé se lit donc comme une variation à partir d'aujourd'hui. Les décaissements sont des engagements de dépense — les lignes de coût n'ont pas d'indicateur de règlement — et les échéances déjà passées ne sont reprises que sur 90 jours. Les montants ne sont pas convertis : ils sont sommés en {{devise}}. Repère réalisé : {{collected}} encaissés sur les 30 derniers jours."
   }
 }

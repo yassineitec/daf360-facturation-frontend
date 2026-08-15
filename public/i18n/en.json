@@ -34,6 +34,7 @@
         "CLIENTS": "Clients",
         "INVOICING": "Invoices",
         "RECOVERY": "Collections",
+        "TREASURY": "Treasury",
         "SUBCONTRACTING": "Subcontracting",
         "COST": "Costs",
         "COST_APPROVAL": "Cost Approval",
@@ -3148,5 +3149,51 @@
       "MANUEL": "Manual",
       "AUTO": "Automatic"
     }
+  },
+  "TREASURY": {
+    "TITLE": "Cash flow forecast",
+    "SUBTITLE": "Expected flows month by month: what should come in, what should go out",
+    "LOADING": "Computing the cash flow projection…",
+    "ERROR_LOAD": "Unable to compute the cash flow projection.",
+    "HORIZON": {
+      "MONTHS": "{{n}} months"
+    },
+    "KPI": {
+      "OVERDUE_IN": "Overdue receivables",
+      "OVERDUE_OUT_DELTA": "{{amount}} of overdue commitments",
+      "EXPECTED_IN": "Expected inflows",
+      "OF_WHICH_MILESTONES": "incl. {{amount}} from milestones",
+      "EXPECTED_OUT": "Committed outflows",
+      "LOW_POINT": "Cumulative low point"
+    },
+    "CHART": {
+      "IN_TITLE": "Inflows per month",
+      "OUT_TITLE": "Outflows per month",
+      "IN_ARIA": "Expected inflows per month over the horizon",
+      "OUT_ARIA": "Committed outflows per month over the horizon",
+      "EMPTY": "No flow over this horizon."
+    },
+    "TABLE": {
+      "PERIOD": "Period",
+      "INVOICES": "Invoices",
+      "MILESTONES": "Milestones",
+      "OUT": "Outflows",
+      "NET": "Net",
+      "CUMUL": "Cumulative",
+      "OVERDUE_ROW": "Already due",
+      "LOW_POINT_TAG": "Low point",
+      "EMPTY": "No due date over this horizon."
+    },
+    "FLOWS": {
+      "TOP_IN": "Largest expected inflows",
+      "TOP_OUT": "Largest committed outflows",
+      "COUNTERPARTY": "Counterparty",
+      "DUE": "Due date",
+      "AMOUNT": "Amount",
+      "FORECAST": "forecast milestone",
+      "EMPTY_IN": "No inflow expected over this horizon.",
+      "EMPTY_OUT": "No outflow committed over this horizon."
+    },
+    "DISCLAIMER": "A flow projection, not a bank balance: the module holds no opening cash position, so the cumulative column reads as a variation starting today. Outflows are spend commitments — cost lines carry no settlement flag — and past due dates are only picked up over 90 days. Amounts are not converted: they are summed in {{devise}}. Actual benchmark: {{collected}} collected over the last 30 days."
   }
 }

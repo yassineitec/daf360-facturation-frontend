@@ -1,0 +1,210 @@
+<!-- Trésorerie prévisionnelle — /finance/tresorerie.
+
+     Lecture de haut en bas : ce qui est déjà exigible → ce qui est attendu → où se situe
+     le creux → la répartition dans le temps → le détail ligne à ligne.
+
+     ⚠️ FLEX en style inline pour les deux colonnes de graphiques, jamais de grid ni de
+     classe de point de rupture : le styles.css d'un remote ne contient que les classes
+     que Tailwind a déjà vues. -->
+
+<daf-page [loading]="firstLoad()" [kpis]="4"
+          [loadingLabel]="'TREASURY.LOADING' | translate">
+
+  <daf-page-header
+    [title]="'TREASURY.TITLE' | translate"
+    [subtitle]="'TREASURY.SUBTITLE' | translate">
+    <!-- ng-container statique : une directive structurelle placerait son élément dans
+         une vue embarquée, où <ng-content select="[pageActions]"> ne peut plus le
+         trouver et le bouton se rendrait dans le corps de la page (§10f). -->
+    <ng-container pageActions>
+      @for (h of horizons; track h) {
+        <daf-button [options]="horizonOptions(h)" (onClick)="setHorizon(h)" />
+      }
+    </ng-container>
+  </daf-page-header>
+
+  @if (error()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  @if (summary(); as s) {
+
+    <!-- KPIs — une ligne, jamais de retour. -->
+    <section class="grid grid-cols-4 gap-2 sm:gap-6">
+      @for (k of kpiTiles(); track k.label) {
+        <daf-metric-card
+          [label]="k.label | translate"
+          [value]="k.value"
+          [delta]="k.delta"
+          [options]="k.options" />
+      }
+    </section>
+
+    <!-- ── Répartition dans le temps ────────────────────────────────────── -->
+    <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+
+      <daf-section-card style="flex:1 1 380px; min-width:0">
+        <div class="flex flex-col gap-4 p-6">
+          <div class="flex items-baseline justify-between gap-3">
+            <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'TREASURY.CHART.IN_TITLE' | translate }}
+            </span>
+            <span class="text-body-md font-extrabold text-teal">
+              {{ s.creancesAVenir + s.jalonsPrevus | displayCurrency : s.devise }}
+            </span>
+          </div>
+          <daf-bar-chart [bars]="inflowBars()" [options]="inflowChartOptions()" />
+        </div>
+      </daf-section-card>
+
+      <daf-section-card style="flex:1 1 380px; min-width:0">
+        <div class="flex flex-col gap-4 p-6">
+          <div class="flex items-baseline justify-between gap-3">
+            <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'TREASURY.CHART.OUT_TITLE' | translate }}
+            </span>
+            <span class="text-body-md font-extrabold text-warning">
+              {{ s.engagementsAVenir | displayCurrency : s.devise }}
+            </span>
+          </div>
+          <daf-bar-chart [bars]="outflowBars()" [options]="outflowChartOptions()" />
+        </div>
+      </daf-section-card>
+
+    </div>
+
+    <!-- ── Projection mois par mois ─────────────────────────────────────── -->
+    <daf-data-table
+      [columns]="bucketColumns()"
+      [rows]="bucketRows()"
+      [config]="bucketConfig()">
+
+      <ng-template dafCell="period" let-row>
+        <div class="flex items-center gap-2">
+          <span class="text-body-md font-bold"
+                [class.text-danger]="row['_overdue']"
+                [class.text-on-surface]="!row['_overdue']">
+            {{ row['_period'] }}
+          </span>
+          @if (row['_lowPoint']) {
+            <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-bold text-danger">
+              <span class="material-symbols-outlined text-[14px]">south</span>
+              {{ 'TREASURY.TABLE.LOW_POINT_TAG' | translate }}
+            </span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template dafCell="net" let-row>
+        <span class="block text-right text-body-md font-bold"
+              [class.text-teal]="row['_netSign'] > 0"
+              [class.text-danger]="row['_netSign'] < 0"
+              [class.text-on-surface-variant]="row['_netSign'] === 0">
+          {{ row['_net'] }}
+        </span>
+      </ng-template>
+
+      <ng-template dafCell="cumul" let-row>
+        <span class="block text-right text-body-md font-extrabold"
+              [class.text-teal]="row['_cumulSign'] > 0"
+              [class.text-danger]="row['_cumulSign'] < 0"
+              [class.text-on-surface-variant]="row['_cumulSign'] === 0">
+          {{ row['_cumul'] }}
+        </span>
+      </ng-template>
+
+    </daf-data-table>
+
+    <!-- ── Principaux flux ──────────────────────────────────────────────── -->
+    <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start">
+
+      <daf-section-card style="flex:1 1 380px; min-width:0">
+        <div class="flex flex-col gap-4 p-6">
+          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+            {{ 'TREASURY.FLOWS.TOP_IN' | translate }}
+          </span>
+          <daf-data-table
+            [columns]="flowColumns()"
+            [rows]="inflowRows()"
+            [config]="inflowFlowConfig()"
+            (rowClick)="onFlowClick($event)">
+
+            <ng-template dafCell="tiers" let-row>
+              <div class="flex flex-col leading-snug">
+                <span class="text-body-md font-bold text-on-surface">{{ row['_tiers'] }}</span>
+                <span class="text-[11px] text-on-surface-variant">
+                  {{ row['_label'] }}
+                  @if (row['_forecast']) {
+                    · {{ 'TREASURY.FLOWS.FORECAST' | translate }}
+                  }
+                </span>
+              </div>
+            </ng-template>
+
+            <ng-template dafCell="due" let-row>
+              <div class="flex flex-col leading-snug">
+                <span class="text-body-sm text-on-surface-variant">{{ row['_due'] }}</span>
+                @if (row['_late'] > 0) {
+                  <span class="text-[11px] font-bold text-danger">
+                    {{ 'PAYMENTS.DASHBOARD.DAYS' | translate : { n: row['_late'] } }}
+                  </span>
+                }
+              </div>
+            </ng-template>
+
+          </daf-data-table>
+        </div>
+      </daf-section-card>
+
+      <daf-section-card style="flex:1 1 380px; min-width:0">
+        <div class="flex flex-col gap-4 p-6">
+          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+            {{ 'TREASURY.FLOWS.TOP_OUT' | translate }}
+          </span>
+          <daf-data-table
+            [columns]="flowColumns()"
+            [rows]="outflowRows()"
+            [config]="outflowFlowConfig()">
+
+            <ng-template dafCell="tiers" let-row>
+              <div class="flex flex-col leading-snug">
+                <span class="text-body-md font-bold text-on-surface">{{ row['_tiers'] }}</span>
+                <span class="text-[11px] text-on-surface-variant">{{ row['_label'] }}</span>
+              </div>
+            </ng-template>
+
+            <ng-template dafCell="due" let-row>
+              <div class="flex flex-col leading-snug">
+                <span class="text-body-sm text-on-surface-variant">{{ row['_due'] }}</span>
+                @if (row['_late'] > 0) {
+                  <span class="text-[11px] font-bold text-danger">
+                    {{ 'PAYMENTS.DASHBOARD.DAYS' | translate : { n: row['_late'] } }}
+                  </span>
+                }
+              </div>
+            </ng-template>
+
+          </daf-data-table>
+        </div>
+      </daf-section-card>
+
+    </div>
+
+    <!-- Les limites du modèle, écrites sur la page plutôt que laissées à découvrir :
+         un prévisionnel qu'on croit être un solde est pire qu'une page absente. -->
+    <div class="flex items-start gap-3 rounded-xl bg-surface-container px-5 py-4 text-body-sm text-on-surface-variant">
+      <span class="material-symbols-outlined text-[18px]">info</span>
+      <p>
+        {{ 'TREASURY.DISCLAIMER' | translate : {
+             collected: (s.encaisseRecent | displayCurrency : s.devise),
+             devise: s.devise
+           } }}
+      </p>
+    </div>
+
+  }
+
+</daf-page>
