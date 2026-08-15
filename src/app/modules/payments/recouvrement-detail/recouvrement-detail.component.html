@@ -1,0 +1,239 @@
+<!-- Fiche de recouvrement d'une facture — même squelette que la fiche facture et la fiche affaire.
+     Aucune feuille de style locale : composants de la lib, jetons de couleur et échelle
+     typographique de la lib.
+
+     Structure, deux colonnes :
+       GAUCHE (30 %, sticky)  le h1 (daf-page-header, size="md"), la carte d'informations
+                              de recouvrement, et les actions en pied de carte.
+       DROITE (70 %)          les 4 indicateurs, puis daf-tabs et ses panneaux.
+
+     ⚠️ FLEX en style inline, jamais de grid ni de classe de point de rupture : le
+     styles.css d'un remote ne contient que les classes que Tailwind a déjà vues. -->
+
+<daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
+          [loadingLabel]="'PAYMENTS.DETAIL.LOADING' | translate">
+
+  @if (error() || actionError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+      <span class="material-symbols-outlined text-headline-md">error</span>
+      {{ error() ?? actionError() }}
+    </div>
+  }
+
+  @if (invoice(); as inv) {
+    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE GAUCHE (30 %, sticky) — identité et actions de recouvrement
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:0 1 30%; min-width:320px">
+        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
+
+          <daf-page-header
+            size="md"
+            [title]="inv.invoiceNumber ?? ('PAYMENTS.COMMON.DRAFT' | translate)"
+            [subtitle]="headerSubtitle()"
+            [badges]="headerBadges()"
+            [breadcrumbs]="breadcrumbs()"
+            [breadcrumbLabel]="'PAYMENTS.DETAIL.BREADCRUMB_ARIA' | translate" />
+
+          <daf-section-card>
+
+            <div class="flex flex-col gap-5 p-6">
+              @for (f of identityLeadFields(); track f.label) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ f.label | translate }}
+                  </p>
+                  <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                </div>
+              }
+
+              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+                @for (f of identityGridFields(); track f.label) {
+                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Actions de recouvrement. Nommées, jamais un « suivant » générique : ce
+                 sont trois gestes distincts (encaisser, taire les relances, les
+                 reprendre) et non les étapes d'un même parcours. -->
+            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
+                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+
+              <div *appHasPermission="'FACT_MANAGE_INVOICING'" style="flex:1 1 100%">
+                <daf-button
+                  [options]="{ variant: 'primary', fullWidth: true, iconStart: 'payments',
+                               disabled: outstanding() <= 0,
+                               label: 'PAYMENTS.DETAIL.ACTIONS.RECORD_PAYMENT' | translate }"
+                  (onClick)="openPaymentModal()" />
+              </div>
+
+              <ng-container *appHasPermission="'FACT_MANAGE_INVOICING'">
+                @if (remindersActive()) {
+                  <daf-button
+                    style="flex:1 1 45%"
+                    [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'notifications_off',
+                                 label: 'PAYMENTS.DETAIL.ACTIONS.SUSPEND_REMINDERS' | translate }"
+                    (onClick)="openSuspend()" />
+                }
+                @if (hasSuspended()) {
+                  <daf-button
+                    style="flex:1 1 45%"
+                    [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'notifications_active',
+                                 label: 'PAYMENTS.DETAIL.ACTIONS.REACTIVATE_REMINDERS' | translate }"
+                    (onClick)="reactivate()" />
+                }
+              </ng-container>
+
+              <daf-button
+                style="flex:1 1 45%"
+                [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'receipt_long',
+                             label: 'PAYMENTS.DETAIL.ACTIONS.SEE_INVOICE' | translate }"
+                (onClick)="goToInvoice()" />
+
+              <daf-button
+                style="flex:1 1 45%"
+                [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'business_center',
+                             disabled: !inv.affaireId,
+                             label: 'PAYMENTS.DETAIL.ACTIONS.SEE_AFFAIRE' | translate }"
+                (onClick)="goToAffaire()" />
+
+              <!-- Le motif de suspension : un champ en pied de carte plutôt qu'une
+                   modale, parce qu'il est facultatif et que la confirmation est le
+                   bouton juste en dessous. -->
+              @if (showSuspendForm()) {
+                <div class="flex flex-col gap-3 pt-2" style="flex:1 1 100%">
+                  <daf-form-field
+                    [options]="{ label: ('PAYMENTS.DETAIL.REMINDERS.SUSPEND_LABEL' | translate),
+                                 placeholder: ('PAYMENTS.COMMON.OPTIONAL' | translate),
+                                 maxLength: 200 }"
+                    [value]="suspendReason()"
+                    (valueChange)="suspendReason.set($any($event) ?? '')" />
+                  <div style="display:flex; gap:0.5rem">
+                    <daf-button
+                      style="flex:1 1 50%"
+                      [options]="{ variant: 'ghost', size: 'sm', fullWidth: true,
+                                   label: 'PAYMENTS.COMMON.CANCEL' | translate }"
+                      (onClick)="showSuspendForm.set(false)" />
+                    <daf-button
+                      style="flex:1 1 50%"
+                      [options]="{ variant: 'danger', size: 'sm', fullWidth: true,
+                                   label: 'PAYMENTS.DETAIL.REMINDERS.SUSPEND_CONFIRM' | translate }"
+                      (onClick)="confirmSuspend()" />
+                  </div>
+                </div>
+              }
+            </div>
+
+          </daf-section-card>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE DROITE (70 %) — indicateurs puis onglets
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+          @for (k of kpiTiles(); track k.label) {
+            <daf-metric-card
+              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+              [label]="k.label | translate"
+              [value]="k.value"
+              [delta]="k.delta"
+              [options]="k.options" />
+          }
+        </div>
+
+        <daf-tabs #tabsRef
+          variant="underline"
+          [tabs]="tabs()"
+          [active]="activeTab()"
+          (activeChange)="activeTab.set($event)"
+          [tabsLabel]="'PAYMENTS.DETAIL.TABS_ARIA' | translate"
+          idPrefix="recouvrement-detail" />
+
+        <div role="tabpanel"
+             [id]="tabsRef.panelId(activeTab())"
+             [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+             class="flex flex-col gap-6">
+
+          <!-- ── Échéancier de relances ───────────────────────────────── -->
+          @if (activeTab() === 'reminders') {
+            <daf-data-table
+              [columns]="reminderColumns()"
+              [rows]="reminderRows()"
+              [config]="reminderConfig()">
+
+              <ng-template dafCell="state" let-row>
+                <div class="flex flex-col items-start gap-1">
+                  @switch (row['_state']) {
+                    @case ('sent') {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-teal/10 px-2 py-0.5 text-[11px] font-bold text-teal">
+                        <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        {{ 'PAYMENTS.DETAIL.REMINDERS.STATUS_SENT' | translate }}
+                      </span>
+                    }
+                    @case ('suspended') {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-bold text-warning">
+                        <span class="material-symbols-outlined text-[14px]">pause_circle</span>
+                        {{ 'PAYMENTS.DETAIL.REMINDERS.STATUS_SUSPENDED' | translate }}
+                      </span>
+                    }
+                    @default {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-0.5 text-[11px] font-bold text-on-surface-variant">
+                        <span class="material-symbols-outlined text-[14px]">schedule</span>
+                        {{ 'PAYMENTS.DETAIL.REMINDERS.STATUS_PENDING' | translate }}
+                      </span>
+                    }
+                  }
+                  @if (row['_reason']) {
+                    <span class="text-[11px] text-on-surface-variant">{{ row['_reason'] }}</span>
+                  }
+                </div>
+              </ng-template>
+
+            </daf-data-table>
+          }
+
+          <!-- ── Encaissements reçus ──────────────────────────────────── -->
+          @if (activeTab() === 'payments') {
+            <daf-data-table
+              [columns]="paymentColumns()"
+              [rows]="paymentRows()"
+              [config]="paymentConfig()" />
+
+            @if (payments().length > 0) {
+              <div class="flex flex-wrap items-baseline justify-end gap-6 rounded-xl bg-surface-container px-6 py-4">
+                <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                  {{ 'PAYMENTS.DETAIL.PAYMENTS.TOTAL' | translate }}
+                </span>
+                <span class="text-body-md font-bold text-on-surface-variant">
+                  {{ 'PAYMENTS.DETAIL.PAYMENTS.OUTSTANDING_SHORT' | translate }}
+                  {{ outstanding() | displayCurrency : inv.devise }}
+                </span>
+                <span class="text-headline-md font-extrabold text-teal">
+                  {{ collected() | displayCurrency : inv.devise }}
+                </span>
+              </div>
+            }
+          }
+
+        </div>
+      </div>
+    </div>
+  }
+
+</daf-page>
+
+<!-- ══ Modales — à la racine de la page (§10e) ══ -->
+@if (showPaymentModal() && invoice()) {
+  <app-payment-modal [invoice]="invoice()!" (closed)="onPaymentClosed($event)" />
+}

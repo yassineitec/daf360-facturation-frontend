@@ -33,7 +33,7 @@
         "AFFAIRES": "Projects",
         "CLIENTS": "Clients",
         "INVOICING": "Invoices",
-        "PAYMENTS": "Payments",
+        "RECOVERY": "Collections",
         "SUBCONTRACTING": "Subcontracting",
         "COST": "Costs",
         "COST_APPROVAL": "Cost Approval",
@@ -530,12 +530,11 @@
       "AVOIR": "Credit note"
     },
     "REMINDER_TYPE": {
-      "J0": "Issuance",
-      "J_7": "D-7 due date",
-      "J0_ECH": "Due date",
-      "J7": "D+7 reminder",
-      "J15": "D+15 reminder",
-      "J30": "D+30 reminder"
+      "J_MINUS_7": "D-7 due date",
+      "ECHEANCE": "Due date",
+      "J_PLUS_7": "D+7 reminder",
+      "J_PLUS_30": "D+30 formal notice",
+      "J_PLUS_60": "D+60 escalation"
     },
     "PLACEHOLDER": {
       "TITLE": "Invoices",
@@ -2362,9 +2361,10 @@
       "DUE_PREFIX": "Due"
     },
     "DASHBOARD": {
-      "TITLE": "Payments",
-      "SUBTITLE": "Track collections and unpaid invoices",
+      "TITLE": "Collections",
+      "SUBTITLE": "Track collections, reminders and unpaid invoices",
       "RECON_BTN": "Bank reconciliation",
+      "RECON_DISABLED": "Bank reconciliation — coming soon",
       "DAYS": "{{n}} d",
       "ERROR_LOAD": "Unable to load unpaid invoices.",
       "KPI": {
@@ -2399,11 +2399,11 @@
         "VIEW": "View"
       },
       "REMINDER": {
-        "AVANT_ECHEANCE": "Before due date",
-        "JOUR_ECHEANCE": "Due day",
-        "RELANCE_1": "1st reminder",
-        "RELANCE_2": "2nd reminder",
-        "RELANCE_3": "3rd reminder"
+        "J_MINUS_7": "D-7 (before due date)",
+        "ECHEANCE": "Due day",
+        "J_PLUS_7": "D+7 (1st reminder)",
+        "J_PLUS_30": "D+30 (formal notice)",
+        "J_PLUS_60": "D+60 (management escalation)"
       },
       "LOADING": "Loading unpaid invoices…",
       "VIEW_GRID": "Grid view",
@@ -2411,6 +2411,64 @@
       "CARD": {
         "ON_TIME": "On time",
         "LAST_REMINDER": "Last reminder"
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Loading collection file…",
+      "LOAD_ERROR": "Unable to load this collection file.",
+      "ACTION_ERROR": "The action could not be completed.",
+      "BACK": "Collections",
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "TABS_ARIA": "Collection file sections",
+      "KPI": {
+        "AMOUNT": "Invoiced amount",
+        "COLLECTED": "Collected",
+        "OUTSTANDING": "Outstanding",
+        "DAYS_LATE": "Overdue by",
+        "ON_TIME": "Up to date"
+      },
+      "INFO": {
+        "CLIENT": "Client",
+        "AFFAIRE": "Project",
+        "ISSUE_DATE": "Issue date",
+        "DUE_DATE": "Due date",
+        "CURRENCY": "Currency",
+        "REMINDERS_STATE": "Reminders",
+        "LAST_SENT": "Last reminder sent"
+      },
+      "ACTIONS": {
+        "RECORD_PAYMENT": "Record a payment",
+        "SUSPEND_REMINDERS": "Suspend reminders",
+        "REACTIVATE_REMINDERS": "Resume reminders",
+        "SEE_INVOICE": "View invoice",
+        "SEE_AFFAIRE": "View project"
+      },
+      "TABS": {
+        "REMINDERS": "Reminder schedule",
+        "PAYMENTS": "Payments received"
+      },
+      "REMINDERS": {
+        "ACTIVE": "Active",
+        "SUSPENDED": "Suspended",
+        "COL_TYPE": "Reminder",
+        "COL_SCHEDULED": "Scheduled for",
+        "COL_SENT": "Sent on",
+        "COL_STATUS": "Status",
+        "STATUS_SENT": "Sent",
+        "STATUS_SUSPENDED": "Suspended",
+        "STATUS_PENDING": "Pending",
+        "EMPTY": "No reminder scheduled — the invoice has no due date.",
+        "SUSPEND_LABEL": "Suspension reason",
+        "SUSPEND_CONFIRM": "Suspend"
+      },
+      "PAYMENTS": {
+        "COL_DATE": "Date",
+        "COL_METHOD": "Method",
+        "COL_REF": "Bank reference",
+        "COL_AMOUNT": "Amount",
+        "EMPTY": "No payment recorded for this invoice.",
+        "TOTAL": "Total collected",
+        "OUTSTANDING_SHORT": "Outstanding"
       }
     },
     "RECON": {

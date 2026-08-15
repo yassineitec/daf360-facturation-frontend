@@ -7,10 +7,15 @@
          an embedded view, where <ng-content select="[pageActions]"> can never match it
          and the button silently renders in the page body instead (§10f). -->
     <ng-container pageActions>
+      <!-- Désactivé volontairement : le rapprochement bancaire reste hors périmètre du
+           recouvrement pour l'instant. Le bouton est laissé visible — il annonce la
+           fonction à venir — mais inerte, et `title` dit pourquoi au survol. -->
       <daf-button
         *appHasPermission="'FACT_BANK_RECONCILIATION'"
-        [options]="{ variant: 'teal', label: 'PAYMENTS.DASHBOARD.RECON_BTN' | translate, iconStart: 'account_balance' }"
-        (onClick)="navigateToReconciliation()" />
+        [options]="{ variant: 'teal', disabled: true,
+                     label: 'PAYMENTS.DASHBOARD.RECON_BTN' | translate,
+                     title: 'PAYMENTS.DASHBOARD.RECON_DISABLED' | translate,
+                     iconStart: 'account_balance' }" />
     </ng-container>
   </daf-page-header>
 

@@ -11,4 +11,10 @@ export const PAYMENTS_ROUTES: Routes = [
     loadComponent: () =>
       import('./reconciliation/reconciliation.component').then(m => m.ReconciliationComponent),
   },
+  // Après `reconciliation` : `:id` capterait le segment sinon.
+  {
+    path: ':id',
+    loadComponent: () =>
+      import('./recouvrement-detail/recouvrement-detail.component').then(m => m.RecouvrementDetailComponent),
+  },
 ];

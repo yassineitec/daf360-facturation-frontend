@@ -214,12 +214,14 @@ export class PaymentsDashboardComponent implements OnInit {
     this.loadRows();
   }
 
+  /**
+   * Ouvre la **fiche de recouvrement** de la facture, pas sa fiche de facturation.
+   * Les deux existent et ne répondent pas à la même question : `/finance/invoicing/:id`
+   * raconte le document (lignes, TVA, cycle de vie), `/finance/payments/:id` raconte
+   * l'encaissement (retard, relances envoyées, règlements reçus, reste dû).
+   */
   navigateToInvoice(id: number): void {
-    this.router.navigate(['../invoicing', id], { relativeTo: this.route });
-  }
-
-  navigateToReconciliation(): void {
-    this.router.navigate(['reconciliation'], { relativeTo: this.route });
+    this.router.navigate([id], { relativeTo: this.route });
   }
 
   private currencyLabel(value: number, devise: string): string {

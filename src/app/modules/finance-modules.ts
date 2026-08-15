@@ -89,24 +89,17 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
     labelKey: 'FACTURATION.layout.NAV.INVOICING',
     descKey: 'HOME.MODULES.INVOICING.DESC',
   },
+  // « Recouvrement » EST cet écran. Il s'appelait « Paiements » et cohabitait avec une
+  // seconde entrée `recouvrement` sans écran (un `redirectTo: 'home'`, écartée de la
+  // barre par `isNavigableRoute`) : deux libellés pour un même métier, dont un seul
+  // menait quelque part. L'entrée morte a disparu, la route `recouvrement` reste comme
+  // alias de redirection vers `payments` pour les liens déjà en circulation.
   {
     id: 'payments',
     route: 'payments',
-    icon: 'credit_card',
-    tone: 'teal',
-    labelKey: 'FACTURATION.layout.NAV.PAYMENTS',
-    descKey: 'HOME.MODULES.PAYMENTS.DESC',
-  },
-  // Les deux suivantes n'ont pas d'écran : leurs routes sont des `redirectTo: 'home'`.
-  // Elles restent des cartes d'accueil (elles annoncent le périmètre à venir) et sont
-  // écartées de la barre par `isNavigableRoute` — pas par un drapeau posé à la main, pour
-  // qu'elles y entrent d'elles-mêmes le jour où la route existera.
-  {
-    id: 'recouvrement',
-    route: 'recouvrement',
     icon: 'assignment_late',
-    tone: 'danger',
-    labelKey: 'HOME.MODULES.RECOVERY.LABEL',
+    tone: 'teal',
+    labelKey: 'FACTURATION.layout.NAV.RECOVERY',
     descKey: 'HOME.MODULES.RECOVERY.DESC',
   },
   {
@@ -126,6 +119,10 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
       },
     ],
   },
+  // Sans écran : sa route est un `redirectTo: 'home'`. Elle reste une carte d'accueil
+  // (elle annonce le périmètre à venir) et est écartée de la barre par
+  // `isNavigableRoute` — pas par un drapeau posé à la main, pour qu'elle y entre d'elle-
+  // même le jour où la route existera.
   {
     id: 'tresorerie',
     route: 'tresorerie',

@@ -33,7 +33,7 @@
         "AFFAIRES": "Affaires",
         "CLIENTS": "Clients",
         "INVOICING": "Factures",
-        "PAYMENTS": "Paiements",
+        "RECOVERY": "Recouvrement",
         "SUBCONTRACTING": "Sous-traitance",
         "COST": "Coûts",
         "COST_APPROVAL": "Approbation Coûts",
@@ -530,12 +530,11 @@
       "AVOIR": "Note d'avoir"
     },
     "REMINDER_TYPE": {
-      "J0": "Émission",
-      "J_7": "J-7 échéance",
-      "J0_ECH": "Jour échéance",
-      "J7": "J+7 relance",
-      "J15": "J+15 relance",
-      "J30": "J+30 relance"
+      "J_MINUS_7": "J-7 échéance",
+      "ECHEANCE": "Jour échéance",
+      "J_PLUS_7": "J+7 relance",
+      "J_PLUS_30": "J+30 mise en demeure",
+      "J_PLUS_60": "J+60 escalade"
     },
     "PLACEHOLDER": {
       "TITLE": "Factures",
@@ -2362,9 +2361,10 @@
       "DUE_PREFIX": "Éch."
     },
     "DASHBOARD": {
-      "TITLE": "Paiements",
-      "SUBTITLE": "Suivi des encaissements et factures impayées",
+      "TITLE": "Recouvrement",
+      "SUBTITLE": "Suivi des encaissements, relances et factures impayées",
       "RECON_BTN": "Rapprochement bancaire",
+      "RECON_DISABLED": "Rapprochement bancaire — bientôt disponible",
       "DAYS": "{{n}} j",
       "ERROR_LOAD": "Impossible de charger les factures impayées.",
       "KPI": {
@@ -2399,11 +2399,11 @@
         "VIEW": "Voir"
       },
       "REMINDER": {
-        "AVANT_ECHEANCE": "Avant échéance",
-        "JOUR_ECHEANCE": "Jour J",
-        "RELANCE_1": "1re relance",
-        "RELANCE_2": "2e relance",
-        "RELANCE_3": "3e relance"
+        "J_MINUS_7": "J-7 (avant échéance)",
+        "ECHEANCE": "Jour J (échéance)",
+        "J_PLUS_7": "J+7 (1re relance)",
+        "J_PLUS_30": "J+30 (mise en demeure)",
+        "J_PLUS_60": "J+60 (escalade Direction)"
       },
       "LOADING": "Chargement des factures impayées…",
       "VIEW_GRID": "Vue grille",
@@ -2411,6 +2411,64 @@
       "CARD": {
         "ON_TIME": "À échéance",
         "LAST_REMINDER": "Dernière relance"
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Chargement du dossier de recouvrement…",
+      "LOAD_ERROR": "Impossible de charger ce dossier de recouvrement.",
+      "ACTION_ERROR": "L'action n'a pas pu être effectuée.",
+      "BACK": "Recouvrement",
+      "BREADCRUMB_ARIA": "Fil d'ariane",
+      "TABS_ARIA": "Sections du dossier de recouvrement",
+      "KPI": {
+        "AMOUNT": "Montant facturé",
+        "COLLECTED": "Encaissé",
+        "OUTSTANDING": "Reste dû",
+        "DAYS_LATE": "Retard",
+        "ON_TIME": "À jour"
+      },
+      "INFO": {
+        "CLIENT": "Client",
+        "AFFAIRE": "Affaire",
+        "ISSUE_DATE": "Date d'émission",
+        "DUE_DATE": "Échéance",
+        "CURRENCY": "Devise",
+        "REMINDERS_STATE": "Relances",
+        "LAST_SENT": "Dernière relance envoyée"
+      },
+      "ACTIONS": {
+        "RECORD_PAYMENT": "Enregistrer un encaissement",
+        "SUSPEND_REMINDERS": "Suspendre les relances",
+        "REACTIVATE_REMINDERS": "Réactiver les relances",
+        "SEE_INVOICE": "Voir la facture",
+        "SEE_AFFAIRE": "Voir l'affaire"
+      },
+      "TABS": {
+        "REMINDERS": "Échéancier de relances",
+        "PAYMENTS": "Encaissements"
+      },
+      "REMINDERS": {
+        "ACTIVE": "Actives",
+        "SUSPENDED": "Suspendues",
+        "COL_TYPE": "Relance",
+        "COL_SCHEDULED": "Planifiée le",
+        "COL_SENT": "Envoyée le",
+        "COL_STATUS": "Statut",
+        "STATUS_SENT": "Envoyée",
+        "STATUS_SUSPENDED": "Suspendue",
+        "STATUS_PENDING": "En attente",
+        "EMPTY": "Aucune relance planifiée — la facture n'a pas d'échéance.",
+        "SUSPEND_LABEL": "Motif de suspension",
+        "SUSPEND_CONFIRM": "Suspendre"
+      },
+      "PAYMENTS": {
+        "COL_DATE": "Date",
+        "COL_METHOD": "Mode",
+        "COL_REF": "Référence bancaire",
+        "COL_AMOUNT": "Montant",
+        "EMPTY": "Aucun encaissement enregistré pour cette facture.",
+        "TOTAL": "Total encaissé",
+        "OUTSTANDING_SHORT": "Reste dû"
       }
     },
     "RECON": {

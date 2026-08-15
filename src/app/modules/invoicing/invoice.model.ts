@@ -51,14 +51,36 @@ export interface InvoiceDetail extends InvoiceListItem {
   remindersActive:         boolean;
 }
 
+/**
+ * `GET /invoices/{id}/reminders` → `ReminderResponseDto`.
+ *
+ * Les noms suivent le DTO Java. Les précédents (`scheduledAt`, `suspended`,
+ * `recipientEmails`) n'existaient dans aucune réponse : la date planifiée sortait
+ * `Invalid Date` et une relance suspendue n'était jamais signalée comme telle.
+ */
 export interface ReminderDto {
-  id:              number;
-  invoiceId:       number;
-  reminderType:    string;
-  scheduledAt:     string;
-  sentAt:          string | null;
-  suspended:       boolean;
-  recipientEmails: string[];
+  id:               number;
+  invoiceId:        number;
+  reminderType:     string;
+  scheduledDate:    string;
+  sentAt:           string | null;
+  isSent:           boolean;
+  isSuspended:      boolean;
+  suspensionReason: string | null;
+}
+
+/** `GET /invoices/{id}/payments` → `PaymentResponseDto`. */
+export interface InvoicePaymentDto {
+  id:            number;
+  invoiceId:     number;
+  paymentDate:   string;
+  amountLocal:   number;
+  currency:      string;
+  paymentMethod: string | null;
+  bankReference: string | null;
+  recordedBy:    number | null;
+  recordedAt:    string | null;
+  notes:         string | null;
 }
 
 // ── Request types ─────────────────────────────────────────────────────────────

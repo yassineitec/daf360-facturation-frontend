@@ -3,7 +3,7 @@ import { HttpClient, HttpParams }       from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  InvoiceListItem, InvoiceDetail, ReminderDto,
+  InvoiceListItem, InvoiceDetail, ReminderDto, InvoicePaymentDto,
   CreateDraftRequest, UpdateDraftRequest, ApproveDecisionRequest,
   RecordPaymentRequest, DisputeRequest, CreditNoteRequest,
   InvoiceFilter, PageResponse,
@@ -87,6 +87,13 @@ export class InvoiceService {
   getReminders(id: number): Observable<ReminderDto[]> {
     return this.http.get<ReminderDto[]>(`${this.base}/invoices/${id}/reminders`).pipe(
       catchError(() => of([] as ReminderDto[])),
+    );
+  }
+
+  /** Encaissements déjà enregistrés sur la facture — le pendant lecture de `recordPayment`. */
+  getPayments(id: number): Observable<InvoicePaymentDto[]> {
+    return this.http.get<InvoicePaymentDto[]>(`${this.base}/invoices/${id}/payments`).pipe(
+      catchError(() => of([] as InvoicePaymentDto[])),
     );
   }
 

@@ -31,13 +31,13 @@ import { ReminderDto } from '../invoice.model';
   } @else {
     <div class="reminders-list">
       @for (r of reminders(); track r.id) {
-        <div class="reminder-row" [class.sent]="!!r.sentAt" [class.suspended]="r.suspended">
+        <div class="reminder-row" [class.sent]="r.isSent" [class.suspended]="r.isSuspended">
           <span class="reminder-type">{{ reminderLabel(r.reminderType) | translate }}</span>
-          <span class="reminder-date">{{ formatDate(r.scheduledAt) }}</span>
+          <span class="reminder-date">{{ formatDate(r.scheduledDate) }}</span>
           <span class="reminder-status">
-            @if (r.sentAt) {
+            @if (r.isSent) {
               <span class="badge-sent">{{ 'INVOICING.REMINDERS.STATUS.SENT' | translate }}</span>
-            } @else if (r.suspended) {
+            } @else if (r.isSuspended) {
               <span class="badge-susp">{{ 'INVOICING.REMINDERS.STATUS.SUSPENDED' | translate }}</span>
             } @else {
               <span class="badge-pending">{{ 'INVOICING.REMINDERS.STATUS.PENDING' | translate }}</span>
@@ -87,13 +87,17 @@ export class RemindersPanelComponent implements OnInit {
   showSuspendForm = signal(false);
   suspendReason   = '';
 
+  /**
+   * Les types que le backend écrit réellement (`InvoiceService.createReminderSchedule`).
+   * Les clés précédentes (`J0`, `J_7`, `J0_ECH`, `J7`, `J15`, `J30`) n'existaient dans
+   * aucune ligne de `payment_reminders` : chaque relance s'affichait avec son code brut.
+   */
   private readonly REMINDER_LABELS: Record<string, string> = {
-    J0:     'INVOICING.REMINDER_TYPE.J0',
-    J_7:    'INVOICING.REMINDER_TYPE.J_7',
-    J0_ECH: 'INVOICING.REMINDER_TYPE.J0_ECH',
-    J7:     'INVOICING.REMINDER_TYPE.J7',
-    J15:    'INVOICING.REMINDER_TYPE.J15',
-    J30:    'INVOICING.REMINDER_TYPE.J30',
+    J_MINUS_7: 'INVOICING.REMINDER_TYPE.J_MINUS_7',
+    ECHEANCE:  'INVOICING.REMINDER_TYPE.ECHEANCE',
+    J_PLUS_7:  'INVOICING.REMINDER_TYPE.J_PLUS_7',
+    J_PLUS_30: 'INVOICING.REMINDER_TYPE.J_PLUS_30',
+    J_PLUS_60: 'INVOICING.REMINDER_TYPE.J_PLUS_60',
   };
 
   ngOnInit(): void { this.load(); }

@@ -128,7 +128,7 @@ export const routes: Routes = [
           import('./modules/home/home.component').then(m => m.HomeComponent),
       },
       { path: 'fournisseurs', redirectTo: 'suppliers', pathMatch: 'full' },
-      { path: 'recouvrement', redirectTo: 'home',      pathMatch: 'full' },
+      { path: 'recouvrement', redirectTo: 'payments',  pathMatch: 'full' },
       { path: 'tresorerie',   redirectTo: 'home',      pathMatch: 'full' },
       { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
