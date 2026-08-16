@@ -254,7 +254,9 @@
         "TRACE": "Timeline"
       },
       "ACTIONS": {
-        "SEE_AFFAIRE": "View project"
+        "SEE_AFFAIRE": "View project",
+        "EXPORT_PDF": "Export as PDF",
+        "EXPORTING_PDF": "Exporting…"
       }
     },
     "NEW": {
@@ -407,7 +409,22 @@
       "TOTALS": "Totals",
       "ERROR": "All lines must be filled in correctly.",
       "BACK": "Back",
-      "NEXT": "Next"
+      "NEXT": "Next",
+      "BUDGET_AFFAIRE": "Contract budget",
+      "PCT_FACTURE": "% Billed",
+      "PCT_AVANCEMENT": "% Progress to date *",
+      "PCT_A_FACTURER": "% To bill",
+      "MONTANT_HT": "Amount ex. tax",
+      "ADD_REMBOURSABLE": "+ Add a reimbursable",
+      "REMBOURSABLE_EMPTY": "No reimbursable expense available for this currency.",
+      "REMBOURSABLE_ADD_SELECTED": "Add selection",
+      "REMBOURSABLE_CANCEL": "Cancel",
+      "REMBOURSABLE_COL_DATE": "Date",
+      "REMBOURSABLE_COL_CATEGORY": "Category",
+      "REMBOURSABLE_COL_AMOUNT": "Amount",
+      "REMBOURSABLE_COL_COMMENT": "Comment",
+      "REMBOURSABLE_LINES_TITLE": "Reimbursable expenses added to this invoice",
+      "REMBOURSABLE_REMOVE": "Remove this line"
     },
     "STEP_CONDITIONS": {
       "DUE_DATE_LABEL": "Due date *",
@@ -431,6 +448,15 @@
       "CONDITIONS": "Conditions",
       "DUE_DATE": "Due date",
       "BDC": "PO",
+      "CLIENT_TITLE": "Client",
+      "CLIENT_NAME": "Client",
+      "CLIENT_ADDRESS": "Address",
+      "CLIENT_TAX_ID": "Tax ID",
+      "CLIENT_REFERENT": "Client referent",
+      "SAVED_MSG": "Invoice saved.",
+      "EXPORT_PDF": "Export as PDF",
+      "EXPORTING": "Exporting…",
+      "VIEW_INVOICE": "View invoice",
       "LINES_TITLE": "Billing lines",
       "DESC": "Description",
       "QTY": "Qty",
@@ -2932,7 +2958,38 @@
       "FOREX": "Exchange rates",
       "FOREX_API": "Forex API",
       "PERMISSIONS": "Permissions",
-      "REMINDERS": "Reminders"
+      "DOCUMENT_TEMPLATES": "Document templates"
+    },
+    "DOCUMENT_TEMPLATES": {
+      "TITLE": "Document templates",
+      "SUBTITLE": "Customize the PDF layout exported for facturation documents (per document type).",
+      "NEW": "New template",
+      "ALL_TYPES": "All types",
+      "SHOW_INACTIVE": "Show inactive",
+      "COL_TYPE": "Document type",
+      "COL_NAME": "Name",
+      "COL_STATUS": "Status",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "ACTIVATE": "Activate",
+      "DEACTIVATE": "Deactivate",
+      "EMPTY": "No template saved — the default file is used.",
+      "MODAL_CREATE": "New template",
+      "MODAL_EDIT": "Edit \"{{name}}\"",
+      "FIELD_TYPE": "Document type",
+      "FIELD_NAME": "Name",
+      "FIELD_DESCRIPTION": "Description",
+      "INSERT_DEFAULT": "Insert default template",
+      "VARIABLES": "Available variables",
+      "PREVIEW_INVOICE_ID": "Invoice ID for preview (optional)",
+      "PREVIEW_INVOICE_ID_HINT": "Empty = sample data",
+      "PREVIEW": "Preview PDF",
+      "PREVIEWING": "Previewing…",
+      "ERR_LOAD": "Could not load templates.",
+      "ERR_SAVE": "Error while saving.",
+      "ERR_REQUIRED": "Type, name, and HTML content are required.",
+      "ERR_GENERIC": "An error occurred.",
+      "ERR_PREVIEW": "Error while generating the preview."
     },
     "LISTS": {
       "LOADING_TYPES": "Loading types…",

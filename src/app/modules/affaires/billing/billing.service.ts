@@ -211,6 +211,13 @@ export class BillingService {
       `${this.base}/billing/rmb/${affaireId}/expenses`, this.opts);
   }
 
+  /** Frais VALIDE, non encore facturés, dans la devise de l'affaire — pour le picker de la facture. */
+  getBillableExpenses(affaireId: number, devise: string): Observable<ExpenseDto[]> {
+    return this.http.get<ExpenseDto[]>(
+      `${this.base}/billing/rmb/${affaireId}/expenses/billable?devise=${encodeURIComponent(devise)}`,
+      this.opts);
+  }
+
   validateExpense(expenseId: number): Observable<ExpenseDto> {
     return this.http.post<ExpenseDto>(
       `${this.base}/billing/rmb/expenses/${expenseId}/validate`, {}, this.opts);

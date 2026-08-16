@@ -304,6 +304,7 @@ textarea.form-input {
 
 .lines-header { display: flex; align-items: center; justify-content: space-between; }
 .section-title { font-size: 0.875rem; font-weight: 700; color: #0b1c30; }
+.lines-header-actions { display: flex; align-items: center; gap: 10px; }
 
 .btn-add-line {
   padding: 8px 14px;
@@ -317,6 +318,60 @@ textarea.form-input {
   font-family: inherit;
   transition: background 0.15s;
   &:hover { background: rgba($green, 0.14); }
+}
+
+.btn-add-rmb {
+  background: rgba($teal, 0.18);
+  border-color: rgba($green, 0.3);
+}
+
+// ── RMB — picker de frais remboursables ────────────────────────────────────────
+.rmb-picker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba($green, 0.04);
+  border: 1.5px solid rgba($green, 0.18);
+  border-radius: 14px;
+}
+
+.rmb-picker-empty { font-size: 0.8125rem; color: #64748b; margin: 4px 0; }
+
+.rmb-picker-row {
+  display: grid;
+  grid-template-columns: 22px 110px 1fr 110px 1.4fr;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  color: #0b1c30;
+  cursor: pointer;
+
+  &:hover { background: rgba($green, 0.06); }
+
+  &--header {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #3e4945;
+    cursor: default;
+    &:hover { background: none; }
+  }
+
+  input[type='checkbox'] { width: 16px; height: 16px; accent-color: $green; cursor: pointer; }
+}
+
+.rmb-picker-num     { text-align: right; }
+.rmb-picker-comment { color: #3e4945; white-space: normal; }
+
+.rmb-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
 }
 
 .lines-table-wrap {
@@ -448,3 +503,25 @@ textarea.form-input {
 .rp-date  { font-size: 0.8125rem; color: $green; font-weight: 700; }
 
 .recap-actions { display: flex; gap: 10px; }
+
+.recap-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1b5e20;
+
+  .material-symbols-outlined { color: $green; }
+}
+
+.recap-success-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}

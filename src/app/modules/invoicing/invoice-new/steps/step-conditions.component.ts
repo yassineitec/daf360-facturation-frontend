@@ -47,19 +47,10 @@ export interface StepConditionsValue {
     </div>
 
     <div class="field field--full">
-      <label for="sc-bdc">
-        {{ 'INVOICING.STEP_CONDITIONS.BDC_LABEL' | translate }}
-        @if (isForfaitOrLumpSum()) {
-          <span class="required-mark">{{ 'INVOICING.STEP_CONDITIONS.BDC_REQUIRED_MARK' | translate }}</span>
-        }
-      </label>
+      <label for="sc-bdc">{{ 'INVOICING.STEP_CONDITIONS.BDC_LABEL' | translate }}</label>
       <input id="sc-bdc" type="text" class="form-input" [formControl]="form.controls['bonDeCommande']"
         maxlength="100"
-        [placeholder]="'INVOICING.STEP_CONDITIONS.BDC_PLACEHOLDER' | translate"
-        [class.invalid]="form.controls['bonDeCommande'].invalid && form.controls['bonDeCommande'].touched" />
-      @if (form.controls['bonDeCommande'].invalid && form.controls['bonDeCommande'].touched) {
-        <span class="error-msg">{{ 'INVOICING.STEP_CONDITIONS.BDC_REQUIRED_ERROR' | translate }}</span>
-      }
+        [placeholder]="'INVOICING.STEP_CONDITIONS.BDC_PLACEHOLDER' | translate" />
     </div>
 
     <div class="field field--full">
@@ -98,27 +89,16 @@ export class StepConditionsComponent {
   readonly conditionOptions = Object.entries(CONDITIONS_PAIEMENT)
     .map(([value, label]) => ({ value, label }));
 
-  readonly isForfaitOrLumpSum = () => {
-    const t = this.affaireData().invoiceType;
-    return t === 'FINALE' || t === 'INTERMEDIAIRE';
-  };
-
   form = this.fb.group({
     dateEcheance:       ['', Validators.required],
     conditionsPaiement: ['', Validators.required],
+    // Bon de commande : toujours facultatif, quel que soit le type de facture — plus
+    // de Validators.required conditionnel pour Forfait/Lump Sum (FINALE/INTERMEDIAIRE).
     bonDeCommande:      [''],
     notes:              [''],
   });
 
   next(): void {
-    const bdcCtrl = this.form.controls['bonDeCommande'];
-    if (this.isForfaitOrLumpSum()) {
-      bdcCtrl.setValidators([Validators.required]);
-    } else {
-      bdcCtrl.clearValidators();
-    }
-    bdcCtrl.updateValueAndValidity();
-
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
     const v = this.form.getRawValue();

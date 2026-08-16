@@ -11,4 +11,9 @@ export const ADMIN_ROUTES: Routes = [
     loadComponent: () =>
       import('./roles/fact-roles-admin.component').then(m => m.FactRolesAdminComponent),
   },
+  {
+    path: 'document-templates',
+    loadComponent: () =>
+      import('./document-templates/document-templates-admin.component').then(m => m.DocumentTemplatesAdminComponent),
+  },
 ];

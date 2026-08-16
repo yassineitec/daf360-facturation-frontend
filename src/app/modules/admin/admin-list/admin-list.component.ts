@@ -6,6 +6,7 @@ import { forkJoin }     from 'rxjs';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { FactRolesAdminComponent } from '../roles/fact-roles-admin.component';
 import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-admin.component';
+import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
   PaginationComponent, PaginationConfig, ButtonComponent, ModalService, ModalRef,
@@ -23,7 +24,7 @@ import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 
-type AdminTab = 'lists' | 'forex' | 'forex-api' | 'reminders' | 'permissions';
+type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'reminders';
 
 const PAGE_SIZE = 10;
 
@@ -41,7 +42,7 @@ interface ForexRow {
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
     FormFieldComponent, StatusBadgeComponent, TranslatePipe,
-    PermissionDirective, FactRolesAdminComponent, ReminderRulesAdminComponent,
+    PermissionDirective, FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
   ],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',

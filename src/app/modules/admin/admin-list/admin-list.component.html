@@ -94,6 +94,12 @@
           <span class="material-symbols-outlined tab-icon">admin_panel_settings</span>
           {{ 'ADMIN.TABS.PERMISSIONS' | translate }}
         </button>
+        <button *appHasPermission="'FACT_SUPER_ADMIN'" class="main-tab"
+          [class.active]="activeTab() === 'document-templates'"
+          (click)="activeTab.set('document-templates')">
+          <span class="material-symbols-outlined tab-icon">description</span>
+          {{ 'ADMIN.TABS.DOCUMENT_TEMPLATES' | translate }}
+        </button>
       </div>
     </daf-card>
 
@@ -371,6 +377,13 @@
     @if (activeTab() === 'permissions') {
       <div class="tab-content">
         <app-fact-roles-admin />
+      </div>
+    }
+
+    <!-- ── DOCUMENT TEMPLATES TAB (maquettes de documents facturation, embedded) ── -->
+    @if (activeTab() === 'document-templates') {
+      <div class="tab-content">
+        <app-document-templates-admin />
       </div>
     }
 
