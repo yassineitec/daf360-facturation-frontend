@@ -253,7 +253,9 @@
         "TRACE": "Suivi"
       },
       "ACTIONS": {
-        "SEE_AFFAIRE": "Voir l'affaire"
+        "SEE_AFFAIRE": "Voir l'affaire",
+        "EXPORT_PDF": "Exporter en PDF",
+        "EXPORTING_PDF": "Export…"
       }
     },
     "NEW": {
@@ -406,7 +408,22 @@
       "TOTALS": "Totaux",
       "ERROR": "Toutes les lignes doivent être remplies correctement.",
       "BACK": "Retour",
-      "NEXT": "Suivant"
+      "NEXT": "Suivant",
+      "BUDGET_AFFAIRE": "Budget affaire",
+      "PCT_FACTURE": "% Facturé",
+      "PCT_AVANCEMENT": "% Avancement à date *",
+      "PCT_A_FACTURER": "% À facturer",
+      "MONTANT_HT": "Montant HT",
+      "ADD_REMBOURSABLE": "+ Ajouter un remboursable",
+      "REMBOURSABLE_EMPTY": "Aucun frais remboursable disponible pour cette devise.",
+      "REMBOURSABLE_ADD_SELECTED": "Ajouter la sélection",
+      "REMBOURSABLE_CANCEL": "Annuler",
+      "REMBOURSABLE_COL_DATE": "Date",
+      "REMBOURSABLE_COL_CATEGORY": "Catégorie",
+      "REMBOURSABLE_COL_AMOUNT": "Montant",
+      "REMBOURSABLE_COL_COMMENT": "Commentaire",
+      "REMBOURSABLE_LINES_TITLE": "Frais remboursables ajoutés à cette facture",
+      "REMBOURSABLE_REMOVE": "Retirer cette ligne"
     },
     "STEP_CONDITIONS": {
       "DUE_DATE_LABEL": "Date d'échéance *",
@@ -430,6 +447,15 @@
       "CONDITIONS": "Conditions",
       "DUE_DATE": "Échéance",
       "BDC": "BDC",
+      "CLIENT_TITLE": "Client",
+      "CLIENT_NAME": "Client",
+      "CLIENT_ADDRESS": "Adresse",
+      "CLIENT_TAX_ID": "Matricule fiscal",
+      "CLIENT_REFERENT": "Référent client",
+      "SAVED_MSG": "Facture enregistrée.",
+      "EXPORT_PDF": "Exporter en PDF",
+      "EXPORTING": "Export…",
+      "VIEW_INVOICE": "Voir la facture",
       "LINES_TITLE": "Lignes de facturation",
       "DESC": "Description",
       "QTY": "Qté",
@@ -2876,7 +2902,39 @@
       "LISTS": "Listes configurables",
       "FOREX": "Taux de change",
       "FOREX_API": "API Forex",
-      "PERMISSIONS": "Permissions"
+      "PERMISSIONS": "Permissions",
+      "DOCUMENT_TEMPLATES": "Maquettes de documents"
+    },
+    "DOCUMENT_TEMPLATES": {
+      "TITLE": "Maquettes de documents",
+      "SUBTITLE": "Personnalisez la mise en page PDF exportée pour les documents facturation (par type de document).",
+      "NEW": "Nouvelle maquette",
+      "ALL_TYPES": "Tous les types",
+      "SHOW_INACTIVE": "Afficher les inactives",
+      "COL_TYPE": "Type de document",
+      "COL_NAME": "Nom",
+      "COL_STATUS": "Statut",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "ACTIVATE": "Activer",
+      "DEACTIVATE": "Désactiver",
+      "EMPTY": "Aucune maquette enregistrée — le fichier par défaut est utilisé.",
+      "MODAL_CREATE": "Nouvelle maquette",
+      "MODAL_EDIT": "Modifier \"{{name}}\"",
+      "FIELD_TYPE": "Type de document",
+      "FIELD_NAME": "Nom",
+      "FIELD_DESCRIPTION": "Description",
+      "INSERT_DEFAULT": "Insérer le gabarit par défaut",
+      "VARIABLES": "Variables disponibles",
+      "PREVIEW_INVOICE_ID": "ID facture pour l'aperçu (facultatif)",
+      "PREVIEW_INVOICE_ID_HINT": "Vide = données factices",
+      "PREVIEW": "Aperçu PDF",
+      "PREVIEWING": "Aperçu…",
+      "ERR_LOAD": "Impossible de charger les maquettes.",
+      "ERR_SAVE": "Erreur lors de l'enregistrement.",
+      "ERR_REQUIRED": "Type, nom et contenu HTML sont requis.",
+      "ERR_GENERIC": "Une erreur est survenue.",
+      "ERR_PREVIEW": "Erreur lors de la génération de l'aperçu."
     },
     "LISTS": {
       "LOADING_TYPES": "Chargement des types…",

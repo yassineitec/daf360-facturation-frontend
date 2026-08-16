@@ -90,6 +90,19 @@ export class InvoiceService {
     );
   }
 
+  /** Aperçu PDF non officiel d'un brouillon AV (voir étape Récapitulatif). */
+  exportPdfPreview(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/invoices/${id}/pdf-preview`, { responseType: 'blob' });
+  }
+
+  // ── Invoice progress (step Lignes — mode AV) ──────────────────────────────
+
+  getAffaireInvoiceProgress(affaireId: number): Observable<{ budgetTotal: number; pctFacture: number }> {
+    return this.http.get<{ budgetTotal: number; pctFacture: number }>(
+      `${this.base}/invoices/affaire/${affaireId}/progress`,
+    );
+  }
+
   // ── Affaire lookup for step 1 ──────────────────────────────────────────────
 
   searchAffaires(search: string): Observable<AffaireListItem[]> {

@@ -107,6 +107,15 @@
                              label: 'INVOICING.DETAIL.ACTIONS.SEE_AFFAIRE' | translate,
                              disabled: !inv.affaireId }"
                 (onClick)="goToAffaire()" />
+
+              @if (inv.billingMode === 'AV') {
+                <daf-button
+                  style="flex:1 1 100%"
+                  [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'picture_as_pdf',
+                               label: (exportingPdf() ? 'INVOICING.DETAIL.ACTIONS.EXPORTING_PDF' : 'INVOICING.DETAIL.ACTIONS.EXPORT_PDF') | translate,
+                               disabled: exportingPdf() }"
+                  (onClick)="exportPdf()" />
+              }
             </div>
 
           </daf-section-card>
@@ -158,6 +167,22 @@
 
               <ng-template dafCell="unitRate" let-row>
                 <span class="text-body-md text-on-surface-variant">{{ row['unitRate'] | displayCurrency : inv.devise }}</span>
+              </ng-template>
+
+              <ng-template dafCell="budgetAffaire" let-row>
+                <span class="text-body-md text-on-surface-variant">{{ row['budgetAffaire'] | displayCurrency : inv.devise }}</span>
+              </ng-template>
+
+              <ng-template dafCell="pctFacture" let-row>
+                <span class="text-body-md text-on-surface-variant">{{ row['pctFacture'] }} %</span>
+              </ng-template>
+
+              <ng-template dafCell="pctAvancement" let-row>
+                <span class="text-body-md text-on-surface-variant">{{ row['pctAvancement'] }} %</span>
+              </ng-template>
+
+              <ng-template dafCell="pctAFacturer" let-row>
+                <span class="text-body-md text-on-surface-variant">{{ row['pctAFacturer'] }} %</span>
               </ng-template>
 
               <ng-template dafCell="vatRatePct" let-row>

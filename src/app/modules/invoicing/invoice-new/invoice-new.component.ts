@@ -153,13 +153,22 @@ export class InvoiceNewComponent {
   });
 
   readonly isSaving  = computed(() => this.stepRecapRef()?.saving() ?? false);
+
+  /**
+   * Vrai dès que le brouillon a été créé (l'étape Récapitulatif n'en navigue plus
+   * automatiquement — elle reste affichée pour permettre l'export PDF). Sans ce garde,
+   * "Enregistrer le brouillon"/"Soumettre" restent cliquables après un enregistrement
+   * réussi et créeraient un DEUXIÈME brouillon en double.
+   */
+  readonly alreadySaved = computed(() => this.stepRecapRef()?.savedInvoiceId() != null);
+
   readonly canGoNext = computed(() => {
     const s = this.step();
     if (s === 1) {
       return !(this.stepAffaireRef()?.rafBlocked() ?? false)
           && !(this.stepAffaireRef()?.rafLoading() ?? false);
     }
-    if (s === 4) return !this.isSaving();
+    if (s === 4) return !this.isSaving() && !this.alreadySaved();
     return true;
   });
 

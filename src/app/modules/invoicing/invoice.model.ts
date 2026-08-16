@@ -15,6 +15,13 @@ export interface InvoiceLine {
   vatRatePct:   number;
   lineTotal:    number;
   vatAmount:    number;
+  // Avancement — présents uniquement en mode AV (Forfaitaire), voir InvoiceLineRequest
+  budgetAffaire?: number;
+  pctFacture?:    number;
+  pctAvancement?: number;
+  pctAFacturer?:  number;
+  // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
+  sourceExpenseId?: number;
 }
 
 export interface InvoiceListItem {
@@ -25,6 +32,7 @@ export interface InvoiceListItem {
   affaireIntitule:  string | null;
   clientId:         number | null;
   clientNom:        string;
+  billingMode:      string;
   montantHt:        number;
   montantTva:       number;
   montantTtc:       number;
@@ -64,10 +72,17 @@ export interface ReminderDto {
 // ── Request types ─────────────────────────────────────────────────────────────
 
 export interface InvoiceLineRequest {
-  description: string;
-  quantity:    number;
-  unitRate:    number;
-  vatRatePct:  number;
+  description:    string;
+  quantity:       number;
+  unitRate:       number;
+  vatRatePct:     number;
+  // Avancement — présents uniquement en mode AV (Forfaitaire)
+  budgetAffaire?: number;
+  pctFacture?:    number;
+  pctAvancement?: number;
+  pctAFacturer?:  number;
+  // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
+  sourceExpenseId?: number;
 }
 
 export interface CreateDraftRequest {
@@ -80,6 +95,7 @@ export interface CreateDraftRequest {
   tsId?:               number | null;
   lines:               InvoiceLineRequest[];
   notes?:              string | null;
+  bonDeCommande?:      string | null;
   dueDate?:            string | null;
   templateId?:         number | null;
 }

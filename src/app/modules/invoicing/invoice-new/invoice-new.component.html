@@ -104,7 +104,7 @@
         <daf-button
           [options]="{ variant: 'secondary', pill: true, iconStart: 'save',
                        label: (isSaving() ? 'INVOICING.NEW.SAVING' : 'INVOICING.NEW.DRAFT') | translate,
-                       disabled: isSaving() }"
+                       disabled: isSaving() || alreadySaved() }"
           (onClick)="saveDraft()" />
       }
 

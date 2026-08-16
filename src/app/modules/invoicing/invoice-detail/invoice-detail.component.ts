@@ -80,6 +80,7 @@ export class InvoiceDetailComponent implements OnInit {
   error       = signal<string | null>(null);
   actionError = signal<string | null>(null);
   saving      = signal(false);
+  exportingPdf = signal(false);
 
   showPaymentModal = signal(false);
   showCreditNote   = signal(false);
@@ -230,7 +231,7 @@ export class InvoiceDetailComponent implements OnInit {
         options: { icon: 'trending_up', iconColor: 'text-primary', iconBg: 'bg-primary/10' },
       },
       {
-        label: 'INVOICING.DETAIL.KPI.BUDGET_TOTAL',
+        label: this.translate.instant('INVOICING.DETAIL.KPI.BUDGET_TOTAL', { currency: devise }),
         value: this.currency.transform(inv?.montantTtc ?? null, devise),
         delta: {
           value: `${this.translate.instant('INVOICING.DETAIL.KPI.HT_PREFIX')} ${this.currency.transform(inv?.montantHt ?? null, devise)}`,
@@ -268,9 +269,30 @@ export class InvoiceDetailComponent implements OnInit {
 
   // ═══ Table des lignes ═════════════════════════════════════════════════════
 
+  /**
+   * Mode AV (Forfaitaire) : les lignes n'ont pas de vraies Qté/PU HT — la création
+   * (step-lines.component) saisit budget/%avancement à la place et n'y écrit que
+   * quantity=1, unitRate=montantHt pour rétrocompatibilité (voir InvoiceLineRequest).
+   * Afficher ces deux colonnes ici serait donc trompeur ; on montre les mêmes
+   * colonnes qu'à la création.
+   */
+  readonly isAv = computed(() => this.invoice()?.billingMode === 'AV');
+
   readonly lineTableColumns = computed((): TableColumn[] => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    if (this.isAv()) {
+      return [
+        { key: 'description',    label: t('INVOICING.DETAIL.LINES.DESC'),                type: 'custom' },
+        { key: 'budgetAffaire',  label: t('INVOICING.STEP_LINES.BUDGET_AFFAIRE'),  type: 'custom', align: 'right' },
+        { key: 'pctFacture',     label: t('INVOICING.STEP_LINES.PCT_FACTURE'),     type: 'custom', align: 'right' },
+        { key: 'pctAvancement',  label: t('INVOICING.STEP_LINES.PCT_AVANCEMENT'),  type: 'custom', align: 'right' },
+        { key: 'pctAFacturer',   label: t('INVOICING.STEP_LINES.PCT_A_FACTURER'),  type: 'custom', align: 'right' },
+        { key: 'lineTotal',      label: t('INVOICING.STEP_LINES.MONTANT_HT'),      type: 'custom', align: 'right' },
+        { key: 'vatRatePct',     label: t('INVOICING.DETAIL.LINES.VAT'),                type: 'custom', align: 'right' },
+        { key: 'lineTtc',        label: t('INVOICING.DETAIL.LINES.TOTAL_TTC'),          type: 'custom', align: 'right' },
+      ];
+    }
     return [
       { key: 'description', label: t('INVOICING.DETAIL.LINES.DESC'),       type: 'custom' },
       { key: 'quantity',    label: t('INVOICING.DETAIL.LINES.QTY'),        type: 'number', align: 'right' },
@@ -294,13 +316,18 @@ export class InvoiceDetailComponent implements OnInit {
     const inv = this.invoice();
     if (!inv) return [];
     return inv.lines.map((line, idx) => ({
-      id:          line.id ?? idx,
-      description: line.description,
-      quantity:    line.quantity,
-      unitRate:    line.unitRate,
-      vatRatePct:  line.vatRatePct,
-      lineTotal:   line.lineTotal,
-      lineTtc:     this.lineTtc(line),
+      id:            line.id ?? idx,
+      description:   line.description,
+      quantity:      line.quantity,
+      unitRate:      line.unitRate,
+      vatRatePct:    line.vatRatePct,
+      lineTotal:     line.lineTotal,
+      lineTtc:       this.lineTtc(line),
+      budgetAffaire:   line.budgetAffaire,
+      pctFacture:      line.pctFacture,
+      pctAvancement:   line.pctAvancement,
+      pctAFacturer:    line.pctAFacturer,
+      sourceExpenseId: line.sourceExpenseId,
     }));
   });
 
@@ -460,6 +487,48 @@ export class InvoiceDetailComponent implements OnInit {
     const affaireId = this.invoice()?.affaireId;
     if (!affaireId) return;
     this.router.navigate(['../../affaires', affaireId], { relativeTo: this.route });
+  }
+
+  /** Export PDF (mode AV uniquement) — brouillon non numéroté tant que la facture n'est
+   * pas émise, numéro et date réels une fois émise (voir FactPdfService côté backend). */
+  exportPdf(): void {
+    const inv = this.invoice();
+    if (!inv) return;
+    this.exportingPdf.set(true);
+    this.actionError.set(null);
+    this.svc.exportPdfPreview(inv.id).subscribe({
+      next: blob => {
+        this.exportingPdf.set(false);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `facture-${inv.invoiceNumber ?? 'apercu-' + inv.id}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err: unknown) => {
+        this.exportingPdf.set(false);
+        this.readBlobError(err).then(msg => this.actionError.set(msg));
+      },
+    });
+  }
+
+  /** Avec `responseType: 'blob'`, le corps d'une réponse d'erreur arrive AUSSI en Blob
+   * (jamais déjà parsé en JSON) — il faut le relire en texte pour en extraire le vrai
+   * message (`ProblemDetail.detail` côté backend). */
+  private async readBlobError(err: unknown): Promise<string> {
+    const fallback = this.translate.instant('INVOICING.DETAIL.ACTION_ERROR');
+    const body = (err as { error?: unknown } | null)?.error;
+    if (body instanceof Blob) {
+      try {
+        const text = await body.text();
+        const parsed = JSON.parse(text);
+        return parsed?.detail ?? parsed?.message ?? fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
   }
 
   // ═══ Rendu ════════════════════════════════════════════════════════════════

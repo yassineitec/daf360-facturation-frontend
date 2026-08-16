@@ -1,8 +1,10 @@
-import { Component, inject, input, output, signal, computed } from '@angular/core';
+import { Component, inject, input, output, signal, computed, effect } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { InvoiceService } from '../../invoice.service';
 import { CONDITIONS_PAIEMENT } from '../../invoice.model';
+import { ClientService } from '../../../clients/client.service';
+import { ClientDetailDto } from '../../../clients/client.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';
@@ -44,6 +46,37 @@ import { StepConditionsValue } from './step-conditions.component';
       }
     </div>
   </div>
+
+  <!-- Client -->
+  @if (client(); as c) {
+    <div class="recap-section">
+      <h3>{{ 'INVOICING.STEP_RECAP.CLIENT_TITLE' | translate }}</h3>
+      <div class="recap-grid">
+        <div class="recap-row">
+          <span class="recap-label">{{ 'INVOICING.STEP_RECAP.CLIENT_NAME' | translate }}</span>
+          <span class="recap-val">{{ c.clientName }}</span>
+        </div>
+        @if (c.address) {
+          <div class="recap-row">
+            <span class="recap-label">{{ 'INVOICING.STEP_RECAP.CLIENT_ADDRESS' | translate }}</span>
+            <span class="recap-val">{{ c.address }}</span>
+          </div>
+        }
+        @if (c.taxId) {
+          <div class="recap-row">
+            <span class="recap-label">{{ 'INVOICING.STEP_RECAP.CLIENT_TAX_ID' | translate }}</span>
+            <span class="recap-val">{{ c.taxId }}</span>
+          </div>
+        }
+        @if (c.contactName) {
+          <div class="recap-row">
+            <span class="recap-label">{{ 'INVOICING.STEP_RECAP.CLIENT_REFERENT' | translate }}</span>
+            <span class="recap-val">{{ c.contactName }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
 
   <!-- Lignes -->
   <div class="recap-section">
@@ -98,7 +131,30 @@ import { StepConditionsValue } from './step-conditions.component';
     <div class="server-error">{{ serverError() }}</div>
   }
 
-  @if (showActions()) {
+  @if (savedInvoiceId(); as invId) {
+    <!-- Post-enregistrement : on ne navigue plus automatiquement — l'export PDF (mode
+         AV) doit rester possible depuis CETTE étape, donc on affiche les actions ici
+         plutôt que de quitter immédiatement vers le détail de la facture. -->
+    <div class="recap-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ 'INVOICING.STEP_RECAP.SAVED_MSG' | translate }}</span>
+      <div class="recap-success-actions">
+        @if (affaireData().billingMode === 'AV') {
+          <button type="button" class="btn-draft" [disabled]="exportingPdf()" (click)="exportPdf(invId)">
+            <span class="material-symbols-outlined">picture_as_pdf</span>
+            {{ exportingPdf() ? ('INVOICING.STEP_RECAP.EXPORTING' | translate) : ('INVOICING.STEP_RECAP.EXPORT_PDF' | translate) }}
+          </button>
+        }
+        <button type="button" class="btn-submit" (click)="goToInvoice(invId)">
+          {{ 'INVOICING.STEP_RECAP.VIEW_INVOICE' | translate }}
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+    @if (exportError()) {
+      <div class="server-error">{{ exportError() }}</div>
+    }
+  } @else if (showActions()) {
   <div class="step-actions">
     <button type="button" class="btn-back" (click)="prevStep.emit()">
       <span class="material-symbols-outlined">arrow_back</span>
@@ -121,10 +177,11 @@ import { StepConditionsValue } from './step-conditions.component';
   styleUrl: './step.component.scss',
 })
 export class StepRecapComponent {
-  private readonly svc       = inject(InvoiceService);
-  private readonly router    = inject(Router);
-  private readonly route     = inject(ActivatedRoute);
-  private readonly translate = inject(TranslateService);
+  private readonly svc          = inject(InvoiceService);
+  private readonly clientSvc    = inject(ClientService);
+  private readonly router       = inject(Router);
+  private readonly route        = inject(ActivatedRoute);
+  private readonly translate    = inject(TranslateService);
 
   showActions    = input<boolean>(true);
   affaireData    = input.required<StepAffaireValue>();
@@ -134,6 +191,30 @@ export class StepRecapComponent {
 
   saving      = signal(false);
   serverError = signal<string | null>(null);
+
+  /** Fiche client complète (nom, adresse, matricule fiscal, contact) — le reste du
+   * wizard ne porte que `clientId`, jamais l'objet complet. */
+  readonly client = signal<ClientDetailDto | null>(null);
+
+  /** Non-null une fois le brouillon enregistré — bascule le pied de page vers le
+   * panneau "Exporter en PDF / Voir la facture" plutôt que de naviguer aussitôt. */
+  readonly savedInvoiceId = signal<number | null>(null);
+  readonly exportingPdf   = signal(false);
+  readonly exportError    = signal<string | null>(null);
+
+  constructor() {
+    effect(() => {
+      const clientId = this.affaireData().clientId;
+      if (clientId) {
+        this.clientSvc.getClient(clientId).subscribe({
+          next:  c => this.client.set(c),
+          error: () => this.client.set(null),
+        });
+      } else {
+        this.client.set(null);
+      }
+    });
+  }
 
   readonly totalHt = computed(() =>
     this.linesData().lines.reduce((s, l) => s + l.quantity * l.unitRate, 0)
@@ -168,15 +249,16 @@ export class StepRecapComponent {
   private buildRequest() {
     const a = this.affaireData(), l = this.linesData(), c = this.conditionsData();
     return {
-      paysId:      a.paysId,
-      affaireId:   a.affaireId,
-      clientId:    a.clientId,
-      billingMode: a.billingMode,
-      currency:    a.currency,
-      tsId:        a.tsId,
-      dueDate:     c.dateEcheance,
-      notes:       c.notes,
-      lines:       l.lines,
+      paysId:        a.paysId,
+      affaireId:     a.affaireId,
+      clientId:      a.clientId,
+      billingMode:   a.billingMode,
+      currency:      a.currency,
+      tsId:          a.tsId,
+      dueDate:       c.dateEcheance,
+      notes:         c.notes,
+      bonDeCommande: c.bonDeCommande,
+      lines:         l.lines,
     };
   }
 
@@ -184,7 +266,7 @@ export class StepRecapComponent {
     this.saving.set(true);
     this.serverError.set(null);
     this.svc.createDraft(this.buildRequest()).subscribe({
-      next:  inv => { this.saving.set(false); this.router.navigate(['..', inv.id], { relativeTo: this.route }); },
+      next:  inv => { this.saving.set(false); this.savedInvoiceId.set(inv.id); },
       error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur.'); },
     });
   }
@@ -195,12 +277,56 @@ export class StepRecapComponent {
     this.svc.createDraft(this.buildRequest()).subscribe({
       next: inv => {
         this.svc.submit(inv.id).subscribe({
-          next:  () => { this.saving.set(false); this.router.navigate(['..', inv.id], { relativeTo: this.route }); },
+          next:  () => { this.saving.set(false); this.savedInvoiceId.set(inv.id); },
           error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur lors de la soumission.'); },
         });
       },
       error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur.'); },
     });
+  }
+
+  goToInvoice(id: number): void {
+    this.router.navigate(['..', id], { relativeTo: this.route });
+  }
+
+  /** Télécharge l'aperçu PDF (brouillon, non numéroté — mode AV uniquement). */
+  exportPdf(id: number): void {
+    this.exportingPdf.set(true);
+    this.exportError.set(null);
+    this.svc.exportPdfPreview(id).subscribe({
+      next: blob => {
+        this.exportingPdf.set(false);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `facture-apercu-${id}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err: unknown) => {
+        this.exportingPdf.set(false);
+        this.readBlobError(err).then(msg => this.exportError.set(msg));
+      },
+    });
+  }
+
+  /** Avec `responseType: 'blob'`, le corps d'une réponse d'erreur arrive AUSSI en Blob
+   * (jamais déjà parsé en JSON) — il faut le relire en texte pour en extraire le
+   * vrai message (`ProblemDetail.detail` côté backend), sinon `err.error?.detail`
+   * vaut toujours `undefined`. */
+  private async readBlobError(err: unknown): Promise<string> {
+    const fallback = "Erreur lors de l'export PDF.";
+    const body = (err as { error?: unknown } | null)?.error;
+    if (body instanceof Blob) {
+      try {
+        const text = await body.text();
+        const parsed = JSON.parse(text);
+        return parsed?.detail ?? parsed?.message ?? fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
   }
 
   formatAmount(v: number): string {
