@@ -95,8 +95,8 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
   // menait quelque part. L'entrée morte a disparu, la route `recouvrement` reste comme
   // alias de redirection vers `payments` pour les liens déjà en circulation.
   {
-    id: 'payments',
-    route: 'payments',
+    id: 'recouvrement',
+    route: 'recouvrement',
     icon: 'assignment_late',
     tone: 'teal',
     labelKey: 'FACTURATION.layout.NAV.RECOVERY',

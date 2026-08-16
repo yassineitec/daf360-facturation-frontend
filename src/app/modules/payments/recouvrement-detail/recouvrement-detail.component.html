@@ -172,6 +172,28 @@
               [rows]="reminderRows()"
               [config]="reminderConfig()">
 
+              <!-- Le palier : son libellé configuré, et le décalage qui le définit.
+                   Un palier retiré n'a plus de règle : il garde son rang dans
+                   l'historique, nommé comme tel, avec son code technique en second plan. -->
+              <ng-template dafCell="type" let-row>
+                <div class="flex flex-col gap-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-body-md font-bold"
+                          [class.text-on-surface]="!row['_code']"
+                          [class.text-on-surface-variant]="row['_code']">
+                      {{ row['_label'] }}
+                    </span>
+                    @if (row['_offset']) {
+                      <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5
+                                   text-[11px] font-bold text-primary">{{ row['_offset'] }}</span>
+                    }
+                  </div>
+                  @if (row['_code']) {
+                    <span class="font-mono text-[11px] text-outline">{{ row['_code'] }}</span>
+                  }
+                </div>
+              </ng-template>
+
               <ng-template dafCell="state" let-row>
                 <div class="flex flex-col items-start gap-1">
                   @switch (row['_state']) {

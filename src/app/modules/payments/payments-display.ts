@@ -28,17 +28,56 @@ export function retardToneClass(joursRetard: number): string {
 }
 
 /**
- * i18n key for a reminder type. The five labels used to be a hardcoded **French**
- * `Record` in the component even though `PAYMENTS.DASHBOARD.REMINDER.*` already
- * existed in fr and en.
+ * Libellé du dernier palier de relance envoyé.
+ *
+ * Il vient de la **règle** qui a produit le palier, transporté par la ligne. Ce fut
+ * successivement un `Record` français codé en dur dans le composant, puis une clé i18n
+ * (`PAYMENTS.DASHBOARD.REMINDER.<code>`) — les deux supposaient une liste de paliers
+ * connue à la compilation. Depuis que l'échéancier est configurable
+ * (`payment_reminder_rules`), cette liste n'existe plus : un palier créé ce matin
+ * n'aurait aucune traduction.
+ *
+ * Repli sur le code brut quand plus aucune règle ne le porte — relance envoyée sous un
+ * ancien échéancier, qu'il vaut mieux montrer telle quelle que faire disparaître.
  */
-export function reminderLabelKey(type: string | null): string | null {
-  return type ? `PAYMENTS.DASHBOARD.REMINDER.${type}` : null;
+export function reminderLabel(row: AgingRow, lang: string | null): string | null {
+  const label = lang === 'en' ? row.lastReminderLabelEn : row.lastReminderLabelFr;
+  return label ?? row.lastReminderType;
 }
 
-export function formatDate(d: string | null): string {
+/**
+ * Une date lisible dans la langue courante.
+ *
+ * Le format était figé en `fr-FR` : en anglais, l'écran affichait « 14 janv. 2026 » à
+ * côté de libellés anglais. `lang` est la valeur de `TranslateService.currentLang()`,
+ * qui peut être vide au tout premier rendu — d'où le repli sur le français, la langue
+ * par défaut de l'application.
+ */
+export function formatDate(d: string | null, lang?: string | null): string {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
+  return new Date(d).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/**
+ * Le décalage d'un palier, écrit dans la langue courante : « J+30 » / « D+30 »,
+ * « J-7 » / « D-7 », « Jour J » / « Due day ».
+ *
+ * Cette mise en forme venait du serveur, qui renvoyait un « Jour J » français à une
+ * interface anglaise. Le service transporte maintenant le nombre signé et rien d'autre :
+ * il n'a pas de locale, et la lettre elle-même change de langue.
+ *
+ * @param offsetDays `null` quand la relance ne correspond plus à aucune règle
+ */
+export function offsetLabel(
+  offsetDays: number | null | undefined,
+  t: (key: string, params?: Record<string, unknown>) => string,
+): string {
+  if (offsetDays == null) return '';
+  if (offsetDays === 0)  return t('PAYMENTS.OFFSET.DAY_ZERO');
+  return offsetDays > 0
+    ? t('PAYMENTS.OFFSET.AFTER',  { n: offsetDays })
+    : t('PAYMENTS.OFFSET.BEFORE', { n: Math.abs(offsetDays) });
 }
 
 export function initials(name: string | null | undefined): string {

@@ -79,6 +79,15 @@
           <span class="material-symbols-outlined tab-icon">api</span>
           {{ 'ADMIN.TABS.FOREX_API' | translate }}
         </button>
+        <!-- Relances : la configuration de l'échéancier de recouvrement. Lecture ouverte
+             à FACT_VIEW_PAYMENT — l'écriture est gardée par le contrôleur et par le
+             bouton « Ajouter » de l'onglet lui-même. -->
+        <button *appHasPermission="'FACT_VIEW_PAYMENT'" class="main-tab"
+          [class.active]="activeTab() === 'reminders'"
+          (click)="activeTab.set('reminders')">
+          <span class="material-symbols-outlined tab-icon">notifications_active</span>
+          {{ 'ADMIN.TABS.REMINDERS' | translate }}
+        </button>
         <button *appHasPermission="'FACT_SUPER_ADMIN'" class="main-tab"
           [class.active]="activeTab() === 'permissions'"
           (click)="activeTab.set('permissions')">
@@ -348,6 +357,13 @@
           </daf-section-card>
 
         }
+      </div>
+    }
+
+    <!-- ── RELANCES TAB (échéancier de recouvrement configurable, embarqué) ── -->
+    @if (activeTab() === 'reminders') {
+      <div class="tab-content">
+        <app-reminder-rules-admin />
       </div>
     }
 

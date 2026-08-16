@@ -11,4 +11,10 @@ export const SUPPLIERS_ROUTES: Routes = [
     loadComponent: () =>
       import('./supplier-new/supplier-new.component').then(m => m.SupplierNewComponent),
   },
+  // Après `new` : `:id` capterait le segment sinon.
+  {
+    path: ':id',
+    loadComponent: () =>
+      import('./supplier-detail/supplier-detail.component').then(m => m.SupplierDetailComponent),
+  },
 ];

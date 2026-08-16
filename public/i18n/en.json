@@ -530,13 +530,6 @@
       "FINALE": "Final",
       "AVOIR": "Credit note"
     },
-    "REMINDER_TYPE": {
-      "J_MINUS_7": "D-7 due date",
-      "ECHEANCE": "Due date",
-      "J_PLUS_7": "D+7 reminder",
-      "J_PLUS_30": "D+30 formal notice",
-      "J_PLUS_60": "D+60 escalation"
-    },
     "PLACEHOLDER": {
       "TITLE": "Invoices",
       "SUBTITLE": "Module under development."
@@ -2399,13 +2392,6 @@
         "EMPTY": "No unpaid invoices found.",
         "VIEW": "View"
       },
-      "REMINDER": {
-        "J_MINUS_7": "D-7 (before due date)",
-        "ECHEANCE": "Due day",
-        "J_PLUS_7": "D+7 (1st reminder)",
-        "J_PLUS_30": "D+30 (formal notice)",
-        "J_PLUS_60": "D+60 (management escalation)"
-      },
       "LOADING": "Loading unpaid invoices…",
       "VIEW_GRID": "Grid view",
       "VIEW_LIST": "List view",
@@ -2458,9 +2444,10 @@
         "STATUS_SENT": "Sent",
         "STATUS_SUSPENDED": "Suspended",
         "STATUS_PENDING": "Pending",
-        "EMPTY": "No reminder scheduled — the invoice has no due date.",
+        "EMPTY": "No reminder scheduled for this invoice.",
         "SUSPEND_LABEL": "Suspension reason",
-        "SUSPEND_CONFIRM": "Suspend"
+        "SUSPEND_CONFIRM": "Suspend",
+        "RETIRED_STAGE": "Retired stage"
       },
       "PAYMENTS": {
         "COL_DATE": "Date",
@@ -2590,6 +2577,11 @@
       "ERR_MAX": "The amount cannot exceed {{amount}}.",
       "CONFIRM_BTN": "Confirm partial reconciliation",
       "ERROR": "Error during partial reconciliation."
+    },
+    "OFFSET": {
+      "DAY_ZERO": "Due day",
+      "AFTER": "D+{{n}}",
+      "BEFORE": "D-{{n}}"
     }
   },
   "SUBCONTRACTING": {
@@ -2789,116 +2781,111 @@
     }
   },
   "SUPPLIERS": {
+    "COMMON": {
+      "CANCEL": "Cancel"
+    },
     "LIST": {
-      "TITLE": "Supplier management",
+      "TITLE": "Suppliers",
+      "SUBTITLE": "Active supplier directory, bank and tax details",
       "NEW": "New supplier",
-      "SEARCH_PLACEHOLDER": "Search for a supplier…",
+      "SEARCH_PLACEHOLDER": "Search by name or code…",
+      "LOADING": "Loading suppliers…",
+      "VIEW_GRID": "Grid view",
+      "VIEW_LIST": "List view",
+      "STATUS_ACTIVE": "Active",
+      "STATUS_INACTIVE": "Inactive",
       "KPI": {
-        "TOTAL": "Total suppliers",
-        "ACTIVE": "Active suppliers",
-        "ACTIVE_TREND": "{{pct}}% of the directory",
-        "PENDING": "Pending validation"
+        "TOTAL": "Suppliers",
+        "SCOPE_ACTIVE": "active only",
+        "WITH_IBAN": "With IBAN",
+        "WITH_TVA": "With VAT number",
+        "COUNTRIES": "Countries covered",
+        "PCT_OF_BASE": "{{pct}}% of the directory"
+      },
+      "CARD": {
+        "COUNTRY": "Country",
+        "TVA": "VAT number",
+        "IBAN": "IBAN",
+        "NO_IBAN": "Not provided",
+        "TAX_ID": "Tax ID",
+        "SEE_FILE": "View file"
       },
       "TABLE": {
-        "CODE": "Code",
-        "NAME": "Name",
+        "NAME": "Supplier",
         "COUNTRY": "Country",
-        "TVA": "VAT No.",
+        "TVA": "VAT number",
+        "IBAN": "IBAN",
         "STATUS": "Status",
+        "VIEW": "View file",
         "EMPTY": "No supplier found."
       },
-      "EMPTY_MOBILE": "No supplier found",
-      "STATUS_ACTIVE": "ACTIVE",
-      "STATUS_INACTIVE": "INACTIVE",
-      "TVA_PREFIX": "VAT {{tva}}",
-      "DETAIL": {
-        "EDIT": "Edit",
-        "MGMT_ALERT": "MANAGEMENT ALERT",
-        "INACTIVE_MSG": "This supplier is inactive. No new transaction can be initiated without reactivation.",
-        "BANK_DETAILS": "BANK DETAILS",
-        "SECURE": "SECURED",
-        "IBAN_MAIN": "MAIN IBAN",
-        "NO_IBAN": "No IBAN recorded",
-        "HIDE": "HIDE",
-        "REVEAL": "REVEAL",
-        "CONFIG": "CONFIGURATION",
-        "COUNTRY": "COUNTRY",
-        "TVA": "VAT No.",
-        "TVA_UNIQUE_ACTIVE": "Single VAT Active",
-        "TVA_UNIQUE_DESC": "Automatic compliance check enabled for incoming invoices.",
-        "HISTORY": "HISTORY",
-        "DEACTIVATE": "DEACTIVATE",
-        "REACTIVATE": "REACTIVATE",
-        "NONE_SELECTED": "No supplier selected",
-        "NONE_SELECTED_HINT": "Click a supplier in the list to view its details"
-      },
-      "TOGGLE": {
-        "DEACTIVATE_TITLE": "Deactivate supplier",
-        "REACTIVATE_TITLE": "Reactivate supplier",
-        "CANCEL": "Cancel",
-        "CONFIRM": "Confirm",
-        "DEACTIVATE_MSG": "will be deactivated. No new transaction can be created.",
-        "REACTIVATE_MSG": "will be reactivated and available for new transactions."
-      },
-      "CREATE": {
-        "NAME": "Name",
-        "NAME_PLACEHOLDER": "Supplier name",
-        "REQUIRED": "This field is required.",
+      "ERROR_PAYS": "Entity not found. Reload the page.",
+      "ERROR_LOAD": "Unable to load suppliers."
+    },
+    "DETAIL": {
+      "LOADING": "Loading supplier file…",
+      "LOAD_ERROR": "Unable to load this supplier.",
+      "ACTION_ERROR": "The action could not be completed.",
+      "IBAN_ERROR": "Unable to display the full IBAN.",
+      "BACK": "Suppliers",
+      "BACK_TO_LIST": "Back to the list",
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "INTERCOMPANY": "Intercompany",
+      "INFO": {
+        "CODE": "Code",
+        "SUPPLIER_CODE": "Internal code",
         "COUNTRY": "Country",
-        "COUNTRY_SELECT": "Select a country…",
+        "COUNTRY_ISO": "Country code",
+        "CREATED_AT": "Created on",
         "TVA": "VAT number",
-        "TVA_PLACEHOLDER": "Single VAT number",
-        "IBAN": "IBAN",
-        "IBAN_PLACEHOLDER": "FR76 3000 1234 5678…",
-        "TVA_UNIQUE": "Enable Single VAT",
-        "TVA_UNIQUE_DESC": "Automatic VAT compliance check",
-        "NOTES": "Notes"
+        "TAX_ID": "Tax ID"
       },
-      "ERROR_PAYS": "Country not found. Reload the page.",
-      "ERROR_CREATE": "Error while creating."
+      "BANK_DETAILS": "Bank details",
+      "SECURE": "Secure",
+      "IBAN_MAIN": "Primary IBAN",
+      "NO_IBAN": "No IBAN on record.",
+      "REVEAL": "Reveal IBAN",
+      "HIDE": "Hide",
+      "FISCAL": "Tax information",
+      "INACTIVE_TITLE": "Supplier deactivated",
+      "INACTIVE_MSG": "It no longer appears in the list or in search, and no new spend should be attached to it. Reactivation is not available.",
+      "DEACTIVATE": "Deactivate supplier",
+      "DEACTIVATE_TITLE": "Deactivate supplier",
+      "DEACTIVATE_MSG": "{{name}} will be deactivated and will leave the directory: it will not reappear in the list or in search, and this cannot be undone from the application.",
+      "DEACTIVATE_CONFIRM": "Deactivate"
     },
     "NEW": {
+      "TITLE": "New supplier",
+      "SUBTITLE": "Three steps: identification, tax details, bank details.",
+      "BREADCRUMB_ROOT": "Suppliers",
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "PROGRESS": "Progress",
+      "STEP_OF": "Step {{current}} of {{total}}",
       "STEPS": {
         "IDENTIFICATION": "Identification",
-        "FISCAL": "Fiscal information",
+        "FISCAL": "Tax information",
         "BANK": "Bank details"
       },
-      "TIPS": {
-        "IDENTIFICATION": "Enter the official company name and country of registration. These fields are required.",
-        "FISCAL": "The intra-community VAT number is required for VAT-liable exchanges. Single VAT enables the automatic compliance check.",
-        "BANK": "The IBAN is stored securely and masked by default. It can only be revealed by an authorized user."
-      },
-      "BREADCRUMB_ROOT": "Suppliers",
-      "BREADCRUMB_CURRENT": "New Supplier",
-      "TITLE": "Register a new supplier",
-      "STEP_OF": "Step {{current}} of {{total}}",
-      "COMPANY_NAME": "Company name",
+      "COMPANY_NAME": "Legal name",
       "COMPANY_NAME_PLACEHOLDER": "Official supplier name",
-      "REQUIRED": "This field is required.",
-      "COUNTRY": "Country",
+      "COUNTRY": "Country of registration",
       "COUNTRY_SELECT": "Select a country…",
       "TVA": "VAT number",
-      "TVA_PLACEHOLDER": "e.g. TN12345678",
-      "TVA_UNIQUE": "Enable Single VAT",
-      "TVA_UNIQUE_DESC": "Automatic VAT compliance check on incoming invoices",
+      "TVA_PLACEHOLDER": "FR12345678901",
+      "TVA_HINT": "Must be unique: an already-used number makes the creation fail.",
+      "TAX_ID": "Tax ID",
+      "TAX_ID_PLACEHOLDER": "Local tax identifier",
       "IBAN": "IBAN",
       "IBAN_PLACEHOLDER": "FR76 3000 1234 5678…",
-      "IBAN_HINT": "Stored securely — masked by default",
-      "NOTES": "Internal notes",
-      "NOTES_PLACEHOLDER": "Internal information about this supplier…",
+      "IBAN_HINT": "Stored masked. Only a user with the cost-management right can display it in full.",
+      "BADGE_IBAN": "IBAN provided",
+      "REQUIRED": "This field is required.",
       "BACK": "Back",
       "CANCEL": "Cancel",
-      "CREATE": "Create supplier",
       "NEXT": "Next",
-      "PROGRESS": "Progress",
-      "SUMMARY": "Summary",
-      "SUMMARY_COMPANY": "Company name",
-      "SUMMARY_COUNTRY": "Country",
-      "SUMMARY_TVA": "VAT No.",
-      "SUMMARY_TVA_UNIQUE": "Single VAT",
-      "SUMMARY_ACTIVATED": "Enabled",
-      "ERROR_PAYS": "Country not found. Reload the page.",
-      "ERROR_CREATE": "Error while creating."
+      "CREATE": "Create supplier",
+      "ERROR_PAYS": "Entity not found. Reload the page.",
+      "ERROR_CREATE": "Error while creating the supplier."
     }
   },
   "ADMIN": {
@@ -2944,7 +2931,8 @@
       "LISTS": "Configurable lists",
       "FOREX": "Exchange rates",
       "FOREX_API": "Forex API",
-      "PERMISSIONS": "Permissions"
+      "PERMISSIONS": "Permissions",
+      "REMINDERS": "Reminders"
     },
     "LISTS": {
       "LOADING_TYPES": "Loading types…",
@@ -3041,6 +3029,46 @@
       "SUCCESS_SAVED": "Configuration saved.",
       "ERR_SAVE": "Save error.",
       "ERR_REFRESH": "Error during refresh."
+    },
+    "REMINDERS": {
+      "INTRO": "These stages drive the collection schedule for every invoice: the generator applies them to each invoice's due date, and the daily scheduler sends the messages to the listed roles. A change applies to new invoices and to any invoice whose due date changes; reminders already sent are untouched.",
+      "SECTION_TITLE": "Collection schedule",
+      "ADD": "Add a stage",
+      "EMPTY": "No stage configured — no reminder will be scheduled.",
+      "COL_OFFSET": "Timing",
+      "COL_RULE": "Stage",
+      "COL_ROLES": "Recipients",
+      "COL_SCOPE": "Scope",
+      "COL_STATE": "State",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "CLIENT": "Client",
+      "DELETE": "Delete",
+      "ORPHAN_HINT": "No user holds this role: this stage will have no internal recipient.",
+      "NEW_TITLE": "New stage",
+      "EDIT_TITLE": "Edit stage",
+      "FIELD_CODE": "Code",
+      "CODE_HINT": "Technical key, uppercase. It is written on every reminder this stage produces.",
+      "CODE_LOCKED": "Locked: reminders already carry this code and would lose their label.",
+      "FIELD_LABEL_FR": "Label (French)",
+      "FIELD_LABEL_EN": "Label (English)",
+      "FIELD_OFFSET": "Offset in days",
+      "OFFSET_HINT": "Relative to the invoice due date. Negative = before the due date.",
+      "FIELD_ROLES": "Roles involved",
+      "ROLES_PLACEHOLDER": "Select one or more roles…",
+      "ROLES_HINT": "People holding these roles will receive the message. The list comes from roles actually present in the directory.",
+      "FIELD_NOTIFY_CLIENT": "Also send to the client",
+      "NOTIFY_CLIENT_HINT": "The client contact is added as a recipient. Leave off for an internal stage.",
+      "FIELD_SUBJECT": "Message subject",
+      "SUBJECT_PLACEHOLDER": "Reminder — invoice {invoice}",
+      "TEMPLATE_HINT": "Leave empty for a subject built from the label.",
+      "FIELD_BODY": "Message body",
+      "BODY_HINT": "Leave empty for a standard body covering the invoice, client, due date and delay.",
+      "FIELD_ACTIVE": "Stage active",
+      "ACTIVE_HINT": "An inactive stage is no longer scheduled, but reminders already sent stay readable.",
+      "ERROR_LOAD": "Unable to load the reminder stages.",
+      "ERROR_SAVE": "Unable to save this stage.",
+      "ERROR_DELETE": "Unable to delete this stage."
     }
   },
   "ENUMS": {

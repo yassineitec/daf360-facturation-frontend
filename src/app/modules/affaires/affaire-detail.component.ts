@@ -1561,7 +1561,7 @@ export class AffaireDetailComponent implements OnInit {
   }
 
   goToPayments(): void {
-    this.router.navigate(['../../payments'], { relativeTo: this.route, queryParams: { affaire: this.numId } });
+    this.router.navigate(['../../recouvrement'], { relativeTo: this.route, queryParams: { affaire: this.numId } });
   }
 
   onTsFormClosed(saved: boolean): void {

@@ -297,7 +297,7 @@ export class TreasuryDashboardComponent implements OnInit {
   /** Seules les factures ont une fiche à ouvrir — un jalon et un coût n'en ont pas ici. */
   onFlowClick(row: TableRow): void {
     if (row['_source'] !== 'INVOICE') return;
-    this.router.navigate(['../payments', row['_id']], { relativeTo: this.route });
+    this.router.navigate(['../recouvrement', row['_id']], { relativeTo: this.route });
   }
 
   // ═══ Chargement ═══════════════════════════════════════════════════════════

@@ -6,7 +6,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { AgingRow } from '../payment.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { formatDate, initials, reminderLabelKey, retardVariant } from '../payments-display';
+import { formatDate, initials, reminderLabel, retardVariant } from '../payments-display';
 
 /**
  * List view of `/finance/payments` on the house table style (UI-PLAYBOOK §6b): no
@@ -69,11 +69,10 @@ export class AgingTableSectionComponent {
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
-    this.translate.currentLang();
-    const t = (key: string) => this.translate.instant(key);
+    const lang = this.translate.currentLang();
 
     return this.agingRows().map(row => {
-      const reminderKey = reminderLabelKey(row.lastReminderType);
+      const reminder = reminderLabel(row, lang);
       return {
         id: row.invoiceId,
         client: {
@@ -83,7 +82,7 @@ export class AgingTableSectionComponent {
         } satisfies AvatarCell,
         invoice: row.invoiceNumber ?? '—',
         amount:  this.currency.transform(row.montantTtc, row.devise),
-        due:     formatDate(row.dateEcheance),
+        due:     formatDate(row.dateEcheance, lang),
         daysLate: {
           // An on-time invoice still gets a badge rather than a bare dash, so the
           // column reads as one thing at a glance.
@@ -92,8 +91,8 @@ export class AgingTableSectionComponent {
         } satisfies BadgeCell,
 
         // Rendered by the projected cell above.
-        _reminderLabel: reminderKey ? t(reminderKey) : '—',
-        _reminderDate:  row.lastReminderSentAt ? formatDate(row.lastReminderSentAt) : '',
+        _reminderLabel: reminder ?? '—',
+        _reminderDate:  row.lastReminderSentAt ? formatDate(row.lastReminderSentAt, lang) : '',
         _raw: row,
       };
     });

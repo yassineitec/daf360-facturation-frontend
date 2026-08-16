@@ -60,8 +60,23 @@ export interface InvoiceDetail extends InvoiceListItem {
  */
 export interface ReminderDto {
   id:               number;
-  invoiceId:        number;
+  /** Code de la règle qui a produit ce palier — la clé, pas un libellé. */
   reminderType:     string;
+  invoiceId:        number;
+  /**
+   * Libellés portés par la règle. `null` quand plus aucune règle ne porte le code —
+   * relance envoyée sous un ancien échéancier : l'écran retombe alors sur `reminderType`.
+   * Les deux langues voyagent parce que le service n'a pas de locale (voir
+   * `ReminderResponseDto`).
+   */
+  labelFr:          string | null;
+  labelEn:          string | null;
+  /**
+   * Décalage signé du palier, `null` si le code n'a plus de règle. Le nombre brut : la
+   * lettre elle-même change de langue (« J+30 » / « D+30 »), donc la mise en forme
+   * appartient à l'écran — voir `offsetLabel()` dans `payments-display.ts`.
+   */
+  offsetDays:       number | null;
   scheduledDate:    string;
   sentAt:           string | null;
   isSent:           boolean;

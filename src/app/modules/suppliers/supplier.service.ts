@@ -26,16 +26,25 @@ export class SupplierService {
     return this.http.get<PageResponse<SupplierDto>>(`${this.base}/search`, { params: p });
   }
 
-  /** Full list for stats — uses GET /?paysId= (returns List<SupplierDto>) */
+  /**
+   * Statistiques du référentiel, comptées côté client sur `GET /?paysId=`.
+   *
+   * ⚠️ Cet endpoint ne renvoie **que les fournisseurs actifs**
+   * (`findByPaysIdAndIsActiveTrueOrderByNameAsc`). Compter `isActive` dessus ne pouvait
+   * donc produire que `active === total` et `pendingValidation === 0` : on compte
+   * maintenant ce que la réponse contient réellement — complétude bancaire, complétude
+   * fiscale, couverture géographique.
+   */
   getStats(paysId: number): Observable<SupplierStatsDto> {
     const p = new HttpParams().set('paysId', String(paysId));
     return this.http.get<SupplierDto[]>(this.base, { params: p }).pipe(
       map(list => ({
-        total: list.length,
-        active: list.filter(s => s.isActive).length,
-        pendingValidation: list.filter(s => !s.isActive).length,
+        total:     list.length,
+        withIban:  list.filter(s => !!s.ibanMasked).length,
+        withTva:   list.filter(s => !!s.numeroTva).length,
+        countries: new Set(list.map(s => s.paysCode).filter(Boolean)).size,
       })),
-      catchError(() => of({ total: 0, active: 0, pendingValidation: 0 } as SupplierStatsDto)),
+      catchError(() => of({ total: 0, withIban: 0, withTva: 0, countries: 0 } as SupplierStatsDto)),
     );
   }
 
@@ -51,7 +60,14 @@ export class SupplierService {
     return this.http.patch<SupplierDto>(`${this.base}/${id}`, dto);
   }
 
-  /** Deactivate — backend has DELETE /{id} only; reactivate not yet implemented */
+  /**
+   * Désactivation (`DELETE /{id}` → `isActive = false`).
+   *
+   * Il n'y a **pas** de réactivation : aucun endpoint ne remet `isActive` à vrai, et de
+   * toute façon ni la liste ni la recherche ne renvoient les inactifs, donc un
+   * fournisseur désactivé sort du référentiel visible. L'ancienne fiche proposait un
+   * bouton « Réactiver » qui ne pouvait jamais s'afficher ni fonctionner.
+   */
   deactivate(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
   }

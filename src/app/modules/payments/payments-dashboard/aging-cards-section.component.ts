@@ -3,7 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { AgingRow } from '../payment.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { formatDate, initials, isLate, reminderLabelKey } from '../payments-display';
+import { formatDate, initials, isLate, reminderLabel } from '../payments-display';
 
 /**
  * Card view of `/finance/payments` — one `daf-entity-card` per unpaid invoice.
@@ -63,12 +63,12 @@ export class AgingCardsSectionComponent {
   );
 
   protected readonly cards = computed<{ id: number; options: EntityCardOptions }[]>(() => {
-    this.translate.currentLang();
+    const lang = this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
 
     return this.agingRows().map(row => {
       const late = isLate(row);
-      const reminderKey = reminderLabelKey(row.lastReminderType);
+      const reminder = reminderLabel(row, lang);
       return {
         id: row.invoiceId,
         options: {
@@ -93,9 +93,9 @@ export class AgingCardsSectionComponent {
           metricsColumns: 2,
           metrics: [
             { label: t('PAYMENTS.DASHBOARD.TABLE.AMOUNT'),          value: this.currency.transform(row.montantTtc, row.devise) },
-            { label: t('PAYMENTS.DASHBOARD.TABLE.DUE'),             value: formatDate(row.dateEcheance) },
-            { label: t('PAYMENTS.DASHBOARD.TABLE.REMINDER_STATUS'), value: reminderKey ? t(reminderKey) : '—' },
-            { label: t('PAYMENTS.DASHBOARD.CARD.LAST_REMINDER'),    value: row.lastReminderSentAt ? formatDate(row.lastReminderSentAt) : '—' },
+            { label: t('PAYMENTS.DASHBOARD.TABLE.DUE'),             value: formatDate(row.dateEcheance, lang) },
+            { label: t('PAYMENTS.DASHBOARD.TABLE.REMINDER_STATUS'), value: reminder ?? '—' },
+            { label: t('PAYMENTS.DASHBOARD.CARD.LAST_REMINDER'),    value: row.lastReminderSentAt ? formatDate(row.lastReminderSentAt, lang) : '—' },
           ],
           viewLabel: t('PAYMENTS.DASHBOARD.TABLE.VIEW'),
         } satisfies EntityCardOptions,

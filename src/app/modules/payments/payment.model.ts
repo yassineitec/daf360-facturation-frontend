@@ -23,7 +23,16 @@ export interface AgingRow {
   devise:             string;
   dateEcheance:       string | null;
   joursRetard:        number;
+  /** Code de la règle du dernier palier envoyé — la clé, pas un libellé. */
   lastReminderType:   string | null;
+  /**
+   * Libellés portés par la règle du palier. `null` quand plus aucune règle ne porte le
+   * code (relance envoyée sous un ancien échéancier) : l'écran retombe alors sur
+   * `lastReminderType`. Les paliers étant configurables, leur liste n'est plus connue à
+   * la compilation et ne peut plus vivre dans un fichier i18n.
+   */
+  lastReminderLabelFr: string | null;
+  lastReminderLabelEn: string | null;
   lastReminderSentAt: string | null;
   statut:             string;
 }

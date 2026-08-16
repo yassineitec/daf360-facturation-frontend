@@ -1,173 +1,179 @@
-import {
-  Component, OnInit, inject, signal, computed, DestroyRef,
-  ViewChild, TemplateRef,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { Router } from '@angular/router';
-import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { SupplierService }   from '../supplier.service';
-import { ClientService }     from '../../clients/client.service';
-import { PermissionDirective } from '../../../shared/permission.directive';
-import { SupplierDto, SupplierStatsDto, CreateSupplierRequest, PageResponse } from '../supplier.model';
-import { PaysRefDto } from '../../affaires/affaire.model';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  DataTableComponent, DafCellDirective, TableColumn, TableRow, TableConfig,
-  PaginationComponent,
-  ToolbarComponent, ToolbarAction,
-  StatusBadgeComponent as DafBadgeComponent, BadgeOptions,
-  CardComponent,
-  FormFieldComponent,
-  SelectComponent, SelectOption,
-  ModalService, ModalRef,
-  ButtonComponent,
+  ButtonComponent, FieldMessageComponent, MetricCardComponent, MetricCardOptions,
+  MetricDelta, PageComponent, PageHeaderComponent, PaginationComponent,
+  SearchToolbarComponent, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
-import { AffaireKpiCardComponent } from '../../affaires/components/affaire-kpi-card.component';
+import { SupplierService } from '../supplier.service';
+import { ClientService } from '../../clients/client.service';
+import { SupplierDto, SupplierStatsDto } from '../supplier.model';
+import { PermissionDirective } from '../../../shared/permission.directive';
+import { SuppliersCardsSectionComponent } from './suppliers-cards-section.component';
+import { SuppliersTableSectionComponent } from './suppliers-table-section.component';
 
+type ViewMode = 'grid' | 'list';
+
+/**
+ * Liste des fournisseurs, refondue sur le squelette des autres listes finance.
+ *
+ * Ce qui a disparu :
+ * - le **panneau scindé** (table à gauche, fiche à droite). Une fiche coincée dans un
+ *   tiers de page ne pouvait ni respirer ni s'ouvrir en propre : elle vit maintenant à
+ *   `/finance/suppliers/:id`, comme les fiches facture, client et recouvrement.
+ * - la **liste mobile dupliquée** (`.mob-list` / `.mob-row`), qui redessinait chaque
+ *   fournisseur dans un second balisage sous 640 px, avec ses propres couleurs de
+ *   statut — la vue cartes remplit ce rôle à toutes les largeurs.
+ * - la **barre d'outils mobile maison** (`matchMedia`, `mobileSearchOpen`, trois
+ *   boutons icône) : `daf-search-toolbar` est déjà responsive.
+ * - la **modale de création en ligne** (`createTpl` et ses sept signaux `create*`),
+ *   morte depuis que `openCreateModal()` navigue vers l'assistant `/new`.
+ * - les 244 lignes de SCSS et l'en-tête maison à icône (`daf-page-header` n'en prend
+ *   pas, par principe — cf. 4.11.0).
+ *
+ * Ce qui reste ici : la requête, la recherche et la pagination. Les deux vues sont des
+ * composants sans état (UI-PLAYBOOK §8b).
+ */
 @Component({
   selector: 'app-supplier-list',
-  standalone: true,
   imports: [
-    PermissionDirective,
-    DataTableComponent, DafCellDirective,
-    PaginationComponent, ToolbarComponent,
-    DafBadgeComponent, CardComponent, FormFieldComponent, SelectComponent,
-    ButtonComponent, AffaireKpiCardComponent, TranslatePipe,
+    TranslatePipe, PermissionDirective,
+    PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
+    SearchToolbarComponent, PaginationComponent, FieldMessageComponent,
+    SuppliersCardsSectionComponent, SuppliersTableSectionComponent,
   ],
+  host: { class: 'block' },
   templateUrl: './supplier-list.component.html',
-  styleUrl:    './supplier-list.component.scss',
 })
 export class SupplierListComponent implements OnInit {
   private readonly svc        = inject(SupplierService);
   private readonly clientSvc  = inject(ClientService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly modal      = inject(ModalService);
   private readonly router     = inject(Router);
+  private readonly route      = inject(ActivatedRoute);
   private readonly translate  = inject(TranslateService);
 
-  private readonly search$ = new Subject<string>();
+  paysId = signal(0);
 
-  @ViewChild('createTpl') createTpl!: TemplateRef<any>;
-  @ViewChild('toggleTpl') toggleTpl!: TemplateRef<any>;
-  private createRef: ModalRef | null = null;
-  private toggleRef: ModalRef | null = null;
+  suppliers = signal<SupplierDto[]>([]);
+  stats     = signal<SupplierStatsDto>({ total: 0, withIban: 0, withTva: 0, countries: 0 });
+  error     = signal<string | null>(null);
 
-  paysId           = signal<number>(0);
-  suppliers        = signal<PageResponse<SupplierDto> | null>(null);
-  selectedSupplier = signal<SupplierDto | null>(null);
-  isLoading        = signal(true);
-  searchTerm       = signal('');
-  currentPage      = signal(0);
-  stats            = signal<SupplierStatsDto>({ total: 0, active: 0, pendingValidation: 0 });
+  totalElements = signal(0);
+  totalPages    = signal(0);
+  currentPage   = signal(0);
+  pageSize      = signal(20);
 
-  ibanRevealed    = signal(false);
-  ibanRaw         = signal<string | null>(null);
-  isRevealLoading = signal(false);
+  /** `firstLoad` pilote le squelette de page entière, `loading` seulement la section (§5). */
+  firstLoad = signal(true);
+  loading   = signal(false);
 
-  private readonly mobileQuery = window.matchMedia('(max-width: 640px)');
-  readonly isMobile = signal(this.mobileQuery.matches);
-  readonly mobileSearchOpen = signal(false);
+  searchText = signal('');
+  viewMode   = signal<ViewMode>('grid');
 
-  paysList   = signal<PaysRefDto[]>([]);
-  isSaving   = signal(false);
-  saveError  = signal<string | null>(null);
-  isToggling = signal(false);
+  // ═══ Indicateurs ══════════════════════════════════════════════════════════
 
-  // Create form signals
-  createName            = signal<string | number | null>('');
-  createPaysCode        = signal('');
-  createPaysLabel       = signal('');
-  createNumeroTva       = signal<string | number | null>('');
-  createIban            = signal<string | number | null>('');
-  createTvaUniqueActive = signal(false);
-  createNotes           = signal<string | number | null>('');
-  createTouched         = signal(false);
+  /**
+   * Classes Tailwind littérales et complètes sur des jetons de la lib (UI-PLAYBOOK
+   * §3/§4). L'ancienne page passait par `app-affaire-kpi-card` et son `variant="green"` /
+   * `"red"`, une échelle de couleurs propre au module affaires que rien d'autre en
+   * finance ne parle.
+   */
+  readonly kpiTotal     : MetricCardOptions = { icon: 'storefront',      iconColor: 'text-primary',   iconBg: 'bg-primary/10'   };
+  readonly kpiIban      : MetricCardOptions = { icon: 'account_balance', iconColor: 'text-teal',      iconBg: 'bg-teal/10'      };
+  readonly kpiTva       : MetricCardOptions = { icon: 'receipt_long',    iconColor: 'text-secondary', iconBg: 'bg-secondary/10' };
+  readonly kpiCountries : MetricCardOptions = { icon: 'public',          iconColor: 'text-tertiary',  iconBg: 'bg-tertiary/10'  };
 
-  readonly activePct = computed(() => {
+  /** Part des fournisseurs actifs disposant d'un IBAN — leur seule condition de paiement. */
+  readonly ibanPct = computed(() => {
     const s = this.stats();
-    return s.total > 0 ? Math.round((s.active / s.total) * 100) : 0;
+    return s.total > 0 ? Math.round((s.withIban / s.total) * 100) : 0;
   });
 
-  readonly totalPagesCount = computed(() => this.suppliers()?.totalPages ?? 0);
+  readonly tvaPct = computed(() => {
+    const s = this.stats();
+    return s.total > 0 ? Math.round((s.withTva / s.total) * 100) : 0;
+  });
 
-  readonly paysSelectOptions = computed<SelectOption[]>(() =>
-    this.paysList().map(p => ({ value: p.isoCode, label: `${p.isoCode} — ${p.frenchLabel}` }))
-  );
+  private pctDelta(pct: number): MetricDelta | null {
+    this.translate.currentLang();
+    if (!this.stats().total) return null;
+    return {
+      value: this.translate.instant('SUPPLIERS.LIST.KPI.PCT_OF_BASE', { pct }),
+      // Une complétude partielle n'est pas une bonne nouvelle : au-dessous de 100 %, il
+      // manque quelque chose pour payer ou pour déclarer.
+      direction: pct >= 100 ? 'up' : 'down',
+    };
+  }
 
-  readonly tableColumns = computed<TableColumn[]>(() => {
+  readonly ibanDelta = computed<MetricDelta | null>(() => this.pctDelta(this.ibanPct()));
+  readonly tvaDelta  = computed<MetricDelta | null>(() => this.pctDelta(this.tvaPct()));
+
+  /**
+   * Les tuiles viennent de `GET /suppliers?paysId=`, qui ne renvoie **que les actifs** —
+   * elles décrivent donc le référentiel utilisable, pas la page affichée ni le total
+   * historique. Le delta de la première tuile le dit, sinon on lit « 42 fournisseurs »
+   * comme un total.
+   */
+  readonly scopeDelta = computed<MetricDelta | null>(() => {
+    this.translate.currentLang();
+    return { value: this.translate.instant('SUPPLIERS.LIST.KPI.SCOPE_ACTIVE'), direction: 'neutral' };
+  });
+
+  readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'code',   label: this.translate.instant('SUPPLIERS.LIST.TABLE.CODE'),    type: 'custom' },
-      { key: 'name',   label: this.translate.instant('SUPPLIERS.LIST.TABLE.NAME'),    type: 'custom' },
-      { key: 'pays',   label: this.translate.instant('SUPPLIERS.LIST.TABLE.COUNTRY'), type: 'text' },
-      { key: 'tva',    label: this.translate.instant('SUPPLIERS.LIST.TABLE.TVA'),     type: 'custom' },
-      { key: 'statut', label: this.translate.instant('SUPPLIERS.LIST.TABLE.STATUS'),  type: 'custom', align: 'center' },
+      { id: 'grid', icon: 'grid_view',  tooltip: this.translate.instant('SUPPLIERS.LIST.VIEW_GRID') },
+      { id: 'list', icon: 'table_rows', tooltip: this.translate.instant('SUPPLIERS.LIST.VIEW_LIST') },
     ];
   });
 
-  readonly tableRows = computed(() =>
-    (this.suppliers()?.content ?? []).map(s => ({
-      id:     s.id,
-      code:   s.code ?? s.supplierCode ?? '—',
-      name:   s.name,
-      pays:   s.paysLabel ?? s.paysCode ?? '—',
-      tva:    s.numeroTva ?? null,
-      statut: s.isActive,
-      _raw:   s,
-    }))
-  );
-
-  readonly tableConfig = computed<TableConfig>(() => ({
-    hoverable:    true,
-    loading:      this.isLoading(),
-    emptyMessage: this.translate.instant('SUPPLIERS.LIST.TABLE.EMPTY'),
-    skeletonRows: 5,
-  }));
-
-  readonly toolbarActions: ToolbarAction[] = [];
-
-  constructor() {
-    this.mobileQuery.addEventListener('change', e => this.isMobile.set(e.matches));
-  }
+  // ═══ Chargement ═══════════════════════════════════════════════════════════
 
   ngOnInit(): void {
-    this.clientSvc.getPays().pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(list => this.paysList.set(list));
-
     this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: id => {
         if (id && id > 0) {
           this.paysId.set(id);
           this.loadSuppliers();
           this.loadStats();
+        } else {
+          this.firstLoad.set(false);
+          this.error.set(this.translate.instant('SUPPLIERS.LIST.ERROR_PAYS'));
         }
       },
-      error: () => this.isLoading.set(false),
-    });
-
-    this.search$.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntilDestroyed(this.destroyRef),
-    ).subscribe(term => {
-      this.searchTerm.set(term);
-      this.currentPage.set(0);
-      this.loadSuppliers();
+      error: () => {
+        this.firstLoad.set(false);
+        this.error.set(this.translate.instant('SUPPLIERS.LIST.ERROR_PAYS'));
+      },
     });
   }
 
   loadSuppliers(): void {
     const paysId = this.paysId();
     if (!paysId) return;
-    this.isLoading.set(true);
+    this.loading.set(true);
+    this.error.set(null);
     this.svc.getSuppliers({
       paysId,
-      search: this.searchTerm() || undefined,
+      search: this.searchText().trim() || undefined,
       page:   this.currentPage(),
-      size:   20,
+      size:   this.pageSize(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next:  r  => { this.suppliers.set(r); this.isLoading.set(false); },
-      error: () => this.isLoading.set(false),
+      next: r => {
+        this.suppliers.set(r.content);
+        this.totalElements.set(r.totalElements);
+        this.totalPages.set(r.totalPages);
+        this.loading.set(false);
+        this.firstLoad.set(false);
+      },
+      error: () => {
+        this.error.set(this.translate.instant('SUPPLIERS.LIST.ERROR_LOAD'));
+        this.loading.set(false);
+        this.firstLoad.set(false);
+      },
     });
   }
 
@@ -178,136 +184,35 @@ export class SupplierListComponent implements OnInit {
       .subscribe(s => this.stats.set(s));
   }
 
-  onSearch(term: string): void { this.search$.next(term); }
-
-  onRowClick(row: TableRow): void { this.selectSupplier(row['_raw'] as SupplierDto); }
-
-  onToolbarAction(id: string): void { if (id === 'new') this.openCreateModal(); }
-
-  selectSupplier(s: SupplierDto): void {
-    this.selectedSupplier.set(s);
-    this.ibanRevealed.set(false);
-    this.ibanRaw.set(null);
-  }
-
-  revealIban(): void {
-    const s = this.selectedSupplier();
-    if (!s) return;
-    this.isRevealLoading.set(true);
-    this.svc.revealIban(s.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next:  r  => { this.ibanRaw.set(r.iban); this.ibanRevealed.set(true); this.isRevealLoading.set(false); },
-      error: () => this.isRevealLoading.set(false),
-    });
-  }
-
-  hideIban(): void {
-    this.ibanRevealed.set(false);
-    this.ibanRaw.set(null);
-  }
-
-  openToggleModal(): void {
-    const s = this.selectedSupplier();
-    if (!s) return;
-    this.toggleRef = this.modal.open({
-      title:           this.translate.instant(s.isActive ? 'SUPPLIERS.LIST.TOGGLE.DEACTIVATE_TITLE' : 'SUPPLIERS.LIST.TOGGLE.REACTIVATE_TITLE'),
-      body:            this.toggleTpl,
-      size:            'sm',
-      closeOnBackdrop: true,
-      buttons: [
-        { label: this.translate.instant('SUPPLIERS.LIST.TOGGLE.CANCEL'),  variant: 'secondary', action: r => r.close() },
-        { label: this.translate.instant('SUPPLIERS.LIST.TOGGLE.CONFIRM'), variant: 'primary', action: _r => this.confirmToggle() },
-      ],
-    });
-  }
-
-  confirmToggle(): void {
-    const s = this.selectedSupplier();
-    if (!s || !s.isActive) return;
-    this.isToggling.set(true);
-    this.svc.deactivate(s.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.selectedSupplier.set({ ...s, isActive: false });
-        this.toggleRef?.close();
-        this.isToggling.set(false);
-        this.loadSuppliers();
-        this.loadStats();
-      },
-      error: () => this.isToggling.set(false),
-    });
-  }
-
-  openCreateModal(): void {
-    this.router.navigate(['/finance/suppliers/new']);
-  }
-
-  onPaysChange(event: Event): void {
-    this.onPaysCodeChange((event.target as HTMLSelectElement).value);
-  }
-
-  onPaysCodeChange(code: string): void {
-    this.createPaysCode.set(code);
-    const pays = this.paysList().find(p => p.isoCode === code);
-    this.createPaysLabel.set(pays?.frenchLabel ?? '');
-  }
-
-  onTvaUniqueChange(event: Event): void {
-    this.createTvaUniqueActive.set((event.target as HTMLInputElement).checked);
-  }
-
-  saveNewSupplier(): void {
-    this.createTouched.set(true);
-    if (!this.createName() || !this.createPaysCode()) return;
-    const paysId = this.paysId();
-    if (!paysId) { this.saveError.set(this.translate.instant('SUPPLIERS.LIST.ERROR_PAYS')); return; }
-    this.isSaving.set(true);
-    this.saveError.set(null);
-    const dto: CreateSupplierRequest = {
-      paysId,
-      name:            String(this.createName()),
-      paysCode:        this.createPaysCode(),
-      paysLabel:       this.createPaysLabel()  || undefined,
-      numeroTva:       this.createNumeroTva()  ? String(this.createNumeroTva())  : undefined,
-      iban:            this.createIban()       ? String(this.createIban())       : undefined,
-      tvaUniqueActive: this.createTvaUniqueActive(),
-      notes:           this.createNotes()      ? String(this.createNotes())      : undefined,
-    };
-    this.svc.create(dto).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: s => {
-        this.isSaving.set(false);
-        this.createRef?.close();
-        this.resetCreateForm();
-        this.loadSuppliers();
-        this.loadStats();
-        this.selectSupplier(s);
-      },
-      error: err => {
-        this.isSaving.set(false);
-        this.saveError.set(err.error?.message ?? this.translate.instant('SUPPLIERS.LIST.ERROR_CREATE'));
-      },
-    });
-  }
-
-  private resetCreateForm(): void {
-    this.createName.set('');
-    this.createPaysCode.set('');
-    this.createPaysLabel.set('');
-    this.createNumeroTva.set('');
-    this.createIban.set('');
-    this.createTvaUniqueActive.set(false);
-    this.createNotes.set('');
-    this.createTouched.set(false);
-    this.saveError.set(null);
-  }
-
-  goPage(p: number): void {
-    const page = this.suppliers();
-    if (!page) return;
-    if (p < 0 || p >= page.totalPages) return;
-    this.currentPage.set(p);
+  /**
+   * Recherche côté serveur : `GET /suppliers/search` prend `q`. L'anti-rebond est celui
+   * de `daf-search-toolbar` — le `Subject` + `debounceTime` + `distinctUntilChanged`
+   * qu'on tenait à la main faisait exactement cela.
+   */
+  onSearchTextChange(value: string): void {
+    this.searchText.set(value);
+    this.currentPage.set(0);
     this.loadSuppliers();
   }
 
-  activeBadgeOptions(isActive: boolean): BadgeOptions {
-    return { variant: isActive ? 'success' : 'danger', pill: true };
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages()) return;
+    this.currentPage.set(page);
+    this.loadSuppliers();
+  }
+
+  /** `pageSizeChange` arrive seul — la page décide de revenir à la première (§7). */
+  onPageSize(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(0);
+    this.loadSuppliers();
+  }
+
+  navigateToDetail(id: number): void {
+    this.router.navigate([id], { relativeTo: this.route });
+  }
+
+  goToNewSupplier(): void {
+    this.router.navigate(['new'], { relativeTo: this.route });
   }
 }

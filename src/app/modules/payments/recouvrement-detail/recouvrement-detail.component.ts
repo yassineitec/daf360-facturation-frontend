@@ -21,7 +21,7 @@ import { STATUT_BADGE_VARIANT } from '../../invoicing/invoice-display';
 import { PaymentModalComponent } from '../../invoicing/payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
-import { formatDate, retardVariant } from '../payments-display';
+import { formatDate, offsetLabel, retardVariant } from '../payments-display';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -188,10 +188,10 @@ export class RecouvrementDetailComponent implements OnInit {
   readonly identityGridFields = computed<DetailField[]>(() => {
     const inv = this.invoice();
     if (!inv) return [];
-    this.translate.currentLang();
+    const lang = this.translate.currentLang();
     return [
-      { label: 'PAYMENTS.DETAIL.INFO.ISSUE_DATE', value: formatDate(inv.dateEmission) },
-      { label: 'PAYMENTS.DETAIL.INFO.DUE_DATE',   value: formatDate(inv.dateEcheance) },
+      { label: 'PAYMENTS.DETAIL.INFO.ISSUE_DATE', value: formatDate(inv.dateEmission, lang) },
+      { label: 'PAYMENTS.DETAIL.INFO.DUE_DATE',   value: formatDate(inv.dateEcheance, lang) },
       { label: 'PAYMENTS.DETAIL.INFO.CURRENCY',   value: inv.devise },
       {
         label: 'PAYMENTS.DETAIL.INFO.REMINDERS_STATE',
@@ -202,7 +202,7 @@ export class RecouvrementDetailComponent implements OnInit {
       },
       {
         label: 'PAYMENTS.DETAIL.INFO.LAST_SENT',
-        value: formatDate(this.lastSentAt()),
+        value: formatDate(this.lastSentAt(), lang),
       },
     ];
   });
@@ -276,7 +276,7 @@ export class RecouvrementDetailComponent implements OnInit {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     return [
-      { key: 'type',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_TYPE'),      type: 'text'   },
+      { key: 'type',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_TYPE'),      type: 'custom' },
       { key: 'scheduled', label: t('PAYMENTS.DETAIL.REMINDERS.COL_SCHEDULED'), type: 'text'   },
       { key: 'sent',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_SENT'),      type: 'text'   },
       { key: 'state',     label: t('PAYMENTS.DETAIL.REMINDERS.COL_STATUS'),    type: 'custom' },
@@ -284,17 +284,27 @@ export class RecouvrementDetailComponent implements OnInit {
   });
 
   readonly reminderRows = computed<TableRow[]>(() => {
-    this.translate.currentLang();
-    const t = (k: string) => this.translate.instant(k);
-    return this.reminders().map(r => ({
-      id:        r.id,
-      type:      t(`PAYMENTS.DASHBOARD.REMINDER.${r.reminderType}`),
-      scheduled: formatDate(r.scheduledDate),
-      sent:      formatDate(r.sentAt),
-      // Rendus par le gabarit projeté : la pastille et son motif de suspension.
-      _state:  r.isSent ? 'sent' : r.isSuspended ? 'suspended' : 'pending',
-      _reason: r.suspensionReason ?? '',
-    }));
+    const lang = this.translate.currentLang();
+    const t = (k: string, p?: Record<string, unknown>) => this.translate.instant(k, p);
+
+    return this.reminders().map(r => {
+      // Le libellé vient de la règle : les paliers sont configurables, leur liste n'est
+      // plus connue à la compilation. Sans règle, la relance vient d'un échéancier retiré
+      // depuis — elle est nommée comme telle, avec son code en second plan, plutôt
+      // qu'affichée sous la forme brute « J_PLUS_30 » ou effacée de l'historique.
+      const label = lang === 'en' ? r.labelEn : r.labelFr;
+      return {
+        id: r.id,
+        _label:   label ?? t('PAYMENTS.DETAIL.REMINDERS.RETIRED_STAGE'),
+        _code:    label ? '' : r.reminderType,
+        _offset:  offsetLabel(r.offsetDays, t),
+        scheduled: formatDate(r.scheduledDate, lang),
+        sent:      formatDate(r.sentAt, lang),
+        // Rendus par le gabarit projeté : la pastille et son motif de suspension.
+        _state:  r.isSent ? 'sent' : r.isSuspended ? 'suspended' : 'pending',
+        _reason: r.suspensionReason ?? '',
+      };
+    });
   });
 
   readonly reminderConfig = computed<TableConfig>(() => {
@@ -325,7 +335,7 @@ export class RecouvrementDetailComponent implements OnInit {
     const devise = this.invoice()?.devise ?? '';
     return this.payments().map(p => ({
       id:     p.id,
-      date:   formatDate(p.paymentDate),
+      date:   formatDate(p.paymentDate, this.translate.currentLang()),
       method: this.paymentModeLabel(p.paymentMethod),
       ref:    p.bankReference || '—',
       amount: this.currency.transform(p.amountLocal, p.currency || devise),

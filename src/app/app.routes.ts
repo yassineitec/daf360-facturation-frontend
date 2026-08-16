@@ -64,7 +64,11 @@ export const routes: Routes = [
           import('./modules/invoicing/invoicing.routes').then(m => m.INVOICING_ROUTES),
       },
       {
-        path: 'payments',
+        // L'URL porte le nom du module métier, pas celui de la table qu'il lit :
+        // l'écran s'appelle « Recouvrement » dans la barre, dans son titre et sur
+        // l'accueil, et `/finance/payments` était le dernier endroit à dire « Paiements ».
+        // `payments` reste en alias de redirection pour les liens déjà en circulation.
+        path: 'recouvrement',
         canActivate: [permissionGuard],
         data: { permissions: ['FACT_VIEW_PAYMENT', 'FACT_MANAGE_PAYMENT'] },
         loadChildren: () =>
@@ -138,7 +142,7 @@ export const routes: Routes = [
           import('./modules/home/home.component').then(m => m.HomeComponent),
       },
       { path: 'fournisseurs', redirectTo: 'suppliers', pathMatch: 'full' },
-      { path: 'recouvrement', redirectTo: 'payments',  pathMatch: 'full' },
+      { path: 'payments',     redirectTo: 'recouvrement', pathMatch: 'full' },
       { path: '', redirectTo: 'home', pathMatch: 'full' },
     ],
   },

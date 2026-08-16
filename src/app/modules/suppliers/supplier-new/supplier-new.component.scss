@@ -1,91 +1,22 @@
 @import '../../../shared/design-tokens';
-
 $tertiary:     var(--color-tertiary);
 $tertiary-hex: #00c1ad;
 
-:host { display: contents; }
+:host { display: block; }
 
-.wizard-page {
-  padding: 0 0 32px;
-  box-sizing: border-box;
-  min-height: calc(100vh - var(--shell-header-h, 64px) - 4rem);
-  display: flex;
-  flex-direction: column;
-}
-
-.wizard-layout {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 20px;
-  width: 100%;
-  align-items: start;
-  flex: 1;
-  min-height: 0;
-}
-
-// ── LEFT ─────────────────────────────────────────────────────────────────────
-.form-area {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.page-head {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  margin-bottom: 4px;
-
-  h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--color-on-surface);
-    line-height: 1.25;
-    margin: 0;
-  }
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.breadcrumb__parent {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #64748b;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-  text-decoration: none;
-  transition: color 0.15s;
-
-  &:hover { color: #0b1c30; text-decoration: underline; }
-}
-
-.breadcrumb__current {
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: #0b1c30;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-
-.page-sub {
-  font-size: 0.8125rem;
-  color: #64748b;
-  margin: 0;
-}
+// Meme coquille que l'assistant « Nouvelle facture », a l'identique et volontairement :
+// les deux assistants doivent avoir la meme carte, le meme bandeau d'etape et les memes
+// paliers de padding. Le jour ou la lib fournira un daf-form-card, les deux fichiers
+// disparaissent ensemble.
+//
+// Le squelette de page, le h1, le fil d'Ariane, la colonne de droite et la progression
+// appartiennent a daf-page / daf-page-header / daf-stepper : .wizard-page,
+// .wizard-layout, .form-area, .page-head, .field, .form-input, .form-select-wrap,
+// .toggle-*, .sidebar, .panel-*, .step-list, .step-item, .summary-* et .save-error sont
+// partis avec le balisage maison qu'elles habillaient — 523 lignes.
+// Ne reste que la carte de formulaire et son contenu, que la lib ne fournit pas.
 
 .form-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   background: $surface;
   border-radius: $radius-lg;
   border: 1px solid $border-soft;
@@ -95,15 +26,19 @@ $tertiary-hex: #00c1ad;
 .card-head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 24px 32px 20px;
+  gap: 18px;
+  padding: 36px 40px 28px;
   border-bottom: 1px solid $border-soft;
   background: rgba($tertiary-hex, 0.04);
 
+  @media (max-width: 1100px) { padding: 28px 32px 22px; }
+  @media (max-width: 768px)  { padding: 14px 16px; }
+  @media (max-width: 480px)  { padding: 12px; }
+
   &__icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
     background: rgba($tertiary-hex, 0.12);
     display: flex;
     align-items: center;
@@ -111,413 +46,36 @@ $tertiary-hex: #00c1ad;
     flex-shrink: 0;
     color: $tertiary;
 
-    .material-symbols-outlined { font-size: 22px; }
+    .material-symbols-outlined { font-size: 32px; }
+
+    @media (max-width: 768px) { width: 40px; height: 40px; border-radius: 10px; .material-symbols-outlined { font-size: 20px; } }
   }
 
   &__title {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #3e4945;
-    margin: 0 0 3px;
-    line-height: 1.3;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0b1c30;
+    margin: 0 0 5px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+
+    @media (max-width: 768px) { font-size: 1rem; }
   }
 
   &__sub {
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     color: #64748b;
     margin: 0;
+    line-height: 1.5;
+
+    @media (max-width: 768px) { font-size: 0.8125rem; }
   }
 }
 
 .step-body {
-  flex: 1;
-  padding: 28px 32px;
-}
+  padding: 36px 40px;
 
-@keyframes stepEnter {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0);    }
-}
-
-.step-enter {
-  animation: stepEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-// ── Form fields ───────────────────────────────────────────────────────────────
-.form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  label {
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: $text-body;
-  }
-
-  &--full { grid-column: 1 / -1; }
-}
-
-.req { color: #BA1A1A; }
-
-.form-input {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid $border;
-  border-radius: $radius-sm;
-  font-size: 0.875rem;
-  font-family: inherit;
-  background: $surface;
-  color: $text-dark;
-  box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
-
-  &:focus {
-    outline: none;
-    border-color: $tertiary;
-    box-shadow: 0 0 0 3px rgba($tertiary-hex, 0.12);
-  }
-
-  &.invalid { border-color: #BA1A1A; }
-
-  &::placeholder { color: $text-light; }
-}
-
-textarea.form-input {
-  resize: vertical;
-  min-height: 96px;
-}
-
-.form-select-wrap {
-  position: relative;
-
-  &::after {
-    content: 'expand_more';
-    font-family: 'Material Symbols Outlined';
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 18px;
-    color: $text-muted;
-    pointer-events: none;
-  }
-
-  select { appearance: none; padding-right: 36px; }
-}
-
-.error-msg {
-  font-size: 11.5px;
-  color: #BA1A1A;
-}
-
-.field-hint {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: $text-muted;
-
-  .material-symbols-outlined { font-size: 13px; }
-}
-
-// ── Toggle ────────────────────────────────────────────────────────────────────
-.toggle-label {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px 16px;
-  background: rgba($tertiary-hex, 0.04);
-  border: 1px solid rgba($tertiary-hex, 0.18);
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.toggle-wrap { flex-shrink: 0; padding-top: 2px; }
-
-.toggle-input { display: none; }
-
-.toggle-track {
-  display: block;
-  width: 40px;
-  height: 22px;
-  border-radius: 999px;
-  background: $surface-high;
-  border: 2px solid $border;
-  position: relative;
-  transition: background 0.2s, border-color 0.2s;
-
-  .toggle-input:checked + & {
-    background: $tertiary;
-    border-color: $tertiary;
-  }
-}
-
-.toggle-thumb {
-  display: block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,.2);
-
-  .toggle-input:checked ~ .toggle-track & { transform: translateX(18px); }
-}
-
-.toggle-title {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: $text-dark;
-}
-
-.toggle-desc {
-  display: block;
-  font-size: 11.5px;
-  color: $text-muted;
-  margin-top: 3px;
-}
-
-// ── Error banner ──────────────────────────────────────────────────────────────
-.save-error {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #b91c1c;
-  margin-top: 16px;
-
-  .material-symbols-outlined { font-size: 16px; flex-shrink: 0; }
-}
-
-// ── Nav footer ────────────────────────────────────────────────────────────────
-.nav-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid $border-soft;
-  margin-bottom: 4px;
-}
-
-// ── Panel nav buttons ─────────────────────────────────────────────────────────
-.panel-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 0;
-
-  .panel-nav__back,
-  .panel-nav__next { flex: 1; }
-}
-
-// ── RIGHT — sidebar ───────────────────────────────────────────────────────────
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: sticky;
-  top: 24px;
-  padding-top: 72px;
-}
-
-.panel-header {
-  padding: 14px 20px;
-  border-bottom: 1px solid $border-soft;
-  background: $surface-low;
-  border-radius: $radius-lg $radius-lg 0 0;
-}
-
-.panel-body { padding: 20px; }
-
-.panel__label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: $tertiary;
-  margin: 0;
-}
-
-// ── Step list ─────────────────────────────────────────────────────────────────
-.step-list {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 17px;
-    top: 36px;
-    bottom: 36px;
-    width: 2px;
-    background: $border;
-    border-radius: 2px;
-  }
-}
-
-.step-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 8px 0;
-  position: relative;
-  z-index: 1;
-
-  &--active {
-    .step-num {
-      background: $tertiary;
-      color: #fff;
-      border-color: $tertiary;
-      box-shadow: 0 0 0 4px rgba($tertiary-hex, 0.18), 0 4px 12px rgba($tertiary-hex, 0.32);
-    }
-    .step-label { color: $tertiary; font-weight: 700; }
-  }
-
-  &--done {
-    .step-num { background: $tertiary; color: #fff; border-color: $tertiary; }
-    .step-label { color: $text-muted; }
-  }
-}
-
-.step-num {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: $surface-mid;
-  border: 2px solid $border;
-  color: $text-muted;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-
-  .material-symbols-outlined { font-size: 16px; }
-}
-
-.step-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: $text-light;
-  transition: color 0.2s;
-}
-
-// ── Summary ───────────────────────────────────────────────────────────────────
-.summary-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-
-  &__key {
-    font-size: 12px;
-    color: #94a3b8;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  &__val {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #0b1c30;
-    text-align: right;
-    word-break: break-word;
-    max-width: 200px;
-
-    &--ok { color: $tertiary; }
-  }
-}
-
-// ── Tips panel ────────────────────────────────────────────────────────────────
-.tips-panel {
-  background: rgba(#FFF8E1, 0.9);
-  border: 1px solid rgba(#F59E0B, 0.3);
-  border-radius: 14px;
-  padding: 16px 18px;
-
-  &__head {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #92400E;
-    margin-bottom: 10px;
-
-    .material-symbols-outlined { font-size: 16px; color: #F59E0B; }
-  }
-
-  &__text {
-    font-size: 12.5px;
-    color: #78350F;
-    line-height: 1.65;
-    margin: 0;
-  }
-}
-
-// ── Responsive ────────────────────────────────────────────────────────────────
-
-@media (max-width: 1100px) {
-  .wizard-layout { grid-template-columns: 1fr 260px; gap: 16px; }
-  .card-head      { padding: 18px 24px 16px; }
-  .step-body      { padding: 20px 24px; }
-  .nav-footer     { padding: 16px 24px; }
-}
-
-@media (max-width: 768px) {
-  .wizard-page   { padding: 0 0 24px; min-height: 0; }
-  .wizard-layout { grid-template-columns: 1fr; gap: 16px; align-items: start; flex: unset; }
-  .form-card     { flex: unset; }
-  .step-body     { flex: unset; }
-
-  .sidebar {
-    position: static;
-    daf-card      { display: none; }
-    .tips-panel   { display: block; }
-  }
-
-  .page-head  { margin-bottom: 6px; }
-  .breadcrumb__current { font-size: 1.1rem; }
-  .page-sub   { font-size: 0.75rem; }
-
-  .card-head        { padding: 14px 16px 12px; gap: 10px; }
-  .card-head__icon  { width: 36px; height: 36px; .material-symbols-outlined { font-size: 18px; } }
-
-  .step-body  { padding: 16px; }
-  .nav-footer { padding: 14px 16px; }
-}
-
-@media (max-width: 480px) {
-  .step-body  { padding: 12px; }
-  .nav-footer { padding: 12px; }
-  .card-head  { padding: 12px 12px 10px; }
+  @media (max-width: 1100px) { padding: 28px 32px; }
+  @media (max-width: 768px)  { padding: 16px; }
+  @media (max-width: 480px)  { padding: 12px; }
 }

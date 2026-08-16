@@ -1,413 +1,93 @@
-<div class="supp-page">
+<daf-page [loading]="firstLoad()" [loadingLabel]="'SUPPLIERS.LIST.LOADING' | translate">
 
-  <!-- Page Header -->
-  <div class="page-header">
-    <div class="flex items-center gap-3">
-      <span class="material-symbols-outlined text-[32px] text-[#79D7BE]"
-            style="font-variation-settings:'FILL' 1">store</span>
-      <h2 class="text-2xl font-bold text-on-surface">{{ 'SUPPLIERS.LIST.TITLE' | translate }}</h2>
-    </div>
-    <daf-button class="new-btn-desktop"
-      [options]="{variant:'teal', label: 'SUPPLIERS.LIST.NEW' | translate, iconStart:'add'}"
-      (onClick)="openCreateModal()" />
-    <button class="new-btn-mobile" (click)="openCreateModal()" [attr.aria-label]="'SUPPLIERS.LIST.NEW' | translate">
-      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">add</span>
-    </button>
-  </div>
+  <daf-page-header
+    [title]="'SUPPLIERS.LIST.TITLE' | translate"
+    [subtitle]="'SUPPLIERS.LIST.SUBTITLE' | translate">
+    <!-- `FACT_MANAGE_COST`, et non `FACT_MANAGE_SUPPLIERS` : c'est le droit que
+         `SupplierController` vérifie réellement sur `POST /suppliers`. Le code
+         `FACT_MANAGE_SUPPLIERS` existe bien au catalogue mais aucun endpoint ne s'en
+         sert — la garde d'origine cachait donc le bouton à des comptes autorisés, et le
+         montrait à des comptes qui prenaient un 403 après trois étapes d'assistant. -->
+    <daf-button pageActions *appHasPermission="'FACT_MANAGE_COST'"
+      [options]="{ variant: 'teal', label: 'SUPPLIERS.LIST.NEW' | translate, iconStart: 'add' }"
+      (onClick)="goToNewSupplier()" />
+  </daf-page-header>
 
-  <!-- KPI cards -->
-  <div class="kpi-grid">
-    <app-affaire-kpi-card
+  <!-- KPIs — une ligne, jamais de retour. Ils décrivent le référentiel ACTIF (c'est tout
+       ce que `GET /suppliers` renvoie), pas la page affichée : le premier delta le dit.
+       Les deux du milieu mesurent une complétude — sans IBAN on ne peut pas payer, sans
+       n° de TVA on ne peut pas déclarer. -->
+  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+    <daf-metric-card
       [label]="'SUPPLIERS.LIST.KPI.TOTAL' | translate"
-      icon="store"
       [value]="stats().total"
-      variant="green" />
+      [delta]="scopeDelta()"
+      [options]="kpiTotal" />
 
-    <app-affaire-kpi-card
-      [label]="'SUPPLIERS.LIST.KPI.ACTIVE' | translate"
-      icon="verified"
-      [value]="stats().active"
-      variant="green"
-      [trend]="'SUPPLIERS.LIST.KPI.ACTIVE_TREND' | translate:{ pct: activePct() }" />
+    <daf-metric-card
+      [label]="'SUPPLIERS.LIST.KPI.WITH_IBAN' | translate"
+      [value]="stats().withIban"
+      [delta]="ibanDelta()"
+      [options]="kpiIban" />
 
-    <app-affaire-kpi-card
-      [label]="'SUPPLIERS.LIST.KPI.PENDING' | translate"
-      icon="pending_actions"
-      [value]="stats().pendingValidation"
-      variant="red" />
-  </div>
+    <daf-metric-card
+      [label]="'SUPPLIERS.LIST.KPI.WITH_TVA' | translate"
+      [value]="stats().withTva"
+      [delta]="tvaDelta()"
+      [options]="kpiTva" />
 
-  <!-- Toolbar Desktop -->
-  <daf-toolbar class="toolbar--desk"
-    [searchValue]="searchTerm()"
-    [searchPlaceholder]="'SUPPLIERS.LIST.SEARCH_PLACEHOLDER' | translate"
-    [actions]="toolbarActions"
-    (searchChange)="onSearch($event)"
-    (actionClick)="onToolbarAction($event)" />
+    <daf-metric-card
+      [label]="'SUPPLIERS.LIST.KPI.COUNTRIES' | translate"
+      [value]="stats().countries"
+      [options]="kpiCountries" />
+  </section>
 
-  <!-- Toolbar Mobile (compact) -->
-  <div class="mob-toolbar">
-    @if (mobileSearchOpen()) {
-      <div class="mob-search-bar">
-        <daf-form-field
-          class="mob-search-field"
-          [options]="{ type: 'search', placeholder: ('SUPPLIERS.LIST.SEARCH_PLACEHOLDER' | translate), prefixIcon: 'search', fullWidth: true }"
-          [value]="searchTerm()"
-          (valueChange)="onSearch($any($event) ?? '')" />
-        <button class="mob-icon-btn" type="button"
-                (click)="mobileSearchOpen.set(false); onSearch('')">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-    } @else {
-      <button class="mob-icon-btn" type="button" (click)="mobileSearchOpen.set(true)">
-        <span class="material-symbols-outlined">search</span>
-      </button>
-      @if (searchTerm()) {
-        <span class="mob-search-active-pill">{{ searchTerm() }}</span>
-      }
-      <div class="mob-header-spacer"></div>
-    }
-  </div>
+  <!-- Recherche + bascule de vue. Pas de panneau de filtres : `GET /suppliers/search`
+       ne prend que `paysId` et `q`, et un filtre qui ne part pas au serveur est un
+       contrôle qui ne fait rien (§10b). -->
+  <daf-search-toolbar
+    [placeholder]="'SUPPLIERS.LIST.SEARCH_PLACEHOLDER' | translate"
+    [value]="searchText()"
+    [debounce]="300"
+    (valueChange)="onSearchTextChange($event)"
+    [showFilter]="false"
+    [views]="viewOptions()"
+    [view]="viewMode()"
+    (viewChange)="viewMode.set($any($event))" />
 
-  <!-- Split panel -->
-  <div class="split-panel">
-
-    <!-- LEFT: supplier table -->
-    <daf-card [options]="{ padding: 'none', variant: 'default', radius: 'xl' }">
-
-      <!-- Mobile list rows -->
-      <div class="mob-list">
-        @if ((suppliers()?.content ?? []).length === 0 && !isLoading()) {
-          <div class="mob-empty">
-            <span class="material-symbols-outlined">store_off</span>
-            <span>{{ 'SUPPLIERS.LIST.EMPTY_MOBILE' | translate }}</span>
-          </div>
-        }
-        @for (s of (suppliers()?.content ?? []); track s.id) {
-          <div class="mob-row" (click)="selectSupplier(s)">
-            <div class="mob-row__top">
-              <span class="mob-row__ref">{{ s.code ?? ('S-' + s.id) }}</span>
-              <span class="mob-row__statut" [class.mob-row__statut--active]="s.isActive"
-                    [class.mob-row__statut--inactive]="!s.isActive">
-                {{ (s.isActive ? 'SUPPLIERS.LIST.STATUS_ACTIVE' : 'SUPPLIERS.LIST.STATUS_INACTIVE') | translate }}
-              </span>
-            </div>
-            <p class="mob-row__title">{{ s.name }}</p>
-            <div class="mob-row__foot">
-              <span class="mob-row__meta">{{ s.paysLabel ?? s.paysCode ?? '—' }}</span>
-              @if (s.numeroTva) {
-                <span class="mob-row__tva">{{ 'SUPPLIERS.LIST.TVA_PREFIX' | translate:{ tva: s.numeroTva } }}</span>
-              }
-            </div>
-          </div>
-        }
-      </div>
-
-      <div class="table-overflow-wrap">
-        <daf-data-table
-          [columns]="tableColumns()"
-          [rows]="tableRows()"
-          [config]="tableConfig()"
-          (rowClick)="onRowClick($event)">
-
-          <ng-template dafCell="code" let-row>
-            <span class="font-mono text-xs font-bold text-on-surface-variant">{{ row['code'] }}</span>
-          </ng-template>
-
-          <ng-template dafCell="name" let-row>
-            <p class="font-semibold text-on-surface text-sm m-0">{{ row['name'] }}</p>
-          </ng-template>
-
-          <ng-template dafCell="tva" let-row>
-            @if (row['tva']) {
-              <span class="font-mono text-xs text-on-surface">{{ row['tva'] }}</span>
-            } @else {
-              <span class="text-outline text-xs">—</span>
-            }
-          </ng-template>
-
-          <ng-template dafCell="statut" let-row>
-            <daf-badge
-              [label]="(row['statut'] ? 'SUPPLIERS.LIST.STATUS_ACTIVE' : 'SUPPLIERS.LIST.STATUS_INACTIVE') | translate"
-              [options]="activeBadgeOptions(row['statut'])" />
-          </ng-template>
-
-        </daf-data-table>
-      </div>
-
-      @if (totalPagesCount() > 1) {
-        <div class="px-4 py-3 border-t border-outline-variant/20">
-          <daf-pagination
-            [currentPage]="currentPage()"
-            [totalPages]="totalPagesCount()"
-            [totalElements]="suppliers()?.totalElements ?? 0"
-            (pageChange)="goPage($event)" />
-        </div>
-      }
-    </daf-card>
-
-    <!-- RIGHT: detail panel -->
-    <div class="detail-panel">
-      @if (selectedSupplier(); as s) {
-        <daf-card [options]="{ padding: 'lg', variant: 'default', radius: 'xl' }">
-          <div class="flex flex-col gap-5">
-
-            <!-- Header -->
-            <div class="flex items-start justify-between flex-wrap gap-2">
-              <div style="min-width:0;flex:1">
-                <div class="flex items-center gap-2 mb-2 flex-wrap">
-                  <span class="px-2 py-0.5 rounded-lg text-xs font-bold bg-on-surface text-surface">
-                    {{ s.code ?? s.supplierCode ?? 'S-' + s.id }}
-                  </span>
-                  @if (s.isActive) {
-                    <span class="material-symbols-outlined text-success"
-                          style="font-size:1.125rem;font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">
-                      verified
-                    </span>
-                  }
-                </div>
-                <h2 class="detail-name text-on-surface m-0">{{ s.name }}</h2>
-                <p class="text-sm text-on-surface-variant flex items-center gap-1 mt-1 m-0">
-                  <span class="material-symbols-outlined" style="font-size:.875rem">location_on</span>
-                  {{ s.paysLabel ?? s.paysCode ?? '—' }}
-                </p>
-              </div>
-              <button class="action-icon-btn flex-shrink-0" [title]="'SUPPLIERS.LIST.DETAIL.EDIT' | translate"
-                *appHasPermission="'FACT_MANAGE_SUPPLIERS'">
-                <span class="material-symbols-outlined">edit_note</span>
-              </button>
-            </div>
-
-            <!-- Inactive alert -->
-            @if (!s.isActive) {
-              <div class="p-3 rounded-xl flex items-start gap-3"
-                   style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2)">
-                <span class="material-symbols-outlined flex-shrink-0"
-                      style="color:var(--color-danger);font-size:1.125rem;
-                             font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">
-                  warning
-                </span>
-                <div>
-                  <p class="text-xs font-bold uppercase tracking-widest m-0" style="color:var(--color-danger)">
-                    {{ 'SUPPLIERS.LIST.DETAIL.MGMT_ALERT' | translate }}
-                  </p>
-                  <p class="text-xs mt-1 text-on-surface m-0">
-                    {{ 'SUPPLIERS.LIST.DETAIL.INACTIVE_MSG' | translate }}
-                  </p>
-                </div>
-              </div>
-            }
-
-            <!-- IBAN section -->
-            <div class="rounded-xl overflow-hidden" style="border:1px solid var(--color-outline-variant,#bdc9c430)">
-              <div class="flex items-center justify-between px-4 py-3 border-b"
-                   style="background:var(--color-surface-container);border-color:var(--color-outline-variant,#bdc9c420)">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-outlined text-on-surface-variant"
-                        style="font-size:1rem;font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">
-                    account_balance
-                  </span>
-                  <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant m-0">
-                    {{ 'SUPPLIERS.LIST.DETAIL.BANK_DETAILS' | translate }}
-                  </p>
-                </div>
-                <span class="px-2 py-0.5 rounded text-xs font-bold"
-                      style="background:rgba(0,107,88,0.1);color:#006b58">{{ 'SUPPLIERS.LIST.DETAIL.SECURE' | translate }}</span>
-              </div>
-              <div class="p-4">
-                <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2 m-0">{{ 'SUPPLIERS.LIST.DETAIL.IBAN_MAIN' | translate }}</p>
-                @if (!s.ibanMasked && !ibanRaw()) {
-                  <p class="text-sm m-0" style="color:var(--color-on-surface-variant,#44474c);opacity:.5">
-                    {{ 'SUPPLIERS.LIST.DETAIL.NO_IBAN' | translate }}
-                  </p>
-                } @else {
-                  <div class="flex items-center justify-between gap-3 flex-wrap">
-                    <p class="font-mono font-bold text-on-surface m-0 truncate" style="min-width:0;flex:1">
-                      {{ ibanRevealed() && ibanRaw() ? ibanRaw() : s.ibanMasked }}
-                    </p>
-                    <button *appHasPermission="'FACT_MANAGE_SUPPLIERS'"
-                      (click)="ibanRevealed() ? hideIban() : revealIban()"
-                      class="flex items-center gap-1.5 text-xs font-bold bg-transparent border-0 cursor-pointer flex-shrink-0"
-                      style="color:#006b58">
-                      @if (isRevealLoading()) {
-                        <span class="material-symbols-outlined" style="font-size:1rem;animation:spin 1s linear infinite">
-                          progress_activity
-                        </span>
-                      } @else {
-                        <span class="material-symbols-outlined" style="font-size:1rem">
-                          {{ ibanRevealed() ? 'visibility_off' : 'visibility' }}
-                        </span>
-                        {{ (ibanRevealed() ? 'SUPPLIERS.LIST.DETAIL.HIDE' : 'SUPPLIERS.LIST.DETAIL.REVEAL') | translate }}
-                      }
-                    </button>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Config section -->
-            <div class="rounded-xl overflow-hidden" style="border:1px solid var(--color-outline-variant,#bdc9c430)">
-              <div class="flex items-center gap-2 px-4 py-3 border-b"
-                   style="background:var(--color-surface-container);border-color:var(--color-outline-variant,#bdc9c420)">
-                <span class="material-symbols-outlined text-on-surface-variant" style="font-size:1rem">settings</span>
-                <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant m-0">{{ 'SUPPLIERS.LIST.DETAIL.CONFIG' | translate }}</p>
-              </div>
-              <div class="p-4 flex flex-col gap-4">
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                  <div>
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1 m-0">{{ 'SUPPLIERS.LIST.DETAIL.COUNTRY' | translate }}</p>
-                    <span class="px-3 py-0.5 rounded-full text-xs font-medium"
-                          style="background:var(--color-surface-container);color:var(--color-on-surface)">
-                      {{ s.paysLabel ?? s.paysCode ?? '—' }}
-                    </span>
-                  </div>
-                  <div>
-                    <p class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1 m-0">{{ 'SUPPLIERS.LIST.DETAIL.TVA' | translate }}</p>
-                    <span class="font-mono text-xs text-on-surface">{{ s.numeroTva ?? '—' }}</span>
-                  </div>
-                </div>
-                @if (s.tvaUniqueActive) {
-                  <div class="p-3 rounded-xl flex items-start gap-3"
-                       style="background:rgba(0,107,88,0.05);border:1px solid rgba(0,107,88,0.2)">
-                    <span class="material-symbols-outlined flex-shrink-0"
-                          style="color:#006b58;font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">
-                      verified_user
-                    </span>
-                    <div>
-                      <p class="text-sm font-bold text-on-surface m-0">{{ 'SUPPLIERS.LIST.DETAIL.TVA_UNIQUE_ACTIVE' | translate }}</p>
-                      <p class="text-xs mt-1 text-on-surface-variant m-0">
-                        {{ 'SUPPLIERS.LIST.DETAIL.TVA_UNIQUE_DESC' | translate }}
-                      </p>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Action buttons -->
-            <div class="flex gap-3">
-              <button class="decision-btn flex-1">
-                <span class="material-symbols-outlined">history</span>
-                {{ 'SUPPLIERS.LIST.DETAIL.HISTORY' | translate }}
-              </button>
-              <button class="decision-btn flex-1"
-                *appHasPermission="'FACT_MANAGE_SUPPLIERS'"
-                [class.decision-btn--danger]="s.isActive"
-                [class.decision-btn--success]="!s.isActive"
-                (click)="openToggleModal()">
-                <span class="material-symbols-outlined"
-                      style="font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24">
-                  {{ s.isActive ? 'block' : 'check_circle' }}
-                </span>
-                {{ (s.isActive ? 'SUPPLIERS.LIST.DETAIL.DEACTIVATE' : 'SUPPLIERS.LIST.DETAIL.REACTIVATE') | translate }}
-              </button>
-            </div>
-
-          </div>
-        </daf-card>
-      } @else {
-        <daf-card [options]="{ padding: 'lg', variant: 'default', radius: 'xl' }">
-          <div class="flex flex-col items-center justify-center min-h-40 text-center">
-            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-                 style="background:rgba(0,107,88,0.08)">
-              <span class="material-symbols-outlined" style="font-size:2rem;color:#006b58">business</span>
-            </div>
-            <p class="font-bold text-on-surface m-0">{{ 'SUPPLIERS.LIST.DETAIL.NONE_SELECTED' | translate }}</p>
-            <p class="text-sm text-on-surface-variant mt-1 m-0">
-              {{ 'SUPPLIERS.LIST.DETAIL.NONE_SELECTED_HINT' | translate }}
-            </p>
-          </div>
-        </daf-card>
-      }
-    </div>
-
-  </div>
-
-</div><!-- /supp-page -->
-
-<!-- Toggle confirm modal -->
-<ng-template #toggleTpl>
-  @if (selectedSupplier(); as s) {
-    <p class="text-sm text-on-surface-variant m-0">
-      @if (s.isActive) {
-        <strong class="text-on-surface">{{ s.name }}</strong>
-        {{ 'SUPPLIERS.LIST.TOGGLE.DEACTIVATE_MSG' | translate }}
-      } @else {
-        <strong class="text-on-surface">{{ s.name }}</strong>
-        {{ 'SUPPLIERS.LIST.TOGGLE.REACTIVATE_MSG' | translate }}
-      }
-    </p>
+  @if (error(); as err) {
+    <daf-field-message [error]="err" />
   }
-</ng-template>
 
-<!-- Create supplier modal -->
-<ng-template #createTpl>
-  <div class="flex flex-col gap-4">
 
-    <daf-form-field
-      [value]="createName()"
-      (valueChange)="createName.set($event)"
-      [options]="{
-        label: ('SUPPLIERS.LIST.CREATE.NAME' | translate),
-        type: 'text',
-        required: true,
-        placeholder: ('SUPPLIERS.LIST.CREATE.NAME_PLACEHOLDER' | translate)
-      }" />
-    @if (createTouched() && !createName()) {
-      <p class="text-xs text-danger -mt-2 m-0">{{ 'SUPPLIERS.LIST.CREATE.REQUIRED' | translate }}</p>
-    }
+  <!-- Le contenu vit librement dans la page — pas de carte conteneur extérieure -->
+  @if (viewMode() === 'grid') {
+    <app-suppliers-cards-section
+      [suppliers]="suppliers()"
+      [loading]="loading()"
+      [skeletonCount]="pageSize()"
+      [emptyMessage]="'SUPPLIERS.LIST.TABLE.EMPTY' | translate"
+      (open)="navigateToDetail($event)" />
+  } @else {
+    <app-suppliers-table-section
+      [suppliers]="suppliers()"
+      [loading]="loading()"
+      [pageSize]="pageSize()"
+      [emptyMessage]="'SUPPLIERS.LIST.TABLE.EMPTY' | translate"
+      (open)="navigateToDetail($event)" />
+  }
 
-    <div>
-      <daf-select
-        [options]="paysSelectOptions()"
-        [selected]="[createPaysCode()]"
-        [config]="{
-          label: ('SUPPLIERS.LIST.CREATE.COUNTRY' | translate),
-          placeholder: ('SUPPLIERS.LIST.CREATE.COUNTRY_SELECT' | translate),
-          required: true,
-          searchable: true
-        }"
-        (selectedChange)="onPaysCodeChange($event[0])" />
-      @if (createTouched() && !createPaysCode()) {
-        <p class="text-xs text-danger mt-1 m-0">{{ 'SUPPLIERS.LIST.CREATE.REQUIRED' | translate }}</p>
-      }
-    </div>
+  <daf-pagination
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [totalElements]="totalElements()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[10, 20, 50, 100]"
+    [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+    [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+    [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+    [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+    (pageChange)="goToPage($event)"
+    (pageSizeChange)="onPageSize($event)" />
 
-    <daf-form-field
-      [value]="createNumeroTva()"
-      (valueChange)="createNumeroTva.set($event)"
-      [options]="{ label: ('SUPPLIERS.LIST.CREATE.TVA' | translate), type: 'text', placeholder: ('SUPPLIERS.LIST.CREATE.TVA_PLACEHOLDER' | translate) }" />
-
-    <daf-form-field
-      [value]="createIban()"
-      (valueChange)="createIban.set($event)"
-      [options]="{ label: ('SUPPLIERS.LIST.CREATE.IBAN' | translate), type: 'text', placeholder: ('SUPPLIERS.LIST.CREATE.IBAN_PLACEHOLDER' | translate) }" />
-
-    <label class="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer"
-           style="background:rgba(0,107,88,0.05);border:1px solid rgba(0,107,88,0.2)">
-      <input type="checkbox"
-             [checked]="createTvaUniqueActive()"
-             (change)="onTvaUniqueChange($event)"
-             class="w-4 h-4" style="accent-color:#006b58" />
-      <div>
-        <p class="text-sm font-medium text-on-surface m-0">{{ 'SUPPLIERS.LIST.CREATE.TVA_UNIQUE' | translate }}</p>
-        <p class="text-xs text-on-surface-variant mt-0.5 m-0">{{ 'SUPPLIERS.LIST.CREATE.TVA_UNIQUE_DESC' | translate }}</p>
-      </div>
-    </label>
-
-    <daf-form-field
-      [value]="createNotes()"
-      (valueChange)="createNotes.set($event)"
-      [options]="{ label: ('SUPPLIERS.LIST.CREATE.NOTES' | translate), type: 'textarea', rows: 2 }" />
-
-    @if (saveError()) {
-      <div class="px-4 py-2.5 rounded-lg text-sm flex items-center gap-2"
-           style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c">
-        <span class="material-symbols-outlined" style="font-size:1rem">error</span>
-        {{ saveError() }}
-      </div>
-    }
-
-  </div>
-</ng-template>
+</daf-page>

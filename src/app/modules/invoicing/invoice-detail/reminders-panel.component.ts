@@ -1,8 +1,9 @@
 import { Component, OnInit, inject, input, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormFieldComponent } from '@khalilrebhiitec/daf360';
 import { InvoiceService } from '../invoice.service';
 import { ReminderDto } from '../invoice.model';
+import { formatDate } from '../../payments/payments-display';
 
 @Component({
   selector: 'app-reminders-panel',
@@ -32,7 +33,7 @@ import { ReminderDto } from '../invoice.model';
     <div class="reminders-list">
       @for (r of reminders(); track r.id) {
         <div class="reminder-row" [class.sent]="r.isSent" [class.suspended]="r.isSuspended">
-          <span class="reminder-type">{{ reminderLabel(r.reminderType) | translate }}</span>
+          <span class="reminder-type">{{ reminderLabel(r) }}</span>
           <span class="reminder-date">{{ formatDate(r.scheduledDate) }}</span>
           <span class="reminder-status">
             @if (r.isSent) {
@@ -76,7 +77,8 @@ import { ReminderDto } from '../invoice.model';
   styleUrl: './reminders-panel.component.scss',
 })
 export class RemindersPanelComponent implements OnInit {
-  private readonly svc = inject(InvoiceService);
+  private readonly svc       = inject(InvoiceService);
+  private readonly translate = inject(TranslateService);
 
   invoiceId       = input.required<number>();
   remindersActive = input.required<boolean>();
@@ -86,19 +88,6 @@ export class RemindersPanelComponent implements OnInit {
   error           = signal<string | null>(null);
   showSuspendForm = signal(false);
   suspendReason   = '';
-
-  /**
-   * Les types que le backend écrit réellement (`InvoiceService.createReminderSchedule`).
-   * Les clés précédentes (`J0`, `J_7`, `J0_ECH`, `J7`, `J15`, `J30`) n'existaient dans
-   * aucune ligne de `payment_reminders` : chaque relance s'affichait avec son code brut.
-   */
-  private readonly REMINDER_LABELS: Record<string, string> = {
-    J_MINUS_7: 'INVOICING.REMINDER_TYPE.J_MINUS_7',
-    ECHEANCE:  'INVOICING.REMINDER_TYPE.ECHEANCE',
-    J_PLUS_7:  'INVOICING.REMINDER_TYPE.J_PLUS_7',
-    J_PLUS_30: 'INVOICING.REMINDER_TYPE.J_PLUS_30',
-    J_PLUS_60: 'INVOICING.REMINDER_TYPE.J_PLUS_60',
-  };
 
   ngOnInit(): void { this.load(); }
 
@@ -126,11 +115,21 @@ export class RemindersPanelComponent implements OnInit {
     });
   }
 
-  reminderLabel(t: string): string {
-    return this.REMINDER_LABELS[t] ?? t;
+  /**
+   * Le libellé du palier vient de sa règle, transporté par la ligne.
+   *
+   * Il venait d'une table de clés i18n indexée par code, qui supposait une liste de
+   * paliers connue à la compilation. L'échéancier étant configurable depuis
+   * l'administration finance, cette liste n'existe plus — repli sur le code brut quand
+   * aucune règle ne le porte (relance d'un ancien échéancier).
+   */
+  reminderLabel(r: ReminderDto): string {
+    const label = this.translate.currentLang() === 'en' ? r.labelEn : r.labelFr;
+    return label ?? r.reminderType;
   }
 
-  formatDate(d: string): string {
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  /** Même formateur que la fiche de recouvrement — le format était figé en `fr-FR`. */
+  formatDate(d: string | null): string {
+    return formatDate(d, this.translate.currentLang());
   }
 }

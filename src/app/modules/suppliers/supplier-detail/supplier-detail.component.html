@@ -1,0 +1,168 @@
+<!-- Fiche fournisseur — même squelette que les fiches facture, client et recouvrement.
+     Aucune feuille de style locale : composants de la lib, jetons de couleur et échelle
+     typographique de la lib.
+
+     ⚠️ FLEX en style inline, jamais de grid ni de classe de point de rupture : le
+     styles.css d'un remote ne contient que les classes que Tailwind a déjà vues. -->
+
+<daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
+          [loadingLabel]="'SUPPLIERS.DETAIL.LOADING' | translate">
+
+  @if (error()) {
+    <daf-field-message [error]="error()!" />
+  }
+  @if (actionError()) {
+    <daf-field-message [error]="actionError()!" />
+  }
+
+  @if (supplier(); as s) {
+    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE GAUCHE (30 %, sticky) — identité et actions
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:0 1 30%; min-width:320px">
+        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
+
+          <daf-page-header
+            size="md"
+            [title]="s.name"
+            [subtitle]="headerSubtitle()"
+            [badges]="headerBadges()"
+            [breadcrumbs]="breadcrumbs()"
+            [breadcrumbLabel]="'SUPPLIERS.DETAIL.BREADCRUMB_ARIA' | translate" />
+
+          <daf-section-card>
+
+            <div class="flex flex-col gap-5 p-6">
+              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+                @for (f of identityFields(); track f.label) {
+                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Une seule action de cycle de vie existe côté API : la désactivation.
+                 L'ancienne fiche proposait aussi « Réactiver » et « Historique » — le
+                 premier n'a aucun endpoint, le second aucun écran. -->
+            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
+                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+
+              @if (s.isActive) {
+                <div *appHasPermission="'FACT_MANAGE_COST'" style="flex:1 1 100%">
+                  <daf-button
+                    [options]="{ variant: 'danger', fullWidth: true, iconStart: 'block',
+                                 loading: isDeactivating(),
+                                 label: 'SUPPLIERS.DETAIL.DEACTIVATE' | translate }"
+                    (onClick)="openDeactivate()" />
+                </div>
+              }
+
+              <daf-button
+                style="flex:1 1 100%"
+                [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'arrow_back',
+                             label: 'SUPPLIERS.DETAIL.BACK_TO_LIST' | translate }"
+                (onClick)="goBack()" />
+            </div>
+
+          </daf-section-card>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE DROITE (70 %) — coordonnées bancaires et fiscales
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+
+        <!-- Fournisseur désactivé : le dire en haut de la colonne de contenu, pas en
+             pastille seule — c'est ce qui explique qu'il ne soit plus dans la liste. -->
+        @if (!s.isActive) {
+          <div class="flex items-start gap-3 rounded-xl bg-danger/10 px-5 py-4">
+            <span class="material-symbols-outlined text-headline-lg text-danger">warning</span>
+            <div class="flex flex-col gap-1">
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-danger">
+                {{ 'SUPPLIERS.DETAIL.INACTIVE_TITLE' | translate }}
+              </p>
+              <p class="text-body-sm text-on-surface-variant">
+                {{ 'SUPPLIERS.DETAIL.INACTIVE_MSG' | translate }}
+              </p>
+            </div>
+          </div>
+        }
+
+        <!-- ── Coordonnées bancaires ────────────────────────────────────── -->
+        <daf-section-card>
+          <div class="flex items-center justify-between gap-3 border-b border-outline-variant/30
+                      bg-surface-container px-6 py-4">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">account_balance</span>
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'SUPPLIERS.DETAIL.BANK_DETAILS' | translate }}
+              </p>
+            </div>
+            <span class="inline-flex items-center gap-1 rounded-full bg-teal/10 px-2 py-0.5
+                         text-[11px] font-bold text-teal">
+              <span class="material-symbols-outlined text-[14px]">lock</span>
+              {{ 'SUPPLIERS.DETAIL.SECURE' | translate }}
+            </span>
+          </div>
+
+          <div class="flex flex-col gap-3 p-6">
+            <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'SUPPLIERS.DETAIL.IBAN_MAIN' | translate }}
+            </p>
+
+            @if (!ibanDisplay()) {
+              <p class="text-body-md text-on-surface-variant">{{ 'SUPPLIERS.DETAIL.NO_IBAN' | translate }}</p>
+            } @else {
+              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:1rem">
+                <p class="font-mono text-body-md font-bold text-on-surface" style="flex:1 1 260px; min-width:0">
+                  {{ ibanDisplay() }}
+                </p>
+                <!-- `FACT_MANAGE_COST` : c'est le droit que porte `GET /{id}/reveal-iban`.
+                     Lire la liste des fournisseurs et lire un IBAN complet ne sont pas
+                     le même droit. -->
+                <div *appHasPermission="'FACT_MANAGE_COST'">
+                  <daf-button
+                    [options]="{ variant: 'ghost', size: 'sm',
+                                 loading: isRevealLoading(),
+                                 iconStart: ibanRevealed() ? 'visibility_off' : 'visibility',
+                                 label: (ibanRevealed() ? 'SUPPLIERS.DETAIL.HIDE' : 'SUPPLIERS.DETAIL.REVEAL') | translate }"
+                    (onClick)="ibanRevealed() ? hideIban() : revealIban()" />
+                </div>
+              </div>
+            }
+          </div>
+        </daf-section-card>
+
+        <!-- ── Informations fiscales ────────────────────────────────────── -->
+        <daf-section-card>
+          <div class="flex items-center gap-2 border-b border-outline-variant/30
+                      bg-surface-container px-6 py-4">
+            <span class="material-symbols-outlined text-[18px] text-on-surface-variant">receipt_long</span>
+            <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'SUPPLIERS.DETAIL.FISCAL' | translate }}
+            </p>
+          </div>
+
+          <div class="p-6" style="display:flex; flex-wrap:wrap; gap:1.25rem">
+            @for (f of fiscalFields(); track f.label) {
+              <div class="flex flex-col gap-1" style="flex:1 1 30%">
+                <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                  {{ f.label | translate }}
+                </p>
+                <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+              </div>
+            }
+          </div>
+        </daf-section-card>
+
+      </div>
+    </div>
+  }
+</daf-page>

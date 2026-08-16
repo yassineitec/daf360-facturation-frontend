@@ -530,13 +530,6 @@
       "FINALE": "Solde",
       "AVOIR": "Note d'avoir"
     },
-    "REMINDER_TYPE": {
-      "J_MINUS_7": "J-7 échéance",
-      "ECHEANCE": "Jour échéance",
-      "J_PLUS_7": "J+7 relance",
-      "J_PLUS_30": "J+30 mise en demeure",
-      "J_PLUS_60": "J+60 escalade"
-    },
     "PLACEHOLDER": {
       "TITLE": "Factures",
       "SUBTITLE": "Module en cours de développement."
@@ -2399,13 +2392,6 @@
         "EMPTY": "Aucune facture impayée trouvée.",
         "VIEW": "Voir"
       },
-      "REMINDER": {
-        "J_MINUS_7": "J-7 (avant échéance)",
-        "ECHEANCE": "Jour J (échéance)",
-        "J_PLUS_7": "J+7 (1re relance)",
-        "J_PLUS_30": "J+30 (mise en demeure)",
-        "J_PLUS_60": "J+60 (escalade Direction)"
-      },
       "LOADING": "Chargement des factures impayées…",
       "VIEW_GRID": "Vue grille",
       "VIEW_LIST": "Vue liste",
@@ -2458,9 +2444,10 @@
         "STATUS_SENT": "Envoyée",
         "STATUS_SUSPENDED": "Suspendue",
         "STATUS_PENDING": "En attente",
-        "EMPTY": "Aucune relance planifiée — la facture n'a pas d'échéance.",
+        "EMPTY": "Aucune relance planifiée pour cette facture.",
         "SUSPEND_LABEL": "Motif de suspension",
-        "SUSPEND_CONFIRM": "Suspendre"
+        "SUSPEND_CONFIRM": "Suspendre",
+        "RETIRED_STAGE": "Palier retiré"
       },
       "PAYMENTS": {
         "COL_DATE": "Date",
@@ -2590,6 +2577,11 @@
       "ERR_MAX": "Le montant ne peut pas dépasser {{amount}}.",
       "CONFIRM_BTN": "Confirmer le rapprochement partiel",
       "ERROR": "Erreur lors du rapprochement partiel."
+    },
+    "OFFSET": {
+      "DAY_ZERO": "Jour J",
+      "AFTER": "J+{{n}}",
+      "BEFORE": "J-{{n}}"
     }
   },
   "SUBCONTRACTING": {
@@ -2789,116 +2781,111 @@
     }
   },
   "SUPPLIERS": {
+    "COMMON": {
+      "CANCEL": "Annuler"
+    },
     "LIST": {
-      "TITLE": "Gestion des fournisseurs",
+      "TITLE": "Fournisseurs",
+      "SUBTITLE": "Référentiel des fournisseurs actifs, coordonnées bancaires et fiscales",
       "NEW": "Nouveau fournisseur",
-      "SEARCH_PLACEHOLDER": "Rechercher un fournisseur…",
+      "SEARCH_PLACEHOLDER": "Rechercher par nom ou par code…",
+      "LOADING": "Chargement des fournisseurs…",
+      "VIEW_GRID": "Vue grille",
+      "VIEW_LIST": "Vue liste",
+      "STATUS_ACTIVE": "Actif",
+      "STATUS_INACTIVE": "Inactif",
       "KPI": {
-        "TOTAL": "Total Fournisseurs",
-        "ACTIVE": "Fournisseurs Actifs",
-        "ACTIVE_TREND": "{{pct}}% du référentiel",
-        "PENDING": "En attente validation"
+        "TOTAL": "Fournisseurs",
+        "SCOPE_ACTIVE": "actifs uniquement",
+        "WITH_IBAN": "Avec IBAN",
+        "WITH_TVA": "Avec n° TVA",
+        "COUNTRIES": "Pays couverts",
+        "PCT_OF_BASE": "{{pct}} % du référentiel"
+      },
+      "CARD": {
+        "COUNTRY": "Pays",
+        "TVA": "N° TVA",
+        "IBAN": "IBAN",
+        "NO_IBAN": "Non renseigné",
+        "TAX_ID": "Identifiant fiscal",
+        "SEE_FILE": "Voir la fiche"
       },
       "TABLE": {
-        "CODE": "Code",
-        "NAME": "Nom",
+        "NAME": "Fournisseur",
         "COUNTRY": "Pays",
         "TVA": "N° TVA",
+        "IBAN": "IBAN",
         "STATUS": "Statut",
+        "VIEW": "Voir la fiche",
         "EMPTY": "Aucun fournisseur trouvé."
       },
-      "EMPTY_MOBILE": "Aucun fournisseur trouvé",
-      "STATUS_ACTIVE": "ACTIF",
-      "STATUS_INACTIVE": "INACTIF",
-      "TVA_PREFIX": "TVA {{tva}}",
-      "DETAIL": {
-        "EDIT": "Modifier",
-        "MGMT_ALERT": "ALERTE GESTION",
-        "INACTIVE_MSG": "Ce fournisseur est inactif. Aucune nouvelle transaction ne peut être initiée sans réactivation.",
-        "BANK_DETAILS": "COORDONNÉES BANCAIRES",
-        "SECURE": "SÉCURISÉ",
-        "IBAN_MAIN": "IBAN PRINCIPAL",
-        "NO_IBAN": "Aucun IBAN enregistré",
-        "HIDE": "MASQUER",
-        "REVEAL": "RÉVÉLER",
-        "CONFIG": "CONFIGURATION",
-        "COUNTRY": "PAYS",
-        "TVA": "N° TVA",
-        "TVA_UNIQUE_ACTIVE": "TVA Unique Active",
-        "TVA_UNIQUE_DESC": "Contrôle de conformité automatique activé pour les factures entrantes.",
-        "HISTORY": "HISTORIQUE",
-        "DEACTIVATE": "DÉSACTIVER",
-        "REACTIVATE": "RÉACTIVER",
-        "NONE_SELECTED": "Aucun fournisseur sélectionné",
-        "NONE_SELECTED_HINT": "Cliquez sur un fournisseur dans la liste pour voir ses détails"
-      },
-      "TOGGLE": {
-        "DEACTIVATE_TITLE": "Désactiver le fournisseur",
-        "REACTIVATE_TITLE": "Réactiver le fournisseur",
-        "CANCEL": "Annuler",
-        "CONFIRM": "Confirmer",
-        "DEACTIVATE_MSG": "sera désactivé. Aucune nouvelle transaction ne pourra être créée.",
-        "REACTIVATE_MSG": "sera réactivé et disponible pour de nouvelles transactions."
-      },
-      "CREATE": {
-        "NAME": "Nom",
-        "NAME_PLACEHOLDER": "Nom du fournisseur",
-        "REQUIRED": "Ce champ est obligatoire.",
+      "ERROR_PAYS": "Entité introuvable. Rechargez la page.",
+      "ERROR_LOAD": "Impossible de charger les fournisseurs."
+    },
+    "DETAIL": {
+      "LOADING": "Chargement de la fiche fournisseur…",
+      "LOAD_ERROR": "Impossible de charger ce fournisseur.",
+      "ACTION_ERROR": "L’action n’a pas pu être effectuée.",
+      "IBAN_ERROR": "Impossible d’afficher l’IBAN complet.",
+      "BACK": "Fournisseurs",
+      "BACK_TO_LIST": "Retour à la liste",
+      "BREADCRUMB_ARIA": "Fil d’ariane",
+      "INTERCOMPANY": "Intragroupe",
+      "INFO": {
+        "CODE": "Code",
+        "SUPPLIER_CODE": "Code interne",
         "COUNTRY": "Pays",
-        "COUNTRY_SELECT": "Sélectionner un pays…",
-        "TVA": "Numéro TVA",
-        "TVA_PLACEHOLDER": "Numéro TVA unique",
-        "IBAN": "IBAN",
-        "IBAN_PLACEHOLDER": "FR76 3000 1234 5678…",
-        "TVA_UNIQUE": "Activer TVA Unique",
-        "TVA_UNIQUE_DESC": "Contrôle automatique de conformité TVA",
-        "NOTES": "Notes"
+        "COUNTRY_ISO": "Code pays",
+        "CREATED_AT": "Créé le",
+        "TVA": "N° TVA",
+        "TAX_ID": "Identifiant fiscal"
       },
-      "ERROR_PAYS": "Pays introuvable. Rechargez la page.",
-      "ERROR_CREATE": "Erreur lors de la création."
+      "BANK_DETAILS": "Coordonnées bancaires",
+      "SECURE": "Sécurisé",
+      "IBAN_MAIN": "IBAN principal",
+      "NO_IBAN": "Aucun IBAN enregistré.",
+      "REVEAL": "Révéler l’IBAN",
+      "HIDE": "Masquer",
+      "FISCAL": "Informations fiscales",
+      "INACTIVE_TITLE": "Fournisseur désactivé",
+      "INACTIVE_MSG": "Il n’apparaît plus dans la liste ni dans la recherche, et aucune nouvelle dépense ne devrait lui être rattachée. La réactivation n’est pas disponible.",
+      "DEACTIVATE": "Désactiver le fournisseur",
+      "DEACTIVATE_TITLE": "Désactiver le fournisseur",
+      "DEACTIVATE_MSG": "{{name}} sera désactivé et sortira du référentiel : il ne réapparaîtra ni dans la liste ni dans la recherche, et cette action ne peut pas être annulée depuis l’application.",
+      "DEACTIVATE_CONFIRM": "Désactiver"
     },
     "NEW": {
+      "TITLE": "Nouveau fournisseur",
+      "SUBTITLE": "Trois étapes : identification, fiscalité, coordonnées bancaires.",
+      "BREADCRUMB_ROOT": "Fournisseurs",
+      "BREADCRUMB_ARIA": "Fil d’ariane",
+      "PROGRESS": "Progression",
+      "STEP_OF": "Étape {{current}} sur {{total}}",
       "STEPS": {
         "IDENTIFICATION": "Identification",
         "FISCAL": "Informations fiscales",
         "BANK": "Coordonnées bancaires"
       },
-      "TIPS": {
-        "IDENTIFICATION": "Renseignez la raison sociale officielle et le pays d'enregistrement. Ces champs sont obligatoires.",
-        "FISCAL": "Le numéro TVA intracommunautaire est requis pour les échanges soumis à la TVA. La TVA unique active le contrôle automatique de conformité.",
-        "BANK": "L'IBAN est stocké de façon sécurisée et masqué par défaut. Il peut être révélé uniquement par un utilisateur autorisé."
-      },
-      "BREADCRUMB_ROOT": "Fournisseurs",
-      "BREADCRUMB_CURRENT": "Nouveau Fournisseur",
-      "TITLE": "Référencer un nouveau fournisseur",
-      "STEP_OF": "Étape {{current}} sur {{total}}",
       "COMPANY_NAME": "Raison sociale",
       "COMPANY_NAME_PLACEHOLDER": "Nom officiel du fournisseur",
-      "REQUIRED": "Ce champ est obligatoire.",
-      "COUNTRY": "Pays",
+      "COUNTRY": "Pays d’enregistrement",
       "COUNTRY_SELECT": "Sélectionner un pays…",
-      "TVA": "Numéro TVA",
-      "TVA_PLACEHOLDER": "Ex: TN12345678",
-      "TVA_UNIQUE": "Activer TVA Unique",
-      "TVA_UNIQUE_DESC": "Contrôle automatique de conformité TVA sur les factures entrantes",
+      "TVA": "Numéro de TVA",
+      "TVA_PLACEHOLDER": "FR12345678901",
+      "TVA_HINT": "Doit être unique : un numéro déjà utilisé fait échouer la création.",
+      "TAX_ID": "Identifiant fiscal",
+      "TAX_ID_PLACEHOLDER": "Matricule fiscal local",
       "IBAN": "IBAN",
       "IBAN_PLACEHOLDER": "FR76 3000 1234 5678…",
-      "IBAN_HINT": "Stocké de façon sécurisée — masqué par défaut",
-      "NOTES": "Notes internes",
-      "NOTES_PLACEHOLDER": "Informations internes sur ce fournisseur…",
+      "IBAN_HINT": "Stocké masqué. Seul un utilisateur disposant du droit de gestion des coûts peut l’afficher en clair.",
+      "BADGE_IBAN": "IBAN renseigné",
+      "REQUIRED": "Ce champ est obligatoire.",
       "BACK": "Retour",
       "CANCEL": "Annuler",
-      "CREATE": "Créer le fournisseur",
       "NEXT": "Suivant",
-      "PROGRESS": "Progression",
-      "SUMMARY": "Résumé",
-      "SUMMARY_COMPANY": "Raison sociale",
-      "SUMMARY_COUNTRY": "Pays",
-      "SUMMARY_TVA": "N° TVA",
-      "SUMMARY_TVA_UNIQUE": "TVA Unique",
-      "SUMMARY_ACTIVATED": "Activée",
-      "ERROR_PAYS": "Pays introuvable. Rechargez la page.",
-      "ERROR_CREATE": "Erreur lors de la création."
+      "CREATE": "Créer le fournisseur",
+      "ERROR_PAYS": "Entité introuvable. Rechargez la page.",
+      "ERROR_CREATE": "Erreur lors de la création du fournisseur."
     }
   },
   "ADMIN": {
@@ -2944,7 +2931,8 @@
       "LISTS": "Listes configurables",
       "FOREX": "Taux de change",
       "FOREX_API": "API Forex",
-      "PERMISSIONS": "Permissions"
+      "PERMISSIONS": "Permissions",
+      "REMINDERS": "Relances"
     },
     "LISTS": {
       "LOADING_TYPES": "Chargement des types…",
@@ -3041,6 +3029,46 @@
       "SUCCESS_SAVED": "Configuration sauvegardée.",
       "ERR_SAVE": "Erreur de sauvegarde.",
       "ERR_REFRESH": "Erreur lors du rafraîchissement."
+    },
+    "REMINDERS": {
+      "INTRO": "Ces paliers pilotent l’échéancier de recouvrement de toutes les factures : le générateur les applique à la date d’échéance de chaque facture, et le planificateur quotidien envoie les messages aux rôles indiqués. Une modification s’applique aux nouvelles factures et à toute facture dont l’échéance change ; les relances déjà envoyées ne bougent pas.",
+      "SECTION_TITLE": "Échéancier de recouvrement",
+      "ADD": "Ajouter un palier",
+      "EMPTY": "Aucun palier configuré — aucune relance ne sera planifiée.",
+      "COL_OFFSET": "Échéance",
+      "COL_RULE": "Palier",
+      "COL_ROLES": "Destinataires",
+      "COL_SCOPE": "Périmètre",
+      "COL_STATE": "État",
+      "ACTIVE": "Actif",
+      "INACTIVE": "Inactif",
+      "CLIENT": "Client",
+      "DELETE": "Supprimer",
+      "ORPHAN_HINT": "Ce rôle n’est porté par aucun utilisateur : ce palier n’aura pas de destinataire interne.",
+      "NEW_TITLE": "Nouveau palier",
+      "EDIT_TITLE": "Modifier le palier",
+      "FIELD_CODE": "Code",
+      "CODE_HINT": "Clé technique, en majuscules. Elle sera écrite sur chaque relance produite par ce palier.",
+      "CODE_LOCKED": "Verrouillé : des relances portent déjà ce code et perdraient leur libellé.",
+      "FIELD_LABEL_FR": "Libellé (français)",
+      "FIELD_LABEL_EN": "Libellé (anglais)",
+      "FIELD_OFFSET": "Décalage en jours",
+      "OFFSET_HINT": "Par rapport à l’échéance de la facture. Négatif = avant l’échéance.",
+      "FIELD_ROLES": "Rôles convoqués",
+      "ROLES_PLACEHOLDER": "Sélectionner un ou plusieurs rôles…",
+      "ROLES_HINT": "Les personnes portant ces rôles recevront le message. La liste vient des rôles réellement présents dans l’annuaire.",
+      "FIELD_NOTIFY_CLIENT": "Envoyer aussi au client",
+      "NOTIFY_CLIENT_HINT": "Le contact du client est mis en destinataire. À laisser désactivé pour un palier interne.",
+      "FIELD_SUBJECT": "Objet du message",
+      "SUBJECT_PLACEHOLDER": "Rappel — facture {invoice}",
+      "TEMPLATE_HINT": "Laisser vide pour un objet construit à partir du libellé.",
+      "FIELD_BODY": "Corps du message",
+      "BODY_HINT": "Laisser vide pour un corps standard reprenant la facture, le client, l’échéance et le retard.",
+      "FIELD_ACTIVE": "Palier actif",
+      "ACTIVE_HINT": "Un palier inactif n’est plus planifié, mais l’historique déjà envoyé reste lisible.",
+      "ERROR_LOAD": "Impossible de charger les paliers de relance.",
+      "ERROR_SAVE": "Impossible d’enregistrer ce palier.",
+      "ERROR_DELETE": "Impossible de supprimer ce palier."
     }
   },
   "ENUMS": {

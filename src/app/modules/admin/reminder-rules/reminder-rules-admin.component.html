@@ -1,0 +1,208 @@
+<!-- Onglet « Relances » de l'administration finance — l'échéancier de recouvrement.
+     Le tableau est l'échéancier lui-même, dans l'ordre où les paliers tombent ; le
+     panneau latéral porte l'édition. -->
+
+<div class="flex flex-col gap-6">
+
+  <!-- Ce que la table gouverne, dit une fois : sans cette phrase, on ne devine pas que
+       modifier un palier change le comportement de toutes les factures ouvertes. -->
+  <div class="flex items-start gap-3 rounded-xl bg-surface-container px-5 py-4 text-body-sm text-on-surface-variant">
+    <span class="material-symbols-outlined text-headline-lg">info</span>
+    <p>{{ 'ADMIN.REMINDERS.INTRO' | translate }}</p>
+  </div>
+
+  @if (error(); as err) {
+    <daf-field-message [error]="err" />
+  }
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+      {{ 'ADMIN.REMINDERS.SECTION_TITLE' | translate }}
+    </span>
+    <daf-button *appHasPermission="'FACT_SUPER_ADMIN'"
+      [options]="{ variant: 'teal', size: 'sm', iconStart: 'add',
+                   label: 'ADMIN.REMINDERS.ADD' | translate }"
+      (onClick)="openCreate()" />
+  </div>
+
+  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()">
+
+    <ng-template dafCell="rule" let-row>
+      <div class="flex flex-col leading-snug">
+        <span class="text-body-md font-bold text-on-surface">{{ row['_labelFr'] }}</span>
+        <span class="text-[11px] text-on-surface-variant">
+          {{ row['_labelEn'] }} · <span class="font-mono">{{ row['_code'] }}</span>
+        </span>
+      </div>
+    </ng-template>
+
+    <ng-template dafCell="audience" let-row>
+      <div class="flex flex-wrap items-center gap-1">
+        @for (r of row['_roles']; track r) {
+          <span class="inline-flex items-center rounded-full bg-surface-container px-2 py-0.5
+                       text-[11px] font-bold text-on-surface-variant">{{ r }}</span>
+        } @empty {
+          <span class="text-[11px] text-outline">—</span>
+        }
+        @if (row['_notifyClient']) {
+          <span class="inline-flex items-center gap-1 rounded-full bg-teal/10 px-2 py-0.5
+                       text-[11px] font-bold text-teal">
+            <span class="material-symbols-outlined text-[14px]">mail</span>
+            {{ 'ADMIN.REMINDERS.CLIENT' | translate }}
+          </span>
+        }
+        <!-- Un rôle configuré qui n'existe dans aucun `users_ref` : le palier n'a pas de
+             destinataire interne et rien d'autre ne le dirait. -->
+        @if (row['_orphans'].length) {
+          <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5
+                       text-[11px] font-bold text-danger"
+                [title]="'ADMIN.REMINDERS.ORPHAN_HINT' | translate">
+            <span class="material-symbols-outlined text-[14px]">person_off</span>
+            {{ row['_orphans'].join(', ') }}
+          </span>
+        }
+      </div>
+    </ng-template>
+
+  </daf-data-table>
+
+</div>
+
+<!-- ══ Panneau d'édition ══ -->
+<daf-drawer
+  [(open)]="drawerOpen"
+  [config]="{
+    title: (isEdit() ? 'ADMIN.REMINDERS.EDIT_TITLE' : 'ADMIN.REMINDERS.NEW_TITLE') | translate,
+    icon: 'notifications_active',
+    width: '460px',
+    showToggle: false
+  }">
+
+  <div class="flex flex-col gap-5 p-1">
+
+    @if (formError(); as err) {
+      <daf-field-message [error]="err" />
+    }
+
+    <daf-form-field
+      [value]="code()"
+      (valueChange)="code.set(($any($event) ?? '').toUpperCase())"
+      [options]="{
+        label: ('ADMIN.REMINDERS.FIELD_CODE' | translate),
+        placeholder: 'RAPPEL_AMICAL',
+        required: true,
+        disabled: codeLocked(),
+        maxLength: 30,
+        fullWidth: true,
+        hint: codeLocked()
+          ? ('ADMIN.REMINDERS.CODE_LOCKED' | translate)
+          : ('ADMIN.REMINDERS.CODE_HINT' | translate)
+      }" />
+
+    <daf-form-field
+      [value]="labelFr()"
+      (valueChange)="labelFr.set($any($event) ?? '')"
+      [options]="{ label: ('ADMIN.REMINDERS.FIELD_LABEL_FR' | translate), required: true, maxLength: 150, fullWidth: true }" />
+
+    <daf-form-field
+      [value]="labelEn()"
+      (valueChange)="labelEn.set($any($event) ?? '')"
+      [options]="{ label: ('ADMIN.REMINDERS.FIELD_LABEL_EN' | translate), required: true, maxLength: 150, fullWidth: true }" />
+
+    <!-- Un seul entier signé, pas un couple (sens, nombre) : deux champs finiraient par
+         se contredire. L'aperçu à droite montre ce que ça donne. -->
+    <div style="display:flex; align-items:flex-end; gap:1rem">
+      <div style="flex:1 1 auto; min-width:0">
+        <daf-form-field
+          [value]="offsetDays()"
+          (valueChange)="offsetDays.set($any($event) ?? '0')"
+          [options]="{
+            label: ('ADMIN.REMINDERS.FIELD_OFFSET' | translate),
+            type: 'number',
+            required: true,
+            fullWidth: true,
+            hint: ('ADMIN.REMINDERS.OFFSET_HINT' | translate)
+          }" />
+      </div>
+      <span class="mb-6 inline-flex shrink-0 items-center rounded-full bg-primary/10 px-3 py-1
+                   text-body-md font-extrabold text-primary">
+        {{ offsetPreview() }}
+      </span>
+    </div>
+
+    <daf-select
+      [options]="roleOptions()"
+      [selected]="roles()"
+      (selectedChange)="roles.set($event)"
+      [config]="{
+        label: ('ADMIN.REMINDERS.FIELD_ROLES' | translate),
+        placeholder: ('ADMIN.REMINDERS.ROLES_PLACEHOLDER' | translate),
+        multiple: true,
+        searchable: true,
+        fullWidth: true,
+        hint: ('ADMIN.REMINDERS.ROLES_HINT' | translate)
+      }" />
+
+    <daf-toggle
+      [(checked)]="notifyClient"
+      [options]="{
+        label: ('ADMIN.REMINDERS.FIELD_NOTIFY_CLIENT' | translate),
+        hint: ('ADMIN.REMINDERS.NOTIFY_CLIENT_HINT' | translate)
+      }" />
+
+    <daf-form-field
+      [value]="emailSubject()"
+      (valueChange)="emailSubject.set($any($event) ?? '')"
+      [options]="{
+        label: ('ADMIN.REMINDERS.FIELD_SUBJECT' | translate),
+        placeholder: ('ADMIN.REMINDERS.SUBJECT_PLACEHOLDER' | translate),
+        maxLength: 255,
+        fullWidth: true,
+        hint: ('ADMIN.REMINDERS.TEMPLATE_HINT' | translate)
+      }" />
+
+    <daf-form-field
+      [value]="emailBody()"
+      (valueChange)="emailBody.set($any($event) ?? '')"
+      [options]="{
+        label: ('ADMIN.REMINDERS.FIELD_BODY' | translate),
+        type: 'textarea',
+        rows: 8,
+        fullWidth: true,
+        hint: ('ADMIN.REMINDERS.BODY_HINT' | translate)
+      }" />
+
+    <!-- Les jetons cliquables : les faire recopier de mémoire garantit des fautes de
+         frappe, qui ne se voient qu'à l'envoi du mail. -->
+    <div class="flex flex-wrap items-center gap-1">
+      @for (t of tokens; track t) {
+        <button type="button"
+                class="inline-flex items-center rounded-full bg-surface-container px-2 py-0.5
+                       font-mono text-[11px] font-bold text-on-surface-variant
+                       hover:bg-primary/10 hover:text-primary"
+                (click)="insertToken(t)">{{ t }}</button>
+      }
+    </div>
+
+    <daf-toggle
+      [(checked)]="isActive"
+      [options]="{
+        label: ('ADMIN.REMINDERS.FIELD_ACTIVE' | translate),
+        hint: ('ADMIN.REMINDERS.ACTIVE_HINT' | translate)
+      }" />
+
+    <div style="display:flex; gap:0.5rem">
+      <daf-button
+        style="flex:1 1 50%"
+        [options]="{ variant: 'ghost', fullWidth: true, label: 'ADMIN.COMMON.CANCEL' | translate }"
+        (onClick)="drawerOpen.set(false)" />
+      <daf-button
+        style="flex:1 1 50%"
+        [options]="{ variant: 'teal', fullWidth: true, iconStart: 'save',
+                     loading: saving(), disabled: !canSave() || saving(),
+                     label: 'ADMIN.COMMON.SAVE' | translate }"
+        (onClick)="save()" />
+    </div>
+
+  </div>
+</daf-drawer>
