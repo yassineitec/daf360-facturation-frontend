@@ -1,11 +1,9 @@
 import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject }            from '@angular/core';
 import { catchError, throwError, from, switchMap, EMPTY } from 'rxjs';
-import { TranslateService } from '@ngx-translate/core';
 import { environment } from '../../environments/environment';
 import { UserStore }   from './user.store';
 import { AuthService } from './auth.service';
-import { ToastService } from './toast.service';
 
 function withToken(req: HttpRequest<unknown>, token: string | null | undefined): HttpRequest<unknown> {
   return token
@@ -13,11 +11,26 @@ function withToken(req: HttpRequest<unknown>, token: string | null | undefined):
     : req.clone({ withCredentials: true });
 }
 
+/**
+ * Auth only — this interceptor raises NO user-facing error notification.
+ *
+ * The 403 and 5xx toasts were removed deliberately. A 403 is ordinary traffic here: every
+ * finance endpoint carries its own @PreAuthorize (e.g. the RMB expenses list requires
+ * FACT_VIEW_BILLING), so a user without a code hit a toast on every page that happened to
+ * load that section. The right place to decide is the caller:
+ *
+ *   - a page the user may not open -> `permissionGuard` -> /forbidden, no request made;
+ *   - a section inside a page they may open -> the section hides itself
+ *     (`*dafHasPermission` for a static code, or a catch on 403 when it is data-dependent).
+ *
+ * Errors still propagate through `throwError`, so nothing is swallowed. Note this app has
+ * no component-level error feedback yet, so a failed write is currently silent — that is
+ * the trade-off of removing the 5xx branch, and the reason to add per-action messages where
+ * a write can fail.
+ */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const store = inject(UserStore);
   const auth  = inject(AuthService);
-  const toast = inject(ToastService);
-  const t     = inject(TranslateService);
 
   const isPortalCall = req.url.startsWith(environment.portalUrl);
   const isFactApi    = req.url.startsWith(environment.factApiUrl);
@@ -35,14 +48,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (isFactApi || isHrApi) {
     return next(withToken(req, store.user()?.rhToken)).pipe(
       catchError(err => {
-        if (err.status === 403) {
-          toast.error(t.instant('ERRORS.FORBIDDEN'));
-          return throwError(() => err);
-        }
-        if (err.status === 0 || err.status >= 500) {
-          toast.error(t.instant('ERRORS.SERVER'));
-          return throwError(() => err);
-        }
         if (err.status !== 401) return throwError(() => err);
         // Token expired or missing — refresh from portal then retry once.
         return from(auth.refreshToken()).pipe(
