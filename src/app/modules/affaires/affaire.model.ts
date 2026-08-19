@@ -7,7 +7,12 @@ export interface PageResponse<T> {
 }
 
 export type AffaireStatut = 'EN_COURS' | 'SUSPENDUE' | 'CLOTUREE' | 'ARCHIVEE';
-export type AffaireType    = 'FORFAIT' | 'REGIE' | 'LUMP_SUM';
+/**
+ * `affaires.type_affaire`, as CK_Affaire_Type actually allows it. The old union
+ * ('FORFAIT' | 'REGIE' | 'LUMP_SUM') listed two codes the database rejects and omitted the
+ * two it uses most — the constraint lives only in the DB, so nothing here ever caught it.
+ */
+export type AffaireType    = 'LUMP_SUM' | 'MILESTONE' | 'TIME_AND_MATERIALS';
 export type TsStatut       = 'CREATED' | 'VALID_TECHNIQUE' | 'VALID_COMMERCIALE' | 'INTEGRE' | 'FACTURE' | 'ANNULE';
 
 /**
@@ -233,9 +238,9 @@ export const STATUT_TRANSITIONS: Record<string, string[]> = {
 };
 
 export const TYPE_LABELS: Record<string, string> = {
-  FORFAIT:  'Forfait',
-  REGIE:    'Régie',
-  LUMP_SUM: 'Lump Sum',
+  LUMP_SUM:           'Forfaitaire',
+  MILESTONE:          'Livrables / Jalons',
+  TIME_AND_MATERIALS: 'Régie / Coûts',
 };
 
 export const STATUT_LABELS: Record<string, string> = {

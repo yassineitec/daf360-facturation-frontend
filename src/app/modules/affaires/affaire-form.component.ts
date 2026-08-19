@@ -72,9 +72,9 @@ import { UserRefDto, PaysRefDto, CreateAffaireRequest } from './affaire.model';
               <label for="type">{{ 'AFFAIRES.form.fields.type' | translate }} *</label>
               <select id="type" formControlName="type">
                 <option value="">{{ 'AFFAIRES.form.select_placeholder' | translate }}</option>
-                <option value="FORFAIT">{{ 'AFFAIRES.form.types.FORFAIT' | translate }}</option>
-                <option value="REGIE">{{ 'AFFAIRES.form.types.REGIE' | translate }}</option>
                 <option value="LUMP_SUM">{{ 'AFFAIRES.form.types.LUMP_SUM' | translate }}</option>
+                <option value="MILESTONE">{{ 'AFFAIRES.form.types.MILESTONE' | translate }}</option>
+                <option value="TIME_AND_MATERIALS">{{ 'AFFAIRES.form.types.TIME_AND_MATERIALS' | translate }}</option>
               </select>
               @if (f['type'].touched && f['type'].errors?.['required']) {
                 <span class="field-error">{{ 'AFFAIRES.form.errors.required' | translate }}</span>

@@ -1509,9 +1509,9 @@
         "notes": "Additional information…"
       },
       "types": {
-        "FORFAIT": "Fixed price",
-        "REGIE": "Time & materials",
-        "LUMP_SUM": "Lump Sum"
+        "LUMP_SUM": "Lump sum (contractual amount)",
+        "MILESTONE": "Deliverables / Milestones",
+        "TIME_AND_MATERIALS": "Time & materials / Cost-based"
       },
       "actions": {
         "cancel": "Cancel",

@@ -1509,9 +1509,9 @@
         "notes": "Informations complémentaires…"
       },
       "types": {
-        "FORFAIT": "Forfait",
-        "REGIE": "Régie",
-        "LUMP_SUM": "Lump Sum"
+        "LUMP_SUM": "Forfaitaire (montant contractuel)",
+        "MILESTONE": "Livrables / Jalons",
+        "TIME_AND_MATERIALS": "Régie / Coûts (TM, CP, RMB)"
       },
       "actions": {
         "cancel": "Annuler",
