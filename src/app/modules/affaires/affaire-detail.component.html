@@ -102,6 +102,38 @@
                 </div>
               }
 
+              <!-- Managers — la LISTE COMPLÈTE, pas le seul responsable principal.
+                   `affaire_responsables` porte une ligne par (personne, activité) : le
+                   composant regroupe par personne, donc une même personne n'apparaît
+                   ici qu'une fois, ses activités jointes sur la ligne de détail. -->
+              <div class="flex flex-col gap-1">
+                <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                  {{ 'AFFAIRES.DETAIL.INFO.MANAGERS' | translate }}
+                </p>
+                @for (r of responsables(); track r.userId) {
+                  <div class="flex items-start justify-between gap-3 py-1">
+                    <div class="min-w-0">
+                      <p class="text-body-md font-bold text-on-surface">
+                        {{ r.fullName }}
+                        @if (r.isPrimary) {
+                          <span class="text-label-sm font-extrabold uppercase tracking-wider text-primary">
+                            · {{ 'AFFAIRES.DETAIL.INFO.MANAGER_PRIMARY' | translate }}
+                          </span>
+                        }
+                      </p>
+                      @if (r.detail) {
+                        <p class="text-body-sm text-on-surface-variant">{{ r.detail }}</p>
+                      }
+                    </div>
+                    @if (r.budget) {
+                      <p class="shrink-0 text-body-sm font-bold text-on-surface-variant">{{ r.budget }}</p>
+                    }
+                  </div>
+                } @empty {
+                  <p class="text-body-md font-bold text-on-surface">—</p>
+                }
+              </div>
+
               <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
                 @for (f of identityGridFields(); track f.label) {
                   <div class="flex flex-col gap-1" style="flex:1 1 40%">
@@ -148,7 +180,7 @@
                    décide de la largeur, pas la longueur du libellé). -->
               <div class="grid grid-cols-2 gap-2">
                 <daf-button *appHasPermission="'FACT_CREATE_TS'"
-                  [options]="timeButtonOptions()"
+                  [options]="tsButtonOptions()"
                   (onClick)="openTsForm()" />
 
                 <!-- Frais : ce n'est plus un mode de facturation mais une action de la
@@ -324,7 +356,7 @@
                         <p class="text-body-md font-bold text-on-surface">
                           {{ 'AFFAIRES.DETAIL.OVERVIEW.TEAM_COUNT' | translate: { count: team().length } }}
                         </p>
-                        <p class="truncate text-body-sm text-on-surface-variant">{{ team()[0].name }}</p>
+                        <p class="truncate text-body-sm text-on-surface-variant" [title]="teamNames()">{{ teamNames() }}</p>
                       </div>
                     </div>
                   }

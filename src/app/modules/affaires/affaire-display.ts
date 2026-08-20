@@ -1,5 +1,5 @@
 import { BadgeVariant } from '@khalilrebhiitec/daf360';
-import { AffaireListItem, TYPE_LABELS } from './affaire.model';
+import { AffaireListItem, AffaireResponsable, TYPE_LABELS } from './affaire.model';
 
 /**
  * Single source of truth for how an affaire is *displayed*.
@@ -59,6 +59,58 @@ export const RAF_TONE_CLASS: Record<RafTone, string> = {
 
 export function typeLabel(type: string): string {
   return TYPE_LABELS[type] ?? type;
+}
+
+/**
+ * Les responsables de l'affaire, UNE ENTRÉE PAR PERSONNE, principal en tête.
+ *
+ * `affaire_responsables` porte une ligne par couple (personne, activité) depuis V26 :
+ * compter les lignes ferait « et 4 autres » là où il n'y a que deux personnes portant
+ * deux activités chacune. L'ordre du serveur est conservé (`is_primary DESC, added_at`),
+ * donc la première entrée est bien le responsable principal.
+ *
+ * Repli sur `responsableFullName` quand la table est vide : une affaire créée avant V18
+ * — ou par l'écran de création simple, qui n'écrit que `responsable_user_id` — n'a
+ * aucune ligne de jointure, et la fiche ne doit pas pour autant afficher « — ».
+ */
+export function distinctResponsables(a: AffaireListItem): AffaireResponsable[] {
+  const rows = a.responsables ?? [];
+  if (!rows.length) {
+    return a.responsableFullName
+      ? [{
+          id: -1, userId: a.responsableUserId ?? -1, fullName: a.responsableFullName,
+          isPrimary: true, role: null, activiteId: null, activiteLabel: null,
+          disciplineId: null, disciplineLabel: null,
+          budgetAllocation: null, budgetCurrency: null,
+        }]
+      : [];
+  }
+  const seen = new Set<number>();
+  return rows.filter(r => {
+    if (seen.has(r.userId)) return false;
+    seen.add(r.userId);
+    return true;
+  });
+}
+
+/**
+ * « John Doe » seul, « John Doe et 3 autres » à plusieurs — le format des cartes et de
+ * la colonne responsable, où il n'y a pas la place d'énumérer.
+ *
+ * `translate` est passé plutôt qu'injecté : ce fichier est un module de présentation
+ * pur, sans dépendance Angular (c'est ce qui permet aux trois vues de le partager).
+ */
+export function responsablesSummary(
+  a: AffaireListItem,
+  t: (key: string, params?: Record<string, unknown>) => string,
+): string {
+  const people = distinctResponsables(a);
+  if (!people.length)      return '—';
+  if (people.length === 1) return people[0].fullName;
+  return t('AFFAIRES.LIST.TABLE.CARD.MANAGERS_MORE', {
+    name:  people[0].fullName,
+    count: people.length - 1,
+  });
 }
 
 export function initials(name: string | null | undefined): string {

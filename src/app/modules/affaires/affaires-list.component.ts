@@ -8,6 +8,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { AffaireService } from './affaire.service';
 import { AffaireFilter, AffaireListItem, STATUT_LABELS, TYPE_LABELS } from './affaire.model';
+import { distinctResponsables } from './affaire-display';
 import { AffairesCardsSectionComponent } from './components/affaires-cards-section.component';
 import { AffairesTableSectionComponent } from './components/affaires-table-section.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
@@ -179,7 +180,17 @@ export class AffairesListComponent implements OnInit {
    * initiales — il n'y a rien à signaler à l'utilisateur.
    */
   private loadResponsableAvatars(rows: AffaireListItem[]): void {
-    const ids = [...new Set(rows.map(a => a.responsableUserId).filter((id): id is number => !!id))];
+    // Le premier responsable de `affaire_responsables`, et non `responsableUserId` : la
+    // colonne de compatibilité peut avoir divergé du principal de la table de jointure
+    // (l'assistant réécrit la liste, la colonne ne suit qu'au dernier enregistrement),
+    // et la cellule affiche justement ce premier-là — sinon elle demandait la photo de
+    // quelqu'un d'autre et retombait sur les initiales.
+    const ids = [...new Set(
+      rows.flatMap(a => {
+        const lead = distinctResponsables(a)[0];
+        return lead ? [lead.userId] : (a.responsableUserId ? [a.responsableUserId] : []);
+      }).filter((id): id is number => !!id && id > 0),
+    )];
     if (ids.length === 0) { this.avatarUrls.set(new Map()); return; }
 
     this.avatarSvc.resolve(ids).subscribe({

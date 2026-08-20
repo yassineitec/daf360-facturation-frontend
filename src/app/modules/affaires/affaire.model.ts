@@ -68,14 +68,43 @@ export interface AffairePaymentItem {
   notes:         string | null;
 }
 
+/**
+ * Une ligne de `affaire_responsables` — la table qui porte VRAIMENT les responsables
+ * d'une affaire.
+ *
+ * `responsableUserId` / `responsableFullName` sur l'affaire ne désignent que le
+ * responsable principal : c'est une colonne de compatibilité que la migration V18
+ * remplit par recopie. La liste et la fiche n'affichaient que celle-là, donc un seul
+ * nom quel que soit le nombre réel de responsables.
+ *
+ * Depuis V26 une même personne occupe une ligne PAR ACTIVITÉ : le nombre de lignes
+ * n'est donc pas le nombre de personnes — voir `distinctResponsables()`.
+ */
+export interface AffaireResponsable {
+  id:               number;
+  userId:           number;
+  fullName:         string;
+  isPrimary:        boolean;
+  role:             string | null;
+  activiteId:       number | null;
+  activiteLabel:    string | null;
+  disciplineId:     number | null;
+  disciplineLabel:  string | null;
+  budgetAllocation: number | null;
+  budgetCurrency:   string | null;
+}
+
 export interface AffaireListItem {
   id:                 number;
   reference:          string;
   intitule:           string;
   clientId:           number | null;
   clientName:         string | null;
+  /** Responsable PRINCIPAL uniquement — la liste complète est dans `responsables`. */
   responsableUserId:  number | null;
   responsableFullName:string | null;
+  /** Toujours servi par l'API (liste et fiche) ; optionnel ici pour les fixtures. */
+  responsables?:      AffaireResponsable[];
   typeAffaire:        AffaireType | string;
   statut:             AffaireStatut | string;
   budgetPrevisionnel: number | null;

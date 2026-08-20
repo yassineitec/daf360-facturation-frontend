@@ -25,6 +25,7 @@ import {
   AffaireInvoiceItem, AffairePaymentItem, PaysRefDto,
   STATUT_TRANSITIONS, STATUT_LABELS,
 } from './affaire.model';
+import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
@@ -40,6 +41,24 @@ import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avata
 
 /** A read-only label/value pair. `label` is always a translation key. */
 interface DetailField { label: string; value: string; }
+
+/**
+ * Un responsable de l'affaire tel que la fiche l'affiche : UNE ENTRÉE PAR PERSONNE,
+ * ses activités et disciplines regroupées, son budget alloué cumulé.
+ *
+ * `affaire_responsables` porte une ligne par couple (personne, activité) depuis V26 :
+ * lister les lignes brutes ferait apparaître deux fois la même personne dès qu'elle
+ * porte deux activités.
+ */
+interface ResponsableEntry {
+  userId:    number;
+  fullName:  string;
+  isPrimary: boolean;
+  /** Rôle · activités · disciplines, dédoublonnés et joints — vide si rien n'est renseigné. */
+  detail:    string;
+  /** Somme des allocations de la personne, déjà formatée — vide si aucune n'est renseignée. */
+  budget:    string;
+}
 
 /** One `daf-metric-card` of the right column's KPI row. `label` is a translation key. */
 interface KpiTile {
@@ -292,14 +311,21 @@ export class AffaireDetailComponent implements OnInit {
    * `fullWidth` : la largeur vient de la cellule de grille, sinon deux libellés de
    * longueurs différentes donnent deux boutons de largeurs différentes sur la même ligne.
    */
-  readonly timeButtonOptions = computed<ButtonOptions>(() => {
+  /**
+   * Le bouton disait « Saisir du temps » avec une icône d'horloge, mais il appelle
+   * `openTsForm()` et il est gardé par `FACT_CREATE_TS` : il crée un TRAVAIL
+   * SUPPLÉMENTAIRE, pas une saisie de temps. Le libellé et l'icône disaient donc une
+   * fonctionnalité qui n'existe pas sur cette fiche. Il reprend maintenant le libellé
+   * déjà employé partout ailleurs pour la même action (`ACTIONS.NEW_TS`).
+   */
+  readonly tsButtonOptions = computed<ButtonOptions>(() => {
     this.translate.currentLang();
     return {
       variant:   'secondary',
       size:      'sm',
       fullWidth: true,
-      iconStart: 'schedule',
-      label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.TIME_TITLE'),
+      iconStart: 'post_add',
+      label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.NEW_TS'),
     };
   });
 
@@ -350,15 +376,87 @@ export class AffaireDetailComponent implements OnInit {
 
   // ═══ Colonne identité ═════════════════════════════════════════════════════
 
-  /** Bloc pleine largeur en tête de carte : client, manager, période. */
+  /** Bloc pleine largeur en tête de carte : client, période. */
   readonly identityLeadFields = computed<DetailField[]>(() => {
     const a = this.affaire();
     if (!a) return [];
+    // Plus de ligne « Manager » ici : elle n'affichait que `responsableFullName`, donc le
+    // seul responsable principal. La liste complète est un bloc à part (`responsables()`),
+    // parce qu'une ligne label/valeur ne peut pas porter N personnes avec leur activité.
     return [
       { label: 'AFFAIRES.DETAIL.INFO.CLIENT',  value: a.clientName ?? '—' },
-      { label: 'AFFAIRES.DETAIL.INFO.MANAGER', value: a.responsableFullName ?? '—' },
       { label: 'AFFAIRES.DETAIL.INFO.PERIOD',  value: `${this.formatDate(a.dateDebut)} — ${this.formatDate(a.dateFin)}` },
     ];
+  });
+
+  /**
+   * TOUS les responsables de l'affaire, une entrée par personne — le bloc « Managers »
+   * de la carte d'informations.
+   *
+   * La fiche n'affichait que `responsableFullName`, la colonne de compatibilité qui ne
+   * désigne que le responsable principal : une affaire à quatre responsables se lisait
+   * comme une affaire à un seul, alors que `affaire_responsables` les porte tous.
+   */
+  readonly responsables = computed<ResponsableEntry[]>(() => {
+    const a = this.affaire();
+    if (!a) return [];
+
+    const rows = a.responsables ?? [];
+    // Affaire créée hors assistant (ou avant V18) : aucune ligne de jointure, mais un
+    // responsable principal quand même — `distinctResponsables` gère ce repli.
+    if (!rows.length) {
+      return distinctResponsables(a).map(r => ({
+        userId: r.userId, fullName: r.fullName, isPrimary: true, detail: '', budget: '',
+      }));
+    }
+
+    const devise = this.affaireDevise();
+    const byUser = new Map<number, { entry: ResponsableEntry; parts: Set<string>; total: number | null }>();
+
+    for (const r of rows) {
+      let acc = byUser.get(r.userId);
+      if (!acc) {
+        acc = {
+          entry: { userId: r.userId, fullName: r.fullName, isPrimary: !!r.isPrimary, detail: '', budget: '' },
+          parts: new Set<string>(),
+          total: null,
+        };
+        byUser.set(r.userId, acc);
+      }
+      acc.entry.isPrimary ||= !!r.isPrimary;
+      for (const part of [r.role, r.activiteLabel, r.disciplineLabel]) {
+        if (part) acc.parts.add(part);
+      }
+      if (r.budgetAllocation != null) acc.total = (acc.total ?? 0) + r.budgetAllocation;
+    }
+
+    return [...byUser.values()].map(({ entry, parts, total }) => ({
+      ...entry,
+      detail: [...parts].join(' · '),
+      budget: total != null ? this.currency.transform(total, devise) : '',
+    }));
+  });
+
+  /**
+   * « Pays d'origine » nommait le pays de rattachement de l'affaire ; le champ désigne en
+   * réalité l'entité mère du groupe, toujours ARX, qualifiée par ce pays — d'où le préfixe
+   * en dur. Sans pays connu, ARX seul : « ARX — » se lirait comme une donnée manquante
+   * alors que l'entité, elle, est certaine.
+   */
+  readonly entiteMere = computed(() => {
+    const pays = this.paysLabel();
+    return pays === '—' ? 'ARX' : `ARX ${pays}`;
+  });
+
+  /**
+   * Somme des `budget_allocation` de tous les responsables, ou `null` si aucun n'en porte.
+   * Le serveur valide déjà que la somme ne dépasse pas `budget_previsionnel` ; l'afficher
+   * rend visible la part encore non répartie.
+   */
+  readonly budgetAllocated = computed<number | null>(() => {
+    const rows = this.affaire()?.responsables ?? [];
+    const total = rows.reduce((s, r) => s + (r.budgetAllocation ?? 0), 0);
+    return rows.some(r => r.budgetAllocation != null) ? total : null;
   });
 
   /** Grille 2 colonnes sous le bloc principal — comme la maquette. */
@@ -366,8 +464,12 @@ export class AffaireDetailComponent implements OnInit {
     const a = this.affaire();
     if (!a) return [];
     const fields: DetailField[] = [
-      { label: 'AFFAIRES.DETAIL.INFO.PAYS',         value: this.paysLabel() },
+      { label: 'AFFAIRES.DETAIL.INFO.ENTITE_MERE',  value: this.entiteMere() },
       { label: 'AFFAIRES.DETAIL.INFO.CURRENCY',     value: this.affaireDevise() },
+      // Le budget prévisionnel n'était nulle part sur la fiche : la ligne « Budget validé »
+      // disait s'il était approuvé sans jamais dire de combien, et les quatre tuiles du haut
+      // montrent CA, RAF, marge et WIP — pas le budget dont elles se déduisent.
+      { label: 'AFFAIRES.DETAIL.INFO.BUDGET',       value: this.money(a.budgetPrevisionnel) },
       // Pas de « type d'engagement » ici : `typeAffaire` n'est jamais renseigné par
       // l'assistant (il retombe systématiquement sur FORFAIT côté service), la ligne
       // affichait donc toujours la même valeur juste à côté du mode de facturation, qui
@@ -379,6 +481,18 @@ export class AffaireDetailComponent implements OnInit {
           ? 'AFFAIRES.DETAIL.INFO.YES' : 'AFFAIRES.DETAIL.INFO.NO'),
       },
     ];
+    // Le montant du contrat n'existe que sur les modes contractuels (AV / LIVRABLE) ;
+    // sur TM, CP et RMB le montant saisi n'est qu'une enveloppe, et le serveur laisse
+    // `contract_amount` nul — une ligne vide dirait « donnée manquante » à tort.
+    if (a.contractAmount != null) {
+      fields.push({ label: 'AFFAIRES.DETAIL.INFO.CONTRACT_AMOUNT', value: this.money(a.contractAmount) });
+    }
+    // La somme allouée aux responsables, seulement si elle est renseignée ET qu'elle ne
+    // couvre pas déjà exactement le budget : sinon la ligne répète le budget juste au-dessus.
+    const allocated = this.budgetAllocated();
+    if (allocated != null && allocated !== (a.budgetPrevisionnel ?? 0)) {
+      fields.push({ label: 'AFFAIRES.DETAIL.INFO.BUDGET_ALLOCATED', value: this.money(allocated) });
+    }
     if (a.doc360Ref)    fields.push({ label: 'AFFAIRES.DETAIL.INFO.DOC360',  value: a.doc360Ref });
     if (a.erpReference) fields.push({ label: 'AFFAIRES.DETAIL.INFO.ERP_REF', value: a.erpReference });
     return fields;
@@ -442,31 +556,34 @@ export class AffaireDetailComponent implements OnInit {
   });
 
   /**
-   * Les personnes rattachées à l'affaire. Le backend d'affaires n'expose aujourd'hui que
-   * le responsable ; la carte est déjà une liste pour que d'autres membres s'y ajoutent
-   * sans retoucher le template — il suffira d'allonger `teamUserIds()`.
-   */
-  /**
+   * Les personnes rattachées à l'affaire — TOUS les responsables, pas seulement le
+   * principal. La pile n'en montrait qu'un parce qu'elle lisait `responsableFullName` ;
+   * elle lit maintenant `responsables()`, et `daf-avatar-group` gère le « +N » au-delà
+   * de quatre.
+   *
    * `AvatarData` directement : `daf-avatar` dérive les initiales (`deriveInitials`, la même
    * fonction que la cellule avatar de `daf-data-table`, donc une personne s'affiche pareil
    * dans un tableau et sur une carte) et retombe dessus tout seul si l'image échoue — ce
    * qui arrive souvent, `photo_url` étant renseigné sur des profils dont le fichier manque
    * du stockage. C'est ce qui a remplacé le handler `onAvatarError` local.
    */
-  readonly team = computed<AvatarData[]>(() => {
-    const a = this.affaire();
-    if (!a?.responsableFullName) return [];
-    const avatar = a.responsableUserId ? this.avatars().get(a.responsableUserId) : undefined;
-    return [{
-      name:      a.responsableFullName,
-      avatarUrl: this.avatarSvc.photoUrl(avatar),
-      subtitle:  this.translate.instant('AFFAIRES.DETAIL.INFO.MANAGER'),
-    }];
-  });
+  readonly team = computed<AvatarData[]>(() =>
+    this.responsables().map(r => ({
+      name:      r.fullName,
+      avatarUrl: this.avatarSvc.photoUrl(this.avatars().get(r.userId)),
+      subtitle:  r.detail || this.translate.instant(r.isPrimary
+        ? 'AFFAIRES.DETAIL.INFO.MANAGER_PRIMARY'
+        : 'AFFAIRES.DETAIL.INFO.MANAGER'),
+    })),
+  );
 
-  /** Les user ids dont on veut la photo. Une seule liste à allonger le jour où l'affaire portera une vraie équipe. */
+  /** Tous les noms de l'équipe — la tuile n'en montrait qu'un, la pile en compte N. */
+  readonly teamNames = computed(() => this.team().map(m => m.name).join(', '));
+
+  /** Les user ids dont on veut la photo : toute l'équipe, résolue en un seul appel groupé. */
   private teamUserIds(a: AffaireDetail): number[] {
-    return a.responsableUserId ? [a.responsableUserId] : [];
+    const ids = distinctResponsables(a).map(r => r.userId).filter(id => id > 0);
+    return ids.length ? ids : (a.responsableUserId ? [a.responsableUserId] : []);
   }
 
   // ═══ Indicateurs ══════════════════════════════════════════════════════════
@@ -833,7 +950,9 @@ export class AffaireDetailComponent implements OnInit {
     return [
       { key: 'reference', label: t('AFFAIRES.DETAIL.MODAL.TS_TITLE') },
       { key: 'intitule',  label: t('AFFAIRES.DETAIL.MODAL.TS_INTITULE') },
-      { key: 'montant',   label: t('AFFAIRES.DETAIL.INVOICES.AMOUNT'), align: 'right' },
+      // Clé propre au TS : `INVOICES.AMOUNT` dit « Montant facturé », or c'est ici le
+      // `montant_estime` d'un travail supplémentaire, qui n'est pas encore facturé.
+      { key: 'montant',   label: t('AFFAIRES.DETAIL.MODAL.TS_AMOUNT'), align: 'right' },
       { key: 'statut',    label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge' },
       { key: 'integre',   label: t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT') },
     ];
@@ -1473,7 +1592,7 @@ export class AffaireDetailComponent implements OnInit {
   openTsView(ts: TsDto): void {
     const fields: DetailField[] = [
       { label: 'AFFAIRES.DETAIL.MODAL.TS_INTITULE',      value: ts.intitule },
-      { label: 'AFFAIRES.DETAIL.INVOICES.AMOUNT',        value: this.money(ts.montantEstime, ts.devise || this.affaireDevise()) },
+      { label: 'AFFAIRES.DETAIL.MODAL.TS_AMOUNT',        value: this.money(ts.montantEstime, ts.devise || this.affaireDevise()) },
       { label: 'AFFAIRES.DETAIL.INVOICES.STATUS',        value: this.enumText('TS_STATUT', ts.statut) },
       { label: 'AFFAIRES.DETAIL.MODAL.TS_PERIMETRE',     value: ts.perimetre ?? '—' },
       { label: 'AFFAIRES.DETAIL.MODAL.TS_IMPACT',        value: ts.impactBudgetaire ?? '—' },
@@ -1577,7 +1696,7 @@ export class AffaireDetailComponent implements OnInit {
     this.downloadCsv(
       `TS_${this.affaire()?.reference ?? this.numId}`,
       [t('AFFAIRES.DETAIL.MODAL.TS_TITLE'), t('AFFAIRES.DETAIL.MODAL.TS_INTITULE'),
-       t('AFFAIRES.DETAIL.INVOICES.AMOUNT'), t('AFFAIRES.DETAIL.INFO.CURRENCY'),
+       t('AFFAIRES.DETAIL.MODAL.TS_AMOUNT'), t('AFFAIRES.DETAIL.INFO.CURRENCY'),
        t('AFFAIRES.DETAIL.INVOICES.STATUS'), t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT')],
       this.filteredTs().map(ts => [
         ts.referenceTs, ts.intitule, ts.montantEstime, ts.devise,

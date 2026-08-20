@@ -3,7 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { STATUT_ENTITY_STATUS, typeLabel } from '../affaire-display';
+import { responsablesSummary, STATUT_ENTITY_STATUS, typeLabel } from '../affaire-display';
 
 /**
  * Card view of `/finance/affaires` — one `daf-entity-card` per affaire.
@@ -74,7 +74,7 @@ export class AffairesCardsSectionComponent {
    */
   protected readonly cards = computed<{ id: number; options: EntityCardOptions }[]>(() => {
     this.translate.currentLang();
-    const t = (key: string) => this.translate.instant(key);
+    const t = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
 
     return this.affaires().map(a => ({
       id: a.id,
@@ -97,7 +97,10 @@ export class AffairesCardsSectionComponent {
         metricsColumns: 2,
         metrics: [
           { label: t('AFFAIRES.LIST.TABLE.CARD.CLIENT'),  value: a.clientName ?? '—' },
-          { label: t('AFFAIRES.LIST.TABLE.CARD.MANAGER'), value: a.responsableFullName ?? '—' },
+          // « John Doe » seul, « John Doe et 3 autres » à plusieurs : la carte n'a pas la
+          // place d'énumérer, et `responsableFullName` seul ne montrait QUE le principal —
+          // une affaire à quatre responsables se lisait comme une affaire à un seul.
+          { label: t('AFFAIRES.LIST.TABLE.CARD.MANAGER'), value: responsablesSummary(a, t) },
           { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, a.devise ?? 'TND') },
           { label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),  value: this.currency.transform(a.rafDisponible, a.devise ?? 'TND') },
         ],

@@ -7,7 +7,7 @@ import {
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import {
-  RAF_TONE_CLASS, STATUT_BADGE_VARIANT, initials, rafTone, typeLabel,
+  RAF_TONE_CLASS, STATUT_BADGE_VARIANT, distinctResponsables, initials, rafTone, typeLabel,
 } from '../affaire-display';
 
 /**
@@ -83,6 +83,10 @@ export class AffairesTableSectionComponent {
     this.translate.currentLang();
     return this.affaires().map(a => {
       const devise = a.devise ?? 'TND';
+      // Les responsables de l'affaire, dédoublonnés par personne, principal en tête —
+      // `affaire_responsables` porte une ligne par activité, pas par personne.
+      const people = distinctResponsables(a);
+      const lead   = people[0];
       return {
         id:          a.id,
         reference:   a.reference,
@@ -90,14 +94,19 @@ export class AffairesTableSectionComponent {
         client:      a.clientName ?? '—',
         pays:        this.paysLabels().get(a.paysId) ?? '—',
         responsable: {
-          name:     a.responsableFullName ?? '—',
-          initials: initials(a.responsableFullName),
+          name:     lead?.fullName ?? '—',
+          initials: initials(lead?.fullName),
           // La photo RH du responsable. La cellule `avatar` de la lib affiche `avatar`
           // quand il est là et retombe sur `initials` sinon, donc une affaire dont le
           // responsable n'a pas de photo (ou pas de profil RH) reste correcte sans
           // traitement particulier ici.
-          avatar:   a.responsableUserId ? this.avatarUrls().get(a.responsableUserId) : undefined,
-          subtitle: a.billingMode ?? undefined,
+          avatar:   lead ? this.avatarUrls().get(lead.userId) : undefined,
+          // Le sous-titre portait le mode de facturation, une information sans rapport
+          // avec la personne affichée juste au-dessus. Il porte maintenant le reste de
+          // l'équipe : sans lui, la colonne laissait croire à un responsable unique.
+          subtitle: people.length > 1
+            ? this.translate.instant('AFFAIRES.LIST.TABLE.MANAGERS_OTHERS', { count: people.length - 1 })
+            : undefined,
         } satisfies AvatarCell,
         type:      typeLabel(a.typeAffaire),
         budget:    this.currency.transform(a.budgetPrevisionnel, devise),
