@@ -146,7 +146,7 @@ export class WizardStepResponsablesComponent implements OnInit {
       ? (this.draft.budgetPrevisionnel ?? 0)
       : Math.max(0, this.budgetRemaining());
     const newRow: ResponsableItem = {
-      userId: 0, userName: '', isPrimary: isFirst,
+      userId: 0, userName: '',
       budgetAllocation: defaultBudget || undefined,
       activiteId: null, disciplineId: null,
     };
@@ -155,16 +155,11 @@ export class WizardStepResponsablesComponent implements OnInit {
 
   removeRow(index: number): void {
     const updated = this.draft.responsables.filter((_, i) => i !== index);
-    if (updated.length > 0 && !updated.some(r => r.isPrimary)) {
-      updated[0] = { ...updated[0], isPrimary: true };
-    }
     this.emit({ ...this.draft, responsables: updated });
   }
 
-  setPrimary(index: number): void {
-    const updated = this.draft.responsables.map((r, i) => ({ ...r, isPrimary: i === index }));
-    this.emit({ ...this.draft, responsables: updated });
-  }
+  // `setPrimary` a disparu avec la notion de responsable principal : il n'y a plus de rang
+  // à attribuer, donc plus d'étoile à cliquer dans l'en-tête de ligne.
 
   updateUser(index: number, userId: number): void {
     const user = this.allUsers().find(u => u.id === userId);

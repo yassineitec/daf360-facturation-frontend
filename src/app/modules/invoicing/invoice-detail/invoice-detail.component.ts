@@ -115,6 +115,32 @@ export class InvoiceDetailComponent implements OnInit {
     return [inv.clientNom, inv.affaireRef].filter(Boolean).join(' · ');
   });
 
+  /**
+   * Le sous-titre mène à l'affaire de la facture (`subtitleLink` de `daf-page-header`).
+   *
+   * Un vrai `routerLink` et non un `(click)` : on peut l'ouvrir dans un onglet, le
+   * copier, le survoler pour voir où il va — ce que le bouton « Voir l'affaire » de la
+   * colonne d'actions ne permet pas. Les deux restent, ils ne visent pas le même geste :
+   * le sous-titre est le fil d'Ariane vers le parent, le bouton est une action de la fiche.
+   *
+   * `undefined` quand la facture ne porte pas d'affaire (un brouillon peut ne pas encore
+   * en avoir) : le composant laisse alors le sous-titre en `<p>` simple, donc pas de lien
+   * mort ni de saut vers `/affaires/null`.
+   *
+   * Chemin RELATIF, et le même que `goToAffaire()` : cette app est un remote dont le
+   * point de montage appartient au shell, un `/finance/...` en dur casserait dès que le
+   * shell le déplace. `routerLink` résout contre la même `ActivatedRoute` que
+   * `router.navigate({ relativeTo })`, donc les deux tombent au même endroit.
+   */
+  readonly affaireLink = computed<unknown[] | undefined>(() => {
+    const affaireId = this.invoice()?.affaireId;
+    return affaireId ? this.affaireRoute(affaireId) : undefined;
+  });
+
+  private affaireRoute(affaireId: number): unknown[] {
+    return ['../../affaires', affaireId];
+  }
+
   readonly headerBadges = computed<PageHeaderBadge[]>(() => {
     const inv = this.invoice();
     if (!inv) return [];
@@ -482,11 +508,15 @@ export class InvoiceDetailComponent implements OnInit {
   onPaymentClosed(saved: boolean): void    { this.showPaymentModal.set(false); if (saved) this.refresh(); }
   onCreditNoteClosed(saved: boolean): void { this.showCreditNote.set(false);   if (saved) this.refresh(); }
 
-  /** La facture porte son affaire : on y va directement plutôt que par la liste. */
+  /**
+   * La facture porte son affaire : on y va directement plutôt que par la liste.
+   * Même destination que le sous-titre cliquable — les deux passent par `affaireRoute`
+   * pour qu'un changement d'arborescence n'en corrige qu'un sur deux.
+   */
   goToAffaire(): void {
     const affaireId = this.invoice()?.affaireId;
     if (!affaireId) return;
-    this.router.navigate(['../../affaires', affaireId], { relativeTo: this.route });
+    this.router.navigate(this.affaireRoute(affaireId), { relativeTo: this.route });
   }
 
   /** Export PDF (mode AV uniquement) — brouillon non numéroté tant que la facture n'est

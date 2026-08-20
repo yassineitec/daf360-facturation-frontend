@@ -4,7 +4,7 @@ import { DecimalPipe } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   AvatarGroupComponent, BarChartComponent, ButtonComponent, ButtonOptions,
-  DataTableComponent, MetricCardComponent,
+  ChipGroupComponent, DataTableComponent, MetricCardComponent,
   DrawerComponent, FormFieldComponent, FormFieldOptions, GaugeComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
   RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, StatusBadgeComponent,
@@ -12,7 +12,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import type {
   AvatarData, BadgeCell, BadgeOptions, BarChartBar, BarChartOptions, BreadcrumbItem,
-  DrawerConfig,
+  ChipGroupConfig, ChipOption, DrawerConfig,
   MetricCardOptions, MetricDelta,
   FilterField, FilterResult, GaugeOptions, PageHeaderBadge, RadioOption,
   SearchToolbarFilterConfig, TabItem, TableAction, TableColumn, TableConfig, TableRow,
@@ -29,7 +29,6 @@ import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
-import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.component';
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
 import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
@@ -53,7 +52,6 @@ interface DetailField { label: string; value: string; }
 interface ResponsableEntry {
   userId:    number;
   fullName:  string;
-  isPrimary: boolean;
   /** Rôle · activités · disciplines, dédoublonnés et joints — vide si rien n'est renseigné. */
   detail:    string;
   /** Somme des allocations de la personne, déjà formatée — vide si aucune n'est renseignée. */
@@ -105,8 +103,8 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, ButtonComponent,
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
-    GaugeComponent, BarChartComponent, AvatarGroupComponent,
-    TsFormComponent, AfaireBillingTabComponent,
+    GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
+    TsFormComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,
@@ -115,6 +113,125 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
   // has to be provided — the pipe is only ambient in a template.
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-detail.component.html',
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Pourquoi des styles de composant, alors que la page est en styles inline
+  //
+  // La page évitait les classes parce que le `styles.css` d'un remote ne contient que les
+  // classes que Tailwind a déjà vues à la compilation : une classe neuve n'existe pas dans
+  // le CSS servi tant que le remote n'est pas reconstruit, et la mise en page retombe en
+  // une colonne. Mais les styles d'un COMPOSANT ne passent pas par ce scan — ils sont
+  // compilés dans le composant lui-même, donc ils voyagent avec lui.
+  //
+  // C'est ce qui débloque les MEDIA QUERIES, impossibles dans un attribut `style` : sans
+  // elles, la seule mise en page possible était `flex-wrap` avec une base en pixels, et
+  // c'est précisément ce qui cassait sur un écran de portable — quatre tuiles de base
+  // 200 px dans 700 px de colonne se replient 3 + 1, laissant une tuile orpheline sur sa
+  // propre ligne. Les rangées sont donc des GRILLES `auto-fit`/`minmax` (ce que les
+  // commentaires du template décrivaient déjà sans que ce soit implémenté) : les colonnes
+  // en `1fr` sont égales par construction et le nombre par ligne s'adapte tout seul.
+  // ═══════════════════════════════════════════════════════════════════════════
+  styles: [`
+    /* ── Les deux colonnes ─────────────────────────────────────────────────── */
+    .detail-split {
+      display:     flex;
+      flex-wrap:   wrap;
+      gap:         2rem;
+      align-items: flex-start;
+    }
+
+    /* Colonne gauche : ~30 % au-delà du portable, mais bornée en dur — au-delà de 420 px
+       la carte d'informations n'a plus rien à faire de la largeur, autant la donner au
+       graphique. */
+    .detail-aside {
+      flex:      0 1 30%;
+      min-width: 320px;
+      max-width: 420px;
+    }
+
+    .detail-main {
+      flex:           1 1 480px;
+      min-width:      0;
+      display:        flex;
+      flex-direction: column;
+      gap:            1.5rem;
+    }
+
+    /* ── Rangées de cartes : des grilles, pas du flex-wrap ─────────────────── */
+    .kpi-row, .tile-row, .bottom-row {
+      display: grid;
+      gap:     1.5rem;
+      align-items: stretch;
+    }
+
+    /* 170 px : les quatre indicateurs tiennent sur une ligne dès ~740 px de colonne, donc
+       sur un portable de 1366 px. En dessous, la grille passe à trois puis deux colonnes
+       ÉGALES — jamais une orpheline pleine largeur. */
+    .kpi-row    { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+    .tile-row   { grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }
+    .bottom-row { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+    /* Les hôtes de carte : display:flex pour que la carte remplisse sa cellule, et
+       min-width:0 pour qu'un contenu large (un montant, un libellé) ne pousse pas la
+       colonne au-delà de son 1fr — c'est ce qui fait déborder une grille. */
+    .kpi-cell, .tile-cell, .bottom-cell {
+      display:        flex;
+      flex-direction: column;
+      min-width:      0;
+    }
+    .kpi-cell    { min-height: 118px; }
+    .tile-cell   { min-height: 210px; height: auto; }
+    .bottom-cell { min-height: 300px; height: auto; }
+
+    /* ── En-tête du panneau graphique ──────────────────────────────────────── */
+    /* Deux rangées : titre + puces, puis légendes + cumul. En une seule rangée, le bloc
+       « Total cumulé » se repliait en emportant sa bordure gauche, qui pendait alors dans
+       le vide à côté du chiffre. Ici la séparation est le border-top de la seconde
+       rangée : elle court sur toute la largeur et ne peut pas devenir orpheline. */
+    .chart-head {
+      display:         flex;
+      flex-wrap:       wrap;
+      gap:             1rem;
+      align-items:     center;
+      justify-content: space-between;
+    }
+
+    .chart-legend {
+      display:         flex;
+      flex-wrap:       wrap;
+      gap:             0.75rem 1.5rem;
+      align-items:     flex-end;
+      justify-content: space-between;
+      padding-top:     1rem;
+      border-top:      1px solid var(--color-outline-variant, #bdc9c4);
+    }
+
+    /* ── Portable et en dessous ────────────────────────────────────────────── */
+    /* 1400 px : la fenêtre d'un portable moins la barre latérale de 256 px et les marges
+       du shell, c'est ~1050 px de contenu. On resserre la gouttière et la colonne gauche
+       pour rendre cette largeur au graphique et aux tableaux. */
+    @media (max-width: 1400px) {
+      .detail-split { gap: 1.5rem; }
+      .detail-aside { min-width: 300px; max-width: 360px; }
+    }
+
+    /* En dessous de ~1150 px il n'y a plus de place pour deux colonnes : la carte
+       d'informations passe pleine largeur au-dessus du reste, et son sticky n'a plus de
+       sens (elle serait collée en haut devant le contenu qu'on lit). */
+    @media (max-width: 1150px) {
+      .detail-aside {
+        flex:      1 1 100%;
+        max-width: none;
+        min-width: 0;
+      }
+      .detail-aside > div { position: static !important; }
+    }
+
+    @media (max-width: 640px) {
+      .kpi-row, .tile-row, .bottom-row { gap: 1rem; }
+      .chart-legend { align-items: flex-start; }
+      .chart-legend > .text-right { text-align: left; }
+    }
+  `],
 })
 export class AffaireDetailComponent implements OnInit {
   // Bound from route param via withComponentInputBinding()
@@ -406,7 +523,7 @@ export class AffaireDetailComponent implements OnInit {
     // responsable principal quand même — `distinctResponsables` gère ce repli.
     if (!rows.length) {
       return distinctResponsables(a).map(r => ({
-        userId: r.userId, fullName: r.fullName, isPrimary: true, detail: '', budget: '',
+        userId: r.userId, fullName: r.fullName, detail: '', budget: '',
       }));
     }
 
@@ -417,13 +534,12 @@ export class AffaireDetailComponent implements OnInit {
       let acc = byUser.get(r.userId);
       if (!acc) {
         acc = {
-          entry: { userId: r.userId, fullName: r.fullName, isPrimary: !!r.isPrimary, detail: '', budget: '' },
+          entry: { userId: r.userId, fullName: r.fullName, detail: '', budget: '' },
           parts: new Set<string>(),
           total: null,
         };
         byUser.set(r.userId, acc);
       }
-      acc.entry.isPrimary ||= !!r.isPrimary;
       for (const part of [r.role, r.activiteLabel, r.disciplineLabel]) {
         if (part) acc.parts.add(part);
       }
@@ -507,15 +623,35 @@ export class AffaireDetailComponent implements OnInit {
    * La part du RAF passe par `delta` — `daf-metric-card` n'a pas de slot pastille, et
    * `delta` est exactement ça : une valeur secondaire à côté du chiffre. `direction:
    * 'neutral'` parce que c'est une part, pas une variation.
+   *
+   * **`help` sur les quatre** (lib 4.20.0) : la définition du chiffre, révélée au survol
+   * de la tuile — sans icône ni bouton, la tuile est identique tant qu'on ne la survole
+   * pas. Ces quatre-là en avaient besoin plus que les autres : deux mesurent autre chose
+   * que ce que leur nom suggère (le CA est de l'ENCAISSÉ et pas du facturé ; la marge est
+   * un % du CA et pas du budget), un troisième vaut 0 en dur côté serveur, et le RAF se
+   * calcule sur l'enveloppe et non sur le prévisionnel. Ces réserves ne vivaient que dans
+   * les commentaires de ce fichier, donc nulle part pour qui lit la page.
+   *
+   * `helpPlacement` reste au défaut (`bottom`) : la rangée est en haut de la colonne, un
+   * panneau au-dessus sortirait de l'écran.
+   *
+   * ⚠️ Le survol est une annotation, pas un contrôle : rien d'actionnable ni
+   * d'indispensable ne va dedans, un écran tactile ne le lira pas.
    */
   readonly kpiTiles = computed<KpiTile[]>(() => {
+    // `help` est résolu ICI et non par le pipe du template : sans cette lecture, changer
+    // de langue laisserait les popovers dans l'ancienne. `label` reste une clé, il passe
+    // par `| translate` dans le template.
+    this.translate.currentLang();
     const k = this.kpis();
+    const t = (key: string) => this.translate.instant(key);
     return [
       {
         label: 'AFFAIRES.DETAIL.KPI.CA',
         value: this.money(k?.ca),
         delta: null,
-        options: { icon: 'account_balance_wallet', iconColor: 'text-primary', iconBg: 'bg-primary/10' },
+        options: { icon: 'account_balance_wallet', iconColor: 'text-primary', iconBg: 'bg-primary/10',
+                   help: t('AFFAIRES.DETAIL.KPI.CA_HELP') },
       },
       {
         label: 'AFFAIRES.DETAIL.KPI.RAF',
@@ -524,20 +660,23 @@ export class AffaireDetailComponent implements OnInit {
           ? { value: `${Math.round(this.rafAvailablePct())}%`, direction: 'neutral' }
           : null,
         options: { icon: 'request_quote', iconColor: 'text-teal', iconBg: 'bg-teal/10',
-                   valueColor: 'text-primary' },
+                   valueColor: 'text-primary',
+                   help: t('AFFAIRES.DETAIL.KPI.RAF_HELP') },
       },
       {
         label: 'AFFAIRES.DETAIL.KPI.MARGIN',
         value: this.formatPct(k?.margeBrutePct ?? null),
         delta: null,
         options: { icon: 'trending_up', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
-                   valueColor: 'text-secondary' },
+                   valueColor: 'text-secondary',
+                   help: t('AFFAIRES.DETAIL.KPI.MARGIN_HELP') },
       },
       {
         label: 'AFFAIRES.DETAIL.KPI.WIP',
         value: this.money(k?.wip),
         delta: null,
-        options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10' },
+        options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10',
+                   help: t('AFFAIRES.DETAIL.KPI.WIP_HELP') },
       },
     ];
   });
@@ -571,9 +710,9 @@ export class AffaireDetailComponent implements OnInit {
     this.responsables().map(r => ({
       name:      r.fullName,
       avatarUrl: this.avatarSvc.photoUrl(this.avatars().get(r.userId)),
-      subtitle:  r.detail || this.translate.instant(r.isPrimary
-        ? 'AFFAIRES.DETAIL.INFO.MANAGER_PRIMARY'
-        : 'AFFAIRES.DETAIL.INFO.MANAGER'),
+      // Un seul libellé de repli : « Principal » / « Responsable » distinguait deux rangs
+      // qui n'existent plus.
+      subtitle:  r.detail || this.translate.instant('AFFAIRES.DETAIL.INFO.MANAGER'),
     })),
   );
 
@@ -599,53 +738,78 @@ export class AffaireDetailComponent implements OnInit {
   //                                              montantTsIntegres, rafDisponible
   //   GET /affaires/{id}/kpis  → AffaireKpisDto : ca, wip, margeBrutePct
   //
-  //   budgetTotal        = raf.budgetPrevisionnel, sinon affaire.budgetPrevisionnel
+  //   budgetPrevisionnel = raf.budgetPrevisionnel, sinon affaire.budgetPrevisionnel
   //                        (le RAF arrive après l'affaire : sans ce repli les tuiles
   //                        affichent 0 % pendant un instant au chargement)
-  //   billingPct         = totalFacturesEmises / budgetTotal × 100   « facturé »
-  //   consumedAmount     = budgetTotal − rafDisponible               « consommé »
-  //   consumptionPct     = consumedAmount / budgetTotal × 100
+  //   budgetTotal        = budgetPrevisionnel + montantTsIntegres — l'ENVELOPPE
+  //                        FACTURABLE, et le dénominateur de tous les taux de la page.
+  //                        C'est celle que le serveur utilise déjà pour le RAF
+  //                        (RAF = budget + TS − facturé), donc facturé + RAF = budget
+  //                        total : les tuiles se réconcilient, ce qui n'était pas le
+  //                        cas quand les taux étaient rapportés au seul prévisionnel.
+  //   billingPct         = totalFacturesEmises / budgetTotal × 100   « taux de facturation »
+  //   collectedPct       = kpis.ca / budgetTotal × 100               « santé du projet »
   //   tsIntegratedPct    = montantTsIntegres / budgetTotal × 100
   //   rafAvailablePct    = rafDisponible / budgetTotal × 100         (pastille RAF)
-  //   healthState        = seuils sur consumptionPct, comparés au **seuil propre à
+  //   healthState        = seuils sur billingPct, comparés au **seuil propre à
   //                        l'affaire** (rafAlerteSeuilPct) : < seuil = Optimale,
   //                        ≥ seuil = Vigilance, ≥ 100 % = Critique
-  //   rafAlertActive     = consumptionPct ≥ rafAlerteSeuilPct (même règle, pour l'encart)
+  //   rafAlertActive     = billingPct ≥ rafAlerteSeuilPct (même règle, pour l'encart)
+  //   budgetOverrun      = rafDisponible < 0, c'est-à-dire facturé > enveloppe
   //
-  //   L'anneau « Santé du projet » affiche billingPct, coloré par healthState.
-  //   Facturé et consommé sont deux choses différentes : un TS intégré augmente le
-  //   consommé sans rien facturer, d'où deux indicateurs distincts et non un seul.
+  //   ⚠️ Les deux taux vont dans des SENS OPPOSÉS et n'ont donc pas la même échelle
+  //   de couleur — c'est tout le sujet du bug « couleurs inversées » :
+  //     · facturation : consommer l'enveloppe est neutre jusqu'à 100 %, la DÉPASSER
+  //       est l'accident → échelle de risque (`healthState`), rouge au-delà de 100 % ;
+  //     · encaissement : plus haut = mieux → rampe rouge → vert du composant `daf-gauge`.
+  //   Faire porter `healthState` aux deux, ce que la page faisait, peignait la bonne
+  //   nouvelle en rouge.
+  //
+  //   Il n'y a plus de « taux de consommation » : l'ancien valait
+  //   (budget − RAF) / budget = (facturé − TS) / budget, donc un TS intégré le FAISAIT
+  //   BAISSER sans que rien ne soit défacturé. Consommer l'enveloppe, ici, c'est la
+  //   facturer — un TS l'agrandit, il n'en consomme rien.
   //
   //   CA encaissé, WIP et Marge brute sont pris **tels quels** dans les KPIs du
   //   backend, la page ne les recalcule pas. À savoir sur ces trois-là :
-  //     · ca   = SUM(payments.amount_local) des factures de l'affaire (encaissé réel) ;
+  //     · ca   = SUM(payments.amount_local) des factures de l'affaire (encaissé réel),
+  //              d'où son emploi comme numérateur de « Santé du projet » ;
   //     · wip  = 0 EN DUR côté serveur, la tuile affichera donc toujours 0 ;
   //     · margeBrutePct = (ca − sous-traitance) / ca × 100, donc un % du CA et non du
   //       budget, nul dès que ca vaut 0 ; les coûts internes sont un placeholder à 0
   //       (pas de timesheet), la marge est donc surévaluée tant qu'ils manquent.
   //
-  //   Graphique mensuel : les 12 valeurs sont la somme des `montantTtc` des factures
-  //   dont `dateEmission` tombe dans le mois, pour l'année affichée (celle de la
-  //   dernière facture émise). L'objectif = budgetTotal / durée de l'affaire en mois
-  //   (bornée à [1, 60]) — c'est une répartition linéaire, pas un objectif saisi.
+  //   Graphique de facturation : DEUX NIVEAUX, voir la section « Facturation » plus bas.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  readonly budgetTotal = computed(() =>
+  /** Le prévisionnel seul — le contrat. Ce n'est PAS le dénominateur des taux. */
+  readonly budgetPrevisionnel = computed(() =>
     this.raf()?.budgetPrevisionnel ?? this.affaire()?.budgetPrevisionnel ?? 0);
 
+  /**
+   * L'enveloppe facturable : prévisionnel + TS intégrés.
+   *
+   * Un TS intégré est facturable, donc il agrandit ce que l'affaire a le droit de
+   * facturer — c'est exactement ce que fait le RAF côté serveur. Rapporter les taux au
+   * seul prévisionnel faisait dépasser 100 % une affaire parfaitement saine dès qu'elle
+   * facturait un TS.
+   */
+  readonly budgetTotal = computed(() =>
+    this.budgetPrevisionnel() + (this.raf()?.montantTsIntegres ?? 0));
+
+  /** Taux de facturation : ce qui est facturé sur l'enveloppe facturable. */
   readonly billingPct = computed(() => {
     const b = this.budgetTotal();
     return b > 0 ? ((this.raf()?.totalFacturesEmises ?? 0) / b) * 100 : 0;
   });
 
-  readonly consumedAmount = computed(() => {
-    const r = this.raf();
-    return r ? this.budgetTotal() - r.rafDisponible : 0;
-  });
+  /** Encaissé réel — `kpis.ca`, la somme des paiements reçus. */
+  readonly collectedAmount = computed(() => this.kpis()?.ca ?? 0);
 
-  readonly consumptionPct = computed(() => {
+  /** Santé du projet : encaissé / budget total. Plus c'est haut, mieux c'est. */
+  readonly collectedPct = computed(() => {
     const b = this.budgetTotal();
-    return b > 0 ? (this.consumedAmount() / b) * 100 : 0;
+    return b > 0 ? (this.collectedAmount() / b) * 100 : 0;
   });
 
   readonly tsIntegratedPct = computed(() => {
@@ -660,17 +824,36 @@ export class AffaireDetailComponent implements OnInit {
 
   readonly rafAlertActive = computed(() => {
     const a = this.affaire();
-    return !!a && this.budgetTotal() > 0 && this.consumptionPct() >= a.rafAlerteSeuilPct;
+    return !!a && this.budgetTotal() > 0 && this.billingPct() >= a.rafAlerteSeuilPct;
   });
 
-  /** Santé de l'affaire, dérivée du seuil d'alerte RAF paramétré sur l'affaire. */
+  /**
+   * Dépassement de budget : le RAF est passé négatif, donc l'affaire a facturé plus que
+   * son enveloppe.
+   *
+   * Sur `rafDisponible < 0` et non sur un pourcentage : c'est le chiffre du serveur, donc
+   * le bandeau ne peut pas contredire la tuile RAF, et il n'y a pas de division par zéro
+   * à traiter. C'est le second niveau d'alerte, au-dessus de `rafAlertActive` (le seuil de
+   * vigilance paramétré sur l'affaire) — et le seul à sortir du drawer pour s'afficher sur
+   * la page, parce qu'un dépassement ne doit pas attendre qu'on ouvre un panneau.
+   */
+  readonly budgetOverrun = computed(() => (this.raf()?.rafDisponible ?? 0) < 0);
+
+  /** Le montant du dépassement, positif. 0 quand il n'y a pas de dépassement. */
+  readonly overrunAmount = computed(() => Math.max(0, -(this.raf()?.rafDisponible ?? 0)));
+
+  /**
+   * L'état de RISQUE de l'affaire : où en est la facturation par rapport au seuil d'alerte
+   * paramétré sur l'affaire. Échelle « plus haut = pire » — elle habille la facturation et
+   * la pastille d'en-tête, **jamais** l'encaissement.
+   */
   readonly healthState = computed<{ variant: 'success' | 'warning' | 'danger' | 'neutral'; labelKey: string }>(() => {
     const a = this.affaire();
     if (!a || this.budgetTotal() <= 0) {
       return { variant: 'neutral', labelKey: 'AFFAIRES.DETAIL.HEALTH.UNKNOWN' };
     }
-    const pct = this.consumptionPct();
-    if (pct >= 100)               return { variant: 'danger',  labelKey: 'AFFAIRES.DETAIL.HEALTH.CRITICAL' };
+    const pct = this.billingPct();
+    if (pct > 100)                  return { variant: 'danger',  labelKey: 'AFFAIRES.DETAIL.HEALTH.CRITICAL' };
     if (pct >= a.rafAlerteSeuilPct) return { variant: 'warning', labelKey: 'AFFAIRES.DETAIL.HEALTH.WATCH' };
     return { variant: 'success', labelKey: 'AFFAIRES.DETAIL.HEALTH.OPTIMAL' };
   });
@@ -682,41 +865,47 @@ export class AffaireDetailComponent implements OnInit {
   });
 
   /**
-   * L'anneau de la tuile « Santé du projet ».
+   * L'anneau de la tuile « Santé du projet » — il affiche `collectedPct`, l'encaissé.
    *
-   * **Valeur seule au centre** : pas de `sublabel`. Le libellé était redondant — l'en-tête
-   * de la tuile dit déjà de quoi il s'agit, et la pastille d'état la qualifie.
+   * **`ramp: true`** : la rampe du composant va du rouge (0) à l'ambre (50) au vert (100),
+   * ce qui est exactement le sens de l'encaissement — n'avoir rien encaissé est mauvais,
+   * avoir tout encaissé est l'objectif. C'est le correctif du bug de couleurs : l'anneau
+   * prenait sa teinte de `healthState`, une échelle de risque « plus haut = pire », donc
+   * une affaire intégralement encaissée s'affichait en rouge. `healthState` reste la
+   * **pastille** à côté du titre, où « plus haut = pire » est le bon sens.
    *
-   * Pas de `ramp` non plus : ici un pourcentage haut est une **bonne** nouvelle (l'affaire
-   * est facturée), alors que la rampe de teintes va du rouge au vert en montant, ce qui
-   * dirait l'inverse. La couleur suit donc l'état de santé, qui tient compte du seuil
-   * d'alerte de l'affaire. Le label centré reste le défaut du composant (le % arrondi), et
-   * `ariaLabel` porte le sens pour les lecteurs d'écran, que le visuel ne dit plus.
+   * Enveloppe absente (budget à 0) : pas de rampe, sinon un anneau à 0 % s'afficherait en
+   * rouge alors que le taux n'est pas calculable — la pastille dit déjà « Indéterminée ».
+   *
+   * **Valeur seule au centre** : pas de `sublabel`, l'en-tête de la tuile dit de quoi il
+   * s'agit. `ariaLabel` porte le sens pour les lecteurs d'écran.
    */
   readonly healthGaugeOptions = computed<GaugeOptions>(() => {
-    const h = this.healthState();
+    const known = this.budgetTotal() > 0;
     return {
       size:      '116px',
       thickness: 10,
-      variant:   h.variant === 'danger' ? 'danger' : h.variant === 'warning' ? 'warning' : 'tertiary',
-      ariaLabel: `${this.translate.instant('AFFAIRES.DETAIL.INDICATORS.BILLING_RATE')} : `
-               + `${Math.round(this.billingPct())}%`,
+      ramp:      known,
+      variant:   known ? undefined : 'primary',
+      ariaLabel: `${this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.HEALTH_TITLE')} : `
+               + `${Math.round(this.collectedPct())}% — `
+               + `${this.money(this.collectedAmount())} / ${this.money(this.budgetTotal())}`,
     };
   });
 
   /**
    * L'anneau de la carte « Progression facturation » de la colonne droite.
    *
-   * ⚠️ Il affiche la **même valeur** que l'anneau « Santé du projet » de l'onglet Vue
-   * générale (`billingPct`) : le premier est le chiffre d'en-tête de la fiche, le second
-   * porte l'état de santé par sa couleur et sa pastille. Deux anneaux identiques à deux
-   * endroits, c'est signalé à la livraison — si l'un doit changer de valeur, c'est ici ou
-   * dans `healthGaugeOptions`, pas dans le template.
+   * Il ne double plus l'anneau de « Santé du projet » : celui-ci porte le facturé, l'autre
+   * l'encaissé. Deux chiffres différents, deux échelles de couleur différentes.
+   *
+   * `> 100` et non `>= 100` : facturer exactement son enveloppe est l'objectif atteint, pas
+   * un accident. Seul le dépassement est rouge.
    */
   readonly billingGaugeOptions = computed<GaugeOptions>(() => ({
     size:      '132px',
     thickness: 12,
-    variant:   this.billingPct() >= 100 ? 'danger' : 'tertiary',
+    variant:   this.billingPct() > 100 ? 'danger' : 'tertiary',
     ariaLabel: `${this.translate.instant('AFFAIRES.DETAIL.IDENTITY.BILLING_PROGRESS')} : `
              + `${Math.round(this.billingPct())}%`,
   }));
@@ -743,86 +932,323 @@ export class AffaireDetailComponent implements OnInit {
     `${this.translate.instant('AFFAIRES.DETAIL.RAF_SECTION.REMAINING')} — `
     + `${this.money(this.raf()?.rafDisponible)}`);
 
-  readonly billingBarOptions = computed<ProgressBarOptions>(() => ({
-    variant: this.billingPct() >= 100 ? 'danger' : 'tertiary',
-    size:    'sm',
-  }));
-
-  readonly consumptionBarOptions = computed<ProgressBarOptions>(() => {
+  /**
+   * La barre du taux de facturation — échelle de risque, `> 100` seul en rouge (facturer
+   * pile son enveloppe est l'objectif atteint). Le seuil de vigilance de l'affaire passe
+   * par `healthState`, qui tient compte de `rafAlerteSeuilPct`.
+   *
+   * C'est cette barre que porte la tuile « Taux de facturation », à la place de l'ancienne
+   * `consumptionBarOptions` qui prenait sa couleur telle quelle de `healthState` : une
+   * affaire à 0 % facturé y sortait en vert vif et une affaire bien avancée en rouge.
+   */
+  readonly billingBarOptions = computed<ProgressBarOptions>(() => {
     const v = this.healthState().variant;
-    return { variant: v === 'danger' ? 'danger' : v === 'warning' ? 'warning' : 'tertiary', size: 'sm' };
+    return {
+      variant: v === 'danger' ? 'danger' : v === 'warning' ? 'warning' : 'tertiary',
+      size:    'sm',
+    };
   });
 
-  // ── Facturation mensuelle ────────────────────────────────────────────────
+  // ── Facturation : un graphique, deux granularités ────────────────────────
 
-  /** Année affichée : celle de la dernière facture émise, sinon l'année courante. */
-  readonly chartYear = computed(() => {
-    const years = this.invoices()
+  // ═══════════════════════════════════════════════════════════════════════════
+  // UN SEUL graphique, dont les puces Année / Mois changent la GRANULARITÉ
+  //
+  // Ce n'est pas une navigation : il n'y a ni niveau où descendre, ni bouton retour, ni
+  // titre qui change de nature. Les puces sont un filtre, comme ceux des tableaux — le
+  // panneau reste le même, seules les barres changent de forme.
+  //
+  //   granularité « années » : une barre par année couverte par l'affaire.
+  //                            Objectif = enveloppe / nombre d'années de l'axe.
+  //   granularité « mois »   : les 12 mois de `chartYear()`.
+  //                            Objectif = enveloppe / durée de l'affaire en mois.
+  //
+  // `chartGranularityEffective` et non `chartGranularity` partout : une affaire tenant
+  // dans un seul exercice n'a pas de vue « années » qui vaille la peine — une barre unique
+  // n'est pas un graphique. Elle s'affiche donc en mois et les puces disparaissent, faute
+  // d'un choix à offrir. C'est le cas le plus courant.
+  //
+  // **Une seule série est calculée à la fois** : `chartValues()` branche sur la
+  // granularité active, il n'y a pas deux agrégats vivant en parallèle. Et pas d'appel
+  // serveur pour changer de forme — `getAffaireInvoices` ramène les factures de l'affaire
+  // sans pagination, donc la série brute est déjà en mémoire et l'agrégat coûte une passe
+  // sur un tableau. Un endpoint par granularité serait un aller-retour réseau pour
+  // recalculer ce qu'on a déjà. Si une affaire devait porter des milliers de factures,
+  // c'est ici que passerait un agrégat serveur.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** La granularité demandée. Voir `chartGranularityEffective` pour celle qui s'affiche. */
+  /**
+   * `null` = l'utilisateur n'a pas encore choisi, on prend le défaut calculé par
+   * `chartGranularityEffective`. Un défaut en dur (`'years'`) affichait une barre unique
+   * sur une affaire dont une seule année est commencée.
+   */
+  private readonly chartGranularity = signal<'years' | 'months' | null>(null);
+
+  // ── L'axe s'arrête à AUJOURD'HUI ─────────────────────────────────────────
+  //
+  // Le graphique montre ce qui a été facturé, donc du passé. Une affaire qui court
+  // jusqu'en 2028 étalait l'axe jusqu'en 2028 : deux ou trois barres à zéro pour des
+  // années qui ne sont pas arrivées, qui écrasaient l'échelle des barres réelles et
+  // faisaient lire « on a arrêté de facturer » là où il n'y avait rien à facturer encore.
+  // Même chose sur les mois : un graphique 2026 affichait décembre en août.
+  //
+  // La borne est la période EN COURS et non la précédente : le mois courant est
+  // partiellement facturé, c'est une information (et il porte `highlight`). Ce sont les
+  // périodes entièrement à venir qui disparaissent.
+  //
+  // Rien n'est filtré côté données : une facture post-datée reste comptée dans son année
+  // (cf. `invoiceYears`), donc si quelqu'un émet une facture en 2027, 2027 réapparaît sur
+  // l'axe par l'union — sinon le cumul en tête de panneau ne retomberait plus sur la somme
+  // des barres. On coupe le FUTUR VIDE, pas les données.
+
+  /** L'année en cours — la borne haute de l'axe. */
+  private readonly currentYear = new Date().getFullYear();
+
+  /** Le mois en cours (0-11), borne haute de l'axe quand on affiche l'année en cours. */
+  private readonly currentMonth = new Date().getMonth();
+
+  /** Les années porteuses d'au moins une facture émise. */
+  private readonly invoiceYears = computed(() =>
+    this.invoices()
       .map(i => (i.dateEmission ? new Date(i.dateEmission).getFullYear() : null))
-      .filter((y): y is number => y !== null);
-    return years.length ? Math.max(...years) : new Date().getFullYear();
-  });
-
-  readonly monthlyValues = computed(() => {
-    const year   = this.chartYear();
-    const totals = Array(12).fill(0) as number[];
-    for (const inv of this.invoices()) {
-      if (!inv.dateEmission) continue;
-      const d = new Date(inv.dateEmission);
-      if (d.getFullYear() !== year) continue;
-      totals[d.getMonth()] += inv.montantTtc ?? 0;
-    }
-    return totals;
-  });
-
-  readonly chartTotal = computed(() => this.monthlyValues().reduce((s, v) => s + v, 0));
+      .filter((y): y is number => y !== null));
 
   /**
-   * Barres du panneau « Facturation mensuelle ».
+   * L'axe de la granularité « années » : la période de l'affaire, **union** les années
+   * porteuses d'une facture, **coupée à l'année en cours**.
    *
-   * `label` ne porte QUE le mois : c'est la légende d'axe, et le montant va dans
-   * `valueLabel`, que le composant met dans sa pastille au survol. Les deux étaient
-   * concaténés dans un seul label du temps des `daf-progress-bar` horizontales.
+   * L'union et non la seule période : une facture émise après `dateFin` — un solde, un
+   * avoir tardif — sortirait sinon du graphique sans que rien ne le signale, et le cumul
+   * ne retomberait pas sur la somme des barres. Bornée à 20 ans, par sécurité contre une
+   * `dateFin` saisie de travers.
    *
-   * `highlight` sur le mois courant, et seulement si le graphique montre l'année en cours —
-   * sinon on surlignerait août 2025 sur un graphique 2026.
+   * Le repli `[currentYear]` couvre l'affaire qui n'a pas encore commencé : sa période est
+   * entièrement future, donc entièrement coupée, et un axe vide n'afficherait rien du tout.
    */
-  readonly monthlyBars = computed<BarChartBar[]>(() => {
-    const now         = new Date();
-    const currentYear = now.getFullYear() === this.chartYear();
-    return this.monthlyValues().map((value, index) => ({
-      label:      MONTH_LABELS[index],
-      value,
-      valueLabel: this.money(value),
-      highlight:  currentYear && index === now.getMonth(),
+  readonly chartYears = computed<number[]>(() => {
+    const years = new Set<number>(this.invoiceYears());
+    const a = this.affaire();
+    if (a?.dateDebut) {
+      const from = new Date(a.dateDebut).getFullYear();
+      const to   = a.dateFin ? new Date(a.dateFin).getFullYear() : from;
+      for (let y = from; y <= Math.min(to, from + 19); y++) years.add(y);
+    }
+    const past = [...years].filter(y => y <= this.currentYear).sort((x, y) => x - y);
+    return past.length ? past : [this.currentYear];
+  });
+
+  /**
+   * L'affaire couvre-t-elle plus d'une année ? Sur sa PÉRIODE, pas sur l'axe.
+   *
+   * L'axe s'arrête à l'année en cours ; une affaire 2026→2028 n'a donc qu'une année
+   * d'axe en 2026, et c'est ce qui faisait disparaître les puces Année / Mois — la bascule
+   * s'était retirée elle-même sur une affaire qui est bel et bien pluriannuelle. Le choix
+   * offert dépend de ce que l'affaire EST, pas de ce qui s'est déjà écoulé.
+   */
+  private readonly spansMultipleYears = computed(() => {
+    const a = this.affaire();
+    const years = new Set<number>(this.invoiceYears());
+    if (a?.dateDebut) {
+      years.add(new Date(a.dateDebut).getFullYear());
+      if (a.dateFin) years.add(new Date(a.dateFin).getFullYear());
+    }
+    return years.size > 1;
+  });
+
+  /** Les puces n'ont de sens que sur une affaire pluriannuelle. */
+  readonly chartGranularitySwitchable = computed(() => this.spansMultipleYears());
+
+  /**
+   * La granularité réellement affichée.
+   *
+   * Le DÉFAUT dépend de l'axe (une seule année écoulée → les mois, un graphique à une
+   * barre n'apprend rien), mais le CHOIX de l'utilisateur l'emporte : s'il demande la vue
+   * par année sur une affaire pluriannuelle dont une seule année est commencée, il obtient
+   * cette unique barre. C'est son choix, pas un défaut à lui imposer.
+   */
+  readonly chartGranularityEffective = computed<'years' | 'months'>(() => {
+    if (!this.chartGranularitySwitchable()) return 'months';
+    return this.chartGranularity() ?? (this.chartYears().length > 1 ? 'years' : 'months');
+  });
+
+  /**
+   * L'année de la granularité « mois » : la dernière année de l'axe.
+   *
+   * Elle vient de `chartYears()` et non plus de `max(invoiceYears)` : l'axe est déjà coupé
+   * à l'année en cours, donc une facture post-datée en 2027 n'emmène plus la vue des mois
+   * sur une année entièrement à venir. Elle est nommée dans le titre.
+   */
+  readonly chartYear = computed(() => {
+    const years = this.chartYears();
+    return years[years.length - 1];
+  });
+
+  /**
+   * Combien de mois l'axe montre pour `chartYear()` : les 12, sauf sur l'année en cours où
+   * il s'arrête au mois courant inclus. Les mois entièrement à venir ne sont pas des
+   * barres à zéro, ils ne sont pas encore arrivés.
+   */
+  private readonly chartMonthCount = computed(() =>
+    this.chartYear() === this.currentYear ? this.currentMonth + 1 : 12);
+
+  /**
+   * La série affichée — **une seule**, celle de la granularité active.
+   *
+   * Une passe unique sur les factures dans les deux cas : on remplit un tableau indexé par
+   * mois, ou une entrée par année de l'axe (0 sur une année vide, une année sans facture
+   * étant une information et pas un trou).
+   */
+  readonly chartValues = computed<number[]>(() => {
+    if (this.chartGranularityEffective() === 'months') {
+      const year   = this.chartYear();
+      const totals = Array(this.chartMonthCount()).fill(0) as number[];
+      for (const inv of this.invoices()) {
+        if (!inv.dateEmission) continue;
+        const d = new Date(inv.dateEmission);
+        // `d.getMonth() < totals.length` : une facture post-datée dans l'année en cours
+        // (émise en septembre alors qu'on est en août) tomberait hors du tableau.
+        if (d.getFullYear() === year && d.getMonth() < totals.length) {
+          totals[d.getMonth()] += inv.montantTtc ?? 0;
+        }
+      }
+      return totals;
+    }
+
+    const sums = new Map<number, number>(this.chartYears().map(y => [y, 0]));
+    for (const inv of this.invoices()) {
+      if (!inv.dateEmission) continue;
+      const y = new Date(inv.dateEmission).getFullYear();
+      if (sums.has(y)) sums.set(y, sums.get(y)! + (inv.montantTtc ?? 0));
+    }
+    return this.chartYears().map(y => sums.get(y)!);
+  });
+
+  /** Le cumul en tête du panneau : celui de la série visible, pas un total figé. */
+  readonly chartTotal = computed(() => this.chartValues().reduce((s, v) => s + v, 0));
+
+  /**
+   * Les barres du graphique.
+   *
+   * `label` ne porte QUE la légende d'axe (le mois, ou l'année) : le montant va dans
+   * `valueLabel`, que le composant met dans sa pastille au survol.
+   *
+   * `highlight` sur la période courante — le mois en cours seulement si le graphique montre
+   * l'année en cours, sinon on surlignerait août 2025 sur un graphique 2026.
+   */
+  readonly chartBars = computed<BarChartBar[]>(() => {
+    const values = this.chartValues();
+
+    if (this.chartGranularityEffective() === 'months') {
+      // `values` s'arrête déjà au mois courant sur l'année en cours, donc la dernière
+      // barre EST le mois courant — pas besoin de comparer les index.
+      const isCurrentYear = this.chartYear() === this.currentYear;
+      return values.map((value, index) => ({
+        label:      MONTH_LABELS[index],
+        value,
+        valueLabel: this.money(value),
+        highlight:  isCurrentYear && index === this.currentMonth,
+      }));
+    }
+
+    return this.chartYears().map((year, index) => ({
+      label:      String(year),
+      value:      values[index],
+      valueLabel: this.money(values[index]),
+      highlight:  year === this.currentYear,
     }));
   });
 
-  readonly monthlyChartOptions = computed<BarChartOptions>(() => {
+  readonly chartOptions = computed<BarChartOptions>(() => {
     this.translate.currentLang();
-    const target = this.monthlyTarget();
+    const years  = this.chartGranularityEffective() === 'years';
+    const target = years ? this.yearlyTarget() : this.monthlyTarget();
     return {
       orientation: 'vertical',
       height:      '200px',
       variant:     'tertiary',
+      // Pas de `clickable` : les barres ne mènent nulle part, ce sont les puces qui
+      // changent la forme. Une barre focusable qui ne fait rien est un piège au clavier.
       // `max` est laissé au composant : son défaut est déjà max(valeurs, target).
       target:      target > 0 ? target : undefined,
-      targetLabel: target > 0
-        ? `${this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.LEGEND_TARGET')} : ${this.money(target)}`
-        : undefined,
+      targetLabel: target > 0 ? `${this.chartTargetLabel()} : ${this.money(target)}` : undefined,
       emptyMessage: this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.NO_CHART_DATA'),
-      ariaLabel: `${this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.CHART_TITLE', { year: this.chartYear() })} — `
+      ariaLabel: `${this.chartTitle()} — `
                + `${this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.CUMUL')} ${this.money(this.chartTotal())}`,
     };
   });
 
-  /** Objectif mensuel = budget réparti sur la durée de l'affaire (légende du panneau). */
-  readonly monthlyTarget = computed(() => {
+  /** Le titre du panneau, qui porte l'année en granularité « mois ». */
+  readonly chartTitle = computed(() => {
+    this.translate.currentLang();
+    return this.chartGranularityEffective() === 'years'
+      ? this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.CHART_TITLE_YEARS')
+      : this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.CHART_TITLE', { year: this.chartYear() });
+  });
+
+  /** « Objectif annuel » / « Objectif mensuel » — la légende ET l'aria de la ligne. */
+  readonly chartTargetLabel = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(this.chartGranularityEffective() === 'years'
+      ? 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_TARGET_YEAR'
+      : 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_TARGET');
+  });
+
+  /** L'objectif de la granularité active — une seule valeur à afficher en légende. */
+  readonly chartTarget = computed(() =>
+    this.chartGranularityEffective() === 'years' ? this.yearlyTarget() : this.monthlyTarget());
+
+  /** Les puces Année / Mois. `selected` est un tableau : `daf-chip-group` est multi-capable. */
+  readonly chartGranularityChips = computed<ChipOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: 'years',  label: this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.LEVEL_YEARS') },
+      { value: 'months', label: this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.LEVEL_MONTHS') },
+    ];
+  });
+
+  readonly chartGranularitySelection = computed<string[]>(() => [this.chartGranularityEffective()]);
+
+  readonly chartGranularityChipConfig: ChipGroupConfig = { multiple: false };
+
+  /**
+   * Les puces sont un `model()` : le composant renvoie la sélection complète. Vide (on a
+   * décoché la puce active) = on garde la granularité courante, il faut bien afficher
+   * quelque chose.
+   */
+  setChartGranularity(selection: string[]): void {
+    const next = selection[0];
+    if (next === 'years' || next === 'months') this.chartGranularity.set(next);
+  }
+
+  /** Objectif mensuel = enveloppe répartie sur la durée de l'affaire (légende du panneau). */
+  private readonly monthlyTarget = computed(() => {
     const a = this.affaire();
     const b = this.budgetTotal();
     if (!a || b <= 0) return 0;
     const months = this.affaireMonths(a.dateDebut, a.dateFin);
     return months > 0 ? b / months : 0;
+  });
+
+  /**
+   * Objectif annuel = enveloppe répartie sur la DURÉE DE L'AFFAIRE en années.
+   *
+   * Sur la durée de l'affaire et non plus sur `chartYears().length` : depuis que l'axe
+   * s'arrête à l'année en cours, sa longueur n'est plus la durée de l'affaire. Une affaire
+   * de quatre ans dont deux sont écoulées aurait vu son objectif annuel doubler
+   * (enveloppe / 2 au lieu de / 4), et la ligne aurait sauté d'un cran chaque 1er janvier
+   * — un objectif qui bouge parce qu'on a changé d'année n'est pas un objectif.
+   *
+   * Comme le mensuel, c'est une répartition linéaire, pas un objectif saisi ; les deux
+   * dérivent donc de la même `affaireMonths` pour ne pas se contredire (12 barres
+   * mensuelles doivent valoir une barre annuelle).
+   */
+  private readonly yearlyTarget = computed(() => {
+    const a = this.affaire();
+    const b = this.budgetTotal();
+    if (!a || b <= 0) return 0;
+    const years = this.affaireMonths(a.dateDebut, a.dateFin) / 12;
+    return years > 0 ? b / years : 0;
   });
 
   /** Nombre de mois couverts par l'affaire, borné à [1, 60]. */
@@ -838,13 +1264,12 @@ export class AffaireDetailComponent implements OnInit {
   readonly tabs = computed<TabItem[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // L'onglet « Facturation » (les écrans par mode AV / JAL / TM / CP / RMB) est
+    // supprimé — pas masqué. Il n'est plus conditionné à `billingMode`, il n'existe plus.
     const tabs: TabItem[] = [
       { id: 'overview', label: t('AFFAIRES.DETAIL.TABS.OVERVIEW') },
       { id: 'ts',       label: t('AFFAIRES.DETAIL.TABS.BUDGET_TS'), count: this.tsList().length },
     ];
-    if (this.affaire()?.billingMode) {
-      tabs.push({ id: 'billing', label: t('AFFAIRES.DETAIL.TABS.BILLING') });
-    }
     tabs.push(
       { id: 'factures',  label: t('AFFAIRES.DETAIL.TABS.INVOICES'), count: this.invoices().length },
       { id: 'paiements', label: t('AFFAIRES.DETAIL.TABS.PAYMENTS'), count: this.payments().length },
@@ -1119,14 +1544,21 @@ export class AffaireDetailComponent implements OnInit {
       // (~200 px de la ligne de titre). Pas de collision avec le FAB de devise du
       // shell : le tab est `fixed top-1/2` (centré verticalement), le FAB est en bas.
       showToggle: true,
-      // Le marqueur d'alerte (4.18.0). Point simple, sans `count` : il n'y a qu'une
-      // condition à signaler, et « il y a quelque chose » se lit plus vite qu'un « 1 ».
-      // Il reste visible panneau ouvert — c'est une condition active, pas du non-lu :
-      // il disparaît quand le RAF repasse sous le seuil, pas quand on a regardé.
-      signal: this.rafAlertActive()
+      // Le marqueur d'alerte (4.18.0). Point simple, sans `count` : « il y a quelque
+      // chose » se lit plus vite qu'un « 1 ». Il reste visible panneau ouvert — c'est une
+      // condition active, pas du non-lu : il disparaît quand le RAF repasse sous le seuil,
+      // pas quand on a regardé.
+      //
+      // Le libellé distingue les deux niveaux : dire « vigilance » sur une affaire qui a
+      // déjà dépassé son budget sous-estime ce qui se passe. Le dépassement allume le point
+      // même si le seuil de l'affaire est mal paramétré (> 100 %), sans quoi le cas le plus
+      // grave serait le seul non signalé.
+      signal: (this.rafAlertActive() || this.budgetOverrun())
         ? {
             tone:  'danger',
-            label: this.translate.instant('AFFAIRES.DETAIL.SIDEBAR.RAF_ALERT_TITLE'),
+            label: this.translate.instant(this.budgetOverrun()
+              ? 'AFFAIRES.DETAIL.SIDEBAR.BUDGET_OVERRUN_TITLE'
+              : 'AFFAIRES.DETAIL.SIDEBAR.RAF_ALERT_TITLE'),
             pulse: true,
           }
         : undefined,

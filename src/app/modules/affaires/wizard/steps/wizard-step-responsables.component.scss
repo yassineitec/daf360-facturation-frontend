@@ -55,10 +55,6 @@
   border: 1.5px solid #e2e8f0;
   border-radius: 10px;
   transition: border-color 0.15s;
-  &.is-primary {
-    border-color: #0d9488;
-    background: #f0fdf9;
-  }
 }
 .resp-avatar {
   width: 36px;
@@ -106,7 +102,7 @@
   border-radius: 20px;
   .material-symbols-outlined { font-size: 14px; font-variation-settings: 'FILL' 1; }
 }
-.set-primary-btn, .remove-btn {
+.remove-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -118,7 +114,6 @@
   cursor: pointer;
   .material-symbols-outlined { font-size: 18px; }
 }
-.set-primary-btn { color: #94a3b8; &:hover { background: #f0fdf9; color: #0d9488; } }
 .remove-btn     { color: #94a3b8; &:hover { background: #fef2f2; color: #ef4444; } }
 
 /* User search */

@@ -897,8 +897,7 @@
       "BACK_TO_LIST": "Projects",
       "TABS": {
         "OVERVIEW": "Overview",
-        "BUDGET_TS": "Budget & AW",
-        "BILLING": "Billing",
+        "BUDGET_TS": "Additional work",
         "INVOICES": "Invoices",
         "PAYMENTS": "Payments"
       },
@@ -949,9 +948,13 @@
         "DRAWER_BTN": "Deadlines & activity",
         "DRAWER_TITLE": "Deadlines & activity",
         "CHART_TITLE": "Monthly billing ({{year}})",
+        "CHART_TITLE_YEARS": "Billing by year",
         "CHART_SUB": "Invoiced amounts vs target",
+        "LEVEL_YEARS": "Year",
+        "LEVEL_MONTHS": "Month",
         "LEGEND_REAL": "Actual",
         "LEGEND_TARGET": "Monthly target",
+        "LEGEND_TARGET_YEAR": "Yearly target",
         "CUMUL": "Cumulated total",
         "NO_CHART_DATA": "No issued invoice to display yet.",
         "DEADLINES_TITLE": "Upcoming deadlines",
@@ -971,17 +974,24 @@
         "ACT_TS_CREATED": "Additional work {{ref}} created",
         "ACT_TS_INTEGRATED": "Additional work {{ref}} added to budget",
         "ACT_UPDATED": "Project updated",
-        "ACT_CREATED": "Project created"
+        "ACT_CREATED": "Project created",
+        "HELP_TITLE_CALC": "How it is computed",
+        "HELP_ARIA": "Help on this indicator",
+        "CHART_HELP": "Sum of the gross amounts of invoices issued in the period. The dashed line is the envelope spread linearly over the project duration, not an entered target. The axis stops at the current period."
       },
       "KPI": {
         "CA": "Collected Revenue",
         "CA_SUB": "Actual revenue",
+        "CA_HELP": "Sum of the payments actually received against this project's invoices. Not the invoiced amount: an issued but unpaid invoice does not count here.",
         "RAF": "Remaining to invoice",
         "RAF_USAGE": "Budget usage",
+        "RAF_HELP": "What is left to invoice: budget + integrated additional work − issued invoices. The percentage is the share still available. Negative = overrun.",
         "WIP": "WIP",
         "WIP_SUB": "Work in progress",
+        "WIP_HELP": "Work in progress, not yet invoiced. Not computed server-side yet, so this tile always shows 0.",
         "MARGIN": "Gross margin",
-        "MARGIN_TARGET": "Margin target"
+        "MARGIN_TARGET": "Margin target",
+        "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated."
       },
       "RAF_SECTION": {
         "TITLE": "Remaining to Invoice (RAF)",
@@ -995,7 +1005,6 @@
         "CLIENT": "Client",
         "MANAGER": "Manager",
         "MANAGERS": "Managers",
-        "MANAGER_PRIMARY": "Primary",
         "BILLING_MODE": "Billing mode",
         "CURRENCY": "Currency",
         "PERIOD": "Period",
@@ -1012,7 +1021,7 @@
         "ENTITE_MERE": "Parent entity"
       },
       "SECTIONS": {
-        "BUDGET_TS": "Budget & Additional Work",
+        "BUDGET_TS": "Additional work",
         "NEW_TS": "New Additional Work",
         "BILLING": "Billing",
         "STUB": "Section under development.",
@@ -1047,7 +1056,7 @@
       "INDICATORS": {
         "TITLE": "Piloting indicators",
         "BILLING_RATE": "Billing rate",
-        "CONSUMPTION_RATE": "Consumption rate",
+        "ENVELOPE_NOTE": "Of the billable envelope: {{budget}} budget + {{ts}} integrated additional work.",
         "BUDGET_CONSUMED": "Budget consumed",
         "ON": "of",
         "EVOLUTION": "Evolution"
@@ -1073,7 +1082,10 @@
         "LAST_MODIFIED": "Last modified",
         "RAF_THRESHOLD": "RAF alert threshold",
         "RAF_ALERT_TITLE": "RAF threshold exceeded",
-        "RAF_ALERT_TEXT": "The alert threshold of {{pct}}% has been reached. Check the remaining amount."
+        "RAF_ALERT_TEXT": "The alert threshold of {{pct}}% has been reached. Check the remaining amount.",
+        "BUDGET_OVERRUN_TITLE": "Budget overrun",
+        "BUDGET_OVERRUN_TEXT": "This project has invoiced {{invoiced}} against an envelope of {{budget}}. The remaining amount is negative: integrate additional work or correct the invoices involved.",
+        "BUDGET_OVERRUN_AMOUNT": "Overrun"
       },
       "MODAL": {
         "STATUS_TITLE": "Change status",
@@ -1164,7 +1176,6 @@
           "rmb": "Select at least one expense category.",
           "livrable": "Configure at least one deliverable before continuing.",
           "resp_add": "Add at least one manager.",
-          "resp_primary": "Designate a primary manager.",
           "resp_alloc": "Each manager must have a user and an allocation > 0.",
           "resp_total": "Total allocations ({{total}}) must equal the budget ({{budget}}).",
           "planning": "Billing start date and contract duration (in months) are required.",
@@ -1388,7 +1399,6 @@
         "allocated_label": "Allocated:",
         "remaining_label": "Remaining:",
         "row": "Row {{n}}",
-        "set_primary": "Set as primary",
         "collaborateur": "Staff member",
         "role": "Role",
         "allocated_budget": "Allocated budget",

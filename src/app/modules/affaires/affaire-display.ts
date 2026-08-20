@@ -79,7 +79,7 @@ export function distinctResponsables(a: AffaireListItem): AffaireResponsable[] {
     return a.responsableFullName
       ? [{
           id: -1, userId: a.responsableUserId ?? -1, fullName: a.responsableFullName,
-          isPrimary: true, role: null, activiteId: null, activiteLabel: null,
+          role: null, activiteId: null, activiteLabel: null,
           disciplineId: null, disciplineLabel: null,
           budgetAllocation: null, budgetCurrency: null,
         }]

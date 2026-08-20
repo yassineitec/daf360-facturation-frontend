@@ -61,19 +61,52 @@
     </div>
   }
 
+  <!-- ══ Dépassement de budget ══════════════════════════════════════════════
+       Le second niveau d'alerte, et le seul à s'afficher SUR LA PAGE : le seuil de
+       vigilance vit dans le drawer, mais un dépassement ne doit pas attendre qu'on ouvre
+       un panneau pour se faire connaître. `role="alert"` : le bandeau n'est monté qu'au
+       retour du RAF, donc l'annonce tombe quand le chiffre arrive, et pas à vide.
+       Au-dessus des deux colonnes, donc visible quel que soit l'onglet actif. -->
+  @if (budgetOverrun()) {
+    <section class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-danger/10 px-4 py-4" role="alert">
+      <span class="material-symbols-outlined text-headline-lg text-danger">error</span>
+      <div class="min-w-0" style="flex:1 1 320px">
+        <p class="text-body-md font-bold text-danger">
+          {{ 'AFFAIRES.DETAIL.SIDEBAR.BUDGET_OVERRUN_TITLE' | translate }}
+        </p>
+        <p class="text-body-sm text-on-surface-variant">
+          {{ 'AFFAIRES.DETAIL.SIDEBAR.BUDGET_OVERRUN_TEXT' | translate:
+             { invoiced: raf()?.totalFacturesEmises | displayCurrency : affaireDevise(),
+               budget:   budgetTotal() | displayCurrency : affaireDevise() } }}
+        </p>
+      </div>
+      <div class="text-right">
+        <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+          {{ 'AFFAIRES.DETAIL.SIDEBAR.BUDGET_OVERRUN_AMOUNT' | translate }}
+        </p>
+        <p class="text-headline-md font-extrabold text-danger">
+          + {{ overrunAmount() | displayCurrency : affaireDevise() }}
+        </p>
+      </div>
+      <daf-button
+        [options]="{ variant: 'secondary', size: 'sm', label: 'AFFAIRES.DETAIL.OVERVIEW.SEE_INVOICES' | translate, iconEnd: 'arrow_forward' }"
+        (onClick)="activeTab.set('factures')" />
+    </section>
+  }
+
   @if (affaire(); as aff) {
     <!-- Deux colonnes en FLEX, portées par des styles inline plutôt que par des classes :
          le styles.css d'un remote ne contient que les classes que Tailwind a déjà vues, donc
          une classe neuve pour l'app n'existe pas dans le CSS servi tant que le remote n'est
          pas reconstruit — et la page retombe en une seule colonne. flex-wrap + min-width
          donnent le repli mobile sans media query, donc sans dépendre d'aucune classe. -->
-    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
+    <div class="detail-split">
 
       <!-- ══════════════════════════════════════════════════════════════════════
            COLONNE GAUCHE (30 %, sticky) — le titre de page, puis la carte
            d'informations dont les actions ferment la section.
            ══════════════════════════════════════════════════════════════════ -->
-      <div style="flex:0 1 30%; min-width:320px">
+      <div class="detail-aside">
         <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
 
           <!-- Le h1 de la page vit ici. size="md" (et headerSize="md" sur daf-page, les deux
@@ -113,14 +146,9 @@
                 @for (r of responsables(); track r.userId) {
                   <div class="flex items-start justify-between gap-3 py-1">
                     <div class="min-w-0">
-                      <p class="text-body-md font-bold text-on-surface">
-                        {{ r.fullName }}
-                        @if (r.isPrimary) {
-                          <span class="text-label-sm font-extrabold uppercase tracking-wider text-primary">
-                            · {{ 'AFFAIRES.DETAIL.INFO.MANAGER_PRIMARY' | translate }}
-                          </span>
-                        }
-                      </p>
+                      <!-- Plus de mention « Principal » : les responsables d'une affaire sont
+                           tous au même niveau. -->
+                      <p class="text-body-md font-bold text-on-surface">{{ r.fullName }}</p>
                       @if (r.detail) {
                         <p class="text-body-sm text-on-surface-variant">{{ r.detail }}</p>
                       }
@@ -248,17 +276,17 @@
            COLONNE DROITE (70 %) — les 4 indicateurs, les onglets, puis les deux
            anneaux/RAF en bas de page. Traçabilité et alertes sont dans le drawer.
            ══════════════════════════════════════════════════════════════════ -->
-      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+      <div class="detail-main">
 
         <!-- Les 4 indicateurs sur daf-metric-card, le composant KPI de la lib. Sa racine
              porte déjà `h-full flex flex-col justify-between`, donc les cartes se règlent
              sur la plus haute. La rangée est une GRILLE `repeat(auto-fit,minmax(...,1fr))` :
              des colonnes en `1fr` sont égales par construction, là où `flex:1 1 0` peut être
              débordé par le `min-width` d'un item. Le repli reste sans media query. -->
-        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+        <div class="kpi-row">
           @for (k of kpiTiles(); track k.label) {
             <daf-metric-card
-              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+              class="kpi-cell"
               [label]="k.label | translate"
               [value]="k.value"
               [delta]="k.delta"
@@ -287,10 +315,10 @@
                  contenu ou le min-width), `auto-fit` + `minmax` donnent le repli sans media
                  query, et les items de grille s'étirent — donc même hauteur. `display:flex`
                  sur l'hôte pour que la carte interne remplisse la cellule. -->
-            <section style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+            <section class="tile-row">
 
               <!-- Santé du projet -->
-              <daf-section-card style="flex:1 1 240px; min-height:210px; height:auto; display:flex; flex-direction:column"
+              <daf-section-card class="tile-cell"
                                 [options]="{ fullHeight: true }">
                 <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
                   <div class="flex items-start justify-between gap-2">
@@ -299,41 +327,57 @@
                     </p>
                     <daf-badge [label]="healthBadge().label" [options]="healthBadge()" />
                   </div>
-                  <!-- L'anneau de la maquette, enfin : daf-gauge (4.17.0) remplace le
-                       gros pourcentage + barre qui tenait lieu de placeholder. -->
-                  <div class="flex items-center justify-center">
-                    <daf-gauge [value]="billingPct()" [options]="healthGaugeOptions()" />
+                  <!-- L'anneau porte l'ENCAISSÉ sur le budget total, pas le facturé, et sa
+                       couleur vient de la rampe du composant (rouge 0 → vert 100) : ici un
+                       pourcentage haut est une bonne nouvelle. La pastille au-dessus garde
+                       l'échelle inverse — le risque d'épuisement du budget. -->
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <daf-gauge [value]="collectedPct()" [options]="healthGaugeOptions()" />
+                    <span class="text-label-caps font-bold text-on-surface-variant">
+                      {{ collectedAmount() | displayCurrency : affaireDevise() }}
+                      / {{ budgetTotal() | displayCurrency : affaireDevise() }}
+                    </span>
                   </div>
                 </div>
               </daf-section-card>
 
-              <!-- Consommation budget -->
-              <daf-section-card style="flex:1 1 240px; min-height:210px; height:auto; display:flex; flex-direction:column"
+              <!-- Taux de facturation -->
+              <daf-section-card class="tile-cell"
                                 [options]="{ fullHeight: true }">
                 <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
                   <div class="flex items-start justify-between gap-2">
                     <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ 'AFFAIRES.DETAIL.INDICATORS.CONSUMPTION_RATE' | translate }}
+                      {{ 'AFFAIRES.DETAIL.INDICATORS.BILLING_RATE' | translate }}
                     </p>
-                    <span class="material-symbols-outlined text-headline-lg text-tertiary">monetization_on</span>
+                    <span class="material-symbols-outlined text-headline-lg text-tertiary">receipt_long</span>
                   </div>
                   <div class="flex flex-col gap-2">
                     <div class="flex items-end justify-between gap-2">
                       <span class="text-headline-xl font-extrabold leading-none text-on-surface">
-                        {{ consumptionPct() | number:'1.0-0' }}%
+                        {{ billingPct() | number:'1.0-0' }}%
                       </span>
                       <span class="text-label-caps font-bold text-on-surface-variant">
-                        {{ consumedAmount() | displayCurrency : affaireDevise() }}
+                        {{ raf()?.totalFacturesEmises | displayCurrency : affaireDevise() }}
                         / {{ budgetTotal() | displayCurrency : affaireDevise() }}
                       </span>
                     </div>
-                    <daf-progress-bar [value]="consumptionPct()" [options]="consumptionBarOptions()" />
+                    <daf-progress-bar [value]="billingPct()" [options]="billingBarOptions()" />
+                    <!-- Le dénominateur n'est pas le prévisionnel mais l'enveloppe
+                         facturable : sans cette mention, un total supérieur au budget du
+                         contrat se lit comme une erreur d'affichage. -->
+                    @if (tsIntegratedPct() > 0) {
+                      <span class="text-body-sm text-on-surface-variant">
+                        {{ 'AFFAIRES.DETAIL.INDICATORS.ENVELOPE_NOTE' | translate:
+                           { budget: budgetPrevisionnel() | displayCurrency : affaireDevise(),
+                             ts: raf()?.montantTsIntegres | displayCurrency : affaireDevise() } }}
+                      </span>
+                    }
                   </div>
                 </div>
               </daf-section-card>
 
               <!-- Équipe projet -->
-              <daf-section-card style="flex:1 1 240px; min-height:210px; height:auto; display:flex; flex-direction:column"
+              <daf-section-card class="tile-cell"
                                 [options]="{ fullHeight: true }">
                 <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
                   <div class="flex items-start justify-between gap-2">
@@ -364,53 +408,79 @@
               </daf-section-card>
             </section>
 
-            <!-- Facturation mensuelle — panneau graphique : en-tête (titre + légende
-                 + total cumulé) puis une barre par mois. La lib n'a pas de composant
-                 graphique : voir la note de livraison (barres horizontales au lieu
-                 des colonnes verticales de la maquette). -->
-            <daf-section-card>
-              <div class="flex flex-col gap-6 p-6">
-                <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:space-between">
-                  <div>
+            <!-- Facturation — UN graphique, dont les puces Année / Mois changent la
+                 granularité. Pas de navigation : ni bouton retour, ni changement de vue.
+                 Les puces n'apparaissent que sur une affaire pluriannuelle, faute de choix
+                 à offrir ailleurs.
+
+                 L'en-tête tient sur DEUX RANGÉES et non une seule : titre + puces en haut,
+                 légendes + cumul en bas. En une seule rangée, la barre du portable faisait
+                 se replier le bloc « Total cumulé » avec sa bordure gauche qui pendait dans
+                 le vide, d'où le trait mal espacé. La bordure est maintenant le `border-t`
+                 de la rangée, qui court sur toute la largeur et ne peut pas se retrouver
+                 orpheline.
+
+                 `help` porte ce que le graphique ne dit pas de lui-même : d'où viennent les
+                 valeurs, ce qu'est la ligne d'objectif, et pourquoi l'axe s'arrête au mois
+                 courant. Le `(i)` a la place qu'il faut ici, la carte est pleine largeur. -->
+            <daf-section-card
+              [help]="'AFFAIRES.DETAIL.OVERVIEW.CHART_HELP' | translate"
+              [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
+              [helpLabel]="'AFFAIRES.DETAIL.OVERVIEW.HELP_ARIA' | translate">
+              <div class="flex flex-col gap-5 p-6">
+
+                <div class="chart-head">
+                  <div class="min-w-0">
                     <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">
-                      {{ 'AFFAIRES.DETAIL.OVERVIEW.CHART_TITLE' | translate: { year: chartYear() } }}
+                      {{ chartTitle() }}
                     </p>
                     <p class="mt-1 text-body-sm text-on-surface-variant">
                       {{ 'AFFAIRES.DETAIL.OVERVIEW.CHART_SUB' | translate }}
                     </p>
                   </div>
-                  <div class="flex flex-wrap items-center gap-6">
+                  @if (chartGranularitySwitchable()) {
+                    <daf-chip-group
+                      [options]="chartGranularityChips()"
+                      [config]="chartGranularityChipConfig"
+                      [selected]="chartGranularitySelection()"
+                      (selectedChange)="setChartGranularity($event)" />
+                  }
+                </div>
+
+                <div class="chart-legend">
+                  <div class="flex flex-wrap items-center gap-4">
                     <span class="flex items-center gap-2 text-label-caps font-bold text-on-surface-variant">
                       <span class="h-2.5 w-2.5 rounded-full bg-tertiary"></span>
                       {{ 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_REAL' | translate }}
                     </span>
-                    @if (monthlyTarget() > 0) {
+                    @if (chartTarget() > 0) {
                       <span class="text-label-caps font-bold text-on-surface-variant">
-                        {{ 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_TARGET' | translate }} :
-                        {{ monthlyTarget() | displayCurrency : affaireDevise() }}
+                        {{ chartTargetLabel() }} : {{ chartTarget() | displayCurrency : affaireDevise() }}
                       </span>
                     }
-                    <div class="border-l border-outline-variant/30 pl-6 text-right">
-                      <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                        {{ 'AFFAIRES.DETAIL.OVERVIEW.CUMUL' | translate }}
-                      </p>
-                      <p class="text-headline-md font-extrabold text-on-surface">
-                        {{ chartTotal() | displayCurrency : affaireDevise() }}
-                      </p>
-                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'AFFAIRES.DETAIL.OVERVIEW.CUMUL' | translate }}
+                    </p>
+                    <p class="text-headline-md font-extrabold text-on-surface">
+                      {{ chartTotal() | displayCurrency : affaireDevise() }}
+                    </p>
                   </div>
                 </div>
 
-                <!-- Colonnes verticales + ligne d'objectif pointillée + axe des mois :
-                     daf-bar-chart (4.17.0) remplace les 12 daf-progress-bar horizontales.
-                     Le composant dessine aussi l'état vide, d'où le retrait du @else. -->
-                <daf-bar-chart [bars]="monthlyBars()" [options]="monthlyChartOptions()" />
+                <!-- Colonnes verticales + ligne d'objectif pointillée + axe : daf-bar-chart
+                     dessine aussi l'état vide, d'où l'absence de @else. Pas de `(barClick)` :
+                     les barres ne mènent nulle part, ce sont les puces qui pilotent. -->
+                <daf-bar-chart [bars]="chartBars()" [options]="chartOptions()" />
               </div>
             </daf-section-card>
 
           }
 
-          <!-- ── Budget & TS ──────────────────────────────────────────── -->
+          <!-- ── Travaux supplémentaires ──────────────────────────────── -->
+          <!-- L'id de l'onglet reste `ts` : ce n'est qu'un libellé qui a changé, et rien ne
+               deep-linke dessus (`activeTab` est un signal, pas un paramètre de route). -->
           @if (activeTab() === 'ts') {
             <daf-search-toolbar
               [placeholder]="'AFFAIRES.DETAIL.TOOLBAR.SEARCH_TS' | translate"
@@ -429,10 +499,9 @@
             <daf-data-table [columns]="tsColumns()" [rows]="tsRows()" [config]="tsConfig()" />
           }
 
-          <!-- ── Facturation (mode) ───────────────────────────────────── -->
-          @if (activeTab() === 'billing' && aff.billingMode) {
-            <app-affaire-billing-tab [affaire]="aff" />
-          }
+          <!-- L'onglet « Facturation » (écrans par mode AV / JAL / TM / CP / RMB) est
+               supprimé. Le mode de facturation reste affiché dans la carte d'informations,
+               c'est une propriété de l'affaire ; ce sont ses écrans qui n'existent plus. -->
 
           <!-- ── Factures ─────────────────────────────────────────────── -->
           @if (activeTab() === 'factures') {
@@ -478,9 +547,9 @@
         <!-- Bas de page : Progression facturation (anneau) et Répartition RAF se partagent la largeur
              à parts égales : même base flex, `fullHeight` pour que les deux cartes aient
              la même hauteur quel que soit leur contenu. -->
-        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+        <div class="bottom-row">
 
-          <daf-section-card style="flex:1 1 300px; min-height:300px; height:auto; display:flex; flex-direction:column" [options]="{ fullHeight: true }">
+          <daf-section-card class="bottom-cell" [options]="{ fullHeight: true }">
             <div class="flex flex-col gap-4 p-6" style="height:100%">
               <div class="flex items-baseline justify-between gap-2">
                 <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
@@ -497,7 +566,7 @@
             </div>
           </daf-section-card>
 
-          <daf-section-card style="flex:1 1 300px; min-height:300px; height:auto; display:flex; flex-direction:column" [options]="{ fullHeight: true }">
+          <daf-section-card class="bottom-cell" [options]="{ fullHeight: true }">
             <div class="flex flex-col gap-5 p-6" style="height:100%">
               <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
@@ -547,9 +616,9 @@
       <div style="display:flex; flex-wrap:wrap; gap:1rem">
         <div class="flex flex-col gap-1" style="flex:1 1 45%">
           <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-            {{ 'AFFAIRES.DETAIL.INDICATORS.CONSUMPTION_RATE' | translate }}
+            {{ 'AFFAIRES.DETAIL.INDICATORS.BILLING_RATE' | translate }}
           </span>
-          <span class="text-headline-md font-extrabold text-danger">{{ consumptionPct() | number:'1.0-0' }}%</span>
+          <span class="text-headline-md font-extrabold text-danger">{{ billingPct() | number:'1.0-0' }}%</span>
         </div>
         <div class="flex flex-col gap-1" style="flex:1 1 45%">
           <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
@@ -559,7 +628,7 @@
         </div>
       </div>
 
-      <daf-progress-bar [value]="consumptionPct()" [options]="alertBarOptions" />
+      <daf-progress-bar [value]="billingPct()" [options]="alertBarOptions" />
 
       <daf-button
         [options]="{ variant: 'secondary', size: 'sm', label: 'AFFAIRES.DETAIL.OVERVIEW.SEE_INVOICES' | translate, iconEnd: 'arrow_forward' }"

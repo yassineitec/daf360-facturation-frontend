@@ -77,7 +77,7 @@
     @if (draft.responsables.length > 0) {
       <div class="resp-list">
         @for (resp of draft.responsables; track $index; let idx = $index) {
-          <div class="resp-item" [class.is-primary]="resp.isPrimary">
+          <div class="resp-item">
 
             <!-- Header row -->
             <div class="resp-header">
@@ -88,13 +88,6 @@
                 <span class="resp-name">{{ resp.userName || ('AFFAIRES.wizard.responsables.row' | translate:{ n: idx + 1 }) }}</span>
               </div>
               <div class="resp-header-actions">
-                @if (!resp.isPrimary) {
-                  <button class="set-primary-btn" type="button"
-                    [title]="'AFFAIRES.wizard.responsables.set_primary' | translate"
-                    (click)="setPrimary(idx)">
-                    <span class="material-symbols-outlined">star_border</span>
-                  </button>
-                }
                 <button class="remove-btn" type="button" (click)="removeRow(idx)">
                   <span class="material-symbols-outlined">close</span>
                 </button>

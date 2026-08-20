@@ -90,7 +90,6 @@ export interface DisciplineDto {
 export interface ResponsableItem {
   userId: number;
   userName: string;
-  isPrimary: boolean;
   role?: string;
   budgetAllocation?: number;
   activiteId: number | null;
@@ -192,7 +191,6 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
   const responsables: AffaireDraftState['responsables'] = (dto.responsables ?? []).map((r: any) => ({
     userId: r.userId,
     userName: r.fullName ?? '',
-    isPrimary: r.isPrimary,
     role: r.role,
     budgetAllocation: r.budgetAllocation != null ? Number(r.budgetAllocation) : undefined,
     activiteId: r.activiteId ?? null,

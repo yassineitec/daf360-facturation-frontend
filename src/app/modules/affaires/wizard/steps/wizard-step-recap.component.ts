@@ -116,7 +116,6 @@ export class WizardStepRecapComponent implements OnInit {
     const budget = this.draft.budgetPrevisionnel;
     return this.draft.responsables.map(r => ({
       userName:         r.userName,
-      isPrimary:        r.isPrimary,
       activiteLabel:    r.activiteLabel,
       disciplineLabel:  r.disciplineLabel,
       role:             r.role || this.translate.instant('AFFAIRES.wizard.shell.dash'),

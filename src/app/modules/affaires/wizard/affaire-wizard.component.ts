@@ -263,7 +263,6 @@ export class AffaireWizardComponent implements OnInit {
       case 4: {
         const d4 = this.draft();
         if (!d4.responsables.length) return this.translate.instant('AFFAIRES.wizard.shell.val.resp_add');
-        if (!d4.responsables.some(r => r.isPrimary)) return this.translate.instant('AFFAIRES.wizard.shell.val.resp_primary');
         if (!d4.responsables.every(r => r.userId > 0 && (r.budgetAllocation ?? 0) > 0))
           return this.translate.instant('AFFAIRES.wizard.shell.val.resp_alloc');
         const total = d4.responsables.reduce((s, r) => s + (r.budgetAllocation ?? 0), 0);
@@ -317,7 +316,6 @@ export class AffaireWizardComponent implements OnInit {
 
       case 4: {
         if (d.responsables.length === 0) return false;
-        if (!d.responsables.some(r => r.isPrimary)) return false;
         if (!d.responsables.every(r => r.userId > 0 && (r.budgetAllocation ?? 0) > 0)) return false;
         if (!d.responsables.every(r => r.activiteId != null)) return false;
         const pairs = d.responsables.map(r => `${r.userId}|${r.activiteId}`);
@@ -541,7 +539,6 @@ export class AffaireWizardComponent implements OnInit {
     this.wizardService.configureResponsables(id, {
       responsables: d.responsables.map(r => ({
         userId:           r.userId,
-        isPrimary:        r.isPrimary,
         role:             r.role ?? null,
         budgetAllocation: r.budgetAllocation ?? 0,
         activiteId:       r.activiteId,

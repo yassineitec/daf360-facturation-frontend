@@ -84,7 +84,6 @@ export interface AffaireResponsable {
   id:               number;
   userId:           number;
   fullName:         string;
-  isPrimary:        boolean;
   role:             string | null;
   activiteId:       number | null;
   activiteLabel:    string | null;

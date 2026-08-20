@@ -31,10 +31,14 @@
       <div style="flex:0 1 30%; min-width:320px">
         <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
 
+          <!-- `subtitleLink` : le sous-titre (« Client · AFF-123 ») mène à l'affaire de la
+               facture. Non renseigné quand la facture n'a pas d'affaire, et le composant
+               laisse alors un `<p>` simple — pas de lien mort sur un brouillon. -->
           <daf-page-header
             size="md"
             [title]="inv.invoiceNumber ?? ('INVOICING.DETAIL.DRAFT_TITLE' | translate)"
             [subtitle]="headerSubtitle()"
+            [subtitleLink]="affaireLink()"
             [badges]="headerBadges()"
             [breadcrumbs]="breadcrumbs()"
             [breadcrumbLabel]="'INVOICING.DETAIL.BREADCRUMB_ARIA' | translate" />

@@ -5,6 +5,21 @@
 }
 
 // ── Main content area ─────────────────────────────────────────────────────────
+//
+// LE POINT DE BASCULE DOIT ÊTRE CELUI DE LA LIB, pas un autre.
+//
+// `daf-side-nav` bascule sur le `sm` de Tailwind, soit **640 px** : au-dessus, un rail
+// gauche `fixed` de 256 px ; en dessous, une barre `fixed` en bas de l'écran. Ce shell
+// lâchait sa marge gauche à 768 px. Entre 641 px et 768 px, le rail était donc affiché
+// alors que le contenu ne lui réservait plus rien : la barre latérale passait PAR-DESSUS
+// la page. C'était le « la barre latérale n'est pas responsive » — un désaccord de
+// points de bascule, pas un défaut de la barre elle-même.
+//
+// La marge gauche tombe maintenant exactement là où le rail disparaît. En dessous, c'est
+// la barre du bas qui prend le relais, donc le contenu réserve de la place EN BAS et non
+// plus à gauche : les 3,5 rem de padding gauche gardaient une place pour un bouton
+// hamburger qui n'existe plus dans ce shell, tout en laissant la dernière ligne de la page
+// passer sous la barre du bas.
 .shell-content {
   margin-left: var(--shell-sidebar-w);
   height:      calc(100vh - var(--shell-header-h));
@@ -13,27 +28,22 @@
   background:  #f8f9fb;
   box-sizing:  border-box;
 
-  @media (max-width: 1024px) { padding: 1.5rem; }
-  @media (max-width: 768px)  { margin-left: 0; padding: 1rem 1rem 1rem 3.5rem; }
-  @media (max-width: 480px)  { padding: 1rem 0.75rem 1rem 3.5rem; }
-}
+  // Portable : on rend au contenu ce que la gouttière prenait. 256 px de rail sur un
+  // écran de 1366 px, c'est déjà 19 % de la largeur partie en navigation.
+  @media (max-width: 1400px) { padding: 1.5rem; }
 
-// ── Mobile overlay backdrop ───────────────────────────────────────────────────
-.mob-overlay {
-  display:        none;
-  position:       fixed;
-  inset:          0;
-  z-index:        39;
-  background:     rgba(0, 0, 0, 0.45);
-  opacity:        0;
-  pointer-events: none;
-  transition:     opacity 0.28s ease;
+  // Le rail disparaît (lib : `sm`), la barre du bas apparaît.
+  @media (max-width: 639.98px) {
+    margin-left:    0;
+    padding:        1rem;
+    // Hauteur de la barre du bas + l'encoche des téléphones, sinon la dernière carte de
+    // la page est masquée par la barre.
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
 
-  @media (max-width: 768px) { display: block; }
-
-  &--open {
-    opacity:        1;
-    pointer-events: all;
+  @media (max-width: 480px) {
+    padding-left:  0.75rem;
+    padding-right: 0.75rem;
   }
 }
 
@@ -41,26 +51,7 @@
 // `daf-radial-menu` picker pinned bottom-right — zero CSS of ours, Tailwind
 // utilities from the lib instead of the eight raw hex values this block carried.
 
-// ── Hamburger toggle button ───────────────────────────────────────────────────
-.mob-hamburger {
-  display:       none;
-  position:      fixed;
-  top:           calc(var(--shell-header-h) + 10px);
-  left:          12px;
-  z-index:       50;
-  width:         36px;
-  height:        36px;
-  border-radius: 10px;
-  border:        1px solid rgba(0, 0, 0, 0.08);
-  background:    #fff;
-  box-shadow:    0 2px 8px rgba(0, 0, 0, 0.10);
-  cursor:        pointer;
-  align-items:   center;
-  justify-content: center;
-  transition:    background 0.2s;
-
-  .material-symbols-outlined { font-size: 20px; color: #1e293b; }
-  &:hover { background: #f1f5f9; }
-
-  @media (max-width: 768px) { display: flex; }
-}
+// Le bouton hamburger et le voile de fond ont disparu avec le tiroir maison : sur mobile,
+// `daf-side-nav` affiche sa propre barre en bas, qui n'a ni bouton d'ouverture ni voile.
+// Leur CSS était resté sans markup pour le porter — et son point de bascule à 768 px était
+// la trace du désaccord corrigé ci-dessus.

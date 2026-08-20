@@ -11,6 +11,28 @@
 @source inline("{md:grid-cols-1,md:grid-cols-2,md:grid-cols-3,md:grid-cols-4,lg:grid-cols-1,lg:grid-cols-2,lg:grid-cols-3,lg:grid-cols-4}");
 @source inline("{sm:grid-cols-1,sm:grid-cols-2,sm:grid-cols-3,sm:grid-cols-4,xl:grid-cols-1,xl:grid-cols-2,xl:grid-cols-3,xl:grid-cols-4}");
 @source inline("{ml-0,ml-64,pt-16,min-h-screen,overflow-y-auto,overflow-hidden}");
+
+/* `daf-side-nav` — le rail de gauche ET la barre du bas sur mobile.
+   Le composant bascule de l'un à l'autre sur le `sm` de Tailwind : le rail est
+   `hidden sm:flex`, la barre du bas est `sm:hidden`. Aucun de ces utilitaires
+   n'apparaît dans un template de cette app (`sm:flex-row` de subcontracting est une
+   AUTRE classe) : ils ne viennent que du bundle de la lib. Si le scan les manque, la
+   barre du bas perd son `sm:hidden` et le rail son `sm:flex` — donc l'un des deux ne
+   s'affiche jamais, selon celui qui manque. Même raison pour `w-[72px]` et les tailles
+   arbitraires de la barre du bas : valeurs arbitraires, générées seulement si la chaîne
+   exacte est trouvée. */
+/* `daf-page-header [subtitleLink]` — le sous-titre cliquable. Son habillage de lien
+   (soulignement décalé, couleur du trait, survol) ne sort QUE du bundle de la lib :
+   `underline-offset-2`, `decoration-outline-variant`, `hover:decoration-tertiary`,
+   `hover:text-tertiary` et `w-fit` n'existent dans aucun template d'ici. Sans elles le
+   lien navigue mais se lit comme le `<p>` d'avant — donc « le sous-titre ne mène nulle
+   part » alors qu'il suffisait de cliquer. `underline`, `cursor-pointer`, `inline-block`
+   et `transition-colors`, eux, viennent déjà des templates de l'app. */
+@source inline("{underline-offset-2,decoration-outline-variant,hover:decoration-tertiary,hover:text-tertiary,w-fit}");
+
+@source inline("{sm:hidden,sm:flex,sm:grid,sm:block}");
+@source inline("{w-[72px],text-[22px],text-[12px],text-[10px],text-[9px],max-w-[68px],max-w-[70vw],min-w-44,min-w-4,min-w-5}");
+@source inline("{bottom-0,left-0,bottom-full,z-40,z-50,items-stretch,overflow-x-auto,overflow-y-visible,shrink-0,-translate-x-1/2}");
 @source inline("{text-primary,text-secondary,text-teal,text-on-surface,text-on-surface-variant,text-outline,text-error,text-danger,text-success}");
 @source inline("{bg-primary,bg-secondary,bg-teal,bg-surface,bg-surface-container,bg-surface-container-lowest,bg-surface-container-high,bg-background,bg-error,bg-danger}");
 @source inline("{border-primary,border-secondary,border-outline,border-outline-variant,border-error}");

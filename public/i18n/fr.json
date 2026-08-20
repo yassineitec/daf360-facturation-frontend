@@ -897,8 +897,7 @@
       "BACK_TO_LIST": "Affaires",
       "TABS": {
         "OVERVIEW": "Vue générale",
-        "BUDGET_TS": "Budget & TS",
-        "BILLING": "Facturation",
+        "BUDGET_TS": "Travaux supplémentaires",
         "INVOICES": "Factures",
         "PAYMENTS": "Paiements"
       },
@@ -949,9 +948,13 @@
         "DRAWER_BTN": "Échéances & activité",
         "DRAWER_TITLE": "Échéances & activité",
         "CHART_TITLE": "Facturation mensuelle ({{year}})",
+        "CHART_TITLE_YEARS": "Facturation par année",
         "CHART_SUB": "Évolution des montants facturés vs objectif",
+        "LEVEL_YEARS": "Année",
+        "LEVEL_MONTHS": "Mois",
         "LEGEND_REAL": "Réel",
         "LEGEND_TARGET": "Objectif mensuel",
+        "LEGEND_TARGET_YEAR": "Objectif annuel",
         "CUMUL": "Total cumulé",
         "NO_CHART_DATA": "Aucune facture émise à afficher pour le moment.",
         "DEADLINES_TITLE": "Prochaines échéances",
@@ -971,17 +974,24 @@
         "ACT_TS_CREATED": "TS {{ref}} créé",
         "ACT_TS_INTEGRATED": "TS {{ref}} intégré au budget",
         "ACT_UPDATED": "Affaire mise à jour",
-        "ACT_CREATED": "Affaire créée"
+        "ACT_CREATED": "Affaire créée",
+        "HELP_TITLE_CALC": "Règles de calcul",
+        "HELP_ARIA": "Aide sur cet indicateur",
+        "CHART_HELP": "Somme des montants TTC des factures émises sur la période. La ligne pointillée est l'enveloppe répartie linéairement sur la durée de l'affaire, pas un objectif saisi. L'axe s'arrête à la période en cours."
       },
       "KPI": {
         "CA": "CA Encaissé",
         "CA_SUB": "Chiffre d'affaires réel",
+        "CA_HELP": "Somme des paiements réellement reçus sur les factures de l'affaire. Ce n'est pas le facturé : une facture émise mais non payée ne compte pas ici.",
         "RAF": "RAF Disponible",
         "RAF_USAGE": "Consommation budget",
+        "RAF_HELP": "Ce qui reste à facturer : budget + TS intégrés − factures émises. Le pourcentage est la part encore disponible. Négatif = budget dépassé.",
         "WIP": "WIP",
         "WIP_SUB": "Travaux en cours",
+        "WIP_HELP": "Travaux en cours, non encore facturés. Pas encore calculé côté serveur : la tuile affiche donc toujours 0.",
         "MARGIN": "Marge brute",
-        "MARGIN_TARGET": "Objectif de marge"
+        "MARGIN_TARGET": "Objectif de marge",
+        "MARGIN_HELP": "(Encaissé − sous-traitance) / encaissé : un % du CA, pas du budget. Les coûts internes valent 0 faute de timesheet, la marge est surévaluée."
       },
       "RAF_SECTION": {
         "TITLE": "Reste À Facturer (RAF)",
@@ -995,7 +1005,6 @@
         "CLIENT": "Client",
         "MANAGER": "Manager",
         "MANAGERS": "Managers",
-        "MANAGER_PRIMARY": "Principal",
         "BILLING_MODE": "Mode de facturation",
         "CURRENCY": "Devise",
         "PERIOD": "Période",
@@ -1012,7 +1021,7 @@
         "ENTITE_MERE": "Entité mère"
       },
       "SECTIONS": {
-        "BUDGET_TS": "Budget & Travail Supplémentaire",
+        "BUDGET_TS": "Travaux supplémentaires",
         "NEW_TS": "Nouvel TS",
         "BILLING": "Facturation",
         "STUB": "Section en cours de développement.",
@@ -1047,7 +1056,7 @@
       "INDICATORS": {
         "TITLE": "Indicateurs de pilotage",
         "BILLING_RATE": "Taux de facturation",
-        "CONSUMPTION_RATE": "Taux de consommation",
+        "ENVELOPE_NOTE": "Sur l'enveloppe facturable : {{budget}} de budget + {{ts}} de TS intégrés.",
         "BUDGET_CONSUMED": "Budget consommé",
         "ON": "sur",
         "EVOLUTION": "Évolution"
@@ -1073,7 +1082,10 @@
         "LAST_MODIFIED": "Dernière modification",
         "RAF_THRESHOLD": "Seuil d'alerte RAF",
         "RAF_ALERT_TITLE": "Alerte RAF dépassée",
-        "RAF_ALERT_TEXT": "Le seuil d'alerte de {{pct}}% est atteint. Vérifiez le reste à facturer."
+        "RAF_ALERT_TEXT": "Le seuil d'alerte de {{pct}}% est atteint. Vérifiez le reste à facturer.",
+        "BUDGET_OVERRUN_TITLE": "Budget dépassé",
+        "BUDGET_OVERRUN_TEXT": "L'affaire a facturé {{invoiced}} pour une enveloppe de {{budget}}. Le reste à facturer est négatif : intégrez un travail supplémentaire ou corrigez les factures concernées.",
+        "BUDGET_OVERRUN_AMOUNT": "Dépassement"
       },
       "MODAL": {
         "STATUS_TITLE": "Changer le statut",
@@ -1164,7 +1176,6 @@
           "rmb": "Sélectionnez au moins une catégorie de dépenses.",
           "livrable": "Configurez au moins un livrable avant de continuer.",
           "resp_add": "Ajoutez au moins un responsable.",
-          "resp_primary": "Désignez un responsable principal.",
           "resp_alloc": "Chaque responsable doit avoir un utilisateur et une allocation > 0.",
           "resp_total": "Total des allocations ({{total}}) doit égaler le budget ({{budget}}).",
           "planning": "Date de début de facturation et durée du contrat (en mois) requises.",
@@ -1388,7 +1399,6 @@
         "allocated_label": "Alloué :",
         "remaining_label": "Restant :",
         "row": "Ligne {{n}}",
-        "set_primary": "Définir comme principal",
         "collaborateur": "Collaborateur",
         "role": "Rôle",
         "allocated_budget": "Budget alloué",
