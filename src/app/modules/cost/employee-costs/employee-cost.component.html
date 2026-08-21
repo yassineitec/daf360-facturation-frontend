@@ -6,7 +6,7 @@
         <input type="checkbox" [checked]="showActiveOnly()" (change)="toggleActiveOnly()" />
         {{ 'COST.EMPLOYEE_COST.ACTIVE_ONLY' | translate }}
       </label>
-      <button type="button" class="btn-primary" (click)="toggleAddForm()">
+      <button type="button" class="btn-primary" [disabled]="showAddForm()" (click)="toggleAddForm()">
         {{ 'COST.EMPLOYEE_COST.ADD' | translate }}
       </button>
     </div>

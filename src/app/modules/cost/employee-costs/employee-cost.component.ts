@@ -126,6 +126,7 @@ export class EmployeeCostComponent implements OnInit {
 
   edit(row: EmployeeCostDto): void {
     this.editingId.set(row.id);
+    this.saveError.set(null); // don't carry a stale error banner over from a prior Add attempt
     this.newRecord = {
       employeeEmail: row.employeeEmail,
       driver: 'basic',
