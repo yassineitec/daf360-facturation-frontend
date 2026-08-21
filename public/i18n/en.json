@@ -1301,6 +1301,7 @@
         "internal_cost": "Internal cost (optional)",
         "internal_cost_ph": "Internal daily / hourly cost",
         "cost_hint": "Used for internal profitability calculation. Not shared with the client.",
+        "no_cost_data_hint": "No cost data found for this collaborator — the values you enter will be saved as their reference cost.",
         "add": "Add a resource",
         "auto_title": "Automatic rate calculation",
         "auto_sub": "Pre-fill the rates from actual costs (3-month averages).",

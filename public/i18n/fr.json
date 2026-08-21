@@ -1301,6 +1301,7 @@
         "internal_cost": "Coût interne (optionnel)",
         "internal_cost_ph": "Coût journalier / horaire interne",
         "cost_hint": "Utilisé pour le calcul de rentabilité interne. Non communiqué au client.",
+        "no_cost_data_hint": "Aucune donnée de coût trouvée pour ce collaborateur — les valeurs saisies seront enregistrées comme référence.",
         "add": "Ajouter une ressource",
         "auto_title": "Calcul automatique des taux",
         "auto_sub": "Pré-remplissez les taux depuis les coûts réels (moyennes 3 mois).",
