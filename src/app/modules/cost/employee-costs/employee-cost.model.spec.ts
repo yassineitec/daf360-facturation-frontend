@@ -12,6 +12,7 @@ describe('deriveEmployeeCostFields', () => {
   it('back-derives basicCost from internalSellingCost', () => {
     const result = deriveEmployeeCostFields('internal', 110);
     expect(result.basicCost).toBe(100);
+    expect(result.internalSellingCost).toBe(110); // round-trips back to the driver's own value
     expect(result.externalSellingCost).toBe(120);
   });
 
@@ -19,6 +20,7 @@ describe('deriveEmployeeCostFields', () => {
     const result = deriveEmployeeCostFields('external', 120);
     expect(result.basicCost).toBe(100);
     expect(result.internalSellingCost).toBe(110);
+    expect(result.externalSellingCost).toBe(120); // round-trips back to the driver's own value
   });
 
   it('rounds to 2 decimal places', () => {
