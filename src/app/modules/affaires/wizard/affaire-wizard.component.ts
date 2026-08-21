@@ -219,18 +219,6 @@ export class AffaireWizardComponent implements OnInit {
   // unlike editing an already-active affaire (which only saves).
   resumeDraft = signal(false);
 
-  /**
-   * Minimal id→email lookup for the T&M cost write-back (`writeBackMissingEmployeeCosts`).
-   * This duplicates a slice of what `wizard-step-tm.component.ts` already fetches for its
-   * own dropdown — a deliberate trade-off, cheaper than threading the child's resolved
-   * user list up through an `@Output` just for this one call.
-   */
-  private readonly allUsers = signal<{ id: number; email: string }[]>([]);
-
-  private resolveEmailForUser(userId: number): string | null {
-    return this.allUsers().find(u => u.id === userId)?.email ?? null;
-  }
-
   draft = signal<AffaireDraftState>({
     paysId: 0,
     intitule: '',
@@ -374,9 +362,6 @@ export class AffaireWizardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.affaireSvc.getUsers().subscribe(users =>
-      this.allUsers.set(users.map(u => ({ id: u.id, email: u.email }))));
-
     const rawId = this.id();
     if (rawId) {
       this.editMode.set(true);
@@ -559,14 +544,16 @@ export class AffaireWizardComponent implements OnInit {
   /** Fire-and-forget: for every T&M collaborator that had no employee_costs row (flagged
    * costDataMissing during the wizard) and a valid manually-entered cost, persist it as
    * their new reference cost. Never blocks or fails the wizard step — this is a best-effort
-   * side-effect, not something the user waits on. */
+   * side-effect, not something the user waits on. Reads r.userEmail (cached by
+   * wizard-step-tm.component.ts's onUserChange the moment the collaborator was selected)
+   * rather than re-resolving it from a second, independently-fetchable user list — that
+   * second list could silently fail to load and skip every write-back with no signal to
+   * anyone; the cached field can't go stale or come back empty this way. */
   private writeBackMissingEmployeeCosts(d: AffaireDraftState): void {
     for (const r of d.ressources) {
-      if (!r.costDataMissing || r.costAmount == null) continue;
-      const email = this.resolveEmailForUser(r.userId);
-      if (!email) continue;
+      if (!r.costDataMissing || r.costAmount == null || !r.userEmail) continue;
       this.employeeCostSvc.recordManualEntry({
-        employeeEmail: email,
+        employeeEmail: r.userEmail,
         basicCost: r.costAmount,
       }).subscribe({ error: () => { /* best-effort — a failed write-back should never block wizard progress */ } });
     }

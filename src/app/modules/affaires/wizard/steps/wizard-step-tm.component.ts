@@ -107,6 +107,7 @@ export class WizardStepTmComponent implements OnInit {
   onUserChange(r: AffaireDraftState['ressources'][0], userId: number): void {
     const user = this.users().find(u => u.id === Number(userId));
     r.userName = user?.fullName;
+    r.userEmail = user?.email;
     r.tauxIntercompany = undefined;
     r.costDataMissing = false;
     // Reset synchronously, before the async lookup below resolves — otherwise a stale value

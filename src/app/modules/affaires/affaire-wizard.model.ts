@@ -143,6 +143,11 @@ export interface AffaireDraftState {
   jalonTotal: number;
   ressources: {
     userId: number; userName?: string;
+    /** Cached alongside userName the moment a collaborator is selected (see
+     * wizard-step-tm.component.ts's onUserChange) — read directly by
+     * affaire-wizard.component.ts's write-back on save, rather than re-resolved from a
+     * second, independently-fetchable user list that could silently be empty/stale. */
+    userEmail?: string;
     resourceType: string; rateType: string;
     rateAmount: number; rateCurrency: string;
     costAmount?: number;
