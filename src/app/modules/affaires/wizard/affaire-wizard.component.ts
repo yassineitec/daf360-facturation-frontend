@@ -13,6 +13,7 @@ import { AffaireDraftState, mapDraftToState } from '../affaire-wizard.model';
 import { AffaireService }           from '../affaire.service';
 import { UserStore }                from '../../../core/user.store';
 import { AffaireDetail }            from '../affaire.model';
+import { EmployeeCostService }      from '../../cost/employee-costs/employee-cost.service';
 import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
 import { WizardStepInfoComponent }       from './steps/wizard-step-info.component';
 import { WizardStepBillingComponent }    from './steps/wizard-step-billing.component';
@@ -54,6 +55,7 @@ export class AffaireWizardComponent implements OnInit {
   private readonly affaireSvc     = inject(AffaireService);
   private readonly userStore      = inject(UserStore);
   private readonly translate      = inject(TranslateService);
+  private readonly employeeCostSvc = inject(EmployeeCostService);
 
   constructor() {
     effect(() => {
@@ -217,6 +219,18 @@ export class AffaireWizardComponent implements OnInit {
   // unlike editing an already-active affaire (which only saves).
   resumeDraft = signal(false);
 
+  /**
+   * Minimal id→email lookup for the T&M cost write-back (`writeBackMissingEmployeeCosts`).
+   * This duplicates a slice of what `wizard-step-tm.component.ts` already fetches for its
+   * own dropdown — a deliberate trade-off, cheaper than threading the child's resolved
+   * user list up through an `@Output` just for this one call.
+   */
+  private readonly allUsers = signal<{ id: number; email: string }[]>([]);
+
+  private resolveEmailForUser(userId: number): string | null {
+    return this.allUsers().find(u => u.id === userId)?.email ?? null;
+  }
+
   draft = signal<AffaireDraftState>({
     paysId: 0,
     intitule: '',
@@ -360,6 +374,9 @@ export class AffaireWizardComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.affaireSvc.getUsers().subscribe(users =>
+      this.allUsers.set(users.map(u => ({ id: u.id, email: u.email }))));
+
     const rawId = this.id();
     if (rawId) {
       this.editMode.set(true);
@@ -525,12 +542,34 @@ export class AffaireWizardComponent implements OnInit {
     })();
 
     save$.subscribe({
-      next: () => { this.isSaving.set(false); this.currentStep.set(4); },
+      next: () => {
+        this.isSaving.set(false);
+        if (mode === 'TM') {
+          this.writeBackMissingEmployeeCosts(d);
+        }
+        this.currentStep.set(4);
+      },
       error: err => {
         this.isSaving.set(false);
         this.serverError.set(this.apiError(err, 'AFFAIRES.wizard.shell.err.config'));
       },
     });
+  }
+
+  /** Fire-and-forget: for every T&M collaborator that had no employee_costs row (flagged
+   * costDataMissing during the wizard) and a valid manually-entered cost, persist it as
+   * their new reference cost. Never blocks or fails the wizard step — this is a best-effort
+   * side-effect, not something the user waits on. */
+  private writeBackMissingEmployeeCosts(d: AffaireDraftState): void {
+    for (const r of d.ressources) {
+      if (!r.costDataMissing || r.costAmount == null) continue;
+      const email = this.resolveEmailForUser(r.userId);
+      if (!email) continue;
+      this.employeeCostSvc.recordManualEntry({
+        employeeEmail: email,
+        basicCost: r.costAmount,
+      }).subscribe({ error: () => { /* best-effort — a failed write-back should never block wizard progress */ } });
+    }
   }
 
   // ── Step 4 — configure responsables & budget ──────────────────────────
