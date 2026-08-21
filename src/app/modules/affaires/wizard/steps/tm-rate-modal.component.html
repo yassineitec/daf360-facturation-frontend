@@ -113,7 +113,7 @@
                     {{ fmtNumber(recomputedTauxVente(taux)) }}
                   </td>
                   <td class="td-center">
-                    @if (taux.sourceCalcul === 'COST_LINES') {
+                    @if (taux.sourceCalcul === 'EMPLOYEE_COSTS') {
                       <span class="source-chip source-chip--real">{{ 'AFFAIRES.wizard.tm.modal.source_real' | translate }}</span>
                     } @else {
                       <span class="source-chip source-chip--default"

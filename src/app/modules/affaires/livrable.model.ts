@@ -59,5 +59,5 @@ export interface CollaborateurTauxDto {
   tauxVente: number;
   pctHqCost: number;
   pctMargin: number;
-  sourceCalcul: 'COST_LINES' | 'DEFAUT_TAUX';
+  sourceCalcul: 'EMPLOYEE_COSTS' | 'AUCUNE_DONNEE';
 }
