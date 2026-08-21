@@ -1,0 +1,100 @@
+<div class="employee-cost-page">
+  <div class="page-header">
+    <h2>{{ 'COST.EMPLOYEE_COST.TITLE' | translate }}</h2>
+    <div class="page-header-actions">
+      <label class="toggle-filter">
+        <input type="checkbox" [checked]="showActiveOnly()" (change)="toggleActiveOnly()" />
+        {{ 'COST.EMPLOYEE_COST.ACTIVE_ONLY' | translate }}
+      </label>
+      <button type="button" class="btn-primary" (click)="toggleAddForm()">
+        {{ 'COST.EMPLOYEE_COST.ADD' | translate }}
+      </button>
+    </div>
+  </div>
+
+  @if (serverError()) {
+    <p class="error-banner">{{ serverError() }}</p>
+  }
+
+  @if (showAddForm()) {
+    <div class="add-form-panel">
+      <label>
+        {{ 'COST.EMPLOYEE_COST.EMPLOYEE_EMAIL' | translate }}
+        <input type="email" [(ngModel)]="newRecord.employeeEmail" [disabled]="editingId() !== null" />
+      </label>
+
+      <label>
+        {{ 'COST.EMPLOYEE_COST.BASIC_COST' | translate }}
+        <input type="number" [ngModel]="newRecord.basicCost"
+          (ngModelChange)="onFieldInput('basic', $event)" />
+      </label>
+
+      <label>
+        {{ 'COST.EMPLOYEE_COST.INTERNAL_SELLING_COST' | translate }}
+        <input type="number" [ngModel]="newRecord.internalSellingCost"
+          (ngModelChange)="onFieldInput('internal', $event)" />
+      </label>
+
+      <label>
+        {{ 'COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST' | translate }}
+        <input type="number" [ngModel]="newRecord.externalSellingCost"
+          (ngModelChange)="onFieldInput('external', $event)" />
+      </label>
+
+      <label>
+        {{ 'COST.EMPLOYEE_COST.DATE_DEBUT' | translate }}
+        <input type="date" [(ngModel)]="newRecord.dateDebut" />
+      </label>
+
+      <label>
+        {{ 'COST.EMPLOYEE_COST.DATE_FIN' | translate }}
+        <input type="date" [(ngModel)]="newRecord.dateFin" />
+      </label>
+
+      @if (saveError()) {
+        <p class="error-inline">{{ saveError() }}</p>
+      }
+
+      <div class="add-form-actions">
+        <button type="button" (click)="toggleAddForm()">{{ 'COST.EMPLOYEE_COST.CANCEL' | translate }}</button>
+        <button type="button" class="btn-primary" [disabled]="isSaving()" (click)="save()">
+          {{ 'COST.EMPLOYEE_COST.SAVE' | translate }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <p>{{ 'COST.EMPLOYEE_COST.LOADING' | translate }}</p>
+  } @else {
+    <table class="employee-cost-table">
+      <thead>
+        <tr>
+          <th>{{ 'COST.EMPLOYEE_COST.COL_EMPLOYEE' | translate }}</th>
+          <th>{{ 'COST.EMPLOYEE_COST.COL_BASIC' | translate }}</th>
+          <th>{{ 'COST.EMPLOYEE_COST.COL_INTERNAL' | translate }}</th>
+          <th>{{ 'COST.EMPLOYEE_COST.COL_EXTERNAL' | translate }}</th>
+          <th>{{ 'COST.EMPLOYEE_COST.COL_STATUS' | translate }}</th>
+          <th>{{ 'COST.EMPLOYEE_COST.COL_PERIOD' | translate }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of visibleRows(); track row.id) {
+          <tr>
+            <td>{{ row.fullName ?? row.employeeEmail }}</td>
+            <td>{{ row.basicCost }}</td>
+            <td>{{ row.internalSellingCost }}</td>
+            <td>{{ row.externalSellingCost }}</td>
+            <td><span class="status-pill" [class.status-current]="row.sourceStatus === 'Current'">{{ statusLabel(row.sourceStatus) }}</span></td>
+            <td>{{ row.dateDebut }} — {{ row.dateFin }}</td>
+            <td>
+              <button type="button" (click)="edit(row)">{{ 'COST.EMPLOYEE_COST.EDIT' | translate }}</button>
+              <button type="button" (click)="remove(row)">{{ 'COST.EMPLOYEE_COST.DELETE' | translate }}</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
