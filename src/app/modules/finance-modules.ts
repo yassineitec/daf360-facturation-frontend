@@ -124,6 +124,13 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
         tone: 'warning',
         labelKey: 'FACTURATION.layout.NAV.COST_APPROVAL',
       },
+      {
+        id: 'employee-cost',
+        route: 'cost/employee-costs',
+        icon: 'badge',
+        tone: 'warning',
+        labelKey: 'FACTURATION.layout.NAV.EMPLOYEE_COST',
+      },
     ],
   },
   {

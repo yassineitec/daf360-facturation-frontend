@@ -22,6 +22,11 @@ export const COST_ROUTES: Routes = [
       import('./rate-computations/rate-computation.component').then(m => m.RateComputationComponent),
   },
   {
+    path: 'employee-costs',
+    loadComponent: () =>
+      import('./employee-costs/employee-cost.component').then(m => m.EmployeeCostComponent),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./cost.component').then(m => m.CostComponent),
