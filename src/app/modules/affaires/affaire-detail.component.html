@@ -80,7 +80,7 @@
                budget:   budgetTotal() | displayCurrency : affaireDevise() } }}
         </p>
       </div>
-      <div class="text-right">
+      <div class="text-right mr-28">
         <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
           {{ 'AFFAIRES.DETAIL.SIDEBAR.BUDGET_OVERRUN_AMOUNT' | translate }}
         </p>
@@ -318,7 +318,15 @@
             <section class="tile-row">
 
               <!-- Santé du projet -->
+              <!-- `helpTrigger="hover"` (lib 4.22.0) : ces trois tuiles sont en LECTURE
+                   SEULE, aucun champ à survoler sur le trajet du curseur, donc le panneau
+                   se révèle sur la carte entière et le glyphe (i) disparaît. Le graphique
+                   plus bas garde son (i) : sa carte est pleine largeur et contient une
+                   bascule de granularité, qu'un survol de carte recouvrirait. -->
               <daf-section-card class="tile-cell"
+                                helpTrigger="hover"
+                                [help]="'AFFAIRES.DETAIL.OVERVIEW.HEALTH_HELP' | translate"
+                                [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
                                 [options]="{ fullHeight: true }">
                 <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
                   <div class="flex items-start justify-between gap-2">
@@ -343,6 +351,9 @@
 
               <!-- Taux de facturation -->
               <daf-section-card class="tile-cell"
+                                helpTrigger="hover"
+                                [help]="'AFFAIRES.DETAIL.INDICATORS.BILLING_RATE_HELP' | translate"
+                                [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
                                 [options]="{ fullHeight: true }">
                 <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
                   <div class="flex items-start justify-between gap-2">
@@ -362,9 +373,9 @@
                       </span>
                     </div>
                     <daf-progress-bar [value]="billingPct()" [options]="billingBarOptions()" />
-                    <!-- Le dénominateur n'est pas le prévisionnel mais l'enveloppe
-                         facturable : sans cette mention, un total supérieur au budget du
-                         contrat se lit comme une erreur d'affichage. -->
+                    <!-- Le dénominateur est le prévisionnel SEUL, les TS intégrés n'y entrent
+                         pas : sans cette mention, un taux au-delà de 100 % sur une affaire
+                         qui a facturé des TS se lit comme une erreur d'affichage. -->
                     @if (tsIntegratedPct() > 0) {
                       <span class="text-body-sm text-on-surface-variant">
                         {{ 'AFFAIRES.DETAIL.INDICATORS.ENVELOPE_NOTE' | translate:
@@ -378,6 +389,9 @@
 
               <!-- Équipe projet -->
               <daf-section-card class="tile-cell"
+                                helpTrigger="hover"
+                                [help]="'AFFAIRES.DETAIL.OVERVIEW.TEAM_HELP' | translate"
+                                [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
                                 [options]="{ fullHeight: true }">
                 <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
                   <div class="flex items-start justify-between gap-2">
@@ -471,8 +485,17 @@
 
                 <!-- Colonnes verticales + ligne d'objectif pointillée + axe : daf-bar-chart
                      dessine aussi l'état vide, d'où l'absence de @else. Pas de `(barClick)` :
-                     les barres ne mènent nulle part, ce sont les puces qui pilotent. -->
-                <daf-bar-chart [bars]="chartBars()" [options]="chartOptions()" />
+                     les barres ne mènent nulle part, ce sont les puces qui pilotent.
+
+                     Le conteneur `.chart-plot` BORNE la largeur du tracé quand il y a peu de
+                     barres : la lib les met en `flex-1`, donc une année unique s'étalait sur
+                     toute la carte en un pavé qui ne se lit plus comme une colonne. -->
+                <div class="chart-plot"
+                     [class.chart-plot--single]="chartBars().length === 1"
+                     [class.chart-plot--pair]="chartBars().length === 2"
+                     [class.chart-plot--few]="chartBars().length === 3 || chartBars().length === 4">
+                  <daf-bar-chart [bars]="chartBars()" [options]="chartOptions()" />
+                </div>
               </div>
             </daf-section-card>
 

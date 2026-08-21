@@ -205,6 +205,23 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
       border-top:      1px solid var(--color-outline-variant, #bdc9c4);
     }
 
+    /* ── Le tracé du graphique ─────────────────────────────────────────────── */
+    /*
+       Une barre unique en "flex-1" occupe TOUTE la largeur de la carte : un pavé de
+       1000 px sur 200 px, qui ne se lit plus comme une colonne. On borne donc le tracé
+       et on le centre quand il y a peu de barres — la ligne d'objectif et la légende
+       d'axe suivent, puisqu'elles sont dans le même conteneur.
+
+       En composante "max-width" et non en classe Tailwind : "styles.css" d'un remote ne
+       contient que les classes vues à la compilation (cf. l'encadré en tête de fichier),
+       et ces largeurs-ci n'existent nulle part ailleurs dans l'app.
+    */
+    .chart-plot { width: 100%; }
+
+    .chart-plot--single { max-width: 180px; margin-inline: auto; }
+    .chart-plot--pair   { max-width: 340px; margin-inline: auto; }
+    .chart-plot--few    { max-width: 520px; margin-inline: auto; }
+
     /* ── Portable et en dessous ────────────────────────────────────────────── */
     /* 1400 px : la fenêtre d'un portable moins la barre latérale de 256 px et les marges
        du shell, c'est ~1050 px de contenu. On resserre la gouttière et la colonne gauche
@@ -741,12 +758,13 @@ export class AffaireDetailComponent implements OnInit {
   //   budgetPrevisionnel = raf.budgetPrevisionnel, sinon affaire.budgetPrevisionnel
   //                        (le RAF arrive après l'affaire : sans ce repli les tuiles
   //                        affichent 0 % pendant un instant au chargement)
-  //   budgetTotal        = budgetPrevisionnel + montantTsIntegres — l'ENVELOPPE
-  //                        FACTURABLE, et le dénominateur de tous les taux de la page.
-  //                        C'est celle que le serveur utilise déjà pour le RAF
-  //                        (RAF = budget + TS − facturé), donc facturé + RAF = budget
-  //                        total : les tuiles se réconcilient, ce qui n'était pas le
-  //                        cas quand les taux étaient rapportés au seul prévisionnel.
+  //   budgetTotal        = budgetPrevisionnel SEUL — le dénominateur de tous les taux.
+  //                        Les TS intégrés n'y entrent PAS : un TS est vendu en plus du
+  //                        contrat, les taux se mesurent sur l'engagement initial.
+  //                        Budget 100, TS 20, facturé 60 → 60 %.
+  //                        Corollaire : le serveur calcule RAF = budget + TS − facturé,
+  //                        donc facturé + RAF ≠ budgetTotal dès qu'il y a des TS, et
+  //                        rafAvailablePct peut dépasser 100 %.
   //   billingPct         = totalFacturesEmises / budgetTotal × 100   « taux de facturation »
   //   collectedPct       = kpis.ca / budgetTotal × 100               « santé du projet »
   //   tsIntegratedPct    = montantTsIntegres / budgetTotal × 100
@@ -759,7 +777,7 @@ export class AffaireDetailComponent implements OnInit {
   //
   //   ⚠️ Les deux taux vont dans des SENS OPPOSÉS et n'ont donc pas la même échelle
   //   de couleur — c'est tout le sujet du bug « couleurs inversées » :
-  //     · facturation : consommer l'enveloppe est neutre jusqu'à 100 %, la DÉPASSER
+  //     · facturation : consommer le budget est neutre jusqu'à 100 %, la DÉPASSER
   //       est l'accident → échelle de risque (`healthState`), rouge au-delà de 100 % ;
   //     · encaissement : plus haut = mieux → rampe rouge → vert du composant `daf-gauge`.
   //   Faire porter `healthState` aux deux, ce que la page faisait, peignait la bonne
@@ -767,7 +785,7 @@ export class AffaireDetailComponent implements OnInit {
   //
   //   Il n'y a plus de « taux de consommation » : l'ancien valait
   //   (budget − RAF) / budget = (facturé − TS) / budget, donc un TS intégré le FAISAIT
-  //   BAISSER sans que rien ne soit défacturé. Consommer l'enveloppe, ici, c'est la
+  //   BAISSER sans que rien ne soit défacturé. Consommer le budget, ici, c'est la
   //   facturer — un TS l'agrandit, il n'en consomme rien.
   //
   //   CA encaissé, WIP et Marge brute sont pris **tels quels** dans les KPIs du
@@ -782,22 +800,27 @@ export class AffaireDetailComponent implements OnInit {
   //   Graphique de facturation : DEUX NIVEAUX, voir la section « Facturation » plus bas.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /** Le prévisionnel seul — le contrat. Ce n'est PAS le dénominateur des taux. */
+  /** Le budget prévisionnel — la valeur initiale saisie sur l'affaire. */
   readonly budgetPrevisionnel = computed(() =>
     this.raf()?.budgetPrevisionnel ?? this.affaire()?.budgetPrevisionnel ?? 0);
 
   /**
-   * L'enveloppe facturable : prévisionnel + TS intégrés.
+   * Le dénominateur de tous les taux de la page : le **budget prévisionnel SEUL**.
    *
-   * Un TS intégré est facturable, donc il agrandit ce que l'affaire a le droit de
-   * facturer — c'est exactement ce que fait le RAF côté serveur. Rapporter les taux au
-   * seul prévisionnel faisait dépasser 100 % une affaire parfaitement saine dès qu'elle
-   * facturait un TS.
+   * Les TS intégrés n'entrent PAS dans le budget. Un TS est un travail supplémentaire
+   * vendu en plus du contrat initial ; le taux de facturation mesure ce qui est facturé
+   * par rapport à l'engagement d'origine, pas par rapport à une enveloppe qui grandit à
+   * chaque avenant. Budget 100, TS 20, facturé 60 → 60 %, et non 60/120 = 50 %.
+   *
+   * ⚠️ Conséquence assumée : `rafDisponible` (serveur) vaut budget + TS − facturé, donc
+   * `facturé + RAF` dépasse le dénominateur du montant des TS. Les barres du panneau RAF
+   * ne se réconcilient pas à 100 %, et `rafAvailablePct` peut passer au-dessus de 100 %
+   * quand l'affaire porte des TS non encore facturés. C'est le prix de la règle : le RAF
+   * raisonne sur l'enveloppe réellement facturable, les taux sur le budget initial.
    */
-  readonly budgetTotal = computed(() =>
-    this.budgetPrevisionnel() + (this.raf()?.montantTsIntegres ?? 0));
+  readonly budgetTotal = computed(() => this.budgetPrevisionnel());
 
-  /** Taux de facturation : ce qui est facturé sur l'enveloppe facturable. */
+  /** Taux de facturation : ce qui est facturé sur le budget prévisionnel. */
   readonly billingPct = computed(() => {
     const b = this.budgetTotal();
     return b > 0 ? ((this.raf()?.totalFacturesEmises ?? 0) / b) * 100 : 0;
@@ -899,7 +922,7 @@ export class AffaireDetailComponent implements OnInit {
    * Il ne double plus l'anneau de « Santé du projet » : celui-ci porte le facturé, l'autre
    * l'encaissé. Deux chiffres différents, deux échelles de couleur différentes.
    *
-   * `> 100` et non `>= 100` : facturer exactement son enveloppe est l'objectif atteint, pas
+   * `> 100` et non `>= 100` : facturer exactement son budget est l'objectif atteint, pas
    * un accident. Seul le dépassement est rouge.
    */
   readonly billingGaugeOptions = computed<GaugeOptions>(() => ({
@@ -934,7 +957,7 @@ export class AffaireDetailComponent implements OnInit {
 
   /**
    * La barre du taux de facturation — échelle de risque, `> 100` seul en rouge (facturer
-   * pile son enveloppe est l'objectif atteint). Le seuil de vigilance de l'affaire passe
+   * pile son budget est l'objectif atteint). Le seuil de vigilance de l'affaire passe
    * par `healthState`, qui tient compte de `rafAlerteSeuilPct`.
    *
    * C'est cette barre que porte la tuile « Taux de facturation », à la place de l'ancienne
@@ -959,9 +982,9 @@ export class AffaireDetailComponent implements OnInit {
   // panneau reste le même, seules les barres changent de forme.
   //
   //   granularité « années » : une barre par année couverte par l'affaire.
-  //                            Objectif = enveloppe / nombre d'années de l'axe.
+  //                            Objectif = budget / nombre d'années de l'axe.
   //   granularité « mois »   : les 12 mois de `chartYear()`.
-  //                            Objectif = enveloppe / durée de l'affaire en mois.
+  //                            Objectif = budget / durée de l'affaire en mois.
   //
   // `chartGranularityEffective` et non `chartGranularity` partout : une affaire tenant
   // dans un seul exercice n'a pas de vue « années » qui vaille la peine — une barre unique
@@ -1128,14 +1151,53 @@ export class AffaireDetailComponent implements OnInit {
   readonly chartTotal = computed(() => this.chartValues().reduce((s, v) => s + v, 0));
 
   /**
+   * Les dates d'émission des factures de chaque mois de `chartYear()`, dans l'ordre.
+   *
+   * Même bornage que `chartValues()` (`getMonth() < length`) : les deux séries doivent
+   * indexer les mêmes mois, sinon la pastille d'un mois porterait la date d'un autre.
+   */
+  private readonly monthlyInvoiceDates = computed<string[][]>(() => {
+    const year   = this.chartYear();
+    const byMonth: string[][] = Array.from({ length: this.chartMonthCount() }, () => []);
+    for (const inv of this.invoices()) {
+      if (!inv.dateEmission) continue;
+      const d = new Date(inv.dateEmission);
+      if (d.getFullYear() === year && d.getMonth() < byMonth.length) {
+        byMonth[d.getMonth()].push(this.formatDayMonth(inv.dateEmission));
+      }
+    }
+    return byMonth;
+  });
+
+  /**
+   * La pastille de survol d'un mois : le montant, puis la DATE d'émission de la facture.
+   *
+   * UNE SEULE LIGNE : la pastille de la lib est en `whitespace-nowrap`, un retour à la
+   * ligne y serait ignoré et le texte sortirait de la carte. D'où le jour + mois court
+   * (« 12 août ») et non la date complète — l'année est déjà dans le titre du panneau.
+   *
+   * Au-delà d'une facture, le NOMBRE remplace les dates : trois dates à la suite
+   * dépassent la largeur d'une colonne, et le détail est dans l'onglet Factures.
+   */
+  private monthTooltip(value: number, dates: string[]): string {
+    const amount = this.money(value);
+    if (dates.length === 0) return amount;
+    if (dates.length === 1) return `${amount} · ${dates[0]}`;
+    return `${amount} · ` + this.translate.instant(
+      'AFFAIRES.DETAIL.OVERVIEW.CHART_INVOICE_COUNT', { count: dates.length });
+  }
+
+  /**
    * Les barres du graphique.
    *
-   * `label` ne porte QUE la légende d'axe (le mois, ou l'année) : le montant va dans
-   * `valueLabel`, que le composant met dans sa pastille au survol.
+   * `label` ne porte QUE la légende d'axe (le mois, ou l'année) : le montant et, en
+   * granularité « mois », la date de facture vont dans `valueLabel`, que le composant met
+   * dans sa pastille au survol.
    *
    * `highlight` sur la période courante — le mois en cours seulement si le graphique montre
    * l'année en cours, sinon on surlignerait août 2025 sur un graphique 2026.
    */
+
   readonly chartBars = computed<BarChartBar[]>(() => {
     const values = this.chartValues();
 
@@ -1143,10 +1205,11 @@ export class AffaireDetailComponent implements OnInit {
       // `values` s'arrête déjà au mois courant sur l'année en cours, donc la dernière
       // barre EST le mois courant — pas besoin de comparer les index.
       const isCurrentYear = this.chartYear() === this.currentYear;
+      const dates         = this.monthlyInvoiceDates();
       return values.map((value, index) => ({
         label:      MONTH_LABELS[index],
         value,
-        valueLabel: this.money(value),
+        valueLabel: this.monthTooltip(value, dates[index] ?? []),
         highlight:  isCurrentYear && index === this.currentMonth,
       }));
     }
@@ -1221,7 +1284,7 @@ export class AffaireDetailComponent implements OnInit {
     if (next === 'years' || next === 'months') this.chartGranularity.set(next);
   }
 
-  /** Objectif mensuel = enveloppe répartie sur la durée de l'affaire (légende du panneau). */
+  /** Objectif mensuel = budget réparti sur la durée de l'affaire (légende du panneau). */
   private readonly monthlyTarget = computed(() => {
     const a = this.affaire();
     const b = this.budgetTotal();
@@ -1231,12 +1294,12 @@ export class AffaireDetailComponent implements OnInit {
   });
 
   /**
-   * Objectif annuel = enveloppe répartie sur la DURÉE DE L'AFFAIRE en années.
+   * Objectif annuel = budget réparti sur la DURÉE DE L'AFFAIRE en années.
    *
    * Sur la durée de l'affaire et non plus sur `chartYears().length` : depuis que l'axe
    * s'arrête à l'année en cours, sa longueur n'est plus la durée de l'affaire. Une affaire
    * de quatre ans dont deux sont écoulées aurait vu son objectif annuel doubler
-   * (enveloppe / 2 au lieu de / 4), et la ligne aurait sauté d'un cran chaque 1er janvier
+   * (budget / 2 au lieu de / 4), et la ligne aurait sauté d'un cran chaque 1er janvier
    * — un objectif qui bouge parce qu'on a changé d'année n'est pas un objectif.
    *
    * Comme le mensuel, c'est une répartition linéaire, pas un objectif saisi ; les deux
@@ -1375,8 +1438,8 @@ export class AffaireDetailComponent implements OnInit {
     return [
       { key: 'reference', label: t('AFFAIRES.DETAIL.MODAL.TS_TITLE') },
       { key: 'intitule',  label: t('AFFAIRES.DETAIL.MODAL.TS_INTITULE') },
-      // Clé propre au TS : `INVOICES.AMOUNT` dit « Montant facturé », or c'est ici le
-      // `montant_estime` d'un travail supplémentaire, qui n'est pas encore facturé.
+      // Clé propre au TS : `INVOICES.AMOUNT` est le montant d'une facture, or c'est ici
+      // le `montant_estime` d'un travail supplémentaire, qui n'est pas encore facturé.
       { key: 'montant',   label: t('AFFAIRES.DETAIL.MODAL.TS_AMOUNT'), align: 'right' },
       { key: 'statut',    label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge' },
       { key: 'integre',   label: t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT') },
@@ -2200,6 +2263,17 @@ export class AffaireDetailComponent implements OnInit {
   formatDate(d: string | null | undefined): string {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+
+  /**
+   * Jour + mois court, sans l'année — la date d'une facture dans la pastille du graphique.
+   *
+   * `formatDate` y serait trop long : la pastille est en `whitespace-nowrap` et une date
+   * complète la fait déborder d'une colonne étroite. L'année n'y manque pas, elle est dans
+   * le titre du panneau (« Facturation 2026 »).
+   */
+  private formatDayMonth(d: string): string {
+    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
   }
 
   private priorityOf(date: string, now: number): 'high' | 'medium' | 'standard' {

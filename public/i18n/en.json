@@ -957,6 +957,7 @@
         "LEGEND_TARGET_YEAR": "Yearly target",
         "CUMUL": "Cumulated total",
         "NO_CHART_DATA": "No issued invoice to display yet.",
+        "CHART_INVOICE_COUNT": "{{count}} invoices",
         "DEADLINES_TITLE": "Upcoming deadlines",
         "SEE_INVOICES": "View invoices",
         "TASK": "Deadline / Step",
@@ -977,7 +978,9 @@
         "ACT_CREATED": "Project created",
         "HELP_TITLE_CALC": "How it is computed",
         "HELP_ARIA": "Help on this indicator",
-        "CHART_HELP": "Sum of the gross amounts of invoices issued in the period. The dashed line is the envelope spread linearly over the project duration, not an entered target. The axis stops at the current period."
+        "CHART_HELP": "Sum of the gross amounts of invoices issued in the period. The dashed line is the forecast budget spread linearly over the project duration, not an entered target. The axis stops at the current period.",
+        "HEALTH_HELP": "Share of the forecast budget already COLLECTED: sum of payments received over the budget. The pill instead rates risk from the billing rate against the project's watch threshold — the two run in opposite directions, hence two colour scales.",
+        "TEAM_HELP": "The project managers, one entry per person. The same person can hold several rows in the database (one per activity): the count shown is of distinct PEOPLE, not rows. Photos come from the HR module."
       },
       "KPI": {
         "CA": "Collected Revenue",
@@ -1035,7 +1038,7 @@
         "TYPE": "Type",
         "EMITTED": "Issued",
         "DUE": "Due",
-        "AMOUNT": "Invoiced amount",
+        "AMOUNT": "Amount",
         "STATUS": "Status",
         "AMOUNT_HT": "Net amount",
         "AMOUNT_TVA": "VAT",
@@ -1056,7 +1059,8 @@
       "INDICATORS": {
         "TITLE": "Piloting indicators",
         "BILLING_RATE": "Billing rate",
-        "ENVELOPE_NOTE": "Of the billable envelope: {{budget}} budget + {{ts}} integrated additional work.",
+        "ENVELOPE_NOTE": "Of the {{budget}} forecast budget. The {{ts}} of integrated additional work is NOT in the denominator, so the rate can exceed 100%.",
+        "BILLING_RATE_HELP": "Sum of issued invoices (excluding drafts, cancelled and returned) over the forecast budget ALONE. Integrated additional work is not in the denominator: invoicing it pushes the rate past 100% without the project being over budget — that is what the remaining-to-invoice figure tracks. Red above 100%, amber from the project's watch threshold.",
         "BUDGET_CONSUMED": "Budget consumed",
         "ON": "of",
         "EVOLUTION": "Evolution"

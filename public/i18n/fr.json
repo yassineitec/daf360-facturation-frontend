@@ -957,6 +957,7 @@
         "LEGEND_TARGET_YEAR": "Objectif annuel",
         "CUMUL": "Total cumulé",
         "NO_CHART_DATA": "Aucune facture émise à afficher pour le moment.",
+        "CHART_INVOICE_COUNT": "{{count}} factures",
         "DEADLINES_TITLE": "Prochaines échéances",
         "SEE_INVOICES": "Voir les factures",
         "TASK": "Échéance / Étape",
@@ -977,7 +978,9 @@
         "ACT_CREATED": "Affaire créée",
         "HELP_TITLE_CALC": "Règles de calcul",
         "HELP_ARIA": "Aide sur cet indicateur",
-        "CHART_HELP": "Somme des montants TTC des factures émises sur la période. La ligne pointillée est l'enveloppe répartie linéairement sur la durée de l'affaire, pas un objectif saisi. L'axe s'arrête à la période en cours."
+        "CHART_HELP": "Somme des montants TTC des factures émises sur la période. La ligne pointillée est le budget prévisionnel réparti linéairement sur la durée de l'affaire, pas un objectif saisi. L'axe s'arrête à la période en cours.",
+        "HEALTH_HELP": "Part du budget prévisionnel déjà ENCAISSÉE : somme des paiements reçus rapportée au budget. La pastille, elle, qualifie le risque à partir du taux de facturation et du seuil de vigilance de l'affaire — les deux ne vont pas dans le même sens, d'où deux échelles de couleur.",
+        "TEAM_HELP": "Les responsables de l'affaire, une entrée par personne. Une même personne peut occuper plusieurs lignes en base (une par activité) : le compte affiché est celui des PERSONNES distinctes, pas des lignes. Les photos viennent du module RH."
       },
       "KPI": {
         "CA": "CA Encaissé",
@@ -1035,7 +1038,7 @@
         "TYPE": "Type",
         "EMITTED": "Émission",
         "DUE": "Échéance",
-        "AMOUNT": "Montant facturé",
+        "AMOUNT": "Montant",
         "STATUS": "Statut",
         "AMOUNT_HT": "Montant HT",
         "AMOUNT_TVA": "TVA",
@@ -1056,7 +1059,8 @@
       "INDICATORS": {
         "TITLE": "Indicateurs de pilotage",
         "BILLING_RATE": "Taux de facturation",
-        "ENVELOPE_NOTE": "Sur l'enveloppe facturable : {{budget}} de budget + {{ts}} de TS intégrés.",
+        "ENVELOPE_NOTE": "Sur le budget prévisionnel de {{budget}}. Les {{ts}} de TS intégrés ne sont PAS au dénominateur, le taux peut donc dépasser 100 %.",
+        "BILLING_RATE_HELP": "Somme des factures émises (hors brouillons, annulées et retournées) rapportée au SEUL budget prévisionnel. Les travaux supplémentaires intégrés n'entrent pas au dénominateur : facturer un TS fait donc monter le taux au-delà de 100 % sans que l'affaire soit en dépassement — c'est le RAF qui porte cette notion. Rouge au-delà de 100 %, ambre à partir du seuil de vigilance de l'affaire.",
         "BUDGET_CONSUMED": "Budget consommé",
         "ON": "sur",
         "EVOLUTION": "Évolution"
