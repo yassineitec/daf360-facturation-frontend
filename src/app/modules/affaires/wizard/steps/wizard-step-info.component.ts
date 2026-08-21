@@ -4,7 +4,9 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { FormFieldComponent, SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
+import {
+  ButtonComponent, CheckboxComponent, FormFieldComponent, SelectComponent, SelectOption,
+} from '@khalilrebhiitec/daf360';
 
 import { AffaireService }         from '../../affaire.service';
 import { FactListService }        from '../../../../core/fact-list.service';
@@ -13,13 +15,16 @@ import {
   AffaireDraftState, BillingMode, BILLING_MODES, BUDGET_LABEL, CONTRACTUAL_MODES,
 } from '../../affaire-wizard.model';
 import { ClientDropdownItemDto }  from '../../../clients/client.model';
+import { ClientContactService }   from '../../../clients/contacts/client-contact.service';
+import { ClientContactDto }       from '../../../clients/contacts/client-contact.model';
 import { PaysRefDto }             from '../../affaire.model';
 import { ListValueDto }           from '../../../cost/cost.model';
 
 @Component({
   selector: 'app-wizard-step-info',
   standalone: true,
-  imports: [FormsModule, FormFieldComponent, SelectComponent, TranslatePipe],
+  imports: [FormsModule, FormFieldComponent, SelectComponent, CheckboxComponent,
+            ButtonComponent, TranslatePipe],
   templateUrl: './wizard-step-info.component.html',
   styleUrl: './wizard-step-info.component.scss',
 })
@@ -35,6 +40,7 @@ export class WizardStepInfoComponent implements OnInit {
   @Output() draftChange = new EventEmitter<AffaireDraftState>();
 
   private readonly clientSvc = inject(ClientService);
+  private readonly contactSvc = inject(ClientContactService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly listSvc   = inject(FactListService);
   private readonly translate = inject(TranslateService);
@@ -47,6 +53,23 @@ export class WizardStepInfoComponent implements OnInit {
   clientResults    = signal<ClientDropdownItemDto[]>([]);
   clientInputValue = signal('');
   clientFocused    = false;
+
+  // ── Contacts du client sélectionné ───────────────────────────────────────
+  // Choisis ICI et non dans une étape à part : ils dépendent du client qu'on vient de
+  // sélectionner juste au-dessus, et une étape séparée aurait permis d'y arriver sans
+  // client. Une affaire ne peut plus être activée sans au moins un contact — ce sont
+  // eux qui reçoivent les factures.
+
+  clientContacts     = signal<ClientContactDto[]>([]);
+  loadingContacts    = signal(false);
+
+  newContactOpen     = signal(false);
+  savingContact      = signal(false);
+  newContactError    = signal<string | null>(null);
+  newContactName     = signal('');
+  newContactFonction = signal('');
+  newContactEmail    = signal('');
+  newContactPhone    = signal('');
   currencies       = signal<ListValueDto[]>([]);
   private clientHideTimer?: ReturnType<typeof setTimeout>;
 
@@ -128,6 +151,10 @@ export class WizardStepInfoComponent implements OnInit {
         } else if (this.draft.clientId && this.draft.clientName) {
           this.clientInputValue.set(this.draft.clientName);
         }
+        // Après le préremplissage DOC360, qui peut avoir résolu un client par son nom :
+        // charger avant lui laisserait la liste des contacts vide sur une affaire dont
+        // le client vient d'être deviné.
+        if (this.draft.clientId) this.loadContacts(this.draft.clientId);
       });
   }
 
@@ -252,11 +279,158 @@ export class WizardStepInfoComponent implements OnInit {
 
   selectClient(c: ClientDropdownItemDto): void {
     if (this.clientHideTimer) { clearTimeout(this.clientHideTimer); this.clientHideTimer = undefined; }
-    this.draft        = { ...this.draft, clientId: c.id, clientName: c.clientName, clientKycDone: c.isKycDone };
+    const clientChanged = this.draft.clientId !== c.id;
+    this.draft = { ...this.draft, clientId: c.id, clientName: c.clientName, clientKycDone: c.isKycDone };
+    // Changer de client invalide la sélection de contacts : ceux du client précédent
+    // n'appartiennent pas à celui-ci, et le serveur refuse le rattachement (FK
+    // composite). Les vider ici évite un refus incompréhensible au « Suivant ».
+    if (clientChanged) {
+      this.draft = { ...this.draft, contactIds: [], billingContactId: undefined };
+      // Le formulaire de saisie appartenait au client précédent : ce qui y était tapé
+      // n'a plus de destinataire. `loadContacts` le rouvrira si ce client-ci n'a
+      // aucun contact.
+      this.newContactOpen.set(false);
+      this.newContactError.set(null);
+      this.resetNewContact();
+    }
     this.clientInputValue.set(c.clientName);
     this.clientResults.set([]);
     this.emit();
+    this.loadContacts(c.id);
   }
+
+  // ── Contacts du client ────────────────────────────────────────────────────
+
+  /**
+   * Charge les contacts du client ET décide de l'état du formulaire de saisie.
+   *
+   * C'est le résultat du chargement qui ouvre ou ferme le formulaire, jamais un état
+   * laissé de côté : un client sans aucun contact ouvre directement la saisie (il n'y
+   * a rien à choisir, demander un clic de plus sur « Nouveau contact » est une étape
+   * pour rien), et un client qui en a referme le formulaire pour montrer la liste.
+   * Sans ce `set` dans les deux sens, passer d'un client sans contact à un client qui
+   * en a laissait le formulaire ouvert par-dessus la liste.
+   */
+  loadContacts(clientId: number): void {
+    this.loadingContacts.set(true);
+    this.contactSvc.getContacts(clientId).subscribe(list => {
+      this.clientContacts.set(list);
+      this.loadingContacts.set(false);
+      this.newContactOpen.set(list.length === 0);
+      this.newContactError.set(null);
+      if (list.length > 0) this.resetNewContact();
+
+      // Client à contact unique : le rattacher d'office. C'est le cas majoritaire, et
+      // faire cocher une seule case n'est pas un choix, c'est une formalité.
+      if (list.length === 1 && this.draft.contactIds.length === 0) {
+        this.draft = {
+          ...this.draft,
+          contactIds: [list[0].id],
+          billingContactId: list[0].id,
+        };
+        this.emit();
+      }
+    });
+  }
+
+  isContactSelected(id: number): boolean {
+    return this.draft.contactIds.includes(id);
+  }
+
+  toggleContact(id: number): void {
+    const selected = this.isContactSelected(id);
+    const contactIds = selected
+      ? this.draft.contactIds.filter(x => x !== id)
+      : [...this.draft.contactIds, id];
+
+    // `billingContactId` porte le nom de la COLONNE `affaire_contacts.is_billing`,
+    // volontairement : le champ suit la base. Ce que l'écran en dit est « Référent »,
+    // le contact imprimé sur la facture et mis en tête des destinataires — tous les
+    // contacts rattachés la reçoivent.
+    let billingContactId = this.draft.billingContactId;
+    // Le référent doit rester dans la sélection : le retirer sans reprendre le drapeau
+    // laisserait une affaire sans référent désigné.
+    if (selected && billingContactId === id) billingContactId = contactIds[0];
+    if (!selected && billingContactId == null) billingContactId = id;
+
+    this.draft = { ...this.draft, contactIds, billingContactId };
+    this.emit();
+  }
+
+  setReferentContact(id: number): void {
+    if (!this.isContactSelected(id)) return;
+    this.draft = { ...this.draft, billingContactId: id };
+    this.emit();
+  }
+
+  // ── Création d'un contact sans quitter l'assistant ────────────────────────
+
+  openNewContact(): void {
+    this.newContactError.set(null);
+    this.newContactOpen.set(true);
+  }
+
+  /**
+   * Ne referme que s'il y a une liste vers laquelle revenir : sur un client sans
+   * aucun contact, fermer le formulaire ne laisserait rien à l'écran et bloquerait
+   * l'étape. Le gabarit masque d'ailleurs le bouton dans ce cas.
+   */
+  cancelNewContact(): void {
+    if (this.clientContacts().length === 0) return;
+    this.newContactOpen.set(false);
+    this.newContactError.set(null);
+    this.resetNewContact();
+  }
+
+  /**
+   * Enregistre le contact tout de suite, et non à la fin de l'assistant : il doit
+   * exister en base pour pouvoir être rattaché à l'affaire, et il appartient au client
+   * — il reste donc utile même si la création d'affaire est abandonnée.
+   */
+  saveNewContact(): void {
+    const clientId = this.draft.clientId;
+    const name = this.newContactName().trim();
+    if (!clientId || !name) {
+      this.newContactError.set(this.translate.instant('CLIENTS.CONTACTS.NAME_REQUIRED'));
+      return;
+    }
+    this.savingContact.set(true);
+    this.newContactError.set(null);
+    this.contactSvc.createContact(clientId, {
+      fullName: name,
+      fonction: this.newContactFonction().trim() || null,
+      email:    this.newContactEmail().trim()    || null,
+      phone:    this.newContactPhone().trim()    || null,
+      isPrimary: null,
+      notes:     null,
+    }).subscribe({
+      next: created => {
+        this.savingContact.set(false);
+        this.resetNewContact();
+        this.clientContacts.update(list => [...list, created]);
+        // La liste n'est plus vide : le formulaire se referme et laisse place aux
+        // choix. C'est aussi la sortie du cas « client sans aucun contact », où il
+        // s'était ouvert tout seul et où « Annuler » n'était pas proposé.
+        this.newContactOpen.set(false);
+        // Créé depuis cet écran = voulu sur cette affaire : on le coche.
+        this.toggleContact(created.id);
+      },
+      error: err => {
+        this.savingContact.set(false);
+        this.newContactError.set(err?.error?.detail ?? err?.error?.message
+          ?? this.translate.instant('CLIENTS.CONTACTS.SAVE_ERROR'));
+      },
+    });
+  }
+
+  private resetNewContact(): void {
+    this.newContactName.set('');
+    this.newContactFonction.set('');
+    this.newContactEmail.set('');
+    this.newContactPhone.set('');
+  }
+
+  asStr(v: string | number | null): string { return v != null ? String(v) : ''; }
 
   emit(): void { this.draftChange.emit({ ...this.draft }); }
 }

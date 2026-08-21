@@ -373,3 +373,109 @@
   transition: color 0.12s;
   &:hover { color: #ba1a1a; }
 }
+
+/* ── Contacts du client ──────────────────────────────────────────────────────
+   Jetons du design system et non hexadécimal : le reste de ce fichier est
+   antérieur à la charte, les blocs neufs n'ajoutent pas de couleur figée. */
+
+.contacts-field { gap: 8px; }
+
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--color-outline-variant);
+  border-radius: 10px;
+  background: var(--color-surface);
+  transition: border-color 0.15s, background 0.15s;
+
+  /* Le rattachement se lit à la bordure : dans une liste de six contacts, repérer
+     les cases cochées une par une est plus lent que balayer les cadres. */
+  &--on {
+    border-color: var(--color-tertiary);
+    background: var(--color-tertiary-container);
+  }
+}
+
+.contact-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 12px;
+}
+
+.contact-fonction {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+}
+
+.contact-email {
+  color: var(--color-on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Un contact sans adresse ne peut RIEN recevoir : c'est la seule mention de cette
+   ligne qui mérite la couleur d'alerte. */
+.contact-noemail {
+  color: var(--color-warning);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Le marqueur « Référent » : le contact imprimé sur la facture et mis en tête des
+   destinataires. Nommé d'après ce que l'écran affiche ; le champ et la colonne
+   restent `is_billing`, pour rester traçables jusqu'à la base. */
+.referent-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1.5px solid var(--color-outline-variant);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  .material-symbols-outlined { font-size: 15px; }
+
+  &:hover { border-color: var(--color-tertiary); }
+
+  &--on {
+    border-color: transparent;
+    background: var(--color-secondary);
+    color: #fff;
+  }
+}
+
+.contact-add { display: flex; }
+
+/* Le formulaire de saisie n'a PLUS de conteneur à lui : il est bâti sur les
+   `section-header` / `field-grid` / `field` de l'étape, comme les autres blocs.
+   L'encadré en pointillés qui était ici ne ressemblait à rien d'autre de
+   l'assistant, et c'est précisément ce qui le faisait passer pour une pièce
+   rapportée. Il ne reste que l'alignement des deux boutons. */
+.contact-new-actions {
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 8px;
+}

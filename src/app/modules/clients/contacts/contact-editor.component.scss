@@ -1,0 +1,182 @@
+/* Couleurs prises aux jetons du design system, jamais en hexadécimal : les écrans
+   qui les ont figées en dur sont ceux qui ne suivent plus le thème. */
+:host { display: block; }
+
+.contact-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ce-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  &__icon {
+    font-size: 22px;
+    color: var(--color-tertiary);
+    margin-top: 2px;
+  }
+  &__text  { flex: 1 1 auto; min-width: 0; }
+  &__title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-on-surface);
+  }
+  &__sub {
+    font-size: 13px;
+    color: var(--color-on-surface-variant);
+    margin-top: 2px;
+  }
+  daf-button { align-self: center; flex-shrink: 0; }
+}
+
+.ce-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 16px;
+  border: 1.5px dashed var(--color-outline-variant);
+  border-radius: 10px;
+  background: var(--color-surface-container-low);
+  color: var(--color-on-surface-variant);
+  font-size: 13px;
+  text-align: center;
+
+  .material-symbols-outlined { font-size: 28px; opacity: 0.7; }
+  p { margin: 0; }
+  &__error { color: var(--color-danger); font-weight: 600; }
+}
+
+.ce-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ce-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-outline-variant);
+  border-radius: 10px;
+  transition: border-color 0.15s;
+
+  /* Le principal se distingue par sa bordure : c'est l'interlocuteur de référence,
+     et le repérer dans une liste de six ne doit pas demander de lire les badges. */
+  &--primary { border-color: var(--color-tertiary); }
+}
+
+.ce-item__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ce-item__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ce-item__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ce-item__fonction {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-surface-container);
+  white-space: nowrap;
+}
+
+.ce-item__badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-on-tertiary-container);
+  background: var(--color-tertiary-container);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.ce-remove {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &:hover {
+    background: var(--color-error-container);
+    color: var(--color-on-error-container);
+  }
+}
+
+/* Deux colonnes au-delà de 640 px, une seule en dessous : quatre champs alignés sur
+   une rangée deviennent illisibles sur un portable. */
+.ce-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.ce-primary-row {
+  padding-top: 2px;
+  border-top: 1px solid var(--color-outline-variant);
+  padding-block-start: 10px;
+}
+
+.ce-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  color: var(--color-on-surface);
+  font-size: 13px;
+
+  .material-symbols-outlined {
+    font-size: 18px;
+    color: var(--color-warning);
+    flex-shrink: 0;
+  }
+}

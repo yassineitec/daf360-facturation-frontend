@@ -63,6 +63,40 @@
         </div>
       }
 
+      <!-- Les contacts sont relus depuis le serveur, pas repris de la saisie : c'est
+           l'écran de relecture avant activation, il doit montrer ce qui est
+           ENREGISTRÉ. La pastille « Référent » désigne le contact imprimé sur la
+           facture ; tous les contacts rattachés la reçoivent. -->
+      <div class="recap-field recap-field--full">
+        <p class="recap-label">{{ 'AFFAIRES.wizard.recap.contacts' | translate }}</p>
+        @if (contacts().length === 0) {
+          <p class="recap-value recap-value--warn">
+            {{ 'AFFAIRES.wizard.recap.contacts_none' | translate }}
+          </p>
+        } @else {
+          <div class="recap-contacts">
+            @for (c of contacts(); track c.contactId) {
+              <span class="recap-contact">
+                <span class="recap-contact__name">{{ c.fullName }}</span>
+                @if (c.fonction) {
+                  <span class="recap-contact__fonction">{{ c.fonction }}</span>
+                }
+                @if (c.isBilling) {
+                  <span class="recap-tag recap-tag--purple">
+                    {{ 'AFFAIRES.wizard.info.referent_contact' | translate }}
+                  </span>
+                }
+                @if (!c.email) {
+                  <span class="recap-contact__noemail">
+                    {{ 'AFFAIRES.wizard.info.contact_no_email' | translate }}
+                  </span>
+                }
+              </span>
+            }
+          </div>
+        }
+      </div>
+
       @if (draft.notes) {
         <div class="recap-field recap-field--full">
           <p class="recap-label">{{ 'AFFAIRES.wizard.recap.notes' | translate }}</p>

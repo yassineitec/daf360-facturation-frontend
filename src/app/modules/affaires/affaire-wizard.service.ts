@@ -35,6 +35,15 @@ export class AffaireWizardService {
     return this.http.patch(`${this.base}/${id}/config/responsables`, dto, { withCredentials: true });
   }
 
+  /**
+   * Remplacement COMPLET des contacts de l'affaire : ce qui n'est pas dans la liste
+   * est détaché. Rejoué à chaque « Suivant » de l'étape 2, comme les responsables le
+   * sont à l'étape 4.
+   */
+  configureContacts(id: number, dto: unknown): Observable<unknown> {
+    return this.http.patch(`${this.base}/${id}/config/contacts`, dto, { withCredentials: true });
+  }
+
   configurePlanning(id: number, dto: unknown): Observable<unknown> {
     return this.http.patch(`${this.base}/${id}/config/planning`, dto, { withCredentials: true });
   }

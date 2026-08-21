@@ -80,11 +80,28 @@ export interface CreateClientRequest {
   phone?:            string | null;
   email?:            string | null;
   website?:          string | null;
+  /**
+   * Colonnes HÉRITÉES du contact unique, remplacées par `contacts` ci-dessous.
+   * Conservées parce que le backend les renvoie encore et les lit en dernier repli ;
+   * aucun écran ne doit plus les écrire.
+   */
   contactName?:      string | null;
   contactEmail?:     string | null;
   contactPhone?:     string | null;
   sector?:           string | null;
   notes?:            string | null;
+  /**
+   * Contacts créés AVEC le client, dans la même transaction. Ignoré par le PATCH de
+   * modification : passé le premier enregistrement, les contacts ont leurs propres
+   * endpoints (`/clients/{id}/contacts`).
+   */
+  contacts?: {
+    fullName:  string;
+    fonction:  string | null;
+    email:     string | null;
+    phone:     string | null;
+    isPrimary: boolean;
+  }[];
 }
 
 export interface ClientFilter {

@@ -251,20 +251,113 @@
             </daf-section-card>
           }
 
-          <!-- ── Contact ──────────────────────────────────────────────── -->
+          <!-- ── Contacts ─────────────────────────────────────────────────
+               Deux blocs distincts, et c'est voulu : les coordonnées de la SOCIÉTÉ
+               (standard, site) d'un côté, les INTERLOCUTEURS de l'autre. Ces
+               derniers sont ce qu'on rattache aux affaires et ce qui reçoit les
+               factures — ils ne se rangent plus sous « le contact du client ». -->
           @if (activeTab() === 'contact') {
-            <daf-section-card>
-              <div class="flex flex-col gap-5 p-6">
-                @for (f of contactFields(); track f.label) {
-                  <div class="flex flex-col gap-1">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ f.label | translate }}
-                    </p>
-                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+            <div class="flex flex-col gap-4">
+
+              <!-- Les interlocuteurs, EN LECTURE. La saisie vit dans une modale, un
+                   contact à la fois : cet onglet portait un éditeur en permanence
+                   ouvert, ce qui présentait quatre champs par personne à quelqu'un
+                   venu simplement lire une adresse. -->
+              <daf-section-card>
+                <div class="flex flex-col gap-4 p-6">
+
+                  <div class="flex items-start gap-3">
+                    <div class="min-w-0 flex-1">
+                      <p class="text-body-md font-bold text-on-surface">
+                        {{ 'CLIENTS.CONTACTS.TITLE' | translate }}
+                      </p>
+                    </div>
+                    <daf-button
+                      [options]="{ variant: 'secondary', size: 'sm', iconStart: 'person_add',
+                                   label: 'CLIENTS.CONTACTS.ADD' | translate }"
+                      (onClick)="openContactModal()" />
                   </div>
-                }
-              </div>
-            </daf-section-card>
+
+                  <!-- Pas de bandeau d'erreur propre à l'onglet : les refus du serveur
+                       partent dans les notifications de l'app (voir toastServerError),
+                       où ils se voient sans avoir à chercher où la page les a mis. -->
+                  @for (c of activeContacts(); track c.id) {
+                    <div class="flex items-center gap-3 border-t border-outline-variant/30 pt-3">
+                      <div class="min-w-0 flex-1">
+                        <p class="flex items-center gap-2 text-body-md font-bold text-on-surface">
+                          {{ c.fullName }}
+                          @if (c.isPrimary) {
+                            <span class="rounded-full bg-tertiary/10 px-2 py-0.5 text-label-caps font-extrabold uppercase tracking-widest text-tertiary">
+                              {{ 'CLIENTS.CONTACTS.PRIMARY_BADGE' | translate }}
+                            </span>
+                          }
+                        </p>
+                        @if (contactMeta(c)) {
+                          <p class="text-body-sm text-on-surface-variant">{{ contactMeta(c) }}</p>
+                        }
+                        <!-- L'absence d'adresse est la seule anomalie à signaler ici :
+                             un contact sans e-mail ne recevra aucune facture. -->
+                        @if (c.email) {
+                          <p class="text-body-sm text-on-surface-variant">{{ c.email }}</p>
+                        } @else {
+                          <p class="text-body-sm font-bold text-warning">
+                            {{ 'CLIENTS.CONTACTS.NO_EMAIL' | translate }}
+                          </p>
+                        }
+                        @if (c.affaireCount) {
+                          <p class="text-body-sm text-on-surface-variant">
+                            {{ 'CLIENTS.CONTACTS.USED_BY' | translate:{ count: c.affaireCount } }}
+                          </p>
+                        }
+                      </div>
+                      <daf-button
+                        [options]="{ variant: 'ghost', size: 'sm', iconStart: 'edit',
+                                     title: ('CLIENTS.CONTACTS.EDIT' | translate) }"
+                        (onClick)="openContactModal(c)" />
+                      <daf-button
+                        [options]="{ variant: 'ghost', size: 'sm', iconStart: 'person_off',
+                                     title: ('CLIENTS.CONTACTS.DEACTIVATE' | translate) }"
+                        (onClick)="deactivateContact(c)" />
+                    </div>
+                  } @empty {
+                    <p class="text-body-md text-on-surface-variant">
+                      {{ 'CLIENTS.CONTACTS.EMPTY' | translate }}
+                    </p>
+                  }
+
+                  <!-- Désactivés : en lecture seule, avec la seule action qui leur
+                       reste. Les rendre modifiables proposerait de corriger un contact
+                       qu'on a justement retiré de la circulation. -->
+                  @if (inactiveContacts().length > 0) {
+                    <div class="flex flex-col gap-2 pt-4 border-t border-outline-variant">
+                      <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                        {{ 'CLIENTS.CONTACTS.INACTIVE_TITLE' | translate }}
+                      </p>
+                      @for (c of inactiveContacts(); track c.id) {
+                        <div class="flex items-center gap-3">
+                          <span class="text-body-md text-on-surface-variant line-through">
+                            {{ c.fullName }}
+                          </span>
+                          @if (c.fonction) {
+                            <span class="text-body-sm text-on-surface-variant">{{ c.fonction }}</span>
+                          }
+                          <div class="ml-auto">
+                            <daf-button
+                              [options]="{
+                                variant: 'ghost', size: 'sm', iconStart: 'restart_alt',
+                                label: 'CLIENTS.CONTACTS.REACTIVATE' | translate
+                              }"
+                              (onClick)="reactivateContact(c.id)" />
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                </div>
+              </daf-section-card>
+
+            </div>
           }
 
           <!-- ── Traçabilité ──────────────────────────────────────────── -->
@@ -290,3 +383,76 @@
 
 <!-- Plus de modale d'édition ici : la modification passe par `clients/:id/edit`, qui
      réutilise l'assistant de création préremplli. -->
+
+<!-- ══ Saisie d'un contact ═════════════════════════════════════════════════════
+     Le corps de la modale ouverte par `openContactModal()`. Projeté dans
+     `ModalConfig.body`, donc écrit ici avec les composants de la lib plutôt que
+     construit en chaîne de caractères côté TypeScript.
+
+     Un contact à la fois, enregistré seul : l'onglet reste en lecture, et ce
+     formulaire n'existe que le temps de la saisie. -->
+<ng-template #contactFormTpl>
+  <div class="flex flex-col gap-4">
+
+    <daf-form-field
+      [value]="formName()"
+      (valueChange)="formName.set(asStr($event))"
+      [options]="{
+        label: ('CLIENTS.CONTACTS.NAME_LABEL' | translate),
+        type: 'text', required: true,
+        placeholder: ('CLIENTS.CONTACTS.NAME_PLACEHOLDER' | translate),
+        maxLength: 255, fullWidth: true
+      }" />
+
+    <!-- Texte libre : « Contact finance », « Ingénierie », « Administratif » sont
+         des libellés propres à chaque client, pas une nomenclature. -->
+    <daf-form-field
+      [value]="formFonction()"
+      (valueChange)="formFonction.set(asStr($event))"
+      [options]="{
+        label: ('CLIENTS.CONTACTS.FONCTION_LABEL' | translate),
+        type: 'text',
+        placeholder: ('CLIENTS.CONTACTS.FONCTION_PLACEHOLDER' | translate),
+        maxLength: 150, fullWidth: true
+      }" />
+
+    <daf-form-field
+      [value]="formEmail()"
+      (valueChange)="formEmail.set(asStr($event))"
+      [options]="{
+        label: ('CLIENTS.CONTACTS.EMAIL_LABEL' | translate),
+        type: 'email', placeholder: 'prenom.nom@societe.com',
+        hint: ('CLIENTS.CONTACTS.EMAIL_HINT' | translate),
+        maxLength: 255, fullWidth: true
+      }" />
+
+    <daf-form-field
+      [value]="formPhone()"
+      (valueChange)="formPhone.set(asStr($event))"
+      [options]="{
+        label: ('CLIENTS.CONTACTS.PHONE_LABEL' | translate),
+        type: 'text', placeholder: '+216 XX XXX XXX',
+        maxLength: 50, fullWidth: true
+      }" />
+
+    <!-- Désactivée quand ce contact EST déjà le principal : le serveur refuse de
+         retirer ce statut sans désigner un remplaçant (promouvoir l'autre suffit,
+         il déclasse celui-ci). Laisser décocher pour un refus n'aide personne. -->
+    <daf-checkbox
+      [checked]="formPrimary()"
+      [options]="{
+        label: ('CLIENTS.CONTACTS.PRIMARY_LABEL' | translate),
+        hint: ('CLIENTS.CONTACTS.PRIMARY_HINT' | translate),
+        disabled: formPrimaryLocked()
+      }"
+      (checkedChange)="formPrimary.set($event)" />
+
+    @if (formError()) {
+      <daf-field-message [error]="formError()!" />
+    }
+    @if (formSaving()) {
+      <daf-field-message [hint]="'CLIENTS.CONTACTS.SAVING' | translate" />
+    }
+
+  </div>
+</ng-template>

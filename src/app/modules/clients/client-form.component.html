@@ -67,74 +67,26 @@
 
 <!-- ── Section 2 : Contact & Coordonnées ───────────────────────────────────── -->
 @if (activeSection === 0 || activeSection === 2) {
+<!-- ── Section 2b : Interlocuteurs ──────────────────────────────────────────
+     Une carte À PART, et non un bloc en pied de la précédente. Les champs
+     ci-dessus sont ceux de la SOCIÉTÉ (adresse, standard, site) ; ceux-ci sont
+     des PERSONNES, autant que le client en compte, et ce sont elles qui se
+     rattachent aux affaires et reçoivent les factures. Les mélanger dans une
+     seule carte intitulée « Contact » était exactement ce qui donnait
+     l'impression que l'ancien formulaire à contact unique était toujours là. -->
 <div class="glass-card rounded-2xl p-6">
-  <p class="section-label">{{ 'CLIENTS.FORM.SECTION_CONTACT' | translate }}</p>
+  <p class="section-label">{{ 'CLIENTS.CONTACTS.TITLE' | translate }}</p>
 
   <div class="flex flex-col gap-4">
+    <app-contact-editor
+      [contacts]="contacts()"
+      [required]="contactsRequired()"
+      [touched]="touched()"
+      (contactsChange)="contacts.set($event)" />
 
-    <daf-form-field
-      [value]="address()"
-      (valueChange)="address.set(asStr($event))"
-      [options]="{ label: ('CLIENTS.FORM.ADDRESS_LABEL' | translate), type: 'text', placeholder: ('CLIENTS.FORM.ADDRESS_PLACEHOLDER' | translate), maxLength: 255 }" />
-
-    <div class="grid grid-cols-2 gap-4">
-      <daf-form-field
-        [value]="city()"
-        (valueChange)="city.set(asStr($event))"
-        [options]="{ label: ('CLIENTS.FORM.CITY_LABEL' | translate), type: 'text', placeholder: ('CLIENTS.FORM.CITY_PLACEHOLDER' | translate), maxLength: 100 }" />
-
-      <daf-form-field
-        [value]="postalCode()"
-        (valueChange)="postalCode.set(asStr($event))"
-        [options]="{ label: ('CLIENTS.FORM.POSTAL_CODE_LABEL' | translate), type: 'text', placeholder: '1000', maxLength: 20 }" />
-    </div>
-
-    <div class="grid grid-cols-2 gap-4">
-      <daf-form-field
-        [value]="phone()"
-        (valueChange)="phone.set(asStr($event))"
-        [options]="{ label: ('CLIENTS.FORM.PHONE_LABEL' | translate), type: 'text', placeholder: '+216 XX XXX XXX', maxLength: 30 }" />
-
-      <daf-form-field
-        [value]="email()"
-        (valueChange)="email.set(asStr($event))"
-        [options]="{
-          label: ('CLIENTS.FORM.EMAIL_LABEL' | translate),
-          type: 'email',
-          placeholder: 'contact@société.com',
-          maxLength: 150,
-          error: emailError()
-        }" />
-    </div>
-
-    <daf-form-field
-      [value]="website()"
-      (valueChange)="website.set(asStr($event))"
-      [options]="{ label: ('CLIENTS.FORM.WEBSITE_LABEL' | translate), type: 'text', placeholder: 'https://www.société.com', maxLength: 200 }" />
-
-    <daf-form-field
-      [value]="contactName()"
-      (valueChange)="contactName.set(asStr($event))"
-      [options]="{ label: ('CLIENTS.FORM.CONTACT_NAME_LABEL' | translate), type: 'text', placeholder: ('CLIENTS.FORM.CONTACT_NAME_PLACEHOLDER' | translate), maxLength: 150 }" />
-
-    <div class="grid grid-cols-2 gap-4">
-      <daf-form-field
-        [value]="contactEmail()"
-        (valueChange)="contactEmail.set(asStr($event))"
-        [options]="{
-          label: ('CLIENTS.FORM.CONTACT_EMAIL_LABEL' | translate),
-          type: 'email',
-          placeholder: 'contact@société.com',
-          maxLength: 150,
-          error: contactEmailError()
-        }" />
-
-      <daf-form-field
-        [value]="contactPhone()"
-        (valueChange)="contactPhone.set(asStr($event))"
-        [options]="{ label: ('CLIENTS.FORM.CONTACT_PHONE_LABEL' | translate), type: 'text', placeholder: '+216 XX XXX XXX', maxLength: 30 }" />
-    </div>
-
+    @if (contactsError()) {
+      <daf-field-message [error]="contactsError()" />
+    }
   </div>
 </div>
 }

@@ -2,9 +2,13 @@ import {
   Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, inject, signal, computed,
 } from '@angular/core';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { of, switchMap } from 'rxjs';
 import { ClientService }        from './client.service';
 import { ClientDetailDto, CreateClientRequest } from './client.model';
 import { PaysRefDto } from '../affaires/affaire.model';
+import { ContactEditorComponent } from './contacts/contact-editor.component';
+import { ClientContactService }   from './contacts/client-contact.service';
+import { ContactDraft, toContactDraft } from './contacts/client-contact.model';
 import {
   ButtonComponent, FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
@@ -26,6 +30,7 @@ const CURRENCY_CODES = ['TND', 'EGP', 'EUR', 'USD'];
   selector: 'app-client-form',
   imports: [
     FormFieldComponent, SelectComponent, ButtonComponent, FieldMessageComponent, TranslatePipe,
+    ContactEditorComponent,
   ],
   templateUrl: './client-form.component.html',
   styleUrl: './client-form.component.scss',
@@ -38,6 +43,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
   @Output() closed = new EventEmitter<void>();
 
   private readonly svc = inject(ClientService);
+  private readonly contactSvc = inject(ClientContactService);
   private readonly translate = inject(TranslateService);
 
   // ── Form field signals ─────────────────────────────────────────────────────
@@ -51,9 +57,6 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly phone            = signal('');
   readonly email            = signal('');
   readonly website          = signal('');
-  readonly contactName      = signal('');
-  readonly contactEmail     = signal('');
-  readonly contactPhone     = signal('');
   readonly paymentTermsDays = signal('30');
   readonly notes            = signal('');
 
@@ -69,6 +72,20 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly touched        = signal(false);
   /** Référentiel des pays, pour la liste déroulante « Pays ». */
   readonly paysList       = signal<PaysRefDto[]>([]);
+
+  // ── Contacts ───────────────────────────────────────────────────────────────
+  // Les trois champs `contactName` / `contactEmail` / `contactPhone` ont disparu :
+  // un client a plusieurs interlocuteurs (finance, ingénierie, administratif…) et
+  // trois colonnes plates n'en tenaient qu'un — le second écrasait le premier.
+
+  readonly contacts = signal<ContactDraft[]>([]);
+
+  /**
+   * L'état des contacts AU CHARGEMENT, en modification. C'est la comparaison avec
+   * `contacts()` qui dit lesquels ont été retirés de la liste : sans cette photo, une
+   * ligne supprimée à l'écran resterait en base.
+   */
+  private initialContacts: ContactDraft[] = [];
 
   // ── Select options ─────────────────────────────────────────────────────────
   readonly sectorSelectOptions = computed<SelectOption[]>(() =>
@@ -148,11 +165,34 @@ export class ClientFormComponent implements OnInit, OnChanges {
     return '';
   });
 
-  readonly contactEmailError = computed(() => {
+  /**
+   * Les contacts sont OBLIGATOIRES à la création : une affaire ne peut plus être
+   * activée sans contact, alors autant l'exiger là où le client naît plutôt que de
+   * laisser l'utilisateur le découvrir au bout de l'assistant d'affaire.
+   *
+   * En modification on ne l'exige pas : les clients d'avant V44 qui n'avaient aucune
+   * coordonnée saisie n'ont hérité d'aucun contact au backfill, et il ne faut pas
+   * bloquer la correction d'un secteur ou d'une adresse pour autant.
+   */
+  readonly contactsRequired = computed(() => !this.isEditMode);
+
+  readonly contactsError = computed(() => {
     if (!this.touched()) return '';
     this.translate.currentLang();
-    const v = this.contactEmail();
-    if (v && !EMAIL_RE.test(v)) return this.translate.instant('CLIENTS.FORM.EMAIL_INVALID');
+    const rows = this.contacts();
+    if (this.contactsRequired() && rows.length === 0) {
+      return this.translate.instant('CLIENTS.CONTACTS.AT_LEAST_ONE');
+    }
+    if (rows.some(r => !r.fullName.trim())) {
+      return this.translate.instant('CLIENTS.CONTACTS.NAME_REQUIRED');
+    }
+    if (rows.some(r => r.email.trim() && !EMAIL_RE.test(r.email.trim()))) {
+      return this.translate.instant('CLIENTS.FORM.EMAIL_INVALID');
+    }
+    const emails = rows.map(r => r.email.trim().toLowerCase()).filter(Boolean);
+    if (new Set(emails).size !== emails.length) {
+      return this.translate.instant('CLIENTS.CONTACTS.EMAIL_DUPLICATE');
+    }
     return '';
   });
 
@@ -198,18 +238,23 @@ export class ClientFormComponent implements OnInit, OnChanges {
       this.phone.set(c.phone ?? '');
       this.email.set(c.email ?? '');
       this.website.set(c.website ?? '');
-      this.contactName.set(c.contactName ?? '');
-      this.contactEmail.set(c.contactEmail ?? '');
-      this.contactPhone.set(c.contactPhone ?? '');
       this.paymentTermsDays.set(c.paymentTermsDays != null ? String(c.paymentTermsDays) : '30');
       this.selectedCurrency.set([c.defaultCurrency ?? 'TND']);
       this.notes.set(c.notes ?? '');
+
+      // Actifs seulement : la réactivation d'un contact désactivé se fait depuis la
+      // fiche client, pas au milieu d'un formulaire d'identification.
+      this.contactSvc.getContacts(c.id).subscribe(list => {
+        const drafts = list.map(toContactDraft);
+        this.initialContacts = drafts;
+        this.contacts.set(drafts.map(d => ({ ...d })));
+      });
     }
   }
 
   submit(): void {
     this.touched.set(true);
-    if (this.clientNameError() || this.emailError() || this.contactEmailError() || this.paymentTermsError()
+    if (this.clientNameError() || this.emailError() || this.contactsError() || this.paymentTermsError()
         || !this.selectedSector()[0]) return;
 
     this.saving.set(true);
@@ -228,23 +273,43 @@ export class ClientFormComponent implements OnInit, OnChanges {
       phone:            this.phone().trim()           || null,
       email:            this.email().trim()           || null,
       website:          this.website().trim()         || null,
-      contactName:      this.contactName().trim()     || null,
-      contactEmail:     this.contactEmail().trim()    || null,
-      contactPhone:     this.contactPhone().trim()    || null,
       paymentTermsDays: days !== '' ? Number(days) : null,
       defaultCurrency:  this.selectedCurrency()[0]   || null,
       notes:            this.notes().trim()           || null,
     };
 
     const obs = this.isEditMode
-      ? this.svc.updateClient(this.client!.id, dto)
-      : this.svc.createClient({ ...dto, paysId: this.paysId } as CreateClientRequest);
+      // En modification, les contacts se rejouent contact par contact APRÈS le client :
+      // ils ont leurs propres endpoints, et le PATCH client les ignore volontairement
+      // (une liste absente ne peut pas vouloir dire à la fois « n'y touche pas » et
+      // « supprime tout »).
+      ? this.svc.updateClient(this.client!.id, dto).pipe(
+          switchMap(saved => this.contactSvc
+            .syncContacts(saved.id, this.contacts(), this.initialContacts)
+            .pipe(switchMap(() => of(saved)))))
+      // À la création, les contacts partent DANS la même requête : deux appels
+      // enchaînés depuis le navigateur laisseraient un client sans contact dès que le
+      // second échoue, et l'écran ne propose pas de reprise.
+      : this.svc.createClient({
+          ...dto,
+          paysId: this.paysId,
+          contacts: this.contacts()
+            .filter(c => c.fullName.trim())
+            .map(c => ({
+              fullName:  c.fullName.trim(),
+              fonction:  c.fonction.trim() || null,
+              email:     c.email.trim()    || null,
+              phone:     c.phone.trim()    || null,
+              isPrimary: c.isPrimary,
+            })),
+        } as CreateClientRequest);
 
     obs.subscribe({
       next: result => { this.saving.set(false); this.saved.emit(result); },
       error: err   => {
         this.saving.set(false);
-        this.serverError.set(err?.error?.message ?? this.translate.instant('CLIENTS.FORM.SERVER_ERROR'));
+        this.serverError.set(err?.error?.detail ?? err?.error?.message
+          ?? this.translate.instant('CLIENTS.FORM.SERVER_ERROR'));
       },
     });
   }

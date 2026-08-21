@@ -119,6 +119,22 @@ export interface AffaireDraftState {
   clientId?: number;
   clientName?: string;
   clientKycDone?: boolean;
+
+  /**
+   * Step 2 — Contacts du client rattachés à l'affaire. Ce sont EUX qui reçoivent les
+   * factures : l'affaire ne peut plus être activée sans au moins un.
+   *
+   * Choisis à l'étape 2 et non dans une étape à part, parce qu'ils dépendent du client
+   * qu'on vient de sélectionner juste au-dessus — une étape séparée aurait permis d'y
+   * arriver sans client.
+   */
+  contactIds: number[];
+  /**
+   * Le destinataire des factures parmi `contactIds`. Un drapeau et non une déduction
+   * depuis le libellé de fonction, qui est du texte libre : rien ne garantit qu'il
+   * contienne « finance ».
+   */
+  billingContactId?: number;
   intitule: string;
   reference?: string;
   doc360Ref?: string;    // manual reference (distinct from DOC360 project)
@@ -198,12 +214,15 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     disciplineId: r.disciplineId ?? null,
     disciplineLabel: r.disciplineLabel,
   }));
+  const contacts: any[] = dto.contacts ?? [];
   return {
     id:                          dto.id,
     paysId:                      dto.paysId ?? 0,
     clientId:                    dto.clientId,
     clientName,
     clientKycDone,
+    contactIds:                  contacts.map(c => c.contactId),
+    billingContactId:            contacts.find(c => c.isBilling)?.contactId,
     intitule:                    dto.intitule ?? '',
     reference:                   dto.reference,
     doc360Ref:                   dto.doc360Ref,

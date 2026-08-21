@@ -1,12 +1,12 @@
 import {
-  Component, OnInit, computed, inject, signal,
+  Component, OnInit, TemplateRef, computed, inject, signal, viewChild,
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   AvatarComponent, ButtonComponent, ButtonOptions, FieldMessageComponent,
-  MetricCardComponent, ModalService,
+  CheckboxComponent, FormFieldComponent, MetricCardComponent, ModalRef, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, SectionCardComponent,
   TabsComponent,
 } from '@khalilrebhiitec/daf360';
@@ -18,11 +18,16 @@ import type {
 import { ClientService } from '../client.service';
 import { ClientDetailDto, ClientStatsDto } from '../client.model';
 import { CLIENT_STATE_BADGE, CLIENT_STATE_LABEL, clientState } from '../client-display';
+import { ClientContactDto } from '../contacts/client-contact.model';
+import { ClientContactService }   from '../contacts/client-contact.service';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { ToastService } from '../../../core/toast.service';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Une tuile de la rangée d'indicateurs. `label` est une clé i18n. */
 interface KpiTile {
@@ -48,7 +53,7 @@ interface KpiTile {
     TranslatePipe, PermissionDirective,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ProgressBarComponent, ButtonComponent, AvatarComponent,
-    FieldMessageComponent,
+    FieldMessageComponent, FormFieldComponent, CheckboxComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './client-detail.component.html',
@@ -60,6 +65,8 @@ export class ClientDetailComponent implements OnInit {
   private readonly modal     = inject(ModalService);
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly contactSvc = inject(ClientContactService);
+  private readonly toast      = inject(ToastService);
 
 
   client      = signal<ClientDetailDto | null>(null);
@@ -68,6 +75,13 @@ export class ClientDetailComponent implements OnInit {
   actionError = signal<string | null>(null);
 
   activeTab = signal<string>('overview');
+
+  /**
+   * Le corps de la modale de saisie d'un contact. `ModalConfig.body` accepte un
+   * `TemplateRef`, ce qui laisse le formulaire s'écrire dans le gabarit de la page
+   * avec les composants de la lib, au lieu d'une chaîne de HTML construite en code.
+   */
+  readonly contactFormTpl = viewChild.required<TemplateRef<unknown>>('contactFormTpl');
 
   private clientId = 0;
 
@@ -94,6 +108,10 @@ export class ClientDetailComponent implements OnInit {
         this.client.set(client);
         this.stats.set(stats);
         this.isLoading.set(false);
+        // Hors du `forkJoin` : les contacts se rechargent seuls après chaque
+        // enregistrement, et les remettre dans le chargement de la page ferait
+        // clignoter tout l'écran à chaque sauvegarde de l'onglet.
+        this.loadContacts(id);
       },
       error: () => {
         this.actionError.set(this.translate.instant('CLIENTS.DETAIL.LOAD_ERROR'));
@@ -293,16 +311,215 @@ export class ClientDetailComponent implements OnInit {
     ];
   });
 
+  /**
+   * Les coordonnées DE LA SOCIÉTÉ, et non d'une personne. Les interlocuteurs vivent
+   * désormais dans `client_contacts` et s'éditent dans l'onglet Contacts juste en
+   * dessous — les trois champs `contact_*` de `clients` ne sont plus lus ici.
+   */
   readonly contactFields = computed<DetailField[]>(() => {
     const c = this.client();
     if (!c) return [];
     return [
-      { label: 'CLIENTS.DETAIL.CONTACT.NAME',  value: c.contactName  ?? '—' },
-      { label: 'CLIENTS.DETAIL.CONTACT.EMAIL', value: c.contactEmail ?? c.email ?? '—' },
-      { label: 'CLIENTS.DETAIL.CONTACT.PHONE', value: c.contactPhone ?? c.phone ?? '—' },
-      { label: 'CLIENTS.DETAIL.CONTACT.WEBSITE', value: c.website ?? '—' },
+      { label: 'CLIENTS.DETAIL.CONTACT.EMAIL_GENERAL', value: c.email   ?? '—' },
+      { label: 'CLIENTS.DETAIL.CONTACT.PHONE',         value: c.phone   ?? '—' },
+      { label: 'CLIENTS.DETAIL.CONTACT.WEBSITE',       value: c.website ?? '—' },
     ];
   });
+
+  // ═══ Contacts ═════════════════════════════════════════════════════════════
+  //
+  // L'onglet est en LECTURE. Il portait un éditeur en permanence ouvert et un bouton
+  // « Enregistrer les contacts » global : une fiche affiche, elle ne présente pas
+  // quatre champs de saisie par interlocuteur à quelqu'un venu lire une adresse. La
+  // modification passe par une modale, un contact à la fois, enregistré seul.
+
+  /** Les contacts ACTIFS, en lecture seule. */
+  readonly activeContacts = signal<ClientContactDto[]>([]);
+  /**
+   * Les DÉSACTIVÉS, à part : ils ne se modifient pas, ils se réactivent. Les mêler
+   * aux actifs reviendrait à proposer de corriger un contact qu'on a justement
+   * retiré de la circulation.
+   */
+  readonly inactiveContacts = signal<ClientContactDto[]>([]);
+
+  private loadContacts(id: number): void {
+    this.contactSvc.getContacts(id, true).subscribe(list => {
+      this.activeContacts.set(list.filter(c => c.isActive));
+      this.inactiveContacts.set(list.filter(c => !c.isActive));
+    });
+  }
+
+  /** « Fonction · téléphone », en sautant ce qui manque — pas de séparateur orphelin. */
+  contactMeta(c: ClientContactDto): string {
+    return [c.fonction, c.phone].filter(Boolean).join(' · ');
+  }
+
+  /** `daf-form-field` émet `string | number | null` ; les signaux du formulaire sont des chaînes. */
+  asStr(v: string | number | null): string { return v != null ? String(v) : ''; }
+
+  // ── Modale de saisie ──────────────────────────────────────────────────────
+  //
+  // Les champs vivent dans des signaux du composant plutôt que dans un contexte de
+  // gabarit : `ModalConfig.body` accepte un `TemplateRef` mais aucun contexte, donc
+  // c'est le composant qui porte l'état du formulaire ouvert.
+
+  /** `null` = création ; sinon l'id du contact modifié. */
+  readonly editingContactId = signal<number | null>(null);
+  readonly formName     = signal('');
+  readonly formFonction = signal('');
+  readonly formEmail    = signal('');
+  readonly formPhone    = signal('');
+  readonly formPrimary  = signal(false);
+  readonly formError    = signal<string | null>(null);
+  readonly formSaving   = signal(false);
+
+  /**
+   * `true` quand le contact édité est DÉJÀ le principal du client. Le serveur refuse
+   * de retirer ce statut sans désigner un remplaçant (promouvoir l'autre suffit, il
+   * déclasse celui-ci), donc la case est présentée cochée et désactivée plutôt que de
+   * laisser décocher pour un refus.
+   */
+  readonly formPrimaryLocked = computed(() => {
+    const id = this.editingContactId();
+    return id != null && this.activeContacts().some(c => c.id === id && c.isPrimary);
+  });
+
+  openContactModal(existing?: ClientContactDto): void {
+    this.editingContactId.set(existing?.id ?? null);
+    this.formName.set(existing?.fullName ?? '');
+    this.formFonction.set(existing?.fonction ?? '');
+    this.formEmail.set(existing?.email ?? '');
+    this.formPhone.set(existing?.phone ?? '');
+    // Premier contact du client : principal d'office, comme le fait le serveur.
+    this.formPrimary.set(existing?.isPrimary ?? this.activeContacts().length === 0);
+    this.formError.set(null);
+
+    const ref = this.modal.open({
+      title: this.translate.instant(existing
+        ? 'CLIENTS.CONTACTS.MODAL_EDIT_TITLE'
+        : 'CLIENTS.CONTACTS.MODAL_NEW_TITLE'),
+      subtitle: this.client()?.clientName,
+      icon: 'contacts',
+      size: 'md',
+      body: this.contactFormTpl(),
+      buttons: [
+        {
+          label: this.translate.instant('CLIENTS.DETAIL.MODAL.CANCEL'),
+          variant: 'secondary',
+          action: r => r.close(),
+        },
+        {
+          label: this.translate.instant('CLIENTS.CONTACTS.MODAL_SAVE'),
+          variant: 'primary',
+          icon: 'save',
+          // Ne ferme QUE sur succès : refermer d'abord ferait disparaître la saisie
+          // avec le message d'erreur qui explique pourquoi elle a été refusée.
+          action: r => this.submitContact(r),
+        },
+      ],
+    });
+    void ref;
+  }
+
+  private submitContact(ref: ModalRef): void {
+    const c = this.client();
+    if (!c) return;
+    const name = this.formName().trim();
+    if (!name) {
+      this.formError.set(this.translate.instant('CLIENTS.CONTACTS.NAME_REQUIRED'));
+      return;
+    }
+    if (this.formEmail().trim() && !EMAIL_RE.test(this.formEmail().trim())) {
+      this.formError.set(this.translate.instant('CLIENTS.FORM.EMAIL_INVALID'));
+      return;
+    }
+
+    this.formSaving.set(true);
+    this.formError.set(null);
+
+    const payload = {
+      fullName: name,
+      fonction: this.formFonction().trim() || null,
+      email:    this.formEmail().trim()    || null,
+      phone:    this.formPhone().trim()    || null,
+      // `null` et non `false` quand la case n'est pas cochée : c'est « ne touche pas
+      // à ce drapeau ». Un `false` explicite sur le principal en place est refusé.
+      isPrimary: this.formPrimary() ? true : null,
+      notes:     null,
+    };
+
+    const id = this.editingContactId();
+    const call$ = id != null
+      ? this.contactSvc.updateContact(c.id, id, payload)
+      : this.contactSvc.createContact(c.id, payload);
+
+    call$.subscribe({
+      next: () => {
+        this.formSaving.set(false);
+        ref.close();
+        // Confirmation en notification : la modale se referme, un message inline
+        // disparaîtrait avec elle.
+        this.toast.success(this.translate.instant('CLIENTS.CONTACTS.TOAST_SAVED'));
+        // Rechargement complet : le serveur a pu déclasser un autre principal et
+        // recompter les affaires de chacun.
+        this.loadContacts(c.id);
+      },
+      error: err => {
+        this.formSaving.set(false);
+        this.formError.set(err?.error?.detail ?? err?.error?.message
+          ?? this.translate.instant('CLIENTS.CONTACTS.SAVE_ERROR'));
+      },
+    });
+  }
+
+  /**
+   * Désactivation — jamais une suppression. Le serveur refuse si une affaire en cours
+   * utilise le contact, et son message NOMME ces affaires ; on le remonte tel quel,
+   * c'est la seule information actionnable.
+   */
+  deactivateContact(c: ClientContactDto): void {
+    const client = this.client();
+    if (!client) return;
+    this.confirmThen('CLIENTS.CONTACTS.CONFIRM_DEACTIVATE_TITLE',
+                     'CLIENTS.CONTACTS.CONFIRM_DEACTIVATE_BODY', () => {
+      this.contactSvc.deactivateContact(client.id, c.id).subscribe({
+        next: () => {
+          this.toast.success(this.translate.instant(
+            'CLIENTS.CONTACTS.TOAST_DEACTIVATED', { name: c.fullName }));
+          this.loadContacts(client.id);
+        },
+        error: err => this.toastServerError(err),
+      });
+    });
+  }
+
+  reactivateContact(contactId: number): void {
+    const c = this.client();
+    if (!c) return;
+    this.contactSvc.reactivateContact(c.id, contactId).subscribe({
+      next: () => {
+        this.toast.success(this.translate.instant('CLIENTS.CONTACTS.TOAST_REACTIVATED'));
+        this.loadContacts(c.id);
+      },
+      error: err => this.toastServerError(err),
+    });
+  }
+
+  /**
+   * Les refus métier du serveur (422) partent dans les notifications de l'app, et NON
+   * dans un bandeau propre à cet onglet : l'action est déclenchée depuis une ligne ou
+   * une confirmation, et le message doit se voir sans avoir à chercher où la page l'a
+   * affiché. Le texte du serveur est repris tel quel — c'est lui qui nomme la cause
+   * (« Désignez d'abord un autre contact comme principal », les affaires qui bloquent
+   * une désactivation) ; un libellé générique retirerait la seule information utile.
+   */
+  private toastServerError(err: unknown): void {
+    const e = err as { error?: { detail?: string; message?: string } };
+    this.toast.error(
+      e?.error?.detail
+      ?? e?.error?.message
+      ?? this.translate.instant('CLIENTS.CONTACTS.SAVE_ERROR'));
+  }
 
   /**
    * Le validateur KYC en données d'avatar, ou `null` quand le nom n'est pas résolu.

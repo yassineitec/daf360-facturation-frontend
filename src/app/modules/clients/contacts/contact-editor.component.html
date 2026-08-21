@@ -1,0 +1,122 @@
+<div class="contact-editor">
+
+  <div class="ce-header">
+    <span class="ce-header__icon material-symbols-outlined">contacts</span>
+    <div class="ce-header__text">
+      <div class="ce-header__title">
+        {{ 'CLIENTS.CONTACTS.TITLE' | translate }}@if (required()) { *}
+      </div>
+      <div class="ce-header__sub">{{ 'CLIENTS.CONTACTS.SUB' | translate }}</div>
+    </div>
+    <daf-button
+      [options]="{ variant: 'secondary', size: 'sm', iconStart: 'add',
+                   label: 'CLIENTS.CONTACTS.ADD' | translate }"
+      (onClick)="addRow()" />
+  </div>
+
+  @if (contacts().length === 0) {
+    <div class="ce-empty">
+      <span class="material-symbols-outlined">person_add</span>
+      <p>{{ 'CLIENTS.CONTACTS.EMPTY' | translate }}</p>
+      @if (required() && touched()) {
+        <p class="ce-empty__error">{{ 'CLIENTS.CONTACTS.AT_LEAST_ONE' | translate }}</p>
+      }
+    </div>
+  } @else {
+    <div class="ce-list">
+      @for (row of contacts(); track $index; let idx = $index) {
+        <div class="ce-item" [class.ce-item--primary]="row.isPrimary">
+
+          <div class="ce-item__head">
+            <span class="ce-item__index">{{ idx + 1 }}</span>
+            <span class="ce-item__name">
+              {{ row.fullName.trim() || ('CLIENTS.CONTACTS.ROW' | translate:{ n: idx + 1 }) }}
+            </span>
+            @if (row.fonction.trim()) {
+              <span class="ce-item__fonction">{{ row.fonction }}</span>
+            }
+            @if (row.isPrimary) {
+              <span class="ce-item__badge">{{ 'CLIENTS.CONTACTS.PRIMARY_BADGE' | translate }}</span>
+            }
+            <button class="ce-remove" type="button"
+                    [attr.aria-label]="'CLIENTS.CONTACTS.REMOVE' | translate"
+                    (click)="removeRow(idx)">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <div class="ce-fields">
+            <daf-form-field
+              [value]="row.fullName"
+              (valueChange)="patch(idx, { fullName: asStr($event) })"
+              [options]="{
+                label: ('CLIENTS.CONTACTS.NAME_LABEL' | translate),
+                type: 'text',
+                placeholder: ('CLIENTS.CONTACTS.NAME_PLACEHOLDER' | translate),
+                maxLength: 255,
+                required: true,
+                error: rowNameError(row)
+              }" />
+
+            <!-- Texte libre, et non une liste : « Contact finance », « Ingénierie »,
+                 « Administratif » sont des libellés propres à chaque client. -->
+            <daf-form-field
+              [value]="row.fonction"
+              (valueChange)="patch(idx, { fonction: asStr($event) })"
+              [options]="{
+                label: ('CLIENTS.CONTACTS.FONCTION_LABEL' | translate),
+                type: 'text',
+                placeholder: ('CLIENTS.CONTACTS.FONCTION_PLACEHOLDER' | translate),
+                maxLength: 150
+              }" />
+
+            <daf-form-field
+              [value]="row.email"
+              (valueChange)="patch(idx, { email: asStr($event) })"
+              [options]="{
+                label: ('CLIENTS.CONTACTS.EMAIL_LABEL' | translate),
+                type: 'email',
+                placeholder: 'prenom.nom@societe.com',
+                maxLength: 255,
+                error: rowDuplicateEmail(idx)
+                         ? ('CLIENTS.CONTACTS.EMAIL_DUPLICATE' | translate)
+                         : rowEmailError(row)
+              }" />
+
+            <daf-form-field
+              [value]="row.phone"
+              (valueChange)="patch(idx, { phone: asStr($event) })"
+              [options]="{
+                label: ('CLIENTS.CONTACTS.PHONE_LABEL' | translate),
+                type: 'text',
+                placeholder: '+216 XX XXX XXX',
+                maxLength: 50
+              }" />
+          </div>
+
+          <!-- Exclusif : cocher ici déclasse l'autre principal. Pas de décochage —
+               il faut désigner quelqu'un, pas retirer tout le monde. -->
+          <div class="ce-primary-row">
+            <daf-checkbox
+              [checked]="row.isPrimary"
+              [options]="{
+                label: ('CLIENTS.CONTACTS.PRIMARY_LABEL' | translate),
+                disabled: row.isPrimary,
+                hint: ('CLIENTS.CONTACTS.PRIMARY_HINT' | translate)
+              }"
+              (checkedChange)="setPrimary(idx)" />
+          </div>
+
+        </div>
+      }
+    </div>
+
+    @if (noEmailAtAll()) {
+      <p class="ce-warning">
+        <span class="material-symbols-outlined">mail_off</span>
+        {{ 'CLIENTS.CONTACTS.NO_EMAIL_WARNING' | translate }}
+      </p>
+    }
+  }
+
+</div>

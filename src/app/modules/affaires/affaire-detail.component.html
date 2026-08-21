@@ -1,10 +1,18 @@
 <!-- Fiche affaire — page 100 % composants lib (UI-PLAYBOOK §10f).
-     Aucune feuille de style locale : composants lib, tokens de couleur et échelle
-     typographique de la lib (text-label-caps / text-body-* / text-headline-*).
+     Composants lib, tokens de couleur et échelle typographique de la lib
+     (text-label-caps / text-body-* / text-headline-*).
+
+     EXCEPTION : le panneau de détails de la colonne gauche (`.dp-*`) est habillé par les
+     styles de COMPOSANT (bloc `styles` du .ts). Sa maquette demande des tailles que
+     l'échelle de la lib ne porte pas (9 px pour les micro-libellés, 10,5 px pour les
+     rôles, 12,5 px pour les valeurs) et un interlettrage précis ; en classes Tailwind
+     arbitraires, elles dépendraient du scan de l'app consommatrice — le piège décrit
+     plus bas. Les couleurs, elles, restent toutes des tokens.
 
      Structure, deux colonnes :
        GAUCHE (30 %, sticky)  le h1 de la page (daf-page-header, size="md", sans bouton)
-                              puis la carte d'informations, actions en pied de section.
+                              puis DEUX cartes empilées : « Détails » (client, contrat,
+                              managers, contacts) et « Actions rapides ».
        DROITE (70 %)          les 4 KPI (daf-metric-card), daf-tabs et ses panneaux, puis
                               en bas Progression facturation (anneau) et Répartition RAF.
      Traçabilité et alertes vivent dans le drawer, l'alerte en tête de panneau ; le rappel
@@ -122,74 +130,191 @@
             [badges]="headerBadges()"
             [breadcrumbs]="breadcrumbs()"
             [breadcrumbLabel]="'AFFAIRES.DETAIL.BREADCRUMB_ARIA' | translate" />
-          <daf-section-card>
 
-            <!-- Informations générales -->
-            <div class="flex flex-col gap-5 p-6">
-              @for (f of identityLeadFields(); track f.label) {
-                <div class="flex flex-col gap-1">
-                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                    {{ f.label | translate }}
-                  </p>
-                  <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+          <!-- ══════════════════════════════════════════════════════════════════
+               PANNEAU DE DÉTAILS — deux cartes empilées, « Détails » puis
+               « Actions rapides ».
+
+               Ce que la version précédente faisait et qui a disparu : UNE seule
+               carte où tout se suivait au même poids, et une grille `flex-wrap` à
+               deux cases par ligne qui appariait des données sans rapport (Entité
+               mère avec Devise, Budget prévisionnel avec Mode de facturation).
+               Deux libellés et deux valeurs par ligne, aucune colonne alignée
+               d'une ligne à l'autre : il n'y avait rien à balayer du regard.
+
+               Ici : les libellés de section sont TOUS au même style (9 px, 700,
+               .14em) — c'est le seul style de libellé du panneau ; les couples
+               clé/valeur du bloc Contrat sont sur deux colonnes, questions à
+               gauche et réponses à droite ; et les séparateurs disent le
+               groupement (2 px entre sections majeures, 1 px après Client et
+               entre les lignes du Contrat) plutôt que de le confier au vide.
+
+               `<aside>` + un `<section>` par bloc dont le micro-libellé est le
+               titre : visuellement une étiquette, sémantiquement un `h3`. Les
+               listes de managers et de contacts sont de vraies `ul`/`li`.
+               ══════════════════════════════════════════════════════════════ -->
+          <aside class="dp" [attr.aria-label]="'AFFAIRES.DETAIL.INFO.PANEL_ARIA' | translate">
+
+            <!-- ── Carte 1 : Détails ────────────────────────────────────────
+                 `daf-section-card` porte la surface, la bordure, le rayon et les
+                 états de survol de la lib — comme les autres cartes de la page.
+                 Le `div` interne ne fait plus que la colonne de blocs. -->
+            <daf-section-card>
+            <div class="dp-card">
+
+              <!-- 1. Client -->
+              <section class="dp-block" aria-labelledby="dp-h-client">
+                <h3 class="dp-label" id="dp-h-client">
+                  {{ 'AFFAIRES.DETAIL.INFO.CLIENT' | translate }}
+                </h3>
+                <!-- Nom à gauche, contexte à droite sur la MÊME ligne de base : entité et
+                     devise ne sont pas des données qu'on vient chercher, elles situent le
+                     client. Elles occupaient deux lignes de la grille auparavant. -->
+                <div class="dp-client">
+                  <span class="dp-client__name" [title]="aff.clientName ?? ''">
+                    {{ aff.clientName ?? '—' }}
+                  </span>
+                  <span class="dp-client__meta">{{ clientMeta() }}</span>
                 </div>
+                <p class="dp-period">{{ periodLine() }}</p>
+              </section>
+
+              <div class="dp-rule"></div>
+
+              <!-- 2. Contrat -->
+              <section class="dp-block" aria-labelledby="dp-h-contrat">
+                <h3 class="dp-label" id="dp-h-contrat">
+                  {{ 'AFFAIRES.DETAIL.INFO.CONTRACT_SECTION' | translate }}
+                </h3>
+                <dl class="dp-rows">
+                  @for (row of contratRows(); track row.label; let last = $last) {
+                    <div class="dp-row" [class.dp-row--last]="last">
+                      <dt class="dp-row__key">{{ row.label | translate }}</dt>
+                      <dd class="dp-row__val">
+                        @if (row.ok !== undefined) {
+                          <!-- État et non valeur : le point double le texte, il ne le
+                               remplace pas — voir contratRows(). -->
+                          <span class="dp-flag" [class.dp-flag--ok]="row.ok">
+                            <span class="dp-flag__dot" aria-hidden="true"></span>{{ row.value }}
+                          </span>
+                        } @else {
+                          {{ row.value }}
+                        }
+                      </dd>
+                    </div>
+                  }
+                </dl>
+              </section>
+
+              <!-- 2 px : séparateur de SECTION MAJEURE. Le 1 px ci-dessus rattache la
+                   période au client ; celui-ci coupe franchement entre le contrat et les
+                   personnes. -->
+              @if (responsables().length || contacts().length) {
+                <div class="dp-rule dp-rule--major"></div>
               }
 
-              <!-- Managers — la LISTE COMPLÈTE, pas le seul responsable principal.
+              <!-- 3. Managers — la LISTE COMPLÈTE, pas le seul responsable principal.
                    `affaire_responsables` porte une ligne par (personne, activité) : le
-                   composant regroupe par personne, donc une même personne n'apparaît
-                   ici qu'une fois, ses activités jointes sur la ligne de détail. -->
-              <div class="flex flex-col gap-1">
-                <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                  {{ 'AFFAIRES.DETAIL.INFO.MANAGERS' | translate }}
-                </p>
-                @for (r of responsables(); track r.userId) {
-                  <div class="flex items-start justify-between gap-3 py-1">
-                    <div class="min-w-0">
-                      <!-- Plus de mention « Principal » : les responsables d'une affaire sont
-                           tous au même niveau. -->
-                      <p class="text-body-md font-bold text-on-surface">{{ r.fullName }}</p>
-                      @if (r.detail) {
-                        <p class="text-body-sm text-on-surface-variant">{{ r.detail }}</p>
-                      }
-                    </div>
-                    @if (r.budget) {
-                      <p class="shrink-0 text-body-sm font-bold text-on-surface-variant">{{ r.budget }}</p>
+                   composant regroupe par personne, donc une même personne n'apparaît ici
+                   qu'une fois, ses activités jointes sur la ligne de détail.
+
+                   Tableau vide = bloc absent, libellé compris : un « MANAGERS » suivi d'un
+                   tiret occupe la place d'une information sans en être une. -->
+              @if (responsables().length) {
+                <section class="dp-block" aria-labelledby="dp-h-managers">
+                  <div class="dp-block__head">
+                    <h3 class="dp-label" id="dp-h-managers">
+                      {{ 'AFFAIRES.DETAIL.INFO.MANAGERS' | translate }}
+                    </h3>
+                    <span class="dp-count">{{ responsables().length }}</span>
+                  </div>
+                  <ul class="dp-people">
+                    @for (r of responsables(); track r.userId) {
+                      <li class="dp-person">
+                        <span class="dp-avatar" aria-hidden="true">{{ initials(r.fullName) }}</span>
+                        <div class="dp-person__body">
+                          <div class="dp-person__top">
+                            <span class="dp-person__name" [title]="r.fullName">{{ r.fullName }}</span>
+                            @if (r.budget) {
+                              <span class="dp-person__amount">{{ r.budget }}</span>
+                            }
+                          </div>
+                          <!-- Deux lignes au plus : « Responsable Génie Civil · Études ·
+                               Structure » ne tient pas sur une, et le tronquer à une ligne
+                               n'en laisserait que le rôle. -->
+                          @if (r.detail) {
+                            <span class="dp-person__role" [title]="r.detail">{{ r.detail }}</span>
+                          }
+                        </div>
+                      </li>
                     }
-                  </div>
-                } @empty {
-                  <p class="text-body-md font-bold text-on-surface">—</p>
-                }
-              </div>
+                  </ul>
+                </section>
+              }
 
-              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
-                @for (f of identityGridFields(); track f.label) {
-                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ f.label | translate }}
-                    </p>
-                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
-                  </div>
-                }
-              </div>
+              @if (responsables().length && contacts().length) {
+                <div class="dp-rule dp-rule--major"></div>
+              }
 
+              <!-- 4. Contacts client — côté CLIENT de l'affaire, à ne pas confondre avec
+                   les managers juste au-dessus qui en sont le côté interne. Tous
+                   reçoivent les factures ; la pastille désigne le référent, celui imprimé
+                   sur le document. C'est du TEXTE, pas une couleur seule. -->
+              @if (contacts().length) {
+                <section class="dp-block" aria-labelledby="dp-h-contacts">
+                  <h3 class="dp-label" id="dp-h-contacts">
+                    {{ 'AFFAIRES.DETAIL.INFO.CONTACTS' | translate }}
+                  </h3>
+                  <ul class="dp-people dp-people--contacts">
+                    @for (c of contacts(); track c.contactId) {
+                      <li class="dp-contact">
+                        <div class="dp-contact__top">
+                          <span class="dp-contact__name" [title]="c.fullName">{{ c.fullName }}</span>
+                          @if (c.isBilling) {
+                            <span class="dp-tag">
+                              {{ 'AFFAIRES.wizard.info.referent_contact' | translate }}
+                            </span>
+                          }
+                        </div>
+                        @if (c.email) {
+                          <span class="dp-contact__mail" [title]="c.email">{{ c.email }}</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                </section>
+              }
+
+              <!-- Notes : gardées telles quelles, en dernier. Ce n'est pas une donnée
+                   structurée du contrat, et sa longueur est imprévisible — elle ne peut
+                   pas entrer dans les lignes clé/valeur du bloc Contrat. -->
               @if (aff.notes) {
-                <div class="flex flex-col gap-1">
-                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                <div class="dp-rule dp-rule--major"></div>
+                <section class="dp-block" aria-labelledby="dp-h-notes">
+                  <h3 class="dp-label" id="dp-h-notes">
                     {{ 'AFFAIRES.DETAIL.INFO.NOTES' | translate }}
-                  </p>
-                  <p class="whitespace-pre-wrap text-body-sm leading-relaxed text-on-surface-variant">{{ aff.notes }}</p>
-                </div>
+                  </h3>
+                  <p class="dp-notes">{{ aff.notes }}</p>
+                </section>
               }
             </div>
+            </daf-section-card>
 
             <!-- ══════════════════════════════════════════════════════════════
                  CENTRE D'ACTIONS — trois niveaux, trois traitements visuels.
                  Les cinq actions étaient auparavant cinq `daf-button` de même
                  taille dans une grille 2 × 3 : « Statut » pesait donc autant que
                  « Nouvelle facture », et rien ne disait par où commencer.
+
+                 Bloc INCHANGÉ par la refonte du panneau : mêmes `daf-button`,
+                 mêmes échelons de taille, mêmes gardes de permission. Il est
+                 seulement passé dans sa propre `daf-section-card` — d'où la
+                 disparition du seul `border-t`, qui le séparait de la carte
+                 d'informations quand les deux partageaient une carte et qui
+                 pendrait maintenant sous le bord haut de la sienne.
                  ══════════════════════════════════════════════════════════════ -->
-            <div class="flex flex-col gap-3 border-t border-outline-variant/30 bg-surface-container p-6">
+            <daf-section-card>
+            <div class="flex flex-col gap-3 bg-surface-container p-6">
 
               <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
                 {{ 'AFFAIRES.DETAIL.ACTIONS.QUICK_TITLE' | translate }}
@@ -267,8 +392,8 @@
                   (onClick)="validerBudget()" />
               }
             </div>
-
-          </daf-section-card>
+            </daf-section-card>
+          </aside>
         </div>
       </div>
 
@@ -373,16 +498,6 @@
                       </span>
                     </div>
                     <daf-progress-bar [value]="billingPct()" [options]="billingBarOptions()" />
-                    <!-- Le dénominateur est le prévisionnel SEUL, les TS intégrés n'y entrent
-                         pas : sans cette mention, un taux au-delà de 100 % sur une affaire
-                         qui a facturé des TS se lit comme une erreur d'affichage. -->
-                    @if (tsIntegratedPct() > 0) {
-                      <span class="text-body-sm text-on-surface-variant">
-                        {{ 'AFFAIRES.DETAIL.INDICATORS.ENVELOPE_NOTE' | translate:
-                           { budget: budgetPrevisionnel() | displayCurrency : affaireDevise(),
-                             ts: raf()?.montantTsIntegres | displayCurrency : affaireDevise() } }}
-                      </span>
-                    }
                   </div>
                 </div>
               </daf-section-card>

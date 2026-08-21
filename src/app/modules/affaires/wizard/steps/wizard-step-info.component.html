@@ -93,6 +93,151 @@
         </div>
       </div>
 
+      <!-- ── Contacts du client ──────────────────────────────────────────────
+           Juste sous le client, et non dans une étape à part : ils en dépendent.
+           Tous les contacts rattachés reçoivent les factures de l'affaire ; le
+           marqueur « Référent » désigne celui qui sera imprimé sur le document et
+           mis en tête des destinataires. -->
+      @if (draft.clientId) {
+        <div class="field field-full contacts-field">
+          <label class="field-label">
+            {{ 'AFFAIRES.wizard.info.contacts' | translate }} *
+          </label>
+
+          @if (loadingContacts()) {
+            <p class="field-hint">{{ 'AFFAIRES.wizard.info.contacts_loading' | translate }}</p>
+          } @else {
+            @if (clientContacts().length === 0) {
+              <!-- Aucun contact : le formulaire s'ouvre tout seul juste en dessous
+                   (voir loadContacts), donc pas de bouton à cliquer d'abord. -->
+              <p class="field-hint">{{ 'AFFAIRES.wizard.info.contacts_none' | translate }}</p>
+            } @else {
+              <div class="contact-list">
+                @for (c of clientContacts(); track c.id) {
+                  <div class="contact-row" [class.contact-row--on]="isContactSelected(c.id)">
+                    <daf-checkbox
+                      [checked]="isContactSelected(c.id)"
+                      [options]="{ label: c.fullName }"
+                      (checkedChange)="toggleContact(c.id)" />
+
+                    <div class="contact-meta">
+                      @if (c.fonction) { <span class="contact-fonction">{{ c.fonction }}</span> }
+                      @if (c.email) { <span class="contact-email">{{ c.email }}</span> }
+                      @else { <span class="contact-noemail">{{ 'AFFAIRES.wizard.info.contact_no_email' | translate }}</span> }
+                    </div>
+
+                    <!-- Le marqueur n'apparaît que sur les contacts retenus : désigner
+                         un référent parmi les contacts non rattachés n'a pas de sens. -->
+                    @if (isContactSelected(c.id)) {
+                      <button type="button"
+                              class="referent-flag"
+                              [class.referent-flag--on]="draft.billingContactId === c.id"
+                              [attr.aria-pressed]="draft.billingContactId === c.id"
+                              (click)="setReferentContact(c.id)">
+                        <span class="material-symbols-outlined">badge</span>
+                        {{ 'AFFAIRES.wizard.info.referent_contact' | translate }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @if (!newContactOpen()) {
+              <div class="contact-add">
+                <daf-button
+                  [options]="{ variant: 'secondary', size: 'sm', iconStart: 'person_add',
+                               label: 'AFFAIRES.wizard.info.contact_new' | translate }"
+                  (onClick)="openNewContact()" />
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Formulaire de saisie : une sous-section à part entière de l'étape, bâtie
+             sur les mêmes `section-header` / `field-grid` / `field` que le reste —
+             l'encadré en pointillés qu'il y avait ici ne ressemblait à rien d'autre
+             de l'assistant.
+
+             Le contact est enregistré IMMÉDIATEMENT : il doit exister en base pour
+             être rattaché, et il appartient au client — il reste donc utile même si
+             la création d'affaire est abandonnée. -->
+        @if (newContactOpen()) {
+          <div class="field field-full">
+            <div class="section-header">
+              <span class="material-symbols-outlined section-icon">person_add</span>
+              <div>
+                <p class="section-title">{{ 'AFFAIRES.wizard.info.contact_new_title' | translate }}</p>
+                <p class="section-sub">{{ 'AFFAIRES.wizard.info.contact_new_sub' | translate }}</p>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <daf-form-field
+                  [value]="newContactName()"
+                  (valueChange)="newContactName.set(asStr($event))"
+                  [options]="{ label: ('CLIENTS.CONTACTS.NAME_LABEL' | translate),
+                               type: 'text', required: true,
+                               placeholder: ('CLIENTS.CONTACTS.NAME_PLACEHOLDER' | translate),
+                               maxLength: 255, fullWidth: true }" />
+              </div>
+              <div class="field">
+                <daf-form-field
+                  [value]="newContactFonction()"
+                  (valueChange)="newContactFonction.set(asStr($event))"
+                  [options]="{ label: ('CLIENTS.CONTACTS.FONCTION_LABEL' | translate),
+                               type: 'text',
+                               placeholder: ('CLIENTS.CONTACTS.FONCTION_PLACEHOLDER' | translate),
+                               maxLength: 150, fullWidth: true }" />
+              </div>
+              <div class="field">
+                <daf-form-field
+                  [value]="newContactEmail()"
+                  (valueChange)="newContactEmail.set(asStr($event))"
+                  [options]="{ label: ('CLIENTS.CONTACTS.EMAIL_LABEL' | translate),
+                               type: 'email', placeholder: 'prenom.nom@societe.com',
+                               maxLength: 255, fullWidth: true }" />
+              </div>
+              <div class="field">
+                <daf-form-field
+                  [value]="newContactPhone()"
+                  (valueChange)="newContactPhone.set(asStr($event))"
+                  [options]="{ label: ('CLIENTS.CONTACTS.PHONE_LABEL' | translate),
+                               type: 'text', placeholder: '+216 XX XXX XXX',
+                               maxLength: 50, fullWidth: true }" />
+              </div>
+
+              @if (newContactError()) {
+                <div class="field field-full">
+                  <p class="field-warning">
+                    <span class="material-symbols-outlined" style="font-size:15px">error</span>
+                    {{ newContactError() }}
+                  </p>
+                </div>
+              }
+
+              <div class="field field-full contact-new-actions">
+                <!-- « Annuler » n'est proposé que s'il reste quelque chose à annuler
+                     vers quoi : un client sans aucun contact n'a pas d'écran de repli,
+                     fermer le formulaire ne ferait que bloquer l'étape. -->
+                @if (clientContacts().length > 0) {
+                  <daf-button
+                    [options]="{ variant: 'ghost', size: 'sm',
+                                 label: 'AFFAIRES.wizard.info.contact_cancel' | translate }"
+                    (onClick)="cancelNewContact()" />
+                }
+                <daf-button
+                  [options]="{ variant: 'primary', size: 'sm', iconStart: 'check',
+                               loading: savingContact(),
+                               label: 'AFFAIRES.wizard.info.contact_save' | translate }"
+                  (onClick)="saveNewContact()" />
+              </div>
+            </div>
+          </div>
+        }
+      }
+
       <!-- Référence — read-only when pre-filled from DOC360 -->
       @if (draft.doc360ServerReference) {
         <div class="field">

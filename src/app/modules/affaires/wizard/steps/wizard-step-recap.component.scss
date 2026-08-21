@@ -245,3 +245,29 @@
   &--teal   { background: #e6f7f5; color: #0d6e65; }
   &--purple { background: #ede9fe; color: #5b21b6; }
 }
+
+/* ── Contacts de l'affaire (section A) ─────────────────────────────────────── */
+
+.recap-contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recap-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: 12px;
+
+  &__name { font-weight: 600; color: var(--color-on-surface); }
+  &__fonction { color: var(--color-on-surface-variant); }
+  /* Un contact sans adresse ne recevra rien : c'est ce qu'on doit voir AVANT d'activer. */
+  &__noemail { color: var(--color-warning); font-weight: 600; }
+}
+
+.recap-value--warn { color: var(--color-warning); font-weight: 600; }

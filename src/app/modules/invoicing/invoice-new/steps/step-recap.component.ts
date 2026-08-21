@@ -5,6 +5,8 @@ import { InvoiceService } from '../../invoice.service';
 import { CONDITIONS_PAIEMENT } from '../../invoice.model';
 import { ClientService } from '../../../clients/client.service';
 import { ClientDetailDto } from '../../../clients/client.model';
+import { ClientContactService } from '../../../clients/contacts/client-contact.service';
+import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';
@@ -68,10 +70,12 @@ import { StepConditionsValue } from './step-conditions.component';
             <span class="recap-val">{{ c.taxId }}</span>
           </div>
         }
-        @if (c.contactName) {
+        @if (billingContact(); as bc) {
           <div class="recap-row">
             <span class="recap-label">{{ 'INVOICING.STEP_RECAP.CLIENT_REFERENT' | translate }}</span>
-            <span class="recap-val">{{ c.contactName }}</span>
+            <span class="recap-val">
+              {{ bc.fullName }}@if (bc.email) { — {{ bc.email }} }
+            </span>
           </div>
         }
       </div>
@@ -179,6 +183,7 @@ import { StepConditionsValue } from './step-conditions.component';
 export class StepRecapComponent {
   private readonly svc          = inject(InvoiceService);
   private readonly clientSvc    = inject(ClientService);
+  private readonly contactSvc   = inject(ClientContactService);
   private readonly router       = inject(Router);
   private readonly route        = inject(ActivatedRoute);
   private readonly translate    = inject(TranslateService);
@@ -214,7 +219,28 @@ export class StepRecapComponent {
         this.client.set(null);
       }
     });
+
+    // Le référent imprimé sur la facture est celui de L'AFFAIRE, pas le contact unique
+    // du client : c'est lui qui recevra le PDF par mail. Le récapitulatif doit donc
+    // montrer le même nom que le document.
+    effect(() => {
+      const affaireId = this.affaireData().affaireId;
+      if (!affaireId) { this.affaireContacts.set([]); return; }
+      this.contactSvc.getAffaireContacts(affaireId)
+        .subscribe(list => this.affaireContacts.set(list));
+    });
   }
+
+  private readonly affaireContacts = signal<AffaireContactDto[]>([]);
+
+  /**
+   * Le destinataire des factures de l'affaire : le contact marqué « Référent », sinon le
+   * premier rattaché — le même ordre que la résolution serveur.
+   */
+  readonly billingContact = computed<AffaireContactDto | null>(() => {
+    const list = this.affaireContacts();
+    return list.find(c => c.isBilling) ?? list[0] ?? null;
+  });
 
   readonly totalHt = computed(() =>
     this.linesData().lines.reduce((s, l) => s + l.quantity * l.unitRate, 0)

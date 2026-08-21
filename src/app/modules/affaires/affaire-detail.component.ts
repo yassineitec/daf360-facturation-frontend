@@ -37,6 +37,8 @@ import {
   INVOICE_STATUT_BADGE, TS_STATUT_BADGE, enumLabel,
 } from '../../shared/enum-labels';
 import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avatar.service';
+import { ClientContactService } from '../clients/contacts/client-contact.service';
+import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
 
 /** A read-only label/value pair. `label` is always a translation key. */
 interface DetailField { label: string; value: string; }
@@ -49,6 +51,13 @@ interface DetailField { label: string; value: string; }
  * lister les lignes brutes ferait apparaître deux fois la même personne dès qu'elle
  * porte deux activités.
  */
+/**
+ * Une ligne du bloc « Contrat » du panneau de gauche : deux colonnes, libellé à gauche
+ * et valeur à droite. `ok` n'est renseigné que sur la ligne « Budget validé », la seule
+ * qui se lit comme un état (point + Oui/Non) plutôt que comme une valeur.
+ */
+interface ContratRow { label: string; value: string; ok?: boolean; }
+
 interface ResponsableEntry {
   userId:    number;
   fullName:  string;
@@ -248,6 +257,282 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
       .chart-legend { align-items: flex-start; }
       .chart-legend > .text-right { text-align: left; }
     }
+
+    /* ══ PANNEAU DE DÉTAILS (colonne gauche) ════════════════════════════════
+       Toutes les couleurs viennent des jetons de la lib, avec un repli en dur
+       pour le cas où la feuille de la lib n'est pas encore chargée — même
+       convention que .chart-legend ci-dessus.
+
+       Pourquoi des styles de COMPOSANT et pas des classes utilitaires : cette
+       maquette demande des tailles que l'échelle de la lib ne porte pas (9 px
+       pour les micro-libellés, 10,5 px pour les rôles, 12,5 px pour les
+       valeurs) et un interlettrage précis. Les écrire en classes Tailwind
+       arbitraires («text-[12.5px]«, «tracking-[.14em]«) les ferait dépendre du
+       scan de l'app consommatrice — l'encadré en tête du gabarit explique
+       pourquoi c'est un piège dans un remote. Les styles de composant, eux,
+       sont compilés avec le composant et voyagent avec lui.
+       ═════════════════════════════════════════════════════════════════════ */
+
+    .dp {
+      display:        flex;
+      flex-direction: column;
+      gap:            12px;
+    }
+
+    /* La SURFACE (fond, bordure, rayon, survol) vient de « daf-section-card », comme
+       partout ailleurs sur la page — ce conteneur ne fait que la colonne de blocs et
+       leurs séparateurs. La refaire en dur ici donnait deux cartes qui ne réagissaient
+       pas au survol comme leurs voisines. */
+    .dp-card {
+      display:        flex;
+      flex-direction: column;
+    }
+
+    .dp-block {
+      display:        flex;
+      flex-direction: column;
+      gap:            8px;
+      padding:        14px 16px;
+    }
+
+    .dp-block__head {
+      display:         flex;
+      align-items:     center;
+      justify-content: space-between;
+      gap:             8px;
+    }
+
+    /* LE style de libellé du panneau — il n'y en a pas d'autre. Toute autre taille
+       ou graisse pour un libellé de section rouvrirait la hiérarchie floue que
+       cette refonte supprime. */
+    .dp-label {
+      margin:         0;
+      font-size:      9px;
+      font-weight:    700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color:          var(--color-on-surface-variant, #44474c);
+    }
+
+    .dp-count {
+      font-size:   10.5px;
+      font-weight: 700;
+      color:       var(--color-on-surface-variant, #44474c);
+    }
+
+    /* 1 px = séparateur interne (Client → Contrat) ; 2 px = séparateur de section
+       majeure (Contrat → Managers → Contacts). C'est le trait qui porte le
+       groupement, pas le blanc : dans 300 px de large, doubler les marges pour
+       séparer coûte un écran de haut. */
+    .dp-rule {
+      height:     1px;
+      background: var(--color-outline-variant, #c5c6cd);
+      opacity:    .55;
+    }
+    .dp-rule--major { height: 2px; opacity: .4; }
+
+    /* ── Bloc Client ──────────────────────────────────────────────────────── */
+    .dp-client {
+      display:         flex;
+      align-items:     baseline;
+      justify-content: space-between;
+      gap:             8px;
+      min-width:       0;
+    }
+    .dp-client__name {
+      flex:          1 1 auto;
+      min-width:     0;
+      font-size:     16px;
+      font-weight:   600;
+      color:         var(--color-on-surface, #191c1e);
+      white-space:   nowrap;
+      overflow:      hidden;
+      text-overflow: ellipsis;
+    }
+    .dp-client__meta {
+      flex-shrink: 0;
+      font-size:   11px;
+      color:       var(--color-on-surface-variant, #44474c);
+    }
+    /* «nowrap« : la période est une unité de lecture, la couper autour de la flèche
+       donnerait « 01 sept. 2026 → » sur une ligne et la fin sur la suivante. */
+    .dp-period {
+      margin:      0;
+      font-size:   11px;
+      color:       var(--color-on-surface-variant, #44474c);
+      white-space: nowrap;
+    }
+
+    /* ── Bloc Contrat : deux colonnes, une paire par ligne ────────────────── */
+    .dp-rows { margin: 0; }
+
+    .dp-row {
+      display:         flex;
+      align-items:     baseline;
+      justify-content: space-between;
+      gap:             12px;
+      padding:         6px 0;
+      border-bottom:   1px solid var(--color-outline-variant, #c5c6cd);
+    }
+    /* Le filet de la dernière ligne doublerait le séparateur de section juste en
+       dessous. */
+    .dp-row--last { border-bottom: 0; padding-bottom: 0; }
+
+    .dp-row__key {
+      margin:    0;
+      font-size: 12px;
+      color:     var(--color-on-surface-variant, #44474c);
+    }
+    .dp-row__val {
+      margin:      0;
+      font-size:   12.5px;
+      font-weight: 600;
+      color:       var(--color-on-surface, #191c1e);
+      text-align:  right;
+    }
+
+    /* État « Budget validé » : point + texte. Le texte reste la source, le point
+       n'est qu'un renfort — d'où «aria-hidden« sur le point dans le gabarit. */
+    .dp-flag {
+      display:     inline-flex;
+      align-items: center;
+      gap:         6px;
+      font-weight: 600;
+      color:       var(--color-on-surface-variant, #44474c);
+    }
+    .dp-flag__dot {
+      width:         6px;
+      height:        6px;
+      border-radius: 50%;
+      background:    var(--color-outline, #75777d);
+      flex-shrink:   0;
+    }
+    .dp-flag--ok            { color: var(--color-tertiary, #00c1ad); }
+    .dp-flag--ok .dp-flag__dot { background: var(--color-tertiary, #00c1ad); }
+
+    /* ── Managers et contacts ─────────────────────────────────────────────── */
+    .dp-people {
+      list-style: none;
+      margin:     0;
+      padding:    0;
+      display:        flex;
+      flex-direction: column;
+      gap:            10px;
+    }
+
+    .dp-person {
+      display:     flex;
+      align-items: flex-start;
+      gap:         8px;
+      min-width:   0;
+    }
+
+    .dp-avatar {
+      flex-shrink:     0;
+      width:           26px;
+      height:          26px;
+      border-radius:   50%;
+      display:         inline-flex;
+      align-items:     center;
+      justify-content: center;
+      background:      var(--color-secondary-container, #e3e3fb);
+      color:           var(--color-on-secondary-container, #34369e);
+      font-size:       10px;
+      font-weight:     700;
+      letter-spacing:  .02em;
+    }
+
+    .dp-person__body { min-width: 0; flex: 1 1 auto; }
+
+    .dp-person__top {
+      display:         flex;
+      align-items:     baseline;
+      justify-content: space-between;
+      gap:             8px;
+      min-width:       0;
+    }
+    .dp-person__name {
+      min-width:     0;
+      font-size:     12.5px;
+      font-weight:   600;
+      color:         var(--color-on-surface, #191c1e);
+      white-space:   nowrap;
+      overflow:      hidden;
+      text-overflow: ellipsis;
+    }
+    .dp-person__amount {
+      flex-shrink: 0;
+      font-size:   11px;
+      font-weight: 600;
+      color:       var(--color-on-surface-variant, #44474c);
+    }
+
+    /* Deux lignes au plus : « Responsable Génie Civil · Études · Structure » ne
+       tient pas sur une, et le tronquer à une ligne n'en laisserait que le rôle. */
+    .dp-person__role {
+      display:            -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow:           hidden;
+      font-size:          10.5px;
+      line-height:        1.35;
+      color:              var(--color-on-surface-variant, #44474c);
+    }
+
+    .dp-contact { min-width: 0; }
+    .dp-contact__top {
+      display:     flex;
+      align-items: center;
+      gap:         6px;
+      min-width:   0;
+    }
+    .dp-contact__name {
+      min-width:     0;
+      font-size:     12.5px;
+      font-weight:   600;
+      color:         var(--color-on-surface, #191c1e);
+      white-space:   nowrap;
+      overflow:      hidden;
+      text-overflow: ellipsis;
+    }
+    .dp-contact__mail {
+      display:       block;
+      font-size:     11px;
+      color:         var(--color-on-surface-variant, #44474c);
+      white-space:   nowrap;
+      overflow:      hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Angles droits, contrairement aux pastilles arrondies du reste de la page :
+       ce n'est pas un badge de statut mais une étiquette accolée au nom. */
+    .dp-tag {
+      flex-shrink:     0;
+      padding:         1px 4px;
+      font-size:       8.5px;
+      font-weight:     700;
+      letter-spacing:  .1em;
+      text-transform:  uppercase;
+      color:           var(--color-on-tertiary-container, #00786b);
+      background:      var(--color-tertiary-container, #d7f7f2);
+    }
+
+    .dp-notes {
+      margin:      0;
+      font-size:   11.5px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      color:       var(--color-on-surface-variant, #44474c);
+    }
+
+    /* Sous le point de repli de la colonne, les deux cartes passent pleine largeur
+       dans le MÊME ordre — « Actions rapides » reste après « Détails ». Rien à
+       faire : «.dp« est déjà une colonne et «.detail-aside« s'étire (cf. la media
+       query à 1150 px ci-dessus). Seule la gouttière se resserre. */
+    @media (max-width: 640px) {
+      .dp { gap: 10px; }
+      .dp-block { padding: 12px 14px; }
+    }
   `],
 })
 export class AffaireDetailComponent implements OnInit {
@@ -263,6 +548,7 @@ export class AffaireDetailComponent implements OnInit {
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly modals    = inject(ModalService);
   private readonly avatarSvc = inject(EmployeeAvatarService);
+  private readonly contactSvc = inject(ClientContactService);
 
   private readonly rowDetailTpl   = viewChild.required<TemplateRef<unknown>>('rowDetailTpl');
   private readonly statutTpl      = viewChild.required<TemplateRef<unknown>>('statutTpl');
@@ -281,6 +567,8 @@ export class AffaireDetailComponent implements OnInit {
   tsList   = signal<TsDto[]>([]);
   invoices = signal<AffaireInvoiceItem[]>([]);
   payments = signal<AffairePaymentItem[]>([]);
+  /** Contacts client rattachés à cette affaire — voir loadContacts. */
+  contacts = signal<AffaireContactDto[]>([]);
   /** Photos RH de l'équipe, par user id. Vide = initiales, ce qui est un état normal. */
   avatars  = signal<Map<number, EmployeeAvatar>>(new Map());
 
@@ -419,6 +707,7 @@ export class AffaireDetailComponent implements OnInit {
       : 'AFFAIRES.DETAIL.ACTIONS.EDIT_LONG');
   });
 
+
   /**
    * L'action principale : `variant: 'primary'` (la teinte marque), `size: 'lg'` et
    * `fullWidth`. La flèche de fin porte l'affordance « ça mène ailleurs » — cliquer
@@ -479,6 +768,15 @@ export class AffaireDetailComponent implements OnInit {
     };
   });
 
+  readonly validateBudgetOptions = computed<ButtonOptions>(() => ({
+    variant:   'primary',
+    size:      'sm',
+    fullWidth: true,
+    iconStart: 'verified',
+    label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.VALIDATE_BUDGET'),
+    loading:   this.budgetLoading(),
+  }));
+
   /**
    * La pastille de statut de la rangée de pied. Même variante et même point coloré que la
    * pastille de l'en-tête de page : c'est le même statut, il ne peut pas se présenter de
@@ -499,28 +797,30 @@ export class AffaireDetailComponent implements OnInit {
   /** Aucune transition possible = rien à ouvrir : la rangée montre le statut sans être cliquable. */
   readonly canChangeStatus = computed(() => this.availableTransitions().length > 0);
 
-  readonly validateBudgetOptions = computed<ButtonOptions>(() => ({
-    variant:   'primary',
-    size:      'sm',
-    fullWidth: true,
-    iconStart: 'verified',
-    label:     this.translate.instant('AFFAIRES.DETAIL.ACTIONS.VALIDATE_BUDGET'),
-    loading:   this.budgetLoading(),
-  }));
 
   // ═══ Colonne identité ═════════════════════════════════════════════════════
 
-  /** Bloc pleine largeur en tête de carte : client, période. */
-  readonly identityLeadFields = computed<DetailField[]>(() => {
+  /**
+   * La ligne discrète en regard du nom du client : entité propriétaire et devise.
+   *
+   * Ces deux données étaient deux cases de la grille 2 × N, au même poids visuel que le
+   * budget ou le mode de facturation. Ce sont des données de CONTEXTE — on ne vient pas
+   * les lire, on veut juste les avoir sous les yeux — d'où leur place en méta du client
+   * plutôt qu'en ligne à part entière.
+   */
+  readonly clientMeta = computed(() =>
+    `${this.entiteMere()} · ${this.affaireDevise()}`);
+
+  /**
+   * La période en UNE ligne compacte, mois abrégés : « 01 sept. 2026 → 28 févr. 2029 ».
+   *
+   * `formatDate` (mois en entier) donnait « 01 septembre 2026 — 28 février 2029 », qui
+   * ne tient pas dans 300 px et se repliait sur deux lignes en cassant autour du tiret.
+   */
+  readonly periodLine = computed(() => {
     const a = this.affaire();
-    if (!a) return [];
-    // Plus de ligne « Manager » ici : elle n'affichait que `responsableFullName`, donc le
-    // seul responsable principal. La liste complète est un bloc à part (`responsables()`),
-    // parce qu'une ligne label/valeur ne peut pas porter N personnes avec leur activité.
-    return [
-      { label: 'AFFAIRES.DETAIL.INFO.CLIENT',  value: a.clientName ?? '—' },
-      { label: 'AFFAIRES.DETAIL.INFO.PERIOD',  value: `${this.formatDate(a.dateDebut)} — ${this.formatDate(a.dateFin)}` },
-    ];
+    if (!a) return '';
+    return `${this.formatDateShort(a.dateDebut)} → ${this.formatDateShort(a.dateFin)}`;
   });
 
   /**
@@ -592,44 +892,77 @@ export class AffaireDetailComponent implements OnInit {
     return rows.some(r => r.budgetAllocation != null) ? total : null;
   });
 
-  /** Grille 2 colonnes sous le bloc principal — comme la maquette. */
-  readonly identityGridFields = computed<DetailField[]>(() => {
+  /**
+   * Le bloc « Contrat » : des lignes clé/valeur sur DEUX colonnes, une par ligne.
+   *
+   * Ce qui a disparu : la grille `flex-wrap` à deux cases par ligne. Elle appariait des
+   * données sans rapport — « Entité mère » avec « Devise », « Budget prévisionnel » avec
+   * « Mode de facturation » — donc deux libellés et deux valeurs sur la même ligne, sans
+   * qu'aucune colonne ne s'aligne d'une ligne à l'autre. Rien ne se balayait du regard.
+   * Ici les libellés sont tous à gauche, les valeurs toutes à droite : une colonne de
+   * questions, une colonne de réponses.
+   *
+   * L'ordre des quatre premières lignes est fixe (budget, montant, mode, validation) ;
+   * les suivantes ne sont là que si elles portent une valeur — voir chaque garde.
+   */
+  readonly contratRows = computed<ContratRow[]>(() => {
     const a = this.affaire();
     if (!a) return [];
-    const fields: DetailField[] = [
-      { label: 'AFFAIRES.DETAIL.INFO.ENTITE_MERE',  value: this.entiteMere() },
-      { label: 'AFFAIRES.DETAIL.INFO.CURRENCY',     value: this.affaireDevise() },
+
+    const rows: ContratRow[] = [
       // Le budget prévisionnel n'était nulle part sur la fiche : la ligne « Budget validé »
       // disait s'il était approuvé sans jamais dire de combien, et les quatre tuiles du haut
       // montrent CA, RAF, marge et WIP — pas le budget dont elles se déduisent.
-      { label: 'AFFAIRES.DETAIL.INFO.BUDGET',       value: this.money(a.budgetPrevisionnel) },
-      // Pas de « type d'engagement » ici : `typeAffaire` n'est jamais renseigné par
-      // l'assistant (il retombe systématiquement sur FORFAIT côté service), la ligne
-      // affichait donc toujours la même valeur juste à côté du mode de facturation, qui
-      // est la vraie information contractuelle.
-      { label: 'AFFAIRES.DETAIL.INFO.BILLING_MODE', value: this.enumText('BILLING_MODE', a.billingMode) },
-      {
-        label: 'AFFAIRES.DETAIL.INFO.BUDGET_VALIDATED',
-        value: this.translate.instant(a.budgetValide
-          ? 'AFFAIRES.DETAIL.INFO.YES' : 'AFFAIRES.DETAIL.INFO.NO'),
-      },
+      { label: 'AFFAIRES.DETAIL.INFO.BUDGET', value: this.money(a.budgetPrevisionnel) },
     ];
+
     // Le montant du contrat n'existe que sur les modes contractuels (AV / LIVRABLE) ;
     // sur TM, CP et RMB le montant saisi n'est qu'une enveloppe, et le serveur laisse
     // `contract_amount` nul — une ligne vide dirait « donnée manquante » à tort.
     if (a.contractAmount != null) {
-      fields.push({ label: 'AFFAIRES.DETAIL.INFO.CONTRACT_AMOUNT', value: this.money(a.contractAmount) });
+      rows.push({ label: 'AFFAIRES.DETAIL.INFO.CONTRACT_AMOUNT', value: this.money(a.contractAmount) });
     }
+
+    // Pas de « type d'engagement » : `typeAffaire` n'est jamais renseigné par l'assistant
+    // (il retombe systématiquement sur FORFAIT côté service), la ligne affichait donc
+    // toujours la même valeur juste à côté du mode de facturation, qui est la vraie
+    // information contractuelle.
+    rows.push({ label: 'AFFAIRES.DETAIL.INFO.BILLING_MODE', value: this.enumText('BILLING_MODE', a.billingMode) });
+
+    // `ok` renseigné = ligne d'ÉTAT : le gabarit y met un point coloré devant le
+    // Oui/Non. Le texte reste, le point ne fait que le doubler — un état porté par la
+    // seule couleur ne se lit pas en niveaux de gris ni au lecteur d'écran.
+    rows.push({
+      label: 'AFFAIRES.DETAIL.INFO.BUDGET_VALIDATED',
+      value: this.translate.instant(a.budgetValide
+        ? 'AFFAIRES.DETAIL.INFO.YES' : 'AFFAIRES.DETAIL.INFO.NO'),
+      ok:    !!a.budgetValide,
+    });
+
     // La somme allouée aux responsables, seulement si elle est renseignée ET qu'elle ne
-    // couvre pas déjà exactement le budget : sinon la ligne répète le budget juste au-dessus.
+    // couvre pas déjà exactement le budget : sinon la ligne répète le budget ci-dessus.
     const allocated = this.budgetAllocated();
     if (allocated != null && allocated !== (a.budgetPrevisionnel ?? 0)) {
-      fields.push({ label: 'AFFAIRES.DETAIL.INFO.BUDGET_ALLOCATED', value: this.money(allocated) });
+      rows.push({ label: 'AFFAIRES.DETAIL.INFO.BUDGET_ALLOCATED', value: this.money(allocated) });
     }
-    if (a.doc360Ref)    fields.push({ label: 'AFFAIRES.DETAIL.INFO.DOC360',  value: a.doc360Ref });
-    if (a.erpReference) fields.push({ label: 'AFFAIRES.DETAIL.INFO.ERP_REF', value: a.erpReference });
-    return fields;
+    if (a.doc360Ref)    rows.push({ label: 'AFFAIRES.DETAIL.INFO.DOC360',  value: a.doc360Ref });
+    if (a.erpReference) rows.push({ label: 'AFFAIRES.DETAIL.INFO.ERP_REF', value: a.erpReference });
+    return rows;
   });
+
+  /**
+   * Les initiales d'une personne, pour la pastille d'avatar du bloc Managers : première
+   * lettre du prénom et du nom, deux au plus. Un nom à rallonge (« Jean-Pierre de la
+   * Fontaine ») ne doit pas produire cinq lettres dans un cercle de 26 px.
+   */
+  initials(name: string): string {
+    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    const first = parts[0][0];
+    const last  = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (first + last).toUpperCase();
+  }
+
 
   /**
    * Les 4 indicateurs financiers du haut de la colonne droite, sur `daf-metric-card`.
@@ -1770,6 +2103,7 @@ export class AffaireDetailComponent implements OnInit {
         this.loadTs();
         this.loadInvoices();
         this.loadPayments();
+        this.loadContacts();
         this.loadTeamAvatars(a);
       },
       error: () => {
@@ -1777,6 +2111,15 @@ export class AffaireDetailComponent implements OnInit {
         this.firstLoad.set(false);
       },
     });
+  }
+
+  /**
+   * Les contacts CLIENT de l'affaire — le pendant externe des managers. Chargés à
+   * part et non dans `getAffaire` : la fiche affaire est déjà servie par un DTO
+   * chargé, et ces lignes n'intéressent que la carte d'informations.
+   */
+  loadContacts(): void {
+    this.contactSvc.getAffaireContacts(this.numId).subscribe(list => this.contacts.set(list));
   }
 
   loadRaf():      void { this.svc.getAffaireRaf(this.numId).subscribe({ next: r => this.raf.set(r) }); }
@@ -2272,6 +2615,17 @@ export class AffaireDetailComponent implements OnInit {
    * complète la fait déborder d'une colonne étroite. L'année n'y manque pas, elle est dans
    * le titre du panneau (« Facturation 2026 »).
    */
+  /**
+   * Jour + mois ABRÉGÉ + année : « 01 sept. 2026 ». La période du panneau de gauche en a
+   * besoin sur une seule ligne dans 300 px, ce que le mois en entier ne permet pas.
+   * L'année reste, elle : une affaire court sur plusieurs exercices.
+   */
+  private formatDateShort(d: string | null | undefined): string {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('fr-FR',
+      { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
   private formatDayMonth(d: string): string {
     return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
   }

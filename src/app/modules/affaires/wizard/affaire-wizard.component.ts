@@ -1,6 +1,6 @@
 import { Component, OnInit, effect, inject, signal, computed, input } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink }   from '@angular/router';
-import { Observable, forkJoin }                 from 'rxjs';
+import { Observable, forkJoin, switchMap }      from 'rxjs';
 import { TranslatePipe, TranslateService }       from '@ngx-translate/core';
 import {
   StepperStep, StepperConfig, StepperComponent,
@@ -222,6 +222,7 @@ export class AffaireWizardComponent implements OnInit {
     contractCurrency: 'EUR',
     billingPeriod: 'MONTHLY',
     responsables: [],
+    contactIds: [],
     repartitions: [],
     repartitionTotal: 0,
     jalons: [],
@@ -245,6 +246,9 @@ export class AffaireWizardComponent implements OnInit {
         if (!d.billingMode)                                     missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.billing_mode'));
         if (!d.budgetPrevisionnel || d.budgetPrevisionnel <= 0) missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.budget'));
         if (!d.contractCurrency?.trim())                        missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.currency'));
+        // Au moins un contact : l'activation le refuse de toute façon, mais le dire
+        // dès l'étape 2 vaut mieux que de le découvrir cinq étapes plus loin.
+        if (!d.contactIds.length)                               missing.push(this.translate.instant('AFFAIRES.wizard.shell.val.contact'));
         return missing.length ? this.translate.instant('AFFAIRES.wizard.shell.val.required_fields', { fields: missing.join(' · ') }) : null;
       }
       case 3: {
@@ -291,7 +295,7 @@ export class AffaireWizardComponent implements OnInit {
         return !!(
           d.paysId && d.clientId && d.clientKycDone && d.intitule?.trim() &&
           d.billingMode && d.budgetPrevisionnel && d.budgetPrevisionnel > 0 &&
-          d.contractCurrency?.trim()
+          d.contractCurrency?.trim() && d.contactIds.length > 0
         );
 
       case 3: {
@@ -417,7 +421,12 @@ export class AffaireWizardComponent implements OnInit {
         contractCurrency:   d.contractCurrency,
         billingPeriod:      d.billingPeriod,
         budgetPrevisionnel: d.budgetPrevisionnel ?? null,
-      }).subscribe({
+      }).pipe(
+        // Les contacts suivent l'info générale : le client peut avoir changé dans le
+        // même « Suivant », et le serveur refuse un contact qui n'appartient pas au
+        // client de l'affaire — l'ordre n'est donc pas indifférent.
+        switchMap(() => this.saveContacts$(this.draftId()!)),
+      ).subscribe({
         next: () => { this.isSaving.set(false); this.currentStep.set(3); },
         error: err => {
           this.isSaving.set(false);
@@ -426,7 +435,19 @@ export class AffaireWizardComponent implements OnInit {
       });
       return;
     }
-    if (this.draftId()) { this.currentStep.set(3); return; }
+    // Retour en arrière puis « Suivant » sur un brouillon déjà créé : l'affaire existe,
+    // mais la sélection de contacts a pu changer et doit être rejouée.
+    if (this.draftId()) {
+      this.isSaving.set(true);
+      this.saveContacts$(this.draftId()!).subscribe({
+        next: () => { this.isSaving.set(false); this.currentStep.set(3); },
+        error: err => {
+          this.isSaving.set(false);
+          this.serverError.set(err?.error?.message ?? this.translate.instant('AFFAIRES.wizard.shell.err.update'));
+        },
+      });
+      return;
+    }
     this.isSaving.set(true);
     const d = this.draft();
     this.wizardService.createDraft({
@@ -445,6 +466,11 @@ export class AffaireWizardComponent implements OnInit {
       budgetPrevisionnel:    d.budgetPrevisionnel   ?? null,
       contractCurrency:      d.contractCurrency     || 'EUR',
       billingPeriod:         d.billingPeriod        || 'MONTHLY',
+      // Les contacts partent AVEC l'affaire, en UN appel : le destinataire des factures
+      // est mis en tête, parce que le serveur marque `is_billing` sur le premier de la
+      // liste (voir AffaireContactService#attachContacts). Enchaîner un PATCH pour
+      // poser le drapeau serait un aller-retour de plus pour le même résultat.
+      contactIds:            this.orderedContactIds(),
     }).subscribe({
       next: result => {
         this.draftId.set(result['id'] as number);
@@ -464,6 +490,32 @@ export class AffaireWizardComponent implements OnInit {
         this.isSaving.set(false);
         this.serverError.set(err?.error?.rule ?? err?.error?.detail ?? err?.error?.message ?? this.translate.instant('AFFAIRES.wizard.shell.err.create'));
       },
+    });
+  }
+
+  /**
+   * Le destinataire des factures en tête de liste. Sert la création, où le serveur
+   * marque `is_billing` sur le premier contact reçu.
+   */
+  private orderedContactIds(): number[] {
+    const d = this.draft();
+    const billing = d.billingContactId;
+    if (!billing || !d.contactIds.includes(billing)) return [...d.contactIds];
+    return [billing, ...d.contactIds.filter(id => id !== billing)];
+  }
+
+  /**
+   * Rejoue la sélection de contacts sur une affaire qui existe déjà — remplacement
+   * complet, comme les responsables à l'étape 4.
+   *
+   * Aucun contact désigné pour la facturation : on laisse le serveur promouvoir le
+   * premier, plutôt que d'activer une affaire dont aucune facture n'a de destinataire.
+   */
+  private saveContacts$(affaireId: number): Observable<unknown> {
+    const d = this.draft();
+    const billing = d.billingContactId;
+    return this.wizardService.configureContacts(affaireId, {
+      contacts: d.contactIds.map(id => ({ contactId: id, isBilling: id === billing })),
     });
   }
 

@@ -8,6 +8,8 @@ import {
 import { CostService }       from '../../../cost/cost.service';
 import { FactListService }   from '../../../../core/fact-list.service';
 import { AffaireDraftState, BILLING_MODES, BUDGET_LABEL } from '../../affaire-wizard.model';
+import { ClientContactService } from '../../../clients/contacts/client-contact.service';
+import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
 
 @Component({
   selector: 'app-wizard-step-recap',
@@ -23,6 +25,7 @@ export class WizardStepRecapComponent implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly costSvc   = inject(CostService);
   private readonly listSvc   = inject(FactListService);
+  private readonly contactSvc = inject(ClientContactService);
 
   /**
    * Les référentiels des catégories, chargés ici aussi.
@@ -37,7 +40,21 @@ export class WizardStepRecapComponent implements OnInit {
   private readonly costCategories    = signal<{ id: number; label: string }[]>([]);
   private readonly expenseCategories = signal<{ id: number; label: string }[]>([]);
 
+  /**
+   * Les contacts RÉELLEMENT enregistrés sur l'affaire, relus depuis le serveur.
+   *
+   * Le brouillon ne transporte que des identifiants, et surtout : c'est ici qu'on
+   * relit avant d'activer. Afficher la sélection locale montrerait ce qu'on croit
+   * avoir enregistré ; relire montre ce qui l'est.
+   */
+  readonly contacts = signal<AffaireContactDto[]>([]);
+
   ngOnInit(): void {
+    if (this.draftId) {
+      this.contactSvc.getAffaireContacts(this.draftId)
+        .subscribe(list => this.contacts.set(list));
+    }
+
     const paysId = Number(this.draft.paysId);
     if (!paysId) return;
 
