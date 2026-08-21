@@ -109,6 +109,13 @@ export class WizardStepTmComponent implements OnInit {
     r.userName = user?.fullName;
     r.tauxIntercompany = undefined;
     r.costDataMissing = false;
+    // Reset synchronously, before the async lookup below resolves — otherwise a stale value
+    // from whichever collaborator was previously selected on this row (including our own
+    // costDataMissing=0 sentinel, set a few lines down) could leak into the fallback on
+    // line "rates.tauxVente ?? r.rateAmount" if the newly-selected person's record happens
+    // to have tauxVente=null. Resetting here means that fallback only ever falls back to a
+    // clean 0, never to unrelated leftover data.
+    r.rateAmount = 0;
     this.emit(); // propagate the name change immediately, even if no cost lookup follows
     if (!user?.email) return;
     this.affaireSvc.getEmployeeCost(user.email, this.draft.paysId).subscribe({
@@ -133,9 +140,12 @@ export class WizardStepTmComponent implements OnInit {
     });
   }
 
-  /** Only reachable when r.costDataMissing is true (see template) — whichever of the three
-   * cost fields the person fills first drives the fixed 1.1/1.2 formula; the other two
-   * recompute immediately, so it's impossible to enter numbers that don't satisfy it. */
+  /** Only reachable when r.costDataMissing is true (see template) — "Coût interne" is the
+   * one field the template leaves enabled in that state (the natural thing to know first);
+   * the other two are disabled and always derived from it via the fixed 1.1/1.2 formula, so
+   * it's impossible to end up with numbers that don't satisfy that formula. The 'internal'/
+   * 'external' driver branches below exist so the same derivation logic could drive from
+   * either of those fields too, if the template ever enables them — today it never does. */
   onDerivedCostFieldChange(
     r: AffaireDraftState['ressources'][0],
     driver: EmployeeCostDriverField,
