@@ -55,18 +55,18 @@
         <!-- Taux facturation -->
         <div>
           <daf-form-field
-            [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.selling_rate' | translate), required: true, fullWidth: true }"
+            [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.selling_rate' | translate), required: true, fullWidth: true, disabled: r.costDataMissing }"
             [value]="r.rateAmount"
-            (valueChange)="onRateAmountChange(r, $event)">
+            (valueChange)="r.costDataMissing ? onDerivedCostFieldChange(r, 'external', $event) : onRateAmountChange(r, $event)">
           </daf-form-field>
         </div>
 
         <!-- Taux intercompany -->
         <div>
           <daf-form-field
-            [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.interco_rate' | translate), placeholder: '—', fullWidth: true }"
+            [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.interco_rate' | translate), placeholder: '—', fullWidth: true, disabled: r.costDataMissing }"
             [value]="r.tauxIntercompany ?? null"
-            (valueChange)="onIntercoChange(r, $event)">
+            (valueChange)="r.costDataMissing ? onDerivedCostFieldChange(r, 'internal', $event) : onIntercoChange(r, $event)">
           </daf-form-field>
         </div>
 
@@ -87,10 +87,14 @@
               <daf-form-field
                 [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.internal_cost' | translate), placeholder: ('AFFAIRES.wizard.tm.internal_cost_ph' | translate), fullWidth: true }"
                 [value]="r.costAmount ?? null"
-                (valueChange)="onCostChange(r, $event)">
+                (valueChange)="r.costDataMissing ? onDerivedCostFieldChange(r, 'basic', $event) : onCostChange(r, $event)">
               </daf-form-field>
             </div>
-            <p class="cost-box-hint">{{ 'AFFAIRES.wizard.tm.cost_hint' | translate }}</p>
+            @if (r.costDataMissing) {
+              <p class="cost-box-hint">{{ 'AFFAIRES.wizard.tm.no_cost_data_hint' | translate }}</p>
+            } @else {
+              <p class="cost-box-hint">{{ 'AFFAIRES.wizard.tm.cost_hint' | translate }}</p>
+            }
           </div>
         </div>
 

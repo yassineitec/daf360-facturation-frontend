@@ -147,6 +147,11 @@ export interface AffaireDraftState {
     rateAmount: number; rateCurrency: string;
     costAmount?: number;
     tauxIntercompany?: number;
+    /** true when getEmployeeCost found no data for this collaborator's email — the wizard
+     * is in manual gap-fill mode for this row (one field drives, the other two derive),
+     * and saving will write the entered cost back to employee_costs. Never set when a
+     * real cost record already exists. */
+    costDataMissing?: boolean;
   }[];
   eligibleCostCategoryIds: number[];
   marginRatePct?: number;

@@ -11,6 +11,7 @@ import { UserRefDto }            from '../../affaire.model';
 import { ListValueDto }          from '../../../cost/cost.model';
 import { CollaborateurTauxDto }  from '../../livrable.model';
 import { TmRateModalComponent }  from './tm-rate-modal.component';
+import { deriveEmployeeCostFields, EmployeeCostDriverField } from '../../../cost/employee-costs/employee-cost.model';
 
 @Component({
   selector: 'app-wizard-step-tm',
@@ -107,17 +108,51 @@ export class WizardStepTmComponent implements OnInit {
     const user = this.users().find(u => u.id === Number(userId));
     r.userName = user?.fullName;
     r.tauxIntercompany = undefined;
+    r.costDataMissing = false;
     this.emit(); // propagate the name change immediately, even if no cost lookup follows
     if (!user?.email) return;
     this.affaireSvc.getEmployeeCost(user.email, this.draft.paysId).subscribe({
       next: rates => {
-        if (!rates || rates.cost === null) return;
+        if (!rates || rates.cost === null) {
+          // No employee_costs row for this person yet — leave fields empty for manual
+          // entry; saving this resource will write the entered value back (see
+          // affaire-wizard.component.ts's saveStep3, TM branch).
+          r.costDataMissing = true;
+          r.costAmount = undefined;
+          r.rateAmount = 0;
+          r.tauxIntercompany = undefined;
+          this.emit();
+          return;
+        }
+        r.costDataMissing  = false;
         r.costAmount       = rates.cost;
         r.rateAmount       = rates.tauxVente ?? r.rateAmount;
         r.tauxIntercompany = rates.tauxIntercompany ?? undefined;
         this.emit();
       },
     });
+  }
+
+  /** Only reachable when r.costDataMissing is true (see template) — whichever of the three
+   * cost fields the person fills first drives the fixed 1.1/1.2 formula; the other two
+   * recompute immediately, so it's impossible to enter numbers that don't satisfy it. */
+  onDerivedCostFieldChange(
+    r: AffaireDraftState['ressources'][0],
+    driver: EmployeeCostDriverField,
+    v: string | number | null,
+  ): void {
+    if (v === null || v === '') {
+      r.costAmount = undefined;
+      r.tauxIntercompany = undefined;
+      r.rateAmount = 0;
+      this.emitChange();
+      return;
+    }
+    const derived = deriveEmployeeCostFields(driver, Number(v));
+    r.costAmount       = derived.basicCost;
+    r.tauxIntercompany = derived.internalSellingCost;
+    r.rateAmount        = derived.externalSellingCost;
+    this.emitChange();
   }
 
   onRatesConfirmed(taux: CollaborateurTauxDto[]): void {
