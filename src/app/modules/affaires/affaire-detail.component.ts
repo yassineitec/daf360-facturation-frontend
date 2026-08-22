@@ -28,6 +28,7 @@ import { UserStore } from '../../core/user.store';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
 import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.component';
+import { AffaireWipTabComponent } from './wip/affaire-wip-tab.component';
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
 import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
@@ -86,7 +87,7 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
     GaugeComponent, BarChartComponent, AvatarGroupComponent,
-    TsFormComponent, AfaireBillingTabComponent,
+    TsFormComponent, AfaireBillingTabComponent, AffaireWipTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,
@@ -669,6 +670,12 @@ export class AffaireDetailComponent implements OnInit {
     ];
     if (this.affaire()?.billingMode) {
       tabs.push({ id: 'billing', label: t('AFFAIRES.DETAIL.TABS.BILLING') });
+    }
+    // WIP n'a de sens que pour AV (forfaitaire) et TM — les autres modes n'ont pas
+    // de notion de travail en cours à valider avant facturation.
+    const wipMode = this.affaire()?.billingMode;
+    if (wipMode === 'AV' || wipMode === 'TM') {
+      tabs.push({ id: 'wip', label: t('AFFAIRES.DETAIL.TABS.WIP') });
     }
     tabs.push(
       { id: 'factures',  label: t('AFFAIRES.DETAIL.TABS.INVOICES'), count: this.invoices().length },

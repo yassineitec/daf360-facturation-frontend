@@ -361,6 +361,11 @@
             <app-affaire-billing-tab [affaire]="aff" />
           }
 
+          <!-- ── WIP (Work In Progress) — AV et TM uniquement ────────────── -->
+          @if (activeTab() === 'wip' && (aff.billingMode === 'AV' || aff.billingMode === 'TM')) {
+            <app-affaire-wip-tab [affaire]="aff" />
+          }
+
           <!-- ── Factures ─────────────────────────────────────────────── -->
           @if (activeTab() === 'factures') {
             <daf-search-toolbar
