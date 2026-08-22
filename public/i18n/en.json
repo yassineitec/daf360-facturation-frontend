@@ -901,7 +901,8 @@
         "BUDGET_TS": "Budget & AW",
         "BILLING": "Billing",
         "INVOICES": "Invoices",
-        "PAYMENTS": "Payments"
+        "PAYMENTS": "Payments",
+        "WIP": "WIP"
       },
       "ACTIONS": {
         "NEW_TS": "New additional work",
@@ -1892,6 +1893,36 @@
         "REASON_LABEL": "Rejection reason",
         "REASON_PH": "Explain the rejection…"
       }
+    },
+    "WIP": {
+      "AV_EXPLAIN": "WIP = contract budget × progress rate to date. Submit a new cumulative rate below; the value is calculated automatically.",
+      "TM_EXPLAIN": "WIP = cost of Timesheet hours already validated for this period. Only hours with status \"Validated\" are counted.",
+      "PERIOD_MONTH": "Month",
+      "PERIOD_YEAR": "Year",
+      "NEW_TAUX": "New cumulative rate",
+      "COMMENT": "Comment",
+      "LAST_VALIDATED": "Last validated",
+      "SUBMIT": "Submit",
+      "CALCULATED": "Calculated WIP",
+      "VALIDATE": "Validate",
+      "DETAILS": "Details",
+      "LOADING": "Loading…",
+      "COL_PERIOD": "Period",
+      "COL_TAUX": "Rate",
+      "COL_INCREMENT": "Incremental amount",
+      "COL_STATUS": "Status",
+      "COL_DATE": "Date",
+      "COL_COLLABORATOR": "Collaborator",
+      "COL_DISCIPLINE": "Discipline",
+      "COL_WBS": "WBS",
+      "COL_DOCUMENT": "Document",
+      "COL_HOURS": "Hours",
+      "COL_COST": "Cost",
+      "EMPTY_DETAIL": "No validated hours for this period.",
+      "UNSUPPORTED_MODE": "WIP is only available for Forfaitaire (AV) and Time & Materials (TM) affaires.",
+      "SUBMIT_ERROR": "Error submitting the rate.",
+      "LOAD_ERROR": "Error loading WIP.",
+      "VALIDATE_ERROR": "Error validating WIP."
     }
   },
   "ERRORS": {

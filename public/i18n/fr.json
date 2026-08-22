@@ -901,7 +901,8 @@
         "BUDGET_TS": "Budget & TS",
         "BILLING": "Facturation",
         "INVOICES": "Factures",
-        "PAYMENTS": "Paiements"
+        "PAYMENTS": "Paiements",
+        "WIP": "WIP"
       },
       "ACTIONS": {
         "NEW_TS": "Nouveau TS",
@@ -1892,6 +1893,36 @@
         "REASON_LABEL": "Motif du refus",
         "REASON_PH": "Expliquez le motif du refus…"
       }
+    },
+    "WIP": {
+      "AV_EXPLAIN": "WIP = budget du contrat × taux d'avancement à date. Soumettez un nouveau taux cumulé ci-dessous ; la valeur est calculée automatiquement.",
+      "TM_EXPLAIN": "WIP = coût des heures Timesheet déjà validées pour cette période. Seules les heures au statut « Validé » sont comptées.",
+      "PERIOD_MONTH": "Mois",
+      "PERIOD_YEAR": "Année",
+      "NEW_TAUX": "Nouveau taux cumulé",
+      "COMMENT": "Commentaire",
+      "LAST_VALIDATED": "Dernier validé",
+      "SUBMIT": "Soumettre",
+      "CALCULATED": "WIP calculé",
+      "VALIDATE": "Valider",
+      "DETAILS": "Détails",
+      "LOADING": "Chargement…",
+      "COL_PERIOD": "Période",
+      "COL_TAUX": "Taux",
+      "COL_INCREMENT": "Montant incrémental",
+      "COL_STATUS": "Statut",
+      "COL_DATE": "Date",
+      "COL_COLLABORATOR": "Collaborateur",
+      "COL_DISCIPLINE": "Discipline",
+      "COL_WBS": "WBS",
+      "COL_DOCUMENT": "Document",
+      "COL_HOURS": "Heures",
+      "COL_COST": "Coût",
+      "EMPTY_DETAIL": "Aucune heure validée pour cette période.",
+      "UNSUPPORTED_MODE": "Le WIP n'est disponible que pour les affaires Forfaitaire (AV) et Time & Materials (TM).",
+      "SUBMIT_ERROR": "Erreur lors de la soumission du taux.",
+      "LOAD_ERROR": "Erreur lors du chargement du WIP.",
+      "VALIDATE_ERROR": "Erreur lors de la validation du WIP."
     }
   },
   "ERRORS": {
