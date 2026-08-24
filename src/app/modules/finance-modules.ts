@@ -50,6 +50,20 @@ export interface FinanceModuleDef {
    * l'écarter si la route n'est pas navigable.
    */
   sidebar?: boolean;
+  /**
+   * Permissions de l'entrée, **exception assumée** à la règle du haut de ce fichier.
+   *
+   * {@link routePermissions} lit `data.permissions` sur les enfants de la route de layout,
+   * et ces enfants sont `loadChildren` : la config d'un PETIT-enfant (`cost/missions`)
+   * n'existe pas encore quand la barre se construit, et `routePermissions` retombe sur
+   * celles du parent (`cost`). Résultat sans ce champ : l'entrée s'affiche pour qui peut
+   * voir les coûts — et renvoie sur `/forbidden` — et reste cachée à qui détient
+   * précisément le code de cet écran.
+   *
+   * À ne renseigner que dans ce cas, et à garder **identique** au `data.permissions` de la
+   * route correspondante.
+   */
+  permissions?: string[];
 }
 
 /**
@@ -116,6 +130,17 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
         icon: 'price_check',
         tone: 'warning',
         labelKey: 'FACTURATION.layout.NAV.COST_APPROVAL',
+      },
+      // Les ordres de mission chiffrés par RH, en attente de la décision finance. La
+      // mission vit dans rh-service (V78) : cet écran l'appelle sur `hrApiUrl`, comme
+      // l'approbation des coûts d'embauche le fait déjà.
+      {
+        id: 'cost-missions',
+        route: 'cost/missions',
+        icon: 'flight_takeoff',
+        tone: 'warning',
+        labelKey: 'FACTURATION.layout.NAV.COST_MISSIONS',
+        permissions: ['FACT_APPROVE_MISSION_COST'],
       },
     ],
   },

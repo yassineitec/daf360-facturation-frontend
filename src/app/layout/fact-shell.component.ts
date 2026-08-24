@@ -96,14 +96,20 @@ export class FactShellComponent {
   readonly navItems = computed<NavItem[]>(() => {
     this.translate.currentLang();
 
-    const allowed = (route: string) => {
-      const perms = routePermissions(this.routeChildren, route);
+    /**
+     * `def.permissions` d'abord : il n'existe que là où {@link routePermissions} ne peut
+     * pas répondre — un petit-enfant sous un `loadChildren`, dont la config de route
+     * n'est pas encore chargée et pour qui le garde retomberait sur les permissions du
+     * parent (voir le champ `permissions` dans `finance-modules`).
+     */
+    const allowed = (def: FinanceModuleDef) => {
+      const perms = def.permissions ?? routePermissions(this.routeChildren, def.route);
       return perms.length === 0 || perms.some(p => this.userStore.hasPermission(p));
     };
 
     const toNavItem = (def: FinanceModuleDef): NavItem => {
       const children = (def.children ?? [])
-        .filter(c => def.sidebar !== false && allowed(c.route))
+        .filter(c => def.sidebar !== false && allowed(c))
         .map(toNavItem);
       return {
         id:    def.id,
@@ -119,7 +125,7 @@ export class FactShellComponent {
     return FINANCE_MODULES
       .filter(def => def.sidebar !== false)
       .filter(def => isNavigableRoute(this.routeChildren, def.route))
-      .filter(def => allowed(def.route))
+      .filter(def => allowed(def))
       .map(toNavItem);
   });
 

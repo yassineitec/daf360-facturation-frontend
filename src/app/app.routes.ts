@@ -84,7 +84,11 @@ export const routes: Routes = [
       {
         path: 'cost',
         canActivate: [permissionGuard],
-        data: { permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'] },
+        // FACT_APPROVE_MISSION_COST est là pour que le décideur des ordres de mission
+        // puisse entrer dans le sous-arbre « Coûts » : son écran (`cost/missions`) est un
+        // enfant, et le garde du parent s'applique avant. La route enfant porte, elle, le
+        // seul code qui la concerne.
+        data: { permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST', 'FACT_APPROVE_MISSION_COST'] },
         loadChildren: () =>
           import('./modules/cost/cost.routes').then(m => m.COST_ROUTES),
       },

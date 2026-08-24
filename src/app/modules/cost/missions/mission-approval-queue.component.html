@@ -1,0 +1,173 @@
+<!-- /finance/cost/missions — the same page shape as /finance/cost/approval next door
+     (UI-PLAYBOOK §1): header, KPI row, search toolbar with filters + view toggle, one
+     stateless section per view. `daf-page` owns the 32px rhythm. -->
+<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'FACTURATION.MISSIONS.TITLE' | translate">
+
+  <daf-page-header
+    [title]="'FACTURATION.MISSIONS.TITLE' | translate"
+    [subtitle]="'FACTURATION.MISSIONS.SUBTITLE' | translate"
+    [badges]="headerBadges()" />
+
+  <section class="grid grid-cols-3 gap-2 sm:gap-6">
+    <daf-metric-card
+      [label]="'FACTURATION.MISSIONS.KPI_PENDING' | translate"
+      [value]="stats().pending"
+      [options]="kpiPending" />
+    <daf-metric-card
+      [label]="'FACTURATION.MISSIONS.KPI_URGENT' | translate"
+      [value]="stats().urgent"
+      [delta]="urgentDelta()"
+      [options]="kpiUrgent" />
+    <daf-metric-card
+      [label]="'FACTURATION.MISSIONS.KPI_INTERNATIONAL' | translate"
+      [value]="stats().international"
+      [options]="kpiInternational" />
+  </section>
+
+  <!-- Search + a real filter panel (scope and urgency) + the view toggle. All three are
+       client-side projections: the queue arrives whole in one call. -->
+  <daf-search-toolbar
+    [placeholder]="'FACTURATION.MISSIONS.SEARCH_PLACEHOLDER' | translate"
+    [value]="searchTerm()"
+    [debounce]="200"
+    (valueChange)="onSearch($event)"
+    [filterFields]="filterFields()"
+    [filterConfig]="filterConfig()"
+    (filterApply)="applyFilters($event)"
+    [views]="viewOptions()"
+    [view]="viewMode()"
+    (viewChange)="setView($event)" />
+
+  @if (error()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Content sits free in the page — no outer container card (§1). -->
+  @if (viewMode() === 'grid') {
+    <app-mission-approval-cards-section
+      [items]="visibleItems()"
+      [loading]="loading()"
+      [emptyMessage]="emptyMessage()"
+      (decide)="onDecide($event)" />
+  } @else {
+    <app-mission-approval-table-section
+      [items]="visibleItems()"
+      [loading]="loading()"
+      [emptyMessage]="emptyMessage()"
+      (decide)="onDecide($event)" />
+  }
+
+</daf-page>
+
+<!-- ── Modal bodies. ModalService projects these into its own host (§10e). ── -->
+
+<!-- The decision. Same three-part body as the cost-approval modal: what is being decided,
+     the choice, then the comment. -->
+<ng-template #decisionTpl>
+  <div class="flex flex-col gap-5">
+
+    @if (selected(); as item) {
+      <div class="flex flex-col gap-1 rounded-xl bg-surface-container-low px-4 py-3">
+        <span class="text-label-caps text-outline">
+          {{ item.employee }} · {{ item.destination }}
+        </span>
+        <span class="text-[22px] font-black leading-tight text-on-surface">{{ item.amountLabel }}</span>
+        <span class="text-body-sm text-on-surface-variant">
+          {{ item.title }} · {{ item.periodLabel }}
+        </span>
+      </div>
+    }
+
+    <div class="flex flex-col gap-2">
+      <span class="text-label-caps text-outline">{{ 'FACTURATION.MISSIONS.DECISION_LABEL' | translate }}</span>
+      <div class="flex flex-wrap gap-2">
+        @for (opt of decisionOptions(); track opt.id) {
+          <button type="button"
+            class="flex items-center gap-2 rounded-lg border-2 px-4 py-2 text-body-md font-bold transition-all"
+            [class]="decision() === opt.id
+              ? 'border-tertiary bg-tertiary/10 text-primary'
+              : 'border-outline-variant/40 text-on-surface-variant hover:bg-surface-container'"
+            (click)="decision.set($any(opt.id))">
+            <span class="material-symbols-outlined text-[18px]">{{ opt.icon }}</span>
+            {{ opt.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <daf-form-field
+      [value]="comment()"
+      (valueChange)="comment.set($any($event) || '')"
+      [options]="{
+        type: 'textarea', rows: 3, fullWidth: true, maxLength: 1000,
+        label: ('FACTURATION.MISSIONS.NOTES' | translate),
+        placeholder: commentPlaceholder(),
+        hint: ('FACTURATION.MISSIONS.NOTES_HINT' | translate),
+        required: decision() === 'reject'
+      }" />
+
+    @if (modalError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ modalError() }}
+      </div>
+    }
+
+  </div>
+</ng-template>
+
+<!-- The file, read-only. A modal and not an inline panel: the decision is taken by
+     comparing the sheet against the plan, and a modal gives both the full width. -->
+<ng-template #detailTpl>
+  @if (selected(); as item) {
+    <div class="flex flex-col gap-5">
+
+      <daf-section-card [title]="'FACTURATION.MISSIONS.MISSION' | translate">
+        <!-- gap-y-5 between rows, gap-1 inside one: a label and its value belong together,
+             and the pair needs more air from the next pair than from itself. gap-y-4 with
+             gap-0.5 made the two spacings read as one flat list. -->
+        <div class="grid grid-cols-1 gap-x-10 gap-y-5 p-4 sm:grid-cols-2">
+          @for (row of planRows(); track row.label) {
+            <div class="flex flex-col gap-1">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
+                {{ row.label }}
+              </span>
+              <span class="text-[14px] text-on-surface">{{ row.value }}</span>
+            </div>
+          }
+        </div>
+        @if (item.mission.details) {
+          <p class="mt-5 whitespace-pre-line rounded-xl bg-surface-container-low px-4 py-3 text-body-md">
+            {{ item.mission.details }}
+          </p>
+        }
+      </daf-section-card>
+
+      <daf-section-card [title]="'FACTURATION.MISSIONS.EXPENSES' | translate">
+        <div class="grid grid-cols-1 gap-x-10 gap-y-5 p-4 sm:grid-cols-2">
+          @for (row of expenseRows(); track row.label) {
+            <div class="flex flex-col gap-1">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
+                {{ row.label }}
+              </span>
+              <span class="text-[14px] text-on-surface">{{ row.value }}</span>
+            </div>
+          }
+        </div>
+        <div class="mt-5 flex items-center justify-between gap-4 rounded-xl bg-teal/10 px-4 py-3">
+          <span class="text-label-caps text-outline">{{ 'FACTURATION.MISSIONS.TOTAL' | translate }}</span>
+          <span class="text-title-md font-semibold text-teal">{{ item.amountLabel }}</span>
+        </div>
+        @if (item.mission.hrNotes) {
+          <p class="mt-3 whitespace-pre-line text-body-sm p-4 text-on-surface-variant">
+            {{ item.mission.hrNotes }}
+          </p>
+        }
+      </daf-section-card>
+
+    </div>
+  }
+</ng-template>
