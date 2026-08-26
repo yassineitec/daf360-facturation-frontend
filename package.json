@@ -30,9 +30,9 @@
   },
   "devDependencies": {
     "@angular-architects/native-federation": "^21.2.3",
-    "@angular/build": "^21.2.7",
-    "@angular/cli": "^21.2.7",
-    "@angular/compiler-cli": "^21.2.0",
+    "@angular/build": "21.2.18",
+    "@angular/cli": "21.2.18",
+    "@angular/compiler-cli": "21.2.18",
     "@softarc/native-federation-node": "^3.3.4",
     "@tailwindcss/postcss": "^4.3.1",
     "@types/node": "^20.17.19",
