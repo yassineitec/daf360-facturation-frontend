@@ -3,10 +3,10 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   CardComponent, FieldMessageComponent,
-  PageComponent, PageHeaderComponent, StepperComponent,
+  PageComponent, PageHeaderComponent, StepperComponent, ButtonComponent,
 } from '@khalilrebhiitec/daf360';
 import type {
-  BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
+  BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep, ButtonOptions,
 } from '@khalilrebhiitec/daf360';
 
 import { ClientService } from '../client.service';
@@ -29,7 +29,7 @@ const STEP_ICONS = ['badge', 'contacts', 'receipt_long'];
   imports: [
     TranslatePipe, ClientFormComponent,
     PageComponent, PageHeaderComponent, StepperComponent,
-    CardComponent, FieldMessageComponent,
+    CardComponent, FieldMessageComponent, ButtonComponent,
   ],
   templateUrl: './client-new.component.html',
   styleUrl: './client-new.component.scss',
@@ -125,6 +125,23 @@ export class ClientNewComponent implements OnInit {
       return this.translate.instant('CLIENTS.NEW.NEXT');
     }
     return this.translate.instant(this.editMode() ? 'CLIENTS.NEW.SAVE' : 'CLIENTS.NEW.CREATE');
+  });
+
+  /**
+   * L'action affirmative de la barre, en `daf-button variant: 'teal'` — le même bouton que
+   * les assistants affaire, fournisseur et facture. Le retour et l'annulation restent des
+   * actions de texte : une seule action colorée dit où continuer.
+   */
+  readonly nextButtonOptions = computed<ButtonOptions>(() => {
+    const last = this.currentStep() === this.steps().length;
+    return {
+      variant:  'teal',
+      pill:     true,
+      label:    this.nextLabel(),
+      iconEnd:  last ? (this.editMode() ? 'save' : 'person_add') : 'arrow_forward',
+      loading:  this.isSaving(),
+      disabled: this.isSaving(),
+    };
   });
 
   // ── En-tête ─────────────────────────────────────────────────────────────

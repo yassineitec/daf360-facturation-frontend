@@ -4,6 +4,7 @@ import { Observable, forkJoin, switchMap }      from 'rxjs';
 import { TranslatePipe, TranslateService }       from '@ngx-translate/core';
 import {
   StepperStep, StepperConfig, StepperComponent,
+  ButtonComponent, ButtonOptions,
   CardComponent, PageComponent, PageHeaderComponent,
 } from '@khalilrebhiitec/daf360';
 import type { BreadcrumbItem, PageHeaderBadge } from '@khalilrebhiitec/daf360';
@@ -34,6 +35,7 @@ const CONFIGURABLE_MODES = new Set<string>(['AV', 'TM', 'CP', 'RMB']);
     PageComponent,
     PageHeaderComponent,
     StepperComponent,
+    ButtonComponent,
     CardComponent,
     WizardStepDoc360Component,
     WizardStepInfoComponent,
@@ -95,6 +97,15 @@ export class AffaireWizardComponent implements OnInit {
    * 1 est retirée du rail plutôt que grisée — un rail qui montre une étape à laquelle
    * on ne peut pas aller n'aide personne.
    */
+  /**
+   * L'étape la plus avancée à afficher comme atteinte. `maxStepReached` est relevée par un
+   * `effect`, donc d'UN cycle en retard sur `currentStep` : pendant ce cycle l'étape qu'on
+   * vient d'atteindre est encore `disabled`, et `stepTitleClass` teste `disabled` AVANT
+   * l'état — son libellé clignotait donc en gris avant de passer en teal. Le maximum des
+   * deux supprime la fenêtre sans toucher à l'effect ni aux huit `currentStep.set(...)`.
+   */
+  private readonly reachedStep = computed(() => Math.max(this.maxStepReached(), this.currentStep()));
+
   readonly stepperSteps = computed<StepperStep[]>(() =>
     this.wizardSteps().slice(this.firstStep() - 1).map((s, i) => ({
       ...s,
@@ -102,8 +113,8 @@ export class AffaireWizardComponent implements OnInit {
       // n'a pas encore vues sont désactivées, ce qui bloque le saut en avant au niveau du
       // rail lui-même plutôt que dans `onStepClick` (un bouton cliquable qui ne fait rien
       // reste focusable et annoncé comme actionnable).
-      completed: i + this.firstStep() < this.maxStepReached(),
-      disabled:  i + this.firstStep() > this.maxStepReached(),
+      completed: i + this.firstStep() < this.reachedStep(),
+      disabled:  i + this.firstStep() > this.reachedStep(),
     })));
 
   /** Le rail est 0-based et peut être tronqué en tête : d'où le décalage. */
@@ -128,6 +139,27 @@ export class AffaireWizardComponent implements OnInit {
       // laisserait le brouillon incomplet.
       clickableSteps: true,
       stepperLabel: this.translate.instant('AFFAIRES.wizard.shell.progression'),
+    };
+  });
+
+  /**
+   * L'action affirmative de la barre, en `daf-button variant: 'teal'` — le même bouton que
+   * les assistants fournisseur et facture, qui ne l'avaient jamais perdu. Le retour et
+   * l'annulation restent des actions de texte : une barre à deux boutons dessinés ferait
+   * concurrence au rail, une seule action colorée dit où continuer.
+   *
+   * `wizardSteps().length` plutôt qu'un 6 en dur : le libellé de fin et l'icône suivaient
+   * jusqu'ici un nombre écrit à la main dans le gabarit, à trois endroits.
+   */
+  readonly nextButtonOptions = computed<ButtonOptions>(() => {
+    const last = this.currentStep() === this.wizardSteps().length;
+    return {
+      variant:  'teal',
+      pill:     true,
+      label:    last ? this.stepperConfig().finishLabel : this.stepperConfig().nextLabel,
+      iconEnd:  last ? 'check' : 'arrow_forward',
+      loading:  this.isSaving(),
+      disabled: !this.canGoNext() || this.isSaving(),
     };
   });
 

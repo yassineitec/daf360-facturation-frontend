@@ -201,9 +201,16 @@ $deep-blue:  #164B60;
 
 // `min-width: 0` indispensable : sans lui, la largeur minimale de contenu du rail
 // l'empêcherait de se réduire et ferait déborder la barre au lieu de replier les colonnes.
+//
+// Les filets qui séparent les trois zones sont portés par le rail lui-même : la lib n'a pas
+// de composant séparateur, et son idiome est un `border` sur un élément existant
+// (`daf-drawer`, `daf-bulk-action-bar`). Deux éléments dédiés auraient été deux enfants flex
+// de plus à faire tenir dans une ligne déjà serrée.
 .action-bar__rail {
   flex: 1 1 auto;
   min-width: 0;
+  padding-inline: 0.875rem;
+  border-inline: 1px solid var(--color-outline-variant);
 }
 
 // ── Actions de la barre : du texte, pas des boutons dessinés ─────────────────
@@ -247,20 +254,6 @@ $deep-blue:  #164B60;
   }
 }
 
-// L'action « suivante » porte son icône APRÈS le libellé (l'ordre vient du gabarit) ;
-// rien à inverser ici, seule la graisse la distingue de l'action de retour.
-.footer-action--forward {
-  font-weight: 700;
-}
-
-.footer-action__spin {
-  animation: footer-action-spin 1s linear infinite;
-}
-
-@keyframes footer-action-spin {
-  to { transform: rotate(360deg); }
-}
-
 // Sous 720 px, le rail passe SOUS les deux boutons plutôt que d'être coincé entre eux :
 // en repli naturel il aurait emmené « Suivant » seul sur une deuxième ligne, ce qui
 // éloigne les deux boutons de navigation l'un de l'autre sans rien gagner.
@@ -268,6 +261,12 @@ $deep-blue:  #164B60;
   .action-bar__rail {
     order: 1;
     flex-basis: 100%;
+    // Le rail est passé sur sa propre ligne : les filets latéraux ne séparent plus rien et
+    // encadreraient une bande pleine largeur. Le filet devient horizontal, au-dessus.
+    padding-inline: 0;
+    padding-top: 0.75rem;
+    border-inline: none;
+    border-top: 1px solid var(--color-outline-variant);
   }
   .action-bar__side { flex: 1 1 auto; }
 }

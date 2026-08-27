@@ -99,9 +99,15 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   &--end { justify-content: flex-end; }
 }
 
+// Les filets qui séparent les trois zones de la barre sont portés par le rail lui-même :
+// la lib n'a pas de composant séparateur, et son idiome est un `border` sur un élément
+// existant (`daf-drawer`, `daf-bulk-action-bar`). Deux éléments dédiés auraient été deux
+// enfants flex de plus à faire tenir dans la ligne.
 .action-bar__rail {
   flex: 1 1 auto;
   min-width: 0;
+  padding-inline: 0.875rem;
+  border-inline: 1px solid var(--color-outline-variant);
 }
 
 // Sous 720 px, le rail passe SOUS les deux boutons plutôt que d'emmener « Suivant » seul
@@ -110,6 +116,12 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
   .action-bar__rail {
     order: 1;
     flex-basis: 100%;
+    // Le rail est passé sur sa propre ligne : les filets latéraux ne séparent plus rien
+    // et encadreraient une bande pleine largeur. Le filet devient horizontal, au-dessus.
+    padding-inline: 0;
+    padding-top: 0.75rem;
+    border-inline: none;
+    border-top: 1px solid var(--color-outline-variant);
   }
   .action-bar__side { flex: 1 1 auto; }
 }
@@ -147,16 +159,4 @@ $tertiary-hex: #00c1ad;                 // valeur fixe pour rgba()
     color: var(--color-outline);
     cursor: not-allowed;
   }
-}
-
-.footer-action--forward {
-  font-weight: 700;
-}
-
-.footer-action__spin {
-  animation: footer-action-spin 1s linear infinite;
-}
-
-@keyframes footer-action-spin {
-  to { transform: rotate(360deg); }
 }

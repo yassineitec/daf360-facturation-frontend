@@ -78,9 +78,9 @@
   <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
     <div class="action-bar__inner">
 
-      <!-- Actions de texte et non `daf-button`, comme l'assistant d'affaire : la barre est
-           un chrome de navigation. Gris au repos, libellé ET icône passent ensemble à la
-           couleur interactive au survol (l'icône hérite de `currentColor`). -->
+      <!-- Retour et annulation restent des actions de texte, comme l'assistant d'affaire :
+           seule l'action affirmative est dessinée. Gris au repos, libellé ET icône passent
+           ensemble à la couleur interactive au survol (l'icône hérite de `currentColor`). -->
       <div class="action-bar__side">
         @if (currentStep() > 1) {
           <button type="button" class="footer-action" (click)="goPrev()">
@@ -105,19 +105,10 @@
       </div>
 
       <div class="action-bar__side action-bar__side--end">
-        <button type="button"
-                class="footer-action footer-action--forward"
-                [disabled]="isSaving()"
-                (click)="goNext()">
-          {{ nextLabel() }}
-          @if (isSaving()) {
-            <span class="material-symbols-outlined footer-action__spin">progress_activity</span>
-          } @else if (currentStep() < steps().length) {
-            <span class="material-symbols-outlined">arrow_forward</span>
-          } @else {
-            <span class="material-symbols-outlined">{{ editMode() ? 'save' : 'person_add' }}</span>
-          }
-        </button>
+        <!-- Action affirmative en `daf-button` teal, comme les trois autres assistants.
+             `loading` porte le spinner et bloque le clic ; le retour et l'annulation
+             restent des actions de texte. -->
+        <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
       </div>
 
     </div>
