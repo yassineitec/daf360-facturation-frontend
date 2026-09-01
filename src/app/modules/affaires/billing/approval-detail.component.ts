@@ -199,7 +199,25 @@ export class ApprovalDetailComponent implements OnInit {
   // ── Actions ──────────────────────────────────────────────────────────────
 
   validateTaux(): void {
-    this.runAction(this.svc.validateTaux(this.id()));
+    // AV taux validation is now a DF action — it creates the draft invoice server-side in
+    // one shot (ProgressBillingService.validateTaux), so jump straight into the edit
+    // stepper, same as validateLine() does for billing lines.
+    this.actioning.set(true);
+    this.actionError.set(null);
+    this.svc.validateTaux(this.id()).subscribe({
+      next: line => {
+        if (line.invoiceId) {
+          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+        } else {
+          this.actioning.set(false);
+          this.loadItem();
+        }
+      },
+      error: (err: any) => {
+        this.actioning.set(false);
+        this.actionError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.billing.approval.detail.action_error'));
+      },
+    });
   }
 
   openRefuseModal(): void {

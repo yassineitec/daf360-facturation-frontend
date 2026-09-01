@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { RouterLink }                         from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule }                        from '@angular/forms';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
 import {
@@ -30,6 +30,8 @@ const LINE_STATUT: Record<string, { bg: string; color: string; border: string }>
 export class ApprovalQueueComponent implements OnInit {
   private readonly svc       = inject(BillingService);
   private readonly translate = inject(TranslateService);
+  private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
 
   readonly tabs = computed<{ key: ActiveTab; label: string; icon: string }[]>(() => {
     this.translate.currentLang();
@@ -77,9 +79,9 @@ export class ApprovalQueueComponent implements OnInit {
       affaireId:       t.affaireId,
       affaireRef:      t.affaireRef,
       affaireIntitule: t.affaireIntitule,
-      taux:            t.taux,
-      valeur:          this.fmtAmt(t.valeurCalculee),
-      soumis:          this.fmtDate(t.soumisAt),
+      taux:            t.tauxSaisi,
+      valeur:          this.fmtAmt(t.montantIncremental),
+      soumis:          this.fmtDate(t.submittedAt),
       _raw:            t,
     }))
   );
@@ -104,7 +106,7 @@ export class ApprovalQueueComponent implements OnInit {
       affaireIntitule: j.affaireIntitule,
       label:           j.label,
       montant:         this.fmtAmt(j.montant),
-      echeance:        this.fmtDate(j.echeance),
+      echeance:        this.fmtDate(j.datePrevisionnelle),
       _raw:            j,
     }))
   );
@@ -165,6 +167,19 @@ export class ApprovalQueueComponent implements OnInit {
 
   ngOnInit(): void { this.loadRF(); }
 
+  /**
+   * Row click on any of the three tables opens the detail page for that item.
+   *
+   * No leading `..`: this component sits on the `approval` route's *empty-path* child, which
+   * doesn't add a navigation hop of its own — so `this.route` already resolves at the
+   * `approval` level, and `[type, id]` reaches its sibling `:type/:id` route directly. A
+   * leading `..` here overshoots past `approval` to `billing`, producing `billing/taux/1`
+   * instead of `billing/approval/taux/1` (a 404) — confirmed live 2026-08-24.
+   */
+  openDetail(row: { id: number }, type: 'taux' | 'jalon' | 'line'): void {
+    this.router.navigate([type, String(row.id)], { relativeTo: this.route });
+  }
+
   setTab(tab: ActiveTab): void {
     this.activeTab.set(tab);
     if (tab === 'rf')      this.loadRF();
@@ -174,17 +189,19 @@ export class ApprovalQueueComponent implements OnInit {
 
   private loadRF(): void {
     this.rfLoading.set(true);
-    this.svc.getPendingTaux().subscribe({
-      next:  t => { this.pendingTaux.set(t); this.rfLoading.set(false); },
-      error: () => this.rfLoading.set(false),
-    });
     this.svc.getPendingJalons().subscribe({
-      next: j => this.pendingJalons.set(j),
+      next:  j => { this.pendingJalons.set(j); this.rfLoading.set(false); },
+      error: () => this.rfLoading.set(false),
     });
   }
 
+  // AV taux live here now, not under RF — validating one is a DF action (see
+  // ProgressBillingService.validateTaux()).
   private loadDF(): void {
     this.dfLoading.set(true);
+    this.svc.getPendingTaux().subscribe({
+      next: t => this.pendingTaux.set(t),
+    });
     this.svc.getPendingDFLines().subscribe({
       next:  l => { this.pendingLines.set(l); this.dfLoading.set(false); },
       error: () => this.dfLoading.set(false),
@@ -200,7 +217,17 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateTaux(id: number): void {
-    this.svc.validateTaux(id).subscribe({ next: () => this.loadRF() });
+    // Validating a taux creates the draft invoice server-side (ProgressBillingService) —
+    // jump straight into its edit stepper, same as doValidateDF() below.
+    this.svc.validateTaux(id).subscribe({
+      next: line => {
+        if (line.invoiceId) {
+          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+        } else {
+          this.loadDF();
+        }
+      },
+    });
   }
 
   doValidateJalon(id: number): void {
@@ -219,7 +246,7 @@ export class ApprovalQueueComponent implements OnInit {
     const motif = this.rfRefuseMotif.trim();
     if (this.rfRefuseType === 'taux') {
       this.svc.refuseTaux(this.rfRefuseId, motif).subscribe({
-        next: () => { this.showRfRefuseModal.set(false); this.loadRF(); },
+        next: () => { this.showRfRefuseModal.set(false); this.loadDF(); },
       });
     } else {
       this.svc.refuseJalon(this.rfRefuseId, motif).subscribe({
@@ -229,7 +256,18 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateDF(lineId: number): void {
-    this.svc.validateDF(lineId).subscribe({ next: () => this.loadDF() });
+    // DF validation creates the draft invoice server-side (DFValidationService) — jump
+    // straight into its edit stepper instead of staying on this list, since there's
+    // nothing left to do here once the invoice exists.
+    this.svc.validateDF(lineId).subscribe({
+      next: line => {
+        if (line.invoiceId) {
+          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+        } else {
+          this.loadDF();
+        }
+      },
+    });
   }
 
   openDfRetourModal(lineId: number): void {

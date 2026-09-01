@@ -156,8 +156,11 @@ export class BillingService {
       `${this.base}/affaires/${affaireId}/taux-avancement`, body, this.opts);
   }
 
-  validateTaux(tauxId: number): Observable<TauxAvancementDto> {
-    return this.http.post<TauxAvancementDto>(
+  /** Validating a taux is now a DF action — it creates the BillingLine and immediately
+   * generates the draft invoice server-side, so this returns the BillingLineDto (with its
+   * invoiceId), same shape validateDF() below returns for the same reason. */
+  validateTaux(tauxId: number): Observable<BillingLineDto> {
+    return this.http.post<BillingLineDto>(
       `${this.base}/billing/av/taux/${tauxId}/validate`, {}, this.opts);
   }
 
@@ -258,9 +261,10 @@ export class BillingService {
 
   // ── Approval Queues ────────────────────────────────────────────────────────
 
+  /** AV taux now belong to the DF queue, not RF — see ProgressBillingService.validateTaux(). */
   getPendingTaux(): Observable<PendingTauxDto[]> {
     return this.http.get<PendingTauxDto[]>(
-      `${this.base}/billing/pending-rf/taux`, this.opts);
+      `${this.base}/billing/pending-df/taux`, this.opts);
   }
 
   getPendingJalons(): Observable<PendingJalonDto[]> {
