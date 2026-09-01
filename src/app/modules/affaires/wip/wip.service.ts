@@ -19,7 +19,7 @@ export class WipService {
 
   submitTaux(
     affaireId: number,
-    body: { periodYear: number; periodMonth: number; tauxSaisi: number; commentaire?: string | null },
+    body: { periodDateFrom: string; periodDateTo: string; tauxSaisi: number; commentaire?: string | null },
   ): Observable<WipTauxDto> {
     return this.http.post<WipTauxDto>(`${this.base}/av/${affaireId}/taux`, body, this.opts);
   }
@@ -39,15 +39,26 @@ export class WipService {
 
   // ── TM — new endpoints (WipTmController) ──────────────────────────────────────
 
-  previewTm(affaireId: number, periodYear: number, periodMonth: number): Observable<WipTmPreviewDto> {
+  /** dateFrom/dateTo are ISO date strings (yyyy-MM-dd) — an arbitrary range, no longer tied
+   * to a calendar month (see WipTmController/WipTmService). */
+  previewTm(affaireId: number, dateFrom: string, dateTo: string): Observable<WipTmPreviewDto> {
     return this.http.get<WipTmPreviewDto>(
-      `${this.base}/wip/tm/${affaireId}/preview?periodYear=${periodYear}&periodMonth=${periodMonth}`,
+      `${this.base}/wip/tm/${affaireId}/preview?dateFrom=${dateFrom}&dateTo=${dateTo}`,
       this.opts);
   }
 
-  validateTm(affaireId: number, periodYear: number, periodMonth: number): Observable<unknown> {
+  validateTm(affaireId: number, dateFrom: string, dateTo: string): Observable<unknown> {
     return this.http.post(
-      `${this.base}/wip/tm/${affaireId}/validate?periodYear=${periodYear}&periodMonth=${periodMonth}`,
+      `${this.base}/wip/tm/${affaireId}/validate?dateFrom=${dateFrom}&dateTo=${dateTo}`,
       {}, this.opts);
+  }
+
+  /** Records what the client actually confirmed (read out of their email reply) — moves the
+   * line from EN_ATTENTE_CLIENT to EN_ATTENTE_DF, where the existing DF approval queue picks
+   * it up unchanged. */
+  enterClientAmount(affaireId: number, billingLineId: number, clientApprovedAmount: number): Observable<unknown> {
+    return this.http.patch(
+      `${this.base}/wip/tm/${affaireId}/lines/${billingLineId}/client-amount`,
+      { clientApprovedAmount }, this.opts);
   }
 }

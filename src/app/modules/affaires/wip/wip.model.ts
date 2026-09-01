@@ -8,8 +8,8 @@ export type WipTauxStatut = 'EN_ATTENTE' | 'VALIDE' | 'REFUSE';
 export interface WipTauxDto {
   id: number;
   affaireId: number;
-  periodYear: number;
-  periodMonth: number;
+  periodDateFrom: string;
+  periodDateTo: string;
   tauxPrecedent: number;
   tauxSaisi: number;
   montantIncremental: number;
@@ -40,4 +40,8 @@ export interface WipTmPreviewDto {
   totalCost: number;
   totalSell: number;
   hours: WipTmHourDto[];
+  /** Unapproved remainder from a prior period, not folded into totalSell/totalCost — the
+   * client-approval workflow displays it separately (see AFFAIRES.WIP.CARRIED_FORWARD_*). */
+  carriedForwardAmount: number;
+  carriedForwardFromLineId: number | null;
 }
