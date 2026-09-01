@@ -371,8 +371,9 @@ export interface LineDetailDto {
   periodYear:       number;
   periodMonth:      number;
   billingDate:      string;
-  /** Real date range for a WIP T&M line (arbitrary range, not tied to a calendar month) —
-   * null for every other billing mode, which still only ever has periodYear/periodMonth. */
+  /** Real date range for a WIP T&M line (arbitrary range, not tied to a calendar month) or
+   * an AV line (mirrors its taux's range) — null for every other billing mode, which still
+   * only ever has periodYear/periodMonth. */
   periodDateFrom:   string | null;
   periodDateTo:     string | null;
   montantHt:        number;

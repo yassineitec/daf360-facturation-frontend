@@ -178,7 +178,15 @@ export class ApprovalDetailComponent implements OnInit {
 
   fmtDate(d: string | null | undefined): string {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    // Date-only strings (e.g. "2026-08-01", as sent for periodDateFrom/periodDateTo) are
+    // parsed by `new Date(...)` as UTC midnight — in a negative-UTC-offset browser that
+    // shifts the displayed day back by one. Parsed as local calendar components instead,
+    // same as full timestamps (which already carry an offset/zone and aren't affected).
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(d);
+    const date = dateOnly
+      ? new Date(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10)))
+      : new Date(d);
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   fmtDateTime(d: string | null | undefined): string {
