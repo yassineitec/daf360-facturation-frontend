@@ -6,7 +6,7 @@ import { environment }         from '../../../../environments/environment';
 // ── Statut enums ──────────────────────────────────────────────────────────────
 
 export type TauxStatut       = 'EN_ATTENTE' | 'VALIDE' | 'REFUSE';
-export type BillingLineStatut= 'EN_ATTENTE_DF' | 'VALIDE_DF' | 'FACTURE' | 'A_VERIFIER' | 'RETOURNE' | 'ANNULE';
+export type BillingLineStatut= 'EN_ATTENTE_CLIENT' | 'EN_ATTENTE_DF' | 'VALIDE_DF' | 'FACTURE' | 'A_VERIFIER' | 'RETOURNE' | 'ANNULE';
 export type JalonStatut      = 'A_FACTURER' | 'EN_ATTENTE_VALIDATION' | 'FACTURE' | 'ANNULE';
 // Les quatre valeurs de la contrainte `CK_Expense_Statut`. `REFUSE` n'existe pas en
 // base — c'est `REJETE` — et le code le cherchait donc en vain : un frais rejeté
@@ -39,6 +39,9 @@ export interface BillingLineDto {
   statut:      BillingLineStatut;
   factureRef:  string | null;
   motifRetour: string | null;
+  /** Set once DF validation has created the draft invoice for this line
+   * (DFValidationService.validateDF) — null before that. */
+  invoiceId?:  number | null;
 }
 
 export interface JalonDto {
@@ -93,14 +96,39 @@ export interface AuditLogEntryDto {
 
 // ── Extended DTOs for approval queue (backend adds affaire context) ────────────
 
-export interface PendingTauxDto extends TauxAvancementDto {
-  affaireRef:      string;
-  affaireIntitule: string;
+/**
+ * Deliberately NOT `extends TauxAvancementDto` — that interface's field names
+ * (`taux`, `valeurCalculee`, `soumisAt`, `evalueAt`) don't match what the backend actually
+ * sends (`tauxSaisi`, `montantIncremental`, `submittedAt`, `validatedAt`); see the real
+ * `TauxAvancementDto` Java record in `ProgressBillingController`. This interface mirrors the
+ * backend's `PendingTauxDto` record field-for-field instead.
+ */
+export interface PendingTauxDto {
+  id:                 number;
+  affaireId:          number;
+  affaireRef:         string;
+  affaireIntitule:    string;
+  periodDateFrom:     string;
+  periodDateTo:       string;
+  tauxSaisi:          number;
+  montantIncremental: number;
+  statut:             TauxStatut;
+  commentaire:        string | null;
+  submittedAt:        string;
+  motifRefus:         string | null;
 }
 
-export interface PendingJalonDto extends JalonDto {
-  affaireRef:      string;
-  affaireIntitule: string;
+/** See `PendingTauxDto`'s comment — same reason this doesn't extend `JalonDto`. */
+export interface PendingJalonDto {
+  id:                 number;
+  affaireId:          number;
+  affaireRef:         string;
+  affaireIntitule:    string;
+  label:              string;
+  montant:            number;
+  datePrevisionnelle: string | null;
+  statut:             JalonStatut;
+  ordre:              number;
 }
 
 export interface PendingBillingLineDto extends BillingLineDto {
@@ -252,4 +280,122 @@ export class BillingService {
     return this.http.get<AuditLogEntryDto[]>(
       `${this.base}/billing/audit${params}`, this.opts);
   }
+
+  /** Full history for one entity (before/after status + who + when) — used by the approval detail page. */
+  getAuditByEntity(entityType: string, entityId: number): Observable<EntityAuditLogDto[]> {
+    return this.http.get<EntityAuditLogDto[]>(
+      `${this.base}/billing/audit/${entityType}/${entityId}`, this.opts);
+  }
+
+  // ── Approval detail page — single-item fetches ──────────────────────────────
+  // These mirror the REAL backend records field-for-field (see the comment on
+  // `PendingTauxDto` above for why: `TauxAvancementDto`/`JalonDto`/`BillingLineDto` don't).
+
+  getTauxDetail(tauxId: number): Observable<TauxDetailDto> {
+    return this.http.get<TauxDetailDto>(`${this.base}/billing/av/taux/${tauxId}`, this.opts);
+  }
+
+  getJalonDetail(jalonId: number): Observable<JalonDetailDto> {
+    return this.http.get<JalonDetailDto>(`${this.base}/billing/jal/jalons/${jalonId}`, this.opts);
+  }
+
+  getLineDetail(lineId: number): Observable<LineDetailDto> {
+    return this.http.get<LineDetailDto>(`${this.base}/billing/df/lines/${lineId}`, this.opts);
+  }
+
+  /** Same endpoints as `getTauxHistory`/`getJalons`/`getBillingLines`, correctly typed for the detail page. */
+  getTauxHistoryDetailed(affaireId: number): Observable<TauxDetailDto[]> {
+    return this.http.get<TauxDetailDto[]>(`${this.base}/billing/av/${affaireId}/taux`, this.opts);
+  }
+
+  getJalonsDetailed(affaireId: number): Observable<JalonDetailDto[]> {
+    return this.http.get<JalonDetailDto[]>(`${this.base}/billing/jal/${affaireId}/jalons`, this.opts);
+  }
+
+  getBillingLinesDetailed(affaireId: number): Observable<LineDetailDto[]> {
+    return this.http.get<LineDetailDto[]>(`${this.base}/affaires/${affaireId}/billing-lines`, this.opts);
+  }
+}
+
+export interface EntityAuditLogDto {
+  id:           number;
+  affaireId:    number | null;
+  entityType:   string;
+  entityId:     number;
+  action:       string;
+  actorId:      number;
+  actorRole:    string | null;
+  statutAvant:  string | null;
+  statutApres:  string | null;
+  commentaire:  string | null;
+  timestampUtc: string;
+  billingMode:  string | null;
+  metadata:     string | null;
+}
+
+export interface TauxDetailDto {
+  id:                 number;
+  affaireId:          number;
+  periodDateFrom:     string;
+  periodDateTo:       string;
+  tauxPrecedent:      number;
+  tauxSaisi:          number;
+  montantIncremental: number;
+  commentaire:        string | null;
+  statut:             TauxStatut;
+  submittedBy:        number;
+  submittedAt:        string;
+  validatedBy:        number | null;
+  validatedAt:        string | null;
+  motifRefus:         string | null;
+  billingLineId:      number | null;
+}
+
+export interface JalonDetailDto {
+  id:                 number;
+  affaireId:          number;
+  label:              string;
+  description:        string | null;
+  montant:            number;
+  ordre:              number;
+  datePrevisionnelle: string | null;
+  statut:             JalonStatut;
+  invoiceId:          number | null;
+  createdBy:          number | null;
+}
+
+export interface LineDetailDto {
+  id:               number;
+  affaireId:        number;
+  billingMode:      string;
+  periodYear:       number;
+  periodMonth:      number;
+  billingDate:      string;
+  /** Real date range for a WIP T&M line (arbitrary range, not tied to a calendar month) —
+   * null for every other billing mode, which still only ever has periodYear/periodMonth. */
+  periodDateFrom:   string | null;
+  periodDateTo:     string | null;
+  montantHt:        number;
+  tvaRate:          number;
+  montantTva:       number;
+  montantTtc:       number;
+  devise:           string;
+  tauxAvancementId: number | null;
+  jalonId:          number | null;
+  wipAmount:        number | null;
+  statut:           BillingLineStatut;
+  submittedAt:      string | null;
+  rfValidatedBy:    number | null;
+  rfValidatedAt:    string | null;
+  rfMotif:          string | null;
+  dfValidatedBy:    number | null;
+  dfValidatedAt:    string | null;
+  dfMotif:          string | null;
+  invoiceId:        number | null;
+  createdBy:        number | null;
+  /** WIP T&M client-approval workflow — null for every other billing mode. */
+  clientApprovedAmount:     number | null;
+  wipCarriedForward:        number | null;
+  carriedForwardFromLineId: number | null;
+  clientNotifiedAt:         string | null;
 }
