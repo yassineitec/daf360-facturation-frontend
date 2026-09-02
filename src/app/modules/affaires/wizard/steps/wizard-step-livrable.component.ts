@@ -220,7 +220,6 @@ export class WizardStepLivrableComponent implements OnInit {
       .filter(d => this.selectedDocs().has(d.id))
       .map(d => ({
         extDocumentId: d.id,
-        extWbsId:      wbs.id,
         documentNom:   d.nom,
         wbsTitre:      wbs.titre,
         budgetHoraireExt: d.budgetHoraire,

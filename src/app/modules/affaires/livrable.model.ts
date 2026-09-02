@@ -28,7 +28,6 @@ export interface DocumentExtDto {
 
 export interface AffectationManuelleItem {
   extDocumentId: string;
-  extWbsId: string;
   documentNom: string;
   wbsTitre?: string;
   budgetHoraireExt?: number;
@@ -39,7 +38,6 @@ export interface AffaireLivrableDto {
   id: number;
   extDocumentId: string;
   documentNom: string;
-  extWbsId: string;
   wbsTitre?: string;
   disciplineLabel: string;
   budgetHoraireExt?: number;
