@@ -1979,6 +1979,9 @@
       "LIVRABLE_EMPTY": "Aucun livrable en attente de facturation.",
       "LIVRABLE_ERROR": "Erreur lors de la génération de la facture.",
       "COL_BUDGET_ALLOUE": "Budget alloué",
+      "COL_PCT_ACTUEL": "% facturé",
+      "COL_NOUVEAU_PCT": "Nouveau %",
+      "COL_MONTANT": "Montant",
       "TOTAL_SELECTED": "Total sélectionné",
       "GENERATE_INVOICE": "Générer facture"
     },

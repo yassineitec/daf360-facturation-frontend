@@ -5,7 +5,7 @@ import { environment }        from '../../../environments/environment';
 
 import {
   DisciplineExtDto, WbsExtDto, DocumentExtDto,
-  AffectationManuelleItem, AffaireLivrableDto, CollaborateurTauxDto,
+  AffectationManuelleItem, AffaireLivrableDto, CollaborateurTauxDto, LivrableTauxEntry,
 } from './livrable.model';
 import { BillingLineDto } from './billing/billing.service';
 
@@ -72,17 +72,17 @@ export class LivrableService {
       { withCredentials: true });
   }
 
-  /** DF groups several ready-to-bill livrables into one invoice — the returned
-   * BillingLineDto (matching validateDF()'s own return shape) carries invoiceId so the
-   * caller can redirect straight into the new invoice. */
+  /** DF enters a new cumulative % for one or more documents and validates them together —
+   * the returned BillingLineDto (matching validateDF()'s own return shape) carries
+   * invoiceId so the caller can redirect straight into the new invoice. */
   validateLivrables(
     affaireId: number,
-    livrableIds: number[],
+    entries: LivrableTauxEntry[],
     billingDate?: string,
   ): Observable<BillingLineDto> {
     return this.http.post<BillingLineDto>(
       `${this.base}/${affaireId}/livrables/validate`,
-      { livrableIds, billingDate },
+      { entries, billingDate },
       { withCredentials: true });
   }
 

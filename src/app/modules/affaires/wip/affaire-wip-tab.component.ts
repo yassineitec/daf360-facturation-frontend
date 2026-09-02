@@ -83,25 +83,37 @@ export class AffaireWipTabComponent implements OnInit {
   loadingTmHistory = signal(false);
 
   // ── LIVRABLE ────────────────────────────────────────────────────────────
+  // Each document already carries its own cumulative % billed (pctFacture) — this map
+  // holds what the user has TYPED for each one so far this session, defaulting to that
+  // same current value (i.e. "no change") until edited. A document only produces an
+  // invoice line if its entered value ends up higher than its stored one.
   livrables            = signal<AffaireLivrableDto[]>([]);
   loadingLivrables     = signal(false);
-  selectedLivrableIds  = signal<Set<number>>(new Set());
+  enteredPct           = signal<Map<number, number>>(new Map());
   validatingLivrables  = signal(false);
   livrableError        = signal<string | null>(null);
 
-  readonly pendingLivrables = computed(() => this.livrables().filter(l => l.statut === 'A_FACTURER'));
+  readonly pendingLivrables = computed(() =>
+    this.livrables().filter(l => l.statut === 'A_FACTURER' || l.statut === 'EN_COURS'));
   readonly livrableHistory  = computed(() => this.livrables().filter(l => l.statut === 'FACTURE'));
 
-  readonly allLivrablesSelected = computed(() => {
-    const pending = this.pendingLivrables();
-    return pending.length > 0 && pending.every(l => this.selectedLivrableIds().has(l.id));
-  });
-
-  readonly selectedLivrableTotal = computed(() => {
-    const ids = this.selectedLivrableIds();
+  private changedEntries(): { livrableId: number; pctSaisi: number }[] {
+    const entered = this.enteredPct();
     return this.pendingLivrables()
-      .filter(l => ids.has(l.id))
-      .reduce((sum, l) => sum + l.budgetAlloue, 0);
+      .map(l => ({ livrableId: l.id, pctSaisi: entered.get(l.id) ?? l.pctFacture, current: l.pctFacture }))
+      .filter(e => e.pctSaisi > e.current)
+      .map(({ livrableId, pctSaisi }) => ({ livrableId, pctSaisi }));
+  }
+
+  readonly hasLivrableChanges = computed(() => this.changedEntries().length > 0);
+
+  readonly totalToInvoice = computed(() => {
+    const entered = this.enteredPct();
+    return this.pendingLivrables().reduce((sum, l) => {
+      const pct = entered.get(l.id) ?? l.pctFacture;
+      const delta = Math.max(0, pct - l.pctFacture);
+      return sum + (delta / 100) * l.budgetAlloue;
+    }, 0);
   });
 
   // ── TM — Review / manual verification / validate / client-response stepper ──────
@@ -419,40 +431,52 @@ export class AffaireWipTabComponent implements OnInit {
   loadLivrables(): void {
     this.loadingLivrables.set(true);
     this.livrableSvc.getLivrables(this.affaire.id).subscribe({
-      next:  l => { this.livrables.set(l); this.loadingLivrables.set(false); },
+      next: l => {
+        this.livrables.set(l);
+        // Reset every editable field back to "no change yet" — each pending document
+        // starts at its own current cumulative %.
+        this.enteredPct.set(new Map(
+          l.filter(x => x.statut !== 'FACTURE' && x.statut !== 'ANNULE').map(x => [x.id, x.pctFacture]),
+        ));
+        this.loadingLivrables.set(false);
+      },
       error: () => this.loadingLivrables.set(false),
     });
   }
 
-  toggleLivrable(id: number): void {
-    const set = new Set(this.selectedLivrableIds());
-    set.has(id) ? set.delete(id) : set.add(id);
-    this.selectedLivrableIds.set(set);
+  getEnteredPct(id: number): number {
+    return this.enteredPct().get(id) ?? 0;
   }
 
-  toggleSelectAllLivrables(): void {
-    if (this.allLivrablesSelected()) {
-      this.selectedLivrableIds.set(new Set());
-    } else {
-      this.selectedLivrableIds.set(new Set(this.pendingLivrables().map(l => l.id)));
-    }
+  setEnteredPct(id: number, value: number): void {
+    const map = new Map(this.enteredPct());
+    map.set(id, Number.isFinite(value) ? value : 0);
+    this.enteredPct.set(map);
   }
 
-  /** DF's one action: validate the selected livrables, which creates their BillingLines and
-   * one shared draft invoice server-side — jump straight into its edit stepper, same
-   * redirect pattern used everywhere else a DF action creates an invoice. */
+  /** Live preview of what this one row would add to the invoice at its currently entered %
+   * — zero if the user hasn't raised it above the document's current cumulative %. */
+  incrementalAmount(l: AffaireLivrableDto): number {
+    const entered = this.enteredPct().get(l.id) ?? l.pctFacture;
+    const delta = Math.max(0, entered - l.pctFacture);
+    return (delta / 100) * l.budgetAlloue;
+  }
+
+  /** DF's one action: validate every document whose entered % was actually raised, which
+   * creates their BillingLines and one shared draft invoice server-side — jump straight
+   * into its edit stepper, same redirect pattern used everywhere else a DF action creates
+   * an invoice. */
   validateLivrables(): void {
-    const ids = [...this.selectedLivrableIds()];
-    if (ids.length === 0 || this.validatingLivrables()) return;
+    const entries = this.changedEntries();
+    if (entries.length === 0 || this.validatingLivrables()) return;
     this.validatingLivrables.set(true);
     this.livrableError.set(null);
-    this.livrableSvc.validateLivrables(this.affaire.id, ids).subscribe({
+    this.livrableSvc.validateLivrables(this.affaire.id, entries).subscribe({
       next: line => {
         if (line.invoiceId) {
           this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
         } else {
           this.validatingLivrables.set(false);
-          this.selectedLivrableIds.set(new Set());
           this.loadLivrables();
         }
       },

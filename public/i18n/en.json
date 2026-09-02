@@ -1979,6 +1979,9 @@
       "LIVRABLE_EMPTY": "No livrable pending billing.",
       "LIVRABLE_ERROR": "Error while generating the invoice.",
       "COL_BUDGET_ALLOUE": "Allocated budget",
+      "COL_PCT_ACTUEL": "% billed",
+      "COL_NOUVEAU_PCT": "New %",
+      "COL_MONTANT": "Amount",
       "TOTAL_SELECTED": "Total selected",
       "GENERATE_INVOICE": "Generate invoice"
     },

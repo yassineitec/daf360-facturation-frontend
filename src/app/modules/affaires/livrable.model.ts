@@ -44,9 +44,19 @@ export interface AffaireLivrableDto {
   disciplineLabel: string;
   budgetHoraireExt?: number;
   budgetAlloue: number;
+  /** Cumulative percentage already invoiced for this document — same mental model as
+   * Forfaitaire's taux d'avancement, scoped to one document. */
+  pctFacture: number;
   modeAffectation: 'MANUEL' | 'AUTO';
   statut: 'A_FACTURER' | 'EN_COURS' | 'FACTURE' | 'ANNULE';
   ordre: number;
+}
+
+/** One document's newly-entered cumulative percentage — the request shape
+ * LivrableService.validateLivrables() sends, one entry per document actually changed. */
+export interface LivrableTauxEntry {
+  livrableId: number;
+  pctSaisi: number;
 }
 
 // ─── TM taux ──────────────────────────────────────────────────────────────────
