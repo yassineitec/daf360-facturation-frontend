@@ -1971,7 +1971,7 @@
       "DOCUMENTS": "documents",
       "BACK": "← Retour",
       "EMPTY_DETAIL": "Aucune heure validée pour cette période.",
-      "UNSUPPORTED_MODE": "Le WIP n'est disponible que pour les affaires Forfaitaire et Régie.",
+      "UNSUPPORTED_MODE": "Le WIP n'est disponible que pour les affaires Forfaitaire, Régie et Livrable.",
       "SUBMIT_ERROR": "Erreur lors de la soumission du taux.",
       "LOAD_ERROR": "Erreur lors du chargement du WIP.",
       "VALIDATE_ERROR": "Erreur lors de la validation du WIP.",

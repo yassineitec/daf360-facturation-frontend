@@ -145,9 +145,10 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ formatPct(pctAFacturer(i)) }}</td>
                 <!-- Montant HT = budget × pctAFacturer / 100 (calculé) -->
                 <td class="td-computed">{{ formatAmount(lineHtAv(i)) }}</td>
-              } @else if (isTm()) {
-                <!-- T&M : une ligne WIP validée facture la totalité du montant calculé sur
-                     sa période — pas de budget d'affaire à comparer, Budget affaire vaut
+              } @else if (isTm() || isLivrable()) {
+                <!-- T&M et Livrable : une ligne ici facture la totalité du montant déjà
+                     calculé côté serveur (WIP validé pour T&M, allocation groupée pour
+                     Livrable) — pas de budget d'affaire à comparer, Budget affaire vaut
                      donc toujours le Montant HT lui-même et les trois pourcentages sont
                      fixés à 100 % (cf. DFValidationService.buildInvoiceLine côté backend).
                      Seul le montant (Montant HT) est saisissable. -->
@@ -181,7 +182,7 @@ export interface StepLinesValue {
 
               @if (isAv()) {
                 <td class="td-computed">{{ formatAmount(lineTtcAv(i)) }}</td>
-              } @else if (isTm()) {
+              } @else if (isTm() || isLivrable()) {
                 <td class="td-computed">{{ formatAmount(lineTtcTm(i)) }}</td>
               } @else {
                 <td class="td-computed">{{ formatAmount(lineHt(i)) }}</td>
@@ -201,7 +202,7 @@ export interface StepLinesValue {
           @if (isAv()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcAv) }}</td>
-          } @else if (isTm()) {
+          } @else if (isTm() || isLivrable()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcTm) }}</td>
           } @else {

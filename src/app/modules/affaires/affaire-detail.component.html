@@ -361,9 +361,14 @@
             <app-affaire-billing-tab [affaire]="aff" />
           }
 
-          <!-- ── WIP (Work In Progress) — AV et TM uniquement ────────────── -->
-          @if (activeTab() === 'wip' && (aff.billingMode === 'AV' || aff.billingMode === 'TM')) {
+          <!-- ── WIP (Work In Progress) — Forfaitaire, Régie et Livrable ─── -->
+          @if (activeTab() === 'wip' && (aff.billingMode === 'FORFAIT' || aff.billingMode === 'REGIE' || aff.billingMode === 'LIVRABLE')) {
             <app-affaire-wip-tab [affaire]="aff" />
+          }
+
+          <!-- ── Ressources — taux TM par collaborateur, TM uniquement ───── -->
+          @if (activeTab() === 'ressources' && aff.billingMode === 'REGIE') {
+            <app-affaire-ressources-tab [affaire]="aff" />
           }
 
           <!-- ── Factures ─────────────────────────────────────────────── -->

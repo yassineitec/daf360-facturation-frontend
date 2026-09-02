@@ -1971,7 +1971,7 @@
       "DOCUMENTS": "documents",
       "BACK": "← Back",
       "EMPTY_DETAIL": "No validated hours for this period.",
-      "UNSUPPORTED_MODE": "WIP is only available for Lump Sum and Time & Materials affaires.",
+      "UNSUPPORTED_MODE": "WIP is only available for Lump Sum, Time & Materials, and Deliverable affaires.",
       "SUBMIT_ERROR": "Error submitting the rate.",
       "LOAD_ERROR": "Error loading WIP.",
       "VALIDATE_ERROR": "Error validating WIP.",
