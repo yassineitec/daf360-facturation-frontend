@@ -29,7 +29,9 @@ export interface StepLinesValue {
     // T&M — collaborateur associé, présent uniquement en mode T&M
     profileUserId?: number;
   }[];
-  // T&M — période facturée (source des heures récupérées) ; null hors mode T&M
+  // Période facturée — les heures récupérées en T&M, la période de génération du lot en
+  // Livrable ; renseignée par le serveur à la génération dans les deux cas et simplement
+  // préservée telle quelle par cette étape. Null dans les autres modes.
   periodFrom?: string | null;
   periodTo?:   string | null;
 }
@@ -172,15 +174,28 @@ export interface StepLinesValue {
                      consultatives ici, exactement comme Budget affaire et % déjà facturé le
                      sont en Forfaitaire : cette étape ne rejoue pas la saisie du pourcentage,
                      elle réaffiche puis réémet tel quel ce que la ligne porte déjà.
-                     '—' pour une ligne ajoutée à la main ici, qui n'a aucun avancement. -->
+                     '—' pour une ligne ajoutée à la main ici, qui n'a aucun avancement.
+                     Le Montant HT en découle et n'est donc PAS saisissable, exactement
+                     comme en Forfaitaire : le serveur le recalcule de toute façon en
+                     budgetAffaire × pctAFacturer / 100 dès que ces deux colonnes sont
+                     renseignées (cf. InvoiceService.saveLines), donc un montant tapé ici
+                     serait purement et simplement ignoré à l'enregistrement — et pire,
+                     l'en-tête de la facture, lui calculé en quantity × unitRate, ne
+                     concorderait plus avec le total de la ligne. Seule une ligne ajoutée
+                     à la main (sans avancement) garde la saisie du montant : c'est le
+                     seul cas où le serveur retient bien quantity × unitRate. -->
                 <td class="td-computed">{{ livrableBudgetAffaireLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctAFacturerLabel(i) }}</td>
-                <td>
-                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                    min="0" step="0.01" (input)="recalc(i)" />
-                </td>
+                @if (livrableHasAvancement(i)) {
+                  <td class="td-computed">{{ formatAmount(lineHtLivrable(i)) }}</td>
+                } @else {
+                  <td>
+                    <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
+                      min="0" step="0.01" (input)="recalc(i)" />
+                  </td>
+                }
               } @else {
                 <td>
                   <input type="number" formControlName="quantite" class="td-input td-num"
@@ -203,8 +218,13 @@ export interface StepLinesValue {
 
               @if (isAv()) {
                 <td class="td-computed">{{ formatAmount(lineTtcAv(i)) }}</td>
-              } @else if (isTm() || isLivrable()) {
+              } @else if (isTm()) {
                 <td class="td-computed">{{ formatAmount(lineTtcTm(i)) }}</td>
+              } @else if (isLivrable()) {
+                <!-- Assis sur le même Montant HT que la colonne ci-dessus (budget ×
+                     pctAFacturer / 100), pas sur le montant du contrôle : sans ça le TTC
+                     affiché dériverait du Montant HT affiché. -->
+                <td class="td-computed">{{ formatAmount(lineTtcLivrable(i)) }}</td>
               } @else {
                 <td class="td-computed">{{ formatAmount(lineHt(i)) }}</td>
                 <td class="td-computed">{{ formatAmount(lineTtc(i)) }}</td>
@@ -223,9 +243,12 @@ export interface StepLinesValue {
           @if (isAv()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcAv) }}</td>
-          } @else if (isTm() || isLivrable()) {
+          } @else if (isTm()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcTm) }}</td>
+          } @else if (isLivrable()) {
+            <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
+            <td class="total-ttc">{{ formatAmount(totalTtcLivrable) }}</td>
           } @else {
             <td colspan="4" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ht">{{ formatAmount(totalHt) }}</td>
@@ -322,7 +345,8 @@ export class StepLinesComponent {
   showActions = input<boolean>(true);
   affaireData = input.required<StepAffaireValue>();
   /** Set when editing an existing draft — seeds the lines table(s) with its saved lines
-   * instead of the usual single blank row, and preserves the T&M period unchanged. */
+   * instead of the usual single blank row, and preserves the T&M / Livrable period
+   * unchanged (both modes get one from the server at generation time). */
   initialLines = input<StepLinesValue | null>(null);
   prevStep    = output<void>();
   nextStep    = output<StepLinesValue>();
@@ -505,7 +529,12 @@ export class StepLinesComponent {
     }
     if (this.linesArray.length === 0) this.linesArray.push(this.newLine());
 
-    if (this.isTm()) {
+    // T&M ET Livrable : le serveur renseigne periodFrom/periodTo à la génération dans les
+    // deux cas (cf. DFValidationService.generateFromBillingLine[s]), et cette étape ne fait
+    // que les préserver. Ne les mémoriser qu'en T&M revenait à effacer la période facturée
+    // d'une facture Livrable au premier réenregistrement depuis ce wizard : `next()` ne
+    // pouvait plus la réémettre, et step-recap la transmet telle quelle dans la requête.
+    if (this.isTm() || this.isLivrable()) {
       this.initialPeriodFrom.set(initial.periodFrom ?? null);
       this.initialPeriodTo.set(initial.periodTo ?? null);
     }
@@ -577,6 +606,42 @@ export class StepLinesComponent {
   livrablePctAFacturerLabel(i: number): string {
     const v = this.livrableAvancement(i, 'pctAFacturer');
     return v == null ? '—' : this.formatPct(v);
+  }
+
+  /**
+   * Vrai quand la ligne porte les DEUX colonnes dont le serveur dérive son total —
+   * exactement la condition qu'il teste lui-même (`InvoiceService.saveLines` : lineTotal
+   * = budgetAffaire × pctAFacturer / 100 si les deux sont renseignées, sinon quantity ×
+   * unitRate). Faux pour une ligne ajoutée à la main dans cette étape, qui n'en a aucune :
+   * elle garde donc la saisie du montant, seul cas où le serveur la retient.
+   */
+  livrableHasAvancement(i: number): boolean {
+    return this.livrableAvancement(i, 'budgetAffaire') != null
+        && this.livrableAvancement(i, 'pctAFacturer')  != null;
+  }
+
+  /**
+   * Montant HT d'une ligne Livrable = budgetAffaire × pctAFacturer / 100 — la formule du
+   * serveur, reproduite à l'identique pour que l'écran montre le montant qui sera
+   * réellement enregistré, et non celui du contrôle `prixUnitaireHt` (que le serveur
+   * ignore dès que la ligne a son avancement). Même rôle que `lineHtAv` en Forfaitaire.
+   * Ligne ajoutée à la main : pas d'avancement, le montant saisi fait foi côté serveur
+   * comme ici.
+   */
+  lineHtLivrable(i: number): number {
+    if (!this.livrableHasAvancement(i)) return this.lineHtTm(i);
+    const budget = this.livrableAvancement(i, 'budgetAffaire') ?? 0;
+    const pct    = this.livrableAvancement(i, 'pctAFacturer')  ?? 0;
+    return budget * pct / 100;
+  }
+
+  lineTtcLivrable(i: number): number {
+    const g = this.linesArray.at(i) as FormGroup;
+    return this.lineHtLivrable(i) * (1 + (g.value.tauxTva ?? 0) / 100);
+  }
+
+  get totalTtcLivrable(): number {
+    return this.linesArray.controls.reduce((s, _, i) => s + this.lineTtcLivrable(i), 0);
   }
 
   // ── T&M et Livrable — calculs sur la ligne au montant déjà arrêté ───────────────
@@ -857,21 +922,32 @@ export class StepLinesComponent {
       // `undefined` (et non 0) quand la ligne n'a pas d'avancement — une ligne ajoutée à
       // la main ici : le backend retombe alors sur quantity × unitRate pour son total,
       // au lieu de le calculer comme budgetAffaire × pctAFacturer / 100.
+      // `unitRate` porte le montant CALCULÉ (lineHtLivrable), pas le contenu du contrôle,
+      // pour la même raison qu'en Forfaitaire : le total de la ligne sera dérivé de
+      // budgetAffaire × pctAFacturer côté serveur alors que l'en-tête de la facture se
+      // calcule, lui, en quantity × unitRate (cf. InvoiceService.computeSubtotal) — les
+      // faire partir de la même valeur est ce qui garantit qu'ils concordent.
       const livrableLines = (this.linesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
-      }[]).map(l => ({
+      }[]).map((l, i) => ({
         description:   l.description,
         quantity:      1,          // rétrocompat : quantity=1, unitRate=montant
-        unitRate:      l.prixUnitaireHt ?? 0,
+        unitRate:      this.lineHtLivrable(i),
         vatRatePct:    l.tauxTva,
         budgetAffaire: l.budgetAffaire ?? undefined,
         pctFacture:    l.pctFacture    ?? undefined,
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
       }));
-      this.nextStep.emit({ lines: livrableLines });
+      this.nextStep.emit({
+        lines: livrableLines,
+        // Période de génération du lot, telle que chargée — même raison qu'en T&M : elle
+        // vient du serveur et cette étape ne la rejoue pas (cf. seedFromInitialLines).
+        periodFrom: this.initialPeriodFrom(),
+        periodTo:   this.initialPeriodTo(),
+      });
     } else {
       this.nextStep.emit({
         lines: (this.linesArray.value as {
