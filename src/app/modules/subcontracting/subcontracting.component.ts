@@ -1,8 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   PageComponent, PageHeaderComponent, SelectComponent, SelectOption, TabItem, TabsComponent,
+  tabParam,
 } from '@khalilrebhiitec/daf360';
 import { AffaireService } from '../affaires/affaire.service';
 import { PaysRefDto } from '../affaires/affaire.model';
@@ -25,10 +25,9 @@ const TAB_IDS: TabId[] = ['st', 'ordres', 'analyse'];
 export class SubcontractingComponent implements OnInit {
   private readonly affaireSvc = inject(AffaireService);
   private readonly translate  = inject(TranslateService);
-  private readonly router     = inject(Router);
-  private readonly route      = inject(ActivatedRoute);
 
-  activeTab      = signal<TabId>('st');
+  /** Adossé au paramètre d'URL : voir tabParam. Survit au rechargement et au précédent. */
+  activeTab      = tabParam<TabId>(TAB_IDS, 'st');
   pays           = signal<PaysRefDto[]>([]);
   selectedPaysId = signal<number | null>(null);
 
@@ -65,9 +64,6 @@ export class SubcontractingComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const tab = this.route.snapshot.queryParamMap.get('tab');
-    if (tab && (TAB_IDS as string[]).includes(tab)) this.activeTab.set(tab as TabId);
-
     this.affaireSvc.getPays().subscribe({
       next: p => {
         this.pays.set(p);
@@ -75,16 +71,6 @@ export class SubcontractingComponent implements OnInit {
         this.firstLoad.set(false);
       },
       error: () => this.firstLoad.set(false),
-    });
-  }
-
-  onTabChange(id: string): void {
-    this.activeTab.set(id as TabId);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { tab: id },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
     });
   }
 

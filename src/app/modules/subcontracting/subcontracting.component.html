@@ -24,8 +24,7 @@
        per-tab work in this page. Active tab lives in ?tab= (§10f). -->
   <daf-tabs #tabsRef
     [tabs]="tabs()"
-    [active]="activeTab()"
-    (activeChange)="onTabChange($event)"
+    [(active)]="activeTab"
     idPrefix="sc" />
 
   <div role="tabpanel"

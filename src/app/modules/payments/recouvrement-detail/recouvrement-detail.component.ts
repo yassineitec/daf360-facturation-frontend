@@ -6,6 +6,7 @@ import {
   ButtonComponent, DafCellDirective, DataTableComponent,
   FormFieldComponent, MetricCardComponent, PageComponent, PageHeaderComponent,
   SectionCardComponent, TabsComponent,
+  tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
   BadgeVariant, BreadcrumbItem, MetricCardOptions, MetricDelta, PageHeaderBadge,
@@ -92,7 +93,8 @@ export class RecouvrementDetailComponent implements OnInit {
   showSuspendForm  = signal(false);
   suspendReason    = signal('');
 
-  activeTab = signal<string>('reminders');
+  /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
+  activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'reminders');
 
   // ═══ Dérivés métier ═══════════════════════════════════════════════════════
 

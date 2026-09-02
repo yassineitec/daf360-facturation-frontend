@@ -9,6 +9,7 @@ import {
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
   RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, StatusBadgeComponent,
   TabsComponent,
+  tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
   AvatarData, BadgeCell, BadgeOptions, BarChartBar, BarChartOptions, BreadcrumbItem,
@@ -579,7 +580,8 @@ export class AffaireDetailComponent implements OnInit {
   /** Error surfaced *inside* an open modal, where the page banner isn't visible. */
   modalError  = signal<string | null>(null);
 
-  activeTab          = signal<string>('overview');
+  /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
+  activeTab          = tabParam(computed(() => this.tabs().map(t => t.id)), 'overview');
   activityDrawerOpen = signal(false);
   budgetLoading      = signal(false);
   // `showTsForm` a disparu avec la fenêtre maison : la modale TS est portée par

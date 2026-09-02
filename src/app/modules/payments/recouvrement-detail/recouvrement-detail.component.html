@@ -155,8 +155,7 @@
         <daf-tabs #tabsRef
           variant="underline"
           [tabs]="tabs()"
-          [active]="activeTab()"
-          (activeChange)="activeTab.set($event)"
+          [(active)]="activeTab"
           [tabsLabel]="'PAYMENTS.DETAIL.TABS_ARIA' | translate"
           idPrefix="recouvrement-detail" />
 

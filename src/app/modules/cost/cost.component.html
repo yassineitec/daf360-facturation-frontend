@@ -7,8 +7,7 @@
   <!-- daf-tabs is strip-only — the consumer renders the panel. Active tab in ?tab=. -->
   <daf-tabs #tabsRef
     [tabs]="tabs()"
-    [active]="activeTab()"
-    (activeChange)="onTabChange($event)"
+    [(active)]="activeTab"
     idPrefix="cost" />
 
   <div role="tabpanel"

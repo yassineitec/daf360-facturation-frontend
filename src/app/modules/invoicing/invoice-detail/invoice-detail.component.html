@@ -145,8 +145,7 @@
         <daf-tabs #tabsRef
           variant="underline"
           [tabs]="tabs()"
-          [active]="activeTab()"
-          (activeChange)="activeTab.set($event)"
+          [(active)]="activeTab"
           [tabsLabel]="'INVOICING.DETAIL.TABS_ARIA' | translate"
           idPrefix="invoice-detail" />
 

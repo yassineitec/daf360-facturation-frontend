@@ -9,6 +9,7 @@ import {
   CheckboxComponent, FormFieldComponent, MetricCardComponent, ModalRef, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, SectionCardComponent,
   TabsComponent,
+  tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
   AvatarData, BreadcrumbItem, MetricCardOptions, MetricDelta, PageHeaderBadge,
@@ -74,7 +75,8 @@ export class ClientDetailComponent implements OnInit {
   isLoading   = signal(true);
   actionError = signal<string | null>(null);
 
-  activeTab = signal<string>('overview');
+  /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
+  activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'overview');
 
   /**
    * Le corps de la modale de saisie d'un contact. `ModalConfig.body` accepte un

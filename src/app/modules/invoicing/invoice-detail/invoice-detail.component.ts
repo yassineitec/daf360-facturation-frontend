@@ -7,6 +7,7 @@ import {
   ButtonComponent, ButtonOptions, DafCellDirective, DataTableComponent,
   FormFieldComponent, MetricCardComponent, ModalService, PageComponent,
   PageHeaderComponent, SectionCardComponent, TabsComponent,
+  tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
   BreadcrumbItem, MetricCardOptions, MetricDelta, PageHeaderBadge,
@@ -85,7 +86,8 @@ export class InvoiceDetailComponent implements OnInit {
   showPaymentModal = signal(false);
   showCreditNote   = signal(false);
 
-  activeTab = signal<string>('lines');
+  /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
+  activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'lines');
 
   /** Texte partagé par les trois modales à commentaire (retour, litige, résolution). */
   readonly commentText = signal('');
