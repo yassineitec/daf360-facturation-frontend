@@ -7,6 +7,7 @@ import {
   DisciplineExtDto, WbsExtDto, DocumentExtDto,
   AffectationManuelleItem, AffaireLivrableDto, CollaborateurTauxDto,
 } from './livrable.model';
+import { BillingLineDto } from './billing/billing.service';
 
 @Injectable({ providedIn: 'root' })
 export class LivrableService {
@@ -68,6 +69,20 @@ export class LivrableService {
   getLivrables(affaireId: number): Observable<AffaireLivrableDto[]> {
     return this.http.get<AffaireLivrableDto[]>(
       `${this.base}/${affaireId}/livrables`,
+      { withCredentials: true });
+  }
+
+  /** DF groups several ready-to-bill livrables into one invoice — the returned
+   * BillingLineDto (matching validateDF()'s own return shape) carries invoiceId so the
+   * caller can redirect straight into the new invoice. */
+  validateLivrables(
+    affaireId: number,
+    livrableIds: number[],
+    billingDate?: string,
+  ): Observable<BillingLineDto> {
+    return this.http.post<BillingLineDto>(
+      `${this.base}/${affaireId}/livrables/validate`,
+      { livrableIds, billingDate },
       { withCredentials: true });
   }
 
