@@ -16,8 +16,10 @@ export interface StepLinesValue {
     quantity:       number;
     unitRate:       number;
     vatRatePct:     number;
-    // Avancement — présents en mode AV (Forfaitaire) et T&M (WIP validé, avancement
-    // toujours fixé à 100 % — cf. isTm() plus bas)
+    // Avancement — présents en mode AV (Forfaitaire, calculé depuis le taux saisi),
+    // Livrable (calculé par ligne/document côté serveur à la génération — cf.
+    // isLivrable() plus bas) et T&M (WIP validé, avancement toujours fixé à 100 % —
+    // cf. isTm() plus bas)
     budgetAffaire?: number;
     pctFacture?:    number;
     pctAvancement?: number;
@@ -145,17 +147,36 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ formatPct(pctAFacturer(i)) }}</td>
                 <!-- Montant HT = budget × pctAFacturer / 100 (calculé) -->
                 <td class="td-computed">{{ formatAmount(lineHtAv(i)) }}</td>
-              } @else if (isTm() || isLivrable()) {
-                <!-- T&M et Livrable : une ligne ici facture la totalité du montant déjà
-                     calculé côté serveur (WIP validé pour T&M, allocation groupée pour
-                     Livrable) — pas de budget d'affaire à comparer, Budget affaire vaut
-                     donc toujours le Montant HT lui-même et les trois pourcentages sont
-                     fixés à 100 % (cf. DFValidationService.buildInvoiceLine côté backend).
-                     Seul le montant (Montant HT) est saisissable. -->
+              } @else if (isTm()) {
+                <!-- T&M : une ligne ici facture la totalité du WIP déjà validé et calculé
+                     côté serveur pour sa période — pas de budget d'affaire à comparer,
+                     Budget affaire vaut donc toujours le Montant HT lui-même et les trois
+                     pourcentages sont fixés à 100 % (cf. DFValidationService.buildInvoiceLine
+                     côté backend, branche REGIE). Seul le montant (Montant HT) est
+                     saisissable. -->
                 <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
+                <td>
+                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
+                    min="0" step="0.01" (input)="recalc(i)" />
+                </td>
+              } @else if (isLivrable()) {
+                <!-- Livrable : les quatre colonnes d'avancement portent de VRAIES valeurs,
+                     propres au document facturé (budget alloué du livrable, % déjà facturé
+                     avant cette facture, % à date, delta à facturer) — calculées une seule
+                     fois côté serveur à la génération de la facture, depuis le pourcentage
+                     que le DF a saisi dans l'onglet WIP avant même que la facture existe
+                     (cf. DFValidationService.buildInvoiceLine, branche LIVRABLE). Purement
+                     consultatives ici, exactement comme Budget affaire et % déjà facturé le
+                     sont en Forfaitaire : cette étape ne rejoue pas la saisie du pourcentage,
+                     elle réaffiche puis réémet tel quel ce que la ligne porte déjà.
+                     '—' pour une ligne ajoutée à la main ici, qui n'a aucun avancement. -->
+                <td class="td-computed">{{ livrableBudgetAffaireLabel(i) }}</td>
+                <td class="td-computed">{{ livrablePctFactureLabel(i) }}</td>
+                <td class="td-computed">{{ livrablePctAvancementLabel(i) }}</td>
+                <td class="td-computed">{{ livrablePctAFacturerLabel(i) }}</td>
                 <td>
                   <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
                     min="0" step="0.01" (input)="recalc(i)" />
@@ -322,9 +343,16 @@ export class StepLinesComponent {
 
   /** Vrai si l'affaire est en mode Livrable — une ligne ici vient toujours d'une
    * génération groupée déjà calculée côté serveur (LivrableBillingService), jamais saisie
-   * à la main. Même traitement flat-100% que T&M ci-dessous : sans cette branche, rouvrir
-   * et sauvegarder l'étape Lignes d'une facture Livrable effacerait silencieusement ses
-   * colonnes d'avancement (elle tomberait dans la branche générique, qui ne les inclut pas). */
+   * à la main. Contrairement au T&M, une ligne Livrable porte de VRAIES colonnes
+   * d'avancement : chaque document suit son propre pourcentage cumulé facturé, exactement
+   * la même relation qu'en Forfaitaire (pctAvancement = pctFacture + pctAFacturer) mais à
+   * l'échelle d'un document plutôt que de l'affaire entière. Elles sont figées à la
+   * génération de la facture (DFValidationService.buildInvoiceLine, branche LIVRABLE,
+   * depuis pctPrecedent/pctSaisi de la BillingLine et le budget alloué du livrable) :
+   * cette étape les affiche et les réémet telles quelles, sans jamais les recalculer —
+   * sans cette branche, rouvrir et sauvegarder l'étape Lignes d'une facture Livrable
+   * effacerait son suivi d'avancement réel (elle tomberait dans la branche générique, qui
+   * n'inclut pas ces colonnes du tout). */
   readonly isLivrable = computed(() => this.affaireData().billingMode === 'LIVRABLE');
 
   private readonly initialPeriodFrom = signal<string | null>(null);
@@ -462,6 +490,13 @@ export class StepLinesComponent {
           prixUnitaireHt:  l.unitRate,
           tauxTva:         l.vatRatePct,
           pctAvancement:   l.pctAvancement ?? null,
+          // Chargées pour le mode Livrable, qui les affiche et les réémet telles quelles
+          // (cf. isLivrable()). Inertes dans les autres modes : le Forfaitaire prend son
+          // budget et son % déjà facturé dans `progress()`, le T&M les fixe à 100 % et le
+          // mode standard n'a pas ces colonnes du tout.
+          budgetAffaire:   l.budgetAffaire ?? null,
+          pctFacture:      l.pctFacture    ?? null,
+          pctAFacturer:    l.pctAFacturer  ?? null,
           sourceExpenseId: l.sourceExpenseId ?? null,
           profileUserId:   l.profileUserId ?? null,
         });
@@ -494,16 +529,66 @@ export class StepLinesComponent {
       quantite:         [1,  [Validators.required, Validators.min(0.01)]],
       prixUnitaireHt:   [0,  [Validators.required, Validators.min(0)]],
       pctAvancement:    [null],
+      // Mode Livrable uniquement : les trois autres colonnes d'avancement de la ligne,
+      // telles que le serveur les a calculées à la génération de la facture. Sans ces
+      // contrôles, `seedFromInitialLines` n'avait nulle part où les charger et `next()`
+      // n'avait rien à réémettre — d'où les 100 % codés en dur qu'ils remplacent.
+      // Ni validateur ni valeur par défaut : le mode Forfaitaire lit son budget et son
+      // % déjà facturé depuis `progress()` (échelle affaire) et ignore ces contrôles,
+      // le mode T&M et le mode standard aussi — les ajouter ne change donc rien pour eux.
+      budgetAffaire:    [null as number | null],
+      pctFacture:       [null as number | null],
+      pctAFacturer:     [null as number | null],
       tauxTva:          [19],
       sourceExpenseId:  [null as number | null],
       profileUserId:    [null as number | null],
     });
   }
 
-  // ── T&M — calculs sur la ligne WIP validée ──────────────────────────────────────
+  // ── Livrable — colonnes d'avancement de la ligne (lecture seule) ─────────────────
+  //
+  // Lues sur le FormGroup de la ligne, jamais recalculées : elles ont été fixées une
+  // seule fois côté serveur à la génération de la facture (cf. isLivrable() plus haut).
+  // `null` = ligne sans avancement (ajoutée à la main dans cette étape) → affichée '—'.
 
-  /** Montant HT = le montant saisi directement — Budget affaire l'égale toujours (cf.
-   * commentaire dans le template), avancement fixé à 100 %. */
+  private livrableAvancement(
+    i: number,
+    key: 'budgetAffaire' | 'pctFacture' | 'pctAvancement' | 'pctAFacturer',
+  ): number | null {
+    const v = (this.linesArray.at(i) as FormGroup).get(key)?.value;
+    return v == null || v === '' ? null : Number(v);
+  }
+
+  livrableBudgetAffaireLabel(i: number): string {
+    const v = this.livrableAvancement(i, 'budgetAffaire');
+    return v == null ? '—' : this.formatAmount(v);
+  }
+
+  livrablePctFactureLabel(i: number): string {
+    const v = this.livrableAvancement(i, 'pctFacture');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  livrablePctAvancementLabel(i: number): string {
+    const v = this.livrableAvancement(i, 'pctAvancement');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  livrablePctAFacturerLabel(i: number): string {
+    const v = this.livrableAvancement(i, 'pctAFacturer');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  // ── T&M et Livrable — calculs sur la ligne au montant déjà arrêté ───────────────
+  //
+  // Partagés par les deux modes : dans les deux cas le montant de la ligne a été calculé
+  // côté serveur (WIP validé en T&M, % du budget du document en Livrable) et se saisit
+  // directement, sans Qté × PU. Seules les colonnes d'avancement diffèrent — 100 % partout
+  // en T&M, valeurs réelles de la ligne en Livrable (cf. le template).
+
+  /** Montant HT = le montant saisi directement. En T&M, Budget affaire l'égale toujours
+   * (cf. commentaire dans le template) ; en Livrable, Budget affaire est celui du document
+   * et n'a aucun lien avec ce getter. */
   lineHtTm(i: number): number {
     const g = this.linesArray.at(i) as FormGroup;
     return g.value.prixUnitaireHt ?? 0;
@@ -760,25 +845,32 @@ export class StepLinesComponent {
         periodTo:   this.initialPeriodTo(),
       });
     } else if (this.isLivrable()) {
-      // Même traitement que T&M : chaque ligne (une par livrable groupé dans la facture)
-      // garde ses trois pourcentages à 100 % et son propre montant comme budgetAffaire —
-      // un livrable n'a pas de notion de pourcentage du budget, cf. LivrableBillingService
-      // côté serveur.
+      // Chaque ligne (un livrable groupé dans la facture) porte un VRAI pourcentage du
+      // budget de son document : le DF l'a saisi dans l'onglet WIP avant que la facture
+      // existe, et le serveur en a dérivé les quatre colonnes une fois pour toutes à la
+      // génération (DFValidationService.buildInvoiceLine, branche LIVRABLE). Cette étape
+      // les réémet donc TELLES QUELLES, sans rien recalculer : les figer à 100 % — ce
+      // qu'elle faisait quand tout livrable se facturait forcément à 100 % — écrasait
+      // silencieusement le suivi d'avancement du document dès qu'on repassait par ici,
+      // alors que la fiche facture, l'export PDF et la réconciliation
+      // AffaireLivrable.pctFacture le relisent tel quel.
+      // `undefined` (et non 0) quand la ligne n'a pas d'avancement — une ligne ajoutée à
+      // la main ici : le backend retombe alors sur quantity × unitRate pour son total,
+      // au lieu de le calculer comme budgetAffaire × pctAFacturer / 100.
       const livrableLines = (this.linesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number;
-      }[]).map(l => {
-        const montant = l.prixUnitaireHt ?? 0;
-        return {
-          description:   l.description,
-          quantity:      1,
-          unitRate:      montant,
-          vatRatePct:    l.tauxTva,
-          budgetAffaire: montant,
-          pctFacture:    100,
-          pctAvancement: 100,
-          pctAFacturer:  100,
-        };
-      });
+        budgetAffaire: number | null; pctFacture: number | null;
+        pctAvancement: number | null; pctAFacturer: number | null;
+      }[]).map(l => ({
+        description:   l.description,
+        quantity:      1,          // rétrocompat : quantity=1, unitRate=montant
+        unitRate:      l.prixUnitaireHt ?? 0,
+        vatRatePct:    l.tauxTva,
+        budgetAffaire: l.budgetAffaire ?? undefined,
+        pctFacture:    l.pctFacture    ?? undefined,
+        pctAvancement: l.pctAvancement ?? undefined,
+        pctAFacturer:  l.pctAFacturer  ?? undefined,
+      }));
       this.nextStep.emit({ lines: livrableLines });
     } else {
       this.nextStep.emit({
