@@ -270,18 +270,22 @@ export class InvoiceDetailComponent implements OnInit {
   // ═══ Table des lignes ═════════════════════════════════════════════════════
 
   /**
-   * Mode AV (Forfaitaire) : les lignes n'ont pas de vraies Qté/PU HT — la création
-   * (step-lines.component) saisit budget/%avancement à la place et n'y écrit que
-   * quantity=1, unitRate=montantHt pour rétrocompatibilité (voir InvoiceLineRequest).
-   * Afficher ces deux colonnes ici serait donc trompeur ; on montre les mêmes
-   * colonnes qu'à la création.
+   * Mode AV (Forfaitaire) ou T&M (WIP validé) : les lignes n'ont pas de vraies Qté/PU HT —
+   * la création (step-lines.component) saisit budget/%avancement à la place et n'y écrit
+   * que quantity=1, unitRate=montantHt pour rétrocompatibilité (voir InvoiceLineRequest).
+   * Afficher ces deux colonnes ici serait donc trompeur ; on montre les mêmes colonnes
+   * qu'à la création. En T&M, l'avancement est toujours fixé à 100 % (une seule ligne =
+   * la totalité du WIP de la période) — cf. DFValidationService.buildInvoiceLine().
    */
-  readonly isAv = computed(() => this.invoice()?.billingMode === 'AV');
+  readonly usesAvancementColumns = computed(() => {
+    const mode = this.invoice()?.billingMode;
+    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE';
+  });
 
   readonly lineTableColumns = computed((): TableColumn[] => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    if (this.isAv()) {
+    if (this.usesAvancementColumns()) {
       return [
         { key: 'description',    label: t('INVOICING.DETAIL.LINES.DESC'),                type: 'custom' },
         { key: 'budgetAffaire',  label: t('INVOICING.STEP_LINES.BUDGET_AFFAIRE'),  type: 'custom', align: 'right' },
@@ -487,6 +491,14 @@ export class InvoiceDetailComponent implements OnInit {
     const affaireId = this.invoice()?.affaireId;
     if (!affaireId) return;
     this.router.navigate(['../../affaires', affaireId], { relativeTo: this.route });
+  }
+
+  /** `invoicing/:id/edit` is a sibling of this `:id` route, not a child of it — one `..`
+   * to reach their shared parent (`invoicing/`), then back down into the sibling. */
+  editDraft(): void {
+    const id = this.invoice()?.id;
+    if (!id) return;
+    this.router.navigate(['..', id, 'edit'], { relativeTo: this.route });
   }
 
   /** Export PDF (mode AV uniquement) — brouillon non numéroté tant que la facture n'est

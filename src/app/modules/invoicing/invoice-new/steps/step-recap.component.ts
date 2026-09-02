@@ -8,6 +8,7 @@ import { ClientDetailDto } from '../../../clients/client.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';
+import { enumLabel } from '../../../../shared/enum-labels';
 
 @Component({
   selector: 'app-step-recap',
@@ -22,7 +23,7 @@ import { StepConditionsValue } from './step-conditions.component';
     <div class="recap-grid">
       <div class="recap-row">
         <span class="recap-label">{{ 'INVOICING.STEP_RECAP.TYPE' | translate }}</span>
-        <span class="recap-val">{{ ('INVOICING.INVOICE_TYPE.' + affaireData().invoiceType) | translate }}</span>
+        <span class="recap-val">{{ invoiceTypeLabel() }}</span>
       </div>
       @if (affaireData().affaireId) {
         <div class="recap-row">
@@ -85,30 +86,59 @@ import { StepConditionsValue } from './step-conditions.component';
       <thead>
         <tr>
           <th>{{ 'INVOICING.STEP_RECAP.DESC' | translate }}</th>
-          <th>{{ 'INVOICING.STEP_RECAP.QTY' | translate }}</th>
-          <th>{{ 'INVOICING.STEP_RECAP.UNIT_PRICE' | translate }}</th>
+          @if (usesAvancementColumns()) {
+            <th>{{ 'INVOICING.STEP_LINES.BUDGET_AFFAIRE' | translate }}</th>
+            <th>{{ 'INVOICING.STEP_LINES.PCT_FACTURE' | translate }}</th>
+            <th>{{ 'INVOICING.STEP_LINES.PCT_AVANCEMENT' | translate }}</th>
+            <th>{{ 'INVOICING.STEP_LINES.PCT_A_FACTURER' | translate }}</th>
+            <th>{{ 'INVOICING.STEP_LINES.MONTANT_HT' | translate }}</th>
+          } @else {
+            <th>{{ 'INVOICING.STEP_RECAP.QTY' | translate }}</th>
+            <th>{{ 'INVOICING.STEP_RECAP.UNIT_PRICE' | translate }}</th>
+          }
           <th>{{ 'INVOICING.STEP_RECAP.VAT' | translate }}</th>
-          <th>{{ 'INVOICING.STEP_RECAP.TOTAL_HT' | translate }}</th>
-          <th>{{ 'INVOICING.STEP_RECAP.TOTAL_TTC' | translate }}</th>
+          @if (usesAvancementColumns()) {
+            <th>{{ 'INVOICING.STEP_RECAP.TOTAL_TTC' | translate }}</th>
+          } @else {
+            <th>{{ 'INVOICING.STEP_RECAP.TOTAL_HT' | translate }}</th>
+            <th>{{ 'INVOICING.STEP_RECAP.TOTAL_TTC' | translate }}</th>
+          }
         </tr>
       </thead>
       <tbody>
         @for (l of linesData().lines; track $index) {
           <tr>
             <td>{{ l.description }}</td>
-            <td class="num">{{ l.quantity }}</td>
-            <td class="num">{{ formatAmount(l.unitRate) }}</td>
+            @if (usesAvancementColumns()) {
+              <td class="num">{{ formatAmount(l.budgetAffaire ?? 0) }}</td>
+              <td class="num">{{ l.pctFacture ?? 0 }}%</td>
+              <td class="num">{{ l.pctAvancement ?? 0 }}%</td>
+              <td class="num">{{ l.pctAFacturer ?? 0 }}%</td>
+              <td class="num">{{ formatAmount(l.quantity * l.unitRate) }}</td>
+            } @else {
+              <td class="num">{{ l.quantity }}</td>
+              <td class="num">{{ formatAmount(l.unitRate) }}</td>
+            }
             <td class="num">{{ l.vatRatePct }}%</td>
-            <td class="num">{{ formatAmount(l.quantity * l.unitRate) }}</td>
-            <td class="num">{{ formatAmount(l.quantity * l.unitRate * (1 + l.vatRatePct / 100)) }}</td>
+            @if (usesAvancementColumns()) {
+              <td class="num">{{ formatAmount(l.quantity * l.unitRate * (1 + l.vatRatePct / 100)) }}</td>
+            } @else {
+              <td class="num">{{ formatAmount(l.quantity * l.unitRate) }}</td>
+              <td class="num">{{ formatAmount(l.quantity * l.unitRate * (1 + l.vatRatePct / 100)) }}</td>
+            }
           </tr>
         }
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="4" class="total-label">{{ 'INVOICING.STEP_RECAP.TOTAL' | translate }}</td>
-          <td class="num total-ht">{{ formatAmount(totalHt()) }}</td>
-          <td class="num total-ttc">{{ formatAmount(totalTtc()) }}</td>
+          @if (usesAvancementColumns()) {
+            <td colspan="7" class="total-label">{{ 'INVOICING.STEP_RECAP.TOTAL' | translate }}</td>
+            <td class="num total-ttc">{{ formatAmount(totalTtc()) }}</td>
+          } @else {
+            <td colspan="4" class="total-label">{{ 'INVOICING.STEP_RECAP.TOTAL' | translate }}</td>
+            <td class="num total-ht">{{ formatAmount(totalHt()) }}</td>
+            <td class="num total-ttc">{{ formatAmount(totalTtc()) }}</td>
+          }
         </tr>
       </tfoot>
     </table>
@@ -139,7 +169,7 @@ import { StepConditionsValue } from './step-conditions.component';
       <span class="material-symbols-outlined">check_circle</span>
       <span>{{ 'INVOICING.STEP_RECAP.SAVED_MSG' | translate }}</span>
       <div class="recap-success-actions">
-        @if (affaireData().billingMode === 'AV') {
+        @if (affaireData().billingMode === 'FORFAIT' || affaireData().billingMode === 'REGIE' || affaireData().billingMode === 'LIVRABLE') {
           <button type="button" class="btn-draft" [disabled]="exportingPdf()" (click)="exportPdf(invId)">
             <span class="material-symbols-outlined">picture_as_pdf</span>
             {{ exportingPdf() ? ('INVOICING.STEP_RECAP.EXPORTING' | translate) : ('INVOICING.STEP_RECAP.EXPORT_PDF' | translate) }}
@@ -187,6 +217,9 @@ export class StepRecapComponent {
   affaireData    = input.required<StepAffaireValue>();
   linesData      = input.required<StepLinesValue>();
   conditionsData = input.required<StepConditionsValue>();
+  /** Non-null when editing an existing DRAFT — saveDraft/saveAndSubmit then call
+   * updateDraft() on this id instead of creating a new invoice. */
+  editInvoiceId  = input<number | null>(null);
   prevStep       = output<void>();
 
   saving      = signal(false);
@@ -215,6 +248,18 @@ export class StepRecapComponent {
       }
     });
   }
+
+  readonly invoiceTypeLabel = computed(() =>
+    enumLabel(this.translate, 'INVOICE_TYPE', this.affaireData().invoiceType));
+
+  /** AV (Forfaitaire) et T&M (WIP validé) affichent budget/%avancement au lieu de
+   * Qté/PU HT — mêmes colonnes qu'à la saisie (step-lines) et qu'à la fiche facture
+   * une fois enregistrée (invoice-detail), pour ne jamais montrer une vue différente
+   * de ce que l'utilisateur vient de saisir/valider. */
+  readonly usesAvancementColumns = computed(() => {
+    const mode = this.affaireData().billingMode;
+    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE';
+  });
 
   readonly totalHt = computed(() =>
     this.linesData().lines.reduce((s, l) => s + l.quantity * l.unitRate, 0)
@@ -252,6 +297,7 @@ export class StepRecapComponent {
       paysId:        a.paysId,
       affaireId:     a.affaireId,
       clientId:      a.clientId,
+      invoiceType:   a.invoiceType,
       billingMode:   a.billingMode,
       currency:      a.currency,
       tsId:          a.tsId,
@@ -259,13 +305,23 @@ export class StepRecapComponent {
       notes:         c.notes,
       bonDeCommande: c.bonDeCommande,
       lines:         l.lines,
+      periodFrom:    l.periodFrom,
+      periodTo:      l.periodTo,
     };
+  }
+
+  /** createDraft (new invoice) or updateDraft (editing an existing one) — same request shape. */
+  private saveOrUpdateDraft() {
+    const id = this.editInvoiceId();
+    return id != null
+      ? this.svc.updateDraft(id, this.buildRequest())
+      : this.svc.createDraft(this.buildRequest());
   }
 
   saveDraft(): void {
     this.saving.set(true);
     this.serverError.set(null);
-    this.svc.createDraft(this.buildRequest()).subscribe({
+    this.saveOrUpdateDraft().subscribe({
       next:  inv => { this.saving.set(false); this.savedInvoiceId.set(inv.id); },
       error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur.'); },
     });
@@ -274,7 +330,7 @@ export class StepRecapComponent {
   saveAndSubmit(): void {
     this.saving.set(true);
     this.serverError.set(null);
-    this.svc.createDraft(this.buildRequest()).subscribe({
+    this.saveOrUpdateDraft().subscribe({
       next: inv => {
         this.svc.submit(inv.id).subscribe({
           next:  () => { this.saving.set(false); this.savedInvoiceId.set(inv.id); },
@@ -331,7 +387,8 @@ export class StepRecapComponent {
 
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: 'TND', minimumFractionDigits: 0, maximumFractionDigits: 2,
+      style: 'currency', currency: this.affaireData().currency ?? 'TND',
+      minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(v);
   }
 

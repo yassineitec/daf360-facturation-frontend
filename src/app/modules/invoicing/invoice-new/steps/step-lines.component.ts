@@ -10,21 +10,26 @@ import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.se
 import { FactListService } from '../../../../core/fact-list.service';
 import { ListValueDto } from '../../../cost/cost.model';
 import { humanise } from '../../../../shared/enum-labels';
-
 export interface StepLinesValue {
   lines: {
     description:    string;
     quantity:       number;
     unitRate:       number;
     vatRatePct:     number;
-    // Avancement — présents uniquement en mode AV (Forfaitaire)
+    // Avancement — présents en mode AV (Forfaitaire) et T&M (WIP validé, avancement
+    // toujours fixé à 100 % — cf. isTm() plus bas)
     budgetAffaire?: number;
     pctFacture?:    number;
     pctAvancement?: number;
     pctAFacturer?:  number;
     // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
     sourceExpenseId?: number;
+    // T&M — collaborateur associé, présent uniquement en mode T&M
+    profileUserId?: number;
   }[];
+  // T&M — période facturée (source des heures récupérées) ; null hors mode T&M
+  periodFrom?: string | null;
+  periodTo?:   string | null;
 }
 
 @Component({
@@ -40,7 +45,7 @@ export interface StepLinesValue {
       <button type="button" class="btn-add-line" (click)="addLine()">
         {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
       </button>
-      @if (isRmb() || isAv()) {
+      @if (isAv()) {
         <button type="button" class="btn-add-line btn-add-rmb" [disabled]="!categoriesLoaded()"
           (click)="toggleRmbPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_REMBOURSABLE' | translate }}
@@ -49,7 +54,7 @@ export interface StepLinesValue {
     </div>
   </div>
 
-  @if ((isRmb() || isAv()) && rmbPickerOpen()) {
+  @if ((isAv()) && rmbPickerOpen()) {
     <div class="rmb-picker-panel">
       @if (pickableExpenses().length === 0) {
         <p class="rmb-picker-empty">{{ 'INVOICING.STEP_LINES.REMBOURSABLE_EMPTY' | translate }}</p>
@@ -90,7 +95,7 @@ export interface StepLinesValue {
       <thead>
         <tr>
           <th class="col-desc">{{ 'INVOICING.STEP_LINES.DESC' | translate }}</th>
-          @if (isAv()) {
+          @if (isAv() || isTm() || isLivrable()) {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.BUDGET_AFFAIRE' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.PCT_FACTURE' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.PCT_AVANCEMENT' | translate }}</th>
@@ -101,7 +106,7 @@ export interface StepLinesValue {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.UNIT_PRICE' | translate }}</th>
           }
           <th class="col-num">{{ 'INVOICING.STEP_LINES.VAT' | translate }}</th>
-          @if (isAv()) {
+          @if (isAv() || isTm() || isLivrable()) {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_TTC' | translate }}</th>
           } @else {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_HT' | translate }}</th>
@@ -140,6 +145,20 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ formatPct(pctAFacturer(i)) }}</td>
                 <!-- Montant HT = budget × pctAFacturer / 100 (calculé) -->
                 <td class="td-computed">{{ formatAmount(lineHtAv(i)) }}</td>
+              } @else if (isTm()) {
+                <!-- T&M : une ligne WIP validée facture la totalité du montant calculé sur
+                     sa période — pas de budget d'affaire à comparer, Budget affaire vaut
+                     donc toujours le Montant HT lui-même et les trois pourcentages sont
+                     fixés à 100 % (cf. DFValidationService.buildInvoiceLine côté backend).
+                     Seul le montant (Montant HT) est saisissable. -->
+                <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
+                <td class="td-computed">{{ formatPct(100) }}</td>
+                <td class="td-computed">{{ formatPct(100) }}</td>
+                <td class="td-computed">{{ formatPct(100) }}</td>
+                <td>
+                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
+                    min="0" step="0.01" (input)="recalc(i)" />
+                </td>
               } @else {
                 <td>
                   <input type="number" formControlName="quantite" class="td-input td-num"
@@ -162,6 +181,8 @@ export interface StepLinesValue {
 
               @if (isAv()) {
                 <td class="td-computed">{{ formatAmount(lineTtcAv(i)) }}</td>
+              } @else if (isTm()) {
+                <td class="td-computed">{{ formatAmount(lineTtcTm(i)) }}</td>
               } @else {
                 <td class="td-computed">{{ formatAmount(lineHt(i)) }}</td>
                 <td class="td-computed">{{ formatAmount(lineTtc(i)) }}</td>
@@ -180,6 +201,9 @@ export interface StepLinesValue {
           @if (isAv()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcAv) }}</td>
+          } @else if (isTm()) {
+            <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
+            <td class="total-ttc">{{ formatAmount(totalTtcTm) }}</td>
           } @else {
             <td colspan="4" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ht">{{ formatAmount(totalHt) }}</td>
@@ -275,6 +299,9 @@ export class StepLinesComponent {
 
   showActions = input<boolean>(true);
   affaireData = input.required<StepAffaireValue>();
+  /** Set when editing an existing draft — seeds the lines table(s) with its saved lines
+   * instead of the usual single blank row, and preserves the T&M period unchanged. */
+  initialLines = input<StepLinesValue | null>(null);
   prevStep    = output<void>();
   nextStep    = output<StepLinesValue>();
 
@@ -284,10 +311,23 @@ export class StepLinesComponent {
   readonly progress = signal<{ budgetTotal: number; pctFacture: number } | null>(null);
 
   /** Vrai si l'affaire est en mode Forfaitaire / Avancement (AV) */
-  readonly isAv = computed(() => this.affaireData().billingMode === 'AV');
+  readonly isAv = computed(() => this.affaireData().billingMode === 'FORFAIT');
 
-  /** Vrai si l'affaire est en mode Frais remboursables (RMB) */
-  readonly isRmb = computed(() => this.affaireData().billingMode === 'RMB');
+  /** Vrai si l'affaire est en mode Temps & Moyens (T&M) — une ligne T&M ici vient
+   * toujours d'un WIP déjà validé (montant déjà calculé côté serveur), jamais saisie à la
+   * main : la période facturée est donc préservée telle quelle, pas éditable dans cette
+   * étape (cf. initialPeriodFrom/To ci-dessous). */
+  readonly isTm = computed(() => this.affaireData().billingMode === 'REGIE');
+
+  /** Vrai si l'affaire est en mode Livrable — une ligne ici vient toujours d'une
+   * génération groupée déjà calculée côté serveur (LivrableBillingService), jamais saisie
+   * à la main. Même traitement flat-100% que T&M ci-dessous : sans cette branche, rouvrir
+   * et sauvegarder l'étape Lignes d'une facture Livrable effacerait silencieusement ses
+   * colonnes d'avancement (elle tomberait dans la branche générique, qui ne les inclut pas). */
+  readonly isLivrable = computed(() => this.affaireData().billingMode === 'LIVRABLE');
+
+  private readonly initialPeriodFrom = signal<string | null>(null);
+  private readonly initialPeriodTo   = signal<string | null>(null);
 
   // ── Picker de frais remboursables (RMB) ──────────────────────────────────────
 
@@ -352,7 +392,7 @@ export class StepLinesComponent {
     // qu'on est en mode RMB OU AV avec une affaire sélectionnée — les frais s'appliquent
     // à toute affaire quel que soit son mode (même règle que côté fiche affaire).
     effect(() => {
-      const rmbOrAv = this.isRmb() || this.isAv();
+      const rmbOrAv = this.isAv();
       const aff = this.affaireData();
       if (rmbOrAv && aff.affaireId) {
         this.billingSvc.getBillableExpenses(aff.affaireId, aff.currency).subscribe({
@@ -373,6 +413,67 @@ export class StepLinesComponent {
         this.linesVersion.update(v => v + 1);
       }
     });
+
+    // Signal inputs are only bound by Angular AFTER the constructor runs — reading
+    // initialLines() directly here would always see its default (null), never the real
+    // edit-mode data passed down by the parent. Wrapping the seed in effect() ensures it
+    // re-runs once the input actually resolves. Confirmed live 2026-08-28: an existing
+    // T&M draft's line silently never seeded (blank Montant HT, 0% everywhere) despite
+    // correct backend data — same latent bug would affect AV edit mode too, just never
+    // surfaced there.
+    let seeded = false;
+    effect(() => {
+      const initial = this.initialLines();
+      if (initial && !seeded) {
+        seeded = true;
+        this.seedFromInitialLines(initial);
+      }
+    });
+  }
+
+  /**
+   * Edit mode: replaces the default single blank row with the invoice's actual saved
+   * lines. AV lines are told apart from AV's own flat reimbursable-expense lines by
+   * `pctAvancement` being set (see `next()` below, which builds them the same way on
+   * save) — reimbursable lines never carry an avancement percentage.
+   */
+  private seedFromInitialLines(initial: StepLinesValue): void {
+    if (initial.lines.length === 0) return;
+
+    this.linesArray.clear();
+    this.expenseLinesArray.clear();
+
+    for (const l of initial.lines) {
+      if (this.isAv() && l.pctAvancement == null && l.sourceExpenseId != null) {
+        const g = this.newExpenseLine();
+        g.patchValue({
+          description:     l.description,
+          prixUnitaireHt:  l.unitRate,
+          tauxTva:         l.vatRatePct,
+          sourceExpenseId: l.sourceExpenseId,
+        });
+        this.expenseLinesArray.push(g);
+      } else {
+        const g = this.newLine();
+        g.patchValue({
+          description:     l.description,
+          quantite:        l.quantity,
+          prixUnitaireHt:  l.unitRate,
+          tauxTva:         l.vatRatePct,
+          pctAvancement:   l.pctAvancement ?? null,
+          sourceExpenseId: l.sourceExpenseId ?? null,
+          profileUserId:   l.profileUserId ?? null,
+        });
+        this.linesArray.push(g);
+      }
+    }
+    if (this.linesArray.length === 0) this.linesArray.push(this.newLine());
+
+    if (this.isTm()) {
+      this.initialPeriodFrom.set(initial.periodFrom ?? null);
+      this.initialPeriodTo.set(initial.periodTo ?? null);
+    }
+    this.linesVersion.update(v => v + 1);
   }
 
   form = this.fb.group({
@@ -394,7 +495,26 @@ export class StepLinesComponent {
       pctAvancement:    [null],
       tauxTva:          [19],
       sourceExpenseId:  [null as number | null],
+      profileUserId:    [null as number | null],
     });
+  }
+
+  // ── T&M — calculs sur la ligne WIP validée ──────────────────────────────────────
+
+  /** Montant HT = le montant saisi directement — Budget affaire l'égale toujours (cf.
+   * commentaire dans le template), avancement fixé à 100 %. */
+  lineHtTm(i: number): number {
+    const g = this.linesArray.at(i) as FormGroup;
+    return g.value.prixUnitaireHt ?? 0;
+  }
+
+  lineTtcTm(i: number): number {
+    const g = this.linesArray.at(i) as FormGroup;
+    return this.lineHtTm(i) * (1 + (g.value.tauxTva ?? 0) / 100);
+  }
+
+  get totalTtcTm(): number {
+    return this.linesArray.controls.reduce((s, _, i) => s + this.lineTtcTm(i), 0);
   }
 
   addLine():    void { this.linesArray.push(this.newLine()); this.linesVersion.update(v => v + 1); }
@@ -614,18 +734,66 @@ export class StepLinesComponent {
       }));
 
       this.nextStep.emit({ lines: [...avancementLines, ...expenseLines] });
+    } else if (this.isTm()) {
+      // Les trois pourcentages sont toujours 100 % (une ligne T&M = la totalité du WIP
+      // déjà calculé pour sa période) — Budget affaire égale toujours le montant saisi,
+      // cf. template.
+      const tmLines = (this.linesArray.value as {
+        description: string; prixUnitaireHt: number; tauxTva: number;
+      }[]).map(l => {
+        const montant = l.prixUnitaireHt ?? 0;
+        return {
+          description:   l.description,
+          quantity:      1,          // rétrocompat : quantity=1, unitRate=montant
+          unitRate:      montant,
+          vatRatePct:    l.tauxTva,
+          budgetAffaire: montant,
+          pctFacture:    100,
+          pctAvancement: 100,
+          pctAFacturer:  100,
+        };
+      });
+      this.nextStep.emit({
+        lines: tmLines,
+        periodFrom: this.initialPeriodFrom(),
+        periodTo:   this.initialPeriodTo(),
+      });
+    } else if (this.isLivrable()) {
+      // Même traitement que T&M : chaque ligne (une par livrable groupé dans la facture)
+      // garde ses trois pourcentages à 100 % et son propre montant comme budgetAffaire —
+      // un livrable n'a pas de notion de pourcentage du budget, cf. LivrableBillingService
+      // côté serveur.
+      const livrableLines = (this.linesArray.value as {
+        description: string; prixUnitaireHt: number; tauxTva: number;
+      }[]).map(l => {
+        const montant = l.prixUnitaireHt ?? 0;
+        return {
+          description:   l.description,
+          quantity:      1,
+          unitRate:      montant,
+          vatRatePct:    l.tauxTva,
+          budgetAffaire: montant,
+          pctFacture:    100,
+          pctAvancement: 100,
+          pctAFacturer:  100,
+        };
+      });
+      this.nextStep.emit({ lines: livrableLines });
     } else {
       this.nextStep.emit({
         lines: (this.linesArray.value as {
           description: string; quantite: number; prixUnitaireHt: number; tauxTva: number;
-          sourceExpenseId: number | null;
+          sourceExpenseId: number | null; profileUserId: number | null;
         }[]).map(l => ({
           description:     l.description,
           quantity:        l.quantite,
           unitRate:        l.prixUnitaireHt,
           vatRatePct:      l.tauxTva,
           sourceExpenseId: l.sourceExpenseId ?? undefined,
+          profileUserId:   l.profileUserId ?? undefined,
         })),
+        periodFrom: null,
+        periodTo:   null,
       });
     }
   }
@@ -634,7 +802,7 @@ export class StepLinesComponent {
 
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: 'TND',
+      style: 'currency', currency: this.affaireData().currency ?? 'TND',
       minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(v);
   }
