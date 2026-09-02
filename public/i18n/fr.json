@@ -1975,14 +1975,13 @@
       "SUBMIT_ERROR": "Erreur lors de la soumission du taux.",
       "LOAD_ERROR": "Erreur lors du chargement du WIP.",
       "VALIDATE_ERROR": "Erreur lors de la validation du WIP.",
-      "LIVRABLE_EXPLAIN": "Sélectionnez les livrables à facturer, puis générez une facture groupée pour l'ensemble de la sélection.",
+      "LIVRABLE_EXPLAIN": "Saisissez le nouveau pourcentage cumulé facturé pour chaque document, puis générez une facture groupée pour l'ensemble des modifications.",
       "LIVRABLE_EMPTY": "Aucun livrable en attente de facturation.",
       "LIVRABLE_ERROR": "Erreur lors de la génération de la facture.",
       "COL_BUDGET_ALLOUE": "Budget alloué",
       "COL_PCT_ACTUEL": "% facturé",
       "COL_NOUVEAU_PCT": "Nouveau %",
-      "COL_MONTANT": "Montant",
-      "TOTAL_SELECTED": "Total sélectionné",
+      "TOTAL_SELECTED": "Total à facturer",
       "GENERATE_INVOICE": "Générer facture"
     },
     "RESSOURCES": {

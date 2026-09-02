@@ -1975,14 +1975,13 @@
       "SUBMIT_ERROR": "Error submitting the rate.",
       "LOAD_ERROR": "Error loading WIP.",
       "VALIDATE_ERROR": "Error validating WIP.",
-      "LIVRABLE_EXPLAIN": "Select the livrables to bill, then generate one combined invoice for the whole selection.",
+      "LIVRABLE_EXPLAIN": "Enter the new cumulative percentage billed for each document, then generate one combined invoice for everything you've changed.",
       "LIVRABLE_EMPTY": "No livrable pending billing.",
       "LIVRABLE_ERROR": "Error while generating the invoice.",
       "COL_BUDGET_ALLOUE": "Allocated budget",
       "COL_PCT_ACTUEL": "% billed",
       "COL_NOUVEAU_PCT": "New %",
-      "COL_MONTANT": "Amount",
-      "TOTAL_SELECTED": "Total selected",
+      "TOTAL_SELECTED": "Total to invoice",
       "GENERATE_INVOICE": "Generate invoice"
     },
     "RESSOURCES": {

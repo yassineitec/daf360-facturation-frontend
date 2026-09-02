@@ -444,13 +444,19 @@ export class AffaireWipTabComponent implements OnInit {
     });
   }
 
+  private currentPct(id: number): number {
+    return this.livrables().find(l => l.id === id)?.pctFacture ?? 0;
+  }
+
   getEnteredPct(id: number): number {
-    return this.enteredPct().get(id) ?? 0;
+    return this.enteredPct().get(id) ?? this.currentPct(id);
   }
 
   setEnteredPct(id: number, value: number): void {
+    const current = this.currentPct(id);
+    const clamped = Number.isFinite(value) ? Math.min(100, Math.max(current, value)) : current;
     const map = new Map(this.enteredPct());
-    map.set(id, Number.isFinite(value) ? value : 0);
+    map.set(id, clamped);
     this.enteredPct.set(map);
   }
 
