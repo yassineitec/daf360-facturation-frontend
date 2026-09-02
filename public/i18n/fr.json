@@ -378,12 +378,9 @@
       "BILLING_MODE_REQUIRED": "Mode de facturation requis.",
       "SELECT": "Sélectionner…",
       "BILLING_MODES": {
-        "TM": "TM — Temps & Matériaux",
-        "CP": "CP — Coût Plus",
-        "AV": "AV — Forfaitaire",
-        "JAL": "JAL — Jalons",
-        "RMB": "RMB — Remboursement",
-        "LIVRABLE": "LIVRABLE — Livrables"
+        "FORFAIT": "Forfaitaire",
+        "REGIE": "Régie",
+        "LIVRABLE": "Livrables"
       },
       "TYPE_LABEL": "Type de facture *",
       "TYPE_SELECT": "Sélectionner le type…",
@@ -1138,10 +1135,8 @@
           "recap": "Récapitulatif"
         },
         "mode": {
-          "AV": "Forfaitaire",
-          "TM": "Temps & Matériels",
-          "CP": "Coût + Marge",
-          "RMB": "Remboursement",
+          "FORFAIT": "Forfaitaire",
+          "REGIE": "Régie",
           "LIVRABLE": "Livrables",
           "none": "—"
         },
@@ -1154,10 +1149,8 @@
           "currency": "devise du contrat",
           "required_fields": "Champs requis : {{fields}}.",
           "select_mode_prev": "Sélectionnez un mode de facturation à l'étape précédente.",
-          "av": "Répartition requise (total = 100 %) avec au moins un type sélectionné.",
-          "tm": "Au moins une ressource avec tarif > 0 requise.",
-          "cp": "Sélectionnez au moins une catégorie de coût et définissez un taux de marge.",
-          "rmb": "Sélectionnez au moins une catégorie de dépenses.",
+          "forfait": "Répartition requise (total = 100 %) avec au moins un type sélectionné.",
+          "regie": "Au moins une ressource avec tarif > 0 requise.",
           "livrable": "Configurez au moins un livrable avant de continuer.",
           "resp_add": "Ajoutez au moins un responsable.",
           "resp_primary": "Désignez un responsable principal.",
@@ -1212,17 +1205,13 @@
         "pays_hint": "Détermine la séquence de référence de l'affaire. Non modifiable ensuite.",
         "pays_locked": "défini à la création",
         "modes": {
-          "AV": {
+          "FORFAIT": {
             "label": "Forfaitaire",
             "desc": "Facturation selon le taux d'avancement validé chaque mois par le Chef de Projet."
           },
-          "TM": {
+          "REGIE": {
             "label": "Régie Time & Materials",
             "desc": "Facturation basée sur les heures validées en timesheet × taux contractuels par ressource."
-          },
-          "CP": {
-            "label": "Cost-Plus",
-            "desc": "Facturation des coûts réels majorés d'un taux de marge contractuel."
           },
           "LIVRABLE": {
             "label": "Livrables documentaires",
@@ -1230,21 +1219,13 @@
           }
         },
         "budget": {
-          "AV": {
+          "FORFAIT": {
             "label": "Montant contractuel",
             "hint": "Montant total du contrat. La somme des répartitions CTR/BPE/TQC sera appliquée sur ce montant."
           },
-          "TM": {
+          "REGIE": {
             "label": "Budget prévisionnel",
             "hint": "Enveloppe budgétaire estimée. La facturation réelle est basée sur les heures validées × taux contractuels."
-          },
-          "CP": {
-            "label": "Budget prévisionnel",
-            "hint": "Enveloppe budgétaire estimée. La facturation réelle est basée sur les coûts réels + taux de marge."
-          },
-          "RMB": {
-            "label": "Budget prévisionnel",
-            "hint": "Enveloppe de remboursements estimée. La facturation réelle est basée sur les frais validés."
           },
           "LIVRABLE": {
             "label": "Montant contractuel",
@@ -1270,10 +1251,8 @@
         "locked": "Le mode de facturation est verrouillé et ne peut pas être modifié.",
         "config": "Configuration — {{mode}}",
         "mode_config": {
-          "AV": "répartition contractuelle",
-          "TM": "régie Time & Materials",
-          "CP": "coûts majorés (Cost-Plus)",
-          "RMB": "frais remboursables",
+          "FORFAIT": "répartition contractuelle",
+          "REGIE": "régie Time & Materials",
           "LIVRABLE": "livrables documentaires"
         }
       },
@@ -1706,8 +1685,7 @@
         "empty_rf": "Aucun élément en attente de validation RF.",
         "empty_df": "Aucun élément en attente de validation DF.",
         "empty_history": "Aucun historique disponible.",
-        "section_taux": "Taux d'avancement (AV) — {{count}}",
-        "section_jalons": "Jalons (JAL) — {{count}}",
+        "section_taux": "Taux d'avancement (FORFAIT) — {{count}}",
         "section_lines": "Lignes de facturation — {{count}}",
         "col_affaire": "Affaire",
         "col_taux": "Taux",
@@ -1824,11 +1802,11 @@
           "err_generic": "Erreur."
         },
         "tm": {
-          "title": "Facturation en Régie (TM)",
+          "title": "Facturation en Régie",
           "create_line": "Créer une ligne",
           "info_title": "Mode Régie — facturation sur consommation",
           "info_body": "Les lignes de facturation sont créées périodiquement selon les ressources et taux configurés lors de la création de l'affaire. Utilisez le bouton \"Créer une ligne\" pour enregistrer la facturation de la période en cours.",
-          "modal_title": "Créer une ligne de facturation TM",
+          "modal_title": "Créer une ligne de facturation en régie",
           "periode": "Période *",
           "montant_ht": "Montant HT *",
           "montant_placeholder": "Montant en {{devise}}",
@@ -1993,14 +1971,20 @@
       "DOCUMENTS": "documents",
       "BACK": "← Retour",
       "EMPTY_DETAIL": "Aucune heure validée pour cette période.",
-      "UNSUPPORTED_MODE": "Le WIP n'est disponible que pour les affaires Forfaitaire (AV) et Time & Materials (TM).",
+      "UNSUPPORTED_MODE": "Le WIP n'est disponible que pour les affaires Forfaitaire et Régie.",
       "SUBMIT_ERROR": "Erreur lors de la soumission du taux.",
       "LOAD_ERROR": "Erreur lors du chargement du WIP.",
-      "VALIDATE_ERROR": "Erreur lors de la validation du WIP."
+      "VALIDATE_ERROR": "Erreur lors de la validation du WIP.",
+      "LIVRABLE_EXPLAIN": "Sélectionnez les livrables à facturer, puis générez une facture groupée pour l'ensemble de la sélection.",
+      "LIVRABLE_EMPTY": "Aucun livrable en attente de facturation.",
+      "LIVRABLE_ERROR": "Erreur lors de la génération de la facture.",
+      "COL_BUDGET_ALLOUE": "Budget alloué",
+      "TOTAL_SELECTED": "Total sélectionné",
+      "GENERATE_INVOICE": "Générer facture"
     },
     "RESSOURCES": {
       "TITLE": "Ressources Temps & Matériels",
-      "EXPLAIN": "Les collaborateurs listés ici sont ceux dont les heures Timesheet sont valorisées sur cette affaire (mode TM). Un taux verrouillé (🔒) a déjà servi à une facturation et ne peut plus être modifié ici.",
+      "EXPLAIN": "Les collaborateurs listés ici sont ceux dont les heures Timesheet sont valorisées sur cette affaire (mode Régie). Un taux verrouillé (🔒) a déjà servi à une facturation et ne peut plus être modifié ici.",
       "ADD": "Ajouter une ressource",
       "CANCEL": "Annuler",
       "CONFIRM_ADD": "Confirmer l'ajout",
@@ -3302,11 +3286,8 @@
       "ANNULE": "Annulé"
     },
     "BILLING_MODE": {
-      "AV": "Forfaitaire",
-      "JAL": "Jalons",
-      "TM": "Temps & Matériels",
-      "CP": "Coût + Marge",
-      "RMB": "Remboursement",
+      "FORFAIT": "Forfaitaire",
+      "REGIE": "Régie",
       "LIVRABLE": "Livrables"
     },
     "BILLING_PERIOD": {

@@ -378,12 +378,9 @@
       "BILLING_MODE_REQUIRED": "Billing mode required.",
       "SELECT": "Select…",
       "BILLING_MODES": {
-        "TM": "TM — Time & Materials",
-        "CP": "CP — Cost Plus",
-        "AV": "AV — Fixed price",
-        "JAL": "JAL — Milestones",
-        "RMB": "RMB — Reimbursement",
-        "LIVRABLE": "LIVRABLE — Deliverables"
+        "FORFAIT": "Lump Sum",
+        "REGIE": "Time & Materials",
+        "LIVRABLE": "Deliverables"
       },
       "TYPE_LABEL": "Invoice type *",
       "TYPE_SELECT": "Select a type…",
@@ -1138,10 +1135,8 @@
           "recap": "Summary"
         },
         "mode": {
-          "AV": "Fixed price",
-          "TM": "Time & Materials",
-          "CP": "Cost + Margin",
-          "RMB": "Reimbursement",
+          "FORFAIT": "Lump Sum",
+          "REGIE": "Time & Materials",
           "LIVRABLE": "Deliverables",
           "none": "—"
         },
@@ -1154,10 +1149,8 @@
           "currency": "contract currency",
           "required_fields": "Required fields: {{fields}}.",
           "select_mode_prev": "Select a billing mode in the previous step.",
-          "av": "A split is required (total = 100%) with at least one type selected.",
-          "tm": "At least one resource with a rate > 0 is required.",
-          "cp": "Select at least one cost category and set a margin rate.",
-          "rmb": "Select at least one expense category.",
+          "forfait": "A split is required (total = 100%) with at least one type selected.",
+          "regie": "At least one resource with a rate > 0 is required.",
           "livrable": "Configure at least one deliverable before continuing.",
           "resp_add": "Add at least one manager.",
           "resp_primary": "Designate a primary manager.",
@@ -1212,17 +1205,13 @@
         "pays_hint": "Drives the project reference sequence. Cannot be changed afterwards.",
         "pays_locked": "set at creation",
         "modes": {
-          "AV": {
-            "label": "Fixed price",
+          "FORFAIT": {
+            "label": "Lump Sum",
             "desc": "Billed on the completion rate approved each month by the project manager."
           },
-          "TM": {
+          "REGIE": {
             "label": "Time & Materials",
             "desc": "Billed on approved timesheet hours × the contractual rate of each resource."
-          },
-          "CP": {
-            "label": "Cost-Plus",
-            "desc": "Actual costs billed with a contractual margin rate on top."
           },
           "LIVRABLE": {
             "label": "Document deliverables",
@@ -1230,21 +1219,13 @@
           }
         },
         "budget": {
-          "AV": {
+          "FORFAIT": {
             "label": "Contract amount",
             "hint": "Total contract amount. The CTR/BPE/TQC split is applied to this amount."
           },
-          "TM": {
+          "REGIE": {
             "label": "Estimated budget",
             "hint": "Estimated envelope. Actual billing is based on approved hours × contractual rates."
-          },
-          "CP": {
-            "label": "Estimated budget",
-            "hint": "Estimated envelope. Actual billing is based on actual costs + margin rate."
-          },
-          "RMB": {
-            "label": "Estimated budget",
-            "hint": "Estimated reimbursement envelope. Actual billing is based on approved expenses."
           },
           "LIVRABLE": {
             "label": "Contract amount",
@@ -1270,10 +1251,8 @@
         "locked": "The billing mode is locked and cannot be changed.",
         "config": "Configuration — {{mode}}",
         "mode_config": {
-          "AV": "contractual breakdown",
-          "TM": "Time & Materials",
-          "CP": "cost-plus",
-          "RMB": "reimbursable expenses",
+          "FORFAIT": "contractual breakdown",
+          "REGIE": "Time & Materials",
           "LIVRABLE": "document deliverables"
         }
       },
@@ -1706,8 +1685,7 @@
         "empty_rf": "No item pending RF validation.",
         "empty_df": "No item pending DF validation.",
         "empty_history": "No history available.",
-        "section_taux": "Progress rate (AV) — {{count}}",
-        "section_jalons": "Milestones (JAL) — {{count}}",
+        "section_taux": "Progress rate (FORFAIT) — {{count}}",
         "section_lines": "Billing lines — {{count}}",
         "col_affaire": "Project",
         "col_taux": "Rate",
@@ -1824,11 +1802,11 @@
           "err_generic": "Error."
         },
         "tm": {
-          "title": "Time & Materials billing (TM)",
+          "title": "Time & Materials billing",
           "create_line": "Create a line",
           "info_title": "Time & Materials mode — billing based on consumption",
           "info_body": "Billing lines are created periodically according to the resources and rates configured when the project was created. Use the \"Create a line\" button to record the billing for the current period.",
-          "modal_title": "Create a TM billing line",
+          "modal_title": "Create a Time & Materials billing line",
           "periode": "Period *",
           "montant_ht": "Amount excl. tax *",
           "montant_placeholder": "Amount in {{devise}}",
@@ -1993,14 +1971,20 @@
       "DOCUMENTS": "documents",
       "BACK": "← Back",
       "EMPTY_DETAIL": "No validated hours for this period.",
-      "UNSUPPORTED_MODE": "WIP is only available for Forfaitaire (AV) and Time & Materials (TM) affaires.",
+      "UNSUPPORTED_MODE": "WIP is only available for Lump Sum and Time & Materials affaires.",
       "SUBMIT_ERROR": "Error submitting the rate.",
       "LOAD_ERROR": "Error loading WIP.",
-      "VALIDATE_ERROR": "Error validating WIP."
+      "VALIDATE_ERROR": "Error validating WIP.",
+      "LIVRABLE_EXPLAIN": "Select the livrables to bill, then generate one combined invoice for the whole selection.",
+      "LIVRABLE_EMPTY": "No livrable pending billing.",
+      "LIVRABLE_ERROR": "Error while generating the invoice.",
+      "COL_BUDGET_ALLOUE": "Allocated budget",
+      "TOTAL_SELECTED": "Total selected",
+      "GENERATE_INVOICE": "Generate invoice"
     },
     "RESSOURCES": {
       "TITLE": "Time & Materials resources",
-      "EXPLAIN": "Collaborators listed here are the ones whose Timesheet hours are valued on this affaire (TM mode). A locked rate (🔒) has already been used for billing and can no longer be edited here.",
+      "EXPLAIN": "Collaborators listed here are the ones whose Timesheet hours are valued on this affaire (Time & Materials mode). A locked rate (🔒) has already been used for billing and can no longer be edited here.",
       "ADD": "Add a resource",
       "CANCEL": "Cancel",
       "CONFIRM_ADD": "Confirm add",
@@ -3302,11 +3286,8 @@
       "ANNULE": "Cancelled"
     },
     "BILLING_MODE": {
-      "AV": "Fixed price",
-      "JAL": "Milestones",
-      "TM": "Time & Materials",
-      "CP": "Cost + Margin",
-      "RMB": "Reimbursement",
+      "FORFAIT": "Lump Sum",
+      "REGIE": "Time & Materials",
       "LIVRABLE": "Deliverables"
     },
     "BILLING_PERIOD": {

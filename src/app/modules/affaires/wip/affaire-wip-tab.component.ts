@@ -5,9 +5,12 @@ import {
   ButtonComponent, FormFieldComponent,
   StepperComponent, StepperStep, StepperConfig,
 } from '@khalilrebhiitec/daf360';
+import { Router } from '@angular/router';
 import { WipService } from './wip.service';
 import { WipTauxDto, WipTmHourDto, WipTmPreviewDto } from './wip.model';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
+import { LivrableService } from '../livrable.service';
+import { AffaireLivrableDto } from '../livrable.model';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
@@ -28,7 +31,9 @@ export class AffaireWipTabComponent implements OnInit {
 
   private readonly svc = inject(WipService);
   private readonly billingSvc = inject(BillingService);
+  private readonly livrableSvc = inject(LivrableService);
   private readonly translate = inject(TranslateService);
+  private readonly router = inject(Router);
 
   private readonly now = new Date();
   // AV only — defaults to the current calendar month as a starting point, same as TM's
@@ -76,6 +81,28 @@ export class AffaireWipTabComponent implements OnInit {
   selectedCollaboratorUserId = signal<number | null>(null);
   tmHistory     = signal<LineDetailDto[]>([]);
   loadingTmHistory = signal(false);
+
+  // ── LIVRABLE ────────────────────────────────────────────────────────────
+  livrables            = signal<AffaireLivrableDto[]>([]);
+  loadingLivrables     = signal(false);
+  selectedLivrableIds  = signal<Set<number>>(new Set());
+  validatingLivrables  = signal(false);
+  livrableError        = signal<string | null>(null);
+
+  readonly pendingLivrables = computed(() => this.livrables().filter(l => l.statut === 'A_FACTURER'));
+  readonly livrableHistory  = computed(() => this.livrables().filter(l => l.statut === 'FACTURE'));
+
+  readonly allLivrablesSelected = computed(() => {
+    const pending = this.pendingLivrables();
+    return pending.length > 0 && pending.every(l => this.selectedLivrableIds().has(l.id));
+  });
+
+  readonly selectedLivrableTotal = computed(() => {
+    const ids = this.selectedLivrableIds();
+    return this.pendingLivrables()
+      .filter(l => ids.has(l.id))
+      .reduce((sum, l) => sum + l.budgetAlloue, 0);
+  });
 
   // ── TM — Review / manual verification / validate / client-response stepper ──────
   // A thin progress rail over the SAME preview content below (chrome: 'header-only' —
@@ -177,8 +204,9 @@ export class AffaireWipTabComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.affaire.billingMode === 'AV') this.loadTauxHistory();
-    if (this.affaire.billingMode === 'TM') { this.loadTmPreview(); this.loadTmHistory(); }
+    if (this.affaire.billingMode === 'FORFAIT') this.loadTauxHistory();
+    if (this.affaire.billingMode === 'REGIE') { this.loadTmPreview(); this.loadTmHistory(); }
+    if (this.affaire.billingMode === 'LIVRABLE') this.loadLivrables();
   }
 
   // ── AV actions ────────────────────────────────────────────────────────────
@@ -384,5 +412,54 @@ export class AffaireWipTabComponent implements OnInit {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  // ── LIVRABLE actions ──────────────────────────────────────────────────────
+
+  loadLivrables(): void {
+    this.loadingLivrables.set(true);
+    this.livrableSvc.getLivrables(this.affaire.id).subscribe({
+      next:  l => { this.livrables.set(l); this.loadingLivrables.set(false); },
+      error: () => this.loadingLivrables.set(false),
+    });
+  }
+
+  toggleLivrable(id: number): void {
+    const set = new Set(this.selectedLivrableIds());
+    set.has(id) ? set.delete(id) : set.add(id);
+    this.selectedLivrableIds.set(set);
+  }
+
+  toggleSelectAllLivrables(): void {
+    if (this.allLivrablesSelected()) {
+      this.selectedLivrableIds.set(new Set());
+    } else {
+      this.selectedLivrableIds.set(new Set(this.pendingLivrables().map(l => l.id)));
+    }
+  }
+
+  /** DF's one action: validate the selected livrables, which creates their BillingLines and
+   * one shared draft invoice server-side — jump straight into its edit stepper, same
+   * redirect pattern used everywhere else a DF action creates an invoice. */
+  validateLivrables(): void {
+    const ids = [...this.selectedLivrableIds()];
+    if (ids.length === 0 || this.validatingLivrables()) return;
+    this.validatingLivrables.set(true);
+    this.livrableError.set(null);
+    this.livrableSvc.validateLivrables(this.affaire.id, ids).subscribe({
+      next: line => {
+        if (line.invoiceId) {
+          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+        } else {
+          this.validatingLivrables.set(false);
+          this.selectedLivrableIds.set(new Set());
+          this.loadLivrables();
+        }
+      },
+      error: err => {
+        this.validatingLivrables.set(false);
+        this.livrableError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.LIVRABLE_ERROR'));
+      },
+    });
   }
 }
