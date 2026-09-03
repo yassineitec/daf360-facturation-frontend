@@ -71,11 +71,14 @@ export class EmployeeCostComponent implements OnInit {
 
   currencies = signal<ListValueDto[]>([]);
 
-  /** Mirrors wizard-step-info.component.ts's own currencyOptions exactly — same fallback
-   * list, same reasoning (show a real backend-driven list when available, degrade to a
-   * known-good hardcoded set if the configurable-list call fails or returns empty). */
+  /** Same reasoning as wizard-step-info.component.ts's own currencyOptions (show a real
+   * backend-driven list when available, degrade to a known-good hardcoded set if the
+   * configurable-list call fails or returns empty) — but the fallback labels here are bare
+   * currency codes rather than the wizard's translated descriptions ("EUR — Euro"), since
+   * a code alone is enough context in this drawer's compact currency field. No
+   * `translate.currentLang()` read needed here (unlike the wizard's version): nothing in
+   * this fallback list is actually translated. */
   readonly currencyOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
     const list = this.currencies();
     if (list.length > 0) {
       return list.map(c => ({ value: c.code, label: `${c.code} — ${c.labelFr}` }));
