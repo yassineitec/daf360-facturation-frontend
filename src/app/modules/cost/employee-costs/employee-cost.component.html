@@ -153,6 +153,9 @@
           <ng-template dafCell="transition" let-row>
             {{ row['statutAvant'] ?? '—' }} → {{ row['statutApres'] ?? '—' }}
           </ng-template>
+          <ng-template dafCell="details" let-row>
+            {{ formatAuditDetails(row['metadata']) }}
+          </ng-template>
         </daf-data-table>
       }
     </div>

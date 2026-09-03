@@ -182,7 +182,7 @@ export class EmployeeCostComponent implements OnInit {
       { key: 'timestampUtc', label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DATE'),    type: 'custom' },
       { key: 'action',       label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'),  type: 'text' },
       { key: 'transition',   label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_STATUS'),  type: 'custom' },
-      { key: 'commentaire',  label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DETAILS'), type: 'text' },
+      { key: 'details',      label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DETAILS'), type: 'custom' },
     ];
   });
 
@@ -324,8 +324,14 @@ export class EmployeeCostComponent implements OnInit {
     this.auditTrail.set([]);
     this.loadingAudit.set(true);
     this.svc.getAuditLog(row.id).subscribe({
-      next: entries => { this.auditTrail.set(entries); this.loadingAudit.set(false); },
-      error: () => { this.auditTrail.set([]); this.loadingAudit.set(false); },
+      next: entries => {
+        if (this.editingId() === row.id) { this.auditTrail.set(entries); }
+        this.loadingAudit.set(false);
+      },
+      error: () => {
+        if (this.editingId() === row.id) { this.auditTrail.set([]); }
+        this.loadingAudit.set(false);
+      },
     });
     this.showDrawer.set(true);
   }
@@ -375,5 +381,32 @@ export class EmployeeCostComponent implements OnInit {
     return new Date(d).toLocaleString('fr-FR', {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
+  }
+
+  /** Renders the real field-level changes from an audit entry's `metadata` JSON
+   * (`{"before":{...},"after":{...}}`) — only the fields that actually differ, so a long
+   * unchanged field list doesn't drown out what matters. CREATE/DELETE entries only carry
+   * one side, so everything on that side is shown as-is (nothing to diff against).
+   * STATUS_NORMALIZED cascade entries carry no metadata at all — '—' for those.
+   * Takes the raw `metadata` string rather than the whole row — `daf-data-table`'s
+   * `dafCell` template context types `row` as `TableRow` (`Record<string, any>`), not
+   * `EntityAuditLogDto`, same reason `fmtDateTime` above takes a single field instead of
+   * the whole row via `row['timestampUtc']`. */
+  formatAuditDetails(metadata: string | null | undefined): string {
+    if (!metadata) return '—';
+    try {
+      const parsed = JSON.parse(metadata) as { before?: Record<string, unknown>; after?: Record<string, unknown> };
+      const { before, after } = parsed;
+      if (before && after) {
+        const changes = Object.keys(after)
+          .filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+          .map(key => `${key}: ${before[key] ?? '—'} → ${after[key] ?? '—'}`);
+        return changes.length ? changes.join(', ') : '—';
+      }
+      const only = after ?? before;
+      return only ? Object.entries(only).map(([k, v]) => `${k}: ${v}`).join(', ') : '—';
+    } catch {
+      return '—';
+    }
   }
 }
