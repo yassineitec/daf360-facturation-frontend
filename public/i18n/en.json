@@ -2436,7 +2436,13 @@
       "FIELDS_REQUIRED": "Email and basic cost are required.",
       "LOAD_ERROR": "Error loading employee costs.",
       "SAVE_ERROR": "Error saving.",
-      "DELETE_ERROR": "Error deleting."
+      "DELETE_ERROR": "Error deleting.",
+      "HISTORY_TITLE": "History",
+      "HISTORY_EMPTY": "No history yet.",
+      "HISTORY_COL_DATE": "Date",
+      "HISTORY_COL_ACTION": "Action",
+      "HISTORY_COL_STATUS": "Status",
+      "HISTORY_COL_DETAILS": "Details"
     },
     "QUEUE": {
       "LOAD_ERROR": "Unable to load the approval queue.",

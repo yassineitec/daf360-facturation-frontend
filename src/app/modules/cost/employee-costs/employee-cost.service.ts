@@ -6,6 +6,7 @@ import {
   EmployeeCostDto, CreateEmployeeCostRequest, UpdateEmployeeCostRequest,
   ManualEmployeeCostEntryRequest,
 } from './employee-cost.model';
+import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 
 @Injectable({ providedIn: 'root' })
 export class EmployeeCostService {
@@ -44,5 +45,14 @@ export class EmployeeCostService {
    * more permissively-gated endpoint (see EmployeeCostController.recordManualEntry). */
   recordManualEntry(req: ManualEmployeeCostEntryRequest): Observable<EmployeeCostDto> {
     return this.http.post<EmployeeCostDto>(`${this.base}/from-manual-entry`, req);
+  }
+
+  /** Full create/update/delete history for one employee-cost row, including complete
+   * before/after field snapshots in `metadata` — reuses the same fact_billing_audit_log-backed
+   * mechanism the billing module's own audit trail already uses, via a dedicated endpoint on
+   * this controller (not the billing module's own audit endpoints) so viewing it only requires
+   * the FACT_VIEW_COST permission this feature already needs, not a billing permission. */
+  getAuditLog(id: number): Observable<EntityAuditLogDto[]> {
+    return this.http.get<EntityAuditLogDto[]>(`${this.base}/${id}/audit`);
   }
 }

@@ -2436,7 +2436,13 @@
       "FIELDS_REQUIRED": "L'email et le coût de base sont requis.",
       "LOAD_ERROR": "Erreur lors du chargement des coûts collaborateurs.",
       "SAVE_ERROR": "Erreur lors de l'enregistrement.",
-      "DELETE_ERROR": "Erreur lors de la suppression."
+      "DELETE_ERROR": "Erreur lors de la suppression.",
+      "HISTORY_TITLE": "Historique",
+      "HISTORY_EMPTY": "Aucun historique pour l'instant.",
+      "HISTORY_COL_DATE": "Date",
+      "HISTORY_COL_ACTION": "Action",
+      "HISTORY_COL_STATUS": "Statut",
+      "HISTORY_COL_DETAILS": "Détails"
     },
     "QUEUE": {
       "LOAD_ERROR": "Impossible de charger la file d'approbation.",
