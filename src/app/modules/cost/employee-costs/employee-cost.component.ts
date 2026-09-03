@@ -14,7 +14,7 @@ import { EmployeeCostService } from './employee-cost.service';
 import {
   EmployeeCostDto, EmployeeCostDriverField, deriveEmployeeCostFields,
 } from './employee-cost.model';
-import { displayName } from './employee-cost-display';
+import { displayName, formatAmount, formatDate } from './employee-cost-display';
 import { EmployeeCostTableSectionComponent } from './employee-cost-table-section.component';
 import { EmployeeCostCardsSectionComponent } from './employee-cost-cards-section.component';
 import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
@@ -182,6 +182,7 @@ export class EmployeeCostComponent implements OnInit {
       { key: 'timestampUtc', label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DATE'),    type: 'custom' },
       { key: 'action',       label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'),  type: 'text' },
       { key: 'transition',   label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_STATUS'),  type: 'custom' },
+      { key: 'actorRole',    label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_USER'),    type: 'text' },
       { key: 'details',      label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DETAILS'), type: 'custom' },
     ];
   });
@@ -383,6 +384,24 @@ export class EmployeeCostComponent implements OnInit {
     });
   }
 
+  /** Which of the raw snapshot's fields to show, in this order, and how to label/format
+   * each one — reuses the SAME formatters the rest of this screen already uses
+   * (`formatAmount`/`formatDate` from `employee-cost-display.ts`) so a changed cost or
+   * date reads the same way here as it does in the main table. `userRefId` is
+   * deliberately excluded: it's an internal id with no meaning to whoever is reading
+   * this history, and `employeeEmail` already identifies the person. */
+  private static readonly AUDIT_FIELDS: {
+    key: string; labelKey: string; format: (v: unknown) => string;
+  }[] = [
+    { key: 'employeeEmail', labelKey: 'COST.EMPLOYEE_COST.EMPLOYEE_EMAIL', format: v => String(v) },
+    { key: 'basicCost', labelKey: 'COST.EMPLOYEE_COST.BASIC_COST', format: v => formatAmount(Number(v)) },
+    { key: 'internalSellingCost', labelKey: 'COST.EMPLOYEE_COST.INTERNAL_SELLING_COST', format: v => formatAmount(Number(v)) },
+    { key: 'externalSellingCost', labelKey: 'COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST', format: v => formatAmount(Number(v)) },
+    { key: 'dateDebut', labelKey: 'COST.EMPLOYEE_COST.DATE_DEBUT', format: v => formatDate(String(v)) },
+    { key: 'dateFin', labelKey: 'COST.EMPLOYEE_COST.DATE_FIN', format: v => formatDate(String(v)) },
+    { key: 'sourceStatus', labelKey: 'COST.EMPLOYEE_COST.HISTORY_COL_STATUS', format: v => String(v) },
+  ];
+
   /** Renders the real field-level changes from an audit entry's `metadata` JSON
    * (`{"before":{...},"after":{...}}`) — only the fields that actually differ, so a long
    * unchanged field list doesn't drown out what matters. CREATE/DELETE entries only carry
@@ -397,14 +416,21 @@ export class EmployeeCostComponent implements OnInit {
     try {
       const parsed = JSON.parse(metadata) as { before?: Record<string, unknown>; after?: Record<string, unknown> };
       const { before, after } = parsed;
+      const label = (labelKey: string) => this.translate.instant(labelKey);
+
       if (before && after) {
-        const changes = Object.keys(after)
-          .filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
-          .map(key => `${key}: ${before[key] ?? '—'} → ${after[key] ?? '—'}`);
+        const changes = EmployeeCostComponent.AUDIT_FIELDS
+          .filter(f => JSON.stringify(before[f.key]) !== JSON.stringify(after[f.key]))
+          .map(f => `${label(f.labelKey)}: ${f.format(before[f.key])} → ${f.format(after[f.key])}`);
         return changes.length ? changes.join(', ') : '—';
       }
+
       const only = after ?? before;
-      return only ? Object.entries(only).map(([k, v]) => `${k}: ${v}`).join(', ') : '—';
+      if (!only) return '—';
+      return EmployeeCostComponent.AUDIT_FIELDS
+        .filter(f => only[f.key] !== undefined)
+        .map(f => `${label(f.labelKey)}: ${f.format(only[f.key])}`)
+        .join(', ');
     } catch {
       return '—';
     }

@@ -2442,6 +2442,7 @@
       "HISTORY_COL_DATE": "Date",
       "HISTORY_COL_ACTION": "Action",
       "HISTORY_COL_STATUS": "Status",
+      "HISTORY_COL_USER": "By",
       "HISTORY_COL_DETAILS": "Details"
     },
     "QUEUE": {
