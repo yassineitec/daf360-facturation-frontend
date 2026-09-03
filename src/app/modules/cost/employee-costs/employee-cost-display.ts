@@ -54,9 +54,11 @@ export function formatPeriod(dateDebut: string | null, dateFin: string | null): 
   return `${formatDate(dateDebut)} – ${formatDate(dateFin)}`;
 }
 
-/** Plain grouped amount, no currency symbol: `employee_costs` carries no currency column
- * (unlike `CostLineDto`), so showing one here would be a guess `DisplayCurrencyPipe` can't
- * back up. */
-export function formatAmount(value: number): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+/** Grouped amount with an optional currency-code suffix — `employee_costs` now carries its
+ * own per-row currency, so a display site that has one should always pass it; the
+ * parameter stays optional only so the audit-history diff (which shows currency as its own
+ * separate line, not appended to every cost figure) can keep calling this bare. */
+export function formatAmount(value: number, currency?: string | null): string {
+  const formatted = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  return currency ? `${formatted} ${currency}` : formatted;
 }

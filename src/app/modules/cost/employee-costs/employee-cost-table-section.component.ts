@@ -72,9 +72,9 @@ export class EmployeeCostTableSectionComponent {
           // Only shown once it's not simply repeating the name above it.
           subtitle: row.fullName?.trim() ? row.employeeEmail : undefined,
         },
-        basic:    formatAmount(row.basicCost),
-        internal: formatAmount(row.internalSellingCost),
-        external: formatAmount(row.externalSellingCost),
+        basic:    formatAmount(row.basicCost, row.currency),
+        internal: formatAmount(row.internalSellingCost, row.currency),
+        external: formatAmount(row.externalSellingCost, row.currency),
         period:   formatPeriod(row.dateDebut, row.dateFin),
         status: {
           label:   row.sourceStatus ? t(statusKey(row.sourceStatus)) : '—',

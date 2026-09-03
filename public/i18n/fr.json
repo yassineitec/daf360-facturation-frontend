@@ -2416,6 +2416,7 @@
       "BASIC_COST": "Coût de base",
       "INTERNAL_SELLING_COST": "Coût de vente interne",
       "EXTERNAL_SELLING_COST": "Coût de vente externe",
+      "CURRENCY": "Devise",
       "DATE_DEBUT": "Date de début",
       "DATE_FIN": "Date de fin",
       "CANCEL": "Annuler",

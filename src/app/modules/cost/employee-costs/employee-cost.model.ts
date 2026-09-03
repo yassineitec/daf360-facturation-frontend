@@ -6,6 +6,7 @@ export interface EmployeeCostDto {
   basicCost: number;
   internalSellingCost: number;
   externalSellingCost: number;
+  currency: string;
   dateDebut: string;
   dateFin: string;
   sourceStatus: 'Current' | 'Expired' | null;
@@ -16,12 +17,14 @@ export interface EmployeeCostDto {
 export interface CreateEmployeeCostRequest {
   employeeEmail: string;
   basicCost: number;
+  currency: string;
   dateDebut: string;
   dateFin: string;
 }
 
 export interface UpdateEmployeeCostRequest {
   basicCost: number;
+  currency: string;
   dateDebut: string;
   dateFin: string;
 }

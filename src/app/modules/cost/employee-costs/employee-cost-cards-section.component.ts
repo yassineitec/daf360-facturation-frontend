@@ -84,9 +84,9 @@ export class EmployeeCostCardsSectionComponent {
           },
           metricsColumns: 2,
           metrics: [
-            { label: t('COST.EMPLOYEE_COST.COL_BASIC'),    value: formatAmount(row.basicCost) },
-            { label: t('COST.EMPLOYEE_COST.COL_INTERNAL'), value: formatAmount(row.internalSellingCost) },
-            { label: t('COST.EMPLOYEE_COST.COL_EXTERNAL'), value: formatAmount(row.externalSellingCost) },
+            { label: t('COST.EMPLOYEE_COST.COL_BASIC'),    value: formatAmount(row.basicCost, row.currency) },
+            { label: t('COST.EMPLOYEE_COST.COL_INTERNAL'), value: formatAmount(row.internalSellingCost, row.currency) },
+            { label: t('COST.EMPLOYEE_COST.COL_EXTERNAL'), value: formatAmount(row.externalSellingCost, row.currency) },
             { label: t('COST.EMPLOYEE_COST.COL_PERIOD'),   value: formatPeriod(row.dateDebut, row.dateFin) },
           ],
           actions: [

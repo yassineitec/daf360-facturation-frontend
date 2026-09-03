@@ -119,6 +119,13 @@
       (valueChange)="onFieldInput('external', $any($event))"
       [options]="{ label: ('COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST' | translate), type: 'number', fullWidth: true }" />
 
+    <daf-select
+      [options]="currencyOptions()"
+      [selected]="[newRecord.currency]"
+      (selectedChange)="onCurrencyChange($event)"
+      [ariaLabel]="'COST.EMPLOYEE_COST.CURRENCY' | translate"
+      [config]="{ label: ('COST.EMPLOYEE_COST.CURRENCY' | translate), fullWidth: true }" />
+
     <div class="grid grid-cols-2 gap-3">
       <daf-form-field
         [value]="newRecord.dateDebut"

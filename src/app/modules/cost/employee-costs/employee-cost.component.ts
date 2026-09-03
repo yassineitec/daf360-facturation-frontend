@@ -18,6 +18,8 @@ import { displayName, formatAmount, formatDate } from './employee-cost-display';
 import { EmployeeCostTableSectionComponent } from './employee-cost-table-section.component';
 import { EmployeeCostCardsSectionComponent } from './employee-cost-cards-section.component';
 import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
+import { FactListService } from '../../../core/fact-list.service';
+import { ListValueDto } from '../cost.model';
 
 type ViewMode = 'list' | 'grid';
 
@@ -37,6 +39,7 @@ export class EmployeeCostComponent implements OnInit {
   private readonly translate  = inject(TranslateService);
   private readonly modals     = inject(ModalService);
   private readonly affaireSvc = inject(AffaireService);
+  private readonly listSvc    = inject(FactListService);
 
   rows          = signal<EmployeeCostDto[]>([]);
   isLoading     = signal(false);
@@ -66,6 +69,25 @@ export class EmployeeCostComponent implements OnInit {
   auditTrail   = signal<EntityAuditLogDto[]>([]);
   loadingAudit = signal(false);
 
+  currencies = signal<ListValueDto[]>([]);
+
+  /** Mirrors wizard-step-info.component.ts's own currencyOptions exactly — same fallback
+   * list, same reasoning (show a real backend-driven list when available, degrade to a
+   * known-good hardcoded set if the configurable-list call fails or returns empty). */
+  readonly currencyOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    const list = this.currencies();
+    if (list.length > 0) {
+      return list.map(c => ({ value: c.code, label: `${c.code} — ${c.labelFr}` }));
+    }
+    return [
+      { value: 'EUR', label: 'EUR' },
+      { value: 'USD', label: 'USD' },
+      { value: 'TND', label: 'TND' },
+      { value: 'MAD', label: 'MAD' },
+    ];
+  });
+
   /** The drawer's employee picker. A signal of its own, not a `newRecord` field like
    * the rest of the form — `userOptions` below needs to react to it (to keep an
    * edited row's email selectable even when it's missing from `users()`, see the
@@ -87,6 +109,7 @@ export class EmployeeCostComponent implements OnInit {
     basicCost: null as number | null,
     internalSellingCost: null as number | null,
     externalSellingCost: null as number | null,
+    currency: 'EUR',
     dateDebut: `${this.currentYear}-01-01`,
     dateFin: `${this.currentYear}-12-31`,
   };
@@ -196,6 +219,10 @@ export class EmployeeCostComponent implements OnInit {
       next:  u  => { this.users.set(u); this.usersLoading.set(false); },
       error: () => this.usersLoading.set(false),
     });
+    this.listSvc.getListValues('CURRENCY', 0).subscribe({
+      next: c => this.currencies.set(c),
+      error: () => this.currencies.set([]),
+    });
   }
 
   private load(): void {
@@ -260,6 +287,10 @@ export class EmployeeCostComponent implements OnInit {
     this.selectedEmail.set(values[0] ?? '');
   }
 
+  onCurrencyChange(values: string[]): void {
+    this.newRecord.currency = values[0] ?? 'EUR';
+  }
+
   /** Whichever field the person types into becomes the driver; the other two
    * immediately recompute — impossible to save numbers that don't satisfy the
    * fixed 1.1 / 1.2 markup formula. */
@@ -287,6 +318,7 @@ export class EmployeeCostComponent implements OnInit {
 
     const req = {
       basicCost: this.newRecord.basicCost,
+      currency: this.newRecord.currency,
       dateDebut: this.newRecord.dateDebut,
       dateFin: this.newRecord.dateFin,
     };
@@ -319,6 +351,7 @@ export class EmployeeCostComponent implements OnInit {
       basicCost: row.basicCost,
       internalSellingCost: row.internalSellingCost,
       externalSellingCost: row.externalSellingCost,
+      currency: row.currency,
       dateDebut: row.dateDebut,
       dateFin: row.dateFin,
     };
@@ -372,6 +405,7 @@ export class EmployeeCostComponent implements OnInit {
       basicCost: null,
       internalSellingCost: null,
       externalSellingCost: null,
+      currency: 'EUR',
       dateDebut: `${this.currentYear}-01-01`,
       dateFin: `${this.currentYear}-12-31`,
     };
@@ -397,6 +431,7 @@ export class EmployeeCostComponent implements OnInit {
     { key: 'basicCost', labelKey: 'COST.EMPLOYEE_COST.BASIC_COST', format: v => formatAmount(Number(v)) },
     { key: 'internalSellingCost', labelKey: 'COST.EMPLOYEE_COST.INTERNAL_SELLING_COST', format: v => formatAmount(Number(v)) },
     { key: 'externalSellingCost', labelKey: 'COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST', format: v => formatAmount(Number(v)) },
+    { key: 'currency', labelKey: 'COST.EMPLOYEE_COST.CURRENCY', format: v => String(v) },
     { key: 'dateDebut', labelKey: 'COST.EMPLOYEE_COST.DATE_DEBUT', format: v => formatDate(String(v)) },
     { key: 'dateFin', labelKey: 'COST.EMPLOYEE_COST.DATE_FIN', format: v => formatDate(String(v)) },
     { key: 'sourceStatus', labelKey: 'COST.EMPLOYEE_COST.HISTORY_COL_STATUS', format: v => String(v) },
