@@ -217,12 +217,12 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateTaux(id: number): void {
-    // Validating a taux creates the draft invoice server-side (ProgressBillingService) —
-    // jump straight into its edit stepper, same as doValidateDF() below.
+    // Validating a taux creates the invoice server-side (ProgressBillingService), emitted
+    // immediately — jump straight into its detail page, same as doValidateDF() below.
     this.svc.validateTaux(id).subscribe({
       next: line => {
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+          this.router.navigate(['/finance/invoicing', line.invoiceId]);
         } else {
           this.loadDF();
         }
@@ -256,13 +256,13 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateDF(lineId: number): void {
-    // DF validation creates the draft invoice server-side (DFValidationService) — jump
-    // straight into its edit stepper instead of staying on this list, since there's
-    // nothing left to do here once the invoice exists.
+    // DF validation creates the invoice server-side (DFValidationService), emitted
+    // immediately — jump straight into its detail page instead of staying on this list,
+    // since there's nothing left to do here once the invoice exists.
     this.svc.validateDF(lineId).subscribe({
       next: line => {
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+          this.router.navigate(['/finance/invoicing', line.invoiceId]);
         } else {
           this.loadDF();
         }

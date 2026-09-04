@@ -469,9 +469,9 @@ export class AffaireWipTabComponent implements OnInit {
   }
 
   /** DF's one action: validate every document whose entered % was actually raised, which
-   * creates their BillingLines and one shared draft invoice server-side — jump straight
-   * into its edit stepper, same redirect pattern used everywhere else a DF action creates
-   * an invoice. */
+   * creates their BillingLines and one shared invoice server-side, emitted immediately —
+   * jump straight into its detail page, same redirect pattern used everywhere else a DF
+   * action creates an invoice. */
   validateLivrables(): void {
     const entries = this.changedEntries();
     if (entries.length === 0 || this.validatingLivrables()) return;
@@ -480,7 +480,7 @@ export class AffaireWipTabComponent implements OnInit {
     this.livrableSvc.validateLivrables(this.affaire.id, entries).subscribe({
       next: line => {
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+          this.router.navigate(['/finance/invoicing', line.invoiceId]);
         } else {
           this.validatingLivrables.set(false);
           this.loadLivrables();

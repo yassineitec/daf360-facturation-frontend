@@ -199,15 +199,15 @@ export class ApprovalDetailComponent implements OnInit {
   // ── Actions ──────────────────────────────────────────────────────────────
 
   validateTaux(): void {
-    // AV taux validation is now a DF action — it creates the draft invoice server-side in
-    // one shot (ProgressBillingService.validateTaux), so jump straight into the edit
-    // stepper, same as validateLine() does for billing lines.
+    // AV taux validation is now a DF action — it creates the invoice server-side in one
+    // shot (ProgressBillingService.validateTaux), emitted immediately, so jump straight
+    // into its detail page, same as validateLine() does for billing lines.
     this.actioning.set(true);
     this.actionError.set(null);
     this.svc.validateTaux(this.id()).subscribe({
       next: line => {
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+          this.router.navigate(['/finance/invoicing', line.invoiceId]);
         } else {
           this.actioning.set(false);
           this.loadItem();
@@ -242,11 +242,12 @@ export class ApprovalDetailComponent implements OnInit {
     this.actionError.set(null);
     this.svc.validateDF(this.id()).subscribe({
       next: line => {
-        // DF validation creates the draft invoice server-side (DFValidationService) —
-        // jump straight into its edit stepper instead of leaving the user on this page,
-        // since there's nothing left for them to check here once the invoice exists.
+        // DF validation creates the invoice server-side (DFValidationService), emitted
+        // immediately — jump straight into its detail page instead of leaving the user on
+        // this page, since there's nothing left for them to check here once the invoice
+        // exists.
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+          this.router.navigate(['/finance/invoicing', line.invoiceId]);
         } else {
           this.actioning.set(false);
           this.loadItem();
