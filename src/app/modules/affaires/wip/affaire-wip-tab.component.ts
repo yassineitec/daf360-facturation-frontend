@@ -10,7 +10,7 @@ import { WipService } from './wip.service';
 import { WipTauxDto, WipTmHourDto, WipTmPreviewDto } from './wip.model';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
 import { LivrableService } from '../livrable.service';
-import { AffaireLivrableDto } from '../livrable.model';
+import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../livrable.model';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
@@ -92,17 +92,27 @@ export class AffaireWipTabComponent implements OnInit {
   // ── LIVRABLE ────────────────────────────────────────────────────────────
   // Each document already carries its own cumulative % billed (pctFacture) — this map
   // holds what the user has TYPED for each one so far this session, defaulting to that
-  // same current value (i.e. "no change") until edited. A document only produces an
-  // invoice line if its entered value ends up higher than its stored one.
+  // same current value (i.e. "no change") until edited. A document only produces a
+  // submission entry if its entered value ends up higher than its stored one.
   livrables            = signal<AffaireLivrableDto[]>([]);
   loadingLivrables     = signal(false);
   enteredPct           = signal<Map<number, number>>(new Map());
-  validatingLivrables  = signal(false);
+  submittingLivrables  = signal(false);
   livrableError        = signal<string | null>(null);
+  editingBatchId        = signal<number | null>(null);
+  activeBatches         = signal<LivrableBatchDto[]>([]);
+  loadingActiveBatches  = signal(false);
+  livrableClientAmountInputs   = signal<Map<number, number | null>>(new Map());
+  submittingLivrableClientBatch = signal<number | null>(null);
+  livrableClientAmountError    = signal<string | null>(null);
+  livrableCancelError          = signal<string | null>(null);
 
   readonly pendingLivrables = computed(() =>
     this.livrables().filter(l => l.statut === 'A_FACTURER' || l.statut === 'EN_COURS'));
   readonly livrableHistory  = computed(() => this.livrables().filter(l => l.statut === 'FACTURE'));
+
+  readonly pendingClientBatches = computed(() =>
+    this.activeBatches().filter(b => b.statut === 'EN_ATTENTE_CLIENT'));
 
   private changedEntries(): { livrableId: number; pctSaisi: number }[] {
     const entered = this.enteredPct();
@@ -122,6 +132,12 @@ export class AffaireWipTabComponent implements OnInit {
       return sum + (delta / 100) * l.budgetAlloue;
     }, 0);
   });
+
+  /** Which batch (if any) a document currently belongs to — drives the per-row status badge
+   * and disables its % input while a submission for it is already in flight. */
+  livrableBatchStatus(livrableId: number): LivrableBatchStatut | null {
+    return this.activeBatches().find(b => b.entries.some(e => e.livrableId === livrableId))?.statut ?? null;
+  }
 
   // ── TM — Review / manual verification / validate / client-response stepper ──────
   // A thin progress rail over the SAME preview content below (chrome: 'header-only' —
@@ -232,7 +248,7 @@ export class AffaireWipTabComponent implements OnInit {
   ngOnInit(): void {
     if (this.affaire.billingMode === 'FORFAIT') this.loadTauxHistory();
     if (this.affaire.billingMode === 'REGIE') { this.loadTmPreview(); this.loadTmHistory(); }
-    if (this.affaire.billingMode === 'LIVRABLE') this.loadLivrables();
+    if (this.affaire.billingMode === 'LIVRABLE') { this.loadLivrables(); this.loadActiveBatches(); }
   }
 
   // ── AV actions ────────────────────────────────────────────────────────────
@@ -519,6 +535,14 @@ export class AffaireWipTabComponent implements OnInit {
     });
   }
 
+  loadActiveBatches(): void {
+    this.loadingActiveBatches.set(true);
+    this.livrableSvc.getActiveBatches(this.affaire.id).subscribe({
+      next: b => { this.activeBatches.set(b); this.loadingActiveBatches.set(false); },
+      error: () => this.loadingActiveBatches.set(false),
+    });
+  }
+
   private currentPct(id: number): number {
     return this.livrables().find(l => l.id === id)?.pctFacture ?? 0;
   }
@@ -535,7 +559,7 @@ export class AffaireWipTabComponent implements OnInit {
     this.enteredPct.set(map);
   }
 
-  /** Live preview of what this one row would add to the invoice at its currently entered %
+  /** Live preview of what this one row would add to the batch at its currently entered %
    * — zero if the user hasn't raised it above the document's current cumulative %. */
   incrementalAmount(l: AffaireLivrableDto): number {
     const entered = this.enteredPct().get(l.id) ?? l.pctFacture;
@@ -543,27 +567,89 @@ export class AffaireWipTabComponent implements OnInit {
     return (delta / 100) * l.budgetAlloue;
   }
 
-  /** DF's one action: validate every document whose entered % was actually raised, which
-   * creates their BillingLines and one shared invoice server-side, emitted immediately —
-   * jump straight into its detail page, same redirect pattern used everywhere else a DF
-   * action creates an invoice. */
-  validateLivrables(): void {
-    const entries = this.changedEntries();
-    if (entries.length === 0 || this.validatingLivrables()) return;
-    this.validatingLivrables.set(true);
+  startEditBatch(batch: LivrableBatchDto): void {
+    this.editingBatchId.set(batch.batchId);
+    const map = new Map(this.enteredPct());
+    batch.entries.forEach(e => map.set(e.livrableId, e.pctSaisi));
+    this.enteredPct.set(map);
     this.livrableError.set(null);
-    this.livrableSvc.validateLivrables(this.affaire.id, entries).subscribe({
-      next: line => {
-        if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId]);
-        } else {
-          this.validatingLivrables.set(false);
-          this.loadLivrables();
-        }
+  }
+
+  cancelEditBatch(): void {
+    this.editingBatchId.set(null);
+    this.enteredPct.set(new Map(
+      this.livrables().filter(x => x.statut !== 'FACTURE' && x.statut !== 'ANNULE').map(x => [x.id, x.pctFacture]),
+    ));
+    this.livrableError.set(null);
+  }
+
+  /** Submits every document whose entered % was actually raised as one batch — lands on
+   * EN_ATTENTE_CLIENT, waiting for the client's confirmation before DF ever sees it (see
+   * docs/superpowers/specs/2026-09-04-livrable-df-approval-design.md). While editing an
+   * existing batch, this calls editBatch instead, which returns a NEW batchId — the old one
+   * is discarded either way once this resolves. */
+  submitLivrables(): void {
+    const entries = this.changedEntries();
+    if (entries.length === 0 || this.submittingLivrables()) return;
+    this.submittingLivrables.set(true);
+    this.livrableError.set(null);
+    const editingId = this.editingBatchId();
+    const request$ = editingId !== null
+      ? this.livrableSvc.editBatch(this.affaire.id, editingId, entries)
+      : this.livrableSvc.submitLivrables(this.affaire.id, entries);
+    request$.subscribe({
+      next: () => {
+        this.submittingLivrables.set(false);
+        this.editingBatchId.set(null);
+        this.loadLivrables();
+        this.loadActiveBatches();
       },
       error: err => {
-        this.validatingLivrables.set(false);
+        this.submittingLivrables.set(false);
         this.livrableError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.LIVRABLE_ERROR'));
+      },
+    });
+  }
+
+  cancelBatch(batchId: number): void {
+    if (!confirm(this.translate.instant('AFFAIRES.WIP.CANCEL_BATCH_CONFIRM'))) return;
+    this.livrableCancelError.set(null);
+    this.livrableSvc.cancelBatch(this.affaire.id, batchId).subscribe({
+      next: () => {
+        if (this.editingBatchId() === batchId) this.cancelEditBatch();
+        this.loadActiveBatches();
+      },
+      error: err => this.livrableCancelError.set(
+        err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CANCEL_BATCH_ERROR')),
+    });
+  }
+
+  getLivrableClientAmountInput(batchId: number): number | null {
+    return this.livrableClientAmountInputs().get(batchId) ?? null;
+  }
+
+  setLivrableClientAmountInput(batchId: number, value: number | null): void {
+    const map = new Map(this.livrableClientAmountInputs());
+    map.set(batchId, value);
+    this.livrableClientAmountInputs.set(map);
+  }
+
+  confirmLivrableClientAmount(batch: LivrableBatchDto): void {
+    const amount = this.getLivrableClientAmountInput(batch.batchId);
+    if (amount === null || amount < 0 || amount > batch.combinedMontant
+      || this.submittingLivrableClientBatch() !== null) return;
+    this.submittingLivrableClientBatch.set(batch.batchId);
+    this.livrableClientAmountError.set(null);
+    this.livrableSvc.enterClientAmountForBatch(this.affaire.id, batch.batchId, amount).subscribe({
+      next: () => {
+        this.submittingLivrableClientBatch.set(null);
+        this.setLivrableClientAmountInput(batch.batchId, null);
+        this.loadActiveBatches();
+      },
+      error: err => {
+        this.submittingLivrableClientBatch.set(null);
+        this.livrableClientAmountError.set(
+          err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CLIENT_AMOUNT_ERROR'));
       },
     });
   }
