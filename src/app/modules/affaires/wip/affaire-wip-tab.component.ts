@@ -49,6 +49,7 @@ export class AffaireWipTabComponent implements OnInit {
   tauxError     = signal<string | null>(null);
   submittingTaux= signal(false);
   editingTauxId = signal<number | null>(null);
+  deleteTauxError = signal<string | null>(null);
 
   readonly lastValidatedTaux = computed(() => {
     const vals = this.tauxHistory().filter(t => t.statut === 'VALIDE');
@@ -300,12 +301,13 @@ export class AffaireWipTabComponent implements OnInit {
 
   deleteTaux(tauxId: number): void {
     if (!confirm(this.translate.instant('AFFAIRES.WIP.DELETE_TAUX_CONFIRM'))) return;
+    this.deleteTauxError.set(null);
     this.svc.deleteTaux(tauxId).subscribe({
       next: () => {
         if (this.editingTauxId() === tauxId) this.cancelEditTaux();
         this.loadTauxHistory();
       },
-      error: err => this.tauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.DELETE_TAUX_ERROR')),
+      error: err => this.deleteTauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.DELETE_TAUX_ERROR')),
     });
   }
 

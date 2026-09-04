@@ -90,6 +90,9 @@
           }
         </tbody>
       </table>
+      @if (deleteTauxError()) {
+        <p class="text-[12px] text-danger">{{ deleteTauxError() }}</p>
+      }
     }
 
   } @else if (affaire.billingMode === 'REGIE') {
