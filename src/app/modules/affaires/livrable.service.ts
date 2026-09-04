@@ -94,6 +94,9 @@ export class LivrableService {
       { withCredentials: true });
   }
 
+  /** Only valid while every line in the batch is EN_ATTENTE_CLIENT. confirmedTotal can be
+   * less than the batch's combinedMontant but never more — the backend rejects that. Moves
+   * the whole batch to EN_ATTENTE_DF. */
   enterClientAmountForBatch(
     affaireId: number,
     batchId: number,
@@ -120,6 +123,8 @@ export class LivrableService {
       { withCredentials: true });
   }
 
+  /** Valid at any pre-FACTURE state (EN_ATTENTE_CLIENT/EN_ATTENTE_DF/A_VERIFIER/RETOURNE) —
+   * unlike editBatch, this stays available even after the client has confirmed a number. */
   cancelBatch(affaireId: number, batchId: number): Observable<LivrableBatchDto> {
     return this.http.post<LivrableBatchDto>(
       `${this.base}/${affaireId}/livrables/batches/${batchId}/cancel`,

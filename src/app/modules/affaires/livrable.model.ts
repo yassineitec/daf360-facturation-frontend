@@ -51,7 +51,7 @@ export interface AffaireLivrableDto {
 }
 
 /** One document's newly-entered cumulative percentage — the request shape
- * LivrableService.validateLivrables() sends, one entry per document actually changed. */
+ * LivrableService.submitLivrables()/editBatch() send, one entry per document actually changed. */
 export interface LivrableTauxEntry {
   livrableId: number;
   pctSaisi: number;
