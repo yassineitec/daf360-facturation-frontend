@@ -32,6 +32,17 @@ export class WipService {
     return this.http.post<WipTauxDto>(`${this.base}/av/taux/${tauxId}/refuse`, { motif }, this.opts);
   }
 
+  updateTaux(
+    tauxId: number,
+    body: { periodDateFrom: string; periodDateTo: string; tauxSaisi: number; commentaire?: string | null },
+  ): Observable<WipTauxDto> {
+    return this.http.put<WipTauxDto>(`${this.base}/av/taux/${tauxId}`, body, this.opts);
+  }
+
+  deleteTaux(tauxId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/av/taux/${tauxId}`, this.opts);
+  }
+
   createBillingLineFromTaux(affaireId: number, tauxId: number): Observable<unknown> {
     return this.http.post(
       `${this.base}/av/taux/${tauxId}/billing-line?affaireId=${affaireId}`, {}, this.opts);

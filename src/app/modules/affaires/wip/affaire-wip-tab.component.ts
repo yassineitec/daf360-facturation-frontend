@@ -48,15 +48,21 @@ export class AffaireWipTabComponent implements OnInit {
   tauxComment   = '';
   tauxError     = signal<string | null>(null);
   submittingTaux= signal(false);
+  editingTauxId = signal<number | null>(null);
 
   readonly lastValidatedTaux = computed(() => {
     const vals = this.tauxHistory().filter(t => t.statut === 'VALIDE');
     return vals.length > 0 ? Math.max(...vals.map(t => t.tauxSaisi)) : 0;
   });
 
+  readonly editingTaux = computed<WipTauxDto | null>(() =>
+    this.tauxHistory().find(t => t.id === this.editingTauxId()) ?? null);
+
   readonly canSubmitTaux = computed(() => {
     const taux = this.newTauxValue();
-    return taux !== null && taux > this.lastValidatedTaux() && taux <= 100;
+    if (taux === null || taux > 100) return false;
+    if (this.editingTauxId() !== null) return true;
+    return taux > this.lastValidatedTaux();
   });
 
   readonly avWipPreview = computed<number | null>(() => {
@@ -231,27 +237,60 @@ export class AffaireWipTabComponent implements OnInit {
     });
   }
 
+  startEditTaux(t: WipTauxDto): void {
+    this.editingTauxId.set(t.id);
+    this.periodDateFrom = t.periodDateFrom;
+    this.periodDateTo = t.periodDateTo;
+    this.newTauxValue.set(t.tauxSaisi);
+    this.tauxComment = t.commentaire ?? '';
+    this.tauxError.set(null);
+  }
+
+  cancelEditTaux(): void {
+    this.editingTauxId.set(null);
+    this.newTauxValue.set(null);
+    this.tauxComment = '';
+  }
+
   submitTaux(): void {
     const taux = this.newTauxValue();
-    if (taux === null || !this.canSubmitTaux() || this.submittingTaux()) return;
+    if (taux === null || this.submittingTaux()) return;
+    const editingId = this.editingTauxId();
+    if (editingId === null && !this.canSubmitTaux()) return;
     this.submittingTaux.set(true);
     this.tauxError.set(null);
-    this.svc.submitTaux(this.affaire.id, {
+    const body = {
       periodDateFrom: this.periodDateFrom,
       periodDateTo: this.periodDateTo,
       tauxSaisi: taux,
       commentaire: this.tauxComment.trim() || null,
-    }).subscribe({
+    };
+    const request$ = editingId !== null
+      ? this.svc.updateTaux(editingId, body)
+      : this.svc.submitTaux(this.affaire.id, body);
+    request$.subscribe({
       next: () => {
         this.submittingTaux.set(false);
         this.newTauxValue.set(null);
         this.tauxComment = '';
+        this.editingTauxId.set(null);
         this.loadTauxHistory();
       },
       error: err => {
         this.submittingTaux.set(false);
         this.tauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.SUBMIT_ERROR'));
       },
+    });
+  }
+
+  deleteTaux(tauxId: number): void {
+    if (!confirm(this.translate.instant('AFFAIRES.WIP.DELETE_TAUX_CONFIRM'))) return;
+    this.svc.deleteTaux(tauxId).subscribe({
+      next: () => {
+        if (this.editingTauxId() === tauxId) this.cancelEditTaux();
+        this.loadTauxHistory();
+      },
+      error: err => this.tauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.SUBMIT_ERROR')),
     });
   }
 
