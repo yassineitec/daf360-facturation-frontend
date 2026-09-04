@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule }                        from '@angular/forms';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
+import { forkJoin, Observable }               from 'rxjs';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
 } from '@khalilrebhiitec/daf360';
@@ -60,7 +61,7 @@ export class ApprovalQueueComponent implements OnInit {
 
   showDfRetourModal = signal(false);
   dfRetourMotif     = '';
-  private dfRetourLineId = 0;
+  private dfRetourEntityId = 0;
   private dfRetourType: 'line' | 'livrableBatch' = 'line';
 
   // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
@@ -226,14 +227,17 @@ export class ApprovalQueueComponent implements OnInit {
   // ProgressBillingService.validateTaux()).
   private loadDF(): void {
     this.dfLoading.set(true);
-    this.svc.getPendingTaux().subscribe({
-      next: t => this.pendingTaux.set(t),
-    });
-    this.svc.getPendingLivrableBatches().subscribe({
-      next: b => this.pendingLivrableBatches.set(b),
-    });
-    this.svc.getPendingDFLines().subscribe({
-      next:  l => { this.pendingLines.set(l); this.dfLoading.set(false); },
+    forkJoin({
+      taux: this.svc.getPendingTaux(),
+      livrableBatches: this.svc.getPendingLivrableBatches(),
+      lines: this.svc.getPendingDFLines(),
+    }).subscribe({
+      next: ({ taux, livrableBatches, lines }) => {
+        this.pendingTaux.set(taux);
+        this.pendingLivrableBatches.set(livrableBatches);
+        this.pendingLines.set(lines);
+        this.dfLoading.set(false);
+      },
       error: () => this.dfLoading.set(false),
     });
   }
@@ -312,8 +316,8 @@ export class ApprovalQueueComponent implements OnInit {
     });
   }
 
-  openDfRetourModal(lineId: number, type: 'line' | 'livrableBatch' = 'line'): void {
-    this.dfRetourLineId = lineId;
+  openDfRetourModal(entityId: number, type: 'line' | 'livrableBatch' = 'line'): void {
+    this.dfRetourEntityId = entityId;
     this.dfRetourType = type;
     this.dfRetourMotif = '';
     this.showDfRetourModal.set(true);
@@ -322,15 +326,16 @@ export class ApprovalQueueComponent implements OnInit {
   submitDfRetour(): void {
     if (!this.dfRetourMotif.trim()) return;
     const motif = this.dfRetourMotif.trim();
-    if (this.dfRetourType === 'livrableBatch') {
-      this.svc.returnLivrableBatch(this.dfRetourLineId, motif).subscribe({
-        next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
-      });
-    } else {
-      this.svc.returnDF(this.dfRetourLineId, motif).subscribe({
-        next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
-      });
-    }
+    // Typed Observable<unknown> rather than letting each branch's own return type stand —
+    // a union of BillingLineDto/LivrableBatchDto observables isn't callable in this
+    // TS/RxJS combination (differently-parameterized Observable overloads don't unify),
+    // and both branches' follow-up is identical anyway.
+    const request$: Observable<unknown> = this.dfRetourType === 'livrableBatch'
+      ? this.svc.returnLivrableBatch(this.dfRetourEntityId, motif)
+      : this.svc.returnDF(this.dfRetourEntityId, motif);
+    request$.subscribe({
+      next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
+    });
   }
 
   lineCfg(statut: string) {

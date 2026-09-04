@@ -1687,7 +1687,7 @@
         "empty_history": "No history available.",
         "section_taux": "Progress rate (FORFAIT) — {{count}}",
         "section_lines": "Billing lines — {{count}}",
-        "section_livrable_batches": "Livrable batches ({{count}})",
+        "section_livrable_batches": "Livrable batches — {{count}}",
         "col_affaire": "Project",
         "col_taux": "Rate",
         "col_valeur": "Value",

@@ -1687,7 +1687,7 @@
         "empty_history": "Aucun historique disponible.",
         "section_taux": "Taux d'avancement (FORFAIT) — {{count}}",
         "section_lines": "Lignes de facturation — {{count}}",
-        "section_livrable_batches": "Batches Livrables ({{count}})",
+        "section_livrable_batches": "Batches Livrables — {{count}}",
         "col_affaire": "Affaire",
         "col_taux": "Taux",
         "col_valeur": "Valeur",
