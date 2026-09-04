@@ -1948,6 +1948,7 @@
       "EDIT": "Modifier",
       "DELETE": "Supprimer",
       "DELETE_TAUX_CONFIRM": "Supprimer ce taux d'avancement ?",
+      "DELETE_TAUX_ERROR": "Erreur lors de la suppression du taux.",
       "EDIT_REFUSED_HINT": "Modifier ce taux refusé le remet en attente de validation.",
       "CALCULATED": "WIP calculé",
       "VALIDATE": "Valider",

@@ -1948,6 +1948,7 @@
       "EDIT": "Edit",
       "DELETE": "Delete",
       "DELETE_TAUX_CONFIRM": "Delete this progress rate submission?",
+      "DELETE_TAUX_ERROR": "Error deleting the rate.",
       "EDIT_REFUSED_HINT": "Editing this refused rate resubmits it for validation.",
       "CALCULATED": "Calculated WIP",
       "VALIDATE": "Validate",

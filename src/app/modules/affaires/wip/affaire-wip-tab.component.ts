@@ -61,7 +61,7 @@ export class AffaireWipTabComponent implements OnInit {
   readonly canSubmitTaux = computed(() => {
     const taux = this.newTauxValue();
     if (taux === null || taux > 100) return false;
-    if (this.editingTauxId() !== null) return true;
+    if (this.editingTauxId() !== null) return taux >= this.lastValidatedTaux();
     return taux > this.lastValidatedTaux();
   });
 
@@ -237,7 +237,12 @@ export class AffaireWipTabComponent implements OnInit {
     });
   }
 
+  private preEditDateFrom = this.periodDateFrom;
+  private preEditDateTo = this.periodDateTo;
+
   startEditTaux(t: WipTauxDto): void {
+    this.preEditDateFrom = this.periodDateFrom;
+    this.preEditDateTo = this.periodDateTo;
     this.editingTauxId.set(t.id);
     this.periodDateFrom = t.periodDateFrom;
     this.periodDateTo = t.periodDateTo;
@@ -250,13 +255,16 @@ export class AffaireWipTabComponent implements OnInit {
     this.editingTauxId.set(null);
     this.newTauxValue.set(null);
     this.tauxComment = '';
+    this.tauxError.set(null);
+    this.periodDateFrom = this.preEditDateFrom;
+    this.periodDateTo = this.preEditDateTo;
   }
 
   submitTaux(): void {
     const taux = this.newTauxValue();
     if (taux === null || this.submittingTaux()) return;
     const editingId = this.editingTauxId();
-    if (editingId === null && !this.canSubmitTaux()) return;
+    if (!this.canSubmitTaux()) return;
     this.submittingTaux.set(true);
     this.tauxError.set(null);
     const body = {
@@ -290,7 +298,7 @@ export class AffaireWipTabComponent implements OnInit {
         if (this.editingTauxId() === tauxId) this.cancelEditTaux();
         this.loadTauxHistory();
       },
-      error: err => this.tauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.SUBMIT_ERROR')),
+      error: err => this.tauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.DELETE_TAUX_ERROR')),
     });
   }
 
