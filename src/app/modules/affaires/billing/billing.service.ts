@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient }          from '@angular/common/http';
 import { Observable }          from 'rxjs';
 import { environment }         from '../../../../environments/environment';
+import { LivrableBatchDto } from '../livrable.model';
 
 // ── Statut enums ──────────────────────────────────────────────────────────────
 
@@ -134,6 +135,19 @@ export interface PendingJalonDto {
 export interface PendingBillingLineDto extends BillingLineDto {
   affaireRef:      string;
   affaireIntitule: string;
+}
+
+/** One row per LIVRABLE batch sitting at EN_ATTENTE_DF, cross-affaire — mirrors the
+ * backend's PendingLivrableBatchDto. Grouped by batch, unlike PendingBillingLineDto which
+ * every other mode still lists one row per document/line. */
+export interface PendingLivrableBatchDto {
+  batchId:         number;
+  affaireId:       number;
+  affaireRef:      string;
+  affaireIntitule: string;
+  documentCount:   number;
+  combinedMontant: number;
+  billingDate:     string;
 }
 
 // ── Service ──────────────────────────────────────────────────────────────────
@@ -275,6 +289,32 @@ export class BillingService {
   getPendingDFLines(): Observable<PendingBillingLineDto[]> {
     return this.http.get<PendingBillingLineDto[]>(
       `${this.base}/billing/pending-df`, this.opts);
+  }
+
+  /** LIVRABLE's own grouped-by-batch pending-DF listing — excluded from getPendingDFLines()
+   * on the backend so a multi-document submission shows as one row here instead of several
+   * ungrouped ones there. */
+  getPendingLivrableBatches(): Observable<PendingLivrableBatchDto[]> {
+    return this.http.get<PendingLivrableBatchDto[]>(
+      `${this.base}/billing/pending-df/livrable-batches`, this.opts);
+  }
+
+  getLivrableBatchDetail(batchId: number): Observable<LivrableBatchDto> {
+    return this.http.get<LivrableBatchDto>(
+      `${this.base}/billing/livrable-batches/${batchId}`, this.opts);
+  }
+
+  /** Validating creates one shared invoice server-side, emitted immediately — same
+   * redirect-on-invoiceId pattern as validateTaux()/validateDF() above. */
+  validateLivrableBatch(batchId: number): Observable<LivrableBatchDto> {
+    return this.http.post<LivrableBatchDto>(
+      `${this.base}/billing/livrable-batches/${batchId}/validate`, {}, this.opts);
+  }
+
+  returnLivrableBatch(batchId: number, motif: string): Observable<LivrableBatchDto> {
+    return this.http.post<LivrableBatchDto>(
+      `${this.base}/billing/livrable-batches/${batchId}/return`,
+      { actionType: 'RETOURNE', motif }, this.opts);
   }
 
   // ── Audit Log ──────────────────────────────────────────────────────────────

@@ -7,7 +7,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService,
-  PendingTauxDto, PendingJalonDto, PendingBillingLineDto, AuditLogEntryDto,
+  PendingTauxDto, PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto, AuditLogEntryDto,
 } from './billing.service';
 
 type ActiveTab = 'rf' | 'df' | 'history';
@@ -50,6 +50,7 @@ export class ApprovalQueueComponent implements OnInit {
   pendingTaux   = signal<PendingTauxDto[]>([]);
   pendingJalons = signal<PendingJalonDto[]>([]);
   pendingLines  = signal<PendingBillingLineDto[]>([]);
+  pendingLivrableBatches = signal<PendingLivrableBatchDto[]>([]);
   auditLog      = signal<AuditLogEntryDto[]>([]);
 
   showRfRefuseModal = signal(false);
@@ -60,6 +61,7 @@ export class ApprovalQueueComponent implements OnInit {
   showDfRetourModal = signal(false);
   dfRetourMotif     = '';
   private dfRetourLineId = 0;
+  private dfRetourType: 'line' | 'livrableBatch' = 'line';
 
   // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
   readonly tauxColumns = computed<TableColumn[]>(() => {
@@ -140,6 +142,31 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  // ── daf-data-table: Livrable batches (DF) ────────────────────────────────────
+  readonly livrableBatchColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'affaire',     label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom' },
+      { key: 'documents',   label: this.translate.instant('AFFAIRES.billing.approval.col_documents'), type: 'custom', align: 'right' },
+      { key: 'montant',     label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
+      { key: 'billingDate', label: this.translate.instant('AFFAIRES.billing.approval.col_date'), type: 'custom' },
+      { key: '_actions',    label: '',                                                             type: 'custom', align: 'right', width: '200px' },
+    ];
+  });
+
+  readonly livrableBatchRows = computed(() =>
+    this.pendingLivrableBatches().map(b => ({
+      id:              b.batchId,
+      affaireId:       b.affaireId,
+      affaireRef:      b.affaireRef,
+      affaireIntitule: b.affaireIntitule,
+      documents:       b.documentCount,
+      montant:         this.fmtAmt(b.combinedMontant),
+      billingDate:     this.fmtDate(b.billingDate),
+      _raw:            b,
+    }))
+  );
+
   // ── daf-data-table: Audit history ────────────────────────────────────────────
   readonly historyColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -176,7 +203,7 @@ export class ApprovalQueueComponent implements OnInit {
    * leading `..` here overshoots past `approval` to `billing`, producing `billing/taux/1`
    * instead of `billing/approval/taux/1` (a 404) — confirmed live 2026-08-24.
    */
-  openDetail(row: { id: number }, type: 'taux' | 'jalon' | 'line'): void {
+  openDetail(row: { id: number }, type: 'taux' | 'jalon' | 'line' | 'livrable'): void {
     this.router.navigate([type, String(row.id)], { relativeTo: this.route });
   }
 
@@ -201,6 +228,9 @@ export class ApprovalQueueComponent implements OnInit {
     this.dfLoading.set(true);
     this.svc.getPendingTaux().subscribe({
       next: t => this.pendingTaux.set(t),
+    });
+    this.svc.getPendingLivrableBatches().subscribe({
+      next: b => this.pendingLivrableBatches.set(b),
     });
     this.svc.getPendingDFLines().subscribe({
       next:  l => { this.pendingLines.set(l); this.dfLoading.set(false); },
@@ -270,17 +300,37 @@ export class ApprovalQueueComponent implements OnInit {
     });
   }
 
-  openDfRetourModal(lineId: number): void {
+  doValidateLivrableBatch(batchId: number): void {
+    this.svc.validateLivrableBatch(batchId).subscribe({
+      next: batch => {
+        if (batch.invoiceId) {
+          this.router.navigate(['/finance/invoicing', batch.invoiceId]);
+        } else {
+          this.loadDF();
+        }
+      },
+    });
+  }
+
+  openDfRetourModal(lineId: number, type: 'line' | 'livrableBatch' = 'line'): void {
     this.dfRetourLineId = lineId;
+    this.dfRetourType = type;
     this.dfRetourMotif = '';
     this.showDfRetourModal.set(true);
   }
 
   submitDfRetour(): void {
     if (!this.dfRetourMotif.trim()) return;
-    this.svc.returnDF(this.dfRetourLineId, this.dfRetourMotif.trim()).subscribe({
-      next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
-    });
+    const motif = this.dfRetourMotif.trim();
+    if (this.dfRetourType === 'livrableBatch') {
+      this.svc.returnLivrableBatch(this.dfRetourLineId, motif).subscribe({
+        next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
+      });
+    } else {
+      this.svc.returnDF(this.dfRetourLineId, motif).subscribe({
+        next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
+      });
+    }
   }
 
   lineCfg(statut: string) {
