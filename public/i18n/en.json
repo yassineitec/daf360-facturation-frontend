@@ -1987,7 +1987,7 @@
       "VALIDATE_ERROR": "Error validating WIP.",
       "LIVRABLE_EXPLAIN": "Enter the new cumulative percentage billed for each document, then generate one combined invoice for everything you've changed.",
       "LIVRABLE_EMPTY": "No livrable pending billing.",
-      "LIVRABLE_ERROR": "Error while generating the invoice.",
+      "LIVRABLE_ERROR": "Error while submitting the batch.",
       "EDIT_BATCH_HINT": "Editing this batch resubmits it for client confirmation.",
       "PENDING_BATCHES_TITLE": "Pending batches",
       "BATCH_STATUS_EN_ATTENTE_CLIENT": "Awaiting client",

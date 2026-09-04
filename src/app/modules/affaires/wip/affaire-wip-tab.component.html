@@ -302,7 +302,7 @@
                 <td class="py-2 pr-3 text-right">
                   <input type="number" class="w-20 text-right border border-outline-variant rounded px-1 py-0.5"
                     [min]="l.pctFacture" max="100" step="0.1"
-                    [disabled]="livrableBatchStatus(l.id) !== null && editingBatchId() === null"
+                    [disabled]="isLivrableRowLocked(l.id)"
                     [value]="getEnteredPct(l.id)"
                     (input)="setEnteredPct(l.id, $any($event.target).valueAsNumber)" />%
                 </td>
@@ -343,7 +343,9 @@
     </div>
 
     <!-- ── Batches en attente (client puis DF) ── -->
-    @if (activeBatches().length) {
+    @if (loadingActiveBatches()) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+    } @else if (activeBatches().length) {
       <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3">
         <p class="text-[13px] font-semibold">{{ 'AFFAIRES.WIP.PENDING_BATCHES_TITLE' | translate }}</p>
 

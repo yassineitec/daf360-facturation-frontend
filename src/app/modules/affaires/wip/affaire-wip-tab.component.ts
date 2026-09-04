@@ -111,9 +111,6 @@ export class AffaireWipTabComponent implements OnInit {
     this.livrables().filter(l => l.statut === 'A_FACTURER' || l.statut === 'EN_COURS'));
   readonly livrableHistory  = computed(() => this.livrables().filter(l => l.statut === 'FACTURE'));
 
-  readonly pendingClientBatches = computed(() =>
-    this.activeBatches().filter(b => b.statut === 'EN_ATTENTE_CLIENT'));
-
   private changedEntries(): { livrableId: number; pctSaisi: number }[] {
     const entered = this.enteredPct();
     return this.pendingLivrables()
@@ -133,10 +130,26 @@ export class AffaireWipTabComponent implements OnInit {
     }, 0);
   });
 
-  /** Which batch (if any) a document currently belongs to — drives the per-row status badge
-   * and disables its % input while a submission for it is already in flight. */
+  /** The batch (if any) a document currently belongs to — null if it has no submission in
+   * flight. */
+  private findLivrableBatch(livrableId: number): LivrableBatchDto | null {
+    return this.activeBatches().find(b => b.entries.some(e => e.livrableId === livrableId)) ?? null;
+  }
+
+  /** Drives the per-row status badge. */
   livrableBatchStatus(livrableId: number): LivrableBatchStatut | null {
-    return this.activeBatches().find(b => b.entries.some(e => e.livrableId === livrableId))?.statut ?? null;
+    return this.findLivrableBatch(livrableId)?.statut ?? null;
+  }
+
+  /** A document's row is locked while it belongs to a batch OTHER than the one currently
+   * being edited — editing a batch must not also unlock every unrelated in-flight document's
+   * input, which would let the user add an unrelated document to the edit and have the
+   * backend reject the whole submission over it (RG-FAC-LIV-007, "already has a pending
+   * submission"). A document with no batch at all, or one that belongs to the batch actually
+   * being edited, stays editable. */
+  isLivrableRowLocked(livrableId: number): boolean {
+    const batch = this.findLivrableBatch(livrableId);
+    return batch !== null && batch.batchId !== this.editingBatchId();
   }
 
   // ── TM — Review / manual verification / validate / client-response stepper ──────
@@ -617,6 +630,7 @@ export class AffaireWipTabComponent implements OnInit {
     this.livrableSvc.cancelBatch(this.affaire.id, batchId).subscribe({
       next: () => {
         if (this.editingBatchId() === batchId) this.cancelEditBatch();
+        this.setLivrableClientAmountInput(batchId, null);
         this.loadActiveBatches();
       },
       error: err => this.livrableCancelError.set(
@@ -644,6 +658,9 @@ export class AffaireWipTabComponent implements OnInit {
       next: () => {
         this.submittingLivrableClientBatch.set(null);
         this.setLivrableClientAmountInput(batch.batchId, null);
+        // The batch just moved to EN_ATTENTE_DF, where editBatch() is no longer allowed —
+        // close any edit form left open on it, same guard cancelBatch() already has above.
+        if (this.editingBatchId() === batch.batchId) this.cancelEditBatch();
         this.loadActiveBatches();
       },
       error: err => {

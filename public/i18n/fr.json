@@ -1987,7 +1987,7 @@
       "VALIDATE_ERROR": "Erreur lors de la validation du WIP.",
       "LIVRABLE_EXPLAIN": "Saisissez le nouveau pourcentage cumulé facturé pour chaque document, puis générez une facture groupée pour l'ensemble des modifications.",
       "LIVRABLE_EMPTY": "Aucun livrable en attente de facturation.",
-      "LIVRABLE_ERROR": "Erreur lors de la génération de la facture.",
+      "LIVRABLE_ERROR": "Erreur lors de la soumission du batch.",
       "EDIT_BATCH_HINT": "Modifier ce batch le renvoie en attente de confirmation client.",
       "PENDING_BATCHES_TITLE": "Batches en attente",
       "BATCH_STATUS_EN_ATTENTE_CLIENT": "En attente client",
