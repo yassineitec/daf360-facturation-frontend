@@ -193,6 +193,12 @@ export class AffaireWipTabComponent implements OnInit {
   submittingClientLine = signal<number | null>(null);
   clientAmountError    = signal<string | null>(null);
 
+  /** Statuses a WIP T&M billing line can still be cancelled from — mirrors the backend's
+   * WipTmController guard (blocked once FACTURE or already ANNULE). */
+  private readonly cancellableTmStatuses = new Set([
+    'EN_ATTENTE_CLIENT', 'EN_ATTENTE_DF', 'A_VERIFIER', 'RETOURNE',
+  ]);
+
   getClientAmountInput(lineId: number): number | null {
     return this.clientAmountInputs().get(lineId) ?? null;
   }
@@ -461,6 +467,23 @@ export class AffaireWipTabComponent implements OnInit {
         if (this.wipStep() === 4 && this.pendingClientLines().length === 0) this.resetWipStepper();
       },
       error: () => this.loadingTmHistory.set(false),
+    });
+  }
+
+  isTmLineCancellable(statut: string): boolean {
+    return this.cancellableTmStatuses.has(statut);
+  }
+
+  /** Cancelling releases the line's locked wip_tm_hours, so both the history table and the
+   * current period's preview (which those hours may now fall back into) need a fresh reload. */
+  cancelLine(billingLineId: number): void {
+    if (!confirm(this.translate.instant('AFFAIRES.WIP.CANCEL_LINE_CONFIRM'))) return;
+    this.svc.cancelLine(this.affaire.id, billingLineId).subscribe({
+      next: () => {
+        this.loadTmHistory();
+        this.loadTmPreview();
+      },
+      error: err => this.tmError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CANCEL_LINE_ERROR')),
     });
   }
 

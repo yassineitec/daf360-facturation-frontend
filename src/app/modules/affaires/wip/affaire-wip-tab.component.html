@@ -229,6 +229,7 @@
             <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_PERIOD' | translate }}</th>
             <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_AMOUNT' | translate }}</th>
             <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
+            <th class="py-2 pr-3"></th>
           </tr>
         </thead>
         <tbody>
@@ -243,6 +244,13 @@
               </td>
               <td class="py-2 pr-3 text-right">{{ l.montantHt | displayCurrency : affaire.devise }}</td>
               <td class="py-2 pr-3">{{ l.statut }}</td>
+              <td class="py-2 pr-3 text-right">
+                @if (isTmLineCancellable(l.statut)) {
+                  <button type="button" class="text-danger text-[12px]" (click)="cancelLine(l.id)">
+                    {{ 'AFFAIRES.WIP.CANCEL' | translate }}
+                  </button>
+                }
+              </td>
             </tr>
           }
         </tbody>
