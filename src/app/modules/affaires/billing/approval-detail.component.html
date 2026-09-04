@@ -212,29 +212,104 @@
       </div>
     }
 
+    @if (type() === 'livrable' && livrableBatch(); as b) {
+      <div class="ad-card">
+        <div class="ad-card__head">
+          <h3 class="ad-card__title">{{ 'AFFAIRES.billing.approval.detail.title_livrable' | translate }}</h3>
+          <span class="ad-status-pill">{{ b.statut }}</span>
+        </div>
+        <div class="ad-grid">
+          <div class="ad-field">
+            <span class="ad-field__label">{{ 'AFFAIRES.billing.approval.col_montant_ht' | translate }}</span>
+            <span class="ad-field__value ad-field__value--bold">
+              {{ b.combinedMontant | displayCurrency : (affaire()?.devise ?? 'EUR') }}
+            </span>
+          </div>
+          <div class="ad-field">
+            <span class="ad-field__label">{{ 'AFFAIRES.billing.approval.detail.billing_date' | translate }}</span>
+            <span class="ad-field__value">{{ fmtDate(b.billingDate) }}</span>
+          </div>
+          @if (b.clientApprovedAmount !== null) {
+            <div class="ad-field">
+              <span class="ad-field__label">{{ 'AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate }}</span>
+              <span class="ad-field__value">
+                {{ b.clientApprovedAmount | displayCurrency : (affaire()?.devise ?? 'EUR') }}
+              </span>
+            </div>
+          }
+          @if (b.wipCarriedForward !== null) {
+            <div class="ad-field">
+              <span class="ad-field__label">{{ 'AFFAIRES.billing.approval.detail.carried_forward' | translate }}</span>
+              <span class="ad-field__value">
+                {{ b.wipCarriedForward | displayCurrency : (affaire()?.devise ?? 'EUR') }}
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="table-wrap">
+          <table class="w-full text-[13px]">
+            <thead>
+              <tr class="text-left text-on-surface-variant border-b border-outline-variant">
+                <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DOCUMENT' | translate }}</th>
+                <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.billing.approval.detail.taux_precedent' | translate }}</th>
+                <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.billing.approval.col_taux' | translate }}</th>
+                <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.billing.approval.col_montant' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of b.entries; track e.billingLineId) {
+                <tr class="border-b border-outline-variant/50">
+                  <td class="py-2 pr-3">{{ e.documentNom }}</td>
+                  <td class="py-2 pr-3 text-right">{{ e.pctPrecedent }}%</td>
+                  <td class="py-2 pr-3 text-right">{{ e.pctSaisi }}%</td>
+                  <td class="py-2 pr-3 text-right">{{ e.montantHt | displayCurrency : (affaire()?.devise ?? 'EUR') }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (canAct()) {
+          <div class="ad-actions">
+            <button class="act-btn act-btn--green" [disabled]="actioning()" (click)="validateLivrableBatch()">
+              <span class="material-symbols-outlined">check_circle</span>
+              {{ 'AFFAIRES.billing.approval.validate' | translate }}
+            </button>
+            <button class="act-btn act-btn--orange" [disabled]="actioning()" (click)="openReturnModal()">
+              <span class="material-symbols-outlined">undo</span>
+              {{ 'AFFAIRES.billing.approval.return' | translate }}
+            </button>
+          </div>
+        }
+      </div>
+    }
+
     @if (actionError()) {
       <p class="ad-error">{{ actionError() }}</p>
     }
 
-    <!-- ── Affaire history for this item type ──────────────────────────── -->
-    <div class="ad-card">
-      <div class="ad-card__head">
-        <h3 class="ad-card__title">{{ 'AFFAIRES.billing.approval.detail.history' | translate }}</h3>
+    <!-- ── Affaire history for this item type (no batch-shaped equivalent for 'livrable') ── -->
+    @if (type() !== 'livrable') {
+      <div class="ad-card">
+        <div class="ad-card__head">
+          <h3 class="ad-card__title">{{ 'AFFAIRES.billing.approval.detail.history' | translate }}</h3>
+        </div>
+        <div class="table-wrap">
+          <daf-data-table [columns]="historyColumns()" [rows]="historyRows()" [config]="tableConfig()">
+            <ng-template dafCell="label" let-row>
+              <span [class.ad-history-current]="row['isCurrent']">{{ row['label'] }}</span>
+              @if (row['isCurrent']) {
+                <span class="ad-current-tag">{{ 'AFFAIRES.billing.approval.detail.current' | translate }}</span>
+              }
+            </ng-template>
+            <ng-template dafCell="value" let-row>
+              {{ row['value'] | displayCurrency : (affaire()?.devise ?? 'EUR') }}
+            </ng-template>
+          </daf-data-table>
+        </div>
       </div>
-      <div class="table-wrap">
-        <daf-data-table [columns]="historyColumns()" [rows]="historyRows()" [config]="tableConfig()">
-          <ng-template dafCell="label" let-row>
-            <span [class.ad-history-current]="row['isCurrent']">{{ row['label'] }}</span>
-            @if (row['isCurrent']) {
-              <span class="ad-current-tag">{{ 'AFFAIRES.billing.approval.detail.current' | translate }}</span>
-            }
-          </ng-template>
-          <ng-template dafCell="value" let-row>
-            {{ row['value'] | displayCurrency : (affaire()?.devise ?? 'EUR') }}
-          </ng-template>
-        </daf-data-table>
-      </div>
-    </div>
+    }
 
     <!-- ── Audit trail ──────────────────────────────────────────────────── -->
     <div class="ad-card">

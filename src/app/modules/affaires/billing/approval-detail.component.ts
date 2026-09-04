@@ -11,8 +11,9 @@ import {
 import { AffaireService } from '../affaire.service';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { LivrableBatchDto } from '../livrable.model';
 
-type DetailType = 'taux' | 'jalon' | 'line';
+type DetailType = 'taux' | 'jalon' | 'line' | 'livrable';
 
 interface HistoryRow {
   id: number;
@@ -49,6 +50,7 @@ export class ApprovalDetailComponent implements OnInit {
   taux  = signal<TauxDetailDto | null>(null);
   jalon = signal<JalonDetailDto | null>(null);
   line  = signal<LineDetailDto | null>(null);
+  livrableBatch = signal<LivrableBatchDto | null>(null);
 
   affaire       = signal<AffaireDetail | null>(null);
   siblingTaux   = signal<TauxDetailDto[]>([]);
@@ -66,9 +68,10 @@ export class ApprovalDetailComponent implements OnInit {
 
   readonly canAct = computed(() => {
     switch (this.type()) {
-      case 'taux':  return this.taux()?.statut === 'EN_ATTENTE';
-      case 'jalon': return this.jalon()?.statut === 'EN_ATTENTE_VALIDATION';
-      case 'line':  return this.line()?.statut === 'EN_ATTENTE_DF';
+      case 'taux':     return this.taux()?.statut === 'EN_ATTENTE';
+      case 'jalon':    return this.jalon()?.statut === 'EN_ATTENTE_VALIDATION';
+      case 'line':     return this.line()?.statut === 'EN_ATTENTE_DF';
+      case 'livrable': return this.livrableBatch()?.statut === 'EN_ATTENTE_DF';
     }
   });
 
@@ -103,6 +106,8 @@ export class ApprovalDetailComponent implements OnInit {
           statut: l.statut,
           isCurrent: l.id === currentId,
         }));
+      case 'livrable':
+        return [];
     }
   });
 
@@ -158,6 +163,12 @@ export class ApprovalDetailComponent implements OnInit {
       case 'line':
         this.svc.getLineDetail(id).subscribe({
           next: l => { this.line.set(l); this.loading.set(false); this.loadContext(l.affaireId, 'BILLING_LINE'); },
+          error: () => { this.loading.set(false); this.errorMsg.set(this.translate.instant('AFFAIRES.billing.approval.detail.load_error')); },
+        });
+        break;
+      case 'livrable':
+        this.svc.getLivrableBatchDetail(id).subscribe({
+          next: b => { this.livrableBatch.set(b); this.loading.set(false); this.loadContext(b.affaireId, 'BILLING_LINE'); },
           error: () => { this.loading.set(false); this.errorMsg.set(this.translate.instant('AFFAIRES.billing.approval.detail.load_error')); },
         });
         break;
@@ -260,6 +271,25 @@ export class ApprovalDetailComponent implements OnInit {
     });
   }
 
+  validateLivrableBatch(): void {
+    this.actioning.set(true);
+    this.actionError.set(null);
+    this.svc.validateLivrableBatch(this.id()).subscribe({
+      next: batch => {
+        if (batch.invoiceId) {
+          this.router.navigate(['/finance/invoicing', batch.invoiceId]);
+        } else {
+          this.actioning.set(false);
+          this.loadItem();
+        }
+      },
+      error: (err: any) => {
+        this.actioning.set(false);
+        this.actionError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.billing.approval.detail.action_error'));
+      },
+    });
+  }
+
   openReturnModal(): void {
     this.returnMotif = '';
     this.showReturnModal.set(true);
@@ -269,7 +299,10 @@ export class ApprovalDetailComponent implements OnInit {
     if (!this.returnMotif.trim()) return;
     const motif = this.returnMotif.trim();
     this.showReturnModal.set(false);
-    this.runAction(this.svc.returnDF(this.id(), motif));
+    const request$ = this.type() === 'livrable'
+      ? this.svc.returnLivrableBatch(this.id(), motif)
+      : this.svc.returnDF(this.id(), motif);
+    this.runAction(request$);
   }
 
   private runAction(obs: { subscribe: (o: { next: () => void; error: (e: unknown) => void }) => void }): void {
