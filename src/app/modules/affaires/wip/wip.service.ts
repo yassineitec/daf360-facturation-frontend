@@ -76,8 +76,8 @@ export class WipService {
   /** Cancels a WIP T&M billing line still in EN_ATTENTE_CLIENT/EN_ATTENTE_DF/A_VERIFIER/
    * RETOURNE — releases its locked wip_tm_hours so those hours become billable again in a
    * future period. Blocked server-side once FACTURE or already ANNULE. */
-  cancelLine(affaireId: number, billingLineId: number): Observable<void> {
-    return this.http.post<void>(
+  cancelLine(affaireId: number, billingLineId: number): Observable<unknown> {
+    return this.http.post(
       `${this.base}/wip/tm/${affaireId}/lines/${billingLineId}/cancel`,
       {}, this.opts);
   }

@@ -255,6 +255,9 @@
           }
         </tbody>
       </table>
+      @if (cancelLineError()) {
+        <p class="text-[12px] text-danger">{{ cancelLineError() }}</p>
+      }
     }
 
   } @else if (affaire.billingMode === 'LIVRABLE') {

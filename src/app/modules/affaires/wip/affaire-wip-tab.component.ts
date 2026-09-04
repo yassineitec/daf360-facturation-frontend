@@ -198,6 +198,7 @@ export class AffaireWipTabComponent implements OnInit {
   private readonly cancellableTmStatuses = new Set([
     'EN_ATTENTE_CLIENT', 'EN_ATTENTE_DF', 'A_VERIFIER', 'RETOURNE',
   ]);
+  cancelLineError = signal<string | null>(null);
 
   getClientAmountInput(lineId: number): number | null {
     return this.clientAmountInputs().get(lineId) ?? null;
@@ -478,12 +479,14 @@ export class AffaireWipTabComponent implements OnInit {
    * current period's preview (which those hours may now fall back into) need a fresh reload. */
   cancelLine(billingLineId: number): void {
     if (!confirm(this.translate.instant('AFFAIRES.WIP.CANCEL_LINE_CONFIRM'))) return;
+    this.cancelLineError.set(null);
     this.svc.cancelLine(this.affaire.id, billingLineId).subscribe({
       next: () => {
+        this.setClientAmountInput(billingLineId, null);
         this.loadTmHistory();
         this.loadTmPreview();
       },
-      error: err => this.tmError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CANCEL_LINE_ERROR')),
+      error: err => this.cancelLineError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CANCEL_LINE_ERROR')),
     });
   }
 
