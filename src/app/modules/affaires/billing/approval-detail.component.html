@@ -260,7 +260,7 @@
             <tbody>
               @for (e of b.entries; track e.billingLineId) {
                 <tr class="border-b border-outline-variant/50">
-                  <td class="py-2 pr-3">{{ e.documentNom }}</td>
+                  <td class="py-2 pr-3">{{ e.documentNom ?? '—' }}</td>
                   <td class="py-2 pr-3 text-right">{{ e.pctPrecedent }}%</td>
                   <td class="py-2 pr-3 text-right">{{ e.pctSaisi }}%</td>
                   <td class="py-2 pr-3 text-right">{{ e.montantHt | displayCurrency : (affaire()?.devise ?? 'EUR') }}</td>
