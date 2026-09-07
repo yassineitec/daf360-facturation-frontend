@@ -116,7 +116,7 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, ButtonComponent,
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
-    GaugeComponent, BarChartComponent, AvatarGroupComponent,
+    GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
     TsFormComponent, AfaireBillingTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
