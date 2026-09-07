@@ -174,7 +174,6 @@ export class WizardStepRecapComponent implements OnInit {
   get ressourcesRows() {
     return this.draft.ressources.map(r => ({
       userName:     r.userName ?? this.translate.instant('AFFAIRES.wizard.recap.user_hash', { id: r.userId }),
-      resourceType: r.resourceType,
       rateType:     r.rateType === 'DAILY' ? 'JH' : 'H',
       rateAmount:   r.rateAmount,
       rateCurrency: r.rateCurrency,

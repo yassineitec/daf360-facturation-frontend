@@ -132,6 +132,94 @@
   flex-shrink: 0;
 }
 
+// ── Taux choice (calculateTaux found data) — same pattern as the affaire detail page's
+// Ressources tab add-form, adapted to this file's own palette. ─────────────────────────
+.taux-placeholder {
+  margin: 0;
+  padding: 12px 14px;
+  background: #f7f9fb;
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: #75777d;
+}
+
+.taux-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.taux-choice-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: #75777d;
+}
+
+.taux-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// Container is a plain <div> now (was a <button>) — it holds a small "select this as
+// the rate source" button (label only) plus a real <input> for the value, since a
+// clickable button can no longer also host an editable number field inside it.
+.taux-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1.5px solid #eceef0;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+
+  &__select {
+    display: inline-flex;
+    align-self: flex-start;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #75777d;
+  }
+
+  &__input {
+    width: 100%;
+    border: 1px solid #eceef0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1d2b3e;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: #1a6b7c;
+    }
+  }
+
+  &:hover { border-color: #1a6b7c; }
+
+  &--active {
+    border-color: #1a6b7c;
+    background: #e6f7f5;
+
+    .taux-pill__label { color: #1a6b7c; }
+  }
+}
+
 // ── Auto-rate row ──────────────────────────────────────────────────────────
 .auto-rate-row {
   display: flex;

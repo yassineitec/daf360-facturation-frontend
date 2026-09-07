@@ -1,14 +1,4 @@
-/**
- * `RMB` n'est plus un mode proposé à la création — les frais remboursables sont
- * devenus une action de la fiche affaire, pas un mode de facturation. Le code reste
- * dans l'union parce que des affaires existantes le portent encore et doivent
- * pouvoir être rouvertes dans l'assistant (voir BILLING_MODES).
- *
- * `JAL` a disparu : il ne servait plus qu'à héberger le mode LIVRABLE, que le
- * backend refusait jusqu'ici (regex du DTO de brouillon). LIVRABLE est maintenant
- * persisté sous son propre code.
- */
-export type BillingMode = 'AV' | 'TM' | 'CP' | 'RMB' | 'LIVRABLE';
+export type BillingMode = 'FORFAIT' | 'REGIE' | 'LIVRABLE';
 
 export interface BillingModeOption {
   code: BillingMode;
@@ -20,31 +10,19 @@ export interface BillingModeOption {
   requiresContractAmount: boolean;
 }
 
-/**
- * Les modes RÉELLEMENT proposés à l'étape 2. `RMB` n'y est plus (action de la fiche
- * affaire) et `JAL` non plus (remplacé par LIVRABLE) — mais les deux restent gérés
- * partout ailleurs dans l'assistant pour les affaires déjà enregistrées avec.
- */
 export const BILLING_MODES: BillingModeOption[] = [
   {
-    code: 'AV',
-    labelKey: 'AFFAIRES.wizard.info.modes.AV.label',
-    descKey:  'AFFAIRES.wizard.info.modes.AV.desc',
+    code: 'FORFAIT',
+    labelKey: 'AFFAIRES.wizard.info.modes.FORFAIT.label',
+    descKey:  'AFFAIRES.wizard.info.modes.FORFAIT.desc',
     icon: 'trending_up',
     requiresContractAmount: true,
   },
   {
-    code: 'TM',
-    labelKey: 'AFFAIRES.wizard.info.modes.TM.label',
-    descKey:  'AFFAIRES.wizard.info.modes.TM.desc',
+    code: 'REGIE',
+    labelKey: 'AFFAIRES.wizard.info.modes.REGIE.label',
+    descKey:  'AFFAIRES.wizard.info.modes.REGIE.desc',
     icon: 'schedule',
-    requiresContractAmount: false,
-  },
-  {
-    code: 'CP',
-    labelKey: 'AFFAIRES.wizard.info.modes.CP.label',
-    descKey:  'AFFAIRES.wizard.info.modes.CP.desc',
-    icon: 'add_circle',
     requiresContractAmount: false,
   },
   {
@@ -56,20 +34,14 @@ export const BILLING_MODES: BillingModeOption[] = [
   },
 ];
 
-/**
- * Libellé et aide du champ montant, par mode — en clés i18n. `RMB` y figure encore :
- * une affaire RMB existante rouverte dans l'assistant doit afficher son champ budget.
- */
 export const BUDGET_LABEL: Record<BillingMode, { labelKey: string; hintKey: string }> = {
-  AV:       { labelKey: 'AFFAIRES.wizard.info.budget.AV.label',       hintKey: 'AFFAIRES.wizard.info.budget.AV.hint'       },
-  TM:       { labelKey: 'AFFAIRES.wizard.info.budget.TM.label',       hintKey: 'AFFAIRES.wizard.info.budget.TM.hint'       },
-  CP:       { labelKey: 'AFFAIRES.wizard.info.budget.CP.label',       hintKey: 'AFFAIRES.wizard.info.budget.CP.hint'       },
-  RMB:      { labelKey: 'AFFAIRES.wizard.info.budget.RMB.label',      hintKey: 'AFFAIRES.wizard.info.budget.RMB.hint'      },
+  FORFAIT:  { labelKey: 'AFFAIRES.wizard.info.budget.FORFAIT.label',  hintKey: 'AFFAIRES.wizard.info.budget.FORFAIT.hint'  },
+  REGIE:    { labelKey: 'AFFAIRES.wizard.info.budget.REGIE.label',    hintKey: 'AFFAIRES.wizard.info.budget.REGIE.hint'    },
   LIVRABLE: { labelKey: 'AFFAIRES.wizard.info.budget.LIVRABLE.label', hintKey: 'AFFAIRES.wizard.info.budget.LIVRABLE.hint' },
 };
 
 /** Les modes dont le montant saisi est un **montant contractuel** et non une enveloppe. */
-export const CONTRACTUAL_MODES: ReadonlySet<BillingMode> = new Set<BillingMode>(['AV', 'LIVRABLE']);
+export const CONTRACTUAL_MODES: ReadonlySet<BillingMode> = new Set<BillingMode>(['FORFAIT', 'LIVRABLE']);
 
 // ── DTOs matching backend ──────────────────────────────────────────────────────
 
@@ -103,16 +75,14 @@ export interface ResponsableItem {
 export interface AffaireDraftState {
   id?: number;
 
-  // Step 2 — Pays d'origine de l'affaire. Saisi à la création (il détermine la
-  // séquence de référence `AFF-<année>-<n>` et l'unicité `(référence, pays)`), puis
-  // en lecture seule : le changer après coup casserait les deux.
+  // Step 2 — Pays d'origine de l'affaire.
   paysId: number;
   paysLabel?: string;
 
   // Step 1 — DOC360 project (optional)
   doc360ProjectName?: string;
-  doc360ErpReference?: string;     // erp_reference from ODS (e.g. ERP project code)
-  doc360ServerReference?: string;  // used to populate discipline dropdown in step 4
+  doc360ErpReference?: string;
+  doc360ServerReference?: string;
   doc360ClientName?: string;
 
   // Step 2 — Informations générales
@@ -137,8 +107,8 @@ export interface AffaireDraftState {
   billingContactId?: number;
   intitule: string;
   reference?: string;
-  doc360Ref?: string;    // manual reference (distinct from DOC360 project)
-  erpReference?: string | null;  // affaire's own ERP reference (from backend entity)
+  doc360Ref?: string;
+  erpReference?: string | null;
   notes?: string;
 
   // Step 3 — Mode de facturation
@@ -158,10 +128,14 @@ export interface AffaireDraftState {
   jalonTotal: number;
   ressources: {
     userId: number; userName?: string;
-    resourceType: string; rateType: string;
+    userEmail?: string;
+    rateType: string;
     rateAmount: number; rateCurrency: string;
     costAmount?: number;
     tauxIntercompany?: number;
+    tauxVente?: number;
+    rateSource?: 'EXTERNAL' | 'INTERNAL';
+    costDataMissing?: boolean;
   }[];
   eligibleCostCategoryIds: number[];
   marginRatePct?: number;
@@ -173,17 +147,13 @@ export interface AffaireDraftState {
 
   // Step 5 — Planification
   dateDebutFacturation?: string;
-  /**
-   * Durée du contrat EN MOIS. Saisie, persistée, et c'est elle qui produit
-   * `dateFinContractuelle` — laquelle n'est plus saisissable directement.
-   */
   dureeMois?: number;
   dateFinContractuelle?: string;
   datePremireEcheance?: string;
 }
 
 export function mapDraftToState(dto: any, clientName: string, clientKycDone: boolean): AffaireDraftState {
-  const repartitions: AffaireDraftState['repartitions'] = (dto.ctrBpeTqcItems ?? []).map((r: any) => ({
+  const repartitions: AffaireDraftState['repartitions'] = (dto.contactAllocationItems ?? []).map((r: any) => ({
     repartitionTypeId: r.repartitionTypeId,
     percentage: Number(r.percentage),
     label: r.label,
@@ -198,7 +168,6 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
   const ressources: AffaireDraftState['ressources'] = (dto.ressources ?? []).map((r: any) => ({
     userId: r.userId,
     userName: r.fullName ?? '',
-    resourceType: r.resourceType,
     rateType: r.rateType,
     rateAmount: Number(r.rateAmount),
     rateCurrency: r.rateCurrency,

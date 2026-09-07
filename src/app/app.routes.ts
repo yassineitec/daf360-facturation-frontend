@@ -118,8 +118,18 @@ export const routes: Routes = [
         children: [
           {
             path: 'approval',
-            loadComponent: () =>
-              import('./modules/affaires/billing/approval-queue.component').then(m => m.ApprovalQueueComponent),
+            children: [
+              {
+                path: '',
+                loadComponent: () =>
+                  import('./modules/affaires/billing/approval-queue.component').then(m => m.ApprovalQueueComponent),
+              },
+              {
+                path: ':type/:id',
+                loadComponent: () =>
+                  import('./modules/affaires/billing/approval-detail.component').then(m => m.ApprovalDetailComponent),
+              },
+            ],
           },
         ],
       },

@@ -1,5 +1,5 @@
-import { Component, signal, computed, viewChild, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, signal, computed, viewChild, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   ButtonComponent, ButtonOptions, PageComponent, PageHeaderComponent, StepperComponent,
@@ -11,18 +11,13 @@ import { StepAffaireComponent, StepAffaireValue } from './steps/step-affaire.com
 import { StepLinesComponent,  StepLinesValue  } from './steps/step-lines.component';
 import { StepConditionsComponent, StepConditionsValue } from './steps/step-conditions.component';
 import { StepRecapComponent } from './steps/step-recap.component';
+import { enumLabel } from '../../../shared/enum-labels';
+import { InvoiceService } from '../invoice.service';
 
 type Step = 1 | 2 | 3 | 4;
 
 const STEP_KEYS  = ['AFFAIRE', 'LINES', 'CONDITIONS', 'RECAP'] as const;
 const STEP_ICONS = ['folder_open', 'receipt', 'calendar_month', 'summarize'] as const;
-
-const INVOICE_TYPE_I18N: Record<string, string> = {
-  ACOMPTE:       'INVOICING.INVOICE_TYPE.ACOMPTE',
-  INTERMEDIAIRE: 'INVOICING.INVOICE_TYPE.INTERMEDIAIRE',
-  FINALE:        'INVOICING.INVOICE_TYPE.FINALE',
-  AVOIR:         'INVOICING.INVOICE_TYPE.AVOIR',
-};
 
 @Component({
   selector: 'app-invoice-new',
@@ -34,14 +29,69 @@ const INVOICE_TYPE_I18N: Record<string, string> = {
   templateUrl: './invoice-new.component.html',
   styleUrl:    './invoice-new.component.scss',
 })
-export class InvoiceNewComponent {
+export class InvoiceNewComponent implements OnInit {
   private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly invSvc    = inject(InvoiceService);
 
   step            = signal<Step>(1);
   affaireValue    = signal<StepAffaireValue    | null>(null);
   linesValue      = signal<StepLinesValue      | null>(null);
   conditionsValue = signal<StepConditionsValue | null>(null);
+
+  /** Non-null when editing an existing DRAFT (route `invoicing/:id/edit`) — passed down
+   * to each step to pre-fill it, and to step-recap so it calls updateDraft() on save. */
+  editInvoiceId      = signal<number | null>(null);
+  initialAffaire     = signal<StepAffaireValue    | null>(null);
+  initialLines       = signal<StepLinesValue      | null>(null);
+  initialConditions  = signal<StepConditionsValue | null>(null);
+  loadingExisting    = signal(false);
+
+  ngOnInit(): void {
+    const raw = this.route.snapshot.paramMap.get('id');
+    const id = raw ? Number(raw) : null;
+    if (!id || !Number.isFinite(id)) return;
+
+    this.loadingExisting.set(true);
+    this.invSvc.getInvoice(id).subscribe({
+      next: inv => {
+        this.editInvoiceId.set(id);
+        this.initialAffaire.set({
+          affaireId:   inv.affaireId,
+          tsId:        inv.tsId,
+          invoiceType: inv.invoiceType ?? '',
+          clientId:    inv.clientId,
+          paysId:      inv.paysId,
+          currency:    inv.devise,
+          billingMode: inv.billingMode,
+        });
+        this.initialLines.set({
+          lines: inv.lines.map(l => ({
+            description:     l.description,
+            quantity:        l.quantity,
+            unitRate:        l.unitRate,
+            vatRatePct:      l.vatRatePct,
+            budgetAffaire:   l.budgetAffaire,
+            pctFacture:      l.pctFacture,
+            pctAvancement:   l.pctAvancement,
+            pctAFacturer:    l.pctAFacturer,
+            sourceExpenseId: l.sourceExpenseId,
+          })),
+          periodFrom: inv.periodFrom,
+          periodTo:   inv.periodTo,
+        });
+        this.initialConditions.set({
+          dateEcheance:       inv.dateEcheance ?? '',
+          conditionsPaiement: inv.conditionsPaiement ?? '',
+          bonDeCommande:      inv.bonDeCommande,
+          notes:              inv.notes,
+        });
+        this.loadingExisting.set(false);
+      },
+      error: () => this.loadingExisting.set(false),
+    });
+  }
 
   summaryAffaire = signal('—');
   summaryClient  = signal('—');
@@ -191,8 +241,7 @@ export class InvoiceNewComponent {
     const aff = this.stepAffaireRef()?.selectedAffaire();
     this.summaryAffaire.set(aff?.intitule ?? '—');
     this.summaryClient.set(aff?.clientName ?? '—');
-    const typeKey = INVOICE_TYPE_I18N[v.invoiceType];
-    this.summaryType.set(typeKey ? this.translate.instant(typeKey) : v.invoiceType);
+    this.summaryType.set(enumLabel(this.translate, 'INVOICE_TYPE', v.invoiceType));
     this.affaireValue.set(v);
     this.step.set(2);
   }

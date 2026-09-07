@@ -10,10 +10,13 @@ export interface EmployeeCostRates {
 import { environment } from '../../../environments/environment';
 import {
   AffaireListItem, AffaireDetail, RafDetailsDto, AffaireKpisDto,
-  TsDto, CreateAffaireRequest, UpdateAffaireRequest, ChangerStatutRequest,
+  TsDto, UpdateAffaireRequest, ChangerStatutRequest,
   CreateTsRequest, ValiderTsRequest, AffaireFilter,
   ClientDto, UserRefDto, PaysRefDto, PageResponse,
   AffaireInvoiceItem, AffairePaymentItem,
+  TmWorkedHoursLine, AffaireRessourceRef,
+  AffaireRessourceManageDto, AddAffaireRessourceRequest, UpdateResourceRateRequest,
+  AffaireWorkedHoursSummaryDto,
 } from './affaire.model';
 
 @Injectable({ providedIn: 'root' })
@@ -29,7 +32,6 @@ export class AffaireService {
       .set('size', String(filter.size ?? 18));
     if (filter.paysId)   params = params.set('paysId',   String(filter.paysId));
     if (filter.statut)   params = params.set('statut',   filter.statut);
-    if (filter.type)     params = params.set('type',     filter.type);
     if (filter.clientId) params = params.set('clientId', String(filter.clientId));
     if (filter.search)   params = params.set('search',   filter.search);
 
@@ -46,10 +48,6 @@ export class AffaireService {
 
   getAffaireKpis(id: number): Observable<AffaireKpisDto> {
     return this.http.get<AffaireKpisDto>(`${this.base}/affaires/${id}/kpis`);
-  }
-
-  createAffaire(dto: CreateAffaireRequest): Observable<AffaireDetail> {
-    return this.http.post<AffaireDetail>(`${this.base}/affaires`, dto);
   }
 
   updateAffaire(id: number, dto: UpdateAffaireRequest): Observable<AffaireDetail> {
@@ -133,6 +131,45 @@ export class AffaireService {
     const params = new HttpParams().set('email', email).set('paysId', String(paysId));
     return this.http.get<EmployeeCostRates>(`${this.base}/ref/employee-cost`, { params }).pipe(
       catchError(() => of(null)),
+    );
+  }
+
+  getRessources(affaireId: number): Observable<AffaireRessourceRef[]> {
+    return this.http.get<AffaireRessourceRef[]>(`${this.base}/affaires/${affaireId}/ressources`).pipe(
+      catchError(() => of([])),
+    );
+  }
+
+  getTmWorkedHours(affaireId: number, dateFrom: string, dateTo: string): Observable<TmWorkedHoursLine[]> {
+    const params = new HttpParams().set('dateFrom', dateFrom).set('dateTo', dateTo);
+    return this.http.get<TmWorkedHoursLine[]>(`${this.base}/affaires/${affaireId}/tm-worked-hours`, { params }).pipe(
+      catchError(() => of([])),
+    );
+  }
+
+  // ── Ressources — management tab (active + inactive, add / deactivate / edit rate) ────
+
+  getAllRessources(affaireId: number): Observable<AffaireRessourceManageDto[]> {
+    return this.http.get<AffaireRessourceManageDto[]>(`${this.base}/affaires/${affaireId}/ressources/all`).pipe(
+      catchError(() => of([])),
+    );
+  }
+
+  addRessource(affaireId: number, dto: AddAffaireRessourceRequest): Observable<AffaireRessourceManageDto> {
+    return this.http.post<AffaireRessourceManageDto>(`${this.base}/affaires/${affaireId}/ressources`, dto);
+  }
+
+  deactivateRessource(affaireId: number, ressourceId: number): Observable<void> {
+    return this.http.patch<void>(`${this.base}/affaires/${affaireId}/ressources/${ressourceId}/deactivate`, {});
+  }
+
+  updateRessourceRate(affaireId: number, ressourceId: number, dto: UpdateResourceRateRequest): Observable<unknown> {
+    return this.http.patch(`${this.base}/affaires/${affaireId}/ressources/${ressourceId}/rate`, dto);
+  }
+
+  getRessourcesWorkedHours(affaireId: number): Observable<AffaireWorkedHoursSummaryDto[]> {
+    return this.http.get<AffaireWorkedHoursSummaryDto[]>(`${this.base}/affaires/${affaireId}/ressources/worked-hours`).pipe(
+      catchError(() => of([])),
     );
   }
 

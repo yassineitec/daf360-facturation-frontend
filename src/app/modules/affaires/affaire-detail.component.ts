@@ -30,6 +30,9 @@ import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
+import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.component';
+import { AffaireWipTabComponent } from './wip/affaire-wip-tab.component';
+import { AffaireRessourcesTabComponent } from './ressources/affaire-ressources-tab.component';
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
 import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
@@ -113,8 +116,8 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, ButtonComponent,
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
-    GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
-    TsFormComponent,
+    GaugeComponent, BarChartComponent, AvatarGroupComponent,
+    TsFormComponent, AfaireBillingTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,
@@ -1668,6 +1671,21 @@ export class AffaireDetailComponent implements OnInit {
       { id: 'overview', label: t('AFFAIRES.DETAIL.TABS.OVERVIEW') },
       { id: 'ts',       label: t('AFFAIRES.DETAIL.TABS.BUDGET_TS'), count: this.tsList().length },
     ];
+    if (this.affaire()?.billingMode) {
+      tabs.push({ id: 'billing', label: t('AFFAIRES.DETAIL.TABS.BILLING') });
+    }
+    // WIP n'a de sens que pour Forfaitaire, Régie et Livrable — les autres modes n'ont
+    // pas de notion de travail en cours (ou de livrables à facturer) à valider avant
+    // facturation.
+    const wipMode = this.affaire()?.billingMode;
+    if (wipMode === 'FORFAIT' || wipMode === 'REGIE' || wipMode === 'LIVRABLE') {
+      tabs.push({ id: 'wip', label: t('AFFAIRES.DETAIL.TABS.WIP') });
+    }
+    // Ressources (taux TM par collaborateur) n'a de sens qu'en mode TM — AV/CP n'ont pas
+    // de notion de ressource facturée à un taux individuel.
+    if (wipMode === 'REGIE') {
+      tabs.push({ id: 'ressources', label: t('AFFAIRES.DETAIL.TABS.RESSOURCES') });
+    }
     tabs.push(
       { id: 'factures',  label: t('AFFAIRES.DETAIL.TABS.INVOICES'), count: this.invoices().length },
       { id: 'paiements', label: t('AFFAIRES.DETAIL.TABS.PAYMENTS'), count: this.payments().length },

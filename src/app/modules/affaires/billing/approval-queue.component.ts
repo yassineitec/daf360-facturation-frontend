@@ -1,13 +1,14 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { RouterLink }                         from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule }                        from '@angular/forms';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
+import { forkJoin, Observable }               from 'rxjs';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService,
-  PendingTauxDto, PendingJalonDto, PendingBillingLineDto, AuditLogEntryDto,
+  PendingTauxDto, PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto, AuditLogEntryDto,
 } from './billing.service';
 
 type ActiveTab = 'rf' | 'df' | 'history';
@@ -30,6 +31,8 @@ const LINE_STATUT: Record<string, { bg: string; color: string; border: string }>
 export class ApprovalQueueComponent implements OnInit {
   private readonly svc       = inject(BillingService);
   private readonly translate = inject(TranslateService);
+  private readonly router    = inject(Router);
+  private readonly route     = inject(ActivatedRoute);
 
   readonly tabs = computed<{ key: ActiveTab; label: string; icon: string }[]>(() => {
     this.translate.currentLang();
@@ -48,6 +51,7 @@ export class ApprovalQueueComponent implements OnInit {
   pendingTaux   = signal<PendingTauxDto[]>([]);
   pendingJalons = signal<PendingJalonDto[]>([]);
   pendingLines  = signal<PendingBillingLineDto[]>([]);
+  pendingLivrableBatches = signal<PendingLivrableBatchDto[]>([]);
   auditLog      = signal<AuditLogEntryDto[]>([]);
 
   showRfRefuseModal = signal(false);
@@ -57,7 +61,8 @@ export class ApprovalQueueComponent implements OnInit {
 
   showDfRetourModal = signal(false);
   dfRetourMotif     = '';
-  private dfRetourLineId = 0;
+  private dfRetourEntityId = 0;
+  private dfRetourType: 'line' | 'livrableBatch' = 'line';
 
   // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
   readonly tauxColumns = computed<TableColumn[]>(() => {
@@ -77,9 +82,9 @@ export class ApprovalQueueComponent implements OnInit {
       affaireId:       t.affaireId,
       affaireRef:      t.affaireRef,
       affaireIntitule: t.affaireIntitule,
-      taux:            t.taux,
-      valeur:          this.fmtAmt(t.valeurCalculee),
-      soumis:          this.fmtDate(t.soumisAt),
+      taux:            t.tauxSaisi,
+      valeur:          this.fmtAmt(t.montantIncremental),
+      soumis:          this.fmtDate(t.submittedAt),
       _raw:            t,
     }))
   );
@@ -104,7 +109,7 @@ export class ApprovalQueueComponent implements OnInit {
       affaireIntitule: j.affaireIntitule,
       label:           j.label,
       montant:         this.fmtAmt(j.montant),
-      echeance:        this.fmtDate(j.echeance),
+      echeance:        this.fmtDate(j.datePrevisionnelle),
       _raw:            j,
     }))
   );
@@ -138,6 +143,31 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  // ── daf-data-table: Livrable batches (DF) ────────────────────────────────────
+  readonly livrableBatchColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'affaire',     label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom' },
+      { key: 'documents',   label: this.translate.instant('AFFAIRES.billing.approval.col_documents'), type: 'custom', align: 'right' },
+      { key: 'montant',     label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
+      { key: 'billingDate', label: this.translate.instant('AFFAIRES.billing.approval.col_date'), type: 'custom' },
+      { key: '_actions',    label: '',                                                             type: 'custom', align: 'right', width: '200px' },
+    ];
+  });
+
+  readonly livrableBatchRows = computed(() =>
+    this.pendingLivrableBatches().map(b => ({
+      id:              b.batchId,
+      affaireId:       b.affaireId,
+      affaireRef:      b.affaireRef,
+      affaireIntitule: b.affaireIntitule,
+      documents:       b.documentCount,
+      montant:         this.fmtAmt(b.combinedMontant),
+      billingDate:     this.fmtDate(b.billingDate),
+      _raw:            b,
+    }))
+  );
+
   // ── daf-data-table: Audit history ────────────────────────────────────────────
   readonly historyColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -165,6 +195,19 @@ export class ApprovalQueueComponent implements OnInit {
 
   ngOnInit(): void { this.loadRF(); }
 
+  /**
+   * Row click on any of the three tables opens the detail page for that item.
+   *
+   * No leading `..`: this component sits on the `approval` route's *empty-path* child, which
+   * doesn't add a navigation hop of its own — so `this.route` already resolves at the
+   * `approval` level, and `[type, id]` reaches its sibling `:type/:id` route directly. A
+   * leading `..` here overshoots past `approval` to `billing`, producing `billing/taux/1`
+   * instead of `billing/approval/taux/1` (a 404) — confirmed live 2026-08-24.
+   */
+  openDetail(row: { id: number }, type: 'taux' | 'jalon' | 'line' | 'livrable'): void {
+    this.router.navigate([type, String(row.id)], { relativeTo: this.route });
+  }
+
   setTab(tab: ActiveTab): void {
     this.activeTab.set(tab);
     if (tab === 'rf')      this.loadRF();
@@ -174,19 +217,27 @@ export class ApprovalQueueComponent implements OnInit {
 
   private loadRF(): void {
     this.rfLoading.set(true);
-    this.svc.getPendingTaux().subscribe({
-      next:  t => { this.pendingTaux.set(t); this.rfLoading.set(false); },
-      error: () => this.rfLoading.set(false),
-    });
     this.svc.getPendingJalons().subscribe({
-      next: j => this.pendingJalons.set(j),
+      next:  j => { this.pendingJalons.set(j); this.rfLoading.set(false); },
+      error: () => this.rfLoading.set(false),
     });
   }
 
+  // AV taux live here now, not under RF — validating one is a DF action (see
+  // ProgressBillingService.validateTaux()).
   private loadDF(): void {
     this.dfLoading.set(true);
-    this.svc.getPendingDFLines().subscribe({
-      next:  l => { this.pendingLines.set(l); this.dfLoading.set(false); },
+    forkJoin({
+      taux: this.svc.getPendingTaux(),
+      livrableBatches: this.svc.getPendingLivrableBatches(),
+      lines: this.svc.getPendingDFLines(),
+    }).subscribe({
+      next: ({ taux, livrableBatches, lines }) => {
+        this.pendingTaux.set(taux);
+        this.pendingLivrableBatches.set(livrableBatches);
+        this.pendingLines.set(lines);
+        this.dfLoading.set(false);
+      },
       error: () => this.dfLoading.set(false),
     });
   }
@@ -200,7 +251,17 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateTaux(id: number): void {
-    this.svc.validateTaux(id).subscribe({ next: () => this.loadRF() });
+    // Validating a taux creates the invoice server-side (ProgressBillingService), emitted
+    // immediately — jump straight into its detail page, same as doValidateDF() below.
+    this.svc.validateTaux(id).subscribe({
+      next: line => {
+        if (line.invoiceId) {
+          this.router.navigate(['/finance/invoicing', line.invoiceId]);
+        } else {
+          this.loadDF();
+        }
+      },
+    });
   }
 
   doValidateJalon(id: number): void {
@@ -219,7 +280,7 @@ export class ApprovalQueueComponent implements OnInit {
     const motif = this.rfRefuseMotif.trim();
     if (this.rfRefuseType === 'taux') {
       this.svc.refuseTaux(this.rfRefuseId, motif).subscribe({
-        next: () => { this.showRfRefuseModal.set(false); this.loadRF(); },
+        next: () => { this.showRfRefuseModal.set(false); this.loadDF(); },
       });
     } else {
       this.svc.refuseJalon(this.rfRefuseId, motif).subscribe({
@@ -229,18 +290,50 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateDF(lineId: number): void {
-    this.svc.validateDF(lineId).subscribe({ next: () => this.loadDF() });
+    // DF validation creates the invoice server-side (DFValidationService), emitted
+    // immediately — jump straight into its detail page instead of staying on this list,
+    // since there's nothing left to do here once the invoice exists.
+    this.svc.validateDF(lineId).subscribe({
+      next: line => {
+        if (line.invoiceId) {
+          this.router.navigate(['/finance/invoicing', line.invoiceId]);
+        } else {
+          this.loadDF();
+        }
+      },
+    });
   }
 
-  openDfRetourModal(lineId: number): void {
-    this.dfRetourLineId = lineId;
+  doValidateLivrableBatch(batchId: number): void {
+    this.svc.validateLivrableBatch(batchId).subscribe({
+      next: batch => {
+        if (batch.invoiceId) {
+          this.router.navigate(['/finance/invoicing', batch.invoiceId]);
+        } else {
+          this.loadDF();
+        }
+      },
+    });
+  }
+
+  openDfRetourModal(entityId: number, type: 'line' | 'livrableBatch' = 'line'): void {
+    this.dfRetourEntityId = entityId;
+    this.dfRetourType = type;
     this.dfRetourMotif = '';
     this.showDfRetourModal.set(true);
   }
 
   submitDfRetour(): void {
     if (!this.dfRetourMotif.trim()) return;
-    this.svc.returnDF(this.dfRetourLineId, this.dfRetourMotif.trim()).subscribe({
+    const motif = this.dfRetourMotif.trim();
+    // Typed Observable<unknown> rather than letting each branch's own return type stand —
+    // a union of BillingLineDto/LivrableBatchDto observables isn't callable in this
+    // TS/RxJS combination (differently-parameterized Observable overloads don't unify),
+    // and both branches' follow-up is identical anyway.
+    const request$: Observable<unknown> = this.dfRetourType === 'livrableBatch'
+      ? this.svc.returnLivrableBatch(this.dfRetourEntityId, motif)
+      : this.svc.returnDF(this.dfRetourEntityId, motif);
+    request$.subscribe({
       next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
     });
   }

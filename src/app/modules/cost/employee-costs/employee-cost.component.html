@@ -1,0 +1,178 @@
+<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'COST.EMPLOYEE_COST.LOADING' | translate">
+
+  <daf-page-header
+    [title]="'COST.EMPLOYEE_COST.TITLE' | translate"
+    [subtitle]="'COST.EMPLOYEE_COST.PAGE_SUBTITLE' | translate">
+    <daf-button pageActions
+      [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.ADD' | translate), iconStart: 'add', disabled: showDrawer() }"
+      (onClick)="openAdd()" />
+  </daf-page-header>
+
+  <div class="flex flex-col gap-8">
+
+    <!-- KPIs — counted over every loaded row, not the filtered/searched subset below -->
+    <section class="grid grid-cols-3 gap-2 sm:gap-6">
+      <daf-metric-card
+        [label]="'COST.EMPLOYEE_COST.KPI_TOTAL' | translate"
+        [value]="totalCount()"
+        [options]="kpiTotal" />
+      <daf-metric-card
+        [label]="'COST.EMPLOYEE_COST.KPI_ACTIVE' | translate"
+        [value]="activeCount()"
+        [options]="kpiActive" />
+      <daf-metric-card
+        [label]="'COST.EMPLOYEE_COST.KPI_EXPIRED' | translate"
+        [value]="expiredCount()"
+        [options]="kpiExpired" />
+    </section>
+
+    <!-- Search + active/expired filter + view toggle, all client-side (list() has no
+         server-side query params to push either into) -->
+    <daf-search-toolbar
+      [placeholder]="'COST.EMPLOYEE_COST.SEARCH_PLACEHOLDER' | translate"
+      [value]="searchText()"
+      [debounce]="200"
+      (valueChange)="onSearch($event)"
+      [filterFields]="filterFields()"
+      [filterConfig]="filterConfig()"
+      (filterApply)="applyFilters($event)"
+      [views]="viewOptions()"
+      [view]="viewMode()"
+      (viewChange)="viewMode.set($any($event))" />
+
+    @if (serverError() || actionError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ serverError() ?? actionError() }}
+      </div>
+    }
+
+    <!-- Content sits free in the page — no outer container card -->
+    @if (viewMode() === 'grid') {
+      <app-employee-cost-cards-section
+        [costs]="pagedRows()"
+        [loading]="isLoading()"
+        [skeletonCount]="size()"
+        [emptyMessage]="'COST.EMPLOYEE_COST.EMPTY' | translate"
+        (edit)="edit($event)"
+        (remove)="remove($event)" />
+    } @else {
+      <app-employee-cost-table-section
+        [costs]="pagedRows()"
+        [loading]="isLoading()"
+        [pageSize]="size()"
+        [emptyMessage]="'COST.EMPLOYEE_COST.EMPTY' | translate"
+        (edit)="edit($event)"
+        (remove)="remove($event)" />
+    }
+
+    <daf-pagination
+      [currentPage]="page()"
+      [totalPages]="totalPagesCount()"
+      [totalElements]="filteredRows().length"
+      [pageSize]="size()"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+      [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+      [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+      [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+      (pageChange)="goToPage($event)"
+      (pageSizeChange)="onPageSize($event)" />
+
+  </div>
+
+</daf-page>
+
+<!-- Add / edit drawer — a side panel rather than a form pushed into the top of the list,
+     so opening it never shoves hundreds of rows down the page. -->
+<daf-drawer [(open)]="showDrawer"
+  [config]="{ title: (editingId() ? 'COST.EMPLOYEE_COST.EDIT_TITLE' : 'COST.EMPLOYEE_COST.ADD_TITLE') | translate,
+              icon: 'badge', width: '420px', showToggle: false }">
+
+  <div class="flex flex-col gap-4">
+    <daf-select
+      [options]="userOptions()"
+      [selected]="selectedEmail() ? [selectedEmail()] : []"
+      (selectedChange)="onEmployeeSelect($event)"
+      [ariaLabel]="'COST.EMPLOYEE_COST.EMPLOYEE_EMAIL' | translate"
+      [config]="{ label: ('COST.EMPLOYEE_COST.EMPLOYEE_EMAIL' | translate),
+                  placeholder: ('COST.EMPLOYEE_COST.EMPLOYEE_EMAIL_PLACEHOLDER' | translate),
+                  hint: ('COST.EMPLOYEE_COST.EMAIL_HINT' | translate),
+                  searchable: true, required: true, fullWidth: true,
+                  disabled: editingId() !== null || usersLoading() }" />
+
+    <!-- Any one of these three drives the other two — the fixed 1.1 / 1.2 markup formula
+         (explained in the page subtitle above) makes it impossible to save numbers that
+         don't satisfy it. -->
+    <daf-form-field
+      [value]="newRecord.basicCost"
+      (valueChange)="onFieldInput('basic', $any($event))"
+      [options]="{ label: ('COST.EMPLOYEE_COST.BASIC_COST' | translate), type: 'number', required: true, fullWidth: true }" />
+
+    <daf-form-field
+      [value]="newRecord.internalSellingCost"
+      (valueChange)="onFieldInput('internal', $any($event))"
+      [options]="{ label: ('COST.EMPLOYEE_COST.INTERNAL_SELLING_COST' | translate), type: 'number', fullWidth: true }" />
+
+    <daf-form-field
+      [value]="newRecord.externalSellingCost"
+      (valueChange)="onFieldInput('external', $any($event))"
+      [options]="{ label: ('COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST' | translate), type: 'number', fullWidth: true }" />
+
+    <daf-select
+      [options]="currencyOptions()"
+      [selected]="[newRecord.currency]"
+      (selectedChange)="onCurrencyChange($event)"
+      [ariaLabel]="'COST.EMPLOYEE_COST.CURRENCY' | translate"
+      [config]="{ label: ('COST.EMPLOYEE_COST.CURRENCY' | translate), fullWidth: true }" />
+
+    <div class="grid grid-cols-2 gap-3">
+      <daf-form-field
+        [value]="newRecord.dateDebut"
+        (valueChange)="newRecord.dateDebut = $any($event) ?? ''"
+        [options]="{ label: ('COST.EMPLOYEE_COST.DATE_DEBUT' | translate), type: 'date', required: true, fullWidth: true }" />
+
+      <daf-form-field
+        [value]="newRecord.dateFin"
+        (valueChange)="newRecord.dateFin = $any($event) ?? ''"
+        [options]="{ label: ('COST.EMPLOYEE_COST.DATE_FIN' | translate), type: 'date', required: true, fullWidth: true }" />
+    </div>
+
+    @if (saveError()) {
+      <p class="text-[12px]" style="color:var(--color-danger)">{{ saveError() }}</p>
+    }
+  </div>
+
+  @if (editingId() !== null) {
+    <div class="flex flex-col gap-2 mt-2 pt-4 border-t border-outline-variant">
+      <h3 class="text-[13px] font-semibold text-on-surface-variant">
+        {{ 'COST.EMPLOYEE_COST.HISTORY_TITLE' | translate }}
+      </h3>
+      @if (loadingAudit()) {
+        <p class="text-[12px] text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.LOADING' | translate }}</p>
+      } @else if (auditTrail().length === 0) {
+        <p class="text-[12px] text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.HISTORY_EMPTY' | translate }}</p>
+      } @else {
+        <daf-data-table [columns]="auditColumns()" [rows]="auditTrail()" [config]="tableConfig()">
+          <ng-template dafCell="timestampUtc" let-row>
+            {{ fmtDateTime(row['timestampUtc']) }}
+          </ng-template>
+          <ng-template dafCell="transition" let-row>
+            {{ row['statutAvant'] ?? '—' }} → {{ row['statutApres'] ?? '—' }}
+          </ng-template>
+          <ng-template dafCell="details" let-row>
+            {{ formatAuditDetails(row['metadata']) }}
+          </ng-template>
+        </daf-data-table>
+      }
+    </div>
+  }
+
+  <div drawerFooter class="flex justify-end gap-2">
+    <daf-button [options]="{ variant: 'secondary', label: ('COST.EMPLOYEE_COST.CANCEL' | translate) }"
+      (onClick)="closeDrawer()" />
+    <daf-button [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.SAVE' | translate), loading: isSaving() }"
+      (onClick)="save()" />
+  </div>
+
+</daf-drawer>

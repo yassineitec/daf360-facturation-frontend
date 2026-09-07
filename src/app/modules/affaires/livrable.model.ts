@@ -28,7 +28,6 @@ export interface DocumentExtDto {
 
 export interface AffectationManuelleItem {
   extDocumentId: string;
-  extWbsId: string;
   documentNom: string;
   wbsTitre?: string;
   budgetHoraireExt?: number;
@@ -39,14 +38,50 @@ export interface AffaireLivrableDto {
   id: number;
   extDocumentId: string;
   documentNom: string;
-  extWbsId: string;
   wbsTitre?: string;
   disciplineLabel: string;
   budgetHoraireExt?: number;
   budgetAlloue: number;
+  /** Cumulative percentage already invoiced for this document — same mental model as
+   * Forfaitaire's taux d'avancement, scoped to one document. */
+  pctFacture: number;
   modeAffectation: 'MANUEL' | 'AUTO';
   statut: 'A_FACTURER' | 'EN_COURS' | 'FACTURE' | 'ANNULE';
   ordre: number;
+}
+
+/** One document's newly-entered cumulative percentage — the request shape
+ * LivrableService.submitLivrables()/editBatch() send, one entry per document actually changed. */
+export interface LivrableTauxEntry {
+  livrableId: number;
+  pctSaisi: number;
+}
+
+/** One document's line within a LIVRABLE batch — mirrors the backend's LivrableBatchEntryDto. */
+export interface LivrableBatchEntryDto {
+  billingLineId: number;
+  livrableId:    number;
+  documentNom:   string | null;
+  pctPrecedent:  number;
+  pctSaisi:      number;
+  montantHt:     number;
+}
+
+export type LivrableBatchStatut =
+  'EN_ATTENTE_CLIENT' | 'EN_ATTENTE_DF' | 'FACTURE' | 'A_VERIFIER' | 'RETOURNE' | 'ANNULE';
+
+/** One or more documents submitted together, sharing one client confirmation and one DF
+ * decision — mirrors the backend's LivrableBatchDto field-for-field. */
+export interface LivrableBatchDto {
+  batchId:              number;
+  affaireId:            number;
+  statut:               LivrableBatchStatut;
+  combinedMontant:      number;
+  clientApprovedAmount: number | null;
+  wipCarriedForward:    number | null;
+  invoiceId:            number | null;
+  billingDate:          string;
+  entries:              LivrableBatchEntryDto[];
 }
 
 // ─── TM taux ──────────────────────────────────────────────────────────────────
@@ -59,5 +94,5 @@ export interface CollaborateurTauxDto {
   tauxVente: number;
   pctHqCost: number;
   pctMargin: number;
-  sourceCalcul: 'COST_LINES' | 'DEFAUT_TAUX';
+  sourceCalcul: 'EMPLOYEE_COSTS' | 'AUCUNE_DONNEE';
 }

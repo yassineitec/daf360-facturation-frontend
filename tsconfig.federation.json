@@ -35,7 +35,8 @@
     "node_modules\\@ngx-translate\\http-loader\\fesm2022\\ngx-translate-http-loader.mjs",
     "node_modules\\rxjs\\dist\\esm\\index.js",
     "node_modules\\rxjs\\dist\\esm\\operators\\index.js",
-    "node_modules\\tslib\\tslib.es6.mjs"
+    "node_modules\\tslib\\tslib.es6.mjs",
+    "node_modules\\xlsx\\xlsx.mjs"
   ],
   "exclude": [
     "src/**/*.spec.ts"

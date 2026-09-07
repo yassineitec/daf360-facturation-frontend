@@ -38,15 +38,6 @@
             (selectedChange)="onUserSelect(r, $event)" />
         </div>
 
-        <!-- Type ressource -->
-        <div>
-          <daf-select
-            [options]="resourceTypeOptions()"
-            [config]="{ label: ('AFFAIRES.wizard.tm.type' | translate), fullWidth: true }"
-            [selected]="[r.resourceType]"
-            (selectedChange)="r.resourceType = $event[0]; emitChange()" />
-        </div>
-
         <!-- Type taux -->
         <div>
           <daf-select
@@ -54,24 +45,6 @@
             [config]="{ label: ('AFFAIRES.wizard.tm.rate_type' | translate), fullWidth: true }"
             [selected]="[r.rateType]"
             (selectedChange)="r.rateType = $event[0]; emitChange()" />
-        </div>
-
-        <!-- Taux facturation -->
-        <div>
-          <daf-form-field
-            [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.selling_rate' | translate), required: true, fullWidth: true }"
-            [value]="r.rateAmount"
-            (valueChange)="onRateAmountChange(r, $event)">
-          </daf-form-field>
-        </div>
-
-        <!-- Taux intercompany -->
-        <div>
-          <daf-form-field
-            [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.interco_rate' | translate), placeholder: '—', fullWidth: true }"
-            [value]="r.tauxIntercompany ?? null"
-            (valueChange)="onIntercoChange(r, $event)">
-          </daf-form-field>
         </div>
 
         <!-- Devise -->
@@ -83,19 +56,59 @@
             (selectedChange)="r.rateCurrency = $event[0]; emitChange()" />
         </div>
 
-        <!-- Coût interne -->
+        <!-- Taux — même logique que l'ajout depuis l'onglet Ressources : coût calculé,
+             choix externe/intercompany, taux final éditable. Repli manuel (Coût interne
+             seul, formule fixe) inchangé quand calculateTaux ne trouve aucune donnée. -->
         <div class="resource-col-3">
-          <div class="cost-box">
-            <span class="material-symbols-outlined" style="font-size:18px;color:#75777d;margin-top:18px;flex-shrink:0">euro</span>
-            <div class="cost-box-content">
+          @if (!r.userId) {
+            <p class="taux-placeholder">{{ 'AFFAIRES.wizard.tm.select_collab_first' | translate }}</p>
+          } @else if (r.costDataMissing) {
+            <div class="cost-box">
+              <span class="material-symbols-outlined" style="font-size:18px;color:#75777d;margin-top:18px;flex-shrink:0">euro</span>
+              <div class="cost-box-content">
+                <daf-form-field
+                  [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.internal_cost' | translate), placeholder: ('AFFAIRES.wizard.tm.internal_cost_ph' | translate), fullWidth: true }"
+                  [value]="r.costAmount ?? null"
+                  (valueChange)="onDerivedCostFieldChange(r, 'basic', $event)">
+                </daf-form-field>
+              </div>
+              <p class="cost-box-hint">{{ 'AFFAIRES.wizard.tm.no_cost_data_hint' | translate }}</p>
+            </div>
+          } @else {
+            <div class="taux-choice">
               <daf-form-field
-                [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.internal_cost' | translate), placeholder: ('AFFAIRES.wizard.tm.internal_cost_ph' | translate), fullWidth: true }"
+                [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.cost_hint_value' | translate), fullWidth: true }"
                 [value]="r.costAmount ?? null"
                 (valueChange)="onCostChange(r, $event)">
               </daf-form-field>
+              <div class="taux-toggle">
+                <div class="taux-pill" [class.taux-pill--active]="(r.rateSource ?? 'EXTERNAL') === 'EXTERNAL'">
+                  <button type="button" class="taux-pill__select"
+                    (click)="setRowRateSource(r, 'EXTERNAL')">
+                    <span class="taux-pill__label">{{ 'AFFAIRES.wizard.tm.selling' | translate }}</span>
+                  </button>
+                  <input type="number" class="taux-pill__input"
+                    [value]="r.tauxVente ?? 0"
+                    (input)="onSellingRateChange(r, 'EXTERNAL', $any($event.target).value)" />
+                </div>
+                <div class="taux-pill" [class.taux-pill--active]="r.rateSource === 'INTERNAL'">
+                  <button type="button" class="taux-pill__select"
+                    (click)="setRowRateSource(r, 'INTERNAL')">
+                    <span class="taux-pill__label">{{ 'AFFAIRES.wizard.tm.interco' | translate }}</span>
+                  </button>
+                  <input type="number" class="taux-pill__input"
+                    [value]="r.tauxIntercompany ?? 0"
+                    (input)="onSellingRateChange(r, 'INTERNAL', $any($event.target).value)" />
+                </div>
+              </div>
+              <daf-form-field
+                [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.selling_rate' | translate), required: true, fullWidth: true,
+                             hint: ('AFFAIRES.wizard.tm.rate_editable_hint' | translate) }"
+                [value]="r.rateAmount"
+                (valueChange)="onRateAmountChange(r, $event)">
+              </daf-form-field>
             </div>
-            <p class="cost-box-hint">{{ 'AFFAIRES.wizard.tm.cost_hint' | translate }}</p>
-          </div>
+          }
         </div>
 
       </div>
@@ -123,6 +136,7 @@
     [affaireId]="draft.id!"
     [paysId]="draft.paysId"
     [availableUsers]="users()"
+    [workedHours]="workedHours()"
     (confirmed)="onRatesConfirmed($event)"
     (closed)="showRateModal.set(false)">
   </app-tm-rate-modal>

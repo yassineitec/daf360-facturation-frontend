@@ -14,6 +14,7 @@ import { AffaireDraftState, mapDraftToState } from '../affaire-wizard.model';
 import { AffaireService }           from '../affaire.service';
 import { UserStore }                from '../../../core/user.store';
 import { AffaireDetail }            from '../affaire.model';
+import { EmployeeCostService }      from '../../cost/employee-costs/employee-cost.service';
 import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
 import { WizardStepInfoComponent }       from './steps/wizard-step-info.component';
 import { WizardStepBillingComponent }    from './steps/wizard-step-billing.component';
@@ -24,7 +25,7 @@ import { WizardStepRecapComponent }      from './steps/wizard-step-recap.compone
 const STEP_ICONS = ['description', 'business_center', 'receipt_long', 'group', 'calendar_month', 'fact_check'];
 
 /** Modes ayant encore un endpoint `PATCH /config/{mode}` à l'étape 3. */
-const CONFIGURABLE_MODES = new Set<string>(['AV', 'TM', 'CP', 'RMB']);
+const CONFIGURABLE_MODES = new Set<string>(['FORFAIT', 'REGIE']);
 
 @Component({
   selector: 'app-affaire-wizard',
@@ -55,6 +56,7 @@ export class AffaireWizardComponent implements OnInit {
   private readonly affaireSvc     = inject(AffaireService);
   private readonly userStore      = inject(UserStore);
   private readonly translate      = inject(TranslateService);
+  private readonly employeeCostSvc = inject(EmployeeCostService);
 
   constructor() {
     effect(() => {
@@ -287,11 +289,8 @@ export class AffaireWizardComponent implements OnInit {
         if (this.editMode() && d.billingModeLocked) return null;
         if (!d.billingMode) return this.translate.instant('AFFAIRES.wizard.shell.val.select_mode_prev');
         switch (d.billingMode) {
-          case 'AV':       return this.translate.instant('AFFAIRES.wizard.shell.val.av');
-          case 'TM':       return this.translate.instant('AFFAIRES.wizard.shell.val.tm');
-          case 'CP':       return this.translate.instant('AFFAIRES.wizard.shell.val.cp');
-          // Plus proposé à la création — une affaire RMB existante reste configurable.
-          case 'RMB':      return this.translate.instant('AFFAIRES.wizard.shell.val.rmb');
+          case 'FORFAIT':  return this.translate.instant('AFFAIRES.wizard.shell.val.forfait');
+          case 'REGIE':    return this.translate.instant('AFFAIRES.wizard.shell.val.regie');
           case 'LIVRABLE': return this.translate.instant('AFFAIRES.wizard.shell.val.livrable');
           default:         return null;
         }
@@ -334,15 +333,11 @@ export class AffaireWizardComponent implements OnInit {
         if (this.editMode() && d.billingModeLocked) return true;
         if (!d.billingMode) return false;
         switch (d.billingMode) {
-          case 'AV':
+          case 'FORFAIT':
             return d.repartitionTotal === 100 && d.repartitions.length > 0
                    && d.repartitions.every(r => r.repartitionTypeId > 0);
-          case 'TM':
+          case 'REGIE':
             return d.ressources.length > 0 && d.ressources.every(r => r.userId > 0 && r.rateAmount > 0);
-          case 'CP':
-            return d.eligibleCostCategoryIds.length > 0 && d.marginRatePct != null;
-          case 'RMB':
-            return d.eligibleExpenseCategoryIds.length > 0;
           case 'LIVRABLE':
             return d.livrablesSaved === true;
           default:
@@ -578,40 +573,55 @@ export class AffaireWizardComponent implements OnInit {
 
     const save$: Observable<unknown> = (() => {
       switch (mode) {
-        case 'AV':
+        case 'FORFAIT':
           return this.wizardService.configureAV(id, {
             items: d.repartitions.map(r => ({
               repartitionTypeId: r.repartitionTypeId,
               percentage: r.percentage,
             })),
           });
-        case 'TM':
+        case 'REGIE':
           return this.wizardService.configureTM(id, {
             ressources: d.ressources.map(r => ({
-              userId: r.userId, resourceType: r.resourceType,
+              userId: r.userId,
               rateType: r.rateType, rateAmount: r.rateAmount,
               rateCurrency: r.rateCurrency, costAmount: r.costAmount ?? null,
             })),
-          });
-        case 'CP':
-          return this.wizardService.configureCP(id, {
-            eligibleCostCategoryIds: d.eligibleCostCategoryIds,
-            marginRatePct: d.marginRatePct,
-          });
-        case 'RMB':
-          return this.wizardService.configureRMB(id, {
-            eligibleExpenseCategoryIds: d.eligibleExpenseCategoryIds,
           });
       }
     })();
 
     save$.subscribe({
-      next: () => { this.isSaving.set(false); this.currentStep.set(4); },
+      next: () => {
+        this.isSaving.set(false);
+        if (mode === 'REGIE') {
+          this.writeBackMissingEmployeeCosts(d);
+        }
+        this.currentStep.set(4);
+      },
       error: err => {
         this.isSaving.set(false);
         this.serverError.set(this.apiError(err, 'AFFAIRES.wizard.shell.err.config'));
       },
     });
+  }
+
+  /** Fire-and-forget: for every T&M collaborator that had no employee_costs row (flagged
+   * costDataMissing during the wizard) and a valid manually-entered cost, persist it as
+   * their new reference cost. Never blocks or fails the wizard step — this is a best-effort
+   * side-effect, not something the user waits on. Reads r.userEmail (cached by
+   * wizard-step-tm.component.ts's onUserChange the moment the collaborator was selected)
+   * rather than re-resolving it from a second, independently-fetchable user list — that
+   * second list could silently fail to load and skip every write-back with no signal to
+   * anyone; the cached field can't go stale or come back empty this way. */
+  private writeBackMissingEmployeeCosts(d: AffaireDraftState): void {
+    for (const r of d.ressources) {
+      if (!r.costDataMissing || r.costAmount == null || !r.userEmail) continue;
+      this.employeeCostSvc.recordManualEntry({
+        employeeEmail: r.userEmail,
+        basicCost: r.costAmount,
+      }).subscribe({ error: () => { /* best-effort — a failed write-back should never block wizard progress */ } });
+    }
   }
 
   // ── Step 4 — configure responsables & budget ──────────────────────────

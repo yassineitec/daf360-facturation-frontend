@@ -640,6 +640,16 @@
                supprimé. Le mode de facturation reste affiché dans la carte d'informations,
                c'est une propriété de l'affaire ; ce sont ses écrans qui n'existent plus. -->
 
+          <!-- ── WIP (Work In Progress) — Forfaitaire, Régie et Livrable ─── -->
+          @if (activeTab() === 'wip' && (aff.billingMode === 'FORFAIT' || aff.billingMode === 'REGIE' || aff.billingMode === 'LIVRABLE')) {
+            <app-affaire-wip-tab [affaire]="aff" />
+          }
+
+          <!-- ── Ressources — taux TM par collaborateur, TM uniquement ───── -->
+          @if (activeTab() === 'ressources' && aff.billingMode === 'REGIE') {
+            <app-affaire-ressources-tab [affaire]="aff" />
+          }
+
           <!-- ── Factures ─────────────────────────────────────────────── -->
           @if (activeTab() === 'factures') {
             <daf-search-toolbar

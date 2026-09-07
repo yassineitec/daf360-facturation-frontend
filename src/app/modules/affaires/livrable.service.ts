@@ -5,7 +5,8 @@ import { environment }        from '../../../environments/environment';
 
 import {
   DisciplineExtDto, WbsExtDto, DocumentExtDto,
-  AffectationManuelleItem, AffaireLivrableDto, CollaborateurTauxDto,
+  AffectationManuelleItem, AffaireLivrableDto, CollaborateurTauxDto, LivrableTauxEntry,
+  LivrableBatchDto,
 } from './livrable.model';
 
 @Injectable({ providedIn: 'root' })
@@ -68,6 +69,66 @@ export class LivrableService {
   getLivrables(affaireId: number): Observable<AffaireLivrableDto[]> {
     return this.http.get<AffaireLivrableDto[]>(
       `${this.base}/${affaireId}/livrables`,
+      { withCredentials: true });
+  }
+
+  /** Submits one or more documents' newly-entered cumulative percentages as one batch —
+   * lands on EN_ATTENTE_CLIENT (previously this created the invoice immediately; see
+   * docs/superpowers/specs/2026-09-04-livrable-df-approval-design.md). */
+  submitLivrables(
+    affaireId: number,
+    entries: LivrableTauxEntry[],
+    billingDate?: string,
+  ): Observable<LivrableBatchDto> {
+    return this.http.post<LivrableBatchDto>(
+      `${this.base}/${affaireId}/livrables/submit`,
+      { entries, billingDate },
+      { withCredentials: true });
+  }
+
+  /** Every batch for this affaire still in a pre-FACTURE state — feeds the WIP tab's
+   * per-document "in flight" badges and its Edit/Cancel actions. */
+  getActiveBatches(affaireId: number): Observable<LivrableBatchDto[]> {
+    return this.http.get<LivrableBatchDto[]>(
+      `${this.base}/${affaireId}/livrables/batches/active`,
+      { withCredentials: true });
+  }
+
+  /** Only valid while every line in the batch is EN_ATTENTE_CLIENT. confirmedTotal can be
+   * less than the batch's combinedMontant but never more — the backend rejects that. Moves
+   * the whole batch to EN_ATTENTE_DF. */
+  enterClientAmountForBatch(
+    affaireId: number,
+    batchId: number,
+    confirmedTotal: number,
+  ): Observable<LivrableBatchDto> {
+    return this.http.patch<LivrableBatchDto>(
+      `${this.base}/${affaireId}/livrables/batches/${batchId}/client-amount`,
+      { confirmedTotal },
+      { withCredentials: true });
+  }
+
+  /** Cancel-then-resubmit server-side — the returned batch has a NEW batchId, never the one
+   * passed in. Callers must re-key any local state (editing/expanded row, etc.) off the
+   * response, not the batchId they called with. */
+  editBatch(
+    affaireId: number,
+    batchId: number,
+    entries: LivrableTauxEntry[],
+    billingDate?: string,
+  ): Observable<LivrableBatchDto> {
+    return this.http.put<LivrableBatchDto>(
+      `${this.base}/${affaireId}/livrables/batches/${batchId}`,
+      { entries, billingDate },
+      { withCredentials: true });
+  }
+
+  /** Valid at any pre-FACTURE state (EN_ATTENTE_CLIENT/EN_ATTENTE_DF/A_VERIFIER/RETOURNE) —
+   * unlike editBatch, this stays available even after the client has confirmed a number. */
+  cancelBatch(affaireId: number, batchId: number): Observable<LivrableBatchDto> {
+    return this.http.post<LivrableBatchDto>(
+      `${this.base}/${affaireId}/livrables/batches/${batchId}/cancel`,
+      {},
       { withCredentials: true });
   }
 

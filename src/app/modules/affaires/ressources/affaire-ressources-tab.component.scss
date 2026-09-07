@@ -1,0 +1,352 @@
+// Same palette/vocabulary as the sibling billing/approval-queue screen (same "affaires"
+// domain, same list-with-row-actions shape) — kept local rather than promoted to a shared
+// file since neither screen is meant to change independently of the other right now.
+$green:   #006b58;
+$teal:    #79d7be;
+$error:   #BA1A1A;
+$warning: #D97706;
+$slate6:  #0b1c30;
+$slate5:  #64748B;
+$slate4:  #94A3B8;
+$border:  #e2e8f0;
+
+:host { display: block; }
+
+// ── Section header ──────────────────────────────────────────────────────────
+.res-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 17px;
+    font-weight: 800;
+    color: $slate6;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+
+    .material-symbols-outlined { font-size: 20px; color: $green; }
+  }
+
+  &__sub {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: $slate5;
+    margin: 0;
+    max-width: 640px;
+  }
+}
+
+.res-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: $slate6;
+  margin: 32px 0 4px;
+
+  .material-symbols-outlined { font-size: 18px; color: $green; }
+}
+
+.res-section-sub {
+  font-size: 12px;
+  color: $slate5;
+  margin: 0 0 12px;
+  max-width: 640px;
+}
+
+// ── Table shell ───────────────────────────────────────────────────────────
+.res-table-wrap {
+  border: 1px solid $border;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.res-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 0;
+  color: $slate4;
+  border: 1px dashed $border;
+  border-radius: 14px;
+
+  .material-symbols-outlined { font-size: 32px; }
+  p { font-size: 13px; font-weight: 500; margin: 0; }
+}
+
+.res-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 0;
+  font-size: 13px;
+  color: $slate5;
+
+  .material-symbols-outlined { font-size: 18px; color: $green; }
+}
+
+// ── Worked-hours native table ────────────────────────────────────────────
+// Approximates daf-data-table's own chrome (which .res-table-wrap normally sits under) —
+// needed here only because this table owns its own <tr> rendering, for the inline
+// add-form row. See the component's comment on why this one isn't a daf-data-table.
+.wh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+
+  thead tr { background: #f8fafc; }
+
+  th {
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: $slate5;
+    white-space: nowrap;
+  }
+
+  &__th--right   { text-align: right !important; }
+  &__th--actions { width: 160px; }
+
+  tbody tr:not(.wh-inline-row) {
+    border-top: 1px solid #f1f5f9;
+    transition: background 0.12s;
+
+    &:hover { background: #f8fafc; }
+  }
+
+  td {
+    padding: 12px 16px;
+    vertical-align: middle;
+  }
+
+  &__td--right   { text-align: right; }
+  &__td--actions { text-align: right; }
+}
+
+.wh-inline-row td {
+  padding: 0 16px 16px;
+  border-top: none;
+}
+
+.wh-inline-form {
+  background: #f8fafc;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+// ── Person cell (avatar + name/email) — shared by both tables ──────────────
+.cell-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+
+  &__name {
+    display: block;
+    font-weight: 700;
+    color: $slate6;
+    font-size: 13.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__email {
+    display: block;
+    font-size: 12px;
+    color: $slate5;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// ── Rate cell ─────────────────────────────────────────────────────────────
+.cell-rate {
+  font-weight: 700;
+  color: $slate6;
+  white-space: nowrap;
+}
+
+.cell-rate-edit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+
+  input {
+    width: 84px;
+    padding: 5px 8px;
+    border: 1.5px solid $border;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus { border-color: $green; box-shadow: 0 0 0 3px rgba($green, 0.1); }
+  }
+
+  span { font-size: 12px; color: $slate5; }
+}
+
+.cell-type-chip {
+  display: inline-block;
+  padding: 2px 9px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: $slate5;
+}
+
+// ── Hours cell (number + inline magnitude bar) ──────────────────────────────
+.cell-hours {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+
+  &__value {
+    font-weight: 800;
+    font-size: 13.5px;
+    color: $slate6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__bar { width: 120px; }
+}
+
+// ── Unresolved-account tag ──────────────────────────────────────────────────
+.cell-unresolved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: $warning;
+  white-space: nowrap;
+
+  .material-symbols-outlined { font-size: 15px; }
+}
+
+// ── Row actions ───────────────────────────────────────────────────────────
+.action-btns {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.act-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+  white-space: nowrap;
+
+  .material-symbols-outlined { font-size: 15px; }
+  &:active { transform: scale(0.97); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  &--green  { background: #d1fae5; color: #065f46; &:hover:not(:disabled) { filter: brightness(0.93); } }
+  &--red    { background: #fee2e2; color: #991b1b; &:hover:not(:disabled) { filter: brightness(0.93); } }
+  &--slate  { background: #f1f5f9; color: $slate5;  &:hover:not(:disabled) { filter: brightness(0.96); } }
+}
+
+// ── Add-resource panel ────────────────────────────────────────────────────
+.taux-hint {
+  font-size: 11px;
+  color: $slate5;
+  margin: 12px 0 8px;
+}
+
+.taux-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.taux-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1.5px solid $border;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+
+  &__label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: $slate5;
+  }
+
+  &__value {
+    font-size: 14px;
+    font-weight: 800;
+    color: $slate6;
+  }
+
+  &:hover { border-color: $teal; }
+
+  &--active {
+    border-color: $green;
+    background: rgba($green, 0.06);
+
+    .taux-pill__label { color: $green; }
+    .taux-pill__value { color: $green; }
+  }
+}
+
+.taux-unavailable {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: $warning;
+  margin-bottom: 14px;
+
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $error;
+  margin-top: 10px;
+
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+.spin { animation: res-spin 0.9s linear infinite; }
+@keyframes res-spin { to { transform: rotate(360deg); } }

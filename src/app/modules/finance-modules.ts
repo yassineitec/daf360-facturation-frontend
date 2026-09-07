@@ -102,6 +102,15 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
     tone: 'tertiary',
     labelKey: 'FACTURATION.layout.NAV.INVOICING',
     descKey: 'HOME.MODULES.INVOICING.DESC',
+    children: [
+      {
+        id: 'billing-approval',
+        route: 'billing/approval',
+        icon: 'fact_check',
+        tone: 'tertiary',
+        labelKey: 'FACTURATION.layout.NAV.BILLING_APPROVAL',
+      },
+    ],
   },
   // « Recouvrement » EST cet écran. Il s'appelait « Paiements » et cohabitait avec une
   // seconde entrée `recouvrement` sans écran (un `redirectTo: 'home'`, écartée de la
@@ -141,6 +150,13 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
         tone: 'warning',
         labelKey: 'FACTURATION.layout.NAV.COST_MISSIONS',
         permissions: ['FACT_APPROVE_MISSION_COST'],
+      },
+      {
+        id: 'employee-cost',
+        route: 'cost/employee-costs',
+        icon: 'badge',
+        tone: 'warning',
+        labelKey: 'FACTURATION.layout.NAV.EMPLOYEE_COST',
       },
     ],
   },

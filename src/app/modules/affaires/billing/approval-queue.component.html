@@ -23,7 +23,7 @@
       </div>
       <div>
         <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_rf' | translate }}</p>
-        <h4 class="kpi-value">{{ pendingTaux().length + pendingJalons().length }}</h4>
+        <h4 class="kpi-value">{{ pendingJalons().length }}</h4>
       </div>
     </div>
 
@@ -33,7 +33,7 @@
       </div>
       <div>
         <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_df' | translate }}</p>
-        <h4 class="kpi-value">{{ pendingLines().length }}</h4>
+        <h4 class="kpi-value">{{ pendingTaux().length + pendingLines().length + pendingLivrableBatches().length }}</h4>
       </div>
     </div>
 
@@ -60,14 +60,14 @@
           (click)="setTab(tab.key)">
           <span class="material-symbols-outlined">{{ tab.icon }}</span>
           {{ tab.label }}
-          @if (tab.key === 'rf' && pendingTaux().length + pendingJalons().length > 0) {
+          @if (tab.key === 'rf' && pendingJalons().length > 0) {
             <span class="tab-badge tab-badge--amber">
-              {{ pendingTaux().length + pendingJalons().length }}
+              {{ pendingJalons().length }}
             </span>
           }
-          @if (tab.key === 'df' && pendingLines().length > 0) {
+          @if (tab.key === 'df' && pendingTaux().length + pendingLines().length + pendingLivrableBatches().length > 0) {
             <span class="tab-badge tab-badge--indigo">
-              {{ pendingLines().length }}
+              {{ pendingTaux().length + pendingLines().length + pendingLivrableBatches().length }}
             </span>
           }
         </button>
@@ -85,14 +85,79 @@
             <span class="material-symbols-outlined spin">progress_activity</span>
             {{ 'AFFAIRES.billing.approval.loading' | translate }}
           </div>
-        } @else if (pendingTaux().length === 0 && pendingJalons().length === 0) {
+        } @else if (pendingJalons().length === 0) {
           <div class="tab-empty">
             <span class="material-symbols-outlined">check_circle</span>
             <p>{{ 'AFFAIRES.billing.approval.empty_rf' | translate }}</p>
           </div>
         } @else {
 
-          <!-- Taux d'avancement -->
+          <!-- Jalons -->
+          <div class="section-head">
+            <span class="material-symbols-outlined">flag</span>
+            {{ 'AFFAIRES.billing.approval.section_jalons' | translate:{ count: pendingJalons().length } }}
+          </div>
+          <div class="table-wrap">
+            <daf-data-table
+              [columns]="jalonColumns()"
+              [rows]="jalonRows()"
+              [config]="tableConfig()"
+              (rowClick)="openDetail($any($event), 'jalon')">
+
+              <ng-template dafCell="affaire" let-row>
+                <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                  (click)="$event.stopPropagation()">
+                  {{ row['affaireRef'] }}
+                </a>
+                <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="montant" let-row>
+                <span class="cell-bold">{{ row['montant'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="echeance" let-row>
+                <span class="cell-muted">{{ row['echeance'] }}</span>
+              </ng-template>
+
+              <ng-template dafCell="_actions" let-row>
+                <div class="action-btns">
+                  <button class="act-btn act-btn--green"
+                    (click)="$event.stopPropagation(); doValidateJalon(row['id'])">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    {{ 'AFFAIRES.billing.approval.validate' | translate }}
+                  </button>
+                  <button class="act-btn act-btn--red"
+                    (click)="$event.stopPropagation(); openRfRefuseModal(row['id'], 'jalon')">
+                    <span class="material-symbols-outlined">block</span>
+                    {{ 'AFFAIRES.billing.approval.refuse' | translate }}
+                  </button>
+                </div>
+              </ng-template>
+
+            </daf-data-table>
+          </div>
+
+        }
+      }
+
+      <!-- ── DF Tab ─────────────────────────────────────────────────────── -->
+      @if (activeTab() === 'df') {
+
+        @if (dfLoading()) {
+          <div class="tab-loading">
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            {{ 'AFFAIRES.billing.approval.loading' | translate }}
+          </div>
+        } @else if (pendingTaux().length === 0 && pendingLines().length === 0 && pendingLivrableBatches().length === 0) {
+          <div class="tab-empty">
+            <span class="material-symbols-outlined">check_circle</span>
+            <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
+          </div>
+        } @else {
+
+          <!-- Taux d'avancement (AV) — validating one creates its BillingLine and the
+               draft invoice in one shot (ProgressBillingService.validateTaux()). -->
           @if (pendingTaux().length > 0) {
             <div class="section-head">
               <span class="material-symbols-outlined">trending_up</span>
@@ -102,10 +167,12 @@
               <daf-data-table
                 [columns]="tauxColumns()"
                 [rows]="tauxRows()"
-                [config]="tableConfig()">
+                [config]="tableConfig()"
+                (rowClick)="openDetail($any($event), 'taux')">
 
                 <ng-template dafCell="affaire" let-row>
-                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link">
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    (click)="$event.stopPropagation()">
                     {{ row['affaireRef'] }}
                   </a>
                   <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
@@ -125,11 +192,13 @@
 
                 <ng-template dafCell="_actions" let-row>
                   <div class="action-btns">
-                    <button class="act-btn act-btn--green" (click)="doValidateTaux(row['id'])">
+                    <button class="act-btn act-btn--green"
+                      (click)="$event.stopPropagation(); doValidateTaux(row['id'])">
                       <span class="material-symbols-outlined">check_circle</span>
                       {{ 'AFFAIRES.billing.approval.validate' | translate }}
                     </button>
-                    <button class="act-btn act-btn--red" (click)="openRfRefuseModal(row['id'], 'taux')">
+                    <button class="act-btn act-btn--red"
+                      (click)="$event.stopPropagation(); openRfRefuseModal(row['id'], 'taux')">
                       <span class="material-symbols-outlined">block</span>
                       {{ 'AFFAIRES.billing.approval.refuse' | translate }}
                     </button>
@@ -140,42 +209,115 @@
             </div>
           }
 
-          <!-- Jalons -->
-          @if (pendingJalons().length > 0) {
+          <!-- Billing lines -->
+          @if (pendingLines().length > 0) {
             <div class="section-head" [class.section-head--mt]="pendingTaux().length > 0">
-              <span class="material-symbols-outlined">flag</span>
-              {{ 'AFFAIRES.billing.approval.section_jalons' | translate:{ count: pendingJalons().length } }}
+              <span class="material-symbols-outlined">receipt_long</span>
+              {{ 'AFFAIRES.billing.approval.section_lines' | translate:{ count: pendingLines().length } }}
             </div>
             <div class="table-wrap">
               <daf-data-table
-                [columns]="jalonColumns()"
-                [rows]="jalonRows()"
-                [config]="tableConfig()">
+                [columns]="lineColumns()"
+                [rows]="lineRows()"
+                [config]="tableConfig()"
+                (rowClick)="openDetail($any($event), 'line')">
 
                 <ng-template dafCell="affaire" let-row>
-                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link">
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    (click)="$event.stopPropagation()">
                     {{ row['affaireRef'] }}
                   </a>
                   <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="reference" let-row>
+                  <span class="cell-mono">{{ row['reference'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="periode" let-row>
+                  <span class="cell-muted">{{ row['periode'] || '—' }}</span>
+                </ng-template>
+
+                <ng-template dafCell="montantHt" let-row>
+                  <span class="cell-bold">{{ row['montantHt'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="mode" let-row>
+                  <span class="cell-mode">{{ row['mode'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="statut" let-row>
+                  <span class="line-badge"
+                    [style.background]="lineCfg(row['statut']).bg"
+                    [style.color]="lineCfg(row['statut']).color"
+                    [style.border-color]="lineCfg(row['statut']).border">
+                    {{ lineCfg(row['statut']).label }}
+                  </span>
+                </ng-template>
+
+                <ng-template dafCell="_actions" let-row>
+                  <div class="action-btns">
+                    <button class="act-btn act-btn--green"
+                      (click)="$event.stopPropagation(); doValidateDF(row['id'])">
+                      <span class="material-symbols-outlined">check_circle</span>
+                      {{ 'AFFAIRES.billing.approval.validate' | translate }}
+                    </button>
+                    <button class="act-btn act-btn--orange"
+                      (click)="$event.stopPropagation(); openDfRetourModal(row['id'])">
+                      <span class="material-symbols-outlined">undo</span>
+                      {{ 'AFFAIRES.billing.approval.return' | translate }}
+                    </button>
+                  </div>
+                </ng-template>
+
+              </daf-data-table>
+            </div>
+          }
+
+          <!-- Livrable batches -->
+          @if (pendingLivrableBatches().length > 0) {
+            <div class="section-head" [class.section-head--mt]="pendingTaux().length > 0 || pendingLines().length > 0">
+              <span class="material-symbols-outlined">folder_copy</span>
+              {{ 'AFFAIRES.billing.approval.section_livrable_batches' | translate:{ count: pendingLivrableBatches().length } }}
+            </div>
+            <div class="table-wrap">
+              <daf-data-table
+                [columns]="livrableBatchColumns()"
+                [rows]="livrableBatchRows()"
+                [config]="tableConfig()"
+                (rowClick)="openDetail($any($event), 'livrable')">
+
+                <ng-template dafCell="affaire" let-row>
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    (click)="$event.stopPropagation()">
+                    {{ row['affaireRef'] }}
+                  </a>
+                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="documents" let-row>
+                  {{ row['documents'] }}
                 </ng-template>
 
                 <ng-template dafCell="montant" let-row>
                   <span class="cell-bold">{{ row['montant'] }}</span>
                 </ng-template>
 
-                <ng-template dafCell="echeance" let-row>
-                  <span class="cell-muted">{{ row['echeance'] }}</span>
+                <ng-template dafCell="billingDate" let-row>
+                  <span class="cell-muted">{{ row['billingDate'] }}</span>
                 </ng-template>
 
                 <ng-template dafCell="_actions" let-row>
                   <div class="action-btns">
-                    <button class="act-btn act-btn--green" (click)="doValidateJalon(row['id'])">
+                    <button class="act-btn act-btn--green"
+                      (click)="$event.stopPropagation(); doValidateLivrableBatch(row['id'])">
                       <span class="material-symbols-outlined">check_circle</span>
                       {{ 'AFFAIRES.billing.approval.validate' | translate }}
                     </button>
-                    <button class="act-btn act-btn--red" (click)="openRfRefuseModal(row['id'], 'jalon')">
-                      <span class="material-symbols-outlined">block</span>
-                      {{ 'AFFAIRES.billing.approval.refuse' | translate }}
+                    <button class="act-btn act-btn--orange"
+                      (click)="$event.stopPropagation(); openDfRetourModal(row['id'], 'livrableBatch')">
+                      <span class="material-symbols-outlined">undo</span>
+                      {{ 'AFFAIRES.billing.approval.return' | translate }}
                     </button>
                   </div>
                 </ng-template>
@@ -184,76 +326,6 @@
             </div>
           }
 
-        }
-      }
-
-      <!-- ── DF Tab ─────────────────────────────────────────────────────── -->
-      @if (activeTab() === 'df') {
-
-        @if (dfLoading()) {
-          <div class="tab-loading">
-            <span class="material-symbols-outlined spin">progress_activity</span>
-            {{ 'AFFAIRES.billing.approval.loading' | translate }}
-          </div>
-        } @else if (pendingLines().length === 0) {
-          <div class="tab-empty">
-            <span class="material-symbols-outlined">check_circle</span>
-            <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
-          </div>
-        } @else {
-          <div class="table-wrap">
-            <daf-data-table
-              [columns]="lineColumns()"
-              [rows]="lineRows()"
-              [config]="tableConfig()">
-
-              <ng-template dafCell="affaire" let-row>
-                <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link">
-                  {{ row['affaireRef'] }}
-                </a>
-                <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-              </ng-template>
-
-              <ng-template dafCell="reference" let-row>
-                <span class="cell-mono">{{ row['reference'] }}</span>
-              </ng-template>
-
-              <ng-template dafCell="periode" let-row>
-                <span class="cell-muted">{{ row['periode'] || '—' }}</span>
-              </ng-template>
-
-              <ng-template dafCell="montantHt" let-row>
-                <span class="cell-bold">{{ row['montantHt'] }}</span>
-              </ng-template>
-
-              <ng-template dafCell="mode" let-row>
-                <span class="cell-mode">{{ row['mode'] }}</span>
-              </ng-template>
-
-              <ng-template dafCell="statut" let-row>
-                <span class="line-badge"
-                  [style.background]="lineCfg(row['statut']).bg"
-                  [style.color]="lineCfg(row['statut']).color"
-                  [style.border-color]="lineCfg(row['statut']).border">
-                  {{ lineCfg(row['statut']).label }}
-                </span>
-              </ng-template>
-
-              <ng-template dafCell="_actions" let-row>
-                <div class="action-btns">
-                  <button class="act-btn act-btn--green" (click)="doValidateDF(row['id'])">
-                    <span class="material-symbols-outlined">check_circle</span>
-                    {{ 'AFFAIRES.billing.approval.validate' | translate }}
-                  </button>
-                  <button class="act-btn act-btn--orange" (click)="openDfRetourModal(row['id'])">
-                    <span class="material-symbols-outlined">undo</span>
-                    {{ 'AFFAIRES.billing.approval.return' | translate }}
-                  </button>
-                </div>
-              </ng-template>
-
-            </daf-data-table>
-          </div>
         }
       }
 

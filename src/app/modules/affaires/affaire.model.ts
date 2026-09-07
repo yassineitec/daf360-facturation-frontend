@@ -189,24 +189,26 @@ export interface TsDto {
   createdAt:           string;
 }
 
-export interface CreateAffaireRequest {
-  reference?:          string | null;
-  intitule:            string;
-  clientId:            number;
+// Correspond exactement à UpdateAffaireRequest.java côté backend (PATCH
+// /affaires/{id}) — pas de reference/paysId/typeAffaire, cette route ne les
+// accepte pas. Aucun appelant frontend actif aujourd'hui (le seul qui existait,
+// affaire-form.component.ts, était l'écran de création legacy — supprimé), gardé
+// pour que affaire.service.ts#updateAffaire reste type-correct si/quand un appelant
+// réapparaît.
+export interface UpdateAffaireRequest {
+  intitule?:           string | null;
+  clientId?:           number | null;
   responsableUserId?:  number | null;
-  typeAffaire?:        string | null;
   dateDebut?:          string | null;
   dateFin?:            string | null;
   budgetPrevisionnel?: number | null;
-  paysId:              number;
+  rafAlerteSeuilPct?:  number | null;
   notes?:              string | null;
   doc360Ref?:          string | null;
   erpReference?:       string | null;
   contractCurrency?:   string | null;
   billingPeriod?:      string | null;
 }
-
-export type UpdateAffaireRequest = CreateAffaireRequest;
 
 export interface ChangerStatutRequest {
   newStatut: string;
@@ -229,7 +231,6 @@ export interface ValiderTsRequest {
 export interface AffaireFilter {
   paysId?:   number | null;
   statut?:   string | null;
-  type?:     string | null;
   clientId?: number | null;
   search?:   string | null;
   page?:     number;
@@ -250,6 +251,62 @@ export interface UserRefDto {
   email:    string;
   paysId:   number;
   roleName: string | null;
+}
+
+export interface TmWorkedHoursLine {
+  collaboratorId:       number;
+  collaboratorFullName: string;
+  // Ces trois champs sont réellement nullable côté API — confirmé par appel live le
+  // 2026-08-19 (ex: wbsId=null pour la majorité des documents réels d'une affaire réelle).
+  // Précédemment typés comme des string non-nullable, ce qui masquait un vrai risque
+  // d'interpolation de "null" littéral dans les descriptions générées côté UI.
+  document:             string | null;
+  wbsId:                string | null;
+  wbsName:              string | null;
+  totalHours:           number;
+}
+
+export interface AffaireRessourceRef {
+  userId:       number;
+  rateType:     string;
+  rateAmount:   number;
+  rateCurrency: string;
+}
+
+/** Richer than AffaireRessourceRef (name/email/active/lock status) — feeds the affaire
+ * detail page's "Ressources" management tab. */
+export interface AffaireRessourceManageDto {
+  id:           number;
+  userId:       number;
+  userFullName: string | null;
+  userEmail:    string | null;
+  rateAmount:   number;
+  rateCurrency: string | null;
+  rateType:     string | null;
+  isActive:     boolean;
+  rateLocked:   boolean | null;
+}
+
+export interface AddAffaireRessourceRequest {
+  userId:       number;
+  rateAmount:   number;
+  rateCurrency?: string | null;
+  rateType?:    string | null;
+}
+
+export interface UpdateResourceRateRequest {
+  newRate:      number;
+  rateCurrency?: string | null;
+}
+
+/** One real Timesheet collaborator with hours on this affaire — feeds the Ressources
+ * tab's "add" flow so a manager picks from people who actually worked here. */
+export interface AffaireWorkedHoursSummaryDto {
+  email:        string;
+  fullName:     string | null;
+  userId:       number | null;
+  totalHours:   number;
+  isRessource:  boolean;
 }
 
 export interface PaysRefDto {

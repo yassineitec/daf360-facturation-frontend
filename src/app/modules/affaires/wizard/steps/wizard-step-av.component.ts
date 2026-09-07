@@ -34,7 +34,7 @@ export class WizardStepAvComponent implements OnInit {
     r.repartitionTypeId = values[0] ? Number(values[0]) : 0;
     // Le libellé est mémorisé avec l'id : le récapitulatif n'a pas le référentiel sous la
     // main et affichait « Type #3 » à la place de « CTR ». En relecture d'un brouillon il
-    // arrive déjà résolu par le backend (AffaireDraftDto.CtrBpeTqcDto.label) — ici on
+    // arrive déjà résolu par le backend (AffaireDraftDto.ContactAllocationDto.label) — ici on
     // couvre le cas création.
     r.label = this.repartitionTypes().find(t => t.id === r.repartitionTypeId)?.labelFr;
     this.updateTotal();

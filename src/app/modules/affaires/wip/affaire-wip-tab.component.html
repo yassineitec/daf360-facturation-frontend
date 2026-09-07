@@ -1,0 +1,429 @@
+<div class="flex flex-col gap-6">
+
+  @if (affaire.billingMode === 'FORFAIT') {
+
+    <!-- ── Forfaitaire: WIP = budget x taux d'avancement ── -->
+    <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-4">
+      <p class="text-[12px] text-on-surface-variant">
+        {{ 'AFFAIRES.WIP.AV_EXPLAIN' | translate }}
+      </p>
+
+      <div class="grid grid-cols-2 gap-3 max-w-md">
+        <daf-form-field
+          [value]="periodDateFrom"
+          (valueChange)="periodDateFrom = $any($event)"
+          [options]="{ label: ('AFFAIRES.WIP.DATE_FROM' | translate), type: 'date', fullWidth: true }" />
+        <daf-form-field
+          [value]="periodDateTo"
+          (valueChange)="periodDateTo = $any($event)"
+          [options]="{ label: ('AFFAIRES.WIP.DATE_TO' | translate), type: 'date', fullWidth: true }" />
+      </div>
+
+      @if (editingTaux()?.statut === 'REFUSE') {
+        <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_REFUSED_HINT' | translate }}</p>
+      }
+
+      <div class="grid grid-cols-2 gap-3 max-w-md items-end">
+        <daf-form-field
+          [value]="newTauxValue()"
+          (valueChange)="newTauxValue.set($any($event))"
+          [options]="{ label: ('AFFAIRES.WIP.NEW_TAUX' | translate) + ' (%)', type: 'number', fullWidth: true,
+                       hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedTaux() + '%' }" />
+        <daf-button [options]="{ variant: 'teal',
+                                  label: (editingTauxId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
+                                  loading: submittingTaux(), disabled: !canSubmitTaux() || submittingTaux() }"
+          (onClick)="submitTaux()" />
+        @if (editingTauxId() !== null) {
+          <daf-button [options]="{ variant: 'ghost', label: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
+            (onClick)="cancelEditTaux()" />
+        }
+      </div>
+
+      <daf-form-field
+        [value]="tauxComment"
+        (valueChange)="tauxComment = $any($event)"
+        [options]="{ label: ('AFFAIRES.WIP.COMMENT' | translate), type: 'textarea', rows: 2, maxLength: 500, fullWidth: true }" />
+
+      @if (avWipPreview() !== null) {
+        <p class="text-[13px] font-semibold">
+          {{ 'AFFAIRES.WIP.CALCULATED' | translate }}:
+          {{ avWipPreview() | displayCurrency : affaire.devise }}
+        </p>
+      }
+
+      @if (tauxError()) {
+        <p class="text-[12px] text-danger">{{ tauxError() }}</p>
+      }
+    </div>
+
+    @if (loadingTaux()) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+    } @else if (tauxHistory().length) {
+      <table class="w-full text-[13px]">
+        <thead>
+          <tr class="text-left text-on-surface-variant border-b border-outline-variant">
+            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_PERIOD' | translate }}</th>
+            <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_TAUX' | translate }}</th>
+            <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_INCREMENT' | translate }}</th>
+            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
+            <th class="py-2 pr-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of tauxHistory(); track t.id) {
+            <tr class="border-b border-outline-variant/50">
+              <td class="py-2 pr-3">{{ t.periodDateFrom }} → {{ t.periodDateTo }}</td>
+              <td class="py-2 pr-3 text-right">{{ t.tauxSaisi }}%</td>
+              <td class="py-2 pr-3 text-right">{{ t.montantIncremental | displayCurrency : affaire.devise }}</td>
+              <td class="py-2 pr-3">{{ t.statut }}</td>
+              <td class="py-2 pr-3 text-right">
+                @if (t.statut === 'EN_ATTENTE' || t.statut === 'REFUSE') {
+                  <button type="button" class="text-primary text-[12px] mr-2" (click)="startEditTaux(t)">
+                    {{ 'AFFAIRES.WIP.EDIT' | translate }}
+                  </button>
+                  <button type="button" class="text-danger text-[12px]" (click)="deleteTaux(t.id)">
+                    {{ 'AFFAIRES.WIP.DELETE' | translate }}
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (deleteTauxError()) {
+        <p class="text-[12px] text-danger">{{ deleteTauxError() }}</p>
+      }
+    }
+
+  } @else if (affaire.billingMode === 'REGIE') {
+
+    <!-- ── Time & Materials: WIP = cost of validated Timesheet hours ── -->
+    <daf-stepper orientation="horizontal"
+      [steps]="wipStepperSteps()" [currentStep]="wipStep() - 1" [config]="wipStepperConfig()"
+      (stepClick)="onWipStepClick($event)" />
+
+    <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-4">
+      <p class="text-[12px] text-on-surface-variant">
+        {{ 'AFFAIRES.WIP.TM_EXPLAIN' | translate }}
+      </p>
+
+      <div class="grid grid-cols-2 gap-3 max-w-md">
+        <daf-form-field
+          [value]="tmDateFrom()"
+          (valueChange)="tmDateFrom.set($any($event)); loadTmPreview()"
+          [options]="{ label: ('AFFAIRES.WIP.DATE_FROM' | translate), type: 'date', fullWidth: true }" />
+        <daf-form-field
+          [value]="tmDateTo()"
+          (valueChange)="tmDateTo.set($any($event)); loadTmPreview()"
+          [options]="{ label: ('AFFAIRES.WIP.DATE_TO' | translate), type: 'date', fullWidth: true }" />
+      </div>
+
+      @if (loadingTm()) {
+        <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+      } @else if (tmPreview()) {
+        <!-- Un seul total : celui calculé au taux choisi par ressource (externe ou
+             intercompany, configuré à la création de chaque ressource) — c'est ce montant,
+             et lui seul, qui sera demandé au client. Le coût interne n'est plus affiché ici :
+             cette page ne sert qu'à préparer ce qui part au client. ─────────────────────── -->
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.CALCULATED' | translate }}</p>
+            <p class="text-[15px] font-semibold">
+              {{ (tmPreview()!.totalSell + tmPreview()!.carriedForwardAmount) | displayCurrency : affaire.devise }}
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <daf-button [options]="{ variant: 'ghost', iconStart: 'download', label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                      disabled: !tmPreview()!.hours.length }"
+              (onClick)="exportWipExcel()" />
+            <daf-button [options]="{ variant: 'secondary', label: ('AFFAIRES.WIP.DETAILS' | translate) }"
+              (onClick)="toggleTmDetails()" />
+          </div>
+        </div>
+
+        @if (tmPreview()!.carriedForwardAmount > 0) {
+          <div class="rounded-lg bg-warning/10 border border-warning/30 p-3 flex flex-col gap-1">
+            <p class="text-[12px] font-semibold text-warning">{{ 'AFFAIRES.WIP.CARRIED_FORWARD_TITLE' | translate }}</p>
+            <div class="grid grid-cols-3 gap-2 text-[12px]">
+              <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_PREVIOUS' | translate }}:
+                <strong>{{ tmPreview()!.carriedForwardAmount | displayCurrency : affaire.devise }}</strong></span>
+              <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_NEW' | translate }}:
+                <strong>{{ tmPreview()!.totalSell | displayCurrency : affaire.devise }}</strong></span>
+              <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_TOTAL' | translate }}:
+                <strong>{{ (tmPreview()!.totalSell + tmPreview()!.carriedForwardAmount) | displayCurrency : affaire.devise }}</strong></span>
+            </div>
+          </div>
+        }
+
+        @if (wipStep() >= 2) {
+          <label class="flex items-start gap-2 text-[12px] cursor-pointer">
+            <input type="checkbox" class="mt-0.5" [checked]="wipManualVerified()"
+              (change)="onManualVerifiedChange($any($event.target).checked)" />
+            <span>{{ 'AFFAIRES.WIP.MANUAL_VERIFY_LABEL' | translate }}</span>
+          </label>
+        }
+
+        <div>
+          <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.VALIDATE' | translate),
+                                    loading: validatingTm(),
+                                    disabled: !tmPreview()!.hours.length || !wipManualVerified() }"
+            (onClick)="validateTm()" />
+        </div>
+      }
+
+      @if (tmError()) {
+        <p class="text-[12px] text-danger">{{ tmError() }}</p>
+      }
+    </div>
+
+    @if (showTmDetails() && tmPreview()) {
+      @if (selectedCollaboratorUserId() === null) {
+        <app-wip-tm-detail-table [hours]="tmPreview()!.hours"
+          (collaboratorSelected)="selectedCollaboratorUserId.set($event)" />
+      } @else {
+        <app-wip-tm-collaborator-detail [hours]="tmPreview()!.hours" [userId]="selectedCollaboratorUserId()!"
+          (back)="selectedCollaboratorUserId.set(null)" />
+      }
+    }
+
+    <!-- ── Lignes en attente de réponse client — la réponse arrive par email hors système,
+         l'utilisateur saisit ici ce que le client a réellement confirmé. ──────────────── -->
+    @if (pendingClientLines().length) {
+      <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3">
+        <p class="text-[13px] font-semibold">{{ 'AFFAIRES.WIP.PENDING_CLIENT_TITLE' | translate }}</p>
+        <p class="text-[12px] text-on-surface-variant">{{ 'AFFAIRES.WIP.PENDING_CLIENT_EXPLAIN' | translate }}</p>
+
+        @for (l of pendingClientLines(); track l.id) {
+          <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
+            <div class="flex items-center justify-between text-[12px]">
+              <span>
+                @if (l.periodDateFrom && l.periodDateTo) { {{ l.periodDateFrom }} → {{ l.periodDateTo }} }
+                @else { {{ l.periodMonth }}/{{ l.periodYear }} }
+              </span>
+              <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ l.montantHt | displayCurrency : affaire.devise }}</strong></span>
+            </div>
+            <div class="flex items-end gap-2">
+              <daf-form-field
+                [value]="getClientAmountInput(l.id)"
+                (valueChange)="setClientAmountInput(l.id, $any($event))"
+                [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
+                             type: 'number', fullWidth: true,
+                             hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
+              <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
+                                        loading: submittingClientLine() === l.id,
+                                        disabled: getClientAmountInput(l.id) === null || getClientAmountInput(l.id)! < 0 || getClientAmountInput(l.id)! > l.montantHt }"
+                (onClick)="confirmClientAmount(l)" />
+            </div>
+          </div>
+        }
+
+        @if (clientAmountError()) {
+          <p class="text-[12px] text-danger">{{ clientAmountError() }}</p>
+        }
+      </div>
+    }
+
+    @if (loadingTmHistory()) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+    } @else if (tmHistory().length) {
+      <table class="w-full text-[13px]">
+        <thead>
+          <tr class="text-left text-on-surface-variant border-b border-outline-variant">
+            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_PERIOD' | translate }}</th>
+            <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_AMOUNT' | translate }}</th>
+            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
+            <th class="py-2 pr-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of tmHistory(); track l.id) {
+            <tr class="border-b border-outline-variant/50">
+              <td class="py-2 pr-3">
+                @if (l.periodDateFrom && l.periodDateTo) {
+                  {{ l.periodDateFrom }} → {{ l.periodDateTo }}
+                } @else {
+                  {{ l.periodMonth }}/{{ l.periodYear }}
+                }
+              </td>
+              <td class="py-2 pr-3 text-right">{{ l.montantHt | displayCurrency : affaire.devise }}</td>
+              <td class="py-2 pr-3">{{ l.statut }}</td>
+              <td class="py-2 pr-3 text-right">
+                @if (isTmLineCancellable(l.statut)) {
+                  <button type="button" class="text-danger text-[12px]" (click)="cancelLine(l.id)">
+                    {{ 'AFFAIRES.WIP.CANCEL' | translate }}
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (cancelLineError()) {
+        <p class="text-[12px] text-danger">{{ cancelLineError() }}</p>
+      }
+    }
+
+  } @else if (affaire.billingMode === 'LIVRABLE') {
+
+    <!-- ── Livrables : facturation par sélection groupée ── -->
+    <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-4">
+      <p class="text-[12px] text-on-surface-variant">
+        {{ 'AFFAIRES.WIP.LIVRABLE_EXPLAIN' | translate }}
+      </p>
+
+      @if (editingBatchId() !== null) {
+        <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_BATCH_HINT' | translate }}</p>
+      }
+
+      @if (loadingLivrables()) {
+        <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+      } @else if (pendingLivrables().length === 0) {
+        <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LIVRABLE_EMPTY' | translate }}</p>
+      } @else {
+        <table class="w-full text-[13px]">
+          <thead>
+            <tr class="text-left text-on-surface-variant border-b border-outline-variant">
+              <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DISCIPLINE' | translate }}</th>
+              <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DOCUMENT' | translate }}</th>
+              <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_BUDGET_ALLOUE' | translate }}</th>
+              <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_PCT_ACTUEL' | translate }}</th>
+              <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_NOUVEAU_PCT' | translate }}</th>
+              <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_AMOUNT' | translate }}</th>
+              <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of pendingLivrables(); track l.id) {
+              <tr class="border-b border-outline-variant/50">
+                <td class="py-2 pr-3">{{ l.disciplineLabel }}</td>
+                <td class="py-2 pr-3">{{ l.documentNom }}</td>
+                <td class="py-2 pr-3 text-right">{{ l.budgetAlloue | displayCurrency : affaire.devise }}</td>
+                <td class="py-2 pr-3 text-right">{{ l.pctFacture }}%</td>
+                <td class="py-2 pr-3 text-right">
+                  <input type="number" class="w-20 text-right border border-outline-variant rounded px-1 py-0.5"
+                    [min]="l.pctFacture" max="100" step="0.1"
+                    [disabled]="isLivrableRowLocked(l.id)"
+                    [value]="getEnteredPct(l.id)"
+                    (input)="setEnteredPct(l.id, $any($event.target).valueAsNumber)" />%
+                </td>
+                <td class="py-2 pr-3 text-right">{{ incrementalAmount(l) | displayCurrency : affaire.devise }}</td>
+                <td class="py-2 pr-3">
+                  @if (livrableBatchStatus(l.id); as st) {
+                    <span class="text-[11px] text-on-surface-variant">
+                      {{ 'AFFAIRES.WIP.BATCH_STATUS_' + st | translate }}
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <div class="flex items-center justify-between">
+          <p class="text-[13px] font-semibold">
+            {{ 'AFFAIRES.WIP.TOTAL_SELECTED' | translate }}:
+            {{ totalToInvoice() | displayCurrency : affaire.devise }}
+          </p>
+          <div class="flex gap-2">
+            <daf-button [options]="{ variant: 'teal',
+                                      label: (editingBatchId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
+                                      loading: submittingLivrables(), disabled: !hasLivrableChanges() || submittingLivrables() }"
+              (onClick)="submitLivrables()" />
+            @if (editingBatchId() !== null) {
+              <daf-button [options]="{ variant: 'ghost', label: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
+                (onClick)="cancelEditBatch()" />
+            }
+          </div>
+        </div>
+      }
+
+      @if (livrableError()) {
+        <p class="text-[12px] text-danger">{{ livrableError() }}</p>
+      }
+    </div>
+
+    <!-- ── Batches en attente (client puis DF) ── -->
+    @if (loadingActiveBatches()) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+    } @else if (activeBatches().length) {
+      <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3">
+        <p class="text-[13px] font-semibold">{{ 'AFFAIRES.WIP.PENDING_BATCHES_TITLE' | translate }}</p>
+
+        @for (b of activeBatches(); track b.batchId) {
+          <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
+            <div class="flex items-center justify-between text-[12px]">
+              <span>
+                {{ b.entries.length }} {{ 'AFFAIRES.WIP.DOCUMENTS' | translate }} —
+                {{ 'AFFAIRES.WIP.BATCH_STATUS_' + b.statut | translate }}
+              </span>
+              <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}:
+                <strong>{{ b.combinedMontant | displayCurrency : affaire.devise }}</strong></span>
+            </div>
+
+            @if (b.statut === 'EN_ATTENTE_CLIENT') {
+              <div class="flex items-end gap-2">
+                <daf-form-field
+                  [value]="getLivrableClientAmountInput(b.batchId)"
+                  (valueChange)="setLivrableClientAmountInput(b.batchId, $any($event))"
+                  [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
+                               type: 'number', fullWidth: true,
+                               hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
+                <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
+                                          loading: submittingLivrableClientBatch() === b.batchId,
+                                          disabled: getLivrableClientAmountInput(b.batchId) === null ||
+                                                    getLivrableClientAmountInput(b.batchId)! < 0 ||
+                                                    getLivrableClientAmountInput(b.batchId)! > b.combinedMontant }"
+                  (onClick)="confirmLivrableClientAmount(b)" />
+              </div>
+            }
+
+            <div class="flex gap-2">
+              @if (b.statut === 'EN_ATTENTE_CLIENT' || b.statut === 'RETOURNE' || b.statut === 'A_VERIFIER') {
+                <button type="button" class="text-primary text-[12px]" (click)="startEditBatch(b)">
+                  {{ 'AFFAIRES.WIP.EDIT' | translate }}
+                </button>
+              }
+              <button type="button" class="text-danger text-[12px]" (click)="cancelBatch(b.batchId)">
+                {{ 'AFFAIRES.WIP.CANCEL' | translate }}
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (livrableClientAmountError()) {
+          <p class="text-[12px] text-danger">{{ livrableClientAmountError() }}</p>
+        }
+        @if (livrableCancelError()) {
+          <p class="text-[12px] text-danger">{{ livrableCancelError() }}</p>
+        }
+      </div>
+    }
+
+    @if (livrableHistory().length) {
+      <table class="w-full text-[13px]">
+        <thead>
+          <tr class="text-left text-on-surface-variant border-b border-outline-variant">
+            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DISCIPLINE' | translate }}</th>
+            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DOCUMENT' | translate }}</th>
+            <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_BUDGET_ALLOUE' | translate }}</th>
+            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of livrableHistory(); track l.id) {
+            <tr class="border-b border-outline-variant/50">
+              <td class="py-2 pr-3">{{ l.disciplineLabel }}</td>
+              <td class="py-2 pr-3">{{ l.documentNom }}</td>
+              <td class="py-2 pr-3 text-right">{{ l.budgetAlloue | displayCurrency : affaire.devise }}</td>
+              <td class="py-2 pr-3">{{ l.statut }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+  } @else {
+    <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.UNSUPPORTED_MODE' | translate }}</p>
+  }
+
+</div>

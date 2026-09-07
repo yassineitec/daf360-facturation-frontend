@@ -1,4 +1,4 @@
-import { Component, inject, input, output } from '@angular/core';
+import { Component, effect, inject, input, output } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CONDITIONS_PAIEMENT } from '../../invoice.model';
@@ -80,11 +80,13 @@ export interface StepConditionsValue {
 export class StepConditionsComponent {
   private readonly fb = inject(FormBuilder);
 
-  showActions = input<boolean>(true);
-  affaireData = input.required<StepAffaireValue>();
-  linesData   = input.required<StepLinesValue>();
-  prevStep    = output<void>();
-  nextStep    = output<StepConditionsValue>();
+  showActions  = input<boolean>(true);
+  affaireData  = input.required<StepAffaireValue>();
+  linesData    = input.required<StepLinesValue>();
+  /** Set when editing an existing draft — pre-fills the form with its saved values. */
+  initialValue = input<StepConditionsValue | null>(null);
+  prevStep     = output<void>();
+  nextStep     = output<StepConditionsValue>();
 
   readonly conditionOptions = Object.entries(CONDITIONS_PAIEMENT)
     .map(([value, label]) => ({ value, label }));
@@ -97,6 +99,27 @@ export class StepConditionsComponent {
     bonDeCommande:      [''],
     notes:              [''],
   });
+
+  constructor() {
+    // Signal inputs are only bound by Angular AFTER the constructor runs — reading
+    // initialValue() directly here always saw its default (null), never the real
+    // edit-mode data passed down by the parent, so this step silently never pre-filled
+    // when editing an existing draft (same bug found and fixed in StepLinesComponent's
+    // seedFromInitialLines — 2026-08-28).
+    let seeded = false;
+    effect(() => {
+      const iv = this.initialValue();
+      if (iv && !seeded) {
+        seeded = true;
+        this.form.patchValue({
+          dateEcheance:       iv.dateEcheance,
+          conditionsPaiement: iv.conditionsPaiement,
+          bonDeCommande:      iv.bonDeCommande ?? '',
+          notes:              iv.notes ?? '',
+        });
+      }
+    });
+  }
 
   next(): void {
     this.form.markAllAsTouched();

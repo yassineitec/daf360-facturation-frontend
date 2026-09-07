@@ -89,6 +89,14 @@
                 </div>
               }
 
+              @if (statut() === 'DRAFT') {
+                <daf-button
+                  style="flex:1 1 45%"
+                  [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'edit',
+                               label: 'INVOICING.LIFECYCLE.ACTIONS.EDIT' | translate }"
+                  (onClick)="editDraft()" />
+              }
+
               @if (canReturn()) {
                 <daf-button
                   style="flex:1 1 45%"
@@ -112,7 +120,7 @@
                              disabled: !inv.affaireId }"
                 (onClick)="goToAffaire()" />
 
-              @if (inv.billingMode === 'AV') {
+              @if (inv.billingMode === 'FORFAIT' || inv.billingMode === 'REGIE' || inv.billingMode === 'LIVRABLE') {
                 <daf-button
                   style="flex:1 1 100%"
                   [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'picture_as_pdf',
