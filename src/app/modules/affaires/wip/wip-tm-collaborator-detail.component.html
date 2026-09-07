@@ -1,0 +1,30 @@
+<div class="flex flex-col gap-4">
+
+  <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'arrow_back', label: ('AFFAIRES.WIP.BACK' | translate) }"
+    (onClick)="back.emit()" />
+
+  <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3">
+    <p class="text-[15px] font-semibold">{{ userFullName() }}</p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div>
+        <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.COL_HOURS' | translate }}</p>
+        <p class="text-[15px] font-semibold">{{ summary().totalHours.toFixed(2) }}</p>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.COL_COST' | translate }}</p>
+        <p class="text-[15px] font-semibold">{{ fmtAmt(summary().totalCost) }}</p>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.AVG_RATE' | translate }}</p>
+        <p class="text-[15px] font-semibold">{{ fmtAmt(summary().avgRate) }}</p>
+      </div>
+      <div>
+        <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.DAYS_WORKED' | translate }}</p>
+        <p class="text-[15px] font-semibold">{{ summary().days }} <span class="text-[12px] text-on-surface-variant font-normal">/ {{ summary().documents }} {{ 'AFFAIRES.WIP.DOCUMENTS' | translate }}</span></p>
+      </div>
+    </div>
+  </div>
+
+  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()" />
+
+</div>

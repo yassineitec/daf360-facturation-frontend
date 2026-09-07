@@ -7,7 +7,7 @@ import {
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import {
-  RAF_TONE_CLASS, STATUT_BADGE_VARIANT, initials, rafTone, typeLabel,
+  RAF_TONE_CLASS, STATUT_BADGE_VARIANT, initials, rafTone,
 } from '../affaire-display';
 
 /**
@@ -69,7 +69,6 @@ export class AffairesTableSectionComponent {
       { key: 'client',      label: t('AFFAIRES.LIST.TABLE.HEADERS.CLIENT'),  type: 'text'   },
       { key: 'pays',        label: t('AFFAIRES.LIST.TABLE.HEADERS.PAYS'),    type: 'text'   },
       { key: 'responsable', label: t('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'), type: 'avatar' },
-      { key: 'type',        label: t('AFFAIRES.LIST.TABLE.HEADERS.TYPE'),    type: 'text'   },
       { key: 'budget',      label: t('AFFAIRES.LIST.TABLE.HEADERS.BUDGET'),  type: 'text', align: 'right' },
       { key: 'raf',         label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),     type: 'custom', align: 'right' },
       { key: 'statut',      label: t('AFFAIRES.LIST.TABLE.HEADERS.STATUS'),  type: 'badge'  },
@@ -99,7 +98,6 @@ export class AffairesTableSectionComponent {
           avatar:   a.responsableUserId ? this.avatarUrls().get(a.responsableUserId) : undefined,
           subtitle: a.billingMode ?? undefined,
         } satisfies AvatarCell,
-        type:      typeLabel(a.typeAffaire),
         budget:    this.currency.transform(a.budgetPrevisionnel, devise),
         statut:    {
           label:   this.translate.instant(`AFFAIRES.LIST.TABLE.STATUS.${a.statut}`),

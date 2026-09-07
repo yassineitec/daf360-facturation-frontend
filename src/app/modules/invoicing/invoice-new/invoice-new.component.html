@@ -32,34 +32,42 @@
       </div>
 
       <div class="step-body">
-        @if (step() === 1) {
-          <app-step-affaire
-            [showActions]="false"
-            (nextStep)="onAffaireDone($event)"
-            (cancel)="cancel()" />
-        }
-        @if (step() === 2 && affaireValue()) {
-          <app-step-lines
-            [showActions]="false"
-            [affaireData]="affaireValue()!"
-            (prevStep)="goPrev()"
-            (nextStep)="onLinesDone($event)" />
-        }
-        @if (step() === 3 && affaireValue() && linesValue()) {
-          <app-step-conditions
-            [showActions]="false"
-            [affaireData]="affaireValue()!"
-            [linesData]="linesValue()!"
-            (prevStep)="goPrev()"
-            (nextStep)="onConditionsDone($event)" />
-        }
-        @if (step() === 4 && affaireValue() && linesValue() && conditionsValue()) {
-          <app-step-recap
-            [showActions]="false"
-            [affaireData]="affaireValue()!"
-            [linesData]="linesValue()!"
-            [conditionsData]="conditionsValue()!"
-            (prevStep)="goPrev()" />
+        @if (loadingExisting()) {
+          <p>{{ 'INVOICING.NEW.LOADING_EXISTING' | translate }}</p>
+        } @else {
+          @if (step() === 1) {
+            <app-step-affaire
+              [showActions]="false"
+              [initialValue]="initialAffaire()"
+              (nextStep)="onAffaireDone($event)"
+              (cancel)="cancel()" />
+          }
+          @if (step() === 2 && affaireValue()) {
+            <app-step-lines
+              [showActions]="false"
+              [affaireData]="affaireValue()!"
+              [initialLines]="initialLines()"
+              (prevStep)="goPrev()"
+              (nextStep)="onLinesDone($event)" />
+          }
+          @if (step() === 3 && affaireValue() && linesValue()) {
+            <app-step-conditions
+              [showActions]="false"
+              [affaireData]="affaireValue()!"
+              [linesData]="linesValue()!"
+              [initialValue]="initialConditions()"
+              (prevStep)="goPrev()"
+              (nextStep)="onConditionsDone($event)" />
+          }
+          @if (step() === 4 && affaireValue() && linesValue() && conditionsValue()) {
+            <app-step-recap
+              [showActions]="false"
+              [affaireData]="affaireValue()!"
+              [linesData]="linesValue()!"
+              [conditionsData]="conditionsValue()!"
+              [editInvoiceId]="editInvoiceId()"
+              (prevStep)="goPrev()" />
+          }
         }
       </div>
 

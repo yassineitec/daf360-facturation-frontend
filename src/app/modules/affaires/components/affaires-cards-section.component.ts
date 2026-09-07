@@ -3,7 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { STATUT_ENTITY_STATUS, typeLabel } from '../affaire-display';
+import { STATUT_ENTITY_STATUS } from '../affaire-display';
 
 /**
  * Card view of `/finance/affaires` — one `daf-entity-card` per affaire.
@@ -89,7 +89,7 @@ export class AffairesCardsSectionComponent {
           // n'a pas de emplacement à pastilles (seuls `title`, `subtitle` et la puce de
           // statut, déjà prise par le statut de l'affaire), et la carte doit rester à
           // QUATRE indicateurs. Le sous-titre est justement la ligne d'identification.
-          subtitle: [a.reference, typeLabel(a.typeAffaire), this.paysLabels().get(a.paysId)]
+          subtitle: [a.reference, this.paysLabels().get(a.paysId)]
             .filter(Boolean).join(' · '),
           status:      STATUT_ENTITY_STATUS[a.statut] ?? 'active',
           statusLabel: t(`AFFAIRES.LIST.TABLE.STATUS.${a.statut}`),

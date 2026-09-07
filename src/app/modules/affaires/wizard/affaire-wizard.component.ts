@@ -24,7 +24,7 @@ import { WizardStepRecapComponent }      from './steps/wizard-step-recap.compone
 const STEP_ICONS = ['description', 'business_center', 'receipt_long', 'group', 'calendar_month', 'fact_check'];
 
 /** Modes ayant encore un endpoint `PATCH /config/{mode}` à l'étape 3. */
-const CONFIGURABLE_MODES = new Set<string>(['AV', 'TM', 'CP', 'RMB']);
+const CONFIGURABLE_MODES = new Set<string>(['FORFAIT', 'REGIE']);
 
 @Component({
   selector: 'app-affaire-wizard',
@@ -254,11 +254,8 @@ export class AffaireWizardComponent implements OnInit {
         if (this.editMode() && d.billingModeLocked) return null;
         if (!d.billingMode) return this.translate.instant('AFFAIRES.wizard.shell.val.select_mode_prev');
         switch (d.billingMode) {
-          case 'AV':       return this.translate.instant('AFFAIRES.wizard.shell.val.av');
-          case 'TM':       return this.translate.instant('AFFAIRES.wizard.shell.val.tm');
-          case 'CP':       return this.translate.instant('AFFAIRES.wizard.shell.val.cp');
-          // Plus proposé à la création — une affaire RMB existante reste configurable.
-          case 'RMB':      return this.translate.instant('AFFAIRES.wizard.shell.val.rmb');
+          case 'FORFAIT':  return this.translate.instant('AFFAIRES.wizard.shell.val.forfait');
+          case 'REGIE':    return this.translate.instant('AFFAIRES.wizard.shell.val.regie');
           case 'LIVRABLE': return this.translate.instant('AFFAIRES.wizard.shell.val.livrable');
           default:         return null;
         }
@@ -302,15 +299,11 @@ export class AffaireWizardComponent implements OnInit {
         if (this.editMode() && d.billingModeLocked) return true;
         if (!d.billingMode) return false;
         switch (d.billingMode) {
-          case 'AV':
+          case 'FORFAIT':
             return d.repartitionTotal === 100 && d.repartitions.length > 0
                    && d.repartitions.every(r => r.repartitionTypeId > 0);
-          case 'TM':
+          case 'REGIE':
             return d.ressources.length > 0 && d.ressources.every(r => r.userId > 0 && r.rateAmount > 0);
-          case 'CP':
-            return d.eligibleCostCategoryIds.length > 0 && d.marginRatePct != null;
-          case 'RMB':
-            return d.eligibleExpenseCategoryIds.length > 0;
           case 'LIVRABLE':
             return d.livrablesSaved === true;
           default:
@@ -499,29 +492,20 @@ export class AffaireWizardComponent implements OnInit {
 
     const save$: Observable<unknown> = (() => {
       switch (mode) {
-        case 'AV':
+        case 'FORFAIT':
           return this.wizardService.configureAV(id, {
             items: d.repartitions.map(r => ({
               repartitionTypeId: r.repartitionTypeId,
               percentage: r.percentage,
             })),
           });
-        case 'TM':
+        case 'REGIE':
           return this.wizardService.configureTM(id, {
             ressources: d.ressources.map(r => ({
-              userId: r.userId, resourceType: r.resourceType,
+              userId: r.userId,
               rateType: r.rateType, rateAmount: r.rateAmount,
               rateCurrency: r.rateCurrency, costAmount: r.costAmount ?? null,
             })),
-          });
-        case 'CP':
-          return this.wizardService.configureCP(id, {
-            eligibleCostCategoryIds: d.eligibleCostCategoryIds,
-            marginRatePct: d.marginRatePct,
-          });
-        case 'RMB':
-          return this.wizardService.configureRMB(id, {
-            eligibleExpenseCategoryIds: d.eligibleExpenseCategoryIds,
           });
       }
     })();
@@ -529,7 +513,7 @@ export class AffaireWizardComponent implements OnInit {
     save$.subscribe({
       next: () => {
         this.isSaving.set(false);
-        if (mode === 'TM') {
+        if (mode === 'REGIE') {
           this.writeBackMissingEmployeeCosts(d);
         }
         this.currentStep.set(4);

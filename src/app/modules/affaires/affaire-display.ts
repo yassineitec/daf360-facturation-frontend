@@ -1,5 +1,5 @@
 import { BadgeVariant } from '@khalilrebhiitec/daf360';
-import { AffaireListItem, TYPE_LABELS } from './affaire.model';
+import { AffaireListItem } from './affaire.model';
 
 /**
  * Single source of truth for how an affaire is *displayed*.
@@ -56,10 +56,6 @@ export const RAF_TONE_CLASS: Record<RafTone, string> = {
   danger:  'text-danger',
   unknown: 'text-on-surface-variant',
 };
-
-export function typeLabel(type: string): string {
-  return TYPE_LABELS[type] ?? type;
-}
 
 export function initials(name: string | null | undefined): string {
   if (!name) return '—';

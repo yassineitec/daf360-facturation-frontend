@@ -42,6 +42,10 @@ export interface InvoiceListItem {
   dateEmission:     string | null;
   dateEcheance:     string | null;
   datePaiementFinal:string | null;
+  // T&M — période facturée ; toujours envoyés par le backend (InvoiceResponseDto),
+  // manquaient ici — null hors mode T&M.
+  periodFrom:       string | null;
+  periodTo:         string | null;
   paysId:           number;
   createdAt:        string;
   updatedAt:        string | null;
@@ -54,7 +58,6 @@ export interface InvoiceDetail extends InvoiceListItem {
   notes:                   string | null;
   bonDeCommande:           string | null;
   conditionsPaiement:      string | null;
-  templateId:              number | null;
   clientValidationDocPath: string | null;
   remindersActive:         boolean;
 }
@@ -83,13 +86,15 @@ export interface InvoiceLineRequest {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
+  // T&M — collaborateur associé à cette ligne, présent uniquement en mode T&M
+  profileUserId?: number;
 }
 
 export interface CreateDraftRequest {
   paysId:              number;
   affaireId:           number | null;
   clientId:            number | null;
-  projectId?:          number | null;
+  invoiceType:         string;
   billingMode:         string;
   currency:            string;
   tsId?:               number | null;
@@ -97,7 +102,9 @@ export interface CreateDraftRequest {
   notes?:              string | null;
   bonDeCommande?:      string | null;
   dueDate?:            string | null;
-  templateId?:         number | null;
+  // T&M — période facturée, source des heures récupérées ; présents uniquement en mode T&M
+  periodFrom?:         string | null;
+  periodTo?:           string | null;
 }
 
 export type UpdateDraftRequest = CreateDraftRequest;

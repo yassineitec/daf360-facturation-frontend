@@ -9,7 +9,7 @@ import { WizardStepRmbComponent }      from './wizard-step-rmb.component';
 import { WizardStepLivrableComponent } from './wizard-step-livrable.component';
 
 /** Modes ayant un libellé métier sous `AFFAIRES.wizard.billing.mode_config`. */
-const LABELLED_MODES = new Set<string>(['AV', 'TM', 'CP', 'RMB', 'LIVRABLE']);
+const LABELLED_MODES = new Set<string>(['FORFAIT', 'REGIE', 'LIVRABLE']);
 
 @Component({
   selector: 'app-wizard-step-billing',

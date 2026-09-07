@@ -1,14 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { WipTmHourDto } from './wip.model';
 
 /**
- * Date -> Collaborateur -> Discipline -> WBS -> Document drill-down for a WIP T&M preview —
- * the house table style (no wrapper, no outer card, showHeader true since this is the only
- * table on the page rather than one of several sections).
+ * WIP T&M preview, aggregated one row per collaborator — the flat Date -> Collaborateur ->
+ * Discipline -> WBS -> Document list this used to render directly became unreadable on a
+ * real affaire (hundreds of rows for a handful of people). Clicking a row now hands the
+ * full per-collaborator breakdown to a drill-down view instead
+ * (see WipTmCollaboratorDetailComponent).
  *
- * Stateless: hours in, nothing out — this is a read-only audit view.
+ * Stateless: hours in, a userId out on click — this component owns no drill-down state
+ * itself, the parent tab does (see affaire-wip-tab.component.ts).
  */
 @Component({
   selector: 'app-wip-tm-detail-table',
@@ -16,38 +19,49 @@ import { WipTmHourDto } from './wip.model';
   imports: [DataTableComponent],
   host: { class: 'block' },
   template: `
-    <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()" />
+    <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()"
+      (rowClick)="collaboratorSelected.emit($any($event)['userId'])" />
   `,
 })
 export class WipTmDetailTableComponent {
   private readonly translate = inject(TranslateService);
 
   hours = input.required<WipTmHourDto[]>();
+  collaboratorSelected = output<number>();
+
+  protected readonly aggregates = computed(() => {
+    const byUser = new Map<number, { userId: number; userFullName: string; totalHours: number; totalCost: number; days: Set<string> }>();
+    for (const h of this.hours()) {
+      const entry = byUser.get(h.userId) ?? { userId: h.userId, userFullName: h.userFullName, totalHours: 0, totalCost: 0, days: new Set<string>() };
+      entry.totalHours += h.hoursValidated;
+      entry.totalCost  += h.costAmount;
+      entry.days.add(h.workDate);
+      byUser.set(h.userId, entry);
+    }
+    return [...byUser.values()]
+      .map(e => ({ userId: e.userId, userFullName: e.userFullName, totalHours: e.totalHours, totalCost: e.totalCost, daysWorked: e.days.size }))
+      .sort((a, b) => b.totalCost - a.totalCost);
+  });
 
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'workDate',   label: t('AFFAIRES.WIP.COL_DATE'),         type: 'text' },
-      { key: 'user',       label: t('AFFAIRES.WIP.COL_COLLABORATOR'), type: 'text' },
-      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'),   type: 'text' },
-      { key: 'wbs',        label: t('AFFAIRES.WIP.COL_WBS'),          type: 'text' },
-      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT'),     type: 'text' },
+      { key: 'user',       label: t('AFFAIRES.WIP.COL_COLLABORATOR'), type: 'text', clickable: true },
+      { key: 'daysWorked', label: t('AFFAIRES.WIP.COL_DAYS'),         type: 'text', align: 'right' },
       { key: 'hours',      label: t('AFFAIRES.WIP.COL_HOURS'),        type: 'text', align: 'right' },
       { key: 'cost',       label: t('AFFAIRES.WIP.COL_COST'),         type: 'text', align: 'right' },
     ];
   });
 
   protected readonly rows = computed<TableRow[]>(() =>
-    this.hours().map((h, i) => ({
-      id: i,
-      workDate:   this.fmtDate(h.workDate),
-      user:       h.userFullName,
-      discipline: h.disciplineLabel ?? '—',
-      wbs:        h.wbsName ?? h.wbsId ?? '—',
-      document:   h.document ?? '—',
-      hours:      h.hoursValidated.toFixed(2),
-      cost:       this.fmtAmt(h.costAmount),
+    this.aggregates().map(a => ({
+      id:         a.userId,
+      userId:     a.userId,
+      user:       a.userFullName,
+      daysWorked: a.daysWorked,
+      hours:      a.totalHours.toFixed(2),
+      cost:       this.fmtAmt(a.totalCost),
     })),
   );
 
@@ -56,10 +70,6 @@ export class WipTmDetailTableComponent {
     hoverable: true,
     emptyMessage: this.translate.instant('AFFAIRES.WIP.EMPTY_DETAIL'),
   }));
-
-  private fmtDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  }
 
   private fmtAmt(v: number): string {
     return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);

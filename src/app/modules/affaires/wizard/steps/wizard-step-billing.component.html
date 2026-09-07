@@ -17,33 +17,19 @@
       </div>
 
       @switch (draft.billingMode) {
-        @case ('AV') {
+        @case ('FORFAIT') {
           <app-wizard-step-av
             [draft]="draft"
             [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-av>
         }
-        @case ('TM') {
+        @case ('REGIE') {
           <app-wizard-step-tm
             [draft]="draft"
             [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-tm>
-        }
-        @case ('CP') {
-          <app-wizard-step-cp
-            [draft]="draft"
-            [locked]="locked"
-            (draftChange)="onSubDraftChange($event)">
-          </app-wizard-step-cp>
-        }
-        @case ('RMB') {
-          <app-wizard-step-rmb
-            [draft]="draft"
-            [locked]="locked"
-            (draftChange)="onSubDraftChange($event)">
-          </app-wizard-step-rmb>
         }
         @case ('LIVRABLE') {
           <app-wizard-step-livrable

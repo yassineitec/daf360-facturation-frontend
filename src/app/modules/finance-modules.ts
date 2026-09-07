@@ -88,6 +88,15 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
     tone: 'tertiary',
     labelKey: 'FACTURATION.layout.NAV.INVOICING',
     descKey: 'HOME.MODULES.INVOICING.DESC',
+    children: [
+      {
+        id: 'billing-approval',
+        route: 'billing/approval',
+        icon: 'fact_check',
+        tone: 'tertiary',
+        labelKey: 'FACTURATION.layout.NAV.BILLING_APPROVAL',
+      },
+    ],
   },
   {
     id: 'payments',

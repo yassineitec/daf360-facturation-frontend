@@ -7,7 +7,7 @@ import {
   MetricCardComponent, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { AffaireService } from './affaire.service';
-import { AffaireFilter, AffaireListItem, STATUT_LABELS, TYPE_LABELS } from './affaire.model';
+import { AffaireFilter, AffaireListItem, STATUT_LABELS } from './affaire.model';
 import { AffairesCardsSectionComponent } from './components/affaires-cards-section.component';
 import { AffairesTableSectionComponent } from './components/affaires-table-section.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
@@ -62,7 +62,6 @@ export class AffairesListComponent implements OnInit {
 
   searchText   = signal('');
   filterStatut = signal('');
-  filterType   = signal('');
   viewMode     = signal<ViewMode>('grid');
 
   /**
@@ -110,7 +109,7 @@ export class AffairesListComponent implements OnInit {
     ];
   });
 
-  /** Statut and type live *inside* the filter panel — never as loose selects next to the search (§1). */
+  /** Statut lives *inside* the filter panel — never as a loose select next to the search (§1). */
   readonly filterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
@@ -121,13 +120,6 @@ export class AffairesListComponent implements OnInit {
         type: 'select',
         placeholder: t('AFFAIRES.LIST.FILTER_ALL'),
         options: Object.keys(STATUT_LABELS).map(k => ({ value: k, label: t(STATUT_LABELS[k]) })),
-      },
-      {
-        name: 'type',
-        label: t('AFFAIRES.LIST.TABLE.HEADERS.TYPE'),
-        type: 'select',
-        placeholder: t('AFFAIRES.LIST.FILTER_ALL'),
-        options: Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label })),
       },
     ];
   });
@@ -148,7 +140,6 @@ export class AffairesListComponent implements OnInit {
       triggerLabel: t('AFFAIRES.LIST.TABLE.FILTERS'),
       initialValues: {
         statut: this.filterStatut() ? [this.filterStatut()] : [],
-        type:   this.filterType()   ? [this.filterType()]   : [],
       },
     };
   });
@@ -202,7 +193,6 @@ export class AffairesListComponent implements OnInit {
       size:     this.pageSize(),
       search:   this.searchText().trim() || null,
       statut:   this.filterStatut()      || null,
-      type:     this.filterType()        || null,
       clientId: this.filterClientId(),
     };
     this.svc.getAffaires(filter).subscribe({
@@ -230,7 +220,6 @@ export class AffairesListComponent implements OnInit {
 
   applyFilters(result: FilterResult): void {
     this.filterStatut.set((result['statut'] as string | null) ?? '');
-    this.filterType.set((result['type'] as string | null) ?? '');
     this.currentPage.set(0);
     this.load();
   }

@@ -1,0 +1,281 @@
+<!-- Shared add-resource form body — rendered either at the top (blind picker, via the
+     header button) or inline right under a worked-hours row (quick-add), never both at
+     once. One template so the two locations can't drift out of sync with each other. -->
+<ng-template #addFormTpl>
+  <div class="flex flex-col gap-3">
+    <daf-select
+      [options]="userOptions()"
+      [config]="userSelectConfig()"
+      [selected]="newUserId() ? [newUserId()!.toString()] : []"
+      (selectedChange)="onUserSelect($event)" />
+
+    @if (newUserId() !== null) {
+      @if (loadingTaux()) {
+        <p class="taux-hint flex items-center gap-1.5">
+          <span class="material-symbols-outlined spin text-[14px]">progress_activity</span>
+          {{ 'AFFAIRES.RESSOURCES.TAUX_LOADING' | translate }}
+        </p>
+      } @else if (suggestedTaux()?.sourceCalcul === 'EMPLOYEE_COSTS') {
+        <div>
+          <p class="taux-hint">
+            {{ 'AFFAIRES.RESSOURCES.TAUX_COST_HINT' | translate }}: {{ suggestedTaux()!.coutReel }} {{ affaire.devise }}
+          </p>
+          <div class="taux-toggle">
+            <button type="button" class="taux-pill" [class.taux-pill--active]="rateSource() === 'EXTERNAL'"
+              (click)="setRateSource('EXTERNAL')">
+              <span class="taux-pill__label">{{ 'AFFAIRES.RESSOURCES.TAUX_EXTERNAL' | translate }}</span>
+              <span class="taux-pill__value">{{ suggestedTaux()!.tauxVente }} {{ affaire.devise }}</span>
+            </button>
+            <button type="button" class="taux-pill" [class.taux-pill--active]="rateSource() === 'INTERNAL'"
+              (click)="setRateSource('INTERNAL')">
+              <span class="taux-pill__label">{{ 'AFFAIRES.RESSOURCES.TAUX_INTERNAL' | translate }}</span>
+              <span class="taux-pill__value">{{ suggestedTaux()!.tauxIntercompany }} {{ affaire.devise }}</span>
+            </button>
+          </div>
+        </div>
+      } @else if (suggestedTaux()?.sourceCalcul === 'AUCUNE_DONNEE') {
+        <p class="taux-unavailable">
+          <span class="material-symbols-outlined">info</span>
+          {{ 'AFFAIRES.RESSOURCES.TAUX_UNAVAILABLE' | translate }}
+        </p>
+      }
+    }
+
+    <div class="grid grid-cols-2 gap-3 max-w-md items-end">
+      <daf-form-field
+        [value]="newRate()"
+        (valueChange)="newRate.set($any($event))"
+        [options]="{ label: ('AFFAIRES.RESSOURCES.RATE' | translate) + ' (' + affaire.devise + ')', type: 'number', fullWidth: true,
+                     hint: ('AFFAIRES.RESSOURCES.RATE_EDITABLE_HINT' | translate) }" />
+      <daf-select
+        [options]="rateTypeOptions()"
+        [config]="rateTypeSelectConfig()"
+        [selected]="[newRateType()]"
+        (selectedChange)="onRateTypeSelect($event)" />
+    </div>
+
+    @if (addingError()) {
+      <p class="form-error">
+        <span class="material-symbols-outlined">error</span>
+        {{ addingError() }}
+      </p>
+    }
+
+    <div class="flex items-center gap-2">
+      <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.RESSOURCES.CONFIRM_ADD' | translate),
+                                iconStart: 'check', loading: submittingAdd(),
+                                disabled: newUserId() === null || newRate() === null || submittingAdd() }"
+        (onClick)="submitAdd()" />
+      <daf-button [options]="{ variant: 'ghost', label: ('AFFAIRES.RESSOURCES.CANCEL' | translate), iconStart: 'close' }"
+        (onClick)="closeAddForm()" />
+    </div>
+  </div>
+</ng-template>
+
+<div class="flex flex-col">
+
+  <div class="res-head">
+    <div>
+      <p class="res-head__title">
+        <span class="material-symbols-outlined">groups</span>
+        {{ 'AFFAIRES.RESSOURCES.TITLE' | translate }}
+      </p>
+      <p class="res-head__sub">{{ 'AFFAIRES.RESSOURCES.EXPLAIN' | translate }}</p>
+    </div>
+    <daf-button
+      [options]="{ variant: 'teal', label: (addFormAnchor() === 'top' ? ('AFFAIRES.RESSOURCES.CANCEL' | translate) : ('AFFAIRES.RESSOURCES.ADD' | translate)),
+                   iconStart: addFormAnchor() === 'top' ? 'close' : 'person_add' }"
+      (onClick)="toggleAddForm()" />
+  </div>
+
+  @if (addFormAnchor() === 'top') {
+    <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }" class="block mb-5">
+      <ng-container *ngTemplateOutlet="addFormTpl" />
+    </daf-card>
+  }
+
+  @if (error()) {
+    <p class="form-error mb-3">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </p>
+  }
+
+  @if (loading()) {
+    <div class="res-loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      {{ 'AFFAIRES.RESSOURCES.LOADING' | translate }}
+    </div>
+  } @else if (ressources().length) {
+    <div class="res-table-wrap">
+      <daf-data-table [columns]="ressourcesColumns()" [rows]="ressourcesRows()" [config]="ressourcesTableConfig()">
+
+        <ng-template dafCell="collaborateur" let-row>
+          <div class="cell-person">
+            <daf-avatar [data]="{ name: row['_raw'].userFullName || row['_raw'].userEmail, subtitle: row['_raw'].userEmail }" size="sm" />
+            <div class="min-w-0">
+              <span class="cell-person__name">{{ row['_raw'].userFullName }}</span>
+              <span class="cell-person__email">{{ row['_raw'].userEmail }}</span>
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template dafCell="rate" let-row>
+          @if (editingId() === row['id']) {
+            <div class="cell-rate-edit">
+              <input type="number" [value]="editRate()" (input)="editRate.set($any($event.target).valueAsNumber)" />
+              <span>{{ row['_raw'].rateCurrency }}</span>
+            </div>
+          } @else {
+            <span class="cell-rate">{{ row['_raw'].rateAmount }} {{ row['_raw'].rateCurrency }}</span>
+          }
+        </ng-template>
+
+        <ng-template dafCell="type" let-row>
+          <span class="cell-type-chip">
+            {{ (row['_raw'].rateType === 'HOURLY' ? 'AFFAIRES.RESSOURCES.RATE_HOURLY' : 'AFFAIRES.RESSOURCES.RATE_DAILY') | translate }}
+          </span>
+        </ng-template>
+
+        <ng-template dafCell="status" let-row>
+          <div class="flex items-center gap-1.5">
+            @if (row['_raw'].isActive) {
+              <daf-badge [label]="'AFFAIRES.RESSOURCES.ACTIVE' | translate" [options]="{ variant: 'success', size: 'sm', dot: true }" />
+            } @else {
+              <daf-badge [label]="'AFFAIRES.RESSOURCES.INACTIVE' | translate" [options]="{ variant: 'neutral', size: 'sm', dot: true }" />
+            }
+            @if (row['_raw'].rateLocked) {
+              <daf-badge [label]="'AFFAIRES.RESSOURCES.LOCKED_HINT' | translate" [options]="{ variant: 'neutral', size: 'sm', icon: 'lock', outline: true }" />
+            }
+          </div>
+        </ng-template>
+
+        <ng-template dafCell="_actions" let-row>
+          @if (row['_raw'].isActive) {
+            @if (editingId() === row['id']) {
+              <div class="action-btns">
+                <button class="act-btn act-btn--green" [disabled]="savingEdit()" (click)="saveEdit(row['_raw'])">
+                  <span class="material-symbols-outlined" [class.spin]="savingEdit()">{{ savingEdit() ? 'progress_activity' : 'check' }}</span>
+                  {{ 'AFFAIRES.RESSOURCES.SAVE' | translate }}
+                </button>
+                <button class="act-btn act-btn--slate" (click)="cancelEdit()">
+                  <span class="material-symbols-outlined">close</span>
+                  {{ 'AFFAIRES.RESSOURCES.CANCEL' | translate }}
+                </button>
+              </div>
+            } @else {
+              <div class="action-btns">
+                @if (!row['_raw'].rateLocked) {
+                  <button class="act-btn act-btn--slate" (click)="startEdit(row['_raw'])">
+                    <span class="material-symbols-outlined">edit</span>
+                    {{ 'AFFAIRES.RESSOURCES.EDIT_RATE' | translate }}
+                  </button>
+                }
+                <button class="act-btn act-btn--red" (click)="deactivate(row['_raw'])">
+                  <span class="material-symbols-outlined">person_remove</span>
+                  {{ 'AFFAIRES.RESSOURCES.DEACTIVATE' | translate }}
+                </button>
+              </div>
+            }
+          }
+        </ng-template>
+
+      </daf-data-table>
+    </div>
+    @if (editingId() !== null && editError()) {
+      <p class="form-error mt-2">
+        <span class="material-symbols-outlined">error</span>
+        {{ editError() }}
+      </p>
+    }
+  } @else {
+    <div class="res-empty">
+      <span class="material-symbols-outlined">group_off</span>
+      <p>{{ 'AFFAIRES.RESSOURCES.EMPTY' | translate }}</p>
+    </div>
+  }
+
+  <!-- ── Real Timesheet hours on this affaire — the source of truth for "who should be
+       a resource here", so adding one doesn't rely on guessing names from memory. Native
+       <table> (not daf-data-table) so the add-form can be spliced in as a real row right
+       under whichever collaborator triggered it. ──────────────────────────────────────── -->
+  <p class="res-section-head">
+    <span class="material-symbols-outlined">schedule</span>
+    {{ 'AFFAIRES.RESSOURCES.WORKED_HOURS_TITLE' | translate }}
+  </p>
+  <p class="res-section-sub">{{ 'AFFAIRES.RESSOURCES.WORKED_HOURS_EXPLAIN' | translate }}</p>
+
+  @if (loadingWorkedHours()) {
+    <div class="res-loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      {{ 'AFFAIRES.RESSOURCES.LOADING' | translate }}
+    </div>
+  } @else if (workedHours().length) {
+    <div class="res-table-wrap">
+      <table class="wh-table">
+        <thead>
+          <tr>
+            <th>{{ 'AFFAIRES.RESSOURCES.COL_NAME' | translate }}</th>
+            <th class="wh-table__th--right">{{ 'AFFAIRES.RESSOURCES.COL_HOURS' | translate }}</th>
+            <th class="wh-table__th--actions"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of workedHours(); track w.email) {
+            <tr>
+              <td>
+                <div class="cell-person">
+                  <daf-avatar [data]="{ name: w.fullName || w.email, subtitle: w.email }" size="sm" />
+                  <div class="min-w-0">
+                    <span class="cell-person__name">{{ w.fullName ?? '—' }}</span>
+                    <span class="cell-person__email">{{ w.email }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="wh-table__td--right">
+                <div class="cell-hours">
+                  <span class="cell-hours__value">{{ w.totalHours }} h</span>
+                  <div class="cell-hours__bar">
+                    <daf-progress-bar [label]="''" [value]="w.totalHours"
+                      [options]="{ max: maxWorkedHours(), variant: 'teal', size: 'xs', showLabel: false, showPercent: false, rounded: true }" />
+                  </div>
+                </div>
+              </td>
+              <td class="wh-table__td--actions">
+                @if (w.isRessource) {
+                  <daf-badge [label]="'AFFAIRES.RESSOURCES.ACTIVE' | translate" [options]="{ variant: 'success', size: 'sm', dot: true }" />
+                } @else if (w.userId === null) {
+                  <span class="cell-unresolved" [title]="'AFFAIRES.RESSOURCES.UNRESOLVED_HINT' | translate">
+                    <span class="material-symbols-outlined">person_search</span>
+                    {{ 'AFFAIRES.RESSOURCES.UNRESOLVED' | translate }}
+                  </span>
+                } @else {
+                  <button class="act-btn" [class.act-btn--green]="addFormAnchor() !== w.email" [class.act-btn--slate]="addFormAnchor() === w.email"
+                    (click)="quickAddFromWorkedHours(w)">
+                    <span class="material-symbols-outlined">{{ addFormAnchor() === w.email ? 'close' : 'person_add' }}</span>
+                    {{ (addFormAnchor() === w.email ? 'AFFAIRES.RESSOURCES.CANCEL' : 'AFFAIRES.RESSOURCES.ADD') | translate }}
+                  </button>
+                }
+              </td>
+            </tr>
+            @if (addFormAnchor() === w.email) {
+              <tr class="wh-inline-row">
+                <td colspan="3">
+                  <div class="wh-inline-form">
+                    <ng-container *ngTemplateOutlet="addFormTpl" />
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="res-empty">
+      <span class="material-symbols-outlined">schedule</span>
+      <p>{{ 'AFFAIRES.RESSOURCES.WORKED_HOURS_EMPTY' | translate }}</p>
+    </div>
+  }
+
+</div>

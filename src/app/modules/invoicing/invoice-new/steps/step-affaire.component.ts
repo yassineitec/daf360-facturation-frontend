@@ -10,12 +10,14 @@ import { InvoiceService } from '../../invoice.service';
 import { AffaireListItem, RafDetailsDto, TsDto } from '../../../affaires/affaire.model';
 import { AffaireService } from '../../../affaires/affaire.service';
 import { SelectComponent } from '@khalilrebhiitec/daf360';
+import { FactListService } from '../../../../core/fact-list.service';
+import { ListValueDto } from '../../../cost/cost.model';
 
 // `LIVRABLE` était absent : le mode existait mais était enregistré sous `JAL`, donc
 // il passait par inadvertance. Maintenant qu'il est persisté sous son propre code, son
 // absence ici rendrait toute affaire « livrables » non facturable. `JAL` reste accepté
 // tant que des affaires antérieures à la migration le portent.
-const VALID_BILLING_MODES = new Set(['AV', 'JAL', 'TM', 'CP', 'RMB', 'LIVRABLE']);
+const VALID_BILLING_MODES = new Set(['FORFAIT', 'REGIE', 'LIVRABLE']);
 
 export interface StepAffaireValue {
   affaireId:   number | null;
@@ -118,18 +120,24 @@ export interface StepAffaireValue {
     </div>
   }
 
-  <!-- Type de facture -->
-  <div class="field">
-    <label>{{ 'INVOICING.STEP_AFFAIRE.TYPE_LABEL' | translate }}</label>
-    <daf-select
-      [options]="typeOptions"
-      [selected]="form.controls['invoiceType'].value ? [form.controls['invoiceType'].value] : []"
-      [config]="typeSelectConfig"
-      (selectedChange)="form.controls['invoiceType'].setValue($event[0] || ''); form.controls['invoiceType'].markAsTouched()" />
-    @if (form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched) {
-      <span class="error-msg">{{ 'INVOICING.STEP_AFFAIRE.TYPE_REQUIRED' | translate }}</span>
-    }
-  </div>
+  <!-- Type de facture (nécessite une affaire sélectionnée : c'est son pays qui détermine
+       quelles valeurs de la liste configurable INVOICE_TYPE proposer) -->
+  @if (selectedAffaire()) {
+    <div class="field">
+      <label>{{ 'INVOICING.STEP_AFFAIRE.TYPE_LABEL' | translate }}</label>
+      <daf-select
+        [options]="invoiceTypeOptions()"
+        [selected]="form.controls['invoiceType'].value ? [form.controls['invoiceType'].value] : []"
+        [config]="typeSelectConfig"
+        (selectedChange)="form.controls['invoiceType'].setValue($event[0] || ''); form.controls['invoiceType'].markAsTouched()" />
+      @if (form.controls['invoiceType'].invalid && form.controls['invoiceType'].touched) {
+        <span class="error-msg">{{ 'INVOICING.STEP_AFFAIRE.TYPE_REQUIRED' | translate }}</span>
+      }
+      @if (invoiceTypeOptions().length === 0) {
+        <span class="error-msg">{{ 'INVOICING.STEP_AFFAIRE.NO_INVOICE_TYPE' | translate }}</span>
+      }
+    </div>
+  }
 
   <!-- TS associé (si affaire sélectionnée) -->
   @if (selectedAffaire() && tsList().length > 0) {
@@ -160,25 +168,17 @@ export interface StepAffaireValue {
   styleUrl: './step.component.scss',
 })
 export class StepAffaireComponent implements OnInit {
-  private readonly invSvc    = inject(InvoiceService);
-  private readonly affSvc    = inject(AffaireService);
-  private readonly route     = inject(ActivatedRoute);
-  private readonly fb        = inject(FormBuilder);
-  private readonly translate = inject(TranslateService);
-
-  readonly typeOptions = [
-    { value: 'ACOMPTE',       label: this.translate.instant('INVOICING.STEP_AFFAIRE.INVOICE_TYPES.ACOMPTE') },
-    { value: 'INTERMEDIAIRE', label: this.translate.instant('INVOICING.STEP_AFFAIRE.INVOICE_TYPES.INTERMEDIAIRE') },
-    { value: 'FINALE',        label: this.translate.instant('INVOICING.STEP_AFFAIRE.INVOICE_TYPES.FINALE') },
-    { value: 'AVOIR',         label: this.translate.instant('INVOICING.STEP_AFFAIRE.INVOICE_TYPES.AVOIR') },
-  ];
+  private readonly invSvc      = inject(InvoiceService);
+  private readonly affSvc      = inject(AffaireService);
+  private readonly route       = inject(ActivatedRoute);
+  private readonly fb          = inject(FormBuilder);
+  private readonly translate   = inject(TranslateService);
+  private readonly factListSvc = inject(FactListService);
 
   readonly billingModeOptions = [
-    { value: 'TM',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.TM')  },
-    { value: 'CP',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.CP')  },
-    { value: 'AV',       label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.AV')       },
+    { value: 'FORFAIT',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.FORFAIT')  },
+    { value: 'REGIE',    label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.REGIE')    },
     { value: 'LIVRABLE', label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.LIVRABLE') },
-    { value: 'RMB',      label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.RMB')      },
   ];
 
   readonly typeSelectConfig    = { placeholder: this.translate.instant('INVOICING.STEP_AFFAIRE.TYPE_SELECT'), multiple: false, searchable: false, fullWidth: true };
@@ -186,6 +186,9 @@ export class StepAffaireComponent implements OnInit {
   readonly tsSelectConfig      = { placeholder: this.translate.instant('INVOICING.STEP_AFFAIRE.TS_NONE'),     multiple: false, searchable: true,  fullWidth: true };
 
   showActions = input<boolean>(true);
+  /** Set when editing an existing draft — pre-selects the affaire and pre-fills the form
+   * instead of starting from the usual empty search. */
+  initialValue = input<StepAffaireValue | null>(null);
   nextStep    = output<StepAffaireValue>();
   cancel      = output<void>();
 
@@ -196,6 +199,7 @@ export class StepAffaireComponent implements OnInit {
   rafDetails      = signal<RafDetailsDto | null>(null);
   rafLoading      = signal(false);
   tsList          = signal<TsDto[]>([]);
+  invoiceTypeOptions = signal<{ value: string; label: string }[]>([]);
 
   private readonly search$ = new Subject<string>();
 
@@ -247,7 +251,25 @@ export class StepAffaireComponent implements OnInit {
       error: () => this.searching.set(false),
     });
 
-    this.preselectFromQuery();
+    const iv = this.initialValue();
+    if (iv?.affaireId) this.preselectForEdit(iv);
+    else this.preselectFromQuery();
+  }
+
+  /** Loads the affaire (same path as a normal selection — RAF, TS list, invoice type
+   * options all load the same way), then patches in the invoice's own saved values. */
+  private preselectForEdit(iv: StepAffaireValue): void {
+    this.affSvc.getAffaire(iv.affaireId!).subscribe({
+      next: a => {
+        this.selectAffaire(a);
+        this.form.patchValue({
+          invoiceType: iv.invoiceType,
+          tsId:        iv.tsId,
+          billingMode: iv.billingMode || this.form.controls['billingMode'].value,
+        });
+      },
+      error: () => { /* affaire introuvable : repli sur la recherche libre */ },
+    });
   }
 
   /**
@@ -303,6 +325,10 @@ export class StepAffaireComponent implements OnInit {
     });
 
     this.affSvc.getTS(a.id).subscribe({ next: r => this.tsList.set(r), error: () => {} });
+
+    this.factListSvc.getListValues('INVOICE_TYPE', a.paysId).subscribe(values => {
+      this.invoiceTypeOptions.set(values.map((v: ListValueDto) => ({ value: v.code, label: v.labelFr })));
+    });
   }
 
   clearAffaire(): void {
@@ -311,6 +337,7 @@ export class StepAffaireComponent implements OnInit {
     this.searchQuery.set('');
     this.searchResults.set([]);
     this.tsList.set([]);
+    this.invoiceTypeOptions.set([]);
     const bmCtrl = this.form.controls['billingMode'];
     bmCtrl.setValue('');
     bmCtrl.clearValidators();

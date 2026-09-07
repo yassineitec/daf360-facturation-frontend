@@ -4,8 +4,6 @@ import { AffaireDetail }         from '../affaire.model';
 import { BillingAvComponent }    from './modes/billing-av.component';
 import { BillingJalComponent }   from './modes/billing-jal.component';
 import { BillingTmComponent }    from './modes/billing-tm.component';
-import { BillingCpComponent }    from './modes/billing-cp.component';
-import { BillingRmbComponent }   from './modes/billing-rmb.component';
 
 /**
  * Onglet « Facturation » de la fiche affaire : un panneau par mode.
@@ -28,28 +26,18 @@ import { BillingRmbComponent }   from './modes/billing-rmb.component';
   imports: [
     TranslatePipe,
     BillingAvComponent, BillingJalComponent, BillingTmComponent,
-    BillingCpComponent, BillingRmbComponent,
   ],
   template: `
 <div class="py-2">
   @switch (affaire.billingMode) {
-    @case ('AV') {
+    @case ('FORFAIT') {
       <app-billing-av [affaire]="affaire" />
     }
     @case ('LIVRABLE') {
       <app-billing-jal [affaire]="affaire" />
     }
-    @case ('JAL') {
-      <app-billing-jal [affaire]="affaire" />
-    }
-    @case ('TM') {
+    @case ('REGIE') {
       <app-billing-tm [affaire]="affaire" />
-    }
-    @case ('CP') {
-      <app-billing-cp [affaire]="affaire" />
-    }
-    @case ('RMB') {
-      <app-billing-rmb [affaire]="affaire" />
     }
     @default {
       <div class="text-sm text-[#64748b] text-center py-6">

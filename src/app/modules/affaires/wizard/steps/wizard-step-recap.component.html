@@ -173,7 +173,7 @@
     </div>
     <div class="recap-table-wrap">
 
-      @if (draft.billingMode === 'AV') {
+      @if (draft.billingMode === 'FORFAIT') {
         <daf-data-table
           [columns]="repartitionsColumns()"
           [rows]="repartitionsRows"
@@ -194,7 +194,7 @@
         </div>
       }
 
-      @if (draft.billingMode === 'TM') {
+      @if (draft.billingMode === 'REGIE') {
         <daf-data-table
           [columns]="ressourcesColumns()"
           [rows]="ressourcesRows"
@@ -202,7 +202,6 @@
 
           <ng-template dafCell="collaborateur" let-row>
             <span class="recap-jalon-label">{{ row['userName'] }}</span>
-            <span class="resource-type-badge">{{ row['resourceType'] === 'INTERNAL' ? ('AFFAIRES.wizard.recap.internal' | translate) : ('AFFAIRES.wizard.recap.external' | translate) }}</span>
           </ng-template>
 
           <ng-template dafCell="rateType" let-row>
@@ -220,34 +219,6 @@
         </daf-data-table>
       }
 
-      @if (draft.billingMode === 'CP') {
-        <div class="cp-summary">
-          <div class="cp-margin-kpi">
-            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">percent</span>
-            <div>
-              <p class="recap-label">{{ 'AFFAIRES.wizard.recap.margin_rate' | translate }}</p>
-              <p class="cp-margin-value">{{ draft.marginRatePct | number:'1.2-2' }} %</p>
-            </div>
-          </div>
-          <p class="recap-label" style="margin-bottom:8px">{{ 'AFFAIRES.wizard.recap.categories_selected' | translate:{ n: draft.eligibleCostCategoryIds.length } }}</p>
-          <div class="badge-wrap">
-            @for (label of costCategoryLabels(); track label) {
-              <span class="mode-badge">{{ label }}</span>
-            }
-          </div>
-        </div>
-      }
-
-      @if (draft.billingMode === 'RMB') {
-        <div class="cp-summary">
-          <p class="recap-label" style="margin-bottom:8px">{{ 'AFFAIRES.wizard.recap.categories_selected' | translate:{ n: draft.eligibleExpenseCategoryIds.length } }}</p>
-          <div class="badge-wrap">
-            @for (label of expenseCategoryLabels(); track label) {
-              <span class="mode-badge">{{ label }}</span>
-            }
-          </div>
-        </div>
-      }
 
     </div>
   </div>
