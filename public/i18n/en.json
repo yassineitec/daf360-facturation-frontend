@@ -37,6 +37,7 @@
         "TREASURY": "Treasury",
         "SUBCONTRACTING": "Subcontracting",
         "COST": "Costs",
+        "COST_LINES": "Cost management",
         "COST_APPROVAL": "Cost Approval",
         "BILLING_APPROVAL": "Billing Approval",
         "EMPLOYEE_COST": "Employee costs",
@@ -1483,8 +1484,6 @@
         "remove": "Remove this resource"
       },
       "cp": {
-        "margin_title": "Contractual margin rate",
-        "margin_sub": "Locked after the first invoice · Formula: Actual cost × (1 + rate/100)",
         "cat_title": "Eligible cost types",
         "cat_sub": "Only costs from the checked categories will be included in the monthly billing calculation.",
         "auto": "Auto",
@@ -2176,7 +2175,6 @@
       "COL_STATUS": "Status",
       "ACTIVE": "Active",
       "INACTIVE": "Inactive",
-      "LOCKED_HINT": "Rate locked — already used for billing",
       "EDIT_RATE": "Edit",
       "SAVE": "Save",
       "DEACTIVATE": "Deactivate",
@@ -3194,7 +3192,8 @@
         "IBAN": "IBAN",
         "NO_IBAN": "Not provided",
         "TAX_ID": "Tax ID",
-        "SEE_FILE": "View file"
+        "SEE_FILE": "View file",
+        "TYPE": "Type"
       },
       "TABLE": {
         "NAME": "Supplier",
@@ -3203,7 +3202,8 @@
         "IBAN": "IBAN",
         "STATUS": "Status",
         "VIEW": "View file",
-        "EMPTY": "No supplier found."
+        "EMPTY": "No supplier found.",
+        "TYPE": "Type"
       },
       "ERROR_PAYS": "Entity not found. Reload the page.",
       "ERROR_LOAD": "Unable to load suppliers."
@@ -3212,26 +3212,21 @@
       "LOADING": "Loading supplier file…",
       "LOAD_ERROR": "Unable to load this supplier.",
       "ACTION_ERROR": "The action could not be completed.",
-      "IBAN_ERROR": "Unable to display the full IBAN.",
       "BACK": "Suppliers",
       "BACK_TO_LIST": "Back to the list",
       "BREADCRUMB_ARIA": "Breadcrumb",
-      "INTERCOMPANY": "Intercompany",
       "INFO": {
         "CODE": "Code",
-        "SUPPLIER_CODE": "Internal code",
         "COUNTRY": "Country",
-        "COUNTRY_ISO": "Country code",
         "CREATED_AT": "Created on",
         "TVA": "VAT number",
-        "TAX_ID": "Tax ID"
+        "TAX_ID": "Tax ID",
+        "TYPE": "Type"
       },
       "BANK_DETAILS": "Bank details",
       "SECURE": "Secure",
       "IBAN_MAIN": "Primary IBAN",
       "NO_IBAN": "No IBAN on record.",
-      "REVEAL": "Reveal IBAN",
-      "HIDE": "Hide",
       "FISCAL": "Tax information",
       "INACTIVE_TITLE": "Supplier deactivated",
       "INACTIVE_MSG": "It no longer appears in the list or in search, and no new spend should be attached to it. Reactivation is not available.",
@@ -3263,7 +3258,7 @@
       "TAX_ID_PLACEHOLDER": "Local tax identifier",
       "IBAN": "IBAN",
       "IBAN_PLACEHOLDER": "FR76 3000 1234 5678…",
-      "IBAN_HINT": "Stored masked. Only a user with the cost-management right can display it in full.",
+      "IBAN_HINT": "Used for bank transfer payments.",
       "BADGE_IBAN": "IBAN provided",
       "REQUIRED": "This field is required.",
       "BACK": "Back",
@@ -3271,7 +3266,9 @@
       "NEXT": "Next",
       "CREATE": "Create supplier",
       "ERROR_PAYS": "Entity not found. Reload the page.",
-      "ERROR_CREATE": "Error while creating the supplier."
+      "ERROR_CREATE": "Error while creating the supplier.",
+      "SUPPLIER_TYPE": "Supplier type",
+      "SUPPLIER_TYPE_SELECT": "Select a type…"
     }
   },
   "ADMIN": {

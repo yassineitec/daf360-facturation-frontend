@@ -37,6 +37,7 @@
         "TREASURY": "Trésorerie",
         "SUBCONTRACTING": "Sous-traitance",
         "COST": "Coûts",
+        "COST_LINES": "Gestion des coûts",
         "COST_APPROVAL": "Approbation Coûts",
         "BILLING_APPROVAL": "Approbation Facturation",
         "EMPLOYEE_COST": "Coûts collaborateurs",
@@ -1483,8 +1484,6 @@
         "remove": "Supprimer cette ressource"
       },
       "cp": {
-        "margin_title": "Taux de marge contractuel",
-        "margin_sub": "Verrouillé après la première facturation · Formule : Coût réel × (1 + taux/100)",
         "cat_title": "Types de coûts éligibles",
         "cat_sub": "Seuls les coûts des catégories cochées seront intégrés dans le calcul mensuel de facturation.",
         "auto": "Auto",
@@ -2176,7 +2175,6 @@
       "COL_STATUS": "Statut",
       "ACTIVE": "Actif",
       "INACTIVE": "Inactif",
-      "LOCKED_HINT": "Taux verrouillé — déjà utilisé pour une facturation",
       "EDIT_RATE": "Modifier",
       "SAVE": "Enregistrer",
       "DEACTIVATE": "Désactiver",
@@ -3194,7 +3192,8 @@
         "IBAN": "IBAN",
         "NO_IBAN": "Non renseigné",
         "TAX_ID": "Identifiant fiscal",
-        "SEE_FILE": "Voir la fiche"
+        "SEE_FILE": "Voir la fiche",
+        "TYPE": "Type"
       },
       "TABLE": {
         "NAME": "Fournisseur",
@@ -3203,7 +3202,8 @@
         "IBAN": "IBAN",
         "STATUS": "Statut",
         "VIEW": "Voir la fiche",
-        "EMPTY": "Aucun fournisseur trouvé."
+        "EMPTY": "Aucun fournisseur trouvé.",
+        "TYPE": "Type"
       },
       "ERROR_PAYS": "Entité introuvable. Rechargez la page.",
       "ERROR_LOAD": "Impossible de charger les fournisseurs."
@@ -3212,26 +3212,21 @@
       "LOADING": "Chargement de la fiche fournisseur…",
       "LOAD_ERROR": "Impossible de charger ce fournisseur.",
       "ACTION_ERROR": "L’action n’a pas pu être effectuée.",
-      "IBAN_ERROR": "Impossible d’afficher l’IBAN complet.",
       "BACK": "Fournisseurs",
       "BACK_TO_LIST": "Retour à la liste",
       "BREADCRUMB_ARIA": "Fil d’ariane",
-      "INTERCOMPANY": "Intragroupe",
       "INFO": {
         "CODE": "Code",
-        "SUPPLIER_CODE": "Code interne",
         "COUNTRY": "Pays",
-        "COUNTRY_ISO": "Code pays",
         "CREATED_AT": "Créé le",
         "TVA": "N° TVA",
-        "TAX_ID": "Identifiant fiscal"
+        "TAX_ID": "Identifiant fiscal",
+        "TYPE": "Type"
       },
       "BANK_DETAILS": "Coordonnées bancaires",
       "SECURE": "Sécurisé",
       "IBAN_MAIN": "IBAN principal",
       "NO_IBAN": "Aucun IBAN enregistré.",
-      "REVEAL": "Révéler l’IBAN",
-      "HIDE": "Masquer",
       "FISCAL": "Informations fiscales",
       "INACTIVE_TITLE": "Fournisseur désactivé",
       "INACTIVE_MSG": "Il n’apparaît plus dans la liste ni dans la recherche, et aucune nouvelle dépense ne devrait lui être rattachée. La réactivation n’est pas disponible.",
@@ -3263,7 +3258,7 @@
       "TAX_ID_PLACEHOLDER": "Matricule fiscal local",
       "IBAN": "IBAN",
       "IBAN_PLACEHOLDER": "FR76 3000 1234 5678…",
-      "IBAN_HINT": "Stocké masqué. Seul un utilisateur disposant du droit de gestion des coûts peut l’afficher en clair.",
+      "IBAN_HINT": "Utilisé pour les paiements par virement bancaire.",
       "BADGE_IBAN": "IBAN renseigné",
       "REQUIRED": "Ce champ est obligatoire.",
       "BACK": "Retour",
@@ -3271,7 +3266,9 @@
       "NEXT": "Suivant",
       "CREATE": "Créer le fournisseur",
       "ERROR_PAYS": "Entité introuvable. Rechargez la page.",
-      "ERROR_CREATE": "Erreur lors de la création du fournisseur."
+      "ERROR_CREATE": "Erreur lors de la création du fournisseur.",
+      "SUPPLIER_TYPE": "Type de fournisseur",
+      "SUPPLIER_TYPE_SELECT": "Sélectionner un type…"
     }
   },
   "ADMIN": {
