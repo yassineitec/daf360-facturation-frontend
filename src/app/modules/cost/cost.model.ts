@@ -347,7 +347,6 @@ export const RATE_COMPUTATION_STATUS_CONFIG: Record<RateComputationStatus, { lab
 export interface SupplierSearchItem {
   id: number;
   name: string;
-  supplierCode: string | null;
   code: string | null;
   paysId: number | null;
 }
