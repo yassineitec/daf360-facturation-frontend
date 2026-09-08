@@ -18,46 +18,20 @@
 
   @if (!isLoading() && !pageError()) {
 
-    <!-- Pays selector (multi-pays only) -->
+    <!-- Sélecteur de pays (multi-pays seulement)
+         Le composant de la lib, à la place d'une liste déroulante écrite à la main :
+         déclencheur, panneau, fond cliquable, champ de recherche et son filtre, soit une
+         quarantaine de lignes de gabarit, six membres de composant et 80 lignes de SCSS
+         — pour reproduire ce que `daf-select` fait avec `searchable: true`. Les drapeaux
+         disparaissent avec : le composant affiche des libellés, et le code ISO reste dans
+         le libellé, donc la recherche le trouve toujours. -->
     @if (paysList().length > 1) {
       <div class="pays-card">
-        <div class="pays-select-wrap">
-          <span class="pays-select-label">{{ 'ADMIN.PAYS.LABEL' | translate }}</span>
-          <div class="pays-select">
-            <button type="button" class="pays-select-trigger" (click)="togglePaysDropdown()">
-              @if (selectedPays()) {
-                <img class="pays-flag" [src]="flagUrl(selectedPays()!.isoCode)" alt="" />
-                <span class="pays-select-value">{{ selectedPays()!.isoCode }} – {{ selectedPays()!.frenchLabel }}</span>
-              }
-              <span class="material-symbols-outlined pays-select-chevron">expand_more</span>
-            </button>
-
-            @if (paysDropdownOpen()) {
-              <div class="pays-dropdown-backdrop" (click)="closePaysDropdown()"></div>
-              <div class="pays-dropdown-panel">
-                <div class="pays-dropdown-search">
-                  <input type="text" [placeholder]="'ADMIN.PAYS.SEARCH' | translate"
-                    [ngModel]="paysSearch()" (ngModelChange)="paysSearch.set($event)" />
-                  <span class="material-symbols-outlined">search</span>
-                </div>
-                <ul class="pays-dropdown-list">
-                  @for (p of filteredPaysList(); track p.id) {
-                    <li class="pays-dropdown-item" [class.active]="paysId() === p.id"
-                      (click)="selectPaysFromDropdown(p.id)">
-                      <img class="pays-flag" [src]="flagUrl(p.isoCode)" alt="" />
-                      <span class="pays-dropdown-item-label">{{ p.isoCode }} – {{ p.frenchLabel }}</span>
-                      @if (paysId() === p.id) {
-                        <span class="material-symbols-outlined pays-check">check</span>
-                      }
-                    </li>
-                  } @empty {
-                    <li class="pays-dropdown-empty">{{ 'ADMIN.PAYS.EMPTY' | translate }}</li>
-                  }
-                </ul>
-              </div>
-            }
-          </div>
-        </div>
+        <daf-select
+          [options]="paysOptions()"
+          [config]="paysSelectConfig()"
+          [selected]="paysId() ? [paysId().toString()] : []"
+          (selectedChange)="onPaysSelected($event)" />
       </div>
     }
 

@@ -50,12 +50,11 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly clientName       = signal('');
   readonly clientCode       = signal('');
   readonly taxId            = signal('');
-  readonly country          = signal('');
+  /** L'identifiant du pays du client (`pays_ref.id`), en chaîne pour le `daf-select`. */
+  readonly countryId        = signal('');
   readonly address          = signal('');
   readonly city             = signal('');
   readonly postalCode       = signal('');
-  readonly phone            = signal('');
-  readonly email            = signal('');
   readonly website          = signal('');
   readonly paymentTermsDays = signal('30');
   readonly notes            = signal('');
@@ -114,28 +113,29 @@ export class ClientFormComponent implements OnInit, OnChanges {
     return { label: this.translate.instant('CLIENTS.FORM.CURRENCY_LABEL'), fullWidth: true };
   });
   /**
-   * Pays du client, alimenté par le référentiel `pays_ref` (`/ref/pays`) — le seul
-   * référentiel de pays de la base ; il n'existe pas de liste configurable « COUNTRY ».
+   * Pays du client, depuis `pays_ref` (`/ref/pays`), qui porte les 194 pays depuis V75.
    *
-   * ⚠️ À ne pas confondre avec `paysId`, qui est l'ENTITÉ ITEC propriétaire du client :
-   * un client français peut très bien appartenir à l'entité tunisienne. Les deux sont
-   * distincts en base (`clients.pays_id` et `clients.country`) et le restent ici : ce
-   * champ n'écrit que `country`.
+   * ⚠️ À ne pas confondre avec `paysId`, l'ENTITÉ ITEC propriétaire du client : un client
+   * français peut très bien appartenir à l'entité tunisienne. Les deux restent distincts
+   * en base (`clients.pays_id` et `clients.country_id`) et ce champ n'écrit que le second.
    *
-   * La valeur stockée est le libellé (et non l'id) parce que la colonne est un
-   * `VARCHAR(100)` : les clients existants portent déjà des libellés, et la liste les
-   * affiche tels quels.
+   * La valeur est désormais l'IDENTIFIANT et non le libellé. La colonne était un
+   * `VARCHAR(100)` de texte libre, et elle portait deux vocabulaires : des noms anglais
+   * venus du seed (`China`, `UAE`) et des libellés français venus d'ici (`Chine`,
+   * `Émirats Arabes Unis`). Même pays, deux orthographes, aucun regroupement fiable —
+   * V76 l'a converti en référence.
+   *
+   * Le repli « ajouter la valeur courante en tête si elle est absente du référentiel »
+   * a disparu avec le texte libre : un identifiant absent de `pays_ref` ne peut pas
+   * exister, la clé étrangère l'interdit.
    */
-  readonly countryOptions = computed<SelectOption[]>(() => {
-    const list = this.paysList().map(p => ({ value: p.frenchLabel, label: p.frenchLabel }));
-    // Un pays déjà enregistré mais absent du référentiel resterait invisible dans la
-    // liste, et l'édition l'effacerait en silence : on l'ajoute en tête.
-    const current = this.country();
-    if (current && !list.some(o => o.value === current)) {
-      list.unshift({ value: current, label: current });
-    }
-    return list;
-  });
+  readonly countryOptions = computed<SelectOption[]>(() =>
+    this.paysList().map(p => ({
+      value: String(p.id),
+      // Libellé ET code ISO : la recherche du composant filtre sur le libellé affiché,
+      // donc « TN » comme « Tunisie » trouvent la Tunisie parmi 194 entrées.
+      label: `${p.frenchLabel} (${p.isoCode})`,
+    })));
 
   readonly countrySelectConfig = computed(() => {
     this.translate.currentLang();
@@ -154,14 +154,6 @@ export class ClientFormComponent implements OnInit, OnChanges {
     const v = this.clientName().trim();
     if (!v) return this.translate.instant('CLIENTS.FORM.REQUIRED');
     if (v.length < 2) return this.translate.instant('CLIENTS.FORM.MIN_LENGTH');
-    return '';
-  });
-
-  readonly emailError = computed(() => {
-    if (!this.touched()) return '';
-    this.translate.currentLang();
-    const v = this.email();
-    if (v && !EMAIL_RE.test(v)) return this.translate.instant('CLIENTS.FORM.EMAIL_INVALID');
     return '';
   });
 
@@ -231,12 +223,10 @@ export class ClientFormComponent implements OnInit, OnChanges {
       this.clientCode.set(c.clientCode ?? '');
       this.selectedSector.set(c.sector ? [c.sector] : []);
       this.taxId.set(c.taxId ?? '');
-      this.country.set(c.country ?? '');
+      this.countryId.set(c.countryId != null ? String(c.countryId) : '');
       this.address.set(c.address ?? '');
       this.city.set(c.city ?? '');
       this.postalCode.set(c.postalCode ?? '');
-      this.phone.set(c.phone ?? '');
-      this.email.set(c.email ?? '');
       this.website.set(c.website ?? '');
       this.paymentTermsDays.set(c.paymentTermsDays != null ? String(c.paymentTermsDays) : '30');
       this.selectedCurrency.set([c.defaultCurrency ?? 'TND']);
@@ -254,7 +244,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
 
   submit(): void {
     this.touched.set(true);
-    if (this.clientNameError() || this.emailError() || this.contactsError() || this.paymentTermsError()
+    if (this.clientNameError() || this.contactsError() || this.paymentTermsError()
         || !this.selectedSector()[0]) return;
 
     this.saving.set(true);
@@ -266,12 +256,10 @@ export class ClientFormComponent implements OnInit, OnChanges {
       clientCode:       this.clientCode().trim()     || null,
       sector:           this.selectedSector()[0]     || null,
       taxId:            this.taxId().trim()           || null,
-      country:          this.country().trim()         || null,
+      countryId:        this.countryId() ? Number(this.countryId()) : null,
       address:          this.address().trim()         || null,
       city:             this.city().trim()            || null,
       postalCode:       this.postalCode().trim()      || null,
-      phone:            this.phone().trim()           || null,
-      email:            this.email().trim()           || null,
       website:          this.website().trim()         || null,
       paymentTermsDays: days !== '' ? Number(days) : null,
       defaultCurrency:  this.selectedCurrency()[0]   || null,

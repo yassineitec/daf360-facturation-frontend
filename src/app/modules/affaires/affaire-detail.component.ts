@@ -108,7 +108,7 @@ const EDITABLE_INVOICE_STATUTS = new Set(['DRAFT', 'RETURNED']);
 const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
   high: 'danger', medium: 'warning', standard: 'neutral',
 };
-
+  
 @Component({
   selector: 'app-affaire-detail',
   imports: [
@@ -117,7 +117,7 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
     GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
-    TsFormComponent, AfaireBillingTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent,
+    TsFormComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,

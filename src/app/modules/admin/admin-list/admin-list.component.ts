@@ -13,7 +13,7 @@ import {
   SectionCardComponent, SectionTitleComponent, CardComponent,
   RadioGroupComponent, RadioGroupConfig, RadioOption,
   ToggleComponent, ToggleOptions,
-  FormFieldComponent, StatusBadgeComponent,
+  FormFieldComponent, StatusBadgeComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
@@ -41,7 +41,7 @@ interface ForexRow {
     CommonModule, FormsModule,
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
-    FormFieldComponent, StatusBadgeComponent, TranslatePipe,
+    FormFieldComponent, StatusBadgeComponent, SelectComponent, TranslatePipe,
     PermissionDirective, FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
   ],
   templateUrl: './admin-list.component.html',
@@ -169,37 +169,47 @@ export class AdminListComponent implements OnInit {
   isLoading = signal(false);
   pageError = signal<string | null>(null);
 
-  // ── Pays / Entité dropdown ───────────────────────────────────────────────
-  paysDropdownOpen = signal(false);
-  paysSearch       = signal('');
+  /* ── Pays / Entité ─────────────────────────────────────────────────────────
+   * `daf-select` avec la recherche, à la place d'une liste déroulante écrite à la main.
+   *
+   * Ce qui a disparu : `paysDropdownOpen`, `paysSearch`, `selectedPays`,
+   * `filteredPaysList`, `togglePaysDropdown`, `closePaysDropdown`,
+   * `selectPaysFromDropdown`, une quarantaine de lignes de gabarit et 80 de SCSS —
+   * dont une réimplémentation du filtre de recherche que le composant fait déjà.
+   *
+   * La recherche du composant porte sur le LIBELLÉ affiché, d'où le code ISO gardé
+   * dedans : « TN » comme « Tunisie » trouvent la Tunisie. C'est ce que le filtre
+   * maison faisait en regardant les deux champs séparément.
+   */
+  readonly paysOptions = computed<SelectOption[]>(() =>
+    this.paysList().map(p => ({
+      value: String(p.id),
+      label: `${p.isoCode} – ${p.frenchLabel}`,
+    })));
 
-  readonly selectedPays = computed(() =>
-    this.paysList().find(p => p.id === this.paysId()) ?? null);
-
-  readonly filteredPaysList = computed(() => {
-    const q = this.paysSearch().trim().toLowerCase();
-    if (!q) return this.paysList();
-    return this.paysList().filter(p =>
-      p.frenchLabel.toLowerCase().includes(q) || p.isoCode.toLowerCase().includes(q));
+  readonly paysSelectConfig = computed(() => {
+    this.translate.currentLang();
+    return {
+      label: this.translate.instant('ADMIN.PAYS.LABEL'),
+      placeholder: this.translate.instant('ADMIN.PAYS.SEARCH'),
+      searchable: true,
+      fullWidth: false,
+    };
   });
 
-  togglePaysDropdown(): void {
-    this.paysDropdownOpen.update(v => !v);
-    if (this.paysDropdownOpen()) this.paysSearch.set('');
+  onPaysSelected(values: string[]): void {
+    const id = Number(values[0]);
+    if (Number.isFinite(id) && id > 0) this.selectPays(id);
   }
 
-  closePaysDropdown(): void {
-    this.paysDropdownOpen.set(false);
-  }
-
-  selectPaysFromDropdown(id: number): void {
-    this.selectPays(id);
-    this.closePaysDropdown();
-  }
-
-  flagUrl(isoCode: string): string {
-    return `https://flagcdn.com/24x18/${isoCode.toLowerCase()}.png`;
-  }
+  /*
+   * `flagUrl` vivait ici : elle construisait une URL vers flagcdn.com pour la vignette
+   * de chaque pays de la liste déroulante maison. Elle disparaît avec elle — `daf-select`
+   * affiche des libellés, pas des images, et plus rien dans l'application ne l'appelait.
+   *
+   * Accessoirement : c'était une requête vers un service externe par ligne de liste.
+   * À onze pays, invisible ; à 194, un mur d'images tierces au premier clic.
+   */
 
   // ── Lists tab ─────────────────────────────────────────────────────────────
   listTypes      = signal<ListTypeDto[]>([]);
