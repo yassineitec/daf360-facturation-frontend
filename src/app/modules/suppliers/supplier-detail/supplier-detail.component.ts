@@ -59,18 +59,14 @@ export class SupplierDetailComponent implements OnInit {
   error       = signal<string | null>(null);
   actionError = signal<string | null>(null);
 
-  ibanRaw         = signal<string | null>(null);
-  isRevealLoading = signal(false);
-  isDeactivating  = signal(false);
-
-  readonly ibanRevealed = computed(() => this.ibanRaw() !== null);
+  isDeactivating = signal(false);
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
   readonly headerSubtitle = computed(() => {
     const s = this.supplier();
     if (!s) return '';
-    return [supplierCode(s), s.paysLabel ?? s.paysCode].filter(Boolean).join(' · ');
+    return [supplierCode(s), s.paysLabel].filter(Boolean).join(' · ');
   });
 
   readonly headerBadges = computed<PageHeaderBadge[]>(() => {
@@ -78,21 +74,11 @@ export class SupplierDetailComponent implements OnInit {
     if (!s) return [];
     this.translate.currentLang();
     const state = supplierState(s);
-
-    const badges: PageHeaderBadge[] = [{
+    return [{
       label:   this.translate.instant(SUPPLIER_STATE_LABEL[state]),
       variant: SUPPLIER_STATE_BADGE[state],
       dot:     true,
     }];
-
-    if (s.isIntercompany) {
-      badges.push({
-        label:   this.translate.instant('SUPPLIERS.DETAIL.INTERCOMPANY'),
-        variant: 'info',
-        icon:    'hub',
-      });
-    }
-    return badges;
   });
 
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
@@ -109,10 +95,10 @@ export class SupplierDetailComponent implements OnInit {
     const s = this.supplier();
     if (!s) return [];
     return [
-      { label: 'SUPPLIERS.DETAIL.INFO.CODE',          value: supplierCode(s) },
-      { label: 'SUPPLIERS.DETAIL.INFO.COUNTRY',       value: s.paysLabel ?? s.paysCode ?? '—' },
-      { label: 'SUPPLIERS.DETAIL.INFO.SUPPLIER_CODE', value: s.supplierCode ?? '—' },
-      { label: 'SUPPLIERS.DETAIL.INFO.CREATED_AT',    value: this.formatDate(s.createdAt) },
+      { label: 'SUPPLIERS.DETAIL.INFO.CODE',       value: supplierCode(s) },
+      { label: 'SUPPLIERS.DETAIL.INFO.COUNTRY',    value: s.paysLabel ?? '—' },
+      { label: 'SUPPLIERS.DETAIL.INFO.TYPE',       value: s.typeLabel ?? '—' },
+      { label: 'SUPPLIERS.DETAIL.INFO.CREATED_AT', value: this.formatDate(s.createdAt) },
     ];
   });
 
@@ -120,17 +106,12 @@ export class SupplierDetailComponent implements OnInit {
     const s = this.supplier();
     if (!s) return [];
     return [
-      { label: 'SUPPLIERS.DETAIL.INFO.TVA',     value: s.numeroTva ?? '—' },
-      { label: 'SUPPLIERS.DETAIL.INFO.TAX_ID',  value: s.taxId ?? '—' },
-      { label: 'SUPPLIERS.DETAIL.INFO.COUNTRY_ISO', value: s.country ?? s.paysCode ?? '—' },
+      { label: 'SUPPLIERS.DETAIL.INFO.TVA',    value: s.numeroTva ?? '—' },
+      { label: 'SUPPLIERS.DETAIL.INFO.TAX_ID', value: s.taxId ?? '—' },
     ];
   });
 
-  /** Ce qui s'affiche dans le bloc bancaire : l'IBAN révélé, sinon le masque. */
-  readonly ibanDisplay = computed(() => {
-    const s = this.supplier();
-    return this.ibanRaw() ?? s?.ibanMasked ?? null;
-  });
+  readonly ibanDisplay = computed(() => this.supplier()?.iban ?? null);
 
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
@@ -156,26 +137,6 @@ export class SupplierDetailComponent implements OnInit {
   }
 
   // ═══ Actions ══════════════════════════════════════════════════════════════
-
-  /**
-   * L'IBAN complet n'est jamais dans la réponse de liste ni dans la fiche (D3-122) :
-   * il faut un appel dédié, sous `FACT_MANAGE_COST`. Masquer à nouveau efface la valeur
-   * côté client plutôt que de la garder cachée dans un signal — un IBAN « masqué » mais
-   * toujours en mémoire est un IBAN divulgué.
-   */
-  revealIban(): void {
-    this.actionError.set(null);
-    this.isRevealLoading.set(true);
-    this.svc.revealIban(this.supplierId).subscribe({
-      next: r => { this.ibanRaw.set(r.iban); this.isRevealLoading.set(false); },
-      error: () => {
-        this.actionError.set(this.translate.instant('SUPPLIERS.DETAIL.IBAN_ERROR'));
-        this.isRevealLoading.set(false);
-      },
-    });
-  }
-
-  hideIban(): void { this.ibanRaw.set(null); }
 
   goBack(): void { this.router.navigate(['..'], { relativeTo: this.route }); }
 

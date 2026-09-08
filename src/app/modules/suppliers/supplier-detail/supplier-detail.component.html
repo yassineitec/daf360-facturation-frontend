@@ -120,22 +120,7 @@
             @if (!ibanDisplay()) {
               <p class="text-body-md text-on-surface-variant">{{ 'SUPPLIERS.DETAIL.NO_IBAN' | translate }}</p>
             } @else {
-              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:1rem">
-                <p class="font-mono text-body-md font-bold text-on-surface" style="flex:1 1 260px; min-width:0">
-                  {{ ibanDisplay() }}
-                </p>
-                <!-- `FACT_MANAGE_COST` : c'est le droit que porte `GET /{id}/reveal-iban`.
-                     Lire la liste des fournisseurs et lire un IBAN complet ne sont pas
-                     le même droit. -->
-                <div *appHasPermission="'FACT_MANAGE_COST'">
-                  <daf-button
-                    [options]="{ variant: 'ghost', size: 'sm',
-                                 loading: isRevealLoading(),
-                                 iconStart: ibanRevealed() ? 'visibility_off' : 'visibility',
-                                 label: (ibanRevealed() ? 'SUPPLIERS.DETAIL.HIDE' : 'SUPPLIERS.DETAIL.REVEAL') | translate }"
-                    (onClick)="ibanRevealed() ? hideIban() : revealIban()" />
-                </div>
-              </div>
+              <p class="font-mono text-body-md font-bold text-on-surface">{{ ibanDisplay() }}</p>
             }
           </div>
         </daf-section-card>
