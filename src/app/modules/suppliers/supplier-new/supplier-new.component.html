@@ -51,14 +51,25 @@
                `<select>` natif obligeait à la parcourir au clavier. -->
           <daf-select
             [options]="paysSelectOptions()"
-            [selected]="paysCode() ? [paysCode()] : []"
-            (selectedChange)="onPaysCodeChange($event[0])"
+            [selected]="selectedPaysValue()"
+            (selectedChange)="onPaysSelect($event)"
             [config]="{
               label: ('SUPPLIERS.NEW.COUNTRY' | translate),
               placeholder: ('SUPPLIERS.NEW.COUNTRY_SELECT' | translate),
               required: true,
               searchable: true,
-              error: touched() && !paysCode() ? ('SUPPLIERS.NEW.REQUIRED' | translate) : undefined
+              error: touched() && !paysId() ? ('SUPPLIERS.NEW.REQUIRED' | translate) : undefined
+            }" />
+
+          <daf-select
+            [options]="typeSelectOptions()"
+            [selected]="typeId() !== null ? [typeId() + '|' + typeLabel()] : []"
+            (selectedChange)="onTypeSelect($event)"
+            [config]="{
+              label: ('SUPPLIERS.NEW.SUPPLIER_TYPE' | translate),
+              placeholder: ('SUPPLIERS.NEW.SUPPLIER_TYPE_SELECT' | translate),
+              required: true,
+              error: touched() && typeId() === null ? ('SUPPLIERS.NEW.REQUIRED' | translate) : undefined
             }" />
 
         </div>
