@@ -41,7 +41,7 @@ export const SUPPLIER_STATE_LABEL: Record<SupplierState, string> = {
 
 /** Le code lisible du fournisseur, avec le repli qu'utilisaient déjà les trois vues. */
 export function supplierCode(s: SupplierDto): string {
-  return s.code ?? s.supplierCode ?? `S-${s.id}`;
+  return s.code ?? `S-${s.id}`;
 }
 
 export function initials(name: string | null | undefined): string {
