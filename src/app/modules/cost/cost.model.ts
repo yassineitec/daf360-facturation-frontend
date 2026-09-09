@@ -374,6 +374,21 @@ export interface SupplierLedgerDto {
   rows: SupplierLedgerRowDto[];
 }
 
+// ── Cost-lines-by-supplier cards (2026-09-09 plan) ──────────────────────────────
+
+/**
+ * `GET /cost-lines/by-supplier` — one row per distinct supplier for this pays, plus one
+ * `supplierId: null` row ("Sans fournisseur") when any cost line has no supplier
+ * attached. Deliberately ALL statuses, not just APPROVED/POSTED like the ledger.
+ */
+export interface SupplierCostSummaryDto {
+  supplierId: number | null;
+  supplierName: string | null;
+  supplierCode: string | null;
+  lineCount: number;
+  totalNetEur: number;
+}
+
 // Derive urgency level from the approval level (L1→BASSE, L2→NORMAL, L3/L4→URGENT)
 export function getUrgencyFromLevel(level: string | null | undefined): {
   label: string; color: string; bg: string;
