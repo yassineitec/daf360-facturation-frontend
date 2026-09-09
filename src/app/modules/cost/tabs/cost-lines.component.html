@@ -17,7 +17,10 @@
   </section>
 
   <!-- Search + status filter + view toggle. The status filter re-fetches (the endpoint
-       takes it); the search is a projection of the loaded page. -->
+       takes it); the search is a projection of the loaded page. In 'supplier' mode the
+       by-supplier aggregation endpoint takes no status param and nothing re-triggers its
+       load on statusFilter changes, so the filter would sit there doing nothing -- hide
+       it there rather than leave a dead control. -->
   <daf-search-toolbar
     [placeholder]="'COST.LINES.SEARCH_PLACEHOLDER' | translate"
     [value]="searchText()"
@@ -25,6 +28,7 @@
     (valueChange)="searchText.set($event)"
     [filterFields]="filterFields()"
     [filterConfig]="filterConfig()"
+    [showFilter]="viewMode() !== 'supplier'"
     (filterApply)="applyFilters($event)"
     [views]="viewOptions()"
     [view]="viewMode()"

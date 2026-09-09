@@ -44,9 +44,13 @@ export class CostLinesComponent implements OnInit {
   viewMode     = signal<ViewMode>('grid');
 
   /** "By supplier" cards view (2026-09-09 plan) -- loaded lazily, the first time the
-   *  toggle switches to 'supplier', not on every ngOnInit. */
+   *  toggle switches to 'supplier', not on every ngOnInit. `supplierSummariesLoaded`
+   *  (not `.length === 0`) is what gates re-fetching -- mirrors step-lines.component.ts's
+   *  own categoriesLoaded pattern, so a pays with genuinely zero cost lines for any
+   *  supplier doesn't re-fetch every time the toggle switches back to 'supplier'. */
   supplierSummaries        = signal<SupplierCostSummaryDto[]>([]);
   supplierSummariesLoading = signal(false);
+  supplierSummariesLoaded  = signal(false);
 
   isLoading   = signal(false);
   serverError = signal<string | null>(null);
@@ -190,7 +194,7 @@ export class CostLinesComponent implements OnInit {
    *  'supplier' -- not on every ngOnInit, since the flat grid/list views never need it. */
   setViewMode(mode: ViewMode): void {
     this.viewMode.set(mode);
-    if (mode === 'supplier' && this.supplierSummaries().length === 0 && !this.supplierSummariesLoading()) {
+    if (mode === 'supplier' && !this.supplierSummariesLoaded() && !this.supplierSummariesLoading()) {
       this.loadSupplierSummaries();
     }
   }
@@ -202,8 +206,12 @@ export class CostLinesComponent implements OnInit {
       next: rows => {
         this.supplierSummaries.set(rows);
         this.supplierSummariesLoading.set(false);
+        this.supplierSummariesLoaded.set(true);
       },
-      error: () => this.supplierSummariesLoading.set(false),
+      error: () => {
+        this.supplierSummariesLoading.set(false);
+        this.supplierSummariesLoaded.set(true);
+      },
     });
   }
 
