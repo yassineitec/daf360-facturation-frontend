@@ -94,3 +94,12 @@ export function initials(text: string | null | undefined): string {
   if (!text) return '—';
   return text.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 }
+
+/**
+ * Cost-line detail page, Tab 1 (approval history). Colours for each decision are
+ * literal Tailwind classes directly in the template's `@switch` (not a variant map
+ * here) — see cost-line-detail.component.html's `decision` cell.
+ */
+export function decisionKey(decision: string): string {
+  return `COST.DETAIL.APPROVALS.DECISION_${decision}`;
+}

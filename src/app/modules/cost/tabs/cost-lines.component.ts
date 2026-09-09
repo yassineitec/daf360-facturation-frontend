@@ -6,13 +6,14 @@ import {
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { CostService } from '../cost.service';
-import { COST_STATUS_CONFIG, CostCategoryDto, CostLineDto } from '../cost.model';
+import { COST_STATUS_CONFIG, CostCategoryDto, CostLineDto, SupplierCostSummaryDto } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import { statusKey } from '../cost-display';
 import { CostLinesCardsSectionComponent } from './cost-lines-cards-section.component';
 import { CostLinesTableSectionComponent } from './cost-lines-table-section.component';
+import { CostSupplierCardsSectionComponent } from './cost-supplier-cards-section.component';
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'grid' | 'list' | 'supplier';
 
 @Component({
   selector: 'app-cost-lines',
@@ -20,6 +21,7 @@ type ViewMode = 'grid' | 'list';
   imports: [
     TranslatePipe, ButtonComponent, MetricCardComponent, PaginationComponent,
     SearchToolbarComponent, CostLinesCardsSectionComponent, CostLinesTableSectionComponent,
+    CostSupplierCardsSectionComponent,
   ],
   host: { class: 'block' },
   templateUrl: './cost-lines.component.html',
@@ -40,6 +42,15 @@ export class CostLinesComponent implements OnInit {
   statusFilter = signal('');
   searchText   = signal('');
   viewMode     = signal<ViewMode>('grid');
+
+  /** "By supplier" cards view (2026-09-09 plan) -- loaded lazily, the first time the
+   *  toggle switches to 'supplier', not on every ngOnInit. `supplierSummariesLoaded`
+   *  (not `.length === 0`) is what gates re-fetching -- mirrors step-lines.component.ts's
+   *  own categoriesLoaded pattern, so a pays with genuinely zero cost lines for any
+   *  supplier doesn't re-fetch every time the toggle switches back to 'supplier'. */
+  supplierSummaries        = signal<SupplierCostSummaryDto[]>([]);
+  supplierSummariesLoading = signal(false);
+  supplierSummariesLoaded  = signal(false);
 
   isLoading   = signal(false);
   serverError = signal<string | null>(null);
@@ -83,8 +94,9 @@ export class CostLinesComponent implements OnInit {
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
     this.translate.currentLang();
     return [
-      { id: 'grid', icon: 'grid_view',  tooltip: this.translate.instant('COST.LINES.VIEW_GRID') },
-      { id: 'list', icon: 'table_rows', tooltip: this.translate.instant('COST.LINES.VIEW_LIST') },
+      { id: 'grid',     icon: 'grid_view',  tooltip: this.translate.instant('COST.LINES.VIEW_GRID') },
+      { id: 'list',     icon: 'table_rows', tooltip: this.translate.instant('COST.LINES.VIEW_LIST') },
+      { id: 'supplier', icon: 'store',      tooltip: this.translate.instant('COST.LINES.VIEW_SUPPLIER') },
     ];
   });
 
@@ -177,6 +189,37 @@ export class CostLinesComponent implements OnInit {
 
   openCreate(): void { this.router.navigate(['new'], { relativeTo: this.route }); }
   openEdit(line: CostLineDto): void { this.router.navigate([line.id, 'edit'], { relativeTo: this.route }); }
+
+  /** Lazily loads the by-supplier aggregation the first time the toggle switches to
+   *  'supplier' -- not on every ngOnInit, since the flat grid/list views never need it. */
+  setViewMode(mode: ViewMode): void {
+    this.viewMode.set(mode);
+    if (mode === 'supplier' && !this.supplierSummariesLoaded() && !this.supplierSummariesLoading()) {
+      this.loadSupplierSummaries();
+    }
+  }
+
+  private loadSupplierSummaries(): void {
+    if (!this.paysId()) return;
+    this.supplierSummariesLoading.set(true);
+    this.svc.getCostLinesBySupplier(this.paysId()).subscribe({
+      next: rows => {
+        this.supplierSummaries.set(rows);
+        this.supplierSummariesLoading.set(false);
+        this.supplierSummariesLoaded.set(true);
+      },
+      error: () => {
+        this.supplierSummariesLoading.set(false);
+        this.supplierSummariesLoaded.set(true);
+      },
+    });
+  }
+
+  /** Navigates to the dual/triple-mode detail page. `null` means the "Sans
+   *  fournisseur" pseudo-card, routed to the literal `supplier/none` path. */
+  openSupplierCard(supplierId: number | null): void {
+    this.router.navigate(['supplier', supplierId ?? 'none'], { relativeTo: this.route });
+  }
 
   submitLine(line: CostLineDto): void {
     this.actionError.set(null);

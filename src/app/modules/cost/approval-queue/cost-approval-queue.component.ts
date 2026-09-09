@@ -303,6 +303,15 @@ export class CostApprovalQueueComponent implements OnInit {
   onDecide(event: { item: ApprovalItem; decision: ApprovalDecision }): void {
     const { item, decision } = event;
 
+    // Additive: navigates to the new read-only detail page instead of opening the
+    // decision modal. The existing approve/return/reject flow below is untouched --
+    // this mirrors the existing 'candidate' branch for hiring items, which likewise
+    // window.open()s instead of opening a modal.
+    if (decision === 'view' && item.kind === 'cost') {
+      this.router.navigate(['..', item.id], { relativeTo: this.route });
+      return;
+    }
+
     if (item.kind === 'hiring') {
       if (decision === 'candidate') {
         window.open(`/rh/candidates/${item.hiring!.candidateId}`, '_blank', 'noopener');

@@ -113,6 +113,14 @@
                   (onClick)="openDisputeModal()" />
               }
 
+              @if (canEmitCreditNote()) {
+                <daf-button
+                  style="flex:1 1 45%"
+                  [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'receipt_long',
+                               label: 'INVOICING.LIFECYCLE.ACTIONS.EMIT_CREDIT' | translate }"
+                  (onClick)="showCreditNote.set(true)" />
+              }
+
               <daf-button
                 style="flex:1 1 45%"
                 [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'business_center',

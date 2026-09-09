@@ -96,12 +96,25 @@ export class CreditNoteModalComponent {
   submit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
-    this.saving.set(true);
     this.serverError.set(null);
     const v = this.form.getRawValue();
+
+    // The backend has no partial-credit-note support yet: CreateCreditNoteRequest has no
+    // amount field, and an empty `lines` list always credits the ORIGINAL invoice's lines
+    // in full (see InvoiceService.createCreditNote). Silently accepting a smaller amount
+    // here would issue a full-amount avoir without telling anyone — so until that's
+    // implemented, a partial amount is refused client-side instead of ignored server-side.
+    if (v.montantTtc != null && Math.abs(v.montantTtc - this.invoice().montantTtc) > 0.01) {
+      this.serverError.set(
+        'Les avoirs partiels ne sont pas encore pris en charge : laissez ce champ vide, ' +
+        'ou saisissez le montant total de la facture.');
+      return;
+    }
+
+    this.saving.set(true);
     this.svc.createCreditNote(this.invoice().id, {
-      reasonCode: v.reasonCode!,
-      reasonText: v.reasonText?.trim() || null,
+      creditNoteReason: v.reasonCode!,
+      creditNoteReasonFree: v.reasonText?.trim() || null,
       montantTtc: v.montantTtc ?? null,
     }).subscribe({
       next:  () => { this.saving.set(false); this.closed.emit(true); },

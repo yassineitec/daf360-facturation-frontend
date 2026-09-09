@@ -82,16 +82,16 @@ export class SuppliersCardsSectionComponent {
           // n'ait déjà dans son nom.
           metadata: {
             title:       s.name,
-            subtitle:    [supplierCode(s), s.paysLabel ?? s.paysCode].filter(Boolean).join(' · '),
+            subtitle:    [supplierCode(s), s.paysLabel].filter(Boolean).join(' · '),
             status:      SUPPLIER_STATE_ENTITY[state],
             statusLabel: t(SUPPLIER_STATE_LABEL[state]),
           },
           metricsColumns: 2,
           metrics: [
-            { label: t('SUPPLIERS.LIST.CARD.COUNTRY'), value: s.paysLabel ?? s.paysCode ?? '—' },
+            { label: t('SUPPLIERS.LIST.CARD.COUNTRY'), value: s.paysLabel ?? '—' },
+            { label: t('SUPPLIERS.LIST.CARD.TYPE'),    value: s.typeLabel ?? '—' },
             { label: t('SUPPLIERS.LIST.CARD.TVA'),     value: s.numeroTva ?? '—' },
-            { label: t('SUPPLIERS.LIST.CARD.IBAN'),    value: s.ibanMasked ?? t('SUPPLIERS.LIST.CARD.NO_IBAN') },
-            { label: t('SUPPLIERS.LIST.CARD.TAX_ID'),  value: s.taxId ?? '—' },
+            { label: t('SUPPLIERS.LIST.CARD.IBAN'),    value: s.iban ?? t('SUPPLIERS.LIST.CARD.NO_IBAN') },
           ],
           viewLabel: t('SUPPLIERS.LIST.CARD.SEE_FILE'),
         } satisfies EntityCardOptions,

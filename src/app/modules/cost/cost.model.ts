@@ -347,9 +347,46 @@ export const RATE_COMPUTATION_STATUS_CONFIG: Record<RateComputationStatus, { lab
 export interface SupplierSearchItem {
   id: number;
   name: string;
-  supplierCode: string | null;
   code: string | null;
   paysId: number | null;
+}
+
+// ── Supplier "Règlement" ledger (cost-line detail page, Tab 2) ─────────────────
+
+export interface SupplierSummaryDto {
+  id: number;
+  name: string | null;
+  code: string | null;
+}
+
+export interface SupplierLedgerRowDto {
+  date: string;                 // ISO LocalDate, e.g. "2026-01-10"
+  label: string | null;
+  debit: number | null;
+  credit: number | null;
+  soldeDebiteur: number | null;
+  soldeCrediteur: number | null;
+  costLineId: number;
+}
+
+export interface SupplierLedgerDto {
+  supplier: SupplierSummaryDto | null;   // null when the cost line has no supplier attached
+  rows: SupplierLedgerRowDto[];
+}
+
+// ── Cost-lines-by-supplier cards (2026-09-09 plan) ──────────────────────────────
+
+/**
+ * `GET /cost-lines/by-supplier` — one row per distinct supplier for this pays, plus one
+ * `supplierId: null` row ("Sans fournisseur") when any cost line has no supplier
+ * attached. Deliberately ALL statuses, not just APPROVED/POSTED like the ledger.
+ */
+export interface SupplierCostSummaryDto {
+  supplierId: number | null;
+  supplierName: string | null;
+  supplierCode: string | null;
+  lineCount: number;
+  totalNetEur: number;
 }
 
 // Derive urgency level from the approval level (L1→BASSE, L2→NORMAL, L3/L4→URGENT)

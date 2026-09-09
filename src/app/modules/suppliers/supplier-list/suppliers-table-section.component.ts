@@ -56,6 +56,7 @@ export class SuppliersTableSectionComponent {
     return [
       { key: 'supplier', label: t('SUPPLIERS.LIST.TABLE.NAME'),    type: 'avatar' },
       { key: 'pays',     label: t('SUPPLIERS.LIST.TABLE.COUNTRY'), type: 'text'   },
+      { key: 'type',     label: t('SUPPLIERS.LIST.TABLE.TYPE'),    type: 'text'   },
       { key: 'tva',      label: t('SUPPLIERS.LIST.TABLE.TVA'),     type: 'text'   },
       { key: 'bank',     label: t('SUPPLIERS.LIST.TABLE.IBAN'),    type: 'custom' },
       { key: 'statut',   label: t('SUPPLIERS.LIST.TABLE.STATUS'),  type: 'badge'  },
@@ -80,7 +81,8 @@ export class SuppliersTableSectionComponent {
           initials: initials(s.name),
           subtitle: supplierCode(s),
         } satisfies AvatarCell,
-        pays: s.paysLabel ?? s.paysCode ?? '—',
+        pays: s.paysLabel ?? '—',
+        type: s.typeLabel ?? '—',
         tva:  s.numeroTva ?? '—',
         statut: {
           label:   t(SUPPLIER_STATE_LABEL[state]),
@@ -88,7 +90,7 @@ export class SuppliersTableSectionComponent {
         } satisfies BadgeCell,
 
         // Rendue par la cellule projetée ci-dessus.
-        _iban: s.ibanMasked ?? '',
+        _iban: s.iban ?? '',
         _raw:  s,
       };
     });
