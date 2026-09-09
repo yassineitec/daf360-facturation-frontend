@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import {
   ButtonComponent, DafCellDirective, DataTableComponent,
   MetricCardComponent, PageComponent, PageHeaderComponent, SectionCardComponent,
@@ -14,14 +14,16 @@ import type {
 
 import { CostService } from '../cost.service';
 import { AffaireService } from '../../affaires/affaire.service';
+import { ClientService } from '../../clients/client.service';
 import type { UserRefDto } from '../../affaires/affaire.model';
-import { CostCategoryDto, CostLineDto, SupplierLedgerDto } from '../cost.model';
+import { CostCategoryDto, CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../cost.model';
 import {
   APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit,
   decisionKey, formatDate, statusKey,
 } from '../cost-display';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -34,19 +36,41 @@ interface KpiTile {
 }
 
 /**
- * Fiche en lecture seule d'une ligne de coût — `/finance/cost/:id`.
+ * Les trois modes de cette page, portés par `route.data.mode` (pas par un test sur la
+ * forme du paramètre) — voir cost.routes.ts pour la répartition des trois routes.
+ */
+type DetailMode = 'line' | 'supplier' | 'unassigned';
+
+/**
+ * Tab 1's supplier/unassigned line list uses a fixed, generous page size instead of a
+ * second, independent pagination control — the live dev DB has 6 suppliers and 1 cost
+ * line total as of this writing, so a real pagination UI here is premature. Flagged as
+ * a scaling caveat, exactly like the by-supplier aggregation endpoint's own lack of
+ * pagination (see docs/superpowers/plans/2026-09-09-cost-lines-by-supplier.md).
+ */
+const SUPPLIER_MODE_PAGE_SIZE = 200;
+
+/**
+ * Fiche en lecture seule d'une ligne de coût — OU, depuis le 2026-09-09, d'un
+ * fournisseur (`/finance/cost/supplier/:supplierId`) ou du panier "Sans fournisseur"
+ * (`/finance/cost/supplier/none`). Trois modes, un seul composant :
  *
- * Distincte de `/finance/cost/:id/edit` (le formulaire) et de la modale de décision
- * de la file d'approbation (approve/return/reject, qui reste inchangée) : cette page
- * est un arrêt optionnel supplémentaire avant la décision, pas un remplacement.
+ *   - `'line'`       : `/finance/cost/:id`               — comportement d'origine,
+ *                        inchangé (Tab 1 : les champs de CETTE ligne + son historique
+ *                        d'approbation ; Tab 2 : le relevé de compte de SON fournisseur).
+ *   - `'supplier'`    : `/finance/cost/supplier/:supplierId` — Tab 1 : la liste de
+ *                        TOUTES les lignes de ce fournisseur, tout statut confondu (vue
+ *                        de consultation, pas la portée restreinte du relevé) ; Tab 2 :
+ *                        le même relevé que ci-dessus, obtenu directement par
+ *                        `supplierId` au lieu de passer par une ligne de coût.
+ *   - `'unassigned'`  : `/finance/cost/supplier/none`     — Tab 1 : toutes les lignes à
+ *                        `supplier_id IS NULL` ; Tab 2 : l'état vide existant de ce
+ *                        composant pour « aucun fournisseur », sans aucun appel réseau
+ *                        au relevé.
  *
- * Deux onglets :
- *   - « Détails »   : les champs propres de la ligne + son historique d'approbation
- *                      complet (déjà renvoyé par l'API aujourd'hui, affiché nulle part).
- *   - « Règlement » : le relevé de compte du FOURNISSEUR de cette ligne — pas
- *                      seulement cette ligne, tout l'historique validé/comptabilisé
- *                      de ce fournisseur, construit uniquement à partir des
- *                      `cost_lines` existantes (aucune nouvelle table).
+ * Distincte de `/finance/cost/:id/edit` (le formulaire) et de la modale de décision de
+ * la file d'approbation (approve/return/reject, qui reste inchangée) : cette page est un
+ * arrêt optionnel supplémentaire avant la décision, pas un remplacement.
  *
  * Squelette identique à `recouvrement-detail.component.ts` (UI-PLAYBOOK) : deux
  * colonnes en **flex inline**, jamais `grid` ni classes de point de rupture.
@@ -58,6 +82,7 @@ interface KpiTile {
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent,
     DataTableComponent, DafCellDirective,
+    CostLinesTableSectionComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -66,19 +91,38 @@ interface KpiTile {
 export class CostLineDetailComponent implements OnInit {
   private readonly svc        = inject(CostService);
   private readonly affaireSvc = inject(AffaireService);
+  private readonly clientSvc  = inject(ClientService);
   private readonly translate  = inject(TranslateService);
   private readonly currency   = inject(DisplayCurrencyPipe);
   private readonly router     = inject(Router);
   private readonly route      = inject(ActivatedRoute);
 
-  /** Lu sur `paramMap` plutôt que par `input()` lié à la route — voir recouvrement-detail
-   *  pour la raison : ce remote est monté par le routeur du shell. */
-  private readonly costLineId = Number(this.route.snapshot.paramMap.get('id'));
+  /** Set once by `cost.routes.ts`'s `data.mode` on each of the three route entries. */
+  readonly mode: DetailMode = (this.route.snapshot.data['mode'] as DetailMode) ?? 'line';
 
-  costLine  = signal<CostLineDto | null>(null);
-  ledger    = signal<SupplierLedgerDto | null>(null);
-  allUsers  = signal<UserRefDto[]>([]);
+  /** Lu sur `paramMap` plutôt que par `input()` lié à la route — voir recouvrement-detail
+   *  pour la raison : ce remote est monté par le routeur du shell. Only meaningful in
+   *  'line' mode; NaN in the other two (no 'id' param on those routes). */
+  private readonly costLineId = Number(this.route.snapshot.paramMap.get('id'));
+  /** Only meaningful in 'supplier' mode; NaN in the other two (no such param there). */
+  private readonly supplierIdParam = Number(this.route.snapshot.paramMap.get('supplierId'));
+
+  costLine   = signal<CostLineDto | null>(null);
+  ledger     = signal<SupplierLedgerDto | null>(null);
+  allUsers   = signal<UserRefDto[]>([]);
   categories = signal<CostCategoryDto[]>([]);
+
+  /** 'supplier'/'unassigned' modes only: the reused Tab-1 line list, and the matching
+   *  row from the by-supplier aggregation (authoritative count/total for the header and
+   *  the KPI tiles — the loaded line PAGE alone can't be trusted for that once a
+   *  supplier has more than SUPPLIER_MODE_PAGE_SIZE lines). */
+  supplierLines   = signal<CostLineDto[]>([]);
+  supplierSummary = signal<SupplierCostSummaryDto | null>(null);
+
+  /** 'supplier'/'unassigned' modes only: resolved via ClientService.getMyPays(), same
+   *  mechanism cost-lines.component.ts uses — unlike 'line' mode, there's no cost line
+   *  to read paysId off of before anything has loaded. */
+  paysId = signal<number>(0);
 
   loading = signal(true);
   error   = signal<string | null>(null);
@@ -88,13 +132,16 @@ export class CostLineDetailComponent implements OnInit {
 
   // ═══ Résolution catégorie / approbateur ═══════════════════════════════════
 
-  /** Même mécanisme que cost-lines.component.ts — ne pas en inventer un second. */
+  /** Même mécanisme que cost-lines.component.ts — ne pas en inventer un second.
+   *  Arrow-function property (not a method): 'supplier'/'unassigned' modes pass this
+   *  as a bound [categoryFor] input to the reused CostLinesTableSectionComponent, and a
+   *  plain method reference would lose its `this` binding when called from there. */
   readonly categoryMap = computed(() => new Map(this.categories().map(c => [c.id, c.labelFr])));
 
-  categoryFor(id: number | null): string {
+  readonly categoryFor = (id: number | null): string => {
     if (id == null) return '—';
     return this.categoryMap().get(id) ?? this.translate.instant('COST.LINES.CAT_FALLBACK', { id });
-  }
+  };
 
   /** Même mécanisme que affaire-ressources-tab.component.ts — ne pas en inventer un second. */
   approverName(id: number | null): string {
@@ -102,22 +149,41 @@ export class CostLineDetailComponent implements OnInit {
     return this.allUsers().find(u => u.id === id)?.fullName ?? '—';
   }
 
-  readonly hasSupplier   = computed(() => this.costLine()?.supplierId != null);
-  readonly supplierName  = computed(() =>
+  readonly hasSupplier = computed(() => {
+    if (this.mode === 'unassigned') return false;
+    if (this.mode === 'supplier')   return true;
+    return this.costLine()?.supplierId != null;
+  });
+
+  readonly supplierName = computed(() =>
     this.ledger()?.supplier?.name ?? this.costLine()?.supplierNameFree ?? null);
-  readonly canEditLine   = computed(() => {
+
+  readonly canEditLine = computed(() => {
     const cl = this.costLine();
     return cl ? canEdit(cl) : false;
   });
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
+  readonly headerTitle = computed(() => {
+    this.translate.currentLang();
+    if (this.mode === 'unassigned') return this.translate.instant('COST.DETAIL.UNASSIGNED_TITLE');
+    if (this.mode === 'supplier')   return this.supplierName() ?? this.translate.instant('COST.DETAIL.UNNAMED');
+    return this.costLine()?.reference ?? this.translate.instant('COST.DETAIL.UNNAMED');
+  });
+
   readonly headerSubtitle = computed(() => {
+    if (this.mode !== 'line') {
+      this.translate.currentLang();
+      const count = this.supplierSummary()?.lineCount ?? this.supplierLines().length;
+      return this.translate.instant('COST.DETAIL.SUPPLIER.SUBTITLE', { count });
+    }
     const cl = this.costLine();
     return cl ? (this.supplierName() ?? cl.label ?? '') : '';
   });
 
   readonly headerBadges = computed<PageHeaderBadge[]>(() => {
+    if (this.mode !== 'line') return [];
     const cl = this.costLine();
     if (!cl) return [];
     this.translate.currentLang();
@@ -137,14 +203,17 @@ export class CostLineDetailComponent implements OnInit {
 
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
-    const cl = this.costLine();
     return [
-      { label: this.translate.instant('COST.DETAIL.BACK'), link: ['..'] },
-      { label: cl?.reference ?? `COUT-${this.costLineId}` },
+      // Absolute, not relative ['..']: 'supplier'/'unassigned' modes are TWO segments
+      // deep (cost/supplier/...), where ['..'] would resolve to the non-existent
+      // cost/supplier route instead of the list page. Also correct, unchanged, for
+      // 'line' mode (one segment deep) -- see this plan's "Decisions locked in" #8.
+      { label: this.translate.instant('COST.DETAIL.BACK'), link: ['/finance/cost'] },
+      { label: this.headerTitle() },
     ];
   });
 
-  // ═══ Colonne identité ═════════════════════════════════════════════════════
+  // ═══ Colonne identité (mode 'line' uniquement) ═══════════════════════════
 
   readonly identityLeadFields = computed<DetailField[]>(() => {
     const cl = this.costLine();
@@ -179,9 +248,22 @@ export class CostLineDetailComponent implements OnInit {
   // ═══ Indicateurs ══════════════════════════════════════════════════════════
 
   readonly kpiTiles = computed<KpiTile[]>(() => {
+    this.translate.currentLang();
+    if (this.mode !== 'line') {
+      const s = this.supplierSummary();
+      return [
+        {
+          label: 'COST.DETAIL.KPI.LINE_COUNT', value: String(s?.lineCount ?? 0),
+          delta: null, options: { icon: 'receipt_long', iconColor: 'text-primary', iconBg: 'bg-primary/10' },
+        },
+        {
+          label: 'COST.DETAIL.KPI.EUR', value: this.currency.transform(s?.totalNetEur ?? 0, 'EUR'),
+          delta: null, options: { icon: 'euro', iconColor: 'text-on-surface-variant', iconBg: 'bg-surface-container' },
+        },
+      ];
+    }
     const cl = this.costLine();
     if (!cl) return [];
-    this.translate.currentLang();
     const cur = cl.currency ?? 'EUR';
     return [
       {
@@ -207,13 +289,17 @@ export class CostLineDetailComponent implements OnInit {
 
   readonly tabs = computed<TabItem[]>(() => {
     this.translate.currentLang();
+    const infoLabel = this.mode === 'line' ? 'COST.DETAIL.TABS.INFO' : 'COST.DETAIL.TABS.LINES';
+    const infoCount = this.mode === 'line'
+      ? (this.costLine()?.approvals.length || null)
+      : (this.supplierSummary()?.lineCount || null);
     return [
-      { id: 'info',      label: this.translate.instant('COST.DETAIL.TABS.INFO'),   count: this.costLine()?.approvals.length || null },
+      { id: 'info',      label: this.translate.instant(infoLabel), count: infoCount },
       { id: 'reglement', label: this.translate.instant('COST.DETAIL.TABS.LEDGER'), count: this.ledger()?.rows.length || null },
     ];
   });
 
-  // ── Tab 1: historique d'approbation ───────────────────────────────────────
+  // ── Tab 1, mode 'line' : historique d'approbation ─────────────────────────
 
   readonly approvalColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -250,7 +336,7 @@ export class CostLineDetailComponent implements OnInit {
     };
   });
 
-  // ── Tab 2: relevé fournisseur ──────────────────────────────────────────────
+  // ── Tab 2 : relevé fournisseur ──────────────────────────────────────────────
 
   readonly ledgerColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -279,9 +365,7 @@ export class CostLineDetailComponent implements OnInit {
   });
 
   /**
-   * SupplierLedgerRowDto carries no currency (see the plan's "Decisions needing
-   * confirmation" #2 — the ledger sums grossAmountLocal across all qualifying lines
-   * regardless of each line's own currency). Plain numeric formatting, deliberately
+   * SupplierLedgerRowDto carries no currency. Plain numeric formatting, deliberately
    * not routed through DisplayCurrencyPipe, which requires a currency code this DTO
    * does not have.
    */
@@ -302,18 +386,48 @@ export class CostLineDetailComponent implements OnInit {
     };
   });
 
+  // ── Tab 1, modes 'supplier'/'unassigned' : liste des lignes ───────────────
+
+  readonly supplierLinesEmptyMessage = computed(() =>
+    this.translate.instant('COST.DETAIL.SUPPLIER.LINES_EMPTY'));
+
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
   ngOnInit(): void {
-    if (!this.costLineId) {
+    if (this.mode === 'line') {
+      if (!this.costLineId) {
+        this.loading.set(false);
+        this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR'));
+        return;
+      }
+      this.loadLine();
+      return;
+    }
+    if (this.mode === 'supplier' && !this.supplierIdParam) {
       this.loading.set(false);
       this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR'));
       return;
     }
-    this.load();
+    // 'supplier' | 'unassigned' -- no single cost line to resolve paysId from, so this
+    // mirrors cost-lines.component.ts's own ngOnInit: resolve the user's pays first.
+    this.clientSvc.getMyPays().subscribe({
+      next: paysId => {
+        if (paysId != null && paysId > 0) {
+          this.paysId.set(paysId);
+          this.loadSupplierMode();
+        } else {
+          this.loading.set(false);
+          this.error.set(this.translate.instant('COST.LINES.NO_PAYS'));
+        }
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set(this.translate.instant('COST.LINES.NO_PAYS_DETERMINE'));
+      },
+    });
   }
 
-  load(): void {
+  loadLine(): void {
     this.loading.set(true);
     this.error.set(null);
     forkJoin({
@@ -335,9 +449,63 @@ export class CostLineDetailComponent implements OnInit {
     });
   }
 
+  loadSupplierMode(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    const paysId = this.paysId();
+    const isUnassigned = this.mode === 'unassigned';
+
+    forkJoin({
+      lines: this.svc.getCostLines({
+        paysId,
+        supplierId: isUnassigned ? null : this.supplierIdParam,
+        noSupplier: isUnassigned,
+        size: SUPPLIER_MODE_PAGE_SIZE,
+      }),
+      // 'unassigned' mode never calls the ledger endpoint at all -- it goes straight to
+      // Tab 2's existing "no supplier" empty state, exactly as single-line mode already
+      // does for a supplier-less cost line (see ledgerConfig()).
+      ledger: isUnassigned
+        ? of<SupplierLedgerDto>({ supplier: null, rows: [] })
+        : this.svc.getLedgerForSupplier(this.supplierIdParam),
+      users:     this.affaireSvc.getUsers(),
+      summaries: this.svc.getCostLinesBySupplier(paysId),
+    }).subscribe({
+      next: ({ lines, ledger, users, summaries }) => {
+        this.supplierLines.set(lines.content);
+        this.ledger.set(ledger);
+        this.allUsers.set(users);
+        this.supplierSummary.set(
+          summaries.find(s => isUnassigned ? s.supplierId == null : s.supplierId === this.supplierIdParam)
+          ?? null,
+        );
+        this.loading.set(false);
+        this.svc.getCategories(paysId).subscribe(cats => this.categories.set(cats));
+      },
+      error: () => {
+        this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR'));
+        this.loading.set(false);
+      },
+    });
+  }
+
   // ═══ Actions ══════════════════════════════════════════════════════════════
 
   goToEdit(): void {
     this.router.navigate(['edit'], { relativeTo: this.route });
+  }
+
+  /** Tab 1, 'supplier'/'unassigned' modes: same click-to-edit-form behaviour the flat
+   *  list page already has for every row, regardless of status -- an absolute path
+   *  since this page can now be reached from routes of different depths. */
+  goToLineEdit(line: CostLineDto): void {
+    this.router.navigate(['/finance/cost', line.id, 'edit']);
+  }
+
+  submitLineFromList(line: CostLineDto): void {
+    this.svc.submitCostLine(line.id).subscribe({
+      next:  () => this.loadSupplierMode(),
+      error: err => this.error.set(err.error?.message ?? this.translate.instant('COST.LINES.SUBMIT_ERROR')),
+    });
   }
 }

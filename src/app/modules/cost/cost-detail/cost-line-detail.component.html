@@ -1,10 +1,12 @@
-<!-- Fiche en lecture seule d'une ligne de coût -- même squelette que la fiche de
+<!-- Fiche en lecture seule -- une ligne de coût ('line'), un fournisseur ('supplier'),
+     ou le panier "Sans fournisseur" ('unassigned'). Même squelette que la fiche de
      recouvrement et la fiche affaire (UI-PLAYBOOK).
 
      Structure, deux colonnes :
-       GAUCHE (30 %, sticky)  le h1 (daf-page-header, size="md"), la carte d'identité,
-                              le bouton "Modifier" en pied de carte.
-       DROITE (70 %)          les 4 indicateurs, puis daf-tabs et ses panneaux.
+       GAUCHE (30 %, sticky)  le h1 (daf-page-header, size="md"), la carte d'identité
+                              (mode 'line') ou le résumé fournisseur (autres modes), le
+                              bouton "Modifier" (mode 'line' uniquement).
+       DROITE (70 %)          les indicateurs, puis daf-tabs et ses panneaux.
 
      ⚠️ FLEX en style inline, jamais de grid ni de classe de point de rupture. -->
 
@@ -18,18 +20,18 @@
     </div>
   }
 
-  @if (costLine(); as cl) {
+  @if (!loading() && !error()) {
     <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
 
       <!-- ══════════════════════════════════════════════════════════════════
-           COLONNE GAUCHE (30 %, sticky) — identité de la ligne
+           COLONNE GAUCHE (30 %, sticky) — identité
            ══════════════════════════════════════════════════════════════ -->
       <div style="flex:0 1 30%; min-width:320px">
         <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
 
           <daf-page-header
             size="md"
-            [title]="cl.reference ?? ('COST.DETAIL.UNNAMED' | translate)"
+            [title]="headerTitle()"
             [subtitle]="headerSubtitle()"
             [badges]="headerBadges()"
             [breadcrumbs]="breadcrumbs()"
@@ -37,38 +39,67 @@
 
           <daf-section-card>
 
-            <div class="flex flex-col gap-5 p-6">
-              @for (f of identityLeadFields(); track f.label) {
-                <div class="flex flex-col gap-1">
-                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                    {{ f.label | translate }}
-                  </p>
-                  <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
-                </div>
-              }
-
-              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
-                @for (f of identityGridFields(); track f.label) {
-                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
+            @if (mode === 'line') {
+              <div class="flex flex-col gap-5 p-6">
+                @for (f of identityLeadFields(); track f.label) {
+                  <div class="flex flex-col gap-1">
                     <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
                       {{ f.label | translate }}
                     </p>
                     <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
                   </div>
                 }
-              </div>
-            </div>
 
-            <!-- "Modifier" seulement -- pas de duplication de la modale de décision de
-                 la file d'approbation, qui reste l'endroit où approuver/retourner/rejeter. -->
-            <div *appHasPermission="'FACT_MANAGE_COST'"
-                 class="border-t border-outline-variant/30 bg-surface-container p-6">
-              <daf-button
-                [options]="{ variant: 'primary', fullWidth: true, iconStart: 'edit',
-                             disabled: !canEditLine(),
-                             label: 'COST.DETAIL.ACTIONS.EDIT' | translate }"
-                (onClick)="goToEdit()" />
-            </div>
+                <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+                  @for (f of identityGridFields(); track f.label) {
+                    <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                      <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                        {{ f.label | translate }}
+                      </p>
+                      <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- "Modifier" seulement -- pas de duplication de la modale de décision de
+                   la file d'approbation, qui reste l'endroit où approuver/retourner/rejeter.
+                   N'a de sens qu'en mode 'line' : il n'y a pas de ligne unique à modifier
+                   depuis une vue agrégée par fournisseur. -->
+              <div *appHasPermission="'FACT_MANAGE_COST'"
+                   class="border-t border-outline-variant/30 bg-surface-container p-6">
+                <daf-button
+                  [options]="{ variant: 'primary', fullWidth: true, iconStart: 'edit',
+                               disabled: !canEditLine(),
+                               label: 'COST.DETAIL.ACTIONS.EDIT' | translate }"
+                  (onClick)="goToEdit()" />
+              </div>
+            } @else {
+              <!-- Modes 'supplier'/'unassigned' : résumé du fournisseur (ou du panier
+                   "Sans fournisseur"), pas les champs d'une ligne unique. -->
+              <div class="flex flex-col gap-5 p-6">
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ 'COST.DETAIL.INFO.SUPPLIER' | translate }}
+                  </p>
+                  <p class="text-body-md font-bold text-on-surface">{{ headerTitle() }}</p>
+                </div>
+                @if (mode === 'supplier') {
+                  <div class="flex flex-col gap-1">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'COST.DETAIL.INFO.SUPPLIER_CODE' | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ supplierSummary()?.supplierCode ?? '—' }}</p>
+                  </div>
+                }
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ 'COST.DETAIL.KPI.LINE_COUNT' | translate }}
+                  </p>
+                  <p class="text-body-md font-bold text-on-surface">{{ supplierSummary()?.lineCount ?? 0 }}</p>
+                </div>
+              </div>
+            }
 
           </daf-section-card>
         </div>
@@ -102,51 +133,67 @@
              [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
              class="flex flex-col gap-6">
 
-          <!-- ── Détails : historique d'approbation ───────────────────────── -->
+          <!-- ── Tab 1 ─────────────────────────────────────────────────────── -->
           @if (activeTab() === 'info') {
-            <daf-data-table
-              [columns]="approvalColumns()"
-              [rows]="approvalRows()"
-              [config]="approvalConfig()">
+            @if (mode === 'line') {
+              <daf-data-table
+                [columns]="approvalColumns()"
+                [rows]="approvalRows()"
+                [config]="approvalConfig()">
 
-              <ng-template dafCell="decision" let-row>
-                @switch (row['_decision']) {
-                  @case ('APPROVED') {
-                    <span class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">
-                      <span class="material-symbols-outlined text-[14px]">check_circle</span>
-                      {{ row['_decisionLabel'] }}
-                    </span>
+                <ng-template dafCell="decision" let-row>
+                  @switch (row['_decision']) {
+                    @case ('APPROVED') {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">
+                        <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        {{ row['_decisionLabel'] }}
+                      </span>
+                    }
+                    @case ('AUTO_APPROVED') {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">
+                        <span class="material-symbols-outlined text-[14px]">bolt</span>
+                        {{ row['_decisionLabel'] }}
+                      </span>
+                    }
+                    @case ('RETURNED') {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-bold text-warning">
+                        <span class="material-symbols-outlined text-[14px]">undo</span>
+                        {{ row['_decisionLabel'] }}
+                      </span>
+                    }
+                    @case ('REJECTED') {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-bold text-danger">
+                        <span class="material-symbols-outlined text-[14px]">cancel</span>
+                        {{ row['_decisionLabel'] }}
+                      </span>
+                    }
+                    @default {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-0.5 text-[11px] font-bold text-on-surface-variant">
+                        {{ row['_decisionLabel'] }}
+                      </span>
+                    }
                   }
-                  @case ('AUTO_APPROVED') {
-                    <span class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">
-                      <span class="material-symbols-outlined text-[14px]">bolt</span>
-                      {{ row['_decisionLabel'] }}
-                    </span>
-                  }
-                  @case ('RETURNED') {
-                    <span class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-bold text-warning">
-                      <span class="material-symbols-outlined text-[14px]">undo</span>
-                      {{ row['_decisionLabel'] }}
-                    </span>
-                  }
-                  @case ('REJECTED') {
-                    <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-bold text-danger">
-                      <span class="material-symbols-outlined text-[14px]">cancel</span>
-                      {{ row['_decisionLabel'] }}
-                    </span>
-                  }
-                  @default {
-                    <span class="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-0.5 text-[11px] font-bold text-on-surface-variant">
-                      {{ row['_decisionLabel'] }}
-                    </span>
-                  }
-                }
-              </ng-template>
+                </ng-template>
 
-            </daf-data-table>
+              </daf-data-table>
+            } @else {
+              <!-- Modes 'supplier'/'unassigned' : la liste des lignes de coût, tout
+                   statut confondu -- réutilise le composant table de la page liste
+                   plate plutôt que d'en construire un troisième. Le clic sur une ligne
+                   se comporte exactement comme sur cette page liste : navigation vers le
+                   formulaire d'édition, avec la même contrainte "brouillon uniquement". -->
+              <app-cost-lines-table-section
+                [lines]="supplierLines()"
+                [categoryFor]="categoryFor"
+                [loading]="false"
+                [pageSize]="200"
+                [emptyMessage]="supplierLinesEmptyMessage()"
+                (edit)="goToLineEdit($event)"
+                (submitLine)="submitLineFromList($event)" />
+            }
           }
 
-          <!-- ── Règlement : relevé de compte fournisseur ─────────────────── -->
+          <!-- ── Tab 2 : relevé de compte fournisseur ─────────────────────── -->
           @if (activeTab() === 'reglement') {
             @if (hasSupplier()) {
               <div class="flex items-center gap-2 px-1">
