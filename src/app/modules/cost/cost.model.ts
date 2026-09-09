@@ -351,6 +351,29 @@ export interface SupplierSearchItem {
   paysId: number | null;
 }
 
+// ── Supplier "Règlement" ledger (cost-line detail page, Tab 2) ─────────────────
+
+export interface SupplierSummaryDto {
+  id: number;
+  name: string | null;
+  code: string | null;
+}
+
+export interface SupplierLedgerRowDto {
+  date: string;                 // ISO LocalDate, e.g. "2026-01-10"
+  label: string | null;
+  debit: number | null;
+  credit: number | null;
+  soldeDebiteur: number | null;
+  soldeCrediteur: number | null;
+  costLineId: number;
+}
+
+export interface SupplierLedgerDto {
+  supplier: SupplierSummaryDto | null;   // null when the cost line has no supplier attached
+  rows: SupplierLedgerRowDto[];
+}
+
 // Derive urgency level from the approval level (L1→BASSE, L2→NORMAL, L3/L4→URGENT)
 export function getUrgencyFromLevel(level: string | null | undefined): {
   label: string; color: string; bg: string;
