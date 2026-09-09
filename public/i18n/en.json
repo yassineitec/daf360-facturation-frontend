@@ -2719,6 +2719,11 @@
       "CAT_FALLBACK": "Cat. {{id}}",
       "VIEW_GRID": "Grid view",
       "VIEW_LIST": "List view",
+      "VIEW_SUPPLIER": "Supplier view",
+      "SUPPLIER_CARD_COUNT": "Lines",
+      "SUPPLIER_CARD_TOTAL": "Total EUR",
+      "NO_SUPPLIER_CARD": "No supplier",
+      "SUPPLIER_VIEW_EMPTY": "No supplier has any cost lines.",
       "FILTERS": "Filters",
       "FILTER_APPLY": "Apply",
       "FILTER_CANCEL": "Cancel",
@@ -2731,11 +2736,13 @@
       "BREADCRUMB_ARIA": "Breadcrumb",
       "TABS_ARIA": "Cost line sections",
       "UNNAMED": "Cost line",
+      "UNASSIGNED_TITLE": "No supplier",
       "KPI": {
         "NET": "Net amount",
         "VAT": "VAT",
         "GROSS": "Gross amount",
-        "EUR": "EUR amount"
+        "EUR": "EUR amount",
+        "LINE_COUNT": "Number of lines"
       },
       "INFO": {
         "REFERENCE": "Reference",
@@ -2744,12 +2751,18 @@
         "CURRENCY": "Currency",
         "CATEGORY": "Category",
         "SUPPLIER": "Supplier",
+        "SUPPLIER_CODE": "Supplier code",
         "NO_SUPPLIER": "No supplier",
         "APPROVAL_LEVEL": "Approval level"
       },
       "TABS": {
         "INFO": "Details",
+        "LINES": "Cost lines",
         "LEDGER": "Settlement"
+      },
+      "SUPPLIER": {
+        "SUBTITLE": "{{count}} cost line(s)",
+        "LINES_EMPTY": "No cost lines for this supplier."
       },
       "ACTIONS": {
         "EDIT": "Edit"

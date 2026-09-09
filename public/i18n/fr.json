@@ -2719,6 +2719,11 @@
       "CAT_FALLBACK": "Cat. {{id}}",
       "VIEW_GRID": "Vue grille",
       "VIEW_LIST": "Vue liste",
+      "VIEW_SUPPLIER": "Vue fournisseurs",
+      "SUPPLIER_CARD_COUNT": "Lignes",
+      "SUPPLIER_CARD_TOTAL": "Total EUR",
+      "NO_SUPPLIER_CARD": "Sans fournisseur",
+      "SUPPLIER_VIEW_EMPTY": "Aucun fournisseur avec des lignes de coût.",
       "FILTERS": "Filtres",
       "FILTER_APPLY": "Appliquer",
       "FILTER_CANCEL": "Annuler",
@@ -2731,11 +2736,13 @@
       "BREADCRUMB_ARIA": "Fil d'ariane",
       "TABS_ARIA": "Sections de la ligne de coût",
       "UNNAMED": "Ligne de coût",
+      "UNASSIGNED_TITLE": "Sans fournisseur",
       "KPI": {
         "NET": "Montant HT",
         "VAT": "TVA",
         "GROSS": "Montant TTC",
-        "EUR": "Montant EUR"
+        "EUR": "Montant EUR",
+        "LINE_COUNT": "Nombre de lignes"
       },
       "INFO": {
         "REFERENCE": "Référence",
@@ -2744,12 +2751,18 @@
         "CURRENCY": "Devise",
         "CATEGORY": "Catégorie",
         "SUPPLIER": "Fournisseur",
+        "SUPPLIER_CODE": "Code fournisseur",
         "NO_SUPPLIER": "Aucun fournisseur",
         "APPROVAL_LEVEL": "Niveau d'approbation"
       },
       "TABS": {
         "INFO": "Détails",
+        "LINES": "Lignes de coût",
         "LEDGER": "Règlement"
+      },
+      "SUPPLIER": {
+        "SUBTITLE": "{{count}} ligne(s) de coût",
+        "LINES_EMPTY": "Aucune ligne de coût pour ce fournisseur."
       },
       "ACTIONS": {
         "EDIT": "Modifier"
