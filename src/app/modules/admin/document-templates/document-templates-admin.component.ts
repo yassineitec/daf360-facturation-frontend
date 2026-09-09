@@ -3,7 +3,10 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { ModalService, ModalRef, ButtonComponent } from '@khalilrebhiitec/daf360';
+import {
+  ModalService, ModalRef, ButtonComponent,
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
+} from '@khalilrebhiitec/daf360';
 import { DocumentTemplateService } from './document-template.service';
 import {
   FactDocumentTemplateDto, SaveFactDocumentTemplateRequest,
@@ -23,7 +26,7 @@ import {
 @Component({
   selector: 'app-document-templates-admin',
   standalone: true,
-  imports: [FormsModule, TranslatePipe, ButtonComponent],
+  imports: [FormsModule, TranslatePipe, ButtonComponent, DataTableComponent, DafCellDirective],
   template: `
 <div class="tmpl-page">
 
@@ -32,7 +35,7 @@ import {
       <h1 class="page-title">{{ 'ADMIN.DOCUMENT_TEMPLATES.TITLE' | translate }}</h1>
       <p class="page-sub">{{ 'ADMIN.DOCUMENT_TEMPLATES.SUBTITLE' | translate }}</p>
     </div>
-    <daf-button [options]="{ variant: 'primary', iconStart: 'add', label: 'ADMIN.DOCUMENT_TEMPLATES.NEW' | translate }"
+    <daf-button [options]="{ variant: 'teal', iconStart: 'add', label: 'ADMIN.DOCUMENT_TEMPLATES.NEW' | translate }"
       (onClick)="openCreateModal()" />
   </div>
 
@@ -53,47 +56,12 @@ import {
     </label>
   </div>
 
-  @if (loading()) {
-    <div class="loading-hint">{{ 'ADMIN.COMMON.LOADING' | translate }}</div>
-  } @else if (templates().length === 0) {
-    <div class="empty-state">{{ 'ADMIN.DOCUMENT_TEMPLATES.EMPTY' | translate }}</div>
-  } @else {
-    <table class="tmpl-table">
-      <thead>
-        <tr>
-          <th>{{ 'ADMIN.DOCUMENT_TEMPLATES.COL_TYPE' | translate }}</th>
-          <th>{{ 'ADMIN.DOCUMENT_TEMPLATES.COL_NAME' | translate }}</th>
-          <th>{{ 'ADMIN.DOCUMENT_TEMPLATES.COL_STATUS' | translate }}</th>
-          <th>{{ 'ADMIN.COMMON.ACTIONS' | translate }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (t of templates(); track t.id) {
-          <tr [class.inactive-row]="!t.isActive">
-            <td><span class="type-badge">{{ typeLabel(t.documentType) }}</span></td>
-            <td>
-              <div class="tmpl-name">{{ t.name }}</div>
-              @if (t.description) { <div class="tmpl-desc">{{ t.description }}</div> }
-            </td>
-            <td>
-              <span class="status-badge" [class.status-active]="t.isActive">
-                {{ (t.isActive ? 'ADMIN.DOCUMENT_TEMPLATES.ACTIVE' : 'ADMIN.DOCUMENT_TEMPLATES.INACTIVE') | translate }}
-              </span>
-            </td>
-            <td class="actions-cell">
-              <button class="icon-btn" [title]="'ADMIN.COMMON.EDIT' | translate" (click)="openEditModal(t)">
-                <span class="material-symbols-outlined">edit</span>
-              </button>
-              <button class="icon-btn" [title]="(t.isActive ? 'ADMIN.DOCUMENT_TEMPLATES.DEACTIVATE' : 'ADMIN.DOCUMENT_TEMPLATES.ACTIVATE') | translate"
-                (click)="toggleActive(t)">
-                <span class="material-symbols-outlined">{{ t.isActive ? 'toggle_on' : 'toggle_off' }}</span>
-              </button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  }
+  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="tableConfig()">
+    <ng-template dafCell="name" let-row>
+      <div class="tmpl-name">{{ row['name'] }}</div>
+      @if (row['_description']) { <div class="tmpl-desc">{{ row['_description'] }}</div> }
+    </ng-template>
+  </daf-data-table>
 </div>
 
 <!-- ── Modal body (create/edit) ──────────────────────────────────────────── -->
@@ -147,10 +115,11 @@ import {
           <span class="field-label">{{ 'ADMIN.DOCUMENT_TEMPLATES.PREVIEW_INVOICE_ID' | translate }}</span>
           <input class="field-input" type="number" [(ngModel)]="previewInvoiceId"
             [placeholder]="'ADMIN.DOCUMENT_TEMPLATES.PREVIEW_INVOICE_ID_HINT' | translate" />
-          <button type="button" class="preview-btn" [disabled]="previewing()" (click)="preview()">
-            <span class="material-symbols-outlined">visibility</span>
-            {{ (previewing() ? 'ADMIN.DOCUMENT_TEMPLATES.PREVIEWING' : 'ADMIN.DOCUMENT_TEMPLATES.PREVIEW') | translate }}
-          </button>
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'visibility',
+                         label: ((previewing() ? 'ADMIN.DOCUMENT_TEMPLATES.PREVIEWING' : 'ADMIN.DOCUMENT_TEMPLATES.PREVIEW') | translate),
+                         loading: previewing(), disabled: previewing() }"
+            (onClick)="preview()" />
           @if (previewError()) { <div class="preview-error">{{ previewError() }}</div> }
         </div>
       </div>
@@ -173,25 +142,8 @@ import {
     .filter-select { padding: 0.4rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.825rem; }
     .filter-checkbox { display: flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; color: #374151; cursor: pointer; }
 
-    .loading-hint, .empty-state { padding: 2.5rem; text-align: center; color: #94a3b8; font-size: 0.875rem; }
-
-    .tmpl-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
-    .tmpl-table th { text-align: left; font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: .04em;
-      padding: 0.75rem 1rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
-    .tmpl-table td { padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; vertical-align: top; }
-    .tmpl-table tr:last-child td { border-bottom: none; }
-    .inactive-row { opacity: 0.5; }
-
-    .type-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 99px; background: #eff6ff; color: #1d4ed8; }
     .tmpl-name { font-weight: 600; color: #0f172a; }
     .tmpl-desc { font-size: 0.775rem; color: #64748b; margin-top: 2px; }
-
-    .status-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 99px; background: #f1f5f9; color: #64748b; }
-    .status-active { background: #dcfce7; color: #166534; }
-
-    .actions-cell { display: flex; gap: 0.25rem; }
-    .icon-btn { border: none; background: none; cursor: pointer; padding: 4px; border-radius: 6px; color: #64748b;
-      &:hover { background: #f1f5f9; color: #0f172a; } }
 
     /* Modal editor */
     .editor-body { display: flex; flex-direction: column; gap: 0.875rem; min-width: 0; }
@@ -222,14 +174,6 @@ import {
     }
 
     .preview-box { margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 0.4rem; }
-    .preview-btn {
-      display: inline-flex; align-items: center; gap: 0.35rem; justify-content: center;
-      padding: 0.4rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;
-      font-size: 0.8rem; cursor: pointer;
-      &:hover:not(:disabled) { background: #f8fafc; }
-      &:disabled { opacity: 0.5; cursor: default; }
-      .material-symbols-outlined { font-size: 16px; }
-    }
     .preview-error { font-size: 0.775rem; color: #b91c1c; }
   `],
 })
@@ -279,6 +223,57 @@ export class DocumentTemplatesAdminComponent implements OnInit {
   typeLabel(value: string): string {
     return this.documentTypes.find(t => t.value === value)?.label ?? value;
   }
+
+  readonly columns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return [
+      { key: 'type',   label: t('ADMIN.DOCUMENT_TEMPLATES.COL_TYPE'),   type: 'badge' },
+      { key: 'name',   label: t('ADMIN.DOCUMENT_TEMPLATES.COL_NAME'),   type: 'custom' },
+      { key: 'status', label: t('ADMIN.DOCUMENT_TEMPLATES.COL_STATUS'), type: 'badge' },
+    ];
+  });
+
+  readonly rows = computed<TableRow[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return this.templates().map(tpl => ({
+      id:   tpl.id,
+      type: { label: this.typeLabel(tpl.documentType), options: { variant: 'info', size: 'sm' } } satisfies BadgeCell,
+      name: tpl.name,
+      status: {
+        label:   t(tpl.isActive ? 'ADMIN.DOCUMENT_TEMPLATES.ACTIVE' : 'ADMIN.DOCUMENT_TEMPLATES.INACTIVE'),
+        options: { variant: tpl.isActive ? 'success' : 'neutral', size: 'sm', dot: true },
+      } satisfies BadgeCell,
+      _description: tpl.description,
+      _raw: tpl,
+    }));
+  });
+
+  readonly tableConfig = computed<TableConfig>(() => {
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      hoverable:    true,
+      loading:      this.loading(),
+      emptyMessage: t('ADMIN.DOCUMENT_TEMPLATES.EMPTY'),
+      actions: [
+        {
+          id: 'edit', icon: 'edit', tooltip: t('ADMIN.COMMON.EDIT'),
+          onClick: row => this.openEditModal(row['_raw'] as FactDocumentTemplateDto),
+        },
+        {
+          id: 'deactivate', icon: 'toggle_on', tooltip: t('ADMIN.DOCUMENT_TEMPLATES.DEACTIVATE'),
+          hidden: row => !(row['_raw'] as FactDocumentTemplateDto).isActive,
+          onClick: row => this.toggleActive(row['_raw'] as FactDocumentTemplateDto),
+        },
+        {
+          id: 'activate', icon: 'toggle_off', tooltip: t('ADMIN.DOCUMENT_TEMPLATES.ACTIVATE'),
+          hidden: row => (row['_raw'] as FactDocumentTemplateDto).isActive,
+          onClick: row => this.toggleActive(row['_raw'] as FactDocumentTemplateDto),
+        },
+      ],
+    };
+  });
 
   load(): void {
     this.loading.set(true);
