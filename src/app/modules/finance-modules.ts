@@ -102,7 +102,18 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
     tone: 'tertiary',
     labelKey: 'FACTURATION.layout.NAV.INVOICING',
     descKey: 'HOME.MODULES.INVOICING.DESC',
+    // Le premier enfant EST l'écran que le parent ouvrait. Un parent à enfants ne
+    // navigue plus (voir `toNavItem` dans fact-shell) : il déplie, et la page qu'il
+    // desservait doit donc exister comme entrée à part entière, sinon elle devient
+    // inatteignable depuis la barre.
     children: [
+      {
+        id: 'invoicing-list',
+        route: 'invoicing',
+        icon: 'receipt_long',
+        tone: 'tertiary',
+        labelKey: 'FACTURATION.layout.NAV.INVOICING_LIST',
+      },
       {
         id: 'billing-approval',
         route: 'billing/approval',
@@ -133,6 +144,14 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
     labelKey: 'FACTURATION.layout.NAV.COST',
     descKey: 'HOME.MODULES.COSTS.DESC',
     children: [
+      {
+        // Idem : l'écran des coûts, que « Coûts » ouvrait lui-même auparavant.
+        id: 'cost-overview',
+        route: 'cost',
+        icon: 'payments',
+        tone: 'warning',
+        labelKey: 'FACTURATION.layout.NAV.COST_OVERVIEW',
+      },
       {
         id: 'cost-approval',
         route: 'cost/approval',
