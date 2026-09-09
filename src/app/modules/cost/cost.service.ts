@@ -8,7 +8,7 @@ import {
   CostLineDto, CreateCostLineRequest,
   CostImportResult, PageResponse,
   CostAttachmentDto, ForexPreviewDto, CircuitPreviewDto,
-  ListValueDto, SupplierSearchItem,
+  ListValueDto, SupplierSearchItem, SupplierLedgerDto,
   RateComputationDto, CreateRateComputationRequest,
 } from './cost.model';
 
@@ -80,6 +80,10 @@ export class CostService {
 
   getCostLine(id: number): Observable<CostLineDto> {
     return this.http.get<CostLineDto>(`${this.base}/cost-lines/${id}`);
+  }
+
+  getSupplierLedger(costLineId: number): Observable<SupplierLedgerDto> {
+    return this.http.get<SupplierLedgerDto>(`${this.base}/cost-lines/${costLineId}/supplier-ledger`);
   }
 
   createCostLine(dto: CreateCostLineRequest): Observable<CostLineDto> {
