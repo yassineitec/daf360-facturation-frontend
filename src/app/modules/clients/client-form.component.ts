@@ -13,14 +13,55 @@ import {
   ButtonComponent, FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 
-const DEFAULT_SECTORS = [
-  'Agriculture', 'Agroalimentaire', 'BTP & Construction', 'Commerce de détail',
-  'Commerce de gros', 'Éducation & Formation', 'Énergie & Utilities',
+/**
+ * Les secteurs proposés d'office, indépendamment de ce que contient la base.
+ *
+ * `GET /clients/sectors` ne renvoie QUE les secteurs déjà saisis sur des clients
+ * existants : c'est un `distinct` sur une colonne libre, pas un référentiel. Seul,
+ * il laisse la liste vide au premier client et n'offre jamais un secteur métier
+ * tant que personne ne l'a tapé — d'où cette liste, fusionnée avec celle du back.
+ */
+const CURATED_SECTORS = [
+  'Administrations et organismes publics',
+  'Agriculture', 'Agroalimentaire',
+  'Architectes et cabinets d’ingénierie',
+  'BTP & Construction', 'Commerce de détail', 'Commerce de gros',
+  'Éducation & Formation', 'Énergie & Utilities',
+  'Entreprises de construction / EPC',
+  'Entreprises de traitement de l’eau',
+  'Entreprises de travaux publics',
+  'Entreprises industrielles',
   'Finance & Banque', 'Hôtellerie & Tourisme', 'Immobilier',
-  'Industrie & Manufacture', 'Informatique & Tech', 'Logistique & Transport',
-  'Médias & Communication', 'Santé & Pharmacie', 'Services aux entreprises',
+  'Industrie & Manufacture', 'Informatique & Tech',
+  'Investisseurs et développeurs de projets',
+  'Logistique & Transport', 'Médias & Communication',
+  'Opérateurs de transport', 'Opérateurs énergétiques', 'Opérateurs Oil & Gas',
+  'Promoteurs immobiliers',
+  'Santé & Pharmacie', 'Services aux entreprises',
+  'Sociétés minières',
   'Télécommunications', 'Textile & Mode',
 ];
+
+/**
+ * Fusionne les secteurs du référentiel figé et ceux remontés de la base, sans doublon.
+ *
+ * Le dédoublonnage ignore la casse et les espaces de bord : un client enregistré avec
+ * « immobilier » ne doit pas créer une seconde ligne à côté d'« Immobilier ». En cas de
+ * collision, c'est l'orthographe de {@link CURATED_SECTORS} qui l'emporte, puisqu'elle
+ * est passée en premier.
+ */
+function mergeSectors(...lists: (readonly (string | null | undefined)[])[]): string[] {
+  const seen = new Map<string, string>();
+  for (const list of lists) {
+    for (const raw of list ?? []) {
+      const value = raw?.trim();
+      if (!value) continue;
+      const key = value.toLocaleLowerCase('fr');
+      if (!seen.has(key)) seen.set(key, value);
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b, 'fr'));
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -105,6 +146,9 @@ export class ClientFormComponent implements OnInit, OnChanges {
       label: this.translate.instant('CLIENTS.FORM.SECTOR_LABEL'),
       placeholder: this.translate.instant('CLIENTS.FORM.SECTOR_PLACEHOLDER'),
       fullWidth: true,
+      // Une trentaine d'entrées dans un panneau `max-h-52` : sans champ de recherche,
+      // atteindre « Sociétés minières » demande de faire défiler à l'aveugle.
+      searchable: true,
       error: (this.touched() && !this.selectedSector()[0]) ? this.translate.instant('CLIENTS.FORM.SECTOR_REQUIRED') : undefined,
     };
   });
@@ -198,17 +242,27 @@ export class ClientFormComponent implements OnInit, OnChanges {
 
   get isEditMode(): boolean { return !!this.client; }
 
+  /**
+   * Alimente la liste déroulante « Secteur » : référentiel figé + secteurs déjà en base,
+   * plus celui du client édité. Ce dernier compte : s'il porte une valeur historique
+   * absente des deux listes, l'omettre viderait en silence un champ obligatoire à
+   * l'ouverture du formulaire.
+   */
+  private setSectors(fromBackend: readonly string[]): void {
+    this.sectors.set(mergeSectors(CURATED_SECTORS, fromBackend, [this.client?.sector]));
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['paysId']) {
       const effectiveId: number = this.client?.paysId ?? changes['paysId'].currentValue;
       if (effectiveId) {
         this.loadingSectors.set(true);
         this.svc.getSectors().subscribe({
-          next:  s  => { this.sectors.set(s.length ? s : DEFAULT_SECTORS); this.loadingSectors.set(false); },
-          error: () => { this.sectors.set(DEFAULT_SECTORS); this.loadingSectors.set(false); },
+          next:  s  => { this.setSectors(s);   this.loadingSectors.set(false); },
+          error: () => { this.setSectors([]);  this.loadingSectors.set(false); },
         });
       } else {
-        this.sectors.set(DEFAULT_SECTORS);
+        this.setSectors([]);
       }
     }
 
@@ -221,7 +275,9 @@ export class ClientFormComponent implements OnInit, OnChanges {
     if (c) {
       this.clientName.set(c.clientName ?? '');
       this.clientCode.set(c.clientCode ?? '');
-      this.selectedSector.set(c.sector ? [c.sector] : []);
+      // Rogné comme dans `mergeSectors`, sinon la valeur sélectionnée ne retrouve pas
+      // son option dans la liste et le `daf-select` s'affiche vide.
+      this.selectedSector.set(c.sector?.trim() ? [c.sector.trim()] : []);
       this.taxId.set(c.taxId ?? '');
       this.countryId.set(c.countryId != null ? String(c.countryId) : '');
       this.address.set(c.address ?? '');
