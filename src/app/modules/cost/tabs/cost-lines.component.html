@@ -28,7 +28,7 @@
     (filterApply)="applyFilters($event)"
     [views]="viewOptions()"
     [view]="viewMode()"
-    (viewChange)="viewMode.set($any($event))">
+    (viewChange)="setViewMode($any($event))">
     <daf-button
       [options]="{ variant: 'teal', label: 'COST.LINES.NEW_LINE' | translate, iconStart: 'add' }"
       (onClick)="openCreate()" />
@@ -51,7 +51,7 @@
       [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
       (edit)="openEdit($event)"
       (submitLine)="submitLine($event)" />
-  } @else {
+  } @else if (viewMode() === 'list') {
     <app-cost-lines-table-section
       [lines]="visibleLines()"
       [categoryFor]="categoryFor"
@@ -60,19 +60,31 @@
       [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
       (edit)="openEdit($event)"
       (submitLine)="submitLine($event)" />
+  } @else {
+    <!-- "By supplier" cards — an unpaginated aggregation over every distinct supplier
+         for this pays, deliberately ALL statuses (see SupplierCostSummaryService). The
+         status filter above has no effect here by design: the aggregation endpoint
+         takes no status param. -->
+    <app-cost-supplier-cards-section
+      [summaries]="supplierSummaries()"
+      [loading]="supplierSummariesLoading()"
+      [emptyMessage]="'COST.LINES.SUPPLIER_VIEW_EMPTY' | translate"
+      (open)="openSupplierCard($event)" />
   }
 
-  <daf-pagination
-    [currentPage]="page()"
-    [totalPages]="totalPagesCount()"
-    [totalElements]="total()"
-    [pageSize]="size()"
-    [pageSizeOptions]="[10, 25, 50, 100]"
-    [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
-    [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
-    [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
-    [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
-    (pageChange)="goToPage($event)"
-    (pageSizeChange)="onPageSize($event)" />
+  @if (viewMode() !== 'supplier') {
+    <daf-pagination
+      [currentPage]="page()"
+      [totalPages]="totalPagesCount()"
+      [totalElements]="total()"
+      [pageSize]="size()"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+      [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+      [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+      [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+      (pageChange)="goToPage($event)"
+      (pageSizeChange)="onPageSize($event)" />
+  }
 
 </div>
