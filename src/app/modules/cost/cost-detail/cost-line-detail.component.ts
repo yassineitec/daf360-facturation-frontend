@@ -54,7 +54,7 @@ interface KpiTile {
 @Component({
   selector: 'app-cost-line-detail',
   imports: [
-    TranslatePipe, DisplayCurrencyPipe, PermissionDirective,
+    TranslatePipe, PermissionDirective,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent,
     DataTableComponent, DafCellDirective,

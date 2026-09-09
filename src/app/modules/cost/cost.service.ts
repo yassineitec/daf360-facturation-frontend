@@ -83,7 +83,9 @@ export class CostService {
   }
 
   getSupplierLedger(costLineId: number): Observable<SupplierLedgerDto> {
-    return this.http.get<SupplierLedgerDto>(`${this.base}/cost-lines/${costLineId}/supplier-ledger`);
+    return this.http.get<SupplierLedgerDto>(`${this.base}/cost-lines/${costLineId}/supplier-ledger`).pipe(
+      catchError(() => of({ supplier: null, rows: [] } as SupplierLedgerDto)),
+    );
   }
 
   createCostLine(dto: CreateCostLineRequest): Observable<CostLineDto> {
