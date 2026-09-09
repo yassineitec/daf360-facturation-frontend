@@ -150,6 +150,26 @@ export interface PendingLivrableBatchDto {
   billingDate:     string;
 }
 
+/**
+ * Mirrors the backend's PendingCreditNoteDto. Unlike the three lists above, a credit
+ * note isn't a BillingLine — it's a real Invoice (invoiceType=CREDIT_NOTE) submitted
+ * directly at creation (see InvoiceService.createCreditNote), so validating one goes
+ * through the ordinary invoicing approve+emit endpoints (InvoiceService in the
+ * `invoicing` module), not DFValidationService.
+ */
+export interface PendingCreditNoteDto {
+  id:                   number;
+  affaireId:            number | null;
+  affaireRef:           string | null;
+  affaireIntitule:      string | null;
+  linkedInvoiceId:      number | null;
+  linkedInvoiceNumber:  string | null;
+  montantTtc:           number;
+  creditNoteReason:     string | null;
+  creditNoteReasonFree: string | null;
+  submittedAt:          string;
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
@@ -297,6 +317,12 @@ export class BillingService {
   getPendingLivrableBatches(): Observable<PendingLivrableBatchDto[]> {
     return this.http.get<PendingLivrableBatchDto[]>(
       `${this.base}/billing/pending-df/livrable-batches`, this.opts);
+  }
+
+  /** Credit notes (avoirs) sitting SUBMITTED, cross-affaire — see PendingCreditNoteDto. */
+  getPendingCreditNotes(): Observable<PendingCreditNoteDto[]> {
+    return this.http.get<PendingCreditNoteDto[]>(
+      `${this.base}/billing/pending-df/credit-notes`, this.opts);
   }
 
   getLivrableBatchDetail(batchId: number): Observable<LivrableBatchDto> {

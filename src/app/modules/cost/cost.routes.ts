@@ -51,4 +51,44 @@ export const COST_ROUTES: Routes = [
     loadComponent: () =>
       import('./cost-create.component').then(m => m.CostCreateComponent),
   },
+  /**
+   * Cost-lines-by-supplier cards (2026-09-09 plan) — both routes below are
+   * TWO-segment paths ("supplier/none" / "supplier/<id>") and never collide with the
+   * bare single-segment ":id" further down regardless of array position: Angular's
+   * router requires an exact remaining-segment-count match, and ":id" has no children.
+   * Placed here anyway, ahead of ":id", to keep every literal-prefixed route grouped
+   * together before the catch-all, matching this file's own existing convention.
+   *
+   * "supplier/none" MUST stay listed before "supplier/:supplierId" — both are
+   * two-segment paths, so ordering between these two genuinely matters: reversed,
+   * "supplier/:supplierId" would greedily match "none" as supplierId="none".
+   *
+   * `data.mode` (not param-sniffing) is how CostLineDetailComponent tells its three
+   * modes apart — see the component's own doc comment.
+   */
+  {
+    path: 'supplier/none',
+    data: { mode: 'unassigned' },
+    loadComponent: () =>
+      import('./cost-detail/cost-line-detail.component').then(m => m.CostLineDetailComponent),
+  },
+  {
+    path: 'supplier/:supplierId',
+    data: { mode: 'supplier' },
+    loadComponent: () =>
+      import('./cost-detail/cost-line-detail.component').then(m => m.CostLineDetailComponent),
+  },
+  /**
+   * Read-only cost-line detail page. Distinct from `:id/edit` (the edit form) and
+   * reached from the approval queue's "view details" action. Deliberately LAST in this
+   * array: `:id` is a single-segment wildcard, and placing it earlier would greedily
+   * match the literal single-segment paths above it (`approval`, `missions`, `new`,
+   * `rate-computations`, `employee-costs`, `create`).
+   */
+  {
+    path: ':id',
+    data: { mode: 'line' },
+    loadComponent: () =>
+      import('./cost-detail/cost-line-detail.component').then(m => m.CostLineDetailComponent),
+  },
 ];

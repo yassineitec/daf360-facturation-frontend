@@ -40,9 +40,9 @@ export class SupplierService {
     return this.http.get<SupplierDto[]>(this.base, { params: p }).pipe(
       map(list => ({
         total:     list.length,
-        withIban:  list.filter(s => !!s.ibanMasked).length,
+        withIban:  list.filter(s => !!s.iban).length,
         withTva:   list.filter(s => !!s.numeroTva).length,
-        countries: new Set(list.map(s => s.paysCode).filter(Boolean)).size,
+        countries: new Set(list.map(s => s.paysId).filter(Boolean)).size,
       })),
       catchError(() => of({ total: 0, withIban: 0, withTva: 0, countries: 0 } as SupplierStatsDto)),
     );
@@ -70,9 +70,5 @@ export class SupplierService {
    */
   deactivate(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
-  }
-
-  revealIban(id: number): Observable<{ iban: string }> {
-    return this.http.get<{ iban: string }>(`${this.base}/${id}/reveal-iban`);
   }
 }

@@ -2,14 +2,20 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule }                        from '@angular/forms';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
-import { forkJoin, Observable }               from 'rxjs';
+import { forkJoin, Observable, switchMap }    from 'rxjs';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService,
-  PendingTauxDto, PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto, AuditLogEntryDto,
+  PendingTauxDto, PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto,
+  PendingCreditNoteDto, AuditLogEntryDto,
 } from './billing.service';
+// Not a BillingLine like the three sources above — a credit note already IS an Invoice
+// (submitted directly at creation), so validating/returning one goes through the
+// ordinary invoicing lifecycle endpoints instead of BillingService.
+import { InvoiceService } from '../../invoicing/invoice.service';
+import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 
 type ActiveTab = 'rf' | 'df' | 'history';
 
@@ -29,10 +35,11 @@ const LINE_STATUT: Record<string, { bg: string; color: string; border: string }>
   styleUrl: './approval-queue.component.scss',
 })
 export class ApprovalQueueComponent implements OnInit {
-  private readonly svc       = inject(BillingService);
-  private readonly translate = inject(TranslateService);
-  private readonly router    = inject(Router);
-  private readonly route     = inject(ActivatedRoute);
+  private readonly svc        = inject(BillingService);
+  private readonly invoiceSvc = inject(InvoiceService);
+  private readonly translate  = inject(TranslateService);
+  private readonly router     = inject(Router);
+  private readonly route      = inject(ActivatedRoute);
 
   readonly tabs = computed<{ key: ActiveTab; label: string; icon: string }[]>(() => {
     this.translate.currentLang();
@@ -52,6 +59,7 @@ export class ApprovalQueueComponent implements OnInit {
   pendingJalons = signal<PendingJalonDto[]>([]);
   pendingLines  = signal<PendingBillingLineDto[]>([]);
   pendingLivrableBatches = signal<PendingLivrableBatchDto[]>([]);
+  pendingCreditNotes     = signal<PendingCreditNoteDto[]>([]);
   auditLog      = signal<AuditLogEntryDto[]>([]);
 
   showRfRefuseModal = signal(false);
@@ -62,7 +70,7 @@ export class ApprovalQueueComponent implements OnInit {
   showDfRetourModal = signal(false);
   dfRetourMotif     = '';
   private dfRetourEntityId = 0;
-  private dfRetourType: 'line' | 'livrableBatch' = 'line';
+  private dfRetourType: 'line' | 'livrableBatch' | 'creditNote' = 'line';
 
   // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
   readonly tauxColumns = computed<TableColumn[]>(() => {
@@ -168,6 +176,35 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  // ── daf-data-table: Credit notes / avoirs (DF) ───────────────────────────────
+  readonly creditNoteColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),  type: 'custom' },
+      { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'), type: 'custom' },
+      { key: 'montant',   label: this.translate.instant('AFFAIRES.billing.approval.col_montant'),  type: 'custom', align: 'right' },
+      { key: 'motif',     label: this.translate.instant('AFFAIRES.billing.approval.col_motif'),    type: 'custom' },
+      { key: 'soumis',    label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),   type: 'custom' },
+      { key: '_actions',  label: '',                                                               type: 'custom', align: 'right', width: '180px' },
+    ];
+  });
+
+  readonly creditNoteRows = computed(() =>
+    this.pendingCreditNotes().map(cn => ({
+      id:              cn.id,
+      affaireId:       cn.affaireId,
+      affaireRef:      cn.affaireRef,
+      affaireIntitule: cn.affaireIntitule,
+      reference:       cn.linkedInvoiceNumber ?? '—',
+      // Toujours négatif (voir InvoiceService.createCreditNote) — Math.abs pour afficher
+      // le montant crédité plutôt qu'un signe qui n'apporte rien à ce stade.
+      montant:         this.fmtAmt(Math.abs(cn.montantTtc)),
+      motif:           this.creditNoteReasonLabel(cn.creditNoteReason),
+      soumis:          this.fmtDate(cn.submittedAt),
+      _raw:            cn,
+    }))
+  );
+
   // ── daf-data-table: Audit history ────────────────────────────────────────────
   readonly historyColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -208,6 +245,13 @@ export class ApprovalQueueComponent implements OnInit {
     this.router.navigate([type, String(row.id)], { relativeTo: this.route });
   }
 
+  /** A credit note is a real Invoice, not a billing-module entity with its own detail
+   * route here — its row opens the ordinary invoice detail page directly (absolute
+   * navigation, unlike openDetail() above which stays relative under this route). */
+  openCreditNoteDetail(row: { id: number }): void {
+    this.router.navigate(['/finance/invoicing', row.id]);
+  }
+
   setTab(tab: ActiveTab): void {
     this.activeTab.set(tab);
     if (tab === 'rf')      this.loadRF();
@@ -231,11 +275,13 @@ export class ApprovalQueueComponent implements OnInit {
       taux: this.svc.getPendingTaux(),
       livrableBatches: this.svc.getPendingLivrableBatches(),
       lines: this.svc.getPendingDFLines(),
+      creditNotes: this.svc.getPendingCreditNotes(),
     }).subscribe({
-      next: ({ taux, livrableBatches, lines }) => {
+      next: ({ taux, livrableBatches, lines, creditNotes }) => {
         this.pendingTaux.set(taux);
         this.pendingLivrableBatches.set(livrableBatches);
         this.pendingLines.set(lines);
+        this.pendingCreditNotes.set(creditNotes);
         this.dfLoading.set(false);
       },
       error: () => this.dfLoading.set(false),
@@ -316,7 +362,23 @@ export class ApprovalQueueComponent implements OnInit {
     });
   }
 
-  openDfRetourModal(entityId: number, type: 'line' | 'livrableBatch' = 'line'): void {
+  /**
+   * A credit note is already a full Invoice (SUBMITTED at creation, see
+   * InvoiceService.createCreditNote) — there's no BillingLine here for
+   * DFValidationService to turn into one. "Valider" is therefore approve THEN emit,
+   * chained the same way createCreditNote_linkedInvoiceSet's fixture data flows
+   * server-side, so DF gets the same one-click result as every other row in this tab.
+   */
+  doValidateCreditNote(id: number): void {
+    this.invoiceSvc.approve(id, { decision: 'APPROVE' }).pipe(
+      switchMap(() => this.invoiceSvc.emit(id)),
+    ).subscribe({
+      next: () => this.router.navigate(['/finance/invoicing', id]),
+      error: () => this.loadDF(),
+    });
+  }
+
+  openDfRetourModal(entityId: number, type: 'line' | 'livrableBatch' | 'creditNote' = 'line'): void {
     this.dfRetourEntityId = entityId;
     this.dfRetourType = type;
     this.dfRetourMotif = '';
@@ -327,11 +389,13 @@ export class ApprovalQueueComponent implements OnInit {
     if (!this.dfRetourMotif.trim()) return;
     const motif = this.dfRetourMotif.trim();
     // Typed Observable<unknown> rather than letting each branch's own return type stand —
-    // a union of BillingLineDto/LivrableBatchDto observables isn't callable in this
+    // a union of BillingLineDto/LivrableBatchDto/void observables isn't callable in this
     // TS/RxJS combination (differently-parameterized Observable overloads don't unify),
-    // and both branches' follow-up is identical anyway.
+    // and every branch's follow-up is identical anyway.
     const request$: Observable<unknown> = this.dfRetourType === 'livrableBatch'
       ? this.svc.returnLivrableBatch(this.dfRetourEntityId, motif)
+      : this.dfRetourType === 'creditNote'
+      ? this.invoiceSvc.approve(this.dfRetourEntityId, { decision: 'RETURN', comment: motif })
       : this.svc.returnDF(this.dfRetourEntityId, motif);
     request$.subscribe({
       next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
@@ -342,6 +406,15 @@ export class ApprovalQueueComponent implements OnInit {
     const c = LINE_STATUT[statut];
     if (!c) return { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
     return { ...c, label: this.translate.instant('AFFAIRES.billing.status.' + statut) };
+  }
+
+  /** `creditNoteReason` holds one of CREDIT_NOTE_REASONS' codes (see
+   * credit-note-modal.component.ts) — translate it, falling back to the raw code for
+   * anything unrecognised rather than showing nothing. */
+  creditNoteReasonLabel(code: string | null): string {
+    if (!code) return '—';
+    const key = CREDIT_NOTE_REASONS[code];
+    return key ? this.translate.instant(key) : code;
   }
 
   fmtAmt(v: number | null): string {

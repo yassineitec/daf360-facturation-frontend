@@ -161,9 +161,18 @@ export interface RecordPaymentRequest {
 
 export interface DisputeRequest { reason: string; }
 
+// Field names must match CreateCreditNoteRequest on the backend exactly — Jackson
+// silently ignores unknown JSON properties (fail-on-unknown-properties: false), so a
+// mismatch here doesn't fail to deserialize, it lands as a null creditNoteReason and
+// fails @NotBlank instead, producing a confusing "ne doit pas être vide" 400.
 export interface CreditNoteRequest {
-  reasonCode: string;
-  reasonText?: string | null;
+  creditNoteReason: string;
+  creditNoteReasonFree?: string | null;
+  // NOT YET SUPPORTED by the backend: CreateCreditNoteRequest has no amount field, and
+  // an empty `lines` always credits the ORIGINAL invoice's lines in full (see
+  // InvoiceService.createCreditNote). Kept on the DTO so the form value has somewhere
+  // to go once partial credit notes are implemented, but the backend ignores it today —
+  // see the TODO on the modal's amount field.
   montantTtc?: number | null;
 }
 
