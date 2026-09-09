@@ -33,7 +33,7 @@
       </div>
       <div>
         <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_df' | translate }}</p>
-        <h4 class="kpi-value">{{ pendingTaux().length + pendingLines().length + pendingLivrableBatches().length }}</h4>
+        <h4 class="kpi-value">{{ pendingTaux().length + pendingLines().length + pendingLivrableBatches().length + pendingCreditNotes().length }}</h4>
       </div>
     </div>
 
@@ -65,9 +65,9 @@
               {{ pendingJalons().length }}
             </span>
           }
-          @if (tab.key === 'df' && pendingTaux().length + pendingLines().length + pendingLivrableBatches().length > 0) {
+          @if (tab.key === 'df' && pendingTaux().length + pendingLines().length + pendingLivrableBatches().length + pendingCreditNotes().length > 0) {
             <span class="tab-badge tab-badge--indigo">
-              {{ pendingTaux().length + pendingLines().length + pendingLivrableBatches().length }}
+              {{ pendingTaux().length + pendingLines().length + pendingLivrableBatches().length + pendingCreditNotes().length }}
             </span>
           }
         </button>
@@ -316,6 +316,65 @@
                     </button>
                     <button class="act-btn act-btn--orange"
                       (click)="$event.stopPropagation(); openDfRetourModal(row['id'], 'livrableBatch')">
+                      <span class="material-symbols-outlined">undo</span>
+                      {{ 'AFFAIRES.billing.approval.return' | translate }}
+                    </button>
+                  </div>
+                </ng-template>
+
+              </daf-data-table>
+            </div>
+          }
+
+          <!-- Credit notes / avoirs — a real Invoice submitted directly at creation
+               (InvoiceService.createCreditNote), not a BillingLine; validating opens the
+               ordinary invoice detail page and calls the invoicing approve+emit endpoints
+               (see ApprovalQueueComponent.doValidateCreditNote). -->
+          @if (pendingCreditNotes().length > 0) {
+            <div class="section-head" [class.section-head--mt]="pendingTaux().length > 0 || pendingLines().length > 0 || pendingLivrableBatches().length > 0">
+              <span class="material-symbols-outlined">receipt_long</span>
+              {{ 'AFFAIRES.billing.approval.section_credit_notes' | translate:{ count: pendingCreditNotes().length } }}
+            </div>
+            <div class="table-wrap">
+              <daf-data-table
+                [columns]="creditNoteColumns()"
+                [rows]="creditNoteRows()"
+                [config]="tableConfig()"
+                (rowClick)="openCreditNoteDetail($any($event))">
+
+                <ng-template dafCell="affaire" let-row>
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    (click)="$event.stopPropagation()">
+                    {{ row['affaireRef'] }}
+                  </a>
+                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="reference" let-row>
+                  <span class="cell-mono">{{ row['reference'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="montant" let-row>
+                  <span class="cell-bold">{{ row['montant'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="motif" let-row>
+                  <span class="cell-muted">{{ row['motif'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="soumis" let-row>
+                  <span class="cell-muted">{{ row['soumis'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="_actions" let-row>
+                  <div class="action-btns">
+                    <button class="act-btn act-btn--green"
+                      (click)="$event.stopPropagation(); doValidateCreditNote(row['id'])">
+                      <span class="material-symbols-outlined">check_circle</span>
+                      {{ 'AFFAIRES.billing.approval.validate' | translate }}
+                    </button>
+                    <button class="act-btn act-btn--orange"
+                      (click)="$event.stopPropagation(); openDfRetourModal(row['id'], 'creditNote')">
                       <span class="material-symbols-outlined">undo</span>
                       {{ 'AFFAIRES.billing.approval.return' | translate }}
                     </button>
