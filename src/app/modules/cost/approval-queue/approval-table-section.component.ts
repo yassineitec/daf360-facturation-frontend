@@ -27,6 +27,10 @@ import { ApprovalDecision } from './approval-cards-section.component';
 
       <ng-template dafCell="_actions" let-row>
         <div class="flex items-center justify-end gap-2">
+          @if (row['_kind'] === 'cost') {
+            <fact-table-action icon="visibility" [tooltip]="tips().view"
+                               (action)="emit(row, 'view')" />
+          }
           @if (row['_canAct']) {
             <fact-table-action icon="check_circle" [tooltip]="tips().approve"
                                (action)="emit(row, 'approve')" />
@@ -60,6 +64,7 @@ export class ApprovalTableSectionComponent {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return {
+      view:       t('COST.APPROVAL_QUEUE.VIEW_DETAILS'),
       approve:    t('COST.APPROVAL_QUEUE.APPROVE_REQUEST'),
       complement: t('COST.APPROVAL_QUEUE.COMPLEMENT'),
       reject:     t('COST.APPROVAL_QUEUE.REJECT'),

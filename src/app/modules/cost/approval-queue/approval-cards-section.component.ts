@@ -7,7 +7,7 @@ import { ApprovalItem, kindKey } from './approval-item';
 import { initials, urgencyKey } from '../cost-display';
 
 /** One decision the queue can emit, for either kind of request. */
-export type ApprovalDecision = 'approve' | 'return' | 'reject' | 'candidate';
+export type ApprovalDecision = 'approve' | 'return' | 'reject' | 'candidate' | 'view';
 
 /**
  * Card view of `/finance/cost/approval` — one `daf-entity-card` per pending request,
@@ -97,6 +97,14 @@ export class ApprovalCardsSectionComponent {
 
   private actionsFor(item: ApprovalItem, t: (key: string) => string): EntityCardAction[] {
     const actions: EntityCardAction[] = [];
+
+    // "View details" needs only FACT_VIEW_COST, which everyone reaching this queue
+    // already has (GET /cost/approvals/pending is gated on exactly that permission) --
+    // unlike the decision buttons below, gated by the stricter FACT_APPROVE_COST_L1.
+    // Additive: the existing modal-based decision flow is untouched.
+    if (item.kind === 'cost') {
+      actions.push({ id: 'view', icon: 'visibility', tooltip: t('COST.APPROVAL_QUEUE.VIEW_DETAILS') });
+    }
 
     // Cost approval is permission-gated; the hiring queue has no equivalent code today.
     if (item.kind === 'cost' && !this.canApproveCost()) return actions;
