@@ -15,11 +15,24 @@
 // ── Header ────────────────────────────────────────────────────────────────────
 
 .page-header {
+  position: relative;
+  // `backdrop-filter` below creates a stacking context — without lifting the whole
+  // header above it, the pays dropdown panel (z-index scoped to *inside* that
+  // context) gets painted over by the list-type cards that follow it in the DOM,
+  // themselves each their own stacking context (glass daf-card also uses
+  // backdrop-filter). This must beat both the cards' own z-index and daf-card's
+  // internal one.
+  z-index: 100;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--color-outline-variant);
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  border-radius: var(--radius-xl, 16px);
 }
 
 .page-title {
@@ -38,19 +51,12 @@
 
 // ── Pays selector (flag + search dropdown) ─────────────────────────────────────
 
-// Same look as daf-card's glass variant, but WITHOUT overflow:hidden — daf-card
-// always clips its content to its rounded corners, which would cut off the
-// absolutely-positioned dropdown panel below the trigger button.
+// No background of its own anymore — it now sits directly on `.page-header`'s own
+// glass background, so title and country picker read as one bar, not two stacked
+// cards. Just positioning, for the dropdown panel below the trigger button.
 .pays-card {
   position: relative;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-  border-radius: var(--radius-xl, 16px);
-  padding: 16px;
 }
 
 .pays-select-wrap {
@@ -204,45 +210,6 @@
   color: var(--color-on-surface-variant);
 }
 
-// ── Main tabs ─────────────────────────────────────────────────────────────────
-
-.main-tabs {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-
-.main-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 38px;
-  padding: 0 20px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-label-md);
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: -1px;
-  transition: all var(--duration-fast) var(--ease-smooth);
-
-  .tab-icon { font-size: 1.05rem; opacity: 0.7; }
-
-  &.active {
-    color: var(--color-tertiary);
-    border-bottom-color: var(--color-tertiary);
-
-    .tab-icon { opacity: 1; }
-  }
-
-  &:hover:not(.active) { color: var(--color-on-surface); }
-}
-
 // ── Tab content ───────────────────────────────────────────────────────────────
 
 .tab-content {
@@ -251,35 +218,34 @@
   gap: 14px;
 }
 
-// ── Type sub-tabs ─────────────────────────────────────────────────────────────
+// ── Type picker cards (configurable lists) ─────────────────────────────────────
+// The cards themselves are `daf-card` (library) — this just lays out the grid.
 
-.type-tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
-}
+.list-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
 
-.type-tab {
-  height: 30px;
-  padding: 0 14px;
-  border: 1px solid var(--color-outline-variant);
-  border-radius: 20px;
-  background: var(--color-surface);
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-label-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
+  // Same fix as /rh/admin's own module-card grid: `options.size` would also shrink
+  // this via a preset, but it caps the card at `max-w-[…]`, which breaks this
+  // auto-fill grid — so the title alone is targeted instead.
+  ::ng-deep h4 { font-size: 15px; line-height: 1.3; }
 
-  &.active {
-    background: var(--color-tertiary-container);
-    color: var(--color-on-tertiary-container);
-    border-color: var(--color-tertiary);
-    font-weight: 700;
+  // Pin the "Gérer" action row to the same spot at the bottom of every card.
+  // daf-card's own action footer is just `mt-4` under the description, not
+  // `mt-auto` — fine for its usual variable-height context, but here `fullHeight`
+  // already stretches every card in a row to match the tallest one, so without
+  // this a short description leaves "Gérer" floating high with blank space below
+  // it, while a long description pushes it further down — different card, same
+  // row, two different "Gérer" positions.
+  ::ng-deep .glass-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
-
-  &:hover:not(.active) { border-color: var(--color-outline); }
+  ::ng-deep .glass-card > .border-t {
+    margin-top: auto;
+  }
 }
 
 .loading-inline {
@@ -385,14 +351,6 @@
   &.text-right { text-align: right; }
 }
 
-// ── Buttons ───────────────────────────────────────────────────────────────────
-
-.cell-actions {
-  display: flex;
-  gap: 5px;
-  justify-content: center;
-  align-items: center;
-}
 
 // ── Badges & pills ────────────────────────────────────────────────────────────
 

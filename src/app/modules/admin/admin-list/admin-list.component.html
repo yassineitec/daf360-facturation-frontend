@@ -1,22 +1,11 @@
 <div class="admin-page">
 
-  <!-- Page header -->
+  <!-- Page header — title on the left, country picker on the right (same row) -->
   <div class="page-header">
     <div>
       <h1 class="page-title">{{ 'ADMIN.PAGE.TITLE' | translate }}</h1>
       <p class="page-sub">{{ 'ADMIN.PAGE.SUBTITLE' | translate }}</p>
     </div>
-  </div>
-
-  @if (isLoading()) {
-    <div class="loading-state">{{ 'ADMIN.COMMON.LOADING' | translate }}</div>
-  }
-
-  @if (pageError()) {
-    <div class="banner-error">{{ pageError() }}</div>
-  }
-
-  @if (!isLoading() && !pageError()) {
 
     <!-- Pays selector (multi-pays only) -->
     @if (paysList().length > 1) {
@@ -60,137 +49,141 @@
         </div>
       </div>
     }
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">{{ 'ADMIN.COMMON.LOADING' | translate }}</div>
+  }
+
+  @if (pageError()) {
+    <div class="banner-error">{{ pageError() }}</div>
+  }
+
+  @if (!isLoading() && !pageError()) {
 
     <!-- Main tab nav -->
     <daf-card [options]="{variant:'glass', padding:'sm', radius:'xl'}">
-      <div class="main-tabs">
-        <button class="main-tab" [class.active]="activeTab() === 'lists'"
-          (click)="activeTab.set('lists')">
-          <span class="material-symbols-outlined tab-icon">checklist</span>
-          {{ 'ADMIN.TABS.LISTS' | translate }}
-        </button>
-        <button class="main-tab" [class.active]="activeTab() === 'forex'"
-          (click)="activeTab.set('forex')">
-          <span class="material-symbols-outlined tab-icon">currency_exchange</span>
-          {{ 'ADMIN.TABS.FOREX' | translate }}
-        </button>
-        <button class="main-tab" [class.active]="activeTab() === 'forex-api'"
-          (click)="openForexApiTab()">
-          <span class="material-symbols-outlined tab-icon">api</span>
-          {{ 'ADMIN.TABS.FOREX_API' | translate }}
-        </button>
-        <!-- Relances : la configuration de l'échéancier de recouvrement. Lecture ouverte
-             à FACT_VIEW_PAYMENT — l'écriture est gardée par le contrôleur et par le
-             bouton « Ajouter » de l'onglet lui-même. -->
-        <button *appHasPermission="'FACT_VIEW_PAYMENT'" class="main-tab"
-          [class.active]="activeTab() === 'reminders'"
-          (click)="activeTab.set('reminders')">
-          <span class="material-symbols-outlined tab-icon">notifications_active</span>
-          {{ 'ADMIN.TABS.REMINDERS' | translate }}
-        </button>
-        <button *appHasPermission="'FACT_SUPER_ADMIN'" class="main-tab"
-          [class.active]="activeTab() === 'permissions'"
-          (click)="activeTab.set('permissions')">
-          <span class="material-symbols-outlined tab-icon">admin_panel_settings</span>
-          {{ 'ADMIN.TABS.PERMISSIONS' | translate }}
-        </button>
-        <button *appHasPermission="'FACT_SUPER_ADMIN'" class="main-tab"
-          [class.active]="activeTab() === 'document-templates'"
-          (click)="activeTab.set('document-templates')">
-          <span class="material-symbols-outlined tab-icon">description</span>
-          {{ 'ADMIN.TABS.DOCUMENT_TEMPLATES' | translate }}
-        </button>
-      </div>
+      <daf-tabs
+        [tabs]="mainTabs()"
+        [active]="activeTab()"
+        (activeChange)="onTabChange($event)"
+        variant="pill"
+        idPrefix="admin-main"
+        [tabsLabel]="'ADMIN.TABS.NAV_LABEL' | translate" />
     </daf-card>
 
     <!-- ── LISTES TAB ────────────────────────────────────────────────────── -->
     @if (activeTab() === 'lists') {
       <div class="tab-content">
 
-        <!-- Type sub-tabs -->
-        <daf-card [options]="{variant:'glass', padding:'md', radius:'xl', hoverable:true}">
-          <div class="type-tabs">
-            @for (t of listTypes(); track t.code) {
-              <button class="type-tab" [class.active]="activeListType() === t.code"
-                (click)="selectListType(t.code)">
-                {{ t.labelFr }}
-              </button>
+        @if (!activeListType()) {
+          <!-- daf-tabs de catégorie + barre de recherche sur la MÊME ligne : les tabs à
+               gauche, la recherche à droite et prend tout l'espace restant (flex-1).
+               Fond blanc partagé pour unifier visuellement les deux éléments. -->
+          <div class="flex flex-wrap items-center gap-3 bg-white rounded-xl p-2">
+            <!-- Category filter — daf-tabs, not a hand-rolled pill row. Purely narrows
+                 which cards show below; the tab id never reaches the backend. -->
+            <daf-tabs
+              [tabs]="listCategoryTabs()"
+              [active]="listCategoryFilter()"
+              (activeChange)="listCategoryFilter.set($event)"
+              variant="pill"
+              idPrefix="admin-list-cat"
+              [tabsLabel]="'ADMIN.LISTS.CAT_TABS_LABEL' | translate" />
+
+            <!-- card="false" : daf-search-toolbar s'enveloppe sinon dans sa propre daf-card
+                 (fond glass), ce qui donnait un double fond avec le conteneur blanc commun
+                 ci-dessus. Ici la barre nue partage le même fond que les tabs. -->
+            <daf-search-toolbar class="flex-1" [card]="false"
+              [placeholder]="'ADMIN.LISTS.SEARCH_PLACEHOLDER' | translate"
+              [value]="listSearch()"
+              [debounce]="200"
+              (valueChange)="listSearch.set($event)" />
+          </div>
+
+          <!-- Type picker — one card per configurable list (devise, fréquence de
+               récurrence, type de coût…). Picking one opens its values as its own
+               page below, rather than switching an inline table under a pill row. -->
+          <div class="list-type-grid">
+            @for (t of filteredListTypes(); track t.code) {
+              <daf-card
+                [options]="{
+                  variant: 'glass', padding: 'lg', radius: 'xl',
+                  hoverable: true, clickable: true, fullHeight: true,
+                  icon: listTypeIcon(t.code), iconColor: 'text-tertiary', iconBg: 'bg-tertiary/10',
+                  iconHoverBg: 'bg-tertiary', iconHoverColor: 'text-white',
+                  title: listTypeLabel(t),
+                  description: listTypeDescription(t.code),
+                  action: { label: ('ADMIN.LISTS.MANAGE' | translate), labelColor: 'text-tertiary' }
+                }"
+                (cardClick)="selectListType(t.code)" />
             }
             @if (listTypes().length === 0) {
               <span class="loading-inline">{{ 'ADMIN.LISTS.LOADING_TYPES' | translate }}</span>
             }
           </div>
-        </daf-card>
+        } @else {
 
-        @if (listError()) {
-          <div class="banner-error">{{ listError() }}</div>
-        }
+          <daf-button [label]="'ADMIN.COMMON.BACK' | translate" variant="ghost"
+            [options]="{ size: 'sm', iconStart: 'arrow_back' }"
+            (onClick)="backToListTypes()" />
 
-        <div class="section-header">
-          <h3 class="section-header-title">{{ activeListTypeLabel() }}</h3>
-          <daf-button [label]="'ADMIN.COMMON.ADD' | translate" variant="teal"
-            [options]="{ size: 'sm', iconStart: 'add' }"
-            (onClick)="openCreateValueModal()" />
-        </div>
+          @if (listError()) {
+            <div class="banner-error">{{ listError() }}</div>
+          }
 
-        <daf-data-table [columns]="listColumns()" [rows]="listRows()" [config]="listTableConfig()">
-
-          <ng-template dafCell="code" let-row>
-            <span class="code-pill">{{ row['code'] }}</span>
-          </ng-template>
-
-          <ng-template dafCell="labelFr" let-row>
-            {{ row['labelFr'] }}
-          </ng-template>
-
-          <ng-template dafCell="labelEn" let-row>
-            <span class="cell-secondary">{{ row['labelEn'] }}</span>
-          </ng-template>
-
-          <ng-template dafCell="isDefault" let-row>
-            <span class="star-default">{{ row['isDefault'] ? '★' : '' }}</span>
-          </ng-template>
-
-          <ng-template dafCell="isActive" let-row>
-            <span [class]="row['isActive'] ? 'badge-active' : 'badge-inactive'">
-              {{ (row['isActive'] ? 'ADMIN.LISTS.ACTIVE' : 'ADMIN.LISTS.INACTIVE') | translate }}
-            </span>
-          </ng-template>
-
-          <!-- Règle de justificatif : rendue en mots plutôt qu'en coche, pour qu'une
-               lecture rapide de la colonne distingue « exigé » de « facultatif » sans
-               avoir à interpréter une case vide. -->
-          <ng-template dafCell="requiresReceipt" let-row>
-            <span [class]="row['requiresReceipt'] ? 'badge-active' : 'badge-inactive'">
-              {{ (row['requiresReceipt'] ? 'ADMIN.LISTS.RECEIPT_YES' : 'ADMIN.LISTS.RECEIPT_NO') | translate }}
-            </span>
-          </ng-template>
-
-          <ng-template dafCell="_actions" let-row>
-            <div class="cell-actions">
-              <daf-button class="icon-btn-edit" [title]="'ADMIN.COMMON.EDIT' | translate" [options]="{ size: 'sm', variant: 'primary', iconStart: 'edit' }"
-                (onClick)="openEditValueModal(row['_source'])" />
-              @if (row['isActive']) {
-                <daf-button class="icon-btn-delete" [title]="'ADMIN.LISTS.DEACTIVATE' | translate" [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
-                  (onClick)="deactivateValue(row['_source'])" />
-              } @else {
-                <daf-button [title]="'ADMIN.LISTS.REACTIVATE' | translate" [options]="{ size: 'sm', variant: 'teal', iconStart: 'restart_alt' }"
-                  (onClick)="reactivateValue(row['_source'])" />
-              }
-            </div>
-          </ng-template>
-
-        </daf-data-table>
-
-        @if (listTotalPages() > 1) {
-          <div class="table-pagination">
-            <daf-pagination
-              [currentPage]="listCurrentPage()"
-              [totalPages]="listTotalPages()"
-              [totalElements]="listValues().length"
-              [config]="paginationConfig"
-              (pageChange)="onListPageChange($event)" />
+          <div class="section-header">
+            <h3 class="section-header-title">{{ activeListTypeLabel() }}</h3>
+            <daf-button [label]="'ADMIN.COMMON.ADD' | translate" variant="teal"
+              [options]="{ size: 'sm', iconStart: 'add' }"
+              (onClick)="openCreateValueModal()" />
           </div>
+
+          <daf-data-table [columns]="listColumns()" [rows]="listRows()" [config]="listTableConfig()">
+
+            <ng-template dafCell="code" let-row>
+              <span class="code-pill">{{ row['code'] }}</span>
+            </ng-template>
+
+            <ng-template dafCell="labelFr" let-row>
+              {{ row['labelFr'] }}
+            </ng-template>
+
+            <ng-template dafCell="labelEn" let-row>
+              <span class="cell-secondary">{{ row['labelEn'] }}</span>
+            </ng-template>
+
+            <ng-template dafCell="isDefault" let-row>
+              <span class="star-default">{{ row['isDefault'] ? '★' : '' }}</span>
+            </ng-template>
+
+            <ng-template dafCell="isActive" let-row>
+              <span [class]="row['isActive'] ? 'badge-active' : 'badge-inactive'">
+                {{ (row['isActive'] ? 'ADMIN.LISTS.ACTIVE' : 'ADMIN.LISTS.INACTIVE') | translate }}
+              </span>
+            </ng-template>
+
+            <!-- Règle de justificatif : rendue en mots plutôt qu'en coche, pour qu'une
+                 lecture rapide de la colonne distingue « exigé » de « facultatif » sans
+                 avoir à interpréter une case vide. -->
+            <ng-template dafCell="requiresReceipt" let-row>
+              <span [class]="row['requiresReceipt'] ? 'badge-active' : 'badge-inactive'">
+                {{ (row['requiresReceipt'] ? 'ADMIN.LISTS.RECEIPT_YES' : 'ADMIN.LISTS.RECEIPT_NO') | translate }}
+              </span>
+            </ng-template>
+
+          </daf-data-table>
+
+          @if (listTotalPages() > 1) {
+            <div class="table-pagination">
+              <daf-pagination
+                [currentPage]="listCurrentPage()"
+                [totalPages]="listTotalPages()"
+                [totalElements]="listValues().length"
+                [config]="paginationConfig"
+                (pageChange)="onListPageChange($event)" />
+            </div>
+          }
         }
       </div>
     }
@@ -233,17 +226,6 @@
             } @else {
               <span class="mono-val">{{ row['chf'] }}</span>
             }
-          </ng-template>
-
-          <ng-template dafCell="_actions" let-row>
-            <div class="cell-actions">
-              <daf-button class="icon-btn-edit" [title]="'ADMIN.COMMON.EDIT' | translate" [options]="{ size: 'sm', variant: 'primary', iconStart: 'edit' }"
-                (onClick)="openEditForexModal(row['_source'])" />
-              @if (row['_source'].eurParam) {
-                <daf-button class="icon-btn-delete" [title]="'ADMIN.FOREX.DELETE_SHORT' | translate" [options]="{ size: 'sm', variant: 'danger', iconStart: 'delete' }"
-                  (onClick)="deleteForexParam(row['_source'].eurParam)" />
-              }
-            </div>
           </ng-template>
 
         </daf-data-table>

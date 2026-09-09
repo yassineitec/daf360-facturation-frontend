@@ -1024,9 +1024,6 @@
         "VALIDATE_BUDGET": "Validate budget",
         "EXPENSES": "Reimbursable expenses"
       },
-      "IDENTITY": {
-        "BILLING_PROGRESS": "Billing progress"
-      },
       "HEALTH": {
         "LABEL": "Health",
         "OPTIMAL": "Optimal",
@@ -1107,13 +1104,6 @@
         "MARGIN": "Gross margin",
         "MARGIN_TARGET": "Margin target",
         "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated."
-      },
-      "RAF_SECTION": {
-        "TITLE": "Remaining to Invoice (RAF)",
-        "BUDGET_TOTAL": "Total budget:",
-        "INVOICED": "Invoiced",
-        "TS_INTEGRATED": "Integrated orders",
-        "REMAINING": "Remaining (RAF)"
       },
       "INFO": {
         "TITLE": "General information",
@@ -2067,10 +2057,14 @@
       }
     },
     "WIP": {
+      "KPI_TS": "TS integrated",
+      "KPI_TS_HELP": "Amount of validated timesheets already integrated into this affaire's RAF calculation.",
       "AV_EXPLAIN": "WIP = contract budget × progress rate to date. Submit a new cumulative rate below; the value is calculated automatically.",
+      "REGIE_LABEL": "Time & Materials",
       "TM_EXPLAIN": "WIP = cost of Timesheet hours already validated for this period. Only hours with status \"Validated\" are counted.",
       "DATE_FROM": "Start date",
       "DATE_TO": "End date",
+      "PERIOD": "Period",
       "DATE_RANGE_INVALID": "The start date must be before the end date.",
       "CALCULATED_HINT": "Internal cost of the work performed — never shared with the client.",
       "TO_INVOICE": "Amount to invoice the client",
@@ -2114,6 +2108,8 @@
       "EXPORT_SHEET_WEEKLY": "Weekly hours",
       "COL_TOTAL": "Total",
       "LOADING": "Loading…",
+      "HISTORY_TITLE": "WIP history",
+      "NO_HISTORY": "No history yet.",
       "COL_PERIOD": "Period",
       "COL_TAUX": "Rate",
       "COL_INCREMENT": "Incremental amount",
@@ -2566,11 +2562,22 @@
     "EMPLOYEE_COST": {
       "TITLE": "Employee costs",
       "PAGE_SUBTITLE": "Internal selling cost = basic cost × 1.1 · external selling cost = basic cost × 1.2 — applied automatically, always.",
+      "EXPORT_EXCEL": "Export Excel",
+      "EXPORT_SHEET": "Employee costs",
       "KPI_TOTAL": "Tracked employees",
       "KPI_ACTIVE": "Active costs",
       "KPI_EXPIRED": "Expired costs",
+      "KPI_COST_TOTAL": "Total basic cost",
+      "KPI_MARGIN": "Average margin (internal / external)",
       "SEARCH_PLACEHOLDER": "Search an employee…",
-      "INCLUDE_EXPIRED": "Include expired costs",
+      "FILTER_STATUS_LABEL": "Status",
+      "FILTER_STATUS_ALL": "All",
+      "FILTER_STATUS_CURRENT": "Active only",
+      "FILTER_STATUS_EXPIRED": "Expired only",
+      "FILTER_COST_MIN_LABEL": "Min. basic cost",
+      "FILTER_COST_MIN_PLACEHOLDER": "e.g. 20000",
+      "FILTER_COST_MAX_LABEL": "Max. basic cost",
+      "FILTER_COST_MAX_PLACEHOLDER": "e.g. 60000",
       "FILTER_TITLE": "Filter",
       "FILTER_APPLY": "Apply",
       "FILTER_CANCEL": "Cancel",
@@ -2582,7 +2589,7 @@
       "ADD": "+ Add",
       "ADD_TITLE": "New employee cost",
       "EDIT_TITLE": "Edit employee cost",
-      "EMPLOYEE_EMAIL": "Employee email",
+      "EMPLOYEE_EMAIL": "Collaborator",
       "EMPLOYEE_EMAIL_PLACEHOLDER": "Search an employee…",
       "EMAIL_HINT": "Must match the employee's account email exactly.",
       "BASIC_COST": "Basic cost",
@@ -3283,7 +3290,7 @@
       "BADGE_ADMIN": "Admin",
       "PERM_COUNT": "{{count}} perm.",
       "EMPTY_STATE": "Select a role to manage its permissions.",
-      "ADMIN_NOTE": "This role is an administrator — it has access to everything.",
+      "NO_ROLES": "No role found.",
       "CHECK_ALL": "Check all",
       "UNCHECK_ALL": "Uncheck all",
       "SAVE": "Save",
@@ -3306,7 +3313,8 @@
       "SAVE": "Save",
       "ADD": "Add",
       "EDIT": "Edit",
-      "ACTIONS": "Actions"
+      "ACTIONS": "Actions",
+      "BACK": "Back"
     },
     "PAYS": {
       "LABEL": "Country / Entity",
@@ -3318,7 +3326,9 @@
       "FOREX": "Exchange rates",
       "FOREX_API": "Forex API",
       "PERMISSIONS": "Permissions",
-      "DOCUMENT_TEMPLATES": "Document templates"
+      "DOCUMENT_TEMPLATES": "Document templates",
+      "REMINDERS": "Reminders",
+      "NAV_LABEL": "Admin navigation"
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Document templates",
@@ -3353,6 +3363,31 @@
     },
     "LISTS": {
       "LOADING_TYPES": "Loading types…",
+      "MANAGE": "Manage",
+      "SEARCH_PLACEHOLDER": "Search a list…",
+      "CAT_ALL": "All",
+      "CAT_TABS_LABEL": "Filter by category",
+      "CAT_COSTS": "Costs",
+      "CAT_BILLING": "Billing",
+      "CAT_SUPPLIERS": "Suppliers",
+      "CAT_GENERAL": "General",
+      "TYPE_DESC": {
+        "RECURRENCE_FREQUENCY": "Recurrence cadences used for periodic costs and billing.",
+        "COST_TYPE": "Cost types available to classify a cost line.",
+        "PAYMENT_METHOD": "Payment methods offered when entering a cost or invoice.",
+        "CURRENCY": "Currencies available in the application.",
+        "SUPPLIER_TYPE": "Supplier types used to classify business partners.",
+        "COST_LINE_ORIGIN": "Possible origins of a cost line (manual entry, import, external module…).",
+        "ACTIVITE": "Activities used when configuring affaires.",
+        "COST_CATEGORY": "Main cost categories.",
+        "COST_SUB_CATEGORY": "Sub-categories detailing a cost category.",
+        "SUPPLIER_CATEGORY": "Categories used to classify suppliers.",
+        "AFFAIRE_REPARTITION_TYPE": "Contractual allocation types applied to affaires.",
+        "EXPENSE_CATEGORY": "Reimbursable expense categories, with receipt requirement rule.",
+        "BILLING_PERIOD": "Billing periods offered.",
+        "BILLING_PERMISSION": "Permissions related to the billing module.",
+        "INVOICE_TYPE": "Invoice types available for issuance."
+      },
       "COL_CODE": "Code",
       "COL_LABEL_FR": "Label FR",
       "COL_LABEL_EN": "Label EN",

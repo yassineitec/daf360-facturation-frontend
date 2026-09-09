@@ -3,7 +3,6 @@ import {
 } from '@angular/core';
 import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
-import { PermissionDirective } from '../../../shared/permission.directive';
 import { FactRolesAdminComponent } from '../roles/fact-roles-admin.component';
 import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-admin.component';
 import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
@@ -14,6 +13,7 @@ import {
   RadioGroupComponent, RadioGroupConfig, RadioOption,
   ToggleComponent, ToggleOptions,
   FormFieldComponent, StatusBadgeComponent,
+  TabsComponent, TabItem, SearchToolbarComponent,
 } from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
@@ -23,6 +23,7 @@ import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { UserStore } from '../../../core/user.store';
 
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'reminders';
 
@@ -41,8 +42,8 @@ interface ForexRow {
     CommonModule, FormsModule,
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
-    FormFieldComponent, StatusBadgeComponent, TranslatePipe,
-    PermissionDirective, FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
+    FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
+    FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
   ],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',
@@ -54,6 +55,7 @@ export class AdminListComponent implements OnInit {
   private readonly forexApiSvc  = inject(ForexApiConfigService);
   private readonly modal        = inject(ModalService);
   private readonly translate    = inject(TranslateService);
+  private readonly userStore    = inject(UserStore);
 
   @ViewChild('valueFormTpl') valueFormTpl!: TemplateRef<unknown>;
   @ViewChild('forexFormTpl') forexFormTpl!: TemplateRef<unknown>;
@@ -90,7 +92,6 @@ export class AdminListComponent implements OnInit {
     cols.push(
       { key: 'isDefault', label: this.translate.instant('ADMIN.LISTS.COL_DEFAULT'),   align: 'center', width: '90px' },
       { key: 'isActive',  label: this.translate.instant('ADMIN.LISTS.COL_STATUS'),    align: 'center', width: '90px' },
-      { key: '_actions',  label: this.translate.instant('ADMIN.COMMON.ACTIONS'),      align: 'right',  width: '150px' },
     );
     return cols;
   });
@@ -101,21 +102,55 @@ export class AdminListComponent implements OnInit {
       { key: 'code',     label: this.translate.instant('ADMIN.FOREX.COL_CODE'),  width: '100px' },
       { key: 'eur',      label: this.translate.instant('ADMIN.FOREX.COL_EUR'),   align: 'right', width: '180px' },
       { key: 'chf',      label: this.translate.instant('ADMIN.FOREX.COL_CHF'),   align: 'right', width: '200px' },
-      { key: '_actions', label: this.translate.instant('ADMIN.COMMON.ACTIONS'),  align: 'right', width: '150px' },
     ];
   });
 
-  readonly listTableConfig = computed<TableConfig>(() => ({
-    hoverable:    true,
-    loading:      this.listLoading(),
-    emptyMessage: this.translate.instant('ADMIN.LISTS.EMPTY'),
-  }));
+  /** Native `TableConfig.actions`, not a hand-placed `_actions` column — same
+   * convention as the Relances / Maquettes de documents tables on this page. */
+  readonly listTableConfig = computed<TableConfig>(() => {
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      hoverable:    true,
+      loading:      this.listLoading(),
+      emptyMessage: t('ADMIN.LISTS.EMPTY'),
+      actions: [
+        {
+          id: 'edit', icon: 'edit', tooltip: t('ADMIN.COMMON.EDIT'),
+          onClick: row => this.openEditValueModal(row['_source'] as ListValueDto),
+        },
+        {
+          id: 'deactivate', icon: 'toggle_on', tooltip: t('ADMIN.LISTS.DEACTIVATE'), variant: 'danger',
+          hidden: row => !(row['_source'] as ListValueDto).isActive,
+          onClick: row => this.deactivateValue(row['_source'] as ListValueDto),
+        },
+        {
+          id: 'reactivate', icon: 'restart_alt', tooltip: t('ADMIN.LISTS.REACTIVATE'),
+          hidden: row => (row['_source'] as ListValueDto).isActive,
+          onClick: row => this.reactivateValue(row['_source'] as ListValueDto),
+        },
+      ],
+    };
+  });
 
-  readonly forexTableConfig = computed<TableConfig>(() => ({
-    hoverable:    true,
-    loading:      this.forexLoading(),
-    emptyMessage: this.translate.instant('ADMIN.FOREX.EMPTY'),
-  }));
+  readonly forexTableConfig = computed<TableConfig>(() => {
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      hoverable:    true,
+      loading:      this.forexLoading(),
+      emptyMessage: t('ADMIN.FOREX.EMPTY'),
+      actions: [
+        {
+          id: 'edit', icon: 'edit', tooltip: t('ADMIN.COMMON.EDIT'),
+          onClick: row => this.openEditForexModal(row['_source'] as ForexRow),
+        },
+        {
+          id: 'delete', icon: 'delete', tooltip: t('ADMIN.FOREX.DELETE_SHORT'), variant: 'danger',
+          hidden: row => !(row['_source'] as ForexRow).eurParam,
+          onClick: row => this.deleteForexParam((row['_source'] as ForexRow).eurParam!),
+        },
+      ],
+    };
+  });
 
   listCurrentPage  = signal(0);
   forexCurrentPage = signal(0);
@@ -158,9 +193,10 @@ export class AdminListComponent implements OnInit {
     })),
   );
 
-  readonly activeListTypeLabel = computed(() =>
-    this.listTypes().find(t => t.code === this.activeListType())?.labelFr
-      ?? this.translate.instant('ADMIN.LISTS.DEFAULT_LABEL'));
+  readonly activeListTypeLabel = computed(() => {
+    const t = this.listTypes().find(x => x.code === this.activeListType());
+    return t ? this.listTypeLabel(t) : this.translate.instant('ADMIN.LISTS.DEFAULT_LABEL');
+  });
 
   // ── Common ────────────────────────────────────────────────────────────────
   activeTab = signal<AdminTab>('lists');
@@ -168,6 +204,34 @@ export class AdminListComponent implements OnInit {
   paysId    = signal<number>(0);
   isLoading = signal(false);
   pageError = signal<string | null>(null);
+
+  /** `daf-tabs`, not hand-rolled `.main-tab` buttons — permission-gated tabs are
+   * filtered here (same checks `*appHasPermission` used to make) since the strip
+   * takes a plain array, not a structural directive per item. */
+  readonly mainTabs = computed<TabItem[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    const items: TabItem[] = [
+      { id: 'lists',     label: t('ADMIN.TABS.LISTS'),     icon: 'checklist' },
+      { id: 'forex',     label: t('ADMIN.TABS.FOREX'),     icon: 'currency_exchange' },
+      { id: 'forex-api', label: t('ADMIN.TABS.FOREX_API'), icon: 'api' },
+    ];
+    if (this.userStore.hasPermission('FACT_VIEW_PAYMENT')) {
+      items.push({ id: 'reminders', label: t('ADMIN.TABS.REMINDERS'), icon: 'notifications_active' });
+    }
+    if (this.userStore.hasPermission('FACT_SUPER_ADMIN')) {
+      items.push({ id: 'permissions',         label: t('ADMIN.TABS.PERMISSIONS'),         icon: 'admin_panel_settings' });
+      items.push({ id: 'document-templates',  label: t('ADMIN.TABS.DOCUMENT_TEMPLATES'),  icon: 'description' });
+    }
+    return items;
+  });
+
+  /** `forex-api` carries a side effect (loads status on entry) the plain tabs don't
+   * have, so this can't be a bare `[(active)]` two-way binding — see openForexApiTab(). */
+  onTabChange(id: string): void {
+    if (id === 'forex-api') { this.openForexApiTab(); return; }
+    this.activeTab.set(id as AdminTab);
+  }
 
   // ── Pays / Entité dropdown ───────────────────────────────────────────────
   paysDropdownOpen = signal(false);
@@ -202,8 +266,10 @@ export class AdminListComponent implements OnInit {
   }
 
   // ── Lists tab ─────────────────────────────────────────────────────────────
+  // `null` = the type-picker cards are showing; picking one opens that type's
+  // values as its own page (back button to return to the cards).
   listTypes      = signal<ListTypeDto[]>([]);
-  activeListType = signal<string>('CURRENCY');
+  activeListType = signal<string | null>(null);
   listValues     = signal<ListValueDto[]>([]);
   listLoading    = signal(false);
   listError      = signal<string | null>(null);
@@ -287,11 +353,112 @@ export class AdminListComponent implements OnInit {
     this.factListSvc.getAllListTypes().subscribe(types => this.listTypes.set(types));
   }
 
+  /** One Material Symbol per known list type, by code — not translated (icons aren't
+   * language-dependent). Falls back to the generic icon for any future type this
+   * map hasn't been extended for yet. */
+  private static readonly TYPE_ICONS: Record<string, string> = {
+    RECURRENCE_FREQUENCY:     'repeat',
+    COST_TYPE:                'category',
+    PAYMENT_METHOD:           'credit_card',
+    CURRENCY:                 'attach_money',
+    SUPPLIER_TYPE:            'storefront',
+    COST_LINE_ORIGIN:         'call_split',
+    ACTIVITE:                 'work',
+    COST_CATEGORY:            'sell',
+    COST_SUB_CATEGORY:        'bookmark',
+    SUPPLIER_CATEGORY:        'store',
+    AFFAIRE_REPARTITION_TYPE: 'pie_chart',
+    EXPENSE_CATEGORY:         'receipt_long',
+    BILLING_PERIOD:           'calendar_month',
+    BILLING_PERMISSION:       'admin_panel_settings',
+    INVOICE_TYPE:             'description',
+  };
+
+  listTypeIcon(code: string): string {
+    return AdminListComponent.TYPE_ICONS[code] ?? 'checklist';
+  }
+
+  /** Display-only correction over the backend's `labelFr` — the type PICKER card
+   * title, nothing else reads through this. "Activité" only has one row's worth of
+   * options showing here, but the card is a category label ("what this list is
+   * about"), which reads better in the plural — same convention as the other 14
+   * card titles ("Catégories de coût", "Modes de paiement"). Not a database fix:
+   * `labelFr` itself is unchanged, so any other screen reading it is unaffected. */
+  private static readonly TYPE_LABEL_OVERRIDE: Record<string, string> = {
+    ACTIVITE: 'Activités',
+  };
+
+  listTypeLabel(t: ListTypeDto): string {
+    return AdminListComponent.TYPE_LABEL_OVERRIDE[t.code] ?? t.labelFr;
+  }
+
+  /** Groups the 15 known list types into 4 categories, purely to give the type-picker
+   * a `daf-tabs` filter above the card grid — codes not in this map fall under
+   * 'general' rather than disappearing. */
+  private static readonly TYPE_CATEGORY: Record<string, string> = {
+    COST_TYPE:                'costs',
+    COST_CATEGORY:            'costs',
+    COST_SUB_CATEGORY:        'costs',
+    COST_LINE_ORIGIN:         'costs',
+    RECURRENCE_FREQUENCY:     'costs',
+    BILLING_PERIOD:           'billing',
+    INVOICE_TYPE:             'billing',
+    AFFAIRE_REPARTITION_TYPE: 'billing',
+    EXPENSE_CATEGORY:         'billing',
+    BILLING_PERMISSION:       'billing',
+    SUPPLIER_TYPE:            'suppliers',
+    SUPPLIER_CATEGORY:        'suppliers',
+    CURRENCY:                 'general',
+    PAYMENT_METHOD:           'general',
+    ACTIVITE:                 'general',
+  };
+
+  listCategoryFilter = signal<string>('all');
+  listSearch = signal('');
+
+  readonly listCategoryTabs = computed<TabItem[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return [
+      { id: 'all',       label: t('ADMIN.LISTS.CAT_ALL') },
+      { id: 'costs',     label: t('ADMIN.LISTS.CAT_COSTS') },
+      { id: 'billing',   label: t('ADMIN.LISTS.CAT_BILLING') },
+      { id: 'suppliers', label: t('ADMIN.LISTS.CAT_SUPPLIERS') },
+      { id: 'general',   label: t('ADMIN.LISTS.CAT_GENERAL') },
+    ];
+  });
+
+  readonly filteredListTypes = computed<ListTypeDto[]>(() => {
+    const cat = this.listCategoryFilter();
+    const byCat = cat === 'all'
+      ? this.listTypes()
+      : this.listTypes().filter(t => (AdminListComponent.TYPE_CATEGORY[t.code] ?? 'general') === cat);
+    const q = this.listSearch().trim().toLowerCase();
+    if (!q) return byCat;
+    return byCat.filter(t =>
+      this.listTypeLabel(t).toLowerCase().includes(q)
+      || this.listTypeDescription(t.code).toLowerCase().includes(q));
+  });
+
+  /** Short "what this list is for" line under the card title — falls back to the
+   * bare code for any type not yet covered by ADMIN.LISTS.TYPE_DESC.*, rather than
+   * showing ngx-translate's raw missing-key string. */
+  listTypeDescription(code: string): string {
+    const key = 'ADMIN.LISTS.TYPE_DESC.' + code;
+    const translated = this.translate.instant(key);
+    return translated === key ? code : translated;
+  }
+
   selectListType(code: string): void {
     if (code === this.activeListType()) return;
     this.activeListType.set(code);
     this.listCurrentPage.set(0);
     this.loadListValues();
+  }
+
+  backToListTypes(): void {
+    this.activeListType.set(null);
+    this.listError.set(null);
   }
 
   loadListValues(): void {
@@ -359,7 +526,9 @@ export class AdminListComponent implements OnInit {
       }
       this.valueModalSaving.set(true);
       this.valueModalError.set(null);
-      const typeCode = this.activeListType();
+      // Non-null: this modal only opens from the detail view, reachable only once
+      // a type card has been picked (see backToListTypes()/selectListType() above).
+      const typeCode = this.activeListType()!;
       this.factListSvc.createListValue(typeCode, {
         typeCode, paysId, code, labelFr,
         labelEn: labelEn || undefined,

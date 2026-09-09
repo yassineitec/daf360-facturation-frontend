@@ -1024,9 +1024,6 @@
         "VALIDATE_BUDGET": "Valider le budget",
         "EXPENSES": "Frais remboursables"
       },
-      "IDENTITY": {
-        "BILLING_PROGRESS": "Progression facturation"
-      },
       "HEALTH": {
         "LABEL": "Santé",
         "OPTIMAL": "Optimale",
@@ -1107,13 +1104,6 @@
         "MARGIN": "Marge brute",
         "MARGIN_TARGET": "Objectif de marge",
         "MARGIN_HELP": "(Encaissé − sous-traitance) / encaissé : un % du CA, pas du budget. Les coûts internes valent 0 faute de timesheet, la marge est surévaluée."
-      },
-      "RAF_SECTION": {
-        "TITLE": "Reste À Facturer (RAF)",
-        "BUDGET_TOTAL": "Budget total :",
-        "INVOICED": "Facturé",
-        "TS_INTEGRATED": "TS intégrés",
-        "REMAINING": "RAF disponible"
       },
       "INFO": {
         "TITLE": "Informations générales",
@@ -2067,10 +2057,14 @@
       }
     },
     "WIP": {
+      "KPI_TS": "TS",
+      "KPI_TS_HELP": "Montant des timesheets validés déjà intégrés dans le calcul du RAF de cette affaire.",
       "AV_EXPLAIN": "WIP = budget du contrat × taux d'avancement à date. Soumettez un nouveau taux cumulé ci-dessous ; la valeur est calculée automatiquement.",
+      "REGIE_LABEL": "Régie Time & Materials",
       "TM_EXPLAIN": "WIP = coût des heures Timesheet déjà validées pour cette période. Seules les heures au statut « Validé » sont comptées.",
       "DATE_FROM": "Date de début",
       "DATE_TO": "Date de fin",
+      "PERIOD": "Période",
       "DATE_RANGE_INVALID": "La date de début doit être avant la date de fin.",
       "CALCULATED_HINT": "Coût interne du travail effectué — jamais communiqué au client.",
       "TO_INVOICE": "Montant à facturer au client",
@@ -2114,6 +2108,8 @@
       "EXPORT_SHEET_WEEKLY": "Heures par semaine",
       "COL_TOTAL": "Total",
       "LOADING": "Chargement…",
+      "HISTORY_TITLE": "Historique WIP",
+      "NO_HISTORY": "Aucun historique pour le moment.",
       "COL_PERIOD": "Période",
       "COL_TAUX": "Taux",
       "COL_INCREMENT": "Montant incrémental",
@@ -2566,11 +2562,22 @@
     "EMPLOYEE_COST": {
       "TITLE": "Coûts collaborateurs",
       "PAGE_SUBTITLE": "Coût de vente interne = coût de base × 1,1 · coût de vente externe = coût de base × 1,2 — appliqué automatiquement, à chaque fois.",
+      "EXPORT_EXCEL": "Exporter Excel",
+      "EXPORT_SHEET": "Coûts collaborateurs",
       "KPI_TOTAL": "Collaborateurs suivis",
       "KPI_ACTIVE": "Coûts actifs",
       "KPI_EXPIRED": "Coûts expirés",
+      "KPI_COST_TOTAL": "Coût de base total",
+      "KPI_MARGIN": "Marge moyenne (interne / externe)",
       "SEARCH_PLACEHOLDER": "Rechercher un collaborateur…",
-      "INCLUDE_EXPIRED": "Inclure les coûts expirés",
+      "FILTER_STATUS_LABEL": "Statut",
+      "FILTER_STATUS_ALL": "Tous",
+      "FILTER_STATUS_CURRENT": "Actifs seulement",
+      "FILTER_STATUS_EXPIRED": "Expirés seulement",
+      "FILTER_COST_MIN_LABEL": "Coût de base min.",
+      "FILTER_COST_MIN_PLACEHOLDER": "Ex: 20000",
+      "FILTER_COST_MAX_LABEL": "Coût de base max.",
+      "FILTER_COST_MAX_PLACEHOLDER": "Ex: 60000",
       "FILTER_TITLE": "Filtrer",
       "FILTER_APPLY": "Appliquer",
       "FILTER_CANCEL": "Annuler",
@@ -2582,7 +2589,7 @@
       "ADD": "+ Ajouter",
       "ADD_TITLE": "Nouveau coût collaborateur",
       "EDIT_TITLE": "Modifier le coût collaborateur",
-      "EMPLOYEE_EMAIL": "Email du collaborateur",
+      "EMPLOYEE_EMAIL": "Collaborateur",
       "EMPLOYEE_EMAIL_PLACEHOLDER": "Rechercher un collaborateur…",
       "EMAIL_HINT": "Doit correspondre exactement à l'email du compte du collaborateur.",
       "BASIC_COST": "Coût de base",
@@ -3283,7 +3290,7 @@
       "BADGE_ADMIN": "Admin",
       "PERM_COUNT": "{{count}} perm.",
       "EMPTY_STATE": "Sélectionnez un rôle pour gérer ses permissions.",
-      "ADMIN_NOTE": "Ce rôle est administrateur — il a accès à tout.",
+      "NO_ROLES": "Aucun rôle trouvé.",
       "CHECK_ALL": "Tout cocher",
       "UNCHECK_ALL": "Tout décocher",
       "SAVE": "Enregistrer",
@@ -3306,7 +3313,8 @@
       "SAVE": "Enregistrer",
       "ADD": "Ajouter",
       "EDIT": "Modifier",
-      "ACTIONS": "Actions"
+      "ACTIONS": "Actions",
+      "BACK": "Retour"
     },
     "PAYS": {
       "LABEL": "Pays / Entité",
@@ -3318,7 +3326,9 @@
       "FOREX": "Taux de change",
       "FOREX_API": "API Forex",
       "PERMISSIONS": "Permissions",
-      "DOCUMENT_TEMPLATES": "Maquettes de documents"
+      "DOCUMENT_TEMPLATES": "Maquettes de documents",
+      "REMINDERS": "Relances",
+      "NAV_LABEL": "Navigation de l'administration"
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Maquettes de documents",
@@ -3353,6 +3363,31 @@
     },
     "LISTS": {
       "LOADING_TYPES": "Chargement des types…",
+      "MANAGE": "Gérer",
+      "SEARCH_PLACEHOLDER": "Rechercher une liste…",
+      "CAT_ALL": "Tous",
+      "CAT_TABS_LABEL": "Filtrer par catégorie",
+      "CAT_COSTS": "Coûts",
+      "CAT_BILLING": "Facturation",
+      "CAT_SUPPLIERS": "Fournisseurs",
+      "CAT_GENERAL": "Général",
+      "TYPE_DESC": {
+        "RECURRENCE_FREQUENCY": "Cadences de récurrence utilisées pour les coûts et facturations périodiques.",
+        "COST_TYPE": "Types de coûts disponibles pour classer une ligne de coût.",
+        "PAYMENT_METHOD": "Modes de paiement proposés lors de la saisie d'un coût ou d'une facture.",
+        "CURRENCY": "Devises disponibles dans l'application.",
+        "SUPPLIER_TYPE": "Types de fournisseurs pour classer les partenaires commerciaux.",
+        "COST_LINE_ORIGIN": "Origines possibles d'une ligne de coût (saisie manuelle, import, module externe…).",
+        "ACTIVITE": "Activités utilisées dans la configuration des affaires.",
+        "COST_CATEGORY": "Catégories principales de coûts.",
+        "COST_SUB_CATEGORY": "Sous-catégories détaillant une catégorie de coût.",
+        "SUPPLIER_CATEGORY": "Catégories utilisées pour classer les fournisseurs.",
+        "AFFAIRE_REPARTITION_TYPE": "Types de répartition contractuelle appliqués aux affaires.",
+        "EXPENSE_CATEGORY": "Catégories de frais remboursables, avec règle de justificatif.",
+        "BILLING_PERIOD": "Périodes de facturation proposées.",
+        "BILLING_PERMISSION": "Permissions liées au module de facturation.",
+        "INVOICE_TYPE": "Types de facture disponibles à l'émission."
+      },
       "COL_CODE": "Code",
       "COL_LABEL_FR": "Libellé FR",
       "COL_LABEL_EN": "Libellé EN",
