@@ -8,7 +8,7 @@ import {
   CostLineDto, CreateCostLineRequest,
   CostImportResult, PageResponse,
   CostAttachmentDto, ForexPreviewDto, CircuitPreviewDto,
-  ListValueDto, SupplierSearchItem, SupplierLedgerDto,
+  ListValueDto, SupplierSearchItem, SupplierLedgerDto, SupplierCostSummaryDto,
   RateComputationDto, CreateRateComputationRequest,
 } from './cost.model';
 
@@ -67,6 +67,10 @@ export class CostService {
   getCostLines(filter: {
     paysId: number;
     status?: string | null;
+    /** Cost-lines-by-supplier (2026-09-09 plan): mutually exclusive with `noSupplier`. */
+    supplierId?: number | null;
+    /** Cost-lines-by-supplier (2026-09-09 plan): mutually exclusive with `supplierId`. */
+    noSupplier?: boolean;
     page?: number;
     size?: number;
   }): Observable<PageResponse<CostLineDto>> {
@@ -74,7 +78,9 @@ export class CostService {
       .set('paysId', String(filter.paysId))
       .set('page', String(filter.page ?? 0))
       .set('size', String(filter.size ?? 25));
-    if (filter.status) params = params.set('status', filter.status);
+    if (filter.status)             params = params.set('status', filter.status);
+    if (filter.supplierId != null) params = params.set('supplierId', String(filter.supplierId));
+    if (filter.noSupplier)         params = params.set('noSupplier', 'true');
     return this.http.get<PageResponse<CostLineDto>>(`${this.base}/cost-lines`, { params });
   }
 
@@ -84,6 +90,23 @@ export class CostService {
 
   getSupplierLedger(costLineId: number): Observable<SupplierLedgerDto> {
     return this.http.get<SupplierLedgerDto>(`${this.base}/cost-lines/${costLineId}/supplier-ledger`).pipe(
+      catchError(() => of({ supplier: null, rows: [] } as SupplierLedgerDto)),
+    );
+  }
+
+  // ── Cost-lines-by-supplier (2026-09-09 plan) ──────────────────────────────────
+
+  getCostLinesBySupplier(paysId: number): Observable<SupplierCostSummaryDto[]> {
+    const params = new HttpParams().set('paysId', String(paysId));
+    return this.http.get<SupplierCostSummaryDto[]>(`${this.base}/cost-lines/by-supplier`, { params }).pipe(
+      catchError(() => of([] as SupplierCostSummaryDto[])),
+    );
+  }
+
+  /** Same ledger as `getSupplierLedger()`, entered directly by supplierId instead of
+   *  via a cost-line id -- used by the `cost/supplier/:supplierId` detail-page route. */
+  getLedgerForSupplier(supplierId: number): Observable<SupplierLedgerDto> {
+    return this.http.get<SupplierLedgerDto>(`${this.base}/suppliers/${supplierId}/cost-ledger`).pipe(
       catchError(() => of({ supplier: null, rows: [] } as SupplierLedgerDto)),
     );
   }
