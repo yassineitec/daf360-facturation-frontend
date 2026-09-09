@@ -2410,6 +2410,7 @@
       "KIND_HIRING": "Recrutement",
       "REFERENCE": "Référence",
       "VIEW_CANDIDATE": "Voir le candidat",
+      "VIEW_DETAILS": "Voir le détail",
       "FILTER_ALL": "Tous",
       "SPLIT": "{{costs}} facturation · {{hiring}} recrutement",
       "HIRING_ERROR_PREFIX": "Approbations recrutement :",
@@ -2722,6 +2723,60 @@
       "FILTER_APPLY": "Appliquer",
       "FILTER_CANCEL": "Annuler",
       "FILTER_RESET": "Réinitialiser"
+    },
+    "DETAIL": {
+      "LOADING": "Chargement de la ligne de coût…",
+      "LOAD_ERROR": "Impossible de charger cette ligne de coût.",
+      "BACK": "Lignes de coût",
+      "BREADCRUMB_ARIA": "Fil d'ariane",
+      "TABS_ARIA": "Sections de la ligne de coût",
+      "UNNAMED": "Ligne de coût",
+      "KPI": {
+        "NET": "Montant HT",
+        "VAT": "TVA",
+        "GROSS": "Montant TTC",
+        "EUR": "Montant EUR"
+      },
+      "INFO": {
+        "REFERENCE": "Référence",
+        "LABEL": "Libellé",
+        "TRANSACTION_DATE": "Date",
+        "CURRENCY": "Devise",
+        "CATEGORY": "Catégorie",
+        "SUPPLIER": "Fournisseur",
+        "NO_SUPPLIER": "Aucun fournisseur",
+        "APPROVAL_LEVEL": "Niveau d'approbation"
+      },
+      "TABS": {
+        "INFO": "Détails",
+        "LEDGER": "Règlement"
+      },
+      "ACTIONS": {
+        "EDIT": "Modifier"
+      },
+      "APPROVALS": {
+        "COL_LEVEL": "Niveau",
+        "COL_DECISION": "Décision",
+        "COL_APPROVER": "Approbateur",
+        "COL_DATE": "Date",
+        "COL_COMMENT": "Commentaire",
+        "EMPTY": "Aucun historique d'approbation pour cette ligne.",
+        "DECISION_APPROVED": "Approuvé",
+        "DECISION_AUTO_APPROVED": "Auto-approuvé",
+        "DECISION_RETURNED": "Retourné",
+        "DECISION_REJECTED": "Rejeté"
+      },
+      "LEDGER": {
+        "COL_DATE": "Date",
+        "COL_LABEL": "Libellé",
+        "COL_DEBIT": "Débit",
+        "COL_CREDIT": "Crédit",
+        "COL_SOLDE_DEBITEUR": "Solde Débiteur",
+        "COL_SOLDE_CREDITEUR": "Solde Créditeur",
+        "ACCOUNT_LABEL": "Compte fournisseur :",
+        "NO_SUPPLIER": "Aucun fournisseur n'est associé à cette ligne de coût — aucun relevé de compte à afficher.",
+        "EMPTY": "Aucune écriture validée pour ce fournisseur."
+      }
     }
   },
   "REPORTING": {

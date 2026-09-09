@@ -2410,6 +2410,7 @@
       "KIND_HIRING": "Recruitment",
       "REFERENCE": "Reference",
       "VIEW_CANDIDATE": "View candidate",
+      "VIEW_DETAILS": "View details",
       "FILTER_ALL": "All",
       "SPLIT": "{{costs}} billing · {{hiring}} recruitment",
       "HIRING_ERROR_PREFIX": "Recruitment approvals:",
@@ -2722,6 +2723,60 @@
       "FILTER_APPLY": "Apply",
       "FILTER_CANCEL": "Cancel",
       "FILTER_RESET": "Reset"
+    },
+    "DETAIL": {
+      "LOADING": "Loading cost line…",
+      "LOAD_ERROR": "Unable to load this cost line.",
+      "BACK": "Cost lines",
+      "BREADCRUMB_ARIA": "Breadcrumb",
+      "TABS_ARIA": "Cost line sections",
+      "UNNAMED": "Cost line",
+      "KPI": {
+        "NET": "Net amount",
+        "VAT": "VAT",
+        "GROSS": "Gross amount",
+        "EUR": "EUR amount"
+      },
+      "INFO": {
+        "REFERENCE": "Reference",
+        "LABEL": "Label",
+        "TRANSACTION_DATE": "Date",
+        "CURRENCY": "Currency",
+        "CATEGORY": "Category",
+        "SUPPLIER": "Supplier",
+        "NO_SUPPLIER": "No supplier",
+        "APPROVAL_LEVEL": "Approval level"
+      },
+      "TABS": {
+        "INFO": "Details",
+        "LEDGER": "Settlement"
+      },
+      "ACTIONS": {
+        "EDIT": "Edit"
+      },
+      "APPROVALS": {
+        "COL_LEVEL": "Level",
+        "COL_DECISION": "Decision",
+        "COL_APPROVER": "Approver",
+        "COL_DATE": "Date",
+        "COL_COMMENT": "Comment",
+        "EMPTY": "No approval history for this line.",
+        "DECISION_APPROVED": "Approved",
+        "DECISION_AUTO_APPROVED": "Auto-approved",
+        "DECISION_RETURNED": "Returned",
+        "DECISION_REJECTED": "Rejected"
+      },
+      "LEDGER": {
+        "COL_DATE": "Date",
+        "COL_LABEL": "Label",
+        "COL_DEBIT": "Debit",
+        "COL_CREDIT": "Credit",
+        "COL_SOLDE_DEBITEUR": "Debit Balance",
+        "COL_SOLDE_CREDITEUR": "Credit Balance",
+        "ACCOUNT_LABEL": "Supplier account:",
+        "NO_SUPPLIER": "No supplier is attached to this cost line — no account statement to show.",
+        "EMPTY": "No validated entries for this supplier."
+      }
     }
   },
   "REPORTING": {
