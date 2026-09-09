@@ -14,6 +14,7 @@ import {
   ToggleComponent, ToggleOptions,
   FormFieldComponent, StatusBadgeComponent,
   TabsComponent, TabItem, SearchToolbarComponent,
+  SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
@@ -43,6 +44,7 @@ interface ForexRow {
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
     FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
+    SelectComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
   ],
   templateUrl: './admin-list.component.html',
@@ -234,8 +236,15 @@ export class AdminListComponent implements OnInit {
   }
 
   // ── Pays / Entité dropdown ───────────────────────────────────────────────
-  paysDropdownOpen = signal(false);
-  paysSearch       = signal('');
+  /**
+   * Le code ISO reste dans le libellé : `daf-select` filtre sur le libellé, donc
+   * taper « TN » trouve toujours la Tunisie. Même forme que cost-config / wizard.
+   */
+  readonly paysOptions = computed<SelectOption[]>(() =>
+    this.paysList().map(p => ({
+      value: String(p.id),
+      label: `${p.frenchLabel} (${p.isoCode})`,
+    })));
 
   readonly paysSelectConfig = computed(() => {
     this.translate.currentLang();
