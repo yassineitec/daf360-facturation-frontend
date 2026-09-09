@@ -51,4 +51,16 @@ export const COST_ROUTES: Routes = [
     loadComponent: () =>
       import('./cost-create.component').then(m => m.CostCreateComponent),
   },
+  /**
+   * Read-only cost-line detail page. Distinct from `:id/edit` (the edit form) and
+   * reached from the approval queue's new "view details" action. Deliberately LAST
+   * in this array: `:id` is a single-segment wildcard, and placing it earlier would
+   * greedily match the literal single-segment paths above it (`approval`, `missions`,
+   * `new`, `rate-computations`, `employee-costs`, `create`).
+   */
+  {
+    path: ':id',
+    loadComponent: () =>
+      import('./cost-detail/cost-line-detail.component').then(m => m.CostLineDetailComponent),
+  },
 ];
