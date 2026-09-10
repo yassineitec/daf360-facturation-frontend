@@ -56,9 +56,7 @@ export class CostFormComponent implements OnInit {
   netAmountLocal      = signal<number | null>(null);
   currencyId          = signal<number | null>(null);
   supplierId          = signal<number | null>(null);
-  supplierNameFree    = signal<string>('');
   supplierQuery       = signal<string>('');
-  useSupplierDb       = signal<boolean>(false);
   affaireId           = signal<number | null>(null);
   notes               = signal<string>('');
   costTypeId          = signal<number | null>(null);
@@ -276,7 +274,12 @@ export class CostFormComponent implements OnInit {
         this.netAmountLocal.set(line.netAmountLocal);
         this.currencyId.set(line.currencyId);
         this.supplierId.set(line.supplierId);
-        this.supplierNameFree.set(line.supplierNameFree ?? '');
+        if (line.supplierId != null) {
+          this.costSvc.getSupplier(line.supplierId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: s => this.supplierQuery.set(s.name),
+            error: () => {}, // supplier lookup failing here shouldn't block loading the rest of the line
+          });
+        }
         this.affaireId.set(line.affaireId);
         this.notes.set(line.notes ?? '');
         this.costTypeId.set(line.costTypeId);
@@ -372,7 +375,6 @@ export class CostFormComponent implements OnInit {
       netAmountLocal:    this.netAmountLocal()!,
       currencyId:        this.currencyId()!,
       supplierId:        this.supplierId() ?? undefined,
-      supplierNameFree:  this.supplierNameFree() || undefined,
       affaireId:         this.affaireId() ?? undefined,
       notes:             this.notes() || undefined,
       costTypeId:        this.costTypeId() ?? undefined,

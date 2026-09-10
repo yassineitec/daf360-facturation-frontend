@@ -234,6 +234,10 @@ export class CostService {
     );
   }
 
+  getSupplier(id: number): Observable<SupplierSearchItem> {
+    return this.http.get<SupplierSearchItem>(`${this.base}/suppliers/${id}`);
+  }
+
   // ── Rate computations ──────────────────────────────────────────────────────
 
   getRateComputations(paysId: number): Observable<RateComputationDto[]> {
