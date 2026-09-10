@@ -468,7 +468,17 @@ export interface SupplierCostSummaryDto {
   supplierName: string | null;
   supplierCode: string | null;
   lineCount: number;
+  /** Montant HT, EUR. Kept, but not what the card shows — see `totalGrossEur`. */
   totalNetEur: number;
+  /**
+   * Montant TTC, EUR — what the card displays, matching the TTC the cost-lines table
+   * shows per line and the TTC the approval tier resolves from (V82).
+   *
+   * Reads 0 for lines created before V82 added `gross_amount_eur` (nullable, never
+   * backfilled), so a supplier with a real `lineCount` and a 0 total means those lines
+   * predate the column — a backfill signal, not a bug.
+   */
+  totalGrossEur: number;
 }
 
 // Derive urgency level from the approval level (L1→BASSE, L2→NORMAL, L3/L4→URGENT)

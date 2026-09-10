@@ -7,9 +7,12 @@ import {
   MetricDelta, PageComponent, PageHeaderComponent, PaginationComponent,
   SearchToolbarComponent, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
+import type {
+  FilterField, FilterResult, SearchToolbarFilterConfig,
+} from '@khalilrebhiitec/daf360';
 import { SupplierService } from '../supplier.service';
 import { ClientService } from '../../clients/client.service';
-import { SupplierDto, SupplierStatsDto } from '../supplier.model';
+import { SupplierDto, SupplierStatsDto, SupplierStatusFilter } from '../supplier.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { SuppliersCardsSectionComponent } from './suppliers-cards-section.component';
 import { SuppliersTableSectionComponent } from './suppliers-table-section.component';
@@ -72,6 +75,47 @@ export class SupplierListComponent implements OnInit {
 
   searchText = signal('');
   viewMode   = signal<ViewMode>('grid');
+
+  /**
+   * Filtre de statut — le seul filtre serveur qui existe pour ce référentiel.
+   *
+   * Il ouvre le seul angle mort de cette page : un fournisseur désactivé n'était
+   * atteignable par AUCUN écran. Ni la liste ni la recherche ne le renvoyaient, aucun
+   * endpoint ne le réactive, et son `code` restait pris — la fiche n'était joignable
+   * qu'en tapant son identifiant dans l'URL. « Actifs » reste le défaut : c'est le
+   * référentiel utilisable, et c'est aussi ce que le serveur renvoie sans paramètre.
+   */
+  statusFilter = signal<SupplierStatusFilter>('ACTIVE');
+
+  readonly filterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    return [{
+      name:  'status',
+      label: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS'),
+      type:  'select',
+      options: [
+        { value: 'ACTIVE',   label: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS_ACTIVE') },
+        { value: 'INACTIVE', label: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS_INACTIVE') },
+        { value: 'ALL',      label: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS_ALL') },
+      ],
+      hint: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS_HINT'),
+    }];
+  });
+
+  readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    return {
+      title:        this.translate.instant('SUPPLIERS.LIST.FILTERS'),
+      applyLabel:   this.translate.instant('SUPPLIERS.LIST.FILTER_APPLY'),
+      cancelLabel:  this.translate.instant('SUPPLIERS.LIST.FILTER_CANCEL'),
+      resetLabel:   this.translate.instant('SUPPLIERS.LIST.FILTER_RESET'),
+      triggerLabel: this.translate.instant('SUPPLIERS.LIST.FILTERS'),
+      // Les valeurs initiales du panneau suivent l'état réel de la page : réouvrir le
+      // panneau après un filtrage doit montrer ce qui est appliqué, pas « Actifs ».
+      initialValues: { status: this.statusFilter() },
+    };
+  });
+
 
   // ═══ Indicateurs ══════════════════════════════════════════════════════════
 
@@ -159,6 +203,7 @@ export class SupplierListComponent implements OnInit {
     this.svc.getSuppliers({
       paysId,
       search: this.searchText().trim() || undefined,
+      status: this.statusFilter(),
       page:   this.currentPage(),
       size:   this.pageSize(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -191,6 +236,28 @@ export class SupplierListComponent implements OnInit {
    */
   onSearchTextChange(value: string): void {
     this.searchText.set(value);
+    this.currentPage.set(0);
+    this.loadSuppliers();
+  }
+
+  /**
+   * Le panneau renvoie tous ses champs à chaque application ; une valeur absente ou
+   * inconnue retombe sur « Actifs » plutôt que d'élargir la liste par accident — le
+   * serveur refuserait de toute façon un statut hors ACTIVE/INACTIVE/ALL.
+   */
+  onFilterApply(result: FilterResult): void {
+    const raw = result['status'];
+    const next: SupplierStatusFilter =
+      raw === 'INACTIVE' || raw === 'ALL' ? raw : 'ACTIVE';
+    this.statusFilter.set(next);
+    this.currentPage.set(0);
+    this.loadSuppliers();
+    // Les tuiles ne suivent pas le filtre : elles décrivent le référentiel ACTIF
+    // (`GET /suppliers` ne renvoie que lui) et le delta de la première le dit.
+  }
+
+  onFilterReset(): void {
+    this.statusFilter.set('ACTIVE');
     this.currentPage.set(0);
     this.loadSuppliers();
   }

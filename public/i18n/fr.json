@@ -2769,7 +2769,7 @@
       "VIEW_LIST": "Vue liste",
       "VIEW_SUPPLIER": "Vue fournisseurs",
       "SUPPLIER_CARD_COUNT": "Lignes",
-      "SUPPLIER_CARD_TOTAL": "Total EUR",
+      "SUPPLIER_CARD_TOTAL": "Total TTC (EUR)",
       "NO_SUPPLIER_CARD": "Sans fournisseur",
       "SUPPLIER_VIEW_EMPTY": "Aucun fournisseur avec des lignes de coût.",
       "FILTERS": "Filtres",
@@ -2789,7 +2789,8 @@
         "NET": "Montant HT",
         "VAT": "TVA",
         "GROSS": "Montant TTC",
-        "EUR": "Montant EUR",
+        "EUR": "Montant HT (EUR)",
+        "EUR_TTC": "Montant TTC (EUR)",
         "LINE_COUNT": "Nombre de lignes"
       },
       "INFO": {
@@ -3334,25 +3335,58 @@
         "TYPE": "Type"
       },
       "ERROR_PAYS": "Entité introuvable. Rechargez la page.",
-      "ERROR_LOAD": "Impossible de charger les fournisseurs."
+      "ERROR_LOAD": "Impossible de charger les fournisseurs.",
+      "FILTERS": "Filtres",
+      "FILTER_APPLY": "Appliquer",
+      "FILTER_CANCEL": "Annuler",
+      "FILTER_RESET": "Réinitialiser",
+      "FILTER": {
+        "STATUS": "Statut",
+        "STATUS_ACTIVE": "Actifs",
+        "STATUS_INACTIVE": "Désactivés",
+        "STATUS_ALL": "Tous",
+        "STATUS_HINT": "Un fournisseur désactivé reste consultable, mais aucune nouvelle dépense ne devrait lui être rattachée.",
+        "SCOPE_INACTIVE": "Vous ne voyez que les fournisseurs désactivés. Les indicateurs ci-dessus décrivent toujours le référentiel actif.",
+        "SCOPE_ALL": "Vous voyez les fournisseurs actifs et désactivés. Les indicateurs ci-dessus décrivent toujours le référentiel actif."
+      }
     },
     "DETAIL": {
       "LOADING": "Chargement de la fiche fournisseur…",
       "LOAD_ERROR": "Impossible de charger ce fournisseur.",
       "ACTION_ERROR": "L’action n’a pas pu être effectuée.",
       "BACK": "Fournisseurs",
-      "BACK_TO_LIST": "Retour à la liste",
       "BREADCRUMB_ARIA": "Fil d’ariane",
       "INFO": {
+        "PANEL_ARIA": "Détails du fournisseur",
+        "SECTION_IDENTITY": "Identification",
         "CODE": "Code",
         "COUNTRY": "Pays",
         "CREATED_AT": "Créé le",
         "TVA": "N° TVA",
         "TAX_ID": "Identifiant fiscal",
-        "TYPE": "Type"
+        "TYPE": "Type",
+        "MISSING": "Non renseigné"
       },
-      "BANK_DETAILS": "Coordonnées bancaires",
-      "SECURE": "Sécurisé",
+      "ACTIONS": {
+        "QUICK_TITLE": "Actions rapides",
+        "NEW_COST_LINE": "Nouvelle ligne de coût",
+        "EDIT": "Modifier",
+        "COST_VIEW": "Voir les coûts"
+      },
+      "DEACTIVATING": "Désactivation en cours…",
+      "TOOLBAR": {
+        "SEARCH_COSTS": "Rechercher par référence ou libellé…",
+        "SEARCH_LEDGER": "Rechercher par libellé…",
+        "FILTERS": "Filtres",
+        "APPLY": "Appliquer",
+        "CANCEL": "Annuler",
+        "RESET": "Réinitialiser",
+        "EXPORT": "Exporter",
+        "NO_MATCH": "Aucun résultat pour cette recherche."
+      },
+      "EXPORT": {
+        "CURRENCY": "Devise"
+      },
       "IBAN_MAIN": "IBAN principal",
       "NO_IBAN": "Aucun IBAN enregistré.",
       "FISCAL": "Informations fiscales",
@@ -3361,7 +3395,51 @@
       "DEACTIVATE": "Désactiver le fournisseur",
       "DEACTIVATE_TITLE": "Désactiver le fournisseur",
       "DEACTIVATE_MSG": "{{name}} sera désactivé et sortira du référentiel : il ne réapparaîtra ni dans la liste ni dans la recherche, et cette action ne peut pas être annulée depuis l’application.",
-      "DEACTIVATE_CONFIRM": "Désactiver"
+      "DEACTIVATE_CONFIRM": "Désactiver",
+      "TABS_ARIA": "Sections de la fiche fournisseur",
+      "TABS": {
+        "COSTS": "Lignes de coût",
+        "LEDGER": "Règlement"
+      },
+      "KPI": {
+        "LINES": "Lignes de coût",
+        "TOTAL_TTC": "Total TTC (EUR)",
+        "REGLEMENTS": "Règlements",
+        "BALANCE": "Solde dû",
+        "OVERPAID": "Trop-payé"
+      },
+      "COSTS": {
+        "COL_REF": "Référence",
+        "COL_LABEL": "Libellé",
+        "COL_DATE": "Date",
+        "COL_STATUS": "Statut",
+        "COL_GROSS": "Montant TTC",
+        "EMPTY": "Aucune ligne de coût rattachée à ce fournisseur.",
+        "HINT": "Tout statut confondu, 200 lignes au plus."
+      },
+      "LEDGER": {
+        "COL_DATE": "Date",
+        "COL_LABEL": "Libellé",
+        "COL_DEBIT": "Débit",
+        "COL_CREDIT": "Crédit",
+        "COL_SOLDE_DEBITEUR": "Solde débiteur",
+        "COL_SOLDE_CREDITEUR": "Solde créditeur",
+        "EMPTY": "Aucun règlement enregistré pour ce fournisseur.",
+        "HINT": "Lecture seule : un règlement se saisit depuis sa ligne de coût. Les soldes sont cumulatifs sur tout le relevé.",
+        "FILTER_TYPE": "Type de mouvement",
+        "TYPE_CREDIT": "Crédit (reste dû)",
+        "TYPE_DEBIT": "Débit (trop-payé)",
+        "TYPE_SETTLED": "Soldé"
+      }
+    },
+    "EDIT": {
+      "TITLE": "Modifier le fournisseur",
+      "SUBTITLE": "Mettre à jour la fiche du fournisseur",
+      "LOADING": "Chargement du fournisseur…",
+      "LOAD_ERROR": "Impossible de charger ce fournisseur. Rechargez la page.",
+      "SAVE": "Enregistrer les modifications",
+      "ERROR_UPDATE": "Erreur lors de la mise à jour du fournisseur.",
+      "PAYS_LOCKED": "Le pays n’est pas modifiable : le code du fournisseur en dépend."
     },
     "NEW": {
       "TITLE": "Nouveau fournisseur",

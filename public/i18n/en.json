@@ -2769,7 +2769,7 @@
       "VIEW_LIST": "List view",
       "VIEW_SUPPLIER": "Supplier view",
       "SUPPLIER_CARD_COUNT": "Lines",
-      "SUPPLIER_CARD_TOTAL": "Total EUR",
+      "SUPPLIER_CARD_TOTAL": "Total incl. tax (EUR)",
       "NO_SUPPLIER_CARD": "No supplier",
       "SUPPLIER_VIEW_EMPTY": "No supplier has any cost lines.",
       "FILTERS": "Filters",
@@ -2789,7 +2789,8 @@
         "NET": "Net amount",
         "VAT": "VAT",
         "GROSS": "Gross amount",
-        "EUR": "EUR amount",
+        "EUR": "Net amount (EUR)",
+        "EUR_TTC": "Amount incl. tax (EUR)",
         "LINE_COUNT": "Number of lines"
       },
       "INFO": {
@@ -3334,25 +3335,58 @@
         "TYPE": "Type"
       },
       "ERROR_PAYS": "Entity not found. Reload the page.",
-      "ERROR_LOAD": "Unable to load suppliers."
+      "ERROR_LOAD": "Unable to load suppliers.",
+      "FILTERS": "Filters",
+      "FILTER_APPLY": "Apply",
+      "FILTER_CANCEL": "Cancel",
+      "FILTER_RESET": "Reset",
+      "FILTER": {
+        "STATUS": "Status",
+        "STATUS_ACTIVE": "Active",
+        "STATUS_INACTIVE": "Deactivated",
+        "STATUS_ALL": "All",
+        "STATUS_HINT": "A deactivated supplier stays viewable, but no new spend should be attached to it.",
+        "SCOPE_INACTIVE": "You are seeing deactivated suppliers only. The metrics above still describe the active directory.",
+        "SCOPE_ALL": "You are seeing both active and deactivated suppliers. The metrics above still describe the active directory."
+      }
     },
     "DETAIL": {
       "LOADING": "Loading supplier file…",
       "LOAD_ERROR": "Unable to load this supplier.",
       "ACTION_ERROR": "The action could not be completed.",
       "BACK": "Suppliers",
-      "BACK_TO_LIST": "Back to the list",
       "BREADCRUMB_ARIA": "Breadcrumb",
       "INFO": {
+        "PANEL_ARIA": "Supplier details",
+        "SECTION_IDENTITY": "Identification",
         "CODE": "Code",
         "COUNTRY": "Country",
         "CREATED_AT": "Created on",
         "TVA": "VAT number",
         "TAX_ID": "Tax ID",
-        "TYPE": "Type"
+        "TYPE": "Type",
+        "MISSING": "Not provided"
       },
-      "BANK_DETAILS": "Bank details",
-      "SECURE": "Secure",
+      "ACTIONS": {
+        "QUICK_TITLE": "Quick actions",
+        "NEW_COST_LINE": "New cost line",
+        "EDIT": "Edit",
+        "COST_VIEW": "View costs"
+      },
+      "DEACTIVATING": "Deactivating…",
+      "TOOLBAR": {
+        "SEARCH_COSTS": "Search by reference or label…",
+        "SEARCH_LEDGER": "Search by label…",
+        "FILTERS": "Filters",
+        "APPLY": "Apply",
+        "CANCEL": "Cancel",
+        "RESET": "Reset",
+        "EXPORT": "Export",
+        "NO_MATCH": "No result for this search."
+      },
+      "EXPORT": {
+        "CURRENCY": "Currency"
+      },
       "IBAN_MAIN": "Primary IBAN",
       "NO_IBAN": "No IBAN on record.",
       "FISCAL": "Tax information",
@@ -3361,7 +3395,51 @@
       "DEACTIVATE": "Deactivate supplier",
       "DEACTIVATE_TITLE": "Deactivate supplier",
       "DEACTIVATE_MSG": "{{name}} will be deactivated and will leave the directory: it will not reappear in the list or in search, and this cannot be undone from the application.",
-      "DEACTIVATE_CONFIRM": "Deactivate"
+      "DEACTIVATE_CONFIRM": "Deactivate",
+      "TABS_ARIA": "Supplier record sections",
+      "TABS": {
+        "COSTS": "Cost lines",
+        "LEDGER": "Settlement"
+      },
+      "KPI": {
+        "LINES": "Cost lines",
+        "TOTAL_TTC": "Total incl. tax (EUR)",
+        "REGLEMENTS": "Settlements",
+        "BALANCE": "Balance due",
+        "OVERPAID": "Overpaid"
+      },
+      "COSTS": {
+        "COL_REF": "Reference",
+        "COL_LABEL": "Label",
+        "COL_DATE": "Date",
+        "COL_STATUS": "Status",
+        "COL_GROSS": "Amount incl. tax",
+        "EMPTY": "No cost line attached to this supplier.",
+        "HINT": "All statuses, up to 200 lines."
+      },
+      "LEDGER": {
+        "COL_DATE": "Date",
+        "COL_LABEL": "Label",
+        "COL_DEBIT": "Debit",
+        "COL_CREDIT": "Credit",
+        "COL_SOLDE_DEBITEUR": "Debit balance",
+        "COL_SOLDE_CREDITEUR": "Credit balance",
+        "EMPTY": "No settlement recorded for this supplier.",
+        "HINT": "Read-only: a settlement is recorded from its cost line. Balances are cumulative across the whole statement.",
+        "FILTER_TYPE": "Movement type",
+        "TYPE_CREDIT": "Credit (still owed)",
+        "TYPE_DEBIT": "Debit (overpaid)",
+        "TYPE_SETTLED": "Settled"
+      }
+    },
+    "EDIT": {
+      "TITLE": "Edit supplier",
+      "SUBTITLE": "Update the supplier record",
+      "LOADING": "Loading supplier…",
+      "LOAD_ERROR": "Unable to load this supplier. Reload the page.",
+      "SAVE": "Save changes",
+      "ERROR_UPDATE": "Error while updating the supplier.",
+      "PAYS_LOCKED": "The country cannot be changed: the supplier code derives from it."
     },
     "NEW": {
       "TITLE": "New supplier",

@@ -42,18 +42,39 @@
       [options]="kpiCountries" />
   </section>
 
-  <!-- Recherche + bascule de vue. Pas de panneau de filtres : `GET /suppliers/search`
-       ne prend que `paysId` et `q`, et un filtre qui ne part pas au serveur est un
-       contrôle qui ne fait rien (§10b). -->
+  <!-- Recherche + filtre + bascule de vue.
+       Le panneau de filtres ne porte qu'UN champ, et c'est voulu : `GET
+       /suppliers/search` ne prend que `paysId`, `q` et `status`, et un filtre qui ne
+       part pas au serveur est un contrôle qui ne fait rien (§10b). Le champ « statut »
+       est ce qui rend un fournisseur désactivé de nouveau atteignable — il ne l'était
+       par aucun écran auparavant. -->
   <daf-search-toolbar
     [placeholder]="'SUPPLIERS.LIST.SEARCH_PLACEHOLDER' | translate"
     [value]="searchText()"
     [debounce]="300"
     (valueChange)="onSearchTextChange($event)"
-    [showFilter]="false"
+    [showFilter]="true"
+    [filterFields]="filterFields()"
+    [filterConfig]="filterConfig()"
+    (filterApply)="onFilterApply($event)"
+    (filterReset)="onFilterReset()"
     [views]="viewOptions()"
     [view]="viewMode()"
     (viewChange)="viewMode.set($any($event))" />
+
+  <!-- Quand on ne regarde plus les seuls actifs, le dire : les pastilles de statut de
+       la table le montrent ligne par ligne, mais pas le fait que la LISTE a changé de
+       périmètre — et les tuiles au-dessus, elles, décrivent toujours les actifs. -->
+  @if (statusFilter() !== 'ACTIVE') {
+    <div class="flex items-center gap-2 rounded-xl bg-surface-container px-4 py-3">
+      <span class="material-symbols-outlined text-[18px] text-on-surface-variant">filter_list</span>
+      <p class="text-body-sm text-on-surface-variant">
+        {{ (statusFilter() === 'INACTIVE'
+              ? 'SUPPLIERS.LIST.FILTER.SCOPE_INACTIVE'
+              : 'SUPPLIERS.LIST.FILTER.SCOPE_ALL') | translate }}
+      </p>
+    </div>
+  }
 
   @if (error(); as err) {
     <daf-field-message [error]="err" />

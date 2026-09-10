@@ -83,7 +83,10 @@ export class CostSupplierCardsSectionComponent {
           metricsColumns: 2,
           metrics: [
             { label: t('COST.LINES.SUPPLIER_CARD_COUNT'), value: String(s.lineCount) },
-            { label: t('COST.LINES.SUPPLIER_CARD_TOTAL'), value: this.currency.transform(s.totalNetEur, 'EUR') },
+            // TTC, not HT: the cost-lines table shows Montant TTC per line and the
+            // approval tier resolves from the TTC EUR amount (V82), so an HT total
+            // here read as "what we spent with this supplier" next to TTC rows.
+            { label: t('COST.LINES.SUPPLIER_CARD_TOTAL'), value: this.currency.transform(s.totalGrossEur, 'EUR') },
           ],
         } satisfies EntityCardOptions,
       };

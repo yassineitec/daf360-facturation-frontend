@@ -25,6 +25,15 @@ export interface SupplierDto {
 }
 
 /**
+ * Filtre de statut de `GET /suppliers/search?status=`.
+ *
+ * `ACTIVE` est le défaut serveur. `INACTIVE` et `ALL` existent parce qu'un
+ * fournisseur désactivé était jusqu'ici introuvable depuis l'application : rien ne le
+ * listait, rien ne le réactive, et son `code` restait pourtant pris.
+ */
+export type SupplierStatusFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
+
+/**
  * Statistiques du référentiel, calculées côté client sur `GET /suppliers?paysId=`.
  *
  * ⚠️ Cet endpoint renvoie `findByPaysIdAndIsActiveTrue…` : **uniquement les actifs**.

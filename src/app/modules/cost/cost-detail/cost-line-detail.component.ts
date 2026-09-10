@@ -260,7 +260,11 @@ export class CostLineDetailComponent implements OnInit {
           delta: null, options: { icon: 'receipt_long', iconColor: 'text-primary', iconBg: 'bg-primary/10' },
         },
         {
-          label: 'COST.DETAIL.KPI.EUR', value: this.currency.transform(s?.totalNetEur ?? 0, 'EUR'),
+          // TTC, like the list page's supplier card it mirrors — the two must not
+          // disagree about the same supplier's total. Its own key, NOT the KPI.EUR
+          // the single-line branch below uses: that one shows netAmountEur (HT), so
+          // one shared label cannot honestly describe both.
+          label: 'COST.DETAIL.KPI.EUR_TTC', value: this.currency.transform(s?.totalGrossEur ?? 0, 'EUR'),
           delta: null, options: { icon: 'euro', iconColor: 'text-on-surface-variant', iconBg: 'bg-surface-container' },
         },
       ];

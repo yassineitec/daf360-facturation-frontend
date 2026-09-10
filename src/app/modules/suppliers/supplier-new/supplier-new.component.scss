@@ -79,3 +79,102 @@ $tertiary-hex: #00c1ad;
   @media (max-width: 768px)  { padding: 16px; }
   @media (max-width: 480px)  { padding: 12px; }
 }
+
+// ── Barre d'actions ─────────────────────────────────────────────────────────
+//
+// Reprise telle quelle de `affaire-wizard.component.scss` : les deux assistants
+// doivent avoir la même barre. Elle vivait ici en classes Tailwind littérales et en
+// styles en ligne dans le template — donc invisible d'ici, et rien ne garantissait
+// qu'elle suive celle de l'affaire. La dalle elle-même appartient maintenant à
+// `daf-card` (`variant: 'floating'`), il ne reste que la géométrie.
+
+.action-bar {
+  display: block;
+  position: sticky;
+  bottom: 1rem;
+  z-index: 40;
+  width: 100%;
+  max-width: 820px;
+  margin-inline: auto;
+}
+
+// Trois colonnes : bouton — rail — bouton.
+.action-bar__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+// Les actions prennent la largeur de leur libellé et RIEN de plus : c'est le rail
+// qui est la pièce large de la barre, et lui voler de l'espace fait se chevaucher
+// les libellés d'étapes.
+.action-bar__side {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+
+  &--end { justify-content: flex-end; }
+}
+
+// `min-width: 0` indispensable : sans lui, la largeur minimale de contenu du rail
+// l'empêche de se réduire et fait déborder la barre au lieu de replier les colonnes.
+// Les filets qui séparent les trois zones sont portés par le rail lui-même — la lib
+// n'a pas de composant séparateur, et son idiome est un `border` sur un élément
+// existant.
+.action-bar__rail {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline: 0.875rem;
+  border-inline: 1px solid var(--color-outline-variant);
+}
+
+// Actions de la barre : du texte, pas des boutons dessinés. `color` est posé sur le
+// BOUTON et l'icône n'en déclare aucune — les symboles Material héritent de
+// `currentColor`, donc libellé et icône ne peuvent pas se désynchroniser au survol.
+.footer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  transition: color 0.15s;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &:hover:not(:disabled) { color: var(--color-teal); }
+
+  // Sans fond ni bordure, l'anneau de focus est le seul repère au clavier.
+  &:focus-visible {
+    outline: 2px solid var(--color-teal);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    color: var(--color-outline);
+    cursor: not-allowed;
+  }
+}
+
+// Sous 720 px le rail passe SOUS les deux actions plutôt que d'être coincé entre
+// elles : en repli naturel il emmènerait l'action affirmative seule sur une seconde
+// ligne, ce qui éloigne les deux actions sans rien gagner.
+@media (max-width: 720px) {
+  .action-bar__rail {
+    order: 1;
+    flex-basis: 100%;
+    padding-inline: 0;
+    padding-top: 0.75rem;
+    border-inline: none;
+    border-top: 1px solid var(--color-outline-variant);
+  }
+  .action-bar__side { flex: 1 1 auto; }
+}

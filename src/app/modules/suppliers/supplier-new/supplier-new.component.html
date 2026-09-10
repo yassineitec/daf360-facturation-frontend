@@ -7,14 +7,22 @@
      `.shell-content`, qui porte la marge de la barre latérale ; une barre `fixed` se
      calerait sur la fenêtre et se retrouverait décentrée par rapport au formulaire. -->
 
-<daf-page [kpis]="0" [breadcrumbs]="true">
+<daf-page [kpis]="0" [breadcrumbs]="true" [loading]="loading()"
+          [loadingLabel]="'SUPPLIERS.EDIT.LOADING' | translate">
 
   <daf-page-header
-    [title]="'SUPPLIERS.NEW.TITLE' | translate"
-    [subtitle]="'SUPPLIERS.NEW.SUBTITLE' | translate"
+    [title]="pageTitle()"
+    [subtitle]="pageSubtitle()"
     [badges]="headerBadges()"
     [breadcrumbs]="breadcrumbs()"
     [breadcrumbLabel]="'SUPPLIERS.NEW.BREADCRUMB_ARIA' | translate" />
+
+  <!-- Les erreurs vivent AU-DESSUS de la carte, pas dans l'étape 3 : en modification,
+       un échec de chargement survient avant que l'utilisateur n'atteigne la dernière
+       étape, et une erreur d'unicité de TVA porte sur un champ de l'étape 2. -->
+  @if (saveError(); as err) {
+    <daf-field-message [error]="err" />
+  }
 
   <div class="form-card">
 
@@ -48,7 +56,12 @@
             }" />
 
           <!-- `searchable` : la liste des pays de référence se compte en dizaines, un
-               `<select>` natif obligeait à la parcourir au clavier. -->
+               `<select>` natif obligeait à la parcourir au clavier.
+
+               Verrouillé en modification : le préfixe du `code` déjà attribué en
+               dépend, et le serveur ignore `paysId` sur le PATCH. Le champ reste
+               VISIBLE — savoir de quel pays dépend le fournisseur qu'on modifie fait
+               partie du contexte — mais il est désactivé et le dit. -->
           <daf-select
             [options]="paysSelectOptions()"
             [selected]="selectedPaysValue()"
@@ -57,13 +70,15 @@
               label: ('SUPPLIERS.NEW.COUNTRY' | translate),
               placeholder: ('SUPPLIERS.NEW.COUNTRY_SELECT' | translate),
               required: true,
-              searchable: true,
+              searchable: !isEdit,
+              disabled: isEdit,
+              hint: isEdit ? ('SUPPLIERS.EDIT.PAYS_LOCKED' | translate) : undefined,
               error: touched() && !paysId() ? ('SUPPLIERS.NEW.REQUIRED' | translate) : undefined
             }" />
 
           <daf-select
             [options]="typeSelectOptions()"
-            [selected]="typeId() !== null ? [typeId() + '|' + typeLabel()] : []"
+            [selected]="selectedTypeValue()"
             (selectedChange)="onTypeSelect($event)"
             [config]="{
               label: ('SUPPLIERS.NEW.SUPPLIER_TYPE' | translate),
@@ -118,10 +133,6 @@
               fullWidth: true
             }" />
 
-          @if (saveError(); as err) {
-            <daf-field-message [error]="err" />
-          }
-
         </div>
       }
 
@@ -131,39 +142,54 @@
 
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       BARRE D'ACTIONS — progression + navigation, comme les autres assistants.
-       `daf-stepper` en `chrome: 'header-only'` : le rail seul.
+       BARRE D'ACTIONS — même barre que l'assistant affaire, à l'identique et
+       volontairement : Retour — rail — action affirmative, dans une `daf-card`
+       `variant: 'floating'` (lib 4.19) plutôt que la dalle que ce fichier
+       dessinait à la main (bordure + `shadow-[0_-4px_24px_rgba(...)]` littérale).
+
+       `position: sticky` et NON `fixed`, et à l'INTÉRIEUR de daf-page : le
+       conteneur de défilement est `.shell-content`, qui porte la marge de la barre
+       latérale ; une barre `fixed` se calerait sur la fenêtre et se retrouverait
+       décentrée par rapport au formulaire. En `sticky`, elle prend la largeur de la
+       colonne de contenu et occupe sa place en fin de flux.
+
+       Une SEULE action dessinée : « Suivant »/« Enregistrer » en teal. Le retour et
+       l'annulation sont des actions de TEXTE (`.footer-action`), gris au repos, dont
+       le libellé et l'icône passent ensemble en teal au survol — l'icône hérite de
+       `currentColor`. Deux boutons dessinés feraient concurrence au rail.
        ══════════════════════════════════════════════════════════════════ -->
-  <div class="action-bar rounded-xl border border-outline-variant bg-surface-container-lowest
-              p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
-       style="position:sticky; bottom:1rem; z-index:40; display:flex; flex-wrap:wrap;
-              align-items:center; justify-content:space-between; gap:1rem">
+  <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
+    <div class="action-bar__inner">
 
-    <div style="flex:1 1 320px; min-width:0">
-      <daf-stepper
-        orientation="horizontal"
-        [steps]="stepperSteps()"
-        [currentStep]="step() - 1"
-        [config]="stepperConfig()"
-        (stepClick)="onStepClick($event)" />
+      <div class="action-bar__side">
+        @if (step() > 1) {
+          <button type="button" class="footer-action" (click)="goPrev()">
+            <span class="material-symbols-outlined">arrow_back</span>
+            {{ 'SUPPLIERS.NEW.BACK' | translate }}
+          </button>
+        } @else {
+          <button type="button" class="footer-action" (click)="cancel()">
+            <span class="material-symbols-outlined">close</span>
+            {{ 'SUPPLIERS.NEW.CANCEL' | translate }}
+          </button>
+        }
+      </div>
+
+      <!-- Rail : cliquable uniquement sur ce qui a déjà été franchi (cf. onStepClick) -->
+      <div class="action-bar__rail">
+        <daf-stepper
+          orientation="horizontal"
+          [steps]="stepperSteps()"
+          [currentStep]="step() - 1"
+          [config]="stepperConfig()"
+          (stepClick)="onStepClick($event)" />
+      </div>
+
+      <div class="action-bar__side action-bar__side--end">
+        <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
+      </div>
+
     </div>
-
-    <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
-      @if (step() > 1) {
-        <daf-button
-          [options]="{ variant: 'ghost', pill: true, iconStart: 'arrow_back',
-                       label: 'SUPPLIERS.NEW.BACK' | translate }"
-          (onClick)="goPrev()" />
-      } @else {
-        <daf-button
-          [options]="{ variant: 'ghost', pill: true, iconStart: 'close',
-                       label: 'SUPPLIERS.NEW.CANCEL' | translate }"
-          (onClick)="cancel()" />
-      }
-
-      <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
-    </div>
-
-  </div>
+  </daf-card>
 
 </daf-page>

@@ -1,9 +1,16 @@
-<!-- Fiche fournisseur — même squelette que les fiches facture, client et recouvrement.
-     Aucune feuille de style locale : composants de la lib, jetons de couleur et échelle
-     typographique de la lib.
+<!-- Fiche fournisseur — même squelette que la fiche AFFAIRE, dont elle reprend le
+     panneau de détails (`.dp-*`) et le centre d'actions à trois niveaux :
 
-     ⚠️ FLEX en style inline, jamais de grid ni de classe de point de rupture : le
-     styles.css d'un remote ne contient que les classes que Tailwind a déjà vues. -->
+     GAUCHE (30 %, sticky)  le h1 (daf-page-header, size="md"), puis deux cartes
+                            empilées — « Détails » et « Actions rapides ».
+     DROITE (70 %)          les 4 indicateurs (daf-metric-card), daf-tabs et ses
+                            panneaux de données rattachées.
+
+     Les classes de mise en page et le panneau `.dp-*` vivent dans les `styles` du
+     composant, pas en classes utilitaires : le styles.css d'un remote ne contient que
+     les classes que Tailwind a déjà vues, alors qu'un style de composant est compilé
+     avec le composant et voyage avec lui. C'est ce qui permet la grille des
+     indicateurs, là où cette page mettait son flex en style en ligne. -->
 
 <daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
           [loadingLabel]="'SUPPLIERS.DETAIL.LOADING' | translate">
@@ -16,12 +23,13 @@
   }
 
   @if (supplier(); as s) {
-    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
+    <div class="detail-split">
 
       <!-- ══════════════════════════════════════════════════════════════════
-           COLONNE GAUCHE (30 %, sticky) — identité et actions
+           COLONNE GAUCHE — le titre de page, puis le panneau de détails dont
+           les actions ferment la section.
            ══════════════════════════════════════════════════════════════ -->
-      <div style="flex:0 1 30%; min-width:320px">
+      <div class="detail-aside">
         <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
 
           <daf-page-header
@@ -32,52 +40,186 @@
             [breadcrumbs]="breadcrumbs()"
             [breadcrumbLabel]="'SUPPLIERS.DETAIL.BREADCRUMB_ARIA' | translate" />
 
-          <daf-section-card>
+          <!-- ══════════════════════════════════════════════════════════════
+               PANNEAU DE DÉTAILS — « Détails » puis « Actions rapides ».
 
-            <div class="flex flex-col gap-5 p-6">
-              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
-                @for (f of identityFields(); track f.label) {
-                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ f.label | translate }}
-                    </p>
-                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
-                  </div>
-                }
-              </div>
-            </div>
+               Ce que la version précédente faisait : une grille `flex-wrap` à
+               deux cases par ligne qui appariait des données sans rapport (Code
+               avec Pays, Type avec Créé le), aucune colonne alignée d'une ligne
+               à l'autre — il n'y avait rien à balayer du regard. Et le fiscal et
+               le bancaire vivaient dans deux cartes de la colonne DROITE, là où
+               l'on cherche les données rattachées, pas l'identité.
 
-            <!-- Une seule action de cycle de vie existe côté API : la désactivation.
-                 L'ancienne fiche proposait aussi « Réactiver » et « Historique » — le
-                 premier n'a aucun endpoint, le second aucun écran. -->
-            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
-                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+               Ici : un seul style de micro-libellé (9 px, 700, .14em), les
+               couples clé/valeur sur deux colonnes — questions à gauche,
+               réponses à droite — et des séparateurs qui disent le groupement
+               (2 px entre sections majeures, 1 px entre les lignes).
 
-              @if (s.isActive) {
-                <div *appHasPermission="'FACT_MANAGE_COST'" style="flex:1 1 100%">
-                  <daf-button
-                    [options]="{ variant: 'danger', fullWidth: true, iconStart: 'block',
-                                 loading: isDeactivating(),
-                                 label: 'SUPPLIERS.DETAIL.DEACTIVATE' | translate }"
-                    (onClick)="openDeactivate()" />
+               `<aside>` + un `<section>` par bloc dont le micro-libellé est le
+               titre : visuellement une étiquette, sémantiquement un `h3`.
+               ══════════════════════════════════════════════════════════════ -->
+          <aside class="dp" [attr.aria-label]="'SUPPLIERS.DETAIL.INFO.PANEL_ARIA' | translate">
+
+            <!-- ── Carte 1 : Détails ──────────────────────────────────────── -->
+            <daf-section-card>
+            <div class="dp-card">
+
+              <!-- 1. Identification -->
+              <section class="dp-block" aria-labelledby="dp-h-ident">
+                <h3 class="dp-label" id="dp-h-ident">
+                  {{ 'SUPPLIERS.DETAIL.INFO.SECTION_IDENTITY' | translate }}
+                </h3>
+                <dl class="dp-rows">
+                  @for (row of identityFields(); track row.label; let last = $last) {
+                    <div class="dp-row" [class.dp-row--last]="last">
+                      <dt class="dp-row__key">{{ row.label | translate }}</dt>
+                      <dd class="dp-row__val">{{ row.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              </section>
+
+              <div class="dp-rule"></div>
+
+              <!-- 2. Fiscal — en ÉTATS et non en valeurs : sans n° de TVA on ne peut
+                   pas déclarer. Le point double le texte, il ne le remplace pas. -->
+              <section class="dp-block" aria-labelledby="dp-h-fiscal">
+                <h3 class="dp-label" id="dp-h-fiscal">
+                  {{ 'SUPPLIERS.DETAIL.FISCAL' | translate }}
+                </h3>
+                <dl class="dp-rows">
+                  @for (row of fiscalFields(); track row.label; let last = $last) {
+                    <div class="dp-row" [class.dp-row--last]="last">
+                      <dt class="dp-row__key">{{ row.label | translate }}</dt>
+                      <dd class="dp-row__val">
+                        @if (row.ok !== undefined) {
+                          <span class="dp-flag" [class.dp-flag--ok]="row.ok">
+                            <span class="dp-flag__dot" aria-hidden="true"></span>{{ row.value }}
+                          </span>
+                        } @else {
+                          {{ row.value }}
+                        }
+                      </dd>
+                    </div>
+                  }
+                </dl>
+              </section>
+
+              <!-- 2 px : séparateur de SECTION MAJEURE. Le 1 px ci-dessus rattache le
+                   fiscal à l'identité ; celui-ci coupe franchement avant la banque,
+                   qui est la seule condition de paiement. -->
+              <div class="dp-rule dp-rule--major"></div>
+
+              <!-- 3. Bancaire -->
+              <section class="dp-block" aria-labelledby="dp-h-bank">
+                <div class="dp-block__head">
+                  <h3 class="dp-label" id="dp-h-bank">
+                    {{ 'SUPPLIERS.DETAIL.IBAN_MAIN' | translate }}
+                  </h3>
+                  <!-- La mention « Sécurisé » a disparu : elle décorait un champ que
+                       l'API renvoie en clair depuis V79 (le masquage et son endpoint
+                       de révélation sont partis), donc elle promettait autre chose
+                       que ce qui se passe. -->
+                  <span class="material-symbols-outlined text-body-lg text-on-surface-variant"
+                        aria-hidden="true">account_balance</span>
                 </div>
+
+                @if (!ibanDisplay()) {
+                  <span class="dp-flag">
+                    <span class="dp-flag__dot" aria-hidden="true"></span>
+                    {{ 'SUPPLIERS.DETAIL.NO_IBAN' | translate }}
+                  </span>
+                } @else {
+                  <p class="dp-iban">{{ ibanDisplay() }}</p>
+                }
+              </section>
+
+            </div>
+            </daf-section-card>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 CENTRE D'ACTIONS — trois niveaux, trois traitements visuels,
+                 comme la fiche affaire. La page proposait auparavant deux
+                 `daf-button` pleine largeur de même poids (« Modifier »,
+                 « Désactiver ») plus un « Retour à la liste » que le fil
+                 d'Ariane fait déjà : rien ne disait par où commencer, et
+                 l'action destructrice pesait autant que l'action courante.
+                 ══════════════════════════════════════════════════════════════ -->
+            <daf-section-card>
+            <div class="flex flex-col gap-3 bg-surface-container p-6">
+
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'SUPPLIERS.DETAIL.ACTIONS.QUICK_TITLE' | translate }}
+              </p>
+
+              <!-- 1. Action principale — c'est pour rattacher une dépense qu'on ouvre
+                   la fiche d'un fournisseur. `lg` contre `sm` en dessous : un écart
+                   lisible d'un coup d'œil, porté par les échelons de la lib. -->
+              @if (s.isActive) {
+                <daf-button *appHasPermission="'FACT_MANAGE_COST'"
+                  [options]="newCostLineOptions()"
+                  (onClick)="goToNewCostLine()" />
               }
 
-              <daf-button
-                style="flex:1 1 100%"
-                [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'arrow_back',
-                             label: 'SUPPLIERS.DETAIL.BACK_TO_LIST' | translate }"
-                (onClick)="goBack()" />
-            </div>
+              <!-- 2. Actions opérationnelles — deux `daf-button` `size: 'sm'` sur UNE
+                   ligne, à largeurs égales (`grid-cols-2` + `fullWidth` : c'est la
+                   cellule qui décide de la largeur, pas la longueur du libellé). -->
+              <div class="grid grid-cols-2 gap-2">
+                @if (s.isActive) {
+                  <daf-button *appHasPermission="'FACT_MANAGE_COST'"
+                    [options]="editButtonOptions()"
+                    (onClick)="goToEdit()" />
+                }
+                <daf-button
+                  [options]="costViewButtonOptions()"
+                  (onClick)="goToCostView()" />
+              </div>
 
-          </daf-section-card>
+              <!-- 3. Rangée de pied sous un filet. Pas de fond, pas de bordure : ce
+                   sont les actions qu'on cherche quand on les cherche. `py-2` garantit
+                   une cible tactile d'au moins 40 px malgré la petite typographie. -->
+              <div class="mt-1 flex flex-wrap items-center justify-between gap-2
+                          border-t border-outline-variant/30 pt-3">
+
+                @if (s.isActive) {
+                  <button type="button" *appHasPermission="'FACT_MANAGE_COST'"
+                          class="group flex items-center gap-1.5 rounded-lg px-2 py-2 text-body-sm
+                                 font-semibold text-on-surface-variant transition-colors
+                                 hover:bg-surface-container-high hover:text-danger
+                                 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
+                          (click)="openDeactivate()">
+                    <span class="material-symbols-outlined text-base">block</span>
+                    {{ 'SUPPLIERS.DETAIL.DEACTIVATE' | translate }}
+                  </button>
+                }
+
+                <!-- Le statut COURANT, toujours hors bouton : un fournisseur n'a que
+                     deux états et AUCUN endpoint ne le réactive, donc il n'y a aucune
+                     transition à proposer. C'est la même règle que la fiche affaire
+                     applique quand un statut n'a pas de transition disponible. -->
+                <span class="px-2 py-2">
+                  <daf-badge [label]="statusChipLabel()" [options]="statusChipOptions()" />
+                </span>
+              </div>
+
+              @if (isDeactivating()) {
+                <p class="text-body-sm text-on-surface-variant">
+                  {{ 'SUPPLIERS.DETAIL.DEACTIVATING' | translate }}
+                </p>
+              }
+            </div>
+            </daf-section-card>
+          </aside>
+
         </div>
       </div>
 
       <!-- ══════════════════════════════════════════════════════════════════
-           COLONNE DROITE (70 %) — coordonnées bancaires et fiscales
+           COLONNE DROITE — les 4 indicateurs, puis les onglets de données
+           rattachées. Plus d'onglet « Informations » : tout ce qu'il portait
+           vit dans le panneau de gauche, comme sur la fiche affaire.
            ══════════════════════════════════════════════════════════════ -->
-      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+      <div class="detail-main">
 
         <!-- Fournisseur désactivé : le dire en haut de la colonne de contenu, pas en
              pastille seule — c'est ce qui explique qu'il ne soit plus dans la liste. -->
@@ -95,57 +237,130 @@
           </div>
         }
 
-        <!-- ── Coordonnées bancaires ────────────────────────────────────── -->
-        <daf-section-card>
-          <div class="flex items-center justify-between gap-3 border-b border-outline-variant/30
-                      bg-surface-container px-6 py-4">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">account_balance</span>
-              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                {{ 'SUPPLIERS.DETAIL.BANK_DETAILS' | translate }}
+        <!-- ── Indicateurs ─────────────────────────────────────────────────
+             Les deux premières tuiles décrivent l'ENGAGEMENT (ce qui a été commandé,
+             tout statut confondu), les deux dernières le RÈGLEMENT (ce qui a été payé
+             et ce qui reste dû) — la distinction que porte tout le module coûts. -->
+        <div class="kpi-row">
+          @for (k of kpiTiles(); track k.label) {
+            <daf-metric-card class="kpi-cell"
+              [label]="k.label | translate"
+              [value]="k.value"
+              [delta]="k.delta"
+              [options]="k.options" />
+          }
+        </div>
+
+        <daf-tabs #tabsRef
+          variant="underline"
+          [tabs]="tabs()"
+          [(active)]="activeTab"
+          [tabsLabel]="'SUPPLIERS.DETAIL.TABS_ARIA' | translate"
+          idPrefix="supplier-detail" />
+
+        <div role="tabpanel"
+             [id]="tabsRef.panelId(activeTab())"
+             [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+             class="flex flex-col gap-6">
+
+          <!-- ══ Onglet « Lignes de coût » ═════════════════════════════════
+               La liste, en lecture. Soumettre, régler ou éditer une ligne se fait
+               depuis le module coûts, qui porte déjà les gardes de statut de chaque
+               action — d'où le renvoi dans le centre d'actions plutôt qu'une seconde
+               implantation de ces boutons ici. -->
+          @if (activeTab() === 'costs') {
+            <!-- Recherche + filtre + export, comme les onglets TS / Factures /
+                 Paiements de la fiche affaire. La barre vit HORS de la carte du
+                 tableau, comme là-bas : elle pilote le tableau, elle n'en fait pas
+                 partie. -->
+            <daf-search-toolbar
+              [placeholder]="'SUPPLIERS.DETAIL.TOOLBAR.SEARCH_COSTS' | translate"
+              [value]="costSearch()"
+              [debounce]="300"
+              (valueChange)="onCostSearch($event)"
+              [filterFields]="costFilterFields()"
+              [filterConfig]="filterConfig()"
+              (filterApply)="onCostFilter($event)"
+              (filterReset)="onCostFilterReset()"
+              [actions]="costToolbarActions()"
+              (action)="onCostToolbarAction($event)" />
+
+            <daf-section-card>
+              <daf-data-table
+                [columns]="costColumns()"
+                [rows]="costRows()"
+                [config]="costConfig()" />
+
+              <p class="border-t border-outline-variant/30 bg-surface-container px-6 py-4
+                        text-body-sm text-on-surface-variant">
+                {{ 'SUPPLIERS.DETAIL.COSTS.HINT' | translate }}
               </p>
-            </div>
-            <span class="inline-flex items-center gap-1 rounded-full bg-teal/10 px-2 py-0.5
-                         text-[11px] font-bold text-teal">
-              <span class="material-symbols-outlined text-[14px]">lock</span>
-              {{ 'SUPPLIERS.DETAIL.SECURE' | translate }}
-            </span>
-          </div>
+            </daf-section-card>
 
-          <div class="flex flex-col gap-3 p-6">
-            <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-              {{ 'SUPPLIERS.DETAIL.IBAN_MAIN' | translate }}
-            </p>
+            <daf-pagination
+              [currentPage]="costPage()"
+              [totalPages]="costTotalPages()"
+              [totalElements]="filteredCostLines().length"
+              [pageSize]="costPageSize()"
+              [pageSizeOptions]="[10, 20, 50, 100]"
+              [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+              [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+              [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+              [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+              (pageChange)="costPage.set($event)"
+              (pageSizeChange)="costPageSize.set($event); costPage.set(0)" />
+          }
 
-            @if (!ibanDisplay()) {
-              <p class="text-body-md text-on-surface-variant">{{ 'SUPPLIERS.DETAIL.NO_IBAN' | translate }}</p>
-            } @else {
-              <p class="font-mono text-body-md font-bold text-on-surface">{{ ibanDisplay() }}</p>
-            }
-          </div>
-        </daf-section-card>
+          <!-- ══ Onglet « Règlement » ══════════════════════════════════════
+               Le relevé de compte, en lecture seule. La décomposition fiscale des six
+               colonnes (HT/FODEC/TVA/Timbre/Autres/TTC) reste sur la fiche ligne de
+               coût : ici on lit un mouvement de compte, pas une facture. -->
+          @if (activeTab() === 'ledger') {
+            <daf-search-toolbar
+              [placeholder]="'SUPPLIERS.DETAIL.TOOLBAR.SEARCH_LEDGER' | translate"
+              [value]="ledgerSearch()"
+              [debounce]="300"
+              (valueChange)="onLedgerSearch($event)"
+              [filterFields]="ledgerFilterFields()"
+              [filterConfig]="filterConfig()"
+              (filterApply)="onLedgerFilter($event)"
+              (filterReset)="onLedgerFilterReset()"
+              [actions]="ledgerToolbarActions()"
+              (action)="onLedgerToolbarAction($event)" />
 
-        <!-- ── Informations fiscales ────────────────────────────────────── -->
-        <daf-section-card>
-          <div class="flex items-center gap-2 border-b border-outline-variant/30
-                      bg-surface-container px-6 py-4">
-            <span class="material-symbols-outlined text-[18px] text-on-surface-variant">receipt_long</span>
-            <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-              {{ 'SUPPLIERS.DETAIL.FISCAL' | translate }}
-            </p>
-          </div>
+            <daf-section-card>
+              <daf-data-table
+                [columns]="ledgerColumns()"
+                [rows]="ledgerRows()"
+                [config]="ledgerConfig()" />
 
-          <div class="p-6" style="display:flex; flex-wrap:wrap; gap:1.25rem">
-            @for (f of fiscalFields(); track f.label) {
-              <div class="flex flex-col gap-1" style="flex:1 1 30%">
-                <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                  {{ f.label | translate }}
-                </p>
-                <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
-              </div>
-            }
-          </div>
-        </daf-section-card>
+              <p class="border-t border-outline-variant/30 bg-surface-container px-6 py-4
+                        text-body-sm text-on-surface-variant">
+                {{ 'SUPPLIERS.DETAIL.LEDGER.HINT' | translate }}
+              </p>
+            </daf-section-card>
+
+            <!-- ⚠️ Le solde des colonnes « Solde » reste CUMULATIF depuis la première
+                 écriture du fournisseur : c'est le back qui le calcule sur le relevé
+                 entier (SupplierLedgerService), il ne se recalcule pas sur la page ni
+                 sur le sous-ensemble filtré. Filtrer « Débit » ne donne donc pas la
+                 somme des débits, mais les écritures débitrices avec leur solde à
+                 leur date — ce qu'un relevé doit dire. -->
+            <daf-pagination
+              [currentPage]="ledgerPage()"
+              [totalPages]="ledgerTotalPages()"
+              [totalElements]="filteredLedgerRows().length"
+              [pageSize]="ledgerPageSize()"
+              [pageSizeOptions]="[10, 20, 50, 100]"
+              [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+              [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+              [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+              [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+              (pageChange)="ledgerPage.set($event)"
+              (pageSizeChange)="ledgerPageSize.set($event); ledgerPage.set(0)" />
+          }
+
+        </div><!-- /tabpanel -->
 
       </div>
     </div>

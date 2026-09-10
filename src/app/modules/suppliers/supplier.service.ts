@@ -3,7 +3,7 @@ import { HttpClient, HttpParams }        from '@angular/common/http';
 import { Observable, map, catchError, of } from 'rxjs';
 import { environment }                   from '../../../environments/environment';
 import {
-  SupplierDto, SupplierStatsDto, CreateSupplierRequest, PageResponse,
+  SupplierDto, SupplierStatsDto, CreateSupplierRequest, PageResponse, SupplierStatusFilter,
 } from './supplier.model';
 
 @Injectable({ providedIn: 'root' })
@@ -11,10 +11,15 @@ export class SupplierService {
   private readonly base = `${environment.factApiUrl}/api/fact/suppliers`;
   private readonly http = inject(HttpClient);
 
-  /** Paginated search — uses GET /search?paysId=&q=&page=&size= */
+  /** Paginated search — uses GET /search?paysId=&q=&status=&page=&size= */
   getSuppliers(params: {
     paysId: number;
     search?: string;
+    /**
+     * `ACTIVE` (défaut serveur), `INACTIVE` ou `ALL`. Omis = actifs seuls, ce que
+     * faisait cet endpoint avant d'accepter le paramètre.
+     */
+    status?: SupplierStatusFilter;
     page?: number;
     size?: number;
   }): Observable<PageResponse<SupplierDto>> {
@@ -23,6 +28,9 @@ export class SupplierService {
       .set('page', String(params.page ?? 0))
       .set('size', String(params.size ?? 20));
     if (params.search) p = p.set('q', params.search);
+    // `ACTIVE` n'est pas envoyé : c'est déjà le défaut serveur, et une requête sans
+    // filtre est ce que les autres appelants émettent.
+    if (params.status && params.status !== 'ACTIVE') p = p.set('status', params.status);
     return this.http.get<PageResponse<SupplierDto>>(`${this.base}/search`, { params: p });
   }
 

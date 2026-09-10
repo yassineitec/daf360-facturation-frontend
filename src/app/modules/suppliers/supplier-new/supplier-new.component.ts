@@ -3,13 +3,14 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  ButtonComponent, ButtonOptions, FieldMessageComponent, FormFieldComponent,
+  ButtonComponent, ButtonOptions, CardComponent, FieldMessageComponent, FormFieldComponent,
   PageComponent, PageHeaderComponent, SelectComponent, SelectOption, StepperComponent,
 } from '@khalilrebhiitec/daf360';
 import type {
   BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
 } from '@khalilrebhiitec/daf360';
 import { SupplierService } from '../supplier.service';
+import { CreateSupplierRequest, SupplierDto } from '../supplier.model';
 import { ClientService } from '../../clients/client.service';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import { FactListService } from '../../../core/fact-list.service';
@@ -21,10 +22,26 @@ const STEP_KEYS  = ['IDENTIFICATION', 'FISCAL', 'BANK'] as const;
 const STEP_ICONS = ['badge', 'receipt_long', 'account_balance'] as const;
 
 /**
- * Assistant « Nouveau fournisseur » — même squelette que les assistants facture,
- * affaire et client : `daf-page` porte le rythme vertical, `daf-page-header` le h1, le
- * fil d'Ariane et le résumé de la saisie en pastilles, et la barre d'actions collante du
- * bas porte la progression (`daf-stepper` en `chrome: 'header-only'`).
+ * Assistant fournisseur — **création ET modification**, un seul formulaire, comme
+ * les assistants client et affaire (`clients.routes.ts` monte déjà `ClientNewComponent`
+ * sur `:id/edit` pour la même raison : un seul écran à faire évoluer).
+ *
+ * Le mode se lit sur l'URL : `/finance/suppliers/new` crée, `/finance/suppliers/:id/edit`
+ * modifie. Deux différences de comportement, pas trois écrans :
+ *
+ * 1. **Le pays est verrouillé en modification.** `code` est généré une fois à partir du
+ *    préfixe ISO du pays (`SupplierService.generateCode()`) et a déjà été vu par des
+ *    utilisateurs ; le serveur ignore d'ailleurs `paysId` sur le PATCH. Déplacer un
+ *    fournisseur d'un pays à l'autre est une autre opération que le modifier.
+ * 2. **On n'envoie que les champs réellement modifiés.** Le contrat du PATCH
+ *    (cf. `SupplierService.updateSupplier`) est : absent/`null` = inchangé, chaîne
+ *    **vide** = effacer. Renvoyer tout le formulaire écraserait donc ce qu'un autre
+ *    utilisateur vient d'écrire dans un champ qu'on n'a pas touché.
+ *
+ * Même squelette que les assistants facture, affaire et client : `daf-page` porte le
+ * rythme vertical, `daf-page-header` le h1, le fil d'Ariane et le résumé de la saisie en
+ * pastilles, et la barre d'actions collante du bas porte la progression
+ * (`daf-stepper` en `chrome: 'header-only'`).
  *
  * Ce qui a disparu :
  * - les **523 lignes de SCSS** et tout le balisage maison qu'elles habillaient
@@ -44,7 +61,7 @@ const STEP_ICONS = ['badge', 'receipt_long', 'account_balance'] as const;
   selector: 'app-supplier-new',
   imports: [
     TranslatePipe,
-    PageComponent, PageHeaderComponent, StepperComponent, ButtonComponent,
+    PageComponent, PageHeaderComponent, StepperComponent, ButtonComponent, CardComponent,
     FormFieldComponent, SelectComponent, FieldMessageComponent,
   ],
   host: { class: 'block' },
@@ -82,6 +99,21 @@ export class SupplierNewComponent implements OnInit {
   supplierTypes = signal<ListValueDto[]>([]);
 
   touched = signal(false);
+
+  // ═══ Mode modification ════════════════════════════════════════════════════
+
+  /**
+   * `null` en création. Lu sur `paramMap` et non via `input()` : ce remote est monté
+   * par le routeur du shell, et `withComponentInputBinding()` est une option du
+   * routeur *hôte* — même raison que dans la fiche fournisseur.
+   */
+  readonly editId = Number(this.route.snapshot.paramMap.get('id')) || null;
+  readonly isEdit = this.editId !== null;
+
+  /** L'état serveur au chargement, seule référence pour savoir ce qui a changé. */
+  private readonly original = signal<SupplierDto | null>(null);
+
+  loading = signal(false);
 
   // ═══ Étapes ═══════════════════════════════════════════════════════════════
 
@@ -123,12 +155,37 @@ export class SupplierNewComponent implements OnInit {
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
+  /**
+   * Le fil d'Ariane remonte d'un cran de plus en modification : `:id/edit` est deux
+   * segments sous la liste, `new` un seul. Chemins absolus plutôt que `['..']`, pour
+   * ne pas dépendre de la profondeur de la route courante.
+   */
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
+    const root: BreadcrumbItem = {
+      label: this.translate.instant('SUPPLIERS.NEW.BREADCRUMB_ROOT'),
+      link:  ['/finance/suppliers'],
+    };
+    if (!this.isEdit) {
+      return [root, { label: this.translate.instant('SUPPLIERS.NEW.TITLE') }];
+    }
     return [
-      { label: this.translate.instant('SUPPLIERS.NEW.BREADCRUMB_ROOT'), link: ['..'] },
-      { label: this.translate.instant('SUPPLIERS.NEW.TITLE') },
+      root,
+      { label: this.original()?.name ?? '—', link: ['/finance/suppliers', this.editId!] },
+      { label: this.translate.instant('SUPPLIERS.EDIT.TITLE') },
     ];
+  });
+
+  readonly pageTitle = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(this.isEdit ? 'SUPPLIERS.EDIT.TITLE' : 'SUPPLIERS.NEW.TITLE');
+  });
+
+  readonly pageSubtitle = computed(() => {
+    this.translate.currentLang();
+    return this.isEdit
+      ? this.original()?.name ?? this.translate.instant('SUPPLIERS.EDIT.SUBTITLE')
+      : this.translate.instant('SUPPLIERS.NEW.SUBTITLE');
   });
 
   /**
@@ -168,6 +225,21 @@ export class SupplierNewComponent implements OnInit {
   readonly typeSelectOptions = computed<SelectOption[]>(() =>
     this.supplierTypes().map(t => ({ value: t.id + '|' + t.labelFr, label: t.labelFr })));
 
+  /**
+   * La valeur sélectionnée est reconstruite `id|label` pour retomber sur l'option
+   * correspondante. Le libellé est **relu dans la liste** quand elle est chargée,
+   * plutôt que repris du `typeLabel` du fournisseur : les deux viennent du même
+   * `label_fr` côté serveur, mais si l'un dérivait de l'autre, la chaîne ne
+   * correspondrait à aucune option et le select afficherait son placeholder alors que
+   * le fournisseur a bien une catégorie.
+   */
+  readonly selectedTypeValue = computed<string[]>(() => {
+    const id = this.typeId();
+    if (id === null) return [];
+    const known = this.supplierTypes().find(t => t.id === id);
+    return [id + '|' + (known?.labelFr ?? this.typeLabel())];
+  });
+
   onTypeSelect(values: string[]): void {
     const value = values[0] ?? '';
     if (!value) { this.typeId.set(null); this.typeLabel.set(''); return; }
@@ -187,14 +259,15 @@ export class SupplierNewComponent implements OnInit {
   readonly nextButtonOptions = computed<ButtonOptions>(() => {
     this.translate.currentLang();
     const last = this.step() === 3;
+    const commitKey = this.isEdit ? 'SUPPLIERS.EDIT.SAVE' : 'SUPPLIERS.NEW.CREATE';
     return {
       variant: 'teal',
       pill:    true,
-      label:   this.translate.instant(last ? 'SUPPLIERS.NEW.CREATE' : 'SUPPLIERS.NEW.NEXT'),
+      label:   this.translate.instant(last ? commitKey : 'SUPPLIERS.NEW.NEXT'),
       iconEnd:   last ? undefined : 'arrow_forward',
-      iconStart: last ? 'storefront' : undefined,
+      iconStart: last ? (this.isEdit ? 'save' : 'storefront') : undefined,
       loading:  this.isSaving(),
-      disabled: !this.canGoNext() || this.isSaving(),
+      disabled: !this.canGoNext() || this.isSaving() || this.loading(),
     };
   });
 
@@ -219,12 +292,40 @@ export class SupplierNewComponent implements OnInit {
     this.clientSvc.getPays().pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(list => this.paysList.set(list));
 
-    this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({ next: id => { if (id && id > 0) this.paysId.set(id); } });
-
     this.factListSvc.getListValues('SUPPLIER_CATEGORY', 0)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(list => this.supplierTypes.set(list));
+
+    if (this.isEdit) {
+      // Le pays vient du fournisseur, pas de l'utilisateur connecté : on peut modifier
+      // un fournisseur d'un autre pays que le sien sans le lui réaffecter au passage.
+      this.loadForEdit();
+      return;
+    }
+
+    this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: id => { if (id && id > 0) this.paysId.set(id); } });
+  }
+
+  private loadForEdit(): void {
+    this.loading.set(true);
+    this.svc.getSupplier(this.editId!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: s => {
+        this.original.set(s);
+        this.name.set(s.name ?? '');
+        this.paysId.set(s.paysId ?? 0);
+        this.typeId.set(s.typeId);
+        this.typeLabel.set(s.typeLabel ?? '');
+        this.numeroTva.set(s.numeroTva ?? '');
+        this.taxId.set(s.taxId ?? '');
+        this.iban.set(s.iban ?? '');
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.saveError.set(this.translate.instant('SUPPLIERS.EDIT.LOAD_ERROR'));
+      },
+    });
   }
 
   private save(): void {
@@ -233,6 +334,8 @@ export class SupplierNewComponent implements OnInit {
 
     const paysId = this.paysId();
     if (!paysId) { this.saveError.set(this.translate.instant('SUPPLIERS.NEW.ERROR_PAYS')); return; }
+
+    if (this.isEdit) { this.saveEdit(); return; }
 
     this.isSaving.set(true);
     this.saveError.set(null);
@@ -257,5 +360,63 @@ export class SupplierNewComponent implements OnInit {
           ?? this.translate.instant('SUPPLIERS.NEW.ERROR_CREATE'));
       },
     });
+  }
+
+  /**
+   * PATCH des seuls champs modifiés. `paysId` n'est jamais envoyé : le serveur
+   * l'ignore de toute façon, et le préfixe du `code` en dépend.
+   *
+   * Un champ vidé part en **chaîne vide**, pas en `null` : côté serveur `null`
+   * signifie « inchangé » (cf. `SupplierService.updateSupplier`), donc envoyer `null`
+   * pour effacer un IBAN ne ferait rien du tout, silencieusement.
+   */
+  private saveEdit(): void {
+    const before = this.original();
+    if (!before) { this.saveError.set(this.translate.instant('SUPPLIERS.EDIT.LOAD_ERROR')); return; }
+
+    const patch: Partial<CreateSupplierRequest> = {};
+
+    const name = this.name().trim();
+    if (name !== (before.name ?? '')) patch.name = name;
+
+    // Les trois champs facultatifs : `''` côté formulaire ⇄ `null` côté serveur, donc
+    // la comparaison se fait sur la chaîne pour ne pas voir une modification là où il
+    // n'y en a pas (`null` → `''` n'est pas un changement).
+    const numeroTva = this.numeroTva().trim();
+    if (numeroTva !== (before.numeroTva ?? '')) patch.numeroTva = numeroTva;
+
+    const taxId = this.taxId().trim();
+    if (taxId !== (before.taxId ?? '')) patch.taxId = taxId;
+
+    const iban = this.iban().trim();
+    if (iban !== (before.iban ?? '')) patch.iban = iban;
+
+    const typeId = this.typeId();
+    if (typeId !== null && typeId !== before.typeId) patch.typeId = typeId;
+
+    // Rien touché : pas d'appel. Un PATCH vide ne renverrait qu'un `updated_at`
+    // remis à l'heure, ce qui ferait passer une consultation pour une modification.
+    if (Object.keys(patch).length === 0) {
+      this.router.navigate(['/finance/suppliers', this.editId!]);
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.saveError.set(null);
+
+    this.svc.update(this.editId!, patch)
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: s => {
+          this.isSaving.set(false);
+          this.router.navigate(['/finance/suppliers', s.id]);
+        },
+        error: err => {
+          this.isSaving.set(false);
+          // Le serveur renvoie un message métier exploitable sur le seul cas
+          // fonctionnel possible ici (RG_SUPPLIER_TVA_UNIQUE / RG_SUPPLIER_TYPE_INVALID).
+          this.saveError.set(err?.error?.message
+            ?? this.translate.instant('SUPPLIERS.EDIT.ERROR_UPDATE'));
+        },
+      });
   }
 }
