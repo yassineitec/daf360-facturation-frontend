@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
 import { forkJoin } from 'rxjs';
 
 import { CostService } from '../cost.service';
@@ -15,7 +16,7 @@ import { PaysRefDto } from '../../affaires/affaire.model';
 @Component({
   selector: 'app-rate-computation',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, SelectComponent],
   templateUrl: './rate-computation.component.html',
   styleUrl: './rate-computation.component.scss',
 })
@@ -26,6 +27,39 @@ export class RateComputationComponent implements OnInit {
 
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);
+
+  /**
+   * Le pays se choisit dans une LISTE DÉROULANTE avec recherche, et non plus dans une
+   * bande d'onglets.
+   *
+   * <p>Les onglets tenaient tant que `pays_ref` portait onze lignes. Depuis V75 elle porte
+   * les 194 pays, et une bande de 194 boutons n'est pas une navigation : c'est un mur.
+   * `daf-select` avec `searchable: true` fait le même travail en une ligne — et la
+   * recherche porte sur le libellé affiché, donc « TN » comme « Tunisie » trouvent la
+   * Tunisie.
+   */
+  readonly paysOptions = computed<SelectOption[]>(() =>
+    this.paysList().map(p => ({
+      value: String(p.id),
+      label: `${p.frenchLabel} (${p.isoCode})`,
+    })));
+
+  readonly paysSelectConfig = computed(() => {
+    this.translate.currentLang();
+    return {
+      // Clé existante de COST.FORM : « Pays / Entité ». Ici le pays EST le contexte
+      // d'entité du calcul de taux, donc le libellé est juste — et pas besoin d'une
+      // nouvelle clé dans les trois locales.
+      label: this.translate.instant('COST.FORM.PAYS_LABEL'),
+      searchable: true,
+      fullWidth: false,
+    };
+  });
+
+  onPaysSelected(values: string[]): void {
+    const id = Number(values[0]);
+    if (Number.isFinite(id) && id > 0) this.selectPays(id);
+  }
 
   computations    = signal<RateComputationDto[]>([]);
   isLoading       = signal(false);

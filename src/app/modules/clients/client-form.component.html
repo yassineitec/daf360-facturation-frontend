@@ -50,23 +50,79 @@
         [options]="{ label: ('CLIENTS.FORM.TAX_ID_LABEL' | translate), type: 'text', placeholder: 'MF-XXXXXXX', maxLength: 50 }" />
     </div>
 
-    <div class="w-1/2">
-      <!-- Pays du client : une liste issue du référentiel `pays_ref`, plus une saisie
-           libre — on ne peut pas contrôler l'orthographe d'un pays tapé à la main, et
-           la valeur sert ensuite de filtre et d'étiquette dans la liste. -->
-      <daf-select
-        [options]="countryOptions()"
-        [config]="countrySelectConfig()"
-        [selected]="country() ? [country()] : []"
-        (selectedChange)="country.set($event[0])" />
-    </div>
-
   </div>
 </div>
 }
 
 <!-- ── Section 2 : Contact & Coordonnées ───────────────────────────────────── -->
 @if (activeSection === 0 || activeSection === 2) {
+<!-- ── Section 2a : Coordonnées de la SOCIÉTÉ ───────────────────────────────
+     Ces quatre champs existaient partout SAUF ici : le composant portait déjà
+     leurs signaux, `submit()` les envoyait déjà au serveur, les colonnes
+     existaient déjà en base et les libellés étaient déjà traduits — mais aucun
+     `<daf-form-field>` ne les rendait. Tout client créé depuis cet écran partait
+     donc avec une adresse, une ville, un code postal et un site vides, sans que
+     rien ne le signale. Le téléphone et l'e-mail « standard » ne reviennent PAS :
+     ce sont des coordonnées de personne, elles vivent dans les contacts (V72). -->
+<div class="glass-card rounded-2xl p-6">
+  <p class="section-label">{{ 'CLIENTS.FORM.SECTION_CONTACT' | translate }}</p>
+
+  <div class="flex flex-col gap-4">
+    <daf-form-field
+      [value]="address()"
+      (valueChange)="address.set(asStr($event))"
+      [options]="{
+        label: ('CLIENTS.FORM.ADDRESS_LABEL' | translate),
+        type: 'text',
+        placeholder: ('CLIENTS.FORM.ADDRESS_PLACEHOLDER' | translate),
+        maxLength: 500
+      }" />
+
+    <div class="grid grid-cols-2 gap-4">
+      <daf-form-field
+        [value]="city()"
+        (valueChange)="city.set(asStr($event))"
+        [options]="{
+          label: ('CLIENTS.FORM.CITY_LABEL' | translate),
+          type: 'text',
+          placeholder: ('CLIENTS.FORM.CITY_PLACEHOLDER' | translate),
+          maxLength: 100
+        }" />
+
+      <daf-form-field
+        [value]="postalCode()"
+        (valueChange)="postalCode.set(asStr($event))"
+        [options]="{
+          label: ('CLIENTS.FORM.POSTAL_CODE_LABEL' | translate),
+          type: 'text',
+          maxLength: 20
+        }" />
+    </div>
+
+    <!-- Le pays fait partie de l'ADRESSE, et il est ici pour ça : il était dans la carte
+         « Identification », à côté du nom et du n° fiscal, loin de la ville et du code
+         postal qu'il complète. Recherche activée — `pays_ref` porte les 194 pays depuis
+         V75, une liste de cette taille sans recherche est inutilisable. -->
+    <div class="grid grid-cols-2 gap-4">
+      <daf-select
+        [options]="countryOptions()"
+        [config]="countrySelectConfig()"
+        [selected]="countryId() ? [countryId()] : []"
+        (selectedChange)="countryId.set($event[0])" />
+
+      <daf-form-field
+        [value]="website()"
+        (valueChange)="website.set(asStr($event))"
+        [options]="{
+          label: ('CLIENTS.FORM.WEBSITE_LABEL' | translate),
+          type: 'text',
+          placeholder: 'https://',
+          maxLength: 255
+        }" />
+    </div>
+  </div>
+</div>
+
 <!-- ── Section 2b : Interlocuteurs ──────────────────────────────────────────
      Une carte À PART, et non un bloc en pied de la précédente. Les champs
      ci-dessus sont ceux de la SOCIÉTÉ (adresse, standard, site) ; ceux-ci sont

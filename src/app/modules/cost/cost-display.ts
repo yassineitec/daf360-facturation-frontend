@@ -79,6 +79,14 @@ export function canEdit(line: CostLineDto): boolean {
 }
 export const canSubmit = canEdit;
 
+/** A line that's payable via a manual règlement — APPROVED only (see
+ *  CostLineReglementService.create()'s own RG_REGLEMENT_LINE_NOT_APPROVED rule on the
+ *  backend: a line already POSTED already has an active règlement, and a line that's
+ *  still DRAFT/SUBMITTED/RETURNED hasn't been approved yet). */
+export function canReglement(line: CostLineDto): boolean {
+  return line.status === 'APPROVED';
+}
+
 export function formatDate(date: string | null): string {
   if (!date) return '—';
   try {

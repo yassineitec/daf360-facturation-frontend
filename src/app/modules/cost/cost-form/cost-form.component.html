@@ -80,15 +80,26 @@
                 (selectedChange)="onPaysChange($event[0] ? +$event[0] : null)">
               </daf-select>
             </div>
-            <!-- Catégorie -->
+            <!-- Catégorie de coût (D3 taxonomy migration, V78) -->
             <div>
               <daf-select
-                [options]="categoryOptions()"
-                [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true, disabled: !paysId() }"
-                [selected]="selArr(categoryId())"
-                (selectedChange)="categoryId.set($event[0] ? +$event[0] : null); onAmountOrCurrencyChange()">
+                [options]="costCategorySelectOptions()"
+                [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true }"
+                [selected]="costCategoryId() !== null ? [costCategoryId() + '|' + costCategoryLabel()] : []"
+                (selectedChange)="onCostCategorySelect($event)">
               </daf-select>
             </div>
+            <!-- Sous-catégorie -- only appears once a category is chosen -->
+            @if (costCategoryId() !== null && costSubCategorySelectOptions().length > 0) {
+              <div>
+                <daf-select
+                  [options]="costSubCategorySelectOptions()"
+                  [config]="{ label: ('COST.FORM.SUB_CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.SUB_CATEGORY_PLACEHOLDER' | translate), searchable: true }"
+                  [selected]="costSubCategoryId() !== null ? [costSubCategoryId() + '|' + costSubCategoryLabel()] : []"
+                  (selectedChange)="onCostSubCategorySelect($event)">
+                </daf-select>
+              </div>
+            }
             <!-- Date -->
             <div>
               <daf-form-field
@@ -151,74 +162,110 @@
         <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
                     box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
                     padding:1.5rem">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-            <div style="display:flex;align-items:center;gap:.75rem">
-              <div style="width:40px;height:40px;border-radius:12px;background:#dbeafe20;
-                          display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <span class="material-symbols-outlined" style="font-size:1.2rem;color:#1d4ed8">business</span>
-              </div>
-              <div>
-                <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_SUPPLIER_TITLE' | translate }}</p>
-                <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_SUPPLIER_SUB' | translate }}</p>
-              </div>
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+            <div style="width:40px;height:40px;border-radius:12px;background:#dbeafe20;
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#1d4ed8">business</span>
             </div>
-            <!-- Toggle Libre / Base -->
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:.75rem;color:#44474c">{{ 'COST.FORM.TOGGLE_FREE' | translate }}</span>
-              <button type="button"
-                (click)="useSupplierDb.set(!useSupplierDb()); supplierId.set(null); supplierNameFree.set(''); supplierQuery.set('')"
-                style="width:44px;height:24px;border-radius:999px;border:none;cursor:pointer;
-                       position:relative;transition:background .2s"
-                [style.background]="useSupplierDb() ? '#006b58' : '#bdc9c4'">
-                <span style="position:absolute;top:2px;width:20px;height:20px;background:white;
-                             border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s"
-                      [style.left]="useSupplierDb() ? '22px' : '2px'"></span>
-              </button>
-              <span style="font-size:.75rem;color:#44474c">{{ 'COST.FORM.TOGGLE_DB' | translate }}</span>
+            <div>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_SUPPLIER_TITLE' | translate }}</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_SUPPLIER_SUB' | translate }}</p>
             </div>
           </div>
 
-          @if (useSupplierDb()) {
-            <div style="position:relative">
-              <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;
-                          border-radius:12px;background:#eff4ff">
-                <span class="material-symbols-outlined" style="font-size:1.2rem;color:#44474c">search</span>
-                <input type="text" [value]="supplierQuery()"
-                  (input)="onSupplierQueryChange($any($event.target).value)"
-                  [placeholder]="'COST.FORM.SUPPLIER_SEARCH_PLACEHOLDER' | translate"
-                  style="flex:1;background:transparent;border:none;outline:none;
-                         font-size:.875rem;color:#0b1c30"/>
+          <div style="position:relative">
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;
+                        border-radius:12px;background:#eff4ff"
+                 [style.opacity]="paysId() ? 1 : 0.6">
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#44474c">search</span>
+              <input type="text" [value]="supplierQuery()"
+                (input)="onSupplierQueryChange($any($event.target).value)"
+                [disabled]="!paysId()"
+                [placeholder]="(paysId() ? 'COST.FORM.SUPPLIER_SEARCH_PLACEHOLDER' : 'COST.FORM.SUPPLIER_SEARCH_NEEDS_PAYS') | translate"
+                style="flex:1;background:transparent;border:none;outline:none;
+                       font-size:.875rem;color:#0b1c30"/>
+            </div>
+            @if (!paysId()) {
+              <p style="font-size:.7rem;color:#94a3b8;margin-top:6px">{{ 'COST.FORM.SUPPLIER_SEARCH_NEEDS_PAYS_HINT' | translate }}</p>
+            }
+            @if (suppliers().length > 0) {
+              <div style="position:absolute;z-index:20;background:white;border-radius:12px;
+                          box-shadow:0 10px 25px rgba(0,0,0,.12);margin-top:4px;width:100%;
+                          max-height:192px;overflow-y:auto;border:1px solid #e2e8f0">
+                @for (s of suppliers(); track s.id) {
+                  <button type="button" (click)="selectSupplier(s)"
+                    style="width:100%;padding:10px 16px;text-align:left;font-size:.875rem;
+                           background:transparent;border:none;cursor:pointer;
+                           display:flex;justify-content:space-between;align-items:center">
+                    <span style="color:#0b1c30">{{ s.name }}</span>
+                    @if (s.code) {
+                      <span style="font-size:.75rem;color:#44474c">{{ s.code }}</span>
+                    }
+                  </button>
+                }
               </div>
-              @if (suppliers().length > 0) {
-                <div style="position:absolute;z-index:20;background:white;border-radius:12px;
-                            box-shadow:0 10px 25px rgba(0,0,0,.12);margin-top:4px;width:100%;
-                            max-height:192px;overflow-y:auto;border:1px solid #e2e8f0">
-                  @for (s of suppliers(); track s.id) {
-                    <button type="button" (click)="selectSupplier(s)"
-                      style="width:100%;padding:10px 16px;text-align:left;font-size:.875rem;
-                             background:transparent;border:none;cursor:pointer;
-                             display:flex;justify-content:space-between;align-items:center">
-                      <span style="color:#0b1c30">{{ s.name }}</span>
-                      @if (s.code) {
-                        <span style="font-size:.75rem;color:#44474c">{{ s.code }}</span>
-                      }
-                    </button>
-                  }
+            }
+            @if (supplierId()) {
+              <p style="font-size:.75rem;margin-top:6px;display:flex;align-items:center;
+                         gap:4px;color:#006b58">
+                <span class="material-symbols-outlined" style="font-size:.875rem">check_circle</span>
+                {{ 'COST.FORM.SUPPLIER_SELECTED' | translate:{ name: supplierQuery() } }}
+              </p>
+            }
+          </div>
+
+          <!-- D3 Tunisian tax fields (V78) — shown only once a real supplier is picked
+               via the autocomplete (showTaxFields() reads supplierId(), not the toggle). -->
+          @if (showTaxFields()) {
+            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #f0f4f8">
+              <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;color:#d97706">receipt_long</span>
+                <p style="font-size:.8rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.TAX.SECTION_TITLE' | translate }}</p>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div>
+                  <daf-select
+                    [options]="fodecOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.FODEC_LABEL' | translate) }"
+                    [selected]="selArr(fodecRate())"
+                    (selectedChange)="fodecRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
+                  </daf-select>
+                </div>
+                <div>
+                  <daf-select
+                    [options]="tvaOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.TVA_LABEL' | translate) }"
+                    [selected]="selArr(tvaRate())"
+                    (selectedChange)="tvaRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
+                  </daf-select>
+                </div>
+                <div>
+                  <daf-select
+                    [options]="timbreOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.TIMBRE_LABEL' | translate) }"
+                    [selected]="selArr(timbreAmount())"
+                    (selectedChange)="timbreAmount.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
+                  </daf-select>
+                </div>
+                <div>
+                  <daf-select
+                    [options]="autresTaxesOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.AUTRES_TAXES_LABEL' | translate) }"
+                    [selected]="selArr(autresTaxesRate())"
+                    (selectedChange)="autresTaxesRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
+                  </daf-select>
+                </div>
+              </div>
+              @if (ttcPreview(); as ttc) {
+                <div style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;
+                            padding:12px 16px;border-radius:12px;background:#f0fdf4">
+                  <span style="font-size:.8rem;font-weight:700;color:#0b1c30">{{ 'COST.FORM.TAX.TTC_LABEL' | translate }}</span>
+                  <span style="font-size:1rem;font-weight:900;color:#006b58">
+                    {{ ttc | number:'1.3-3' }} {{ selectedCurrencyCode() }}
+                  </span>
                 </div>
               }
-              @if (supplierId()) {
-                <p style="font-size:.75rem;margin-top:6px;display:flex;align-items:center;
-                           gap:4px;color:#006b58">
-                  <span class="material-symbols-outlined" style="font-size:.875rem">check_circle</span>
-                  {{ 'COST.FORM.SUPPLIER_SELECTED' | translate:{ id: supplierId() } }}
-                </p>
-              }
             </div>
-          } @else {
-            <daf-form-field
-              [options]="{ type: 'text', placeholder: ('COST.FORM.SUPPLIER_FREE_PLACEHOLDER' | translate) }"
-              [(value)]="supplierNameFree">
-            </daf-form-field>
           }
         </div>
 

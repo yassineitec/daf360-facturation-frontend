@@ -25,30 +25,13 @@
   line-height: 1.5;
 }
 
-/* ── Pays tabs ─────────────────────────────────────────── */
+/* ── Selecteur de pays ─────────────────────────────────────
+   `.list-tabs` / `.list-tab` ont disparu avec la bande d onglets : le pays se choisit
+   dans un `daf-select` cherchable depuis que `pays_ref` porte les 194 pays (V75). */
 
-.list-tabs {
-  display: flex;
-  gap: 4px;
+.pays-picker {
   margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.list-tab {
-  padding: 6px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 0.82rem;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s;
-
-  &.active, &:hover {
-    background: #1a6b7c;
-    color: #fff;
-    border-color: #1a6b7c;
-  }
+  max-width: 320px;
 }
 
 /* ── Section ───────────────────────────────────────────── */

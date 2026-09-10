@@ -20,6 +20,24 @@ export interface ListValueDto {
    * « non exigé » : une catégorie sans règle explicite ne bloque pas la saisie.
    */
   requiresReceipt?: boolean | null;
+  /**
+   * D3 cost-management taxonomy metadata (V78) — populated for `COST_CATEGORY`
+   * (all fields below) and `COST_SUB_CATEGORY` (`parentValueId` only). `null` for
+   * every other list type.
+   */
+  parentValueId?: number | null;
+  isCapex?: boolean | null;
+  isOverhead?: boolean | null;
+  isDirect?: boolean | null;
+  requiresSupplier?: boolean | null;
+  requiresDocument?: boolean | null;
+  approvalRequiredFromAmount?: number | null;
+  /** 'MANUAL' | 'AUTO_PUSH' — only populated for COST_CATEGORY rows. */
+  sourceType?: string | null;
+  autoPushModule?: string | null;
+  isStrictScrutiny?: boolean | null;
+  descriptionFr?: string | null;
+  descriptionEn?: string | null;
 }
 
 export interface ListTypeDto {
@@ -139,7 +157,14 @@ export interface CostLineDto {
   periodYear: number;
   periodMonth: number;
   transactionDate: string | null;
+  /** Legacy — old cost_categories taxonomy. Null for lines created under the new taxonomy. */
   categoryId: number | null;
+  /** New taxonomy (V78) — COST_CATEGORY configurable list. */
+  costCategoryId: number | null;
+  costCategoryLabel: string | null;
+  /** New taxonomy (V78) — COST_SUB_CATEGORY configurable list. Null if no sub-category chosen. */
+  costSubCategoryId: number | null;
+  costSubCategoryLabel: string | null;
   reference?: string | null;
   label: string | null;           // backend field name is "label"
   originModule: string | null;
@@ -152,6 +177,13 @@ export interface CostLineDto {
   netAmountLocal: number | null;
   vatAmountLocal: number | null;
   grossAmountLocal: number | null;
+  // D3 Tunisian tax fields (V78) — populated only when a supplier is attached.
+  fodecRate: number | null;
+  fodecAmount: number | null;
+  tvaRate: number | null;
+  autresTaxesRate: number | null;
+  autresTaxesAmount: number | null;
+  timbreAmount: number | null;
   currency: string | null;        // currency code string
   currencyId: number | null;
   netAmountEur: number | null;    // backend field name is "netAmountEur"
@@ -176,7 +208,18 @@ export interface CostLineDto {
 
 export interface CreateCostLineRequest {
   paysId: number;
-  categoryId: number;
+  /**
+   * Legacy — old cost_categories taxonomy. Kept optional only because the shared
+   * backend record still accepts it (CSV import's back-compat path); the live
+   * CostFormComponent never sets it — it sends costCategoryId instead. Left
+   * optional here (rather than removed) so CostCreateComponent/CostLineFormComponent
+   * (confirmed dead code, deliberately untouched by this plan) keep compiling.
+   */
+  categoryId?: number;
+  /** New taxonomy (V78) — required by the live create form's own canSave() gate; the
+   *  backend enforces @NotNull for manual creation via CostLineController. */
+  costCategoryId?: number;
+  costSubCategoryId?: number;
   transactionDate: string;   // YYYY-MM-DD
   periodYear: number;
   periodMonth: number;
@@ -193,6 +236,11 @@ export interface CreateCostLineRequest {
   costTypeId?: number | null;
   paymentMethodId?: number | null;
   affaireId?: number | null;
+  // D3 Tunisian tax fields (V78) — only meaningful when supplierId is set.
+  fodecRate?: number | null;
+  tvaRate?: number | null;
+  timbreAmount?: number | null;
+  autresTaxesRate?: number | null;
 }
 
 // ── Import result ──────────────────────────────────────────────────────────────
@@ -367,11 +415,45 @@ export interface SupplierLedgerRowDto {
   soldeDebiteur: number | null;
   soldeCrediteur: number | null;
   costLineId: number;
+  /** Manual règlement feature (2026-09-10 plan) -- addresses the règlement this row
+   *  came from, for Edit/Delete. Every row now originates from exactly one règlement. */
+  reglementId: number;
+  /** The originating cost line's OWN tax breakdown -- not derived from the règlement,
+   *  unrelated to the debit/credit/solde reconciliation above. All null when the line
+   *  had no supplier/tax data. */
+  netAmountLocal: number | null;    // Montant HT
+  fodecAmount: number | null;
+  vatAmountLocal: number | null;    // TVA
+  timbreAmount: number | null;
+  autresTaxesAmount: number | null;
+  grossAmountLocal: number | null;  // Montant TTC
 }
 
 export interface SupplierLedgerDto {
   supplier: SupplierSummaryDto | null;   // null when the cost line has no supplier attached
   rows: SupplierLedgerRowDto[];
+}
+
+// ── Manual règlement (payment) feature (2026-09-10 plan) ───────────────────────
+
+export interface CostLineReglementDto {
+  id: number;
+  costLineId: number;
+  montantPaye: number;
+  datePaiement: string; // ISO LocalDate, e.g. "2026-09-10"
+  comment: string | null;
+}
+
+export interface CreateReglementRequest {
+  montantPaye: number;
+  datePaiement: string; // YYYY-MM-DD
+  comment?: string | null;
+}
+
+export interface UpdateReglementRequest {
+  montantPaye: number;
+  datePaiement: string; // YYYY-MM-DD
+  comment?: string | null;
 }
 
 // ── Cost-lines-by-supplier cards (2026-09-09 plan) ──────────────────────────────

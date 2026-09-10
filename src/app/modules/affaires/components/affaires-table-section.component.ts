@@ -7,8 +7,10 @@ import {
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import {
-  RAF_TONE_CLASS, STATUT_BADGE_VARIANT, distinctResponsables, initials, rafTone, typeLabel,
+  BILLING_MODE_BADGE_VARIANT, RAF_TONE_CLASS, STATUT_BADGE_VARIANT,
+  distinctResponsables, initials, rafTone, typeLabel,
 } from '../affaire-display';
+import { enumLabel } from '../../../shared/enum-labels';
 
 /**
  * List view of `/finance/affaires` on the house table style (UI-PLAYBOOK §6b):
@@ -66,6 +68,10 @@ export class AffairesTableSectionComponent {
     return [
       { key: 'reference',   label: t('AFFAIRES.LIST.TABLE.HEADERS.REF'),     type: 'text'   },
       { key: 'intitule',    label: t('AFFAIRES.LIST.TABLE.HEADERS.TITLE'),   type: 'text'   },
+      // Le mode se range avec la référence et l'intitulé, pas à côté du statut : ce sont
+      // les trois éléments qui identifient le contrat, et deux pastilles voisines se
+      // liraient comme un seul bloc d'état.
+      { key: 'billingMode', label: t('AFFAIRES.LIST.TABLE.HEADERS.BILLING_MODE'), type: 'badge' },
       { key: 'client',      label: t('AFFAIRES.LIST.TABLE.HEADERS.CLIENT'),  type: 'text'   },
       { key: 'pays',        label: t('AFFAIRES.LIST.TABLE.HEADERS.PAYS'),    type: 'text'   },
       { key: 'responsable', label: t('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'), type: 'avatar' },
@@ -92,6 +98,20 @@ export class AffairesTableSectionComponent {
         intitule:    a.intitule,
         client:      a.clientName ?? '—',
         pays:        this.paysLabels().get(a.paysId) ?? '—',
+        // Une chaîne nue plutôt qu'une pastille vide quand le mode manque : la cellule
+        // `badge` retombe sur le rendu texte dès que la valeur n'est pas un `BadgeCell`,
+        // et une pastille contenant « — » est un cadre autour de rien. Le cas existe —
+        // un brouillon peut être créé avant le choix du mode.
+        billingMode: a.billingMode
+          ? {
+              label:   enumLabel(this.translate, 'BILLING_MODE', a.billingMode),
+              options: {
+                variant: BILLING_MODE_BADGE_VARIANT[a.billingMode] ?? 'neutral',
+                size:    'sm',
+                outline: true,
+              },
+            } satisfies BadgeCell
+          : '—',
         responsable: {
           name:     lead?.fullName ?? '—',
           initials: initials(lead?.fullName),

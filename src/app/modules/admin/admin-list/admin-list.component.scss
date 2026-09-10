@@ -48,6 +48,15 @@
   color: var(--color-on-surface-variant);
   margin: 0;
 }
+// Même aspect que la variante « glass » de daf-card, mais SANS overflow:hidden : daf-card
+// rogne son contenu sur ses coins arrondis, ce qui coupait le panneau de la liste
+// déroulante. On garde la carte telle quelle — `daf-select` gère lui-même le placement de
+// son panneau, mais l'aspect reste le bon.
+//
+// Les 150 lignes qui suivaient — `.pays-select*`, `.pays-dropdown*`, `.pays-flag`,
+// `.pays-check` — ont disparu avec la liste déroulante écrite à la main qu'elles
+// habillaient : déclencheur, panneau, fond, champ de recherche, ligne active, vignette de
+// drapeau. `daf-select` apporte tout ça.
 
 // ── Pays selector (flag + search dropdown) ─────────────────────────────────────
 
@@ -57,6 +66,45 @@
 .pays-card {
   position: relative;
   z-index: 50;
+}
+
+// ── Main tabs ─────────────────────────────────────────────────────────────────
+
+.main-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.main-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 20px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  font-size: var(--text-label-md);
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: all var(--duration-fast) var(--ease-smooth);
+
+  .tab-icon { font-size: 1.05rem; opacity: 0.7; }
+
+  &.active {
+    color: var(--color-tertiary);
+    border-bottom-color: var(--color-tertiary);
+
+    .tab-icon { opacity: 1; }
+  }
+
+  &:hover:not(.active) { color: var(--color-on-surface); }
 }
 
 .pays-select-wrap {

@@ -202,13 +202,27 @@ export class ClientNewComponent implements OnInit {
     if (this.currentStep() === 1) {
       return !!form.clientName()?.trim() && !!form.selectedSector()[0];
     }
+    // Étape 2 « Coordonnées » : au moins un contact nommé, à la création.
+    //
+    // `submit()` le refusait déjà, mais seulement au bout de l'assistant : on
+    // parcourait les trois étapes pour se faire renvoyer à la deuxième. Le serveur le
+    // refuse aussi (`@NotEmpty` sur `contacts`), et pour une raison qui n'est pas
+    // cosmétique : depuis V72, le contact principal est la SEULE source d'un
+    // destinataire de facture. Un client sans contact ne peut rien recevoir.
+    if (this.currentStep() === 2 && form.contactsRequired()) {
+      return form.contacts().some(c => c.fullName.trim());
+    }
     return true;
   });
 
   readonly stepValidationError = computed((): string | null => {
     this.translate.currentLang();
-    if (this.currentStep() === 1 && !this.canGoNext()) {
+    if (this.canGoNext()) return null;
+    if (this.currentStep() === 1) {
       return this.translate.instant('CLIENTS.NEW.VALIDATION_REQUIRED');
+    }
+    if (this.currentStep() === 2) {
+      return this.translate.instant('CLIENTS.CONTACTS.AT_LEAST_ONE');
     }
     return null;
   });

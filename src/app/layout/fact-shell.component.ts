@@ -115,7 +115,11 @@ export class FactShellComponent {
         id:    def.id,
         label: this.translate.instant(def.labelKey),
         icon:  def.icon,
-        route: def.route,
+        // PAS de route sur un groupe : un parent à enfants ne fait qu'ouvrir sa liste,
+        // seuls les enfants changent l'URL. La `route` reste sur le `FinanceModuleDef`
+        // parce que la carte d'accueil s'en sert — elle est simplement retirée de
+        // l'entrée de barre, où l'écran correspondant est devenu le premier enfant.
+        ...(children.length ? {} : { route: def.route }),
         // Omis quand vide : `children: []` ferait quand même de l'entrée un groupe
         // dépliable, avec un chevron qui n'ouvre rien.
         ...(children.length ? { children } : {}),
@@ -161,6 +165,9 @@ export class FactShellComponent {
   }
 
   onNavClick(item: NavItem): void {
+    // `closeSidebar` sans condition : depuis la lib 4.27.0, un item à enfants n'émet plus
+    // `itemClick`, donc un clic sur un groupe ne passe plus par ici et ne referme plus la
+    // barre — la liste qu'il vient d'ouvrir reste lisible, sans garde à maintenir.
     this.closeSidebar();
     if (item.route) {
       this.router.navigate([item.route], { relativeTo: this.activatedRoute });

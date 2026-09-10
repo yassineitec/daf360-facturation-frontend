@@ -7,8 +7,8 @@ import { CostLineDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import {
-  APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit, canSubmit,
-  formatDate, statusKey,
+  APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit, canReglement,
+  canSubmit, formatDate, statusKey,
 } from '../cost-display';
 
 /**
@@ -50,6 +50,10 @@ import {
           @if (row['_canEdit']) {
             <fact-table-action id="edit" [tooltip]="tips().edit" (action)="edit.emit(row['_raw'])" />
           }
+          @if (row['_canReglement']) {
+            <fact-table-action icon="payments" [tooltip]="tips().reglement"
+                               (action)="createReglement.emit(row['_raw'])" />
+          }
         </div>
       </ng-template>
 
@@ -66,14 +70,16 @@ export class CostLinesTableSectionComponent {
   emptyMessage = input('');
   pageSize     = input(25);
 
-  readonly edit       = output<CostLineDto>();
-  readonly submitLine = output<CostLineDto>();
+  readonly edit            = output<CostLineDto>();
+  readonly submitLine      = output<CostLineDto>();
+  readonly createReglement = output<CostLineDto>();
 
   protected readonly tips = computed(() => {
     this.translate.currentLang();
     return {
-      edit:   this.translate.instant('COST.LINES.EDIT'),
-      submit: this.translate.instant('COST.LINES.SUBMIT'),
+      edit:      this.translate.instant('COST.LINES.EDIT'),
+      submit:    this.translate.instant('COST.LINES.SUBMIT'),
+      reglement: this.translate.instant('COST.LINES.CREATE_REGLEMENT'),
     };
   });
 
@@ -85,7 +91,7 @@ export class CostLinesTableSectionComponent {
       { key: 'category', label: t('COST.LINES.COL_CATEGORY'),    type: 'text'   },
       { key: 'date',     label: t('COST.LINES.COL_DATE'),        type: 'text'   },
       { key: 'net',      label: t('COST.LINES.COL_NET_AMOUNT'),  type: 'text', align: 'right' },
-      { key: 'eur',      label: t('COST.LINES.COL_EUR'),         type: 'text', align: 'right' },
+      { key: 'ttc',      label: t('COST.LINES.COL_TTC'),         type: 'text', align: 'right' },
       { key: 'status',   label: t('COST.LINES.COL_STATUS'),      type: 'badge'  },
       { key: 'approval', label: t('COST.LINES.COL_APPROVAL'),    type: 'badge'  },
       { key: '_actions', label: '', align: 'right', width: '1%' },
@@ -106,7 +112,7 @@ export class CostLinesTableSectionComponent {
         category: cat(line.categoryId),
         date:     formatDate(line.transactionDate),
         net:      this.currency.transform(line.netAmountLocal, line.currency ?? 'TND'),
-        eur:      this.currency.transform(line.netAmountEur, 'EUR'),
+        ttc:      this.currency.transform(line.grossAmountLocal, line.currency ?? 'TND'),
         status: {
           label:   t(statusKey(line.status)),
           options: { variant: STATUS_BADGE_VARIANT[line.status] ?? 'neutral', dot: true, size: 'sm' },
@@ -122,9 +128,10 @@ export class CostLinesTableSectionComponent {
         // Rendered by the projected cells above.
         _label:      line.label ?? '—',
         _reference:  line.reference ?? '',
-        _canEdit:    canEdit(line),
-        _canSubmit:  canSubmit(line),
-        _raw:        line,
+        _canEdit:      canEdit(line),
+        _canSubmit:    canSubmit(line),
+        _canReglement: canReglement(line),
+        _raw:          line,
       };
     });
   });

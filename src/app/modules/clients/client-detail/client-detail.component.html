@@ -58,7 +58,20 @@
                     <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
                       {{ f.label | translate }}
                     </p>
-                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                    <!-- `rel="noopener"` n'est pas décoratif : sans lui, la page ouverte
+                         reçoit un `window.opener` pointant sur l'application et peut la
+                         faire naviguer ailleurs. `noreferrer` évite en plus d'annoncer
+                         l'URL interne d'où vient le clic. -->
+                    @if (f.href) {
+                      <a class="text-body-md font-bold text-primary hover:underline"
+                         [href]="f.href" target="_blank" rel="noopener noreferrer">
+                        {{ f.value }}
+                        <span class="material-symbols-outlined"
+                              style="font-size:1rem; vertical-align:-2px">open_in_new</span>
+                      </a>
+                    } @else {
+                      <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                    }
                   </div>
                 }
               </div>

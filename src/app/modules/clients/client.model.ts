@@ -5,7 +5,9 @@ export interface ClientListItemDto {
   id:                number;
   clientCode:        string;
   clientName:        string;
-  country:           string | null;
+  /** Le pays du CLIENT (adresse) — à ne pas confondre avec l'entité qui le facture. */
+  countryId:         number | null;
+  countryLabel:      string | null;
   sector:            string | null;
   paymentTermsDays:  number | null;
   defaultCurrency:   string | null;
@@ -21,7 +23,8 @@ export interface ClientDetailDto {
   paysLabel:         string | null;
   clientCode:        string;
   clientName:        string;
-  country:           string | null;
+  countryId:         number | null;
+  countryLabel:      string | null;
   taxId:             string | null;
   paymentTermsDays:  number | null;
   defaultCurrency:   string | null;
@@ -30,12 +33,7 @@ export interface ClientDetailDto {
   address:           string | null;
   city:              string | null;
   postalCode:        string | null;
-  phone:             string | null;
-  email:             string | null;
   website:           string | null;
-  contactName:       string | null;
-  contactEmail:      string | null;
-  contactPhone:      string | null;
   sector:            string | null;
   notes:             string | null;
   kycApprovedByName: string | null;
@@ -70,28 +68,23 @@ export interface CreateClientRequest {
   paysId:            number;
   clientCode?:       string | null;
   clientName:        string;
-  country?:          string | null;
+  countryId?:        number | null;
   taxId?:            string | null;
   paymentTermsDays?: number | null;
   defaultCurrency?:  string | null;
   address?:          string | null;
   city?:             string | null;
   postalCode?:       string | null;
-  phone?:            string | null;
-  email?:            string | null;
   website?:          string | null;
-  /**
-   * Colonnes HÉRITÉES du contact unique, remplacées par `contacts` ci-dessous.
-   * Conservées parce que le backend les renvoie encore et les lit en dernier repli ;
-   * aucun écran ne doit plus les écrire.
-   */
-  contactName?:      string | null;
-  contactEmail?:     string | null;
-  contactPhone?:     string | null;
   sector?:           string | null;
   notes?:            string | null;
   /**
-   * Contacts créés AVEC le client, dans la même transaction. Ignoré par le PATCH de
+   * Contacts créés AVEC le client, dans la même transaction. AU MOINS UN à la création :
+   * le contact principal est désormais la seule source d'un destinataire de facture,
+   * les colonnes héritées de `clients` ayant été supprimées (V72). Le serveur refuse une
+   * liste vide en création (`@NotEmpty`).
+   *
+   * Ignoré par le PATCH de
    * modification : passé le premier enregistrement, les contacts ont leurs propres
    * endpoints (`/clients/{id}/contacts`).
    */

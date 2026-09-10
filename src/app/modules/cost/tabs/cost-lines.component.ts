@@ -6,12 +6,13 @@ import {
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { CostService } from '../cost.service';
-import { COST_STATUS_CONFIG, CostCategoryDto, CostLineDto, SupplierCostSummaryDto } from '../cost.model';
+import { COST_STATUS_CONFIG, CostCategoryDto, CostLineDto, CostLineReglementDto, SupplierCostSummaryDto } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import { statusKey } from '../cost-display';
 import { CostLinesCardsSectionComponent } from './cost-lines-cards-section.component';
 import { CostLinesTableSectionComponent } from './cost-lines-table-section.component';
 import { CostSupplierCardsSectionComponent } from './cost-supplier-cards-section.component';
+import { ReglementModalComponent } from '../modals/reglement-modal.component';
 
 type ViewMode = 'grid' | 'list' | 'supplier';
 
@@ -21,7 +22,7 @@ type ViewMode = 'grid' | 'list' | 'supplier';
   imports: [
     TranslatePipe, ButtonComponent, MetricCardComponent, PaginationComponent,
     SearchToolbarComponent, CostLinesCardsSectionComponent, CostLinesTableSectionComponent,
-    CostSupplierCardsSectionComponent,
+    CostSupplierCardsSectionComponent, ReglementModalComponent,
   ],
   host: { class: 'block' },
   templateUrl: './cost-lines.component.html',
@@ -55,6 +56,10 @@ export class CostLinesComponent implements OnInit {
   isLoading   = signal(false);
   serverError = signal<string | null>(null);
   actionError = signal<string | null>(null);
+
+  payableLines        = signal<CostLineDto[]>([]);
+  reglementModalOpen  = signal(false);
+  editingReglement     = signal<CostLineReglementDto | null>(null);
 
   categories  = signal<CostCategoryDto[]>([]);
   categoryMap = computed(() => new Map(this.categories().map(c => [c.id, c.labelFr])));
@@ -227,5 +232,22 @@ export class CostLinesComponent implements OnInit {
       next:  () => this.load(),
       error: err => this.actionError.set(err.error?.message ?? this.translate.instant('COST.LINES.SUBMIT_ERROR')),
     });
+  }
+
+  openReglementForLine(line: CostLineDto): void {
+    this.editingReglement.set(null);
+    this.payableLines.set([line]);
+    this.reglementModalOpen.set(true);
+  }
+
+  onReglementModalClosed(): void {
+    this.reglementModalOpen.set(false);
+    this.editingReglement.set(null);
+  }
+
+  onReglementModalResolved(): void {
+    this.reglementModalOpen.set(false);
+    this.editingReglement.set(null);
+    this.load();
   }
 }

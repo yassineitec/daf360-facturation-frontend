@@ -220,6 +220,16 @@
   margin-top: 2px;
 }
 
+
+// ── Selecteur de pays ─────────────────────────────────────────────────────
+// `.list-tabs` ci-dessous reste : il habille les onglets de TYPE DE LISTE, pas les pays.
+// Ceux-ci sont passes en `daf-select` cherchable (194 pays depuis V75).
+
+.pays-picker {
+  margin-bottom: 16px;
+  max-width: 320px;
+}
+
 // ── List sub-tabs ─────────────────────────────────────────────────────────
 
 .list-tabs {

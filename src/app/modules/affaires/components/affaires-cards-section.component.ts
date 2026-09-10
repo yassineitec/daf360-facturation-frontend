@@ -4,6 +4,7 @@ import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khal
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { responsablesSummary, STATUT_ENTITY_STATUS, typeLabel } from '../affaire-display';
+import { enumLabel } from '../../../shared/enum-labels';
 
 /**
  * Card view of `/finance/affaires` — one `daf-entity-card` per affaire.
@@ -85,12 +86,22 @@ export class AffairesCardsSectionComponent {
         // the title takes the full card width — which is what these cards want.
         metadata: {
           title: a.intitule,
-          // Le pays rejoint le sous-titre plutôt que les indicateurs : `daf-entity-card`
-          // n'a pas de emplacement à pastilles (seuls `title`, `subtitle` et la puce de
-          // statut, déjà prise par le statut de l'affaire), et la carte doit rester à
-          // QUATRE indicateurs. Le sous-titre est justement la ligne d'identification.
-          subtitle: [a.reference, this.paysLabels().get(a.paysId)]
-            .filter(Boolean).join(' · '),
+          // Le pays ET le mode de facturation rejoignent le sous-titre plutôt que les
+          // indicateurs : `daf-entity-card` n'a pas d'emplacement à pastilles (seuls
+          // `title`, `subtitle` et la puce de statut, déjà prise par le statut de
+          // l'affaire), et la carte doit rester à QUATRE indicateurs — les quatre sont
+          // pris, et un cinquième laisserait une cellule seule dans une grille à deux
+          // colonnes. Le sous-titre est justement la ligne d'identification, et le mode
+          // en fait partie au même titre que la référence.
+          //
+          // Le mode n'est ajouté QUE s'il existe : `enumLabel` rend « — » sur une valeur
+          // absente, et `filter(Boolean)` ne retire pas un tiret — le sous-titre d'un
+          // brouillon sans mode se terminerait par « · — ».
+          subtitle: [
+            a.reference,
+            this.paysLabels().get(a.paysId),
+            a.billingMode ? enumLabel(this.translate, 'BILLING_MODE', a.billingMode) : null,
+          ].filter(Boolean).join(' · '),
           status:      STATUT_ENTITY_STATUS[a.statut] ?? 'active',
           statusLabel: t(`AFFAIRES.LIST.TABLE.STATUS.${a.statut}`),
         },

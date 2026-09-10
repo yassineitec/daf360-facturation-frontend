@@ -67,6 +67,16 @@ export class AffaireWizardService {
       { params: { ref }, withCredentials: true });
   }
 
+  /**
+   * Les disciplines déjà employées dans la base, avec leur identifiant DOC360 quand elles
+   * en ont un. Le repli de `getDisciplines` : sans référence de projet, l'ODS ne peut rien
+   * rendre, et sans liste du tout l'étape 4 retombait en saisie libre intégrale.
+   */
+  getKnownDisciplines(): Observable<DisciplineDto[]> {
+    return this.http.get<DisciplineDto[]>(`${this.base}/disciplines/known`,
+      { withCredentials: true });
+  }
+
   updateInfo(id: number, dto: {
     intitule: string;
     clientId: number;

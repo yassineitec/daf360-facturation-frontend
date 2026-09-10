@@ -15,6 +15,7 @@ import { PaysRefDto } from '../../affaires/affaire.model';
 import { forkJoin } from 'rxjs';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
+  SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 
 type ListTab = 'CURRENCY' | 'COST_TYPE' | 'PAYMENT_METHOD' | 'RECURRENCE_FREQUENCY';
@@ -22,7 +23,8 @@ type ListTab = 'CURRENCY' | 'COST_TYPE' | 'PAYMENT_METHOD' | 'RECURRENCE_FREQUEN
 @Component({
   selector: 'app-cost-config',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataTableComponent, DafCellDirective, TranslatePipe],
+  imports: [CommonModule, FormsModule, DataTableComponent, DafCellDirective, TranslatePipe,
+            SelectComponent],
   templateUrl: './cost-config.component.html',
   styleUrl: './cost-config.component.scss',
 })
@@ -34,6 +36,31 @@ export class CostConfigComponent implements OnInit {
 
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);
+
+  /**
+   * Le pays dans une liste déroulante cherchable, et non plus une bande d'onglets :
+   * `pays_ref` porte les 194 pays depuis V75, et 194 boutons ne sont pas une navigation.
+   * Le code ISO reste dans le libellé pour que la recherche du composant le trouve.
+   */
+  readonly paysOptions = computed<SelectOption[]>(() =>
+    this.paysList().map(p => ({
+      value: String(p.id),
+      label: `${p.frenchLabel} (${p.isoCode})`,
+    })));
+
+  readonly paysSelectConfig = computed(() => {
+    this.translate.currentLang();
+    return {
+      label: this.translate.instant('COST.FORM.PAYS_LABEL'),
+      searchable: true,
+      fullWidth: false,
+    };
+  });
+
+  onPaysSelected(values: string[]): void {
+    const id = Number(values[0]);
+    if (Number.isFinite(id) && id > 0) this.selectPays(id);
+  }
 
   // ── Thresholds ────────────────────────────────────────────────────────────
   thresholds           = signal<CostApprovalThresholdDto[]>([]);

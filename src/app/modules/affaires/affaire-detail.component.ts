@@ -107,7 +107,7 @@ const EDITABLE_INVOICE_STATUTS = new Set(['DRAFT', 'RETURNED']);
 const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
   high: 'danger', medium: 'warning', standard: 'neutral',
 };
-
+  
 @Component({
   selector: 'app-affaire-detail',
   imports: [

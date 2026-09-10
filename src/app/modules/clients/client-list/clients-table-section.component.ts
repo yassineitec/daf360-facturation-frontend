@@ -76,7 +76,7 @@ export class ClientsTableSectionComponent {
           initials: initials(c.clientName),
           subtitle: c.defaultCurrency ?? undefined,
         } satisfies AvatarCell,
-        pays:    c.country ?? '—',
+        pays:    c.countryLabel ?? '—',
         secteur: c.sector ?? '—',
         projets: String(c.activeAffaireCount),
         ca:      this.currency.transform(c.totalCA, c.defaultCurrency ?? 'TND'),
