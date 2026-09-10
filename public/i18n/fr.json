@@ -972,7 +972,8 @@
           "BUDGET": "Budget",
           "RAF": "RAF",
           "STATUS": "Statut",
-          "PAYS": "Pays"
+          "PAYS": "Pays",
+          "BILLING_MODE": "Mode"
         },
         "STATUS": {
           "DRAFT": "Brouillon",

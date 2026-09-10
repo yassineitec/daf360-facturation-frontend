@@ -972,7 +972,8 @@
           "BUDGET": "Budget",
           "RAF": "Remaining",
           "STATUS": "Status",
-          "PAYS": "Country"
+          "PAYS": "Country",
+          "BILLING_MODE": "Mode"
         },
         "STATUS": {
           "DRAFT": "Draft",

@@ -34,6 +34,26 @@ export const STATUT_ENTITY_STATUS: Record<string, 'active' | 'inactive' | 'pendi
   ARCHIVEE:  'inactive',
 };
 
+/**
+ * Le mode de facturation, en pastille **contour** et non pleine.
+ *
+ * C'est une CLASSIFICATION, pas un état : elle ne change pas au fil de la vie de
+ * l'affaire et ne dit rien de sa santé. Le contour la range visuellement sous la pastille
+ * de statut — la seule pleine et à point de la ligne — au lieu de lui disputer le regard.
+ *
+ * Aucune teinte de santé (`success` / `warning` / `danger`) : la colonne RAF juste à côté
+ * s'en sert pour dire un dépassement, et un `REGIE` en orange se lirait comme une alerte.
+ *
+ * Le majoritaire est le plus DISCRET. La répartition réelle est très déséquilibrée
+ * (110 FORFAIT, 19 REGIE, 2 LIVRABLE) : colorer les 84 % ne fait que du bruit, alors que
+ * repérer les exceptions est justement la question qu'on pose à cette colonne.
+ */
+export const BILLING_MODE_BADGE_VARIANT: Record<string, BadgeVariant> = {
+  FORFAIT:  'neutral',
+  REGIE:    'info',
+  LIVRABLE: 'teal',
+};
+
 /** How healthy the remaining-to-invoice figure is, relative to the affaire's own threshold. */
 export type RafTone = 'ok' | 'warn' | 'danger' | 'unknown';
 
