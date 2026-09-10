@@ -97,7 +97,7 @@ export interface ReglementModalData {
           } @else {
             <div>
               <label for="reglement-line">Ligne de coût à régler *</label>
-              <select id="reglement-line" [(ngModel)]="costLineId">
+              <select id="reglement-line" [(ngModel)]="costLineId" (ngModelChange)="onLineSelected($event)">
                 <option [ngValue]="null">— Sélectionner une ligne —</option>
                 @for (line of data.payableLines; track line.id) {
                   <option [ngValue]="line.id">{{ line.reference ?? ('#' + line.id) }} — {{ line.label ?? '' }}</option>
@@ -169,11 +169,21 @@ export class ReglementModalComponent implements OnInit {
       this.comment.set(this.data.editing.comment ?? '');
     } else {
       this.datePaiement.set(new Date().toISOString().slice(0, 10));
+      if (this.data.payableLines.length === 1) {
+        const line = this.data.payableLines[0];
+        this.costLineId.set(line.id);
+        this.montantPaye.set(line.grossAmountLocal ?? null);
+      }
     }
   }
 
   get canSave(): boolean {
     return this.costLineId() != null && (this.montantPaye() ?? 0) > 0 && !!this.datePaiement();
+  }
+
+  onLineSelected(lineId: number | null): void {
+    const line = this.data.payableLines.find(l => l.id === lineId);
+    this.montantPaye.set(line?.grossAmountLocal ?? null);
   }
 
   onBackdropClick(e: MouseEvent): void {
