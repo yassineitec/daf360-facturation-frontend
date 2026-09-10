@@ -42,7 +42,7 @@
           <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_REFUSED_HINT' | translate }}</p>
         }
 
-        <div class="grid grid-cols-2 gap-3 max-w-md items-start">
+        <div class="flex gap-3 max-w-md items-start">
           <!-- TEST : le champ du taux à gauche, les 2 boutons devant (à droite), sur la
                même ligne que le champ de saisie. Le pill est décalé vers le bas d'un
                spaceur invisible qui reprend EXACTEMENT le style du <label> de
@@ -57,7 +57,7 @@
                            hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedTaux() + '%' }" />
           </div>
 
-          <div class="flex flex-col gap-1.5 ml-4">
+          <div class="flex flex-col gap-1.5">
             <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
             <div class="wip-icon-actions w-fit h-10 flex items-center gap-1 transition-opacity duration-200
                         bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
