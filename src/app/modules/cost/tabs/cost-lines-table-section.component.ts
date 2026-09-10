@@ -7,8 +7,8 @@ import { CostLineDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import {
-  APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit, canSubmit,
-  formatDate, statusKey,
+  APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit, canReglement,
+  canSubmit, formatDate, statusKey,
 } from '../cost-display';
 
 /**
@@ -50,6 +50,10 @@ import {
           @if (row['_canEdit']) {
             <fact-table-action id="edit" [tooltip]="tips().edit" (action)="edit.emit(row['_raw'])" />
           }
+          @if (row['_canReglement']) {
+            <fact-table-action icon="payments" [tooltip]="tips().reglement"
+                               (action)="createReglement.emit(row['_raw'])" />
+          }
         </div>
       </ng-template>
 
@@ -66,14 +70,16 @@ export class CostLinesTableSectionComponent {
   emptyMessage = input('');
   pageSize     = input(25);
 
-  readonly edit       = output<CostLineDto>();
-  readonly submitLine = output<CostLineDto>();
+  readonly edit            = output<CostLineDto>();
+  readonly submitLine      = output<CostLineDto>();
+  readonly createReglement = output<CostLineDto>();
 
   protected readonly tips = computed(() => {
     this.translate.currentLang();
     return {
-      edit:   this.translate.instant('COST.LINES.EDIT'),
-      submit: this.translate.instant('COST.LINES.SUBMIT'),
+      edit:      this.translate.instant('COST.LINES.EDIT'),
+      submit:    this.translate.instant('COST.LINES.SUBMIT'),
+      reglement: this.translate.instant('COST.LINES.CREATE_REGLEMENT'),
     };
   });
 
@@ -122,9 +128,10 @@ export class CostLinesTableSectionComponent {
         // Rendered by the projected cells above.
         _label:      line.label ?? '—',
         _reference:  line.reference ?? '',
-        _canEdit:    canEdit(line),
-        _canSubmit:  canSubmit(line),
-        _raw:        line,
+        _canEdit:      canEdit(line),
+        _canSubmit:    canSubmit(line),
+        _canReglement: canReglement(line),
+        _raw:          line,
       };
     });
   });
