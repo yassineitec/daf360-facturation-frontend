@@ -103,7 +103,7 @@ export interface ReglementModalData {
                   <option [ngValue]="line.id">{{ line.reference ?? ('#' + line.id) }} — {{ line.label ?? '' }}</option>
                 }
               </select>
-              @if (touched && !costLineId) {
+              @if (touched && !costLineId()) {
                 <p class="error-text">Choisissez une ligne de coût.</p>
               }
             </div>
