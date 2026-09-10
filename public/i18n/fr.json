@@ -2740,6 +2740,7 @@
       "COL_DATE": "Date",
       "COL_NET_AMOUNT": "Montant HT",
       "COL_EUR": "EUR",
+      "COL_TTC": "Montant TTC",
       "COL_STATUS": "Statut",
       "COL_APPROVAL": "Approbation",
       "COL_ACTIONS": "Actions",

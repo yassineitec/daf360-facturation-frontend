@@ -91,7 +91,7 @@ export class CostLinesTableSectionComponent {
       { key: 'category', label: t('COST.LINES.COL_CATEGORY'),    type: 'text'   },
       { key: 'date',     label: t('COST.LINES.COL_DATE'),        type: 'text'   },
       { key: 'net',      label: t('COST.LINES.COL_NET_AMOUNT'),  type: 'text', align: 'right' },
-      { key: 'eur',      label: t('COST.LINES.COL_EUR'),         type: 'text', align: 'right' },
+      { key: 'ttc',      label: t('COST.LINES.COL_TTC'),         type: 'text', align: 'right' },
       { key: 'status',   label: t('COST.LINES.COL_STATUS'),      type: 'badge'  },
       { key: 'approval', label: t('COST.LINES.COL_APPROVAL'),    type: 'badge'  },
       { key: '_actions', label: '', align: 'right', width: '1%' },
@@ -112,7 +112,7 @@ export class CostLinesTableSectionComponent {
         category: cat(line.categoryId),
         date:     formatDate(line.transactionDate),
         net:      this.currency.transform(line.netAmountLocal, line.currency ?? 'TND'),
-        eur:      this.currency.transform(line.netAmountEur, 'EUR'),
+        ttc:      this.currency.transform(line.grossAmountLocal, line.currency ?? 'TND'),
         status: {
           label:   t(statusKey(line.status)),
           options: { variant: STATUS_BADGE_VARIANT[line.status] ?? 'neutral', dot: true, size: 'sm' },

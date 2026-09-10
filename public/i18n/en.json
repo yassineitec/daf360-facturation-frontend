@@ -2740,6 +2740,7 @@
       "COL_DATE": "Date",
       "COL_NET_AMOUNT": "Net amount",
       "COL_EUR": "EUR",
+      "COL_TTC": "Gross Amount",
       "COL_STATUS": "Status",
       "COL_APPROVAL": "Approval",
       "COL_ACTIONS": "Actions",
