@@ -134,7 +134,17 @@
       </button>
       <daf-help-popover [text]="tmHelpText()" placement="bottom" align="end" [open]="regieHelpOpen()" />
 
-      <daf-stepper orientation="horizontal" class="mb-8"
+      <!-- `block` AVANT la marge, et ce n'est pas décoratif : `daf-stepper` ne pose pas
+           `host: { class: 'block' }` (contrairement à `daf-select`), donc l'élément
+           personnalisé reste `display: inline` — et une marge VERTICALE ne s'applique pas
+           à un élément inline. Le `mb-*` était donc purement ignoré, et le rail se
+           retrouvait collé au bloc « WIP calculé » en dessous. C'est aussi pourquoi ce
+           composant est le seul touché : les quatre autres `daf-stepper` de l'application
+           (assistants affaire / client / facture / fournisseur) sont des enfants de
+           conteneurs flex, qui « blockifient » leurs éléments d'office.
+           Le vrai correctif est côté lib (ajouter l'hôte `block` au stepper) — à faire au
+           prochain incrément de version, après quoi ce `block` deviendra redondant. -->
+      <daf-stepper orientation="horizontal" class="block mb-6"
         [steps]="wipStepperSteps()" [currentStep]="wipStep() - 1" [config]="wipStepperConfig()"
         (stepClick)="onWipStepClick($event)" />
 

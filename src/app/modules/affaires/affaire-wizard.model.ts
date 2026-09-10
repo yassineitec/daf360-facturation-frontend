@@ -54,7 +54,12 @@ export interface ExternalProjectResult {
 }
 
 export interface DisciplineDto {
-  id: number;
+  /**
+   * NULL pour une discipline déjà saisie librement dans cette base et reproposée par
+   * `/disciplines/known` : elle n'a qu'un libellé, jamais d'identifiant DOC360. Les
+   * disciplines venant de l'ODS en portent toujours un.
+   */
+  id: number | null;
   levelLabel: string;
   levelConcat?: string;
 }

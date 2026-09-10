@@ -151,35 +151,29 @@
               <div class="resp-field">
                 <label class="resp-field-label">
                   {{ 'AFFAIRES.wizard.responsables.discipline' | translate }}
-                  @if (draft.doc360ServerReference) {
+                  @if (disciplinesFromDoc360()) {
                     <span class="doc360-badge">DOC360</span>
                   }
                 </label>
 
-                @if (!draft.doc360ServerReference) {
-                  <daf-form-field
-                    [options]="{ type: 'text', placeholder: ('AFFAIRES.wizard.responsables.free_ph' | translate), fullWidth: true }"
-                    [value]="resp.disciplineLabel ?? ''"
-                    (valueChange)="onFreeDisciplineChange(idx, $event)" />
-
-                } @else if (isLoadingDisc()) {
+                <!-- UN seul contrôle, quelle que soit la source de la liste. Le
+                     sélecteur est `creatable` : il propose ce que la base ou l'ODS
+                     connaît, et garde ce qui est tapé quand rien ne correspond. Le champ
+                     texte nu qui tenait cette place hors DOC360 n'avait rien à proposer,
+                     donc rien à réutiliser. -->
+                @if (isLoadingDisc()) {
                   <span class="disc-loading">
                     <span class="material-symbols-outlined spin">progress_activity</span>
                     {{ 'AFFAIRES.wizard.responsables.disc_loading' | translate }}
                   </span>
 
-                } @else if (disciplines().length > 0) {
+                } @else {
                   <daf-select
                     [options]="disciplineOptions()"
-                    [config]="selectConfig()"
-                    [selected]="resp.disciplineId && resp.disciplineId > 0 ? [resp.disciplineId + '|' + resp.disciplineLabel] : []"
-                    (selectedChange)="onDisciplineSelect(idx, $event)" />
-
-                } @else {
-                  <daf-form-field
-                    [options]="{ type: 'text', placeholder: !isDisciplineAvail() ? ('AFFAIRES.wizard.responsables.doc360_unavailable_ph' | translate) : ('AFFAIRES.wizard.responsables.no_discipline_ph' | translate), fullWidth: true }"
-                    [value]="resp.disciplineLabel ?? ''"
-                    (valueChange)="onFreeDisciplineChange(idx, $event)" />
+                    [config]="disciplineConfig()"
+                    [selected]="disciplineValue(resp)"
+                    (selectedChange)="onDisciplineSelect(idx, $event)"
+                    (created)="onDisciplineCreated(idx, $event)" />
                 }
               </div>
             </div>
