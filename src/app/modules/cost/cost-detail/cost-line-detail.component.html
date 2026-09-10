@@ -189,7 +189,8 @@
                 [pageSize]="200"
                 [emptyMessage]="supplierLinesEmptyMessage()"
                 (edit)="goToLineEdit($event)"
-                (submitLine)="submitLineFromList($event)" />
+                (submitLine)="submitLineFromList($event)"
+                (createReglement)="openReglementForLine($event)" />
             }
           }
 

@@ -345,12 +345,18 @@ export class CostLineDetailComponent implements OnInit {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     const cols: TableColumn[] = [
-      { key: 'date',           label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text' },
-      { key: 'label',          label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text' },
-      { key: 'debit',          label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right' },
-      { key: 'credit',         label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right' },
-      { key: 'soldeDebiteur',  label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right' },
-      { key: 'soldeCrediteur', label: t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right' },
+      { key: 'date',            label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text' },
+      { key: 'label',           label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text' },
+      { key: 'netAmount',       label: t('COST.DETAIL.LEDGER.COL_NET_AMOUNT'),      type: 'text', align: 'right' },
+      { key: 'fodec',           label: t('COST.DETAIL.LEDGER.COL_FODEC'),           type: 'text', align: 'right' },
+      { key: 'tva',             label: t('COST.DETAIL.LEDGER.COL_TVA'),             type: 'text', align: 'right' },
+      { key: 'timbre',          label: t('COST.DETAIL.LEDGER.COL_TIMBRE'),          type: 'text', align: 'right' },
+      { key: 'autresTaxes',     label: t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES'),    type: 'text', align: 'right' },
+      { key: 'grossAmount',     label: t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT'),    type: 'text', align: 'right' },
+      { key: 'debit',           label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right' },
+      { key: 'credit',          label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right' },
+      { key: 'soldeDebiteur',   label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right' },
+      { key: 'soldeCrediteur',  label: t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right' },
     ];
     if (this.canManageReglements()) {
       cols.push({ key: 'actions', label: '', type: 'custom' });
@@ -364,6 +370,12 @@ export class CostLineDetailComponent implements OnInit {
       id:             i,
       date:           formatDate(r.date),
       label:          r.label ?? '—',
+      netAmount:      this.fmtAmount(r.netAmountLocal),
+      fodec:          this.fmtAmount(r.fodecAmount),
+      tva:            this.fmtAmount(r.vatAmountLocal),
+      timbre:         this.fmtAmount(r.timbreAmount),
+      autresTaxes:    this.fmtAmount(r.autresTaxesAmount),
+      grossAmount:    this.fmtAmount(r.grossAmountLocal),
       debit:          this.fmtAmount(r.debit),
       credit:         this.fmtAmount(r.credit),
       soldeDebiteur:  this.fmtAmount(r.soldeDebiteur),
@@ -550,6 +562,16 @@ export class CostLineDetailComponent implements OnInit {
       next: page => { this.payableLines.set(page.content); this.reglementModalOpen.set(true); },
       error: () => { this.payableLines.set([]); this.reglementModalOpen.set(true); },
     });
+  }
+
+  /** Tab 1's per-line "Créer un règlement" shortcut -- skips the network round-trip
+   *  `openNewReglement()` needs (it doesn't know which lines are payable yet); here the
+   *  caller already has the one exact line, so the modal's line picker gets a
+   *  single-element array and auto-selects/auto-fills it (see reglement-modal.component.ts). */
+  openReglementForLine(line: CostLineDto): void {
+    this.editingReglement.set(null);
+    this.payableLines.set([line]);
+    this.reglementModalOpen.set(true);
   }
 
   openEditReglement(reglementId: number | null): void {
