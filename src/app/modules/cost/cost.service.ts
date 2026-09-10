@@ -183,11 +183,15 @@ export class CostService {
     return this.http.get<ForexPreviewDto>(`${this.base}/cost-lines/forex-preview`, { params });
   }
 
-  getCircuitPreview(amountEur: number, paysId: number, categoryId?: number | null): Observable<CircuitPreviewDto> {
+  getCircuitPreview(
+    amountEur: number, paysId: number,
+    categoryId?: number | null, costCategoryId?: number | null,
+  ): Observable<CircuitPreviewDto> {
     let params = new HttpParams()
       .set('amountEur', String(amountEur))
       .set('paysId', String(paysId));
     if (categoryId != null) params = params.set('categoryId', String(categoryId));
+    if (costCategoryId != null) params = params.set('costCategoryId', String(costCategoryId));
     return this.http.get<CircuitPreviewDto>(`${this.base}/cost-lines/circuit-preview`, { params });
   }
 
