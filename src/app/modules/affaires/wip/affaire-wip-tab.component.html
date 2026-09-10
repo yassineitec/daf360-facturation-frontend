@@ -458,7 +458,12 @@
 
     <!-- ── Livrables : facturation par sélection groupée — même habillage (daf-card
          glass, daf-data-table, boutons en icônes révélés au survol) que Forfaitaire/
-         Régie ci-dessus. -->
+         Régie ci-dessus. N'apparaît que s'il y a effectivement des livrables en attente
+         (même logique "cachée si rien à montrer" que Batches en attente/En attente de
+         réponse client ci-dessous), plutôt que toujours visible. -->
+    @if (loadingLivrables()) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+    } @else if (pendingLivrables().length) {
     <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'lg', hoverable: true }"
       (mouseenter)="livrablePendingCardHovered.set(true)"
       (mouseleave)="livrablePendingCardHovered.set(false)">
@@ -522,6 +527,7 @@
         }
       </div>
     </daf-card>
+    }
 
     <!-- ── Batches en attente (client puis DF) — même habillage "WIP calculé" (label +
          gros montant vert) + pill d'icônes révélée au survol que la carte Régie. ── -->
@@ -626,7 +632,10 @@
     }
 
     <!-- ── Historique — même coquille (carte + daf-data-table + badge de statut) que la
-         carte Historique WIP de Régie. ── -->
+         carte Historique WIP de Régie. N'apparaît que s'il y a au moins une ligne
+         facturée, même logique que les 2 sections ci-dessus, plutôt que toujours
+         visible. ── -->
+    @if (livrableHistory().length) {
     <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
       (mouseenter)="livrableHistoryCardHovered.set(true)"
       (mouseleave)="livrableHistoryCardHovered.set(false)">
@@ -653,6 +662,7 @@
       </div>
       <daf-data-table [columns]="livrableHistoryColumns()" [rows]="livrableHistoryRows()" [config]="livrableHistoryConfig()" />
     </daf-card>
+    }
 
     <!-- Popup "Historique" EN PLEIN ÉCRAN — même coquille que la popup Historique WIP de
          la carte Régie (fond assombri, panneau blanc centré, en-tête + croix, recherche +
