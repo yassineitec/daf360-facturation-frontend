@@ -54,7 +54,8 @@
       [skeletonCount]="size()"
       [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
       (edit)="openEdit($event)"
-      (submitLine)="submitLine($event)" />
+      (submitLine)="submitLine($event)"
+      (createReglement)="openReglementForLine($event)" />
   } @else if (viewMode() === 'list') {
     <app-cost-lines-table-section
       [lines]="visibleLines()"
@@ -63,7 +64,8 @@
       [pageSize]="size()"
       [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
       (edit)="openEdit($event)"
-      (submitLine)="submitLine($event)" />
+      (submitLine)="submitLine($event)"
+      (createReglement)="openReglementForLine($event)" />
   } @else {
     <!-- "By supplier" cards — an unpaginated aggregation over every distinct supplier
          for this pays, deliberately ALL statuses (see SupplierCostSummaryService). The
@@ -89,6 +91,13 @@
       [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
       (pageChange)="goToPage($event)"
       (pageSizeChange)="onPageSize($event)" />
+  }
+
+  @if (reglementModalOpen()) {
+    <app-reglement-modal
+      [data]="{ editing: editingReglement(), payableLines: payableLines() }"
+      (closed)="onReglementModalClosed()"
+      (resolved)="onReglementModalResolved()" />
   }
 
 </div>
