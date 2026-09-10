@@ -196,22 +196,56 @@
           <!-- ── Tab 2 : relevé de compte fournisseur ─────────────────────── -->
           @if (activeTab() === 'reglement') {
             @if (hasSupplier()) {
-              <div class="flex items-center gap-2 px-1">
-                <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                  {{ 'COST.DETAIL.LEDGER.ACCOUNT_LABEL' | translate }}
-                </span>
-                <span class="text-body-md font-bold text-on-surface">{{ supplierName() ?? '—' }}</span>
+              <div class="flex items-center justify-between gap-2 px-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ 'COST.DETAIL.LEDGER.ACCOUNT_LABEL' | translate }}
+                  </span>
+                  <span class="text-body-md font-bold text-on-surface">{{ supplierName() ?? '—' }}</span>
+                </div>
+                @if (canManageReglements()) {
+                  <daf-button
+                    [options]="{ variant: 'primary', iconStart: 'add',
+                                 label: 'COST.DETAIL.LEDGER.NEW_REGLEMENT' | translate }"
+                    (onClick)="openNewReglement()" />
+                }
               </div>
             }
             <daf-data-table
               [columns]="ledgerColumns()"
               [rows]="ledgerRows()"
-              [config]="ledgerConfig()" />
+              [config]="ledgerConfig()">
+
+              <ng-template dafCell="actions" let-row>
+                @if (row['_reglementId']) {
+                  <div class="flex items-center gap-1 justify-end">
+                    <button type="button"
+                            class="material-symbols-outlined text-[18px] text-on-surface-variant"
+                            style="background:none;border:none;cursor:pointer;padding:2px"
+                            [attr.aria-label]="'COST.DETAIL.LEDGER.EDIT_REGLEMENT' | translate"
+                            (click)="openEditReglement(row['_reglementId'])">edit</button>
+                    <button type="button"
+                            class="material-symbols-outlined text-[18px] text-danger"
+                            style="background:none;border:none;cursor:pointer;padding:2px"
+                            [attr.aria-label]="'COST.DETAIL.LEDGER.DELETE_REGLEMENT' | translate"
+                            (click)="confirmDeleteReglement(row['_reglementId'])">delete</button>
+                  </div>
+                }
+              </ng-template>
+
+            </daf-data-table>
           }
 
         </div>
       </div>
     </div>
+  }
+
+  @if (reglementModalOpen()) {
+    <app-reglement-modal
+      [data]="{ editing: editingReglement(), payableLines: payableLines() }"
+      (closed)="onReglementModalClosed()"
+      (resolved)="onReglementModalResolved()" />
   }
 
 </daf-page>
