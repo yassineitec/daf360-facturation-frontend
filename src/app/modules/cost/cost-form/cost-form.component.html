@@ -80,15 +80,26 @@
                 (selectedChange)="onPaysChange($event[0] ? +$event[0] : null)">
               </daf-select>
             </div>
-            <!-- Catégorie -->
+            <!-- Catégorie de coût (D3 taxonomy migration, V78) -->
             <div>
               <daf-select
-                [options]="categoryOptions()"
-                [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true, disabled: !paysId() }"
-                [selected]="selArr(categoryId())"
-                (selectedChange)="categoryId.set($event[0] ? +$event[0] : null); onAmountOrCurrencyChange()">
+                [options]="costCategorySelectOptions()"
+                [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true }"
+                [selected]="costCategoryId() !== null ? [costCategoryId() + '|' + costCategoryLabel()] : []"
+                (selectedChange)="onCostCategorySelect($event)">
               </daf-select>
             </div>
+            <!-- Sous-catégorie -- only appears once a category is chosen -->
+            @if (costCategoryId() !== null && costSubCategorySelectOptions().length > 0) {
+              <div>
+                <daf-select
+                  [options]="costSubCategorySelectOptions()"
+                  [config]="{ label: ('COST.FORM.SUB_CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.SUB_CATEGORY_PLACEHOLDER' | translate), searchable: true }"
+                  [selected]="costSubCategoryId() !== null ? [costSubCategoryId() + '|' + costSubCategoryLabel()] : []"
+                  (selectedChange)="onCostSubCategorySelect($event)">
+                </daf-select>
+              </div>
+            }
             <!-- Date -->
             <div>
               <daf-form-field
@@ -219,6 +230,60 @@
               [options]="{ type: 'text', placeholder: ('COST.FORM.SUPPLIER_FREE_PLACEHOLDER' | translate) }"
               [(value)]="supplierNameFree">
             </daf-form-field>
+          }
+
+          <!-- D3 Tunisian tax fields (V78) — shown only once a real supplier is picked
+               via the autocomplete (showTaxFields() reads supplierId(), not the toggle). -->
+          @if (showTaxFields()) {
+            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #f0f4f8">
+              <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;color:#d97706">receipt_long</span>
+                <p style="font-size:.8rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.TAX.SECTION_TITLE' | translate }}</p>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                <div>
+                  <daf-select
+                    [options]="fodecOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.FODEC_LABEL' | translate) }"
+                    [selected]="selArr(fodecRate())"
+                    (selectedChange)="fodecRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
+                  </daf-select>
+                </div>
+                <div>
+                  <daf-select
+                    [options]="tvaOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.TVA_LABEL' | translate) }"
+                    [selected]="selArr(tvaRate())"
+                    (selectedChange)="tvaRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
+                  </daf-select>
+                </div>
+                <div>
+                  <daf-select
+                    [options]="timbreOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.TIMBRE_LABEL' | translate) }"
+                    [selected]="selArr(timbreAmount())"
+                    (selectedChange)="timbreAmount.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
+                  </daf-select>
+                </div>
+                <div>
+                  <daf-select
+                    [options]="autresTaxesOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.AUTRES_TAXES_LABEL' | translate) }"
+                    [selected]="selArr(autresTaxesRate())"
+                    (selectedChange)="autresTaxesRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
+                  </daf-select>
+                </div>
+              </div>
+              @if (ttcPreview(); as ttc) {
+                <div style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;
+                            padding:12px 16px;border-radius:12px;background:#f0fdf4">
+                  <span style="font-size:.8rem;font-weight:700;color:#0b1c30">{{ 'COST.FORM.TAX.TTC_LABEL' | translate }}</span>
+                  <span style="font-size:1rem;font-weight:900;color:#006b58">
+                    {{ ttc | number:'1.3-3' }} {{ selectedCurrencyCode() }}
+                  </span>
+                </div>
+              }
+            </div>
           }
         </div>
 
