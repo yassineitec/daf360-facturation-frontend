@@ -74,6 +74,24 @@ export const WIP_TAUX_STATUT_BADGE: Record<string, BadgeVariant> = {
   REFUSE:     'danger',
 };
 
+/** Statut d'un livrable (WIP Livrable) — `AffaireLivrableDto.statut`. */
+export const LIVRABLE_STATUT_BADGE: Record<string, BadgeVariant> = {
+  A_FACTURER: 'neutral',
+  EN_COURS:   'warning',
+  FACTURE:    'success',
+  ANNULE:     'neutral',
+};
+
+/** Statut d'un batch de facturation Livrable — `LivrableBatchDto.statut`. */
+export const LIVRABLE_BATCH_STATUT_BADGE: Record<string, BadgeVariant> = {
+  EN_ATTENTE_CLIENT: 'warning',
+  EN_ATTENTE_DF:      'warning',
+  A_VERIFIER:         'warning',
+  RETOURNE:           'danger',
+  FACTURE:            'success',
+  ANNULE:             'neutral',
+};
+
 /** Statuts de ligne de facturation — `billing_lines.statut`. */
 export const BILLING_LINE_STATUT_BADGE: Record<string, BadgeVariant> = {
   BROUILLON:     'neutral',
