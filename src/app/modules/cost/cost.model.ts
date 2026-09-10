@@ -415,11 +415,36 @@ export interface SupplierLedgerRowDto {
   soldeDebiteur: number | null;
   soldeCrediteur: number | null;
   costLineId: number;
+  /** Manual règlement feature (2026-09-10 plan) -- addresses the règlement this row
+   *  came from, for Edit/Delete. Every row now originates from exactly one règlement. */
+  reglementId: number;
 }
 
 export interface SupplierLedgerDto {
   supplier: SupplierSummaryDto | null;   // null when the cost line has no supplier attached
   rows: SupplierLedgerRowDto[];
+}
+
+// ── Manual règlement (payment) feature (2026-09-10 plan) ───────────────────────
+
+export interface CostLineReglementDto {
+  id: number;
+  costLineId: number;
+  montantPaye: number;
+  datePaiement: string; // ISO LocalDate, e.g. "2026-09-10"
+  comment: string | null;
+}
+
+export interface CreateReglementRequest {
+  montantPaye: number;
+  datePaiement: string; // YYYY-MM-DD
+  comment?: string | null;
+}
+
+export interface UpdateReglementRequest {
+  montantPaye: number;
+  datePaiement: string; // YYYY-MM-DD
+  comment?: string | null;
 }
 
 // ── Cost-lines-by-supplier cards (2026-09-09 plan) ──────────────────────────────
