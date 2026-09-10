@@ -10,6 +10,7 @@ import {
   CostAttachmentDto, ForexPreviewDto, CircuitPreviewDto,
   ListValueDto, SupplierSearchItem, SupplierLedgerDto, SupplierCostSummaryDto,
   RateComputationDto, CreateRateComputationRequest,
+  CostLineReglementDto, CreateReglementRequest, UpdateReglementRequest,
 } from './cost.model';
 
 @Injectable({ providedIn: 'root' })
@@ -109,6 +110,24 @@ export class CostService {
     return this.http.get<SupplierLedgerDto>(`${this.base}/suppliers/${supplierId}/cost-ledger`).pipe(
       catchError(() => of({ supplier: null, rows: [] } as SupplierLedgerDto)),
     );
+  }
+
+  // ── Manual règlement (payment) feature (2026-09-10 plan) ───────────────────────
+
+  createReglement(costLineId: number, req: CreateReglementRequest): Observable<CostLineReglementDto> {
+    return this.http.post<CostLineReglementDto>(`${this.base}/cost-lines/${costLineId}/reglement`, req);
+  }
+
+  updateReglement(reglementId: number, req: UpdateReglementRequest): Observable<CostLineReglementDto> {
+    return this.http.put<CostLineReglementDto>(`${this.base}/reglements/${reglementId}`, req);
+  }
+
+  deleteReglement(reglementId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/reglements/${reglementId}`);
+  }
+
+  getReglement(reglementId: number): Observable<CostLineReglementDto> {
+    return this.http.get<CostLineReglementDto>(`${this.base}/reglements/${reglementId}`);
   }
 
   createCostLine(dto: CreateCostLineRequest): Observable<CostLineDto> {
