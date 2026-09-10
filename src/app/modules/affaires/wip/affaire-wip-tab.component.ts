@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import {
   ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent,
   StepperComponent, StepperStep, StepperConfig,
-  DataTableComponent, TableColumn, TableConfig, TableRow, BadgeCell,
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
   SearchToolbarComponent, StatusBadgeComponent, FilterField, FilterResult,
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
@@ -20,7 +20,7 @@ import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../li
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
-import { BILLING_LINE_STATUT_BADGE, WIP_TAUX_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
+import { BILLING_LINE_STATUT_BADGE, WIP_TAUX_STATUT_BADGE, LIVRABLE_STATUT_BADGE, LIVRABLE_BATCH_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
 import { WipTmDetailTableComponent } from './wip-tm-detail-table.component';
 import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.component';
 
@@ -29,7 +29,7 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
   standalone: true,
   imports: [
     TranslatePipe, ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent, StepperComponent,
-    DataTableComponent, DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
+    DataTableComponent, DafCellDirective, DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
     SearchToolbarComponent, StatusBadgeComponent,
   ],
   providers: [DisplayCurrencyPipe],
@@ -205,39 +205,130 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * (mouseenter)/(mouseleave) sur `daf-section-card`/`daf-card`. */
   regieCardHovered = signal(false);
   historyCardHovered = signal(false);
-  /** MOCKUP STATIQUE TEMPORAIRE (mode LIVRABLE) — hover dédié pour le bloc "En attente de
-   * réponse client", à retirer avec le reste du mockup (voir affaire-wip-tab.component.html). */
-  livrableClientCardHovered = signal(false);
 
-  /** MOCKUP STATIQUE TEMPORAIRE (mode LIVRABLE) — données factices + recherche/filtre pour
-   * la popup "Historique", même mécanisme (historySearch/historyStatut/onHistoryFilterApply,
-   * déjà génériques) que la popup Historique WIP de la carte Régie. À retirer avec le reste
-   * du mockup. */
-  private readonly livrableHistoryMockRows: { discipline: string; document: string; budget: string; statut: string }[] = [
-    { discipline: 'Électricité', document: 'Schéma unifilaire BT', budget: '28 500,00 MAD', statut: 'FACTURE' },
-    { discipline: 'Génie civil', document: 'Plan de masse — Indice B', budget: '32 000,00 MAD', statut: 'FACTURE' },
-  ];
+  // ── LIVRABLE — mêmes pills d'icônes révélées au survol que Forfaitaire/Régie, un
+  // signal dédié par carte (voir le commentaire ci-dessus). ──────────────────────────
+  livrablePendingCardHovered  = signal(false);
+  livrableBatchesCardHovered  = signal(false);
+  livrableClientCardHovered   = signal(false);
+  livrableHistoryCardHovered  = signal(false);
 
+  livrableBatchBadgeVariant(statut: LivrableBatchStatut) {
+    return LIVRABLE_BATCH_STATUT_BADGE[statut] ?? 'neutral';
+  }
+
+  /** Colonnes du tableau "Livrables en attente" — `nouveauPct` (input éditable) et
+   * `statut` (badge du batch en cours, s'il y en a un) sont en `type: 'custom'`, rendues
+   * via les `<ng-template dafCell>` du template, même mécanisme que
+   * affaire-ressources-tab.component.html. */
+  readonly livrablePendingColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE') },
+      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT') },
+      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE'), align: 'right' },
+      { key: 'pctActuel',  label: t('AFFAIRES.WIP.COL_PCT_ACTUEL'), align: 'right' },
+      { key: 'nouveauPct', label: t('AFFAIRES.WIP.COL_NOUVEAU_PCT'), align: 'right', type: 'custom' },
+      { key: 'montant',    label: t('AFFAIRES.WIP.COL_AMOUNT'), align: 'right' },
+      { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'custom' },
+    ];
+  });
+
+  readonly livrablePendingRows = computed<TableRow[]>(() => this.pendingLivrables().map(l => ({
+    id:         l.id,
+    discipline: l.disciplineLabel,
+    document:   l.documentNom,
+    budget:     this.currency.transform(l.budgetAlloue, this.affaire.devise),
+    pctActuel:  `${l.pctFacture}%`,
+    montant:    this.currency.transform(this.incrementalAmount(l), this.affaire.devise),
+    _raw:       l,
+  } satisfies TableRow)));
+
+  readonly livrablePendingConfig = computed<TableConfig>(() => ({
+    showHeader:   true,
+    hoverable:    true,
+    loading:      this.loadingLivrables(),
+    emptyMessage: this.translate.instant('AFFAIRES.WIP.LIVRABLE_EMPTY'),
+  }));
+
+  /** Batches `EN_ATTENTE_CLIENT` uniquement — même principe que `pendingClientLines` pour
+   * Régie : un sous-ensemble d'`activeBatches()` qui a besoin du formulaire de
+   * confirmation client, affiché dans un bloc séparé. */
+  readonly livrableClientBatches = computed(() =>
+    this.activeBatches().filter(b => b.statut === 'EN_ATTENTE_CLIENT'));
+
+  /** Historique Livrable — même habillage (carte + daf-data-table + badge de statut) que
+   * l'historique WIP de la carte Régie. */
+  readonly livrableHistoryColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE') },
+      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT') },
+      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE'), align: 'right' },
+      { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
+    ];
+  });
+
+  private toLivrableHistoryRow(l: AffaireLivrableDto): TableRow {
+    return {
+      id:         l.id,
+      discipline: l.disciplineLabel,
+      document:   l.documentNom,
+      budget:     this.currency.transform(l.budgetAlloue, this.affaire.devise),
+      statut:     { label: this.translate.instant('AFFAIRES.WIP.BATCH_STATUS_' + l.statut),
+                    options: { variant: LIVRABLE_STATUT_BADGE[l.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
+    } satisfies TableRow;
+  }
+
+  readonly livrableHistoryRows = computed<TableRow[]>(() =>
+    this.livrableHistory().map(l => this.toLivrableHistoryRow(l)));
+
+  readonly livrableHistoryConfig = computed<TableConfig>(() => ({
+    showHeader:   true,
+    hoverable:    false,
+    emptyMessage: this.translate.instant('AFFAIRES.WIP.NO_HISTORY'),
+  }));
+
+  /** Popup "Afficher tout" — recherche + filtre Statut, même mécanisme
+   * (historySearch/historyStatut/onHistoryFilterApply, déjà génériques) que la popup
+   * Historique WIP de la carte Régie. */
   readonly livrableHistoryFilterFields = computed<FilterField[]>(() => [{
     name:    'statut',
     label:   this.translate.instant('AFFAIRES.WIP.COL_STATUS'),
     type:    'select',
-    options: [...new Set(this.livrableHistoryMockRows.map(l => l.statut))].sort()
-      .map(value => ({ value, label: enumLabel(this.translate, 'BILLING_LINE_STATUT', value) })),
+    options: [...new Set(this.livrableHistory().map(l => l.statut))].sort()
+      .map(value => ({ value, label: this.translate.instant('AFFAIRES.WIP.BATCH_STATUS_' + value) })),
   }]);
 
-  readonly filteredLivrableHistoryRows = computed<TableRow[]>(() => {
+  readonly filteredLivrableHistory = computed<AffaireLivrableDto[]>(() => {
     const q      = this.historySearch().trim().toLowerCase();
     const statut = this.historyStatut();
-    return this.livrableHistoryMockRows
+    return this.livrableHistory()
       .filter(l => !statut || l.statut === statut)
-      .filter(l => !q || `${l.discipline} ${l.document}`.toLowerCase().includes(q))
-      .map(l => ({
-        discipline: l.discipline, document: l.document, budget: l.budget,
-        statut: { label: enumLabel(this.translate, 'BILLING_LINE_STATUT', l.statut),
-                  options: { variant: BILLING_LINE_STATUT_BADGE[l.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
-      } satisfies TableRow));
+      .filter(l => !q || `${l.disciplineLabel} ${l.documentNom}`.toLowerCase().includes(q));
   });
+
+  readonly filteredLivrableHistoryRows = computed<TableRow[]>(() =>
+    this.filteredLivrableHistory().map(l => this.toLivrableHistoryRow(l)));
+
+  /** Même bibliothèque (xlsx) et même schéma d'export que exportHistoryExcel() — appelé
+   * depuis la carte (livrableHistory, tout) et depuis la popup (filteredLivrableHistory). */
+  exportLivrableHistoryExcel(lines: AffaireLivrableDto[]): void {
+    if (!lines.length) return;
+    const t = (k: string) => this.translate.instant(k);
+    const rows = lines.map(l => ({
+      [t('AFFAIRES.WIP.COL_DISCIPLINE')]:    l.disciplineLabel,
+      [t('AFFAIRES.WIP.COL_DOCUMENT')]:      l.documentNom,
+      [t('AFFAIRES.WIP.COL_BUDGET_ALLOUE')]: this.currency.transform(l.budgetAlloue, this.affaire.devise),
+      [t('AFFAIRES.WIP.COL_STATUS')]:        t('AFFAIRES.WIP.BATCH_STATUS_' + l.statut),
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('AFFAIRES.WIP.HISTORY_TITLE'));
+    const affaireRef = this.affaire.reference ?? String(this.affaire.id);
+    XLSX.writeFile(wb, `Historique_Livrables_${affaireRef}.xlsx`);
+  }
 
   /** TEST : popover (i) de la carte Régie — bouton maison en `position:absolute`
    * (top-3 right-3, comme profile-grid-card.component.ts) au lieu de l'en-tête auto de

@@ -42,7 +42,7 @@
           <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_REFUSED_HINT' | translate }}</p>
         }
 
-        <div class="grid grid-cols-2 gap-3 max-w-md items-start">
+        <div class="flex gap-3 max-w-md items-start">
           <!-- TEST : le champ du taux à gauche, les 2 boutons devant (à droite), sur la
                même ligne que le champ de saisie. Le pill est décalé vers le bas d'un
                spaceur invisible qui reprend EXACTEMENT le style du <label> de
@@ -57,7 +57,7 @@
                            hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedTaux() + '%' }" />
           </div>
 
-          <div class="flex flex-col gap-1.5 ml-4">
+          <div class="flex flex-col gap-1.5">
             <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
             <div class="wip-icon-actions w-fit h-10 flex items-center gap-1 transition-opacity duration-200
                         bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
@@ -456,200 +456,217 @@
 
   } @else if (affaire.billingMode === 'LIVRABLE') {
 
-    <!-- ⚠️ MOCKUP STATIQUE TEMPORAIRE (demandé pour visualiser l'écran Livrable sans
-         dépendre du chargement API, avec le même habillage visuel — daf-card glass,
-         daf-badge, daf-data-table — que les cartes Forfaitaire/Régie ci-dessus) — données
-         factices, aucune liaison aux signaux du composant. À RETIRER une fois les
-         modifications validées : remettre le bloc dynamique d'origine (voir git diff /
-         historique de ce fichier) et supprimer tout ce qui se trouve entre ce commentaire
-         et « FIN MOCKUP STATIQUE ». -->
-
-    <!-- ── Livrables : facturation par sélection groupée ── -->
+    <!-- ── Livrables : facturation par sélection groupée — même habillage (daf-card
+         glass, daf-data-table, boutons en icônes révélés au survol) que Forfaitaire/
+         Régie ci-dessus. N'apparaît que s'il y a effectivement des livrables en attente
+         (même logique "cachée si rien à montrer" que Batches en attente/En attente de
+         réponse client ci-dessous), plutôt que toujours visible. -->
+    @if (loadingLivrables()) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+    } @else if (pendingLivrables().length) {
     <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'lg', hoverable: true }"
-      (mouseenter)="regieCardHovered.set(true)"
-      (mouseleave)="regieCardHovered.set(false)">
+      (mouseenter)="livrablePendingCardHovered.set(true)"
+      (mouseleave)="livrablePendingCardHovered.set(false)">
       <div class="flex flex-col gap-4">
         <p class="text-[12px] text-on-surface-variant">
-          Saisissez le nouveau pourcentage cumulé facturé pour chaque document, puis générez une facture groupée pour l'ensemble des modifications.
+          {{ 'AFFAIRES.WIP.LIVRABLE_EXPLAIN' | translate }}
         </p>
 
+        @if (editingBatchId() !== null) {
+          <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_BATCH_HINT' | translate }}</p>
+        }
+
+        <!-- Colonnes "Nouveau %" (input éditable) et "Statut" (badge du batch en cours)
+             en `dafCell`, même mécanisme que affaire-ressources-tab.component.html. -->
         <daf-data-table
-          [columns]="[
-            { key: 'discipline', label: 'Discipline' },
-            { key: 'document', label: 'Document' },
-            { key: 'budget', label: 'Budget alloué', align: 'right' },
-            { key: 'pctActuel', label: '% facturé', align: 'right' },
-            { key: 'nouveauPct', label: 'Nouveau %', align: 'right', type: 'custom' },
-            { key: 'montant', label: 'Montant', align: 'right' },
-            { key: 'statut', label: 'Statut', type: 'custom' }
-          ]"
-          [rows]="[
-            { discipline: 'Génie civil', document: 'Plan de fondation — Lot A', budget: '45 000,00 MAD',
-              pctActuel: '40%', montant: '6 750,00 MAD', enteredPct: 55, minPct: 40, locked: false, statutLabel: null },
-            { discipline: 'Structures', document: 'Note de calcul — Poteaux préfabriqués', budget: '19 800,00 MAD',
-              pctActuel: '0%', montant: '0,00 MAD', enteredPct: 25, minPct: 0, locked: true, statutLabel: 'En attente client' },
-            { discipline: 'VRD', document: 'Plan de voirie — Phase 1', budget: '62 000,00 MAD',
-              pctActuel: '60%', montant: '0,00 MAD', enteredPct: 60, minPct: 60, locked: false, statutLabel: null }
-          ]"
-          [config]="{ showHeader: true, hoverable: true, emptyMessage: 'Aucun livrable en attente de facturation.' }">
+          [columns]="livrablePendingColumns()"
+          [rows]="livrablePendingRows()"
+          [config]="livrablePendingConfig()">
 
           <ng-template dafCell="nouveauPct" let-row>
             <input type="number" class="w-20 text-right border border-outline-variant rounded px-1 py-0.5"
-              [value]="row['enteredPct']" [min]="row['minPct']" max="100" step="0.1"
-              [disabled]="row['locked']" />%
+              [min]="row['_raw'].pctFacture" max="100" step="0.1"
+              [disabled]="isLivrableRowLocked(row['id'])"
+              [value]="getEnteredPct(row['id'])"
+              (input)="setEnteredPct(row['id'], $any($event.target).valueAsNumber)" />%
           </ng-template>
 
           <ng-template dafCell="statut" let-row>
-            @if (row['statutLabel']) {
-              <daf-badge [label]="row['statutLabel']" [options]="{ variant: 'warning', size: 'sm' }" />
+            @if (livrableBatchStatus(row['id']); as st) {
+              <daf-badge [label]="'AFFAIRES.WIP.BATCH_STATUS_' + st | translate"
+                [options]="{ variant: livrableBatchBadgeVariant(st), size: 'sm' }" />
             }
           </ng-template>
         </daf-data-table>
 
         <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
           <div style="grid-column:1">
-            <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">Total à facturer</p>
-            <p class="text-[20px] font-black text-success">6 750,00 MAD</p>
+            <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.TOTAL_SELECTED' | translate }}</p>
+            <p class="text-[20px] font-black text-success">
+              {{ totalToInvoice() | displayCurrency : affaire.devise }}
+            </p>
           </div>
           <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
                       bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-            [class.opacity-0]="!regieCardHovered()"
-            [class.opacity-100]="regieCardHovered()"
-            [class.pointer-events-none]="!regieCardHovered()">
-            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send', title: 'Soumettre' }" />
+            [class.opacity-0]="!livrablePendingCardHovered()"
+            [class.opacity-100]="livrablePendingCardHovered()"
+            [class.pointer-events-none]="!livrablePendingCardHovered()">
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send',
+                                      title: (editingBatchId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
+                                      loading: submittingLivrables(), disabled: !hasLivrableChanges() || submittingLivrables() }"
+              (onClick)="submitLivrables()" />
+            @if (editingBatchId() !== null) {
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
+                (onClick)="cancelEditBatch()" />
+            }
           </div>
         </div>
+
+        @if (livrableError()) {
+          <p class="text-[12px] text-danger">{{ livrableError() }}</p>
+        }
       </div>
     </daf-card>
+    }
 
     <!-- ── Batches en attente (client puis DF) — même habillage "WIP calculé" (label +
          gros montant vert) + pill d'icônes révélée au survol que la carte Régie. ── -->
-    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
-      (mouseenter)="forfaitCardHovered.set(true)"
-      (mouseleave)="forfaitCardHovered.set(false)">
-      <div class="flex flex-col gap-4">
-        <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
-          <span class="material-symbols-outlined text-[18px]">pending_actions</span>
-          Batches en attente
-        </h3>
+    @if (loadingActiveBatches()) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+    } @else if (activeBatches().length) {
+      <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
+        (mouseenter)="livrableBatchesCardHovered.set(true)"
+        (mouseleave)="livrableBatchesCardHovered.set(false)">
+        <div class="flex flex-col gap-4">
+          <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
+            <span class="material-symbols-outlined text-[18px]">pending_actions</span>
+            {{ 'AFFAIRES.WIP.PENDING_BATCHES_TITLE' | translate }}
+          </h3>
 
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center gap-2 text-[12px]">
-            <span>1 document</span>
-            <daf-badge label="En attente client" [options]="{ variant: 'warning', size: 'sm' }" />
-          </div>
-          <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
-            <div style="grid-column:1">
-              <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">WIP calculé</p>
-              <p class="text-[20px] font-black text-success">4 950,00 MAD</p>
+          @for (b of activeBatches(); track b.batchId) {
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-2 text-[12px]">
+                <span>{{ b.entries.length }} {{ 'AFFAIRES.WIP.DOCUMENTS' | translate }}</span>
+                <daf-badge [label]="'AFFAIRES.WIP.BATCH_STATUS_' + b.statut | translate"
+                  [options]="{ variant: livrableBatchBadgeVariant(b.statut), size: 'sm' }" />
+              </div>
+              <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
+                <div style="grid-column:1">
+                  <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.CALCULATED' | translate }}</p>
+                  <p class="text-[20px] font-black text-success">
+                    {{ b.combinedMontant | displayCurrency : affaire.devise }}
+                  </p>
+                </div>
+                <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
+                            bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+                  [class.opacity-0]="!livrableBatchesCardHovered()"
+                  [class.opacity-100]="livrableBatchesCardHovered()"
+                  [class.pointer-events-none]="!livrableBatchesCardHovered()">
+                  @if (b.statut === 'EN_ATTENTE_CLIENT' || b.statut === 'RETOURNE' || b.statut === 'A_VERIFIER') {
+                    <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'edit', title: ('AFFAIRES.WIP.EDIT' | translate) }"
+                      (onClick)="startEditBatch(b)" />
+                  }
+                  <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: ('AFFAIRES.WIP.CANCEL' | translate) }"
+                    (onClick)="cancelBatch(b.batchId)" />
+                </div>
+              </div>
             </div>
-            <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
-                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-              [class.opacity-0]="!forfaitCardHovered()"
-              [class.opacity-100]="forfaitCardHovered()"
-              [class.pointer-events-none]="!forfaitCardHovered()">
-              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'edit', title: 'Modifier' }" />
-              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: 'Annuler' }" />
-            </div>
-          </div>
-        </div>
+          }
 
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center gap-2 text-[12px]">
-            <span>2 documents</span>
-            <daf-badge label="En attente DF" [options]="{ variant: 'warning', size: 'sm' }" />
-          </div>
-          <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
-            <div style="grid-column:1">
-              <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">WIP calculé</p>
-              <p class="text-[20px] font-black text-success">11 200,00 MAD</p>
-            </div>
-            <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
-                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-              [class.opacity-0]="!forfaitCardHovered()"
-              [class.opacity-100]="forfaitCardHovered()"
-              [class.pointer-events-none]="!forfaitCardHovered()">
-              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: 'Annuler' }" />
-            </div>
-          </div>
+          @if (livrableCancelError()) {
+            <p class="text-[12px] text-danger">{{ livrableCancelError() }}</p>
+          }
         </div>
+      </daf-card>
+    }
+
+    <!-- ── En attente de réponse client — même bloc (bordure simple, bouton en icône
+         juste après le champ) que pendingClientLines côté Régie, restreint aux batches
+         EN_ATTENTE_CLIENT. ── -->
+    @if (livrableClientBatches().length) {
+      <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3"
+        (mouseenter)="livrableClientCardHovered.set(true)"
+        (mouseleave)="livrableClientCardHovered.set(false)">
+        <p class="text-[13px] font-semibold">{{ 'AFFAIRES.WIP.PENDING_CLIENT_TITLE' | translate }}</p>
+        <p class="text-[12px] text-on-surface-variant">{{ 'AFFAIRES.WIP.PENDING_CLIENT_EXPLAIN' | translate }}</p>
+
+        @for (b of livrableClientBatches(); track b.batchId) {
+          <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
+            <div class="flex items-center justify-between text-[12px]">
+              <span>{{ b.entries.length }} {{ 'AFFAIRES.WIP.DOCUMENTS' | translate }}</span>
+              <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ b.combinedMontant | displayCurrency : affaire.devise }}</strong></span>
+            </div>
+            <div class="flex items-start gap-2 max-w-md">
+              <div class="flex-1 min-w-0">
+                <daf-form-field
+                  [value]="getLivrableClientAmountInput(b.batchId)"
+                  (valueChange)="setLivrableClientAmountInput(b.batchId, $any($event))"
+                  [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
+                               type: 'number', fullWidth: true,
+                               hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
+              </div>
+
+              <div class="flex flex-col gap-1.5 shrink-0">
+                <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
+                <div class="wip-icon-actions w-fit h-10 flex items-center gap-1 transition-opacity duration-200
+                            bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+                  [class.opacity-0]="!livrableClientCardHovered()"
+                  [class.opacity-100]="livrableClientCardHovered()"
+                  [class.pointer-events-none]="!livrableClientCardHovered()">
+                  <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'check', title: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
+                                            loading: submittingLivrableClientBatch() === b.batchId,
+                                            disabled: getLivrableClientAmountInput(b.batchId) === null ||
+                                                      getLivrableClientAmountInput(b.batchId)! < 0 ||
+                                                      getLivrableClientAmountInput(b.batchId)! > b.combinedMontant }"
+                    (onClick)="confirmLivrableClientAmount(b)" />
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (livrableClientAmountError()) {
+          <p class="text-[12px] text-danger">{{ livrableClientAmountError() }}</p>
+        }
       </div>
-    </daf-card>
+    }
 
-    <!-- ── En attente de réponse client — bouton en icône, même pill révélée au survol
-         (ici du bloc lui-même) que Forfaitaire/Régie, sur la même ligne que le champ. ── -->
-    <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3"
-      (mouseenter)="livrableClientCardHovered.set(true)"
-      (mouseleave)="livrableClientCardHovered.set(false)">
-      <p class="text-[13px] font-semibold">En attente de réponse client</p>
-      <p class="text-[12px] text-on-surface-variant">Un email récapitulatif a été envoyé au client. Une fois sa réponse reçue, saisissez ici le montant qu'il a réellement confirmé.</p>
-
-      <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
-        <div class="flex items-center justify-between text-[12px]">
-          <span>1 document</span>
-          <span>Calculé: <strong>4 950,00 MAD</strong></span>
-        </div>
-        <div class="flex items-start gap-2 max-w-md">
-          <div class="flex-1 min-w-0">
-            <daf-form-field
-              [value]="4500"
-              [options]="{ label: 'Montant validé par le client (MAD)', type: 'number', fullWidth: true,
-                           hint: 'Ne peut pas dépasser le montant calculé.' }" />
-          </div>
-
-          <div class="flex flex-col gap-1.5 shrink-0">
-            <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
-            <div class="wip-icon-actions w-fit h-10 flex items-center gap-1 transition-opacity duration-200
-                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-              [class.opacity-0]="!livrableClientCardHovered()"
-              [class.opacity-100]="livrableClientCardHovered()"
-              [class.pointer-events-none]="!livrableClientCardHovered()">
-              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'check', title: 'Confirmer' }" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Historique ── -->
+    <!-- ── Historique — même coquille (carte + daf-data-table + badge de statut) que la
+         carte Historique WIP de Régie. N'apparaît que s'il y a au moins une ligne
+         facturée, même logique que les 2 sections ci-dessus, plutôt que toujours
+         visible. ── -->
+    @if (livrableHistory().length) {
     <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
-      (mouseenter)="historyCardHovered.set(true)"
-      (mouseleave)="historyCardHovered.set(false)">
+      (mouseenter)="livrableHistoryCardHovered.set(true)"
+      (mouseleave)="livrableHistoryCardHovered.set(false)">
       <div class="mb-3 flex items-center justify-between gap-2">
         <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
           <span class="material-symbols-outlined text-[18px]">history</span>
-          Historique
+          {{ 'AFFAIRES.WIP.HISTORY_TITLE' | translate }}
         </h3>
         <div class="flex items-center gap-2">
-          <daf-badge label="1 ligne(s)" [options]="{ variant: 'neutral', size: 'sm' }" />
+          <daf-badge [label]="livrableHistory().length + ' ' + ('AFFAIRES.WIP.HISTORY_COUNT_UNIT' | translate)"
+            [options]="{ variant: 'neutral', size: 'sm' }" />
           <div class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
                       bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-            [class.opacity-0]="!historyCardHovered()"
-            [class.opacity-100]="historyCardHovered()"
-            [class.pointer-events-none]="!historyCardHovered()">
-            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: 'Exporter Excel' }" />
-            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full', title: 'Afficher tout' }"
+            [class.opacity-0]="!livrableHistoryCardHovered()"
+            [class.opacity-100]="livrableHistoryCardHovered()"
+            [class.pointer-events-none]="!livrableHistoryCardHovered()">
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                      disabled: !livrableHistory().length }"
+              (onClick)="exportLivrableHistoryExcel(livrableHistory())" />
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full', title: ('AFFAIRES.WIP.HISTORY_SHOW_ALL' | translate) }"
               (onClick)="showHistoryPage.set(true)" />
           </div>
         </div>
       </div>
-      <daf-data-table
-        [columns]="[
-          { key: 'discipline', label: 'Discipline' },
-          { key: 'document', label: 'Document' },
-          { key: 'budget', label: 'Budget alloué', align: 'right' },
-          { key: 'statut', label: 'Statut', type: 'badge' }
-        ]"
-        [rows]="[
-          { discipline: 'Électricité', document: 'Schéma unifilaire BT', budget: '28 500,00 MAD',
-            statut: { label: 'Facturé', options: { variant: 'success', dot: true } } }
-        ]"
-        [config]="{ showHeader: true, hoverable: false, emptyMessage: 'Aucun historique pour le moment.' }" />
+      <daf-data-table [columns]="livrableHistoryColumns()" [rows]="livrableHistoryRows()" [config]="livrableHistoryConfig()" />
     </daf-card>
+    }
 
     <!-- Popup "Historique" EN PLEIN ÉCRAN — même coquille que la popup Historique WIP de
-         la carte Régie (fond assombri, panneau blanc centré, en-tête + croix, table
-         agrandie). ── -->
+         la carte Régie (fond assombri, panneau blanc centré, en-tête + croix, recherche +
+         filtre + export + table agrandie). ── -->
     @if (showHistoryPage()) {
       <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
            style="z-index:1000"
@@ -660,19 +677,19 @@
           <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
             <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
               <span class="material-symbols-outlined text-primary">history</span>
-              Historique
+              {{ 'AFFAIRES.WIP.HISTORY_TITLE' | translate }}
             </h2>
             <button type="button" (click)="showHistoryPage.set(false)"
               class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
                      hover:text-on-surface hover:bg-surface-container transition-colors"
-              aria-label="Fermer">
+              [attr.aria-label]="'ADMIN.COMMON.BACK' | translate">
               <span class="material-symbols-outlined">close</span>
             </button>
           </div>
           <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
             <div class="flex items-center gap-2 bg-white rounded-xl p-2">
               <daf-search-toolbar class="flex-1" [card]="false"
-                placeholder="Rechercher un document…"
+                [placeholder]="'AFFAIRES.WIP.HISTORY_SEARCH_PLACEHOLDER' | translate"
                 [value]="historySearch()"
                 [debounce]="200"
                 (valueChange)="historySearch.set($event)"
@@ -680,22 +697,15 @@
                 (filterApply)="onHistoryFilterApply($event)"
                 (filterReset)="historyStatut.set('')" />
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
-                                        label: 'Exporter Excel', disabled: !filteredLivrableHistoryRows().length }" />
+                                        label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                        disabled: !filteredLivrableHistory().length }"
+                (onClick)="exportLivrableHistoryExcel(filteredLivrableHistory())" />
             </div>
-            <daf-data-table
-              [columns]="[
-                { key: 'discipline', label: 'Discipline' },
-                { key: 'document', label: 'Document' },
-                { key: 'budget', label: 'Budget alloué', align: 'right' },
-                { key: 'statut', label: 'Statut', type: 'badge' }
-              ]"
-              [rows]="filteredLivrableHistoryRows()"
-              [config]="{ showHeader: true, hoverable: false, emptyMessage: 'Aucun historique pour le moment.' }" />
+            <daf-data-table [columns]="livrableHistoryColumns()" [rows]="filteredLivrableHistoryRows()" [config]="livrableHistoryConfig()" />
           </div>
         </div>
       </div>
     }
-    <!-- FIN MOCKUP STATIQUE -->
 
   } @else {
     <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.UNSUPPORTED_MODE' | translate }}</p>
