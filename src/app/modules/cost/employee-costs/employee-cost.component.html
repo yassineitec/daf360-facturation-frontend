@@ -1,29 +1,84 @@
-<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'COST.EMPLOYEE_COST.LOADING' | translate">
+<daf-page [loading]="firstLoad()" [kpis]="4" [loadingLabel]="'COST.EMPLOYEE_COST.LOADING' | translate">
 
   <daf-page-header
-    [title]="'COST.EMPLOYEE_COST.TITLE' | translate"
-    [subtitle]="'COST.EMPLOYEE_COST.PAGE_SUBTITLE' | translate">
+    [title]="'COST.EMPLOYEE_COST.TITLE' | translate">
     <daf-button pageActions
-      [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.ADD' | translate), iconStart: 'add', disabled: showDrawer() }"
+      [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !filteredRows().length }"
+      (onClick)="exportExcel()" />
+    <daf-button pageActions
+      [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.ADD' | translate), iconStart: 'add' }"
       (onClick)="openAdd()" />
   </daf-page-header>
 
   <div class="flex flex-col gap-8">
 
-    <!-- KPIs — counted over every loaded row, not the filtered/searched subset below -->
-    <section class="grid grid-cols-3 gap-2 sm:gap-6">
-      <daf-metric-card
-        [label]="'COST.EMPLOYEE_COST.KPI_TOTAL' | translate"
-        [value]="totalCount()"
-        [options]="kpiTotal" />
-      <daf-metric-card
-        [label]="'COST.EMPLOYEE_COST.KPI_ACTIVE' | translate"
-        [value]="activeCount()"
-        [options]="kpiActive" />
-      <daf-metric-card
-        [label]="'COST.EMPLOYEE_COST.KPI_EXPIRED' | translate"
-        [value]="expiredCount()"
-        [options]="kpiExpired" />
+    <!-- KPIs — counted over every loaded row, not the filtered/searched subset below.
+         Flex, not `grid-cols-5`: a 5-column grid utility isn't used anywhere else in
+         this app, and this app's own Tailwind build only reliably emits utilities it
+         can already see used elsewhere — `flex-1` is safe, it's everywhere. -->
+    <section class="flex flex-wrap gap-2 sm:gap-6">
+      <!-- TEST : 1re carte — même disposition que la carte 3/4 : le total mis en avant
+           à gauche, part des actifs / expirés (en %) empilée à droite, séparée par la
+           même ligne verticale. -->
+      <daf-card class="flex-1 min-w-[240px]" [options]="{ variant: 'glass', padding: 'md', radius: 'xl', fullHeight: true }">
+        <div class="grid grid-cols-2 items-center gap-4 h-full">
+          <div class="text-left">
+            <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_TOTAL' | translate }}</p>
+            <p class="text-[24px] font-black text-primary">{{ totalCount() }}</p>
+          </div>
+          <div class="flex flex-col items-end gap-3 text-right border-l-2 border-outline-variant pl-6">
+            <div>
+              <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_ACTIVE_PCT' | translate }}</p>
+              <p class="text-[14px] font-bold text-on-surface">{{ activePercent() }}</p>
+            </div>
+            <div class="w-full">
+              <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_EXPIRED_PCT' | translate }}</p>
+              <p class="text-[14px] font-bold text-on-surface">{{ expiredPercent() }}</p>
+            </div>
+          </div>
+        </div>
+      </daf-card>
+      <daf-metric-card class="flex-1 min-w-[240px]"
+        [label]="'COST.EMPLOYEE_COST.KPI_AVG_INTERNAL' | translate"
+        [value]="avgInternalCost()"
+        [options]="kpiAvgInternal()" />
+      <!-- TEST : 3e carte — nouvelle disposition : le taux à gauche (mis en avant,
+           grande taille), interco et externe empilés à droite (interco en haut,
+           externe en dessous). -->
+      <daf-card class="flex-1 min-w-[240px]" [options]="{ variant: 'glass', padding: 'md', radius: 'xl', fullHeight: true }">
+        <div class="grid grid-cols-2 items-center gap-4 h-full">
+          <div class="text-left">
+            <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_RATE_LABEL' | translate }}</p>
+            <p class="text-[24px] font-black text-secondary">{{ externalVsIntercoRate() }}</p>
+          </div>
+          <!-- TEST : ligne horizontale (border-t-2) sous "interco" supprimée — ne reste
+               que la ligne verticale sur toute la hauteur de la colonne. -->
+          <div class="flex flex-col items-end gap-3 text-right border-l-2 border-outline-variant pl-6">
+            <div>
+              <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_AVG_INTERCO' | translate }}</p>
+              <p class="text-[14px] font-bold text-on-surface">{{ avgIntercoCost() }}</p>
+            </div>
+            <div class="w-full">
+              <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_AVG_EXTERNAL' | translate }}</p>
+              <p class="text-[14px] font-bold text-on-surface">{{ avgExternalCost() }}</p>
+            </div>
+          </div>
+        </div>
+      </daf-card>
+      <!-- TEST : 4e carte — l'écart de marge (valeur combinée à gauche) est supprimé ;
+           ne restent que les 2 marges, centrées dans la carte. -->
+      <daf-card class="flex-1 min-w-[240px]" [options]="{ variant: 'glass', padding: 'md', radius: 'xl', fullHeight: true }">
+        <div class="flex h-full flex-col items-center justify-center gap-1.5 text-center">
+          <div>
+            <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_MARGIN_INTERCO' | translate }}</p>
+            <p class="text-[14px] font-bold text-on-surface">{{ marginInterneInterco() }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_MARGIN_EXTERNE' | translate }}</p>
+            <p class="text-[14px] font-bold text-on-surface">{{ marginInterneExterne() }}</p>
+          </div>
+        </div>
+      </daf-card>
     </section>
 
     <!-- Search + active/expired filter + view toggle, all client-side (list() has no
@@ -63,13 +118,14 @@
         [pageSize]="size()"
         [emptyMessage]="'COST.EMPLOYEE_COST.EMPTY' | translate"
         (edit)="edit($event)"
-        (remove)="remove($event)" />
+        (remove)="remove($event)"
+        (sortChange)="onSort($event)" />
     }
 
     <daf-pagination
       [currentPage]="page()"
       [totalPages]="totalPagesCount()"
-      [totalElements]="filteredRows().length"
+      [totalElements]="sortedRows().length"
       [pageSize]="size()"
       [pageSizeOptions]="[10, 25, 50, 100]"
       [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
@@ -83,11 +139,9 @@
 
 </daf-page>
 
-<!-- Add / edit drawer — a side panel rather than a form pushed into the top of the list,
-     so opening it never shoves hundreds of rows down the page. -->
-<daf-drawer [(open)]="showDrawer"
-  [config]="{ title: (editingId() ? 'COST.EMPLOYEE_COST.EDIT_TITLE' : 'COST.EMPLOYEE_COST.ADD_TITLE') | translate,
-              icon: 'badge', width: '420px', showToggle: false }">
+<!-- Add / edit popup — body + footer in one template, since ModalConfig.buttons is a
+     non-reactive snapshot and Save needs to keep reflecting isSaving(). -->
+<ng-template #formTpl>
 
   <div class="flex flex-col gap-4">
     <daf-select
@@ -124,18 +178,16 @@
       [selected]="[newRecord.currency]"
       (selectedChange)="onCurrencyChange($event)"
       [ariaLabel]="'COST.EMPLOYEE_COST.CURRENCY' | translate"
-      [config]="{ label: ('COST.EMPLOYEE_COST.CURRENCY' | translate), fullWidth: true }" />
+      [config]="{ label: ('COST.EMPLOYEE_COST.CURRENCY' | translate), searchable: true, fullWidth: true }" />
 
     <div class="grid grid-cols-2 gap-3">
-      <daf-form-field
-        [value]="newRecord.dateDebut"
-        (valueChange)="newRecord.dateDebut = $any($event) ?? ''"
-        [options]="{ label: ('COST.EMPLOYEE_COST.DATE_DEBUT' | translate), type: 'date', required: true, fullWidth: true }" />
+      <daf-multi-date-picker
+        [config]="dateDebutConfig()"
+        [(value)]="dateDebutValue" />
 
-      <daf-form-field
-        [value]="newRecord.dateFin"
-        (valueChange)="newRecord.dateFin = $any($event) ?? ''"
-        [options]="{ label: ('COST.EMPLOYEE_COST.DATE_FIN' | translate), type: 'date', required: true, fullWidth: true }" />
+      <daf-multi-date-picker
+        [config]="dateFinConfig()"
+        [(value)]="dateFinValue" />
     </div>
 
     @if (saveError()) {
@@ -168,11 +220,11 @@
     </div>
   }
 
-  <div drawerFooter class="flex justify-end gap-2">
+  <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-outline-variant">
     <daf-button [options]="{ variant: 'secondary', label: ('COST.EMPLOYEE_COST.CANCEL' | translate) }"
       (onClick)="closeDrawer()" />
     <daf-button [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.SAVE' | translate), loading: isSaving() }"
       (onClick)="save()" />
   </div>
 
-</daf-drawer>
+</ng-template>

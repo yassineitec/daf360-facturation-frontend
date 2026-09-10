@@ -2570,13 +2570,14 @@
       "EXPORT_SHEET": "Coûts collaborateurs",
       "KPI_TOTAL": "Collaborateurs suivis",
       "KPI_TOTAL_HELP": "Nombre de collaborateurs ayant un coût de vente configuré. Volume suivi.",
+      "KPI_ACTIVE_PCT": "Actifs",
+      "KPI_EXPIRED_PCT": "Expirés",
       "KPI_AVG_INTERNAL": "Coût de vente moyen",
       "KPI_AVG_INTERNAL_HELP": "Moyenne des coûts horaires facturés à l'entreprise / interne. Comparer les coûts interne.",
       "KPI_AVG_INTERCO": "Coût de vente interco moyen",
       "KPI_AVG_EXTERNAL": "Coût de vente externe moyen",
       "KPI_RATE_LABEL": "Taux externe / interco",
       "KPI_EXPIRED": "Coûts expirés",
-      "KPI_MARGIN_SPREAD_LABEL": "Écart des marges",
       "KPI_MARGIN_INTERCO": "Marge moyenne (interne / interco)",
       "KPI_MARGIN_EXTERNE": "Marge moyenne (interne / externe)",
       "SEARCH_PLACEHOLDER": "Rechercher un collaborateur…",
@@ -3652,6 +3653,11 @@
       "A_VERIFIER": "À vérifier",
       "RETOURNE": "Retournée",
       "ANNULE": "Annulée"
+    },
+    "WIP_TAUX_STATUT": {
+      "EN_ATTENTE": "En attente",
+      "VALIDE": "Validé",
+      "REFUSE": "Refusé"
     },
     "BILLING_LOT_STATUT": {
       "EN_ATTENTE_MANAGER": "En attente manager",

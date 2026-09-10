@@ -2,96 +2,114 @@
 
   @if (affaire.billingMode === 'FORFAIT') {
 
-    <!-- ── Forfaitaire: WIP = budget x taux d'avancement ── -->
-    <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-4">
-      <p class="text-[12px] text-on-surface-variant">
-        {{ 'AFFAIRES.WIP.AV_EXPLAIN' | translate }}
-      </p>
+    <!-- TEST : carte FORFAIT alignée sur la carte Régie — fond blanc (daf-card glass),
+         bouton (i) en position:absolute + daf-help-popover au survol (au lieu du texte
+         d'explication toujours visible), champ de date remplacé par une icône calendrier
+         (même portail maison, voir positionPortal()/showAvDatePicker dans le .ts), et
+         les boutons d'action en icônes dans le même "pill" que Régie, révélées au survol
+         de la carte (forfaitCardHovered). -->
+    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'lg', hoverable: true }"
+      style="position:relative"
+      (mouseenter)="forfaitCardHovered.set(true)"
+      (mouseleave)="forfaitCardHovered.set(false)">
 
-      <div class="grid grid-cols-2 gap-3 max-w-md">
-        <daf-form-field
-          [value]="periodDateFrom"
-          (valueChange)="periodDateFrom = $any($event)"
-          [options]="{ label: ('AFFAIRES.WIP.DATE_FROM' | translate), type: 'date', fullWidth: true }" />
-        <daf-form-field
-          [value]="periodDateTo"
-          (valueChange)="periodDateTo = $any($event)"
-          [options]="{ label: ('AFFAIRES.WIP.DATE_TO' | translate), type: 'date', fullWidth: true }" />
-      </div>
+      <button type="button" #forfaitHelpBtn
+        class="absolute top-3 right-3 z-10 inline-flex items-center justify-center w-4 h-4 rounded-full
+               text-outline hover:text-tertiary focus:text-tertiary focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-tertiary/40 transition-colors cursor-help"
+        [attr.aria-label]="'AFFAIRES.WIP.HELP_ARIA' | translate"
+        (mouseenter)="forfaitHelpOpen.set(true)" (mouseleave)="forfaitHelpOpen.set(false)"
+        (focus)="forfaitHelpOpen.set(true)" (blur)="forfaitHelpOpen.set(false)">
+        <span class="material-symbols-outlined text-[14px] leading-none" aria-hidden="true">info</span>
+      </button>
+      <daf-help-popover [anchor]="forfaitHelpBtn" [text]="'AFFAIRES.WIP.AV_EXPLAIN' | translate" placement="bottom" align="end" [open]="forfaitHelpOpen()" />
 
-      @if (editingTaux()?.statut === 'REFUSE') {
-        <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_REFUSED_HINT' | translate }}</p>
-      }
+      <div class="flex flex-col gap-4">
 
-      <div class="grid grid-cols-2 gap-3 max-w-md items-end">
+        <!-- Panneau du calendrier AV — même principe que celui de la carte Régie : toujours
+             présent dans le DOM, déplacé vers <body> et positionné en fixed à l'ouverture. -->
+        <div #avDatePickerPanel
+          [style.display]="showAvDatePicker() ? 'block' : 'none'"
+          [style.visibility]="avDatePickerVisible() ? 'visible' : 'hidden'"
+          class="shadow-xl rounded-lg">
+          <daf-multi-date-picker
+            [value]="avDateRange()"
+            (valueChange)="onAvDateRangeChange($event)"
+            [config]="{ selectionMode: 'range', inline: true, fullWidth: false }" />
+        </div>
+
+        @if (editingTaux()?.statut === 'REFUSE') {
+          <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_REFUSED_HINT' | translate }}</p>
+        }
+
+        <div class="grid grid-cols-2 gap-3 max-w-md items-start">
+          <!-- TEST : le champ du taux à gauche, les 2 boutons devant (à droite), sur la
+               même ligne que le champ de saisie. Le pill est décalé vers le bas d'un
+               spaceur invisible qui reprend EXACTEMENT le style du <label> de
+               daf-form-field (text-[10px] font-semibold uppercase tracking-wider + le
+               wrapperClasses `gap-1.5` de la lib), pour que le pill s'aligne pile sur la
+               ligne du champ et non sur celle du label. -->
+          <div class="taux-field-compact w-1/2">
+            <daf-form-field
+              [value]="newTauxValue()"
+              (valueChange)="newTauxValue.set($any($event))"
+              [options]="{ label: ('AFFAIRES.WIP.NEW_TAUX' | translate) + ' (%)', type: 'number', fullWidth: true,
+                           hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedTaux() + '%' }" />
+          </div>
+
+          <div class="flex flex-col gap-1.5 ml-4">
+            <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
+            <div class="wip-icon-actions w-fit h-10 flex items-center gap-1 transition-opacity duration-200
+                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+              [class.opacity-0]="!forfaitCardHovered()"
+              [class.opacity-100]="forfaitCardHovered()"
+              [class.pointer-events-none]="!forfaitCardHovered()">
+              <daf-button #avDatePickerTrigger
+                [options]="{ variant: 'ghost', size: 'sm', iconStart: 'calendar_month', title: ('AFFAIRES.WIP.PERIOD' | translate) }"
+                (onClick)="toggleAvDatePicker()" />
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'check',
+                                        title: (editingTauxId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
+                                        loading: submittingTaux(), disabled: !canSubmitTaux() || submittingTaux() }"
+                (onClick)="submitTaux()" />
+              @if (editingTauxId() !== null) {
+                <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
+                  (onClick)="cancelEditTaux()" />
+              }
+            </div>
+          </div>
+        </div>
+
         <daf-form-field
-          [value]="newTauxValue()"
-          (valueChange)="newTauxValue.set($any($event))"
-          [options]="{ label: ('AFFAIRES.WIP.NEW_TAUX' | translate) + ' (%)', type: 'number', fullWidth: true,
-                       hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedTaux() + '%' }" />
-        <daf-button [options]="{ variant: 'teal',
-                                  label: (editingTauxId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
-                                  loading: submittingTaux(), disabled: !canSubmitTaux() || submittingTaux() }"
-          (onClick)="submitTaux()" />
-        @if (editingTauxId() !== null) {
-          <daf-button [options]="{ variant: 'ghost', label: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
-            (onClick)="cancelEditTaux()" />
+          [value]="tauxComment"
+          (valueChange)="tauxComment = $any($event)"
+          [options]="{ label: ('AFFAIRES.WIP.COMMENT' | translate), type: 'textarea', rows: 2, maxLength: 500, fullWidth: true }" />
+
+        @if (avWipPreview() !== null) {
+          <!-- Même habillage que le "WIP calculé" de la carte Régie (label discret
+               au-dessus + montant en gros/gras vert) plutôt qu'une simple ligne de texte. -->
+          <div>
+            <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.CALCULATED' | translate }}</p>
+            <p class="text-[20px] font-black text-success">
+              {{ avWipPreview() | displayCurrency : affaire.devise }}
+            </p>
+          </div>
+        }
+
+        @if (tauxError()) {
+          <p class="text-[12px] text-danger">{{ tauxError() }}</p>
         }
       </div>
+    </daf-card>
 
-      <daf-form-field
-        [value]="tauxComment"
-        (valueChange)="tauxComment = $any($event)"
-        [options]="{ label: ('AFFAIRES.WIP.COMMENT' | translate), type: 'textarea', rows: 2, maxLength: 500, fullWidth: true }" />
-
-      @if (avWipPreview() !== null) {
-        <p class="text-[13px] font-semibold">
-          {{ 'AFFAIRES.WIP.CALCULATED' | translate }}:
-          {{ avWipPreview() | displayCurrency : affaire.devise }}
-        </p>
-      }
-
-      @if (tauxError()) {
-        <p class="text-[12px] text-danger">{{ tauxError() }}</p>
-      }
-    </div>
-
+    <!-- Historique des taux (AV) : daf-data-table de la lib, même habillage que
+         l'historique WIP de la carte Régie (colonnes + badge de statut + actions en
+         icônes), à la place de l'ancien <table> fait main. -->
     @if (loadingTaux()) {
       <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
-    } @else if (tauxHistory().length) {
-      <table class="w-full text-[13px]">
-        <thead>
-          <tr class="text-left text-on-surface-variant border-b border-outline-variant">
-            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_PERIOD' | translate }}</th>
-            <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_TAUX' | translate }}</th>
-            <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_INCREMENT' | translate }}</th>
-            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
-            <th class="py-2 pr-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (t of tauxHistory(); track t.id) {
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2 pr-3">{{ t.periodDateFrom }} → {{ t.periodDateTo }}</td>
-              <td class="py-2 pr-3 text-right">{{ t.tauxSaisi }}%</td>
-              <td class="py-2 pr-3 text-right">{{ t.montantIncremental | displayCurrency : affaire.devise }}</td>
-              <td class="py-2 pr-3">{{ t.statut }}</td>
-              <td class="py-2 pr-3 text-right">
-                @if (t.statut === 'EN_ATTENTE' || t.statut === 'REFUSE') {
-                  <button type="button" class="text-primary text-[12px] mr-2" (click)="startEditTaux(t)">
-                    {{ 'AFFAIRES.WIP.EDIT' | translate }}
-                  </button>
-                  <button type="button" class="text-danger text-[12px]" (click)="deleteTaux(t.id)">
-                    {{ 'AFFAIRES.WIP.DELETE' | translate }}
-                  </button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    } @else {
+      <daf-data-table [columns]="tauxHistoryColumns()" [rows]="tauxHistoryRows()" [config]="tauxHistoryConfig()" />
       @if (deleteTauxError()) {
-        <p class="text-[12px] text-danger">{{ deleteTauxError() }}</p>
+        <p class="mt-2 text-[12px] text-danger">{{ deleteTauxError() }}</p>
       }
     }
 
@@ -132,7 +150,7 @@
         (focus)="regieHelpOpen.set(true)" (blur)="regieHelpOpen.set(false)">
         <span class="material-symbols-outlined text-[14px] leading-none" aria-hidden="true">info</span>
       </button>
-      <daf-help-popover [text]="tmHelpText()" placement="bottom" align="end" [open]="regieHelpOpen()" />
+      <daf-help-popover [anchor]="regieHelpBtn" [text]="tmHelpText()" placement="bottom" align="end" [open]="regieHelpOpen()" />
 
       <daf-stepper orientation="horizontal" class="mb-8"
         [steps]="wipStepperSteps()" [currentStep]="wipStep() - 1" [config]="wipStepperConfig()"
@@ -343,7 +361,7 @@
           <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
             <div class="flex items-center justify-between text-[12px]">
               <span>
-                @if (l.periodDateFrom && l.periodDateTo) { {{ l.periodDateFrom }} → {{ l.periodDateTo }} }
+                @if (l.periodDateFrom && l.periodDateTo) { {{ formatWipPeriod(l.periodDateFrom, l.periodDateTo) }} }
                 @else { {{ l.periodMonth }}/{{ l.periodYear }} }
               </span>
               <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ l.montantHt | displayCurrency : affaire.devise }}</strong></span>
@@ -428,162 +446,246 @@
 
   } @else if (affaire.billingMode === 'LIVRABLE') {
 
+    <!-- ⚠️ MOCKUP STATIQUE TEMPORAIRE (demandé pour visualiser l'écran Livrable sans
+         dépendre du chargement API, avec le même habillage visuel — daf-card glass,
+         daf-badge, daf-data-table — que les cartes Forfaitaire/Régie ci-dessus) — données
+         factices, aucune liaison aux signaux du composant. À RETIRER une fois les
+         modifications validées : remettre le bloc dynamique d'origine (voir git diff /
+         historique de ce fichier) et supprimer tout ce qui se trouve entre ce commentaire
+         et « FIN MOCKUP STATIQUE ». -->
+
     <!-- ── Livrables : facturation par sélection groupée ── -->
-    <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-4">
-      <p class="text-[12px] text-on-surface-variant">
-        {{ 'AFFAIRES.WIP.LIVRABLE_EXPLAIN' | translate }}
-      </p>
+    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'lg', hoverable: true }"
+      (mouseenter)="regieCardHovered.set(true)"
+      (mouseleave)="regieCardHovered.set(false)">
+      <div class="flex flex-col gap-4">
+        <p class="text-[12px] text-on-surface-variant">
+          Saisissez le nouveau pourcentage cumulé facturé pour chaque document, puis générez une facture groupée pour l'ensemble des modifications.
+        </p>
 
-      @if (editingBatchId() !== null) {
-        <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_BATCH_HINT' | translate }}</p>
-      }
+        <daf-data-table
+          [columns]="[
+            { key: 'discipline', label: 'Discipline' },
+            { key: 'document', label: 'Document' },
+            { key: 'budget', label: 'Budget alloué', align: 'right' },
+            { key: 'pctActuel', label: '% facturé', align: 'right' },
+            { key: 'nouveauPct', label: 'Nouveau %', align: 'right', type: 'custom' },
+            { key: 'montant', label: 'Montant', align: 'right' },
+            { key: 'statut', label: 'Statut', type: 'custom' }
+          ]"
+          [rows]="[
+            { discipline: 'Génie civil', document: 'Plan de fondation — Lot A', budget: '45 000,00 MAD',
+              pctActuel: '40%', montant: '6 750,00 MAD', enteredPct: 55, minPct: 40, locked: false, statutLabel: null },
+            { discipline: 'Structures', document: 'Note de calcul — Poteaux préfabriqués', budget: '19 800,00 MAD',
+              pctActuel: '0%', montant: '0,00 MAD', enteredPct: 25, minPct: 0, locked: true, statutLabel: 'En attente client' },
+            { discipline: 'VRD', document: 'Plan de voirie — Phase 1', budget: '62 000,00 MAD',
+              pctActuel: '60%', montant: '0,00 MAD', enteredPct: 60, minPct: 60, locked: false, statutLabel: null }
+          ]"
+          [config]="{ showHeader: true, hoverable: true, emptyMessage: 'Aucun livrable en attente de facturation.' }">
 
-      @if (loadingLivrables()) {
-        <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
-      } @else if (pendingLivrables().length === 0) {
-        <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LIVRABLE_EMPTY' | translate }}</p>
-      } @else {
-        <table class="w-full text-[13px]">
-          <thead>
-            <tr class="text-left text-on-surface-variant border-b border-outline-variant">
-              <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DISCIPLINE' | translate }}</th>
-              <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DOCUMENT' | translate }}</th>
-              <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_BUDGET_ALLOUE' | translate }}</th>
-              <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_PCT_ACTUEL' | translate }}</th>
-              <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_NOUVEAU_PCT' | translate }}</th>
-              <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_AMOUNT' | translate }}</th>
-              <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (l of pendingLivrables(); track l.id) {
-              <tr class="border-b border-outline-variant/50">
-                <td class="py-2 pr-3">{{ l.disciplineLabel }}</td>
-                <td class="py-2 pr-3">{{ l.documentNom }}</td>
-                <td class="py-2 pr-3 text-right">{{ l.budgetAlloue | displayCurrency : affaire.devise }}</td>
-                <td class="py-2 pr-3 text-right">{{ l.pctFacture }}%</td>
-                <td class="py-2 pr-3 text-right">
-                  <input type="number" class="w-20 text-right border border-outline-variant rounded px-1 py-0.5"
-                    [min]="l.pctFacture" max="100" step="0.1"
-                    [disabled]="isLivrableRowLocked(l.id)"
-                    [value]="getEnteredPct(l.id)"
-                    (input)="setEnteredPct(l.id, $any($event.target).valueAsNumber)" />%
-                </td>
-                <td class="py-2 pr-3 text-right">{{ incrementalAmount(l) | displayCurrency : affaire.devise }}</td>
-                <td class="py-2 pr-3">
-                  @if (livrableBatchStatus(l.id); as st) {
-                    <span class="text-[11px] text-on-surface-variant">
-                      {{ 'AFFAIRES.WIP.BATCH_STATUS_' + st | translate }}
-                    </span>
-                  }
-                </td>
-              </tr>
+          <ng-template dafCell="nouveauPct" let-row>
+            <input type="number" class="w-20 text-right border border-outline-variant rounded px-1 py-0.5"
+              [value]="row['enteredPct']" [min]="row['minPct']" max="100" step="0.1"
+              [disabled]="row['locked']" />%
+          </ng-template>
+
+          <ng-template dafCell="statut" let-row>
+            @if (row['statutLabel']) {
+              <daf-badge [label]="row['statutLabel']" [options]="{ variant: 'warning', size: 'sm' }" />
             }
-          </tbody>
-        </table>
+          </ng-template>
+        </daf-data-table>
 
-        <div class="flex items-center justify-between">
-          <p class="text-[13px] font-semibold">
-            {{ 'AFFAIRES.WIP.TOTAL_SELECTED' | translate }}:
-            {{ totalToInvoice() | displayCurrency : affaire.devise }}
-          </p>
-          <div class="flex gap-2">
-            <daf-button [options]="{ variant: 'teal',
-                                      label: (editingBatchId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
-                                      loading: submittingLivrables(), disabled: !hasLivrableChanges() || submittingLivrables() }"
-              (onClick)="submitLivrables()" />
-            @if (editingBatchId() !== null) {
-              <daf-button [options]="{ variant: 'ghost', label: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
-                (onClick)="cancelEditBatch()" />
-            }
+        <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
+          <div style="grid-column:1">
+            <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">Total à facturer</p>
+            <p class="text-[20px] font-black text-success">6 750,00 MAD</p>
+          </div>
+          <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
+                      bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+            [class.opacity-0]="!regieCardHovered()"
+            [class.opacity-100]="regieCardHovered()"
+            [class.pointer-events-none]="!regieCardHovered()">
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send', title: 'Soumettre' }" />
           </div>
         </div>
-      }
+      </div>
+    </daf-card>
 
-      @if (livrableError()) {
-        <p class="text-[12px] text-danger">{{ livrableError() }}</p>
-      }
-    </div>
+    <!-- ── Batches en attente (client puis DF) — même habillage "WIP calculé" (label +
+         gros montant vert) + pill d'icônes révélée au survol que la carte Régie. ── -->
+    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
+      (mouseenter)="forfaitCardHovered.set(true)"
+      (mouseleave)="forfaitCardHovered.set(false)">
+      <div class="flex flex-col gap-4">
+        <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
+          <span class="material-symbols-outlined text-[18px]">pending_actions</span>
+          Batches en attente
+        </h3>
 
-    <!-- ── Batches en attente (client puis DF) ── -->
-    @if (loadingActiveBatches()) {
-      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
-    } @else if (activeBatches().length) {
-      <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3">
-        <p class="text-[13px] font-semibold">{{ 'AFFAIRES.WIP.PENDING_BATCHES_TITLE' | translate }}</p>
-
-        @for (b of activeBatches(); track b.batchId) {
-          <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
-            <div class="flex items-center justify-between text-[12px]">
-              <span>
-                {{ b.entries.length }} {{ 'AFFAIRES.WIP.DOCUMENTS' | translate }} —
-                {{ 'AFFAIRES.WIP.BATCH_STATUS_' + b.statut | translate }}
-              </span>
-              <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}:
-                <strong>{{ b.combinedMontant | displayCurrency : affaire.devise }}</strong></span>
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center gap-2 text-[12px]">
+            <span>1 document</span>
+            <daf-badge label="En attente client" [options]="{ variant: 'warning', size: 'sm' }" />
+          </div>
+          <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
+            <div style="grid-column:1">
+              <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">WIP calculé</p>
+              <p class="text-[20px] font-black text-success">4 950,00 MAD</p>
             </div>
-
-            @if (b.statut === 'EN_ATTENTE_CLIENT') {
-              <div class="flex items-end gap-2">
-                <daf-form-field
-                  [value]="getLivrableClientAmountInput(b.batchId)"
-                  (valueChange)="setLivrableClientAmountInput(b.batchId, $any($event))"
-                  [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
-                               type: 'number', fullWidth: true,
-                               hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
-                <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
-                                          loading: submittingLivrableClientBatch() === b.batchId,
-                                          disabled: getLivrableClientAmountInput(b.batchId) === null ||
-                                                    getLivrableClientAmountInput(b.batchId)! < 0 ||
-                                                    getLivrableClientAmountInput(b.batchId)! > b.combinedMontant }"
-                  (onClick)="confirmLivrableClientAmount(b)" />
-              </div>
-            }
-
-            <div class="flex gap-2">
-              @if (b.statut === 'EN_ATTENTE_CLIENT' || b.statut === 'RETOURNE' || b.statut === 'A_VERIFIER') {
-                <button type="button" class="text-primary text-[12px]" (click)="startEditBatch(b)">
-                  {{ 'AFFAIRES.WIP.EDIT' | translate }}
-                </button>
-              }
-              <button type="button" class="text-danger text-[12px]" (click)="cancelBatch(b.batchId)">
-                {{ 'AFFAIRES.WIP.CANCEL' | translate }}
-              </button>
+            <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
+                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+              [class.opacity-0]="!forfaitCardHovered()"
+              [class.opacity-100]="forfaitCardHovered()"
+              [class.pointer-events-none]="!forfaitCardHovered()">
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'edit', title: 'Modifier' }" />
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: 'Annuler' }" />
             </div>
           </div>
-        }
+        </div>
 
-        @if (livrableClientAmountError()) {
-          <p class="text-[12px] text-danger">{{ livrableClientAmountError() }}</p>
-        }
-        @if (livrableCancelError()) {
-          <p class="text-[12px] text-danger">{{ livrableCancelError() }}</p>
-        }
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center gap-2 text-[12px]">
+            <span>2 documents</span>
+            <daf-badge label="En attente DF" [options]="{ variant: 'warning', size: 'sm' }" />
+          </div>
+          <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
+            <div style="grid-column:1">
+              <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">WIP calculé</p>
+              <p class="text-[20px] font-black text-success">11 200,00 MAD</p>
+            </div>
+            <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
+                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+              [class.opacity-0]="!forfaitCardHovered()"
+              [class.opacity-100]="forfaitCardHovered()"
+              [class.pointer-events-none]="!forfaitCardHovered()">
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: 'Annuler' }" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </daf-card>
+
+    <!-- ── En attente de réponse client — bouton en icône, même pill révélée au survol
+         (ici du bloc lui-même) que Forfaitaire/Régie, sur la même ligne que le champ. ── -->
+    <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3"
+      (mouseenter)="livrableClientCardHovered.set(true)"
+      (mouseleave)="livrableClientCardHovered.set(false)">
+      <p class="text-[13px] font-semibold">En attente de réponse client</p>
+      <p class="text-[12px] text-on-surface-variant">Un email récapitulatif a été envoyé au client. Une fois sa réponse reçue, saisissez ici le montant qu'il a réellement confirmé.</p>
+
+      <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between text-[12px]">
+          <span>1 document</span>
+          <span>Calculé: <strong>4 950,00 MAD</strong></span>
+        </div>
+        <div class="flex items-start gap-2 max-w-md">
+          <div class="flex-1 min-w-0">
+            <daf-form-field
+              [value]="4500"
+              [options]="{ label: 'Montant validé par le client (MAD)', type: 'number', fullWidth: true,
+                           hint: 'Ne peut pas dépasser le montant calculé.' }" />
+          </div>
+
+          <div class="flex flex-col gap-1.5 shrink-0">
+            <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
+            <div class="wip-icon-actions w-fit h-10 flex items-center gap-1 transition-opacity duration-200
+                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+              [class.opacity-0]="!livrableClientCardHovered()"
+              [class.opacity-100]="livrableClientCardHovered()"
+              [class.pointer-events-none]="!livrableClientCardHovered()">
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'check', title: 'Confirmer' }" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Historique ── -->
+    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
+      (mouseenter)="historyCardHovered.set(true)"
+      (mouseleave)="historyCardHovered.set(false)">
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
+          <span class="material-symbols-outlined text-[18px]">history</span>
+          Historique
+        </h3>
+        <div class="flex items-center gap-2">
+          <daf-badge label="1 ligne(s)" [options]="{ variant: 'neutral', size: 'sm' }" />
+          <div class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
+                      bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+            [class.opacity-0]="!historyCardHovered()"
+            [class.opacity-100]="historyCardHovered()"
+            [class.pointer-events-none]="!historyCardHovered()">
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: 'Exporter Excel' }" />
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full', title: 'Afficher tout' }"
+              (onClick)="showHistoryPage.set(true)" />
+          </div>
+        </div>
+      </div>
+      <daf-data-table
+        [columns]="[
+          { key: 'discipline', label: 'Discipline' },
+          { key: 'document', label: 'Document' },
+          { key: 'budget', label: 'Budget alloué', align: 'right' },
+          { key: 'statut', label: 'Statut', type: 'badge' }
+        ]"
+        [rows]="[
+          { discipline: 'Électricité', document: 'Schéma unifilaire BT', budget: '28 500,00 MAD',
+            statut: { label: 'Facturé', options: { variant: 'success', dot: true } } }
+        ]"
+        [config]="{ showHeader: true, hoverable: false, emptyMessage: 'Aucun historique pour le moment.' }" />
+    </daf-card>
+
+    <!-- Popup "Historique" EN PLEIN ÉCRAN — même coquille que la popup Historique WIP de
+         la carte Régie (fond assombri, panneau blanc centré, en-tête + croix, table
+         agrandie). ── -->
+    @if (showHistoryPage()) {
+      <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+           style="z-index:1000"
+           (click)="showHistoryPage.set(false)">
+        <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+             style="width:calc(100vw - 200px); height:88vh;"
+             (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
+            <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
+              <span class="material-symbols-outlined text-primary">history</span>
+              Historique
+            </h2>
+            <button type="button" (click)="showHistoryPage.set(false)"
+              class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
+                     hover:text-on-surface hover:bg-surface-container transition-colors"
+              aria-label="Fermer">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+            <div class="flex items-center gap-2 bg-white rounded-xl p-2">
+              <daf-search-toolbar class="flex-1" [card]="false"
+                placeholder="Rechercher un document…"
+                [value]="historySearch()"
+                [debounce]="200"
+                (valueChange)="historySearch.set($event)"
+                [filterFields]="livrableHistoryFilterFields()"
+                (filterApply)="onHistoryFilterApply($event)"
+                (filterReset)="historyStatut.set('')" />
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
+                                        label: 'Exporter Excel', disabled: !filteredLivrableHistoryRows().length }" />
+            </div>
+            <daf-data-table
+              [columns]="[
+                { key: 'discipline', label: 'Discipline' },
+                { key: 'document', label: 'Document' },
+                { key: 'budget', label: 'Budget alloué', align: 'right' },
+                { key: 'statut', label: 'Statut', type: 'badge' }
+              ]"
+              [rows]="filteredLivrableHistoryRows()"
+              [config]="{ showHeader: true, hoverable: false, emptyMessage: 'Aucun historique pour le moment.' }" />
+          </div>
+        </div>
       </div>
     }
-
-    @if (livrableHistory().length) {
-      <table class="w-full text-[13px]">
-        <thead>
-          <tr class="text-left text-on-surface-variant border-b border-outline-variant">
-            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DISCIPLINE' | translate }}</th>
-            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_DOCUMENT' | translate }}</th>
-            <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_BUDGET_ALLOUE' | translate }}</th>
-            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (l of livrableHistory(); track l.id) {
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2 pr-3">{{ l.disciplineLabel }}</td>
-              <td class="py-2 pr-3">{{ l.documentNom }}</td>
-              <td class="py-2 pr-3 text-right">{{ l.budgetAlloue | displayCurrency : affaire.devise }}</td>
-              <td class="py-2 pr-3">{{ l.statut }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
+    <!-- FIN MOCKUP STATIQUE -->
 
   } @else {
     <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.UNSUPPORTED_MODE' | translate }}</p>

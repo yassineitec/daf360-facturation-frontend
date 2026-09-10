@@ -67,6 +67,13 @@ export const EXPENSE_STATUT_BADGE: Record<string, BadgeVariant> = {
   INTEGRE:    'teal',
 };
 
+/** Statuts de taux d'avancement WIP (Forfaitaire) — `wip_taux_avancement.statut`. */
+export const WIP_TAUX_STATUT_BADGE: Record<string, BadgeVariant> = {
+  EN_ATTENTE: 'warning',
+  VALIDE:     'success',
+  REFUSE:     'danger',
+};
+
 /** Statuts de ligne de facturation — `billing_lines.statut`. */
 export const BILLING_LINE_STATUT_BADGE: Record<string, BadgeVariant> = {
   BROUILLON:     'neutral',

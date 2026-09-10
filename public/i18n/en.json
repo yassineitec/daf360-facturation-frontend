@@ -2570,13 +2570,14 @@
       "EXPORT_SHEET": "Employee costs",
       "KPI_TOTAL": "Tracked employees",
       "KPI_TOTAL_HELP": "Number of employees with a configured selling cost. Tracked volume.",
+      "KPI_ACTIVE_PCT": "Active",
+      "KPI_EXPIRED_PCT": "Expired",
       "KPI_AVG_INTERNAL": "Average selling cost",
       "KPI_AVG_INTERNAL_HELP": "Average hourly costs billed to the company / internal. Compare internal costs.",
       "KPI_AVG_INTERCO": "Average intercompany selling cost",
       "KPI_AVG_EXTERNAL": "Average external selling cost",
       "KPI_RATE_LABEL": "External / intercompany rate",
       "KPI_EXPIRED": "Expired costs",
-      "KPI_MARGIN_SPREAD_LABEL": "Margin spread",
       "KPI_MARGIN_INTERCO": "Average margin (internal / intercompany)",
       "KPI_MARGIN_EXTERNE": "Average margin (internal / external)",
       "SEARCH_PLACEHOLDER": "Search an employee…",
@@ -3652,6 +3653,11 @@
       "A_VERIFIER": "To review",
       "RETOURNE": "Returned",
       "ANNULE": "Cancelled"
+    },
+    "WIP_TAUX_STATUT": {
+      "EN_ATTENTE": "Pending",
+      "VALIDE": "Approved",
+      "REFUSE": "Rejected"
     },
     "BILLING_LOT_STATUT": {
       "EN_ATTENTE_MANAGER": "Pending manager",

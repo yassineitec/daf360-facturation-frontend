@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
-  BadgeCell, DataTableComponent, TableColumn, TableConfig, TableRow,
+  BadgeCell, DataTableComponent, SortDirection, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
 import { EmployeeCostDto } from './employee-cost.model';
 import {
@@ -10,12 +10,22 @@ import {
 
 /**
  * List view of the Coûts collaborateurs screen, on the house table style (same as
- * ../tabs/cost-lines-table-section.component.ts): no wrapper, no outer card,
- * `showHeader: false`, row actions declared through `TableConfig.actions` rather than a
- * projected `_actions` column — the newer of the two row-action patterns in this
- * codebase (see `TableAction`'s doc comment), so no custom cell template is needed here.
+ * ../tabs/cost-lines-table-section.component.ts): no wrapper, no outer card, column
+ * headers shown (`showHeader: true`), row actions declared through `TableConfig.actions`
+ * rather than a projected `_actions` column — the newer of the two row-action patterns
+ * in this codebase (see `TableAction`'s doc comment), so no custom cell template is
+ * needed here.
  *
- * Stateless: rows in, `(edit)` / `(remove)` out.
+ * Sorting: `daf-data-table` sorts whatever page of rows it's handed, which would
+ * normally only reorder the current page (§10b elsewhere in this app). Here that's
+ * safe — the parent sorts the FULL filtered set before slicing into this page (see
+ * `EmployeeCostComponent.sortedRows`), so `(sortChange)` is forwarded up to drive
+ * that real sort, and the table's own redundant re-sort of the page it already
+ * received either agrees with it or (for the `employee` avatar-object column, where
+ * `row['employee']` isn't a plain string) compares everything equal and leaves the
+ * parent's order untouched.
+ *
+ * Stateless: rows in, `(edit)` / `(remove)` / `(sortChange)` out.
  */
 @Component({
   selector: 'app-employee-cost-table-section',
@@ -27,7 +37,8 @@ import {
       [columns]="columns()"
       [rows]="rows()"
       [config]="config()"
-      (rowClick)="edit.emit($event['_raw'])" />
+      (rowClick)="edit.emit($event['_raw'])"
+      (sortChange)="sortChange.emit($event)" />
   `,
 })
 export class EmployeeCostTableSectionComponent {
@@ -38,24 +49,24 @@ export class EmployeeCostTableSectionComponent {
   emptyMessage = input('');
   pageSize     = input(25);
 
-  readonly edit   = output<EmployeeCostDto>();
-  readonly remove = output<EmployeeCostDto>();
+  readonly edit       = output<EmployeeCostDto>();
+  readonly remove     = output<EmployeeCostDto>();
+  readonly sortChange = output<{ key: string; dir: SortDirection }>();
 
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'employee', label: t('COST.EMPLOYEE_COST.COL_EMPLOYEE'), type: 'avatar' },
-      { key: 'basic',    label: t('COST.EMPLOYEE_COST.COL_BASIC'),    type: 'text', align: 'right' },
-      { key: 'internal', label: t('COST.EMPLOYEE_COST.COL_INTERNAL'), type: 'text', align: 'right' },
-      { key: 'external', label: t('COST.EMPLOYEE_COST.COL_EXTERNAL'), type: 'text', align: 'right' },
-      { key: 'period',   label: t('COST.EMPLOYEE_COST.COL_PERIOD'),   type: 'text' },
-      { key: 'status',   label: t('COST.EMPLOYEE_COST.COL_STATUS'),   type: 'badge' },
+      { key: 'employee', label: t('COST.EMPLOYEE_COST.COL_EMPLOYEE'), type: 'avatar', sortable: true },
+      { key: 'basic',    label: t('COST.EMPLOYEE_COST.COL_BASIC'),    type: 'text', sortable: true },
+      { key: 'internal', label: t('COST.EMPLOYEE_COST.COL_INTERNAL'), type: 'text', sortable: true },
+      { key: 'external', label: t('COST.EMPLOYEE_COST.COL_EXTERNAL'), type: 'text', sortable: true },
+      { key: 'period',   label: t('COST.EMPLOYEE_COST.COL_PERIOD'),   type: 'text', sortable: true },
+      { key: 'status',   label: t('COST.EMPLOYEE_COST.COL_STATUS'),   type: 'badge', sortable: true },
     ];
-    // No column is `sortable`: this list is paginated client-side over the full,
-    // already-loaded set, same reasoning as cost-lines-table-section (§10b) even
-    // though the pagination boundary itself sits one level up (there: server page,
-    // here: the parent's client-side slice).
+    // `sortable` here only drives the header arrow + a redundant re-sort of the page
+    // this component was already handed — the real, full-set sort lives one level up
+    // (see the class doc comment above).
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
@@ -93,7 +104,7 @@ export class EmployeeCostTableSectionComponent {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return {
-      showHeader:   false,
+      showHeader:   true,
       hoverable:    true,
       loading:      this.loading(),
       skeletonRows: Math.min(this.pageSize(), 20),

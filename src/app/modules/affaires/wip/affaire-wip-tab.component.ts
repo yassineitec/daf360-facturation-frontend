@@ -1,5 +1,5 @@
 import {
-  Component, ElementRef, HostListener, Input, OnDestroy, OnInit, Renderer2, ViewChild,
+  Component, ElementRef, HostListener, Input, OnDestroy, OnInit, Renderer2, ViewChild, WritableSignal,
   inject, signal, computed,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
@@ -13,14 +13,14 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
 import { WipService } from './wip.service';
-import { WipTauxDto, WipTmHourDto, WipTmPreviewDto } from './wip.model';
+import { WipTauxDto, WipTauxStatut, WipTmHourDto, WipTmPreviewDto } from './wip.model';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
 import { LivrableService } from '../livrable.service';
 import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../livrable.model';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
-import { BILLING_LINE_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
+import { BILLING_LINE_STATUT_BADGE, WIP_TAUX_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
 import { WipTmDetailTableComponent } from './wip-tm-detail-table.component';
 import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.component';
 
@@ -56,6 +56,16 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
     }
     ::ng-deep .wip-icon-actions button .material-symbols-outlined {
       font-size: 18px;
+    }
+
+    /* TEST : champ "Nouveau taux cumulé" un peu moins haut que le h-11 (44px) par défaut
+       de daf-form-field — même technique de spécificité que .wip-icon-actions ci-dessus
+       (.taux-field-compact input, 0,1,1, l'emporte sur les classes Tailwind h-11/py-2.5
+       de la lib sans !important). */
+    ::ng-deep .taux-field-compact input {
+      height: 38px;
+      padding-top: 6px;
+      padding-bottom: 6px;
     }
   `],
 })
@@ -115,6 +125,56 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     return (taux / 100) * this.affaire.contractAmount;
   });
 
+  /** TEST : carte FORFAIT alignée sur la carte Régie — même mécanismes, mêmes raisons
+   * (voir les commentaires détaillés à côté des signaux `regieCardHovered`/
+   * `regieHelpOpen`/`showTmDatePicker` plus bas, tous identiques ici en substance). */
+  forfaitCardHovered = signal(false);
+  forfaitHelpOpen = signal(false);
+
+  /** Calendrier AV — même portail maison que celui de la carte Régie
+   * (`showTmDatePicker`/`positionPortal`/etc.), sur `periodDateFrom`/`periodDateTo` (de
+   * simples champs, pas des signaux : `avDateRange()` est une méthode ordinaire plutôt
+   * qu'un `computed()`, réévaluée à chaque cycle de détection de changements — largement
+   * suffisant ici, ce composant n'est pas OnPush). */
+  showAvDatePicker = signal(false);
+  private avDatePickerPositioned = signal(false);
+  readonly avDatePickerVisible = computed(() => this.showAvDatePicker() && this.avDatePickerPositioned());
+
+  @ViewChild('avDatePickerPanel') private avDatePickerPanelRef?: ElementRef<HTMLElement>;
+  @ViewChild('avDatePickerTrigger', { read: ElementRef })
+  private avDatePickerTriggerRef?: ElementRef<HTMLElement>;
+
+  avDateRange(): Date[] {
+    return [
+      new Date(this.periodDateFrom + 'T00:00:00'),
+      new Date(this.periodDateTo + 'T00:00:00'),
+    ];
+  }
+
+  onAvDateRangeChange(value: Date | Date[] | null): void {
+    if (!Array.isArray(value) || value.length !== 2) return;
+    this.periodDateFrom = this.toIso(value[0]);
+    this.periodDateTo = this.toIso(value[1]);
+    this.closeAvDatePicker();
+  }
+
+  toggleAvDatePicker(): void {
+    if (this.showAvDatePicker()) {
+      this.closeAvDatePicker();
+      return;
+    }
+    this.showAvDatePicker.set(true);
+    requestAnimationFrame(() => this.positionPortal(
+      this.avDatePickerPanelRef?.nativeElement,
+      this.avDatePickerTriggerRef?.nativeElement,
+      this.avDatePickerPositioned));
+  }
+
+  closeAvDatePicker(): void {
+    this.showAvDatePicker.set(false);
+    this.avDatePickerPositioned.set(false);
+  }
+
   // ── TM ──────────────────────────────────────────────────────────────────
   // Arbitrary date range (no longer tied to a calendar month) — see
   // WipTmController/WipTmService. Defaults to the current month purely as a starting
@@ -145,6 +205,39 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * (mouseenter)/(mouseleave) sur `daf-section-card`/`daf-card`. */
   regieCardHovered = signal(false);
   historyCardHovered = signal(false);
+  /** MOCKUP STATIQUE TEMPORAIRE (mode LIVRABLE) — hover dédié pour le bloc "En attente de
+   * réponse client", à retirer avec le reste du mockup (voir affaire-wip-tab.component.html). */
+  livrableClientCardHovered = signal(false);
+
+  /** MOCKUP STATIQUE TEMPORAIRE (mode LIVRABLE) — données factices + recherche/filtre pour
+   * la popup "Historique", même mécanisme (historySearch/historyStatut/onHistoryFilterApply,
+   * déjà génériques) que la popup Historique WIP de la carte Régie. À retirer avec le reste
+   * du mockup. */
+  private readonly livrableHistoryMockRows: { discipline: string; document: string; budget: string; statut: string }[] = [
+    { discipline: 'Électricité', document: 'Schéma unifilaire BT', budget: '28 500,00 MAD', statut: 'FACTURE' },
+    { discipline: 'Génie civil', document: 'Plan de masse — Indice B', budget: '32 000,00 MAD', statut: 'FACTURE' },
+  ];
+
+  readonly livrableHistoryFilterFields = computed<FilterField[]>(() => [{
+    name:    'statut',
+    label:   this.translate.instant('AFFAIRES.WIP.COL_STATUS'),
+    type:    'select',
+    options: [...new Set(this.livrableHistoryMockRows.map(l => l.statut))].sort()
+      .map(value => ({ value, label: enumLabel(this.translate, 'BILLING_LINE_STATUT', value) })),
+  }]);
+
+  readonly filteredLivrableHistoryRows = computed<TableRow[]>(() => {
+    const q      = this.historySearch().trim().toLowerCase();
+    const statut = this.historyStatut();
+    return this.livrableHistoryMockRows
+      .filter(l => !statut || l.statut === statut)
+      .filter(l => !q || `${l.discipline} ${l.document}`.toLowerCase().includes(q))
+      .map(l => ({
+        discipline: l.discipline, document: l.document, budget: l.budget,
+        statut: { label: enumLabel(this.translate, 'BILLING_LINE_STATUT', l.statut),
+                  options: { variant: BILLING_LINE_STATUT_BADGE[l.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
+      } satisfies TableRow));
+  });
 
   /** TEST : popover (i) de la carte Régie — bouton maison en `position:absolute`
    * (top-3 right-3, comme profile-grid-card.component.ts) au lieu de l'en-tête auto de
@@ -200,8 +293,22 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   }
 
   private positionDatePicker(): void {
-    const panel = this.calDatePickerPanelRef?.nativeElement;
-    const trigger = this.calDatePickerTriggerRef?.nativeElement;
+    this.positionPortal(
+      this.calDatePickerPanelRef?.nativeElement,
+      this.calDatePickerTriggerRef?.nativeElement,
+      this.datePickerPositioned);
+  }
+
+  /** Partagé avec le calendrier AV (voir showAvDatePicker plus bas) — même carte, même
+   * défilement, même besoin : un panneau déplacé sous <body>, ancré au-dessus de son
+   * bouton, jamais coupé par la carte. Seule la mesure/le positionnement sont communs ;
+   * chaque calendrier garde son propre signal `positioned`, ses propres refs et son
+   * propre toggle/close (ils ne s'affichent jamais tous les deux à la fois de toute
+   * façon, un seul billingMode étant actif à l'écran). */
+  private positionPortal(
+    panel: HTMLElement | undefined, trigger: HTMLElement | undefined,
+    positioned: WritableSignal<boolean>,
+  ): void {
     if (!panel || !trigger) return;
     if (panel.parentElement !== this.document.body) {
       this.renderer.appendChild(this.document.body, panel);
@@ -223,7 +330,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     const triggerRect = trigger.getBoundingClientRect();
     const panelRect = panel.getBoundingClientRect();
     const gap = 8;
-    // Calé sur le bord droit du déclencheur (comme les 3 boutons alignés à droite de la
+    // Calé sur le bord droit du déclencheur (comme les boutons alignés à droite de la
     // carte), borné à 8px du bord de la fenêtre des deux côtés.
     let left = triggerRect.right - panelRect.width;
     left = Math.max(8, Math.min(left, window.innerWidth - panelRect.width - 8));
@@ -232,31 +339,41 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     const top = Math.max(8, triggerRect.top - gap - panelRect.height);
     this.renderer.setStyle(panel, 'top', `${top}px`);
     this.renderer.setStyle(panel, 'left', `${left}px`);
-    this.datePickerPositioned.set(true);
+    positioned.set(true);
   }
 
   /** Ferme sur un clic hors du panneau ET hors du bouton déclencheur (sinon le clic qui
    * OUVRE le calendrier — capté ici aussi, car il remonte jusqu'à `document` — le
-   * refermerait dans la foulée). Même garde que `onDocumentClick` de la lib. */
+   * refermerait dans la foulée). Même garde que `onDocumentClick` de la lib. Gère les
+   * deux calendriers (Régie et AV) : un seul est jamais monté à la fois (un seul
+   * billingMode actif), donc pas de conflit entre les deux gardes. */
   @HostListener('document:click', ['$event'])
   onDocumentClickForDatePicker(event: MouseEvent): void {
-    if (!this.showTmDatePicker()) return;
     const target = event.target as Node;
-    if (this.calDatePickerPanelRef?.nativeElement.contains(target)) return;
-    if (this.calDatePickerTriggerRef?.nativeElement.contains(target)) return;
-    this.closeDatePicker();
+    if (this.showTmDatePicker()) {
+      if (this.calDatePickerPanelRef?.nativeElement.contains(target)) return;
+      if (this.calDatePickerTriggerRef?.nativeElement.contains(target)) return;
+      this.closeDatePicker();
+    }
+    if (this.showAvDatePicker()) {
+      if (this.avDatePickerPanelRef?.nativeElement.contains(target)) return;
+      if (this.avDatePickerTriggerRef?.nativeElement.contains(target)) return;
+      this.closeAvDatePicker();
+    }
   }
 
   @HostListener('document:keydown.escape')
   onEscapeForDatePicker(): void {
     if (this.showTmDatePicker()) this.closeDatePicker();
+    if (this.showAvDatePicker()) this.closeAvDatePicker();
   }
 
   ngOnDestroy(): void {
-    // Le panneau a pu être déplacé sous <body> : Angular ne le nettoiera pas tout seul
-    // puisqu'il ne se trouve plus là où le template l'a créé (même raison que le
-    // `onCleanup` de `portalPanel()` dans la lib, pour son propre portail).
+    // Les panneaux ont pu être déplacés sous <body> : Angular ne les nettoiera pas tout
+    // seul puisqu'ils ne se trouvent plus là où le template les a créés (même raison que
+    // le `onCleanup` de `portalPanel()` dans la lib, pour son propre portail).
     this.calDatePickerPanelRef?.nativeElement.remove();
+    this.avDatePickerPanelRef?.nativeElement.remove();
   }
 
   tmPreview     = signal<WipTmPreviewDto | null>(null);
@@ -529,6 +646,56 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Historique des taux (AV) — daf-data-table, même bibliothèque que tmHistoryColumns/
+  // tmHistoryRows/tmHistoryConfig plus bas, remplace l'ancien <table> fait main. ─────────
+  readonly tauxHistoryColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
+      { key: 'taux',    label: t('AFFAIRES.WIP.COL_TAUX'), align: 'right' },
+      { key: 'montant', label: t('AFFAIRES.WIP.COL_INCREMENT'), align: 'right' },
+      { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
+    ];
+  });
+
+  readonly tauxHistoryRows = computed<TableRow[]>(() => this.tauxHistory().map(t => ({
+    id:      t.id,
+    period:  this.formatWipPeriod(t.periodDateFrom, t.periodDateTo),
+    taux:    `${t.tauxSaisi}%`,
+    montant: this.currency.transform(t.montantIncremental, this.affaire.devise),
+    statut:  { label: enumLabel(this.translate, 'WIP_TAUX_STATUT', t.statut),
+               options: { variant: WIP_TAUX_STATUT_BADGE[t.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
+    _source: t,
+  } satisfies TableRow)));
+
+  readonly tauxHistoryConfig = computed<TableConfig>(() => ({
+    showHeader: true,
+    hoverable:  false,
+    emptyMessage: this.translate.instant('AFFAIRES.WIP.NO_HISTORY'),
+    actions: [
+      {
+        id:      'edit',
+        icon:    'edit',
+        tooltip: this.translate.instant('AFFAIRES.WIP.EDIT'),
+        onClick: (row: TableRow) => this.startEditTaux(row['_source'] as WipTauxDto),
+        hidden:  (row: TableRow) => !this.isTauxEditable((row['_source'] as WipTauxDto).statut),
+      },
+      {
+        id:      'delete',
+        icon:    'delete',
+        tooltip: this.translate.instant('AFFAIRES.WIP.DELETE'),
+        variant: 'danger',
+        onClick: (row: TableRow) => this.deleteTaux((row['_source'] as WipTauxDto).id),
+        hidden:  (row: TableRow) => !this.isTauxEditable((row['_source'] as WipTauxDto).statut),
+      },
+    ],
+  }));
+
+  private isTauxEditable(statut: WipTauxStatut): boolean {
+    return statut === 'EN_ATTENTE' || statut === 'REFUSE';
+  }
+
   // ── TM actions ────────────────────────────────────────────────────────────
 
   toggleTmDetails(): void {
@@ -724,7 +891,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   private toHistoryRow(l: LineDetailDto): TableRow {
     return {
       id:      l.id,
-      period:  (l.periodDateFrom && l.periodDateTo) ? `${l.periodDateFrom} → ${l.periodDateTo}` : `${l.periodMonth}/${l.periodYear}`,
+      period:  (l.periodDateFrom && l.periodDateTo) ? this.formatWipPeriod(l.periodDateFrom, l.periodDateTo) : `${l.periodMonth}/${l.periodYear}`,
       montant: this.currency.transform(l.montantHt, l.devise || this.affaire.devise),
       statut:  { label: enumLabel(this.translate, 'BILLING_LINE_STATUT', l.statut),
                  options: { variant: BILLING_LINE_STATUT_BADGE[l.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
@@ -778,7 +945,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     const t = (k: string) => this.translate.instant(k);
     const rows = lines.map(l => ({
       [t('AFFAIRES.WIP.COL_PERIOD')]: (l.periodDateFrom && l.periodDateTo)
-        ? `${l.periodDateFrom} → ${l.periodDateTo}` : `${l.periodMonth}/${l.periodYear}`,
+        ? this.formatWipPeriod(l.periodDateFrom, l.periodDateTo) : `${l.periodMonth}/${l.periodYear}`,
       [t('AFFAIRES.WIP.COL_AMOUNT')]: this.currency.transform(l.montantHt, l.devise || this.affaire.devise),
       [t('AFFAIRES.WIP.COL_STATUS')]: enumLabel(this.translate, 'BILLING_LINE_STATUT', l.statut),
     }));
@@ -806,6 +973,28 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  /** Même repli que TreasuryDashboardComponent.locale() : langue de l'app -> locale ICU
+   * pour Intl/toLocaleDateString. */
+  private locale(): string {
+    return this.translate.currentLang() === 'en' ? 'en-GB' : 'fr-FR';
+  }
+
+  /** "2026-01-01" → "2026-01-31" (mois calendaire complet, du 1er au dernier jour du même
+   * mois) s'affiche "Janvier 2026" plutôt que la plage de dates — toute autre période
+   * (partielle, ou à cheval sur plusieurs mois) garde l'ancien affichage "dateFrom → dateTo". */
+  formatWipPeriod(dateFrom: string, dateTo: string): string {
+    const from = new Date(dateFrom + 'T00:00:00');
+    const to = new Date(dateTo + 'T00:00:00');
+    const lastDayOfFromMonth = new Date(from.getFullYear(), from.getMonth() + 1, 0).getDate();
+    const isFullMonth = from.getDate() === 1
+      && from.getFullYear() === to.getFullYear()
+      && from.getMonth() === to.getMonth()
+      && to.getDate() === lastDayOfFromMonth;
+    if (!isFullMonth) return `${dateFrom} → ${dateTo}`;
+    const label = from.toLocaleDateString(this.locale(), { month: 'long', year: 'numeric' });
+    return label.charAt(0).toLocaleUpperCase() + label.slice(1);
   }
 
   // ── LIVRABLE actions ──────────────────────────────────────────────────────

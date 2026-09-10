@@ -1,11 +1,12 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, signal, computed, viewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import * as XLSX from 'xlsx';
 import {
-  ButtonComponent, DafCellDirective, DataTableComponent, DrawerComponent, FilterField,
-  FilterResult, FormFieldComponent, MetricCardComponent, MetricCardOptions, ModalService,
-  PageComponent, PageHeaderComponent, PaginationComponent, SearchToolbarComponent,
-  SearchToolbarFilterConfig, SelectComponent, SelectOption, TableColumn, TableConfig,
-  ToolbarToggleOption,
+  ButtonComponent, CardComponent, DafCellDirective, DataTableComponent, FilterField,
+  FilterResult, FormFieldComponent, MetricCardComponent, MetricCardOptions, ModalRef, ModalService,
+  MultiDatePickerComponent, MultiDatePickerConfig, PageComponent, PageHeaderComponent,
+  PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, SelectComponent,
+  SelectOption, SortDirection, TableColumn, TableConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 
 import { AffaireService } from '../../affaires/affaire.service';
@@ -14,12 +15,14 @@ import { EmployeeCostService } from './employee-cost.service';
 import {
   EmployeeCostDto, EmployeeCostDriverField, deriveEmployeeCostFields,
 } from './employee-cost.model';
-import { displayName, formatAmount, formatDate } from './employee-cost-display';
+import { displayName, formatAmount, formatDate, statusKey } from './employee-cost-display';
 import { EmployeeCostTableSectionComponent } from './employee-cost-table-section.component';
 import { EmployeeCostCardsSectionComponent } from './employee-cost-cards-section.component';
 import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { ListValueDto } from '../cost.model';
+import { CurrencyRateService } from '../../../core/currency-rate.service';
+import { CurrencyDisplayService } from '../../../core/currency-display.service';
 
 type ViewMode = 'list' | 'grid';
 
@@ -27,8 +30,8 @@ type ViewMode = 'list' | 'grid';
   selector: 'app-employee-cost',
   standalone: true,
   imports: [
-    TranslatePipe, ButtonComponent, DafCellDirective, DataTableComponent, DrawerComponent,
-    FormFieldComponent, MetricCardComponent, PageComponent, PageHeaderComponent,
+    TranslatePipe, ButtonComponent, CardComponent, DafCellDirective, DataTableComponent,
+    FormFieldComponent, MetricCardComponent, MultiDatePickerComponent, PageComponent, PageHeaderComponent,
     PaginationComponent, SearchToolbarComponent, SelectComponent, EmployeeCostTableSectionComponent,
     EmployeeCostCardsSectionComponent,
   ],
@@ -40,6 +43,8 @@ export class EmployeeCostComponent implements OnInit {
   private readonly modals     = inject(ModalService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly listSvc    = inject(FactListService);
+  private readonly ratesSvc   = inject(CurrencyRateService);
+  private readonly displaySvc = inject(CurrencyDisplayService);
 
   rows          = signal<EmployeeCostDto[]>([]);
   isLoading     = signal(false);
@@ -54,17 +59,27 @@ export class EmployeeCostComponent implements OnInit {
    * `isLoading()` passed straight to the active section below. */
   readonly firstLoad = computed(() => this.isLoading() && !this.hasLoadedOnce());
 
-  searchText     = signal('');
-  includeExpired = signal(false);
-  viewMode       = signal<ViewMode>('list'); // dense reference data (hundreds of rows) — table first, unlike cost-lines' 'grid' default
+  searchText   = signal('');
+  statusFilter = signal<'all' | 'current' | 'expired'>('all');
+  costMin      = signal<number | null>(null);
+  costMax      = signal<number | null>(null);
+  viewMode     = signal<ViewMode>('grid');
 
   page = signal(0);
   size = signal(25);
 
-  showDrawer = signal(false);
+  /** Owned here, not inside the table section, so a sort reorders the FULL filtered
+   * set before pagination slices it — sorting only the current page's 25 rows would
+   * be wrong (see employee-cost-table-section.component.ts's class doc comment). */
+  sortKey = signal<string | null>(null);
+  sortDir = signal<SortDirection>(null);
+
   isSaving   = signal(false);
   saveError  = signal<string | null>(null);
   editingId  = signal<number | null>(null);
+
+  private readonly formTpl = viewChild.required<TemplateRef<unknown>>('formTpl');
+  private modalRef?: ModalRef;
 
   auditTrail   = signal<EntityAuditLogDto[]>([]);
   loadingAudit = signal(false);
@@ -89,6 +104,55 @@ export class EmployeeCostComponent implements OnInit {
       { value: 'TND', label: 'TND' },
       { value: 'MAD', label: 'MAD' },
     ];
+  });
+
+  /** `daf-multi-date-picker` travaille en `Date` ; le formulaire stocke l'ISO (yyyy-MM-dd)
+   * qu'attend l'API, même pattern que expense-form.component.ts / wizard-step-planning
+   * .component.ts — un champ `type: 'date'` retombait sur le calendrier natif du
+   * navigateur, hors charte. */
+  private toDate(iso: string | null | undefined): Date | null {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  private toIso(v: Date | Date[] | null): string {
+    const d = Array.isArray(v) ? v[0] : v;
+    if (!d) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  get dateDebutValue(): Date | Date[] | null { return this.toDate(this.newRecord.dateDebut); }
+  set dateDebutValue(v: Date | Date[] | null) { this.newRecord.dateDebut = this.toIso(v); }
+
+  get dateFinValue(): Date | Date[] | null { return this.toDate(this.newRecord.dateFin); }
+  set dateFinValue(v: Date | Date[] | null) { this.newRecord.dateFin = this.toIso(v); }
+
+  readonly dateDebutConfig = computed<MultiDatePickerConfig>(() => {
+    this.translate.currentLang();
+    return {
+      label: this.translate.instant('COST.EMPLOYEE_COST.DATE_DEBUT'),
+      selectionMode: 'single',
+      required: true,
+      allowPastDays: true,
+      allowWeekends: true,
+      fullWidth: true,
+    };
+  });
+
+  readonly dateFinConfig = computed<MultiDatePickerConfig>(() => {
+    this.translate.currentLang();
+    return {
+      label: this.translate.instant('COST.EMPLOYEE_COST.DATE_FIN'),
+      selectionMode: 'single',
+      required: true,
+      allowPastDays: true,
+      allowWeekends: true,
+      fullWidth: true,
+    };
   });
 
   /** The drawer's employee picker. A signal of its own, not a `newRecord` field like
@@ -142,12 +206,94 @@ export class EmployeeCostComponent implements OnInit {
   readonly activeCount  = computed(() => this.rows().filter(r => r.sourceStatus === 'Current').length);
   readonly expiredCount = computed(() => this.rows().filter(r => r.sourceStatus === 'Expired').length);
 
+  /** TEST : 1re carte — mêmes 2 sous-affichages empilés à droite que les cartes 3/4
+   * (ligne verticale, `border-l-2`) : part des collaborateurs actifs / expirés dans
+   * le total suivi à gauche. */
+  readonly activePercent = computed(() => {
+    const total = this.totalCount();
+    return total === 0 ? '—' : `${((this.activeCount() / total) * 100).toFixed(1)}%`;
+  });
+
+  readonly expiredPercent = computed(() => {
+    const total = this.totalCount();
+    return total === 0 ? '—' : `${((this.expiredCount() / total) * 100).toFixed(1)}%`;
+  });
+
+  private avgOf(selector: (r: EmployeeCostDto) => number): number | null {
+    const target = this.displaySvc.selectedCurrency();
+    const rows = this.rows().filter(r => r.basicCost > 0);
+    if (rows.length === 0) return null;
+    return rows.reduce((sum, r) => sum + this.ratesSvc.convert(selector(r), r.currency, target), 0) / rows.length;
+  }
+
+  /** CORRIGÉ : "interne" = `basicCost` (la base la plus basse), pas
+   * `internalSellingCost` — sinon les marges de la carte 4 (interne vs interco/
+   * externe) ressortent négatives, ce qui n'a aucun sens pour "mesurer la
+   * rentabilité". `internalSellingCost`/`externalSellingCost` sont les deux prix de
+   * vente (×1,1 et ×1,2), tous deux calculés AU-DESSUS de ce coût de base. */
+  readonly avgInternalCost = computed(() => {
+    const target = this.displaySvc.selectedCurrency();
+    const avg = this.avgOf(r => r.basicCost);
+    return avg === null ? '—' : formatAmount(avg, target);
+  });
+
+  /** TEST : 3e carte — fusionne "Coût de vente interco moyen" et "Coût de vente
+   * externe moyen" en UNE carte à deux valeurs, avec le taux entre les deux.
+   * "interco" = `internalSellingCost` (×1,1) — le champ que le code appelle déjà
+   * "internal", "interco" en étant juste le nom métier. */
+  readonly avgIntercoCost = computed(() => {
+    const target = this.displaySvc.selectedCurrency();
+    const avg = this.avgOf(r => r.internalSellingCost);
+    return avg === null ? '—' : formatAmount(avg, target);
+  });
+
+  readonly avgExternalCost = computed(() => {
+    const target = this.displaySvc.selectedCurrency();
+    const avg = this.avgOf(r => r.externalSellingCost);
+    return avg === null ? '—' : formatAmount(avg, target);
+  });
+
+  /** Taux = (externe − interco) / interco × 100. Constante mathématique (~9,1 %,
+   * puisque externe = 1,2×base et interco = 1,1×base) — contrôle d'intégrité,
+   * comme `avgMargin` plus bas, pas un indicateur qui varie vraiment. */
+  readonly externalVsIntercoRate = computed(() => {
+    const interco = this.avgOf(r => r.internalSellingCost);
+    const externe = this.avgOf(r => r.externalSellingCost);
+    if (interco === null || externe === null || interco === 0) return '—';
+    return `${(((externe - interco) / interco) * 100).toFixed(1)}%`;
+  });
+
+  /** TEST : 4e carte — les 2 marges de rentabilité de la maquette, même disposition
+   * que la carte 3 (une 3e valeur combinée à gauche, les 2 marges empilées à
+   * droite). "Interne" = basicCost, cohérent avec avgInternalCost/avgIntercoCost
+   * ci-dessus — sinon ces marges ressortent négatives (voir la note plus haut). */
+  readonly marginInterneInterco = computed(() => {
+    const interne = this.avgOf(r => r.basicCost);
+    const interco = this.avgOf(r => r.internalSellingCost);
+    if (interne === null || interco === null || interco === 0) return '—';
+    return `${(((interco - interne) / interco) * 100).toFixed(1)}%`;
+  });
+
+  readonly marginInterneExterne = computed(() => {
+    const interne = this.avgOf(r => r.basicCost);
+    const externe = this.avgOf(r => r.externalSellingCost);
+    if (interne === null || externe === null || externe === 0) return '—';
+    return `${(((externe - interne) / externe) * 100).toFixed(1)}%`;
+  });
+
   /** Proven token pairs already in use elsewhere in this app (client-list's kpiTotal,
    * cost-lines' kpiApproved, sous-traitants-tab's kpiInactive) — reused rather than
    * invented, so nothing here risks a Tailwind class the app has never generated. */
-  readonly kpiTotal   : MetricCardOptions = { icon: 'group',        iconColor: 'text-primary', iconBg: 'bg-primary/10' };
-  readonly kpiActive  : MetricCardOptions = { icon: 'check_circle', iconColor: 'text-teal',    iconBg: 'bg-teal/10' };
-  readonly kpiExpired : MetricCardOptions = { icon: 'history',      iconColor: 'text-outline', iconBg: 'bg-surface-container' };
+  readonly kpiExpired   : MetricCardOptions = { icon: 'history',      iconColor: 'text-outline', iconBg: 'bg-surface-container' };
+
+  readonly kpiAvgInternal = computed<MetricCardOptions>(() => {
+    this.translate.currentLang();
+    return {
+      icon: 'payments', iconColor: 'text-warning', iconBg: 'bg-warning/10',
+      helpTitle: this.translate.instant('COST.EMPLOYEE_COST.KPI_AVG_INTERNAL'),
+      help:      this.translate.instant('COST.EMPLOYEE_COST.KPI_AVG_INTERNAL_HELP'),
+    };
+  });
 
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
     this.translate.currentLang();
@@ -157,16 +303,38 @@ export class EmployeeCostComponent implements OnInit {
     ];
   });
 
-  /** The active/expired switch lives *inside* the filter panel rather than as a loose
-   * checkbox beside the search box — same call as cost-lines putting status there
-   * (§1): one control, one place a person learns to look for every list filter. */
+  /** Status (3-way, not a binary "include expired" checkbox — "expired only" has no
+   * way to ask for it otherwise) and a basic-cost range live *inside* the filter
+   * panel rather than loose controls beside the search box — same call as cost-lines
+   * putting status there (§1): one control, one place a person learns to look for
+   * every list filter. */
   readonly filterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
-    return [{
-      name: 'includeExpired',
-      label: this.translate.instant('COST.EMPLOYEE_COST.INCLUDE_EXPIRED'),
-      type: 'checkbox',
-    }];
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      {
+        name: 'status',
+        label: t('COST.EMPLOYEE_COST.FILTER_STATUS_LABEL'),
+        type: 'select',
+        options: [
+          { value: 'all',      label: t('COST.EMPLOYEE_COST.FILTER_STATUS_ALL') },
+          { value: 'current',  label: t('COST.EMPLOYEE_COST.FILTER_STATUS_CURRENT') },
+          { value: 'expired',  label: t('COST.EMPLOYEE_COST.FILTER_STATUS_EXPIRED') },
+        ],
+      },
+      {
+        name: 'costMin',
+        label: t('COST.EMPLOYEE_COST.FILTER_COST_MIN_LABEL'),
+        type: 'text',
+        placeholder: t('COST.EMPLOYEE_COST.FILTER_COST_MIN_PLACEHOLDER'),
+      },
+      {
+        name: 'costMax',
+        label: t('COST.EMPLOYEE_COST.FILTER_COST_MAX_LABEL'),
+        type: 'text',
+        placeholder: t('COST.EMPLOYEE_COST.FILTER_COST_MAX_PLACEHOLDER'),
+      },
+    ];
   });
 
   readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
@@ -178,26 +346,71 @@ export class EmployeeCostComponent implements OnInit {
       cancelLabel:  t('COST.EMPLOYEE_COST.FILTER_CANCEL'),
       resetLabel:   t('COST.EMPLOYEE_COST.FILTER_RESET'),
       triggerLabel: t('COST.EMPLOYEE_COST.FILTERS'),
-      initialValues: { includeExpired: this.includeExpired() },
+      initialValues: {
+        status:  this.statusFilter(),
+        costMin: this.costMin() != null ? String(this.costMin()) : '',
+        costMax: this.costMax() != null ? String(this.costMax()) : '',
+      },
     };
   });
 
-  /** Search + the active/expired switch, both client-side over the full loaded set —
+  /** Search + status + cost range, all client-side over the full loaded set —
    * `list()` has no server-side query params to push either into (unlike cost-lines,
-   * whose status filter re-fetches). */
+   * whose status filter re-fetches). Basic cost is compared in its own original
+   * currency (not display-converted) — min/max are numbers someone typed with a
+   * currency in mind, converting the row instead of the bound would silently move it
+   * across the threshold every time the radial menu changes. */
   readonly filteredRows = computed<EmployeeCostDto[]>(() => {
-    const q = this.searchText().toLowerCase().trim();
+    const q      = this.searchText().toLowerCase().trim();
+    const status = this.statusFilter();
+    const min    = this.costMin();
+    const max    = this.costMax();
     return this.rows()
-      .filter(r => this.includeExpired() || r.sourceStatus === 'Current')
+      .filter(r => status === 'all' || (status === 'current' ? r.sourceStatus === 'Current' : r.sourceStatus === 'Expired'))
+      .filter(r => min == null || r.basicCost >= min)
+      .filter(r => max == null || r.basicCost <= max)
       .filter(r => !q || displayName(r).toLowerCase().includes(q) || r.employeeEmail.toLowerCase().includes(q));
   });
 
-  readonly totalPagesCount = computed(() => Math.ceil(this.filteredRows().length / this.size()) || 1);
+  /** Raw-value comparator per sort key — plain fields sort correctly as strings
+   * (ISO dates), numbers need a numeric comparison rather than `basicCost.toString()`
+   * lexical order (which would put 100 before 20). */
+  private static readonly SORT_ACCESSORS: Record<string, (r: EmployeeCostDto) => string | number> = {
+    employee: r => displayName(r).toLowerCase(),
+    basic:    r => r.basicCost,
+    internal: r => r.internalSellingCost,
+    external: r => r.externalSellingCost,
+    period:   r => r.dateDebut,
+    status:   r => r.sourceStatus ?? '',
+  };
+
+  readonly sortedRows = computed<EmployeeCostDto[]>(() => {
+    const key = this.sortKey();
+    const dir = this.sortDir();
+    const accessor = key ? EmployeeCostComponent.SORT_ACCESSORS[key] : null;
+    if (!accessor || !dir) return this.filteredRows();
+    return [...this.filteredRows()].sort((a, b) => {
+      const av = accessor(a);
+      const bv = accessor(b);
+      const cmp = typeof av === 'number' && typeof bv === 'number'
+        ? av - bv
+        : String(av).localeCompare(String(bv), undefined, { numeric: true });
+      return dir === 'asc' ? cmp : -cmp;
+    });
+  });
+
+  readonly totalPagesCount = computed(() => Math.ceil(this.sortedRows().length / this.size()) || 1);
 
   readonly pagedRows = computed<EmployeeCostDto[]>(() => {
     const start = this.page() * this.size();
-    return this.filteredRows().slice(start, start + this.size());
+    return this.sortedRows().slice(start, start + this.size());
   });
+
+  onSort(event: { key: string; dir: SortDirection }): void {
+    this.sortKey.set(event.dir ? event.key : null);
+    this.sortDir.set(event.dir);
+    this.page.set(0);
+  }
 
   /** Mirrors approval-detail.component.ts's own `auditColumns` — same `EntityAuditLogDto`
    * shape, same `<daf-data-table>` pattern — but under this feature's own i18n namespace
@@ -257,7 +470,14 @@ export class EmployeeCostComponent implements OnInit {
   }
 
   applyFilters(result: FilterResult): void {
-    this.includeExpired.set(!!result['includeExpired']);
+    const status = result['status'];
+    this.statusFilter.set(status === 'current' || status === 'expired' ? status : 'all');
+
+    const min = Number(result['costMin']);
+    const max = Number(result['costMax']);
+    this.costMin.set(result['costMin'] && !isNaN(min) ? min : null);
+    this.costMax.set(result['costMax'] && !isNaN(max) ? max : null);
+
     this.page.set(0);
   }
 
@@ -279,11 +499,24 @@ export class EmployeeCostComponent implements OnInit {
     this.selectedEmail.set('');
     this.resetNewRecord();
     this.auditTrail.set([]);
-    this.showDrawer.set(true);
+    this.openModal(this.translate.instant('COST.EMPLOYEE_COST.ADD_TITLE'));
+  }
+
+  /** Popup, not a side drawer — the form + audit history live in one `<ng-template>`
+   * body (buttons included), since `ModalConfig.buttons` is a non-reactive snapshot
+   * and this form needs `isSaving()` to keep driving the Save button's spinner. */
+  private openModal(title: string): void {
+    this.modalRef = this.modals.open({
+      title,
+      icon: 'badge',
+      body: this.formTpl(),
+      size: 'lg',
+      closeOnBackdrop: false,
+    });
   }
 
   closeDrawer(): void {
-    this.showDrawer.set(false);
+    this.modalRef?.close();
   }
 
   onEmployeeSelect(values: string[]): void {
@@ -333,7 +566,7 @@ export class EmployeeCostComponent implements OnInit {
     request$.subscribe({
       next: () => {
         this.isSaving.set(false);
-        this.showDrawer.set(false);
+        this.modalRef?.close();
         this.editingId.set(null);
         this.resetNewRecord();
         this.load();
@@ -370,7 +603,7 @@ export class EmployeeCostComponent implements OnInit {
         this.loadingAudit.set(false);
       },
     });
-    this.showDrawer.set(true);
+    this.openModal(this.translate.instant('COST.EMPLOYEE_COST.EDIT_TITLE'));
   }
 
   /** A destructive action gets a confirmation, unlike the plain-HTML version this
@@ -400,6 +633,33 @@ export class EmployeeCostComponent implements OnInit {
         },
       ],
     });
+  }
+
+  /** One row per cost record currently visible (search + include-expired filter applied,
+   * pagination ignored — an export is a full extract, not just the current page), same
+   * `xlsx` pattern as affaire-wip-tab.component.ts's exportWipExcel(): plain row objects
+   * keyed by translated column headers, one sheet, no shared wrapper exists in this app
+   * to route through instead. */
+  exportExcel(): void {
+    const rows = this.filteredRows();
+    if (!rows.length) return;
+
+    const t = (k: string) => this.translate.instant(k);
+    const sheetRows = rows.map(r => ({
+      [t('COST.EMPLOYEE_COST.COL_EMPLOYEE')]:          displayName(r),
+      [t('COST.EMPLOYEE_COST.EMPLOYEE_EMAIL')]:        r.employeeEmail,
+      [t('COST.EMPLOYEE_COST.COL_BASIC')]:             r.basicCost,
+      [t('COST.EMPLOYEE_COST.COL_INTERNAL')]:          r.internalSellingCost,
+      [t('COST.EMPLOYEE_COST.COL_EXTERNAL')]:          r.externalSellingCost,
+      [t('COST.EMPLOYEE_COST.CURRENCY')]:              r.currency,
+      [t('COST.EMPLOYEE_COST.DATE_DEBUT')]:             formatDate(r.dateDebut),
+      [t('COST.EMPLOYEE_COST.DATE_FIN')]:               formatDate(r.dateFin),
+      [t('COST.EMPLOYEE_COST.COL_STATUS')]:            r.sourceStatus ? t(statusKey(r.sourceStatus)) : '—',
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheetRows), t('COST.EMPLOYEE_COST.EXPORT_SHEET'));
+    XLSX.writeFile(wb, `Couts_Collaborateurs_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   private resetNewRecord(): void {
