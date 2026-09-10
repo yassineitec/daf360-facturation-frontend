@@ -30,7 +30,6 @@ import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
-import { AfaireBillingTabComponent } from './billing/affaire-billing-tab.component';
 import { AffaireWipTabComponent } from './wip/affaire-wip-tab.component';
 import { AffaireRessourcesTabComponent } from './ressources/affaire-ressources-tab.component';
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
@@ -170,7 +169,7 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     }
 
     /* ── Rangées de cartes : des grilles, pas du flex-wrap ─────────────────── */
-    .kpi-row, .tile-row, .bottom-row {
+    .kpi-row, .tile-row {
       display: grid;
       gap:     1.5rem;
       align-items: stretch;
@@ -181,19 +180,17 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
        ÉGALES — jamais une orpheline pleine largeur. */
     .kpi-row    { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
     .tile-row   { grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }
-    .bottom-row { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 
     /* Les hôtes de carte : display:flex pour que la carte remplisse sa cellule, et
        min-width:0 pour qu'un contenu large (un montant, un libellé) ne pousse pas la
        colonne au-delà de son 1fr — c'est ce qui fait déborder une grille. */
-    .kpi-cell, .tile-cell, .bottom-cell {
+    .kpi-cell, .tile-cell {
       display:        flex;
       flex-direction: column;
       min-width:      0;
     }
     .kpi-cell    { min-height: 118px; }
     .tile-cell   { min-height: 210px; height: auto; }
-    .bottom-cell { min-height: 300px; height: auto; }
 
     /* ── En-tête du panneau graphique ──────────────────────────────────────── */
     /* Deux rangées : titre + puces, puis légendes + cumul. En une seule rangée, le bloc
@@ -381,6 +378,7 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     /* Le filet de la dernière ligne doublerait le séparateur de section juste en
        dessous. */
     .dp-row--last { border-bottom: 0; padding-bottom: 0; }
+    .dp-row--no-divider { border-bottom: 0; padding-bottom: 0; }
 
     .dp-row__key {
       margin:    0;
@@ -464,13 +462,6 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
       overflow:      hidden;
       text-overflow: ellipsis;
     }
-    .dp-person__amount {
-      flex-shrink: 0;
-      font-size:   11px;
-      font-weight: 600;
-      color:       var(--color-on-surface-variant, #44474c);
-    }
-
     /* Deux lignes au plus : « Responsable Génie Civil · Études · Structure » ne
        tient pas sur une, et le tronquer à une ligne n'en laisserait que le rôle. */
     .dp-person__role {
@@ -1009,16 +1000,6 @@ export class AffaireDetailComponent implements OnInit {
                    help: t('AFFAIRES.DETAIL.KPI.CA_HELP') },
       },
       {
-        label: 'AFFAIRES.DETAIL.KPI.RAF',
-        value: this.money(this.raf()?.rafDisponible),
-        delta: this.budgetTotal() > 0
-          ? { value: `${Math.round(this.rafAvailablePct())}%`, direction: 'neutral' }
-          : null,
-        options: { icon: 'request_quote', iconColor: 'text-teal', iconBg: 'bg-teal/10',
-                   valueColor: 'text-primary',
-                   help: t('AFFAIRES.DETAIL.KPI.RAF_HELP') },
-      },
-      {
         label: 'AFFAIRES.DETAIL.KPI.MARGIN',
         value: this.formatPct(k?.margeBrutePct ?? null),
         delta: null,
@@ -1032,6 +1013,23 @@ export class AffaireDetailComponent implements OnInit {
         delta: null,
         options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10',
                    help: t('AFFAIRES.DETAIL.KPI.WIP_HELP') },
+      },
+      {
+        label: 'AFFAIRES.DETAIL.KPI.RAF',
+        value: this.money(this.raf()?.rafDisponible),
+        delta: this.budgetTotal() > 0
+          ? { value: `${Math.round(this.rafAvailablePct())}%`, direction: 'neutral' as const }
+          : null,
+        options: { icon: 'request_quote', iconColor: 'text-teal', iconBg: 'bg-teal/10',
+                   valueColor: 'text-primary',
+                   help: t('AFFAIRES.DETAIL.KPI.RAF_HELP') },
+      },
+      {
+        label: 'AFFAIRES.WIP.KPI_TS',
+        value: this.money(this.raf()?.montantTsIntegres),
+        delta: null,
+        options: { icon: 'schedule', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
+                   help: t('AFFAIRES.WIP.KPI_TS_HELP') },
       },
     ];
   });
@@ -1254,44 +1252,13 @@ export class AffaireDetailComponent implements OnInit {
     };
   });
 
-  /**
-   * L'anneau de la carte « Progression facturation » de la colonne droite.
-   *
-   * Il ne double plus l'anneau de « Santé du projet » : celui-ci porte le facturé, l'autre
-   * l'encaissé. Deux chiffres différents, deux échelles de couleur différentes.
-   *
-   * `> 100` et non `>= 100` : facturer exactement son budget est l'objectif atteint, pas
-   * un accident. Seul le dépassement est rouge.
-   */
-  readonly billingGaugeOptions = computed<GaugeOptions>(() => ({
-    size:      '132px',
-    thickness: 12,
-    variant:   this.billingPct() > 100 ? 'danger' : 'tertiary',
-    ariaLabel: `${this.translate.instant('AFFAIRES.DETAIL.IDENTITY.BILLING_PROGRESS')} : `
-             + `${Math.round(this.billingPct())}%`,
-  }));
-
   // ── Barres de progression ────────────────────────────────────────────────
   readonly alertBarOptions: ProgressBarOptions = { variant: 'warning',   size: 'xs', showLabel: false, showPercent: false };
-  readonly tsBarOptions: ProgressBarOptions    = { variant: 'secondary', size: 'sm' };
-  readonly rafBarOptions: ProgressBarOptions   = { variant: 'primary',   size: 'sm' };
 
   /** Barre de la carte d'identité : le % est déjà affiché en gros au-dessus. */
   readonly identityBarOptions = computed<ProgressBarOptions>(() => ({
     ...this.billingBarOptions(), showLabel: false, showPercent: false,
   }));
-
-  readonly billingBarLabel = computed(() =>
-    `${this.translate.instant('AFFAIRES.DETAIL.RAF_SECTION.INVOICED')} — `
-    + `${this.money(this.raf()?.totalFacturesEmises)} / ${this.money(this.budgetTotal())}`);
-
-  readonly tsBarLabel = computed(() =>
-    `${this.translate.instant('AFFAIRES.DETAIL.RAF_SECTION.TS_INTEGRATED')} — `
-    + `${this.money(this.raf()?.montantTsIntegres)}`);
-
-  readonly rafBarLabel = computed(() =>
-    `${this.translate.instant('AFFAIRES.DETAIL.RAF_SECTION.REMAINING')} — `
-    + `${this.money(this.raf()?.rafDisponible)}`);
 
   /**
    * La barre du taux de facturation — échelle de risque, `> 100` seul en rouge (facturer
@@ -1671,9 +1638,6 @@ export class AffaireDetailComponent implements OnInit {
       { id: 'overview', label: t('AFFAIRES.DETAIL.TABS.OVERVIEW') },
       { id: 'ts',       label: t('AFFAIRES.DETAIL.TABS.BUDGET_TS'), count: this.tsList().length },
     ];
-    if (this.affaire()?.billingMode) {
-      tabs.push({ id: 'billing', label: t('AFFAIRES.DETAIL.TABS.BILLING') });
-    }
     // WIP n'a de sens que pour Forfaitaire, Régie et Livrable — les autres modes n'ont
     // pas de notion de travail en cours (ou de livrables à facturer) à valider avant
     // facturation.
