@@ -418,6 +418,15 @@ export interface SupplierLedgerRowDto {
   /** Manual règlement feature (2026-09-10 plan) -- addresses the règlement this row
    *  came from, for Edit/Delete. Every row now originates from exactly one règlement. */
   reglementId: number;
+  /** The originating cost line's OWN tax breakdown -- not derived from the règlement,
+   *  unrelated to the debit/credit/solde reconciliation above. All null when the line
+   *  had no supplier/tax data. */
+  netAmountLocal: number | null;    // Montant HT
+  fodecAmount: number | null;
+  vatAmountLocal: number | null;    // TVA
+  timbreAmount: number | null;
+  autresTaxesAmount: number | null;
+  grossAmountLocal: number | null;  // Montant TTC
 }
 
 export interface SupplierLedgerDto {
