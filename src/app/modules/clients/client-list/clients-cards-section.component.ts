@@ -83,7 +83,7 @@ export class ClientsCardsSectionComponent {
         // font les cartes d'affaires, avec lesquelles cette liste doit s'accorder.
         metadata: {
           title:    c.clientName,
-          subtitle: [c.clientCode, c.sector ?? c.country].filter(Boolean).join(' · '),
+          subtitle: [c.clientCode, c.sector ?? c.countryLabel].filter(Boolean).join(' · '),
           // The card has ONE status slot and the client carries two flags, so the
           // exception wins (UI-PLAYBOOK §6): inactive beats KYC. An active client
           // then splits on KYC — validated (green) vs awaiting (warning).
@@ -95,7 +95,7 @@ export class ClientsCardsSectionComponent {
           { label: t('CLIENTS.LIST.CARD.TOTAL_CA'),        value: this.currency.transform(c.totalCA, c.defaultCurrency ?? 'TND') },
           { label: t('CLIENTS.LIST.CARD.ACTIVE_PROJECTS'), value: String(c.activeAffaireCount) },
           { label: t('CLIENTS.LIST.CARD.PAYMENT_TERMS'),   value: c.paymentTermsDays != null ? `${c.paymentTermsDays} j` : '—' },
-          { label: t('CLIENTS.LIST.CARD.COUNTRY'),         value: c.country ?? '—' },
+          { label: t('CLIENTS.LIST.CARD.COUNTRY'),         value: c.countryLabel ?? '—' },
         ],
         viewLabel: t('CLIENTS.LIST.CARD.SEE_FILE'),
       } satisfies EntityCardOptions,

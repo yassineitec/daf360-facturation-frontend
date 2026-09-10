@@ -25,8 +25,14 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { ToastService } from '../../../core/toast.service';
 
-/** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
-interface DetailField { label: string; value: string; }
+/**
+ * Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n.
+ *
+ * `href` renseigné ⇒ la valeur s'affiche en lien. Réservé aux champs qui SONT une
+ * adresse à ouvrir (le site du client) : un lien sur un champ qui n'en est pas un
+ * promet une navigation qui n'existe pas.
+ */
+interface DetailField { label: string; value: string; href?: string; }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -129,7 +135,7 @@ export class ClientDetailComponent implements OnInit {
   readonly headerSubtitle = computed(() => {
     const c = this.client();
     if (!c) return '';
-    return [c.clientCode, c.paysLabel ?? c.country, c.sector].filter(Boolean).join(' · ');
+    return [c.clientCode, c.countryLabel, c.sector].filter(Boolean).join(' · ');
   });
 
   /**
@@ -172,7 +178,10 @@ export class ClientDetailComponent implements OnInit {
     if (!c) return [];
     return [
       { label: 'CLIENTS.DETAIL.INFO.CODE',    value: c.clientCode },
-      { label: 'CLIENTS.DETAIL.INFO.COUNTRY', value: c.paysLabel ?? c.country ?? '—' },
+      // Le pays du CLIENT, et plus `paysLabel ?? country` : ce repli affichait l'ENTITÉ
+      // ITEC sous un libellé « Pays », d'où une carte annonçant la Tunisie et la fiche du
+      // même client la France. Deux valeurs justes, un seul mot pour les dire.
+      { label: 'CLIENTS.DETAIL.INFO.COUNTRY', value: c.countryLabel ?? '—' },
       { label: 'CLIENTS.DETAIL.INFO.ADDRESS', value: this.formattedAddress() || '—' },
     ];
   });
@@ -191,13 +200,57 @@ export class ClientDetailComponent implements OnInit {
       },
     ];
     if (c.taxId) fields.push({ label: 'CLIENTS.DETAIL.INFO.TAX_ID', value: c.taxId });
+    // Le site du client, cliquable. Il n'était affiché NULLE PART : la seule ligne qui le
+    // mentionnait vivait dans `contactFields`, un bloc que le gabarit ne parcourait plus
+    // depuis la refonte. On le saisit, on l'enregistre, et personne ne le voyait.
+    if (c.website) {
+      fields.push({
+        label: 'CLIENTS.DETAIL.INFO.WEBSITE',
+        value: c.website,                 // tel que saisi
+        href:  this.websiteHref() ?? undefined,
+      });
+    }
     return fields;
   });
 
+  /**
+   * L'URL à ouvrir pour le site du client, ou `null` si la valeur saisie n'en donne pas
+   * une utilisable.
+   *
+   * <p>Deux raisons de ne pas mettre `c.website` directement dans un `href` :
+   *
+   * <ul>
+   *   <li><b>Le schéma.</b> Personne ne tape « https:// ». Un `href="acme.tn"` est une
+   *       adresse RELATIVE : le clic naviguerait vers `/clients/12/acme.tn` à l'intérieur
+   *       de l'application, ce qui a l'air d'un bug et non d'un lien.</li>
+   *   <li><b>Le protocole.</b> La colonne est du texte libre. Angular assainit déjà les
+   *       liaisons `[href]` et neutraliserait un `javascript:`, mais mieux vaut ne pas
+   *       PROPOSER le lien du tout que d'offrir un lien inerte.</li>
+   * </ul>
+   */
+  private readonly websiteHref = computed<string | null>(() => {
+    const raw = this.client()?.website?.trim();
+    if (!raw) return null;
+    const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    try {
+      const url = new URL(candidate);
+      return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : null;
+    } catch {
+      // Saisie qui ne fait pas une URL (un espace, un mot seul) : on affiche la valeur
+      // en texte, sans lien, plutôt que d'ouvrir un onglet sur une adresse inventée.
+      return null;
+    }
+  });
+
+  /**
+   * L'adresse postale sur une ligne. Le pays en fait partie — c'est la décision qui a
+   * motivé son passage en référence : il vivait dans la carte « Identification », à côté
+   * du nom et du n° fiscal, alors qu'il complète la ville et le code postal.
+   */
   readonly formattedAddress = computed(() => {
     const c = this.client();
     if (!c) return '';
-    return [c.address, c.city, c.postalCode].filter(Boolean).join(', ');
+    return [c.address, c.city, c.postalCode, c.countryLabel].filter(Boolean).join(', ');
   });
 
   // ═══ Boutons d'action ═════════════════════════════════════════════════════
@@ -313,20 +366,17 @@ export class ClientDetailComponent implements OnInit {
     ];
   });
 
-  /**
-   * Les coordonnées DE LA SOCIÉTÉ, et non d'une personne. Les interlocuteurs vivent
-   * désormais dans `client_contacts` et s'éditent dans l'onglet Contacts juste en
-   * dessous — les trois champs `contact_*` de `clients` ne sont plus lus ici.
+  /*
+   * `contactFields` vivait ici : une carte « Contact » listant `clients.email`,
+   * `clients.phone` et `website`. Supprimée, et non réécrite : le gabarit ne la rendait
+   * PLUS DEPUIS LA REFONTE — aucune boucle `@for` ne la parcourait. Elle lisait donc
+   * deux colonnes que V72 supprime, sans rien afficher à personne.
+   *
+   * Ce qu'elle prétendait montrer est déjà là, et mieux placé : l'adresse dans
+   * `identityLeadFields`, et les interlocuteurs dans l'onglet Contacts, qui les affiche
+   * tous avec leur fonction, leur téléphone et leur qualité de principal — au lieu d'un
+   * seul e-mail « général » que rien n'utilisait pour écrire au client.
    */
-  readonly contactFields = computed<DetailField[]>(() => {
-    const c = this.client();
-    if (!c) return [];
-    return [
-      { label: 'CLIENTS.DETAIL.CONTACT.EMAIL_GENERAL', value: c.email   ?? '—' },
-      { label: 'CLIENTS.DETAIL.CONTACT.PHONE',         value: c.phone   ?? '—' },
-      { label: 'CLIENTS.DETAIL.CONTACT.WEBSITE',       value: c.website ?? '—' },
-    ];
-  });
 
   // ═══ Contacts ═════════════════════════════════════════════════════════════
   //

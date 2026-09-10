@@ -1,9 +1,15 @@
-import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
+import {
+  Component, ElementRef, HostListener, Input, OnDestroy, OnInit, Renderer2, ViewChild,
+  inject, signal, computed,
+} from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
 import {
-  ButtonComponent, FormFieldComponent,
+  ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent,
   StepperComponent, StepperStep, StepperConfig,
+  DataTableComponent, TableColumn, TableConfig, TableRow, BadgeCell,
+  SearchToolbarComponent, StatusBadgeComponent, FilterField, FilterResult,
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
 import { WipService } from './wip.service';
@@ -14,6 +20,7 @@ import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../li
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
+import { BILLING_LINE_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
 import { WipTmDetailTableComponent } from './wip-tm-detail-table.component';
 import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.component';
 
@@ -21,19 +28,55 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
   selector: 'app-affaire-wip-tab',
   standalone: true,
   imports: [
-    TranslatePipe, ButtonComponent, FormFieldComponent, StepperComponent,
-    DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
+    TranslatePipe, ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent, StepperComponent,
+    DataTableComponent, DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
+    SearchToolbarComponent, StatusBadgeComponent,
   ],
+  providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-wip-tab.component.html',
+  styles: [`
+    /* TEST : habille les daf-button à l'intérieur de .wip-icon-actions pour qu'ils
+       ressemblent aux boutons d'action de profile-grid-card.component.ts (/rh/profiles) —
+       neutres, petits, la couleur ne change qu'au survol — plutôt que les fonds pleins
+       "ghost"/"secondary"/"teal" de la lib. On garde daf-button (loading/disabled
+       marchent toujours) : seule son apparence est retouchée ici, pas son mécanisme.
+       Spécificité : .wip-icon-actions button (0,1,1) l'emporte déjà sur les classes
+       utilitaires Tailwind (0,1,0) de la lib, pas besoin de !important. */
+    ::ng-deep .wip-icon-actions button {
+      padding: 6px;
+      border: none;
+      background: transparent;
+      color: var(--color-outline, #75777d);
+      border-radius: 6px;
+      box-shadow: none;
+    }
+    ::ng-deep .wip-icon-actions button:hover:not(:disabled) {
+      color: var(--color-tertiary, #1a6b7c);
+      background: var(--color-surface-container, #eceef0);
+    }
+    ::ng-deep .wip-icon-actions button .material-symbols-outlined {
+      font-size: 18px;
+    }
+  `],
 })
-export class AffaireWipTabComponent implements OnInit {
+export class AffaireWipTabComponent implements OnInit, OnDestroy {
   @Input({ required: true }) affaire!: AffaireDetail;
 
+  private readonly currency = inject(DisplayCurrencyPipe);
   private readonly svc = inject(WipService);
   private readonly billingSvc = inject(BillingService);
   private readonly livrableSvc = inject(LivrableService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly renderer = inject(Renderer2);
+  private readonly document = inject(DOCUMENT);
+
+  /** "Historique WIP" en plein écran (remplace la carte + le stepper) — tout
+   * l'historique avec recherche + filtre Statut, plutôt qu'une popup plafonnée à
+   * 900px (taille max native de ModalConfig, sans option pour aller plus loin). */
+  showHistoryPage = signal(false);
+  historySearch = signal('');
+  historyStatut = signal('');
 
   private readonly now = new Date();
   // AV only — defaults to the current calendar month as a starting point, same as TM's
@@ -78,11 +121,158 @@ export class AffaireWipTabComponent implements OnInit {
   // point, same as AV's periodDateFrom/periodDateTo above; either date is freely editable.
   tmDateFrom = signal(this.toIso(new Date(this.now.getFullYear(), this.now.getMonth(), 1)));
   tmDateTo   = signal(this.toIso(new Date(this.now.getFullYear(), this.now.getMonth() + 1, 0)));
+
+  /** TEST : un seul daf-multi-date-picker (selectionMode 'range') à la place des deux
+   * daf-form-field Date début / Date fin — fait le pont vers les mêmes tmDateFrom/tmDateTo
+   * ISO que le reste du composant utilise déjà (export Excel, aperçu, validation). */
+  readonly tmDateRange = computed<Date[]>(() => [
+    new Date(this.tmDateFrom() + 'T00:00:00'),
+    new Date(this.tmDateTo() + 'T00:00:00'),
+  ]);
+
+  onTmDateRangeChange(value: Date | Date[] | null): void {
+    if (!Array.isArray(value) || value.length !== 2) return;
+    this.tmDateFrom.set(this.toIso(value[0]));
+    this.tmDateTo.set(this.toIso(value[1]));
+    this.loadTmPreview();
+    // Les deux bornes sont posées : referme le calendrier, qui n'a pas de bouton
+    // "Confirmer" en selectionMode 'range' (celui de la lib ne s'affiche qu'en 'multiple').
+    this.closeDatePicker();
+  }
+
+  /** TEST : boutons révélés au survol de la carte, même mécanisme que les cartes de
+   * /rh/profiles (profile-grid-card.component.ts) — un signal par carte, mis à jour par
+   * (mouseenter)/(mouseleave) sur `daf-section-card`/`daf-card`. */
+  regieCardHovered = signal(false);
+  historyCardHovered = signal(false);
+
+  /** TEST : popover (i) de la carte Régie — bouton maison en `position:absolute`
+   * (top-3 right-3, comme profile-grid-card.component.ts) au lieu de l'en-tête auto de
+   * `daf-section-card`, qui poussait le stepper vers le bas. `daf-help-popover` reste le
+   * vrai composant de la lib (portail vers <body> déjà géré par lui) ; seul son
+   * déclencheur (`open`) est piloté ici, hover/focus comme le fait la lib elle-même. */
+  regieHelpOpen = signal(false);
+
+  /** TEST v3 : le champ de date pleine largeur devient une icône (calendrier) parmi les
+   * 3 autres. `daf-multi-date-picker` reste en mode `inline` (aucun déclencheur/portail à
+   * lui, juste le panneau) — SES DEUX essais précédents ont chacun raté un point :
+   *   1. panneau en `position:absolute` dans la carte → coupé par l'`overflow:hidden` de
+   *      `daf-card` dès qu'il dépassait ;
+   *   2. déclencheur natif de la lib (mode flottant, pas inline) → son propre portail vers
+   *      <body> évite bien la coupe, mais (a) son gabarit (texte + icône "x" effacer +
+   *      icône calendrier) ne se laisse pas réduire proprement à une icône seule en CSS, et
+   *      (b) il choisit lui-même d'ouvrir en dessous quand il y a la place, jamais "toujours
+   *      au-dessus" comme demandé.
+   * Solution : notre PROPRE portail, minimal, sur le panneau `inline` (un simple <div> qu'on
+   * écrit nous-mêmes) — déplacé vers <body> et positionné en `fixed`, ancré au-dessus du
+   * bouton (jamais en dessous), donc jamais coupé ET toujours "en haut". */
+  showTmDatePicker = signal(false);
+  /** Passe à `true` seulement une fois `positionDatePicker()` exécuté — le panneau reste
+   * `visibility:hidden` jusque-là pour ne pas flasher un instant dans le coin de la carte
+   * (position par défaut du <div>) avant d'être déplacé vers <body> et repositionné. */
+  private datePickerPositioned = signal(false);
+  readonly datePickerVisible = computed(() => this.showTmDatePicker() && this.datePickerPositioned());
+
+  @ViewChild('calDatePickerPanel') private calDatePickerPanelRef?: ElementRef<HTMLElement>;
+  @ViewChild('calDatePickerTrigger', { read: ElementRef })
+  private calDatePickerTriggerRef?: ElementRef<HTMLElement>;
+
+  toggleDatePicker(): void {
+    if (this.showTmDatePicker()) {
+      this.closeDatePicker();
+      return;
+    }
+    this.showTmDatePicker.set(true);
+    // `requestAnimationFrame`, pas `queueMicrotask` : un microtask peut encore s'exécuter
+    // AVANT qu'Angular n'ait appliqué le binding `[style.display]` (les deux sont mis en
+    // file d'attente séparément, l'ordre entre les deux n'est pas garanti) — mesurer à ce
+    // moment-là lit un panneau encore `display:none`, donc une hauteur de 0. Résultat
+    // observé : le calcul « au-dessus » se faisait à partir du mauvais point de départ,
+    // et le panneau semblait s'ouvrir vers le BAS. `requestAnimationFrame` ne s'exécute
+    // qu'après qu'un rendu a eu lieu, donc après que le style ait bien été appliqué —
+    // même raison que `place()` de la lib, qui a besoin de la vraie hauteur rendue.
+    requestAnimationFrame(() => this.positionDatePicker());
+  }
+
+  closeDatePicker(): void {
+    this.showTmDatePicker.set(false);
+    this.datePickerPositioned.set(false);
+  }
+
+  private positionDatePicker(): void {
+    const panel = this.calDatePickerPanelRef?.nativeElement;
+    const trigger = this.calDatePickerTriggerRef?.nativeElement;
+    if (!panel || !trigger) return;
+    if (panel.parentElement !== this.document.body) {
+      this.renderer.appendChild(this.document.body, panel);
+    }
+    // `fixed` + hors écran AVANT de mesurer sa hauteur/largeur — même raison que place()
+    // dans la lib ("pin size/position before reading offsetHeight"). Bug corrigé : au tout
+    // premier clic, le panneau venait d'être rattaché à <body> et était encore en flux
+    // normal (`position:static`, aucun style précédent à hériter) au moment de la mesure —
+    // sa position dans le document tombait alors n'importe où (observé : dans la sidebar),
+    // le temps d'un instant avant d'être replacé. Aux ouvertures suivantes, le style
+    // `position:fixed` du clic précédent restait posé sur l'élément, ce qui masquait le
+    // problème. En forçant `fixed` + hors écran dès le départ, à CHAQUE ouverture, il n'y a
+    // plus jamais de flux normal à un instant T, donc plus jamais ce point de départ faux.
+    this.renderer.setStyle(panel, 'position', 'fixed');
+    this.renderer.setStyle(panel, 'top', '-9999px');
+    this.renderer.setStyle(panel, 'left', '-9999px');
+    this.renderer.setStyle(panel, 'z-index', '9999');
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const gap = 8;
+    // Calé sur le bord droit du déclencheur (comme les 3 boutons alignés à droite de la
+    // carte), borné à 8px du bord de la fenêtre des deux côtés.
+    let left = triggerRect.right - panelRect.width;
+    left = Math.max(8, Math.min(left, window.innerWidth - panelRect.width - 8));
+    // TOUJOURS au-dessus du déclencheur, jamais en dessous — contrairement à `daf-select`/
+    // `daf-multi-date-picker` flottant, qui choisissent selon la place disponible.
+    const top = Math.max(8, triggerRect.top - gap - panelRect.height);
+    this.renderer.setStyle(panel, 'top', `${top}px`);
+    this.renderer.setStyle(panel, 'left', `${left}px`);
+    this.datePickerPositioned.set(true);
+  }
+
+  /** Ferme sur un clic hors du panneau ET hors du bouton déclencheur (sinon le clic qui
+   * OUVRE le calendrier — capté ici aussi, car il remonte jusqu'à `document` — le
+   * refermerait dans la foulée). Même garde que `onDocumentClick` de la lib. */
+  @HostListener('document:click', ['$event'])
+  onDocumentClickForDatePicker(event: MouseEvent): void {
+    if (!this.showTmDatePicker()) return;
+    const target = event.target as Node;
+    if (this.calDatePickerPanelRef?.nativeElement.contains(target)) return;
+    if (this.calDatePickerTriggerRef?.nativeElement.contains(target)) return;
+    this.closeDatePicker();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeForDatePicker(): void {
+    if (this.showTmDatePicker()) this.closeDatePicker();
+  }
+
+  ngOnDestroy(): void {
+    // Le panneau a pu être déplacé sous <body> : Angular ne le nettoiera pas tout seul
+    // puisqu'il ne se trouve plus là où le template l'a créé (même raison que le
+    // `onCleanup` de `portalPanel()` dans la lib, pour son propre portail).
+    this.calDatePickerPanelRef?.nativeElement.remove();
+  }
+
   tmPreview     = signal<WipTmPreviewDto | null>(null);
   loadingTm     = signal(false);
   tmError       = signal<string | null>(null);
   validatingTm  = signal(false);
   showTmDetails = signal(false);
+  /** Texte du popover (i) de la carte Régie Time & Materials — `daf-section-card`
+   * (`[help]`) l'affiche via `daf-help-popover`, le même mécanisme que les tuiles d'aide
+   * de l'onglet Vue générale, à la place de l'ancien `<div>` en position absolue déclenché
+   * par un signal maison. Les deux phrases de l'ancien texte sont jointes par un espace :
+   * `help` est un simple texte interpolé, sans balisage pour un saut de ligne. */
+  readonly tmHelpText = computed(() => {
+    this.translate.currentLang();
+    return `${this.translate.instant('AFFAIRES.WIP.TM_EXPLAIN')} ${this.translate.instant('AFFAIRES.WIP.TM_EXPLAIN_2')}`;
+  });
   /** Which collaborator's granular hours are currently drilled into, within the Détails
    * panel — null shows the by-collaborator summary table instead. */
   selectedCollaboratorUserId = signal<number | null>(null);
@@ -194,7 +384,6 @@ export class AffaireWipTabComponent implements OnInit {
     this.translate.currentLang();
     return {
       chrome: 'header-only',
-      labelDensity: 'quiet',
       clickableSteps: true,
       stepperLabel: this.translate.instant('AFFAIRES.WIP.STEPPER_LABEL'),
     };
@@ -519,6 +708,95 @@ export class AffaireWipTabComponent implements OnInit {
       },
       error: err => this.cancelLineError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CANCEL_LINE_ERROR')),
     });
+  }
+
+  // ── Historique WIP — daf-data-table, remplace l'ancien <table> fait main ───────────
+  readonly tmHistoryColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
+      { key: 'montant', label: t('AFFAIRES.WIP.COL_AMOUNT'), align: 'right' },
+      { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
+    ];
+  });
+
+  private toHistoryRow(l: LineDetailDto): TableRow {
+    return {
+      id:      l.id,
+      period:  (l.periodDateFrom && l.periodDateTo) ? `${l.periodDateFrom} → ${l.periodDateTo}` : `${l.periodMonth}/${l.periodYear}`,
+      montant: this.currency.transform(l.montantHt, l.devise || this.affaire.devise),
+      statut:  { label: enumLabel(this.translate, 'BILLING_LINE_STATUT', l.statut),
+                 options: { variant: BILLING_LINE_STATUT_BADGE[l.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
+      _source: l,
+    };
+  }
+
+  readonly tmHistoryRows = computed<TableRow[]>(() => this.tmHistory().map(l => this.toHistoryRow(l)));
+
+  readonly tmHistoryConfig = computed<TableConfig>(() => ({
+    showHeader: true,
+    hoverable:  false,
+    emptyMessage: this.translate.instant('AFFAIRES.WIP.NO_HISTORY'),
+    actions: [
+      {
+        id:      'cancel',
+        icon:    'cancel',
+        tooltip: this.translate.instant('AFFAIRES.WIP.CANCEL'),
+        variant: 'danger',
+        onClick: (row: TableRow) => this.cancelLine((row['_source'] as LineDetailDto).id),
+        hidden:  (row: TableRow) => !this.isTmLineCancellable((row['_source'] as LineDetailDto).statut),
+      },
+    ],
+  }));
+
+  // ── Popup "Afficher tout" — recherche + filtre Statut sur l'historique complet ──────
+  readonly historyFilterFields = computed<FilterField[]>(() => [{
+    name:    'statut',
+    label:   this.translate.instant('AFFAIRES.WIP.COL_STATUS'),
+    type:    'select',
+    options: [...new Set(this.tmHistory().map(l => l.statut))].sort()
+      .map(value => ({ value, label: enumLabel(this.translate, 'BILLING_LINE_STATUT', value) })),
+  }]);
+
+  readonly filteredHistoryLines = computed<LineDetailDto[]>(() => {
+    const q      = this.historySearch().trim().toLowerCase();
+    const statut = this.historyStatut();
+    return this.tmHistory()
+      .filter(l => !statut || l.statut === statut)
+      .filter(l => !q || `${l.periodDateFrom ?? ''} ${l.periodDateTo ?? ''} ${l.periodMonth}/${l.periodYear}`
+        .toLowerCase().includes(q));
+  });
+
+  readonly filteredHistoryRows = computed<TableRow[]>(() =>
+    this.filteredHistoryLines().map(l => this.toHistoryRow(l)));
+
+  /** Même bibliothèque (xlsx) et même schéma d'export que exportWipExcel() ci-dessus —
+   * appelé depuis la carte (tmHistory, tout) et depuis la popup (filteredHistoryLines). */
+  exportHistoryExcel(lines: LineDetailDto[]): void {
+    if (!lines.length) return;
+    const t = (k: string) => this.translate.instant(k);
+    const rows = lines.map(l => ({
+      [t('AFFAIRES.WIP.COL_PERIOD')]: (l.periodDateFrom && l.periodDateTo)
+        ? `${l.periodDateFrom} → ${l.periodDateTo}` : `${l.periodMonth}/${l.periodYear}`,
+      [t('AFFAIRES.WIP.COL_AMOUNT')]: this.currency.transform(l.montantHt, l.devise || this.affaire.devise),
+      [t('AFFAIRES.WIP.COL_STATUS')]: enumLabel(this.translate, 'BILLING_LINE_STATUT', l.statut),
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('AFFAIRES.WIP.HISTORY_TITLE'));
+    const affaireRef = this.affaire.reference ?? String(this.affaire.id);
+    XLSX.writeFile(wb, `Historique_WIP_${affaireRef}.xlsx`);
+  }
+
+  /** `daf-filter` renders a select as `string[]` internally and emits a scalar — normalise both. */
+  private asFilterValue(result: FilterResult, key: string): string {
+    const v = result[key];
+    if (Array.isArray(v)) return (v[0] as string) ?? '';
+    return typeof v === 'string' ? v : '';
+  }
+
+  onHistoryFilterApply(result: FilterResult): void {
+    this.historyStatut.set(this.asFilterValue(result, 'statut'));
   }
 
   /** Local calendar date -> 'yyyy-MM-dd', deliberately not toISOString() (UTC-based, which

@@ -1,13 +1,14 @@
 <div class="tab-container">
 
+  <!-- Une liste déroulante cherchable, et non plus une bande d'onglets : `pays_ref` porte
+       les 194 pays depuis V75. La bande tenait à onze. -->
   @if (paysList().length > 1) {
-    <div class="list-tabs">
-      @for (p of paysList(); track p.id) {
-        <button class="list-tab" [class.active]="paysId() === p.id"
-          (click)="selectPays(p.id)">
-          {{ p.isoCode }} — {{ p.frenchLabel }}
-        </button>
-      }
+    <div class="pays-picker">
+      <daf-select
+        [options]="paysOptions()"
+        [config]="paysSelectConfig()"
+        [selected]="paysId() ? [paysId().toString()] : []"
+        (selectedChange)="onPaysSelected($event)" />
     </div>
   }
 

@@ -17,7 +17,7 @@ const LABELLED_MODES = new Set<string>(['FORFAIT', 'REGIE', 'LIVRABLE']);
   imports: [
     TranslatePipe,
     WizardStepAvComponent,
-    WizardStepTmComponent, WizardStepCpComponent, WizardStepRmbComponent,
+    WizardStepTmComponent,
     WizardStepLivrableComponent,
   ],
   templateUrl: './wizard-step-billing.component.html',
