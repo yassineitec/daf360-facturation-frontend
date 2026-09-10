@@ -2821,6 +2821,11 @@
         "COL_SOLDE_DEBITEUR": "Solde Débiteur",
         "COL_SOLDE_CREDITEUR": "Solde Créditeur",
         "ACCOUNT_LABEL": "Compte fournisseur :",
+        "NEW_REGLEMENT": "Nouveau règlement",
+        "EDIT_REGLEMENT": "Modifier le règlement",
+        "DELETE_REGLEMENT": "Supprimer le règlement",
+        "CONFIRM_DELETE": "Supprimer ce règlement ? La ligne de coût redeviendra Approuvée.",
+        "DELETE_ERROR": "Impossible de supprimer ce règlement.",
         "NO_SUPPLIER": "Aucun fournisseur n'est associé à cette ligne de coût — aucun relevé de compte à afficher.",
         "EMPTY": "Aucune écriture validée pour ce fournisseur."
       }

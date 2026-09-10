@@ -2821,6 +2821,11 @@
         "COL_SOLDE_DEBITEUR": "Debit Balance",
         "COL_SOLDE_CREDITEUR": "Credit Balance",
         "ACCOUNT_LABEL": "Supplier account:",
+        "NEW_REGLEMENT": "New règlement",
+        "EDIT_REGLEMENT": "Edit règlement",
+        "DELETE_REGLEMENT": "Delete règlement",
+        "CONFIRM_DELETE": "Delete this règlement? The cost line will revert to Approved.",
+        "DELETE_ERROR": "Unable to delete this règlement.",
         "NO_SUPPLIER": "No supplier is attached to this cost line — no account statement to show.",
         "EMPTY": "No validated entries for this supplier."
       }
