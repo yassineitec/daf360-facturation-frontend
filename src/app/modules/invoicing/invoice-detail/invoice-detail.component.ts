@@ -386,8 +386,10 @@ export class InvoiceDetailComponent implements OnInit {
       case 'SENT':
       case 'PARTIALLY_PAID': return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.RECORD_PAYMENT'), 'payments'), run: () => this.showPaymentModal.set(true) };
       case 'DISPUTED':       return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.RESOLVE'),  'gavel'),       run: () => this.openResolveModal() };
-      case 'PAID':           return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.EMIT_CREDIT'), 'receipt_long'), run: () => this.showCreditNote.set(true) };
-      // CANCELLED et CREDIT_NOTED sont terminaux : aucune action à proposer.
+      // PAID, CANCELLED et CREDIT_NOTED sont terminaux pour l'action principale : aucune
+      // action à proposer. L'avoir n'en fait PLUS partie (voir canEmitCreditNote) — il ne
+      // s'agit pas d'une étape suivante, une facture PAID/EMITTED/SENT/PARTIALLY_PAID peut
+      // déjà proposer une autre action principale (MARK_SENT, RECORD_PAYMENT...).
       default: return null;
     }
   });
@@ -398,6 +400,17 @@ export class InvoiceDetailComponent implements OnInit {
   readonly canReturn  = computed(() => this.statut() === 'SUBMITTED');
   /** Ouverture d'un litige : une facture partie chez le client et non soldée. */
   readonly canDispute = computed(() => ['SENT', 'PARTIALLY_PAID'].includes(this.statut()));
+  /**
+   * Émettre un avoir n'est pas la « prochaine étape » d'un statut donné — EMITTED garde
+   * MARK_SENT comme action principale, SENT/PARTIALLY_PAID gardent RECORD_PAYMENT — donc
+   * ce bouton est une action secondaire disponible EN PLUS de l'action principale, pas à
+   * sa place. La liste doit rester identique à celle vérifiée côté serveur
+   * (InvoiceService.createCreditNote) : PAID en est délibérément exclu par le backend
+   * ("Seules les factures EMITTED/SENT/PARTIALLY_PAID peuvent avoir une note de crédit"),
+   * donc il ne doit pas non plus l'être ici — l'ancien câblage sur PAID uniquement faisait
+   * apparaître le bouton exactement là où l'API le refusait toujours (422).
+   */
+  readonly canEmitCreditNote = computed(() => ['EMITTED', 'SENT', 'PARTIALLY_PAID'].includes(this.statut()));
 
   readonly commentFieldOptions = computed(() => {
     this.translate.currentLang();

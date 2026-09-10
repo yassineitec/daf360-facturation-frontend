@@ -12,6 +12,8 @@ import type {
 import { SupplierService } from '../supplier.service';
 import { ClientService } from '../../clients/client.service';
 import { PaysRefDto } from '../../affaires/affaire.model';
+import { FactListService } from '../../../core/fact-list.service';
+import { ListValueDto } from '../../cost/cost.model';
 
 type Step = 1 | 2 | 3;
 
@@ -56,6 +58,7 @@ export class SupplierNewComponent implements OnInit {
   private readonly route      = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly translate  = inject(TranslateService);
+  private readonly factListSvc = inject(FactListService);
 
   step      = signal<Step>(1);
   isSaving  = signal(false);
@@ -70,11 +73,13 @@ export class SupplierNewComponent implements OnInit {
    * `Validators.required` ajoutait une seconde source de vérité à tenir en phase.
    */
   name      = signal('');
-  paysCode  = signal('');
-  paysLabel = signal('');
+  typeId    = signal<number | null>(null);
+  typeLabel = signal('');
   numeroTva = signal('');
   taxId     = signal('');
   iban      = signal('');
+
+  supplierTypes = signal<ListValueDto[]>([]);
 
   touched = signal(false);
 
@@ -135,26 +140,40 @@ export class SupplierNewComponent implements OnInit {
     this.translate.currentLang();
     const badges: PageHeaderBadge[] = [];
     if (this.name().trim())  badges.push({ label: this.name().trim(), icon: 'storefront',      variant: 'neutral' });
-    if (this.paysCode())     badges.push({ label: this.paysSummary(), icon: 'public',          variant: 'neutral' });
+    if (this.paysId())       badges.push({ label: this.paysSummary(), icon: 'public',          variant: 'neutral' });
+    if (this.typeLabel())    badges.push({ label: this.typeLabel(),   icon: 'category',         variant: 'neutral' });
     if (this.numeroTva())    badges.push({ label: this.numeroTva(),   icon: 'receipt_long',    variant: 'neutral' });
     if (this.iban())         badges.push({ label: this.translate.instant('SUPPLIERS.NEW.BADGE_IBAN'), icon: 'account_balance', variant: 'secondary' });
     return badges;
   });
 
   private paysSummary(): string {
-    const code = this.paysCode();
-    const pays = this.paysList().find(p => p.isoCode === code);
-    return pays ? `${code} — ${pays.frenchLabel}` : code;
+    const pays = this.paysList().find(p => p.id === this.paysId());
+    return pays ? `${pays.isoCode} — ${pays.frenchLabel}` : '';
   }
 
   // ═══ Pays ═════════════════════════════════════════════════════════════════
 
   readonly paysSelectOptions = computed<SelectOption[]>(() =>
-    this.paysList().map(p => ({ value: p.isoCode, label: `${p.isoCode} — ${p.frenchLabel}` })));
+    this.paysList().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
 
-  onPaysCodeChange(code: string): void {
-    this.paysCode.set(code ?? '');
-    this.paysLabel.set(this.paysList().find(p => p.isoCode === code)?.frenchLabel ?? '');
+  readonly selectedPaysValue = computed(() => this.paysId() ? [String(this.paysId())] : []);
+
+  onPaysSelect(values: string[]): void {
+    this.paysId.set(Number(values[0] ?? 0));
+  }
+
+  // ═══ Catégorie de fournisseur ═════════════════════════════════════════════
+
+  readonly typeSelectOptions = computed<SelectOption[]>(() =>
+    this.supplierTypes().map(t => ({ value: t.id + '|' + t.labelFr, label: t.labelFr })));
+
+  onTypeSelect(values: string[]): void {
+    const value = values[0] ?? '';
+    if (!value) { this.typeId.set(null); this.typeLabel.set(''); return; }
+    const sep = value.indexOf('|');
+    this.typeId.set(Number(value.substring(0, sep)));
+    this.typeLabel.set(value.substring(sep + 1));
   }
 
   // ═══ Navigation ═══════════════════════════════════════════════════════════
@@ -162,7 +181,7 @@ export class SupplierNewComponent implements OnInit {
   /** Seule l'étape 1 bloque : le fiscal et le bancaire sont facultatifs côté serveur. */
   readonly canGoNext = computed(() => {
     if (this.step() !== 1) return true;
-    return !!this.name().trim() && !!this.paysCode();
+    return !!this.name().trim() && !!this.paysId() && this.typeId() !== null;
   });
 
   readonly nextButtonOptions = computed<ButtonOptions>(() => {
@@ -202,6 +221,10 @@ export class SupplierNewComponent implements OnInit {
 
     this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({ next: id => { if (id && id > 0) this.paysId.set(id); } });
+
+    this.factListSvc.getListValues('SUPPLIER_CATEGORY', 0)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => this.supplierTypes.set(list));
   }
 
   private save(): void {
@@ -217,9 +240,7 @@ export class SupplierNewComponent implements OnInit {
     this.svc.create({
       paysId,
       name:      this.name().trim(),
-      paysCode:  this.paysCode(),
-      paysLabel: this.paysLabel() || undefined,
-      country:   this.paysCode()  || undefined,
+      typeId:    this.typeId() ?? undefined,
       numeroTva: this.numeroTva().trim() || undefined,
       taxId:     this.taxId().trim()     || undefined,
       iban:      this.iban().trim()      || undefined,
