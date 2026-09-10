@@ -539,6 +539,17 @@ export class CostLineDetailComponent implements OnInit {
     this.router.navigate(['/finance/cost', line.id, 'edit']);
   }
 
+  /** 'supplier' mode only (see the template's `@if (mode === 'supplier')` gate): opens
+   *  the creation form with this supplier and pays pre-filled via query params, so the
+   *  user doesn't have to search for the same supplier again — see
+   *  CostFormComponent.prefillFromQueryParams(). Absolute path, same reasoning as
+   *  goToLineEdit() above. */
+  goToNewLineForSupplier(): void {
+    this.router.navigate(['/finance/cost/new'], {
+      queryParams: { paysId: this.effectivePaysId(), supplierId: this.supplierIdParam },
+    });
+  }
+
   submitLineFromList(line: CostLineDto): void {
     this.svc.submitCostLine(line.id).subscribe({
       next:  () => this.loadSupplierMode(),

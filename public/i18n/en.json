@@ -2798,7 +2798,8 @@
       },
       "SUPPLIER": {
         "SUBTITLE": "{{count}} cost line(s)",
-        "LINES_EMPTY": "No cost lines for this supplier."
+        "LINES_EMPTY": "No cost lines for this supplier.",
+        "NEW_LINE": "New cost line"
       },
       "ACTIONS": {
         "EDIT": "Edit"

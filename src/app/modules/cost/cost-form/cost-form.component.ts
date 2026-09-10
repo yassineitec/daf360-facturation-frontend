@@ -232,6 +232,7 @@ export class CostFormComponent implements OnInit {
       this.loadExisting(+idStr);
     } else {
       this.transactionDate.set(new Date().toISOString().slice(0, 10));
+      this.prefillFromQueryParams();
     }
 
     this.affaireSvc.getPays()
@@ -293,6 +294,31 @@ export class CostFormComponent implements OnInit {
         this.error.set(this.translate.instant('COST.FORM.LOAD_ERROR'));
       },
     });
+  }
+
+  /**
+   * Pre-fills Pays + Fournisseur when this form is opened from a supplier's own detail
+   * page (its "Nouvelle ligne de coût" button — see
+   * CostLineDetailComponent.goToNewLineForSupplier()). Absent for every other entry
+   * point into this route (e.g. the flat list page's own "Nouvelle ligne" button passes
+   * no query params at all), so this is a pure no-op there.
+   */
+  private prefillFromQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const paysIdParam = params.get('paysId');
+    const supplierIdParam = params.get('supplierId');
+
+    if (paysIdParam) {
+      this.onPaysChange(+paysIdParam);
+    }
+    if (supplierIdParam) {
+      const sid = +supplierIdParam;
+      this.supplierId.set(sid);
+      this.costSvc.getSupplier(sid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: s => this.supplierQuery.set(s.name),
+        error: () => {}, // supplier lookup failing here shouldn't block the rest of the form
+      });
+    }
   }
 
   onPaysChange(id: number | null): void {

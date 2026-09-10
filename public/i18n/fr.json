@@ -2798,7 +2798,8 @@
       },
       "SUPPLIER": {
         "SUBTITLE": "{{count}} ligne(s) de coût",
-        "LINES_EMPTY": "Aucune ligne de coût pour ce fournisseur."
+        "LINES_EMPTY": "Aucune ligne de coût pour ce fournisseur.",
+        "NEW_LINE": "Nouvelle ligne de coût"
       },
       "ACTIONS": {
         "EDIT": "Modifier"

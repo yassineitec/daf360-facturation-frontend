@@ -100,6 +100,14 @@
                 </div>
               </div>
             }
+            @if (mode === 'supplier') {
+              <div class="border-t border-outline-variant/30 bg-surface-container p-6">
+                <daf-button
+                  [options]="{ variant: 'primary', fullWidth: true, iconStart: 'add',
+                               label: 'COST.DETAIL.SUPPLIER.NEW_LINE' | translate }"
+                  (onClick)="goToNewLineForSupplier()" />
+              </div>
+            }
 
           </daf-section-card>
         </div>
