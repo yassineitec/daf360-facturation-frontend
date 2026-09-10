@@ -228,7 +228,7 @@
                     [options]="fodecOptions()"
                     [config]="{ label: ('COST.FORM.TAX.FODEC_LABEL' | translate) }"
                     [selected]="selArr(fodecRate())"
-                    (selectedChange)="fodecRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
+                    (selectedChange)="fodecRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
                   </daf-select>
                 </div>
                 <div>
@@ -236,7 +236,7 @@
                     [options]="tvaOptions()"
                     [config]="{ label: ('COST.FORM.TAX.TVA_LABEL' | translate) }"
                     [selected]="selArr(tvaRate())"
-                    (selectedChange)="tvaRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
+                    (selectedChange)="tvaRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
                   </daf-select>
                 </div>
                 <div>
@@ -244,7 +244,7 @@
                     [options]="timbreOptions()"
                     [config]="{ label: ('COST.FORM.TAX.TIMBRE_LABEL' | translate) }"
                     [selected]="selArr(timbreAmount())"
-                    (selectedChange)="timbreAmount.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
+                    (selectedChange)="timbreAmount.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
                   </daf-select>
                 </div>
                 <div>

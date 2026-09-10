@@ -334,14 +334,53 @@ export class CostFormComponent implements OnInit {
     this.costSvc.getForexPreview(amount, curr.code).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: fx => {
         this.forexPreview.set(fx);
-        this.costSvc.getCircuitPreview(fx.montantEur, pid, null, this.costCategoryId())
-          .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: cp => { this.circuitPreview.set(cp); this.previewLoading.set(false); },
-          error: ()  => this.previewLoading.set(false),
-        });
+        this.refreshCircuitPreview(pid, curr.code);
       },
       error: () => { this.forexPreview.set(null); this.previewLoading.set(false); },
     });
+  }
+
+  /**
+   * The approval circuit is keyed on the line's own TTC (gross) amount, mirroring
+   * CostApprovalService.submitForApproval()'s server-side threshold check — NOT the HT
+   * amount shown in the "Devise" forex panel above, which stays HT-based on purpose.
+   * Re-run whenever the HT amount, currency, or any tax field changes: ttcPreview()
+   * already recomputes from all of those, this just re-converts it to EUR and re-fetches
+   * the circuit preview. Falls back to the HT amount when there's no supplier/tax
+   * context yet (ttcPreview() returns null in that case, and gross == net server-side
+   * too when there's no supplier — see doCreateCostLine()'s useTaxBlock branch).
+   */
+  private refreshCircuitPreview(paysId: number, currencyCode: string): void {
+    const ttcAmount = this.ttcPreview() ?? this.netAmountLocal();
+    if (!ttcAmount) {
+      this.circuitPreview.set(null);
+      this.previewLoading.set(false);
+      return;
+    }
+    this.costSvc.getForexPreview(ttcAmount, currencyCode).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: fx => {
+        this.costSvc.getCircuitPreview(fx.montantEur, paysId, null, this.costCategoryId())
+          .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: cp => { this.circuitPreview.set(cp); this.previewLoading.set(false); },
+          error: () => this.previewLoading.set(false),
+        });
+      },
+      error: () => this.previewLoading.set(false),
+    });
+  }
+
+  /**
+   * Tax-rate changes (FODEC/TVA/Timbre Fiscal) affect ttcPreview() and therefore the
+   * approval circuit, but NOT the HT amount or its forex conversion — so only the
+   * circuit preview needs to be refreshed here, unlike onAmountOrCurrencyChange().
+   */
+  onTaxFieldChange(): void {
+    const currId = this.currencyId();
+    const pid    = this.paysId();
+    const curr   = this.currencies().find(c => c.id === currId);
+    if (!curr || !pid) return;
+    this.previewLoading.set(true);
+    this.refreshCircuitPreview(pid, curr.code);
   }
 
   onFileSelected(event: Event): void {
