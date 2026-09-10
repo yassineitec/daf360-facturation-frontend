@@ -6,7 +6,8 @@ import {
 import { CostLineDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import {
-  STATUS_ENTITY_STATUS, approvalLevelKey, canEdit, canSubmit, formatDate, initials, statusKey,
+  STATUS_ENTITY_STATUS, approvalLevelKey, canEdit, canReglement, canSubmit, formatDate,
+  initials, statusKey,
 } from '../cost-display';
 
 /**
@@ -60,8 +61,9 @@ export class CostLinesCardsSectionComponent {
   emptyMessage  = input('');
   skeletonCount = input(6);
 
-  readonly edit       = output<CostLineDto>();
-  readonly submitLine = output<CostLineDto>();
+  readonly edit            = output<CostLineDto>();
+  readonly submitLine      = output<CostLineDto>();
+  readonly createReglement = output<CostLineDto>();
 
   protected readonly skeletonSlots = computed(() =>
     Array.from({ length: Math.max(1, this.skeletonCount()) }, (_, i) => i),
@@ -104,13 +106,15 @@ export class CostLinesCardsSectionComponent {
   /** Same gates as the table's row actions — both read `cost-display.ts`. */
   private actionsFor(line: CostLineDto, t: (key: string) => string): EntityCardAction[] {
     const actions: EntityCardAction[] = [];
-    if (canSubmit(line)) actions.push({ id: 'submit', icon: 'send',   tooltip: t('COST.LINES.SUBMIT') });
-    if (canEdit(line))   actions.push({ id: 'edit',   icon: 'stylus', tooltip: t('COST.LINES.EDIT')   });
+    if (canSubmit(line))    actions.push({ id: 'submit',    icon: 'send',     tooltip: t('COST.LINES.SUBMIT') });
+    if (canEdit(line))      actions.push({ id: 'edit',      icon: 'stylus',   tooltip: t('COST.LINES.EDIT')   });
+    if (canReglement(line)) actions.push({ id: 'reglement', icon: 'payments', tooltip: t('COST.LINES.CREATE_REGLEMENT') });
     return actions;
   }
 
   protected onAction(line: CostLineDto, id: string): void {
-    if (id === 'submit') this.submitLine.emit(line);
-    if (id === 'edit')   this.edit.emit(line);
+    if (id === 'submit')    this.submitLine.emit(line);
+    if (id === 'edit')      this.edit.emit(line);
+    if (id === 'reglement') this.createReglement.emit(line);
   }
 }

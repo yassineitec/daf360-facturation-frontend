@@ -16,7 +16,7 @@ import { CostService } from '../cost.service';
 import { AffaireService } from '../../affaires/affaire.service';
 import { ClientService } from '../../clients/client.service';
 import type { UserRefDto } from '../../affaires/affaire.model';
-import { CostCategoryDto, CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../cost.model';
+import { CostCategoryDto, CostLineDto, CostLineReglementDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../cost.model';
 import {
   APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit,
   decisionKey, formatDate, statusKey,
@@ -24,6 +24,8 @@ import {
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
+import { ReglementModalComponent } from '../modals/reglement-modal.component';
+import { UserStore } from '../../../core/user.store';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -82,7 +84,7 @@ const SUPPLIER_MODE_PAGE_SIZE = 200;
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent,
     DataTableComponent, DafCellDirective,
-    CostLinesTableSectionComponent,
+    CostLinesTableSectionComponent, ReglementModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -96,6 +98,7 @@ export class CostLineDetailComponent implements OnInit {
   private readonly currency   = inject(DisplayCurrencyPipe);
   private readonly router     = inject(Router);
   private readonly route      = inject(ActivatedRoute);
+  private readonly userStore  = inject(UserStore);
 
   /** Set once by `cost.routes.ts`'s `data.mode` on each of the three route entries. */
   readonly mode: DetailMode = (this.route.snapshot.data['mode'] as DetailMode) ?? 'line';
@@ -341,14 +344,24 @@ export class CostLineDetailComponent implements OnInit {
   readonly ledgerColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
-      { key: 'date',           label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text' },
-      { key: 'label',          label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text' },
-      { key: 'debit',          label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right' },
-      { key: 'credit',         label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right' },
-      { key: 'soldeDebiteur',  label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right' },
-      { key: 'soldeCrediteur', label: t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right' },
+    const cols: TableColumn[] = [
+      { key: 'date',            label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text' },
+      { key: 'label',           label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text' },
+      { key: 'netAmount',       label: t('COST.DETAIL.LEDGER.COL_NET_AMOUNT'),      type: 'text', align: 'right' },
+      { key: 'fodec',           label: t('COST.DETAIL.LEDGER.COL_FODEC'),           type: 'text', align: 'right' },
+      { key: 'tva',             label: t('COST.DETAIL.LEDGER.COL_TVA'),             type: 'text', align: 'right' },
+      { key: 'timbre',          label: t('COST.DETAIL.LEDGER.COL_TIMBRE'),          type: 'text', align: 'right' },
+      { key: 'autresTaxes',     label: t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES'),    type: 'text', align: 'right' },
+      { key: 'grossAmount',     label: t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT'),    type: 'text', align: 'right' },
+      { key: 'debit',           label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right' },
+      { key: 'credit',          label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right' },
+      { key: 'soldeDebiteur',   label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right' },
+      { key: 'soldeCrediteur',  label: t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right' },
     ];
+    if (this.canManageReglements()) {
+      cols.push({ key: 'actions', label: '', type: 'custom' });
+    }
+    return cols;
   });
 
   readonly ledgerRows = computed<TableRow[]>(() => {
@@ -357,10 +370,17 @@ export class CostLineDetailComponent implements OnInit {
       id:             i,
       date:           formatDate(r.date),
       label:          r.label ?? '—',
+      netAmount:      this.fmtAmount(r.netAmountLocal),
+      fodec:          this.fmtAmount(r.fodecAmount),
+      tva:            this.fmtAmount(r.vatAmountLocal),
+      timbre:         this.fmtAmount(r.timbreAmount),
+      autresTaxes:    this.fmtAmount(r.autresTaxesAmount),
+      grossAmount:    this.fmtAmount(r.grossAmountLocal),
       debit:          this.fmtAmount(r.debit),
       credit:         this.fmtAmount(r.credit),
       soldeDebiteur:  this.fmtAmount(r.soldeDebiteur),
       soldeCrediteur: this.fmtAmount(r.soldeCrediteur),
+      _reglementId:   r.reglementId,
     }));
   });
 
@@ -390,6 +410,23 @@ export class CostLineDetailComponent implements OnInit {
 
   readonly supplierLinesEmptyMessage = computed(() =>
     this.translate.instant('COST.DETAIL.SUPPLIER.LINES_EMPTY'));
+
+  // ── Manual règlement (payment) feature (2026-09-10 plan) ───────────────────────
+
+  readonly canManageReglements = computed(() => this.userStore.hasPermission('FACT_MANAGE_COST'));
+
+  /** Unified across all three modes: the pays this page is currently scoped to. */
+  readonly effectivePaysId = computed(() =>
+    this.mode === 'line' ? (this.costLine()?.paysId ?? null) : this.paysId());
+
+  /** The supplier whose ledger Tab 2 is currently showing -- works in 'line' and
+   *  'supplier' modes alike (both have hasSupplier() === true when this is non-null);
+   *  always null in 'unassigned' mode, where the "Nouveau règlement" button never shows. */
+  readonly currentSupplierId = computed(() => this.ledger()?.supplier?.id ?? null);
+
+  payableLines       = signal<CostLineDto[]>([]);
+  reglementModalOpen = signal(false);
+  editingReglement    = signal<CostLineReglementDto | null>(null);
 
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
@@ -502,10 +539,81 @@ export class CostLineDetailComponent implements OnInit {
     this.router.navigate(['/finance/cost', line.id, 'edit']);
   }
 
+  /** 'supplier' mode only (see the template's `@if (mode === 'supplier')` gate): opens
+   *  the creation form with this supplier and pays pre-filled via query params, so the
+   *  user doesn't have to search for the same supplier again — see
+   *  CostFormComponent.prefillFromQueryParams(). Absolute path, same reasoning as
+   *  goToLineEdit() above. */
+  goToNewLineForSupplier(): void {
+    this.router.navigate(['/finance/cost/new'], {
+      queryParams: { paysId: this.effectivePaysId(), supplierId: this.supplierIdParam },
+    });
+  }
+
   submitLineFromList(line: CostLineDto): void {
     this.svc.submitCostLine(line.id).subscribe({
       next:  () => this.loadSupplierMode(),
       error: err => this.error.set(err.error?.message ?? this.translate.instant('COST.LINES.SUBMIT_ERROR')),
     });
+  }
+
+  // ── Manual règlement (payment) feature (2026-09-10 plan) ───────────────────────
+
+  private reloadCurrentMode(): void {
+    if (this.mode === 'line') this.loadLine();
+    else this.loadSupplierMode();
+  }
+
+  openNewReglement(): void {
+    const paysId = this.effectivePaysId();
+    const supplierId = this.currentSupplierId();
+    if (!paysId || !supplierId) return;
+    this.editingReglement.set(null);
+    this.svc.getCostLines({ paysId, status: 'APPROVED', supplierId, size: 200 }).subscribe({
+      next: page => { this.payableLines.set(page.content); this.reglementModalOpen.set(true); },
+      error: () => { this.payableLines.set([]); this.reglementModalOpen.set(true); },
+    });
+  }
+
+  /** Tab 1's per-line "Créer un règlement" shortcut -- skips the network round-trip
+   *  `openNewReglement()` needs (it doesn't know which lines are payable yet); here the
+   *  caller already has the one exact line, so the modal's line picker gets a
+   *  single-element array and auto-selects/auto-fills it (see reglement-modal.component.ts). */
+  openReglementForLine(line: CostLineDto): void {
+    this.editingReglement.set(null);
+    this.payableLines.set([line]);
+    this.reglementModalOpen.set(true);
+  }
+
+  openEditReglement(reglementId: number | null): void {
+    if (reglementId == null) return;
+    this.svc.getReglement(reglementId).subscribe({
+      next: reglement => {
+        this.payableLines.set([]);
+        this.editingReglement.set(reglement);
+        this.reglementModalOpen.set(true);
+      },
+      error: () => this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR')),
+    });
+  }
+
+  confirmDeleteReglement(reglementId: number | null): void {
+    if (reglementId == null) return;
+    if (!confirm(this.translate.instant('COST.DETAIL.LEDGER.CONFIRM_DELETE'))) return;
+    this.svc.deleteReglement(reglementId).subscribe({
+      next: () => this.reloadCurrentMode(),
+      error: err => this.error.set(err.error?.message ?? this.translate.instant('COST.DETAIL.LEDGER.DELETE_ERROR')),
+    });
+  }
+
+  onReglementModalClosed(): void {
+    this.reglementModalOpen.set(false);
+    this.editingReglement.set(null);
+  }
+
+  onReglementModalResolved(): void {
+    this.reglementModalOpen.set(false);
+    this.editingReglement.set(null);
+    this.reloadCurrentMode();
   }
 }

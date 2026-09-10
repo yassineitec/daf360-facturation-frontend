@@ -10,6 +10,7 @@ import {
   CostAttachmentDto, ForexPreviewDto, CircuitPreviewDto,
   ListValueDto, SupplierSearchItem, SupplierLedgerDto, SupplierCostSummaryDto,
   RateComputationDto, CreateRateComputationRequest,
+  CostLineReglementDto, CreateReglementRequest, UpdateReglementRequest,
 } from './cost.model';
 
 @Injectable({ providedIn: 'root' })
@@ -111,6 +112,24 @@ export class CostService {
     );
   }
 
+  // ── Manual règlement (payment) feature (2026-09-10 plan) ───────────────────────
+
+  createReglement(costLineId: number, req: CreateReglementRequest): Observable<CostLineReglementDto> {
+    return this.http.post<CostLineReglementDto>(`${this.base}/cost-lines/${costLineId}/reglement`, req);
+  }
+
+  updateReglement(reglementId: number, req: UpdateReglementRequest): Observable<CostLineReglementDto> {
+    return this.http.put<CostLineReglementDto>(`${this.base}/reglements/${reglementId}`, req);
+  }
+
+  deleteReglement(reglementId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/reglements/${reglementId}`);
+  }
+
+  getReglement(reglementId: number): Observable<CostLineReglementDto> {
+    return this.http.get<CostLineReglementDto>(`${this.base}/reglements/${reglementId}`);
+  }
+
   createCostLine(dto: CreateCostLineRequest): Observable<CostLineDto> {
     return this.http.post<CostLineDto>(`${this.base}/cost-lines`, dto);
   }
@@ -183,11 +202,15 @@ export class CostService {
     return this.http.get<ForexPreviewDto>(`${this.base}/cost-lines/forex-preview`, { params });
   }
 
-  getCircuitPreview(amountEur: number, paysId: number, categoryId?: number | null): Observable<CircuitPreviewDto> {
+  getCircuitPreview(
+    amountEur: number, paysId: number,
+    categoryId?: number | null, costCategoryId?: number | null,
+  ): Observable<CircuitPreviewDto> {
     let params = new HttpParams()
       .set('amountEur', String(amountEur))
       .set('paysId', String(paysId));
     if (categoryId != null) params = params.set('categoryId', String(categoryId));
+    if (costCategoryId != null) params = params.set('costCategoryId', String(costCategoryId));
     return this.http.get<CircuitPreviewDto>(`${this.base}/cost-lines/circuit-preview`, { params });
   }
 
@@ -228,6 +251,10 @@ export class CostService {
       map(page => page.content),
       catchError(() => of([] as SupplierSearchItem[])),
     );
+  }
+
+  getSupplier(id: number): Observable<SupplierSearchItem> {
+    return this.http.get<SupplierSearchItem>(`${this.base}/suppliers/${id}`);
   }
 
   // ── Rate computations ──────────────────────────────────────────────────────
