@@ -97,93 +97,239 @@
 
   } @else if (affaire.billingMode === 'REGIE') {
 
-    <!-- ── Time & Materials: WIP = cost of validated Timesheet hours ── -->
-    <daf-stepper orientation="horizontal"
-      [steps]="wipStepperSteps()" [currentStep]="wipStep() - 1" [config]="wipStepperConfig()"
-      (stepClick)="onWipStepClick($event)" />
+    <!-- ── Time & Materials: WIP = cost of validated Timesheet hours ──
+         Le stepper est maintenant À L'INTÉRIEUR de la carte Régie Time & Materials,
+         tout en haut (au-dessus du bouton (i) / micro-libellé). -->
+    <div class="flex flex-col gap-3">
+    <!-- Coquille alignée sur celle de /rh/onboarding/:id (rh-section-card) : daf-card en
+         variante glass. Popover (i) : voir le commentaire juste avant le bouton plus bas
+         (daf-help-popover de la lib, déclencheur maison en position absolue). -->
+    <!-- TEST : carte agrandie un peu (padding lg au lieu de md — voir demande "augmenter
+         un peu la taille de cette carte"). -->
+    <!-- TEST : boutons masqués par défaut, révélés au survol de la carte — même
+         comportement que les cartes de /rh/profiles (profile-grid-card.component.ts,
+         `hovered` + [class.opacity-0]/[class.pointer-events-none]), mais en gardant les
+         `daf-button` déjà utilisés ici plutôt que de reprendre ses boutons natifs. -->
+    <!-- TEST : retour à `daf-card` (plutôt que `daf-section-card [help]`) — l'en-tête
+         automatique de `daf-section-card` (rien que pour loger le bouton (i)) prenait de
+         la place AVANT le stepper, impossible à remonter à zéro par simple marge négative
+         sans aussi annuler le padding de la carte. Le bouton (i) est ici position:absolute
+         (top-3 right-3, même recette que profile-grid-card.component.ts) — il ne
+         consomme donc plus AUCUN espace dans le flux, et le stepper devient le tout
+         premier contenu de la carte. `daf-help-popover` reste le vrai composant de la
+         lib (portail vers <body> inclus) : seul son déclencheur est géré à la main. -->
+    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'lg', hoverable: true }"
+      style="position:relative"
+      (mouseenter)="regieCardHovered.set(true)"
+      (mouseleave)="regieCardHovered.set(false)">
 
-    <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-4">
-      <p class="text-[12px] text-on-surface-variant">
-        {{ 'AFFAIRES.WIP.TM_EXPLAIN' | translate }}
-      </p>
+      <button type="button" #regieHelpBtn
+        class="absolute top-3 right-3 z-10 inline-flex items-center justify-center w-4 h-4 rounded-full
+               text-outline hover:text-tertiary focus:text-tertiary focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-tertiary/40 transition-colors cursor-help"
+        [attr.aria-label]="'AFFAIRES.WIP.HELP_ARIA' | translate"
+        (mouseenter)="regieHelpOpen.set(true)" (mouseleave)="regieHelpOpen.set(false)"
+        (focus)="regieHelpOpen.set(true)" (blur)="regieHelpOpen.set(false)">
+        <span class="material-symbols-outlined text-[14px] leading-none" aria-hidden="true">info</span>
+      </button>
+      <daf-help-popover [text]="tmHelpText()" placement="bottom" align="end" [open]="regieHelpOpen()" />
 
-      <div class="grid grid-cols-2 gap-3 max-w-md">
-        <daf-form-field
-          [value]="tmDateFrom()"
-          (valueChange)="tmDateFrom.set($any($event)); loadTmPreview()"
-          [options]="{ label: ('AFFAIRES.WIP.DATE_FROM' | translate), type: 'date', fullWidth: true }" />
-        <daf-form-field
-          [value]="tmDateTo()"
-          (valueChange)="tmDateTo.set($any($event)); loadTmPreview()"
-          [options]="{ label: ('AFFAIRES.WIP.DATE_TO' | translate), type: 'date', fullWidth: true }" />
-      </div>
+      <daf-stepper orientation="horizontal" class="mb-8"
+        [steps]="wipStepperSteps()" [currentStep]="wipStep() - 1" [config]="wipStepperConfig()"
+        (stepClick)="onWipStepClick($event)" />
 
-      @if (loadingTm()) {
-        <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
-      } @else if (tmPreview()) {
-        <!-- Un seul total : celui calculé au taux choisi par ressource (externe ou
-             intercompany, configuré à la création de chaque ressource) — c'est ce montant,
-             et lui seul, qui sera demandé au client. Le coût interne n'est plus affiché ici :
-             cette page ne sert qu'à préparer ce qui part au client. ─────────────────────── -->
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.CALCULATED' | translate }}</p>
-            <p class="text-[15px] font-semibold">
-              {{ (tmPreview()!.totalSell + tmPreview()!.carriedForwardAmount) | displayCurrency : affaire.devise }}
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <daf-button [options]="{ variant: 'ghost', iconStart: 'download', label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
-                                      disabled: !tmPreview()!.hours.length }"
-              (onClick)="exportWipExcel()" />
-            <daf-button [options]="{ variant: 'secondary', label: ('AFFAIRES.WIP.DETAILS' | translate) }"
-              (onClick)="toggleTmDetails()" />
-          </div>
+      <!-- TEST : carte encore agrandie (gap-8 au lieu de gap-6, + pb-2 — le padding de la
+           carte est déjà au maximum du type CardPadding : 'lg', donc c'est l'espacement
+           interne qui grandit pour rapprocher sa taille de la carte Historique WIP). -->
+      <div class="flex flex-col gap-8 pb-2">
+
+        <!-- Panneau du calendrier — TOUJOURS présent dans le DOM (jamais créé/détruit par
+             un `@if`, contrairement aux deux essais précédents) : `toggleDatePicker()` le
+             déplace lui-même vers <body> et le positionne en `position:fixed` la première
+             fois qu'on l'ouvre, ce qui évite tout conflit entre notre déplacement manuel et
+             la destruction de vue d'Angular. `[style.display]` le cache tant qu'il est
+             fermé ; `visibility:hidden` avant le premier calcul de position évite un flash
+             dans le coin de la carte le temps que `positionDatePicker()` s'exécute. -->
+        <div #calDatePickerPanel
+          [style.display]="showTmDatePicker() ? 'block' : 'none'"
+          [style.visibility]="datePickerVisible() ? 'visible' : 'hidden'"
+          class="shadow-xl rounded-lg">
+          <daf-multi-date-picker
+            [value]="tmDateRange()"
+            (valueChange)="onTmDateRangeChange($event)"
+            [config]="{ selectionMode: 'range', inline: true, fullWidth: false }" />
         </div>
 
-        @if (tmPreview()!.carriedForwardAmount > 0) {
-          <div class="rounded-lg bg-warning/10 border border-warning/30 p-3 flex flex-col gap-1">
-            <p class="text-[12px] font-semibold text-warning">{{ 'AFFAIRES.WIP.CARRIED_FORWARD_TITLE' | translate }}</p>
-            <div class="grid grid-cols-3 gap-2 text-[12px]">
-              <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_PREVIOUS' | translate }}:
-                <strong>{{ tmPreview()!.carriedForwardAmount | displayCurrency : affaire.devise }}</strong></span>
-              <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_NEW' | translate }}:
-                <strong>{{ tmPreview()!.totalSell | displayCurrency : affaire.devise }}</strong></span>
-              <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_TOTAL' | translate }}:
-                <strong>{{ (tmPreview()!.totalSell + tmPreview()!.carriedForwardAmount) | displayCurrency : affaire.devise }}</strong></span>
+        @if (loadingTm()) {
+          <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+        } @else if (tmPreview()) {
+          @if (tmPreview()!.carriedForwardAmount > 0) {
+            <div class="rounded-lg bg-warning/10 border border-warning/30 p-3 flex flex-col gap-1">
+              <p class="text-[12px] font-semibold text-warning">{{ 'AFFAIRES.WIP.CARRIED_FORWARD_TITLE' | translate }}</p>
+              <div class="grid grid-cols-3 gap-2 text-[12px]">
+                <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_PREVIOUS' | translate }}:
+                  <strong>{{ tmPreview()!.carriedForwardAmount | displayCurrency : affaire.devise }}</strong></span>
+                <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_NEW' | translate }}:
+                  <strong>{{ tmPreview()!.totalSell | displayCurrency : affaire.devise }}</strong></span>
+                <span>{{ 'AFFAIRES.WIP.CARRIED_FORWARD_TOTAL' | translate }}:
+                  <strong>{{ (tmPreview()!.totalSell + tmPreview()!.carriedForwardAmount) | displayCurrency : affaire.devise }}</strong></span>
+              </div>
             </div>
+          }
+        }
+
+        @if (tmPreview()) {
+          <!-- TEST : grille 3 colonnes (auto / 1fr / auto) plutôt qu'un simple flex — avec
+               seulement `justify-between`, le message de vérification se retrouvait dans
+               l'espace laissé entre "WIP calculé" et les boutons, pas au vrai milieu de la
+               carte. La colonne du milieu (1fr) prend tout l'espace restant et centre son
+               contenu ; chaque bloc reste épinglé à sa colonne (grid-column explicite) même
+               quand le message ou les boutons ne s'affichent pas (rechargement), pour que
+               "WIP calculé"/les boutons ne glissent jamais dans la colonne du milieu. -->
+          <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
+            <div style="grid-column:1">
+              <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.CALCULATED' | translate }}</p>
+              <p class="text-[20px] font-black text-success">
+                {{ (tmPreview()!.totalSell + tmPreview()!.carriedForwardAmount) | displayCurrency : affaire.devise }}
+              </p>
+            </div>
+
+            @if (!loadingTm() && wipStep() >= 2) {
+              <label style="grid-column:2" class="flex justify-center items-start gap-2 text-[12px] text-center cursor-pointer">
+                <input type="checkbox" class="mt-0.5 shrink-0" [checked]="wipManualVerified()"
+                  (change)="onManualVerifiedChange($any($event.target).checked)" />
+                <span>{{ 'AFFAIRES.WIP.MANUAL_VERIFY_LABEL' | translate }}</span>
+              </label>
+            }
+
+            @if (!loadingTm()) {
+              <!-- TEST : habillage repris de profile-grid-card.component.ts (/rh/profiles)
+                   — petit "pill" blanc/flouté (bg-white/90 backdrop-blur-sm p-1 rounded-lg
+                   border shadow-sm, classe wip-icon-actions, stylée en ::ng-deep dans le
+                   .ts) au lieu des couleurs pleines de "ghost"/"secondary"/"teal" — un seul
+                   traitement neutre pour les 4, comme les 2 boutons (visibility/edit) de
+                   la carte profil. On garde daf-button (mécanisme loading/disabled). -->
+              <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
+                          bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+                [class.opacity-0]="!regieCardHovered()"
+                [class.opacity-100]="regieCardHovered()"
+                [class.pointer-events-none]="!regieCardHovered()">
+                <!-- TEST v3 : bouton icône à nous (propre, cohérent avec les 3 suivants) +
+                     panneau `inline` de la lib qu'on déplace nous-mêmes vers <body> en
+                     `position:fixed`, toujours ancré AU-DESSUS de ce bouton — voir
+                     toggleDatePicker()/positionDatePicker() dans le .ts pour le pourquoi des
+                     deux essais précédents (l'un coupé par la carte, l'autre pas réductible
+                     à une icône propre et pas garanti "au-dessus"). -->
+                <daf-button #calDatePickerTrigger
+                  [options]="{ variant: 'ghost', size: 'sm', iconStart: 'calendar_month',
+                               title: ('AFFAIRES.WIP.PERIOD' | translate) }"
+                  (onClick)="toggleDatePicker()" />
+                <!-- Icônes seules + tooltip natif (`title`) plutôt que des boutons avec libellé :
+                     le texte n'apparaît qu'au survol (comme le bouton (i) juste au-dessus).
+                     `title` documente déjà le nom de l'action à l'écran lecteur (voir
+                     ButtonOptions), donc aucun `ariaLabel` distinct requis. -->
+                <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                          disabled: !tmPreview()!.hours.length }"
+                  (onClick)="exportWipExcel()" />
+                <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'visibility', title: ('AFFAIRES.WIP.DETAILS' | translate) }"
+                  (onClick)="toggleTmDetails()" />
+                <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'check', title: ('AFFAIRES.WIP.VALIDATE' | translate),
+                                          loading: validatingTm(),
+                                          disabled: !tmPreview()!.hours.length || !wipManualVerified() }"
+                  (onClick)="validateTm()" />
+              </div>
+            }
           </div>
         }
 
-        @if (wipStep() >= 2) {
-          <label class="flex items-start gap-2 text-[12px] cursor-pointer">
-            <input type="checkbox" class="mt-0.5" [checked]="wipManualVerified()"
-              (change)="onManualVerifiedChange($any($event.target).checked)" />
-            <span>{{ 'AFFAIRES.WIP.MANUAL_VERIFY_LABEL' | translate }}</span>
-          </label>
+        @if (tmError()) {
+          <p class="text-[12px] text-danger">{{ tmError() }}</p>
         }
+      </div>
+    </daf-card>
 
-        <div>
-          <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.VALIDATE' | translate),
-                                    loading: validatingTm(),
-                                    disabled: !tmPreview()!.hours.length || !wipManualVerified() }"
-            (onClick)="validateTm()" />
+    <!-- Historique WIP : sous la carte Régie Time & Materials, même coquille daf-card,
+         daf-data-table natif à la place de l'ancien <table> fait main. En-tête : titre
+         à gauche, nombre de lignes + bouton "Afficher tout" à droite (ouvre la popup
+         avec l'historique complet + recherche/filtre). -->
+    <!-- TEST : mêmes boutons masqués/révélés au survol de la carte que la carte Régie
+         ci-dessus (regieCardHovered) — ici historyCardHovered. Le badge (juste un
+         compteur, pas un bouton) reste toujours visible. -->
+    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
+      (mouseenter)="historyCardHovered.set(true)"
+      (mouseleave)="historyCardHovered.set(false)">
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
+          <span class="material-symbols-outlined text-[18px]">history</span>
+          {{ 'AFFAIRES.WIP.HISTORY_TITLE' | translate }}
+        </h3>
+        <div class="flex items-center gap-2">
+          <daf-badge [label]="tmHistory().length + ' ' + ('AFFAIRES.WIP.HISTORY_COUNT_UNIT' | translate)"
+            [options]="{ variant: 'neutral', size: 'sm' }" />
+          <!-- TEST : icônes seules + tooltip natif (`title`), même traitement que les
+               4 boutons de la carte Régie ci-dessus — même bibliothèque (daf-button +
+               xlsx) que exportWipExcel(). Masquées par défaut, révélées au survol, même
+               pill visuel repris de profile-grid-card.component.ts. -->
+          <div class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
+                      bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+            [class.opacity-0]="!historyCardHovered()"
+            [class.opacity-100]="historyCardHovered()"
+            [class.pointer-events-none]="!historyCardHovered()">
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
+                                      title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                      disabled: !tmHistory().length }"
+              (onClick)="exportHistoryExcel(tmHistory())" />
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full',
+                                      title: ('AFFAIRES.WIP.HISTORY_SHOW_ALL' | translate) }"
+              (onClick)="showHistoryPage.set(true)" />
+          </div>
         </div>
+      </div>
+      @if (loadingTmHistory()) {
+        <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+      } @else {
+        <daf-data-table [columns]="tmHistoryColumns()" [rows]="tmHistoryRows()" [config]="tmHistoryConfig()" />
+        @if (cancelLineError()) {
+          <p class="mt-2 text-[12px] text-danger">{{ cancelLineError() }}</p>
+        }
       }
-
-      @if (tmError()) {
-        <p class="text-[12px] text-danger">{{ tmError() }}</p>
-      }
+    </daf-card>
     </div>
 
+    <!-- TEST : "Détails" en POPUP plein écran plutôt qu'affiché en bas de page — même
+         coquille que la popup "Historique WIP" plus haut (daf-modal plafonne à 900px,
+         voir son propre commentaire), mais encore plus petite (marge 600px au lieu de
+         400px, 65vh au lieu de 75vh) : ce tableau a moins de colonnes que l'historique. -->
     @if (showTmDetails() && tmPreview()) {
-      @if (selectedCollaboratorUserId() === null) {
-        <app-wip-tm-detail-table [hours]="tmPreview()!.hours"
-          (collaboratorSelected)="selectedCollaboratorUserId.set($event)" />
-      } @else {
-        <app-wip-tm-collaborator-detail [hours]="tmPreview()!.hours" [userId]="selectedCollaboratorUserId()!"
-          (back)="selectedCollaboratorUserId.set(null)" />
-      }
+      <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+           style="z-index:1000"
+           (click)="toggleTmDetails()">
+        <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+             style="width:calc(100vw - 600px); height:65vh;"
+             (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
+            <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
+              <span class="material-symbols-outlined text-primary">visibility</span>
+              {{ 'AFFAIRES.WIP.DETAILS' | translate }}
+            </h2>
+            <button type="button" (click)="toggleTmDetails()"
+              class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
+                     hover:text-on-surface hover:bg-surface-container transition-colors"
+              [attr.aria-label]="'ADMIN.COMMON.BACK' | translate">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+            @if (selectedCollaboratorUserId() === null) {
+              <app-wip-tm-detail-table [hours]="tmPreview()!.hours"
+                (collaboratorSelected)="selectedCollaboratorUserId.set($event)" />
+            } @else {
+              <app-wip-tm-collaborator-detail [hours]="tmPreview()!.hours" [userId]="selectedCollaboratorUserId()!"
+                (back)="selectedCollaboratorUserId.set(null)" />
+            }
+          </div>
+        </div>
+      </div>
     }
 
     <!-- ── Lignes en attente de réponse client — la réponse arrive par email hors système,
@@ -223,44 +369,61 @@
       </div>
     }
 
-    @if (loadingTmHistory()) {
-      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
-    } @else if (tmHistory().length) {
-      <table class="w-full text-[13px]">
-        <thead>
-          <tr class="text-left text-on-surface-variant border-b border-outline-variant">
-            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_PERIOD' | translate }}</th>
-            <th class="py-2 pr-3 text-right">{{ 'AFFAIRES.WIP.COL_AMOUNT' | translate }}</th>
-            <th class="py-2 pr-3">{{ 'AFFAIRES.WIP.COL_STATUS' | translate }}</th>
-            <th class="py-2 pr-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (l of tmHistory(); track l.id) {
-            <tr class="border-b border-outline-variant/50">
-              <td class="py-2 pr-3">
-                @if (l.periodDateFrom && l.periodDateTo) {
-                  {{ l.periodDateFrom }} → {{ l.periodDateTo }}
-                } @else {
-                  {{ l.periodMonth }}/{{ l.periodYear }}
-                }
-              </td>
-              <td class="py-2 pr-3 text-right">{{ l.montantHt | displayCurrency : affaire.devise }}</td>
-              <td class="py-2 pr-3">{{ l.statut }}</td>
-              <td class="py-2 pr-3 text-right">
-                @if (isTmLineCancellable(l.statut)) {
-                  <button type="button" class="text-danger text-[12px]" (click)="cancelLine(l.id)">
-                    {{ 'AFFAIRES.WIP.CANCEL' | translate }}
-                  </button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-      @if (cancelLineError()) {
-        <p class="text-[12px] text-danger">{{ cancelLineError() }}</p>
-      }
+    <!-- Popup "Historique WIP" EN PLEIN ÉCRAN — recouvre toute la fenêtre (fixed inset-0),
+         pas une nouvelle page : le contenu de l'onglet reste monté en dessous. daf-modal
+         plafonne à 900px sans option pour aller plus loin (voir ModalHostComponent),
+         donc l'habillage (fond assombri, panneau, en-tête, croix) est reproduit ici à la
+         même taille que le reste des popups de l'app, en pleine largeur/hauteur. -->
+    @if (showHistoryPage()) {
+      <!-- Recentré : couvre tout l'écran (inset-0) et centre le panneau au milieu,
+           comme une vraie popup — plus de bande réservée à gauche. -->
+      <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+           style="z-index:1000"
+           (click)="showHistoryPage.set(false)">
+        <!-- TEST : popup agrandie (marge 100px de chaque côté au lieu de 240px, 88vh au
+             lieu de 72vh de hauteur). -->
+        <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+             style="width:calc(100vw - 200px); height:88vh;"
+             (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
+            <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
+              <span class="material-symbols-outlined text-primary">history</span>
+              {{ 'AFFAIRES.WIP.HISTORY_TITLE' | translate }}
+            </h2>
+            <button type="button" (click)="showHistoryPage.set(false)"
+              class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
+                     hover:text-on-surface hover:bg-surface-container transition-colors"
+              [attr.aria-label]="'ADMIN.COMMON.BACK' | translate">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+            <!-- Fond blanc commun à la recherche et au bouton export — même mécanisme
+                 que /finance/admin : card="false" retire le fond glass propre à
+                 daf-search-toolbar pour ne garder qu'un seul fond partagé. -->
+            <div class="flex items-center gap-2 bg-white rounded-xl p-2">
+              <daf-search-toolbar class="flex-1" [card]="false"
+                [placeholder]="'AFFAIRES.WIP.HISTORY_SEARCH_PLACEHOLDER' | translate"
+                [value]="historySearch()"
+                [debounce]="200"
+                (valueChange)="historySearch.set($event)"
+                [filterFields]="historyFilterFields()"
+                (filterApply)="onHistoryFilterApply($event)"
+                (filterReset)="historyStatut.set('')" />
+              <!-- Même bibliothèque (daf-button + xlsx) que la carte — exporte ici la
+                   sélection filtrée plutôt que tout l'historique. -->
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
+                                        label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                        disabled: !filteredHistoryLines().length }"
+                (onClick)="exportHistoryExcel(filteredHistoryLines())" />
+            </div>
+            <daf-data-table [columns]="tmHistoryColumns()" [rows]="filteredHistoryRows()" [config]="tmHistoryConfig()" />
+            @if (cancelLineError()) {
+              <p class="text-[12px] text-danger">{{ cancelLineError() }}</p>
+            }
+          </div>
+        </div>
+      </div>
     }
 
   } @else if (affaire.billingMode === 'LIVRABLE') {
