@@ -179,6 +179,14 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
       },
     ],
   },
+  {
+    id: 'suppliers',
+    route: 'suppliers',
+    icon: 'storefront',
+    tone: 'secondary',
+    labelKey: 'FACTURATION.layout.NAV.SUPPLIERS',
+    descKey: 'HOME.MODULES.SUPPLIERS.DESC',
+  },
   // Elle a désormais un écran : `isNavigableRoute` la laisse entrer dans la barre d'elle-
   // même, sans drapeau à poser ici — c'était tout l'intérêt de dériver la barre de la
   // config de route plutôt que d'une seconde liste.
@@ -200,14 +208,6 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
   //   labelKey: 'FACTURATION.layout.NAV.SUBCONTRACTING',
   //   descKey: 'HOME.MODULES.SUBCONTRACTING.DESC',
   // },
-  {
-    id: 'suppliers',
-    route: 'suppliers',
-    icon: 'storefront',
-    tone: 'secondary',
-    labelKey: 'FACTURATION.layout.NAV.SUPPLIERS',
-    descKey: 'HOME.MODULES.SUPPLIERS.DESC',
-  },
   {
     id: 'reporting',
     route: 'reporting',
