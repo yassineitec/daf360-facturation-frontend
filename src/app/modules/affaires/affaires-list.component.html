@@ -18,13 +18,13 @@
 
     <daf-metric-card
       [label]="'AFFAIRES.LIST.KPI.RAF' | translate"
-      [value]="statsRafTotal() | displayCurrency : 'TND'"
+      [value]="statsRafTotal() | displayCurrency : summaryCurrency()"
       [delta]="kpiDelta()"
       [options]="kpiRaf" />
 
     <daf-metric-card
       [label]="'AFFAIRES.LIST.KPI.BUDGET' | translate"
-      [value]="statsBudgetTotal() | displayCurrency : 'TND'"
+      [value]="statsBudgetTotal() | displayCurrency : summaryCurrency()"
       [delta]="kpiDelta()"
       [options]="kpiBudget" />
 

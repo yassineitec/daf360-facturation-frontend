@@ -15,8 +15,7 @@ import {
 // (submitted directly at creation), so validating/returning one goes through the
 // ordinary invoicing lifecycle endpoints instead of BillingService.
 import { InvoiceService } from '../../invoicing/invoice.service';
-import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
-
+import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 type ActiveTab = 'rf' | 'df' | 'history';
 
 const LINE_STATUT: Record<string, { bg: string; color: string; border: string }> = {
@@ -297,12 +296,12 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateTaux(id: number): void {
-    // Validating a taux creates the invoice server-side (ProgressBillingService), emitted
-    // immediately — jump straight into its detail page, same as doValidateDF() below.
+    // Validating a taux creates the draft invoice server-side (ProgressBillingService) —
+    // jump straight into its edit stepper, same as doValidateDF() below.
     this.svc.validateTaux(id).subscribe({
       next: line => {
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId]);
+          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
         } else {
           this.loadDF();
         }
@@ -336,13 +335,13 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateDF(lineId: number): void {
-    // DF validation creates the invoice server-side (DFValidationService), emitted
-    // immediately — jump straight into its detail page instead of staying on this list,
-    // since there's nothing left to do here once the invoice exists.
+    // DF validation creates the draft invoice server-side (DFValidationService) — jump
+    // straight into its edit stepper instead of staying on this list, since there's
+    // nothing left to do here once the invoice exists.
     this.svc.validateDF(lineId).subscribe({
       next: line => {
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId]);
+          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
         } else {
           this.loadDF();
         }
@@ -351,10 +350,13 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   doValidateLivrableBatch(batchId: number): void {
+    // Same as doValidateDF() above — the batch's shared invoice is created as a DRAFT
+    // (LivrableBillingService → DFValidationService.generateFromBillingLines), so the
+    // edit stepper is where DF reviews it, not the read-only detail page.
     this.svc.validateLivrableBatch(batchId).subscribe({
       next: batch => {
         if (batch.invoiceId) {
-          this.router.navigate(['/finance/invoicing', batch.invoiceId]);
+          this.router.navigate(['/finance/invoicing', batch.invoiceId, 'edit']);
         } else {
           this.loadDF();
         }

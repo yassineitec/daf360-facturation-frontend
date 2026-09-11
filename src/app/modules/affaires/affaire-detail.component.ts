@@ -41,8 +41,7 @@ import {
 } from '../../shared/enum-labels';
 import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avatar.service';
 import { ClientContactService } from '../clients/contacts/client-contact.service';
-import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
-
+import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
 /** A read-only label/value pair. `label` is always a translation key. */
 interface DetailField { label: string; value: string; }
 

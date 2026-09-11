@@ -144,9 +144,15 @@ export const routes: Routes = [
         // Trésorerie prévisionnelle. Adossée au même droit que le recouvrement : elle
         // n'agrège que des créances et des engagements déjà lisibles ailleurs, et
         // `TreasuryController` applique exactement le même garde côté service.
+        //
+        // `FACT_VIEW_PAYMENT` **seul** — et pas aussi `FACT_MANAGE_PAYMENT` comme ailleurs :
+        // le contrôleur n'accepte que le droit de lecture, donc un porteur de MANAGE sans
+        // VIEW franchissait la garde de route pour ne récolter qu'un 403 et la bannière
+        // d'erreur. Consulter est un droit de consultation ; élargir la garde ici sans
+        // élargir `@PreAuthorize` ne fait qu'échanger une page refusée contre une page cassée.
         path: 'tresorerie',
         canActivate: [permissionGuard],
-        data: { permissions: ['FACT_VIEW_PAYMENT', 'FACT_MANAGE_PAYMENT'] },
+        data: { permissions: ['FACT_VIEW_PAYMENT'] },
         loadChildren: () =>
           import('./modules/treasury/treasury.routes').then(m => m.TREASURY_ROUTES),
       },

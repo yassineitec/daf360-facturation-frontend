@@ -3,8 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, DataTableComponent, SortDirection, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
-import { EmployeeCostDto } from './employee-cost.model';
-import {
+import { EmployeeCostDto } from './employee-cost.model';import {
   STATUS_BADGE_VARIANT, displayName, formatAmount, formatPeriod, initials, statusKey,
 } from './employee-cost-display';
 

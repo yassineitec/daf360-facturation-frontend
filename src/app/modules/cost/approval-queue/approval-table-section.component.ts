@@ -6,8 +6,7 @@ import {
 import { ApprovalItem, KIND_BADGE_VARIANT, kindKey } from './approval-item';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { URGENCY_BADGE_VARIANT, urgencyKey } from '../cost-display';
-import { ApprovalDecision } from './approval-cards-section.component';
-
+import { ApprovalDecision } from './approval-cards-section.component';
 /**
  * List view of `/finance/cost/approval` on the house table style (UI-PLAYBOOK §6b),
  * over the same unified `ApprovalItem` the card view renders.

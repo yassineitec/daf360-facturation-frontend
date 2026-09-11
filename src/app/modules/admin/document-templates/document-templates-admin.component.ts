@@ -7,8 +7,7 @@ import {
   ModalService, ModalRef, ButtonComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
 } from '@khalilrebhiitec/daf360';
-import { DocumentTemplateService } from './document-template.service';
-import {
+import { DocumentTemplateService } from './document-template.service';import {
   FactDocumentTemplateDto, SaveFactDocumentTemplateRequest,
   DOCUMENT_TYPES, INVOICE_TEMPLATE_VARIABLES, TemplateVariableDef,
 } from './document-template.model';

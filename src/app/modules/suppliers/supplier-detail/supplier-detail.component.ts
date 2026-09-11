@@ -23,8 +23,7 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { CostService } from '../../cost/cost.service';
 import { CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../../cost/cost.model';
 import { STATUS_BADGE_VARIANT, statusKey } from '../../cost/cost-display';
-import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 /**
  * Une ligne clé/valeur du panneau de détails. `label` est toujours une clé i18n.
  *

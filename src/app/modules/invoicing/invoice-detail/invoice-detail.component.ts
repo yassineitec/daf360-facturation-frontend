@@ -22,8 +22,7 @@ import { STATUT_BADGE_VARIANT } from '../invoice-display';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
-import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
 

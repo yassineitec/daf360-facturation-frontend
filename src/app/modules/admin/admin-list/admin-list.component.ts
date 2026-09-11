@@ -24,8 +24,7 @@ import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { UserStore } from '../../../core/user.store';
-
+import { UserStore } from '../../../core/user.store';
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'reminders';
 
 const PAGE_SIZE = 10;

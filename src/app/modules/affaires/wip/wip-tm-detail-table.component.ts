@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
-import { WipTmHourDto } from './wip.model';
-
+import { WipTmHourDto } from './wip.model';
 /**
  * WIP T&M preview, aggregated one row per collaborator — the flat Date -> Collaborateur ->
  * Discipline -> WBS -> Document list this used to render directly became unreadable on a

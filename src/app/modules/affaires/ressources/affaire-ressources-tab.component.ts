@@ -10,8 +10,7 @@ import {
 import { AffaireService } from '../affaire.service';
 import { LivrableService } from '../livrable.service';
 import { CollaborateurTauxDto } from '../livrable.model';
-import { AffaireDetail, AffaireRessourceManageDto, AffaireWorkedHoursSummaryDto, UserRefDto } from '../affaire.model';
-
+import { AffaireDetail, AffaireRessourceManageDto, AffaireWorkedHoursSummaryDto, UserRefDto } from '../affaire.model';
 type RateSource = 'EXTERNAL' | 'INTERNAL';
 
 /** Where the (single, shared) add-resource form is currently rendered: `'top'` next to the

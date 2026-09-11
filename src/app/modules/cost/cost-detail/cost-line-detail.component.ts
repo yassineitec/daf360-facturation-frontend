@@ -25,8 +25,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
-import { UserStore } from '../../../core/user.store';
-
+import { UserStore } from '../../../core/user.store';
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
 

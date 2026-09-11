@@ -2,8 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { environment } from '../../../../environments/environment';
-import {
+import { environment } from '../../../../environments/environment';import {
   ButtonComponent, CardComponent, CheckboxComponent, PageHeaderComponent, BreadcrumbItem, AccordionCardComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
 } from '@khalilrebhiitec/daf360';

@@ -4,8 +4,7 @@ import {
   AvatarCell, BadgeCell, DafCellDirective, DataTableComponent,
   TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
-import { SupplierDto } from '../supplier.model';
-import {
+import { SupplierDto } from '../supplier.model';import {
   SUPPLIER_STATE_BADGE, SUPPLIER_STATE_LABEL, initials, supplierCode, supplierState,
 } from '../supplier-display';
 

@@ -228,6 +228,22 @@ export interface ValiderTsRequest {
   notes?: string | null;
 }
 
+/**
+ * Agrégats des tuiles, calculés côté serveur sur TOUT le jeu filtré.
+ * Ils ne se déduisent pas de la page reçue : `GET /affaires` n'en renvoie que 20 lignes.
+ */
+export interface AffairesSummary {
+  total:       number;
+  actives:     number;
+  suspendues:  number;
+  budgetTotal: number;
+  rafTotal:    number;
+  /** Devise des deux montants : toujours 'EUR', converti côté serveur. */
+  devise:      string;
+  /** Devises écartées faute de taux `RATE_EUR_*` — leurs montants ne sont dans aucun total. */
+  devisesIgnorees: string[];
+}
+
 export interface AffaireFilter {
   paysId?:   number | null;
   statut?:   string | null;

@@ -942,7 +942,8 @@
         "BUDGET": "Total budget",
         "PENDING": "Suspended",
         "UNITS": "projects",
-        "CURRENT_PAGE": "current page"
+        "ALL": "all projects",
+        "FILTERED": "filters applied"
       },
       "TABLE": {
         "SEARCH": "Search by name, reference…",
@@ -3845,8 +3846,9 @@
       "OVERDUE_IN": "Overdue receivables",
       "OVERDUE_OUT_DELTA": "{{amount}} of overdue commitments",
       "EXPECTED_IN": "Expected inflows",
-      "OF_WHICH_MILESTONES": "incl. {{amount}} from milestones",
+      "NET_DELTA": "{{amount}} net over the horizon",
       "EXPECTED_OUT": "Committed outflows",
+      "COLLECTED_DELTA": "{{amount}} collected in 30 days",
       "LOW_POINT": "Cumulative low point"
     },
     "CHART": {
@@ -3858,8 +3860,7 @@
     },
     "TABLE": {
       "PERIOD": "Period",
-      "INVOICES": "Invoices",
-      "MILESTONES": "Milestones",
+      "IN": "Inflows",
       "OUT": "Outflows",
       "NET": "Net",
       "CUMUL": "Cumulative",
@@ -3868,15 +3869,23 @@
       "EMPTY": "No due date over this horizon."
     },
     "FLOWS": {
-      "TOP_IN": "Largest expected inflows",
-      "TOP_OUT": "Largest committed outflows",
+      "TOP_IN": "Expected inflows",
+      "TOP_OUT": "Committed outflows",
       "COUNTERPARTY": "Counterparty",
       "DUE": "Due date",
       "AMOUNT": "Amount",
-      "FORECAST": "forecast milestone",
       "EMPTY_IN": "No inflow expected over this horizon.",
       "EMPTY_OUT": "No outflow committed over this horizon."
     },
-    "DISCLAIMER": "A flow projection, not a bank balance: the module holds no opening cash position, so the cumulative column reads as a variation starting today. Outflows are spend commitments — cost lines carry no settlement flag — and past due dates are only picked up over 90 days. Amounts are not converted: they are summed in {{devise}}. Actual benchmark: {{collected}} collected over the last 30 days."
+    "HELP": {
+      "OVERDUE_IN": "Invoices past their payment date and not settled, over the last {{n}} days. Beyond that it is a collections matter, not a cash forecast.",
+      "EXPECTED_IN": "What is left to collect before the end of the horizon, net of payments already received. Credit notes are not counted.",
+      "EXPECTED_OUT": "Approved spend falling due, less supplier payments already recorded. Approved spend that nobody has marked as paid still counts as owed.",
+      "LOW_POINT": "The tightest moment in the projection: where inflows minus outflows, accumulated, sit at their lowest. This is the question the page exists to answer.",
+      "CHART_IN": "Expected inflows month by month. Same scale as the outflows chart, so the two heights can be compared by eye.",
+      "CHART_OUT": "Committed outflows month by month. Same scale as the inflows chart."
+    },
+    "WARN_NO_RATE": "No exchange rate is configured for: {{devises}}. Flows in those currencies are excluded from every total on this page. Add the rate under Administration › Currencies to bring them back in.",
+    "DISCLAIMER": "A flow projection, not a bank balance: the module holds no opening cash position, so the cumulative column reads as a variation starting today. Outflows are spend commitments — cost lines carry no settlement flag — and past due dates are only picked up over {{lookback}} days, for money in as well as money out. Amounts are converted to {{devise}} at the current rate. Actual benchmark: {{collected}} collected over the last 30 days."
   }
 }

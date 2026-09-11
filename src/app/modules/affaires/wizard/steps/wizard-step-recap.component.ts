@@ -9,8 +9,7 @@ import { CostService }       from '../../../cost/cost.service';
 import { FactListService }   from '../../../../core/fact-list.service';
 import { AffaireDraftState, BILLING_MODES, BUDGET_LABEL } from '../../affaire-wizard.model';
 import { ClientContactService } from '../../../clients/contacts/client-contact.service';
-import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
-
+import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
 @Component({
   selector: 'app-wizard-step-recap',
   standalone: true,

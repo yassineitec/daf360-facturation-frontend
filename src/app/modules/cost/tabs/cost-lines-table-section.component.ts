@@ -5,8 +5,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { CostLineDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { TableActionComponent } from '../../../shared/table-action.component';
-import {
+import { TableActionComponent } from '../../../shared/table-action.component';import {
   APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit, canReglement,
   canSubmit, formatDate, statusKey,
 } from '../cost-display';

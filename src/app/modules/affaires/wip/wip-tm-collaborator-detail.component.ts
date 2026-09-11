@@ -2,8 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonComponent, DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { WipTmHourDto } from './wip.model';
-import { isoWeek } from '../../../shared/iso-week';
-
+import { isoWeek } from '../../../shared/iso-week';
 /**
  * Drill-down for one collaborator out of a WIP T&M preview — the "most important
  * information" summary strip (hours, cost, average rate, days worked) plus the full

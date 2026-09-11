@@ -43,24 +43,40 @@
       }
     </section>
 
-    <!-- ── Répartition dans le temps ────────────────────────────────────── -->
+    <!-- Devises écartées faute de taux : les flux concernés ne sont dans aucun total.
+         Silencieux dans le cas normal — le bloc n'existe que s'il y a quelque chose à
+         signaler, parce qu'un total incomplet sans avertissement est pire qu'une erreur. -->
+    @if (s.devisesIgnorees.length) {
+      <div class="flex items-start gap-3 rounded-xl bg-warning/10 px-5 py-4 text-body-sm text-on-surface">
+        <span class="material-symbols-outlined text-[18px] text-warning">currency_exchange</span>
+        <p>{{ 'TREASURY.WARN_NO_RATE' | translate : { devises: s.devisesIgnorees.join(', ') } }}</p>
+      </div>
+    }
+
+    <!-- ── Répartition dans le temps ──────────────────────────────────────
+         `helpTrigger="hover"` : ces deux cartes sont en lecture seule, aucun champ à
+         traverser, donc pas de glyphe `(i)` à ajouter — même traitement que les tuiles. -->
     <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
 
-      <daf-section-card style="flex:1 1 380px; min-width:0">
+      <daf-section-card style="flex:1 1 380px; min-width:0"
+                        helpTrigger="hover"
+                        [help]="'TREASURY.HELP.CHART_IN' | translate">
         <div class="flex flex-col gap-4 p-6">
           <div class="flex items-baseline justify-between gap-3">
             <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
               {{ 'TREASURY.CHART.IN_TITLE' | translate }}
             </span>
             <span class="text-body-md font-extrabold text-teal">
-              {{ s.creancesAVenir + s.jalonsPrevus | displayCurrency : s.devise }}
+              {{ s.creancesAVenir | displayCurrency : s.devise }}
             </span>
           </div>
           <daf-bar-chart [bars]="inflowBars()" [options]="inflowChartOptions()" />
         </div>
       </daf-section-card>
 
-      <daf-section-card style="flex:1 1 380px; min-width:0">
+      <daf-section-card style="flex:1 1 380px; min-width:0"
+                        helpTrigger="hover"
+                        [help]="'TREASURY.HELP.CHART_OUT' | translate">
         <div class="flex flex-col gap-4 p-6">
           <div class="flex items-baseline justify-between gap-3">
             <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
@@ -98,8 +114,11 @@
         </div>
       </ng-template>
 
+      <!-- Pas de `text-right` ici : la colonne porte `align: 'right'` et la lib l'applique
+           à la cellule. Le répéter sur le gabarit donnerait deux sources de vérité, dont
+           l'une gagnerait silencieusement si la colonne changeait d'alignement. -->
       <ng-template dafCell="net" let-row>
-        <span class="block text-right text-body-md font-bold"
+        <span class="text-body-md font-bold"
               [class.text-teal]="row['_netSign'] > 0"
               [class.text-danger]="row['_netSign'] < 0"
               [class.text-on-surface-variant]="row['_netSign'] === 0">
@@ -108,7 +127,7 @@
       </ng-template>
 
       <ng-template dafCell="cumul" let-row>
-        <span class="block text-right text-body-md font-extrabold"
+        <span class="text-body-md font-extrabold"
               [class.text-teal]="row['_cumulSign'] > 0"
               [class.text-danger]="row['_cumulSign'] < 0"
               [class.text-on-surface-variant]="row['_cumulSign'] === 0">
@@ -118,78 +137,108 @@
 
     </daf-data-table>
 
-    <!-- ── Principaux flux ──────────────────────────────────────────────── -->
+    <!-- ── Principaux flux ──────────────────────────────────────────────────
+         Les deux tables sont libres dans la page : `daf-data-table` dessine déjà sa
+         bordure, son rayon et son propre `overflow-x-auto` (UI-PLAYBOOK §6b règle 1).
+         Les envelopper dans un `daf-section-card` doublait le cadre et imbriquait un
+         second conteneur de défilement. Le titre passe par `config.title` — c'est le
+         mécanisme prévu par la lib, et le `<h3>` qu'elle rend ne dispute pas son `h1`
+         au `daf-page-header`. Le div restant ne porte que le flex, aucune chrome. -->
     <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start">
 
-      <daf-section-card style="flex:1 1 380px; min-width:0">
-        <div class="flex flex-col gap-4 p-6">
-          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-            {{ 'TREASURY.FLOWS.TOP_IN' | translate }}
-          </span>
-          <daf-data-table
-            [columns]="flowColumns()"
-            [rows]="inflowRows()"
-            [config]="inflowFlowConfig()"
-            (rowClick)="onFlowClick($event)">
+      <div style="flex:1 1 380px; min-width:0">
+        <daf-data-table
+          [columns]="flowColumns()"
+          [rows]="inflowRows()"
+          [config]="inflowFlowConfig()"
+          (rowClick)="onFlowClick($event)">
 
-            <ng-template dafCell="tiers" let-row>
-              <div class="flex flex-col leading-snug">
-                <span class="text-body-md font-bold text-on-surface">{{ row['_tiers'] }}</span>
-                <span class="text-[11px] text-on-surface-variant">
-                  {{ row['_label'] }}
-                  @if (row['_forecast']) {
-                    · {{ 'TREASURY.FLOWS.FORECAST' | translate }}
-                  }
+          <ng-template dafCell="tiers" let-row>
+            <div class="flex flex-col leading-snug">
+              <span class="text-body-md font-bold text-on-surface">{{ row['_tiers'] }}</span>
+              <span class="text-[11px] text-on-surface-variant">{{ row['_label'] }}</span>
+            </div>
+          </ng-template>
+
+          <ng-template dafCell="due" let-row>
+            <div class="flex flex-col leading-snug">
+              <span class="text-body-sm text-on-surface-variant">{{ row['_due'] }}</span>
+              @if (row['_late'] > 0) {
+                <span class="text-[11px] font-bold text-danger">
+                  {{ 'PAYMENTS.DASHBOARD.DAYS' | translate : { n: row['_late'] } }}
                 </span>
-              </div>
-            </ng-template>
+              }
+            </div>
+          </ng-template>
 
-            <ng-template dafCell="due" let-row>
-              <div class="flex flex-col leading-snug">
-                <span class="text-body-sm text-on-surface-variant">{{ row['_due'] }}</span>
-                @if (row['_late'] > 0) {
-                  <span class="text-[11px] font-bold text-danger">
-                    {{ 'PAYMENTS.DASHBOARD.DAYS' | translate : { n: row['_late'] } }}
-                  </span>
-                }
-              </div>
-            </ng-template>
+          <!-- Montant converti en gros, montant d'origine dessous et seulement s'il
+               diffère — la conversion reste vérifiable sans alourdir les lignes déjà
+               en euros. -->
+          <ng-template dafCell="amount" let-row>
+            <div class="flex flex-col items-end leading-snug">
+              <span class="text-body-md font-bold text-on-surface">{{ row['amount'] }}</span>
+              @if (row['_origin']) {
+                <span class="text-[11px] text-on-surface-variant">{{ row['_origin'] }}</span>
+              }
+            </div>
+          </ng-template>
 
-          </daf-data-table>
-        </div>
-      </daf-section-card>
+        </daf-data-table>
 
-      <daf-section-card style="flex:1 1 380px; min-width:0">
-        <div class="flex flex-col gap-4 p-6">
-          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-            {{ 'TREASURY.FLOWS.TOP_OUT' | translate }}
-          </span>
-          <daf-data-table
-            [columns]="flowColumns()"
-            [rows]="outflowRows()"
-            [config]="outflowFlowConfig()">
+        <daf-pagination
+          [currentPage]="inflowPage()"
+          [totalPages]="inflowTotalPages()"
+          [totalElements]="inflowTotal()"
+          [pageSize]="flowPageSize()"
+          [pageSizeOptions]="[10, 20, 50]"
+          (pageChange)="goToInflowPage($event)"
+          (pageSizeChange)="onFlowPageSize($event)" />
+      </div>
 
-            <ng-template dafCell="tiers" let-row>
-              <div class="flex flex-col leading-snug">
-                <span class="text-body-md font-bold text-on-surface">{{ row['_tiers'] }}</span>
-                <span class="text-[11px] text-on-surface-variant">{{ row['_label'] }}</span>
-              </div>
-            </ng-template>
+      <div style="flex:1 1 380px; min-width:0">
+        <daf-data-table
+          [columns]="flowColumns()"
+          [rows]="outflowRows()"
+          [config]="outflowFlowConfig()">
 
-            <ng-template dafCell="due" let-row>
-              <div class="flex flex-col leading-snug">
-                <span class="text-body-sm text-on-surface-variant">{{ row['_due'] }}</span>
-                @if (row['_late'] > 0) {
-                  <span class="text-[11px] font-bold text-danger">
-                    {{ 'PAYMENTS.DASHBOARD.DAYS' | translate : { n: row['_late'] } }}
-                  </span>
-                }
-              </div>
-            </ng-template>
+          <ng-template dafCell="tiers" let-row>
+            <div class="flex flex-col leading-snug">
+              <span class="text-body-md font-bold text-on-surface">{{ row['_tiers'] }}</span>
+              <span class="text-[11px] text-on-surface-variant">{{ row['_label'] }}</span>
+            </div>
+          </ng-template>
 
-          </daf-data-table>
-        </div>
-      </daf-section-card>
+          <ng-template dafCell="due" let-row>
+            <div class="flex flex-col leading-snug">
+              <span class="text-body-sm text-on-surface-variant">{{ row['_due'] }}</span>
+              @if (row['_late'] > 0) {
+                <span class="text-[11px] font-bold text-danger">
+                  {{ 'PAYMENTS.DASHBOARD.DAYS' | translate : { n: row['_late'] } }}
+                </span>
+              }
+            </div>
+          </ng-template>
+
+          <ng-template dafCell="amount" let-row>
+            <div class="flex flex-col items-end leading-snug">
+              <span class="text-body-md font-bold text-on-surface">{{ row['amount'] }}</span>
+              @if (row['_origin']) {
+                <span class="text-[11px] text-on-surface-variant">{{ row['_origin'] }}</span>
+              }
+            </div>
+          </ng-template>
+
+        </daf-data-table>
+
+        <daf-pagination
+          [currentPage]="outflowPage()"
+          [totalPages]="outflowTotalPages()"
+          [totalElements]="outflowTotal()"
+          [pageSize]="flowPageSize()"
+          [pageSizeOptions]="[10, 20, 50]"
+          (pageChange)="goToOutflowPage($event)"
+          (pageSizeChange)="onFlowPageSize($event)" />
+      </div>
 
     </div>
 
@@ -200,7 +249,8 @@
       <p>
         {{ 'TREASURY.DISCLAIMER' | translate : {
              collected: (s.encaisseRecent | displayCurrency : s.devise),
-             devise: s.devise
+             devise: s.devise,
+             lookback: s.lookbackJours
            } }}
       </p>
     </div>
