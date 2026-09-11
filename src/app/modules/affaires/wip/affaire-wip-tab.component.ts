@@ -79,6 +79,42 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
       padding-top: 6px;
       padding-bottom: 6px;
     }
+
+    /* Champ "Nouveau %" du tableau Livrable : les flèches haut/bas natives du navigateur
+       (input type="number") débordaient du petit cadre custom (input sans bordure propre,
+       bordure portée par son conteneur) — on les retire de la case et on les redessine
+       juste à côté (.pct-stepper-btn ci-dessous), au lieu de les supprimer purement. */
+    .pct-cell-input::-webkit-outer-spin-button,
+    .pct-cell-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .pct-cell-input[type='number'] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+    .pct-stepper-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 11px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--color-outline, #75777d);
+      cursor: pointer;
+    }
+    .pct-stepper-btn:hover:not(:disabled) {
+      color: var(--color-tertiary, #1a6b7c);
+    }
+    .pct-stepper-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .pct-stepper-btn .material-symbols-outlined {
+      font-size: 14px;
+    }
   `],
 })
 export class AffaireWipTabComponent implements OnInit, OnDestroy {
