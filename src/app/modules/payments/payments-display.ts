@@ -80,6 +80,31 @@ export function offsetLabel(
     : t('PAYMENTS.OFFSET.BEFORE', { n: Math.abs(offsetDays) });
 }
 
+/**
+ * Jours écoulés depuis l'échéance, en **jours de calendrier**. Négatif avant l'échéance,
+ * `0` le jour même.
+ *
+ * La fiche de recouvrement calculait `Date.now() - new Date(dateEcheance)` puis divisait.
+ * Or `new Date('2026-01-14')` est minuit **UTC** tandis que `Date.now()` est l'instant
+ * local : l'écart n'est pas un nombre entier de jours, et le plancher tombait d'un jour
+ * du mauvais côté selon le fuseau du navigateur et l'heure de consultation. Les serveurs
+ * sont épinglés en UTC (voir TIMEZONE-PLAN) et comptent, eux,
+ * `ChronoUnit.DAYS.between(dueDate, today)` — deux dates civiles. La liste et la fiche
+ * pouvaient donc annoncer 30 et 31 jours de retard pour la même facture.
+ *
+ * Les deux bornes sont ramenées à minuit UTC : la soustraction rend alors un nombre
+ * entier de jours, identique à celui du serveur.
+ */
+export function daysPastDue(dueDate: string | null | undefined): number {
+  if (!dueDate) return 0;
+  const parts = /^(\d{4})-(\d{2})-(\d{2})/.exec(dueDate);
+  if (!parts) return 0;
+  const due   = Date.UTC(+parts[1], +parts[2] - 1, +parts[3]);
+  const now   = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((today - due) / 86_400_000);
+}
+
 export function initials(name: string | null | undefined): string {
   if (!name) return '—';
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
@@ -88,4 +113,16 @@ export function initials(name: string | null | undefined): string {
 /** An invoice past its due date — the only urgency cue an entity-card can carry (§6). */
 export function isLate(row: AgingRow): boolean {
   return row.joursRetard > 0;
+}
+
+/**
+ * Une facture dont une partie seulement a été encaissée.
+ *
+ * Sert à décider si le montant facturé mérite d'être rappelé sous le reste dû : quand
+ * rien n'a été réglé les deux chiffres sont égaux, et les écrire tous les deux fait lire
+ * deux fois la même somme. Une tolérance d'un centime, parce que les deux montants sont
+ * des flottants venus d'une soustraction côté serveur.
+ */
+export function partiallyPaid(row: AgingRow): boolean {
+  return Math.abs(row.montantTtc - row.montantRestant) > 0.01;
 }

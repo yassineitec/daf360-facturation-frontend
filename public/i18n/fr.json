@@ -132,8 +132,8 @@
       "OVERDUE_TITLE": "Factures en retard",
       "OVERDUE_COUNT": "{{count}} factures critiques",
       "NO_DELAY": "Aucun retard",
-      "DSO_TITLE": "Délai moyen (DSO)",
-      "DSO_SUB": "Jours moyens"
+      "PLUS_90_TITLE": "Échu depuis +90 jours",
+      "PLUS_90_COUNT": "{{count}} facture(s)"
     },
     "MODULES": {
       "TREASURY_BALANCE": "Solde Consolidé",
@@ -2881,10 +2881,15 @@
       "DAYS": "{{n}} j",
       "ERROR_LOAD": "Impossible de charger les factures impayées.",
       "KPI": {
-        "PENDING": "En attente de paiement",
-        "OVERDUE": "En retard",
+        "PENDING": "Encours à recouvrer",
+        "PENDING_HELP": "Somme des restes dus sur les factures émises, envoyées ou partiellement réglées. Net des encaissements déjà reçus ; avoirs et litiges exclus.",
+        "OVERDUE": "Échu",
+        "OVERDUE_HELP": "La part de l'encours dont l'échéance est passée. Une facture sans date d'échéance en fait partie mais n'est jamais comptée en retard.",
         "COLLECTED_MONTH": "Encaissé ce mois",
-        "AVG_DELAY": "Délai moyen de paiement"
+        "COLLECTED_MONTH_HELP": "Règlements reçus depuis le 1er du mois, quel que soit le statut de la facture — y compris sur une facture pas encore soldée.",
+        "PLUS_90": "Échu depuis +90 jours",
+        "PLUS_90_HELP": "La tranche la plus ancienne de la balance âgée : plus de 90 jours après l'échéance. C'est la part la plus difficile à recouvrer.",
+        "INVOICE_COUNT": "{{n}} facture(s)"
       },
       "FILTER": {
         "AFFAIRE": "Affaire",
@@ -2894,7 +2899,7 @@
         "PERIOD": "Période",
         "DATE_PH": "Date ou plage de dates",
         "OVERDUE_ONLY": "En retard uniquement",
-        "PAGE_SEARCH_PH": "Filtrer cette page (client, facture, affaire)…",
+        "SEARCH_PH": "Rechercher un client ou un numéro de facture…",
         "PANEL_TITLE": "Filtrer les impayés",
         "APPLY": "Appliquer",
         "RESET": "Réinitialiser",
@@ -2904,6 +2909,8 @@
         "CLIENT": "Client",
         "INVOICE": "Facture",
         "AMOUNT": "Montant TTC",
+        "OUTSTANDING": "Reste dû",
+        "OF_BILLED": "sur {{amount}}",
         "DUE": "Échéance",
         "DAYS_LATE": "Jours retard",
         "REMINDER_STATUS": "Statut relance",
@@ -2929,6 +2936,7 @@
       "KPI": {
         "AMOUNT": "Montant facturé",
         "COLLECTED": "Encaissé",
+        "COLLECTED_PCT": "{{pct}} % du montant facturé",
         "OUTSTANDING": "Reste dû",
         "DAYS_LATE": "Retard",
         "ON_TIME": "À jour"
@@ -2969,13 +2977,13 @@
         "RETIRED_STAGE": "Palier retiré"
       },
       "PAYMENTS": {
-        "COL_DATE": "Date",
+        "COL_DATE": "Date de valeur",
         "COL_METHOD": "Mode",
-        "COL_REF": "Référence bancaire",
+        "COL_NOTES": "Note",
         "COL_AMOUNT": "Montant",
+        "RECORDED_AT": "saisi le {{date}}",
         "EMPTY": "Aucun encaissement enregistré pour cette facture.",
-        "TOTAL": "Total encaissé",
-        "OUTSTANDING_SHORT": "Reste dû"
+        "TOTAL": "Encaissé"
       }
     },
     "RECON": {
