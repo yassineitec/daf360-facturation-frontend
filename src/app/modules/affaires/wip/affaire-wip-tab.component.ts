@@ -10,6 +10,7 @@ import {
   StepperComponent, StepperStep, StepperConfig,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
   SearchToolbarComponent, StatusBadgeComponent, FilterField, FilterResult,
+  AccordionCardComponent,
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
 import { WipService } from './wip.service';
@@ -30,7 +31,7 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
   imports: [
     TranslatePipe, ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent, StepperComponent,
     DataTableComponent, DafCellDirective, DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
-    SearchToolbarComponent, StatusBadgeComponent,
+    SearchToolbarComponent, StatusBadgeComponent, AccordionCardComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-wip-tab.component.html',
@@ -56,6 +57,17 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
     }
     ::ng-deep .wip-icon-actions button .material-symbols-outlined {
       font-size: 18px;
+    }
+
+    /* TEST : daf-accordion-card ne retire l'outline par défaut du navigateur qu'en
+       'focus-visible:outline-none' — au clic SOURIS (pas clavier), le <button> d'en-tête
+       garde l'outline natif (souvent un cadre noir/sombre selon le navigateur/l'OS),
+       jamais retiré puisqu'un clic souris ne déclenche pas :focus-visible. On le retire
+       nous-mêmes seulement quand ce n'est PAS un focus clavier (:not(:focus-visible)),
+       pour ne rien casser côté accessibilité clavier. Classe partagée par les 3 modes
+       (Forfaitaire/Régie/Livrable), pas juste le taux AV. */
+    ::ng-deep .wip-accordion button:focus:not(:focus-visible) {
+      outline: none;
     }
 
     /* TEST : champ "Nouveau taux cumulé" un peu moins haut que le h-11 (44px) par défaut
@@ -131,6 +143,13 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   forfaitCardHovered = signal(false);
   forfaitHelpOpen = signal(false);
 
+  /** TEST : carte de saisie AV — repli sur un panneau EXTENSIBLE en ligne (au lieu du
+   * `daf-drawer` latéral essayé plus tôt, qui collidait avec le drawer "Traçabilité &
+   * alertes" déjà à la racine de affaire-detail.component.html) : le bouton de la ligne
+   * d'en-tête du tableau Historique bascule ce signal, qui affiche/cache la carte juste
+   * entre ce bouton et le tableau. */
+  forfaitDrawerOpen = signal(false);
+
   /** Calendrier AV — même portail maison que celui de la carte Régie
    * (`showTmDatePicker`/`positionPortal`/etc.), sur `periodDateFrom`/`periodDateTo` (de
    * simples champs, pas des signaux : `avDateRange()` est une méthode ordinaire plutôt
@@ -152,6 +171,16 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   }
 
   onAvDateRangeChange(value: Date | Date[] | null): void {
+    // `value` arrive à `null` quand on clique "Effacer" dans le calendrier (reset() de
+    // daf-multi-date-picker) — un AV a toujours besoin d'une période, donc il n'y a rien
+    // de valide à appliquer ; on se contente de refermer le panneau. Sans ce cas, le
+    // `return` du garde ci-dessous avalait l'événement en silence et "Effacer" ne
+    // semblait rien faire (le panneau restait ouvert, la période affichée ne changeait
+    // pas).
+    if (value === null) {
+      this.closeAvDatePicker();
+      return;
+    }
     if (!Array.isArray(value) || value.length !== 2) return;
     this.periodDateFrom = this.toIso(value[0]);
     this.periodDateTo = this.toIso(value[1]);
@@ -206,12 +235,20 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   regieCardHovered = signal(false);
   historyCardHovered = signal(false);
 
+  /** TEST : même repli daf-accordion-card que la carte FORFAIT (voir forfaitDrawerOpen)
+   * appliqué ici à la carte Régie Time & Materials. */
+  regieDrawerOpen = signal(false);
+
   // ── LIVRABLE — mêmes pills d'icônes révélées au survol que Forfaitaire/Régie, un
   // signal dédié par carte (voir le commentaire ci-dessus). ──────────────────────────
   livrablePendingCardHovered  = signal(false);
   livrableBatchesCardHovered  = signal(false);
   livrableClientCardHovered   = signal(false);
   livrableHistoryCardHovered  = signal(false);
+
+  /** TEST : même repli daf-accordion-card que la carte FORFAIT (voir forfaitDrawerOpen)
+   * appliqué ici à la carte Livrables en attente. */
+  livrableDrawerOpen = signal(false);
 
   livrableBatchBadgeVariant(statut: LivrableBatchStatut) {
     return LIVRABLE_BATCH_STATUT_BADGE[statut] ?? 'neutral';

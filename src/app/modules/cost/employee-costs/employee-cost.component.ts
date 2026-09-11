@@ -3,7 +3,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
 import {
   ButtonComponent, CardComponent, DafCellDirective, DataTableComponent, FilterField,
-  FilterResult, FormFieldComponent, MetricCardComponent, MetricCardOptions, ModalRef, ModalService,
+  FilterResult, FormFieldComponent, MetricCardOptions, ModalRef, ModalService,
   MultiDatePickerComponent, MultiDatePickerConfig, PageComponent, PageHeaderComponent,
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, SelectComponent,
   SelectOption, SortDirection, TableColumn, TableConfig, ToolbarToggleOption,
@@ -31,7 +31,7 @@ type ViewMode = 'list' | 'grid';
   standalone: true,
   imports: [
     TranslatePipe, ButtonComponent, CardComponent, DafCellDirective, DataTableComponent,
-    FormFieldComponent, MetricCardComponent, MultiDatePickerComponent, PageComponent, PageHeaderComponent,
+    FormFieldComponent, MultiDatePickerComponent, PageComponent, PageHeaderComponent,
     PaginationComponent, SearchToolbarComponent, SelectComponent, EmployeeCostTableSectionComponent,
     EmployeeCostCardsSectionComponent,
   ],
@@ -237,9 +237,7 @@ export class EmployeeCostComponent implements OnInit {
     return avg === null ? '—' : formatAmount(avg, target);
   });
 
-  /** TEST : 3e carte — fusionne "Coût de vente interco moyen" et "Coût de vente
-   * externe moyen" en UNE carte à deux valeurs, avec le taux entre les deux.
-   * "interco" = `internalSellingCost` (×1,1) — le champ que le code appelle déjà
+  /** "interco" = `internalSellingCost` (×1,1) — le champ que le code appelle déjà
    * "internal", "interco" en étant juste le nom métier. */
   readonly avgIntercoCost = computed(() => {
     const target = this.displaySvc.selectedCurrency();
@@ -251,16 +249,6 @@ export class EmployeeCostComponent implements OnInit {
     const target = this.displaySvc.selectedCurrency();
     const avg = this.avgOf(r => r.externalSellingCost);
     return avg === null ? '—' : formatAmount(avg, target);
-  });
-
-  /** Taux = (externe − interco) / interco × 100. Constante mathématique (~9,1 %,
-   * puisque externe = 1,2×base et interco = 1,1×base) — contrôle d'intégrité,
-   * comme `avgMargin` plus bas, pas un indicateur qui varie vraiment. */
-  readonly externalVsIntercoRate = computed(() => {
-    const interco = this.avgOf(r => r.internalSellingCost);
-    const externe = this.avgOf(r => r.externalSellingCost);
-    if (interco === null || externe === null || interco === 0) return '—';
-    return `${(((externe - interco) / interco) * 100).toFixed(1)}%`;
   });
 
   /** TEST : 4e carte — les 2 marges de rentabilité de la maquette, même disposition
@@ -285,15 +273,6 @@ export class EmployeeCostComponent implements OnInit {
    * cost-lines' kpiApproved, sous-traitants-tab's kpiInactive) — reused rather than
    * invented, so nothing here risks a Tailwind class the app has never generated. */
   readonly kpiExpired   : MetricCardOptions = { icon: 'history',      iconColor: 'text-outline', iconBg: 'bg-surface-container' };
-
-  readonly kpiAvgInternal = computed<MetricCardOptions>(() => {
-    this.translate.currentLang();
-    return {
-      icon: 'payments', iconColor: 'text-warning', iconBg: 'bg-warning/10',
-      helpTitle: this.translate.instant('COST.EMPLOYEE_COST.KPI_AVG_INTERNAL'),
-      help:      this.translate.instant('COST.EMPLOYEE_COST.KPI_AVG_INTERNAL_HELP'),
-    };
-  });
 
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
     this.translate.currentLang();

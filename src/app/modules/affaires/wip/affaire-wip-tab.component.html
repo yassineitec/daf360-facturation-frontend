@@ -2,16 +2,38 @@
 
   @if (affaire.billingMode === 'FORFAIT') {
 
-    <!-- TEST : carte FORFAIT alignée sur la carte Régie — fond blanc (daf-card glass),
-         bouton (i) en position:absolute + daf-help-popover au survol (au lieu du texte
-         d'explication toujours visible), champ de date remplacé par une icône calendrier
-         (même portail maison, voir positionPortal()/showAvDatePicker dans le .ts), et
-         les boutons d'action en icônes dans le même "pill" que Régie, révélées au survol
-         de la carte (forfaitCardHovered). -->
-    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'lg', hoverable: true }"
-      style="position:relative"
-      (mouseenter)="forfaitCardHovered.set(true)"
-      (mouseleave)="forfaitCardHovered.set(false)">
+    <!-- Historique des taux (AV) : daf-data-table de la lib, même habillage que
+         l'historique WIP de la carte Régie (colonnes + badge de statut + actions en
+         icônes), à la place de l'ancien <table> fait main. -->
+    @if (loadingTaux()) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+    } @else {
+      <!-- TEST : daf-accordion-card de la lib (même composant que /rh/profiles pour les
+           types de documents — folder_open, titre, chevron, corps replié/déplié) à la
+           place de la barre + @if maison précédente : son en-tête EST le déclencheur
+           (toute la ligne est cliquable, pas juste une icône), le chevron tourne à
+           l'ouverture, tout ça géré par la lib plutôt que recopié à la main. -->
+      <!-- TEST : petit gap-2 (au lieu de 0 ou du gap-6 du conteneur racine) — les deux
+           bordures (bas de l'accordéon / haut du tableau) se touchant pile l'une contre
+           l'autre se superposaient visuellement en un trait plus épais/sombre ("cadre
+           noir"). Un léger espace les sépare franchement, sans revenir au grand espace
+           d'origine. -->
+      <div class="flex flex-col gap-2">
+      <!-- TEST : classe wip-accordion — voir styles du .ts : neutralise le cadre noir
+           par défaut du navigateur sur le <button> d'en-tête de daf-accordion-card au
+           clic souris (la lib ne retire l'outline qu'en :focus-visible, pas en :focus
+           simple). Partagée par les 3 modes. -->
+      <daf-accordion-card class="wip-accordion"
+        [options]="{ title: ('AFFAIRES.WIP.FORFAIT_ENTRY_TITLE' | translate), icon: 'edit_calendar', variant: 'outlined', radius: 'lg' }"
+        [(open)]="forfaitDrawerOpen">
+
+        <!-- position:relative + (mouseenter)/(mouseleave) reprennent ce que portait
+             l'ancien <daf-card style="position:relative" (mouseenter)=...> : le bouton
+             (i) en position:absolute et le pill d'actions révélé au survol en ont besoin
+             tels quels, daf-accordion-card ne les fournit pas lui-même. -->
+        <div style="position:relative"
+          (mouseenter)="forfaitCardHovered.set(true)"
+          (mouseleave)="forfaitCardHovered.set(false)">
 
       <button type="button" #forfaitHelpBtn
         class="absolute top-3 right-3 z-10 inline-flex items-center justify-center w-4 h-4 rounded-full
@@ -77,6 +99,21 @@
               }
             </div>
           </div>
+
+          <!-- TEST : période AV choisie au calendrier, affichée après les boutons —
+               même style gris que le <label> de daf-form-field (text-[10px]
+               font-semibold uppercase tracking-wider text-outline), même spaceur
+               invisible que le pill de boutons juste avant pour rester aligné sur la
+               ligne du champ, et même révélation au survol de la carte
+               (forfaitCardHovered) que le pill de boutons. -->
+          <div class="flex flex-col gap-1.5">
+            <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
+            <span class="h-10 flex items-center text-[10px] font-semibold uppercase tracking-wider text-outline whitespace-nowrap transition-opacity duration-200"
+              [class.opacity-0]="!forfaitCardHovered()"
+              [class.opacity-100]="forfaitCardHovered()">
+              {{ formatWipPeriod(periodDateFrom, periodDateTo) }}
+            </span>
+          </div>
         </div>
 
         <daf-form-field
@@ -99,15 +136,11 @@
           <p class="text-[12px] text-danger">{{ tauxError() }}</p>
         }
       </div>
-    </daf-card>
+        </div>
+      </daf-accordion-card>
 
-    <!-- Historique des taux (AV) : daf-data-table de la lib, même habillage que
-         l'historique WIP de la carte Régie (colonnes + badge de statut + actions en
-         icônes), à la place de l'ancien <table> fait main. -->
-    @if (loadingTaux()) {
-      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
-    } @else {
       <daf-data-table [columns]="tauxHistoryColumns()" [rows]="tauxHistoryRows()" [config]="tauxHistoryConfig()" />
+      </div>
       @if (deleteTauxError()) {
         <p class="mt-2 text-[12px] text-danger">{{ deleteTauxError() }}</p>
       }
@@ -118,26 +151,20 @@
     <!-- ── Time & Materials: WIP = cost of validated Timesheet hours ──
          Le stepper est maintenant À L'INTÉRIEUR de la carte Régie Time & Materials,
          tout en haut (au-dessus du bouton (i) / micro-libellé). -->
-    <div class="flex flex-col gap-3">
-    <!-- Coquille alignée sur celle de /rh/onboarding/:id (rh-section-card) : daf-card en
-         variante glass. Popover (i) : voir le commentaire juste avant le bouton plus bas
-         (daf-help-popover de la lib, déclencheur maison en position absolue). -->
-    <!-- TEST : carte agrandie un peu (padding lg au lieu de md — voir demande "augmenter
-         un peu la taille de cette carte"). -->
-    <!-- TEST : boutons masqués par défaut, révélés au survol de la carte — même
-         comportement que les cartes de /rh/profiles (profile-grid-card.component.ts,
-         `hovered` + [class.opacity-0]/[class.pointer-events-none]), mais en gardant les
-         `daf-button` déjà utilisés ici plutôt que de reprendre ses boutons natifs. -->
-    <!-- TEST : retour à `daf-card` (plutôt que `daf-section-card [help]`) — l'en-tête
-         automatique de `daf-section-card` (rien que pour loger le bouton (i)) prenait de
-         la place AVANT le stepper, impossible à remonter à zéro par simple marge négative
-         sans aussi annuler le padding de la carte. Le bouton (i) est ici position:absolute
-         (top-3 right-3, même recette que profile-grid-card.component.ts) — il ne
-         consomme donc plus AUCUN espace dans le flux, et le stepper devient le tout
-         premier contenu de la carte. `daf-help-popover` reste le vrai composant de la
-         lib (portail vers <body> inclus) : seul son déclencheur est géré à la main. -->
-    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'lg', hoverable: true }"
-      style="position:relative"
+    <div class="flex flex-col gap-2">
+    <!-- TEST : même repli daf-accordion-card que la carte FORFAIT (voir son commentaire
+         détaillé plus haut) — l'ancien <daf-card variant:'glass' style="position:relative"
+         (mouseenter)=...> devient un simple <div> projeté dans le corps de l'accordéon ;
+         position:relative + (mouseenter)/(mouseleave) sont repris tels quels pour le
+         bouton (i) et le pill d'actions révélé au survol, que daf-accordion-card ne
+         fournit pas lui-même. gap-2 (au lieu de gap-3) pour la même raison que FORFAIT :
+         éviter que la bordure basse de l'accordéon et la bordure haute de la carte
+         Historique juste en dessous ne se collent en un trait plus épais. -->
+    <daf-accordion-card class="wip-accordion"
+      [options]="{ title: ('AFFAIRES.WIP.REGIE_ENTRY_TITLE' | translate), icon: 'schedule', variant: 'outlined', radius: 'lg' }"
+      [(open)]="regieDrawerOpen">
+
+    <div style="position:relative"
       (mouseenter)="regieCardHovered.set(true)"
       (mouseleave)="regieCardHovered.set(false)">
 
@@ -274,7 +301,8 @@
           <p class="text-[12px] text-danger">{{ tmError() }}</p>
         }
       </div>
-    </daf-card>
+    </div>
+    </daf-accordion-card>
 
     <!-- Historique WIP : sous la carte Régie Time & Materials, même coquille daf-card,
          daf-data-table natif à la place de l'ancien <table> fait main. En-tête : titre
@@ -456,15 +484,13 @@
 
   } @else if (affaire.billingMode === 'LIVRABLE') {
 
-    <!-- ── Livrables : facturation par sélection groupée — même habillage (daf-card
-         glass, daf-data-table, boutons en icônes révélés au survol) que Forfaitaire/
-         Régie ci-dessus. N'apparaît que s'il y a effectivement des livrables en attente
-         (même logique "cachée si rien à montrer" que Batches en attente/En attente de
-         réponse client ci-dessous), plutôt que toujours visible. -->
-    @if (loadingLivrables()) {
-      <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
-    } @else if (pendingLivrables().length) {
-    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'lg', hoverable: true }"
+    <!-- ── Livrables : facturation par sélection groupée — même repli daf-accordion-card
+         que FORFAIT/RÉGIE (voir leurs commentaires détaillés plus haut) ; le contenu est
+         branché sur les vraies données (pendingLivrables(), totalToInvoice(), etc.). ── -->
+    <daf-accordion-card class="wip-accordion"
+      [options]="{ title: ('AFFAIRES.WIP.LIVRABLE_ENTRY_TITLE' | translate), icon: 'inventory_2', variant: 'outlined', radius: 'lg' }"
+      [(open)]="livrableDrawerOpen">
+    <div
       (mouseenter)="livrablePendingCardHovered.set(true)"
       (mouseleave)="livrablePendingCardHovered.set(false)">
       <div class="flex flex-col gap-4">
@@ -476,61 +502,67 @@
           <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_BATCH_HINT' | translate }}</p>
         }
 
-        <!-- Colonnes "Nouveau %" (input éditable) et "Statut" (badge du batch en cours)
-             en `dafCell`, même mécanisme que affaire-ressources-tab.component.html. -->
-        <daf-data-table
-          [columns]="livrablePendingColumns()"
-          [rows]="livrablePendingRows()"
-          [config]="livrablePendingConfig()">
+        @if (loadingLivrables()) {
+          <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
+        } @else if (pendingLivrables().length === 0) {
+          <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LIVRABLE_EMPTY' | translate }}</p>
+        } @else {
+          <!-- Colonnes "Nouveau %" (input éditable) et "Statut" (badge du batch en cours)
+               en `dafCell`, même mécanisme que affaire-ressources-tab.component.html. -->
+          <daf-data-table
+            [columns]="livrablePendingColumns()"
+            [rows]="livrablePendingRows()"
+            [config]="livrablePendingConfig()">
 
-          <ng-template dafCell="nouveauPct" let-row>
-            <input type="number" class="w-20 text-right border border-outline-variant rounded px-1 py-0.5"
-              [min]="row['_raw'].pctFacture" max="100" step="0.1"
-              [disabled]="isLivrableRowLocked(row['id'])"
-              [value]="getEnteredPct(row['id'])"
-              (input)="setEnteredPct(row['id'], $any($event.target).valueAsNumber)" />%
-          </ng-template>
+            <ng-template dafCell="nouveauPct" let-row>
+              <input type="number" class="w-20 text-right border border-outline-variant rounded px-1 py-0.5"
+                [min]="row['_raw'].pctFacture" max="100" step="0.1"
+                [disabled]="isLivrableRowLocked(row['id'])"
+                [value]="getEnteredPct(row['id'])"
+                (input)="setEnteredPct(row['id'], $any($event.target).valueAsNumber)" />%
+            </ng-template>
 
-          <ng-template dafCell="statut" let-row>
-            @if (livrableBatchStatus(row['id']); as st) {
-              <daf-badge [label]="'AFFAIRES.WIP.BATCH_STATUS_' + st | translate"
-                [options]="{ variant: livrableBatchBadgeVariant(st), size: 'sm' }" />
-            }
-          </ng-template>
-        </daf-data-table>
+            <ng-template dafCell="statut" let-row>
+              @if (livrableBatchStatus(row['id']); as st) {
+                <daf-badge [label]="'AFFAIRES.WIP.BATCH_STATUS_' + st | translate"
+                  [options]="{ variant: livrableBatchBadgeVariant(st), size: 'sm' }" />
+              }
+            </ng-template>
+          </daf-data-table>
 
-        <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
-          <div style="grid-column:1">
-            <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.TOTAL_SELECTED' | translate }}</p>
-            <p class="text-[20px] font-black text-success">
-              {{ totalToInvoice() | displayCurrency : affaire.devise }}
-            </p>
+          <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
+            <div style="grid-column:1">
+              <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.TOTAL_SELECTED' | translate }}</p>
+              <p class="text-[20px] font-black text-success">
+                {{ totalToInvoice() | displayCurrency : affaire.devise }}
+              </p>
+            </div>
+            <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
+                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
+              [class.opacity-0]="!livrablePendingCardHovered()"
+              [class.opacity-100]="livrablePendingCardHovered()"
+              [class.pointer-events-none]="!livrablePendingCardHovered()">
+              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send',
+                                        title: (editingBatchId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
+                                        loading: submittingLivrables(), disabled: !hasLivrableChanges() || submittingLivrables() }"
+                (onClick)="submitLivrables()" />
+              @if (editingBatchId() !== null) {
+                <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
+                  (onClick)="cancelEditBatch()" />
+              }
+            </div>
           </div>
-          <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
-                      bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-            [class.opacity-0]="!livrablePendingCardHovered()"
-            [class.opacity-100]="livrablePendingCardHovered()"
-            [class.pointer-events-none]="!livrablePendingCardHovered()">
-            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send',
-                                      title: (editingBatchId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
-                                      loading: submittingLivrables(), disabled: !hasLivrableChanges() || submittingLivrables() }"
-              (onClick)="submitLivrables()" />
-            @if (editingBatchId() !== null) {
-              <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
-                (onClick)="cancelEditBatch()" />
-            }
-          </div>
-        </div>
+        }
 
         @if (livrableError()) {
           <p class="text-[12px] text-danger">{{ livrableError() }}</p>
         }
       </div>
-    </daf-card>
-    }
+    </div>
+    </daf-accordion-card>
 
-    <!-- ── Batches en attente (client puis DF) — même habillage "WIP calculé" (label +
-         gros montant vert) + pill d'icônes révélée au survol que la carte Régie. ── -->
+    <!-- ── Batches en attente (client puis DF) — n'apparaît que s'il y a des batches en
+         cours. ── -->
     @if (loadingActiveBatches()) {
       <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
     } @else if (activeBatches().length) {
@@ -631,10 +663,7 @@
       </div>
     }
 
-    <!-- ── Historique — même coquille (carte + daf-data-table + badge de statut) que la
-         carte Historique WIP de Régie. N'apparaît que s'il y a au moins une ligne
-         facturée, même logique que les 2 sections ci-dessus, plutôt que toujours
-         visible. ── -->
+    <!-- ── Historique — n'apparaît que s'il y a au moins une ligne facturée. ── -->
     @if (livrableHistory().length) {
     <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
       (mouseenter)="livrableHistoryCardHovered.set(true)"
@@ -665,8 +694,7 @@
     }
 
     <!-- Popup "Historique" EN PLEIN ÉCRAN — même coquille que la popup Historique WIP de
-         la carte Régie (fond assombri, panneau blanc centré, en-tête + croix, recherche +
-         filtre + export + table agrandie). ── -->
+         la carte Régie. ── -->
     @if (showHistoryPage()) {
       <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
            style="z-index:1000"

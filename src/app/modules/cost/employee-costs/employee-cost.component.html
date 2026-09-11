@@ -1,4 +1,4 @@
-<daf-page [loading]="firstLoad()" [kpis]="4" [loadingLabel]="'COST.EMPLOYEE_COST.LOADING' | translate">
+<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'COST.EMPLOYEE_COST.LOADING' | translate">
 
   <daf-page-header
     [title]="'COST.EMPLOYEE_COST.TITLE' | translate">
@@ -26,7 +26,10 @@
             <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_TOTAL' | translate }}</p>
             <p class="text-[24px] font-black text-primary">{{ totalCount() }}</p>
           </div>
-          <div class="flex h-full flex-col items-end justify-center gap-3 text-right border-l-2 border-outline-variant pl-6">
+          <div class="flex h-full flex-col items-end justify-center gap-3 text-right border-l border-outline-variant pl-6">
+            <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10">
+              <span class="material-symbols-outlined text-[14px] text-primary">group</span>
+            </div>
             <div>
               <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_ACTIVE_PCT' | translate }}</p>
               <p class="text-[14px] font-bold text-on-surface">{{ activePercent() }}</p>
@@ -38,22 +41,18 @@
           </div>
         </div>
       </daf-card>
-      <daf-metric-card class="flex-1 min-w-[240px]"
-        [label]="'COST.EMPLOYEE_COST.KPI_AVG_INTERNAL' | translate"
-        [value]="avgInternalCost()"
-        [options]="kpiAvgInternal()" />
-      <!-- TEST : 3e carte — nouvelle disposition : le taux à gauche (mis en avant,
-           grande taille), interco et externe empilés à droite (interco en haut,
-           externe en dessous). -->
+      <!-- TEST : 2e carte — coût de vente moyen mis en avant à gauche, interco et externe
+           empilés à droite (interco en haut, externe en dessous). -->
       <daf-card class="flex-1 min-w-[240px]" [options]="{ variant: 'glass', padding: 'md', radius: 'xl', fullHeight: true }">
         <div class="grid grid-cols-2 gap-4 h-full">
           <div class="flex h-full flex-col justify-center text-left">
-            <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_RATE_LABEL' | translate }}</p>
-            <p class="text-[24px] font-black text-secondary">{{ externalVsIntercoRate() }}</p>
+            <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_AVG_INTERNAL' | translate }}</p>
+            <p class="text-[22px] font-black text-on-surface">{{ avgInternalCost() }}</p>
           </div>
-          <!-- TEST : ligne horizontale (border-t-2) sous "interco" supprimée — ne reste
-               que la ligne verticale sur toute la hauteur de la colonne. -->
-          <div class="flex h-full flex-col items-end justify-center gap-3 text-right border-l-2 border-outline-variant pl-6">
+          <div class="flex h-full flex-col items-end justify-center gap-3 text-right border-l border-outline-variant pl-6">
+            <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-warning/10">
+              <span class="material-symbols-outlined text-[14px] text-warning">payments</span>
+            </div>
             <div>
               <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_AVG_INTERCO' | translate }}</p>
               <p class="text-[14px] font-bold text-on-surface">{{ avgIntercoCost() }}</p>
@@ -73,9 +72,14 @@
             <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_MARGIN_INTERCO' | translate }}</p>
             <p class="text-[14px] font-bold text-on-surface">{{ marginInterneInterco() }}</p>
           </div>
-          <div class="flex h-full flex-col justify-center text-right border-l-2 border-outline-variant pl-6">
-            <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_MARGIN_EXTERNE' | translate }}</p>
-            <p class="text-[14px] font-bold text-on-surface">{{ marginInterneExterne() }}</p>
+          <div class="flex h-full flex-col items-end justify-center gap-3 text-right border-l border-outline-variant pl-6">
+            <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-tertiary/10">
+              <span class="material-symbols-outlined text-[14px] text-tertiary">trending_up</span>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase tracking-wide text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.KPI_MARGIN_EXTERNE' | translate }}</p>
+              <p class="text-[14px] font-bold text-on-surface">{{ marginInterneExterne() }}</p>
+            </div>
           </div>
         </div>
       </daf-card>
@@ -220,7 +224,7 @@
     </div>
   }
 
-  <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-outline-variant">
+  <div class="flex justify-end gap-2 mt-6">
     <daf-button [options]="{ variant: 'secondary', label: ('COST.EMPLOYEE_COST.CANCEL' | translate) }"
       (onClick)="closeDrawer()" />
     <daf-button [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.SAVE' | translate), loading: isSaving() }"
