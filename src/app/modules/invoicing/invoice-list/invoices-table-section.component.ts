@@ -7,7 +7,6 @@ import {
 import { INVOICE_STATUT_CONFIG, InvoiceListItem } from '../invoice.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableActionComponent } from '../../../shared/table-action.component';
-import { centered } from '../../../shared/table-align';
 import {
   STATUT_BADGE_VARIANT, canApprove, canEmit, canMarkSent, canRecordPayment,
   formatDate, initials, isOverdue, overdueDays,
@@ -99,7 +98,7 @@ export class InvoicesTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'reference', label: t('INVOICING.LIST.TABLE.REF'),    type: 'text'   },
       { key: 'client',    label: t('INVOICING.LIST.TABLE.CLIENT'), type: 'avatar' },
       { key: 'amount',    label: t('INVOICING.LIST.TABLE.AMOUNT'), type: 'text', align: 'right' },
@@ -108,7 +107,7 @@ export class InvoicesTableSectionComponent {
       // Never `clickable: true` on a projected actions column — that styles the cell as
       // a link rather than an action (§6b rule 4).
       { key: '_actions',  label: '', align: 'right', width: '1%' },
-    ]);
+    ];
     // No column is `sortable`: the lib sorts client-side over the one page it was
     // handed, and this list is server-paginated (§10b).
   });

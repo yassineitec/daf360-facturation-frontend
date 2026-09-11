@@ -41,9 +41,7 @@ import {
 } from '../../shared/enum-labels';
 import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avatar.service';
 import { ClientContactService } from '../clients/contacts/client-contact.service';
-import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
-import { centered } from '../../shared/table-align';
-
+import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
 /** A read-only label/value pair. `label` is always a translation key. */
 interface DetailField { label: string; value: string; }
 
@@ -1753,7 +1751,7 @@ export class AffaireDetailComponent implements OnInit {
   readonly tsColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return centered([
+    return [
       { key: 'reference', label: t('AFFAIRES.DETAIL.MODAL.TS_TITLE') },
       { key: 'intitule',  label: t('AFFAIRES.DETAIL.MODAL.TS_INTITULE') },
       // Clé propre au TS : `INVOICES.AMOUNT` est le montant d'une facture, or c'est ici
@@ -1761,7 +1759,7 @@ export class AffaireDetailComponent implements OnInit {
       { key: 'montant',   label: t('AFFAIRES.DETAIL.MODAL.TS_AMOUNT'), align: 'right' },
       { key: 'statut',    label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge' },
       { key: 'integre',   label: t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT') },
-    ]);
+    ];
   });
 
   readonly tsRows = computed<TableRow[]>(() => this.filteredTs().map(ts => ({
@@ -1785,14 +1783,14 @@ export class AffaireDetailComponent implements OnInit {
   readonly invoiceColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return centered([
+    return [
       { key: 'numero',   label: t('AFFAIRES.DETAIL.INVOICES.NUMBER') },
       { key: 'type',     label: t('AFFAIRES.DETAIL.INVOICES.TYPE') },
       { key: 'emission', label: t('AFFAIRES.DETAIL.INVOICES.EMITTED') },
       { key: 'echeance', label: t('AFFAIRES.DETAIL.INVOICES.DUE') },
       { key: 'montant',  label: t('AFFAIRES.DETAIL.INVOICES.AMOUNT'), align: 'right' },
       { key: 'statut',   label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge' },
-    ]);
+    ];
   });
 
   readonly invoiceRows = computed<TableRow[]>(() => this.filteredInvoices().map(inv => ({
@@ -1820,13 +1818,13 @@ export class AffaireDetailComponent implements OnInit {
   readonly paymentColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return centered([
+    return [
       { key: 'date',     label: t('AFFAIRES.DETAIL.PAYMENTS.DATE') },
       { key: 'facture',  label: t('AFFAIRES.DETAIL.PAYMENTS.INVOICE') },
       { key: 'methode',  label: t('AFFAIRES.DETAIL.PAYMENTS.METHOD') },
       { key: 'ref',      label: t('AFFAIRES.DETAIL.PAYMENTS.REFERENCE') },
       { key: 'montant',  label: t('AFFAIRES.DETAIL.PAYMENTS.AMOUNT'), align: 'right' },
-    ]);
+    ];
   });
 
   readonly paymentRows = computed<TableRow[]>(() => this.filteredPayments().map(p => ({
@@ -1949,11 +1947,11 @@ export class AffaireDetailComponent implements OnInit {
   readonly deadlineColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return centered([
+    return [
       { key: 'tache',    label: t('AFFAIRES.DETAIL.OVERVIEW.TASK') },
       { key: 'echeance', label: t('AFFAIRES.DETAIL.INVOICES.DUE') },
       { key: 'priorite', label: t('AFFAIRES.DETAIL.OVERVIEW.PRIORITY'), type: 'badge', align: 'right' },
-    ]);
+    ];
   });
 
   readonly deadlineRows = computed<TableRow[]>(() => {

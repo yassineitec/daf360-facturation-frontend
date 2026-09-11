@@ -7,9 +7,7 @@ import {
   ModalService, ModalRef, ButtonComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
 } from '@khalilrebhiitec/daf360';
-import { DocumentTemplateService } from './document-template.service';
-import { centered } from '../../../shared/table-align';
-import {
+import { DocumentTemplateService } from './document-template.service';import {
   FactDocumentTemplateDto, SaveFactDocumentTemplateRequest,
   DOCUMENT_TYPES, INVOICE_TEMPLATE_VARIABLES, TemplateVariableDef,
 } from './document-template.model';
@@ -228,11 +226,11 @@ export class DocumentTemplatesAdminComponent implements OnInit {
   readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'type',   label: t('ADMIN.DOCUMENT_TEMPLATES.COL_TYPE'),   type: 'badge' },
       { key: 'name',   label: t('ADMIN.DOCUMENT_TEMPLATES.COL_NAME'),   type: 'custom' },
       { key: 'status', label: t('ADMIN.DOCUMENT_TEMPLATES.COL_STATUS'), type: 'badge' },
-    ]);
+    ];
   });
 
   readonly rows = computed<TableRow[]>(() => {

@@ -6,7 +6,6 @@ import {
 import { CostLineDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableActionComponent } from '../../../shared/table-action.component';
-import { centered } from '../../../shared/table-align';
 import {
   STATUS_BADGE_VARIANT, URGENCY_BADGE_VARIANT, formatDate, statusKey, urgency, urgencyKey,
 } from '../cost-display';
@@ -67,14 +66,14 @@ export class ApprovalQueueTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'label',    label: t('COST.LINES.COL_DESCRIPTION'), type: 'text'  },
       { key: 'date',     label: t('COST.QUEUE.DATE'),            type: 'text'  },
       { key: 'amount',   label: t('COST.QUEUE.AMOUNT_TOTAL'),    type: 'text', align: 'right' },
       { key: 'urgency',  label: t('COST.LINES.COL_APPROVAL'),    type: 'badge' },
       { key: 'status',   label: t('COST.QUEUE.STATUS'),          type: 'badge' },
       { key: '_actions', label: '', align: 'right', width: '1%' },
-    ]);
+    ];
   });
 
   protected readonly rows = computed<TableRow[]>(() => {

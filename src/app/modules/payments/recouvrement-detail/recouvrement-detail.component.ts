@@ -23,7 +23,6 @@ import { PaymentModalComponent } from '../../invoicing/payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { formatDate, offsetLabel, retardVariant } from '../payments-display';
-import { centered } from '../../../shared/table-align';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -278,12 +277,12 @@ export class RecouvrementDetailComponent implements OnInit {
   readonly reminderColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return centered([
+    return [
       { key: 'type',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_TYPE'),      type: 'custom' },
       { key: 'scheduled', label: t('PAYMENTS.DETAIL.REMINDERS.COL_SCHEDULED'), type: 'text'   },
       { key: 'sent',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_SENT'),      type: 'text'   },
       { key: 'state',     label: t('PAYMENTS.DETAIL.REMINDERS.COL_STATUS'),    type: 'custom' },
-    ]);
+    ];
   });
 
   readonly reminderRows = computed<TableRow[]>(() => {
@@ -325,12 +324,12 @@ export class RecouvrementDetailComponent implements OnInit {
   readonly paymentColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return centered([
+    return [
       { key: 'date',   label: t('PAYMENTS.DETAIL.PAYMENTS.COL_DATE'),   type: 'text' },
       { key: 'method', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_METHOD'), type: 'text' },
       { key: 'ref',    label: t('PAYMENTS.DETAIL.PAYMENTS.COL_REF'),    type: 'text' },
       { key: 'amount', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_AMOUNT'), type: 'text', align: 'right' },
-    ]);
+    ];
   });
 
   readonly paymentRows = computed<TableRow[]>(() => {

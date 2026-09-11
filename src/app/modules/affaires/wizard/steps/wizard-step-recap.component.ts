@@ -9,9 +9,7 @@ import { CostService }       from '../../../cost/cost.service';
 import { FactListService }   from '../../../../core/fact-list.service';
 import { AffaireDraftState, BILLING_MODES, BUDGET_LABEL } from '../../affaire-wizard.model';
 import { ClientContactService } from '../../../clients/contacts/client-contact.service';
-import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
-import { centered } from '../../../../shared/table-align';
-
+import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
 @Component({
   selector: 'app-wizard-step-recap',
   standalone: true,
@@ -117,10 +115,10 @@ export class WizardStepRecapComponent implements OnInit {
 
   // ── Section B: Responsables table ────────────────────────────────────────
   get responsablesColumns(): TableColumn[] {
-    const cols: TableColumn[] = centered([
+    const cols: TableColumn[] = [
       { key: 'responsable', label: this.translate.instant('AFFAIRES.wizard.recap.col_responsable'), type: 'custom' },
       { key: 'role',        label: this.translate.instant('AFFAIRES.wizard.recap.col_role'),        type: 'text' },
-    ]);
+    ];
     if (this.draft.budgetPrevisionnel) {
       cols.push(
         { key: 'budgetAllocation', label: this.translate.instant('AFFAIRES.wizard.recap.col_budget'), type: 'custom', align: 'right' },
@@ -146,10 +144,10 @@ export class WizardStepRecapComponent implements OnInit {
   // ── Section D / AV: Répartitions table ───────────────────────────────────
   readonly repartitionsColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'typeLabel',  label: this.translate.instant('AFFAIRES.wizard.recap.col_type_repartition'), type: 'text' },
       { key: 'percentage', label: this.translate.instant('AFFAIRES.wizard.recap.col_percentage'),       type: 'custom', align: 'right' },
-    ]);
+    ];
   });
 
   get repartitionsRows() {
@@ -164,12 +162,12 @@ export class WizardStepRecapComponent implements OnInit {
   // ── Section D / TM: Ressources table ─────────────────────────────────────
   readonly ressourcesColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'collaborateur', label: this.translate.instant('AFFAIRES.wizard.recap.col_collaborateur'), type: 'custom' },
       { key: 'rateType',      label: this.translate.instant('AFFAIRES.wizard.recap.col_rate_type'),     type: 'custom' },
       { key: 'rateAmount',    label: this.translate.instant('AFFAIRES.wizard.recap.col_rate'),          type: 'custom', align: 'right' },
       { key: 'costAmount',    label: this.translate.instant('AFFAIRES.wizard.recap.col_internal_cost'), type: 'custom', align: 'right' },
-    ]);
+    ];
   });
 
   get ressourcesRows() {

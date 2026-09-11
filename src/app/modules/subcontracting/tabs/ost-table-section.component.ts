@@ -7,7 +7,6 @@ import {
 import { OSTDto } from '../subcontracting.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableActionComponent } from '../../../shared/table-action.component';
-import { centered } from '../../../shared/table-align';
 import {
   OST_BADGE_VARIANT, budgetPct, budgetVariant, initials, isOver, ostStatutKey,
 } from '../subcontracting-display';
@@ -95,7 +94,7 @@ export class OstTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'reference',   label: t('SUBCONTRACTING.OST.TABLE.REF'),        type: 'text'   },
       { key: 'subcontractor', label: t('SUBCONTRACTING.OST.TABLE.ST'),       type: 'avatar' },
       { key: 'budget',      label: t('SUBCONTRACTING.OST.BUDGET'),           type: 'text', align: 'right' },
@@ -103,7 +102,7 @@ export class OstTableSectionComponent {
       { key: 'consumption', label: t('SUBCONTRACTING.OST.CARD.CONSUMED'),    type: 'custom' },
       { key: 'statut',      label: t('SUBCONTRACTING.OST.TABLE.STATUS'),     type: 'badge'  },
       { key: '_actions',    label: '', align: 'right', width: '1%' },
-    ]);
+    ];
   });
 
   protected readonly rows = computed<TableRow[]>(() => {

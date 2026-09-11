@@ -3,9 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, DataTableComponent, SortDirection, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
-import { EmployeeCostDto } from './employee-cost.model';
-import { centered } from '../../../shared/table-align';
-import {
+import { EmployeeCostDto } from './employee-cost.model';import {
   STATUS_BADGE_VARIANT, displayName, formatAmount, formatPeriod, initials, statusKey,
 } from './employee-cost-display';
 
@@ -57,14 +55,14 @@ export class EmployeeCostTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'employee', label: t('COST.EMPLOYEE_COST.COL_EMPLOYEE'), type: 'avatar', sortable: true },
       { key: 'basic',    label: t('COST.EMPLOYEE_COST.COL_BASIC'),    type: 'text', sortable: true },
       { key: 'internal', label: t('COST.EMPLOYEE_COST.COL_INTERNAL'), type: 'text', sortable: true },
       { key: 'external', label: t('COST.EMPLOYEE_COST.COL_EXTERNAL'), type: 'text', sortable: true },
       { key: 'period',   label: t('COST.EMPLOYEE_COST.COL_PERIOD'),   type: 'text', sortable: true },
       { key: 'status',   label: t('COST.EMPLOYEE_COST.COL_STATUS'),   type: 'badge', sortable: true },
-    ]);
+    ];
     // `sortable` here only drives the header arrow + a redundant re-sort of the page
     // this component was already handed — the real, full-set sort lives one level up
     // (see the class doc comment above).

@@ -13,7 +13,6 @@ import {
 } from '../cost.model';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import { forkJoin } from 'rxjs';
-import { centered } from '../../../shared/table-align';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
   SelectComponent, SelectOption,
@@ -107,13 +106,13 @@ export class CostConfigComponent implements OnInit {
 
   readonly thresholdColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'level',            label: this.translate.instant('COST.CONFIG.TH_LEVEL'),   type: 'custom' },
       { key: 'approverRoleCode', label: this.translate.instant('COST.CONFIG.TH_ROLE'),    type: 'custom' },
       { key: 'minAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MIN_EUR'), type: 'custom', align: 'right' },
       { key: 'maxAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MAX_EUR'), type: 'custom', align: 'right' },
       { key: '_actions',         label: '',                                               type: 'custom', align: 'right' },
-    ]);
+    ];
   });
 
   readonly thresholdTableConfig = computed<TableConfig>(() => ({
@@ -148,7 +147,7 @@ export class CostConfigComponent implements OnInit {
 
   readonly categoryColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'categoryNumber',    label: this.translate.instant('COST.CONFIG.CAT_NUM'),      type: 'custom' },
       { key: 'code',              label: this.translate.instant('COST.CONFIG.CAT_CODE'),     type: 'custom' },
       { key: 'labelFr',           label: this.translate.instant('COST.CONFIG.CAT_LABEL_FR'), type: 'custom' },
@@ -158,7 +157,7 @@ export class CostConfigComponent implements OnInit {
       { key: 'isDirect',          label: this.translate.instant('COST.CONFIG.CAT_DIRECT'),   type: 'custom', align: 'center' },
       { key: 'isStrictScrutiny',  label: this.translate.instant('COST.CONFIG.CAT_SCRUTINY'), type: 'custom', align: 'center' },
       { key: '_actions',          label: '',                                                 type: 'custom', align: 'right' },
-    ]);
+    ];
   });
 
   readonly categoryTableConfig = computed<TableConfig>(() => ({
@@ -195,14 +194,14 @@ export class CostConfigComponent implements OnInit {
 
   readonly listValueColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'code',         label: this.translate.instant('COST.CONFIG.LV_CODE'),     type: 'custom' },
       { key: 'labelFr',      label: this.translate.instant('COST.CONFIG.LV_LABEL_FR'), type: 'custom' },
       { key: 'labelEn',      label: this.translate.instant('COST.CONFIG.LV_LABEL_EN'), type: 'custom' },
       { key: 'isDefault',    label: this.translate.instant('COST.CONFIG.LV_DEFAULT'),  type: 'custom', align: 'center' },
       { key: 'displayOrder', label: this.translate.instant('COST.CONFIG.LV_ORDER'),    type: 'custom', align: 'center' },
       { key: '_actions',     label: '',                                                type: 'custom', align: 'right' },
-    ]);
+    ];
   });
 
   readonly listValueTableConfig = computed<TableConfig>(() => ({

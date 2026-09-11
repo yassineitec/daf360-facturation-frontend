@@ -17,7 +17,6 @@ import { AffaireDetail } from '../../affaire.model';
 import { ListValueDto } from '../../../cost/cost.model';
 import { DisplayCurrencyPipe } from '../../../../shared/display-currency.pipe';
 import { EXPENSE_STATUT_BADGE, humanise } from '../../../../shared/enum-labels';
-import { centered } from '../../../../shared/table-align';
 
 /**
  * Historique des frais remboursables d'une affaire — l'onglet « Frais » de la fiche.
@@ -134,14 +133,14 @@ export class ExpenseHistoryComponent implements OnInit {
   readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant('AFFAIRES.EXPENSES.HISTORY.' + k);
-    return centered([
+    return [
       { key: 'date',      label: t('COL_DATE'),     type: 'text' },
       { key: 'categorie', label: t('COL_CATEGORY'), type: 'text' },
       { key: 'montant',   label: t('COL_AMOUNT'),   type: 'text', align: 'right' },
       { key: 'receipt',   label: t('COL_RECEIPT'),  type: 'text' },
       { key: 'statut',    label: t('COL_STATUS'),   type: 'badge' },
       { key: 'motif',     label: t('COL_REASON'),   type: 'text' },
-    ]);
+    ];
   });
 
   private readonly filtered = computed(() => {

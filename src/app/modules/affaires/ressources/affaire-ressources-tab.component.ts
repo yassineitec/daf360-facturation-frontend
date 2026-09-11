@@ -10,9 +10,7 @@ import {
 import { AffaireService } from '../affaire.service';
 import { LivrableService } from '../livrable.service';
 import { CollaborateurTauxDto } from '../livrable.model';
-import { AffaireDetail, AffaireRessourceManageDto, AffaireWorkedHoursSummaryDto, UserRefDto } from '../affaire.model';
-import { centered } from '../../../shared/table-align';
-
+import { AffaireDetail, AffaireRessourceManageDto, AffaireWorkedHoursSummaryDto, UserRefDto } from '../affaire.model';
 type RateSource = 'EXTERNAL' | 'INTERNAL';
 
 /** Where the (single, shared) add-resource form is currently rendered: `'top'` next to the
@@ -103,13 +101,13 @@ export class AffaireRessourcesTabComponent implements OnInit {
   readonly ressourcesColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return centered([
+    return [
       { key: 'collaborateur', label: t('AFFAIRES.RESSOURCES.COL_NAME'),   type: 'custom' },
       { key: 'rate',          label: t('AFFAIRES.RESSOURCES.COL_RATE'),   type: 'custom', align: 'right' },
       { key: 'type',          label: t('AFFAIRES.RESSOURCES.COL_TYPE'),   type: 'custom' },
       { key: 'status',        label: t('AFFAIRES.RESSOURCES.COL_STATUS'), type: 'custom' },
       { key: '_actions',      label: '',                                  type: 'custom', align: 'right', width: '220px' },
-    ]);
+    ];
   });
 
   readonly ressourcesRows = computed(() =>

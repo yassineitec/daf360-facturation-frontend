@@ -22,9 +22,7 @@ import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { ListValueDto } from '../cost.model';
 import { CurrencyRateService } from '../../../core/currency-rate.service';
-import { CurrencyDisplayService } from '../../../core/currency-display.service';
-import { centered } from '../../../shared/table-align';
-
+import { CurrencyDisplayService } from '../../../core/currency-display.service';
 type ViewMode = 'list' | 'grid';
 
 @Component({
@@ -418,13 +416,13 @@ export class EmployeeCostComponent implements OnInit {
    * rather than the billing module's `AFFAIRES.billing.approval.*` keys. */
   readonly auditColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'timestampUtc', label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DATE'),    type: 'custom' },
       { key: 'action',       label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'),  type: 'text' },
       { key: 'transition',   label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_STATUS'),  type: 'custom' },
       { key: 'actorRole',    label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_USER'),    type: 'text' },
       { key: 'details',      label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DETAILS'), type: 'custom' },
-    ]);
+    ];
   });
 
   readonly tableConfig = computed<TableConfig>(() => ({ hoverable: false }));

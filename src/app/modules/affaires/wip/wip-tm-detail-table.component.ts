@@ -1,9 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
-import { WipTmHourDto } from './wip.model';
-import { centered } from '../../../shared/table-align';
-
+import { WipTmHourDto } from './wip.model';
 /**
  * WIP T&M preview, aggregated one row per collaborator — the flat Date -> Collaborateur ->
  * Discipline -> WBS -> Document list this used to render directly became unreadable on a
@@ -47,12 +45,12 @@ export class WipTmDetailTableComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'user',       label: t('AFFAIRES.WIP.COL_COLLABORATOR'), type: 'text', clickable: true },
       { key: 'daysWorked', label: t('AFFAIRES.WIP.COL_DAYS'),         type: 'text', align: 'right' },
       { key: 'hours',      label: t('AFFAIRES.WIP.COL_HOURS'),        type: 'text', align: 'right' },
       { key: 'cost',       label: t('AFFAIRES.WIP.COL_COST'),         type: 'text', align: 'right' },
-    ]);
+    ];
   });
 
   protected readonly rows = computed<TableRow[]>(() =>

@@ -99,7 +99,7 @@
       [config]="bucketConfig()">
 
       <ng-template dafCell="period" let-row>
-        <div class="flex items-center justify-center gap-2">
+        <div class="flex items-center gap-2">
           <span class="text-body-md font-bold"
                 [class.text-danger]="row['_overdue']"
                 [class.text-on-surface]="!row['_overdue']">
@@ -175,7 +175,7 @@
                diffère — la conversion reste vérifiable sans alourdir les lignes déjà
                en euros. -->
           <ng-template dafCell="amount" let-row>
-            <div class="flex flex-col items-center leading-snug">
+            <div class="flex flex-col items-end leading-snug">
               <span class="text-body-md font-bold text-on-surface">{{ row['amount'] }}</span>
               @if (row['_origin']) {
                 <span class="text-[11px] text-on-surface-variant">{{ row['_origin'] }}</span>
@@ -220,7 +220,7 @@
           </ng-template>
 
           <ng-template dafCell="amount" let-row>
-            <div class="flex flex-col items-center leading-snug">
+            <div class="flex flex-col items-end leading-snug">
               <span class="text-body-md font-bold text-on-surface">{{ row['amount'] }}</span>
               @if (row['_origin']) {
                 <span class="text-[11px] text-on-surface-variant">{{ row['_origin'] }}</span>

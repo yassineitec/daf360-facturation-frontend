@@ -24,9 +24,7 @@ import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { UserStore } from '../../../core/user.store';
-import { centered } from '../../../shared/table-align';
-
+import { UserStore } from '../../../core/user.store';
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'reminders';
 
 const PAGE_SIZE = 10;
@@ -83,11 +81,11 @@ export class AdminListComponent implements OnInit {
 
   readonly listColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    const cols: TableColumn[] = centered([
+    const cols: TableColumn[] = [
       { key: 'code',      label: this.translate.instant('ADMIN.LISTS.COL_CODE'),      width: '120px' },
       { key: 'labelFr',   label: this.translate.instant('ADMIN.LISTS.COL_LABEL_FR') },
       { key: 'labelEn',   label: this.translate.instant('ADMIN.LISTS.COL_LABEL_EN') },
-    ]);
+    ];
     if (this.showsReceiptRule()) {
       cols.push({ key: 'requiresReceipt', label: this.translate.instant('ADMIN.LISTS.COL_RECEIPT'),
                   align: 'center', width: '130px' });
@@ -101,11 +99,11 @@ export class AdminListComponent implements OnInit {
 
   readonly forexColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'code',     label: this.translate.instant('ADMIN.FOREX.COL_CODE'),  width: '100px' },
       { key: 'eur',      label: this.translate.instant('ADMIN.FOREX.COL_EUR'),   align: 'right', width: '180px' },
       { key: 'chf',      label: this.translate.instant('ADMIN.FOREX.COL_CHF'),   align: 'right', width: '200px' },
-    ]);
+    ];
   });
 
   /** Native `TableConfig.actions`, not a hand-placed `_actions` column — same

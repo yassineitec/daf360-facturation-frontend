@@ -7,7 +7,6 @@ import {
 import { AgingRow } from '../payment.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { formatDate, initials, reminderLabel, retardVariant } from '../payments-display';
-import { centered } from '../../../shared/table-align';
 
 /**
  * List view of `/finance/payments` on the house table style (UI-PLAYBOOK §6b): no
@@ -57,14 +56,14 @@ export class AgingTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'client',     label: t('PAYMENTS.DASHBOARD.TABLE.CLIENT'),          type: 'avatar' },
       { key: 'invoice',    label: t('PAYMENTS.DASHBOARD.TABLE.INVOICE'),         type: 'text'   },
       { key: 'amount',     label: t('PAYMENTS.DASHBOARD.TABLE.AMOUNT'),          type: 'text', align: 'right' },
       { key: 'due',        label: t('PAYMENTS.DASHBOARD.TABLE.DUE'),             type: 'text'   },
       { key: 'daysLate',   label: t('PAYMENTS.DASHBOARD.TABLE.DAYS_LATE'),       type: 'badge'  },
       { key: 'reminder',   label: t('PAYMENTS.DASHBOARD.TABLE.REMINDER_STATUS'), type: 'custom' },
-    ]);
+    ];
     // No column is `sortable`: the lib sorts client-side over the one page it was
     // handed, and this list is server-paginated (§10b).
   });

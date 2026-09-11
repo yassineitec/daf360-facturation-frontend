@@ -10,9 +10,7 @@ import {
   BILLING_MODE_BADGE_VARIANT, RAF_TONE_CLASS, STATUT_BADGE_VARIANT,
   distinctResponsables, initials, rafTone, typeLabel,
 } from '../affaire-display';
-import { enumLabel } from '../../../shared/enum-labels';
-import { centered } from '../../../shared/table-align';
-
+import { enumLabel } from '../../../shared/enum-labels';
 /**
  * List view of `/finance/affaires` on the house table style (UI-PLAYBOOK §6b):
  * no wrapper and no outer card (the lib already draws the border, the radius and
@@ -66,7 +64,7 @@ export class AffairesTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'reference',   label: t('AFFAIRES.LIST.TABLE.HEADERS.REF'),     type: 'text'   },
       { key: 'intitule',    label: t('AFFAIRES.LIST.TABLE.HEADERS.TITLE'),   type: 'text'   },
       // Le mode se range avec la référence et l'intitulé, pas à côté du statut : ce sont
@@ -79,7 +77,7 @@ export class AffairesTableSectionComponent {
       { key: 'budget',      label: t('AFFAIRES.LIST.TABLE.HEADERS.BUDGET'),  type: 'text', align: 'right' },
       { key: 'raf',         label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),     type: 'custom', align: 'right' },
       { key: 'statut',      label: t('AFFAIRES.LIST.TABLE.HEADERS.STATUS'),  type: 'badge'  },
-    ]);
+    ];
     // No column is `sortable`: the lib sorts client-side over the one page it was
     // handed, and the list is server-paginated — the arrows would silently reorder
     // just the visible rows (§10b).

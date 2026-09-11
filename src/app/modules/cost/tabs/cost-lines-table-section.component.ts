@@ -5,9 +5,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { CostLineDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { TableActionComponent } from '../../../shared/table-action.component';
-import { centered } from '../../../shared/table-align';
-import {
+import { TableActionComponent } from '../../../shared/table-action.component';import {
   APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit, canReglement,
   canSubmit, formatDate, statusKey,
 } from '../cost-display';
@@ -87,7 +85,7 @@ export class CostLinesTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return centered([
+    return [
       { key: 'label',    label: t('COST.LINES.COL_DESCRIPTION'), type: 'custom' },
       { key: 'category', label: t('COST.LINES.COL_CATEGORY'),    type: 'text'   },
       { key: 'date',     label: t('COST.LINES.COL_DATE'),        type: 'text'   },
@@ -96,7 +94,7 @@ export class CostLinesTableSectionComponent {
       { key: 'status',   label: t('COST.LINES.COL_STATUS'),      type: 'badge'  },
       { key: 'approval', label: t('COST.LINES.COL_APPROVAL'),    type: 'badge'  },
       { key: '_actions', label: '', align: 'right', width: '1%' },
-    ]);
+    ];
     // No column is `sortable`: the lib sorts client-side over the one page it was
     // handed, and this list is server-paginated (§10b).
   });

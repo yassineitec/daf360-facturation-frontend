@@ -11,9 +11,7 @@ import {
 import { AffaireService } from '../affaire.service';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { LivrableBatchDto } from '../livrable.model';
-import { centered } from '../../../shared/table-align';
-
+import { LivrableBatchDto } from '../livrable.model';
 type DetailType = 'taux' | 'jalon' | 'line' | 'livrable';
 
 interface HistoryRow {
@@ -114,23 +112,23 @@ export class ApprovalDetailComponent implements OnInit {
 
   readonly historyColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'period',  label: this.translate.instant('AFFAIRES.billing.approval.col_periode'), type: 'text' },
       { key: 'label',   label: this.translate.instant('AFFAIRES.billing.approval.detail.item'), type: 'custom' },
       { key: 'value',   label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
       { key: 'statut',  label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),  type: 'text' },
-    ]);
+    ];
   });
 
   readonly auditColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return centered([
+    return [
       { key: 'timestampUtc', label: this.translate.instant('AFFAIRES.billing.approval.col_date'),    type: 'custom' },
       { key: 'action',       label: this.translate.instant('AFFAIRES.billing.approval.col_action'),  type: 'text' },
       { key: 'transition',   label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),  type: 'custom' },
       { key: 'actorRole',    label: this.translate.instant('AFFAIRES.billing.approval.col_user'),    type: 'text' },
       { key: 'commentaire',  label: this.translate.instant('AFFAIRES.billing.approval.col_comment'), type: 'text' },
-    ]);
+    ];
   });
 
   readonly tableConfig = computed<TableConfig>(() => ({ hoverable: false }));

@@ -175,8 +175,8 @@
                    Un palier retiré n'a plus de règle : il garde son rang dans
                    l'historique, nommé comme tel, avec son code technique en second plan. -->
               <ng-template dafCell="type" let-row>
-                <div class="flex flex-col items-center gap-0.5">
-                  <div class="flex items-center justify-center gap-2">
+                <div class="flex flex-col gap-0.5">
+                  <div class="flex items-center gap-2">
                     <span class="text-body-md font-bold"
                           [class.text-on-surface]="!row['_code']"
                           [class.text-on-surface-variant]="row['_code']">
@@ -194,7 +194,7 @@
               </ng-template>
 
               <ng-template dafCell="state" let-row>
-                <div class="flex flex-col items-center gap-1">
+                <div class="flex flex-col items-start gap-1">
                   @switch (row['_state']) {
                     @case ('sent') {
                       <span class="inline-flex items-center gap-1 rounded-full bg-teal/10 px-2 py-0.5 text-[11px] font-bold text-teal">

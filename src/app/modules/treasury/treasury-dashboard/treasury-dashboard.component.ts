@@ -17,7 +17,6 @@ import {
   TREASURY_HORIZONS, TreasuryHorizon,
 } from '../treasury.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { centered } from '../../../shared/table-align';
 
 interface KpiTile {
   label:   string;
@@ -252,13 +251,13 @@ export class TreasuryDashboardComponent implements OnInit {
     // `text-left`, pour l'en-tête comme pour la cellule. Les gabarits projetés de `net`
     // et `cumul` forçaient déjà leur texte à droite de leur côté, donc l'en-tête restait
     // seul à gauche au-dessus de chiffres alignés à droite.
-    return centered([
+    return [
       { key: 'period', label: t('TREASURY.TABLE.PERIOD'), type: 'custom' },
       { key: 'in',     label: t('TREASURY.TABLE.IN'),     type: 'text',   align: 'right' },
       { key: 'out',    label: t('TREASURY.TABLE.OUT'),    type: 'text',   align: 'right' },
       { key: 'net',    label: t('TREASURY.TABLE.NET'),    type: 'custom', align: 'right' },
       { key: 'cumul',  label: t('TREASURY.TABLE.CUMUL'),  type: 'custom', align: 'right' },
-    ]);
+    ];
   });
 
   readonly bucketRows = computed<TableRow[]>(() => {
@@ -299,11 +298,11 @@ export class TreasuryDashboardComponent implements OnInit {
   readonly flowColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return centered([
+    return [
       { key: 'tiers',  label: t('TREASURY.FLOWS.COUNTERPARTY'), type: 'custom' },
       { key: 'due',    label: t('TREASURY.FLOWS.DUE'),          type: 'custom' },
       { key: 'amount', label: t('TREASURY.FLOWS.AMOUNT'),       type: 'custom', align: 'right' },
-    ]);
+    ];
   });
 
   // ── Pagination ────────────────────────────────────────────────────────────
