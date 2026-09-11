@@ -4,12 +4,23 @@ export type { PageResponse };
 
 export type MatchStatut = 'UNMATCHED' | 'PROPOSED' | 'CONFIRMED' | 'REJECTED' | 'PARTIALLY_MATCHED' | 'ACOMPTE';
 
+/**
+ * Les indicateurs de `/finance/recouvrement`. Tous les montants sont **nets des
+ * règlements reçus** — ils sortent de `ReceivablesService`, comme la trésorerie.
+ *
+ * `delaiMoyenPaiement` a disparu : il ne se calculait que sur les factures soldées des
+ * six derniers mois, donc les créances en retard jamais encaissées — le sujet même de
+ * cet écran — n'entraient pas dans la moyenne, qui s'améliorait à mesure que l'arriéré
+ * vieillissait. Remplacé par la tranche la plus dure de la balance âgée.
+ */
 export interface PaymentsDashboardStats {
   enAttenteMontant:        number;
   enRetardCount:           number;
   enRetardMontant:         number;
   encaisseThisMoisMontant: number;
-  delaiMoyenPaiement:      number;
+  /** Créances échues depuis plus de 90 jours — nombre et montant. */
+  plus90Count:             number;
+  plus90Montant:           number;
   devise:                  string;
 }
 
@@ -19,7 +30,16 @@ export interface AgingRow {
   affaireId:          number | null;
   affaireRef:         string | null;
   clientNom:          string;
+  /** Le montant du document, TTC — ce qui a été facturé. */
   montantTtc:         number;
+  /**
+   * **Reste dû** : `montantTtc` moins les règlements reçus, plancher à zéro. C'est le
+   * chiffre mis en avant par la liste. L'indicateur « en attente » en haut de page est
+   * net depuis qu'il passe par `ReceivablesService` ; la ligne, elle, affichait encore
+   * le montant plein, si bien qu'une facture à moitié réglée se lisait deux fois sur le
+   * même écran avec deux nombres différents.
+   */
+  montantRestant:     number;
   devise:             string;
   dateEcheance:       string | null;
   joursRetard:        number;
@@ -43,6 +63,8 @@ export interface AgingFilter {
   from?:       string | null;
   to?:         string | null;
   overdueOnly?: boolean;
+  /** Numéro de facture ou nom de client — filtré par le serveur, sur tout l'encours. */
+  search?:     string | null;
   page?:       number;
   size?:       number;
 }

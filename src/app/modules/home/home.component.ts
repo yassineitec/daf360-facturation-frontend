@@ -131,6 +131,11 @@ export class HomeComponent implements OnInit {
   // ── KPI ────────────────────────────────────────────────────────────────────
 
   readonly kpiTiles = computed<KpiTile[]>(() => {
+    // Les `label` sont des clés, traduites par le gabarit — mais les `delta` passent par
+    // `translate.instant()` ici même. Sans cette lecture, le calcul ne dépend d'aucun
+    // signal de langue et le décompte de factures reste figé dans la langue du premier
+    // rendu quand l'utilisateur bascule.
+    this.translate.currentLang();
     const s      = this.stats();
     const devise = s?.devise ?? 'TND';
     const money  = (v: number | null | undefined) => this.currency.transform(v ?? null, devise);
@@ -161,10 +166,21 @@ export class HomeComponent implements OnInit {
                    valueColor: 'text-danger' },
       },
       {
-        label: 'HOME.KPI.DSO_TITLE',
-        value: s?.delaiMoyenPaiement != null ? `${s.delaiMoyenPaiement.toFixed(0)} j` : '—',
-        delta: null,
-        options: { icon: 'timer', iconColor: 'text-warning', iconBg: 'bg-warning/10' },
+        // Le « délai moyen (DSO) » occupait cette case. Il ne se calculait que sur les
+        // factures soldées des six derniers mois : les créances en retard jamais encaissées
+        // n'entraient pas dans la moyenne, qui s'améliorait donc à mesure que l'arriéré
+        // vieillissait. `delaiMoyenPaiement` a disparu de `PaymentsDashboardStats` ; la
+        // case revient à la tranche la plus ancienne de la balance âgée, la même que sur
+        // /finance/recouvrement, pour que les deux écrans racontent la même chose.
+        label: 'HOME.KPI.PLUS_90_TITLE',
+        value: money(s?.plus90Montant),
+        delta: s && s.plus90Count > 0
+          ? { value: this.translate.instant('HOME.KPI.PLUS_90_COUNT', { count: s.plus90Count }) }
+          : null,
+        options: (s?.plus90Count ?? 0) > 0
+          ? { icon: 'hourglass_bottom', iconColor: 'text-danger', iconBg: 'bg-danger/10',
+              valueColor: 'text-danger', deltaColor: 'text-danger' }
+          : { icon: 'hourglass_bottom', iconColor: 'text-secondary', iconBg: 'bg-secondary/10' },
       },
     ];
   });
