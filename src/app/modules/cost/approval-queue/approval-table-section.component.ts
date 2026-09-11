@@ -7,6 +7,7 @@ import { ApprovalItem, KIND_BADGE_VARIANT, kindKey } from './approval-item';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { URGENCY_BADGE_VARIANT, urgencyKey } from '../cost-display';
 import { ApprovalDecision } from './approval-cards-section.component';
+import { centered } from '../../../shared/table-align';
 
 /**
  * List view of `/finance/cost/approval` on the house table style (UI-PLAYBOOK §6b),
@@ -75,7 +76,7 @@ export class ApprovalTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return [
+    return centered([
       { key: 'kind',      label: t('COST.APPROVAL_QUEUE.KIND'),         type: 'badge' },
       { key: 'title',     label: t('COST.LINES.COL_DESCRIPTION'),       type: 'text'  },
       { key: 'reference', label: t('COST.APPROVAL_QUEUE.REFERENCE'),    type: 'text'  },
@@ -83,7 +84,7 @@ export class ApprovalTableSectionComponent {
       { key: 'amount',    label: t('COST.APPROVAL_QUEUE.AMOUNT_TOTAL'), type: 'text', align: 'right' },
       { key: 'priority',  label: t('COST.APPROVAL_QUEUE.PRIORITY'),     type: 'badge' },
       { key: '_actions',  label: '', align: 'right', width: '1%' },
-    ];
+    ]);
   });
 
   protected readonly rows = computed<TableRow[]>(() => {

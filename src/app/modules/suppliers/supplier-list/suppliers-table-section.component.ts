@@ -5,6 +5,7 @@ import {
   TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
 import { SupplierDto } from '../supplier.model';
+import { centered } from '../../../shared/table-align';
 import {
   SUPPLIER_STATE_BADGE, SUPPLIER_STATE_LABEL, initials, supplierCode, supplierState,
 } from '../supplier-display';
@@ -53,14 +54,14 @@ export class SuppliersTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return [
+    return centered([
       { key: 'supplier', label: t('SUPPLIERS.LIST.TABLE.NAME'),    type: 'avatar' },
       { key: 'pays',     label: t('SUPPLIERS.LIST.TABLE.COUNTRY'), type: 'text'   },
       { key: 'type',     label: t('SUPPLIERS.LIST.TABLE.TYPE'),    type: 'text'   },
       { key: 'tva',      label: t('SUPPLIERS.LIST.TABLE.TVA'),     type: 'text'   },
       { key: 'bank',     label: t('SUPPLIERS.LIST.TABLE.IBAN'),    type: 'custom' },
       { key: 'statut',   label: t('SUPPLIERS.LIST.TABLE.STATUS'),  type: 'badge'  },
-    ];
+    ]);
     // Aucune colonne `sortable` : la lib trie côté client sur la seule page qu'on lui a
     // donnée, et cette liste est paginée côté serveur (§10b).
   });

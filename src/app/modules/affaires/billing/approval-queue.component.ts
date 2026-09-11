@@ -16,6 +16,7 @@ import {
 // ordinary invoicing lifecycle endpoints instead of BillingService.
 import { InvoiceService } from '../../invoicing/invoice.service';
 import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
+import { centered } from '../../../shared/table-align';
 
 type ActiveTab = 'rf' | 'df' | 'history';
 
@@ -75,13 +76,13 @@ export class ApprovalQueueComponent implements OnInit {
   // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
   readonly tauxColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return [
+    return centered([
       { key: 'affaire', label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom' },
       { key: 'taux',    label: this.translate.instant('AFFAIRES.billing.approval.col_taux'),    type: 'custom', align: 'right' },
       { key: 'valeur',  label: this.translate.instant('AFFAIRES.billing.approval.col_valeur'),  type: 'custom', align: 'right' },
       { key: 'soumis',  label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),  type: 'custom' },
       { key: '_actions',label: '',                                                              type: 'custom', align: 'right', width: '180px' },
-    ];
+    ]);
   });
 
   readonly tauxRows = computed(() =>
@@ -100,13 +101,13 @@ export class ApprovalQueueComponent implements OnInit {
   // ── daf-data-table: Jalons (RF) ──────────────────────────────────────────────
   readonly jalonColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return [
+    return centered([
       { key: 'affaire',  label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),  type: 'custom' },
       { key: 'label',    label: this.translate.instant('AFFAIRES.billing.approval.col_jalon'),    type: 'text' },
       { key: 'montant',  label: this.translate.instant('AFFAIRES.billing.approval.col_montant'),  type: 'custom', align: 'right' },
       { key: 'echeance', label: this.translate.instant('AFFAIRES.billing.approval.col_echeance'), type: 'custom' },
       { key: '_actions', label: '',                                                               type: 'custom', align: 'right', width: '180px' },
-    ];
+    ]);
   });
 
   readonly jalonRows = computed(() =>
@@ -125,7 +126,7 @@ export class ApprovalQueueComponent implements OnInit {
   // ── daf-data-table: Billing lines (DF) ───────────────────────────────────────
   readonly lineColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return [
+    return centered([
       { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),    type: 'custom' },
       { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'),  type: 'custom' },
       { key: 'periode',   label: this.translate.instant('AFFAIRES.billing.approval.col_periode'),    type: 'custom' },
@@ -133,7 +134,7 @@ export class ApprovalQueueComponent implements OnInit {
       { key: 'mode',      label: this.translate.instant('AFFAIRES.billing.approval.col_mode'),        type: 'custom' },
       { key: 'statut',    label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),      type: 'custom' },
       { key: '_actions',  label: '',                                                                  type: 'custom', align: 'right', width: '200px' },
-    ];
+    ]);
   });
 
   readonly lineRows = computed(() =>
@@ -154,13 +155,13 @@ export class ApprovalQueueComponent implements OnInit {
   // ── daf-data-table: Livrable batches (DF) ────────────────────────────────────
   readonly livrableBatchColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return [
+    return centered([
       { key: 'affaire',     label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom' },
       { key: 'documents',   label: this.translate.instant('AFFAIRES.billing.approval.col_documents'), type: 'custom', align: 'right' },
       { key: 'montant',     label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
       { key: 'billingDate', label: this.translate.instant('AFFAIRES.billing.approval.col_date'), type: 'custom' },
       { key: '_actions',    label: '',                                                             type: 'custom', align: 'right', width: '200px' },
-    ];
+    ]);
   });
 
   readonly livrableBatchRows = computed(() =>
@@ -179,14 +180,14 @@ export class ApprovalQueueComponent implements OnInit {
   // ── daf-data-table: Credit notes / avoirs (DF) ───────────────────────────────
   readonly creditNoteColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return [
+    return centered([
       { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),  type: 'custom' },
       { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'), type: 'custom' },
       { key: 'montant',   label: this.translate.instant('AFFAIRES.billing.approval.col_montant'),  type: 'custom', align: 'right' },
       { key: 'motif',     label: this.translate.instant('AFFAIRES.billing.approval.col_motif'),    type: 'custom' },
       { key: 'soumis',    label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),   type: 'custom' },
       { key: '_actions',  label: '',                                                               type: 'custom', align: 'right', width: '180px' },
-    ];
+    ]);
   });
 
   readonly creditNoteRows = computed(() =>
@@ -208,13 +209,13 @@ export class ApprovalQueueComponent implements OnInit {
   // ── daf-data-table: Audit history ────────────────────────────────────────────
   readonly historyColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
-    return [
+    return centered([
       { key: 'createdAt',   label: this.translate.instant('AFFAIRES.billing.approval.col_date'),    type: 'custom' },
       { key: 'userNom',     label: this.translate.instant('AFFAIRES.billing.approval.col_user'),    type: 'custom' },
       { key: 'action',      label: this.translate.instant('AFFAIRES.billing.approval.col_action'),  type: 'custom' },
       { key: 'entity',      label: this.translate.instant('AFFAIRES.billing.approval.col_entity'),  type: 'custom' },
       { key: 'commentaire', label: this.translate.instant('AFFAIRES.billing.approval.col_comment'), type: 'custom' },
-    ];
+    ]);
   });
 
   readonly historyRows = computed(() =>

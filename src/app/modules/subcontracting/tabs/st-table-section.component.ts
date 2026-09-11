@@ -7,6 +7,7 @@ import {
 import { SousTraitantDto } from '../subcontracting.model';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { initials } from '../subcontracting-display';
+import { centered } from '../../../shared/table-align';
 
 /**
  * List view of the Sous-traitants tab on the house table style (UI-PLAYBOOK §6b): no
@@ -64,14 +65,14 @@ export class StTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return [
+    return centered([
       { key: 'name',    label: t('SUBCONTRACTING.ST.TABLE.NAME'),    type: 'avatar' },
       { key: 'email',   label: t('SUBCONTRACTING.ST.TABLE.EMAIL'),   type: 'text'   },
       { key: 'phone',   label: t('SUBCONTRACTING.ST.TABLE.PHONE'),   type: 'text'   },
       { key: 'taxId',   label: t('SUBCONTRACTING.ST.TABLE.TAX_ID'),  type: 'text'   },
       { key: 'status',  label: t('SUBCONTRACTING.ST.TABLE.STATUS'),  type: 'badge'  },
       { key: '_actions', label: '', align: 'right', width: '1%' },
-    ];
+    ]);
   });
 
   protected readonly rows = computed<TableRow[]>(() => {

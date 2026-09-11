@@ -23,6 +23,7 @@ import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
 import { BILLING_LINE_STATUT_BADGE, WIP_TAUX_STATUT_BADGE, LIVRABLE_STATUT_BADGE, LIVRABLE_BATCH_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
 import { WipTmDetailTableComponent } from './wip-tm-detail-table.component';
 import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.component';
+import { centered } from '../../../shared/table-align';
 
 @Component({
   selector: 'app-affaire-wip-tab',
@@ -224,7 +225,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly livrablePendingColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
+    return centered([
       { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE') },
       { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT') },
       { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE'), align: 'right' },
@@ -232,7 +233,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       { key: 'nouveauPct', label: t('AFFAIRES.WIP.COL_NOUVEAU_PCT'), align: 'right', type: 'custom' },
       { key: 'montant',    label: t('AFFAIRES.WIP.COL_AMOUNT'), align: 'right' },
       { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'custom' },
-    ];
+    ]);
   });
 
   readonly livrablePendingRows = computed<TableRow[]>(() => this.pendingLivrables().map(l => ({
@@ -263,12 +264,12 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly livrableHistoryColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
+    return centered([
       { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE') },
       { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT') },
       { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE'), align: 'right' },
       { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
-    ];
+    ]);
   });
 
   private toLivrableHistoryRow(l: AffaireLivrableDto): TableRow {
@@ -742,12 +743,12 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly tauxHistoryColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
+    return centered([
       { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
       { key: 'taux',    label: t('AFFAIRES.WIP.COL_TAUX'), align: 'right' },
       { key: 'montant', label: t('AFFAIRES.WIP.COL_INCREMENT'), align: 'right' },
       { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
-    ];
+    ]);
   });
 
   readonly tauxHistoryRows = computed<TableRow[]>(() => this.tauxHistory().map(t => ({
@@ -972,11 +973,11 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly tmHistoryColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
+    return centered([
       { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
       { key: 'montant', label: t('AFFAIRES.WIP.COL_AMOUNT'), align: 'right' },
       { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
-    ];
+    ]);
   });
 
   private toHistoryRow(l: LineDetailDto): TableRow {

@@ -12,6 +12,7 @@ import {
 } from '../../payments/reminder-rule.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { offsetLabel } from '../../payments/payments-display';
+import { centered } from '../../../shared/table-align';
 
 /**
  * Administration de l'échéancier de recouvrement — l'onglet « Relances ».
@@ -104,13 +105,13 @@ export class ReminderRulesAdminComponent implements OnInit {
   readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
+    return centered([
       { key: 'offset',    label: t('ADMIN.REMINDERS.COL_OFFSET'),  type: 'badge'  },
       { key: 'rule',      label: t('ADMIN.REMINDERS.COL_RULE'),    type: 'custom' },
       { key: 'audience',  label: t('ADMIN.REMINDERS.COL_ROLES'),   type: 'custom' },
       { key: 'scope',     label: t('ADMIN.REMINDERS.COL_SCOPE'),   type: 'text'   },
       { key: 'state',     label: t('ADMIN.REMINDERS.COL_STATE'),   type: 'badge'  },
-    ];
+    ]);
   });
 
   readonly rows = computed<TableRow[]>(() => {

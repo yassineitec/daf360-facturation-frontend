@@ -26,6 +26,7 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
 import { UserStore } from '../../../core/user.store';
+import { centered } from '../../../shared/table-align';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -311,13 +312,13 @@ export class CostLineDetailComponent implements OnInit {
   readonly approvalColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
+    return centered([
       { key: 'level',    label: t('COST.DETAIL.APPROVALS.COL_LEVEL'),    type: 'text'   },
       { key: 'decision', label: t('COST.DETAIL.APPROVALS.COL_DECISION'), type: 'custom' },
       { key: 'approver', label: t('COST.DETAIL.APPROVALS.COL_APPROVER'), type: 'text'   },
       { key: 'date',     label: t('COST.DETAIL.APPROVALS.COL_DATE'),     type: 'text'   },
       { key: 'comment',  label: t('COST.DETAIL.APPROVALS.COL_COMMENT'),  type: 'text'   },
-    ];
+    ]);
   });
 
   readonly approvalRows = computed<TableRow[]>(() => {
@@ -348,7 +349,7 @@ export class CostLineDetailComponent implements OnInit {
   readonly ledgerColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    const cols: TableColumn[] = [
+    const cols: TableColumn[] = centered([
       { key: 'date',            label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text' },
       { key: 'label',           label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text' },
       { key: 'netAmount',       label: t('COST.DETAIL.LEDGER.COL_NET_AMOUNT'),      type: 'text', align: 'right' },
@@ -361,7 +362,7 @@ export class CostLineDetailComponent implements OnInit {
       { key: 'credit',          label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right' },
       { key: 'soldeDebiteur',   label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right' },
       { key: 'soldeCrediteur',  label: t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right' },
-    ];
+    ]);
     if (this.canManageReglements()) {
       cols.push({ key: 'actions', label: '', type: 'custom' });
     }

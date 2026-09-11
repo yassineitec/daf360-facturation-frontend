@@ -7,7 +7,7 @@ import {
   MetricCardComponent, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { AffaireService } from './affaire.service';
-import { AffaireFilter, AffaireListItem, STATUT_LABELS } from './affaire.model';
+import { AffaireFilter, AffaireListItem, AffairesSummary, STATUT_LABELS } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
 import { AffairesCardsSectionComponent } from './components/affaires-cards-section.component';
 import { AffairesTableSectionComponent } from './components/affaires-table-section.component';
@@ -76,15 +76,24 @@ export class AffairesListComponent implements OnInit {
   clientName     = signal<string | null>(null);
 
   /**
-   * ⚠️ Every tile below is computed from the page currently on screen, not from the
-   * whole result set — the list endpoint returns one page and no aggregates. The
-   * "page courante" delta says so rather than letting "Budget total" read as the
-   * portfolio total.
+   * Agrégats des tuiles, renvoyés par `GET /affaires/summary` sur l'ENSEMBLE du jeu
+   * filtré. Ils étaient auparavant sommés sur `affaires()`, c'est-à-dire sur les 20
+   * lignes affichées : « Budget total » changeait donc à chaque page tournée et ne
+   * comptait jamais le reste du portefeuille.
    */
-  readonly statsActives     = computed(() => this.affaires().filter(a => a.statut === 'EN_COURS').length);
-  readonly statsSuspendu    = computed(() => this.affaires().filter(a => a.statut === 'SUSPENDUE').length);
-  readonly statsRafTotal    = computed(() => this.affaires().reduce((s, a) => s + (a.rafDisponible ?? 0), 0));
-  readonly statsBudgetTotal = computed(() => this.affaires().reduce((s, a) => s + (a.budgetPrevisionnel ?? 0), 0));
+  readonly summary = signal<AffairesSummary | null>(null);
+
+  /**
+   * Devise des montants renvoyés — 'EUR', converti côté serveur. Elle était codée en
+   * dur à 'TND' dans le gabarit : le pipe reconvertissait donc des euros comme s'ils
+   * étaient des dinars et affichait un budget divisé par plus de trois.
+   */
+  readonly summaryCurrency = computed(() => this.summary()?.devise ?? 'EUR');
+
+  readonly statsActives     = computed(() => this.summary()?.actives     ?? 0);
+  readonly statsSuspendu    = computed(() => this.summary()?.suspendues  ?? 0);
+  readonly statsRafTotal    = computed(() => this.summary()?.rafTotal    ?? 0);
+  readonly statsBudgetTotal = computed(() => this.summary()?.budgetTotal ?? 0);
 
   /**
    * Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4) — the tiles
@@ -96,10 +105,19 @@ export class AffairesListComponent implements OnInit {
   readonly kpiBudget  : MetricCardOptions = { icon: 'payments',                iconColor: 'text-secondary', iconBg: 'bg-secondary/10' };
   readonly kpiPending : MetricCardOptions = { icon: 'pause_circle',            iconColor: 'text-warning',   iconBg: 'bg-warning/10'   };
 
-  /** Same caption on all four tiles — see the note on the stats above. */
+  /** Un filtre est-il actif ? Décide seulement de la légende des tuiles. */
+  readonly hasActiveFilter = computed(() =>
+    !!this.searchText().trim() || !!this.filterStatut() || this.filterClientId() !== null);
+
+  /**
+   * Même légende sur les quatre tuiles. Elle dit sur quoi porte le chiffre — tout le
+   * portefeuille, ou la sélection en cours — pour qu'un total qui baisse après un
+   * filtre se lise comme un filtre et non comme une perte de données.
+   */
   readonly kpiDelta = computed<MetricDelta>(() => {
     this.translate.currentLang();
-    return { value: this.translate.instant('AFFAIRES.LIST.KPI.CURRENT_PAGE'), direction: 'neutral' };
+    const key = this.hasActiveFilter() ? 'AFFAIRES.LIST.KPI.FILTERED' : 'AFFAIRES.LIST.KPI.ALL';
+    return { value: this.translate.instant(key), direction: 'neutral' };
   });
 
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
@@ -160,6 +178,7 @@ export class AffairesListComponent implements OnInit {
     this.svc.getPays().subscribe(list =>
       this.paysLabels.set(new Map(list.map(p => [p.id, p.frenchLabel]))));
     this.load();
+    this.loadSummary();
   }
 
   /**
@@ -196,15 +215,36 @@ export class AffairesListComponent implements OnInit {
     });
   }
 
+  /** Le jeu décrit par les filtres courants, sans la pagination. */
+  private currentFilter(): AffaireFilter {
+    return {
+      search:   this.searchText().trim() || null,
+      statut:   this.filterStatut()      || null,
+      clientId: this.filterClientId(),
+    };
+  }
+
+  /**
+   * Les tuiles ne dépendent que des filtres, jamais de la page : elles ne sont donc
+   * PAS rechargées depuis `goToPage` / `onPageSize`, sous peine d'un appel de plus
+   * par page tournée pour un résultat identique.
+   *
+   * Sans `error` visible : l'échec laisse le dernier total affiché, et l'erreur de la
+   * liste (même filtre, même requête) porte déjà le message.
+   */
+  private loadSummary(): void {
+    this.svc.getAffairesSummary(this.currentFilter()).subscribe({
+      next: s => this.summary.set(s),
+    });
+  }
+
   load(): void {
     this.loading.set(true);
     this.error.set(null);
     const filter: AffaireFilter = {
-      page:     this.currentPage(),
-      size:     this.pageSize(),
-      search:   this.searchText().trim() || null,
-      statut:   this.filterStatut()      || null,
-      clientId: this.filterClientId(),
+      ...this.currentFilter(),
+      page: this.currentPage(),
+      size: this.pageSize(),
     };
     this.svc.getAffaires(filter).subscribe({
       next: res => {
@@ -227,12 +267,14 @@ export class AffairesListComponent implements OnInit {
     this.searchText.set(value);
     this.currentPage.set(0);
     this.load();
+    this.loadSummary();
   }
 
   applyFilters(result: FilterResult): void {
     this.filterStatut.set((result['statut'] as string | null) ?? '');
     this.currentPage.set(0);
     this.load();
+    this.loadSummary();
   }
 
   goToPage(page: number): void {
@@ -260,6 +302,7 @@ export class AffairesListComponent implements OnInit {
       queryParamsHandling: 'merge',
     });
     this.load();
+    this.loadSummary();
   }
 
   navigateToDetail(id: number): void {

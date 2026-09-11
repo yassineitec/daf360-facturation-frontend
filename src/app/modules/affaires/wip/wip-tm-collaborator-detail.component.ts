@@ -3,6 +3,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonComponent, DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { WipTmHourDto } from './wip.model';
 import { isoWeek } from '../../../shared/iso-week';
+import { centered } from '../../../shared/table-align';
 
 /**
  * Drill-down for one collaborator out of a WIP T&M preview — the "most important
@@ -49,7 +50,7 @@ export class WipTmCollaboratorDetailComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return [
+    return centered([
       { key: 'workDate',   label: t('AFFAIRES.WIP.COL_DATE'),       type: 'text' },
       { key: 'week',       label: t('AFFAIRES.WIP.COL_WEEK'),       type: 'text' },
       { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'), type: 'text' },
@@ -57,7 +58,7 @@ export class WipTmCollaboratorDetailComponent {
       { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT'),   type: 'text' },
       { key: 'hours',      label: t('AFFAIRES.WIP.COL_HOURS'),      type: 'text', align: 'right' },
       { key: 'cost',       label: t('AFFAIRES.WIP.COL_COST'),       type: 'text', align: 'right' },
-    ];
+    ]);
   });
 
   protected readonly rows = computed<TableRow[]>(() =>

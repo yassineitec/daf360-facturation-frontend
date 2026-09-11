@@ -11,6 +11,7 @@ import {
   missionScopeKey, missionUrgencyKey,
 } from '../mission-approval-item';
 import { MissionDecisionKind } from './mission-approval-cards-section.component';
+import { centered } from '../../../../shared/table-align';
 
 /**
  * List view of `/finance/cost/missions` on the house table style (§6b), over the same
@@ -65,7 +66,7 @@ export class MissionApprovalTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return [
+    return centered([
       { key: 'employee',    label: t('FACTURATION.MISSIONS.COL_EMPLOYEE'), type: 'avatar' },
       { key: 'scope',       label: t('FACTURATION.MISSIONS.SCOPE'), type: 'badge' },
       { key: 'destination', label: t('FACTURATION.MISSIONS.COL_DESTINATION') },
@@ -74,7 +75,7 @@ export class MissionApprovalTableSectionComponent {
       { key: 'amount',      label: t('FACTURATION.MISSIONS.COL_TOTAL'), align: 'right' },
       { key: 'urgency',     label: t('FACTURATION.MISSIONS.COL_URGENCY'), type: 'badge' },
       { key: '_actions',    label: '', align: 'right', width: '1%' },
-    ];
+    ]);
   });
 
   protected readonly rows = computed<TableRow[]>(() => {

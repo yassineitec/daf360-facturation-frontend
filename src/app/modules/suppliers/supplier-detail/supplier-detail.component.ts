@@ -24,6 +24,7 @@ import { CostService } from '../../cost/cost.service';
 import { CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../../cost/cost.model';
 import { STATUS_BADGE_VARIANT, statusKey } from '../../cost/cost-display';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { centered } from '../../../shared/table-align';
 
 /**
  * Une ligne clé/valeur du panneau de détails. `label` est toujours une clé i18n.
@@ -649,13 +650,13 @@ export class SupplierDetailComponent implements OnInit {
   readonly costColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
+    return centered([
       { key: 'reference', label: t('SUPPLIERS.DETAIL.COSTS.COL_REF'),    type: 'text' },
       { key: 'label',     label: t('SUPPLIERS.DETAIL.COSTS.COL_LABEL'),  type: 'text' },
       { key: 'date',      label: t('SUPPLIERS.DETAIL.COSTS.COL_DATE'),   type: 'text' },
       { key: 'status',    label: t('SUPPLIERS.DETAIL.COSTS.COL_STATUS'), type: 'badge' },
       { key: 'gross',     label: t('SUPPLIERS.DETAIL.COSTS.COL_GROSS'),  type: 'text', align: 'right' },
-    ];
+    ]);
   });
 
   readonly costRows = computed<TableRow[]>(() => {
@@ -699,14 +700,14 @@ export class SupplierDetailComponent implements OnInit {
   readonly ledgerColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [
+    return centered([
       { key: 'date',           label: t('SUPPLIERS.DETAIL.LEDGER.COL_DATE'),            type: 'text' },
       { key: 'label',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_LABEL'),           type: 'text' },
       { key: 'debit',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right' },
       { key: 'credit',         label: t('SUPPLIERS.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right' },
       { key: 'soldeDebiteur',  label: t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right' },
       { key: 'soldeCrediteur', label: t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right' },
-    ];
+    ]);
   });
 
   readonly filteredLedgerRows = computed(() => {

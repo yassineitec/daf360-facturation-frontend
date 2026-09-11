@@ -23,6 +23,7 @@ import { PaymentModalComponent } from '../payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { centered } from '../../../shared/table-align';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -314,7 +315,7 @@ export class InvoiceDetailComponent implements OnInit {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     if (this.usesAvancementColumns()) {
-      return [
+      return centered([
         { key: 'description',    label: t('INVOICING.DETAIL.LINES.DESC'),                type: 'custom' },
         { key: 'budgetAffaire',  label: t('INVOICING.STEP_LINES.BUDGET_AFFAIRE'),  type: 'custom', align: 'right' },
         { key: 'pctFacture',     label: t('INVOICING.STEP_LINES.PCT_FACTURE'),     type: 'custom', align: 'right' },
@@ -323,7 +324,7 @@ export class InvoiceDetailComponent implements OnInit {
         { key: 'lineTotal',      label: t('INVOICING.STEP_LINES.MONTANT_HT'),      type: 'custom', align: 'right' },
         { key: 'vatRatePct',     label: t('INVOICING.DETAIL.LINES.VAT'),                type: 'custom', align: 'right' },
         { key: 'lineTtc',        label: t('INVOICING.DETAIL.LINES.TOTAL_TTC'),          type: 'custom', align: 'right' },
-      ];
+      ]);
     }
     return [
       { key: 'description', label: t('INVOICING.DETAIL.LINES.DESC'),       type: 'custom' },

@@ -138,7 +138,7 @@
         </ng-template>
 
         <ng-template dafCell="status" let-row>
-          <div class="flex items-center gap-1.5">
+          <div class="flex items-center justify-center gap-1.5">
             @if (row['_raw'].isActive) {
               <daf-badge [label]="'AFFAIRES.RESSOURCES.ACTIVE' | translate" [options]="{ variant: 'success', size: 'sm', dot: true }" />
             } @else {

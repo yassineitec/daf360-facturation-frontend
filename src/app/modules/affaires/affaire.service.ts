@@ -12,7 +12,7 @@ import {
   AffaireListItem, AffaireDetail, RafDetailsDto, AffaireKpisDto,
   TsDto, UpdateAffaireRequest, ChangerStatutRequest,
   CreateTsRequest, ValiderTsRequest, AffaireFilter,
-  ClientDto, UserRefDto, PaysRefDto, PageResponse,
+  ClientDto, UserRefDto, PaysRefDto, PageResponse, AffairesSummary,
   AffaireInvoiceItem, AffairePaymentItem,
   TmWorkedHoursLine, AffaireRessourceRef,
   AffaireRessourceManageDto, AddAffaireRessourceRequest, UpdateResourceRateRequest,
@@ -36,6 +36,20 @@ export class AffaireService {
     if (filter.search)   params = params.set('search',   filter.search);
 
     return this.http.get<PageResponse<AffaireListItem>>(`${this.base}/affaires`, { params });
+  }
+
+  /**
+   * Les agrégats des tuiles. Mêmes filtres que `getAffaires` — moins `page`/`size`,
+   * qui n'ont pas de sens ici : le total porte sur l'ensemble, pas sur une tranche.
+   */
+  getAffairesSummary(filter: AffaireFilter = {}): Observable<AffairesSummary> {
+    let params = new HttpParams();
+    if (filter.paysId)   params = params.set('paysId',   String(filter.paysId));
+    if (filter.statut)   params = params.set('statut',   filter.statut);
+    if (filter.clientId) params = params.set('clientId', String(filter.clientId));
+    if (filter.search)   params = params.set('search',   filter.search);
+
+    return this.http.get<AffairesSummary>(`${this.base}/affaires/summary`, { params });
   }
 
   getAffaire(id: number): Observable<AffaireDetail> {

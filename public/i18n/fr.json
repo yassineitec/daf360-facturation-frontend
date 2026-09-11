@@ -942,7 +942,8 @@
         "BUDGET": "Budget total",
         "PENDING": "En attente",
         "UNITS": "affaires",
-        "CURRENT_PAGE": "page courante"
+        "ALL": "toutes les affaires",
+        "FILTERED": "filtres appliqués"
       },
       "TABLE": {
         "SEARCH": "Rechercher par nom, référence…",
@@ -3840,8 +3841,9 @@
       "OVERDUE_IN": "Créances échues",
       "OVERDUE_OUT_DELTA": "{{amount}} d'engagements échus",
       "EXPECTED_IN": "Encaissements attendus",
-      "OF_WHICH_MILESTONES": "dont {{amount}} de jalons",
+      "NET_DELTA": "{{amount}} net sur l'horizon",
       "EXPECTED_OUT": "Décaissements engagés",
+      "COLLECTED_DELTA": "{{amount}} encaissés sur 30 j",
       "LOW_POINT": "Point bas cumulé"
     },
     "CHART": {
@@ -3853,8 +3855,7 @@
     },
     "TABLE": {
       "PERIOD": "Période",
-      "INVOICES": "Factures",
-      "MILESTONES": "Jalons",
+      "IN": "Encaissements",
       "OUT": "Décaissements",
       "NET": "Net",
       "CUMUL": "Cumulé",
@@ -3863,15 +3864,23 @@
       "EMPTY": "Aucune échéance sur cet horizon."
     },
     "FLOWS": {
-      "TOP_IN": "Principaux encaissements attendus",
-      "TOP_OUT": "Principaux décaissements engagés",
+      "TOP_IN": "Encaissements attendus",
+      "TOP_OUT": "Décaissements engagés",
       "COUNTERPARTY": "Tiers",
       "DUE": "Échéance",
       "AMOUNT": "Montant",
-      "FORECAST": "jalon prévisionnel",
       "EMPTY_IN": "Aucun encaissement attendu sur cet horizon.",
       "EMPTY_OUT": "Aucun décaissement engagé sur cet horizon."
     },
-    "DISCLAIMER": "Projection de flux, pas un solde bancaire : le module ne porte aucune position de trésorerie d'ouverture, le cumulé se lit donc comme une variation à partir d'aujourd'hui. Les décaissements sont des engagements de dépense — les lignes de coût n'ont pas d'indicateur de règlement — et les échéances déjà passées ne sont reprises que sur 90 jours. Les montants ne sont pas convertis : ils sont sommés en {{devise}}. Repère réalisé : {{collected}} encaissés sur les 30 derniers jours."
+    "HELP": {
+      "OVERDUE_IN": "Factures dont la date de paiement est dépassée et qui ne sont pas soldées, sur les {{n}} derniers jours. Au-delà, c'est un recouvrement, plus une prévision de caisse.",
+      "EXPECTED_IN": "Ce qu'il reste à encaisser d'ici la fin de l'horizon, déduction faite des règlements déjà reçus. Les avoirs ne sont pas comptés.",
+      "EXPECTED_OUT": "Dépenses approuvées arrivant à échéance, moins les règlements fournisseurs déjà saisis. Une dépense approuvée mais non pointée reste comptée comme due.",
+      "LOW_POINT": "Le moment le plus tendu de la projection : là où le cumul des entrées moins les sorties est au plus bas. C'est la question à laquelle sert cette page.",
+      "CHART_IN": "Encaissements attendus mois par mois. Même échelle que le graphique des décaissements, pour que les deux hauteurs se comparent à l'œil.",
+      "CHART_OUT": "Décaissements engagés mois par mois. Même échelle que le graphique des encaissements."
+    },
+    "WARN_NO_RATE": "Aucun taux de change n'est configuré pour : {{devises}}. Les flux dans ces devises sont exclus de tous les totaux de cette page. Ajoutez le taux dans Administration › Devises pour les réintégrer.",
+    "DISCLAIMER": "Projection de flux, pas un solde bancaire : le module ne porte aucune position de trésorerie d'ouverture, le cumulé se lit donc comme une variation à partir d'aujourd'hui. Les décaissements sont des engagements de dépense — les lignes de coût n'ont pas d'indicateur de règlement — et les échéances déjà passées ne sont reprises que sur {{lookback}} jours, à l'encaissement comme au décaissement. Les montants sont convertis en {{devise}} au taux courant. Repère réalisé : {{collected}} encaissés sur les 30 derniers jours."
   }
 }

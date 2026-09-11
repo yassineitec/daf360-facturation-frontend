@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { environment } from '../../../../environments/environment';
+import { centered } from '../../../shared/table-align';
 import {
   ButtonComponent, CardComponent, CheckboxComponent, PageHeaderComponent, BreadcrumbItem, AccordionCardComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
@@ -172,10 +173,10 @@ export class FactRolesAdminComponent implements OnInit {
   checkedSet     = signal<Set<string>>(new Set());
   expandedGroups = signal<Set<string>>(new Set());
 
-  readonly roleColumns = computed<TableColumn[]>(() => [
+  readonly roleColumns = computed<TableColumn[]>(() => centered([
     { key: 'name',  label: '', type: 'custom' },
     { key: 'badge', label: '', type: 'badge', align: 'right' },
-  ]);
+  ]));
 
   readonly roleRows = computed<TableRow[]>(() => {
     this.translate.currentLang();
