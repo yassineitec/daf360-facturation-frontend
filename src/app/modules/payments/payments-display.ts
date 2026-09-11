@@ -52,11 +52,30 @@ export function reminderLabel(row: AgingRow, lang: string | null): string | null
  * côté de libellés anglais. `lang` est la valeur de `TranslateService.currentLang()`,
  * qui peut être vide au tout premier rendu — d'où le repli sur le français, la langue
  * par défaut de l'application.
+ *
+ * ⚠️ **Deux formes arrivent ici, et `new Date()` ne les traite pas pareil.** Le service
+ * envoie des `LocalDate` (`"2026-01-14"` — échéance, date de planification, date de
+ * valeur) et des `OffsetDateTime` (`"2026-01-14T10:30+01:00"` — envoi de relance). La
+ * spécification ECMAScript lit la première comme **minuit UTC** et la seconde dans son
+ * décalage déclaré. Une échéance était donc convertie dans le fuseau du navigateur avant
+ * d'être écrite : à l'ouest de Greenwich, `"2026-01-14"` s'affichait « 13 janv. 2026 ».
+ * Une date d'échéance n'est pas un instant — c'est une date civile, la même pour tout le
+ * monde — et elle est reconstruite comme telle, à partir de ses trois nombres. Les
+ * horodatages porteurs d'un décalage gardent le chemin normal : eux désignent bien un
+ * instant, et le fuseau du lecteur est la bonne réponse.
+ *
+ * Sans cela, l'écran se contredisait depuis que `daysPastDue()` compte en jours civils :
+ * une facture pouvait afficher « Échéance 13 janv. » et « 1 j » de retard le 14.
  */
 export function formatDate(d: string | null, lang?: string | null): string {
   if (!d) return '—';
-  const locale = lang === 'en' ? 'en-GB' : 'fr-FR';
-  return new Date(d).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+  const locale  = lang === 'en' ? 'en-GB' : 'fr-FR';
+  const civile  = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  // Minuit **local** : `toLocaleDateString` réécrit alors exactement ces trois nombres.
+  const date = civile
+    ? new Date(+civile[1], +civile[2] - 1, +civile[3])
+    : new Date(d);
+  return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /**
