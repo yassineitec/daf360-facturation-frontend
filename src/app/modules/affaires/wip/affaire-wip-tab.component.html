@@ -485,8 +485,8 @@
   } @else if (affaire.billingMode === 'LIVRABLE') {
 
     <!-- ── Livrables : facturation par sélection groupée — même repli daf-accordion-card
-         que FORFAIT/RÉGIE (voir leurs commentaires détaillés plus haut) ; le contenu est
-         branché sur les vraies données (pendingLivrables(), totalToInvoice(), etc.). ── -->
+         que FORFAIT/RÉGIE ; le contenu est branché sur les vraies données
+         (pendingLivrables(), totalToInvoice(), etc.). ── -->
     <daf-accordion-card class="wip-accordion"
       [options]="{ title: ('AFFAIRES.WIP.LIVRABLE_ENTRY_TITLE' | translate), icon: 'inventory_2', variant: 'outlined', radius: 'lg' }"
       [(open)]="livrableDrawerOpen">
@@ -515,11 +515,29 @@
             [config]="livrablePendingConfig()">
 
             <ng-template dafCell="nouveauPct" let-row>
-              <input type="number" class="w-20 text-right border border-outline-variant rounded px-1 py-0.5"
-                [min]="row['_raw'].pctFacture" max="100" step="0.1"
-                [disabled]="isLivrableRowLocked(row['id'])"
-                [value]="getEnteredPct(row['id'])"
-                (input)="setEnteredPct(row['id'], $any($event.target).valueAsNumber)" />%
+              <div class="inline-flex items-center gap-1">
+                <div class="inline-flex items-center w-20 border border-outline-variant rounded px-1 py-0.5">
+                  <input #pctInput type="number" class="pct-cell-input w-full min-w-0 text-right border-0 p-0 bg-transparent focus:outline-none"
+                    [min]="row['_raw'].pctFacture" max="100" step="0.1"
+                    [disabled]="isLivrableRowLocked(row['id'])"
+                    [value]="getEnteredPct(row['id'])"
+                    (input)="setEnteredPct(row['id'], $any($event.target).valueAsNumber)" />
+                  <span class="text-[11px] text-on-surface-variant ml-0.5">%</span>
+                </div>
+                <!-- Flèches haut/bas natives retirées de la case (débordaient de son cadre)
+                     et redessinées juste à côté, empilées ; stepUp/stepDown ne déclenchent
+                     pas d'événement natif, donc on répercute la valeur nous-mêmes. -->
+                <div class="flex flex-col leading-none">
+                  <button type="button" class="pct-stepper-btn" aria-label="Augmenter" [disabled]="isLivrableRowLocked(row['id'])"
+                    (click)="pctInput.stepUp(); setEnteredPct(row['id'], pctInput.valueAsNumber)">
+                    <span class="material-symbols-outlined">expand_less</span>
+                  </button>
+                  <button type="button" class="pct-stepper-btn" aria-label="Diminuer" [disabled]="isLivrableRowLocked(row['id'])"
+                    (click)="pctInput.stepDown(); setEnteredPct(row['id'], pctInput.valueAsNumber)">
+                    <span class="material-symbols-outlined">expand_more</span>
+                  </button>
+                </div>
+              </div>
             </ng-template>
 
             <ng-template dafCell="statut" let-row>
@@ -561,8 +579,8 @@
     </div>
     </daf-accordion-card>
 
-    <!-- ── Batches en attente (client puis DF) — n'apparaît que s'il y a des batches en
-         cours. ── -->
+    <!-- ── WIP en attente (batches client puis DF) — n'apparaît que s'il y a des batches
+         en cours. ── -->
     @if (loadingActiveBatches()) {
       <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
     } @else if (activeBatches().length) {
@@ -572,7 +590,7 @@
         <div class="flex flex-col gap-4">
           <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
             <span class="material-symbols-outlined text-[18px]">pending_actions</span>
-            {{ 'AFFAIRES.WIP.PENDING_BATCHES_TITLE' | translate }}
+            WIP en attente
           </h3>
 
           @for (b of activeBatches(); track b.batchId) {
