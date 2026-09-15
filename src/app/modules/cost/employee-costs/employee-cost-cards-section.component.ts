@@ -30,8 +30,8 @@ import {
         @for (card of cards(); track card.id) {
           <daf-entity-card
             [options]="card.options"
-            (cardClick)="edit.emit(card.raw)"
-            (viewClick)="edit.emit(card.raw)"
+            (cardClick)="history.emit(card.raw)"
+            (viewClick)="history.emit(card.raw)"
             (actionClick)="onAction(card.raw, $event.id)" />
         } @empty {
           <div class="col-span-full flex flex-col items-center gap-2 rounded-xl
@@ -54,8 +54,9 @@ export class EmployeeCostCardsSectionComponent {
   emptyMessage  = input('');
   skeletonCount = input(6);
 
-  readonly edit   = output<EmployeeCostDto>();
-  readonly remove = output<EmployeeCostDto>();
+  readonly edit    = output<EmployeeCostDto>();
+  readonly remove  = output<EmployeeCostDto>();
+  readonly history = output<EmployeeCostDto>();
 
   protected readonly skeletonSlots = computed(() =>
     Array.from({ length: Math.max(1, this.skeletonCount()) }, (_, i) => i),
@@ -90,17 +91,19 @@ export class EmployeeCostCardsSectionComponent {
             { label: t('COST.EMPLOYEE_COST.COL_PERIOD'),   value: formatPeriod(row.dateDebut, row.dateFin) },
           ],
           actions: [
-            { id: 'edit',   icon: 'stylus', tooltip: t('COST.EMPLOYEE_COST.EDIT') },
-            { id: 'delete', icon: 'delete', tooltip: t('COST.EMPLOYEE_COST.DELETE'), variant: 'danger' },
+            { id: 'history', icon: 'history', tooltip: t('COST.EMPLOYEE_COST.HISTORY') },
+            { id: 'edit',    icon: 'stylus',  tooltip: t('COST.EMPLOYEE_COST.EDIT') },
+            { id: 'delete',  icon: 'delete',  tooltip: t('COST.EMPLOYEE_COST.DELETE'), variant: 'danger' },
           ],
-          viewLabel: t('COST.EMPLOYEE_COST.EDIT'),
+          viewLabel: t('COST.EMPLOYEE_COST.HISTORY'),
         } satisfies EntityCardOptions,
       };
     });
   });
 
   protected onAction(row: EmployeeCostDto, id: string): void {
-    if (id === 'delete') this.remove.emit(row);
-    if (id === 'edit')   this.edit.emit(row);
+    if (id === 'delete')  this.remove.emit(row);
+    if (id === 'edit')    this.edit.emit(row);
+    if (id === 'history') this.history.emit(row);
   }
 }

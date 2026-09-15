@@ -337,7 +337,7 @@
               (onClick)="exportHistoryExcel(tmHistory())" />
             <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full',
                                       title: ('AFFAIRES.WIP.HISTORY_SHOW_ALL' | translate) }"
-              (onClick)="showHistoryPage.set(true)" />
+              (onClick)="openHistoryPage()" />
           </div>
         </div>
       </div>
@@ -462,10 +462,10 @@
                 [placeholder]="'AFFAIRES.WIP.HISTORY_SEARCH_PLACEHOLDER' | translate"
                 [value]="historySearch()"
                 [debounce]="200"
-                (valueChange)="historySearch.set($event)"
+                (valueChange)="onHistorySearchChange($event)"
                 [filterFields]="historyFilterFields()"
                 (filterApply)="onHistoryFilterApply($event)"
-                (filterReset)="historyStatut.set('')" />
+                (filterReset)="onHistoryStatutReset()" />
               <!-- Même bibliothèque (daf-button + xlsx) que la carte — exporte ici la
                    sélection filtrée plutôt que tout l'historique. -->
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
@@ -473,7 +473,22 @@
                                         disabled: !filteredHistoryLines().length }"
                 (onClick)="exportHistoryExcel(filteredHistoryLines())" />
             </div>
-            <daf-data-table [columns]="tmHistoryColumns()" [rows]="filteredHistoryRows()" [config]="tmHistoryConfig()" />
+            <daf-data-table [columns]="tmHistoryColumns()" [rows]="paginatedHistoryRows()" [config]="tmHistoryConfig()" />
+            <!-- TEST : daf-pagination de la lib — mêmes signaux historyPage/historyPageSize
+                 que la popup Historique du mode Livrable (une seule popup affichée à la
+                 fois selon le mode, donc l'état partagé ne pose pas de conflit). -->
+            <daf-pagination class="wip-pagination"
+              [currentPage]="historyPage()"
+              [totalPages]="historyTotalPages()"
+              [totalElements]="filteredHistoryLines().length"
+              [pageSize]="historyPageSize()"
+              [perPageLabel]="'AFFAIRES.WIP.HISTORY_PER_PAGE' | translate"
+              [summaryLabel]="'AFFAIRES.WIP.HISTORY_SUMMARY' | translate"
+              [firstPageLabel]="'AFFAIRES.WIP.HISTORY_FIRST_PAGE' | translate"
+              [lastPageLabel]="'AFFAIRES.WIP.HISTORY_LAST_PAGE' | translate"
+              [config]="{ showFirstLast: true }"
+              (pageChange)="historyPage.set($event)"
+              (pageSizeChange)="onHistoryPageSizeChange($event)" />
             @if (cancelLineError()) {
               <p class="text-[12px] text-danger">{{ cancelLineError() }}</p>
             }
@@ -703,7 +718,7 @@
                                       disabled: !livrableHistory().length }"
               (onClick)="exportLivrableHistoryExcel(livrableHistory())" />
             <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full', title: ('AFFAIRES.WIP.HISTORY_SHOW_ALL' | translate) }"
-              (onClick)="showHistoryPage.set(true)" />
+              (onClick)="openHistoryPage()" />
           </div>
         </div>
       </div>
@@ -738,16 +753,30 @@
                 [placeholder]="'AFFAIRES.WIP.HISTORY_SEARCH_PLACEHOLDER' | translate"
                 [value]="historySearch()"
                 [debounce]="200"
-                (valueChange)="historySearch.set($event)"
+                (valueChange)="onHistorySearchChange($event)"
                 [filterFields]="livrableHistoryFilterFields()"
                 (filterApply)="onHistoryFilterApply($event)"
-                (filterReset)="historyStatut.set('')" />
+                (filterReset)="onHistoryStatutReset()" />
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
                                         label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
                                         disabled: !filteredLivrableHistory().length }"
                 (onClick)="exportLivrableHistoryExcel(filteredLivrableHistory())" />
             </div>
-            <daf-data-table [columns]="livrableHistoryColumns()" [rows]="filteredLivrableHistoryRows()" [config]="livrableHistoryConfig()" />
+            <daf-data-table [columns]="livrableHistoryColumns()" [rows]="paginatedLivrableHistoryRows()" [config]="livrableHistoryConfig()" />
+            <!-- TEST : daf-pagination de la lib — voir le commentaire détaillé sur la
+                 popup Historique du mode Régie. -->
+            <daf-pagination class="wip-pagination"
+              [currentPage]="historyPage()"
+              [totalPages]="livrableHistoryTotalPages()"
+              [totalElements]="filteredLivrableHistory().length"
+              [pageSize]="historyPageSize()"
+              [perPageLabel]="'AFFAIRES.WIP.HISTORY_PER_PAGE' | translate"
+              [summaryLabel]="'AFFAIRES.WIP.HISTORY_SUMMARY' | translate"
+              [firstPageLabel]="'AFFAIRES.WIP.HISTORY_FIRST_PAGE' | translate"
+              [lastPageLabel]="'AFFAIRES.WIP.HISTORY_LAST_PAGE' | translate"
+              [config]="{ showFirstLast: true }"
+              (pageChange)="historyPage.set($event)"
+              (pageSizeChange)="onHistoryPageSizeChange($event)" />
           </div>
         </div>
       </div>

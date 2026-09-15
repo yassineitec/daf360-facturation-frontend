@@ -8,6 +8,15 @@
                               bouton "Modifier" (mode 'line' uniquement).
        DROITE (70 %)          les indicateurs, puis daf-tabs et ses panneaux.
 
+     EXCEPTION -- Tab 2 zoomé (`ledgerZoomed()`, reglement uniquement) : le tableau a 12
+     colonnes et ne tient pas dans les 70 %, donc on abandonne le découpage 30/70 pendant
+     que ce mode est actif. La carte d'identité (`identityCard`, h1 compris) est remplacée
+     par une tuile "Fournisseur" -- le même `daf-metric-card` que les KPI, avec le même
+     style inline, donc EXACTEMENT leur taille -- qui rejoint leur rangée, laquelle passe
+     pleine largeur. Le tableau (`ledgerPanel`) suit, pleine largeur, sous les onglets.
+     Changer d'onglet revient automatiquement à la mise en page normale : la condition ne
+     porte que sur `activeTab() === 'reglement'`.
+
      ⚠️ FLEX en style inline, jamais de grid ni de classe de point de rupture. -->
 
 <daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
@@ -21,240 +30,296 @@
   }
 
   @if (!loading() && !error()) {
-    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
+
+    @if (!(activeTab() === 'reglement' && ledgerZoomed())) {
 
       <!-- ══════════════════════════════════════════════════════════════════
-           COLONNE GAUCHE (30 %, sticky) — identité
+           MISE EN PAGE NORMALE — deux colonnes
            ══════════════════════════════════════════════════════════════ -->
-      <div style="flex:0 1 30%; min-width:320px">
-        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
+      <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
 
-          <daf-page-header
-            size="md"
-            [title]="headerTitle()"
-            [subtitle]="headerSubtitle()"
-            [badges]="headerBadges()"
-            [breadcrumbs]="breadcrumbs()"
-            [breadcrumbLabel]="'COST.DETAIL.BREADCRUMB_ARIA' | translate" />
+        <!-- COLONNE GAUCHE (30 %, sticky) — identité. Même taille que la fiche
+             client (`/finance/clients/:id`, UI-PLAYBOOK) : 30 %, `p-6`/`gap-5`,
+             texte `text-body-md` -- voir `identityCard`. -->
+        <div style="flex:0 1 30%; min-width:320px">
+          <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
+            <ng-container [ngTemplateOutlet]="identityCard" />
+          </div>
+        </div>
 
-          <daf-section-card>
+        <!-- COLONNE DROITE (70 %) — indicateurs puis onglets -->
+        <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
 
-            @if (mode === 'line') {
-              <div class="flex flex-col gap-5 p-6">
-                @for (f of identityLeadFields(); track f.label) {
-                  <div class="flex flex-col gap-1">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ f.label | translate }}
-                    </p>
-                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
-                  </div>
-                }
-
-                <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
-                  @for (f of identityGridFields(); track f.label) {
-                    <div class="flex flex-col gap-1" style="flex:1 1 40%">
-                      <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                        {{ f.label | translate }}
-                      </p>
-                      <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <!-- "Modifier" seulement -- pas de duplication de la modale de décision de
-                   la file d'approbation, qui reste l'endroit où approuver/retourner/rejeter.
-                   N'a de sens qu'en mode 'line' : il n'y a pas de ligne unique à modifier
-                   depuis une vue agrégée par fournisseur. -->
-              <div *appHasPermission="'FACT_MANAGE_COST'"
-                   class="border-t border-outline-variant/30 bg-surface-container p-6">
-                <daf-button
-                  [options]="{ variant: 'primary', fullWidth: true, iconStart: 'edit',
-                               disabled: !canEditLine(),
-                               label: 'COST.DETAIL.ACTIONS.EDIT' | translate }"
-                  (onClick)="goToEdit()" />
-              </div>
-            } @else {
-              <!-- Modes 'supplier'/'unassigned' : résumé du fournisseur (ou du panier
-                   "Sans fournisseur"), pas les champs d'une ligne unique. -->
-              <div class="flex flex-col gap-5 p-6">
-                <div class="flex flex-col gap-1">
-                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                    {{ 'COST.DETAIL.INFO.SUPPLIER' | translate }}
-                  </p>
-                  <p class="text-body-md font-bold text-on-surface">{{ headerTitle() }}</p>
-                </div>
-                @if (mode === 'supplier') {
-                  <div class="flex flex-col gap-1">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ 'COST.DETAIL.INFO.SUPPLIER_CODE' | translate }}
-                    </p>
-                    <p class="text-body-md font-bold text-on-surface">{{ supplierSummary()?.supplierCode ?? '—' }}</p>
-                  </div>
-                }
-                <div class="flex flex-col gap-1">
-                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                    {{ 'COST.DETAIL.KPI.LINE_COUNT' | translate }}
-                  </p>
-                  <p class="text-body-md font-bold text-on-surface">{{ supplierSummary()?.lineCount ?? 0 }}</p>
-                </div>
-              </div>
+          <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+            @for (k of kpiTiles(); track k.label) {
+              <daf-metric-card
+                style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+                [label]="k.label | translate"
+                [value]="k.value"
+                [delta]="k.delta"
+                [options]="k.options" />
             }
-            @if (mode === 'supplier') {
-              <div class="border-t border-outline-variant/30 bg-surface-container p-6">
-                <daf-button
-                  [options]="{ variant: 'primary', fullWidth: true, iconStart: 'add',
-                               label: 'COST.DETAIL.SUPPLIER.NEW_LINE' | translate }"
-                  (onClick)="goToNewLineForSupplier()" />
-              </div>
+          </div>
+
+          <daf-tabs #tabsRef
+            variant="underline"
+            [tabs]="tabs()"
+            [(active)]="activeTab"
+            [tabsLabel]="'COST.DETAIL.TABS_ARIA' | translate"
+            idPrefix="cost-line-detail" />
+
+          <div role="tabpanel"
+               [id]="tabsRef.panelId(activeTab())"
+               [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+               class="flex flex-col gap-6">
+
+            <!-- ── Tab 1 ─────────────────────────────────────────────────────── -->
+            @if (activeTab() === 'info') {
+              @if (mode === 'line') {
+                <daf-data-table
+                  [columns]="approvalColumns()"
+                  [rows]="approvalRows()"
+                  [config]="approvalConfig()">
+
+                  <ng-template dafCell="decision" let-row>
+                    <daf-badge
+                      [label]="row['_decisionLabel']"
+                      [options]="{ variant: row['_decisionVariant'], icon: row['_decisionIcon'] }" />
+                  </ng-template>
+
+                </daf-data-table>
+              } @else {
+                <!-- Modes 'supplier'/'unassigned' : la liste des lignes de coût, tout
+                     statut confondu -- réutilise le composant table de la page liste
+                     plate plutôt que d'en construire un troisième. Le clic sur une ligne
+                     se comporte exactement comme sur cette page liste : navigation vers le
+                     formulaire d'édition, avec la même contrainte "brouillon uniquement". -->
+                <app-cost-lines-table-section
+                  [lines]="supplierLines()"
+                  [categoryFor]="categoryFor"
+                  [loading]="false"
+                  [pageSize]="200"
+                  [emptyMessage]="supplierLinesEmptyMessage()"
+                  (edit)="goToLineEdit($event)"
+                  (submitLine)="submitLineFromList($event)"
+                  (createReglement)="openReglementForLine($event)" />
+              }
             }
 
-          </daf-section-card>
+            <!-- ── Tab 2 : relevé de compte fournisseur ─────────────────────── -->
+            @if (activeTab() === 'reglement') {
+              <ng-container [ngTemplateOutlet]="ledgerPanel" />
+            }
+
+          </div>
         </div>
       </div>
 
+    } @else {
+
       <!-- ══════════════════════════════════════════════════════════════════
-           COLONNE DROITE (70 %) — indicateurs puis onglets
+           TAB 2 ZOOMÉ — plus de découpage 30/70 : la carte d'identité est
+           remplacée par une tuile "Fournisseur" -- littéralement le même
+           `daf-metric-card` que "Nombre de lignes" juste à côté, avec le même
+           style inline, donc EXACTEMENT la même taille, pas juste une taille
+           approchante. Elle rejoint la rangée des KPI, qui passe pleine
+           largeur. Le tableau suit, pleine largeur, sous les onglets.
            ══════════════════════════════════════════════════════════════ -->
-      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+      <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
 
-        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
-          @for (k of kpiTiles(); track k.label) {
-            <daf-metric-card
-              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
-              [label]="k.label | translate"
-              [value]="k.value"
-              [delta]="k.delta"
-              [options]="k.options" />
-          }
-        </div>
+        <daf-metric-card
+          style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+          [label]="'COST.DETAIL.INFO.SUPPLIER' | translate"
+          [value]="headerTitle()"
+          [delta]="null"
+          [options]="{ icon: 'store', iconColor: 'text-tertiary', iconBg: 'bg-tertiary/10' }" />
 
-        <daf-tabs #tabsRef
-          variant="underline"
-          [tabs]="tabs()"
-          [(active)]="activeTab"
-          [tabsLabel]="'COST.DETAIL.TABS_ARIA' | translate"
-          idPrefix="cost-line-detail" />
+        @for (k of kpiTiles(); track k.label) {
+          <daf-metric-card
+            style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+            [label]="k.label | translate"
+            [value]="k.value"
+            [delta]="k.delta"
+            [options]="k.options" />
+        }
+      </div>
 
-        <div role="tabpanel"
-             [id]="tabsRef.panelId(activeTab())"
-             [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
-             class="flex flex-col gap-6">
+      <daf-tabs #tabsRef
+        variant="underline"
+        [tabs]="tabs()"
+        [(active)]="activeTab"
+        [tabsLabel]="'COST.DETAIL.TABS_ARIA' | translate"
+        idPrefix="cost-line-detail"
+        style="display:block; margin-top:1.5rem" />
 
-          <!-- ── Tab 1 ─────────────────────────────────────────────────────── -->
-          @if (activeTab() === 'info') {
-            @if (mode === 'line') {
-              <daf-data-table
-                [columns]="approvalColumns()"
-                [rows]="approvalRows()"
-                [config]="approvalConfig()">
+      <div role="tabpanel"
+           [id]="tabsRef.panelId(activeTab())"
+           [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+           style="margin-top:1.5rem">
+        <ng-container [ngTemplateOutlet]="ledgerPanel" />
+      </div>
 
-                <ng-template dafCell="decision" let-row>
-                  @switch (row['_decision']) {
-                    @case ('APPROVED') {
-                      <span class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">
-                        <span class="material-symbols-outlined text-[14px]">check_circle</span>
-                        {{ row['_decisionLabel'] }}
-                      </span>
-                    }
-                    @case ('AUTO_APPROVED') {
-                      <span class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">
-                        <span class="material-symbols-outlined text-[14px]">bolt</span>
-                        {{ row['_decisionLabel'] }}
-                      </span>
-                    }
-                    @case ('RETURNED') {
-                      <span class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-bold text-warning">
-                        <span class="material-symbols-outlined text-[14px]">undo</span>
-                        {{ row['_decisionLabel'] }}
-                      </span>
-                    }
-                    @case ('REJECTED') {
-                      <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-bold text-danger">
-                        <span class="material-symbols-outlined text-[14px]">cancel</span>
-                        {{ row['_decisionLabel'] }}
-                      </span>
-                    }
-                    @default {
-                      <span class="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-0.5 text-[11px] font-bold text-on-surface-variant">
-                        {{ row['_decisionLabel'] }}
-                      </span>
-                    }
-                  }
-                </ng-template>
+    }
+  }
 
-              </daf-data-table>
-            } @else {
-              <!-- Modes 'supplier'/'unassigned' : la liste des lignes de coût, tout
-                   statut confondu -- réutilise le composant table de la page liste
-                   plate plutôt que d'en construire un troisième. Le clic sur une ligne
-                   se comporte exactement comme sur cette page liste : navigation vers le
-                   formulaire d'édition, avec la même contrainte "brouillon uniquement". -->
-              <app-cost-lines-table-section
-                [lines]="supplierLines()"
-                [categoryFor]="categoryFor"
-                [loading]="false"
-                [pageSize]="200"
-                [emptyMessage]="supplierLinesEmptyMessage()"
-                (edit)="goToLineEdit($event)"
-                (submitLine)="submitLineFromList($event)"
-                (createReglement)="openReglementForLine($event)" />
-            }
+  <!-- ══════════════════════════════════════════════════════════════════
+       Carte d'identité / résumé fournisseur (h1 compris) — seulement dans
+       la mise en page normale (colonne gauche sticky) : zoomé, elle est
+       remplacée par une tuile "Fournisseur" (voir la rangée KPI ci-dessus),
+       pas rendue ici en plus petit.
+       ══════════════════════════════════════════════════════════════ -->
+  <ng-template #identityCard>
+    <daf-page-header
+      size="md"
+      [title]="headerTitle()"
+      [subtitle]="headerSubtitle()"
+      [badges]="headerBadges()"
+      [breadcrumbs]="breadcrumbs()"
+      [breadcrumbLabel]="'COST.DETAIL.BREADCRUMB_ARIA' | translate" />
+
+    <daf-section-card>
+
+      @if (mode === 'line') {
+        <div class="flex flex-col gap-5 p-6">
+          @for (f of identityLeadFields(); track f.label) {
+            <div class="flex flex-col gap-1">
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ f.label | translate }}
+              </p>
+              <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+            </div>
           }
 
-          <!-- ── Tab 2 : relevé de compte fournisseur ─────────────────────── -->
-          @if (activeTab() === 'reglement') {
-            @if (hasSupplier()) {
-              <div class="flex items-center justify-between gap-2 px-1">
-                <div class="flex items-center gap-2">
-                  <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                    {{ 'COST.DETAIL.LEDGER.ACCOUNT_LABEL' | translate }}
-                  </span>
-                  <span class="text-body-md font-bold text-on-surface">{{ supplierName() ?? '—' }}</span>
-                </div>
-                @if (canManageReglements()) {
-                  <daf-button
-                    [options]="{ variant: 'primary', iconStart: 'add',
-                                 label: 'COST.DETAIL.LEDGER.NEW_REGLEMENT' | translate }"
-                    (onClick)="openNewReglement()" />
-                }
+          <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+            @for (f of identityGridFields(); track f.label) {
+              <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                  {{ f.label | translate }}
+                </p>
+                <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
               </div>
             }
-            <daf-data-table
-              [columns]="ledgerColumns()"
-              [rows]="ledgerRows()"
-              [config]="ledgerConfig()">
+          </div>
+        </div>
 
-              <ng-template dafCell="actions" let-row>
-                @if (row['_reglementId']) {
-                  <div class="flex items-center gap-1 justify-end">
-                    <button type="button"
-                            class="material-symbols-outlined text-[18px] text-on-surface-variant"
-                            style="background:none;border:none;cursor:pointer;padding:2px"
-                            [attr.aria-label]="'COST.DETAIL.LEDGER.EDIT_REGLEMENT' | translate"
-                            (click)="openEditReglement(row['_reglementId'])">edit</button>
-                    <button type="button"
-                            class="material-symbols-outlined text-[18px] text-danger"
-                            style="background:none;border:none;cursor:pointer;padding:2px"
-                            [attr.aria-label]="'COST.DETAIL.LEDGER.DELETE_REGLEMENT' | translate"
-                            (click)="confirmDeleteReglement(row['_reglementId'])">delete</button>
-                  </div>
-                }
-              </ng-template>
-
-            </daf-data-table>
+        <!-- "Modifier" seulement -- pas de duplication de la modale de décision de
+             la file d'approbation, qui reste l'endroit où approuver/retourner/rejeter.
+             N'a de sens qu'en mode 'line' : il n'y a pas de ligne unique à modifier
+             depuis une vue agrégée par fournisseur. -->
+        <div *appHasPermission="'FACT_MANAGE_COST'"
+             class="border-t border-outline-variant/30 bg-surface-container p-6">
+          <daf-button
+            [options]="{ variant: 'primary', fullWidth: true, iconStart: 'edit',
+                         disabled: !canEditLine(),
+                         label: 'COST.DETAIL.ACTIONS.EDIT' | translate }"
+            (onClick)="goToEdit()" />
+        </div>
+      } @else {
+        <!-- Modes 'supplier'/'unassigned' : résumé du fournisseur (ou du panier
+             "Sans fournisseur"), pas les champs d'une ligne unique. -->
+        <div class="flex flex-col gap-5 p-6">
+          <div class="flex flex-col gap-1">
+            <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'COST.DETAIL.INFO.SUPPLIER' | translate }}
+            </p>
+            <p class="text-body-md font-bold text-on-surface">{{ headerTitle() }}</p>
+          </div>
+          @if (mode === 'supplier') {
+            <div class="flex flex-col gap-1">
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'COST.DETAIL.INFO.SUPPLIER_CODE' | translate }}
+              </p>
+              <p class="text-body-md font-bold text-on-surface">{{ supplierSummary()?.supplierCode ?? '—' }}</p>
+            </div>
           }
+          <div class="flex flex-col gap-1">
+            <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'COST.DETAIL.KPI.LINE_COUNT' | translate }}
+            </p>
+            <p class="text-body-md font-bold text-on-surface">{{ supplierSummary()?.lineCount ?? 0 }}</p>
+          </div>
+        </div>
+      }
+      @if (mode === 'supplier') {
+        <div class="flex flex-col gap-3 border-t border-outline-variant/30 bg-surface-container p-6">
+          <daf-button
+            [options]="{ variant: 'teal', fullWidth: true, iconStart: 'add',
+                         label: 'COST.DETAIL.SUPPLIER.NEW_LINE' | translate }"
+            (onClick)="goToNewLineForSupplier()" />
 
+          <!-- Même action que le bouton de l'onglet règlement (`openNewReglement()`) --
+               un raccourci ici évite de devoir changer d'onglet juste pour saisir un
+               règlement. Même garde de permission, et `hasSupplier()` par cohérence
+               (toujours vrai en mode 'supplier', mais le composant est partagé avec
+               'unassigned' où cette branche entière ne s'affiche de toute façon pas). -->
+          @if (canManageReglements() && hasSupplier()) {
+            <daf-button
+              [options]="{ variant: 'secondary', fullWidth: true, iconStart: 'add',
+                           label: 'COST.DETAIL.LEDGER.NEW_REGLEMENT' | translate }"
+              (onClick)="openNewReglement()" />
+          }
+        </div>
+      }
+
+    </daf-section-card>
+  </ng-template>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       Relevé fournisseur — partagé entre l'emplacement normal (dans
+       l'onglet, 70 %) et l'emplacement zoomé (pleine largeur), pour ne
+       jamais dupliquer le tableau ni sa colonne d'actions.
+       ══════════════════════════════════════════════════════════════ -->
+  <ng-template #ledgerPanel>
+    @if (hasSupplier()) {
+      <div class="flex items-center justify-between gap-2 px-1">
+        <div class="flex items-center gap-2">
+          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+            {{ 'COST.DETAIL.LEDGER.ACCOUNT_LABEL' | translate }}
+          </span>
+          <span class="text-body-md font-bold text-on-surface">{{ supplierName() ?? '—' }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Mode 'supplier' a déjà ce bouton dans la carte d'identité (juste sous
+               "Nouvelle ligne de coût") -- le répéter ici serait redondant. Mode 'line'
+               n'a pas cette carte-là, donc il le garde ici : c'est son seul accès. -->
+          @if (canManageReglements() && mode !== 'supplier') {
+            <daf-button
+              [options]="{ variant: 'teal', iconStart: 'add',
+                           label: 'COST.DETAIL.LEDGER.NEW_REGLEMENT' | translate }"
+              (onClick)="openNewReglement()" />
+          }
+          <!-- Sans fond (`ghost`) : posé dans cette ligne de texte, pas au-dessus d'un
+               tableau -- une icône seule s'y fond mieux qu'un bouton plein. -->
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm',
+                         iconStart: ledgerZoomed() ? 'close_fullscreen' : 'open_in_full',
+                         title: (ledgerZoomed() ? 'COST.DETAIL.LEDGER.ZOOM_OUT' : 'COST.DETAIL.LEDGER.ZOOM_IN') | translate }"
+            (onClick)="toggleLedgerZoom()" />
         </div>
       </div>
-    </div>
-  }
+    }
 
-  @if (reglementModalOpen()) {
-    <app-reglement-modal
-      [data]="{ editing: editingReglement(), payableLines: payableLines() }"
-      (closed)="onReglementModalClosed()"
-      (resolved)="onReglementModalResolved()" />
-  }
+    <daf-data-table
+      [columns]="ledgerColumns()"
+      [rows]="ledgerRows()"
+      [config]="ledgerConfig()">
+
+      <ng-template dafCell="actions" let-row>
+        @if (row['_reglementId']) {
+          <div class="flex items-center gap-1 justify-end">
+            <fact-table-action id="edit" icon="edit"
+              [tooltip]="'COST.DETAIL.LEDGER.EDIT_REGLEMENT' | translate"
+              (action)="openEditReglement(row['_reglementId'])" />
+            <fact-table-action id="delete" variant="danger"
+              [tooltip]="'COST.DETAIL.LEDGER.DELETE_REGLEMENT' | translate"
+              (action)="confirmDeleteReglement(row['_reglementId'])" />
+          </div>
+        }
+      </ng-template>
+
+    </daf-data-table>
+  </ng-template>
+
+  <app-reglement-modal #reglementModal />
 
 </daf-page>

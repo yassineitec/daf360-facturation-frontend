@@ -1,9 +1,11 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, inject, signal, computed, ViewChild, TemplateRef } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
+  PageComponent, PageHeaderComponent, CardComponent, BreadcrumbItem,
+  ButtonComponent, StatusBadgeComponent, BadgeVariant, FormFieldComponent,
+  ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService, TauxDetailDto, JalonDetailDto, LineDetailDto, EntityAuditLogDto,
@@ -11,7 +13,7 @@ import {
 import { AffaireService } from '../affaire.service';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { LivrableBatchDto } from '../livrable.model';
+import { LivrableBatchDto } from '../livrable.model';
 type DetailType = 'taux' | 'jalon' | 'line' | 'livrable';
 
 interface HistoryRow {
@@ -27,8 +29,9 @@ interface HistoryRow {
   selector: 'app-approval-detail',
   standalone: true,
   imports: [
-    RouterLink, FormsModule, TranslatePipe, DataTableComponent, DafCellDirective,
-    DisplayCurrencyPipe,
+    TranslatePipe, DataTableComponent, DafCellDirective, DisplayCurrencyPipe,
+    PageComponent, PageHeaderComponent, CardComponent,
+    ButtonComponent, StatusBadgeComponent, FormFieldComponent,
   ],
   templateUrl: './approval-detail.component.html',
   styleUrl: './approval-detail.component.scss',
@@ -39,6 +42,10 @@ export class ApprovalDetailComponent implements OnInit {
   private readonly svc        = inject(BillingService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly translate  = inject(TranslateService);
+  private readonly modal      = inject(ModalService);
+
+  @ViewChild('refuseTpl') private refuseTpl!: TemplateRef<unknown>;
+  @ViewChild('returnTpl') private returnTpl!: TemplateRef<unknown>;
 
   type = signal<DetailType>('taux');
   id   = signal(0);
@@ -60,10 +67,44 @@ export class ApprovalDetailComponent implements OnInit {
   actioning   = signal(false);
   actionError = signal<string | null>(null);
 
-  showRefuseModal = signal(false);
-  refuseMotif = '';
-  showReturnModal = signal(false);
-  returnMotif = '';
+  refuseMotif = signal('');
+  refuseError = signal<string | null>(null);
+  private refuseRef?: ModalRef;
+
+  returnMotif = signal('');
+  returnError = signal<string | null>(null);
+  private returnRef?: ModalRef;
+
+  readonly pageTitle = computed(() => {
+    const a = this.affaire();
+    return a?.intitule || a?.reference || '';
+  });
+
+  /** Translated label for the item type — used both as the breadcrumb's current
+   * (non-link) crumb and as each "this item" card's heading. */
+  readonly detailTypeLabel = computed(() => {
+    this.translate.currentLang();
+    const key: Record<DetailType, string> = {
+      taux:     'AFFAIRES.billing.approval.detail.title_taux',
+      jalon:    'AFFAIRES.billing.approval.detail.title_jalon',
+      line:     'AFFAIRES.billing.approval.detail.title_line',
+      livrable: 'AFFAIRES.billing.approval.detail.title_livrable',
+    };
+    return this.translate.instant(key[this.type()]);
+  });
+
+  /** Approbations > {référence affaire} > {type d'élément}. The middle crumb is the
+   * only real navigation target here — back to the affaire itself. */
+  readonly breadcrumbItems = computed<BreadcrumbItem[]>(() => {
+    this.translate.currentLang();
+    const a = this.affaire();
+    if (!a) return [];
+    return [
+      { label: this.translate.instant('AFFAIRES.billing.approval.title'), link: '/finance/billing/approval' },
+      { label: a.reference, link: ['/fact/affaires', a.id] },
+      { label: this.detailTypeLabel() },
+    ];
+  });
 
   readonly canAct = computed(() => {
     switch (this.type()) {
@@ -130,6 +171,27 @@ export class ApprovalDetailComponent implements OnInit {
       { key: 'commentaire',  label: this.translate.instant('AFFAIRES.billing.approval.col_comment'), type: 'text' },
     ];
   });
+
+  // ── daf-data-table: livrable batch entries ───────────────────────────────────
+  readonly livrableEntryColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'document',     label: this.translate.instant('AFFAIRES.WIP.COL_DOCUMENT'), type: 'text' },
+      { key: 'pctPrecedent', label: this.translate.instant('AFFAIRES.billing.approval.detail.taux_precedent'), type: 'custom', align: 'right' },
+      { key: 'pctSaisi',     label: this.translate.instant('AFFAIRES.billing.approval.col_taux'), type: 'custom', align: 'right' },
+      { key: 'montant',      label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
+    ];
+  });
+
+  readonly livrableEntryRows = computed(() =>
+    (this.livrableBatch()?.entries ?? []).map(e => ({
+      id:           e.billingLineId,
+      document:     e.documentNom ?? '—',
+      pctPrecedent: e.pctPrecedent,
+      pctSaisi:     e.pctSaisi,
+      montant:      e.montantHt,
+    }))
+  );
 
   readonly tableConfig = computed<TableConfig>(() => ({ hoverable: false }));
 
@@ -206,6 +268,18 @@ export class ApprovalDetailComponent implements OnInit {
     });
   }
 
+  /** Coarse status → badge color, from the shared prefix/value conventions across
+   * taux/jalon/line/livrable statuses (EN_ATTENTE*, VALIDE*, FACTURE, RETOURNE, REFUSE/ANNULE). */
+  statusBadgeVariant(statut: string | null | undefined): BadgeVariant {
+    if (!statut) return 'neutral';
+    if (statut.startsWith('EN_ATTENTE')) return 'warning';
+    if (statut.startsWith('VALIDE'))     return 'info';
+    if (statut === 'FACTURE')            return 'success';
+    if (statut === 'RETOURNE')           return 'secondary';
+    if (statut === 'REFUSE' || statut === 'ANNULE') return 'danger';
+    return 'neutral';
+  }
+
   // ── Actions ──────────────────────────────────────────────────────────────
 
   validateTaux(): void {
@@ -231,14 +305,27 @@ export class ApprovalDetailComponent implements OnInit {
   }
 
   openRefuseModal(): void {
-    this.refuseMotif = '';
-    this.showRefuseModal.set(true);
+    this.refuseMotif.set('');
+    this.refuseError.set(null);
+    this.refuseRef = this.modal.open({
+      title: this.translate.instant('AFFAIRES.billing.approval.modal_refuse_title'),
+      body: this.refuseTpl,
+      size: 'sm',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: this.translate.instant('AFFAIRES.billing.approval.modal_cancel'),     variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('AFFAIRES.billing.approval.modal_refuse_btn'), variant: 'primary',   action: () => this.confirmRefuse() },
+      ],
+    });
   }
 
   confirmRefuse(): void {
-    if (!this.refuseMotif.trim()) return;
-    const motif = this.refuseMotif.trim();
-    this.showRefuseModal.set(false);
+    const motif = this.refuseMotif().trim();
+    if (!motif) {
+      this.refuseError.set(this.translate.instant('AFFAIRES.billing.approval.modal_motif_required'));
+      return;
+    }
+    this.refuseRef?.close();
     if (this.type() === 'taux') this.runAction(this.svc.refuseTaux(this.id(), motif));
     if (this.type() === 'jalon') this.runAction(this.svc.refuseJalon(this.id(), motif));
   }
@@ -292,14 +379,27 @@ export class ApprovalDetailComponent implements OnInit {
   }
 
   openReturnModal(): void {
-    this.returnMotif = '';
-    this.showReturnModal.set(true);
+    this.returnMotif.set('');
+    this.returnError.set(null);
+    this.returnRef = this.modal.open({
+      title: this.translate.instant('AFFAIRES.billing.approval.modal_return_title'),
+      body: this.returnTpl,
+      size: 'sm',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: this.translate.instant('AFFAIRES.billing.approval.modal_cancel'),  variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('AFFAIRES.billing.approval.modal_confirm'), variant: 'primary',   action: () => this.confirmReturn() },
+      ],
+    });
   }
 
   confirmReturn(): void {
-    if (!this.returnMotif.trim()) return;
-    const motif = this.returnMotif.trim();
-    this.showReturnModal.set(false);
+    const motif = this.returnMotif().trim();
+    if (!motif) {
+      this.returnError.set(this.translate.instant('AFFAIRES.billing.approval.modal_motif_required'));
+      return;
+    }
+    this.returnRef?.close();
     const request$ = this.type() === 'livrable'
       ? this.svc.returnLivrableBatch(this.id(), motif)
       : this.svc.returnDF(this.id(), motif);

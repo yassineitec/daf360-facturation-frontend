@@ -77,7 +77,7 @@ export interface StepAffaireValue {
         <div class="sel-kpis">
           <div class="kpi">
             <span class="kpi-label">{{ 'INVOICING.STEP_AFFAIRE.BUDGET' | translate }}</span>
-            <span class="kpi-val">{{ formatAmount(selectedAffaire()!.budgetPrevisionnel ?? 0) }}</span>
+            <span class="kpi-val">{{ formatAmount(selectedAffaire()!.budgetPrevisionnel ?? 0, selectedAffaire()!.devise) }}</span>
           </div>
           <div class="kpi">
             <span class="kpi-label">{{ 'INVOICING.STEP_AFFAIRE.RAF' | translate }}</span>
@@ -85,7 +85,7 @@ export interface StepAffaireValue {
               <span class="kpi-val">…</span>
             } @else {
               <span class="kpi-val" [class.raf-warn]="rafWarning()" [class.raf-block]="rafBlocked()">
-                {{ rafDetails() ? formatAmount(rafDetails()!.rafDisponible) : '—' }}
+                {{ rafDetails() ? formatAmount(rafDetails()!.rafDisponible, selectedAffaire()!.devise) : '—' }}
               </span>
             }
           </div>
@@ -225,7 +225,7 @@ export class StepAffaireComponent implements OnInit {
     { value: '', label: this.translate.instant('INVOICING.STEP_AFFAIRE.TS_NONE') },
     ...this.tsList().map(ts => ({
       value: String(ts.id),
-      label: `${ts.referenceTs} — ${ts.intitule} (${this.formatAmount(ts.montantEstime)})`,
+      label: `${ts.referenceTs} — ${ts.intitule} (${this.formatAmount(ts.montantEstime, this.selectedAffaire()?.devise)})`,
     })),
   ]);
 

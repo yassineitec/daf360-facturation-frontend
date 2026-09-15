@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+// 4x3 flag ratio, matching flag-icons' own aspect. object-fit:cover crops rather than
+// letterboxing so a wide-format SVG (viewBox="0 0 640 480" for all of them here) fills
+// this box cleanly at 20x15.
+.flag-swatch {
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  object-fit: cover;
+  flex-shrink: 0;
+}

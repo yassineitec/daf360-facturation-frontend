@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef, inject, signal, computed, viewChild } from '@angular/core';
+import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
 import {
@@ -6,7 +7,7 @@ import {
   FilterResult, FormFieldComponent, MetricCardOptions, ModalRef, ModalService,
   MultiDatePickerComponent, MultiDatePickerConfig, PageComponent, PageHeaderComponent,
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, SelectComponent,
-  SelectOption, SortDirection, TableColumn, TableConfig, ToolbarToggleOption,
+  SelectOption, SortDirection, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 
 import { AffaireService } from '../../affaires/affaire.service';
@@ -18,7 +19,6 @@ import {
 import { displayName, formatAmount, formatDate, statusKey } from './employee-cost-display';
 import { EmployeeCostTableSectionComponent } from './employee-cost-table-section.component';
 import { EmployeeCostCardsSectionComponent } from './employee-cost-cards-section.component';
-import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { ListValueDto } from '../cost.model';
 import { CurrencyRateService } from '../../../core/currency-rate.service';
@@ -45,6 +45,7 @@ export class EmployeeCostComponent implements OnInit {
   private readonly listSvc    = inject(FactListService);
   private readonly ratesSvc   = inject(CurrencyRateService);
   private readonly displaySvc = inject(CurrencyDisplayService);
+  private readonly router     = inject(Router);
 
   rows          = signal<EmployeeCostDto[]>([]);
   isLoading     = signal(false);
@@ -80,9 +81,6 @@ export class EmployeeCostComponent implements OnInit {
 
   private readonly formTpl = viewChild.required<TemplateRef<unknown>>('formTpl');
   private modalRef?: ModalRef;
-
-  auditTrail   = signal<EntityAuditLogDto[]>([]);
-  loadingAudit = signal(false);
 
   currencies = signal<ListValueDto[]>([]);
 
@@ -391,22 +389,6 @@ export class EmployeeCostComponent implements OnInit {
     this.page.set(0);
   }
 
-  /** Mirrors approval-detail.component.ts's own `auditColumns` — same `EntityAuditLogDto`
-   * shape, same `<daf-data-table>` pattern — but under this feature's own i18n namespace
-   * rather than the billing module's `AFFAIRES.billing.approval.*` keys. */
-  readonly auditColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    return [
-      { key: 'timestampUtc', label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DATE'),    type: 'custom' },
-      { key: 'action',       label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'),  type: 'text' },
-      { key: 'transition',   label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_STATUS'),  type: 'custom' },
-      { key: 'actorRole',    label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_USER'),    type: 'text' },
-      { key: 'details',      label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DETAILS'), type: 'custom' },
-    ];
-  });
-
-  readonly tableConfig = computed<TableConfig>(() => ({ hoverable: false }));
-
   ngOnInit(): void {
     this.load();
     this.usersLoading.set(true);
@@ -477,7 +459,6 @@ export class EmployeeCostComponent implements OnInit {
     this.saveError.set(null);
     this.selectedEmail.set('');
     this.resetNewRecord();
-    this.auditTrail.set([]);
     this.openModal(this.translate.instant('COST.EMPLOYEE_COST.ADD_TITLE'));
   }
 
@@ -570,19 +551,17 @@ export class EmployeeCostComponent implements OnInit {
       dateDebut: row.dateDebut,
       dateFin: row.dateFin,
     };
-    this.auditTrail.set([]);
-    this.loadingAudit.set(true);
-    this.svc.getAuditLog(row.id).subscribe({
-      next: entries => {
-        if (this.editingId() === row.id) { this.auditTrail.set(entries); }
-        this.loadingAudit.set(false);
-      },
-      error: () => {
-        if (this.editingId() === row.id) { this.auditTrail.set([]); }
-        this.loadingAudit.set(false);
-      },
-    });
     this.openModal(this.translate.instant('COST.EMPLOYEE_COST.EDIT_TITLE'));
+  }
+
+  /** Navigates to the dedicated history page instead of opening a popup — `name`/`email`
+   * are passed as query params purely to label that page without a second network call
+   * (see EmployeeCostHistoryComponent's own doc comment for why it moved out of a popup
+   * in the first place). */
+  viewHistory(row: EmployeeCostDto): void {
+    this.router.navigate(['/finance/cost/employee-costs', row.id, 'history'], {
+      queryParams: { name: displayName(row), email: row.employeeEmail },
+    });
   }
 
   /** A destructive action gets a confirmation, unlike the plain-HTML version this
@@ -653,63 +632,4 @@ export class EmployeeCostComponent implements OnInit {
     };
   }
 
-  fmtDateTime(d: string | null | undefined): string {
-    if (!d) return '—';
-    return new Date(d).toLocaleString('fr-FR', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-    });
-  }
-
-  /** Which of the raw snapshot's fields to show, in this order, and how to label/format
-   * each one — reuses the SAME formatters the rest of this screen already uses
-   * (`formatAmount`/`formatDate` from `employee-cost-display.ts`) so a changed cost or
-   * date reads the same way here as it does in the main table. `userRefId` is
-   * deliberately excluded: it's an internal id with no meaning to whoever is reading
-   * this history, and `employeeEmail` already identifies the person. */
-  private static readonly AUDIT_FIELDS: {
-    key: string; labelKey: string; format: (v: unknown) => string;
-  }[] = [
-    { key: 'employeeEmail', labelKey: 'COST.EMPLOYEE_COST.EMPLOYEE_EMAIL', format: v => String(v) },
-    { key: 'basicCost', labelKey: 'COST.EMPLOYEE_COST.BASIC_COST', format: v => formatAmount(Number(v)) },
-    { key: 'internalSellingCost', labelKey: 'COST.EMPLOYEE_COST.INTERNAL_SELLING_COST', format: v => formatAmount(Number(v)) },
-    { key: 'externalSellingCost', labelKey: 'COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST', format: v => formatAmount(Number(v)) },
-    { key: 'currency', labelKey: 'COST.EMPLOYEE_COST.CURRENCY', format: v => String(v) },
-    { key: 'dateDebut', labelKey: 'COST.EMPLOYEE_COST.DATE_DEBUT', format: v => formatDate(String(v)) },
-    { key: 'dateFin', labelKey: 'COST.EMPLOYEE_COST.DATE_FIN', format: v => formatDate(String(v)) },
-    { key: 'sourceStatus', labelKey: 'COST.EMPLOYEE_COST.HISTORY_COL_STATUS', format: v => String(v) },
-  ];
-
-  /** Renders the real field-level changes from an audit entry's `metadata` JSON
-   * (`{"before":{...},"after":{...}}`) — only the fields that actually differ, so a long
-   * unchanged field list doesn't drown out what matters. CREATE/DELETE entries only carry
-   * one side, so everything on that side is shown as-is (nothing to diff against).
-   * STATUS_NORMALIZED cascade entries carry no metadata at all — '—' for those.
-   * Takes the raw `metadata` string rather than the whole row — `daf-data-table`'s
-   * `dafCell` template context types `row` as `TableRow` (`Record<string, any>`), not
-   * `EntityAuditLogDto`, same reason `fmtDateTime` above takes a single field instead of
-   * the whole row via `row['timestampUtc']`. */
-  formatAuditDetails(metadata: string | null | undefined): string {
-    if (!metadata) return '—';
-    try {
-      const parsed = JSON.parse(metadata) as { before?: Record<string, unknown>; after?: Record<string, unknown> };
-      const { before, after } = parsed;
-      const label = (labelKey: string) => this.translate.instant(labelKey);
-
-      if (before && after) {
-        const changes = EmployeeCostComponent.AUDIT_FIELDS
-          .filter(f => JSON.stringify(before[f.key]) !== JSON.stringify(after[f.key]))
-          .map(f => `${label(f.labelKey)}: ${f.format(before[f.key])} → ${f.format(after[f.key])}`);
-        return changes.length ? changes.join(', ') : '—';
-      }
-
-      const only = after ?? before;
-      if (!only) return '—';
-      return EmployeeCostComponent.AUDIT_FIELDS
-        .filter(f => only[f.key] !== undefined)
-        .map(f => `${label(f.labelKey)}: ${f.format(only[f.key])}`)
-        .join(', ');
-    } catch {
-      return '—';
-    }
-  }
 }

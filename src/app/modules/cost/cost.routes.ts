@@ -41,6 +41,17 @@ export const COST_ROUTES: Routes = [
     loadComponent: () =>
       import('./employee-costs/employee-cost.component').then(m => m.EmployeeCostComponent),
   },
+  /**
+   * Full-page audit history for one employee-cost record — reached from that row's own
+   * "History" action, never from the sidebar. THREE segments, so it never collides with
+   * the bare 'employee-costs' route above or the single-segment ':id' catch-all further
+   * down (same reasoning as the 'supplier/...' routes' own comment below).
+   */
+  {
+    path: 'employee-costs/:id/history',
+    loadComponent: () =>
+      import('./employee-costs/employee-cost-history.component').then(m => m.EmployeeCostHistoryComponent),
+  },
   {
     path: '',
     loadComponent: () =>

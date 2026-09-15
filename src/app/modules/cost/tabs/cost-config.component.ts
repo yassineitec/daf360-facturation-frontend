@@ -1,65 +1,62 @@
 import {
-  Component, OnInit, inject, signal, computed,
+  Component, effect, inject, input, signal, computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import { FactListService } from '../../../core/fact-list.service';
-import { ClientService } from '../../clients/client.service';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import {
   CostCategoryDto, CostApprovalThresholdDto, ListValueDto, ListTypeDto,
   UpdateCostCategoryLabelRequest, CreateCostCategoryRequest, CreateCostApprovalThresholdRequest,
 } from '../cost.model';
-import { PaysRefDto } from '../../affaires/affaire.model';
 import { forkJoin } from 'rxjs';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
-  SelectComponent, SelectOption,
+  SelectComponent, SelectOption, TabsComponent, TabItem, ButtonComponent,
+  FormFieldComponent, CheckboxComponent, StatusBadgeComponent, SectionTitleComponent,
+  SectionCardComponent,
 } from '@khalilrebhiitec/daf360';
 
 type ListTab = 'CURRENCY' | 'COST_TYPE' | 'PAYMENT_METHOD' | 'RECURRENCE_FREQUENCY';
+type ConfigSection = 'thresholds' | 'categories' | 'lists';
 
 @Component({
   selector: 'app-cost-config',
   standalone: true,
   imports: [CommonModule, FormsModule, DataTableComponent, DafCellDirective, TranslatePipe,
-            SelectComponent],
+            SelectComponent, TabsComponent, ButtonComponent, FormFieldComponent,
+            CheckboxComponent, StatusBadgeComponent, SectionTitleComponent, SectionCardComponent,
+            DisplayCurrencyPipe],
   templateUrl: './cost-config.component.html',
   styleUrl: './cost-config.component.scss',
 })
-export class CostConfigComponent implements OnInit {
+export class CostConfigComponent {
   private readonly svc         = inject(CostService);
   private readonly factListSvc = inject(FactListService);
-  private readonly clientSvc   = inject(ClientService);
   private readonly translate   = inject(TranslateService);
 
-  paysList = signal<PaysRefDto[]>([]);
-  paysId   = signal<number>(0);
-
   /**
-   * Le pays dans une liste déroulante cherchable, et non plus une bande d'onglets :
-   * `pays_ref` porte les 194 pays depuis V75, et 194 boutons ne sont pas une navigation.
-   * Le code ISO reste dans le libellé pour que la recherche du composant le trouve.
+   * Owned by the parent page (`admin-list.component`'s own pays picker) — this
+   * component used to fetch and pick its own country, back when it was the standalone
+   * `/finance/cost?tab=config` page. Now that it is embedded as one tab of a page that
+   * already has a single pays picker at the top, a second independent one here would
+   * desync from it (pick Egypt up top, land back on Tunisia's thresholds). One picker,
+   * one source of truth.
    */
-  readonly paysOptions = computed<SelectOption[]>(() =>
-    this.paysList().map(p => ({
-      value: String(p.id),
-      label: `${p.frenchLabel} (${p.isoCode})`,
-    })));
+  paysId = input.required<number>();
 
-  readonly paysSelectConfig = computed(() => {
-    this.translate.currentLang();
-    return {
-      label: this.translate.instant('COST.FORM.PAYS_LABEL'),
-      searchable: true,
-      fullWidth: false,
-    };
-  });
-
-  onPaysSelected(values: string[]): void {
-    const id = Number(values[0]);
-    if (Number.isFinite(id) && id > 0) this.selectPays(id);
+  constructor() {
+    effect(() => {
+      const pid = this.paysId();
+      if (!pid) return;
+      this.editThreshold.set({});
+      this.editingCategoryId.set(null);
+      this.showAddThreshold.set(false);
+      this.showAddCategory.set(false);
+      this.loadAll();
+    });
   }
 
   // ── Thresholds ────────────────────────────────────────────────────────────
@@ -71,6 +68,15 @@ export class CostConfigComponent implements OnInit {
   isCreatingThreshold  = signal(false);
   createThresholdError = signal<string | null>(null);
   newThreshold = { level: 'L2', minAmountEur: null as number | null, maxAmountEur: null as number | null, approverRoleCode: '' };
+
+  /** Fixed 4-level scale — plain strings, not a fetched list, so a static array beats
+   * a computed() here (no i18n, no reactivity to track). */
+  readonly levelOptions: SelectOption[] = [
+    { value: 'L1', label: 'L1' },
+    { value: 'L2', label: 'L2' },
+    { value: 'L3', label: 'L3' },
+    { value: 'L4', label: 'L4' },
+  ];
 
   // ── Categories ────────────────────────────────────────────────────────────
   categories         = signal<CostCategoryDto[]>([]);
@@ -99,8 +105,33 @@ export class CostConfigComponent implements OnInit {
     return this.translate.instant('COST.CONFIG.LIST_TAB.' + tab);
   }
 
+  /** `.list-tab` hand-rolled pill row, replaced by `daf-tabs`. */
+  readonly listTypeTabs = computed<TabItem[]>(() => {
+    this.translate.currentLang();
+    return this.LIST_TABS.map(tab => ({ id: tab, label: this.listTabLabel(tab) }));
+  });
+
+  onListTypeTabChange(id: string): void {
+    this.selectListTab(id as ListTab);
+  }
+
   isLoading   = signal(false);
   serverError = signal<string | null>(null);
+
+  // ── Section strip (daf-tabs) ─────────────────────────────────────────────────
+  // Seuils / Catégories / Listes vivaient empilés en trois <section> l'un sous l'autre ;
+  // `daf-tabs` les bascule en panneaux, un seul visible à la fois.
+  activeConfigSection = signal<ConfigSection>('thresholds');
+
+  readonly configSectionTabs = computed<TabItem[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return [
+      { id: 'thresholds', label: t('COST.CONFIG.THRESHOLDS_TITLE'),   icon: 'price_check' },
+      { id: 'categories', label: t('COST.CONFIG.CATEGORIES_TITLE'),   icon: 'category'    },
+      { id: 'lists',      label: t('COST.CONFIG.LIST_VALUES_TITLE'),  icon: 'checklist'   },
+    ];
+  });
 
   // ── Tables (daf-data-table) ─────────────────────────────────────────────────
 
@@ -111,14 +142,54 @@ export class CostConfigComponent implements OnInit {
       { key: 'approverRoleCode', label: this.translate.instant('COST.CONFIG.TH_ROLE'),    type: 'custom' },
       { key: 'minAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MIN_EUR'), type: 'custom', align: 'right' },
       { key: 'maxAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MAX_EUR'), type: 'custom', align: 'right' },
-      { key: '_actions',         label: '',                                               type: 'custom', align: 'right' },
     ];
   });
 
-  readonly thresholdTableConfig = computed<TableConfig>(() => ({
-    hoverable: true,
-    emptyMessage: this.translate.instant('COST.CONFIG.THRESHOLD_EMPTY'),
-  }));
+  /** Row actions via `TableConfig.actions`, not a hand-rolled `dafCell="_actions"`
+   * column — same convention as admin-list's `listTableConfig`. Four actions cover
+   * the two row states (new-row draft vs. an existing row being edited in place);
+   * `hidden` picks the right pair per row instead of branching inside a template. */
+  readonly thresholdTableConfig = computed<TableConfig>(() => {
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      hoverable: true,
+      emptyMessage: t('COST.CONFIG.THRESHOLD_EMPTY'),
+      actions: [
+        {
+          id: 'save-new', icon: 'add', tooltip: t('COST.CONFIG.ADD'),
+          hidden: row => !row['_isNew'],
+          disabled: () => this.isCreatingThreshold(),
+          onClick: () => this.saveNewThreshold(),
+        },
+        {
+          id: 'cancel-new', icon: 'close', tooltip: t('COST.CONFIG.CANCEL'),
+          hidden: row => !row['_isNew'],
+          onClick: () => this.showAddThreshold.set(false),
+        },
+        {
+          id: 'save-edit', icon: 'check', tooltip: t('COST.CONFIG.SAVE'),
+          hidden: row => row['_isNew'] || !this.isThresholdEditing(row['id']),
+          disabled: row => this.thresholdSaving() === row['id'],
+          onClick: row => this.saveThreshold(row['_raw']),
+        },
+        {
+          id: 'cancel-edit', icon: 'close', tooltip: t('COST.CONFIG.CANCEL'),
+          hidden: row => row['_isNew'] || !this.isThresholdEditing(row['id']),
+          onClick: row => this.cancelEdit(row['id']),
+        },
+        {
+          id: 'edit', icon: 'edit', tooltip: t('COST.CONFIG.EDIT'),
+          hidden: row => row['_isNew'] || this.isThresholdEditing(row['id']),
+          onClick: row => this.startEdit(row['_raw']),
+        },
+        {
+          id: 'delete', icon: 'delete', tooltip: t('COST.CONFIG.DEACTIVATE'), variant: 'danger',
+          hidden: row => row['_isNew'] || this.isThresholdEditing(row['id']),
+          onClick: row => this.deleteThreshold(row['id']),
+        },
+      ],
+    };
+  });
 
   readonly thresholdRows = computed(() => {
     const rows = this.thresholds().map(t => ({
@@ -156,14 +227,50 @@ export class CostConfigComponent implements OnInit {
       { key: 'isCapex',           label: this.translate.instant('COST.CONFIG.CAT_CAPEX'),    type: 'custom', align: 'center' },
       { key: 'isDirect',          label: this.translate.instant('COST.CONFIG.CAT_DIRECT'),   type: 'custom', align: 'center' },
       { key: 'isStrictScrutiny',  label: this.translate.instant('COST.CONFIG.CAT_SCRUTINY'), type: 'custom', align: 'center' },
-      { key: '_actions',          label: '',                                                 type: 'custom', align: 'right' },
     ];
   });
 
-  readonly categoryTableConfig = computed<TableConfig>(() => ({
-    hoverable: true,
-    emptyMessage: this.translate.instant('COST.CONFIG.CATEGORY_EMPTY'),
-  }));
+  readonly categoryTableConfig = computed<TableConfig>(() => {
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      hoverable: true,
+      emptyMessage: t('COST.CONFIG.CATEGORY_EMPTY'),
+      actions: [
+        {
+          id: 'save-new', icon: 'add', tooltip: t('COST.CONFIG.ADD'),
+          hidden: row => !row['_isNew'],
+          disabled: () => this.isCreatingCategory(),
+          onClick: () => this.saveNewCategory(),
+        },
+        {
+          id: 'cancel-new', icon: 'close', tooltip: t('COST.CONFIG.CANCEL'),
+          hidden: row => !row['_isNew'],
+          onClick: () => this.showAddCategory.set(false),
+        },
+        {
+          id: 'save-edit', icon: 'check', tooltip: t('COST.CONFIG.SAVE'),
+          hidden: row => row['_isNew'] || this.editingCategoryId() !== row['id'],
+          disabled: () => this.isSavingCategory(),
+          onClick: row => this.saveCategoryLabel(row['_raw']),
+        },
+        {
+          id: 'cancel-edit', icon: 'close', tooltip: t('COST.CONFIG.CANCEL'),
+          hidden: row => row['_isNew'] || this.editingCategoryId() !== row['id'],
+          onClick: () => this.cancelCategoryEdit(),
+        },
+        {
+          id: 'edit', icon: 'edit', tooltip: t('COST.CONFIG.EDIT_LABEL'),
+          hidden: row => row['_isNew'] || this.editingCategoryId() === row['id'],
+          onClick: row => this.startEditCategory(row['_raw']),
+        },
+        {
+          id: 'delete', icon: 'delete', tooltip: t('COST.CONFIG.DEACTIVATE'), variant: 'danger',
+          hidden: row => row['_isNew'] || this.editingCategoryId() === row['id'],
+          onClick: row => this.deleteCategory(row['id']),
+        },
+      ],
+    };
+  });
 
   readonly categoryRows = computed(() => {
     const rows = this.categories().map(cat => ({
@@ -200,14 +307,29 @@ export class CostConfigComponent implements OnInit {
       { key: 'labelEn',      label: this.translate.instant('COST.CONFIG.LV_LABEL_EN'), type: 'custom' },
       { key: 'isDefault',    label: this.translate.instant('COST.CONFIG.LV_DEFAULT'),  type: 'custom', align: 'center' },
       { key: 'displayOrder', label: this.translate.instant('COST.CONFIG.LV_ORDER'),    type: 'custom', align: 'center' },
-      { key: '_actions',     label: '',                                                type: 'custom', align: 'right' },
     ];
   });
 
-  readonly listValueTableConfig = computed<TableConfig>(() => ({
-    hoverable: true,
-    emptyMessage: this.translate.instant('COST.CONFIG.LIST_VALUE_EMPTY'),
-  }));
+  readonly listValueTableConfig = computed<TableConfig>(() => {
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      hoverable: true,
+      emptyMessage: t('COST.CONFIG.LIST_VALUE_EMPTY'),
+      actions: [
+        {
+          id: 'save-new', icon: 'add', tooltip: t('COST.CONFIG.ADD'),
+          hidden: row => !row['_isNew'],
+          disabled: () => this.isCreating() || !this.newValue.code || !this.newValue.labelFr,
+          onClick: () => this.createValue(),
+        },
+        {
+          id: 'delete', icon: 'close', tooltip: t('COST.CONFIG.DEACTIVATE'), variant: 'danger',
+          hidden: row => !!row['_isNew'],
+          onClick: row => this.deactivate(row['id']),
+        },
+      ],
+    };
+  });
 
   readonly listValueRows = computed(() => {
     const rows = this.listValues().map(v => ({
@@ -227,40 +349,6 @@ export class CostConfigComponent implements OnInit {
     });
     return rows;
   });
-
-  ngOnInit(): void {
-    this.isLoading.set(true);
-    forkJoin({
-      myPays: this.clientSvc.getMyPays(),
-      allPays: this.clientSvc.getPays(),
-    }).subscribe({
-      next: ({ myPays, allPays }) => {
-        this.paysList.set(allPays);
-        const resolved = myPays ?? (allPays.length > 0 ? allPays[0].id : 0);
-        if (resolved > 0) {
-          this.paysId.set(resolved);
-          this.loadAll();
-        } else {
-          this.serverError.set(this.translate.instant('COST.CONFIG.NO_PAYS'));
-          this.isLoading.set(false);
-        }
-      },
-      error: () => {
-        this.serverError.set(this.translate.instant('COST.CONFIG.LOAD_PAYS_ERROR'));
-        this.isLoading.set(false);
-      },
-    });
-  }
-
-  selectPays(id: number): void {
-    if (id === this.paysId()) return;
-    this.paysId.set(id);
-    this.editThreshold.set({});
-    this.editingCategoryId.set(null);
-    this.showAddThreshold.set(false);
-    this.showAddCategory.set(false);
-    this.loadAll();
-  }
 
   private loadAll(): void {
     const pid = this.paysId();

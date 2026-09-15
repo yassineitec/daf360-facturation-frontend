@@ -1,7 +1,11 @@
 import {
-  Component, EventEmitter, Input, OnInit, Output, inject, signal,
+  Component, TemplateRef, ViewChild, inject, signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import {
+  ButtonComponent, FormFieldComponent, ModalRef, ModalService,
+  MultiDatePickerComponent, SelectComponent, SelectOption,
+} from '@khalilrebhiitec/daf360';
 import { CostLineDto, CostLineReglementDto } from '../cost.model';
 import { CostService } from '../cost.service';
 
@@ -14,205 +18,207 @@ export interface ReglementModalData {
   payableLines: CostLineDto[];
 }
 
+/**
+ * Owns one `ModalService`-backed dialog, reused by both call sites (`cost-lines` and
+ * `cost-line-detail`) — mount once per caller (`<app-reglement-modal #reglementModal />`,
+ * unconditionally, no `@if`) and call `.open(data, onResolved)`. Replaces the previous
+ * hand-rolled backdrop/box/header/footer component: the `<ng-template>` here is only ever
+ * rendered inside the library's own dialog chrome, never on its own.
+ *
+ * Save/Cancel live inside the template body rather than `ModalConfig.buttons` — that array
+ * is a non-reactive snapshot, and `saving()` needs to keep driving the confirm button's
+ * spinner (same convention as employee-cost.component.ts's own modal).
+ */
 @Component({
   selector: 'app-reglement-modal',
   standalone: true,
-  imports: [FormsModule],
-  styles: [`
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(15,61,71,.35);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1000; padding: 16px;
-    }
-    .modal-box {
-      background: #fff; border-radius: 16px; width: 100%; max-width: 480px;
-      box-shadow: 0 8px 32px rgba(15,61,71,.18);
-      display: flex; flex-direction: column;
-    }
-    .modal-header {
-      padding: 20px 24px 16px; border-bottom: 1px solid #e2e8f0;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .modal-title { font-size: 1rem; font-weight: 700; color: #0f3d47; }
-    .modal-close {
-      background: none; border: none; cursor: pointer; padding: 4px;
-      color: #94a3b8; font-size: 1.25rem; line-height: 1;
-    }
-    .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
-    label { font-size: .8125rem; font-weight: 600; color: #334155; }
-    select, input, textarea {
-      width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
-      padding: 10px 12px; font-size: .875rem; color: #1e293b;
-      background: #f8fafc; font-family: inherit; box-sizing: border-box;
-    }
-    select:focus, input:focus, textarea:focus { outline: none; border-color: #1a6b7c; background: #fff; }
-    textarea { resize: vertical; min-height: 70px; }
-    .info-box {
-      padding: 12px 14px; border-radius: 10px; font-size: .8125rem;
-      background: #f1f5f9; color: #1e293b;
-      display: flex; flex-direction: column; gap: 4px;
-    }
-    .info-label { font-size: .6875rem; color: #64748b; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
-    .info-value { font-weight: 600; color: #0f3d47; }
-    .error-text { font-size: .75rem; color: #dc2626; margin-top: 2px; }
-    .server-error {
-      padding: 10px 14px; border-radius: 8px;
-      background: #fee2e2; color: #991b1b; font-size: .8125rem;
-    }
-    .modal-footer {
-      padding: 16px 24px; border-top: 1px solid #f1f5f9;
-      display: flex; justify-content: flex-end; gap: 10px;
-    }
-    .btn-cancel {
-      padding: 8px 18px; border: 1px solid #e2e8f0; border-radius: 8px;
-      background: #fff; color: #475569; font-size: .875rem; font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-cancel:hover { border-color: #94a3b8; }
-    .btn-confirm {
-      padding: 8px 18px; border: none; border-radius: 8px;
-      font-size: .875rem; font-weight: 600; cursor: pointer;
-      background: #1a6b7c; color: #fff;
-      display: inline-flex; align-items: center; gap: 6px;
-      transition: opacity .15s;
-    }
-    .btn-confirm:hover:not(:disabled) { background: #134f5c; }
-    .btn-confirm:disabled { opacity: .5; cursor: default; }
-  `],
+  imports: [
+    TranslatePipe, SelectComponent, FormFieldComponent, MultiDatePickerComponent, ButtonComponent,
+  ],
   template: `
-    <div class="modal-backdrop" (click)="onBackdropClick($event)">
-      <div class="modal-box" role="dialog" aria-modal="true">
+    <ng-template #tpl>
+      <div class="flex flex-col gap-4">
 
-        <div class="modal-header">
-          <span class="modal-title">{{ isEditMode ? 'Modifier le règlement' : 'Nouveau règlement' }}</span>
-          <button class="modal-close" (click)="closed.emit()" aria-label="Fermer">✕</button>
+        @if (isEditMode()) {
+          <div class="flex flex-col gap-1 rounded-xl bg-surface-container p-3">
+            <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'COST.REGLEMENT.LINE' | translate }}
+            </span>
+            <span class="text-body-md font-bold text-on-surface">
+              {{ 'COST.REGLEMENT.LINE_NUMBER' | translate:{ id: data.editing!.costLineId } }}
+            </span>
+          </div>
+        } @else {
+          <daf-select
+            [options]="lineOptions()"
+            [selected]="costLineId() != null ? [costLineId()!.toString()] : []"
+            [config]="{
+              label: ('COST.REGLEMENT.LINE_PICKER' | translate),
+              placeholder: ('COST.REGLEMENT.LINE_PICKER_PLACEHOLDER' | translate),
+              required: true,
+              searchable: true,
+              error: (touched() && costLineId() == null) ? ('COST.REGLEMENT.ERR_LINE_REQUIRED' | translate) : undefined
+            }"
+            (selectedChange)="onLineSelected($event)" />
+        }
+
+        <daf-form-field
+          [options]="{
+            label: ('COST.REGLEMENT.AMOUNT' | translate), type: 'number', required: true,
+            error: (touched() && !(montantPaye()! > 0)) ? ('COST.REGLEMENT.ERR_AMOUNT_REQUIRED' | translate) : undefined
+          }"
+          [value]="montantPaye()"
+          (valueChange)="montantPaye.set($any($event))" />
+
+        <daf-multi-date-picker
+          [config]="{ label: ('COST.REGLEMENT.DATE' | translate), required: true }"
+          [value]="dateValue"
+          (valueChange)="dateValue = $any($event)" />
+
+        <daf-form-field
+          [options]="{
+            label: ('COST.REGLEMENT.COMMENT' | translate), type: 'textarea',
+            placeholder: ('COST.REGLEMENT.COMMENT_PLACEHOLDER' | translate)
+          }"
+          [value]="comment()"
+          (valueChange)="comment.set($any($event) ?? '')" />
+
+        @if (serverError()) {
+          <div class="rounded-lg bg-danger/10 px-3 py-2 text-body-sm text-danger">
+            {{ serverError() }}
+          </div>
+        }
+
+        <div class="flex justify-end gap-2.5 pt-1">
+          <daf-button
+            [label]="'COST.REGLEMENT.CANCEL' | translate"
+            variant="secondary"
+            [options]="{ disabled: saving() }"
+            (onClick)="modalRef?.close()" />
+          <daf-button
+            [label]="(isEditMode() ? 'COST.REGLEMENT.SAVE' : 'COST.REGLEMENT.CREATE') | translate"
+            variant="primary"
+            [options]="{ loading: saving(), disabled: saving() }"
+            (onClick)="confirm()" />
         </div>
 
-        <div class="modal-body">
-          @if (isEditMode) {
-            <div class="info-box">
-              <span class="info-label">Ligne de coût</span>
-              <span class="info-value">Ligne #{{ data.editing!.costLineId }}</span>
-            </div>
-          } @else {
-            <div>
-              <label for="reglement-line">Ligne de coût à régler *</label>
-              <select id="reglement-line" [(ngModel)]="costLineId" (ngModelChange)="onLineSelected($event)">
-                <option [ngValue]="null">— Sélectionner une ligne —</option>
-                @for (line of data.payableLines; track line.id) {
-                  <option [ngValue]="line.id">{{ line.reference ?? ('#' + line.id) }} — {{ line.label ?? '' }}</option>
-                }
-              </select>
-              @if (touched && !costLineId()) {
-                <p class="error-text">Choisissez une ligne de coût.</p>
-              }
-            </div>
-          }
-
-          <div>
-            <label for="reglement-montant">Montant payé *</label>
-            <input id="reglement-montant" type="number" min="0.01" step="0.001"
-                   [(ngModel)]="montantPaye" />
-            @if (touched && !(montantPaye()! > 0)) {
-              <p class="error-text">Le montant doit être supérieur à 0.</p>
-            }
-          </div>
-
-          <div>
-            <label for="reglement-date">Date de paiement *</label>
-            <input id="reglement-date" type="date" [(ngModel)]="datePaiement" />
-          </div>
-
-          <div>
-            <label for="reglement-comment">Commentaire</label>
-            <textarea id="reglement-comment" [(ngModel)]="comment" placeholder="Commentaire optionnel..."></textarea>
-          </div>
-
-          @if (serverError()) {
-            <div class="server-error">{{ serverError() }}</div>
-          }
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn-cancel" (click)="closed.emit()" [disabled]="saving()">Annuler</button>
-          <button class="btn-confirm" (click)="confirm()" [disabled]="saving()">
-            @if (saving()) { <span style="font-size:.75rem;">…</span> }
-            {{ isEditMode ? 'Enregistrer' : 'Créer' }}
-          </button>
-        </div>
       </div>
-    </div>
+    </ng-template>
   `,
 })
-export class ReglementModalComponent implements OnInit {
-  @Input() data!: ReglementModalData;
-  @Output() closed   = new EventEmitter<void>();
-  @Output() resolved = new EventEmitter<void>();
+export class ReglementModalComponent {
+  @ViewChild('tpl', { static: true }) private tpl!: TemplateRef<unknown>;
 
-  private readonly svc = inject(CostService);
+  private readonly svc      = inject(CostService);
+  private readonly modal    = inject(ModalService);
+  private readonly translate = inject(TranslateService);
+
+  protected modalRef?: ModalRef;
+  private onResolved?: () => void;
+
+  protected data!: ReglementModalData;
 
   costLineId   = signal<number | null>(null);
   montantPaye  = signal<number | null>(null);
-  datePaiement = signal<string>('');
   comment      = signal<string>('');
   saving       = signal(false);
   serverError  = signal<string | null>(null);
-  touched      = false;
+  touched      = signal(false);
 
-  get isEditMode(): boolean { return this.data.editing !== null; }
+  private dateIso = '';
 
-  ngOnInit(): void {
-    if (this.data.editing) {
-      this.costLineId.set(this.data.editing.costLineId);
-      this.montantPaye.set(this.data.editing.montantPaye);
-      this.datePaiement.set(this.data.editing.datePaiement.slice(0, 10));
-      this.comment.set(this.data.editing.comment ?? '');
+  /** `daf-multi-date-picker` works in `Date`; the form stores the ISO (yyyy-MM-dd) the
+   *  API expects — same pattern as expense-form.component.ts / employee-cost.component.ts. */
+  get dateValue(): Date | null {
+    if (!this.dateIso) return null;
+    const d = new Date(this.dateIso);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  set dateValue(v: Date | Date[] | null) {
+    const d = Array.isArray(v) ? v[0] : v;
+    this.dateIso = d
+      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      : '';
+  }
+
+  isEditMode(): boolean { return this.data.editing !== null; }
+
+  readonly lineOptions = signal<SelectOption[]>([]);
+
+  onLineSelected(values: string[]): void {
+    const id = Number(values[0]);
+    this.costLineId.set(Number.isFinite(id) ? id : null);
+    const line = this.data.payableLines.find(l => l.id === this.costLineId());
+    this.montantPaye.set(line?.grossAmountLocal ?? null);
+  }
+
+  open(data: ReglementModalData, onResolved: () => void): void {
+    this.data = data;
+    this.onResolved = onResolved;
+    this.touched.set(false);
+    this.saving.set(false);
+    this.serverError.set(null);
+    this.lineOptions.set(data.payableLines.map(l => ({
+      value: String(l.id),
+      label: `${l.reference ?? ('#' + l.id)} — ${l.label ?? ''}`,
+    })));
+
+    if (data.editing) {
+      this.costLineId.set(data.editing.costLineId);
+      this.montantPaye.set(data.editing.montantPaye);
+      this.dateValue = new Date(data.editing.datePaiement);
+      this.comment.set(data.editing.comment ?? '');
     } else {
-      this.datePaiement.set(new Date().toISOString().slice(0, 10));
-      if (this.data.payableLines.length === 1) {
-        const line = this.data.payableLines[0];
+      this.costLineId.set(null);
+      this.montantPaye.set(null);
+      this.dateValue = new Date();
+      this.comment.set('');
+      if (data.payableLines.length === 1) {
+        const line = data.payableLines[0];
         this.costLineId.set(line.id);
         this.montantPaye.set(line.grossAmountLocal ?? null);
       }
     }
+
+    const t = (key: string) => this.translate.instant(key);
+    this.modalRef = this.modal.open({
+      title: t(this.isEditMode() ? 'COST.REGLEMENT.EDIT_TITLE' : 'COST.REGLEMENT.NEW_TITLE'),
+      body:  this.tpl,
+      size:  'md',
+      closeOnBackdrop: false,
+    });
   }
 
   get canSave(): boolean {
-    return this.costLineId() != null && (this.montantPaye() ?? 0) > 0 && !!this.datePaiement();
-  }
-
-  onLineSelected(lineId: number | null): void {
-    const line = this.data.payableLines.find(l => l.id === lineId);
-    this.montantPaye.set(line?.grossAmountLocal ?? null);
-  }
-
-  onBackdropClick(e: MouseEvent): void {
-    if ((e.target as HTMLElement).classList.contains('modal-backdrop')) {
-      this.closed.emit();
-    }
+    return this.costLineId() != null && (this.montantPaye() ?? 0) > 0 && !!this.dateIso;
   }
 
   confirm(): void {
-    this.touched = true;
+    this.touched.set(true);
     if (!this.canSave) return;
     this.saving.set(true);
     this.serverError.set(null);
 
     const body = {
       montantPaye:  this.montantPaye()!,
-      datePaiement: this.datePaiement(),
+      datePaiement: this.dateIso,
       comment:      this.comment().trim() || null,
     };
 
-    const call$ = this.isEditMode
+    const call$ = this.isEditMode()
       ? this.svc.updateReglement(this.data.editing!.id, body)
       : this.svc.createReglement(this.costLineId()!, body);
 
     call$.subscribe({
-      next: () => { this.saving.set(false); this.resolved.emit(); },
+      next: () => {
+        this.saving.set(false);
+        this.modalRef?.close();
+        this.onResolved?.();
+      },
       error: err => {
         this.saving.set(false);
-        this.serverError.set(err.error?.message ?? err.error?.error ?? 'Une erreur est survenue.');
+        this.serverError.set(err.error?.message ?? err.error?.error
+          ?? this.translate.instant('COST.REGLEMENT.GENERIC_ERROR'));
       },
     });
   }

@@ -1,11 +1,12 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin, of } from 'rxjs';
 import {
   ButtonComponent, DafCellDirective, DataTableComponent,
-  MetricCardComponent, PageComponent, PageHeaderComponent, SectionCardComponent,
-  TabsComponent, tabParam,
+  MetricCardComponent, ModalService, PageComponent, PageHeaderComponent, SectionCardComponent,
+  StatusBadgeComponent, TabsComponent, tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
   BreadcrumbItem, MetricCardOptions, MetricDelta, PageHeaderBadge,
@@ -16,16 +17,17 @@ import { CostService } from '../cost.service';
 import { AffaireService } from '../../affaires/affaire.service';
 import { ClientService } from '../../clients/client.service';
 import type { UserRefDto } from '../../affaires/affaire.model';
-import { CostCategoryDto, CostLineDto, CostLineReglementDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../cost.model';
+import { CostCategoryDto, CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../cost.model';
 import {
-  APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit,
-  decisionKey, formatDate, statusKey,
+  APPROVAL_BADGE_VARIANT, DECISION_BADGE_VARIANT, DECISION_ICON, STATUS_BADGE_VARIANT,
+  approvalLevelKey, canEdit, decisionKey, formatDate, statusKey,
 } from '../cost-display';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { TableActionComponent } from '../../../shared/table-action.component';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
-import { UserStore } from '../../../core/user.store';
+import { UserStore } from '../../../core/user.store';
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
 
@@ -79,10 +81,10 @@ const SUPPLIER_MODE_PAGE_SIZE = 200;
 @Component({
   selector: 'app-cost-line-detail',
   imports: [
-    TranslatePipe, PermissionDirective,
+    TranslatePipe, PermissionDirective, NgTemplateOutlet,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
-    MetricCardComponent, ButtonComponent,
-    DataTableComponent, DafCellDirective,
+    MetricCardComponent, ButtonComponent, StatusBadgeComponent,
+    DataTableComponent, DafCellDirective, TableActionComponent,
     CostLinesTableSectionComponent, ReglementModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
@@ -98,6 +100,9 @@ export class CostLineDetailComponent implements OnInit {
   private readonly router     = inject(Router);
   private readonly route      = inject(ActivatedRoute);
   private readonly userStore  = inject(UserStore);
+  private readonly modal      = inject(ModalService);
+
+  @ViewChild('reglementModal') private reglementModal!: ReglementModalComponent;
 
   /** Set once by `cost.routes.ts`'s `data.mode` on each of the three route entries. */
   readonly mode: DetailMode = (this.route.snapshot.data['mode'] as DetailMode) ?? 'line';
@@ -113,6 +118,18 @@ export class CostLineDetailComponent implements OnInit {
   ledger     = signal<SupplierLedgerDto | null>(null);
   allUsers   = signal<UserRefDto[]>([]);
   categories = signal<CostCategoryDto[]>([]);
+
+  /**
+   * Tab 2's ledger table has 12 columns, cramped into the 70%-wide right column — this
+   * lets the user break it out to the page's full width (rendered below the two-column
+   * layout, see the template's `ledgerPanel` outlet) instead of scrolling it
+   * horizontally. Local to this view: not persisted, resets on navigation.
+   */
+  ledgerZoomed = signal(false);
+
+  toggleLedgerZoom(): void {
+    this.ledgerZoomed.update(z => !z);
+  }
 
   /** 'supplier'/'unassigned' modes only: the reused Tab-1 line list, and the matching
    *  row from the by-supplier aggregation (authoritative count/total for the header and
@@ -327,8 +344,9 @@ export class CostLineDetailComponent implements OnInit {
       approver: this.approverName(a.approverId),
       date:     formatDate(a.decisionDate),
       comment:  a.comment || '—',
-      _decision:      a.decision,
-      _decisionLabel: t(decisionKey(a.decision)),
+      _decisionLabel:   t(decisionKey(a.decision)),
+      _decisionVariant: DECISION_BADGE_VARIANT[a.decision] ?? 'neutral',
+      _decisionIcon:    DECISION_ICON[a.decision],
     }));
   });
 
@@ -426,10 +444,6 @@ export class CostLineDetailComponent implements OnInit {
    *  'supplier' modes alike (both have hasSupplier() === true when this is non-null);
    *  always null in 'unassigned' mode, where the "Nouveau règlement" button never shows. */
   readonly currentSupplierId = computed(() => this.ledger()?.supplier?.id ?? null);
-
-  payableLines       = signal<CostLineDto[]>([]);
-  reglementModalOpen = signal(false);
-  editingReglement    = signal<CostLineReglementDto | null>(null);
 
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
@@ -571,10 +585,11 @@ export class CostLineDetailComponent implements OnInit {
     const paysId = this.effectivePaysId();
     const supplierId = this.currentSupplierId();
     if (!paysId || !supplierId) return;
-    this.editingReglement.set(null);
     this.svc.getCostLines({ paysId, status: 'APPROVED', supplierId, size: 200 }).subscribe({
-      next: page => { this.payableLines.set(page.content); this.reglementModalOpen.set(true); },
-      error: () => { this.payableLines.set([]); this.reglementModalOpen.set(true); },
+      next: page => this.reglementModal.open(
+        { editing: null, payableLines: page.content }, () => this.reloadCurrentMode()),
+      error: () => this.reglementModal.open(
+        { editing: null, payableLines: [] }, () => this.reloadCurrentMode()),
     });
   }
 
@@ -583,40 +598,38 @@ export class CostLineDetailComponent implements OnInit {
    *  caller already has the one exact line, so the modal's line picker gets a
    *  single-element array and auto-selects/auto-fills it (see reglement-modal.component.ts). */
   openReglementForLine(line: CostLineDto): void {
-    this.editingReglement.set(null);
-    this.payableLines.set([line]);
-    this.reglementModalOpen.set(true);
+    this.reglementModal.open({ editing: null, payableLines: [line] }, () => this.reloadCurrentMode());
   }
 
   openEditReglement(reglementId: number | null): void {
     if (reglementId == null) return;
     this.svc.getReglement(reglementId).subscribe({
-      next: reglement => {
-        this.payableLines.set([]);
-        this.editingReglement.set(reglement);
-        this.reglementModalOpen.set(true);
-      },
+      next: reglement => this.reglementModal.open(
+        { editing: reglement, payableLines: [] }, () => this.reloadCurrentMode()),
       error: () => this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR')),
     });
   }
 
   confirmDeleteReglement(reglementId: number | null): void {
     if (reglementId == null) return;
-    if (!confirm(this.translate.instant('COST.DETAIL.LEDGER.CONFIRM_DELETE'))) return;
-    this.svc.deleteReglement(reglementId).subscribe({
-      next: () => this.reloadCurrentMode(),
-      error: err => this.error.set(err.error?.message ?? this.translate.instant('COST.DETAIL.LEDGER.DELETE_ERROR')),
+    const t = (key: string) => this.translate.instant(key);
+    this.modal.open({
+      title: t('COST.DETAIL.LEDGER.DELETE_REGLEMENT'),
+      body:  t('COST.DETAIL.LEDGER.CONFIRM_DELETE'),
+      size:  'sm',
+      buttons: [
+        { label: t('COST.REGLEMENT.CANCEL'), variant: 'secondary', action: r => r.close() },
+        {
+          label: t('COST.DETAIL.LEDGER.DELETE_REGLEMENT'), variant: 'primary',
+          action: r => {
+            r.close();
+            this.svc.deleteReglement(reglementId).subscribe({
+              next: () => this.reloadCurrentMode(),
+              error: err => this.error.set(err.error?.message ?? t('COST.DETAIL.LEDGER.DELETE_ERROR')),
+            });
+          },
+        },
+      ],
     });
-  }
-
-  onReglementModalClosed(): void {
-    this.reglementModalOpen.set(false);
-    this.editingReglement.set(null);
-  }
-
-  onReglementModalResolved(): void {
-    this.reglementModalOpen.set(false);
-    this.editingReglement.set(null);
-    this.reloadCurrentMode();
   }
 }

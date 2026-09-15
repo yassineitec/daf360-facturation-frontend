@@ -103,11 +103,21 @@ export function initials(text: string | null | undefined): string {
   return text.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 }
 
-/**
- * Cost-line detail page, Tab 1 (approval history). Colours for each decision are
- * literal Tailwind classes directly in the template's `@switch` (not a variant map
- * here) — see cost-line-detail.component.html's `decision` cell.
- */
+/** Cost-line detail page, Tab 1 (approval history) — the `decision` column. */
 export function decisionKey(decision: string): string {
   return `COST.DETAIL.APPROVALS.DECISION_${decision}`;
 }
+
+export const DECISION_BADGE_VARIANT: Record<string, BadgeVariant> = {
+  APPROVED:      'success',
+  AUTO_APPROVED: 'success',
+  RETURNED:      'warning',
+  REJECTED:      'danger',
+};
+
+export const DECISION_ICON: Record<string, string> = {
+  APPROVED:      'check_circle',
+  AUTO_APPROVED: 'bolt',
+  RETURNED:      'undo',
+  REJECTED:      'cancel',
+};

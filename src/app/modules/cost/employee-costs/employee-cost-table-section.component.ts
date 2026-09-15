@@ -50,6 +50,7 @@ export class EmployeeCostTableSectionComponent {
 
   readonly edit       = output<EmployeeCostDto>();
   readonly remove     = output<EmployeeCostDto>();
+  readonly history    = output<EmployeeCostDto>();
   readonly sortChange = output<{ key: string; dir: SortDirection }>();
 
   protected readonly columns = computed<TableColumn[]>(() => {
@@ -109,6 +110,8 @@ export class EmployeeCostTableSectionComponent {
       skeletonRows: Math.min(this.pageSize(), 20),
       emptyMessage: this.emptyMessage(),
       actions: [
+        { id: 'history', icon: 'history', tooltip: t('COST.EMPLOYEE_COST.HISTORY'),
+          onClick: row => this.history.emit(row['_raw']) },
         { id: 'edit',   icon: 'stylus', tooltip: t('COST.EMPLOYEE_COST.EDIT'),
           onClick: row => this.edit.emit(row['_raw']) },
         { id: 'delete', icon: 'delete', tooltip: t('COST.EMPLOYEE_COST.DELETE'), variant: 'danger',

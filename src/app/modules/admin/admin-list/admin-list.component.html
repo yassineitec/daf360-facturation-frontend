@@ -7,19 +7,16 @@
       <p class="page-sub">{{ 'ADMIN.PAGE.SUBTITLE' | translate }}</p>
     </div>
 
-    <!-- Sélecteur de pays (multi-pays seulement)
-         Le composant de la lib, à la place d'une liste déroulante écrite à la main :
-         déclencheur, panneau, fond cliquable, champ de recherche et son filtre, soit une
-         quarantaine de lignes de gabarit, six membres de composant et 80 lignes de SCSS
-         — pour reproduire ce que `daf-select` fait avec `searchable: true`. Les drapeaux
-         disparaissent avec : le composant affiche des libellés, et le code ISO reste dans
-         le libellé, donc la recherche le trouve toujours. -->
+    <!-- Sélecteur de pays (multi-pays seulement), avec drapeau — `app-pays-flag-select`,
+         pas `daf-select` : ses options n'affichent qu'une icône Material Symbol ou du
+         texte, pas une image par option. -->
     @if (paysList().length > 1) {
       <div class="pays-card">
-        <daf-select
+        <app-pays-flag-select
           [options]="paysOptions()"
-          [config]="paysSelectConfig()"
           [selected]="paysId() ? [paysId().toString()] : []"
+          [label]="paysSelectLabel()"
+          [placeholder]="paysSelectPlaceholder()"
           (selectedChange)="onPaysSelected($event)" />
       </div>
     }
@@ -340,6 +337,19 @@
     @if (activeTab() === 'document-templates') {
       <div class="tab-content">
         <app-document-templates-admin />
+      </div>
+    }
+
+    <!-- ── COST CONFIG TAB (seuils d'approbation, catégories et listes de coûts —
+         anciennement l'onglet « Config » de /finance/cost, embedded).
+         Même disposition à deux colonnes que sur l'ancienne page : la config à
+         gauche, le panneau d'import CSV à droite. -->
+    @if (activeTab() === 'cost-config') {
+      <div class="tab-content">
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <div class="xl:col-span-2"><app-cost-config [paysId]="paysId()" /></div>
+          <div><app-cost-import-panel [paysId]="paysId()" /></div>
+        </div>
       </div>
     }
 
