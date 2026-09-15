@@ -43,7 +43,7 @@ export class PaymentsDashboardComponent implements OnInit {
   firstLoad   = signal(true);
   loadingRows = signal(false);
 
-  private readonly allRows = signal<AgingRow[]>([]);
+  readonly rows = signal<AgingRow[]>([]);
 
   searchText      = signal('');
   filterAffaireId = signal('');
@@ -51,23 +51,6 @@ export class PaymentsDashboardComponent implements OnInit {
   filterDateRange = signal<Date[] | null>(null);
   filterOverdueOnly = signal(false);
   viewMode        = signal<ViewMode>('grid');
-
-  /**
-   * ⚠️ Client-side, over the loaded page only — `GET /payments/aging` accepts
-   * paysId/affaireId/clientId/from/to/overdueOnly and **no free-text param**. Wiring
-   * this to the request would produce a search box that silently does nothing; the
-   * placeholder (`FILTER.PAGE_SEARCH_PH`) says it filters the page. Add `search` to
-   * the endpoint and this collapses into a normal server-side filter.
-   */
-  readonly rows = computed<AgingRow[]>(() => {
-    const q = this.searchText().trim().toLowerCase();
-    if (!q) return this.allRows();
-    return this.allRows().filter(r =>
-      (r.clientNom ?? '').toLowerCase().includes(q)
-      || (r.invoiceNumber ?? '').toLowerCase().includes(q)
-      || (r.affaireRef ?? '').toLowerCase().includes(q),
-    );
-  });
 
   /**
    * Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4).
@@ -78,25 +61,76 @@ export class PaymentsDashboardComponent implements OnInit {
    * icon, background and value colour on this page rendered uncoloured. This is the
    * page the playbook flagged for exactly that.
    */
-  readonly kpiPending   : MetricCardOptions = { icon: 'hourglass_empty', iconColor: 'text-primary', iconBg: 'bg-primary/10' };
-  readonly kpiOverdue   : MetricCardOptions = {
-    icon: 'warning', iconColor: 'text-danger', iconBg: 'bg-danger/10',
-    valueColor: 'text-danger', deltaColor: 'text-danger',
-  };
-  readonly kpiCollected : MetricCardOptions = { icon: 'payments', iconColor: 'text-teal',      iconBg: 'bg-teal/10'      };
-  readonly kpiDelay     : MetricCardOptions = { icon: 'schedule', iconColor: 'text-secondary', iconBg: 'bg-secondary/10' };
+  readonly kpiPending = computed<MetricCardOptions>(() => ({
+    icon: 'hourglass_empty', iconColor: 'text-primary', iconBg: 'bg-primary/10',
+    deltaColor: 'text-on-surface-variant',
+    ...this.help('PENDING'),
+  }));
+  readonly kpiOverdue = computed<MetricCardOptions>(() => ({
+    icon: 'warning', iconColor: 'text-warning', iconBg: 'bg-warning/10',
+    valueColor: 'text-warning', deltaColor: 'text-on-surface-variant',
+    ...this.help('OVERDUE'),
+  }));
+  readonly kpiCollected = computed<MetricCardOptions>(() => ({
+    icon: 'payments', iconColor: 'text-teal', iconBg: 'bg-teal/10',
+    ...this.help('COLLECTED_MONTH'),
+  }));
+  /**
+   * La tranche la plus ancienne. Rouge quand elle n'est pas vide, neutre sinon : une
+   * balance âgée sans créance à plus de 90 jours est une bonne nouvelle, pas une alerte
+   * à zéro. Classes Tailwind littérales et complètes (UI-PLAYBOOK §3).
+   */
+  readonly kpiPlus90 = computed<MetricCardOptions>(() => ({
+    icon: 'hourglass_bottom',
+    ...((this.stats()?.plus90Count ?? 0) > 0
+      ? { iconColor: 'text-danger', iconBg: 'bg-danger/10',
+          valueColor: 'text-danger', deltaColor: 'text-danger' }
+      : { iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
+          deltaColor: 'text-on-surface-variant' }),
+    ...this.help('PLUS_90'),
+  }));
 
-  /** Overdue amount, under the overdue count. */
+  /**
+   * Ce que la tuile mesure, révélé au survol. Ces quatre chiffres sont **nets des
+   * règlements reçus** et la nuance ne se lit nulle part sur l'écran : « en attente »
+   * pourrait tout aussi bien vouloir dire « total facturé non soldé ». Le texte le dit.
+   *
+   * Le popover est une **annotation** (voir `MetricCardOptions.help`) : il ne porte
+   * jamais une valeur dont l'utilisateur a besoin — un écran tactile ne le verra pas.
+   */
+  private help(kpi: string): Pick<MetricCardOptions, 'help' | 'helpTitle'> {
+    this.translate.currentLang();
+    return {
+      helpTitle: this.translate.instant(`PAYMENTS.DASHBOARD.KPI.${kpi}`),
+      help:      this.translate.instant(`PAYMENTS.DASHBOARD.KPI.${kpi}_HELP`),
+    };
+  }
+
+  /**
+   * Les quatre tuiles portent maintenant toutes un **montant** comme valeur, et le
+   * décompte de factures en second plan. C'était l'inverse pour « en retard » : un
+   * nombre de factures au milieu de trois montants, qui se comparait à la mauvaise
+   * chose. Le montant est ce sur quoi porte la décision de relancer ; le nombre dit
+   * seulement sur combien de dossiers il se répartit.
+   *
+   * ⚠️ `direction` est volontairement absent. Il ne sert qu'à choisir une couleur par
+   * défaut (`deltaColorClass`), et l'ancien `direction: 'down'` peignait donc le montant
+   * en retard de la couleur d'une baisse — sur un chiffre qui n'est pas une variation :
+   * rien ici ne compare deux périodes. `deltaColor` dit la couleur voulue, sans prétendre
+   * à un sens de variation.
+   */
   readonly overdueDelta = computed<MetricDelta | null>(() => {
     const s = this.stats();
     if (!s) return null;
-    return { value: this.currencyLabel(s.enRetardMontant, s.devise), direction: 'down' };
+    this.translate.currentLang();
+    return { value: this.translate.instant('PAYMENTS.DASHBOARD.KPI.INVOICE_COUNT', { n: s.enRetardCount }) };
   });
 
-  readonly avgDelayLabel = computed(() => {
-    this.translate.currentLang();
+  readonly plus90Delta = computed<MetricDelta | null>(() => {
     const s = this.stats();
-    return s ? this.translate.instant('PAYMENTS.DASHBOARD.DAYS', { n: s.delaiMoyenPaiement }) : '—';
+    if (!s) return null;
+    this.translate.currentLang();
+    return { value: this.translate.instant('PAYMENTS.DASHBOARD.KPI.INVOICE_COUNT', { n: s.plus90Count }) };
   });
 
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
@@ -169,10 +203,11 @@ export class PaymentsDashboardComponent implements OnInit {
       from:        toIsoDate(range[0]),
       to:          toIsoDate(range[1]),
       overdueOnly: this.filterOverdueOnly() || undefined,
+      search:      this.searchText().trim() || null,
     };
     this.svc.getAgingRows(filter).subscribe({
       next: res => {
-        this.allRows.set(res.content);
+        this.rows.set(res.content);
         this.totalElements.set(res.totalElements);
         this.totalPages.set(res.totalPages);
         this.loadingRows.set(false);
@@ -186,9 +221,16 @@ export class PaymentsDashboardComponent implements OnInit {
     });
   }
 
-  /** No re-fetch — the search is a projection of the page already on screen. */
+  /**
+   * Recherche **serveur**, sur tout l'encours de l'entité — plus seulement sur la page
+   * affichée. La toolbar débounce déjà à 300 ms, donc la frappe ne déclenche pas un appel
+   * par caractère. Retour à la première page : les résultats d'une nouvelle recherche
+   * n'ont rien à voir avec la page où l'on se trouvait.
+   */
   onSearchTextChange(value: string): void {
     this.searchText.set(value);
+    this.currentPage.set(0);
+    this.loadRows();
   }
 
   applyFilters(result: FilterResult): void {

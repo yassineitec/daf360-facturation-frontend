@@ -47,6 +47,7 @@
               [showActions]="false"
               [affaireData]="affaireValue()!"
               [initialLines]="initialLines()"
+              [isEditMode]="editInvoiceId() !== null"
               (prevStep)="goPrev()"
               (nextStep)="onLinesDone($event)" />
           }

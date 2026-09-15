@@ -132,8 +132,8 @@
       "OVERDUE_TITLE": "Overdue invoices",
       "OVERDUE_COUNT": "{{count}} critical invoices",
       "NO_DELAY": "No overdue",
-      "DSO_TITLE": "Average delay (DSO)",
-      "DSO_SUB": "Average days"
+      "PLUS_90_TITLE": "Past due 90+ days",
+      "PLUS_90_COUNT": "{{count}} invoice(s)"
     },
     "MODULES": {
       "TREASURY_BALANCE": "Consolidated Balance",
@@ -2926,10 +2926,15 @@
       "DAYS": "{{n}} d",
       "ERROR_LOAD": "Unable to load unpaid invoices.",
       "KPI": {
-        "PENDING": "Pending payment",
-        "OVERDUE": "Overdue",
+        "PENDING": "Outstanding receivables",
+        "PENDING_HELP": "Sum of the amounts still owed on emitted, sent and partially paid invoices. Net of payments already received; credit notes and disputes excluded.",
+        "OVERDUE": "Past due",
+        "OVERDUE_HELP": "The share of receivables whose due date has passed. An invoice with no due date counts as a receivable but is never counted as overdue.",
         "COLLECTED_MONTH": "Collected this month",
-        "AVG_DELAY": "Average payment time"
+        "COLLECTED_MONTH_HELP": "Payments received since the 1st of the month, whatever the invoice status — including on invoices not yet settled.",
+        "PLUS_90": "Past due 90+ days",
+        "PLUS_90_HELP": "The oldest ageing band: more than 90 days past the due date. This is the hardest share to collect.",
+        "INVOICE_COUNT": "{{n}} invoice(s)"
       },
       "FILTER": {
         "AFFAIRE": "Project",
@@ -2939,7 +2944,7 @@
         "PERIOD": "Period",
         "DATE_PH": "Date or date range",
         "OVERDUE_ONLY": "Overdue only",
-        "PAGE_SEARCH_PH": "Filter this page (client, invoice, project)…",
+        "SEARCH_PH": "Search a client or an invoice number…",
         "PANEL_TITLE": "Filter unpaid invoices",
         "APPLY": "Apply",
         "RESET": "Reset",
@@ -2949,6 +2954,8 @@
         "CLIENT": "Client",
         "INVOICE": "Invoice",
         "AMOUNT": "Amount incl. tax",
+        "OUTSTANDING": "Outstanding",
+        "OF_BILLED": "of {{amount}}",
         "DUE": "Due date",
         "DAYS_LATE": "Days late",
         "REMINDER_STATUS": "Reminder status",
@@ -2974,6 +2981,7 @@
       "KPI": {
         "AMOUNT": "Invoiced amount",
         "COLLECTED": "Collected",
+        "COLLECTED_PCT": "{{pct}} % of the invoiced amount",
         "OUTSTANDING": "Outstanding",
         "DAYS_LATE": "Overdue by",
         "ON_TIME": "Up to date"
@@ -3014,13 +3022,13 @@
         "RETIRED_STAGE": "Retired stage"
       },
       "PAYMENTS": {
-        "COL_DATE": "Date",
+        "COL_DATE": "Value date",
         "COL_METHOD": "Method",
-        "COL_REF": "Bank reference",
+        "COL_NOTES": "Note",
         "COL_AMOUNT": "Amount",
+        "RECORDED_AT": "recorded {{date}}",
         "EMPTY": "No payment recorded for this invoice.",
-        "TOTAL": "Total collected",
-        "OUTSTANDING_SHORT": "Outstanding"
+        "TOTAL": "Collected"
       }
     },
     "RECON": {

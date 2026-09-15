@@ -22,7 +22,7 @@ import { STATUT_BADGE_VARIANT } from '../../invoicing/invoice-display';
 import { PaymentModalComponent } from '../../invoicing/payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
-import { formatDate, offsetLabel, retardVariant } from '../payments-display';
+import { daysPastDue, formatDate, offsetLabel, retardVariant } from '../payments-display';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -57,8 +57,11 @@ interface KpiTile {
  */
 @Component({
   selector: 'app-recouvrement-detail',
+  // `DisplayCurrencyPipe` n'est plus dans `imports` : depuis que le pied de tableau passe
+  // par `paymentTotals()`, plus aucune expression du gabarit ne l'utilise. Il reste dans
+  // `providers` — il est injecté comme service et mis en forme en TypeScript.
   imports: [
-    TranslatePipe, DisplayCurrencyPipe, PermissionDirective,
+    TranslatePipe, PermissionDirective,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent, FormFieldComponent,
     DataTableComponent, DafCellDirective, PaymentModalComponent,
@@ -106,19 +109,19 @@ export class RecouvrementDetailComponent implements OnInit {
   readonly outstanding = computed(() =>
     Math.max(0, (this.invoice()?.montantTtc ?? 0) - this.collected()));
 
-  /** Jours de retard, recalculés ici : la fiche facture ne porte pas ce champ. */
-  readonly daysLate = computed(() => {
-    const due = this.invoice()?.dateEcheance;
-    if (!due || !this.isOverdue()) return 0;
-    const diff = Date.now() - new Date(due).getTime();
-    return Math.max(0, Math.floor(diff / 86_400_000));
-  });
+  /**
+   * Jours de retard, recalculés ici : la fiche facture ne porte pas ce champ.
+   *
+   * En **jours de calendrier** (`daysPastDue`), comme les compte le serveur pour la liste
+   * — les deux écrans annonçaient sinon un jour d'écart selon le fuseau du navigateur.
+   */
+  readonly daysLate = computed(() =>
+    this.isOverdue() ? Math.max(0, daysPastDue(this.invoice()?.dateEcheance)) : 0);
 
   readonly isOverdue = computed(() => {
     const inv = this.invoice();
     if (!inv || !OVERDUE_STATUTS.has(inv.statut)) return false;
-    if (!inv.dateEcheance) return false;
-    return new Date(inv.dateEcheance) < new Date();
+    return daysPastDue(inv.dateEcheance) > 0;
   });
 
   /**
@@ -236,8 +239,18 @@ export class RecouvrementDetailComponent implements OnInit {
       {
         label: 'PAYMENTS.DETAIL.KPI.COLLECTED',
         value: this.currency.transform(this.collected(), inv.devise),
-        delta: { value: `${paidPct} %`, direction: 'up' },
-        options: { icon: 'payments', iconColor: 'text-teal', iconBg: 'bg-teal/10', deltaColor: 'text-teal' },
+        // « 0 % » ne monte pas. `direction: 'up'` était inconditionnel et peignait donc en
+        // vert le taux de recouvrement d'une facture dont rien n'a été encaissé ; ce n'est
+        // d'ailleurs pas une variation mais une part, d'où `deltaColor` explicite plutôt
+        // qu'une direction. Le libellé dit de quoi c'est la part — un « 42 % » nu sous un
+        // montant encaissé pouvait tout aussi bien être lu comme une évolution.
+        delta: {
+          value: this.translate.instant('PAYMENTS.DETAIL.KPI.COLLECTED_PCT', { pct: paidPct }),
+        },
+        options: {
+          icon: 'payments', iconColor: 'text-teal', iconBg: 'bg-teal/10',
+          deltaColor: paidPct > 0 ? 'text-teal' : 'text-on-surface-variant',
+        },
       },
       {
         label: 'PAYMENTS.DETAIL.KPI.OUTSTANDING',
@@ -321,27 +334,61 @@ export class RecouvrementDetailComponent implements OnInit {
 
   // ── Encaissements reçus ───────────────────────────────────────────────────
 
+  /**
+   * Quatre colonnes plutôt que cinq : la référence bancaire glisse sous le mode de
+   * règlement (elle ne se lit jamais sans lui), et la date de saisie sous la date de
+   * valeur. Cela laisse une colonne pleine aux **notes**, que la table n'affichait pas
+   * du tout — c'est pourtant la seule trace écrite de ce qui a été convenu avec le client
+   * (« virement annoncé », « chèque reçu, à déposer »), et le recouvrement la cherche.
+   */
   readonly paymentColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     return [
-      { key: 'date',   label: t('PAYMENTS.DETAIL.PAYMENTS.COL_DATE'),   type: 'text' },
-      { key: 'method', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_METHOD'), type: 'text' },
-      { key: 'ref',    label: t('PAYMENTS.DETAIL.PAYMENTS.COL_REF'),    type: 'text' },
+      { key: 'date',   label: t('PAYMENTS.DETAIL.PAYMENTS.COL_DATE'),   type: 'custom' },
+      { key: 'method', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_METHOD'), type: 'custom' },
+      { key: 'notes',  label: t('PAYMENTS.DETAIL.PAYMENTS.COL_NOTES'),  type: 'text'   },
       { key: 'amount', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_AMOUNT'), type: 'text', align: 'right' },
     ];
   });
 
   readonly paymentRows = computed<TableRow[]>(() => {
-    this.translate.currentLang();
+    const lang   = this.translate.currentLang();
     const devise = this.invoice()?.devise ?? '';
     return this.payments().map(p => ({
       id:     p.id,
-      date:   formatDate(p.paymentDate, this.translate.currentLang()),
-      method: this.paymentModeLabel(p.paymentMethod),
-      ref:    p.bankReference || '—',
+      notes:  p.notes?.trim() || '—',
       amount: this.currency.transform(p.amountLocal, p.currency || devise),
+      // Rendus par les gabarits projetés : chacun une valeur et sa précision en dessous.
+      _date:       formatDate(p.paymentDate, lang),
+      _recordedAt: p.recordedAt
+        ? this.translate.instant('PAYMENTS.DETAIL.PAYMENTS.RECORDED_AT',
+            { date: formatDate(p.recordedAt, lang) })
+        : '',
+      _method: this.paymentModeLabel(p.paymentMethod),
+      _ref:    p.bankReference?.trim() || '',
     }));
+  });
+
+  /**
+   * Le pied de l'onglet « encaissements » : facturé − encaissé = reste dû, dans l'ordre
+   * du calcul. Chaque montant porte son propre libellé au-dessus de lui — l'ancien pied
+   * en alignait un seul, « TOTAL », deux éléments avant la valeur qu'il nommait.
+   */
+  readonly paymentTotals = computed<{ label: string; value: string; tone: string }[]>(() => {
+    const inv = this.invoice();
+    if (!inv) return [];
+    return [
+      { label: 'PAYMENTS.DETAIL.KPI.AMOUNT',
+        value: this.currency.transform(inv.montantTtc, inv.devise), tone: 'text-on-surface' },
+      { label: 'PAYMENTS.DETAIL.PAYMENTS.TOTAL',
+        value: this.currency.transform(this.collected(), inv.devise), tone: 'text-teal' },
+      { label: 'PAYMENTS.DETAIL.KPI.OUTSTANDING',
+        value: this.currency.transform(this.outstanding(), inv.devise),
+        // Classes littérales et complètes (§3). Un reste dû nul est une facture soldée,
+        // pas un avertissement.
+        tone: this.outstanding() > 0 ? 'text-warning' : 'text-on-surface-variant' },
+    ];
   });
 
   readonly paymentConfig = computed<TableConfig>(() => {

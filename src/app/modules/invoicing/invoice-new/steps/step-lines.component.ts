@@ -46,10 +46,12 @@ export interface StepLinesValue {
   <div class="lines-header">
     <span class="section-title">{{ 'INVOICING.STEP_LINES.TITLE' | translate }}</span>
     <div class="lines-header-actions">
-      <button type="button" class="btn-add-line" (click)="addLine()">
-        {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
-      </button>
-      @if (isAv()) {
+      @if (!isAv() && !isTm() && !isLivrable()) {
+        <button type="button" class="btn-add-line" (click)="addLine()">
+          {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
+        </button>
+      }
+      @if (isAv() || isTm() || isLivrable()) {
         <button type="button" class="btn-add-line btn-add-rmb" [disabled]="!categoriesLoaded()"
           (click)="toggleRmbPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_REMBOURSABLE' | translate }}
@@ -58,7 +60,7 @@ export interface StepLinesValue {
     </div>
   </div>
 
-  @if ((isAv()) && rmbPickerOpen()) {
+  @if ((isAv() || isTm() || isLivrable()) && rmbPickerOpen()) {
     <div class="rmb-picker-panel">
       @if (pickableExpenses().length === 0) {
         <p class="rmb-picker-empty">{{ 'INVOICING.STEP_LINES.REMBOURSABLE_EMPTY' | translate }}</p>
@@ -326,7 +328,7 @@ export interface StepLinesValue {
         <span class="material-symbols-outlined">arrow_back</span>
         {{ 'INVOICING.STEP_LINES.BACK' | translate }}
       </button>
-      <button type="button" class="btn-next" (click)="next()" [disabled]="linesArray.length === 0">
+      <button type="button" class="btn-next" (click)="next()" [disabled]="linesArray.length === 0 && expenseLinesArray.length === 0">
         {{ 'INVOICING.STEP_LINES.NEXT' | translate }}
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
@@ -348,6 +350,12 @@ export class StepLinesComponent {
    * instead of the usual single blank row, and preserves the T&M / Livrable period
    * unchanged (both modes get one from the server at generation time). */
   initialLines = input<StepLinesValue | null>(null);
+  /** True only when editing an existing invoice (route has an id) — passed down from
+   * invoice-new.component.ts's editInvoiceId(), which resolves synchronously at
+   * construction, unlike initialLines() which only resolves later even in edit mode.
+   * Needed so a brand-new FORFAIT/REGIE/LIVRABLE invoice never starts with the usual
+   * default blank manual line — see the constructor effect below. */
+  isEditMode = input<boolean>(false);
   prevStep    = output<void>();
   nextStep    = output<StepLinesValue>();
 
@@ -445,7 +453,7 @@ export class StepLinesComponent {
     // qu'on est en mode RMB OU AV avec une affaire sélectionnée — les frais s'appliquent
     // à toute affaire quel que soit son mode (même règle que côté fiche affaire).
     effect(() => {
-      const rmbOrAv = this.isAv();
+      const rmbOrAv = this.isAv() || this.isTm() || this.isLivrable();
       const aff = this.affaireData();
       if (rmbOrAv && aff.affaireId) {
         this.billingSvc.getBillableExpenses(aff.affaireId, aff.currency).subscribe({
@@ -464,6 +472,17 @@ export class StepLinesComponent {
         this.selectedExpenseIds.set(new Set());
         this.expenseLinesArray.clear();
         this.linesVersion.update(v => v + 1);
+      }
+    });
+
+    // Brand-new invoice (not editing) for a real billing mode: FORFAIT/REGIE/LIVRABLE
+    // invoices are now WIP-only -- no default blank manual line, so the sole way to add a
+    // line here is the reimbursable-expense picker (see the "Ajouter une ligne" button's
+    // new guard in the template, and the picker's own guard extended to all three modes).
+    effect(() => {
+      const realMode = this.isAv() || this.isTm() || this.isLivrable();
+      if (!this.isEditMode() && realMode) {
+        this.linesArray.clear();
       }
     });
 

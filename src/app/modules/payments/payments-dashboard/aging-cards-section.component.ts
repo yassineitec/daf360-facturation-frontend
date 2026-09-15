@@ -3,7 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { AgingRow } from '../payment.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { formatDate, initials, isLate, reminderLabel } from '../payments-display';
+import { formatDate, initials, isLate, partiallyPaid, reminderLabel } from '../payments-display';
 
 /**
  * Card view of `/finance/payments` — one `daf-entity-card` per unpaid invoice.
@@ -91,11 +91,17 @@ export class AgingCardsSectionComponent {
               : t('PAYMENTS.DASHBOARD.CARD.ON_TIME'),
           },
           metricsColumns: 2,
+          // Le reste dû prend la première case — c'est le montant à réclamer. Le montant
+          // facturé occupe la deuxième, mais seulement sur une facture partiellement
+          // réglée : ailleurs les deux chiffres sont identiques, et la case revient à la
+          // dernière relance, plus utile pour décider du geste suivant.
           metrics: [
-            { label: t('PAYMENTS.DASHBOARD.TABLE.AMOUNT'),          value: this.currency.transform(row.montantTtc, row.devise) },
+            { label: t('PAYMENTS.DASHBOARD.TABLE.OUTSTANDING'),     value: this.currency.transform(row.montantRestant, row.devise) },
+            partiallyPaid(row)
+              ? { label: t('PAYMENTS.DASHBOARD.TABLE.AMOUNT'),      value: this.currency.transform(row.montantTtc, row.devise) }
+              : { label: t('PAYMENTS.DASHBOARD.CARD.LAST_REMINDER'), value: row.lastReminderSentAt ? formatDate(row.lastReminderSentAt, lang) : '—' },
             { label: t('PAYMENTS.DASHBOARD.TABLE.DUE'),             value: formatDate(row.dateEcheance, lang) },
             { label: t('PAYMENTS.DASHBOARD.TABLE.REMINDER_STATUS'), value: reminder ?? '—' },
-            { label: t('PAYMENTS.DASHBOARD.CARD.LAST_REMINDER'),    value: row.lastReminderSentAt ? formatDate(row.lastReminderSentAt, lang) : '—' },
           ],
           viewLabel: t('PAYMENTS.DASHBOARD.TABLE.VIEW'),
         } satisfies EntityCardOptions,

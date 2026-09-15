@@ -96,8 +96,8 @@
       "OVERDUE_TITLE": "الفواتير المتأخرة",
       "OVERDUE_COUNT": "{{count}} فواتير حرجة",
       "NO_DELAY": "لا تأخير",
-      "DSO_TITLE": "متوسط التأخير (DSO)",
-      "DSO_SUB": "متوسط الأيام"
+      "PLUS_90_TITLE": "متأخرة منذ أكثر من 90 يومًا",
+      "PLUS_90_COUNT": "{{count}} فاتورة"
     },
     "MODULES": {
       "TREASURY_BALANCE": "الرصيد الموحد",

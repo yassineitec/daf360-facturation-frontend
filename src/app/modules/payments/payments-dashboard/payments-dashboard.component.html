@@ -20,38 +20,45 @@
   </daf-page-header>
 
   <!-- KPIs — one row, never wraps. These come from /payments/stats and are tenant-wide,
-       not page-scoped like the other finance lists. -->
+       not page-scoped like the other finance lists.
+
+       Les quatre valeurs sont des MONTANTS, nets des règlements reçus, et le décompte de
+       factures passe en `delta`. « En retard » faisait l'inverse — un nombre de factures
+       au milieu de trois montants — et « Délai moyen de paiement » a été retiré : il ne
+       se calculait que sur les factures soldées, donc il s'améliorait à mesure que
+       l'arriéré vieillissait. Sa place revient à la tranche à plus de 90 jours, qui est
+       la question que cet écran pose vraiment. -->
   <section class="grid grid-cols-4 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'PAYMENTS.DASHBOARD.KPI.PENDING' | translate"
       [value]="stats() ? (stats()!.enAttenteMontant | displayCurrency : stats()!.devise) : '—'"
-      [options]="kpiPending" />
+      [options]="kpiPending()" />
 
     <daf-metric-card
       [label]="'PAYMENTS.DASHBOARD.KPI.OVERDUE' | translate"
-      [value]="stats()?.enRetardCount ?? '—'"
+      [value]="stats() ? (stats()!.enRetardMontant | displayCurrency : stats()!.devise) : '—'"
       [delta]="overdueDelta()"
-      [options]="kpiOverdue" />
+      [options]="kpiOverdue()" />
 
     <daf-metric-card
       [label]="'PAYMENTS.DASHBOARD.KPI.COLLECTED_MONTH' | translate"
       [value]="stats() ? (stats()!.encaisseThisMoisMontant | displayCurrency : stats()!.devise) : '—'"
-      [options]="kpiCollected" />
+      [options]="kpiCollected()" />
 
     <daf-metric-card
-      [label]="'PAYMENTS.DASHBOARD.KPI.AVG_DELAY' | translate"
-      [value]="avgDelayLabel()"
-      [options]="kpiDelay" />
+      [label]="'PAYMENTS.DASHBOARD.KPI.PLUS_90' | translate"
+      [value]="stats() ? (stats()!.plus90Montant | displayCurrency : stats()!.devise) : '—'"
+      [delta]="plus90Delta()"
+      [options]="kpiPlus90()" />
   </section>
 
   <!-- Affaire, client, période and the overdue toggle live inside the filter panel.
-       ⚠️ The search box filters the LOADED PAGE only — GET /payments/aging takes
-       paysId/affaireId/clientId/from/to/overdueOnly and no free-text param, so a
-       server-side search would be a control that silently does nothing. The
-       placeholder says so; give the endpoint a `search` param and this becomes a
-       normal server-side search. -->
+       La recherche est servie par le serveur (`search` sur GET /payments/aging) et porte
+       donc sur tout l'encours de l'entité, numéro de facture ou nom de client. Elle ne
+       filtrait auparavant que la page déjà chargée : un client absent de la page courante
+       restait introuvable alors qu'il avait des factures en retard. -->
   <daf-search-toolbar
-    [placeholder]="'PAYMENTS.DASHBOARD.FILTER.PAGE_SEARCH_PH' | translate"
+    [placeholder]="'PAYMENTS.DASHBOARD.FILTER.SEARCH_PH' | translate"
     [value]="searchText()"
     [debounce]="300"
     (valueChange)="onSearchTextChange($event)"

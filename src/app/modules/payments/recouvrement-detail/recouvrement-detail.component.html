@@ -229,20 +229,48 @@
             <daf-data-table
               [columns]="paymentColumns()"
               [rows]="paymentRows()"
-              [config]="paymentConfig()" />
+              [config]="paymentConfig()">
 
+              <!-- Date de valeur, et en dessous la date de saisie quand elle diffère de
+                   l'histoire : « reçu le 3, enregistré le 11 » explique un écart que la
+                   seule date de valeur laisse sans réponse. -->
+              <ng-template dafCell="date" let-row>
+                <div class="flex flex-col leading-snug">
+                  <span class="font-bold text-on-surface">{{ row['_date'] }}</span>
+                  @if (row['_recordedAt']) {
+                    <span class="text-[11px] text-on-surface-variant">{{ row['_recordedAt'] }}</span>
+                  }
+                </div>
+              </ng-template>
+
+              <!-- La référence bancaire ne se lit jamais sans son mode de règlement. -->
+              <ng-template dafCell="method" let-row>
+                <div class="flex flex-col leading-snug">
+                  <span>{{ row['_method'] }}</span>
+                  @if (row['_ref']) {
+                    <span class="font-mono text-[11px] text-on-surface-variant">{{ row['_ref'] }}</span>
+                  }
+                </div>
+              </ng-template>
+
+            </daf-data-table>
+
+            <!-- Trois chiffres, chacun sous son propre libellé. L'ancien pied de tableau
+                 alignait « TOTAL », puis « Reste dû X », puis un grand montant vert : le
+                 libellé se trouvait deux éléments avant la valeur qu'il nommait, et le
+                 montant facturé n'apparaissait nulle part. Ils se lisent maintenant de
+                 gauche à droite dans l'ordre du calcul : facturé − encaissé = reste dû. -->
             @if (payments().length > 0) {
-              <div class="flex flex-wrap items-baseline justify-end gap-6 rounded-xl bg-surface-container px-6 py-4">
-                <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                  {{ 'PAYMENTS.DETAIL.PAYMENTS.TOTAL' | translate }}
-                </span>
-                <span class="text-body-md font-bold text-on-surface-variant">
-                  {{ 'PAYMENTS.DETAIL.PAYMENTS.OUTSTANDING_SHORT' | translate }}
-                  {{ outstanding() | displayCurrency : inv.devise }}
-                </span>
-                <span class="text-headline-md font-extrabold text-teal">
-                  {{ collected() | displayCurrency : inv.devise }}
-                </span>
+              <div class="rounded-xl bg-surface-container px-6 py-4"
+                   style="display:flex; flex-wrap:wrap; gap:1.5rem; justify-content:flex-end">
+                @for (f of paymentTotals(); track f.label) {
+                  <div class="flex flex-col gap-1" style="text-align:right">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-headline-md font-extrabold" [class]="f.tone">{{ f.value }}</p>
+                  </div>
+                }
               </div>
             }
           }
