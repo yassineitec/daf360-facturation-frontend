@@ -40,7 +40,7 @@ export class AffaireDepenseTabComponent implements OnInit {
     const t = (k: string) => this.translate.instant(k);
     const p = this.preview();
     return [
-      { label: t('AFFAIRES.DEPENSE.KPI_HOURS'), value: (p?.totalHours ?? 0).toFixed(2),
+      { label: t('AFFAIRES.DEPENSE.KPI_HOURS'), value: (p?.totalHours ?? 0).toFixed(2) + ' h',
         options: { icon: 'schedule', iconColor: 'text-primary', iconBg: 'bg-primary/10' } },
       { label: t('AFFAIRES.DEPENSE.KPI_COST'), value: this.currency.transform(p?.totalCost ?? null, this.affaire.devise),
         options: { icon: 'payments', iconColor: 'text-secondary', iconBg: 'bg-secondary/10' } },
