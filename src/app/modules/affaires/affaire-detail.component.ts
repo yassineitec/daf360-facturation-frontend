@@ -32,6 +32,7 @@ import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
 import { AffaireWipTabComponent } from './wip/affaire-wip-tab.component';
 import { AffaireRessourcesTabComponent } from './ressources/affaire-ressources-tab.component';
+import { AffaireDepenseTabComponent } from './depense/affaire-depense-tab.component';
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
 import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
@@ -41,7 +42,7 @@ import {
 } from '../../shared/enum-labels';
 import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avatar.service';
 import { ClientContactService } from '../clients/contacts/client-contact.service';
-import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
+import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
 /** A read-only label/value pair. `label` is always a translation key. */
 interface DetailField { label: string; value: string; }
 
@@ -115,7 +116,7 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
     GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
-    TsFormComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent,
+    TsFormComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,
@@ -1648,6 +1649,13 @@ export class AffaireDetailComponent implements OnInit {
     // de notion de ressource facturée à un taux individuel.
     if (wipMode === 'REGIE') {
       tabs.push({ id: 'ressources', label: t('AFFAIRES.DETAIL.TABS.RESSOURCES') });
+    }
+    // Dépense : visibilité en lecture seule des heures Timesheet + coût interne estimé,
+    // pour les affaires Forfaitaire/Livrable — Régie a déjà cette information (et plus)
+    // dans l'onglet Ressources ci-dessus. Timesheet n'a aucune notion de mode de
+    // facturation : les heures peuvent être saisies quel que soit le mode de l'affaire.
+    if (wipMode === 'FORFAIT' || wipMode === 'LIVRABLE') {
+      tabs.push({ id: 'depense', label: t('AFFAIRES.DETAIL.TABS.DEPENSE') });
     }
     tabs.push(
       { id: 'factures',  label: t('AFFAIRES.DETAIL.TABS.INVOICES'), count: this.invoices().length },
