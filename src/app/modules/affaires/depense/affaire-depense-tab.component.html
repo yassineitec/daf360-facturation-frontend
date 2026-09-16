@@ -1,0 +1,20 @@
+<div class="flex flex-col gap-6">
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    @for (k of kpiTiles(); track k.label) {
+      <daf-metric-card [label]="k.label" [value]="k.value" [options]="k.options" />
+    }
+  </div>
+
+  @if (selectedEmail(); as email) {
+    <app-depense-collaborator-detail
+      [lignes]="preview()?.lignes ?? []"
+      [email]="email"
+      (back)="onBack()" />
+  } @else {
+    <app-depense-summary-table
+      [lignes]="preview()?.lignes ?? []"
+      (collaboratorSelected)="onCollaboratorSelected($event)" />
+  }
+
+</div>
