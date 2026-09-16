@@ -2212,12 +2212,17 @@
       "RATE_EDITABLE_HINT": "Pré-rempli depuis le coût employé — modifiable si besoin."
     },
     "DEPENSE": {
-      "KPI_HOURS": "Heures Timesheet (à date)",
+      "KPI_HOURS": "Nombre d'heures travaillées (timesheet)",
       "KPI_COST": "Coût interne estimé",
       "KPI_COLLABORATORS": "Collaborateurs",
       "EMPTY": "Aucune heure Timesheet enregistrée sur cette affaire.",
       "EMPTY_DETAIL": "Aucune heure pour ce collaborateur.",
-      "EMAIL": "Email"
+      "EMAIL": "Email",
+      "COL_PERIOD": "Période",
+      "FILTER_ALL": "Tout",
+      "FILTER_PERIOD": "Période",
+      "FILTER_MONTH": "Mois",
+      "FILTER_YEAR": "Année"
     }
   },
   "ERRORS": {
