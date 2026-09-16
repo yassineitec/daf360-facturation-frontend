@@ -3,6 +3,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonComponent, DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { DepenseLigne } from './depense.model';
 import { isoWeek } from '../../../shared/iso-week';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 /**
  * Drill-down for one collaborator out of a Dépense preview — a summary strip (hours, cost,
@@ -15,14 +16,17 @@ import { isoWeek } from '../../../shared/iso-week';
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [DataTableComponent, ButtonComponent, TranslatePipe],
+  providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
   templateUrl: './depense-collaborator-detail.component.html',
 })
 export class DepenseCollaboratorDetailComponent {
   private readonly translate = inject(TranslateService);
+  private readonly currency = inject(DisplayCurrencyPipe);
 
   lignes = input.required<DepenseLigne[]>();
   email = input.required<string>();
+  devise = input.required<string>();
   back = output<void>();
 
   protected readonly rowsForUser = computed(() => this.lignes().filter(l => l.userEmail === this.email()));
@@ -79,6 +83,6 @@ export class DepenseCollaboratorDetailComponent {
   }
 
   protected fmtAmt(v: number): string {
-    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    return this.currency.transform(v, this.devise());
   }
 }

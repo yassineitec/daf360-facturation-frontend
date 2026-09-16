@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { TranslateService } from '@ngx-translate/core';
 import { DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { DepenseLigne } from './depense.model';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 /**
  * "Dépense" preview, aggregated one row per collaborator — same reasoning as
@@ -15,6 +16,7 @@ import { DepenseLigne } from './depense.model';
   selector: 'app-depense-summary-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DataTableComponent],
+  providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
   template: `
     <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()"
@@ -23,8 +25,10 @@ import { DepenseLigne } from './depense.model';
 })
 export class DepenseSummaryTableComponent {
   private readonly translate = inject(TranslateService);
+  private readonly currency = inject(DisplayCurrencyPipe);
 
   lignes = input.required<DepenseLigne[]>();
+  devise = input.required<string>();
   collaboratorSelected = output<string>();
 
   protected readonly aggregates = computed(() => {
@@ -76,7 +80,7 @@ export class DepenseSummaryTableComponent {
   }));
 
   private fmtAmt(v: number): string {
-    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    return this.currency.transform(v, this.devise());
   }
 
   /** Same `dd/MM/yyyy`-style formatting `depense-collaborator-detail.component.ts`'s own

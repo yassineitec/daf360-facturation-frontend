@@ -10,10 +10,12 @@
     <app-depense-collaborator-detail
       [lignes]="preview()?.lignes ?? []"
       [email]="email"
+      [devise]="affaire.devise"
       (back)="onBack()" />
   } @else {
     <app-depense-summary-table
       [lignes]="preview()?.lignes ?? []"
+      [devise]="affaire.devise"
       (collaboratorSelected)="onCollaboratorSelected($event)" />
   }
 
