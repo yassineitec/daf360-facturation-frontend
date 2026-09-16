@@ -1016,7 +1016,8 @@
         "INVOICES": "Invoices",
         "PAYMENTS": "Payments",
         "WIP": "WIP",
-        "RESSOURCES": "Resources"
+        "RESSOURCES": "Resources",
+        "DEPENSE": "Expense"
       },
       "ACTIONS": {
         "QUICK_TITLE": "Quick actions",
@@ -2205,6 +2206,14 @@
       "TAUX_INTERNAL": "Intercompany",
       "TAUX_UNAVAILABLE": "No employee cost found for this collaborator — enter the rate manually.",
       "RATE_EDITABLE_HINT": "Pre-filled from employee cost — editable if needed."
+    },
+    "DEPENSE": {
+      "KPI_HOURS": "Timesheet hours (to date)",
+      "KPI_COST": "Estimated internal cost",
+      "KPI_COLLABORATORS": "Collaborators",
+      "EMPTY": "No Timesheet hours logged on this affaire.",
+      "EMPTY_DETAIL": "No hours for this collaborator.",
+      "EMAIL": "Email"
     }
   },
   "ERRORS": {

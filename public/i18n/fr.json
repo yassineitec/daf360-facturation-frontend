@@ -1016,7 +1016,8 @@
         "INVOICES": "Factures",
         "PAYMENTS": "Paiements",
         "WIP": "WIP",
-        "RESSOURCES": "Ressources"
+        "RESSOURCES": "Ressources",
+        "DEPENSE": "Dépense"
       },
       "ACTIONS": {
         "QUICK_TITLE": "Actions rapides",
@@ -2205,6 +2206,14 @@
       "TAUX_INTERNAL": "Intercompany",
       "TAUX_UNAVAILABLE": "Aucun coût employé trouvé pour ce collaborateur — saisissez le taux manuellement.",
       "RATE_EDITABLE_HINT": "Pré-rempli depuis le coût employé — modifiable si besoin."
+    },
+    "DEPENSE": {
+      "KPI_HOURS": "Heures Timesheet (à date)",
+      "KPI_COST": "Coût interne estimé",
+      "KPI_COLLABORATORS": "Collaborateurs",
+      "EMPTY": "Aucune heure Timesheet enregistrée sur cette affaire.",
+      "EMPTY_DETAIL": "Aucune heure pour ce collaborateur.",
+      "EMAIL": "Email"
     }
   },
   "ERRORS": {
