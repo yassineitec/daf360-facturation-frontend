@@ -17,7 +17,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
   selector: 'app-affaire-depense-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, MetricCardComponent, DisplayCurrencyPipe, DepenseSummaryTableComponent, DepenseCollaboratorDetailComponent],
+  imports: [MetricCardComponent, DepenseSummaryTableComponent, DepenseCollaboratorDetailComponent],
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-depense-tab.component.html',
 })
