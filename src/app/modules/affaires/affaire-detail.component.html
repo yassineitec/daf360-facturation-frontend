@@ -665,6 +665,11 @@
             <app-affaire-ressources-tab [affaire]="aff" />
           }
 
+          <!-- ── Dépense — heures Timesheet + coût interne, Forfaitaire/Livrable ── -->
+          @if (activeTab() === 'depense' && (aff.billingMode === 'FORFAIT' || aff.billingMode === 'LIVRABLE')) {
+            <app-affaire-depense-tab [affaire]="aff" />
+          }
+
           <!-- ── Factures ─────────────────────────────────────────────── -->
           @if (activeTab() === 'factures') {
             <daf-search-toolbar

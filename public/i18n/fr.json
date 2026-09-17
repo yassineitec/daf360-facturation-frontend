@@ -1017,7 +1017,8 @@
         "INVOICES": "Factures",
         "PAYMENTS": "Paiements",
         "WIP": "WIP",
-        "RESSOURCES": "Ressources"
+        "RESSOURCES": "Ressources",
+        "DEPENSE": "Dépense"
       },
       "ACTIONS": {
         "QUICK_TITLE": "Actions rapides",
@@ -2095,6 +2096,9 @@
       "CLIENT_AMOUNT_CONFIRM": "Confirmer",
       "CLIENT_AMOUNT_ERROR": "Erreur lors de l'enregistrement du montant validé par le client.",
       "NEW_TAUX": "Nouveau taux cumulé",
+      "NEW_MONTANT": "Nouveau montant cumulé",
+      "TAUX_MODE_PERCENT": "Pourcentage",
+      "TAUX_MODE_AMOUNT": "Montant",
       "FORFAIT_ENTRY_TITLE": "Saisir un taux d'avancement",
       "REGIE_ENTRY_TITLE": "Calculer le WIP Temps & Matériel",
       "LIVRABLE_ENTRY_TITLE": "Sélectionner les livrables à facturer",
@@ -2114,6 +2118,7 @@
       "CANCEL_LINE_ERROR": "Erreur lors de l'annulation de la ligne.",
       "EDIT_REFUSED_HINT": "Modifier ce taux refusé le remet en attente de validation.",
       "CALCULATED": "WIP calculé",
+      "CALCULATED_PERCENT": "Pourcentage calculé",
       "VALIDATE": "Valider",
       "DETAILS": "Détails",
       "EXPORT_EXCEL": "Exporter Excel",
@@ -2213,6 +2218,19 @@
       "TAUX_INTERNAL": "Intercompany",
       "TAUX_UNAVAILABLE": "Aucun coût employé trouvé pour ce collaborateur — saisissez le taux manuellement.",
       "RATE_EDITABLE_HINT": "Pré-rempli depuis le coût employé — modifiable si besoin."
+    },
+    "DEPENSE": {
+      "KPI_HOURS": "Nombre d'heures travaillées (timesheet)",
+      "KPI_COST": "Coût interne estimé",
+      "KPI_COLLABORATORS": "Collaborateurs",
+      "EMPTY": "Aucune heure Timesheet enregistrée sur cette affaire.",
+      "EMPTY_DETAIL": "Aucune heure pour ce collaborateur.",
+      "EMAIL": "Email",
+      "COL_PERIOD": "Période",
+      "FILTER_ALL": "Tout",
+      "FILTER_PERIOD": "Période",
+      "FILTER_MONTH": "Mois",
+      "FILTER_YEAR": "Année"
     }
   },
   "ERRORS": {

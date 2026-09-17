@@ -1017,7 +1017,8 @@
         "INVOICES": "Invoices",
         "PAYMENTS": "Payments",
         "WIP": "WIP",
-        "RESSOURCES": "Resources"
+        "RESSOURCES": "Resources",
+        "DEPENSE": "Expense"
       },
       "ACTIONS": {
         "QUICK_TITLE": "Quick actions",
@@ -2095,6 +2096,9 @@
       "CLIENT_AMOUNT_CONFIRM": "Confirm",
       "CLIENT_AMOUNT_ERROR": "Error saving the client-confirmed amount.",
       "NEW_TAUX": "New cumulative rate",
+      "NEW_MONTANT": "New cumulative amount",
+      "TAUX_MODE_PERCENT": "Percentage",
+      "TAUX_MODE_AMOUNT": "Amount",
       "FORFAIT_ENTRY_TITLE": "Enter a progress rate",
       "REGIE_ENTRY_TITLE": "Calculate Time & Materials WIP",
       "LIVRABLE_ENTRY_TITLE": "Select deliverables to bill",
@@ -2114,6 +2118,7 @@
       "CANCEL_LINE_ERROR": "Error cancelling the line.",
       "EDIT_REFUSED_HINT": "Editing this refused rate resubmits it for validation.",
       "CALCULATED": "Calculated WIP",
+      "CALCULATED_PERCENT": "Calculated percentage",
       "VALIDATE": "Validate",
       "DETAILS": "Details",
       "EXPORT_EXCEL": "Export Excel",
@@ -2213,6 +2218,19 @@
       "TAUX_INTERNAL": "Intercompany",
       "TAUX_UNAVAILABLE": "No employee cost found for this collaborator — enter the rate manually.",
       "RATE_EDITABLE_HINT": "Pre-filled from employee cost — editable if needed."
+    },
+    "DEPENSE": {
+      "KPI_HOURS": "Hours worked (timesheet)",
+      "KPI_COST": "Estimated internal cost",
+      "KPI_COLLABORATORS": "Collaborators",
+      "EMPTY": "No Timesheet hours logged on this affaire.",
+      "EMPTY_DETAIL": "No hours for this collaborator.",
+      "EMAIL": "Email",
+      "COL_PERIOD": "Period",
+      "FILTER_ALL": "All",
+      "FILTER_PERIOD": "Period",
+      "FILTER_MONTH": "Month",
+      "FILTER_YEAR": "Year"
     }
   },
   "ERRORS": {

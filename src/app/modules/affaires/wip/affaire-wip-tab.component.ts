@@ -185,6 +185,12 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   tauxHistory   = signal<WipTauxDto[]>([]);
   loadingTaux   = signal(false);
   newTauxValue  = signal<number | null>(null);
+  // Named to match this codebase's existing string-union convention (WipTauxStatut's
+  // 'EN_ATTENTE'/'VALIDE'/'REFUSE' — French business terms, not English enum names). Whichever
+  // mode is active, effectiveTauxPercent() below always converts to the percentage the backend
+  // actually stores, so nothing downstream needs to know which mode was used.
+  avInputMode    = signal<'POURCENTAGE' | 'MONTANT'>('POURCENTAGE');
+  newAmountValue = signal<number | null>(null);
   tauxComment   = '';
   tauxError     = signal<string | null>(null);
   submittingTaux= signal(false);
@@ -199,17 +205,50 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly editingTaux = computed<WipTauxDto | null>(() =>
     this.tauxHistory().find(t => t.id === this.editingTauxId()) ?? null);
 
+  /** The single percentage every existing consumer (validation, preview, submit payload)
+   * reads — regardless of whether the user is currently typing a percentage or an amount.
+   * In MONTANT mode, converts amount -> percentage at the same 3-decimal precision
+   * ProgressBillingService already uses for every currency calculation in this flow, so a
+   * displayed amount never silently disagrees with what actually gets submitted. */
+  readonly effectiveTauxPercent = computed<number | null>(() => {
+    if (this.avInputMode() === 'POURCENTAGE') return this.newTauxValue();
+    const amount = this.newAmountValue();
+    const contractAmount = this.affaire.contractAmount;
+    if (amount === null || !contractAmount) return null;
+    return Number(((amount / contractAmount) * 100).toFixed(3));
+  });
+
   readonly canSubmitTaux = computed(() => {
-    const taux = this.newTauxValue();
+    const taux = this.effectiveTauxPercent();
     if (taux === null || taux > 100) return false;
     if (this.editingTauxId() !== null) return taux >= this.lastValidatedTaux();
     return taux > this.lastValidatedTaux();
   });
 
   readonly avWipPreview = computed<number | null>(() => {
-    const taux = this.newTauxValue();
+    const taux = this.effectiveTauxPercent();
     if (taux === null || !this.affaire.contractAmount) return null;
     return (taux / 100) * this.affaire.contractAmount;
+  });
+
+  /** Inverse of avWipPreview, shown only in MONTANT mode: the equivalent percentage for
+   * whatever amount the user just typed, so they can sanity-check it against
+   * lastValidatedTaux() without doing the division themselves. */
+  readonly avWipPreviewPercent = computed<number | null>(() => {
+    if (this.avInputMode() !== 'MONTANT') return null;
+    return this.effectiveTauxPercent();
+  });
+
+  /** The MONTANT-mode field's hint — the last-validated taux expressed as an amount instead
+   * of a percentage. Computed in TS via the already-injected `currency` (DisplayCurrencyPipe
+   * instance, used the same way elsewhere in this file, e.g. the LIVRABLE section's
+   * `this.currency.transform(l.budgetAlloue, this.affaire.devise)`) rather than nesting a
+   * pipe inside the template's `[options]` object-literal string concatenation — this file's
+   * own convention is "format in a computed, read it plainly in the template" (see
+   * avWipPreview()'s own top-level `| displayCurrency` usage), not deeply nested pipes. */
+  readonly lastValidatedAmountHint = computed(() => {
+    const amount = (this.lastValidatedTaux() / 100) * (this.affaire.contractAmount ?? 0);
+    return this.currency.transform(amount, this.affaire.devise);
   });
 
   /** TEST : carte FORFAIT alignée sur la carte Régie — même mécanismes, mêmes raisons
@@ -803,14 +842,20 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.editingTauxId.set(t.id);
     this.periodDateFrom = t.periodDateFrom;
     this.periodDateTo = t.periodDateTo;
+    // Always opens in POURCENTAGE mode — tauxSaisi is what's actually stored, so that's the
+    // faithful starting point for an edit. The user can still switch to MONTANT mid-edit.
+    this.avInputMode.set('POURCENTAGE');
     this.newTauxValue.set(t.tauxSaisi);
+    this.newAmountValue.set(null);
     this.tauxComment = t.commentaire ?? '';
     this.tauxError.set(null);
   }
 
   cancelEditTaux(): void {
     this.editingTauxId.set(null);
+    this.avInputMode.set('POURCENTAGE');
     this.newTauxValue.set(null);
+    this.newAmountValue.set(null);
     this.tauxComment = '';
     this.tauxError.set(null);
     this.periodDateFrom = this.preEditDateFrom;
@@ -818,7 +863,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   }
 
   submitTaux(): void {
-    const taux = this.newTauxValue();
+    const taux = this.effectiveTauxPercent();
     if (taux === null || this.submittingTaux()) return;
     const editingId = this.editingTauxId();
     if (!this.canSubmitTaux()) return;
@@ -836,7 +881,9 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     request$.subscribe({
       next: () => {
         this.submittingTaux.set(false);
+        this.avInputMode.set('POURCENTAGE');
         this.newTauxValue.set(null);
+        this.newAmountValue.set(null);
         this.tauxComment = '';
         this.editingTauxId.set(null);
         this.loadTauxHistory();

@@ -64,6 +64,32 @@
           <p class="text-[12px] text-warning">{{ 'AFFAIRES.WIP.EDIT_REFUSED_HINT' | translate }}</p>
         }
 
+        @if (affaire.contractAmount) {
+          <!-- `self-start` overrides this flex-col parent's default `align-items:stretch`
+               cross-axis behavior JUST for this pill (not the whole container — the
+               `tauxComment` field below relies on that same stretch to render full-width via
+               its own `fullWidth: true`, so the parent itself must stay untouched). Without
+               it, this div — despite `w-fit` — was being stretched to the container's full
+               width by the ambient stretch, and its second (active, `bg-primary`) button
+               visibly filled that entire stretched width, reported live by the user. -->
+          <div class="flex self-start overflow-hidden rounded-lg border border-outline-variant w-fit">
+            <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
+              [class.bg-primary]="avInputMode() === 'POURCENTAGE'"
+              [class.text-on-primary]="avInputMode() === 'POURCENTAGE'"
+              [class.text-on-surface-variant]="avInputMode() !== 'POURCENTAGE'"
+              (click)="avInputMode.set('POURCENTAGE')">
+              {{ 'AFFAIRES.WIP.TAUX_MODE_PERCENT' | translate }}
+            </button>
+            <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
+              [class.bg-primary]="avInputMode() === 'MONTANT'"
+              [class.text-on-primary]="avInputMode() === 'MONTANT'"
+              [class.text-on-surface-variant]="avInputMode() !== 'MONTANT'"
+              (click)="avInputMode.set('MONTANT')">
+              {{ 'AFFAIRES.WIP.TAUX_MODE_AMOUNT' | translate }}
+            </button>
+          </div>
+        }
+
         <div class="flex gap-3 max-w-md items-start">
           <!-- TEST : le champ du taux à gauche, les 2 boutons devant (à droite), sur la
                même ligne que le champ de saisie. Le pill est décalé vers le bas d'un
@@ -72,11 +98,19 @@
                wrapperClasses `gap-1.5` de la lib), pour que le pill s'aligne pile sur la
                ligne du champ et non sur celle du label. -->
           <div class="taux-field-compact w-1/2">
-            <daf-form-field
-              [value]="newTauxValue()"
-              (valueChange)="newTauxValue.set($any($event))"
-              [options]="{ label: ('AFFAIRES.WIP.NEW_TAUX' | translate) + ' (%)', type: 'number', fullWidth: true,
-                           hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedTaux() + '%' }" />
+            @if (avInputMode() === 'POURCENTAGE') {
+              <daf-form-field
+                [value]="newTauxValue()"
+                (valueChange)="newTauxValue.set($any($event))"
+                [options]="{ label: ('AFFAIRES.WIP.NEW_TAUX' | translate) + ' (%)', type: 'number', fullWidth: true,
+                             hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedTaux() + '%' }" />
+            } @else {
+              <daf-form-field
+                [value]="newAmountValue()"
+                (valueChange)="newAmountValue.set($any($event))"
+                [options]="{ label: ('AFFAIRES.WIP.NEW_MONTANT' | translate) + ' (' + affaire.devise + ')', type: 'number', fullWidth: true,
+                             hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedAmountHint() }" />
+            }
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -121,13 +155,21 @@
           (valueChange)="tauxComment = $any($event)"
           [options]="{ label: ('AFFAIRES.WIP.COMMENT' | translate), type: 'textarea', rows: 2, maxLength: 500, fullWidth: true }" />
 
-        @if (avWipPreview() !== null) {
+        @if (avInputMode() === 'POURCENTAGE' && avWipPreview() !== null) {
           <!-- Même habillage que le "WIP calculé" de la carte Régie (label discret
                au-dessus + montant en gros/gras vert) plutôt qu'une simple ligne de texte. -->
           <div>
             <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.CALCULATED' | translate }}</p>
             <p class="text-[20px] font-black text-success">
               {{ avWipPreview() | displayCurrency : affaire.devise }}
+            </p>
+          </div>
+        }
+        @if (avInputMode() === 'MONTANT' && avWipPreviewPercent() !== null) {
+          <div>
+            <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.CALCULATED_PERCENT' | translate }}</p>
+            <p class="text-[20px] font-black text-success">
+              {{ avWipPreviewPercent() }}%
             </p>
           </div>
         }
