@@ -114,7 +114,8 @@
         [skeletonCount]="size()"
         [emptyMessage]="'COST.EMPLOYEE_COST.EMPTY' | translate"
         (edit)="edit($event)"
-        (remove)="remove($event)" />
+        (remove)="remove($event)"
+        (history)="viewHistory($event)" />
     } @else {
       <app-employee-cost-table-section
         [costs]="pagedRows()"
@@ -123,6 +124,7 @@
         [emptyMessage]="'COST.EMPLOYEE_COST.EMPTY' | translate"
         (edit)="edit($event)"
         (remove)="remove($event)"
+        (history)="viewHistory($event)"
         (sortChange)="onSort($event)" />
     }
 
@@ -198,31 +200,6 @@
       <p class="text-[12px]" style="color:var(--color-danger)">{{ saveError() }}</p>
     }
   </div>
-
-  @if (editingId() !== null) {
-    <div class="flex flex-col gap-2 mt-2 pt-4 border-t border-outline-variant">
-      <h3 class="text-[13px] font-semibold text-on-surface-variant">
-        {{ 'COST.EMPLOYEE_COST.HISTORY_TITLE' | translate }}
-      </h3>
-      @if (loadingAudit()) {
-        <p class="text-[12px] text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.LOADING' | translate }}</p>
-      } @else if (auditTrail().length === 0) {
-        <p class="text-[12px] text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.HISTORY_EMPTY' | translate }}</p>
-      } @else {
-        <daf-data-table [columns]="auditColumns()" [rows]="auditTrail()" [config]="tableConfig()">
-          <ng-template dafCell="timestampUtc" let-row>
-            {{ fmtDateTime(row['timestampUtc']) }}
-          </ng-template>
-          <ng-template dafCell="transition" let-row>
-            {{ row['statutAvant'] ?? '—' }} → {{ row['statutApres'] ?? '—' }}
-          </ng-template>
-          <ng-template dafCell="details" let-row>
-            {{ formatAuditDetails(row['metadata']) }}
-          </ng-template>
-        </daf-data-table>
-      }
-    </div>
-  }
 
   <div class="flex justify-end gap-2 mt-6">
     <daf-button [options]="{ variant: 'secondary', label: ('COST.EMPLOYEE_COST.CANCEL' | translate) }"

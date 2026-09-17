@@ -1,10 +1,14 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ViewChild, TemplateRef } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
-import { FormsModule }                        from '@angular/forms';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
 import { forkJoin, Observable, switchMap }    from 'rxjs';
 import {
-  DataTableComponent, DafCellDirective, TableColumn, TableConfig,
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableAction, TableRow,
+  PageComponent, PageHeaderComponent, MetricCardComponent, MetricCardOptions,
+  TabsComponent, TabItem, PaginationComponent,
+  StatusBadgeComponent, BadgeVariant,
+  FormFieldComponent,
+  ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService,
@@ -15,21 +19,25 @@ import {
 // (submitted directly at creation), so validating/returning one goes through the
 // ordinary invoicing lifecycle endpoints instead of BillingService.
 import { InvoiceService } from '../../invoicing/invoice.service';
-import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
-type ActiveTab = 'rf' | 'df' | 'history';
+import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
+type ActiveTab = 'df' | 'history';
 
-const LINE_STATUT: Record<string, { bg: string; color: string; border: string }> = {
-  EN_ATTENTE_DF: { bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-  VALIDE_DF:     { bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },
-  FACTURE:       { bg: '#d1fae5', color: '#065f46', border: '#34d399' },
-  RETOURNE:      { bg: '#ffedd5', color: '#9a3412', border: '#fdba74' },
-  ANNULE:        { bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+const LINE_STATUT_VARIANT: Record<string, BadgeVariant> = {
+  EN_ATTENTE_DF: 'warning',
+  VALIDE_DF:     'info',
+  FACTURE:       'success',
+  RETOURNE:      'secondary',
+  ANNULE:        'danger',
 };
 
 @Component({
   selector: 'app-approval-queue',
   standalone: true,
-  imports: [RouterLink, FormsModule, TranslatePipe, DataTableComponent, DafCellDirective],
+  imports: [
+    RouterLink, TranslatePipe, DataTableComponent, DafCellDirective,
+    PageComponent, PageHeaderComponent, MetricCardComponent,
+    TabsComponent, StatusBadgeComponent, FormFieldComponent, PaginationComponent,
+  ],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
 })
@@ -39,18 +47,15 @@ export class ApprovalQueueComponent implements OnInit {
   private readonly translate  = inject(TranslateService);
   private readonly router     = inject(Router);
   private readonly route      = inject(ActivatedRoute);
+  private readonly modal      = inject(ModalService);
 
-  readonly tabs = computed<{ key: ActiveTab; label: string; icon: string }[]>(() => {
-    this.translate.currentLang();
-    return [
-      { key: 'rf',      label: this.translate.instant('AFFAIRES.billing.approval.tab_rf'),      icon: 'approval' },
-      { key: 'df',      label: this.translate.instant('AFFAIRES.billing.approval.tab_df'),      icon: 'task_alt' },
-      { key: 'history', label: this.translate.instant('AFFAIRES.billing.approval.tab_history'), icon: 'history'  },
-    ];
-  });
+  @ViewChild('rfRefuseTpl') private rfRefuseTpl!: TemplateRef<unknown>;
+  @ViewChild('dfRetourTpl') private dfRetourTpl!: TemplateRef<unknown>;
 
-  activeTab   = signal<ActiveTab>('rf');
-  rfLoading   = signal(false);
+  // Mirrors first-load skeleton pattern used elsewhere (see CostApprovalQueueComponent) —
+  // only the very first fetch shows the daf-page skeleton, tab switches never do.
+  firstLoad   = signal(true);
+  activeTab   = signal<ActiveTab>('df');
   dfLoading   = signal(false);
   histLoading = signal(false);
 
@@ -61,15 +66,32 @@ export class ApprovalQueueComponent implements OnInit {
   pendingCreditNotes     = signal<PendingCreditNoteDto[]>([]);
   auditLog      = signal<AuditLogEntryDto[]>([]);
 
-  showRfRefuseModal = signal(false);
-  rfRefuseMotif     = '';
+  rfRefuseMotif = signal('');
+  rfRefuseError = signal<string | null>(null);
+  private rfRefuseRef?: ModalRef;
   private rfRefuseId   = 0;
-  private rfRefuseType: 'taux' | 'jalon' = 'taux';
 
-  showDfRetourModal = signal(false);
-  dfRetourMotif     = '';
+  dfRetourMotif = signal('');
+  dfRetourError = signal<string | null>(null);
+  private dfRetourRef?: ModalRef;
   private dfRetourEntityId = 0;
   private dfRetourType: 'line' | 'livrableBatch' | 'creditNote' = 'line';
+
+  readonly kpiRfOptions: MetricCardOptions = { icon: 'pending_actions', iconBg: 'bg-warning/10', iconColor: 'text-warning' };
+  readonly kpiDfOptions: MetricCardOptions = { icon: 'task_alt', iconBg: 'bg-tertiary/10', iconColor: 'text-tertiary' };
+  readonly kpiHistoryOptions: MetricCardOptions = { icon: 'history', iconBg: 'bg-teal/10', iconColor: 'text-teal' };
+
+  readonly dfCount = computed(() =>
+    this.pendingTaux().length + this.pendingLines().length + this.pendingLivrableBatches().length + this.pendingCreditNotes().length
+  );
+
+  readonly tabItems = computed<TabItem[]>(() => {
+    this.translate.currentLang();
+    return [
+      { id: 'df',      label: this.translate.instant('AFFAIRES.billing.approval.tab_df'),      icon: 'task_alt', count: this.dfCount() || null },
+      { id: 'history', label: this.translate.instant('AFFAIRES.billing.approval.tab_history'), icon: 'history' },
+    ];
+  });
 
   // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
   readonly tauxColumns = computed<TableColumn[]>(() => {
@@ -79,7 +101,6 @@ export class ApprovalQueueComponent implements OnInit {
       { key: 'taux',    label: this.translate.instant('AFFAIRES.billing.approval.col_taux'),    type: 'custom', align: 'right' },
       { key: 'valeur',  label: this.translate.instant('AFFAIRES.billing.approval.col_valeur'),  type: 'custom', align: 'right' },
       { key: 'soumis',  label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),  type: 'custom' },
-      { key: '_actions',label: '',                                                              type: 'custom', align: 'right', width: '180px' },
     ];
   });
 
@@ -96,30 +117,15 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
-  // ── daf-data-table: Jalons (RF) ──────────────────────────────────────────────
-  readonly jalonColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    return [
-      { key: 'affaire',  label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),  type: 'custom' },
-      { key: 'label',    label: this.translate.instant('AFFAIRES.billing.approval.col_jalon'),    type: 'text' },
-      { key: 'montant',  label: this.translate.instant('AFFAIRES.billing.approval.col_montant'),  type: 'custom', align: 'right' },
-      { key: 'echeance', label: this.translate.instant('AFFAIRES.billing.approval.col_echeance'), type: 'custom' },
-      { key: '_actions', label: '',                                                               type: 'custom', align: 'right', width: '180px' },
-    ];
+  tauxPage     = signal(0);
+  tauxPageSize = signal(10);
+  readonly tauxTotalPages = computed(() => Math.ceil(this.tauxRows().length / this.tauxPageSize()));
+  readonly pagedTauxRows = computed(() => {
+    const rows = this.tauxRows();
+    const size = this.tauxPageSize();
+    const page = Math.min(this.tauxPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
+    return rows.slice(page * size, page * size + size);
   });
-
-  readonly jalonRows = computed(() =>
-    this.pendingJalons().map(j => ({
-      id:              j.id,
-      affaireId:       j.affaireId,
-      affaireRef:      j.affaireRef,
-      affaireIntitule: j.affaireIntitule,
-      label:           j.label,
-      montant:         this.fmtAmt(j.montant),
-      echeance:        this.fmtDate(j.datePrevisionnelle),
-      _raw:            j,
-    }))
-  );
 
   // ── daf-data-table: Billing lines (DF) ───────────────────────────────────────
   readonly lineColumns = computed<TableColumn[]>(() => {
@@ -131,7 +137,6 @@ export class ApprovalQueueComponent implements OnInit {
       { key: 'montantHt', label: this.translate.instant('AFFAIRES.billing.approval.col_montant_ht'), type: 'custom', align: 'right' },
       { key: 'mode',      label: this.translate.instant('AFFAIRES.billing.approval.col_mode'),        type: 'custom' },
       { key: 'statut',    label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),      type: 'custom' },
-      { key: '_actions',  label: '',                                                                  type: 'custom', align: 'right', width: '200px' },
     ];
   });
 
@@ -150,6 +155,16 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  linePage     = signal(0);
+  linePageSize = signal(10);
+  readonly lineTotalPages = computed(() => Math.ceil(this.lineRows().length / this.linePageSize()));
+  readonly pagedLineRows = computed(() => {
+    const rows = this.lineRows();
+    const size = this.linePageSize();
+    const page = Math.min(this.linePage(), Math.max(0, Math.ceil(rows.length / size) - 1));
+    return rows.slice(page * size, page * size + size);
+  });
+
   // ── daf-data-table: Livrable batches (DF) ────────────────────────────────────
   readonly livrableBatchColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -158,7 +173,6 @@ export class ApprovalQueueComponent implements OnInit {
       { key: 'documents',   label: this.translate.instant('AFFAIRES.billing.approval.col_documents'), type: 'custom', align: 'right' },
       { key: 'montant',     label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
       { key: 'billingDate', label: this.translate.instant('AFFAIRES.billing.approval.col_date'), type: 'custom' },
-      { key: '_actions',    label: '',                                                             type: 'custom', align: 'right', width: '200px' },
     ];
   });
 
@@ -175,6 +189,16 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  livrableBatchPage     = signal(0);
+  livrableBatchPageSize = signal(10);
+  readonly livrableBatchTotalPages = computed(() => Math.ceil(this.livrableBatchRows().length / this.livrableBatchPageSize()));
+  readonly pagedLivrableBatchRows = computed(() => {
+    const rows = this.livrableBatchRows();
+    const size = this.livrableBatchPageSize();
+    const page = Math.min(this.livrableBatchPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
+    return rows.slice(page * size, page * size + size);
+  });
+
   // ── daf-data-table: Credit notes / avoirs (DF) ───────────────────────────────
   readonly creditNoteColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -184,7 +208,6 @@ export class ApprovalQueueComponent implements OnInit {
       { key: 'montant',   label: this.translate.instant('AFFAIRES.billing.approval.col_montant'),  type: 'custom', align: 'right' },
       { key: 'motif',     label: this.translate.instant('AFFAIRES.billing.approval.col_motif'),    type: 'custom' },
       { key: 'soumis',    label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),   type: 'custom' },
-      { key: '_actions',  label: '',                                                               type: 'custom', align: 'right', width: '180px' },
     ];
   });
 
@@ -203,6 +226,16 @@ export class ApprovalQueueComponent implements OnInit {
       _raw:            cn,
     }))
   );
+
+  creditNotePage     = signal(0);
+  creditNotePageSize = signal(10);
+  readonly creditNoteTotalPages = computed(() => Math.ceil(this.creditNoteRows().length / this.creditNotePageSize()));
+  readonly pagedCreditNoteRows = computed(() => {
+    const rows = this.creditNoteRows();
+    const size = this.creditNotePageSize();
+    const page = Math.min(this.creditNotePage(), Math.max(0, Math.ceil(rows.length / size) - 1));
+    return rows.slice(page * size, page * size + size);
+  });
 
   // ── daf-data-table: Audit history ────────────────────────────────────────────
   readonly historyColumns = computed<TableColumn[]>(() => {
@@ -227,9 +260,100 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  historyPage     = signal(0);
+  historyPageSize = signal(10);
+  readonly historyTotalPages = computed(() => Math.ceil(this.historyRows().length / this.historyPageSize()));
+  readonly pagedHistoryRows = computed(() => {
+    const rows = this.historyRows();
+    const size = this.historyPageSize();
+    const page = Math.min(this.historyPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
+    return rows.slice(page * size, page * size + size);
+  });
+
   readonly tableConfig = computed<TableConfig>(() => ({ hoverable: true }));
 
-  ngOnInit(): void { this.loadRF(); }
+  // ── Row action buttons — rendered as icon buttons in a trailing column by
+  // daf-data-table itself (config.actions), same as the library demo's table. ──
+  private validateAction(onClick: (row: TableRow) => void): TableAction {
+    return {
+      id: 'validate', icon: 'check_circle',
+      tooltip: this.translate.instant('AFFAIRES.billing.approval.validate'),
+      onClick,
+    };
+  }
+
+  private refuseAction(onClick: (row: TableRow) => void): TableAction {
+    return {
+      id: 'refuse', icon: 'block', variant: 'danger',
+      tooltip: this.translate.instant('AFFAIRES.billing.approval.refuse'),
+      onClick,
+    };
+  }
+
+  private returnAction(onClick: (row: TableRow) => void): TableAction {
+    return {
+      id: 'return', icon: 'undo',
+      tooltip: this.translate.instant('AFFAIRES.billing.approval.return'),
+      onClick,
+    };
+  }
+
+  readonly tauxTableConfig = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return {
+      hoverable: true,
+      actions: [
+        this.validateAction(row => this.doValidateTaux(row['id'])),
+        this.refuseAction(row => this.openRfRefuseModal(row['id'])),
+      ],
+    };
+  });
+
+  readonly lineTableConfig = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return {
+      hoverable: true,
+      actions: [
+        this.validateAction(row => this.doValidateDF(row['id'])),
+        this.returnAction(row => this.openDfRetourModal(row['id'])),
+      ],
+    };
+  });
+
+  readonly livrableBatchTableConfig = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return {
+      hoverable: true,
+      actions: [
+        this.validateAction(row => this.doValidateLivrableBatch(row['id'])),
+        this.returnAction(row => this.openDfRetourModal(row['id'], 'livrableBatch')),
+      ],
+    };
+  });
+
+  readonly creditNoteTableConfig = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return {
+      hoverable: true,
+      actions: [
+        this.validateAction(row => this.doValidateCreditNote(row['id'])),
+        this.returnAction(row => this.openDfRetourModal(row['id'], 'creditNote')),
+      ],
+    };
+  });
+
+  ngOnInit(): void {
+    // Jalons no longer have a tab of their own, but the "En attente RF" KPI still
+    // needs a count — fetched once here, independent of which tab is active.
+    this.loadRF();
+    this.loadDF();
+  }
+
+  onTabChange(id: string): void {
+    const tab = id as ActiveTab;
+    this.activeTab.set(tab);
+    this.setTab(tab);
+  }
 
   /**
    * Row click on any of the three tables opens the detail page for that item.
@@ -240,7 +364,7 @@ export class ApprovalQueueComponent implements OnInit {
    * leading `..` here overshoots past `approval` to `billing`, producing `billing/taux/1`
    * instead of `billing/approval/taux/1` (a 404) — confirmed live 2026-08-24.
    */
-  openDetail(row: { id: number }, type: 'taux' | 'jalon' | 'line' | 'livrable'): void {
+  openDetail(row: { id: number }, type: 'taux' | 'line' | 'livrable'): void {
     this.router.navigate([type, String(row.id)], { relativeTo: this.route });
   }
 
@@ -253,17 +377,13 @@ export class ApprovalQueueComponent implements OnInit {
 
   setTab(tab: ActiveTab): void {
     this.activeTab.set(tab);
-    if (tab === 'rf')      this.loadRF();
     if (tab === 'df')      this.loadDF();
     if (tab === 'history') this.loadHistory();
   }
 
+  /** Feeds only the "En attente RF" KPI now — jalons have no tab of their own. */
   private loadRF(): void {
-    this.rfLoading.set(true);
-    this.svc.getPendingJalons().subscribe({
-      next:  j => { this.pendingJalons.set(j); this.rfLoading.set(false); },
-      error: () => this.rfLoading.set(false),
-    });
+    this.svc.getPendingJalons().subscribe({ next: j => this.pendingJalons.set(j) });
   }
 
   // AV taux live here now, not under RF — validating one is a DF action (see
@@ -282,8 +402,9 @@ export class ApprovalQueueComponent implements OnInit {
         this.pendingLines.set(lines);
         this.pendingCreditNotes.set(creditNotes);
         this.dfLoading.set(false);
+        this.firstLoad.set(false);
       },
-      error: () => this.dfLoading.set(false),
+      error: () => { this.dfLoading.set(false); this.firstLoad.set(false); },
     });
   }
 
@@ -309,29 +430,31 @@ export class ApprovalQueueComponent implements OnInit {
     });
   }
 
-  doValidateJalon(id: number): void {
-    this.svc.validateJalon(id).subscribe({ next: () => this.loadRF() });
-  }
-
-  openRfRefuseModal(id: number, type: 'taux' | 'jalon'): void {
+  openRfRefuseModal(id: number): void {
     this.rfRefuseId   = id;
-    this.rfRefuseType = type;
-    this.rfRefuseMotif = '';
-    this.showRfRefuseModal.set(true);
+    this.rfRefuseMotif.set('');
+    this.rfRefuseError.set(null);
+    this.rfRefuseRef = this.modal.open({
+      title: this.translate.instant('AFFAIRES.billing.approval.modal_refuse_title'),
+      body: this.rfRefuseTpl,
+      size: 'sm',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: this.translate.instant('AFFAIRES.billing.approval.modal_cancel'),     variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('AFFAIRES.billing.approval.modal_refuse_btn'), variant: 'primary',   action: () => this.submitRfRefuse() },
+      ],
+    });
   }
 
   submitRfRefuse(): void {
-    if (!this.rfRefuseMotif.trim()) return;
-    const motif = this.rfRefuseMotif.trim();
-    if (this.rfRefuseType === 'taux') {
-      this.svc.refuseTaux(this.rfRefuseId, motif).subscribe({
-        next: () => { this.showRfRefuseModal.set(false); this.loadDF(); },
-      });
-    } else {
-      this.svc.refuseJalon(this.rfRefuseId, motif).subscribe({
-        next: () => { this.showRfRefuseModal.set(false); this.loadRF(); },
-      });
+    const motif = this.rfRefuseMotif().trim();
+    if (!motif) {
+      this.rfRefuseError.set(this.translate.instant('AFFAIRES.billing.approval.modal_motif_required'));
+      return;
     }
+    this.svc.refuseTaux(this.rfRefuseId, motif).subscribe({
+      next: () => { this.rfRefuseRef?.close(); this.loadDF(); },
+    });
   }
 
   doValidateDF(lineId: number): void {
@@ -383,13 +506,26 @@ export class ApprovalQueueComponent implements OnInit {
   openDfRetourModal(entityId: number, type: 'line' | 'livrableBatch' | 'creditNote' = 'line'): void {
     this.dfRetourEntityId = entityId;
     this.dfRetourType = type;
-    this.dfRetourMotif = '';
-    this.showDfRetourModal.set(true);
+    this.dfRetourMotif.set('');
+    this.dfRetourError.set(null);
+    this.dfRetourRef = this.modal.open({
+      title: this.translate.instant('AFFAIRES.billing.approval.modal_return_title'),
+      body: this.dfRetourTpl,
+      size: 'sm',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: this.translate.instant('AFFAIRES.billing.approval.modal_cancel'),  variant: 'secondary', action: r => r.close() },
+        { label: this.translate.instant('AFFAIRES.billing.approval.modal_confirm'), variant: 'primary',   action: () => this.submitDfRetour() },
+      ],
+    });
   }
 
   submitDfRetour(): void {
-    if (!this.dfRetourMotif.trim()) return;
-    const motif = this.dfRetourMotif.trim();
+    const motif = this.dfRetourMotif().trim();
+    if (!motif) {
+      this.dfRetourError.set(this.translate.instant('AFFAIRES.billing.approval.modal_motif_required'));
+      return;
+    }
     // Typed Observable<unknown> rather than letting each branch's own return type stand —
     // a union of BillingLineDto/LivrableBatchDto/void observables isn't callable in this
     // TS/RxJS combination (differently-parameterized Observable overloads don't unify),
@@ -400,14 +536,16 @@ export class ApprovalQueueComponent implements OnInit {
       ? this.invoiceSvc.approve(this.dfRetourEntityId, { decision: 'RETURN', comment: motif })
       : this.svc.returnDF(this.dfRetourEntityId, motif);
     request$.subscribe({
-      next: () => { this.showDfRetourModal.set(false); this.loadDF(); },
+      next: () => { this.dfRetourRef?.close(); this.loadDF(); },
     });
   }
 
-  lineCfg(statut: string) {
-    const c = LINE_STATUT[statut];
-    if (!c) return { label: statut, bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
-    return { ...c, label: this.translate.instant('AFFAIRES.billing.status.' + statut) };
+  lineBadgeVariant(statut: string): BadgeVariant {
+    return LINE_STATUT_VARIANT[statut] ?? 'neutral';
+  }
+
+  lineStatusLabel(statut: string): string {
+    return this.translate.instant('AFFAIRES.billing.status.' + statut);
   }
 
   /** `creditNoteReason` holds one of CREDIT_NOTE_REASONS' codes (see

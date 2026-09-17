@@ -1,0 +1,112 @@
+<daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true"
+          [loadingLabel]="'COST.EMPLOYEE_COST.LOADING' | translate">
+
+  <!-- Hand-rolled identity row (avatar + breadcrumb), not `daf-page-header` — its own
+       title `<h1>` stays in the DOM even with `[title]="''"`, reserving vertical space
+       below the breadcrumb that pushes it off-centre against the avatar. Same
+       breadcrumb markup/classes as PageHeaderComponent's own template, so it still
+       looks and behaves like every other breadcrumb in the app (clickable crumb,
+       chevron separator, current page non-interactive). -->
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <daf-avatar [data]="avatarData()" size="lg" />
+      <nav [attr.aria-label]="'COST.EMPLOYEE_COST.HISTORY_BREADCRUMB_ARIA' | translate"
+           class="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[12px] leading-4 text-outline">
+        @for (crumb of breadcrumbs(); track $index; let last = $last; let first = $first) {
+          @if (!first) {
+            <span class="material-symbols-outlined text-[14px] leading-4 text-outline-variant"
+                  aria-hidden="true">chevron_right</span>
+          }
+          @if (last) {
+            <span aria-current="page" class="text-on-surface-variant font-medium">{{ crumb.label }}</span>
+          } @else if (crumb.link) {
+            <a [routerLink]="crumb.link" class="hover:text-tertiary transition-colors">{{ crumb.label }}</a>
+          }
+        }
+      </nav>
+    </div>
+    <daf-button
+      [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !flatRows().length }"
+      (onClick)="exportHistoryExcel()" />
+  </div>
+
+  <div class="flex flex-col gap-6">
+
+    <daf-search-toolbar
+      [placeholder]="'COST.EMPLOYEE_COST.HISTORY_SEARCH_PLACEHOLDER' | translate"
+      [value]="historySearch()"
+      [debounce]="200"
+      (valueChange)="onHistorySearch($event)"
+      [filterFields]="historyFilterFields()"
+      [filterConfig]="historyFilterConfig()"
+      (filterApply)="onHistoryFilterApply($event)"
+      (filterReset)="resetHistoryFilters()"
+      [views]="viewOptions()"
+      [view]="viewMode()"
+      (viewChange)="onViewChange($any($event))" />
+
+    @if (loadError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ loadError() }}
+      </div>
+    }
+
+    @if (!loading() && historyTotalElements() === 0) {
+      <p class="text-[13px] text-on-surface-variant">{{ 'COST.EMPLOYEE_COST.HISTORY_EMPTY' | translate }}</p>
+    } @else if (!loading() && viewMode() === 'timeline') {
+      <!-- Timeline — one block per audit event, its field changes as a bullet list
+           underneath, so an UPDATE that touched several fields at once reads as ONE
+           event instead of several visually-unrelated rows (see the .ts file's class
+           doc comment for why this is the default over a flat table). -->
+      <div class="flex flex-col gap-3">
+        @for (ev of pagedEvents(); track $index) {
+          <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md' }">
+            <div class="flex items-center gap-2 text-[13px] font-semibold text-on-surface">
+              <span class="material-symbols-outlined text-[16px] text-primary">history</span>
+              {{ eventHeader(ev) }}
+            </div>
+            <p class="pl-7 mt-1 text-[12px] text-on-surface-variant">
+              {{ 'COST.EMPLOYEE_COST.DATE_FIN' | translate }} : {{ ev.expirationDate }}
+            </p>
+            @if (ev.diffs.length) {
+              <ul class="flex flex-col gap-1 pl-7 mt-2 list-disc text-[13px] text-on-surface-variant">
+                @for (d of ev.diffs; track d.label) {
+                  <li>{{ d.label }} : {{ d.before }} → {{ d.after }}</li>
+                }
+              </ul>
+            } @else if (ev.statusChange) {
+              <ul class="flex flex-col gap-1 pl-7 mt-2 list-disc text-[13px] text-on-surface-variant">
+                <li>{{ 'COST.EMPLOYEE_COST.HISTORY_COL_STATUS' | translate }} : {{ ev.statusChange }}</li>
+              </ul>
+            } @else {
+              <p class="pl-7 mt-2 text-[13px] text-on-surface-variant">—</p>
+            }
+          </daf-card>
+        }
+      </div>
+    } @else if (!loading()) {
+      <!-- Table view — one row per EVENT, "Coût"/"Coût de vente interne"/"Coût de vente
+           externe" showing the resulting cost snapshot on every row (see TimelineEvent's
+           own doc comment in the .ts file). All plain text columns, no custom cells. -->
+      <daf-data-table [columns]="auditColumns()" [rows]="tableRows()" [config]="tableConfig()" />
+    }
+
+    @if (!loading() && historyTotalElements() > 0) {
+      <daf-pagination
+        [currentPage]="historyPage()"
+        [totalPages]="historyTotalPages()"
+        [totalElements]="historyTotalElements()"
+        [pageSize]="historySize()"
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+        [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+        [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+        [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+        (pageChange)="goToHistoryPage($event)"
+        (pageSizeChange)="onHistoryPageSize($event)" />
+    }
+
+  </div>
+
+</daf-page>

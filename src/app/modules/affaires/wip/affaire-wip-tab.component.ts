@@ -10,7 +10,7 @@ import {
   StepperComponent, StepperStep, StepperConfig,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
   SearchToolbarComponent, StatusBadgeComponent, FilterField, FilterResult,
-  AccordionCardComponent,
+  AccordionCardComponent, PaginationComponent,
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
 import { WipService } from './wip.service';
@@ -31,7 +31,7 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
   imports: [
     TranslatePipe, ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent, StepperComponent,
     DataTableComponent, DafCellDirective, DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
-    SearchToolbarComponent, StatusBadgeComponent, AccordionCardComponent,
+    SearchToolbarComponent, StatusBadgeComponent, AccordionCardComponent, PaginationComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-wip-tab.component.html',
@@ -78,6 +78,15 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
       height: 38px;
       padding-top: 6px;
       padding-bottom: 6px;
+    }
+
+    /* TEST : daf-pagination place le résumé "1–20 sur 137" à gauche (justify-between,
+       premier enfant) et les contrôles de page + sélecteur "par page" à droite (second
+       enfant). On veut l'inverse : row-reverse sur son unique <div> racine inverse
+       l'ordre visuel des deux (justify-between s'applique toujours, juste à l'ordre
+       inversé), sans devoir recopier le template de la lib. */
+    ::ng-deep .wip-pagination > div {
+      flex-direction: row-reverse;
     }
 
     /* Champ "Nouveau %" du tableau Livrable : les flèches haut/bas natives du navigateur
@@ -135,6 +144,36 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   showHistoryPage = signal(false);
   historySearch = signal('');
   historyStatut = signal('');
+
+  /** TEST : pagination daf-pagination de la lib sur les popups "Historique" (Régie et
+   * Livrable) — partagée entre les deux comme historySearch/historyStatut ci-dessus
+   * (une seule popup affichée à la fois, selon le mode). `currentPage` de daf-pagination
+   * est 0-indexé. */
+  historyPage = signal(0);
+  historyPageSize = signal(20);
+
+  /** Recherche/filtre/ouverture de la popup Historique repassent tous par ici pour
+   * remettre `historyPage` à 0 — sinon une page 3 restait affichée après une recherche
+   * qui ne renvoie qu'une page de résultats. */
+  onHistorySearchChange(value: string): void {
+    this.historySearch.set(value);
+    this.historyPage.set(0);
+  }
+
+  onHistoryStatutReset(): void {
+    this.historyStatut.set('');
+    this.historyPage.set(0);
+  }
+
+  openHistoryPage(): void {
+    this.historyPage.set(0);
+    this.showHistoryPage.set(true);
+  }
+
+  onHistoryPageSizeChange(size: number): void {
+    this.historyPageSize.set(size);
+    this.historyPage.set(0);
+  }
 
   private readonly now = new Date();
   // AV only — defaults to the current calendar month as a starting point, same as TM's
@@ -424,6 +463,17 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
 
   readonly filteredLivrableHistoryRows = computed<TableRow[]>(() =>
     this.filteredLivrableHistory().map(l => this.toLivrableHistoryRow(l)));
+
+  /** TEST : même pagination daf-pagination que la popup Régie — voir historyTotalPages/
+   * paginatedHistoryRows plus bas, mêmes signaux historyPage/historyPageSize partagés. */
+  readonly livrableHistoryTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredLivrableHistoryRows().length / this.historyPageSize())));
+
+  readonly paginatedLivrableHistoryRows = computed<TableRow[]>(() => {
+    const size = this.historyPageSize();
+    const page = Math.min(this.historyPage(), this.livrableHistoryTotalPages() - 1);
+    return this.filteredLivrableHistoryRows().slice(page * size, page * size + size);
+  });
 
   /** Même bibliothèque (xlsx) et même schéma d'export que exportHistoryExcel() — appelé
    * depuis la carte (livrableHistory, tout) et depuis la popup (filteredLivrableHistory). */
@@ -1149,6 +1199,16 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly filteredHistoryRows = computed<TableRow[]>(() =>
     this.filteredHistoryLines().map(l => this.toHistoryRow(l)));
 
+  /** TEST : pagination daf-pagination — voir historyPage/historyPageSize plus haut. */
+  readonly historyTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredHistoryRows().length / this.historyPageSize())));
+
+  readonly paginatedHistoryRows = computed<TableRow[]>(() => {
+    const size = this.historyPageSize();
+    const page = Math.min(this.historyPage(), this.historyTotalPages() - 1);
+    return this.filteredHistoryRows().slice(page * size, page * size + size);
+  });
+
   /** Même bibliothèque (xlsx) et même schéma d'export que exportWipExcel() ci-dessus —
    * appelé depuis la carte (tmHistory, tout) et depuis la popup (filteredHistoryLines). */
   exportHistoryExcel(lines: LineDetailDto[]): void {
@@ -1175,6 +1235,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
 
   onHistoryFilterApply(result: FilterResult): void {
     this.historyStatut.set(this.asFilterValue(result, 'statut'));
+    this.historyPage.set(0);
   }
 
   /** Local calendar date -> 'yyyy-MM-dd', deliberately not toISOString() (UTC-based, which

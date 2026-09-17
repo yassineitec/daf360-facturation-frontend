@@ -4,27 +4,6 @@
     [title]="'COST.PAGE.TITLE' | translate"
     [subtitle]="'COST.PAGE.SUBTITLE' | translate" />
 
-  <!-- daf-tabs is strip-only — the consumer renders the panel. Active tab in ?tab=. -->
-  <daf-tabs #tabsRef
-    [tabs]="tabs()"
-    [(active)]="activeTab"
-    idPrefix="cost" />
-
-  <div role="tabpanel"
-       [id]="tabsRef.panelId(activeTab())"
-       [attr.aria-labelledby]="tabsRef.tabId(activeTab())">
-    @switch (activeTab()) {
-      @case ('lines')     { <app-cost-lines /> }
-      @case ('approvals') { <app-approval-queue /> }
-      @default {
-        <!-- Config keeps its own two-column layout: a settings form on the left and the
-             CSV import panel on the right. -->
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <div class="xl:col-span-2"><app-cost-config /></div>
-          <div><app-cost-import-panel [paysId]="paysId()" /></div>
-        </div>
-      }
-    }
-  </div>
+  <app-cost-lines />
 
 </daf-page>

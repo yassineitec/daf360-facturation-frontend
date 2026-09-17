@@ -1,476 +1,358 @@
-<div class="aq-page">
+<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'AFFAIRES.billing.approval.title' | translate">
 
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
-  <div class="aq-header">
-    <div>
-      <h3 class="aq-header__title">{{ 'AFFAIRES.billing.approval.title' | translate }}</h3>
-      <p class="aq-header__sub">{{ 'AFFAIRES.billing.approval.subtitle' | translate }}</p>
-    </div>
-    <div class="aq-header__actions">
-      <a routerLink="/fact/affaires" class="aq-back-btn">
-        <span class="material-symbols-outlined">arrow_back</span>
-        {{ 'AFFAIRES.billing.approval.back' | translate }}
-      </a>
-    </div>
-  </div>
+  <daf-page-header
+    [title]="'AFFAIRES.billing.approval.title' | translate"
+    [subtitle]="'AFFAIRES.billing.approval.subtitle' | translate" />
 
   <!-- ── KPI Stats ─────────────────────────────────────────────────────────── -->
-  <div class="kpi-grid">
+  <section class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-6">
+    <daf-metric-card
+      [label]="'AFFAIRES.billing.approval.kpi_rf' | translate"
+      [value]="pendingJalons().length"
+      [options]="kpiRfOptions" />
+    <daf-metric-card
+      [label]="'AFFAIRES.billing.approval.kpi_df' | translate"
+      [value]="dfCount()"
+      [options]="kpiDfOptions" />
+    <daf-metric-card
+      [label]="'AFFAIRES.billing.approval.kpi_history' | translate"
+      [value]="auditLog().length"
+      [delta]="{ value: ('AFFAIRES.billing.approval.kpi_history_sub' | translate), direction: 'neutral' }"
+      [options]="kpiHistoryOptions" />
+  </section>
 
-    <div class="kpi-glass">
-      <div class="kpi-icon-box kpi-icon-box--amber">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">pending_actions</span>
-      </div>
-      <div>
-        <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_rf' | translate }}</p>
-        <h4 class="kpi-value">{{ pendingJalons().length }}</h4>
-      </div>
-    </div>
+  <!-- ── Tabs ──────────────────────────────────────────────────────────────── -->
+  <daf-tabs #tabsRef
+    [tabs]="tabItems()"
+    [active]="activeTab()"
+    (activeChange)="onTabChange($event)"
+    variant="underline"
+    idPrefix="billing-approval"
+    [tabsLabel]="'AFFAIRES.billing.approval.title' | translate" />
 
-    <div class="kpi-glass kpi-glass--indigo">
-      <div class="kpi-icon-box kpi-icon-box--indigo">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">task_alt</span>
-      </div>
-      <div>
-        <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_df' | translate }}</p>
-        <h4 class="kpi-value">{{ pendingTaux().length + pendingLines().length + pendingLivrableBatches().length + pendingCreditNotes().length }}</h4>
-      </div>
-    </div>
+  <div role="tabpanel"
+       [id]="tabsRef.panelId(activeTab())"
+       [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+       class="flex flex-col gap-6">
 
-    <div class="kpi-glass kpi-glass--perf">
-      <div class="kpi-perf-content">
-        <p class="kpi-label">{{ 'AFFAIRES.billing.approval.kpi_history' | translate }}</p>
-        <h4 class="kpi-value">{{ auditLog().length }}</h4>
-        <p class="kpi-perf-sub">{{ 'AFFAIRES.billing.approval.kpi_history_sub' | translate }}</p>
-      </div>
-      <div class="kpi-icon-box kpi-icon-box--teal kpi-icon-box--lg">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">history</span>
-      </div>
-    </div>
+    <!-- ── DF Tab ─────────────────────────────────────────────────────── -->
+    @if (activeTab() === 'df') {
 
-  </div>
+      @if (dfLoading()) {
+        <div class="flex items-center justify-center gap-2 py-16 text-body-md text-on-surface-variant">
+          <span class="material-symbols-outlined animate-spin">progress_activity</span>
+          {{ 'AFFAIRES.billing.approval.loading' | translate }}
+        </div>
+      } @else if (pendingTaux().length === 0 && pendingLines().length === 0 && pendingLivrableBatches().length === 0) {
+        <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+          <span class="material-symbols-outlined text-[32px]">check_circle</span>
+          <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
+        </div>
+      } @else {
 
-  <!-- ── Tabs card ─────────────────────────────────────────────────────────── -->
-  <div class="tabs-card">
+        <!-- Taux d'avancement (AV) — validating one creates its BillingLine and the
+             draft invoice in one shot (ProgressBillingService.validateTaux()). -->
+        @if (pendingTaux().length > 0) {
+          <daf-data-table
+            [columns]="tauxColumns()"
+            [rows]="pagedTauxRows()"
+            [config]="tauxTableConfig()"
+            (rowClick)="openDetail($any($event), 'taux')">
 
-    <!-- Tab bar -->
-    <div class="tabs-bar">
-      @for (tab of tabs(); track tab.key) {
-        <button class="tab-btn" [class.tab-btn--active]="activeTab() === tab.key"
-          (click)="setTab(tab.key)">
-          <span class="material-symbols-outlined">{{ tab.icon }}</span>
-          {{ tab.label }}
-          @if (tab.key === 'rf' && pendingJalons().length > 0) {
-            <span class="tab-badge tab-badge--amber">
-              {{ pendingJalons().length }}
-            </span>
-          }
-          @if (tab.key === 'df' && pendingTaux().length + pendingLines().length + pendingLivrableBatches().length + pendingCreditNotes().length > 0) {
-            <span class="tab-badge tab-badge--indigo">
-              {{ pendingTaux().length + pendingLines().length + pendingLivrableBatches().length + pendingCreditNotes().length }}
-            </span>
-          }
-        </button>
-      }
-    </div>
+            <ng-template dafCell="affaire" let-row>
+              <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                (click)="$event.stopPropagation()">
+                {{ row['affaireRef'] }}
+              </a>
+              <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+            </ng-template>
 
-    <!-- Tab body -->
-    <div class="tab-body">
+            <ng-template dafCell="taux" let-row>
+              <span class="cell-bold">{{ row['taux'] }}%</span>
+            </ng-template>
 
-      <!-- ── RF Tab ─────────────────────────────────────────────────────── -->
-      @if (activeTab() === 'rf') {
+            <ng-template dafCell="valeur" let-row>
+              {{ row['valeur'] }}
+            </ng-template>
 
-        @if (rfLoading()) {
-          <div class="tab-loading">
-            <span class="material-symbols-outlined spin">progress_activity</span>
-            {{ 'AFFAIRES.billing.approval.loading' | translate }}
-          </div>
-        } @else if (pendingJalons().length === 0) {
-          <div class="tab-empty">
-            <span class="material-symbols-outlined">check_circle</span>
-            <p>{{ 'AFFAIRES.billing.approval.empty_rf' | translate }}</p>
-          </div>
-        } @else {
+            <ng-template dafCell="soumis" let-row>
+              <span class="cell-muted">{{ row['soumis'] }}</span>
+            </ng-template>
 
-          <!-- Jalons -->
-          <div class="section-head">
-            <span class="material-symbols-outlined">flag</span>
-            {{ 'AFFAIRES.billing.approval.section_jalons' | translate:{ count: pendingJalons().length } }}
-          </div>
-          <div class="table-wrap">
-            <daf-data-table
-              [columns]="jalonColumns()"
-              [rows]="jalonRows()"
-              [config]="tableConfig()"
-              (rowClick)="openDetail($any($event), 'jalon')">
+          </daf-data-table>
 
-              <ng-template dafCell="affaire" let-row>
-                <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                  (click)="$event.stopPropagation()">
-                  {{ row['affaireRef'] }}
-                </a>
-                <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-              </ng-template>
-
-              <ng-template dafCell="montant" let-row>
-                <span class="cell-bold">{{ row['montant'] }}</span>
-              </ng-template>
-
-              <ng-template dafCell="echeance" let-row>
-                <span class="cell-muted">{{ row['echeance'] }}</span>
-              </ng-template>
-
-              <ng-template dafCell="_actions" let-row>
-                <div class="action-btns">
-                  <button class="act-btn act-btn--green"
-                    (click)="$event.stopPropagation(); doValidateJalon(row['id'])">
-                    <span class="material-symbols-outlined">check_circle</span>
-                    {{ 'AFFAIRES.billing.approval.validate' | translate }}
-                  </button>
-                  <button class="act-btn act-btn--red"
-                    (click)="$event.stopPropagation(); openRfRefuseModal(row['id'], 'jalon')">
-                    <span class="material-symbols-outlined">block</span>
-                    {{ 'AFFAIRES.billing.approval.refuse' | translate }}
-                  </button>
-                </div>
-              </ng-template>
-
-            </daf-data-table>
-          </div>
-
+          <daf-pagination
+            [currentPage]="tauxPage()"
+            [totalPages]="tauxTotalPages()"
+            [totalElements]="tauxRows().length"
+            [pageSize]="tauxPageSize()"
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+            (pageChange)="tauxPage.set($event)"
+            (pageSizeChange)="tauxPageSize.set($event); tauxPage.set(0)" />
         }
-      }
 
-      <!-- ── DF Tab ─────────────────────────────────────────────────────── -->
-      @if (activeTab() === 'df') {
-
-        @if (dfLoading()) {
-          <div class="tab-loading">
-            <span class="material-symbols-outlined spin">progress_activity</span>
-            {{ 'AFFAIRES.billing.approval.loading' | translate }}
+        <!-- Billing lines -->
+        @if (pendingLines().length > 0) {
+          <div class="flex items-center gap-2 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">
+            <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+            {{ 'AFFAIRES.billing.approval.section_lines' | translate:{ count: pendingLines().length } }}
           </div>
-        } @else if (pendingTaux().length === 0 && pendingLines().length === 0 && pendingLivrableBatches().length === 0) {
-          <div class="tab-empty">
-            <span class="material-symbols-outlined">check_circle</span>
-            <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
-          </div>
-        } @else {
+          <daf-data-table
+            [columns]="lineColumns()"
+            [rows]="pagedLineRows()"
+            [config]="lineTableConfig()"
+            (rowClick)="openDetail($any($event), 'line')">
 
-          <!-- Taux d'avancement (AV) — validating one creates its BillingLine and the
-               draft invoice in one shot (ProgressBillingService.validateTaux()). -->
-          @if (pendingTaux().length > 0) {
-            <div class="section-head">
-              <span class="material-symbols-outlined">trending_up</span>
-              {{ 'AFFAIRES.billing.approval.section_taux' | translate:{ count: pendingTaux().length } }}
-            </div>
-            <div class="table-wrap">
-              <daf-data-table
-                [columns]="tauxColumns()"
-                [rows]="tauxRows()"
-                [config]="tableConfig()"
-                (rowClick)="openDetail($any($event), 'taux')">
+            <ng-template dafCell="affaire" let-row>
+              <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                (click)="$event.stopPropagation()">
+                {{ row['affaireRef'] }}
+              </a>
+              <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+            </ng-template>
 
-                <ng-template dafCell="affaire" let-row>
-                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                    (click)="$event.stopPropagation()">
-                    {{ row['affaireRef'] }}
-                  </a>
-                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-                </ng-template>
+            <ng-template dafCell="reference" let-row>
+              <span class="cell-mono">{{ row['reference'] }}</span>
+            </ng-template>
 
-                <ng-template dafCell="taux" let-row>
-                  <span class="cell-bold">{{ row['taux'] }}%</span>
-                </ng-template>
+            <ng-template dafCell="periode" let-row>
+              <span class="cell-muted">{{ row['periode'] || '—' }}</span>
+            </ng-template>
 
-                <ng-template dafCell="valeur" let-row>
-                  {{ row['valeur'] }}
-                </ng-template>
+            <ng-template dafCell="montantHt" let-row>
+              <span class="cell-bold">{{ row['montantHt'] }}</span>
+            </ng-template>
 
-                <ng-template dafCell="soumis" let-row>
-                  <span class="cell-muted">{{ row['soumis'] }}</span>
-                </ng-template>
+            <ng-template dafCell="mode" let-row>
+              <span class="cell-mode">{{ row['mode'] }}</span>
+            </ng-template>
 
-                <ng-template dafCell="_actions" let-row>
-                  <div class="action-btns">
-                    <button class="act-btn act-btn--green"
-                      (click)="$event.stopPropagation(); doValidateTaux(row['id'])">
-                      <span class="material-symbols-outlined">check_circle</span>
-                      {{ 'AFFAIRES.billing.approval.validate' | translate }}
-                    </button>
-                    <button class="act-btn act-btn--red"
-                      (click)="$event.stopPropagation(); openRfRefuseModal(row['id'], 'taux')">
-                      <span class="material-symbols-outlined">block</span>
-                      {{ 'AFFAIRES.billing.approval.refuse' | translate }}
-                    </button>
-                  </div>
-                </ng-template>
+            <ng-template dafCell="statut" let-row>
+              <daf-badge [label]="lineStatusLabel(row['statut'])" [options]="{ variant: lineBadgeVariant(row['statut']) }" />
+            </ng-template>
 
-              </daf-data-table>
-            </div>
-          }
+          </daf-data-table>
 
-          <!-- Billing lines -->
-          @if (pendingLines().length > 0) {
-            <div class="section-head" [class.section-head--mt]="pendingTaux().length > 0">
-              <span class="material-symbols-outlined">receipt_long</span>
-              {{ 'AFFAIRES.billing.approval.section_lines' | translate:{ count: pendingLines().length } }}
-            </div>
-            <div class="table-wrap">
-              <daf-data-table
-                [columns]="lineColumns()"
-                [rows]="lineRows()"
-                [config]="tableConfig()"
-                (rowClick)="openDetail($any($event), 'line')">
-
-                <ng-template dafCell="affaire" let-row>
-                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                    (click)="$event.stopPropagation()">
-                    {{ row['affaireRef'] }}
-                  </a>
-                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="reference" let-row>
-                  <span class="cell-mono">{{ row['reference'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="periode" let-row>
-                  <span class="cell-muted">{{ row['periode'] || '—' }}</span>
-                </ng-template>
-
-                <ng-template dafCell="montantHt" let-row>
-                  <span class="cell-bold">{{ row['montantHt'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="mode" let-row>
-                  <span class="cell-mode">{{ row['mode'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="statut" let-row>
-                  <span class="line-badge"
-                    [style.background]="lineCfg(row['statut']).bg"
-                    [style.color]="lineCfg(row['statut']).color"
-                    [style.border-color]="lineCfg(row['statut']).border">
-                    {{ lineCfg(row['statut']).label }}
-                  </span>
-                </ng-template>
-
-                <ng-template dafCell="_actions" let-row>
-                  <div class="action-btns">
-                    <button class="act-btn act-btn--green"
-                      (click)="$event.stopPropagation(); doValidateDF(row['id'])">
-                      <span class="material-symbols-outlined">check_circle</span>
-                      {{ 'AFFAIRES.billing.approval.validate' | translate }}
-                    </button>
-                    <button class="act-btn act-btn--orange"
-                      (click)="$event.stopPropagation(); openDfRetourModal(row['id'])">
-                      <span class="material-symbols-outlined">undo</span>
-                      {{ 'AFFAIRES.billing.approval.return' | translate }}
-                    </button>
-                  </div>
-                </ng-template>
-
-              </daf-data-table>
-            </div>
-          }
-
-          <!-- Livrable batches -->
-          @if (pendingLivrableBatches().length > 0) {
-            <div class="section-head" [class.section-head--mt]="pendingTaux().length > 0 || pendingLines().length > 0">
-              <span class="material-symbols-outlined">folder_copy</span>
-              {{ 'AFFAIRES.billing.approval.section_livrable_batches' | translate:{ count: pendingLivrableBatches().length } }}
-            </div>
-            <div class="table-wrap">
-              <daf-data-table
-                [columns]="livrableBatchColumns()"
-                [rows]="livrableBatchRows()"
-                [config]="tableConfig()"
-                (rowClick)="openDetail($any($event), 'livrable')">
-
-                <ng-template dafCell="affaire" let-row>
-                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                    (click)="$event.stopPropagation()">
-                    {{ row['affaireRef'] }}
-                  </a>
-                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="documents" let-row>
-                  {{ row['documents'] }}
-                </ng-template>
-
-                <ng-template dafCell="montant" let-row>
-                  <span class="cell-bold">{{ row['montant'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="billingDate" let-row>
-                  <span class="cell-muted">{{ row['billingDate'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="_actions" let-row>
-                  <div class="action-btns">
-                    <button class="act-btn act-btn--green"
-                      (click)="$event.stopPropagation(); doValidateLivrableBatch(row['id'])">
-                      <span class="material-symbols-outlined">check_circle</span>
-                      {{ 'AFFAIRES.billing.approval.validate' | translate }}
-                    </button>
-                    <button class="act-btn act-btn--orange"
-                      (click)="$event.stopPropagation(); openDfRetourModal(row['id'], 'livrableBatch')">
-                      <span class="material-symbols-outlined">undo</span>
-                      {{ 'AFFAIRES.billing.approval.return' | translate }}
-                    </button>
-                  </div>
-                </ng-template>
-
-              </daf-data-table>
-            </div>
-          }
-
-          <!-- Credit notes / avoirs — a real Invoice submitted directly at creation
-               (InvoiceService.createCreditNote), not a BillingLine; validating opens the
-               ordinary invoice detail page and calls the invoicing approve+emit endpoints
-               (see ApprovalQueueComponent.doValidateCreditNote). -->
-          @if (pendingCreditNotes().length > 0) {
-            <div class="section-head" [class.section-head--mt]="pendingTaux().length > 0 || pendingLines().length > 0 || pendingLivrableBatches().length > 0">
-              <span class="material-symbols-outlined">receipt_long</span>
-              {{ 'AFFAIRES.billing.approval.section_credit_notes' | translate:{ count: pendingCreditNotes().length } }}
-            </div>
-            <div class="table-wrap">
-              <daf-data-table
-                [columns]="creditNoteColumns()"
-                [rows]="creditNoteRows()"
-                [config]="tableConfig()"
-                (rowClick)="openCreditNoteDetail($any($event))">
-
-                <ng-template dafCell="affaire" let-row>
-                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                    (click)="$event.stopPropagation()">
-                    {{ row['affaireRef'] }}
-                  </a>
-                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="reference" let-row>
-                  <span class="cell-mono">{{ row['reference'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="montant" let-row>
-                  <span class="cell-bold">{{ row['montant'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="motif" let-row>
-                  <span class="cell-muted">{{ row['motif'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="soumis" let-row>
-                  <span class="cell-muted">{{ row['soumis'] }}</span>
-                </ng-template>
-
-                <ng-template dafCell="_actions" let-row>
-                  <div class="action-btns">
-                    <button class="act-btn act-btn--green"
-                      (click)="$event.stopPropagation(); doValidateCreditNote(row['id'])">
-                      <span class="material-symbols-outlined">check_circle</span>
-                      {{ 'AFFAIRES.billing.approval.validate' | translate }}
-                    </button>
-                    <button class="act-btn act-btn--orange"
-                      (click)="$event.stopPropagation(); openDfRetourModal(row['id'], 'creditNote')">
-                      <span class="material-symbols-outlined">undo</span>
-                      {{ 'AFFAIRES.billing.approval.return' | translate }}
-                    </button>
-                  </div>
-                </ng-template>
-
-              </daf-data-table>
-            </div>
-          }
-
+          <daf-pagination
+            [currentPage]="linePage()"
+            [totalPages]="lineTotalPages()"
+            [totalElements]="lineRows().length"
+            [pageSize]="linePageSize()"
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+            (pageChange)="linePage.set($event)"
+            (pageSizeChange)="linePageSize.set($event); linePage.set(0)" />
         }
-      }
 
-      <!-- ── History Tab ────────────────────────────────────────────────── -->
-      @if (activeTab() === 'history') {
-
-        @if (histLoading()) {
-          <div class="tab-loading">
-            <span class="material-symbols-outlined spin">progress_activity</span>
-            {{ 'AFFAIRES.billing.approval.loading' | translate }}
+        <!-- Livrable batches -->
+        @if (pendingLivrableBatches().length > 0) {
+          <div class="flex items-center gap-2 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">
+            <span class="material-symbols-outlined text-[18px]">folder_copy</span>
+            {{ 'AFFAIRES.billing.approval.section_livrable_batches' | translate:{ count: pendingLivrableBatches().length } }}
           </div>
-        } @else if (auditLog().length === 0) {
-          <div class="tab-empty">
-            <span class="material-symbols-outlined">history</span>
-            <p>{{ 'AFFAIRES.billing.approval.empty_history' | translate }}</p>
-          </div>
-        } @else {
-          <div class="table-wrap">
-            <daf-data-table
-              [columns]="historyColumns()"
-              [rows]="historyRows()"
-              [config]="tableConfig()">
+          <daf-data-table
+            [columns]="livrableBatchColumns()"
+            [rows]="pagedLivrableBatchRows()"
+            [config]="livrableBatchTableConfig()"
+            (rowClick)="openDetail($any($event), 'livrable')">
 
-              <ng-template dafCell="createdAt" let-row>
-                <span class="cell-muted cell-nowrap">{{ row['createdAt'] }}</span>
-              </ng-template>
+            <ng-template dafCell="affaire" let-row>
+              <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                (click)="$event.stopPropagation()">
+                {{ row['affaireRef'] }}
+              </a>
+              <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+            </ng-template>
 
-              <ng-template dafCell="userNom" let-row>
-                <span class="cell-bold">{{ row['userNom'] }}</span>
-              </ng-template>
+            <ng-template dafCell="documents" let-row>
+              {{ row['documents'] }}
+            </ng-template>
 
-              <ng-template dafCell="action" let-row>
-                <span class="action-chip">{{ row['action'] }}</span>
-              </ng-template>
+            <ng-template dafCell="montant" let-row>
+              <span class="cell-bold">{{ row['montant'] }}</span>
+            </ng-template>
 
-              <ng-template dafCell="entity" let-row>
-                <span class="cell-muted">{{ row['entity'] }}</span>
-              </ng-template>
+            <ng-template dafCell="billingDate" let-row>
+              <span class="cell-muted">{{ row['billingDate'] }}</span>
+            </ng-template>
 
-              <ng-template dafCell="commentaire" let-row>
-                <span class="cell-muted cell-truncate">{{ row['commentaire'] || '—' }}</span>
-              </ng-template>
+          </daf-data-table>
 
-            </daf-data-table>
-          </div>
+          <daf-pagination
+            [currentPage]="livrableBatchPage()"
+            [totalPages]="livrableBatchTotalPages()"
+            [totalElements]="livrableBatchRows().length"
+            [pageSize]="livrableBatchPageSize()"
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+            (pageChange)="livrableBatchPage.set($event)"
+            (pageSizeChange)="livrableBatchPageSize.set($event); livrableBatchPage.set(0)" />
         }
+
+        <!-- Credit notes / avoirs — a real Invoice submitted directly at creation
+             (InvoiceService.createCreditNote), not a BillingLine; validating opens the
+             ordinary invoice detail page and calls the invoicing approve+emit endpoints
+             (see ApprovalQueueComponent.doValidateCreditNote). -->
+        @if (pendingCreditNotes().length > 0) {
+          <div class="flex items-center gap-2 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">
+            <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+            {{ 'AFFAIRES.billing.approval.section_credit_notes' | translate:{ count: pendingCreditNotes().length } }}
+          </div>
+          <daf-data-table
+            [columns]="creditNoteColumns()"
+            [rows]="pagedCreditNoteRows()"
+            [config]="creditNoteTableConfig()"
+            (rowClick)="openCreditNoteDetail($any($event))">
+
+            <ng-template dafCell="affaire" let-row>
+              <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                (click)="$event.stopPropagation()">
+                {{ row['affaireRef'] }}
+              </a>
+              <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+            </ng-template>
+
+            <ng-template dafCell="reference" let-row>
+              <span class="cell-mono">{{ row['reference'] }}</span>
+            </ng-template>
+
+            <ng-template dafCell="montant" let-row>
+              <span class="cell-bold">{{ row['montant'] }}</span>
+            </ng-template>
+
+            <ng-template dafCell="motif" let-row>
+              <span class="cell-muted">{{ row['motif'] }}</span>
+            </ng-template>
+
+            <ng-template dafCell="soumis" let-row>
+              <span class="cell-muted">{{ row['soumis'] }}</span>
+            </ng-template>
+
+          </daf-data-table>
+
+          <daf-pagination
+            [currentPage]="creditNotePage()"
+            [totalPages]="creditNoteTotalPages()"
+            [totalElements]="creditNoteRows().length"
+            [pageSize]="creditNotePageSize()"
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+            (pageChange)="creditNotePage.set($event)"
+            (pageSizeChange)="creditNotePageSize.set($event); creditNotePage.set(0)" />
+        }
+
       }
+    }
 
-    </div><!-- /tab-body -->
+    <!-- ── History Tab ────────────────────────────────────────────────── -->
+    @if (activeTab() === 'history') {
 
-  </div><!-- /tabs-card -->
+      @if (histLoading()) {
+        <div class="flex items-center justify-center gap-2 py-16 text-body-md text-on-surface-variant">
+          <span class="material-symbols-outlined animate-spin">progress_activity</span>
+          {{ 'AFFAIRES.billing.approval.loading' | translate }}
+        </div>
+      } @else if (auditLog().length === 0) {
+        <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+          <span class="material-symbols-outlined text-[32px]">history</span>
+          <p>{{ 'AFFAIRES.billing.approval.empty_history' | translate }}</p>
+        </div>
+      } @else {
+        <daf-data-table
+          [columns]="historyColumns()"
+          [rows]="pagedHistoryRows()"
+          [config]="tableConfig()">
 
-</div><!-- /aq-page -->
+          <ng-template dafCell="createdAt" let-row>
+            <span class="cell-muted cell-nowrap">{{ row['createdAt'] }}</span>
+          </ng-template>
 
-<!-- ── RF Refuse modal ───────────────────────────────────────────────────── -->
-@if (showRfRefuseModal()) {
-  <div class="modal-backdrop" (click)="$event.target === $event.currentTarget && showRfRefuseModal.set(false)">
-    <div class="modal-box">
-      <h3 class="modal-title">{{ 'AFFAIRES.billing.approval.modal_refuse_title' | translate }}</h3>
-      <textarea class="modal-textarea" rows="3" maxlength="500" placeholder="{{ 'AFFAIRES.billing.approval.modal_refuse_placeholder' | translate }}"
-        [(ngModel)]="rfRefuseMotif"></textarea>
-      <div class="modal-footer">
-        <button class="modal-btn modal-btn--cancel" (click)="showRfRefuseModal.set(false)">{{ 'AFFAIRES.billing.approval.modal_cancel' | translate }}</button>
-        <button class="modal-btn modal-btn--danger"
-          [class.modal-btn--disabled]="!rfRefuseMotif.trim()"
-          [disabled]="!rfRefuseMotif.trim()"
-          (click)="submitRfRefuse()">{{ 'AFFAIRES.billing.approval.modal_refuse_btn' | translate }}</button>
+          <ng-template dafCell="userNom" let-row>
+            <span class="cell-bold">{{ row['userNom'] }}</span>
+          </ng-template>
+
+          <ng-template dafCell="action" let-row>
+            <span class="action-chip">{{ row['action'] }}</span>
+          </ng-template>
+
+          <ng-template dafCell="entity" let-row>
+            <span class="cell-muted">{{ row['entity'] }}</span>
+          </ng-template>
+
+          <ng-template dafCell="commentaire" let-row>
+            <span class="cell-muted cell-truncate">{{ row['commentaire'] || '—' }}</span>
+          </ng-template>
+
+        </daf-data-table>
+
+        <daf-pagination
+          [currentPage]="historyPage()"
+          [totalPages]="historyTotalPages()"
+          [totalElements]="historyRows().length"
+          [pageSize]="historyPageSize()"
+          [pageSizeOptions]="[10, 20, 50, 100]"
+          [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+          [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+          [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+          [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+          (pageChange)="historyPage.set($event)"
+          (pageSizeChange)="historyPageSize.set($event); historyPage.set(0)" />
+      }
+    }
+
+  </div><!-- /tabpanel -->
+
+</daf-page>
+
+<!-- ── Modal bodies — projected into ModalService's own host ──────────────────────── -->
+<ng-template #rfRefuseTpl>
+  <div class="flex flex-col gap-4">
+    <daf-form-field
+      [value]="rfRefuseMotif()"
+      (valueChange)="rfRefuseMotif.set($any($event) || '')"
+      [options]="{
+        type: 'textarea', rows: 3, required: true,
+        label: ('AFFAIRES.billing.approval.modal_refuse_title' | translate),
+        placeholder: ('AFFAIRES.billing.approval.modal_refuse_placeholder' | translate)
+      }" />
+    @if (rfRefuseError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ rfRefuseError() }}
       </div>
-    </div>
+    }
   </div>
-}
+</ng-template>
 
-<!-- ── DF Retour modal ───────────────────────────────────────────────────── -->
-@if (showDfRetourModal()) {
-  <div class="modal-backdrop" (click)="$event.target === $event.currentTarget && showDfRetourModal.set(false)">
-    <div class="modal-box">
-      <h3 class="modal-title">{{ 'AFFAIRES.billing.approval.modal_return_title' | translate }}</h3>
-      <textarea class="modal-textarea" rows="3" maxlength="500" placeholder="{{ 'AFFAIRES.billing.approval.modal_return_placeholder' | translate }}"
-        [(ngModel)]="dfRetourMotif"></textarea>
-      <div class="modal-footer">
-        <button class="modal-btn modal-btn--cancel" (click)="showDfRetourModal.set(false)">{{ 'AFFAIRES.billing.approval.modal_cancel' | translate }}</button>
-        <button class="modal-btn modal-btn--primary"
-          [class.modal-btn--disabled]="!dfRetourMotif.trim()"
-          [disabled]="!dfRetourMotif.trim()"
-          (click)="submitDfRetour()">{{ 'AFFAIRES.billing.approval.modal_confirm' | translate }}</button>
+<ng-template #dfRetourTpl>
+  <div class="flex flex-col gap-4">
+    <daf-form-field
+      [value]="dfRetourMotif()"
+      (valueChange)="dfRetourMotif.set($any($event) || '')"
+      [options]="{
+        type: 'textarea', rows: 3, required: true,
+        label: ('AFFAIRES.billing.approval.modal_return_title' | translate),
+        placeholder: ('AFFAIRES.billing.approval.modal_return_placeholder' | translate)
+      }" />
+    @if (dfRetourError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ dfRetourError() }}
       </div>
-    </div>
+    }
   </div>
-}
+</ng-template>

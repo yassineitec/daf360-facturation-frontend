@@ -1,30 +1,34 @@
 <div class="tab-container">
 
-  <!-- Une liste déroulante cherchable, et non plus une bande d'onglets : `pays_ref` porte
-       les 194 pays depuis V75. La bande tenait à onze. -->
-  @if (paysList().length > 1) {
-    <div class="pays-picker">
-      <daf-select
-        [options]="paysOptions()"
-        [config]="paysSelectConfig()"
-        [selected]="paysId() ? [paysId().toString()] : []"
-        (selectedChange)="onPaysSelected($event)" />
-    </div>
-  }
-
   @if (isLoading()) {
     <div class="loading-state">{{ 'COST.CONFIG.LOADING' | translate }}</div>
   } @else if (serverError()) {
     <div class="banner-error">{{ serverError() }}</div>
   } @else {
 
+    <daf-tabs #sectionTabsRef
+      [tabs]="configSectionTabs()"
+      [(active)]="activeConfigSection"
+      variant="pill"
+      idPrefix="cost-config-section"
+      [tabsLabel]="'COST.CONFIG.SECTIONS_NAV_LABEL' | translate" />
+
+    <div role="tabpanel"
+         [id]="sectionTabsRef.panelId(activeConfigSection())"
+         [attr.aria-labelledby]="sectionTabsRef.tabId(activeConfigSection())">
+    @switch (activeConfigSection()) {
+
+    @case ('thresholds') {
     <!-- ── THRESHOLDS ──────────────────────────────────────────────────────── -->
+    <daf-section-card [options]="{ padding: 'lg' }">
     <section class="config-section">
       <div class="section-header">
-        <h3 class="section-title">{{ 'COST.CONFIG.THRESHOLDS_TITLE' | translate }}</h3>
-        <button class="btn-add" (click)="showAddThreshold.set(!showAddThreshold())">
-          {{ (showAddThreshold() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate }}
-        </button>
+        <daf-section-title [title]="'COST.CONFIG.THRESHOLDS_TITLE' | translate" />
+        <daf-button
+          [label]="(showAddThreshold() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate"
+          [variant]="showAddThreshold() ? 'secondary' : 'teal'"
+          [options]="{ size: 'sm', iconStart: showAddThreshold() ? 'close' : 'add' }"
+          (onClick)="showAddThreshold.set(!showAddThreshold())" />
       </div>
 
       @if (thresholdError()) {
@@ -42,12 +46,11 @@
 
           <ng-template dafCell="level" let-row>
             @if (row['_isNew']) {
-              <select class="inline-input" [(ngModel)]="newThreshold.level">
-                <option value="L1">L1</option>
-                <option value="L2">L2</option>
-                <option value="L3">L3</option>
-                <option value="L4">L4</option>
-              </select>
+              <daf-select
+                [options]="levelOptions"
+                [selected]="[newThreshold.level]"
+                [config]="{ fullWidth: false }"
+                (selectedChange)="newThreshold.level = $event[0]" />
             } @else {
               <strong>{{ row['level'] }}</strong>
             }
@@ -55,13 +58,14 @@
 
           <ng-template dafCell="approverRoleCode" let-row>
             @if (row['_isNew']) {
-              <input class="inline-input" type="text"
-                [(ngModel)]="newThreshold.approverRoleCode"
-                [placeholder]="'COST.CONFIG.ROLE_PLACEHOLDER' | translate">
+              <daf-form-field
+                [options]="{ placeholder: ('COST.CONFIG.ROLE_PLACEHOLDER' | translate) }"
+                [value]="newThreshold.approverRoleCode"
+                (valueChange)="newThreshold.approverRoleCode = $any($event) ?? ''" />
             } @else if (isThresholdEditing(row['id'])) {
-              <input class="inline-input" type="text"
+              <daf-form-field
                 [value]="getEdit(row['id']).approverRoleCode ?? row['approverRoleCode']"
-                (input)="patchThreshold(row['id'], 'approverRoleCode', $any($event.target).value)">
+                (valueChange)="patchThreshold(row['id'], 'approverRoleCode', $any($event) ?? '')" />
             } @else {
               {{ row['approverRoleCode'] }}
             }
@@ -69,64 +73,55 @@
 
           <ng-template dafCell="minAmountEur" let-row>
             @if (row['_isNew']) {
-              <input class="inline-input text-right" type="number"
-                [(ngModel)]="newThreshold.minAmountEur"
-                placeholder="0" min="0">
+              <daf-form-field
+                [options]="{ type: 'number', align: 'end', suffixText: '€', placeholder: '0' }"
+                [value]="newThreshold.minAmountEur"
+                (valueChange)="newThreshold.minAmountEur = $any($event)" />
             } @else if (isThresholdEditing(row['id'])) {
-              <input class="inline-input text-right" type="number"
+              <daf-form-field
+                [options]="{ type: 'number', align: 'end', suffixText: '€' }"
                 [value]="getEdit(row['id']).minAmountEur ?? row['minAmountEur']"
-                (input)="patchThreshold(row['id'], 'minAmountEur', +$any($event.target).value)">
+                (valueChange)="patchThreshold(row['id'], 'minAmountEur', +($any($event) ?? 0))" />
             } @else {
-              {{ row['minAmountEur'] | number:'1.0-0' }} €
+              {{ row['minAmountEur'] | displayCurrency:'EUR' }}
             }
           </ng-template>
 
           <ng-template dafCell="maxAmountEur" let-row>
             @if (row['_isNew']) {
-              <input class="inline-input text-right" type="number"
-                [(ngModel)]="newThreshold.maxAmountEur"
-                [placeholder]="'COST.CONFIG.MAX_PLACEHOLDER' | translate" min="0">
+              <daf-form-field
+                [options]="{ type: 'number', align: 'end', suffixText: '€', placeholder: ('COST.CONFIG.MAX_PLACEHOLDER' | translate) }"
+                [value]="newThreshold.maxAmountEur"
+                (valueChange)="newThreshold.maxAmountEur = $any($event)" />
             } @else if (isThresholdEditing(row['id'])) {
-              <input class="inline-input text-right" type="number"
+              <daf-form-field
+                [options]="{ type: 'number', align: 'end', suffixText: '€' }"
                 [value]="getEdit(row['id']).maxAmountEur ?? row['maxAmountEur']"
-                (input)="patchThreshold(row['id'], 'maxAmountEur', +$any($event.target).value)">
+                (valueChange)="patchThreshold(row['id'], 'maxAmountEur', +($any($event) ?? 0))" />
+            } @else if (row['maxAmountEur'] != null) {
+              {{ row['maxAmountEur'] | displayCurrency:'EUR' }}
             } @else {
-              {{ row['maxAmountEur'] != null ? (row['maxAmountEur'] | number:'1.0-0') + ' €' : '∞' }}
+              ∞
             }
-          </ng-template>
-
-          <ng-template dafCell="_actions" let-row>
-            <div class="cell-actions">
-              @if (row['_isNew']) {
-                <button class="btn-save" (click)="saveNewThreshold()"
-                  [disabled]="isCreatingThreshold()">
-                  @if (isCreatingThreshold()) { … } @else { + }
-                </button>
-                <button class="btn-icon" (click)="showAddThreshold.set(false)">✕</button>
-              } @else if (isThresholdEditing(row['id'])) {
-                <button class="btn-save" (click)="saveThreshold(row['_raw'])"
-                  [disabled]="thresholdSaving() === row['id']">
-                  @if (thresholdSaving() === row['id']) { … } @else { ✓ }
-                </button>
-                <button class="btn-icon" (click)="cancelEdit(row['id'])">✕</button>
-              } @else {
-                <button class="btn-icon" (click)="startEdit(row['_raw'])" [title]="'COST.CONFIG.EDIT' | translate">✏</button>
-                <button class="btn-icon btn-danger" (click)="deleteThreshold(row['id'])" [title]="'COST.CONFIG.DEACTIVATE' | translate">🗑</button>
-              }
-            </div>
           </ng-template>
 
         </daf-data-table>
       </div>
     </section>
+    </daf-section-card>
+    }
 
+    @case ('categories') {
     <!-- ── CATEGORIES ─────────────────────────────────────────────────────── -->
+    <daf-section-card [options]="{ padding: 'lg' }">
     <section class="config-section">
       <div class="section-header">
-        <h3 class="section-title">{{ 'COST.CONFIG.CATEGORIES_TITLE' | translate }}</h3>
-        <button class="btn-add" (click)="showAddCategory.set(!showAddCategory())">
-          {{ (showAddCategory() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate }}
-        </button>
+        <daf-section-title [title]="'COST.CONFIG.CATEGORIES_TITLE' | translate" />
+        <daf-button
+          [label]="(showAddCategory() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate"
+          [variant]="showAddCategory() ? 'secondary' : 'teal'"
+          [options]="{ size: 'sm', iconStart: showAddCategory() ? 'close' : 'add' }"
+          (onClick)="showAddCategory.set(!showAddCategory())" />
       </div>
 
       @if (createCatError()) {
@@ -141,9 +136,10 @@
 
           <ng-template dafCell="categoryNumber" let-row>
             @if (row['_isNew']) {
-              <input class="inline-input text-right" type="number"
-                [(ngModel)]="newCat.categoryNumber"
-                placeholder="#" min="1" style="width:52px">
+              <daf-form-field
+                [options]="{ type: 'number', align: 'end', placeholder: '#' }"
+                [value]="newCat.categoryNumber"
+                (valueChange)="newCat.categoryNumber = $any($event)" />
             } @else {
               <strong>{{ row['categoryNumber'] }}</strong>
             }
@@ -151,9 +147,10 @@
 
           <ng-template dafCell="code" let-row>
             @if (row['_isNew']) {
-              <input class="inline-input" type="text"
-                [(ngModel)]="newCat.code"
-                [placeholder]="'COST.CONFIG.CODE_PLACEHOLDER' | translate" style="text-transform:uppercase">
+              <daf-form-field
+                [options]="{ placeholder: ('COST.CONFIG.CODE_PLACEHOLDER' | translate) }"
+                [value]="newCat.code"
+                (valueChange)="newCat.code = ($any($event) ?? '').toUpperCase()" />
             } @else {
               <span class="cell-secondary">{{ row['code'] }}</span>
             }
@@ -161,13 +158,14 @@
 
           <ng-template dafCell="labelFr" let-row>
             @if (row['_isNew']) {
-              <input class="inline-input" type="text"
-                [(ngModel)]="newCat.labelFr"
-                [placeholder]="'COST.CONFIG.LABEL_FR_PLACEHOLDER' | translate">
+              <daf-form-field
+                [options]="{ placeholder: ('COST.CONFIG.LABEL_FR_PLACEHOLDER' | translate) }"
+                [value]="newCat.labelFr"
+                (valueChange)="newCat.labelFr = $any($event) ?? ''" />
             } @else if (editingCategoryId() === row['id']) {
-              <input class="inline-input" type="text"
+              <daf-form-field
                 [value]="categoryEditForm().labelFr ?? ''"
-                (input)="patchCategoryForm('labelFr', $any($event.target).value)">
+                (valueChange)="patchCategoryForm('labelFr', $any($event) ?? '')" />
             } @else {
               {{ row['labelFr'] }}
               @if (row['descriptionFr']) {
@@ -178,13 +176,14 @@
 
           <ng-template dafCell="labelEn" let-row>
             @if (row['_isNew']) {
-              <input class="inline-input" type="text"
-                [(ngModel)]="newCat.labelEn"
-                [placeholder]="'COST.CONFIG.LABEL_EN_PLACEHOLDER' | translate">
+              <daf-form-field
+                [options]="{ placeholder: ('COST.CONFIG.LABEL_EN_PLACEHOLDER' | translate) }"
+                [value]="newCat.labelEn"
+                (valueChange)="newCat.labelEn = $any($event) ?? ''" />
             } @else if (editingCategoryId() === row['id']) {
-              <input class="inline-input" type="text"
+              <daf-form-field
                 [value]="categoryEditForm().labelEn ?? ''"
-                (input)="patchCategoryForm('labelEn', $any($event.target).value)">
+                (valueChange)="patchCategoryForm('labelEn', $any($event) ?? '')" />
             } @else {
               <span class="cell-secondary">{{ row['labelEn'] ?? '—' }}</span>
             }
@@ -192,38 +191,42 @@
 
           <ng-template dafCell="source" let-row>
             @if (row['_isNew']) {
-              <span class="badge-manual">{{ 'COST.CONFIG.SOURCE_MANUAL' | translate }}</span>
+              <daf-badge [label]="'COST.CONFIG.SOURCE_MANUAL' | translate" [options]="{ variant: 'neutral' }" />
             } @else if (editingCategoryId() === row['id']) {
-              <input class="inline-input" type="text"
+              <daf-form-field
+                [options]="{ placeholder: ('COST.CONFIG.DESC_FR_PLACEHOLDER' | translate) }"
                 [value]="categoryEditForm().descriptionFr ?? ''"
-                (input)="patchCategoryForm('descriptionFr', $any($event.target).value)"
-                [placeholder]="'COST.CONFIG.DESC_FR_PLACEHOLDER' | translate">
+                (valueChange)="patchCategoryForm('descriptionFr', $any($event) ?? '')" />
             } @else {
               @if (row['source'] === 'AUTO_PUSH') {
-                <span class="badge-auto-push" [title]="row['autoPushModule'] ?? ''">{{ 'COST.CONFIG.SOURCE_AUTO_PUSH' | translate }}</span>
+                <daf-badge [label]="'COST.CONFIG.SOURCE_AUTO_PUSH' | translate" [title]="row['autoPushModule'] ?? ''" [options]="{ variant: 'info' }" />
               } @else {
-                <span class="badge-manual">{{ 'COST.CONFIG.SOURCE_MANUAL' | translate }}</span>
+                <daf-badge [label]="'COST.CONFIG.SOURCE_MANUAL' | translate" [options]="{ variant: 'neutral' }" />
               }
             }
           </ng-template>
 
           <ng-template dafCell="isCapex" let-row>
             @if (row['_isNew']) {
-              <input type="checkbox" [(ngModel)]="newCat.isCapex" style="accent-color:#1a6b7c">
+              <daf-checkbox [(checked)]="newCat.isCapex" />
             } @else if (editingCategoryId() === row['id']) {
               <!-- editing: field not shown, matches original collapsed row -->
+            } @else if (row['isCapex']) {
+              <span class="material-symbols-outlined text-teal text-label-md">check</span>
             } @else {
-              {{ row['isCapex'] ? '✓' : '—' }}
+              <span class="cell-secondary">—</span>
             }
           </ng-template>
 
           <ng-template dafCell="isDirect" let-row>
             @if (row['_isNew']) {
-              <input type="checkbox" [(ngModel)]="newCat.isDirect" style="accent-color:#1a6b7c">
+              <daf-checkbox [(checked)]="newCat.isDirect" />
             } @else if (editingCategoryId() === row['id']) {
               <!-- editing: field not shown, matches original collapsed row -->
+            } @else if (row['isDirect']) {
+              <span class="material-symbols-outlined text-teal text-label-md">check</span>
             } @else {
-              {{ row['isDirect'] ? '✓' : '—' }}
+              <span class="cell-secondary">—</span>
             }
           </ng-template>
 
@@ -231,49 +234,33 @@
             @if (row['_isNew'] || editingCategoryId() === row['id']) {
               <!-- not editable / not shown while editing, matches original -->
             } @else if (row['isStrictScrutiny']) {
-              <span class="icon-scrutiny" [title]="'COST.CONFIG.SCRUTINY_TITLE' | translate">⚠</span>
+              <span class="material-symbols-outlined icon-scrutiny" [title]="'COST.CONFIG.SCRUTINY_TITLE' | translate">warning</span>
             } @else {
               <span class="cell-secondary">—</span>
             }
           </ng-template>
 
-          <ng-template dafCell="_actions" let-row>
-            <div class="cell-actions">
-              @if (row['_isNew']) {
-                <button class="btn-save" (click)="saveNewCategory()"
-                  [disabled]="isCreatingCategory()">
-                  @if (isCreatingCategory()) { … } @else { + }
-                </button>
-                <button class="btn-icon" (click)="showAddCategory.set(false)">✕</button>
-              } @else if (editingCategoryId() === row['id']) {
-                <button class="btn-save" (click)="saveCategoryLabel(row['_raw'])"
-                  [disabled]="isSavingCategory()">
-                  @if (isSavingCategory()) { … } @else { ✓ }
-                </button>
-                <button class="btn-icon" (click)="cancelCategoryEdit()">✕</button>
-              } @else {
-                <button class="btn-icon" (click)="startEditCategory(row['_raw'])" [title]="'COST.CONFIG.EDIT_LABEL' | translate">✏</button>
-                <button class="btn-icon btn-danger" (click)="deleteCategory(row['id'])" [title]="'COST.CONFIG.DEACTIVATE' | translate">🗑</button>
-              }
-            </div>
-          </ng-template>
-
         </daf-data-table>
       </div>
     </section>
+    </daf-section-card>
+    }
 
+    @case ('lists') {
     <!-- ── LIST MANAGEMENT ───────────────────────────────────────────────── -->
+    <daf-section-card [options]="{ padding: 'lg' }">
     <section class="config-section">
-      <h3 class="section-title">{{ 'COST.CONFIG.LIST_VALUES_TITLE' | translate }}</h3>
-
-      <div class="list-tabs">
-        @for (tab of LIST_TABS; track tab) {
-          <button class="list-tab" [class.active]="activeListTab() === tab"
-            (click)="selectListTab(tab)">
-            {{ listTabLabel(tab) }}
-          </button>
-        }
+      <div class="section-header">
+        <daf-section-title [title]="'COST.CONFIG.LIST_VALUES_TITLE' | translate" />
       </div>
+
+      <daf-tabs
+        [tabs]="listTypeTabs()"
+        [active]="activeListTab()"
+        (activeChange)="onListTypeTabChange($event)"
+        variant="pill"
+        idPrefix="cost-config-list-type"
+        [tabsLabel]="'COST.CONFIG.LIST_TYPE_NAV_LABEL' | translate" />
 
       @if (listError()) {
         <div class="banner-error">{{ listError() }}</div>
@@ -290,8 +277,10 @@
 
             <ng-template dafCell="code" let-row>
               @if (row['_isNew']) {
-                <input class="inline-input" type="text"
-                  [(ngModel)]="newValue.code" [placeholder]="'COST.CONFIG.CODE_PLACEHOLDER' | translate">
+                <daf-form-field
+                  [options]="{ placeholder: ('COST.CONFIG.CODE_PLACEHOLDER' | translate) }"
+                  [value]="newValue.code"
+                  (valueChange)="newValue.code = $any($event) ?? ''" />
               } @else {
                 <code class="code-pill">{{ row['code'] }}</code>
               }
@@ -299,8 +288,10 @@
 
             <ng-template dafCell="labelFr" let-row>
               @if (row['_isNew']) {
-                <input class="inline-input" type="text"
-                  [(ngModel)]="newValue.labelFr" [placeholder]="'COST.CONFIG.LABEL_FR_PLACEHOLDER' | translate">
+                <daf-form-field
+                  [options]="{ placeholder: ('COST.CONFIG.LABEL_FR_PLACEHOLDER' | translate) }"
+                  [value]="newValue.labelFr"
+                  (valueChange)="newValue.labelFr = $any($event) ?? ''" />
               } @else {
                 {{ row['labelFr'] }}
               }
@@ -308,8 +299,10 @@
 
             <ng-template dafCell="labelEn" let-row>
               @if (row['_isNew']) {
-                <input class="inline-input" type="text"
-                  [(ngModel)]="newValue.labelEn" [placeholder]="'COST.CONFIG.LABEL_EN_PLACEHOLDER_LV' | translate">
+                <daf-form-field
+                  [options]="{ placeholder: ('COST.CONFIG.LABEL_EN_PLACEHOLDER_LV' | translate) }"
+                  [value]="newValue.labelEn"
+                  (valueChange)="newValue.labelEn = $any($event) ?? ''" />
               } @else {
                 <span class="cell-secondary">{{ row['labelEn'] ?? '—' }}</span>
               }
@@ -317,9 +310,11 @@
 
             <ng-template dafCell="isDefault" let-row>
               @if (row['_isNew']) {
-                <input type="checkbox" [(ngModel)]="newValue.isDefault" style="accent-color:#1a6b7c">
-              } @else {
-                {{ row['isDefault'] ? '★' : '' }}
+                <daf-checkbox [(checked)]="newValue.isDefault" />
+              } @else if (row['isDefault']) {
+                <span class="material-symbols-outlined text-warning text-label-md"
+                      style="font-variation-settings:'FILL' 1"
+                      [title]="'COST.CONFIG.LV_DEFAULT' | translate">star</span>
               }
             </ng-template>
 
@@ -329,19 +324,6 @@
               }
             </ng-template>
 
-            <ng-template dafCell="_actions" let-row>
-              <div class="cell-actions">
-                @if (row['_isNew']) {
-                  <button class="btn-save" (click)="createValue()"
-                    [disabled]="isCreating() || !newValue.code || !newValue.labelFr">
-                    @if (isCreating()) { … } @else { + }
-                  </button>
-                } @else {
-                  <button class="btn-icon btn-danger" (click)="deactivate(row['id'])" [title]="'COST.CONFIG.DEACTIVATE' | translate">✕</button>
-                }
-              </div>
-            </ng-template>
-
           </daf-data-table>
           @if (createError()) {
             <div class="banner-error" style="margin-top:8px">{{ createError() }}</div>
@@ -349,6 +331,11 @@
         </div>
       }
     </section>
+    </daf-section-card>
+    }
+
+    }
+    </div>
 
   }
 </div>

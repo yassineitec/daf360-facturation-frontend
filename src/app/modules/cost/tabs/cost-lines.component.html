@@ -93,11 +93,6 @@
       (pageSizeChange)="onPageSize($event)" />
   }
 
-  @if (reglementModalOpen()) {
-    <app-reglement-modal
-      [data]="{ editing: editingReglement(), payableLines: payableLines() }"
-      (closed)="onReglementModalClosed()"
-      (resolved)="onReglementModalResolved()" />
-  }
+  <app-reglement-modal #reglementModal />
 
 </div>

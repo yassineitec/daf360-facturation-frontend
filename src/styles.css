@@ -49,6 +49,14 @@
 @source inline("{text-on-primary,text-warning,text-tertiary,text-outline,border-outline-variant/30}");
 @source inline("{whitespace-pre-wrap,truncate,border-t,-ml-2,first:ml-0,leading-none,leading-tight,leading-relaxed,tracking-widest,tracking-tight}");
 
+/* `daf-page-header [titleWrap]` (lib 4.31.0) — the h1's wrap branch. `truncate` above
+   was already force-listed because it's assembled in a ternary in the lib bundle, not
+   written whole in any template here; `break-words` is built the exact same way for the
+   other branch and needs the exact same treatment. Without it the title neither
+   truncates nor wraps: it renders as one unbroken line that overflows past the aside
+   column, unclipped, and bleeds visually under the KPI cards to its right. */
+@source inline("{break-words}");
+
 /* `DrawerConfig.signal` (lib 4.18.0) — le point/pastille posé sur l'onglet de bord du
    drawer. Ces utilitaires n'apparaissent NULLE PART dans les templates de cette app :
    ils ne viennent que du bundle de la lib. Sans eux, le `<span>` du marqueur est bien

@@ -6,6 +6,9 @@ import { forkJoin }     from 'rxjs';
 import { FactRolesAdminComponent } from '../roles/fact-roles-admin.component';
 import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-admin.component';
 import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
+import { CostConfigComponent } from '../../cost/tabs/cost-config.component';
+import { CostImportPanelComponent } from '../../cost/import/cost-import-panel.component';
+import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
   PaginationComponent, PaginationConfig, ButtonComponent, ModalService, ModalRef,
@@ -14,18 +17,18 @@ import {
   ToggleComponent, ToggleOptions,
   FormFieldComponent, StatusBadgeComponent,
   TabsComponent, TabItem, SearchToolbarComponent,
-  SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
+import { AffaireService }     from '../../affaires/affaire.service';
 import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-set.service';
 import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-api-config.service';
 import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { UserStore } from '../../../core/user.store';
-type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'reminders';
+import { UserStore } from '../../../core/user.store';
+type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders';
 
 const PAGE_SIZE = 10;
 
@@ -43,8 +46,9 @@ interface ForexRow {
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
     FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
-    SelectComponent,
+    PaysFlagSelectComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
+    CostConfigComponent, CostImportPanelComponent,
   ],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',
@@ -52,6 +56,7 @@ interface ForexRow {
 export class AdminListComponent implements OnInit {
   private readonly factListSvc  = inject(FactListService);
   private readonly clientSvc    = inject(ClientService);
+  private readonly affaireSvc   = inject(AffaireService);
   private readonly paramSvc     = inject(ParameterSetService);
   private readonly forexApiSvc  = inject(ForexApiConfigService);
   private readonly modal        = inject(ModalService);
@@ -224,6 +229,13 @@ export class AdminListComponent implements OnInit {
       items.push({ id: 'permissions',         label: t('ADMIN.TABS.PERMISSIONS'),         icon: 'admin_panel_settings' });
       items.push({ id: 'document-templates',  label: t('ADMIN.TABS.DOCUMENT_TEMPLATES'),  icon: 'description' });
     }
+    // Anciennement l'onglet « Config » de /finance/cost : déplacé ici, à côté des
+    // Maquettes de documents. Ouvert aux mêmes profils que la route `cost` elle-même
+    // (`FACT_ADMIN_COST`), en plus du super-admin — sinon un gestionnaire des coûts qui
+    // pouvait configurer seuils/catégories perdrait l'accès en migrant vers /admin.
+    if (this.userStore.hasPermission('FACT_SUPER_ADMIN') || this.userStore.hasPermission('FACT_ADMIN_COST')) {
+      items.push({ id: 'cost-config', label: t('ADMIN.TABS.COST_CONFIG'), icon: 'tune' });
+    }
     return items;
   });
 
@@ -236,23 +248,25 @@ export class AdminListComponent implements OnInit {
 
   // ── Pays / Entité dropdown ───────────────────────────────────────────────
   /**
-   * Le code ISO reste dans le libellé : `daf-select` filtre sur le libellé, donc
-   * taper « TN » trouve toujours la Tunisie. Même forme que cost-config / wizard.
+   * Le code ISO reste dans le libellé en plus du drapeau : `app-pays-flag-select`
+   * filtre sur le libellé, donc taper « TN » trouve toujours la Tunisie même pour un
+   * pays sans drapeau connu (voir `country-flags.ts`).
    */
-  readonly paysOptions = computed<SelectOption[]>(() =>
+  readonly paysOptions = computed<PaysFlagOption[]>(() =>
     this.paysList().map(p => ({
       value: String(p.id),
       label: `${p.frenchLabel} (${p.isoCode})`,
+      isoCode: p.isoCode,
     })));
 
-  readonly paysSelectConfig = computed(() => {
+  readonly paysSelectLabel = computed(() => {
     this.translate.currentLang();
-    return {
-      label: this.translate.instant('ADMIN.PAYS.LABEL'),
-      placeholder: this.translate.instant('ADMIN.PAYS.SEARCH'),
-      searchable: true,
-      fullWidth: false,
-    };
+    return this.translate.instant('ADMIN.PAYS.LABEL');
+  });
+
+  readonly paysSelectPlaceholder = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant('ADMIN.PAYS.SEARCH');
   });
 
   onPaysSelected(values: string[]): void {
@@ -323,10 +337,19 @@ export class AdminListComponent implements OnInit {
     forkJoin({
       myPays:  this.clientSvc.getMyPays(),
       allPays: this.clientSvc.getPays(),
+      users:   this.affaireSvc.getUsers(),
     }).subscribe({
-      next: ({ myPays, allPays }) => {
-        this.paysList.set(allPays);
-        const resolved = myPays ?? (allPays.length > 0 ? allPays[0].id : 0);
+      next: ({ myPays, allPays, users }) => {
+        // `/ref/pays` liste les 194 pays possibles pour une adresse client (V75), pas les
+        // entités DAF360 réelles — le picker ne doit proposer que celles où quelqu'un a
+        // effectivement un compte (ex: un utilisateur connecté depuis l'Égypte ⇒ l'Égypte
+        // apparaît). Retombe sur la liste complète si `/ref/users` échoue ou ne renvoie
+        // aucun pays exploitable, pour ne pas vider le picker.
+        const paysIdsWithUsers = new Set(users.map(u => u.paysId));
+        const scopedPays = allPays.filter(p => paysIdsWithUsers.has(p.id));
+        const pays = scopedPays.length > 0 ? scopedPays : allPays;
+        this.paysList.set(pays);
+        const resolved = myPays ?? (pays.length > 0 ? pays[0].id : 0);
         if (resolved > 0) {
           this.paysId.set(resolved);
           this.loadListTypes();

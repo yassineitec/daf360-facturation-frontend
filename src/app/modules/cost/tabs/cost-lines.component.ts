@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -6,7 +6,7 @@ import {
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { CostService } from '../cost.service';
-import { COST_STATUS_CONFIG, CostCategoryDto, CostLineDto, CostLineReglementDto, SupplierCostSummaryDto } from '../cost.model';
+import { COST_STATUS_CONFIG, CostCategoryDto, CostLineDto, SupplierCostSummaryDto } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import { statusKey } from '../cost-display';
 import { CostLinesCardsSectionComponent } from './cost-lines-cards-section.component';
@@ -40,9 +40,15 @@ export class CostLinesComponent implements OnInit {
   page   = signal(0);
   size   = signal(25);
 
-  statusFilter = signal('');
-  searchText   = signal('');
-  viewMode     = signal<ViewMode>('grid');
+  statusFilter    = signal('');
+  categoryFilter  = signal('');
+  /** Client-side only, like categoryFilter -- CostLineController.list() has neither a
+   *  date-range nor an amount-range param. */
+  dateRangeFilter = signal<Date[] | null>(null);
+  amountMinFilter = signal('');
+  amountMaxFilter = signal('');
+  searchText      = signal('');
+  viewMode        = signal<ViewMode>('grid');
 
   /** "By supplier" cards view (2026-09-09 plan) -- loaded lazily, the first time the
    *  toggle switches to 'supplier', not on every ngOnInit. `supplierSummariesLoaded`
@@ -57,9 +63,7 @@ export class CostLinesComponent implements OnInit {
   serverError = signal<string | null>(null);
   actionError = signal<string | null>(null);
 
-  payableLines        = signal<CostLineDto[]>([]);
-  reglementModalOpen  = signal(false);
-  editingReglement     = signal<CostLineReglementDto | null>(null);
+  @ViewChild('reglementModal') private reglementModal!: ReglementModalComponent;
 
   categories  = signal<CostCategoryDto[]>([]);
   categoryMap = computed(() => new Map(this.categories().map(c => [c.id, c.labelFr])));
@@ -74,14 +78,43 @@ export class CostLinesComponent implements OnInit {
       ?? this.translate.instant('COST.LINES.CAT_FALLBACK', { id });
   };
 
-  /** Client-side over the loaded page — the endpoint takes `status` but no free text. */
+  /** Client-side over the loaded page — the endpoint takes `status` but no free text, no
+   *  category, no date range and no amount range. Same limit as the search box: only the
+   *  current page is filtered, not the full result set (`CostLineController.list()` has
+   *  none of `categoryId`/date-range/amount-range params yet). */
   readonly visibleLines = computed<CostLineDto[]>(() => {
     const q = this.searchText().toLowerCase().trim();
-    if (!q) return this.lines();
-    return this.lines().filter(l =>
-      (l.label ?? '').toLowerCase().includes(q) || (l.reference ?? '').toLowerCase().includes(q),
-    );
+    const cat = this.categoryFilter();
+    const [dateFrom, dateTo] = this.dateRangeBounds();
+    const amountMin = this.amountMinFilter() ? Number(this.amountMinFilter()) : null;
+    const amountMax = this.amountMaxFilter() ? Number(this.amountMaxFilter()) : null;
+    return this.lines()
+      .filter(l => !cat || l.categoryId === +cat)
+      .filter(l => !q || (l.label ?? '').toLowerCase().includes(q) || (l.reference ?? '').toLowerCase().includes(q))
+      .filter(l => {
+        if (!dateFrom && !dateTo) return true;
+        if (!l.transactionDate) return false;
+        const d = new Date(l.transactionDate);
+        return (!dateFrom || d >= dateFrom) && (!dateTo || d <= dateTo);
+      })
+      .filter(l => {
+        if (amountMin == null && amountMax == null) return true;
+        const amount = l.grossAmountLocal;
+        if (amount == null) return false;
+        return (amountMin == null || amount >= amountMin) && (amountMax == null || amount <= amountMax);
+      });
   });
+
+  /** `daterange` emits a 2-element `[start, end]` array (or null) -- the end bound is
+   *  widened to the end of its day so "01/09 - 05/09" includes lines dated 05/09. */
+  private dateRangeBounds(): [Date | null, Date | null] {
+    const range = this.dateRangeFilter();
+    if (!range || range.length < 2) return [null, null];
+    const [from, to] = range;
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999);
+    return [from, end];
+  }
 
   draftCount    = computed(() => this.lines().filter(l => l.status === 'DRAFT').length);
   pendingCount  = computed(() => this.lines().filter(l => l.status === 'SUBMITTED').length);
@@ -109,27 +142,60 @@ export class CostLinesComponent implements OnInit {
   readonly filterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return [{
-      name: 'status',
-      label: t('COST.LINES.STATUS_FILTER_LABEL'),
-      type: 'select',
-      placeholder: t('COST.LINES.STATUS_FILTER_PLACEHOLDER'),
-      // Keys, not COST_STATUS_CONFIG's hardcoded French labels.
-      options: Object.keys(COST_STATUS_CONFIG).map(value => ({ value, label: t(statusKey(value)) })),
-    }];
+    return [
+      {
+        name: 'status',
+        label: t('COST.LINES.STATUS_FILTER_LABEL'),
+        type: 'select',
+        placeholder: t('COST.LINES.STATUS_FILTER_PLACEHOLDER'),
+        // Keys, not COST_STATUS_CONFIG's hardcoded French labels.
+        options: Object.keys(COST_STATUS_CONFIG).map(value => ({ value, label: t(statusKey(value)) })),
+      },
+      {
+        name: 'category',
+        label: t('COST.LINES.CATEGORY_FILTER_LABEL'),
+        type: 'select',
+        placeholder: t('COST.LINES.CATEGORY_FILTER_PLACEHOLDER'),
+        searchable: true,
+        options: this.categories().map(c => ({ value: String(c.id), label: c.labelFr })),
+      },
+      {
+        name: 'dateRange',
+        label: t('COST.LINES.DATE_RANGE_FILTER_LABEL'),
+        type: 'daterange',
+      },
+      {
+        name: 'amountMin',
+        label: t('COST.LINES.AMOUNT_MIN_FILTER_LABEL'),
+        type: 'text',
+        placeholder: t('COST.LINES.AMOUNT_MIN_FILTER_PLACEHOLDER'),
+      },
+      {
+        name: 'amountMax',
+        label: t('COST.LINES.AMOUNT_MAX_FILTER_LABEL'),
+        type: 'text',
+        placeholder: t('COST.LINES.AMOUNT_MAX_FILTER_PLACEHOLDER'),
+      },
+    ];
   });
 
   readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return {
-      title:        t('COST.LINES.STATUS_FILTER_LABEL'),
+      title:        t('COST.LINES.FILTERS'),
       applyLabel:   t('COST.LINES.FILTER_APPLY'),
       cancelLabel:  t('COST.LINES.FILTER_CANCEL'),
       resetLabel:   t('COST.LINES.FILTER_RESET'),
       triggerLabel: t('COST.LINES.FILTERS'),
       // Seeded once, in the panel's internal shape — a select is a string[] (§10b).
-      initialValues: { status: this.statusFilter() ? [this.statusFilter()] : [] },
+      initialValues: {
+        status:     this.statusFilter()   ? [this.statusFilter()]   : [],
+        category:   this.categoryFilter() ? [this.categoryFilter()] : [],
+        dateRange:  this.dateRangeFilter(),
+        amountMin:  this.amountMinFilter(),
+        amountMax:  this.amountMaxFilter(),
+      },
     };
   });
 
@@ -175,6 +241,10 @@ export class CostLinesComponent implements OnInit {
 
   applyFilters(result: FilterResult): void {
     this.statusFilter.set((result['status'] as string | null) ?? '');
+    this.categoryFilter.set((result['category'] as string | null) ?? '');
+    this.dateRangeFilter.set((result['dateRange'] as Date[] | null) ?? null);
+    this.amountMinFilter.set((result['amountMin'] as string | null) ?? '');
+    this.amountMaxFilter.set((result['amountMax'] as string | null) ?? '');
     this.page.set(0);
     this.load();
   }
@@ -235,19 +305,6 @@ export class CostLinesComponent implements OnInit {
   }
 
   openReglementForLine(line: CostLineDto): void {
-    this.editingReglement.set(null);
-    this.payableLines.set([line]);
-    this.reglementModalOpen.set(true);
-  }
-
-  onReglementModalClosed(): void {
-    this.reglementModalOpen.set(false);
-    this.editingReglement.set(null);
-  }
-
-  onReglementModalResolved(): void {
-    this.reglementModalOpen.set(false);
-    this.editingReglement.set(null);
-    this.load();
+    this.reglementModal.open({ editing: null, payableLines: [line] }, () => this.load());
   }
 }
