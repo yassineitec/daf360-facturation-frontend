@@ -1,5 +1,15 @@
 <div class="step-form">
 
+  <!-- Échec du chargement du référentiel : sans ce bandeau, l'étape se présentait avec une
+       liste déroulante vide, exactement comme un pays dont personne n'a encore paramétré les
+       types — deux situations opposées pour un même écran muet. -->
+  @if (loadError(); as err) {
+    <p class="warning-msg" role="alert">
+      <span class="material-symbols-outlined" style="font-size:16px">error</span>
+      {{ err }}
+    </p>
+  }
+
   <!-- Une seule bande : la règle des 100 % à gauche, l'ajout à droite. Les deux tenaient
        deux lignes pour une note et un bouton, alors que la bande de titre de section a
        disparu (la carte de l'étape annonce déjà « Configuration — répartition

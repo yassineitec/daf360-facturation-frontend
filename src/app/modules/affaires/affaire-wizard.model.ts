@@ -94,6 +94,16 @@ export interface AffaireDraftState {
   clientId?: number;
   clientName?: string;
   clientKycDone?: boolean;
+  /**
+   * Pays d'ADRESSE du client retenu (`clients.country_id`) — à ne pas confondre avec
+   * `paysId` plus haut, qui est l'entité ITEC portant l'affaire. Les deux diffèrent
+   * légitimement (un client marocain facturé depuis l'entité AE).
+   *
+   * Sert à l'étape AV : depuis le 2026-09-17 les types de répartition contractuelle se
+   * lisent dans le référentiel du pays du client. Nul si le client n'a pas de pays connu,
+   * et l'étape retombe alors sur `paysId`.
+   */
+  clientCountryId?: number;
 
   /**
    * Step 2 — Contacts du client rattachés à l'affaire. Ce sont EUX qui reçoivent les
@@ -195,6 +205,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     clientId:                    dto.clientId,
     clientName,
     clientKycDone,
+    clientCountryId:             dto.clientCountryId ?? undefined,
     contactIds:                  contacts.map(c => c.contactId),
     billingContactId:            contacts.find(c => c.isBilling)?.contactId,
     intitule:                    dto.intitule ?? '',

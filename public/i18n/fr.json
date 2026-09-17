@@ -978,6 +978,7 @@
         },
         "STATUS": {
           "DRAFT": "Brouillon",
+          "CONFIGURED": "Configurée",
           "EN_COURS": "En cours",
           "SUSPENDUE": "Suspendue",
           "CLOTUREE": "Clôturée",
@@ -1122,7 +1123,7 @@
         "CURRENCY": "Devise",
         "PERIOD": "Période",
         "ENGAGEMENT": "Type d'engagement",
-        "BUDGET": "Budget prévisionnel",
+        "BUDGET": "Budget",
         "CONTRACT_AMOUNT": "Montant du contrat",
         "BUDGET_ALLOCATED": "Budget alloué aux managers",
         "BUDGET_VALIDATED": "Budget validé",
@@ -1408,7 +1409,8 @@
         "total": "Total",
         "warn_exact": "La somme doit être exactement 100 %.",
         "warn_missing": "Il manque {{n}} %.",
-        "warn_excess": "L'excédent est de {{n}} %."
+        "warn_excess": "L'excédent est de {{n}} %.",
+        "load_error": "Impossible de charger les types de répartition. Réessayez, ou signalez-le si cela persiste."
       },
       "tm": {
         "info": "Sélectionnez les collaborateurs et définissez leurs taux de facturation. Les taux seront verrouillés après la première facturation.",

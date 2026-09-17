@@ -24,7 +24,7 @@ import { AffaireWizardService } from './affaire-wizard.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto,
   AffaireInvoiceItem, AffairePaymentItem, PaysRefDto,
-  STATUT_TRANSITIONS, STATUT_LABELS,
+  AFFAIRE_STATUTS, STATUT_LABELS,
 } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
@@ -41,7 +41,7 @@ import {
 } from '../../shared/enum-labels';
 import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avatar.service';
 import { ClientContactService } from '../clients/contacts/client-contact.service';
-import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
+import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
 /** A read-only label/value pair. `label` is always a translation key. */
 interface DetailField { label: string; value: string; }
 
@@ -940,8 +940,12 @@ export class AffaireDetailComponent implements OnInit {
     if (allocated != null && allocated !== (a.budgetPrevisionnel ?? 0)) {
       rows.push({ label: 'AFFAIRES.DETAIL.INFO.BUDGET_ALLOCATED', value: this.money(allocated) });
     }
-    if (a.doc360Ref)    rows.push({ label: 'AFFAIRES.DETAIL.INFO.DOC360',  value: a.doc360Ref });
-    if (a.erpReference) rows.push({ label: 'AFFAIRES.DETAIL.INFO.ERP_REF', value: a.erpReference });
+    if (a.doc360Ref) rows.push({ label: 'AFFAIRES.DETAIL.INFO.DOC360', value: a.doc360Ref });
+    // La référence ERP est montrée MÊME vide, contrairement aux autres lignes optionnelles :
+    // c'est la clé de rapprochement avec l'ERP, et son absence est justement ce qu'on vient
+    // vérifier sur la fiche. Une ligne escamotée ne distingue pas « pas de référence » de
+    // « je ne sais pas où elle s'affiche ».
+    rows.push({ label: 'AFFAIRES.DETAIL.INFO.ERP_REF', value: a.erpReference || '—' });
     return rows;
   });
 
@@ -2058,9 +2062,15 @@ export class AffaireDetailComponent implements OnInit {
 
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
+  /**
+   * Tous les statuts sauf celui en cours : la fiche autorise n'importe quel changement
+   * depuis n'importe quel statut (décision du 2026-09-17). Il n'y a plus de graphe de
+   * transitions — le serveur applique la même règle, et refuse seulement un statut
+   * inconnu.
+   */
   readonly availableTransitions = computed(() => {
     const a = this.affaire();
-    return a ? (STATUT_TRANSITIONS[a.statut] ?? []) : [];
+    return a ? AFFAIRE_STATUTS.filter(s => s !== a.statut) : [];
   });
 
   ngOnInit(): void {

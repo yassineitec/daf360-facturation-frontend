@@ -14,6 +14,7 @@ import { AffaireListItem, AffaireResponsable, TYPE_LABELS } from './affaire.mode
 /** Badge variant for `daf-data-table`'s `type: 'badge'` column. */
 export const STATUT_BADGE_VARIANT: Record<string, BadgeVariant> = {
   DRAFT:     'neutral',
+  CONFIGURED:'info',
   EN_COURS:  'success',
   SUSPENDUE: 'warning',
   CLOTUREE:  'secondary',
