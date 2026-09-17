@@ -36,53 +36,6 @@
        [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
        class="flex flex-col gap-6">
 
-    <!-- ── RF Tab ─────────────────────────────────────────────────────── -->
-    @if (activeTab() === 'rf') {
-
-      @if (rfLoading()) {
-        <div class="flex items-center justify-center gap-2 py-16 text-body-md text-on-surface-variant">
-          <span class="material-symbols-outlined animate-spin">progress_activity</span>
-          {{ 'AFFAIRES.billing.approval.loading' | translate }}
-        </div>
-      } @else if (pendingJalons().length === 0) {
-        <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
-          <span class="material-symbols-outlined text-[32px]">check_circle</span>
-          <p>{{ 'AFFAIRES.billing.approval.empty_rf' | translate }}</p>
-        </div>
-      } @else {
-
-        <!-- Jalons -->
-        <div class="flex items-center gap-2 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">
-          <span class="material-symbols-outlined text-[18px]">flag</span>
-          {{ 'AFFAIRES.billing.approval.section_jalons' | translate:{ count: pendingJalons().length } }}
-        </div>
-        <daf-data-table
-          [columns]="jalonColumns()"
-          [rows]="jalonRows()"
-          [config]="jalonTableConfig()"
-          (rowClick)="openDetail($any($event), 'jalon')">
-
-          <ng-template dafCell="affaire" let-row>
-            <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-              (click)="$event.stopPropagation()">
-              {{ row['affaireRef'] }}
-            </a>
-            <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-          </ng-template>
-
-          <ng-template dafCell="montant" let-row>
-            <span class="cell-bold">{{ row['montant'] }}</span>
-          </ng-template>
-
-          <ng-template dafCell="echeance" let-row>
-            <span class="cell-muted">{{ row['echeance'] }}</span>
-          </ng-template>
-
-        </daf-data-table>
-
-      }
-    }
-
     <!-- ── DF Tab ─────────────────────────────────────────────────────── -->
     @if (activeTab() === 'df') {
 
@@ -101,13 +54,9 @@
         <!-- Taux d'avancement (AV) — validating one creates its BillingLine and the
              draft invoice in one shot (ProgressBillingService.validateTaux()). -->
         @if (pendingTaux().length > 0) {
-          <div class="flex items-center gap-2 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">
-            <span class="material-symbols-outlined text-[18px]">trending_up</span>
-            {{ 'AFFAIRES.billing.approval.section_taux' | translate:{ count: pendingTaux().length } }}
-          </div>
           <daf-data-table
             [columns]="tauxColumns()"
-            [rows]="tauxRows()"
+            [rows]="pagedTauxRows()"
             [config]="tauxTableConfig()"
             (rowClick)="openDetail($any($event), 'taux')">
 
@@ -132,6 +81,19 @@
             </ng-template>
 
           </daf-data-table>
+
+          <daf-pagination
+            [currentPage]="tauxPage()"
+            [totalPages]="tauxTotalPages()"
+            [totalElements]="tauxRows().length"
+            [pageSize]="tauxPageSize()"
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+            (pageChange)="tauxPage.set($event)"
+            (pageSizeChange)="tauxPageSize.set($event); tauxPage.set(0)" />
         }
 
         <!-- Billing lines -->
@@ -142,7 +104,7 @@
           </div>
           <daf-data-table
             [columns]="lineColumns()"
-            [rows]="lineRows()"
+            [rows]="pagedLineRows()"
             [config]="lineTableConfig()"
             (rowClick)="openDetail($any($event), 'line')">
 
@@ -175,6 +137,19 @@
             </ng-template>
 
           </daf-data-table>
+
+          <daf-pagination
+            [currentPage]="linePage()"
+            [totalPages]="lineTotalPages()"
+            [totalElements]="lineRows().length"
+            [pageSize]="linePageSize()"
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+            (pageChange)="linePage.set($event)"
+            (pageSizeChange)="linePageSize.set($event); linePage.set(0)" />
         }
 
         <!-- Livrable batches -->
@@ -185,7 +160,7 @@
           </div>
           <daf-data-table
             [columns]="livrableBatchColumns()"
-            [rows]="livrableBatchRows()"
+            [rows]="pagedLivrableBatchRows()"
             [config]="livrableBatchTableConfig()"
             (rowClick)="openDetail($any($event), 'livrable')">
 
@@ -210,6 +185,19 @@
             </ng-template>
 
           </daf-data-table>
+
+          <daf-pagination
+            [currentPage]="livrableBatchPage()"
+            [totalPages]="livrableBatchTotalPages()"
+            [totalElements]="livrableBatchRows().length"
+            [pageSize]="livrableBatchPageSize()"
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+            (pageChange)="livrableBatchPage.set($event)"
+            (pageSizeChange)="livrableBatchPageSize.set($event); livrableBatchPage.set(0)" />
         }
 
         <!-- Credit notes / avoirs — a real Invoice submitted directly at creation
@@ -223,7 +211,7 @@
           </div>
           <daf-data-table
             [columns]="creditNoteColumns()"
-            [rows]="creditNoteRows()"
+            [rows]="pagedCreditNoteRows()"
             [config]="creditNoteTableConfig()"
             (rowClick)="openCreditNoteDetail($any($event))">
 
@@ -252,6 +240,19 @@
             </ng-template>
 
           </daf-data-table>
+
+          <daf-pagination
+            [currentPage]="creditNotePage()"
+            [totalPages]="creditNoteTotalPages()"
+            [totalElements]="creditNoteRows().length"
+            [pageSize]="creditNotePageSize()"
+            [pageSizeOptions]="[10, 20, 50, 100]"
+            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+            (pageChange)="creditNotePage.set($event)"
+            (pageSizeChange)="creditNotePageSize.set($event); creditNotePage.set(0)" />
         }
 
       }
@@ -273,7 +274,7 @@
       } @else {
         <daf-data-table
           [columns]="historyColumns()"
-          [rows]="historyRows()"
+          [rows]="pagedHistoryRows()"
           [config]="tableConfig()">
 
           <ng-template dafCell="createdAt" let-row>
@@ -297,6 +298,19 @@
           </ng-template>
 
         </daf-data-table>
+
+        <daf-pagination
+          [currentPage]="historyPage()"
+          [totalPages]="historyTotalPages()"
+          [totalElements]="historyRows().length"
+          [pageSize]="historyPageSize()"
+          [pageSizeOptions]="[10, 20, 50, 100]"
+          [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+          [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+          [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+          [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+          (pageChange)="historyPage.set($event)"
+          (pageSizeChange)="historyPageSize.set($event); historyPage.set(0)" />
       }
     }
 

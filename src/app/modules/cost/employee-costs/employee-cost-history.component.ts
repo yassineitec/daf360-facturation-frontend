@@ -1,12 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
 import {
   AvatarComponent, ButtonComponent, CardComponent, DataTableComponent, FilterField,
-  FilterResult, PageComponent, PageHeaderComponent, PaginationComponent,
-  SearchToolbarComponent, SearchToolbarFilterConfig, TableColumn, TableConfig, TableRow,
-  ToolbarToggleOption,
+  FilterResult, PageComponent, PaginationComponent, SearchToolbarComponent,
+  SearchToolbarFilterConfig, TableColumn, TableConfig, TableRow, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import type { AvatarData, BreadcrumbItem } from '@khalilrebhiitec/daf360';
 
@@ -45,6 +44,10 @@ interface TimelineEvent {
   basicCost:    string;
   internalCost: string;
   externalCost: string;
+  /** The resulting end date ("date d'expiration") at this point in the record's history
+   * — same snapshot reasoning as the 3 cost fields above, formatted with `formatDate()`
+   * (not `formatAmount()`) since it's a calendar date, not a currency amount. */
+  expirationDate: string;
 }
 
 /** The Excel export's flat shape — one row per changed field (spreadsheets can't group
@@ -86,7 +89,7 @@ type HistoryViewMode = 'timeline' | 'table';
   standalone: true,
   imports: [
     TranslatePipe, AvatarComponent, ButtonComponent, CardComponent, DataTableComponent,
-    PageComponent, PageHeaderComponent, PaginationComponent, SearchToolbarComponent,
+    PageComponent, PaginationComponent, RouterLink, SearchToolbarComponent,
   ],
   templateUrl: './employee-cost-history.component.html',
 })
@@ -178,12 +181,13 @@ export class EmployeeCostHistoryComponent implements OnInit {
   readonly auditColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'dateDisplay',  label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DATE'),   type: 'text' },
-      { key: 'actor',        label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_USER'),   type: 'text' },
-      { key: 'basicCost',    label: this.translate.instant('COST.EMPLOYEE_COST.BASIC_COST'),         type: 'text' },
-      { key: 'internalCost', label: this.translate.instant('COST.EMPLOYEE_COST.COL_INTERNAL'),       type: 'text' },
-      { key: 'externalCost', label: this.translate.instant('COST.EMPLOYEE_COST.COL_EXTERNAL'),       type: 'text' },
-      { key: 'action',       label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'), type: 'text' },
+      { key: 'dateDisplay',     label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DATE'),   type: 'text' },
+      { key: 'actor',           label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_USER'),   type: 'text' },
+      { key: 'basicCost',       label: this.translate.instant('COST.EMPLOYEE_COST.BASIC_COST'),         type: 'text' },
+      { key: 'internalCost',    label: this.translate.instant('COST.EMPLOYEE_COST.COL_INTERNAL'),       type: 'text' },
+      { key: 'externalCost',    label: this.translate.instant('COST.EMPLOYEE_COST.COL_EXTERNAL'),       type: 'text' },
+      { key: 'expirationDate',  label: this.translate.instant('COST.EMPLOYEE_COST.DATE_FIN'),           type: 'text' },
+      { key: 'action',          label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'), type: 'text' },
     ];
   });
 
@@ -199,6 +203,7 @@ export class EmployeeCostHistoryComponent implements OnInit {
       basicCost: ev.basicCost,
       internalCost: ev.internalCost,
       externalCost: ev.externalCost,
+      expirationDate: ev.expirationDate,
     })));
 
   /** Options built from whatever actually occurs in this record's own trail, same
@@ -295,22 +300,27 @@ export class EmployeeCostHistoryComponent implements OnInit {
       actor:        this.actorName(e.actorId, e.actorRole),
       diffs,
       statusChange,
-      basicCost:    this.snapshotValue(e.metadata, 'basicCost'),
-      internalCost: this.snapshotValue(e.metadata, 'internalSellingCost'),
-      externalCost: this.snapshotValue(e.metadata, 'externalSellingCost'),
+      basicCost:      this.snapshotValue(e.metadata, 'basicCost', v => formatAmount(Number(v))),
+      internalCost:   this.snapshotValue(e.metadata, 'internalSellingCost', v => formatAmount(Number(v))),
+      externalCost:   this.snapshotValue(e.metadata, 'externalSellingCost', v => formatAmount(Number(v))),
+      expirationDate: this.snapshotValue(e.metadata, 'dateFin', v => formatDate(String(v))),
     };
   }
 
   /** Resulting value of one field at this point in the record's history: the event's
    * `after` snapshot when there is one (CREATE/UPDATE), else `before` (a DELETE has no
    * `after`). `'—'` when there's no metadata at all (a STATUS_NORMALIZED entry). */
-  private snapshotValue(metadata: string | null | undefined, key: 'basicCost' | 'internalSellingCost' | 'externalSellingCost'): string {
+  private snapshotValue(
+    metadata: string | null | undefined,
+    key: 'basicCost' | 'internalSellingCost' | 'externalSellingCost' | 'dateFin',
+    format: (v: unknown) => string,
+  ): string {
     if (!metadata) return '—';
     try {
       const parsed = JSON.parse(metadata) as { before?: Record<string, unknown>; after?: Record<string, unknown> };
       const state = parsed.after ?? parsed.before;
       const value = state?.[key];
-      return value === undefined || value === null ? '—' : formatAmount(Number(value));
+      return value === undefined || value === null ? '—' : format(value);
     } catch {
       return '—';
     }

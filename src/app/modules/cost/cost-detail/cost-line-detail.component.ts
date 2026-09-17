@@ -3,21 +3,26 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin, of } from 'rxjs';
+import * as XLSX from 'xlsx';
 import {
-  ButtonComponent, DafCellDirective, DataTableComponent,
+  ButtonComponent, DafCellDirective, DataTableComponent, FilterComponent,
   MetricCardComponent, ModalService, PageComponent, PageHeaderComponent, SectionCardComponent,
   StatusBadgeComponent, TabsComponent, tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
-  BreadcrumbItem, MetricCardOptions, MetricDelta, PageHeaderBadge,
+  BreadcrumbItem, FilterField, FilterResult, MetricCardOptions, MetricDelta, PageHeaderBadge,
   TabItem, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
 
 import { CostService } from '../cost.service';
 import { AffaireService } from '../../affaires/affaire.service';
 import { ClientService } from '../../clients/client.service';
+import { SupplierService } from '../../suppliers/supplier.service';
 import type { UserRefDto } from '../../affaires/affaire.model';
-import { CostCategoryDto, CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../cost.model';
+import type { SupplierDto } from '../../suppliers/supplier.model';
+import {
+  CostCategoryDto, CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto, SupplierLedgerRowDto,
+} from '../cost.model';
 import {
   APPROVAL_BADGE_VARIANT, DECISION_BADGE_VARIANT, DECISION_ICON, STATUS_BADGE_VARIANT,
   approvalLevelKey, canEdit, decisionKey, formatDate, statusKey,
@@ -83,7 +88,7 @@ const SUPPLIER_MODE_PAGE_SIZE = 200;
   imports: [
     TranslatePipe, PermissionDirective, NgTemplateOutlet,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
-    MetricCardComponent, ButtonComponent, StatusBadgeComponent,
+    MetricCardComponent, ButtonComponent, StatusBadgeComponent, FilterComponent,
     DataTableComponent, DafCellDirective, TableActionComponent,
     CostLinesTableSectionComponent, ReglementModalComponent,
   ],
@@ -92,15 +97,16 @@ const SUPPLIER_MODE_PAGE_SIZE = 200;
   templateUrl: './cost-line-detail.component.html',
 })
 export class CostLineDetailComponent implements OnInit {
-  private readonly svc        = inject(CostService);
-  private readonly affaireSvc = inject(AffaireService);
-  private readonly clientSvc  = inject(ClientService);
-  private readonly translate  = inject(TranslateService);
-  private readonly currency   = inject(DisplayCurrencyPipe);
-  private readonly router     = inject(Router);
-  private readonly route      = inject(ActivatedRoute);
-  private readonly userStore  = inject(UserStore);
-  private readonly modal      = inject(ModalService);
+  private readonly svc         = inject(CostService);
+  private readonly affaireSvc  = inject(AffaireService);
+  private readonly clientSvc   = inject(ClientService);
+  private readonly supplierSvc = inject(SupplierService);
+  private readonly translate   = inject(TranslateService);
+  private readonly currency    = inject(DisplayCurrencyPipe);
+  private readonly router      = inject(Router);
+  private readonly route       = inject(ActivatedRoute);
+  private readonly userStore   = inject(UserStore);
+  private readonly modal       = inject(ModalService);
 
   @ViewChild('reglementModal') private reglementModal!: ReglementModalComponent;
 
@@ -131,12 +137,22 @@ export class CostLineDetailComponent implements OnInit {
     this.ledgerZoomed.update(z => !z);
   }
 
+  /** '' (no filter), or one of the `ledgerFilterFields()` option values below. Reset
+   *  on navigation, same as `ledgerZoomed` -- a display preference, not data. */
+  ledgerType = signal('');
+
   /** 'supplier'/'unassigned' modes only: the reused Tab-1 line list, and the matching
    *  row from the by-supplier aggregation (authoritative count/total for the header and
    *  the KPI tiles — the loaded line PAGE alone can't be trusted for that once a
    *  supplier has more than SUPPLIER_MODE_PAGE_SIZE lines). */
   supplierLines   = signal<CostLineDto[]>([]);
   supplierSummary = signal<SupplierCostSummaryDto | null>(null);
+
+  /** 'supplier' mode only: the full supplier record (type, matricule fiscale, pays) --
+   *  `null` in 'unassigned' mode, where there is no real supplier to fetch. Neither
+   *  `SupplierLedgerDto.supplier` nor `SupplierCostSummaryDto` carries these fields, so
+   *  this is its own call to `SupplierService`, not something already in hand. */
+  supplierDetail = signal<SupplierDto | null>(null);
 
   /** 'supplier'/'unassigned' modes only: resolved via ClientService.getMyPays(), same
    *  mechanism cost-lines.component.ts uses — unlike 'line' mode, there's no cost line
@@ -385,9 +401,45 @@ export class CostLineDetailComponent implements OnInit {
     return cols;
   });
 
+  /**
+   * Le mouvement plutôt que le montant : un relevé se lit « qu'est-ce qui reste dû »
+   * (crédit), « qu'ai-je payé en trop » (débit) ou « qu'est-ce qui est soldé » (ni l'un
+   * ni l'autre). Même construction que le filtre du relevé sur la fiche fournisseur
+   * (`supplier-detail.component.ts`).
+   */
+  readonly ledgerFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [{
+      name:    'type',
+      label:   t('COST.DETAIL.LEDGER.FILTER_TYPE'),
+      type:    'select',
+      options: [
+        { value: 'CREDIT',  label: t('COST.DETAIL.LEDGER.TYPE_CREDIT') },
+        { value: 'DEBIT',   label: t('COST.DETAIL.LEDGER.TYPE_DEBIT') },
+        { value: 'SETTLED', label: t('COST.DETAIL.LEDGER.TYPE_SETTLED') },
+      ],
+    }];
+  });
+
+  onLedgerFilter(result: FilterResult): void {
+    const v = result['type'];
+    this.ledgerType.set(Array.isArray(v) ? (v[0] as string) ?? '' : (v as string) ?? '');
+  }
+
+  readonly filteredLedgerRawRows = computed<SupplierLedgerRowDto[]>(() => {
+    const type = this.ledgerType();
+    return (this.ledger()?.rows ?? []).filter(r => {
+      if (!type) return true;
+      if (type === 'CREDIT')  return r.credit != null;
+      if (type === 'DEBIT')   return r.debit  != null;
+      return r.credit == null && r.debit == null; // 'SETTLED'
+    });
+  });
+
   readonly ledgerRows = computed<TableRow[]>(() => {
     this.translate.currentLang();
-    return (this.ledger()?.rows ?? []).map((r, i) => ({
+    return this.filteredLedgerRawRows().map((r, i) => ({
       id:             i,
       date:           formatDate(r.date),
       label:          r.label ?? '—',
@@ -418,7 +470,11 @@ export class CostLineDetailComponent implements OnInit {
   readonly ledgerConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
     return {
-      showHeader:   true,
+      // `false`, not the default `true` : that card-header bar has no title/viewAllLabel
+      // here, so it only rendered as dead empty (white) space above the column-header
+      // row -- the template's own header row (compte fournisseur + filtres/export/zoom)
+      // sits flush on top of the table instead, playing that role.
+      showHeader:   false,
       hoverable:    false,
       loading:      false,
       emptyMessage: this.hasSupplier()
@@ -426,6 +482,35 @@ export class CostLineDetailComponent implements OnInit {
         : this.translate.instant('COST.DETAIL.LEDGER.NO_SUPPLIER'),
     };
   });
+
+  /**
+   * Même bibliothèque (xlsx) et même schéma d'export que `exportWipExcel()` /
+   * `exportHistoryExcel()` (fiche affaire) -- un classeur, une feuille, colonnes
+   * traduites. Montants en nombres bruts (pas `fmtAmount()`) : un export sert à
+   * recalculer dans le tableur, pas à relire à l'écran. Respecte le filtre actif
+   * (`filteredLedgerRawRows()`), pas le relevé entier.
+   */
+  exportLedgerExcel(): void {
+    const t = (k: string) => this.translate.instant(k);
+    const rows = this.filteredLedgerRawRows().map(r => ({
+      [t('COST.DETAIL.LEDGER.COL_DATE')]:            formatDate(r.date),
+      [t('COST.DETAIL.LEDGER.COL_LABEL')]:            r.label ?? '',
+      [t('COST.DETAIL.LEDGER.COL_NET_AMOUNT')]:       r.netAmountLocal ?? '',
+      [t('COST.DETAIL.LEDGER.COL_FODEC')]:            r.fodecAmount ?? '',
+      [t('COST.DETAIL.LEDGER.COL_TVA')]:              r.vatAmountLocal ?? '',
+      [t('COST.DETAIL.LEDGER.COL_TIMBRE')]:           r.timbreAmount ?? '',
+      [t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES')]:     r.autresTaxesAmount ?? '',
+      [t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT')]:     r.grossAmountLocal ?? '',
+      [t('COST.DETAIL.LEDGER.COL_DEBIT')]:            r.debit ?? '',
+      [t('COST.DETAIL.LEDGER.COL_CREDIT')]:           r.credit ?? '',
+      [t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR')]:   r.soldeDebiteur ?? '',
+      [t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR')]:  r.soldeCrediteur ?? '',
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('COST.DETAIL.TABS.LEDGER'));
+    const supplierPart = (this.supplierName() ?? 'RELEVE').replace(/[^a-z0-9]+/gi, '_');
+    XLSX.writeFile(wb, `${supplierPart}_releve.xlsx`);
+  }
 
   // ── Tab 1, modes 'supplier'/'unassigned' : liste des lignes ───────────────
 
@@ -522,13 +607,17 @@ export class CostLineDetailComponent implements OnInit {
       ledger: isUnassigned
         ? of<SupplierLedgerDto>({ supplier: null, rows: [] })
         : this.svc.getLedgerForSupplier(this.supplierIdParam),
-      users:     this.affaireSvc.getUsers(),
-      summaries: this.svc.getCostLinesBySupplier(paysId),
+      users:          this.affaireSvc.getUsers(),
+      summaries:      this.svc.getCostLinesBySupplier(paysId),
+      supplierDetail: isUnassigned
+        ? of<SupplierDto | null>(null)
+        : this.supplierSvc.getSupplier(this.supplierIdParam),
     }).subscribe({
-      next: ({ lines, ledger, users, summaries }) => {
+      next: ({ lines, ledger, users, summaries, supplierDetail }) => {
         this.supplierLines.set(lines.content);
         this.ledger.set(ledger);
         this.allUsers.set(users);
+        this.supplierDetail.set(supplierDetail);
         this.supplierSummary.set(
           summaries.find(s => isUnassigned ? s.supplierId == null : s.supplierId === this.supplierIdParam)
           ?? null,

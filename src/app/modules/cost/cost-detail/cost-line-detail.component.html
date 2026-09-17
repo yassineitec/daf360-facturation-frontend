@@ -124,39 +124,49 @@
            style inline, donc EXACTEMENT la même taille, pas juste une taille
            approchante. Elle rejoint la rangée des KPI, qui passe pleine
            largeur. Le tableau suit, pleine largeur, sous les onglets.
-           ══════════════════════════════════════════════════════════════ -->
-      <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
 
-        <daf-metric-card
-          style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
-          [label]="'COST.DETAIL.INFO.SUPPLIER' | translate"
-          [value]="headerTitle()"
-          [delta]="null"
-          [options]="{ icon: 'store', iconColor: 'text-tertiary', iconBg: 'bg-tertiary/10' }" />
+           `display:flex; flex-direction:column; gap:1.5rem` sur le conteneur, PAS des
+           `margin-top` individuels sur les onglets/le panneau -- c'est le mécanisme
+           EXACT que la colonne droite de la mise en page normale utilise déjà pour son
+           propre espacement KPI/onglets/panneau. Deux mécanismes différents (`gap`
+           flexbox ici, `margin-top` avant) ne produisent pas la même distance : les
+           marges d'éléments empilés peuvent fusionner entre elles, un `gap` jamais --
+           d'où le petit décalage vertical de l'entête (et donc des boutons) entre
+           zoomé et pas zoomé. Même mécanisme des deux côtés = même distance. -->
+      <div style="display:flex; flex-direction:column; gap:1.5rem">
 
-        @for (k of kpiTiles(); track k.label) {
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+
           <daf-metric-card
             style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
-            [label]="k.label | translate"
-            [value]="k.value"
-            [delta]="k.delta"
-            [options]="k.options" />
-        }
-      </div>
+            [label]="'COST.DETAIL.INFO.SUPPLIER' | translate"
+            [value]="headerTitle()"
+            [delta]="null"
+            [options]="{ icon: 'store', iconColor: 'text-tertiary', iconBg: 'bg-tertiary/10' }" />
 
-      <daf-tabs #tabsRef
-        variant="underline"
-        [tabs]="tabs()"
-        [(active)]="activeTab"
-        [tabsLabel]="'COST.DETAIL.TABS_ARIA' | translate"
-        idPrefix="cost-line-detail"
-        style="display:block; margin-top:1.5rem" />
+          @for (k of kpiTiles(); track k.label) {
+            <daf-metric-card
+              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+              [label]="k.label | translate"
+              [value]="k.value"
+              [delta]="k.delta"
+              [options]="k.options" />
+          }
+        </div>
 
-      <div role="tabpanel"
-           [id]="tabsRef.panelId(activeTab())"
-           [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
-           style="margin-top:1.5rem">
-        <ng-container [ngTemplateOutlet]="ledgerPanel" />
+        <daf-tabs #tabsRef
+          variant="underline"
+          [tabs]="tabs()"
+          [(active)]="activeTab"
+          [tabsLabel]="'COST.DETAIL.TABS_ARIA' | translate"
+          idPrefix="cost-line-detail" />
+
+        <div role="tabpanel"
+             [id]="tabsRef.panelId(activeTab())"
+             [attr.aria-labelledby]="tabsRef.tabId(activeTab())">
+          <ng-container [ngTemplateOutlet]="ledgerPanel" />
+        </div>
+
       </div>
 
     }
@@ -169,10 +179,16 @@
        pas rendue ici en plus petit.
        ══════════════════════════════════════════════════════════════ -->
   <ng-template #identityCard>
+    <!-- Modes 'supplier'/'unassigned' : le nom du fournisseur et le nombre de lignes
+         sont déjà affichés juste en dessous, dans la carte -- les répéter ici dans le
+         h1/sous-titre serait redondant. `title` reste obligatoire (a11y : une page a
+         toujours un h1), donc chaîne vide plutôt qu'omis ; les breadcrumbs restent,
+         eux, seule navigation de cette zone. Mode 'line' inchangé : pas de doublon,
+         c'est la seule ligne de coût de la page. -->
     <daf-page-header
       size="md"
-      [title]="headerTitle()"
-      [subtitle]="headerSubtitle()"
+      [title]="mode === 'line' ? headerTitle() : ''"
+      [subtitle]="mode === 'line' ? headerSubtitle() : undefined"
       [badges]="headerBadges()"
       [breadcrumbs]="breadcrumbs()"
       [breadcrumbLabel]="'COST.DETAIL.BREADCRUMB_ARIA' | translate" />
@@ -231,6 +247,27 @@
               </p>
               <p class="text-body-md font-bold text-on-surface">{{ supplierSummary()?.supplierCode ?? '—' }}</p>
             </div>
+            <!-- Ni `SupplierLedgerDto.supplier` ni `SupplierCostSummaryDto` ne portent
+                 ces trois champs -- `supplierDetail()` vient d'un appel dédié à
+                 `SupplierService.getSupplier()`, `null` tant qu'il n'a pas répondu. -->
+            <div class="flex flex-col gap-1">
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'COST.DETAIL.INFO.SUPPLIER_TYPE' | translate }}
+              </p>
+              <p class="text-body-md font-bold text-on-surface">{{ supplierDetail()?.typeLabel ?? '—' }}</p>
+            </div>
+            <div class="flex flex-col gap-1">
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'COST.DETAIL.INFO.SUPPLIER_TAX_ID' | translate }}
+              </p>
+              <p class="text-body-md font-bold text-on-surface">{{ supplierDetail()?.taxId ?? '—' }}</p>
+            </div>
+            <div class="flex flex-col gap-1">
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'COST.DETAIL.INFO.SUPPLIER_COUNTRY' | translate }}
+              </p>
+              <p class="text-body-md font-bold text-on-surface">{{ supplierDetail()?.paysLabel ?? '—' }}</p>
+            </div>
           }
           <div class="flex flex-col gap-1">
             <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
@@ -270,39 +307,65 @@
        jamais dupliquer le tableau ni sa colonne d'actions.
        ══════════════════════════════════════════════════════════════ -->
   <ng-template #ledgerPanel>
-    @if (hasSupplier()) {
-      <div class="flex items-center justify-between gap-2 px-1">
-        <div class="flex items-center gap-2">
-          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-            {{ 'COST.DETAIL.LEDGER.ACCOUNT_LABEL' | translate }}
-          </span>
-          <span class="text-body-md font-bold text-on-surface">{{ supplierName() ?? '—' }}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <!-- Mode 'supplier' a déjà ce bouton dans la carte d'identité (juste sous
-               "Nouvelle ligne de coût") -- le répéter ici serait redondant. Mode 'line'
-               n'a pas cette carte-là, donc il le garde ici : c'est son seul accès. -->
-          @if (canManageReglements() && mode !== 'supplier') {
+    <!-- `display:flex; flex-direction:column` sans `gap` -- pas un simple wrapper : c'est
+         ce qui soude cette rangée au tableau juste en dessous, quel que soit le `gap`
+         du conteneur parent (le tabpanel en a un, la version zoomée aussi). Combiné à
+         `ledgerConfig().showHeader = false` (le bandeau vide de `daf-data-table`
+         disparaît), cette rangée EST l'entête du tableau -- même fond, mêmes coins
+         arrondis en haut, aucun interstice blanc entre les deux. -->
+    <div style="display:flex; flex-direction:column">
+      @if (hasSupplier()) {
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-t-xl
+                    border border-b-0 border-outline-variant/30 bg-surface-container-lowest px-5 py-4">
+          <div class="flex items-center gap-2">
+            <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'COST.DETAIL.LEDGER.ACCOUNT_LABEL' | translate }}
+            </span>
+            <span class="text-body-md font-bold text-on-surface">{{ supplierName() ?? '—' }}</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Mode 'supplier' a déjà ce bouton dans la carte d'identité (juste sous
+                 "Nouvelle ligne de coût") -- le répéter ici serait redondant. Mode 'line'
+                 n'a pas cette carte-là, donc il le garde ici : c'est son seul accès. -->
+            @if (canManageReglements() && mode !== 'supplier') {
+              <daf-button
+                [options]="{ variant: 'teal', iconStart: 'add',
+                             label: 'COST.DETAIL.LEDGER.NEW_REGLEMENT' | translate }"
+                (onClick)="openNewReglement()" />
+            }
+            <!-- Même bibliothèque que la fiche fournisseur (`supplier-detail.component.ts`) :
+                 `daf-filter` porte son propre bouton déclencheur (pas de daf-button séparé à
+                 câbler), et l'export Excel réutilise `exportWipExcel()` (xlsx, fiche affaire). -->
+            <daf-filter
+              [fields]="ledgerFilterFields()"
+              [title]="'COST.DETAIL.LEDGER.FILTERS' | translate"
+              [applyLabel]="'COST.DETAIL.LEDGER.FILTER_APPLY' | translate"
+              [cancelLabel]="'COST.DETAIL.LEDGER.FILTER_CANCEL' | translate"
+              [resetLabel]="'COST.DETAIL.LEDGER.FILTER_RESET' | translate"
+              [triggerLabel]="'COST.DETAIL.LEDGER.FILTERS' | translate"
+              triggerIcon="filter_list"
+              triggerVariant="teal"
+              (apply)="onLedgerFilter($event)" />
             <daf-button
-              [options]="{ variant: 'teal', iconStart: 'add',
-                           label: 'COST.DETAIL.LEDGER.NEW_REGLEMENT' | translate }"
-              (onClick)="openNewReglement()" />
-          }
-          <!-- Sans fond (`ghost`) : posé dans cette ligne de texte, pas au-dessus d'un
-               tableau -- une icône seule s'y fond mieux qu'un bouton plein. -->
-          <daf-button
-            [options]="{ variant: 'ghost', size: 'sm',
-                         iconStart: ledgerZoomed() ? 'close_fullscreen' : 'open_in_full',
-                         title: (ledgerZoomed() ? 'COST.DETAIL.LEDGER.ZOOM_OUT' : 'COST.DETAIL.LEDGER.ZOOM_IN') | translate }"
-            (onClick)="toggleLedgerZoom()" />
+              [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
+                           title: 'COST.DETAIL.LEDGER.EXPORT_EXCEL' | translate,
+                           disabled: !filteredLedgerRawRows().length }"
+              (onClick)="exportLedgerExcel()" />
+            <!-- Sans fond (`ghost`) : posé dans cette ligne de texte, pas au-dessus d'un
+                 tableau -- une icône seule s'y fond mieux qu'un bouton plein. -->
+            <daf-button
+              [options]="{ variant: 'ghost', size: 'sm',
+                           iconStart: ledgerZoomed() ? 'close_fullscreen' : 'open_in_full',
+                           title: (ledgerZoomed() ? 'COST.DETAIL.LEDGER.ZOOM_OUT' : 'COST.DETAIL.LEDGER.ZOOM_IN') | translate }"
+              (onClick)="toggleLedgerZoom()" />
+          </div>
         </div>
-      </div>
-    }
+      }
 
-    <daf-data-table
-      [columns]="ledgerColumns()"
-      [rows]="ledgerRows()"
-      [config]="ledgerConfig()">
+      <daf-data-table
+        [columns]="ledgerColumns()"
+        [rows]="ledgerRows()"
+        [config]="ledgerConfig()">
 
       <ng-template dafCell="actions" let-row>
         @if (row['_reglementId']) {
@@ -317,7 +380,8 @@
         }
       </ng-template>
 
-    </daf-data-table>
+      </daf-data-table>
+    </div>
   </ng-template>
 
   <app-reglement-modal #reglementModal />

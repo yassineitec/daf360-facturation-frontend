@@ -1,16 +1,33 @@
 <daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true"
           [loadingLabel]="'COST.EMPLOYEE_COST.LOADING' | translate">
 
-  <div class="flex items-center gap-3">
-    <daf-avatar [data]="avatarData()" size="lg" />
-    <daf-page-header class="flex-1"
-      [title]="''"
-      [breadcrumbs]="breadcrumbs()"
-      [breadcrumbLabel]="'COST.EMPLOYEE_COST.HISTORY_BREADCRUMB_ARIA' | translate">
-      <daf-button pageActions
-        [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !flatRows().length }"
-        (onClick)="exportHistoryExcel()" />
-    </daf-page-header>
+  <!-- Hand-rolled identity row (avatar + breadcrumb), not `daf-page-header` — its own
+       title `<h1>` stays in the DOM even with `[title]="''"`, reserving vertical space
+       below the breadcrumb that pushes it off-centre against the avatar. Same
+       breadcrumb markup/classes as PageHeaderComponent's own template, so it still
+       looks and behaves like every other breadcrumb in the app (clickable crumb,
+       chevron separator, current page non-interactive). -->
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <daf-avatar [data]="avatarData()" size="lg" />
+      <nav [attr.aria-label]="'COST.EMPLOYEE_COST.HISTORY_BREADCRUMB_ARIA' | translate"
+           class="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[12px] leading-4 text-outline">
+        @for (crumb of breadcrumbs(); track $index; let last = $last; let first = $first) {
+          @if (!first) {
+            <span class="material-symbols-outlined text-[14px] leading-4 text-outline-variant"
+                  aria-hidden="true">chevron_right</span>
+          }
+          @if (last) {
+            <span aria-current="page" class="text-on-surface-variant font-medium">{{ crumb.label }}</span>
+          } @else if (crumb.link) {
+            <a [routerLink]="crumb.link" class="hover:text-tertiary transition-colors">{{ crumb.label }}</a>
+          }
+        }
+      </nav>
+    </div>
+    <daf-button
+      [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !flatRows().length }"
+      (onClick)="exportHistoryExcel()" />
   </div>
 
   <div class="flex flex-col gap-6">
@@ -49,6 +66,9 @@
               <span class="material-symbols-outlined text-[16px] text-primary">history</span>
               {{ eventHeader(ev) }}
             </div>
+            <p class="pl-7 mt-1 text-[12px] text-on-surface-variant">
+              {{ 'COST.EMPLOYEE_COST.DATE_FIN' | translate }} : {{ ev.expirationDate }}
+            </p>
             @if (ev.diffs.length) {
               <ul class="flex flex-col gap-1 pl-7 mt-2 list-disc text-[13px] text-on-surface-variant">
                 @for (d of ev.diffs; track d.label) {
