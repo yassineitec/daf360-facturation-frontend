@@ -65,7 +65,14 @@
         }
 
         @if (affaire.contractAmount) {
-          <div class="flex overflow-hidden rounded-lg border border-outline-variant w-fit">
+          <!-- `self-start` overrides this flex-col parent's default `align-items:stretch`
+               cross-axis behavior JUST for this pill (not the whole container — the
+               `tauxComment` field below relies on that same stretch to render full-width via
+               its own `fullWidth: true`, so the parent itself must stay untouched). Without
+               it, this div — despite `w-fit` — was being stretched to the container's full
+               width by the ambient stretch, and its second (active, `bg-primary`) button
+               visibly filled that entire stretched width, reported live by the user. -->
+          <div class="flex self-start overflow-hidden rounded-lg border border-outline-variant w-fit">
             <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
               [class.bg-primary]="avInputMode() === 'POURCENTAGE'"
               [class.text-on-primary]="avInputMode() === 'POURCENTAGE'"
