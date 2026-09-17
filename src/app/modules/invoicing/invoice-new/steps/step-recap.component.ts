@@ -375,7 +375,7 @@ export class StepRecapComponent {
   exportPdf(id: number): void {
     this.exportingPdf.set(true);
     this.exportError.set(null);
-    this.svc.exportPdfPreview(id).subscribe({
+    this.svc.exportPdfPreview(id, this.translate.currentLang() ?? undefined).subscribe({
       next: blob => {
         this.exportingPdf.set(false);
         const url = URL.createObjectURL(blob);

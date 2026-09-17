@@ -98,8 +98,9 @@ export class InvoiceService {
   }
 
   /** Aperçu PDF non officiel d'un brouillon AV (voir étape Récapitulatif). */
-  exportPdfPreview(id: number): Observable<Blob> {
-    return this.http.get(`${this.base}/invoices/${id}/pdf-preview`, { responseType: 'blob' });
+  exportPdfPreview(id: number, lang?: string): Observable<Blob> {
+    const params = lang ? new HttpParams().set('lang', lang) : undefined;
+    return this.http.get(`${this.base}/invoices/${id}/pdf-preview`, { params, responseType: 'blob' });
   }
 
   // ── Invoice progress (step Lignes — mode AV) ──────────────────────────────

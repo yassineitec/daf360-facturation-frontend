@@ -22,7 +22,7 @@ import { STATUT_BADGE_VARIANT } from '../invoice-display';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
-import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
 
@@ -552,7 +552,7 @@ export class InvoiceDetailComponent implements OnInit {
     if (!inv) return;
     this.exportingPdf.set(true);
     this.actionError.set(null);
-    this.svc.exportPdfPreview(inv.id).subscribe({
+    this.svc.exportPdfPreview(inv.id, this.translate.currentLang() ?? undefined).subscribe({
       next: blob => {
         this.exportingPdf.set(false);
         const url = URL.createObjectURL(blob);
