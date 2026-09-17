@@ -962,7 +962,9 @@
           "MANAGERS_MORE": "{{name}} and {{count}} more",
           "MANAGER": "Manager",
           "TYPE": "Type",
-          "BUDGET_LABEL": "Budget"
+          "BUDGET_LABEL": "Budget",
+          "FACTURE": "Invoiced",
+          "WIP": "Wip"
         },
         "HEADERS": {
           "REF": "Reference",
@@ -1329,6 +1331,7 @@
         "reference": "Reference",
         "from_doc360": "from DOC360",
         "reference_label": "Reference (auto if empty)",
+        "erp_reference_label": "ERP Ref.",
         "billing_mode_label": "Billing mode",
         "billing_mode_sub": "Select the contractual mode for this project",
         "amount_label": "Amount",
@@ -2099,6 +2102,7 @@
       "NEW_MONTANT": "New cumulative amount",
       "TAUX_MODE_PERCENT": "Percentage",
       "TAUX_MODE_AMOUNT": "Amount",
+      "TAUX_MODE_ARIA": "Rate entry mode",
       "FORFAIT_ENTRY_TITLE": "Enter a progress rate",
       "REGIE_ENTRY_TITLE": "Calculate Time & Materials WIP",
       "LIVRABLE_ENTRY_TITLE": "Select deliverables to bill",
@@ -2230,7 +2234,21 @@
       "FILTER_ALL": "All",
       "FILTER_PERIOD": "Period",
       "FILTER_MONTH": "Month",
-      "FILTER_YEAR": "Year"
+      "FILTER_YEAR": "Year",
+      "SEARCH_PLACEHOLDER": "Search a collaborator…",
+      "TABLE_FILTER_TITLE": "Filter expenses",
+      "TABLE_FILTER_TRIGGER": "Filters",
+      "TABLE_FILTER_APPLY": "Apply",
+      "TABLE_FILTER_CANCEL": "Cancel",
+      "TABLE_FILTER_RESET": "Reset",
+      "ZOOM_TOOLTIP": "Expand",
+      "ZOOM_TITLE": "Expenses by collaborator",
+      "ZOOM_CLOSE": "Close",
+      "EXPORT_EXCEL": "Export Excel",
+      "PER_PAGE": "per page",
+      "PAGE_SUMMARY": "{start}–{end} of {total}",
+      "FIRST_PAGE": "First page",
+      "LAST_PAGE": "Last page"
     }
   },
   "ERRORS": {

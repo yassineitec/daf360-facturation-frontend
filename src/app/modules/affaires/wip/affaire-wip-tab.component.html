@@ -66,27 +66,17 @@
 
         @if (affaire.contractAmount) {
           <!-- `self-start` overrides this flex-col parent's default `align-items:stretch`
-               cross-axis behavior JUST for this pill (not the whole container — the
+               cross-axis behavior JUST for this switch (not the whole container — the
                `tauxComment` field below relies on that same stretch to render full-width via
-               its own `fullWidth: true`, so the parent itself must stay untouched). Without
-               it, this div — despite `w-fit` — was being stretched to the container's full
-               width by the ambient stretch, and its second (active, `bg-primary`) button
-               visibly filled that entire stretched width, reported live by the user. -->
-          <div class="flex self-start overflow-hidden rounded-lg border border-outline-variant w-fit">
-            <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
-              [class.bg-primary]="avInputMode() === 'POURCENTAGE'"
-              [class.text-on-primary]="avInputMode() === 'POURCENTAGE'"
-              [class.text-on-surface-variant]="avInputMode() !== 'POURCENTAGE'"
-              (click)="avInputMode.set('POURCENTAGE')">
-              {{ 'AFFAIRES.WIP.TAUX_MODE_PERCENT' | translate }}
-            </button>
-            <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
-              [class.bg-primary]="avInputMode() === 'MONTANT'"
-              [class.text-on-primary]="avInputMode() === 'MONTANT'"
-              [class.text-on-surface-variant]="avInputMode() !== 'MONTANT'"
-              (click)="avInputMode.set('MONTANT')">
-              {{ 'AFFAIRES.WIP.TAUX_MODE_AMOUNT' | translate }}
-            </button>
+               its own `fullWidth: true`, so the parent itself must stay untouched). -->
+          <div class="wip-mode-tabs self-start w-fit">
+            <daf-tabs
+              variant="pill"
+              [tabs]="avModeTabs()"
+              [active]="avInputMode()"
+              (activeChange)="onAvModeTabChange($event)"
+              [tabsLabel]="'AFFAIRES.WIP.TAUX_MODE_ARIA' | translate"
+              idPrefix="wip-av-mode" />
           </div>
         }
 
@@ -474,14 +464,16 @@
          même taille que le reste des popups de l'app, en pleine largeur/hauteur. -->
     @if (showHistoryPage()) {
       <!-- Recentré : couvre tout l'écran (inset-0) et centre le panneau au milieu,
-           comme une vraie popup — plus de bande réservée à gauche. -->
-      <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-           style="z-index:1000"
+           comme une vraie popup — plus de bande réservée à gauche. Portalée sous <body>
+           (voir historyOverlayRef/l'effect du constructeur) : sans ça, un ancêtre du shell
+           (la sidebar) recevait `position: fixed` en local et la popup s'arrêtait avant elle. -->
+      <div #historyOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+           style="z-index:9999"
            (click)="showHistoryPage.set(false)">
-        <!-- TEST : popup agrandie (marge 100px de chaque côté au lieu de 240px, 88vh au
-             lieu de 72vh de hauteur). -->
+        <!-- Même taille que le popup "zoom" de l'onglet Dépense
+             (depense-summary-table.component.html) : marge 60px de chaque côté, 90vh. -->
         <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-             style="width:calc(100vw - 200px); height:88vh;"
+             style="width:calc(100vw - 120px); height:90vh;"
              (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
             <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
@@ -771,11 +763,13 @@
     <!-- Popup "Historique" EN PLEIN ÉCRAN — même coquille que la popup Historique WIP de
          la carte Régie. ── -->
     @if (showHistoryPage()) {
-      <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-           style="z-index:1000"
+      <!-- Portalée sous <body> (voir historyOverlayRef partagé avec la popup Régie ci-dessus,
+           un seul billingMode actif à la fois). -->
+      <div #historyOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+           style="z-index:9999"
            (click)="showHistoryPage.set(false)">
         <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-             style="width:calc(100vw - 200px); height:88vh;"
+             style="width:calc(100vw - 120px); height:90vh;"
              (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
             <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">

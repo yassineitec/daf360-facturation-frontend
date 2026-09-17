@@ -95,6 +95,9 @@ export class WizardStepInfoComponent implements OnInit {
   get reference(): string | number | null  { return this.draft.reference ?? null; }
   set reference(v: string | number | null) { this.draft.reference = (v as string) || undefined; }
 
+  get erpReference(): string | number | null  { return this.draft.erpReference ?? null; }
+  set erpReference(v: string | number | null) { this.draft.erpReference = (v as string) || null; }
+
   get notes(): string | number | null      { return this.draft.notes ?? null; }
   set notes(v: string | number | null)     { this.draft.notes = (v as string) || undefined; }
 

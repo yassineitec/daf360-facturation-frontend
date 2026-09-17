@@ -109,6 +109,10 @@ export interface AffaireListItem {
   budgetPrevisionnel: number | null;
   budgetValide:       boolean;
   rafDisponible?:     number | null;
+  /** Somme des factures émises (hors annulées/brouillons/retournées). */
+  montantFacture?:    number | null;
+  /** Pas encore un vrai calcul côté serveur — même placeholder que `AffaireKpisDto.wip`. */
+  wip?:               number | null;
   rafAlerteSeuilPct:  number;
   paysId:             number;
   devise?:            string;

@@ -1,63 +1,5 @@
 <div class="flex flex-col gap-6">
 
-  <div class="flex flex-wrap items-center gap-3">
-    <div class="flex overflow-hidden rounded-lg border border-outline-variant w-fit">
-      <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
-        [class.bg-primary]="filterMode() === 'ALL'"
-        [class.text-on-primary]="filterMode() === 'ALL'"
-        [class.text-on-surface-variant]="filterMode() !== 'ALL'"
-        [attr.aria-pressed]="filterMode() === 'ALL'"
-        (click)="setFilterMode('ALL')">
-        {{ 'AFFAIRES.DEPENSE.FILTER_ALL' | translate }}
-      </button>
-      <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
-        [class.bg-primary]="filterMode() === 'PERIOD'"
-        [class.text-on-primary]="filterMode() === 'PERIOD'"
-        [class.text-on-surface-variant]="filterMode() !== 'PERIOD'"
-        [attr.aria-pressed]="filterMode() === 'PERIOD'"
-        (click)="setFilterMode('PERIOD')">
-        {{ 'AFFAIRES.DEPENSE.FILTER_PERIOD' | translate }}
-      </button>
-      <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
-        [class.bg-primary]="filterMode() === 'MONTH'"
-        [class.text-on-primary]="filterMode() === 'MONTH'"
-        [class.text-on-surface-variant]="filterMode() !== 'MONTH'"
-        [attr.aria-pressed]="filterMode() === 'MONTH'"
-        (click)="setFilterMode('MONTH')">
-        {{ 'AFFAIRES.DEPENSE.FILTER_MONTH' | translate }}
-      </button>
-      <button type="button" class="px-3 py-1 text-[12px] font-semibold transition-colors"
-        [class.bg-primary]="filterMode() === 'YEAR'"
-        [class.text-on-primary]="filterMode() === 'YEAR'"
-        [class.text-on-surface-variant]="filterMode() !== 'YEAR'"
-        [attr.aria-pressed]="filterMode() === 'YEAR'"
-        (click)="setFilterMode('YEAR')">
-        {{ 'AFFAIRES.DEPENSE.FILTER_YEAR' | translate }}
-      </button>
-    </div>
-
-    @if (filterMode() === 'PERIOD') {
-      <daf-multi-date-picker
-        [value]="filterRangeDates()"
-        (valueChange)="onFilterRangeChange($event)"
-        [config]="{ selectionMode: 'range', fullWidth: false }" />
-    }
-    @if (filterMode() === 'MONTH') {
-      <daf-select
-        [options]="monthSelectOptions()"
-        [config]="{ placeholder: ('AFFAIRES.DEPENSE.FILTER_MONTH' | translate), fullWidth: false }"
-        [selected]="selectedMonthValue()"
-        (selectedChange)="onFilterMonthChange($event)" />
-    }
-    @if (filterMode() === 'YEAR') {
-      <daf-select
-        [options]="yearSelectOptions()"
-        [config]="{ placeholder: ('AFFAIRES.DEPENSE.FILTER_YEAR' | translate), fullWidth: false }"
-        [selected]="selectedYearValue()"
-        (selectedChange)="onFilterYearChange($event)" />
-    }
-  </div>
-
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     @for (k of kpiTiles(); track k.label) {
       <daf-metric-card [label]="k.label" [value]="k.value" [options]="k.options" />
@@ -74,7 +16,10 @@
     <app-depense-summary-table
       [lignes]="filteredLignes()"
       [devise]="affaire.devise"
-      (collaboratorSelected)="onCollaboratorSelected($event)" />
+      [monthOptions]="monthFilterOptions()"
+      [yearOptions]="yearFilterOptions()"
+      (collaboratorSelected)="onCollaboratorSelected($event)"
+      (periodApply)="onFilterApply($event)" />
   }
 
 </div>

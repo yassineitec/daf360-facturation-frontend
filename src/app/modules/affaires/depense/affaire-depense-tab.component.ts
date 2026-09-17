@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { MetricCardComponent, MultiDatePickerComponent, SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
+import { MetricCardComponent, FilterOption, FilterResult } from '@khalilrebhiitec/daf360';
 import { DepenseService } from './depense.service';
 import { DepensePreview, DepenseLigne } from './depense.model';
 import { DepenseSummaryTableComponent } from './depense-summary-table.component';
@@ -19,7 +19,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MetricCardComponent, DepenseSummaryTableComponent, DepenseCollaboratorDetailComponent,
-    TranslatePipe, MultiDatePickerComponent, SelectComponent,
+    TranslatePipe,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-depense-tab.component.html',
@@ -100,7 +100,10 @@ export class AffaireDepenseTabComponent implements OnInit {
     return [...seen.values()].sort((a, b) => b.year - a.year || b.month - a.month);
   });
 
-  protected readonly monthSelectOptions = computed<SelectOption[]>(() => {
+  /** `FilterOption[]`, not `SelectOption[]`: these feed the Mois/Année fields of the
+   * `daf-filter` panel that now lives in `app-depense-summary-table`'s own toolbar
+   * (passed down as `[monthOptions]`/`[yearOptions]`), not a `daf-select` here. */
+  protected readonly monthFilterOptions = computed<FilterOption[]>(() => {
     this.translate.currentLang();
     return this.availableMonths().map(m => ({
       value: `${m.year}-${String(m.month).padStart(2, '0')}`,
@@ -108,19 +111,9 @@ export class AffaireDepenseTabComponent implements OnInit {
     }));
   });
 
-  protected readonly yearSelectOptions = computed<SelectOption[]>(() =>
+  protected readonly yearFilterOptions = computed<FilterOption[]>(() =>
     this.availableYears().map(y => ({ value: String(y), label: String(y) })),
   );
-
-  protected readonly selectedMonthValue = computed<string[]>(() => {
-    const m = this.filterMonth();
-    return m ? [`${m.year}-${String(m.month).padStart(2, '0')}`] : [];
-  });
-
-  protected readonly selectedYearValue = computed<string[]>(() => {
-    const y = this.filterYear();
-    return y != null ? [String(y)] : [];
-  });
 
   /** Single source of truth every consumer reads instead of `preview()?.lignes` directly —
    * `kpiTiles` below, and (from Task 6 onward) both child tables' `[lignes]` binding. ISO
@@ -174,30 +167,28 @@ export class AffaireDepenseTabComponent implements OnInit {
     this.selectedEmail.set(null);
   }
 
-  onFilterRangeChange(value: Date | Date[] | null): void {
-    this.filterRangeDates.set(value);
-    // `null` arrives when the user clicks "Effacer" in the picker — unlike the WIP tab's AV
-    // period (which always needs a value), this filter is optional: clearing it means "show
-    // everything again", so fall back to 'ALL' instead of leaving a stale range applied.
-    if (value === null) this.filterMode.set('ALL');
-    this.selectedEmail.set(null);
-  }
+  /** From `app-depense-summary-table`'s `(periodApply)` — its own `daf-filter` panel bubbles
+   * the Période/Mois/Année part of its result up here so `filteredLignes()` (and the KPI
+   * tiles that read it) stay in sync with whatever the table's panel applies. Checked in
+   * this order because the three fields are mutually exclusive filters, not independent
+   * ones; whichever is actually set wins. Nothing set across all three means 'ALL'. */
+  onFilterApply(result: FilterResult): void {
+    const period = result['period'];
+    const month  = result['month'];
+    const year   = result['year'];
 
-  onFilterMonthChange(values: string[]): void {
-    const v = values[0];
-    if (!v) {
-      this.filterMonth.set(null);
-      this.selectedEmail.set(null);
-      return;
+    if (Array.isArray(period) && period.length === 2) {
+      this.setFilterMode('PERIOD');
+      this.filterRangeDates.set(period as Date[]);
+    } else if (typeof month === 'string' && month) {
+      this.setFilterMode('MONTH');
+      const [y, m] = month.split('-').map(Number);
+      this.filterMonth.set({ year: y, month: m });
+    } else if (typeof year === 'string' && year) {
+      this.setFilterMode('YEAR');
+      this.filterYear.set(Number(year));
+    } else {
+      this.setFilterMode('ALL');
     }
-    const [year, month] = v.split('-').map(Number);
-    this.filterMonth.set({ year, month });
-    this.selectedEmail.set(null);
-  }
-
-  onFilterYearChange(values: string[]): void {
-    const v = values[0];
-    this.filterYear.set(v ? Number(v) : null);
-    this.selectedEmail.set(null);
   }
 }

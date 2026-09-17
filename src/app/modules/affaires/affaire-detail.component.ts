@@ -898,7 +898,7 @@ export class AffaireDetailComponent implements OnInit {
    * Ici les libellés sont tous à gauche, les valeurs toutes à droite : une colonne de
    * questions, une colonne de réponses.
    *
-   * L'ordre des quatre premières lignes est fixe (budget, montant, mode, validation) ;
+   * L'ordre des trois premières lignes est fixe (budget, mode, validation) ;
    * les suivantes ne sont là que si elles portent une valeur — voir chaque garde.
    */
   readonly contratRows = computed<ContratRow[]>(() => {
@@ -911,13 +911,6 @@ export class AffaireDetailComponent implements OnInit {
       // montrent CA, RAF, marge et WIP — pas le budget dont elles se déduisent.
       { label: 'AFFAIRES.DETAIL.INFO.BUDGET', value: this.money(a.budgetPrevisionnel) },
     ];
-
-    // Le montant du contrat n'existe que sur les modes contractuels (AV / LIVRABLE) ;
-    // sur TM, CP et RMB le montant saisi n'est qu'une enveloppe, et le serveur laisse
-    // `contract_amount` nul — une ligne vide dirait « donnée manquante » à tort.
-    if (a.contractAmount != null) {
-      rows.push({ label: 'AFFAIRES.DETAIL.INFO.CONTRACT_AMOUNT', value: this.money(a.contractAmount) });
-    }
 
     // Pas de « type d'engagement » : `typeAffaire` n'est jamais renseigné par l'assistant
     // (il retombe systématiquement sur FORFAIT côté service), la ligne affichait donc

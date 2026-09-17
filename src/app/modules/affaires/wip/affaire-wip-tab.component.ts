@@ -1,6 +1,6 @@
 import {
   Component, ElementRef, HostListener, Input, OnDestroy, OnInit, Renderer2, ViewChild, WritableSignal,
-  inject, signal, computed,
+  effect, inject, signal, computed, viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -10,7 +10,7 @@ import {
   StepperComponent, StepperStep, StepperConfig,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
   SearchToolbarComponent, StatusBadgeComponent, FilterField, FilterResult,
-  AccordionCardComponent, PaginationComponent,
+  AccordionCardComponent, PaginationComponent, TabsComponent, TabItem,
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
 import { WipService } from './wip.service';
@@ -31,7 +31,7 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
   imports: [
     TranslatePipe, ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent, StepperComponent,
     DataTableComponent, DafCellDirective, DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
-    SearchToolbarComponent, StatusBadgeComponent, AccordionCardComponent, PaginationComponent,
+    SearchToolbarComponent, StatusBadgeComponent, AccordionCardComponent, PaginationComponent, TabsComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-wip-tab.component.html',
@@ -87,6 +87,18 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
        inversé), sans devoir recopier le template de la lib. */
     ::ng-deep .wip-pagination > div {
       flex-direction: row-reverse;
+    }
+
+    /* TEST : switch Pourcentage/Montant — daf-tabs (variant pill) recoloré en vert
+       (même palette que .act-btn--green de affaire-ressources-tab.component.scss)
+       au lieu du tertiary bleu/teal par défaut de la lib. Les classes Tailwind
+       générées par daf-tabs (bg-tertiary-container, border-tertiary,
+       text-on-tertiary-container) lisent ces variables CSS, qui héritent normalement
+       à travers le DOM réel — pas besoin de ::ng-deep pour les redéfinir ici. */
+    .wip-mode-tabs {
+      --color-tertiary: #006b58;
+      --color-tertiary-container: #d1fae5;
+      --color-on-tertiary-container: #065f46;
     }
 
     /* Champ "Nouveau %" du tableau Livrable : les flèches haut/bas natives du navigateur
@@ -145,6 +157,36 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   historySearch = signal('');
   historyStatut = signal('');
 
+  /** Portalé sous <body> pendant qu'elle est ouverte — même raison que positionPortal()
+   * plus bas pour les calendriers : `position: fixed` se cale sur le premier ancêtre avec
+   * un `transform`/`filter`, pas sur le viewport, et le conteneur de la sidebar du shell en
+   * est un — sans ça la popup s'arrêtait avant la sidebar au lieu de couvrir toute la page.
+   * Une seule ref partagée entre les popups Régie et Livrable : un seul `billingMode` actif
+   * à la fois, jamais les deux popups montées en même temps (voir positionPortal). */
+  private readonly historyOverlayRef = viewChild<ElementRef<HTMLElement>>('historyOverlay');
+  private historyOverlayPortaled: HTMLElement | null = null;
+
+  constructor() {
+    effect(onCleanup => {
+      const ref = this.historyOverlayRef();
+      if (!ref || !this.showHistoryPage()) return;
+
+      const node = ref.nativeElement;
+      if (node.parentElement !== this.document.body) {
+        this.renderer.appendChild(this.document.body, node);
+        this.historyOverlayPortaled = node;
+      }
+
+      onCleanup(() => {
+        // Angular détruit la vue du `@if` en ciblant le parent D'ORIGINE du nœud — comme
+        // on l'a déplacé sous <body>, il faut le retirer nous-mêmes avant, sans quoi Angular
+        // tenterait de le retirer d'un parent qui n'est plus le sien.
+        node.remove();
+        if (this.historyOverlayPortaled === node) this.historyOverlayPortaled = null;
+      });
+    });
+  }
+
   /** TEST : pagination daf-pagination de la lib sur les popups "Historique" (Régie et
    * Livrable) — partagée entre les deux comme historySearch/historyStatut ci-dessus
    * (une seule popup affichée à la fois, selon le mode). `currentPage` de daf-pagination
@@ -191,6 +233,19 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   // actually stores, so nothing downstream needs to know which mode was used.
   avInputMode    = signal<'POURCENTAGE' | 'MONTANT'>('POURCENTAGE');
   newAmountValue = signal<number | null>(null);
+
+  /** TEST : le switch Pourcentage/Montant devient un vrai `daf-tabs` (variant `pill`,
+   * même composant que le bandeau d'onglets de la page /finance/affaires/:id) au lieu
+   * des deux <button> faits main — coloré en vert via .wip-mode-tabs (styles du .ts)
+   * plutôt que le tertiary (bleu/teal) par défaut de la lib. */
+  readonly avModeTabs = computed<TabItem[]>(() => [
+    { id: 'POURCENTAGE', label: this.translate.instant('AFFAIRES.WIP.TAUX_MODE_PERCENT') },
+    { id: 'MONTANT',     label: this.translate.instant('AFFAIRES.WIP.TAUX_MODE_AMOUNT') },
+  ]);
+
+  onAvModeTabChange(id: string): void {
+    if (id === 'POURCENTAGE' || id === 'MONTANT') this.avInputMode.set(id);
+  }
   tauxComment   = '';
   tauxError     = signal<string | null>(null);
   submittingTaux= signal(false);
@@ -627,6 +682,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     // le `onCleanup` de `portalPanel()` dans la lib, pour son propre portail).
     this.calDatePickerPanelRef?.nativeElement.remove();
     this.avDatePickerPanelRef?.nativeElement.remove();
+    this.historyOverlayPortaled?.remove();
+    this.historyOverlayPortaled = null;
   }
 
   tmPreview     = signal<WipTmPreviewDto | null>(null);

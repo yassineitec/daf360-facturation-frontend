@@ -3,7 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { responsablesSummary, STATUT_ENTITY_STATUS, typeLabel } from '../affaire-display';
+import { STATUT_ENTITY_STATUS, typeLabel } from '../affaire-display';
 import { enumLabel } from '../../../shared/enum-labels';
 
 /**
@@ -32,10 +32,26 @@ import { enumLabel } from '../../../shared/enum-labels';
         }
       } @else {
         @for (card of cards(); track card.id) {
-          <daf-entity-card
-            [options]="card.options"
-            (cardClick)="open.emit(card.id)"
-            (viewClick)="open.emit(card.id)" />
+          <!-- daf-entity-card n'a pas d'emplacement pour un texte dans son pied de
+               carte (seuls des boutons icône côté actions, rien côté texte) — le nom du
+               client est donc superposé ici, dans notre propre template, à l'endroit où
+               vivrait le slot « actions » (coin bas-gauche, symétrique de « Voir le
+               détail »). Ancré au BAS de la carte plutôt qu'en haut : contrairement à la
+               zone du titre, cette position ne bouge pas quand l'intitulé est long et
+               passe sur plusieurs lignes. group / group-hover reproduit le même
+               fondu au survol que le pied de carte de la librairie, pour que les deux
+               apparaissent et disparaissent ensemble. -->
+          <div class="relative group">
+            <daf-entity-card
+              [options]="card.options"
+              (cardClick)="open.emit(card.id)"
+              (viewClick)="open.emit(card.id)" />
+            <span class="absolute left-5 bottom-5 text-[12px] font-semibold text-outline
+                         truncate max-w-[45%] opacity-0 group-hover:opacity-100
+                         transition-opacity duration-100 pointer-events-none">
+              {{ card.clientName }}
+            </span>
+          </div>
         } @empty {
           <div class="col-span-full flex flex-col items-center gap-2 rounded-xl
                       border border-dashed border-outline-variant/50 px-6 py-14
@@ -73,12 +89,14 @@ export class AffairesCardsSectionComponent {
    * translation lives in one place (UI-PLAYBOOK §6). `currentLang()` is read so the
    * cards re-translate on a language switch — `translate.instant` is not reactive.
    */
-  protected readonly cards = computed<{ id: number; options: EntityCardOptions }[]>(() => {
+  protected readonly cards = computed<{ id: number; clientName: string; options: EntityCardOptions }[]>(() => {
     this.translate.currentLang();
     const t = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
 
     return this.affaires().map(a => ({
       id: a.id,
+      // Affiché séparément, superposé au pied de carte — voir le template.
+      clientName: a.clientName ?? '—',
       options: {
         variant: 'glass',
         clickable: true,
@@ -89,10 +107,12 @@ export class AffairesCardsSectionComponent {
           // Le pays ET le mode de facturation rejoignent le sous-titre plutôt que les
           // indicateurs : `daf-entity-card` n'a pas d'emplacement à pastilles (seuls
           // `title`, `subtitle` et la puce de statut, déjà prise par le statut de
-          // l'affaire), et la carte doit rester à QUATRE indicateurs — les quatre sont
-          // pris, et un cinquième laisserait une cellule seule dans une grille à deux
-          // colonnes. Le sous-titre est justement la ligne d'identification, et le mode
-          // en fait partie au même titre que la référence.
+          // l'affaire), et la carte doit rester à QUATRE indicateurs (Budget, RAF,
+          // Facturé, Wip) — les quatre sont pris, et un cinquième laisserait une cellule
+          // seule dans une grille à deux colonnes. Le sous-titre est justement la ligne
+          // d'identification, et le mode en fait partie au même titre que la référence.
+          // Le client, lui, est affiché séparément (superposé au pied de carte) plutôt
+          // que dans cette ligne — voir le template.
           //
           // Le mode n'est ajouté QUE s'il existe : `enumLabel` rend « — » sur une valeur
           // absente, et `filter(Boolean)` ne retire pas un tiret — le sous-titre d'un
@@ -107,13 +127,13 @@ export class AffairesCardsSectionComponent {
         },
         metricsColumns: 2,
         metrics: [
-          { label: t('AFFAIRES.LIST.TABLE.CARD.CLIENT'),  value: a.clientName ?? '—' },
-          // « John Doe » seul, « John Doe et 3 autres » à plusieurs : la carte n'a pas la
-          // place d'énumérer, et `responsableFullName` seul ne montrait QUE le principal —
-          // une affaire à quatre responsables se lisait comme une affaire à un seul.
-          { label: t('AFFAIRES.LIST.TABLE.CARD.MANAGER'), value: responsablesSummary(a, t) },
           { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, a.devise ?? 'TND') },
           { label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),  value: this.currency.transform(a.rafDisponible, a.devise ?? 'TND') },
+          { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.montantFacture, a.devise ?? 'TND') },
+          // Pas encore un vrai calcul côté serveur pour aucun des trois modes de
+          // facturation — même placeholder que la carte KPI « Wip » de la fiche affaire
+          // (voir AffaireService#wipPlaceholder côté backend).
+          { label: t('AFFAIRES.LIST.TABLE.CARD.WIP'),     value: this.currency.transform(a.wip, a.devise ?? 'TND') },
         ],
         viewLabel: t('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
       } satisfies EntityCardOptions,

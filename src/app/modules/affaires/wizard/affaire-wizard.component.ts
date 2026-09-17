@@ -486,7 +486,9 @@ export class AffaireWizardComponent implements OnInit {
       notes:                 d.notes?.trim()        || null,
       doc360Ref:             d.doc360Ref?.trim()    || null,
       doc360ServerReference: d.doc360ServerReference || null,
-      erpReference:          d.doc360ErpReference?.trim() || null,
+      // Le DOC360 lié est prioritaire (rapprochement automatique) ; la saisie manuelle
+      // ne sert que si l'affaire n'est pas liée à un projet DOC360.
+      erpReference:          d.doc360ErpReference?.trim() || d.erpReference?.trim() || null,
       // LIVRABLE part enfin sous son propre code : le backend le refusait (regex du
       // DTO limitée à AV|JAL|TM|CP|RMB), d'où l'ancien détour par JAL.
       billingMode:           d.billingMode || null,

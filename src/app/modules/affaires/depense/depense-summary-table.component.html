@@ -1,0 +1,81 @@
+<div class="flex flex-col gap-3">
+  <!-- Le bouton zoom est PROJETÉ dans daf-search-toolbar (son <ng-content>, juste avant le
+       bouton Filtres) plutôt que posé à côté : ça le fait vivre dans la même carte/fond que
+       la barre de recherche et le bouton Filtres, au lieu d'un bouton isolé sans fond. -->
+  <daf-search-toolbar
+    [placeholder]="searchPlaceholder()"
+    [value]="search()"
+    [debounce]="200"
+    (valueChange)="search.set($event)"
+    [filterFields]="filterFields()"
+    [filterConfig]="filterConfig()"
+    (filterApply)="onFilterApply($event)">
+    <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full',
+                              title: ('AFFAIRES.DEPENSE.ZOOM_TOOLTIP' | translate) }"
+      (onClick)="zoomOpen.set(true)" />
+  </daf-search-toolbar>
+  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()"
+    (rowClick)="collaboratorSelected.emit($any($event)['email'])" />
+</div>
+
+<!-- Popup "zoom" EN PLEIN ÉCRAN — même habillage (fond assombri, panneau, en-tête, croix)
+     et même taille que le popup Historique de l'onglet WIP (affaire-wip-tab.component.html),
+     pas daf-modal qui plafonne à 900px. Le tableau dedans est le même que ci-dessus, en
+     plus grand — même état de recherche/filtre, pas une copie. -->
+@if (zoomOpen()) {
+  <div #zoomOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+       style="z-index:9999"
+       (click)="zoomOpen.set(false)">
+    <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+         style="width:calc(100vw - 120px); height:90vh;"
+         (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
+        <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
+          <span class="material-symbols-outlined text-primary">table_view</span>
+          {{ 'AFFAIRES.DEPENSE.ZOOM_TITLE' | translate }}
+        </h2>
+        <button type="button" (click)="zoomOpen.set(false)"
+          class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
+                 hover:text-on-surface hover:bg-surface-container transition-colors"
+          [attr.aria-label]="'AFFAIRES.DEPENSE.ZOOM_CLOSE' | translate">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+        <!-- Fond blanc partagé par la recherche et le bouton export — même mécanisme que
+             la popup Historique WIP (affaire-wip-tab.component.html). -->
+        <div class="flex items-center gap-2 bg-white rounded-xl p-2">
+          <daf-search-toolbar class="flex-1" [card]="false"
+            [placeholder]="searchPlaceholder()"
+            [value]="search()"
+            [debounce]="200"
+            (valueChange)="onSearchChange($event)"
+            [filterFields]="filterFields()"
+            [filterConfig]="filterConfig()"
+            (filterApply)="onFilterApply($event)" />
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
+                         label: ('AFFAIRES.DEPENSE.EXPORT_EXCEL' | translate),
+                         disabled: !rows().length }"
+            (onClick)="exportExcel()" />
+        </div>
+        <daf-data-table [columns]="columns()" [rows]="paginatedRows()" [config]="config()" />
+        <!-- daf-pagination de la lib — même mécanisme que la popup Historique WIP, mais
+             regroupée à droite (résumé + numéros de page + sélecteur) via l'override
+             CSS ci-dessus, plutôt que répartie sur toute la largeur. -->
+        <daf-pagination class="depense-zoom-pagination"
+          [currentPage]="zoomPage()"
+          [totalPages]="zoomTotalPages()"
+          [totalElements]="rows().length"
+          [pageSize]="zoomPageSize()"
+          [perPageLabel]="'AFFAIRES.DEPENSE.PER_PAGE' | translate"
+          [summaryLabel]="'AFFAIRES.DEPENSE.PAGE_SUMMARY' | translate"
+          [firstPageLabel]="'AFFAIRES.DEPENSE.FIRST_PAGE' | translate"
+          [lastPageLabel]="'AFFAIRES.DEPENSE.LAST_PAGE' | translate"
+          [config]="{ showFirstLast: true }"
+          (pageChange)="zoomPage.set($event)"
+          (pageSizeChange)="onZoomPageSizeChange($event)" />
+      </div>
+    </div>
+  </div>
+}

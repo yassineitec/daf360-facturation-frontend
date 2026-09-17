@@ -197,12 +197,11 @@
                 </h3>
                 <dl class="dp-rows">
                   @for (row of contratRows(); track row.label; let last = $last) {
-                    <!-- Pas de filet entre Budget prévisionnel / Montant du contrat /
-                         Mode de facturation / Budget validé — ces 4 lignes se lisent comme
-                         un seul bloc, le séparateur ne reste qu'après Budget validé. -->
+                    <!-- Pas de filet entre Budget prévisionnel / Mode de facturation /
+                         Budget validé — ces 3 lignes se lisent comme un seul bloc, le
+                         séparateur ne reste qu'après Budget validé. -->
                     <div class="dp-row" [class.dp-row--last]="last"
                       [class.dp-row--no-divider]="row.label === 'AFFAIRES.DETAIL.INFO.BUDGET'
-                        || row.label === 'AFFAIRES.DETAIL.INFO.CONTRACT_AMOUNT'
                         || row.label === 'AFFAIRES.DETAIL.INFO.BILLING_MODE'">
                       <dt class="dp-row__key">{{ row.label | translate }}</dt>
                       <dd class="dp-row__val">

@@ -962,7 +962,9 @@
           "MANAGERS_MORE": "{{name}} et {{count}} autre(s)",
           "MANAGER": "Manager",
           "TYPE": "Type",
-          "BUDGET_LABEL": "Budget"
+          "BUDGET_LABEL": "Budget",
+          "FACTURE": "Facturé",
+          "WIP": "Wip"
         },
         "HEADERS": {
           "REF": "Référence",
@@ -1329,6 +1331,7 @@
         "reference": "Référence",
         "from_doc360": "issu de DOC360",
         "reference_label": "Référence (auto si vide)",
+        "erp_reference_label": "Réf. ERP",
         "billing_mode_label": "Mode de facturation",
         "billing_mode_sub": "Sélectionnez le mode contractuel de cette affaire",
         "amount_label": "Montant",
@@ -2099,6 +2102,7 @@
       "NEW_MONTANT": "Nouveau montant cumulé",
       "TAUX_MODE_PERCENT": "Pourcentage",
       "TAUX_MODE_AMOUNT": "Montant",
+      "TAUX_MODE_ARIA": "Mode de saisie du taux",
       "FORFAIT_ENTRY_TITLE": "Saisir un taux d'avancement",
       "REGIE_ENTRY_TITLE": "Calculer le WIP Temps & Matériel",
       "LIVRABLE_ENTRY_TITLE": "Sélectionner les livrables à facturer",
@@ -2230,7 +2234,21 @@
       "FILTER_ALL": "Tout",
       "FILTER_PERIOD": "Période",
       "FILTER_MONTH": "Mois",
-      "FILTER_YEAR": "Année"
+      "FILTER_YEAR": "Année",
+      "SEARCH_PLACEHOLDER": "Rechercher un collaborateur…",
+      "TABLE_FILTER_TITLE": "Filtrer les dépenses",
+      "TABLE_FILTER_TRIGGER": "Filtres",
+      "TABLE_FILTER_APPLY": "Appliquer",
+      "TABLE_FILTER_CANCEL": "Annuler",
+      "TABLE_FILTER_RESET": "Réinitialiser",
+      "ZOOM_TOOLTIP": "Agrandir",
+      "ZOOM_TITLE": "Dépenses par collaborateur",
+      "ZOOM_CLOSE": "Fermer",
+      "EXPORT_EXCEL": "Exporter Excel",
+      "PER_PAGE": "par page",
+      "PAGE_SUMMARY": "{start}–{end} sur {total}",
+      "FIRST_PAGE": "Première page",
+      "LAST_PAGE": "Dernière page"
     }
   },
   "ERRORS": {

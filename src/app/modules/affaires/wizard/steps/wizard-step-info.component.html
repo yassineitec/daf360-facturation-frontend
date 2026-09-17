@@ -258,6 +258,16 @@
         </div>
       }
 
+      <!-- Réf. ERP — toujours éditable, indépendante de la référence interne ;
+           c'est la valeur reprise sur la ligne « Réf. ERP » de la fiche détail. -->
+      <div class="field">
+        <daf-form-field
+          [(value)]="erpReference"
+          [options]="{label: ('AFFAIRES.wizard.info.erp_reference_label' | translate), placeholder: 'ERP-2026-0001', fullWidth: true}"
+          (valueChange)="emit()">
+        </daf-form-field>
+      </div>
+
     </div>
   </div>
 
