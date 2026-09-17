@@ -24,8 +24,18 @@
     </button>
 
     @if (open()) {
+      <!-- `right-0` et non le bord gauche : ce sélecteur est posé en HAUT À DROITE de la
+           page d'administration, donc un panneau ancré à gauche grandit vers l'extérieur de
+           la fenêtre. Il débordait depuis que la liste porte les 194 pays — `w-max` se cale
+           sur le libellé le plus long — et poussait une barre de défilement horizontale sur
+           toute la page.
+
+           `max-w-` plafonne la largeur en plus de l'ancrage : `right-0` seul laisserait un
+           libellé à rallonge déborder du côté gauche. Les libellés sont déjà tronqués
+           (`truncate` sur le `span`), et la recherche reste là pour ce que la troncature
+           masque. -->
       <div
-        class="absolute z-9999 mt-1 min-w-full w-max max-w-[90vw]
+        class="absolute right-0 z-9999 mt-1 min-w-full w-max max-w-[min(20rem,90vw)]
                bg-surface-container-lowest rounded-lg border border-outline-variant
                shadow-xl overflow-hidden"
         (click)="$event.stopPropagation()">

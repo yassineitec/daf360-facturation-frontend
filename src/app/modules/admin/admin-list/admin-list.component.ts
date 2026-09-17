@@ -20,7 +20,6 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
-import { AffaireService }     from '../../affaires/affaire.service';
 import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-set.service';
 import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-api-config.service';
 import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
@@ -56,7 +55,6 @@ interface ForexRow {
 export class AdminListComponent implements OnInit {
   private readonly factListSvc  = inject(FactListService);
   private readonly clientSvc    = inject(ClientService);
-  private readonly affaireSvc   = inject(AffaireService);
   private readonly paramSvc     = inject(ParameterSetService);
   private readonly forexApiSvc  = inject(ForexApiConfigService);
   private readonly modal        = inject(ModalService);
@@ -335,19 +333,28 @@ export class AdminListComponent implements OnInit {
   ngOnInit(): void {
     this.isLoading.set(true);
     forkJoin({
-      myPays:  this.clientSvc.getMyPays(),
-      allPays: this.clientSvc.getPays(),
-      users:   this.affaireSvc.getUsers(),
+      myPays:     this.clientSvc.getMyPays(),
+      allPays:    this.clientSvc.getPays(),
+      paysInUse:  this.clientSvc.getPaysInUse(),
     }).subscribe({
-      next: ({ myPays, allPays, users }) => {
-        // `/ref/pays` liste les 194 pays possibles pour une adresse client (V75), pas les
-        // entités DAF360 réelles — le picker ne doit proposer que celles où quelqu'un a
-        // effectivement un compte (ex: un utilisateur connecté depuis l'Égypte ⇒ l'Égypte
-        // apparaît). Retombe sur la liste complète si `/ref/users` échoue ou ne renvoie
-        // aucun pays exploitable, pour ne pas vider le picker.
-        const paysIdsWithUsers = new Set(users.map(u => u.paysId));
-        const scopedPays = allPays.filter(p => paysIdsWithUsers.has(p.id));
-        const pays = scopedPays.length > 0 ? scopedPays : allPays;
+      next: ({ myPays, allPays, paysInUse }) => {
+        // TOUS les pays sont proposés, y compris ceux qui n'ont encore aucune donnée : c'est
+        // précisément là qu'on vient créer une première valeur de liste, et un picker qui les
+        // masque rend ce paramétrage impossible.
+        //
+        // Le picker les filtrait, d'abord par `/ref/users` puis par `/ref/pays/in-use`, et
+        // c'était un cercle vicieux : un pays sans configuration n'apparaissait pas, donc on
+        // ne pouvait pas le configurer, donc il n'apparaissait toujours pas.
+        //
+        // `/ref/pays/in-use` sert maintenant à l'ORDRE et non au filtre : les pays où DAF360
+        // détient déjà quelque chose (compte, client, affaire, valeur de liste) sont remontés
+        // en tête, les 194 autres suivent. La recherche du picker porte sur le libellé et le
+        // code ISO, donc la queue de liste reste atteignable en deux frappes.
+        const inUseIds = new Set(paysInUse.map(p => p.id));
+        const pays = [
+          ...allPays.filter(p => inUseIds.has(p.id)),
+          ...allPays.filter(p => !inUseIds.has(p.id)),
+        ];
         this.paysList.set(pays);
         const resolved = myPays ?? (pays.length > 0 ? pays[0].id : 0);
         if (resolved > 0) {

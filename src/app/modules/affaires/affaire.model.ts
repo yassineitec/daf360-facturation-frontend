@@ -331,12 +331,24 @@ export interface PaysRefDto {
   frenchLabel:  string;
 }
 
-export const STATUT_TRANSITIONS: Record<string, string[]> = {
-  EN_COURS:  ['SUSPENDUE', 'CLOTUREE'],
-  SUSPENDUE: ['EN_COURS',  'CLOTUREE'],
-  CLOTUREE:  ['ARCHIVEE'],
-  ARCHIVEE:  [],
-};
+/**
+ * Les statuts d'affaire, dans l'ordre du cycle de vie — et c'est un ordre d'AFFICHAGE, pas
+ * une contrainte : depuis la décision du 2026-09-17, la fiche affaire permet d'aller de
+ * n'importe quel statut vers n'importe quel autre.
+ *
+ * <p>Le graphe de transitions qui vivait ici (EN_COURS → SUSPENDUE|CLOTUREE, CLOTUREE →
+ * ARCHIVEE seulement) n'avait aucune porte de sortie : une affaire archivée par erreur, ou
+ * clôturée trop tôt, ne pouvait plus jamais revenir en arrière et il fallait une écriture
+ * en base pour la rattraper.
+ *
+ * <p>La même liste est répliquée côté serveur (`AffaireService.AFFAIRE_STATUTS`) : ce que
+ * cet écran propose et ce que le serveur accepte doivent rester la même chose. Elle doit
+ * aussi rester alignée sur la contrainte `CK_Affaire_Statut` (V22), qui refuse tout
+ * statut hors de ces six valeurs.
+ */
+export const AFFAIRE_STATUTS: string[] = [
+  'DRAFT', 'CONFIGURED', 'EN_COURS', 'SUSPENDUE', 'CLOTUREE', 'ARCHIVEE',
+];
 
 export const TYPE_LABELS: Record<string, string> = {
   LUMP_SUM:           'Forfaitaire',
@@ -346,6 +358,7 @@ export const TYPE_LABELS: Record<string, string> = {
 
 export const STATUT_LABELS: Record<string, string> = {
   DRAFT:     'AFFAIRES.LIST.TABLE.STATUS.DRAFT',
+  CONFIGURED:'AFFAIRES.LIST.TABLE.STATUS.CONFIGURED',
   EN_COURS:  'AFFAIRES.LIST.TABLE.STATUS.EN_COURS',
   SUSPENDUE: 'AFFAIRES.LIST.TABLE.STATUS.SUSPENDUE',
   CLOTUREE:  'AFFAIRES.LIST.TABLE.STATUS.CLOTUREE',

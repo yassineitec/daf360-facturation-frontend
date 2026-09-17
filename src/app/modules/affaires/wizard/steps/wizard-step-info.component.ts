@@ -150,6 +150,16 @@ export class WizardStepInfoComponent implements OnInit {
           this.prefillFromDoc360(clients);
         } else if (this.draft.clientId && this.draft.clientName) {
           this.clientInputValue.set(this.draft.clientName);
+          // Brouillon d'une session précédente, ou repris avant que le serveur ne renvoie
+          // `clientCountryId` : le résoudre ici évite que l'étape AV retombe sur l'entité de
+          // l'affaire alors que le pays du client est connu.
+          if (this.draft.clientCountryId === undefined) {
+            const known = clients.find(c => c.id === this.draft.clientId);
+            if (known?.countryId != null) {
+              this.draft = { ...this.draft, clientCountryId: known.countryId };
+              this.draftChange.emit(this.draft);
+            }
+          }
         }
         // Après le préremplissage DOC360, qui peut avoir résolu un client par son nom :
         // charger avant lui laisserait la liste des contacts vide sur une affaire dont
@@ -226,7 +236,11 @@ export class WizardStepInfoComponent implements OnInit {
       );
 
       if (match) {
-        updated = { ...updated, clientId: match.id, clientName: match.clientName, clientKycDone: match.isKycDone };
+        updated = {
+          ...updated,
+          clientId: match.id, clientName: match.clientName, clientKycDone: match.isKycDone,
+          clientCountryId: match.countryId ?? undefined,
+        };
         this.clientInputValue.set(match.clientName);
         changed = true;
       } else {
@@ -263,7 +277,11 @@ export class WizardStepInfoComponent implements OnInit {
   onClientInput(value: string): void {
     this.clientInputValue.set(value);
     if (!value) {
-      this.draft = { ...this.draft, clientId: undefined, clientName: undefined, clientKycDone: undefined };
+      this.draft = {
+        ...this.draft,
+        clientId: undefined, clientName: undefined, clientKycDone: undefined,
+        clientCountryId: undefined,
+      };
       this.draftChange.emit(this.draft);
     }
     this.searchClients(value);
@@ -280,7 +298,13 @@ export class WizardStepInfoComponent implements OnInit {
   selectClient(c: ClientDropdownItemDto): void {
     if (this.clientHideTimer) { clearTimeout(this.clientHideTimer); this.clientHideTimer = undefined; }
     const clientChanged = this.draft.clientId !== c.id;
-    this.draft = { ...this.draft, clientId: c.id, clientName: c.clientName, clientKycDone: c.isKycDone };
+    // `countryId` suit le client jusqu'à l'étape AV, qui y lit le référentiel des types de
+    // répartition contractuelle — changer de client change donc la liste proposée.
+    this.draft = {
+      ...this.draft,
+      clientId: c.id, clientName: c.clientName, clientKycDone: c.isKycDone,
+      clientCountryId: c.countryId ?? undefined,
+    };
     // Changer de client invalide la sélection de contacts : ceux du client précédent
     // n'appartiennent pas à celui-ci, et le serveur refuse le rattachement (FK
     // composite). Les vider ici évite un refus incompréhensible au « Suivant ».

@@ -50,6 +50,12 @@ export interface ClientDropdownItemDto {
   isKycDone:        boolean;
   defaultCurrency:  string | null;
   paymentTermsDays: number | null;
+  /**
+   * Pays d'ADRESSE du client (`clients.country_id`), pas l'entité qui le facture. Nul quand
+   * le client n'a pas de pays connu. L'assistant d'affaire y lit le référentiel des types
+   * de répartition contractuelle.
+   */
+  countryId:        number | null;
 }
 
 export interface ClientStatsDto {

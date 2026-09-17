@@ -78,6 +78,17 @@ export class ClientService {
     );
   }
 
+  /**
+   * Les pays où DAF360 détient réellement quelque chose (compte, client, affaire, valeur de
+   * liste déjà paramétrée) — le sélecteur d'entité de l'administration. À ne pas confondre
+   * avec `getPays()`, qui rend les 194 pays possibles pour une ADRESSE client (V75).
+   */
+  getPaysInUse(): Observable<PaysRefDto[]> {
+    return this.http.get<PaysRefDto[]>(`${this.base}/ref/pays/in-use`).pipe(
+      catchError(() => of([] as PaysRefDto[])),
+    );
+  }
+
   getMyPays(): Observable<number | null> {
     return this.http.get<{ paysId: number }>(`${this.base}/ref/me`).pipe(
       map(r => r.paysId),

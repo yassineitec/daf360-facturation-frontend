@@ -978,6 +978,7 @@
         },
         "STATUS": {
           "DRAFT": "Draft",
+          "CONFIGURED": "Configured",
           "EN_COURS": "In progress",
           "SUSPENDUE": "Suspended",
           "CLOTUREE": "Closed",
@@ -1123,7 +1124,7 @@
         "CURRENCY": "Currency",
         "PERIOD": "Period",
         "ENGAGEMENT": "Engagement type",
-        "BUDGET": "Forecast budget",
+        "BUDGET": "Budget",
         "CONTRACT_AMOUNT": "Contract amount",
         "BUDGET_ALLOCATED": "Budget allocated to managers",
         "BUDGET_VALIDATED": "Budget validated",
@@ -1409,7 +1410,8 @@
         "total": "Total",
         "warn_exact": "The sum must be exactly 100%.",
         "warn_missing": "{{n}}% missing.",
-        "warn_excess": "Excess of {{n}}%."
+        "warn_excess": "Excess of {{n}}%.",
+        "load_error": "Could not load the breakdown types. Try again, or report it if it persists."
       },
       "tm": {
         "info": "Select the staff members and set their billing rates. Rates will be locked after the first invoice.",

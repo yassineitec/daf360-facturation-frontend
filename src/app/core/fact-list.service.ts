@@ -14,7 +14,14 @@ export class FactListService {
   private readonly valueCache = new Map<string, ListValueDto[]>();
   private typeCache: ListTypeDto[] | null = null;
 
-  getListValues(typeCode: string, paysId: number): Observable<ListValueDto[]> {
+  /**
+   * Les valeurs d'une liste, l'ERREUR PROPAGÉE en cas d'échec.
+   *
+   * À préférer partout où l'écran a de quoi afficher un message : une liste vide ne
+   * distingue pas « ce pays n'a rien de paramétré » d'un service hors service, et
+   * `getListValues` ci-dessous confond justement les deux.
+   */
+  getListValuesOrFail(typeCode: string, paysId: number): Observable<ListValueDto[]> {
     const key = `${typeCode}_${paysId}`;
     if (this.valueCache.has(key)) {
       return of(this.valueCache.get(key)!);
@@ -27,6 +34,17 @@ export class FactListService {
         }
         this.valueCache.set(key, values);
       }),
+    );
+  }
+
+  /**
+   * Variante silencieuse : rend une liste vide sur échec. Conservée pour la vingtaine
+   * d'appelants qui n'ont pas d'endroit où afficher une erreur — un `subscribe` sans
+   * branche `error` lèverait une exception non rattrapée. Rien n'apparaît alors à l'écran :
+   * seule la console porte la trace, d'où `getListValuesOrFail` juste au-dessus.
+   */
+  getListValues(typeCode: string, paysId: number): Observable<ListValueDto[]> {
+    return this.getListValuesOrFail(typeCode, paysId).pipe(
       catchError(err => {
         console.error(`[FactListService] Failed to load '${typeCode}'`, err);
         return of([] as ListValueDto[]);
