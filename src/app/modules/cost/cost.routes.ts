@@ -2,8 +2,23 @@ import { Routes } from '@angular/router';
 import { permissionGuard } from '@khalilrebhiitec/daf360';
 
 export const COST_ROUTES: Routes = [
+  /**
+   * Deux files en une : les lignes de coût (FACT_APPROVE_COST_L1) et les demandes
+   * d'embauche chiffrées par RH (APPROVE_HIRING_COST).
+   *
+   * Garde propre, comme `cost/missions` juste en dessous et pour la même raison : celui du
+   * parent accepte quatre codes, dont de simples lecteurs de coûts, qui atteignaient donc
+   * cet écran alors que chaque appel leur renvoyait un 403.
+   *
+   * APPROVE_HIRING_COST n'est pas un code FACT_* — il appartient au catalogue RH, où le
+   * décideur des embauches est déjà géré. Il est cité ici parce que c'est l'écran qui vit
+   * de ce côté ; le déclarer aussi dans FactPermissionCatalog ferait administrer la même
+   * permission depuis deux panneaux.
+   */
   {
     path: 'approval',
+    canActivate: [permissionGuard],
+    data: { permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST'] },
     loadComponent: () =>
       import('./approval-queue/cost-approval-queue.component').then(m => m.CostApprovalQueueComponent),
   },

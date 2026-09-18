@@ -187,10 +187,16 @@ export class CostApprovalQueueComponent implements OnInit {
         label: t('COST.APPROVAL_QUEUE.KIND'),
         type: 'select',
         placeholder: t('COST.APPROVAL_QUEUE.FILTER_ALL'),
-        options: [
-          { value: 'cost',   label: t('COST.APPROVAL_QUEUE.KIND_COST')   },
-          { value: 'hiring', label: t('COST.APPROVAL_QUEUE.KIND_HIRING') },
-        ],
+        // Le filtre « Embauches » disparaît pour qui ne peut pas les décider — sinon il
+        // filtre sur une file que l'API ne lui rend pas.
+        options: this.canDecideHiring()
+          ? [
+              { value: 'cost',   label: t('COST.APPROVAL_QUEUE.KIND_COST')   },
+              { value: 'hiring', label: t('COST.APPROVAL_QUEUE.KIND_HIRING') },
+            ]
+          : [
+              { value: 'cost',   label: t('COST.APPROVAL_QUEUE.KIND_COST')   },
+            ],
       },
       {
         name: 'priority',
@@ -275,7 +281,18 @@ export class CostApprovalQueueComponent implements OnInit {
     });
   }
 
+  /**
+   * Le décideur des embauches, côté RH — `APPROVE_HIRING_COST`, la permission que
+   * rh-service exige sur /api/hr/cost-approvals.
+   *
+   * Sans ce test, un approbateur de lignes de coût voyait l'onglet « Embauches », son
+   * compteur et son filtre, pour un appel qui lui renvoyait 403 : une file qui paraît vide
+   * alors qu'elle est seulement interdite.
+   */
+  readonly canDecideHiring = computed(() => this.userStore.hasPermission('APPROVE_HIRING_COST'));
+
   loadHiringQueue(): void {
+    if (!this.canDecideHiring()) return;
     this.hiringLoading.set(true);
     this.hiringError.set(null);
     this.hiringSvc.getPendingByPays(this.paysId()).subscribe({
