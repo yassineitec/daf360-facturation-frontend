@@ -89,11 +89,11 @@ export class CostLinesTableSectionComponent {
       { key: 'label',    label: t('COST.LINES.COL_DESCRIPTION'), type: 'custom' },
       { key: 'category', label: t('COST.LINES.COL_CATEGORY'),    type: 'text'   },
       { key: 'date',     label: t('COST.LINES.COL_DATE'),        type: 'text'   },
-      { key: 'net',      label: t('COST.LINES.COL_NET_AMOUNT'),  type: 'text', align: 'right' },
-      { key: 'ttc',      label: t('COST.LINES.COL_TTC'),         type: 'text', align: 'right' },
+      { key: 'net',      label: t('COST.LINES.COL_NET_AMOUNT'),  type: 'text' },
+      { key: 'ttc',      label: t('COST.LINES.COL_TTC'),         type: 'text' },
       { key: 'status',   label: t('COST.LINES.COL_STATUS'),      type: 'badge'  },
       { key: 'approval', label: t('COST.LINES.COL_APPROVAL'),    type: 'badge'  },
-      { key: '_actions', label: '', align: 'right', width: '1%' },
+      { key: '_actions', label: '', width: '1%' },
     ];
     // No column is `sortable`: the lib sorts client-side over the one page it was
     // handed, and this list is server-paginated (§10b).

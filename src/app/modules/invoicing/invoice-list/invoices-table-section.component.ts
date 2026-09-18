@@ -101,12 +101,12 @@ export class InvoicesTableSectionComponent {
     return [
       { key: 'reference', label: t('INVOICING.LIST.TABLE.REF'),    type: 'text'   },
       { key: 'client',    label: t('INVOICING.LIST.TABLE.CLIENT'), type: 'avatar' },
-      { key: 'amount',    label: t('INVOICING.LIST.TABLE.AMOUNT'), type: 'text', align: 'right' },
+      { key: 'amount',    label: t('INVOICING.LIST.TABLE.AMOUNT'), type: 'text' },
       { key: 'statut',    label: t('INVOICING.LIST.TABLE.STATUS'), type: 'badge'  },
       { key: 'date',      label: t('INVOICING.LIST.TABLE.DATE'),   type: 'custom' },
       // Never `clickable: true` on a projected actions column — that styles the cell as
       // a link rather than an action (§6b rule 4).
-      { key: '_actions',  label: '', align: 'right', width: '1%' },
+      { key: '_actions',  label: '', width: '1%' },
     ];
     // No column is `sortable`: the lib sorts client-side over the one page it was
     // handed, and this list is server-paginated (§10b).

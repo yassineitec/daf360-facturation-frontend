@@ -130,9 +130,8 @@ export class AffairesCardsSectionComponent {
           { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, a.devise ?? 'TND') },
           { label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),  value: this.currency.transform(a.rafDisponible, a.devise ?? 'TND') },
           { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.montantFacture, a.devise ?? 'TND') },
-          // Pas encore un vrai calcul côté serveur pour aucun des trois modes de
-          // facturation — même placeholder que la carte KPI « Wip » de la fiche affaire
-          // (voir AffaireService#wipPlaceholder côté backend).
+          // Calculé côté serveur selon le mode de facturation de l'affaire — voir
+          // AffaireService#computeWip côté backend.
           { label: t('AFFAIRES.LIST.TABLE.CARD.WIP'),     value: this.currency.transform(a.wip, a.devise ?? 'TND') },
         ],
         viewLabel: t('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
