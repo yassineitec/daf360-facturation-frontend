@@ -6,7 +6,7 @@ import {
 import { ApprovalItem, KIND_BADGE_VARIANT, kindKey } from './approval-item';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { URGENCY_BADGE_VARIANT, urgencyKey } from '../cost-display';
-import { ApprovalDecision } from './approval-cards-section.component';
+import { ApprovalDecision } from './approval-cards-section.component';
 /**
  * List view of `/finance/cost/approval` on the house table style (UI-PLAYBOOK §6b),
  * over the same unified `ApprovalItem` the card view renders.
@@ -79,9 +79,9 @@ export class ApprovalTableSectionComponent {
       { key: 'title',     label: t('COST.LINES.COL_DESCRIPTION'),       type: 'text'  },
       { key: 'reference', label: t('COST.APPROVAL_QUEUE.REFERENCE'),    type: 'text'  },
       { key: 'date',      label: t('COST.APPROVAL_QUEUE.DATE'),         type: 'text'  },
-      { key: 'amount',    label: t('COST.APPROVAL_QUEUE.AMOUNT_TOTAL'), type: 'text', align: 'right' },
+      { key: 'amount',    label: t('COST.APPROVAL_QUEUE.AMOUNT_TOTAL'), type: 'text' },
       { key: 'priority',  label: t('COST.APPROVAL_QUEUE.PRIORITY'),     type: 'badge' },
-      { key: '_actions',  label: '', align: 'right', width: '1%' },
+      { key: '_actions',  label: '', width: '1%' },
     ];
   });
 

@@ -433,10 +433,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     return [
       { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE') },
       { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT') },
-      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE'), align: 'right' },
-      { key: 'pctActuel',  label: t('AFFAIRES.WIP.COL_PCT_ACTUEL'), align: 'right' },
-      { key: 'nouveauPct', label: t('AFFAIRES.WIP.COL_NOUVEAU_PCT'), align: 'right', type: 'custom' },
-      { key: 'montant',    label: t('AFFAIRES.WIP.COL_AMOUNT'), align: 'right' },
+      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE') },
+      { key: 'pctActuel',  label: t('AFFAIRES.WIP.COL_PCT_ACTUEL') },
+      { key: 'nouveauPct', label: t('AFFAIRES.WIP.COL_NOUVEAU_PCT'), type: 'custom' },
+      { key: 'montant',    label: t('AFFAIRES.WIP.COL_AMOUNT') },
       { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'custom' },
     ];
   });
@@ -472,7 +472,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     return [
       { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE') },
       { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT') },
-      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE'), align: 'right' },
+      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE') },
       { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
     ];
   });
@@ -971,8 +971,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     const t = (k: string) => this.translate.instant(k);
     return [
       { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
-      { key: 'taux',    label: t('AFFAIRES.WIP.COL_TAUX'), align: 'right' },
-      { key: 'montant', label: t('AFFAIRES.WIP.COL_INCREMENT'), align: 'right' },
+      { key: 'taux',    label: t('AFFAIRES.WIP.COL_TAUX') },
+      { key: 'montant', label: t('AFFAIRES.WIP.COL_INCREMENT') },
       { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
     ];
   });
@@ -1201,7 +1201,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     const t = (k: string) => this.translate.instant(k);
     return [
       { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
-      { key: 'montant', label: t('AFFAIRES.WIP.COL_AMOUNT'), align: 'right' },
+      { key: 'montant', label: t('AFFAIRES.WIP.COL_AMOUNT') },
       { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
     ];
   });

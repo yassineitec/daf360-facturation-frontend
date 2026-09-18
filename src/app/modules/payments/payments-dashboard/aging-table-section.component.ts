@@ -32,7 +32,7 @@ import { formatDate, initials, partiallyPaid, reminderLabel, retardVariant } fro
            diffère : sur une facture jamais réglée les deux chiffres sont identiques, et
            les afficher tous les deux ferait lire deux fois la même chose. -->
       <ng-template dafCell="amount" let-row>
-        <div class="flex flex-col items-end leading-snug">
+        <div class="flex flex-col items-start leading-snug">
           <span class="font-bold text-on-surface">{{ row['_outstanding'] }}</span>
           @if (row['_billed']) {
             <span class="text-[11px] text-on-surface-variant">{{ row['_billed'] }}</span>
@@ -71,7 +71,7 @@ export class AgingTableSectionComponent {
     return [
       { key: 'client',     label: t('PAYMENTS.DASHBOARD.TABLE.CLIENT'),          type: 'avatar' },
       { key: 'invoice',    label: t('PAYMENTS.DASHBOARD.TABLE.INVOICE'),         type: 'text'   },
-      { key: 'amount',     label: t('PAYMENTS.DASHBOARD.TABLE.OUTSTANDING'),     type: 'custom', align: 'right' },
+      { key: 'amount',     label: t('PAYMENTS.DASHBOARD.TABLE.OUTSTANDING'),     type: 'custom' },
       { key: 'due',        label: t('PAYMENTS.DASHBOARD.TABLE.DUE'),             type: 'text'   },
       { key: 'daysLate',   label: t('PAYMENTS.DASHBOARD.TABLE.DAYS_LATE'),       type: 'badge'  },
       { key: 'reminder',   label: t('PAYMENTS.DASHBOARD.TABLE.REMINDER_STATUS'), type: 'custom' },
