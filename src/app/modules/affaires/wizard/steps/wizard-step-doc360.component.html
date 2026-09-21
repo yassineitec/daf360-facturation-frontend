@@ -64,7 +64,13 @@
                   @if (p.erpReference) { <div class="result-erp">{{ 'AFFAIRES.wizard.doc360.erp' | translate:{ ref: p.erpReference } }}</div> }
                   @if (p.clientName)   { <div class="result-client">{{ p.clientName }}</div> }
                 </div>
-                <span class="result-status">{{ p.status }}</span>
+                <span class="result-status">
+                  @if (statusKey(p.status); as key) {
+                    {{ 'AFFAIRES.wizard.doc360.status.' + key | translate }}
+                  } @else {
+                    {{ p.status }}
+                  }
+                </span>
               </button>
             }
           </div>
