@@ -152,16 +152,18 @@ export interface RafDetailsDto {
  * `rafDisponible`, deux noms que le backend n'envoie jamais (`ca` et `raf`), donc la
  * tuile « CA encaissé » lisait `undefined` et restait vide en permanence.
  *
- * Trois champs valent 0 en dur côté serveur aujourd'hui, ce n'est pas une donnée
- * manquante mais un calcul non implémenté : `wip`, `coutsInternes` (placeholder
- * timesheet, donc `margeBrute` = ca − sous-traitance) et `tauxAvancement`.
+ * Deux champs valent 0 en dur côté serveur aujourd'hui, ce n'est pas une donnée
+ * manquante mais un calcul non implémenté : `coutsInternes` (placeholder timesheet,
+ * donc `margeBrute` = ca − sous-traitance) et `tauxAvancement`.
  */
 export interface AffaireKpisDto {
   affaireId:                  number;
   reference:                  string;
   /** Encaissé : somme des paiements reçus sur les factures de l'affaire. */
   ca:                         number;
-  /** Toujours 0 côté backend. */
+  /** `totalFacture − somme des WIP déclarés` — dans ce sens-là (règle de gestion) : ce qui
+   *  a été facturé AU-DELÀ de ce que l'onglet WIP a déclaré. Négatif quand le WIP déclaré
+   *  dépasse le facturé. 0 hors Forfait/Régie/Livrable. */
   wip:                        number;
   raf:                        number;
   /** Toujours 0 côté backend (placeholder timesheet). */
@@ -172,6 +174,16 @@ export interface AffaireKpisDto {
   margeBrutePct:              number;
   /** Toujours 0 côté backend. */
   tauxAvancement:             number;
+  /** Budget prévisionnel − `totalFacture` : le reste du contrat à facturer. Négatif =
+   *  budget dépassé. */
+  backlog:                    number;
+  /** Somme des factures dont le statut n'est pas `PAID` — le facturé non encore soldé.
+   *  Le « facturé » de référence : `backlog` et `wip` se calculent dessus. */
+  totalFacture:               number;
+  /** Somme des factures au statut `PAID` — la tuile « Total encaissé ». À ne pas confondre
+   *  avec `ca` (somme des règlements reçus), qui alimente la marge et la jauge « Santé du
+   *  projet » : les deux divergent dès qu'une facture est partiellement réglée. */
+  totalEncaisse:              number;
 }
 
 export interface TsDto {

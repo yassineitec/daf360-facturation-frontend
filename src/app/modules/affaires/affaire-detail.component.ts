@@ -958,22 +958,25 @@ export class AffaireDetailComponent implements OnInit {
 
 
   /**
-   * Les 4 indicateurs financiers du haut de la colonne droite, sur `daf-metric-card`.
+   * Les 5 indicateurs financiers du haut de la colonne droite, sur `daf-metric-card` :
+   * **Backlog, WIP, Total facturé, Total encaissé, TS**, dans cet ordre — de l'engagement
+   * restant jusqu'à l'argent réellement reçu, la rangée se lit de gauche à droite comme
+   * le cycle de vie du budget.
    *
    * Toutes les classes de couleur sont des **littéraux complets** (§3) : assemblées à
    * l'exécution elles ne survivraient pas au scan Tailwind de l'app consommatrice.
    *
-   * La part du RAF passe par `delta` — `daf-metric-card` n'a pas de slot pastille, et
-   * `delta` est exactement ça : une valeur secondaire à côté du chiffre. `direction:
-   * 'neutral'` parce que c'est une part, pas une variation.
+   * La part du budget encore au backlog passe par `delta` — `daf-metric-card` n'a pas de
+   * slot pastille, et `delta` est exactement ça : une valeur secondaire à côté du chiffre.
+   * `direction: 'neutral'` parce que c'est une part, pas une variation.
    *
-   * **`help` sur les quatre** (lib 4.20.0) : la définition du chiffre, révélée au survol
-   * de la tuile — sans icône ni bouton, la tuile est identique tant qu'on ne la survole
-   * pas. Ces quatre-là en avaient besoin plus que les autres : deux mesurent autre chose
-   * que ce que leur nom suggère (le CA est de l'ENCAISSÉ et pas du facturé ; la marge est
-   * un % du CA et pas du budget), un troisième vaut 0 en dur côté serveur, et le RAF se
-   * calcule sur l'enveloppe et non sur le prévisionnel. Ces réserves ne vivaient que dans
-   * les commentaires de ce fichier, donc nulle part pour qui lit la page.
+   * **`help` sur chacune** (lib 4.20.0) : la définition du chiffre, révélée au survol de
+   * la tuile — sans icône ni bouton, la tuile est identique tant qu'on ne la survole pas.
+   * Ces définitions en avaient besoin plus que les autres : trois d'entre elles mesurent
+   * autre chose que ce que leur nom suggère (« Total encaissé » est du PAYÉ et pas du
+   * facturé ; « Total facturé » exclut justement les factures payées ; le WIP est un
+   * cumul NET des factures). Ces réserves ne vivaient que dans les commentaires de ce
+   * fichier, donc nulle part pour qui lit la page.
    *
    * `helpPlacement` reste au défaut (`bottom`) : la rangée est en haut de la colonne, un
    * panneau au-dessus sortirait de l'écran.
@@ -990,19 +993,17 @@ export class AffaireDetailComponent implements OnInit {
     const t = (key: string) => this.translate.instant(key);
     return [
       {
-        label: 'AFFAIRES.DETAIL.KPI.CA',
-        value: this.money(k?.ca),
-        delta: null,
-        options: { icon: 'account_balance_wallet', iconColor: 'text-primary', iconBg: 'bg-primary/10',
-                   help: t('AFFAIRES.DETAIL.KPI.CA_HELP') },
-      },
-      {
-        label: 'AFFAIRES.DETAIL.KPI.MARGIN',
-        value: this.formatPct(k?.margeBrutePct ?? null),
-        delta: null,
-        options: { icon: 'trending_up', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
-                   valueColor: 'text-secondary',
-                   help: t('AFFAIRES.DETAIL.KPI.MARGIN_HELP') },
+        label: 'AFFAIRES.DETAIL.KPI.BACKLOG',
+        value: this.money(k?.backlog),
+        // Même pastille que le RAF portait : la part encore disponible du budget. Le
+        // dénominateur reste `budgetTotal()` (prévisionnel seul), donc la pastille et la
+        // valeur mesurent bien la même enveloppe.
+        delta: this.budgetTotal() > 0 && k
+          ? { value: `${Math.round((k.backlog / this.budgetTotal()) * 100)}%`, direction: 'neutral' as const }
+          : null,
+        options: { icon: 'inventory_2', iconColor: 'text-teal', iconBg: 'bg-teal/10',
+                   valueColor: 'text-primary',
+                   help: t('AFFAIRES.DETAIL.KPI.BACKLOG_HELP') },
       },
       {
         label: 'AFFAIRES.DETAIL.KPI.WIP',
@@ -1012,14 +1013,24 @@ export class AffaireDetailComponent implements OnInit {
                    help: t('AFFAIRES.DETAIL.KPI.WIP_HELP') },
       },
       {
-        label: 'AFFAIRES.DETAIL.KPI.RAF',
-        value: this.money(this.raf()?.rafDisponible),
-        delta: this.budgetTotal() > 0
-          ? { value: `${Math.round(this.rafAvailablePct())}%`, direction: 'neutral' as const }
-          : null,
-        options: { icon: 'request_quote', iconColor: 'text-teal', iconBg: 'bg-teal/10',
-                   valueColor: 'text-primary',
-                   help: t('AFFAIRES.DETAIL.KPI.RAF_HELP') },
+        label: 'AFFAIRES.DETAIL.KPI.INVOICED',
+        value: this.money(k?.totalFacture),
+        delta: null,
+        options: { icon: 'receipt_long', iconColor: 'text-primary', iconBg: 'bg-primary/10',
+                   help: t('AFFAIRES.DETAIL.KPI.INVOICED_HELP') },
+      },
+      {
+        label: 'AFFAIRES.DETAIL.KPI.CA',
+        // `totalEncaisse` (factures au statut Encaissé) et NON `ca` (somme des règlements
+        // reçus) : règle de gestion « Encaissé = somme des montants facturés dont le statut
+        // est Encaissé ». `ca` reste servi par l'API et continue d'alimenter la marge et la
+        // jauge « Santé du projet » plus bas — les deux divergent sur une facture
+        // partiellement réglée, d'où deux champs distincts plutôt qu'une redéfinition.
+        value: this.money(k?.totalEncaisse),
+        delta: null,
+        options: { icon: 'account_balance_wallet', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
+                   valueColor: 'text-secondary',
+                   help: t('AFFAIRES.DETAIL.KPI.CA_HELP') },
       },
       {
         label: 'AFFAIRES.WIP.KPI_TS',
@@ -1086,7 +1097,8 @@ export class AffaireDetailComponent implements OnInit {
   //
   //   GET /affaires/{id}/raf   → RafDetailsDto  : budgetPrevisionnel, totalFacturesEmises,
   //                                              montantTsIntegres, rafDisponible
-  //   GET /affaires/{id}/kpis  → AffaireKpisDto : ca, wip, margeBrutePct
+  //   GET /affaires/{id}/kpis  → AffaireKpisDto : backlog, wip, totalFacture, ca,
+  //                                              margeBrutePct
   //
   //   budgetPrevisionnel = raf.budgetPrevisionnel, sinon affaire.budgetPrevisionnel
   //                        (le RAF arrive après l'affaire : sans ce repli les tuiles
@@ -1121,11 +1133,32 @@ export class AffaireDetailComponent implements OnInit {
   //   BAISSER sans que rien ne soit défacturé. Consommer le budget, ici, c'est la
   //   facturer — un TS l'agrandit, il n'en consomme rien.
   //
-  //   CA encaissé, WIP et Marge brute sont pris **tels quels** dans les KPIs du
-  //   backend, la page ne les recalcule pas. À savoir sur ces trois-là :
-  //     · ca   = SUM(payments.amount_local) des factures de l'affaire (encaissé réel),
-  //              d'où son emploi comme numérateur de « Santé du projet » ;
-  //     · wip  = 0 EN DUR côté serveur, la tuile affichera donc toujours 0 ;
+  //   Les cinq tuiles du haut sont, dans l'ordre : Backlog, WIP, Total facturé, Total
+  //   encaissé, TS. Les quatre premières sont prises **telles quelles** dans les KPIs du
+  //   backend, la page ne les recalcule pas (seule la pastille % du Backlog est dérivée
+  //   ici) ; la cinquième vient du RAF. À savoir :
+  //   Les trois premières se calculent toutes sur le MÊME « facturé », `totalFacture` :
+  //     · totalFacture  = SUM(factures) dont le statut n'est PAS 'PAID' — à la lettre,
+  //                       donc DRAFT et CANCELLED y entrent aussi.
+  //     · backlog       = budgetPrevisionnel − totalFacture.
+  //     · wip           = totalFacture − somme des WIP déclarés (tous statuts), DANS CE
+  //                       SENS-LÀ : ce qui a été facturé au-delà de ce que l'onglet WIP a
+  //                       déclaré. Négatif quand le WIP déclaré dépasse le facturé.
+  //     · totalEncaisse = SUM(factures) au statut 'PAID' — complément exact de
+  //                       totalFacture, donc totalFacture + totalEncaisse = tout le facturé.
+  //   Un chiffre lu sur une tuile se retrouve donc tel quel dans le calcul des deux
+  //   autres : budget = backlog + totalFacture, et la tuile WIP se lit à partir de la
+  //   tuile « Total facturé » affichée juste à côté.
+  //
+  //   ⚠️ `ca` (SUM(payments.amount_local)) n'est PLUS la tuile « Total encaissé » — celle-ci
+  //   lit `totalEncaisse`, les factures au statut Encaissé. `ca` reste servi par l'API et
+  //   alimente toujours la marge et la jauge « Santé du projet » ci-dessous. Les deux
+  //   divergent dès qu'une facture est partiellement réglée : un acompte entre dans `ca`,
+  //   mais sa facture reste PARTIALLY_PAID donc dans `totalFacture`, pas dans
+  //   `totalEncaisse`.
+  //
+  //   margeBrutePct et rafDisponible ne sont plus sur la rangée mais restent servis par
+  //   les mêmes endpoints, et le RAF alimente toujours les anneaux du bas de page.
   //     · margeBrutePct = (ca − sous-traitance) / ca × 100, donc un % du CA et non du
   //       budget, nul dès que ca vaut 0 ; les coûts internes sont un placeholder à 0
   //       (pas de timesheet), la marge est donc surévaluée tant qu'ils manquent.
@@ -2116,6 +2149,25 @@ export class AffaireDetailComponent implements OnInit {
     this.contactSvc.getAffaireContacts(this.numId).subscribe(list => this.contacts.set(list));
   }
 
+  /**
+   * Recharge tout ce dont dépendent les cinq tuiles du haut, après une action qui vient
+   * d'en changer une valeur. À appeler depuis CHAQUE écriture qui touche le WIP, les TS,
+   * les factures ou les paiements — sans quoi les tuiles gardent les chiffres du
+   * chargement initial jusqu'au prochain rechargement de page, ce qui est d'autant plus
+   * trompeur que l'onglet WIP, lui, se met bien à jour tout seul juste en dessous.
+   *
+   * Les deux endpoints suffisent : Backlog / WIP / Total facturé / Total encaissé sortent
+   * tous de `kpis`, et TS de `raf`. Les listes (factures, paiements, TS) sont rechargées
+   * par leurs propres actions, pas ici — cette méthode ne sert que les indicateurs.
+   *
+   * Un seul aller-retour par endpoint, pas de debounce : ces actions sont des clics
+   * humains, jamais des rafales.
+   */
+  refreshIndicators(): void {
+    this.loadKpis();
+    this.loadRaf();
+  }
+
   loadRaf():      void { this.svc.getAffaireRaf(this.numId).subscribe({ next: r => this.raf.set(r) }); }
   loadKpis():     void { this.svc.getAffaireKpis(this.numId).subscribe({ next: k => this.kpis.set(k) }); }
   loadTs():       void { this.svc.getTS(this.numId).subscribe({ next: ts => this.tsList.set(ts) }); }
@@ -2207,6 +2259,9 @@ export class AffaireDetailComponent implements OnInit {
     this.expensesModalRef?.close();
     this.expensesModalRef = null;
     this.activeTab.set('frais');
+    // Un frais remboursable finit en ligne de facturation puis en facture : il déplace donc
+    // Backlog et Total facturé, même s'il n'a rien à voir avec le WIP.
+    this.refreshIndicators();
   }
 
   openStatutModal(): void {
@@ -2318,7 +2373,14 @@ export class AffaireDetailComponent implements OnInit {
 
     this.modalError.set(null);
     call.subscribe({
-      next: () => { ref.close(); this.tsValidationTarget.set(null); this.loadTs(); this.loadRaf(); },
+      next: () => {
+        ref.close();
+        this.tsValidationTarget.set(null);
+        this.loadTs();
+        // Un TS validé peut passer INTEGRE, donc entrer dans la tuile TS : indicateurs
+        // relus, pas seulement le RAF (que refreshIndicators recharge déjà).
+        this.refreshIndicators();
+      },
       error: err => this.modalError.set(
         err?.error?.message ?? this.translate.instant('AFFAIRES.DETAIL.TS.VALIDATE_ERROR')),
     });
@@ -2518,7 +2580,7 @@ export class AffaireDetailComponent implements OnInit {
   onTsFormClosed(saved: boolean): void {
     this.tsFormModalRef?.close();
     this.tsFormModalRef = null;
-    if (saved) { this.loadTs(); this.loadRaf(); }
+    if (saved) { this.loadTs(); this.refreshIndicators(); }
   }
 
   // ═══ Export CSV ═══════════════════════════════════════════════════════════

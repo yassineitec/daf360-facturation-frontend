@@ -656,7 +656,10 @@
 
           <!-- ── WIP (Work In Progress) — Forfaitaire, Régie et Livrable ─── -->
           @if (activeTab() === 'wip' && (aff.billingMode === 'FORFAIT' || aff.billingMode === 'REGIE' || aff.billingMode === 'LIVRABLE')) {
-            <app-affaire-wip-tab [affaire]="aff" />
+            <!-- (dataChanged) : toute écriture de l'onglet WIP change au moins une des
+                 tuiles du haut (WIP, et Backlog/Total facturé dès qu'une facture en
+                 découle) — on relit les indicateurs plutôt que de les recalculer ici. -->
+            <app-affaire-wip-tab [affaire]="aff" (dataChanged)="refreshIndicators()" />
           }
 
           <!-- ── Ressources — taux TM par collaborateur, TM uniquement ───── -->

@@ -1,5 +1,6 @@
 import {
-  Component, ElementRef, HostListener, Input, OnDestroy, OnInit, Renderer2, ViewChild, WritableSignal,
+  Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output,
+  Renderer2, ViewChild, WritableSignal,
   effect, inject, signal, computed, viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
@@ -140,6 +141,21 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
 })
 export class AffaireWipTabComponent implements OnInit, OnDestroy {
   @Input({ required: true }) affaire!: AffaireDetail;
+
+  /**
+   * Émis après CHAQUE écriture réussie de cet onglet, quel que soit le mode : soumission /
+   * modification / suppression d'un taux AV, validation d'une période Régie, saisie du
+   * montant confirmé par le client, annulation d'une ligne ou d'un batch, soumission de
+   * livrables. La fiche affaire s'y abonne pour recharger ses tuiles (Backlog, WIP, Total
+   * facturé…), qui dérivent toutes de ce que ces actions viennent d'écrire — sans ça elles
+   * gardaient les valeurs du chargement initial de la page jusqu'au prochain F5.
+   *
+   * Volontairement SANS charge utile : l'onglet ne sait pas recalculer les indicateurs de
+   * la fiche (ils agrègent aussi les factures et les paiements), il signale juste « quelque
+   * chose a changé, va relire ». Un seul événement pour les trois modes, le parent n'ayant
+   * aucune raison de les traiter différemment.
+   */
+  @Output() readonly dataChanged = new EventEmitter<void>();
 
   private readonly currency = inject(DisplayCurrencyPipe);
   private readonly svc = inject(WipService);
@@ -866,6 +882,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         this.submittingClientLine.set(null);
         this.setClientAmountInput(line.id, null);
         this.loadTmHistory();
+        this.dataChanged.emit();
       },
       error: err => {
         this.submittingClientLine.set(null);
@@ -944,6 +961,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         this.tauxComment = '';
         this.editingTauxId.set(null);
         this.loadTauxHistory();
+        this.dataChanged.emit();
       },
       error: err => {
         this.submittingTaux.set(false);
@@ -959,6 +977,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       next: () => {
         if (this.editingTauxId() === tauxId) this.cancelEditTaux();
         this.loadTauxHistory();
+        this.dataChanged.emit();
       },
       error: err => this.deleteTauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.DELETE_TAUX_ERROR')),
     });
@@ -1151,6 +1170,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         // loadTmHistory()'s response confirms it (loadTmPreview()'s own reset runs first,
         // synchronously, so this has to come after it to win).
         this.wipStep.set(4);
+        this.dataChanged.emit();
       },
       error: err => {
         this.validatingTm.set(false);
@@ -1190,6 +1210,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         this.setClientAmountInput(billingLineId, null);
         this.loadTmHistory();
         this.loadTmPreview();
+        this.dataChanged.emit();
       },
       error: err => this.cancelLineError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CANCEL_LINE_ERROR')),
     });
@@ -1412,6 +1433,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         this.editingBatchId.set(null);
         this.loadLivrables();
         this.loadActiveBatches();
+        this.dataChanged.emit();
       },
       error: err => {
         this.submittingLivrables.set(false);
@@ -1428,6 +1450,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         if (this.editingBatchId() === batchId) this.cancelEditBatch();
         this.setLivrableClientAmountInput(batchId, null);
         this.loadActiveBatches();
+        this.dataChanged.emit();
       },
       error: err => this.livrableCancelError.set(
         err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CANCEL_BATCH_ERROR')),
@@ -1458,6 +1481,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         // close any edit form left open on it, same guard cancelBatch() already has above.
         if (this.editingBatchId() === batch.batchId) this.cancelEditBatch();
         this.loadActiveBatches();
+        this.dataChanged.emit();
       },
       error: err => {
         this.submittingLivrableClientBatch.set(null);

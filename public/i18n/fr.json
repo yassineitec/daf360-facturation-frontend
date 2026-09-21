@@ -1101,18 +1101,22 @@
         "TEAM_HELP": "Les responsables de l'affaire, une entrée par personne. Une même personne peut occuper plusieurs lignes en base (une par activité) : le compte affiché est celui des PERSONNES distinctes, pas des lignes. Les photos viennent du module RH."
       },
       "KPI": {
-        "CA": "CA Encaissé",
+        "CA": "Total encaissé",
         "CA_SUB": "Chiffre d'affaires réel",
-        "CA_HELP": "Somme des paiements réellement reçus sur les factures de l'affaire. Ce n'est pas le facturé : une facture émise mais non payée ne compte pas ici.",
+        "CA_HELP": "Somme des factures de l'affaire dont le statut est « Encaissé ». Complément exact de « Total facturé » : les deux réunis font tout le facturé. Un acompte sur une facture encore partiellement payée ne compte pas ici.",
         "RAF": "RAF Disponible",
         "RAF_USAGE": "Consommation budget",
         "RAF_HELP": "Ce qui reste à facturer : budget + TS intégrés − factures émises. Le pourcentage est la part encore disponible. Négatif = budget dépassé.",
         "WIP": "WIP",
         "WIP_SUB": "Travaux en cours",
-        "WIP_HELP": "Travaux en cours, non encore facturés. Pas encore calculé côté serveur : la tuile affiche donc toujours 0.",
+        "WIP_HELP": "Total facturé − somme de TOUS les WIP de l'onglet WIP, quel que soit leur statut (en attente, validé, facturé, annulé). Dans ce sens : ce qui a été facturé au-delà du WIP déclaré. Négatif = le WIP déclaré dépasse le facturé. Vaut 0 hors Forfaitaire/Régie/Livrable.",
         "MARGIN": "Marge brute",
         "MARGIN_TARGET": "Objectif de marge",
-        "MARGIN_HELP": "(Encaissé − sous-traitance) / encaissé : un % du CA, pas du budget. Les coûts internes valent 0 faute de timesheet, la marge est surévaluée."
+        "MARGIN_HELP": "(Encaissé − sous-traitance) / encaissé : un % du CA, pas du budget. Les coûts internes valent 0 faute de timesheet, la marge est surévaluée.",
+        "BACKLOG": "Backlog",
+        "BACKLOG_HELP": "Ce qui reste du contrat à facturer : budget prévisionnel − Total facturé (la tuile voisine). La pastille est la part du budget encore au backlog. Négatif = budget dépassé.",
+        "INVOICED": "Total facturé",
+        "INVOICED_HELP": "Somme des factures de l'affaire dont le statut n'est pas « Encaissé » — le facturé non encore soldé. C'est le « facturé » de référence : le Backlog et le WIP se calculent dessus."
       },
       "INFO": {
         "TITLE": "Informations générales",

@@ -1101,18 +1101,22 @@
         "TEAM_HELP": "The project managers, one entry per person. The same person can hold several rows in the database (one per activity): the count shown is of distinct PEOPLE, not rows. Photos come from the HR module."
       },
       "KPI": {
-        "CA": "Collected Revenue",
+        "CA": "Total collected",
         "CA_SUB": "Actual revenue",
-        "CA_HELP": "Sum of the payments actually received against this project's invoices. Not the invoiced amount: an issued but unpaid invoice does not count here.",
+        "CA_HELP": "Sum of this project's invoices whose status is 'Collected'. The exact complement of 'Total invoiced': together they make up everything invoiced. A part-payment on an invoice that is still partly paid does not count here.",
         "RAF": "Remaining to invoice",
         "RAF_USAGE": "Budget usage",
         "RAF_HELP": "What is left to invoice: budget + integrated additional work − issued invoices. The percentage is the share still available. Negative = overrun.",
         "WIP": "WIP",
         "WIP_SUB": "Work in progress",
-        "WIP_HELP": "Work in progress, not yet invoiced. Not computed server-side yet, so this tile always shows 0.",
+        "WIP_HELP": "Total invoiced − the sum of EVERY WIP entry in the WIP tab, whatever its status (pending, approved, invoiced, cancelled). In that direction: what has been invoiced beyond the declared WIP. Negative = declared WIP exceeds what was invoiced. 0 outside Fixed-price/T&M/Deliverable.",
         "MARGIN": "Gross margin",
         "MARGIN_TARGET": "Margin target",
-        "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated."
+        "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated.",
+        "BACKLOG": "Backlog",
+        "BACKLOG_HELP": "What is left of the contract to invoice: forecast budget − Total invoiced (the neighbouring tile). The pill is the share of the budget still in backlog. Negative = overrun.",
+        "INVOICED": "Total invoiced",
+        "INVOICED_HELP": "Sum of this project's invoices whose status is not 'Collected' — the invoiced amount still owed. This is the reference 'invoiced' figure: Backlog and WIP are both computed from it."
       },
       "INFO": {
         "TITLE": "General information",
