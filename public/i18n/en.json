@@ -1109,7 +1109,7 @@
         "RAF_HELP": "What is left to invoice: budget + integrated additional work − issued invoices. The percentage is the share still available. Negative = overrun.",
         "WIP": "WIP",
         "WIP_SUB": "Work in progress",
-        "WIP_HELP": "Total invoiced − the sum of EVERY WIP entry in the WIP tab, whatever its status (pending, approved, invoiced, cancelled). In that direction: what has been invoiced beyond the declared WIP. Negative = declared WIP exceeds what was invoiced. 0 outside Fixed-price/T&M/Deliverable.",
+        "WIP_HELP": "The sum of EVERY WIP entry in the WIP tab, whatever its status (pending, approved, invoiced, cancelled) − Total invoiced (the neighbouring tile): work recognised but not yet invoiced. Negative = more has been invoiced than WIP has declared. 0 outside Fixed-price/T&M/Deliverable.",
         "MARGIN": "Gross margin",
         "MARGIN_TARGET": "Margin target",
         "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated.",

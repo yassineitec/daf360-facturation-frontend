@@ -1141,14 +1141,18 @@ export class AffaireDetailComponent implements OnInit {
   //     · totalFacture  = SUM(factures) dont le statut n'est PAS 'PAID' — à la lettre,
   //                       donc DRAFT et CANCELLED y entrent aussi.
   //     · backlog       = budgetPrevisionnel − totalFacture.
-  //     · wip           = totalFacture − somme des WIP déclarés (tous statuts), DANS CE
-  //                       SENS-LÀ : ce qui a été facturé au-delà de ce que l'onglet WIP a
-  //                       déclaré. Négatif quand le WIP déclaré dépasse le facturé.
+  //     · wip           = somme des WIP déclarés (tous statuts) − totalFacture : le
+  //                       constaté pas encore passé en facture. Négatif quand on a facturé
+  //                       plus que ce que l'onglet WIP a déclaré.
   //     · totalEncaisse = SUM(factures) au statut 'PAID' — complément exact de
   //                       totalFacture, donc totalFacture + totalEncaisse = tout le facturé.
   //   Un chiffre lu sur une tuile se retrouve donc tel quel dans le calcul des deux
   //   autres : budget = backlog + totalFacture, et la tuile WIP se lit à partir de la
   //   tuile « Total facturé » affichée juste à côté.
+  //
+  //   ⚠️ Le sens de la soustraction du WIP a été inversé le 21/09 (il valait
+  //   totalFacture − WIP du 18 au 21) : une capture d'écran de cette période se lit à
+  //   l'opposé de ce que la page affiche aujourd'hui.
   //
   //   ⚠️ `ca` (SUM(payments.amount_local)) n'est PLUS la tuile « Total encaissé » — celle-ci
   //   lit `totalEncaisse`, les factures au statut Encaissé. `ca` reste servi par l'API et
