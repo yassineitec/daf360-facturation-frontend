@@ -19,6 +19,27 @@ export class WizardStepDoc360Component implements OnInit {
 
   private readonly wizardSvc = inject(AffaireWizardService);
 
+  // ODS/DOC360 stores `status` as a pre-rendered French label (`statut_label_fr`), not a
+  // code — there is no locale-aware source for it. This maps the known French labels to an
+  // i18n key under AFFAIRES.wizard.doc360.status.*; anything unrecognized falls back to the
+  // raw ODS text as before, so a new/unmapped status never disappears from the UI.
+  private static readonly STATUS_KEYS: Record<string, string> = {
+    'en cours':   'in_progress',
+    'actif':      'active',
+    'clôturé':    'closed',
+    'cloture':    'closed',
+    'clôture':    'closed',
+    'terminé':    'completed',
+    'termine':    'completed',
+    'annulé':     'cancelled',
+    'annule':     'cancelled',
+    'suspendu':   'suspended',
+    'en attente': 'pending',
+    'brouillon':  'draft',
+    'archivé':    'archived',
+    'archive':    'archived',
+  };
+
   searchQuery    = '';
   results        = signal<ExternalProjectResult[]>([]);
   isSearching    = signal(false);
@@ -78,6 +99,12 @@ export class WizardStepDoc360Component implements OnInit {
       reference:             p.serverReference,
       intitule,
     });
+  }
+
+  statusKey(status: string | null | undefined): string | null {
+    if (!status) return null;
+    const normalized = status.trim().toLowerCase();
+    return WizardStepDoc360Component.STATUS_KEYS[normalized] ?? null;
   }
 
   selectSource(source: 'doc360' | 'interco'): void {

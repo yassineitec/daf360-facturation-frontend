@@ -8,6 +8,7 @@ import {
   TabsComponent, TabItem, PaginationComponent,
   StatusBadgeComponent, BadgeVariant,
   FormFieldComponent,
+  SearchToolbarComponent, SearchToolbarFilterConfig, FilterField, FilterResult,
   ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 import {
@@ -21,6 +22,7 @@ import {
 import { InvoiceService } from '../../invoicing/invoice.service';
 import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 type ActiveTab = 'df' | 'history';
+type DfSubTab  = 'taux' | 'lines' | 'livrable' | 'creditNotes';
 
 const LINE_STATUT_VARIANT: Record<string, BadgeVariant> = {
   EN_ATTENTE_DF: 'warning',
@@ -37,6 +39,7 @@ const LINE_STATUT_VARIANT: Record<string, BadgeVariant> = {
     RouterLink, TranslatePipe, DataTableComponent, DafCellDirective,
     PageComponent, PageHeaderComponent, MetricCardComponent,
     TabsComponent, StatusBadgeComponent, FormFieldComponent, PaginationComponent,
+    SearchToolbarComponent,
   ],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
@@ -54,10 +57,26 @@ export class ApprovalQueueComponent implements OnInit {
 
   // Mirrors first-load skeleton pattern used elsewhere (see CostApprovalQueueComponent) —
   // only the very first fetch shows the daf-page skeleton, tab switches never do.
-  firstLoad   = signal(true);
-  activeTab   = signal<ActiveTab>('df');
-  dfLoading   = signal(false);
-  histLoading = signal(false);
+  firstLoad     = signal(true);
+  activeTab     = signal<ActiveTab>('df');
+  activeDfSubTab = signal<DfSubTab>('taux');
+  dfLoading     = signal(false);
+  histLoading   = signal(false);
+
+  // ── Per-sub-tab search + filter state — each of the 4 "df" tables owns its own
+  // text/filter, kept independent of the others (switching tabs must not bleed one
+  // table's search into another's rows). A single shared daf-search-toolbar instance
+  // isn't reused across tabs (see the .html): daf-filter seeds its internal state
+  // from `initialValues` only once per component instance, so swapping `filterFields`
+  // under a live instance wouldn't reset stale field keys from the previous tab. ──
+  tauxSearch            = signal('');
+  tauxFilter            = signal<FilterResult>({});
+  lineSearch            = signal('');
+  lineFilter            = signal<FilterResult>({});
+  livrableBatchSearch   = signal('');
+  livrableBatchFilter   = signal<FilterResult>({});
+  creditNoteSearch      = signal('');
+  creditNoteFilter      = signal<FilterResult>({});
 
   pendingTaux   = signal<PendingTauxDto[]>([]);
   pendingJalons = signal<PendingJalonDto[]>([]);
@@ -93,6 +112,20 @@ export class ApprovalQueueComponent implements OnInit {
     ];
   });
 
+  // ── "df" sub-strip (daf-tabs, variant="pill") — the 4 pending-item tables used to sit
+  // stacked one under the other; each now lives in its own panel, same pattern as
+  // CostConfigComponent's nested section/list-type strips. ──
+  readonly dfSubTabItems = computed<TabItem[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return [
+      { id: 'taux',        label: t('AFFAIRES.billing.approval.tab_taux'),             icon: 'percent',      count: this.pendingTaux().length || null },
+      { id: 'lines',       label: t('AFFAIRES.billing.approval.tab_lines'),             icon: 'receipt_long', count: this.pendingLines().length || null },
+      { id: 'livrable',    label: t('AFFAIRES.billing.approval.tab_livrable_batches'),  icon: 'folder_copy',  count: this.pendingLivrableBatches().length || null },
+      { id: 'creditNotes', label: t('AFFAIRES.billing.approval.tab_credit_notes'),      icon: 'request_quote', count: this.pendingCreditNotes().length || null },
+    ];
+  });
+
   // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
   readonly tauxColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -117,11 +150,56 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  readonly tauxFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    return [{
+      name:  'soumis',
+      label: this.translate.instant('AFFAIRES.billing.approval.filter_soumis'),
+      type:  'daterange',
+    }];
+  });
+
+  readonly tauxFilterConfig = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      title:         t('AFFAIRES.billing.approval.filter_title'),
+      applyLabel:    t('AFFAIRES.billing.approval.filter_apply'),
+      cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
+      resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
+      align:         'right',
+      initialValues: this.tauxFilter(),
+    };
+  });
+
+  onTauxSearch(value: string): void {
+    this.tauxSearch.set(value);
+    this.tauxPage.set(0);
+  }
+
+  onTauxFilterApply(result: FilterResult): void {
+    this.tauxFilter.set(result);
+    this.tauxPage.set(0);
+  }
+
+  readonly filteredTauxRows = computed(() => {
+    const q     = this.tauxSearch().trim().toLowerCase();
+    const range = this.tauxFilter()['soumis'] as Date[] | null;
+    return this.tauxRows().filter(r => {
+      if (q && !`${r.affaireRef} ${r.affaireIntitule}`.toLowerCase().includes(q)) return false;
+      if (range?.length === 2) {
+        const d = new Date(r._raw.submittedAt);
+        if (d < range[0] || d > range[1]) return false;
+      }
+      return true;
+    });
+  });
+
   tauxPage     = signal(0);
   tauxPageSize = signal(10);
-  readonly tauxTotalPages = computed(() => Math.ceil(this.tauxRows().length / this.tauxPageSize()));
+  readonly tauxTotalPages = computed(() => Math.ceil(this.filteredTauxRows().length / this.tauxPageSize()));
   readonly pagedTauxRows = computed(() => {
-    const rows = this.tauxRows();
+    const rows = this.filteredTauxRows();
     const size = this.tauxPageSize();
     const page = Math.min(this.tauxPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
     return rows.slice(page * size, page * size + size);
@@ -155,11 +233,70 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  // Options derived from the pending rows themselves rather than hardcoded — `mode` is
+  // a free-form string server-side and `statut` is expected to sit at EN_ATTENTE_DF for
+  // everything in this list, so guessing a fixed enum here would drift from reality.
+  readonly lineFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const modes   = [...new Set(this.pendingLines().map(l => l.mode).filter(Boolean))];
+    const statuts = [...new Set(this.pendingLines().map(l => l.statut).filter(Boolean))];
+    return [
+      {
+        name:    'mode',
+        label:   this.translate.instant('AFFAIRES.billing.approval.filter_mode'),
+        type:    'select',
+        options: modes.map(m => ({ value: m, label: m })),
+      },
+      {
+        name:    'statut',
+        label:   this.translate.instant('AFFAIRES.billing.approval.filter_statut'),
+        type:    'select',
+        options: statuts.map(s => ({ value: s, label: this.lineStatusLabel(s) })),
+      },
+    ];
+  });
+
+  readonly lineFilterConfig = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      title:         t('AFFAIRES.billing.approval.filter_title'),
+      applyLabel:    t('AFFAIRES.billing.approval.filter_apply'),
+      cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
+      resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
+      align:         'right',
+      initialValues: this.lineFilter(),
+    };
+  });
+
+  onLineSearch(value: string): void {
+    this.lineSearch.set(value);
+    this.linePage.set(0);
+  }
+
+  onLineFilterApply(result: FilterResult): void {
+    this.lineFilter.set(result);
+    this.linePage.set(0);
+  }
+
+  readonly filteredLineRows = computed(() => {
+    const q      = this.lineSearch().trim().toLowerCase();
+    const filter = this.lineFilter();
+    const mode   = filter['mode'] as string | null;
+    const statut = filter['statut'] as string | null;
+    return this.lineRows().filter(r => {
+      if (q && !`${r.affaireRef} ${r.affaireIntitule} ${r.reference}`.toLowerCase().includes(q)) return false;
+      if (mode && r._raw.mode !== mode) return false;
+      if (statut && r._raw.statut !== statut) return false;
+      return true;
+    });
+  });
+
   linePage     = signal(0);
   linePageSize = signal(10);
-  readonly lineTotalPages = computed(() => Math.ceil(this.lineRows().length / this.linePageSize()));
+  readonly lineTotalPages = computed(() => Math.ceil(this.filteredLineRows().length / this.linePageSize()));
   readonly pagedLineRows = computed(() => {
-    const rows = this.lineRows();
+    const rows = this.filteredLineRows();
     const size = this.linePageSize();
     const page = Math.min(this.linePage(), Math.max(0, Math.ceil(rows.length / size) - 1));
     return rows.slice(page * size, page * size + size);
@@ -189,11 +326,56 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  readonly livrableBatchFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    return [{
+      name:  'billingDate',
+      label: this.translate.instant('AFFAIRES.billing.approval.filter_billing_date'),
+      type:  'daterange',
+    }];
+  });
+
+  readonly livrableBatchFilterConfig = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      title:         t('AFFAIRES.billing.approval.filter_title'),
+      applyLabel:    t('AFFAIRES.billing.approval.filter_apply'),
+      cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
+      resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
+      align:         'right',
+      initialValues: this.livrableBatchFilter(),
+    };
+  });
+
+  onLivrableBatchSearch(value: string): void {
+    this.livrableBatchSearch.set(value);
+    this.livrableBatchPage.set(0);
+  }
+
+  onLivrableBatchFilterApply(result: FilterResult): void {
+    this.livrableBatchFilter.set(result);
+    this.livrableBatchPage.set(0);
+  }
+
+  readonly filteredLivrableBatchRows = computed(() => {
+    const q     = this.livrableBatchSearch().trim().toLowerCase();
+    const range = this.livrableBatchFilter()['billingDate'] as Date[] | null;
+    return this.livrableBatchRows().filter(r => {
+      if (q && !`${r.affaireRef} ${r.affaireIntitule}`.toLowerCase().includes(q)) return false;
+      if (range?.length === 2) {
+        const d = new Date(r._raw.billingDate);
+        if (d < range[0] || d > range[1]) return false;
+      }
+      return true;
+    });
+  });
+
   livrableBatchPage     = signal(0);
   livrableBatchPageSize = signal(10);
-  readonly livrableBatchTotalPages = computed(() => Math.ceil(this.livrableBatchRows().length / this.livrableBatchPageSize()));
+  readonly livrableBatchTotalPages = computed(() => Math.ceil(this.filteredLivrableBatchRows().length / this.livrableBatchPageSize()));
   readonly pagedLivrableBatchRows = computed(() => {
-    const rows = this.livrableBatchRows();
+    const rows = this.filteredLivrableBatchRows();
     const size = this.livrableBatchPageSize();
     const page = Math.min(this.livrableBatchPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
     return rows.slice(page * size, page * size + size);
@@ -227,11 +409,56 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  readonly creditNoteFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    return [{
+      name:    'motif',
+      label:   this.translate.instant('AFFAIRES.billing.approval.filter_motif'),
+      type:    'select',
+      options: Object.entries(CREDIT_NOTE_REASONS).map(([value, key]) => ({
+        value, label: this.translate.instant(key),
+      })),
+    }];
+  });
+
+  readonly creditNoteFilterConfig = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      title:         t('AFFAIRES.billing.approval.filter_title'),
+      applyLabel:    t('AFFAIRES.billing.approval.filter_apply'),
+      cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
+      resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
+      align:         'right',
+      initialValues: this.creditNoteFilter(),
+    };
+  });
+
+  onCreditNoteSearch(value: string): void {
+    this.creditNoteSearch.set(value);
+    this.creditNotePage.set(0);
+  }
+
+  onCreditNoteFilterApply(result: FilterResult): void {
+    this.creditNoteFilter.set(result);
+    this.creditNotePage.set(0);
+  }
+
+  readonly filteredCreditNoteRows = computed(() => {
+    const q     = this.creditNoteSearch().trim().toLowerCase();
+    const motif = this.creditNoteFilter()['motif'] as string | null;
+    return this.creditNoteRows().filter(r => {
+      if (q && !`${r.affaireRef} ${r.affaireIntitule} ${r.reference}`.toLowerCase().includes(q)) return false;
+      if (motif && r._raw.creditNoteReason !== motif) return false;
+      return true;
+    });
+  });
+
   creditNotePage     = signal(0);
   creditNotePageSize = signal(10);
-  readonly creditNoteTotalPages = computed(() => Math.ceil(this.creditNoteRows().length / this.creditNotePageSize()));
+  readonly creditNoteTotalPages = computed(() => Math.ceil(this.filteredCreditNoteRows().length / this.creditNotePageSize()));
   readonly pagedCreditNoteRows = computed(() => {
-    const rows = this.creditNoteRows();
+    const rows = this.filteredCreditNoteRows();
     const size = this.creditNotePageSize();
     const page = Math.min(this.creditNotePage(), Math.max(0, Math.ceil(rows.length / size) - 1));
     return rows.slice(page * size, page * size + size);
@@ -270,7 +497,7 @@ export class ApprovalQueueComponent implements OnInit {
     return rows.slice(page * size, page * size + size);
   });
 
-  readonly tableConfig = computed<TableConfig>(() => ({ hoverable: true }));
+  readonly tableConfig = computed<TableConfig>(() => ({ hoverable: true, showHeader: false }));
 
   // ── Row action buttons — rendered as icon buttons in a trailing column by
   // daf-data-table itself (config.actions), same as the library demo's table. ──
@@ -302,6 +529,7 @@ export class ApprovalQueueComponent implements OnInit {
     this.translate.currentLang();
     return {
       hoverable: true,
+      showHeader: false,
       actions: [
         this.validateAction(row => this.doValidateTaux(row['id'])),
         this.refuseAction(row => this.openRfRefuseModal(row['id'])),
@@ -313,6 +541,7 @@ export class ApprovalQueueComponent implements OnInit {
     this.translate.currentLang();
     return {
       hoverable: true,
+      showHeader: false,
       actions: [
         this.validateAction(row => this.doValidateDF(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'])),
@@ -324,6 +553,7 @@ export class ApprovalQueueComponent implements OnInit {
     this.translate.currentLang();
     return {
       hoverable: true,
+      showHeader: false,
       actions: [
         this.validateAction(row => this.doValidateLivrableBatch(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'], 'livrableBatch')),
@@ -335,6 +565,7 @@ export class ApprovalQueueComponent implements OnInit {
     this.translate.currentLang();
     return {
       hoverable: true,
+      showHeader: false,
       actions: [
         this.validateAction(row => this.doValidateCreditNote(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'], 'creditNote')),
@@ -353,6 +584,10 @@ export class ApprovalQueueComponent implements OnInit {
     const tab = id as ActiveTab;
     this.activeTab.set(tab);
     this.setTab(tab);
+  }
+
+  onDfSubTabChange(id: string): void {
+    this.activeDfSubTab.set(id as DfSubTab);
   }
 
   /**
