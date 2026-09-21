@@ -970,13 +970,13 @@ export class AffaireDetailComponent implements OnInit {
    * slot pastille, et `delta` est exactement ça : une valeur secondaire à côté du chiffre.
    * `direction: 'neutral'` parce que c'est une part, pas une variation.
    *
-   * **`help` sur chacune** (lib 4.20.0) : la définition du chiffre, révélée au survol de
-   * la tuile — sans icône ni bouton, la tuile est identique tant qu'on ne la survole pas.
-   * Ces définitions en avaient besoin plus que les autres : trois d'entre elles mesurent
-   * autre chose que ce que leur nom suggère (« Total encaissé » est du PAYÉ et pas du
-   * facturé ; « Total facturé » exclut justement les factures payées ; le WIP est un
-   * cumul NET des factures). Ces réserves ne vivaient que dans les commentaires de ce
-   * fichier, donc nulle part pour qui lit la page.
+   * **`help` sur chacune** (lib 4.20.0) : une phrase, révélée au survol de la tuile —
+   * sans icône ni bouton, la tuile est identique tant qu'on ne la survole pas. Une
+   * INFOBULLE, pas de la documentation : elle dit ce que le chiffre représente, pas
+   * comment il est calculé. Les règles de calcul complètes, leurs cas limites et leurs
+   * pièges restent dans le bloc « D'où viennent les chiffres de la page » ci-dessous, à
+   * destination de qui lit le code — les y laisser évite d'imposer un pavé à qui survole
+   * simplement une carte.
    *
    * `helpPlacement` reste au défaut (`bottom`) : la rangée est en haut de la colonne, un
    * panneau au-dessus sortirait de l'écran.

@@ -1103,20 +1103,20 @@
       "KPI": {
         "CA": "Total collected",
         "CA_SUB": "Actual revenue",
-        "CA_HELP": "Sum of this project's invoices whose status is 'Collected'. The exact complement of 'Total invoiced': together they make up everything invoiced. A part-payment on an invoice that is still partly paid does not count here.",
+        "CA_HELP": "Invoices collected.",
         "RAF": "Remaining to invoice",
         "RAF_USAGE": "Budget usage",
         "RAF_HELP": "What is left to invoice: budget + integrated additional work − issued invoices. The percentage is the share still available. Negative = overrun.",
         "WIP": "WIP",
         "WIP_SUB": "Work in progress",
-        "WIP_HELP": "The sum of EVERY WIP entry in the WIP tab, whatever its status (pending, approved, invoiced, cancelled) − Total invoiced (the neighbouring tile): work recognised but not yet invoiced. Negative = more has been invoiced than WIP has declared. 0 outside Fixed-price/T&M/Deliverable.",
+        "WIP_HELP": "Work recognised but not yet invoiced.",
         "MARGIN": "Gross margin",
         "MARGIN_TARGET": "Margin target",
         "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated.",
         "BACKLOG": "Backlog",
-        "BACKLOG_HELP": "What is left of the contract to invoice: forecast budget − Total invoiced (the neighbouring tile). The pill is the share of the budget still in backlog. Negative = overrun.",
+        "BACKLOG_HELP": "What is left of the contract to invoice: budget − total invoiced.",
         "INVOICED": "Total invoiced",
-        "INVOICED_HELP": "Sum of this project's invoices whose status is not 'Collected' — the invoiced amount still owed. This is the reference 'invoiced' figure: Backlog and WIP are both computed from it."
+        "INVOICED_HELP": "Issued invoices, not yet collected."
       },
       "INFO": {
         "TITLE": "General information",
@@ -2074,7 +2074,7 @@
     },
     "WIP": {
       "KPI_TS": "TS integrated",
-      "KPI_TS_HELP": "Amount of validated timesheets already integrated into this affaire's RAF calculation.",
+      "KPI_TS_HELP": "Additional work integrated into the budget.",
       "AV_EXPLAIN": "WIP = contract budget × progress rate to date. Submit a new cumulative rate below; the value is calculated automatically.",
       "TM_EXPLAIN": "WIP = cost of Timesheet hours already validated for this period.",
       "TM_EXPLAIN_2": "Only hours with status \"Validated\" are counted.",
