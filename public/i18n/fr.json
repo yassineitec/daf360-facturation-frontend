@@ -2082,6 +2082,7 @@
       "DATE_FROM": "Date de début",
       "DATE_TO": "Date de fin",
       "PERIOD": "Période",
+      "APPLY": "Confirmer",
       "DATE_RANGE_INVALID": "La date de début doit être avant la date de fin.",
       "CALCULATED_HINT": "Coût interne du travail effectué — jamais communiqué au client.",
       "TO_INVOICE": "Montant à facturer au client",

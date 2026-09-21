@@ -53,11 +53,23 @@
         <div #avDatePickerPanel
           [style.display]="showAvDatePicker() ? 'block' : 'none'"
           [style.visibility]="avDatePickerVisible() ? 'visible' : 'hidden'"
-          class="shadow-xl rounded-lg">
+          class="wip-date-picker-panel shadow-xl rounded-lg">
           <daf-multi-date-picker
             [value]="avDateRange()"
             (valueChange)="onAvDateRangeChange($event)"
             [config]="{ selectionMode: 'range', inline: true, fullWidth: false }" />
+          <!-- La lib n'affiche son bouton "Confirmer" qu'en mode dropdown + sélection multiple
+               (jamais en inline) — ce bouton ajoute une fermeture explicite. <button> brut
+               plutôt que daf-button : mêmes classes texte-seul que "Effacer" de la lib (pas de
+               fond plein), juste une autre couleur pour marquer l'action positive. Positionné
+               en absolu (pas une rangée à part) pour retomber exactement sur la même ligne que
+               "Effacer", repositionné à gauche via CSS — voir .wip-date-picker-confirm-btn dans
+               les styles du .ts ; le panneau est déjà en position:fixed (posé par
+               positionPortal()), qui sert de repère à cet absolu. -->
+          <button type="button" class="wip-date-picker-confirm-btn"
+            (click)="closeAvDatePicker()">
+            {{ 'AFFAIRES.WIP.APPLY' | translate }}
+          </button>
         </div>
 
         @if (editingTaux()?.statut === 'REFUSE') {
@@ -196,9 +208,7 @@
       [options]="{ title: ('AFFAIRES.WIP.REGIE_ENTRY_TITLE' | translate), icon: 'schedule', variant: 'outlined', radius: 'lg' }"
       [(open)]="regieDrawerOpen">
 
-    <div style="position:relative"
-      (mouseenter)="regieCardHovered.set(true)"
-      (mouseleave)="regieCardHovered.set(false)">
+    <div style="position:relative">
 
       <button type="button" #regieHelpBtn
         class="absolute top-3 right-3 z-10 inline-flex items-center justify-center w-4 h-4 rounded-full
@@ -240,11 +250,17 @@
         <div #calDatePickerPanel
           [style.display]="showTmDatePicker() ? 'block' : 'none'"
           [style.visibility]="datePickerVisible() ? 'visible' : 'hidden'"
-          class="shadow-xl rounded-lg">
+          class="wip-date-picker-panel shadow-xl rounded-lg">
           <daf-multi-date-picker
             [value]="tmDateRange()"
             (valueChange)="onTmDateRangeChange($event)"
             [config]="{ selectionMode: 'range', inline: true, fullWidth: false }" />
+          <!-- Voir le commentaire jumeau sur avDatePickerPanel plus haut — même bouton, même
+               raison d'être, pour le calendrier Régie/TM. -->
+          <button type="button" class="wip-date-picker-confirm-btn"
+            (click)="closeDatePicker()">
+            {{ 'AFFAIRES.WIP.APPLY' | translate }}
+          </button>
         </div>
 
         @if (loadingTm()) {
@@ -295,12 +311,13 @@
                    border shadow-sm, classe wip-icon-actions, stylée en ::ng-deep dans le
                    .ts) au lieu des couleurs pleines de "ghost"/"secondary"/"teal" — un seul
                    traitement neutre pour les 4, comme les 2 boutons (visibility/edit) de
-                   la carte profil. On garde daf-button (mécanisme loading/disabled). -->
-              <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
-                          bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-                [class.opacity-0]="!regieCardHovered()"
-                [class.opacity-100]="regieCardHovered()"
-                [class.pointer-events-none]="!regieCardHovered()">
+                   la carte profil. On garde daf-button (mécanisme loading/disabled).
+                   TOUJOURS visible (plus de révélation au survol, regieCardHovered) : cette
+                   pastille porte "Valider", l'action qui fait avancer l'étape 3 du stepper —
+                   la cacher derrière un survol la rendait invisible/non cliquable dès que la
+                   souris quittait la carte (aucun équivalent clavier/tactile). -->
+              <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1
+                          bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm">
                 <!-- TEST v3 : bouton icône à nous (propre, cohérent avec les 3 suivants) +
                      panneau `inline` de la lib qu'on déplace nous-mêmes vers <body> en
                      `position:fixed`, toujours ancré AU-DESSUS de ce bouton — voir
@@ -389,11 +406,18 @@
          voir son propre commentaire), mais encore plus petite (marge 600px au lieu de
          400px, 65vh au lieu de 75vh) : ce tableau a moins de colonnes que l'historique. -->
     @if (showTmDetails() && tmPreview()) {
-      <div class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      <!-- Portalé sous <body> (voir detailsOverlayRef/l'effect du constructeur) — même
+           raison que showHistoryPage : sans ça, un ancêtre à backdrop-filter/transform (une
+           daf-card 'glass' de cet onglet) fait résoudre position:fixed contre lui plutôt
+           que contre la fenêtre, et le popup ne se centre plus sur toute la page. -->
+      <div #detailsOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
            style="z-index:1000"
            (click)="toggleTmDetails()">
+        <!-- Même taille que le popup "Historique WIP" (voir showHistoryPage plus bas) —
+             marge 60px de chaque côté, 90vh, pour que les deux popups de cet onglet
+             partagent le même gabarit au lieu d'un plus petit ici. -->
         <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-             style="width:calc(100vw - 600px); height:65vh;"
+             style="width:calc(100vw - 120px); height:90vh;"
              (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
             <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
@@ -423,38 +447,45 @@
     <!-- ── Lignes en attente de réponse client — la réponse arrive par email hors système,
          l'utilisateur saisit ici ce que le client a réellement confirmé. ──────────────── -->
     @if (pendingClientLines().length) {
-      <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3">
-        <p class="text-[13px] font-semibold">{{ 'AFFAIRES.WIP.PENDING_CLIENT_TITLE' | translate }}</p>
-        <p class="text-[12px] text-on-surface-variant">{{ 'AFFAIRES.WIP.PENDING_CLIENT_EXPLAIN' | translate }}</p>
+      <!-- TEST : daf-card (comme "Historique WIP" ci-dessus), à la place d'un <div> fait
+           main — même en-tête icône + titre uppercase que les autres cartes de cet onglet. -->
+      <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }">
+        <div class="flex flex-col gap-3">
+          <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
+            <span class="material-symbols-outlined text-[18px]">forward_to_inbox</span>
+            {{ 'AFFAIRES.WIP.PENDING_CLIENT_TITLE' | translate }}
+          </h3>
+          <p class="text-[12px] text-on-surface-variant">{{ 'AFFAIRES.WIP.PENDING_CLIENT_EXPLAIN' | translate }}</p>
 
-        @for (l of pendingClientLines(); track l.id) {
-          <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
-            <div class="flex items-center justify-between text-[12px]">
-              <span>
-                @if (l.periodDateFrom && l.periodDateTo) { {{ formatWipPeriod(l.periodDateFrom, l.periodDateTo) }} }
-                @else { {{ l.periodMonth }}/{{ l.periodYear }} }
-              </span>
-              <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ l.montantHt | displayCurrency : affaire.devise }}</strong></span>
+          @for (l of pendingClientLines(); track l.id) {
+            <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-[12px]">
+                <span>
+                  @if (l.periodDateFrom && l.periodDateTo) { {{ formatWipPeriod(l.periodDateFrom, l.periodDateTo) }} }
+                  @else { {{ l.periodMonth }}/{{ l.periodYear }} }
+                </span>
+                <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ l.montantHt | displayCurrency : affaire.devise }}</strong></span>
+              </div>
+              <div class="flex items-end gap-2">
+                <daf-form-field
+                  [value]="getClientAmountInput(l.id)"
+                  (valueChange)="setClientAmountInput(l.id, $any($event))"
+                  [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
+                               type: 'number', fullWidth: true,
+                               hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
+                <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
+                                          loading: submittingClientLine() === l.id,
+                                          disabled: getClientAmountInput(l.id) === null || getClientAmountInput(l.id)! < 0 || getClientAmountInput(l.id)! > l.montantHt }"
+                  (onClick)="confirmClientAmount(l)" />
+              </div>
             </div>
-            <div class="flex items-end gap-2">
-              <daf-form-field
-                [value]="getClientAmountInput(l.id)"
-                (valueChange)="setClientAmountInput(l.id, $any($event))"
-                [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
-                             type: 'number', fullWidth: true,
-                             hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
-              <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
-                                        loading: submittingClientLine() === l.id,
-                                        disabled: getClientAmountInput(l.id) === null || getClientAmountInput(l.id)! < 0 || getClientAmountInput(l.id)! > l.montantHt }"
-                (onClick)="confirmClientAmount(l)" />
-            </div>
-          </div>
-        }
+          }
 
-        @if (clientAmountError()) {
-          <p class="text-[12px] text-danger">{{ clientAmountError() }}</p>
-        }
-      </div>
+          @if (clientAmountError()) {
+            <p class="text-[12px] text-danger">{{ clientAmountError() }}</p>
+          }
+        </div>
+      </daf-card>
     }
 
     <!-- Popup "Historique WIP" EN PLEIN ÉCRAN — recouvre toute la fenêtre (fixed inset-0),
@@ -679,55 +710,47 @@
       </daf-card>
     }
 
-    <!-- ── En attente de réponse client — même bloc (bordure simple, bouton en icône
-         juste après le champ) que pendingClientLines côté Régie, restreint aux batches
-         EN_ATTENTE_CLIENT. ── -->
+    <!-- ── En attente de réponse client — daf-card comme le bloc jumeau côté Régie
+         (voir pendingClientLines plus haut), restreint aux batches EN_ATTENTE_CLIENT.
+         Bouton "Confirmer" aligné sur celui de Régie : un vrai libellé visible (variant
+         'teal'), pas une icône seule avec un `title` qui ne s'affichait qu'au survol. ── -->
     @if (livrableClientBatches().length) {
-      <div class="rounded-xl border border-outline-variant p-4 flex flex-col gap-3"
-        (mouseenter)="livrableClientCardHovered.set(true)"
-        (mouseleave)="livrableClientCardHovered.set(false)">
-        <p class="text-[13px] font-semibold">{{ 'AFFAIRES.WIP.PENDING_CLIENT_TITLE' | translate }}</p>
-        <p class="text-[12px] text-on-surface-variant">{{ 'AFFAIRES.WIP.PENDING_CLIENT_EXPLAIN' | translate }}</p>
+      <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }">
+        <div class="flex flex-col gap-3">
+          <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
+            <span class="material-symbols-outlined text-[18px]">forward_to_inbox</span>
+            {{ 'AFFAIRES.WIP.PENDING_CLIENT_TITLE' | translate }}
+          </h3>
+          <p class="text-[12px] text-on-surface-variant">{{ 'AFFAIRES.WIP.PENDING_CLIENT_EXPLAIN' | translate }}</p>
 
-        @for (b of livrableClientBatches(); track b.batchId) {
-          <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
-            <div class="flex items-center justify-between text-[12px]">
-              <span>{{ b.entries.length }} {{ 'AFFAIRES.WIP.DOCUMENTS' | translate }}</span>
-              <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ b.combinedMontant | displayCurrency : affaire.devise }}</strong></span>
-            </div>
-            <div class="flex items-start gap-2 max-w-md">
-              <div class="flex-1 min-w-0">
+          @for (b of livrableClientBatches(); track b.batchId) {
+            <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-[12px]">
+                <span>{{ b.entries.length }} {{ 'AFFAIRES.WIP.DOCUMENTS' | translate }}</span>
+                <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ b.combinedMontant | displayCurrency : affaire.devise }}</strong></span>
+              </div>
+              <div class="flex items-end gap-2">
                 <daf-form-field
                   [value]="getLivrableClientAmountInput(b.batchId)"
                   (valueChange)="setLivrableClientAmountInput(b.batchId, $any($event))"
                   [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
                                type: 'number', fullWidth: true,
                                hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
-              </div>
-
-              <div class="flex flex-col gap-1.5 shrink-0">
-                <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
-                <div class="wip-icon-actions w-fit h-10 flex items-center gap-1 transition-opacity duration-200
-                            bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-                  [class.opacity-0]="!livrableClientCardHovered()"
-                  [class.opacity-100]="livrableClientCardHovered()"
-                  [class.pointer-events-none]="!livrableClientCardHovered()">
-                  <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'check', title: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
-                                            loading: submittingLivrableClientBatch() === b.batchId,
-                                            disabled: getLivrableClientAmountInput(b.batchId) === null ||
-                                                      getLivrableClientAmountInput(b.batchId)! < 0 ||
-                                                      getLivrableClientAmountInput(b.batchId)! > b.combinedMontant }"
-                    (onClick)="confirmLivrableClientAmount(b)" />
-                </div>
+                <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
+                                          loading: submittingLivrableClientBatch() === b.batchId,
+                                          disabled: getLivrableClientAmountInput(b.batchId) === null ||
+                                                    getLivrableClientAmountInput(b.batchId)! < 0 ||
+                                                    getLivrableClientAmountInput(b.batchId)! > b.combinedMontant }"
+                  (onClick)="confirmLivrableClientAmount(b)" />
               </div>
             </div>
-          </div>
-        }
+          }
 
-        @if (livrableClientAmountError()) {
-          <p class="text-[12px] text-danger">{{ livrableClientAmountError() }}</p>
-        }
-      </div>
+          @if (livrableClientAmountError()) {
+            <p class="text-[12px] text-danger">{{ livrableClientAmountError() }}</p>
+          }
+        </div>
+      </daf-card>
     }
 
     <!-- ── Historique — n'apparaît que s'il y a au moins une ligne facturée. ── -->

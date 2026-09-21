@@ -45,11 +45,11 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
        Spécificité : .wip-icon-actions button (0,1,1) l'emporte déjà sur les classes
        utilitaires Tailwind (0,1,0) de la lib, pas besoin de !important. */
     ::ng-deep .wip-icon-actions button {
-      padding: 6px;
+      padding: 9px;
       border: none;
       background: transparent;
       color: var(--color-outline, #75777d);
-      border-radius: 6px;
+      border-radius: 8px;
       box-shadow: none;
     }
     ::ng-deep .wip-icon-actions button:hover:not(:disabled) {
@@ -57,7 +57,7 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
       background: var(--color-surface-container, #eceef0);
     }
     ::ng-deep .wip-icon-actions button .material-symbols-outlined {
-      font-size: 18px;
+      font-size: 22px;
     }
 
     /* TEST : daf-accordion-card ne retire l'outline par défaut du navigateur qu'en
@@ -137,6 +137,49 @@ import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.c
     .pct-stepper-btn .material-symbols-outlined {
       font-size: 14px;
     }
+
+    /* TEST : panneau du calendrier AV/Régie — même technique de spécificité que
+       .wip-icon-actions ci-dessus (deux classes, 0,2,0, l'emporte sur la classe Tailwind
+       seule de la lib sans !important).
+       - Agrandi (min-width) mais moins que le premier essai (320px) : par défaut la
+         grille de 7 colonnes tient sur ~236px, trop serré, 280px suffit sans être
+         disproportionné.
+       - "Effacer" (le seul bouton de ce footer en mode inline — la lib ne rend
+         "Confirmer" qu'en dropdown + sélection multiple, jamais ici) déplacé à gauche
+         (flex-start au lieu de justify-end) pour laisser la droite au bouton "Confirmer". */
+    ::ng-deep .wip-date-picker-panel .bg-surface-container-lowest {
+      min-width: 280px;
+    }
+    ::ng-deep .wip-date-picker-panel .justify-end {
+      justify-content: flex-start;
+    }
+    /* Bouton "Confirmer" ajouté par ce composant (pas par la lib), positionné en absolu
+       plutôt qu'en rangée à part pour retomber pile sur la même ligne que "Effacer" — le
+       panneau (.wip-date-picker-panel) est déjà en position:fixed (posé par
+       positionPortal() au runtime), ce qui suffit comme repère à cet absolu, sans avoir
+       besoin d'ajouter position:relative ici. 8px/10px reprennent le padding du footer de
+       la lib (pb-2/px-2.5) pour s'aligner exactement dessus.
+       Mêmes classes texte-seul que le bouton "Effacer" de la lib (text-label-sm
+       font-semibold uppercase tracking-wide, pas de fond) — juste une couleur différente
+       (tertiary/teal) pour signaler l'action positive plutôt qu'un bouton plein noir. */
+    .wip-date-picker-confirm-btn {
+      position: absolute;
+      right: 10px;
+      bottom: 8px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: var(--color-tertiary, #1a6b7c);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .wip-date-picker-confirm-btn:hover {
+      color: var(--color-teal, #006b58);
+    }
   `],
 })
 export class AffaireWipTabComponent implements OnInit, OnDestroy {
@@ -182,6 +225,13 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   private readonly historyOverlayRef = viewChild<ElementRef<HTMLElement>>('historyOverlay');
   private historyOverlayPortaled: HTMLElement | null = null;
 
+  /** Même portail que historyOverlayRef ci-dessus, pour le popup "Détails" (showTmDetails) —
+   * sans lui, il restait au fil de la vue plutôt que sous <body>, et se retrouvait cadré par
+   * un ancêtre à backdrop-filter (une daf-card 'glass' de cet onglet) au lieu de se centrer
+   * sur toute la page comme "Historique WIP". */
+  private readonly detailsOverlayRef = viewChild<ElementRef<HTMLElement>>('detailsOverlay');
+  private detailsOverlayPortaled: HTMLElement | null = null;
+
   constructor() {
     effect(onCleanup => {
       const ref = this.historyOverlayRef();
@@ -199,6 +249,22 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         // tenterait de le retirer d'un parent qui n'est plus le sien.
         node.remove();
         if (this.historyOverlayPortaled === node) this.historyOverlayPortaled = null;
+      });
+    });
+
+    effect(onCleanup => {
+      const ref = this.detailsOverlayRef();
+      if (!ref || !this.showTmDetails()) return;
+
+      const node = ref.nativeElement;
+      if (node.parentElement !== this.document.body) {
+        this.renderer.appendChild(this.document.body, node);
+        this.detailsOverlayPortaled = node;
+      }
+
+      onCleanup(() => {
+        node.remove();
+        if (this.detailsOverlayPortaled === node) this.detailsOverlayPortaled = null;
       });
     });
   }
@@ -369,7 +435,9 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     if (!Array.isArray(value) || value.length !== 2) return;
     this.periodDateFrom = this.toIso(value[0]);
     this.periodDateTo = this.toIso(value[1]);
-    this.closeAvDatePicker();
+    // Ne referme plus tout seul une fois les deux dates posées — seul le bouton
+    // "Confirmer" (ou Échap) referme désormais, pour laisser le temps de vérifier/corriger
+    // la plage avant de la valider.
   }
 
   toggleAvDatePicker(): void {
@@ -405,19 +473,29 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   ]);
 
   onTmDateRangeChange(value: Date | Date[] | null): void {
+    // `value` arrive à `null` quand on clique "Effacer" (reset() de daf-multi-date-picker) —
+    // même cas que onAvDateRangeChange : un TM a toujours besoin d'une période pour son
+    // aperçu, donc rien de valide à appliquer ; on se contente de refermer le panneau. Sans
+    // ce cas, le `return` du garde ci-dessous avalait l'événement en silence et "Effacer"
+    // ne semblait rien faire du tout (pas même refermer le panneau).
+    if (value === null) {
+      this.closeDatePicker();
+      return;
+    }
     if (!Array.isArray(value) || value.length !== 2) return;
     this.tmDateFrom.set(this.toIso(value[0]));
     this.tmDateTo.set(this.toIso(value[1]));
     this.loadTmPreview();
-    // Les deux bornes sont posées : referme le calendrier, qui n'a pas de bouton
-    // "Confirmer" en selectionMode 'range' (celui de la lib ne s'affiche qu'en 'multiple').
-    this.closeDatePicker();
+    // Ne referme plus tout seul une fois les deux bornes posées — seul le bouton
+    // "Confirmer" (ou Échap) referme désormais, pour laisser le temps de vérifier/corriger
+    // la plage avant de la valider.
   }
 
   /** TEST : boutons révélés au survol de la carte, même mécanisme que les cartes de
    * /rh/profiles (profile-grid-card.component.ts) — un signal par carte, mis à jour par
-   * (mouseenter)/(mouseleave) sur `daf-section-card`/`daf-card`. */
-  regieCardHovered = signal(false);
+   * (mouseenter)/(mouseleave) sur `daf-section-card`/`daf-card`. Pas de signal pour la
+   * carte Régie elle-même : sa pastille d'icônes (dont "Valider") est maintenant toujours
+   * visible plutôt que révélée au survol — voir le commentaire à côté de ce bloc. */
   historyCardHovered = signal(false);
 
   /** TEST : même repli daf-accordion-card que la carte FORFAIT (voir forfaitDrawerOpen)
@@ -428,7 +506,6 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   // signal dédié par carte (voir le commentaire ci-dessus). ──────────────────────────
   livrablePendingCardHovered  = signal(false);
   livrableBatchesCardHovered  = signal(false);
-  livrableClientCardHovered   = signal(false);
   livrableHistoryCardHovered  = signal(false);
 
   /** TEST : même repli daf-accordion-card que la carte FORFAIT (voir forfaitDrawerOpen)
@@ -666,25 +743,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     positioned.set(true);
   }
 
-  /** Ferme sur un clic hors du panneau ET hors du bouton déclencheur (sinon le clic qui
-   * OUVRE le calendrier — capté ici aussi, car il remonte jusqu'à `document` — le
-   * refermerait dans la foulée). Même garde que `onDocumentClick` de la lib. Gère les
-   * deux calendriers (Régie et AV) : un seul est jamais monté à la fois (un seul
-   * billingMode actif), donc pas de conflit entre les deux gardes. */
-  @HostListener('document:click', ['$event'])
-  onDocumentClickForDatePicker(event: MouseEvent): void {
-    const target = event.target as Node;
-    if (this.showTmDatePicker()) {
-      if (this.calDatePickerPanelRef?.nativeElement.contains(target)) return;
-      if (this.calDatePickerTriggerRef?.nativeElement.contains(target)) return;
-      this.closeDatePicker();
-    }
-    if (this.showAvDatePicker()) {
-      if (this.avDatePickerPanelRef?.nativeElement.contains(target)) return;
-      if (this.avDatePickerTriggerRef?.nativeElement.contains(target)) return;
-      this.closeAvDatePicker();
-    }
-  }
+  // Un clic n'importe où sur la page ne referme plus les calendriers AV/Régie, et choisir
+  // les deux dates ne les referme plus non plus tout seul (voir onAvDateRangeChange/
+  // onTmDateRangeChange) — seuls le bouton "Confirmer" ou Échap (onEscapeForDatePicker)
+  // les referment désormais.
 
   @HostListener('document:keydown.escape')
   onEscapeForDatePicker(): void {
@@ -700,6 +762,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.avDatePickerPanelRef?.nativeElement.remove();
     this.historyOverlayPortaled?.remove();
     this.historyOverlayPortaled = null;
+    this.detailsOverlayPortaled?.remove();
+    this.detailsOverlayPortaled = null;
   }
 
   tmPreview     = signal<WipTmPreviewDto | null>(null);
@@ -911,6 +975,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   private preEditDateTo = this.periodDateTo;
 
   startEditTaux(t: WipTauxDto): void {
+    // Le formulaire d'édition vit dans l'accordéon FORFAIT_ENTRY_TITLE — sans l'ouvrir ici,
+    // un clic sur "Modifier" depuis le tableau d'historique (en dehors de l'accordéon)
+    // préremplit le formulaire mais l'utilisateur ne le voit jamais s'il était fermé.
+    this.forfaitDrawerOpen.set(true);
     this.preEditDateFrom = this.periodDateFrom;
     this.preEditDateTo = this.periodDateTo;
     this.editingTauxId.set(t.id);

@@ -2082,6 +2082,7 @@
       "DATE_FROM": "Start date",
       "DATE_TO": "End date",
       "PERIOD": "Period",
+      "APPLY": "Confirm",
       "DATE_RANGE_INVALID": "The start date must be before the end date.",
       "CALCULATED_HINT": "Internal cost of the work performed — never shared with the client.",
       "TO_INVOICE": "Amount to invoice the client",
