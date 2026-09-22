@@ -1,7 +1,6 @@
 // Field-for-field match of the REAL backend DTOs (ProgressBillingService.toDto() /
-// WipTmPreviewDto / WipTmHourDto) — NOT the existing (broken) TauxAvancementDto in
-// ../billing/billing.service.ts, whose field names don't match what the server actually
-// sends.
+// WipTmPreviewDto / WipTmHourDto) — NOT a naive reuse of the old progress-billing taux DTO
+// (since removed), whose field names didn't match what the server actually sends.
 
 export type WipTauxStatut = 'EN_ATTENTE' | 'VALIDE' | 'REFUSE';
 

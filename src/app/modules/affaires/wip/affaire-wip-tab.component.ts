@@ -308,6 +308,12 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   // ── AV ──────────────────────────────────────────────────────────────────
   tauxHistory   = signal<WipTauxDto[]>([]);
   loadingTaux   = signal(false);
+  /** Every BillingLine ever created for this affaire's AV taux submissions — same generic
+   * endpoint RÉGIE's own tmHistory() reads (getBillingLinesDetailed), scoped implicitly to
+   * FORFAIT since an affaire only ever has one active billing mode. Needed so
+   * avPendingClientLines() below can find AV lines sitting at EN_ATTENTE_CLIENT, exactly the
+   * same way RÉGIE's own pendingClientLines() filters tmHistory(). */
+  avLineHistory = signal<LineDetailDto[]>([]);
   newTauxValue  = signal<number | null>(null);
   // Named to match this codebase's existing string-union convention (WipTauxStatut's
   // 'EN_ATTENTE'/'VALIDE'/'REFUSE' — French business terms, not English enum names). Whichever
@@ -315,6 +321,18 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   // actually stores, so nothing downstream needs to know which mode was used.
   avInputMode    = signal<'POURCENTAGE' | 'MONTANT'>('POURCENTAGE');
   newAmountValue = signal<number | null>(null);
+
+  /** AV's own Revue / Vérification manuelle / Validation / Réponse client rail — visually
+   * the same 4 steps as the RÉGIE card's `wipStep`/`wipManualVerified` (see that section
+   * further down), but AV's real lifecycle has no manual-verification-checkbox concept and
+   * no client-confirmation concept, so this checkbox is new, local-only state, never sent
+   * to the backend — exactly how RÉGIE's own `wipManualVerified` already works (see its own
+   * comment: "never sent to the backend, never persisted"). Step 4 is now a real
+   * client-confirmation wait (see avPendingClientLines below) — the original design's step-4
+   * placeholder (DAF's decision, no literal client response) was superseded by the full
+   * client-confirmation feature; see
+   * docs/superpowers/specs/2026-09-21-av-client-confirmation-design.md. */
+  avManualVerified = signal(false);
 
   /** TEST : le switch Pourcentage/Montant devient un vrai `daf-tabs` (variant `pill`,
    * même composant que le bandeau d'onglets de la page /finance/affaires/:id) au lieu
@@ -334,13 +352,44 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   editingTauxId = signal<number | null>(null);
   deleteTauxError = signal<string | null>(null);
 
+  /** Sum, not max — each VALIDE entry is now an INCREMENTAL percentage (see
+   * docs/superpowers/specs/2026-09-22-av-incremental-taux-design.md), so "cumulative progress
+   * so far" is the sum of every validated increment, mirroring the backend's own
+   * sumValidatedTaux() change exactly. */
   readonly lastValidatedTaux = computed(() => {
     const vals = this.tauxHistory().filter(t => t.statut === 'VALIDE');
-    return vals.length > 0 ? Math.max(...vals.map(t => t.tauxSaisi)) : 0;
+    return vals.reduce((sum, t) => sum + t.tauxSaisi, 0);
   });
 
   readonly editingTaux = computed<WipTauxDto | null>(() =>
     this.tauxHistory().find(t => t.id === this.editingTauxId()) ?? null);
+
+  /** AV's own equivalent of RÉGIE's pendingClientLines() — byte-for-byte the same filter,
+   * just reading avLineHistory() instead of tmHistory(). Step 4 "Réponse client" is now real
+   * (not a DAF-decision placeholder): reaching it means the client hasn't replied yet to the
+   * BillingLine submitTaux()/updateTaux() created — see
+   * docs/superpowers/specs/2026-09-21-av-client-confirmation-design.md. */
+  readonly avPendingClientLines = computed(() =>
+    this.avLineHistory().filter(l => l.statut === 'EN_ATTENTE_CLIENT'));
+
+  /** 0-based, matches `daf-stepper`'s own `[currentStep]` convention (RÉGIE converts its
+   * 1-based `wipStep` with `wipStep() - 1`; this one is 0-based from the start, so no
+   * conversion is needed at the template call site). Checked in the same priority order
+   * RÉGIE's own `wipMaxStepReached` uses: the "furthest/most real" condition first, falling
+   * through to earlier, more local-only conditions only when it doesn't apply. Purely
+   * derived — no imperative `.set()` anywhere, unlike RÉGIE's clickable `wipStep`, because
+   * this rail isn't clickable (nothing to navigate to, see the template task). The moment
+   * avLineHistory() refreshes and the pending line is no longer EN_ATTENTE_CLIENT, this
+   * recomputes on its own and falls all the way back to step 1 (avManualVerified was already
+   * reset to false at submission time) — mirroring RÉGIE's own rail exactly: it resets the
+   * moment the CLIENT confirms, not once DAF also approves (DAF's decision plays out entirely
+   * off-rail, on the approval queue). */
+  readonly avStepIndex = computed<number>(() => {
+    if (this.avPendingClientLines().length > 0) return 3; // step 4
+    if (this.avManualVerified()) return 2;                    // step 3
+    if (this.effectiveTauxPercent() !== null && this.canSubmitTaux()) return 1; // step 2
+    return 0;                                                  // step 1
+  });
 
   /** The single percentage every existing consumer (validation, preview, submit payload)
    * reads — regardless of whether the user is currently typing a percentage or an amount.
@@ -355,11 +404,17 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     return Number(((amount / contractAmount) * 100).toFixed(3));
   });
 
+  /** Mirrors the backend's own 2 new rules exactly (see ProgressBillingService.
+   * submitTauxAvancement()/updateTaux()): the entered value must be > 0 (a fresh delta of
+   * zero or less isn't meaningful), and adding it to the cumulative-so-far must not exceed
+   * 100%. No more distinction between "new" and "editing" — under the old cumulative model,
+   * editing allowed re-submitting the SAME cumulative value (>=) while a fresh submission
+   * required strictly exceeding it (>); that distinction doesn't have an equivalent meaning
+   * once each entry is its own independent increment, so both cases now use the same rule. */
   readonly canSubmitTaux = computed(() => {
     const taux = this.effectiveTauxPercent();
-    if (taux === null || taux > 100) return false;
-    if (this.editingTauxId() !== null) return taux >= this.lastValidatedTaux();
-    return taux > this.lastValidatedTaux();
+    if (taux === null || taux <= 0) return false;
+    return this.lastValidatedTaux() + taux <= 100;
   });
 
   readonly avWipPreview = computed<number | null>(() => {
@@ -386,6 +441,33 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly lastValidatedAmountHint = computed(() => {
     const amount = (this.lastValidatedTaux() / 100) * (this.affaire.contractAmount ?? 0);
     return this.currency.transform(amount, this.affaire.devise);
+  });
+
+  /** Same 4 i18n keys RÉGIE's own wipStepperSteps already uses (STEP_REVIEW/STEP_VERIFY/
+   * STEP_VALIDATE/STEP_CLIENT) — no new i18n keys needed, matching this file's own
+   * established convention of sharing plain-word keys across billing-mode branches. */
+  readonly avStepperSteps = computed<StepperStep[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    const idx = this.avStepIndex();
+    return [
+      { title: t('AFFAIRES.WIP.STEP_REVIEW') },
+      { title: t('AFFAIRES.WIP.STEP_VERIFY') },
+      { title: t('AFFAIRES.WIP.STEP_VALIDATE') },
+      { title: t('AFFAIRES.WIP.STEP_CLIENT') },
+    ].map((s, i) => ({ ...s, completed: i < idx, disabled: i > idx }));
+  });
+
+  /** `clickableSteps: false` (RÉGIE's is `true`) — this rail is a pure read-only reflection
+   * of tauxHistory()/the entry form's own state, there's no per-step content to navigate to,
+   * so no (stepClick) handler is needed at the template call site either. */
+  readonly avStepperConfig = computed<StepperConfig>(() => {
+    this.translate.currentLang();
+    return {
+      chrome: 'header-only',
+      clickableSteps: false,
+      stepperLabel: this.translate.instant('AFFAIRES.WIP.STEPPER_LABEL'),
+    };
   });
 
   /** TEST : carte FORFAIT alignée sur la carte Régie — même mécanismes, mêmes raisons
@@ -956,7 +1038,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    if (this.affaire.billingMode === 'FORFAIT') this.loadTauxHistory();
+    if (this.affaire.billingMode === 'FORFAIT') { this.loadTauxHistory(); this.loadAvLineHistory(); }
     if (this.affaire.billingMode === 'REGIE') { this.loadTmPreview(); this.loadTmHistory(); }
     if (this.affaire.billingMode === 'LIVRABLE') { this.loadLivrables(); this.loadActiveBatches(); }
   }
@@ -968,6 +1050,53 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.svc.getTauxHistory(this.affaire.id).subscribe({
       next:  h => { this.tauxHistory.set(h); this.loadingTaux.set(false); },
       error: () => this.loadingTaux.set(false),
+    });
+  }
+
+  /** Every billing line for this affaire — same generic endpoint RÉGIE's own loadTmHistory()
+   * reads, needed so avPendingClientLines() can find the line submitTauxAvancement()/
+   * updateTaux() creates. Unlike loadTmHistory(), no stepper-reset call is needed here:
+   * avStepIndex is a pure computed, it falls back on its own the moment avLineHistory()
+   * no longer contains an EN_ATTENTE_CLIENT line. */
+  loadAvLineHistory(): void {
+    this.billingSvc.getBillingLinesDetailed(this.affaire.id).subscribe({
+      next:  lines => this.avLineHistory.set(lines),
+      error: () => {},
+    });
+  }
+
+  // ── AV — client-approval workflow (mirrors RÉGIE's own pendingClientLines/
+  // confirmClientAmount below, field-for-field, just scoped to AV's own line) ─────────
+  avClientAmountInputs   = signal<Map<number, number | null>>(new Map());
+  submittingAvClientLine = signal<number | null>(null);
+  avClientAmountError    = signal<string | null>(null);
+
+  getAvClientAmountInput(lineId: number): number | null {
+    return this.avClientAmountInputs().get(lineId) ?? null;
+  }
+
+  setAvClientAmountInput(lineId: number, value: number | null): void {
+    const map = new Map(this.avClientAmountInputs());
+    map.set(lineId, value);
+    this.avClientAmountInputs.set(map);
+  }
+
+  confirmAvClientAmount(line: LineDetailDto): void {
+    const amount = this.getAvClientAmountInput(line.id);
+    if (amount === null || amount < 0 || amount > line.montantHt || this.submittingAvClientLine() !== null) return;
+    this.submittingAvClientLine.set(line.id);
+    this.avClientAmountError.set(null);
+    this.svc.enterAvClientAmount(this.affaire.id, line.tauxAvancementId!, amount).subscribe({
+      next: () => {
+        this.submittingAvClientLine.set(null);
+        this.setAvClientAmountInput(line.id, null);
+        this.loadAvLineHistory();
+        this.dataChanged.emit();
+      },
+      error: err => {
+        this.submittingAvClientLine.set(null);
+        this.avClientAmountError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.CLIENT_AMOUNT_ERROR'));
+      },
     });
   }
 
@@ -991,6 +1120,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.newAmountValue.set(null);
     this.tauxComment = t.commentaire ?? '';
     this.tauxError.set(null);
+    // Re-editing a value the user already reviewed once shouldn't force them to re-tick the
+    // acknowledgment — but re-editing a REFUSED taux is effectively a fresh submission (a
+    // new value going back to DAF), so it resets like any other fresh start.
+    this.avManualVerified.set(false);
   }
 
   cancelEditTaux(): void {
@@ -1000,6 +1133,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.newAmountValue.set(null);
     this.tauxComment = '';
     this.tauxError.set(null);
+    this.avManualVerified.set(false);
     this.periodDateFrom = this.preEditDateFrom;
     this.periodDateTo = this.preEditDateTo;
   }
@@ -1027,8 +1161,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         this.newTauxValue.set(null);
         this.newAmountValue.set(null);
         this.tauxComment = '';
+        this.avManualVerified.set(false);
         this.editingTauxId.set(null);
         this.loadTauxHistory();
+        this.loadAvLineHistory();
         this.dataChanged.emit();
       },
       error: err => {
@@ -1045,6 +1181,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       next: () => {
         if (this.editingTauxId() === tauxId) this.cancelEditTaux();
         this.loadTauxHistory();
+        this.loadAvLineHistory();
         this.dataChanged.emit();
       },
       error: err => this.deleteTauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.DELETE_TAUX_ERROR')),
@@ -1059,20 +1196,35 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     return [
       { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
       { key: 'taux',    label: t('AFFAIRES.WIP.COL_TAUX') },
+      { key: 'cumul',   label: t('AFFAIRES.WIP.COL_CUMUL') },
       { key: 'montant', label: t('AFFAIRES.WIP.COL_INCREMENT') },
       { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
     ];
   });
 
-  readonly tauxHistoryRows = computed<TableRow[]>(() => this.tauxHistory().map(t => ({
-    id:      t.id,
-    period:  this.formatWipPeriod(t.periodDateFrom, t.periodDateTo),
-    taux:    `${t.tauxSaisi}%`,
-    montant: this.currency.transform(t.montantIncremental, this.affaire.devise),
-    statut:  { label: enumLabel(this.translate, 'WIP_TAUX_STATUT', t.statut),
-               options: { variant: WIP_TAUX_STATUT_BADGE[t.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
-    _source: t,
-  } satisfies TableRow)));
+  /** `cumul` is a pure display aid — the running sum of `tauxSaisi` down the table in its
+   * existing period-ascending order (the backend already returns tauxHistory() sorted by
+   * periodDateFrom), regardless of each row's own statut. This is deliberately simpler than
+   * the backend's own sumValidatedTaux() (which only sums VALIDE rows for real business
+   * validation) — here it's just "what do all the entries through this row add up to,"
+   * matching the plain reading of the user's own example (September 10%, October 5%, running
+   * total 15%) without needing to special-case pending/refused rows in the UI. */
+  readonly tauxHistoryRows = computed<TableRow[]>(() => {
+    let runningCumul = 0;
+    return this.tauxHistory().map(t => {
+      runningCumul += t.tauxSaisi;
+      return {
+        id:      t.id,
+        period:  this.formatWipPeriod(t.periodDateFrom, t.periodDateTo),
+        taux:    `${t.tauxSaisi}%`,
+        cumul:   `${runningCumul}%`,
+        montant: this.currency.transform(t.montantIncremental, this.affaire.devise),
+        statut:  { label: enumLabel(this.translate, 'WIP_TAUX_STATUT', t.statut),
+                   options: { variant: WIP_TAUX_STATUT_BADGE[t.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
+        _source: t,
+      } satisfies TableRow;
+    });
+  });
 
   readonly tauxHistoryConfig = computed<TableConfig>(() => ({
     showHeader: true,

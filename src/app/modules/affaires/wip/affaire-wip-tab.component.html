@@ -46,6 +46,14 @@
       </button>
       <daf-help-popover [anchor]="forfaitHelpBtn" [text]="'AFFAIRES.WIP.AV_EXPLAIN' | translate" placement="bottom" align="end" [open]="forfaitHelpOpen()" />
 
+      <!-- Même rail que la carte Régie (voir son commentaire détaillé plus bas sur
+           `daf-stepper` et la classe `block` obligatoire) — pas cliquable ici
+           (`clickableSteps: false` dans avStepperConfig) : ce rail reflète juste l'état
+           réel (tauxHistory() + le formulaire), il n'y a pas de contenu par étape vers
+           lequel naviguer, donc pas de (stepClick) non plus. -->
+      <daf-stepper orientation="horizontal" class="block mb-6"
+        [steps]="avStepperSteps()" [currentStep]="avStepIndex()" [config]="avStepperConfig()" />
+
       <div class="flex flex-col gap-4">
 
         <!-- Panneau du calendrier AV — même principe que celui de la carte Régie : toujours
@@ -127,7 +135,7 @@
                 (onClick)="toggleAvDatePicker()" />
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'check',
                                         title: (editingTauxId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
-                                        loading: submittingTaux(), disabled: !canSubmitTaux() || submittingTaux() }"
+                                        loading: submittingTaux(), disabled: !canSubmitTaux() || !avManualVerified() || submittingTaux() }"
                 (onClick)="submitTaux()" />
               @if (editingTauxId() !== null) {
                 <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
@@ -176,6 +184,17 @@
           </div>
         }
 
+        <!-- Même checkbox que la carte Régie (MANUAL_VERIFY_LABEL), visible dès que
+             l'étape 2 est atteinte — jamais envoyée au backend, purement locale, comme
+             chez Régie. -->
+        @if (avStepIndex() >= 1) {
+          <label class="flex items-center gap-2 text-[12px] cursor-pointer">
+            <input type="checkbox" class="shrink-0" [checked]="avManualVerified()"
+              (change)="avManualVerified.set($any($event.target).checked)" />
+            <span>{{ 'AFFAIRES.WIP.MANUAL_VERIFY_LABEL' | translate }}</span>
+          </label>
+        }
+
         @if (tauxError()) {
           <p class="text-[12px] text-danger">{{ tauxError() }}</p>
         }
@@ -187,6 +206,48 @@
       </div>
       @if (deleteTauxError()) {
         <p class="mt-2 text-[12px] text-danger">{{ deleteTauxError() }}</p>
+      }
+
+      <!-- ── Ligne en attente de réponse client — même carte que celle de Régie
+           (pendingClientLines plus bas), juste au-dessus, scopée à la ligne AV. ──────── -->
+      @if (avPendingClientLines().length) {
+        <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }">
+          <div class="flex flex-col gap-3">
+            <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
+              <span class="material-symbols-outlined text-[18px]">forward_to_inbox</span>
+              {{ 'AFFAIRES.WIP.PENDING_CLIENT_TITLE' | translate }}
+            </h3>
+            <p class="text-[12px] text-on-surface-variant">{{ 'AFFAIRES.WIP.PENDING_CLIENT_EXPLAIN' | translate }}</p>
+
+            @for (l of avPendingClientLines(); track l.id) {
+              <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between text-[12px]">
+                  <span>
+                    @if (l.periodDateFrom && l.periodDateTo) { {{ formatWipPeriod(l.periodDateFrom, l.periodDateTo) }} }
+                    @else { {{ l.periodMonth }}/{{ l.periodYear }} }
+                  </span>
+                  <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ l.montantHt | displayCurrency : affaire.devise }}</strong></span>
+                </div>
+                <div class="flex items-end gap-2">
+                  <daf-form-field
+                    [value]="getAvClientAmountInput(l.id)"
+                    (valueChange)="setAvClientAmountInput(l.id, $any($event))"
+                    [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
+                                 type: 'number', fullWidth: true,
+                                 hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
+                  <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
+                                            loading: submittingAvClientLine() === l.id,
+                                            disabled: getAvClientAmountInput(l.id) === null || getAvClientAmountInput(l.id)! < 0 || getAvClientAmountInput(l.id)! > l.montantHt }"
+                    (onClick)="confirmAvClientAmount(l)" />
+                </div>
+              </div>
+            }
+
+            @if (avClientAmountError()) {
+              <p class="text-[12px] text-danger">{{ avClientAmountError() }}</p>
+            }
+          </div>
+        </daf-card>
       }
     }
 
