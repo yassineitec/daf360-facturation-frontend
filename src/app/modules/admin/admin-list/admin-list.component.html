@@ -342,14 +342,13 @@
 
     <!-- ── COST CONFIG TAB (seuils d'approbation, catégories et listes de coûts —
          anciennement l'onglet « Config » de /finance/cost, embedded).
-         Même disposition à deux colonnes que sur l'ancienne page : la config à
-         gauche, le panneau d'import CSV à droite. -->
+         Pleine largeur : le panneau d'import CSV n'est plus une colonne latérale
+         fixe, il s'ouvre en popup depuis le bouton du header "Valeurs de liste"
+         (cf. cost-config.component.html) — donc plus besoin de lui réserver 1/3
+         de la page en permanence. -->
     @if (activeTab() === 'cost-config') {
       <div class="tab-content">
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <div class="xl:col-span-2"><app-cost-config [paysId]="paysId()" /></div>
-          <div><app-cost-import-panel [paysId]="paysId()" /></div>
-        </div>
+        <app-cost-config [paysId]="paysId()" />
       </div>
     }
 

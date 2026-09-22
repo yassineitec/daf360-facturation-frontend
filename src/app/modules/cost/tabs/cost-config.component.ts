@@ -1,5 +1,5 @@
 import {
-  Component, effect, inject, input, signal, computed,
+  Component, effect, inject, input, signal, computed, ViewChild, TemplateRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +7,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CostImportPanelComponent } from '../import/cost-import-panel.component';
 import {
   CostCategoryDto, CostApprovalThresholdDto, ListValueDto, ListTypeDto,
   UpdateCostCategoryLabelRequest, CreateCostCategoryRequest, CreateCostApprovalThresholdRequest,
@@ -16,7 +17,7 @@ import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
   SelectComponent, SelectOption, TabsComponent, TabItem, ButtonComponent,
   FormFieldComponent, CheckboxComponent, StatusBadgeComponent, SectionTitleComponent,
-  SectionCardComponent,
+  SectionCardComponent, ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 
 type ListTab = 'CURRENCY' | 'COST_TYPE' | 'PAYMENT_METHOD' | 'RECURRENCE_FREQUENCY';
@@ -28,7 +29,7 @@ type ConfigSection = 'thresholds' | 'categories' | 'lists';
   imports: [CommonModule, FormsModule, DataTableComponent, DafCellDirective, TranslatePipe,
             SelectComponent, TabsComponent, ButtonComponent, FormFieldComponent,
             CheckboxComponent, StatusBadgeComponent, SectionTitleComponent, SectionCardComponent,
-            DisplayCurrencyPipe],
+            DisplayCurrencyPipe, CostImportPanelComponent],
   templateUrl: './cost-config.component.html',
   styleUrl: './cost-config.component.scss',
 })
@@ -36,6 +37,20 @@ export class CostConfigComponent {
   private readonly svc         = inject(CostService);
   private readonly factListSvc = inject(FactListService);
   private readonly translate   = inject(TranslateService);
+  private readonly modal       = inject(ModalService);
+
+  @ViewChild('importTpl') importTpl!: TemplateRef<unknown>;
+  private importModalRef: ModalRef | null = null;
+
+  openImportModal(): void {
+    this.importModalRef = this.modal.open({
+      body: this.importTpl,
+      size: 'lg',
+      buttons: [
+        { label: this.translate.instant('ADMIN.COMMON.CLOSE'), variant: 'secondary', action: r => r.close() },
+      ],
+    });
+  }
 
   /**
    * Owned by the parent page (`admin-list.component`'s own pays picker) — this
@@ -55,6 +70,7 @@ export class CostConfigComponent {
       this.editingCategoryId.set(null);
       this.showAddThreshold.set(false);
       this.showAddCategory.set(false);
+      this.showAddValue.set(false);
       this.loadAll();
     });
   }
@@ -95,7 +111,8 @@ export class CostConfigComponent {
   listLoading   = signal(false);
   listError     = signal<string | null>(null);
 
-  newValue    = { code: '', labelFr: '', labelEn: '', isDefault: false };
+  newValue      = { code: '', labelFr: '', labelEn: '', isDefault: false };
+  showAddValue  = signal(false);
   isCreating  = signal(false);
   createError = signal<string | null>(null);
 
@@ -323,6 +340,11 @@ export class CostConfigComponent {
           onClick: () => this.createValue(),
         },
         {
+          id: 'cancel-new', icon: 'close', tooltip: t('COST.CONFIG.CANCEL'),
+          hidden: row => !row['_isNew'],
+          onClick: () => this.showAddValue.set(false),
+        },
+        {
           id: 'delete', icon: 'close', tooltip: t('COST.CONFIG.DEACTIVATE'), variant: 'danger',
           hidden: row => !!row['_isNew'],
           onClick: row => this.deactivate(row['id']),
@@ -342,11 +364,13 @@ export class CostConfigComponent {
       _isNew:        false,
       _raw:          v,
     }));
-    rows.push({
-      id: '__new-value__' as unknown as number, code: '', labelFr: '', labelEn: null,
-      isDefault: false, displayOrder: null as unknown as number, _isNew: true,
-      _raw: null as unknown as ListValueDto,
-    });
+    if (this.showAddValue()) {
+      rows.push({
+        id: '__new-value__' as unknown as number, code: '', labelFr: '', labelEn: null,
+        isDefault: false, displayOrder: null as unknown as number, _isNew: true,
+        _raw: null as unknown as ListValueDto,
+      });
+    }
     return rows;
   });
 
@@ -534,6 +558,7 @@ export class CostConfigComponent {
 
   selectListTab(tab: ListTab): void {
     this.activeListTab.set(tab);
+    this.showAddValue.set(false);
     this.loadListTab(tab);
   }
 
@@ -570,6 +595,7 @@ export class CostConfigComponent {
       next: created => {
         this.listValues.update(list => [...list, created]);
         this.newValue = { code: '', labelFr: '', labelEn: '', isDefault: false };
+        this.showAddValue.set(false);
         this.isCreating.set(false);
       },
       error: err => {

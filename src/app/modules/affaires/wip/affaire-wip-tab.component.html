@@ -117,11 +117,12 @@
 
           <div class="flex flex-col gap-1.5">
             <span class="invisible text-[10px] font-semibold uppercase tracking-wider" aria-hidden="true">&nbsp;</span>
-            <div class="wip-icon-actions w-fit h-10 flex items-center gap-1 transition-opacity duration-200
-                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-              [class.opacity-0]="!forfaitCardHovered()"
-              [class.opacity-100]="forfaitCardHovered()"
-              [class.pointer-events-none]="!forfaitCardHovered()">
+            <!-- TOUJOURS visible (plus de révélation au survol, forfaitCardHovered) : cette
+                 pastille porte "Soumettre"/"Mettre à jour", l'action d'approbation du taux —
+                 même correctif que la pastille Régie (voir son commentaire), pour qu'elle
+                 reste cliquable sans dépendre d'un survol souris. -->
+            <div class="wip-icon-actions w-fit h-10 flex items-center gap-1
+                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm">
               <daf-button #avDatePickerTrigger
                 [options]="{ variant: 'ghost', size: 'sm', iconStart: 'calendar_month', title: ('AFFAIRES.WIP.PERIOD' | translate) }"
                 (onClick)="toggleAvDatePicker()" />
@@ -570,9 +571,7 @@
     <daf-accordion-card class="wip-accordion"
       [options]="{ title: ('AFFAIRES.WIP.LIVRABLE_ENTRY_TITLE' | translate), icon: 'inventory_2', variant: 'outlined', radius: 'lg' }"
       [(open)]="livrableDrawerOpen">
-    <div
-      (mouseenter)="livrablePendingCardHovered.set(true)"
-      (mouseleave)="livrablePendingCardHovered.set(false)">
+    <div>
       <div class="flex flex-col gap-4">
         <p class="text-[12px] text-on-surface-variant">
           {{ 'AFFAIRES.WIP.LIVRABLE_EXPLAIN' | translate }}
@@ -635,11 +634,11 @@
                 {{ totalToInvoice() | displayCurrency : affaire.devise }}
               </p>
             </div>
-            <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1 transition-opacity duration-200
-                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm"
-              [class.opacity-0]="!livrablePendingCardHovered()"
-              [class.opacity-100]="livrablePendingCardHovered()"
-              [class.pointer-events-none]="!livrablePendingCardHovered()">
+            <!-- TOUJOURS visible (plus de révélation au survol, livrablePendingCardHovered) :
+                 cette pastille porte "Soumettre"/"Mettre à jour", l'action d'approbation du
+                 lot — même correctif que les pastilles AV/Régie. -->
+            <div style="grid-column:3" class="wip-icon-actions flex items-center gap-1
+                        bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm">
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send',
                                         title: (editingBatchId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
                                         loading: submittingLivrables(), disabled: !hasLivrableChanges() || submittingLivrables() }"

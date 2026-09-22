@@ -10,7 +10,7 @@ import {
   BILLING_MODE_BADGE_VARIANT, RAF_TONE_CLASS, STATUT_BADGE_VARIANT,
   distinctResponsables, initials, rafTone, typeLabel,
 } from '../affaire-display';
-import { enumLabel } from '../../../shared/enum-labels';
+import { enumLabel } from '../../../shared/enum-labels';
 /**
  * List view of `/finance/affaires` on the house table style (UI-PLAYBOOK §6b):
  * no wrapper and no outer card (the lib already draws the border, the radius and
