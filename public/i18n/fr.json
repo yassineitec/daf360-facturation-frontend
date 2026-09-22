@@ -1103,20 +1103,20 @@
       "KPI": {
         "CA": "Total encaissé",
         "CA_SUB": "Chiffre d'affaires réel",
-        "CA_HELP": "Factures encaissées.",
+        "CA_HELP": "Somme des factures de l'affaire dont le statut est « Encaissé ». Complément exact de « Total facturé » : les deux réunis font tout le facturé. Un acompte sur une facture encore partiellement payée ne compte pas ici.",
         "RAF": "RAF Disponible",
         "RAF_USAGE": "Consommation budget",
         "RAF_HELP": "Ce qui reste à facturer : budget + TS intégrés − factures émises. Le pourcentage est la part encore disponible. Négatif = budget dépassé.",
         "WIP": "WIP",
         "WIP_SUB": "Travaux en cours",
-        "WIP_HELP": "Travail constaté pas encore facturé.",
+        "WIP_HELP": "Total facturé − somme de TOUS les WIP de l'onglet WIP, quel que soit leur statut (en attente, validé, facturé, annulé). Dans ce sens : ce qui a été facturé au-delà du WIP déclaré. Négatif = le WIP déclaré dépasse le facturé. Vaut 0 hors Forfaitaire/Régie/Livrable.",
         "MARGIN": "Marge brute",
         "MARGIN_TARGET": "Objectif de marge",
         "MARGIN_HELP": "(Encaissé − sous-traitance) / encaissé : un % du CA, pas du budget. Les coûts internes valent 0 faute de timesheet, la marge est surévaluée.",
         "BACKLOG": "Backlog",
-        "BACKLOG_HELP": "Ce qui reste du contrat à facturer : budget − total facturé.",
+        "BACKLOG_HELP": "Ce qui reste du contrat à facturer : budget prévisionnel − Total facturé (la tuile voisine). La pastille est la part du budget encore au backlog. Négatif = budget dépassé.",
         "INVOICED": "Total facturé",
-        "INVOICED_HELP": "Factures émises, pas encore encaissées."
+        "INVOICED_HELP": "Somme des factures de l'affaire dont le statut n'est pas « Encaissé » — le facturé non encore soldé. C'est le « facturé » de référence : le Backlog et le WIP se calculent dessus."
       },
       "INFO": {
         "TITLE": "Informations générales",
@@ -1397,18 +1397,7 @@
         "bento_interco_title": "Projets Interco",
         "bento_interco_desc": "Liez des projets provenant de filiales ou de partenaires inter-compagnies.",
         "info_title": "Pas de projet à lier?",
-        "info_body": "Vous pouvez continuer et saisir les informations manuellement à l'étape suivante.",
-        "status": {
-          "in_progress": "En cours",
-          "active": "Actif",
-          "closed": "Clôturé",
-          "completed": "Terminé",
-          "cancelled": "Annulé",
-          "suspended": "Suspendu",
-          "pending": "En attente",
-          "draft": "Brouillon",
-          "archived": "Archivé"
-        }
+        "info_body": "Vous pouvez continuer et saisir les informations manuellement à l'étape suivante."
       },
       "billing": {
         "locked": "Le mode de facturation est verrouillé et ne peut pas être modifié.",
@@ -2100,7 +2089,7 @@
     },
     "WIP": {
       "KPI_TS": "TS",
-      "KPI_TS_HELP": "Travaux supplémentaires intégrés au budget.",
+      "KPI_TS_HELP": "Montant des timesheets validés déjà intégrés dans le calcul du RAF de cette affaire.",
       "AV_EXPLAIN": "WIP = budget du contrat × taux d'avancement à date. Soumettez un nouveau taux cumulé ci-dessous ; la valeur est calculée automatiquement.",
       "TM_EXPLAIN": "WIP = coût des heures Timesheet déjà validées pour cette période.",
       "TM_EXPLAIN_2": "Seules les heures au statut « Validé » sont comptées.",
@@ -3650,7 +3639,8 @@
       "ADD": "Ajouter",
       "EDIT": "Modifier",
       "ACTIONS": "Actions",
-      "BACK": "Retour"
+      "BACK": "Retour",
+      "CLOSE": "Fermer"
     },
     "PAYS": {
       "LABEL": "Pays / Entité",

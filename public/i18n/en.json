@@ -1103,20 +1103,20 @@
       "KPI": {
         "CA": "Total collected",
         "CA_SUB": "Actual revenue",
-        "CA_HELP": "Invoices collected.",
+        "CA_HELP": "Sum of this project's invoices whose status is 'Collected'. The exact complement of 'Total invoiced': together they make up everything invoiced. A part-payment on an invoice that is still partly paid does not count here.",
         "RAF": "Remaining to invoice",
         "RAF_USAGE": "Budget usage",
         "RAF_HELP": "What is left to invoice: budget + integrated additional work − issued invoices. The percentage is the share still available. Negative = overrun.",
         "WIP": "WIP",
         "WIP_SUB": "Work in progress",
-        "WIP_HELP": "Work recognised but not yet invoiced.",
+        "WIP_HELP": "Total invoiced − the sum of EVERY WIP entry in the WIP tab, whatever its status (pending, approved, invoiced, cancelled). In that direction: what has been invoiced beyond the declared WIP. Negative = declared WIP exceeds what was invoiced. 0 outside Fixed-price/T&M/Deliverable.",
         "MARGIN": "Gross margin",
         "MARGIN_TARGET": "Margin target",
         "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated.",
         "BACKLOG": "Backlog",
-        "BACKLOG_HELP": "What is left of the contract to invoice: budget − total invoiced.",
+        "BACKLOG_HELP": "What is left of the contract to invoice: forecast budget − Total invoiced (the neighbouring tile). The pill is the share of the budget still in backlog. Negative = overrun.",
         "INVOICED": "Total invoiced",
-        "INVOICED_HELP": "Issued invoices, not yet collected."
+        "INVOICED_HELP": "Sum of this project's invoices whose status is not 'Collected' — the invoiced amount still owed. This is the reference 'invoiced' figure: Backlog and WIP are both computed from it."
       },
       "INFO": {
         "TITLE": "General information",
@@ -1397,18 +1397,7 @@
         "bento_interco_title": "Interco projects",
         "bento_interco_desc": "Link projects from subsidiaries or inter-company partners.",
         "info_title": "No project to link?",
-        "info_body": "You can continue and enter the information manually in the next step.",
-        "status": {
-          "in_progress": "In progress",
-          "active": "Active",
-          "closed": "Closed",
-          "completed": "Completed",
-          "cancelled": "Cancelled",
-          "suspended": "Suspended",
-          "pending": "Pending",
-          "draft": "Draft",
-          "archived": "Archived"
-        }
+        "info_body": "You can continue and enter the information manually in the next step."
       },
       "billing": {
         "locked": "The billing mode is locked and cannot be changed.",
@@ -2100,7 +2089,7 @@
     },
     "WIP": {
       "KPI_TS": "TS integrated",
-      "KPI_TS_HELP": "Additional work integrated into the budget.",
+      "KPI_TS_HELP": "Amount of validated timesheets already integrated into this affaire's RAF calculation.",
       "AV_EXPLAIN": "WIP = contract budget × progress rate to date. Submit a new cumulative rate below; the value is calculated automatically.",
       "TM_EXPLAIN": "WIP = cost of Timesheet hours already validated for this period.",
       "TM_EXPLAIN_2": "Only hours with status \"Validated\" are counted.",
@@ -3650,7 +3639,8 @@
       "ADD": "Add",
       "EDIT": "Edit",
       "ACTIONS": "Actions",
-      "BACK": "Back"
+      "BACK": "Back",
+      "CLOSE": "Close"
     },
     "PAYS": {
       "LABEL": "Country / Entity",

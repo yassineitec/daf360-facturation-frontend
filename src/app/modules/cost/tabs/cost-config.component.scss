@@ -18,6 +18,22 @@
   justify-content: space-between;
   padding-bottom: 8px;
   border-bottom: 2px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.list-values-title-tabs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.list-values-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .banner-error {

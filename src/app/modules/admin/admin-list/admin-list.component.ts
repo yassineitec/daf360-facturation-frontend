@@ -7,7 +7,6 @@ import { FactRolesAdminComponent } from '../roles/fact-roles-admin.component';
 import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-admin.component';
 import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
 import { CostConfigComponent } from '../../cost/tabs/cost-config.component';
-import { CostImportPanelComponent } from '../../cost/import/cost-import-panel.component';
 import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
@@ -47,7 +46,7 @@ interface ForexRow {
     FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
     PaysFlagSelectComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
-    CostConfigComponent, CostImportPanelComponent,
+    CostConfigComponent,
   ],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',

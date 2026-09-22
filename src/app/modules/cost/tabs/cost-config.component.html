@@ -24,11 +24,18 @@
     <section class="config-section">
       <div class="section-header">
         <daf-section-title [title]="'COST.CONFIG.THRESHOLDS_TITLE' | translate" />
-        <daf-button
-          [label]="(showAddThreshold() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate"
-          [variant]="showAddThreshold() ? 'secondary' : 'teal'"
-          [options]="{ size: 'sm', iconStart: showAddThreshold() ? 'close' : 'add' }"
-          (onClick)="showAddThreshold.set(!showAddThreshold())" />
+        <div class="list-values-actions">
+          <daf-button
+            [label]="'COST.IMPORT.TITLE' | translate"
+            variant="ghost"
+            [options]="{ size: 'sm', iconStart: 'upload_file' }"
+            (onClick)="openImportModal()" />
+          <daf-button
+            [label]="(showAddThreshold() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate"
+            [variant]="showAddThreshold() ? 'secondary' : 'teal'"
+            [options]="{ size: 'sm', iconStart: showAddThreshold() ? 'close' : 'add' }"
+            (onClick)="showAddThreshold.set(!showAddThreshold())" />
+        </div>
       </div>
 
       @if (thresholdError()) {
@@ -117,11 +124,18 @@
     <section class="config-section">
       <div class="section-header">
         <daf-section-title [title]="'COST.CONFIG.CATEGORIES_TITLE' | translate" />
-        <daf-button
-          [label]="(showAddCategory() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate"
-          [variant]="showAddCategory() ? 'secondary' : 'teal'"
-          [options]="{ size: 'sm', iconStart: showAddCategory() ? 'close' : 'add' }"
-          (onClick)="showAddCategory.set(!showAddCategory())" />
+        <div class="list-values-actions">
+          <daf-button
+            [label]="'COST.IMPORT.TITLE' | translate"
+            variant="ghost"
+            [options]="{ size: 'sm', iconStart: 'upload_file' }"
+            (onClick)="openImportModal()" />
+          <daf-button
+            [label]="(showAddCategory() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate"
+            [variant]="showAddCategory() ? 'secondary' : 'teal'"
+            [options]="{ size: 'sm', iconStart: showAddCategory() ? 'close' : 'add' }"
+            (onClick)="showAddCategory.set(!showAddCategory())" />
+        </div>
       </div>
 
       @if (createCatError()) {
@@ -251,16 +265,29 @@
     <daf-section-card [options]="{ padding: 'lg' }">
     <section class="config-section">
       <div class="section-header">
-        <daf-section-title [title]="'COST.CONFIG.LIST_VALUES_TITLE' | translate" />
+        <div class="list-values-title-tabs">
+          <daf-section-title [title]="'COST.CONFIG.LIST_VALUES_TITLE' | translate" />
+          <daf-tabs
+            [tabs]="listTypeTabs()"
+            [active]="activeListTab()"
+            (activeChange)="onListTypeTabChange($event)"
+            variant="pill"
+            idPrefix="cost-config-list-type"
+            [tabsLabel]="'COST.CONFIG.LIST_TYPE_NAV_LABEL' | translate" />
+        </div>
+        <div class="list-values-actions">
+          <daf-button
+            [label]="'COST.IMPORT.TITLE' | translate"
+            variant="ghost"
+            [options]="{ size: 'sm', iconStart: 'upload_file' }"
+            (onClick)="openImportModal()" />
+          <daf-button
+            [label]="(showAddValue() ? 'COST.CONFIG.CANCEL' : 'COST.CONFIG.ADD') | translate"
+            [variant]="showAddValue() ? 'secondary' : 'teal'"
+            [options]="{ size: 'sm', iconStart: showAddValue() ? 'close' : 'add' }"
+            (onClick)="showAddValue.set(!showAddValue())" />
+        </div>
       </div>
-
-      <daf-tabs
-        [tabs]="listTypeTabs()"
-        [active]="activeListTab()"
-        (activeChange)="onListTypeTabChange($event)"
-        variant="pill"
-        idPrefix="cost-config-list-type"
-        [tabsLabel]="'COST.CONFIG.LIST_TYPE_NAV_LABEL' | translate" />
 
       @if (listError()) {
         <div class="banner-error">{{ listError() }}</div>
@@ -339,3 +366,9 @@
 
   }
 </div>
+
+<!-- Import CSV — ouvert en popup depuis le bouton du header "Valeurs de liste"
+     (déplacé hors de la colonne latérale, cf. admin-list.component.html). -->
+<ng-template #importTpl>
+  <app-cost-import-panel [paysId]="paysId()" />
+</ng-template>

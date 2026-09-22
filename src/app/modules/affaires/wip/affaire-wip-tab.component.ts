@@ -503,8 +503,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   regieDrawerOpen = signal(false);
 
   // ── LIVRABLE — mêmes pills d'icônes révélées au survol que Forfaitaire/Régie, un
-  // signal dédié par carte (voir le commentaire ci-dessus). ──────────────────────────
-  livrablePendingCardHovered  = signal(false);
+  // signal dédié par carte (voir le commentaire ci-dessus). Pas de signal pour la carte
+  // "Livrables en attente" elle-même : sa pastille (dont "Soumettre") est maintenant
+  // toujours visible plutôt que révélée au survol — voir le commentaire à côté de ce
+  // bloc côté HTML. ──────────────────────────
   livrableBatchesCardHovered  = signal(false);
   livrableHistoryCardHovered  = signal(false);
 
