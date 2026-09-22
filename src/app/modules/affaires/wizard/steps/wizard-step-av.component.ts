@@ -30,8 +30,15 @@ export class WizardStepAvComponent implements OnInit {
   readonly loadError = signal<string | null>(null);
 
   // daf-select option list for the repartition type picker.
-  readonly repartitionTypeOptions = computed<SelectOption[]>(() =>
-    this.repartitionTypes().map(t => ({ value: String(t.id), label: t.labelFr })));
+  readonly repartitionTypeOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return this.repartitionTypes().map(t => ({ value: String(t.id), label: this.typeLabel(t) }));
+  });
+
+  // labelEn n'est pas garanti pour chaque valeur (référentiels pays), d'où le repli sur labelFr.
+  private typeLabel(t: ListValueDto): string {
+    return this.translate.currentLang() === 'en' ? (t.labelEn ?? t.labelFr) : t.labelFr;
+  }
 
   // daf-select emits string[]; bridge back to the numeric model + total recompute.
   onTypeChange(r: AffaireDraftState['repartitions'][0], values: string[]): void {
@@ -40,7 +47,8 @@ export class WizardStepAvComponent implements OnInit {
     // main et affichait « Type #3 » à la place de « CTR ». En relecture d'un brouillon il
     // arrive déjà résolu par le backend (AffaireDraftDto.ContactAllocationDto.label) — ici on
     // couvre le cas création.
-    r.label = this.repartitionTypes().find(t => t.id === r.repartitionTypeId)?.labelFr;
+    const type = this.repartitionTypes().find(t => t.id === r.repartitionTypeId);
+    r.label = type ? this.typeLabel(type) : undefined;
     this.updateTotal();
   }
 

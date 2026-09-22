@@ -4,13 +4,14 @@ import {
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
-  ModalService, ModalRef, ButtonComponent,
+  ModalService, ModalRef, ButtonComponent, SelectComponent, SelectOption, CheckboxComponent, FormFieldComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
 } from '@khalilrebhiitec/daf360';
 import { DocumentTemplateService } from './document-template.service';import {
   FactDocumentTemplateDto, SaveFactDocumentTemplateRequest,
   DOCUMENT_TYPES, INVOICE_TEMPLATE_VARIABLES, TemplateVariableDef,
 } from './document-template.model';
+import { FilterPanelComponent } from '../../../shared/filter-panel/filter-panel.component';
 
 /**
  * Admin des maquettes de documents facturation éditables — même principe que
@@ -25,7 +26,10 @@ import { DocumentTemplateService } from './document-template.service';import {
 @Component({
   selector: 'app-document-templates-admin',
   standalone: true,
-  imports: [FormsModule, TranslatePipe, ButtonComponent, DataTableComponent, DafCellDirective],
+  imports: [
+    FormsModule, TranslatePipe, ButtonComponent, SelectComponent, CheckboxComponent, FormFieldComponent,
+    DataTableComponent, DafCellDirective, FilterPanelComponent,
+  ],
   template: `
 <div class="tmpl-page">
 
@@ -34,26 +38,29 @@ import { DocumentTemplateService } from './document-template.service';import {
       <h1 class="page-title">{{ 'ADMIN.DOCUMENT_TEMPLATES.TITLE' | translate }}</h1>
       <p class="page-sub">{{ 'ADMIN.DOCUMENT_TEMPLATES.SUBTITLE' | translate }}</p>
     </div>
-    <daf-button [options]="{ variant: 'teal', iconStart: 'add', label: 'ADMIN.DOCUMENT_TEMPLATES.NEW' | translate }"
-      (onClick)="openCreateModal()" />
+    <div class="header-actions">
+      <daf-checkbox
+        [checked]="showInactive()"
+        (checkedChange)="onShowInactiveChange($event)"
+        [options]="{ label: ('ADMIN.DOCUMENT_TEMPLATES.SHOW_INACTIVE' | translate) }" />
+      <app-filter-panel
+        [title]="'ADMIN.DOCUMENT_TEMPLATES.FIELD_TYPE' | translate"
+        (apply)="onFilterChange(pendingDocType())"
+        (cancel)="pendingDocType.set(filterDocumentType())">
+        <daf-select
+          [options]="documentTypeSelectOptions()"
+          [config]="{ label: ('ADMIN.DOCUMENT_TEMPLATES.FIELD_TYPE' | translate), placeholder: ('ADMIN.DOCUMENT_TEMPLATES.ALL_TYPES' | translate) }"
+          [selected]="pendingDocType() ? [pendingDocType()] : []"
+          (selectedChange)="pendingDocType.set($event[0] ?? '')" />
+      </app-filter-panel>
+      <daf-button [options]="{ variant: 'teal', iconStart: 'add', label: 'ADMIN.DOCUMENT_TEMPLATES.NEW' | translate }"
+        (onClick)="openCreateModal()" />
+    </div>
   </div>
 
   @if (pageError()) {
     <div class="banner banner--error">{{ pageError() }}</div>
   }
-
-  <div class="filter-bar">
-    <select class="filter-select" [ngModel]="filterDocumentType()" (ngModelChange)="onFilterChange($event)">
-      <option value="">{{ 'ADMIN.DOCUMENT_TEMPLATES.ALL_TYPES' | translate }}</option>
-      @for (t of documentTypes; track t.value) {
-        <option [value]="t.value">{{ t.label }}</option>
-      }
-    </select>
-    <label class="filter-checkbox">
-      <input type="checkbox" [ngModel]="showInactive()" (ngModelChange)="onShowInactiveChange($event)" />
-      {{ 'ADMIN.DOCUMENT_TEMPLATES.SHOW_INACTIVE' | translate }}
-    </label>
-  </div>
 
   <daf-data-table [columns]="columns()" [rows]="rows()" [config]="tableConfig()">
     <ng-template dafCell="name" let-row>
@@ -67,31 +74,33 @@ import { DocumentTemplateService } from './document-template.service';import {
 <ng-template #editorTpl>
   <div class="editor-body">
     <div class="editor-meta">
-      <label class="field">
-        <span class="field-label">{{ 'ADMIN.DOCUMENT_TEMPLATES.FIELD_TYPE' | translate }}</span>
-        <select class="field-input" [(ngModel)]="form.documentType">
-          @for (t of documentTypes; track t.value) {
-            <option [value]="t.value">{{ t.label }}</option>
-          }
-        </select>
-      </label>
-      <label class="field field--grow">
-        <span class="field-label">{{ 'ADMIN.DOCUMENT_TEMPLATES.FIELD_NAME' | translate }}</span>
-        <input class="field-input" type="text" [(ngModel)]="form.name" maxlength="200" />
-      </label>
+      <div class="field">
+        <daf-select
+          [options]="documentTypeSelectOptions(false)"
+          [config]="{ label: ('ADMIN.DOCUMENT_TEMPLATES.FIELD_TYPE' | translate), required: true }"
+          [selected]="[form.documentType]"
+          (selectedChange)="form.documentType = $event[0] ?? documentTypes[0].value" />
+      </div>
+      <div class="field field--grow">
+        <daf-form-field
+          [options]="{ label: ('ADMIN.DOCUMENT_TEMPLATES.FIELD_NAME' | translate), required: true, maxLength: 200, fullWidth: true }"
+          [value]="form.name"
+          (valueChange)="form.name = ($any($event) ?? '')" />
+      </div>
     </div>
-    <label class="field">
-      <span class="field-label">{{ 'ADMIN.DOCUMENT_TEMPLATES.FIELD_DESCRIPTION' | translate }}</span>
-      <input class="field-input" type="text" [(ngModel)]="form.description" maxlength="500" />
-    </label>
+    <div class="field">
+      <daf-form-field
+        [options]="{ label: ('ADMIN.DOCUMENT_TEMPLATES.FIELD_DESCRIPTION' | translate), maxLength: 500, fullWidth: true }"
+        [value]="form.description"
+        (valueChange)="form.description = ($any($event) ?? '')" />
+    </div>
 
     <div class="editor-split">
       <div class="editor-html">
         <div class="editor-html-toolbar">
           <span class="field-label">HTML / Handlebars</span>
-          <button type="button" class="link-btn" (click)="insertDefaultTemplate()">
-            {{ 'ADMIN.DOCUMENT_TEMPLATES.INSERT_DEFAULT' | translate }}
-          </button>
+          <daf-button [options]="{ variant: 'ghost', size: 'sm', label: ('ADMIN.DOCUMENT_TEMPLATES.INSERT_DEFAULT' | translate) }"
+            (onClick)="insertDefaultTemplate()" />
         </div>
         <textarea #htmlEditor class="html-textarea" [(ngModel)]="form.htmlContent" rows="22"
           spellcheck="false"></textarea>
@@ -111,9 +120,11 @@ import { DocumentTemplateService } from './document-template.service';import {
         }
 
         <div class="preview-box">
-          <span class="field-label">{{ 'ADMIN.DOCUMENT_TEMPLATES.PREVIEW_INVOICE_ID' | translate }}</span>
-          <input class="field-input" type="number" [(ngModel)]="previewInvoiceId"
-            [placeholder]="'ADMIN.DOCUMENT_TEMPLATES.PREVIEW_INVOICE_ID_HINT' | translate" />
+          <daf-form-field
+            [options]="{ label: ('ADMIN.DOCUMENT_TEMPLATES.PREVIEW_INVOICE_ID' | translate), type: 'number',
+                         placeholder: ('ADMIN.DOCUMENT_TEMPLATES.PREVIEW_INVOICE_ID_HINT' | translate), fullWidth: true }"
+            [value]="previewInvoiceId"
+            (valueChange)="previewInvoiceId = $any($event) ? +$any($event) : null" />
           <daf-button
             [options]="{ variant: 'ghost', size: 'sm', iconStart: 'visibility',
                          label: ((previewing() ? 'ADMIN.DOCUMENT_TEMPLATES.PREVIEWING' : 'ADMIN.DOCUMENT_TEMPLATES.PREVIEW') | translate),
@@ -129,7 +140,7 @@ import { DocumentTemplateService } from './document-template.service';import {
 </ng-template>
   `,
   styles: [`
-    .tmpl-page { padding: 1.5rem 2rem; max-width: 1200px; }
+    .tmpl-page { padding: 1.5rem 2rem; }
     .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; gap: 1rem; }
     .page-title { font-size: 1.375rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem; }
     .page-sub   { font-size: 0.875rem; color: #64748b; margin: 0; }
@@ -137,9 +148,8 @@ import { DocumentTemplateService } from './document-template.service';import {
     .banner { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.875rem; margin-bottom: 1rem;
       &--error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; } }
 
-    .filter-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-    .filter-select { padding: 0.4rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.825rem; }
-    .filter-checkbox { display: flex; align-items: center; gap: 0.4rem; font-size: 0.825rem; color: #374151; cursor: pointer; }
+    .header-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: nowrap; }
+    .header-actions daf-select { min-width: 220px; }
 
     .tmpl-name { font-weight: 600; color: #0f172a; }
     .tmpl-desc { font-size: 0.775rem; color: #64748b; margin-top: 2px; }
@@ -150,12 +160,10 @@ import { DocumentTemplateService } from './document-template.service';import {
     .field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; }
     .field--grow { flex: 1; }
     .field-label { font-weight: 600; color: #374151; }
-    .field-input { padding: 0.45rem 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; font-family: inherit; }
 
     .editor-split { display: flex; gap: 0.875rem; min-height: 420px; }
     .editor-html { flex: 1.6; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
     .editor-html-toolbar { display: flex; align-items: center; justify-content: space-between; }
-    .link-btn { border: none; background: none; color: #2563eb; font-size: 0.775rem; cursor: pointer; padding: 0; }
     .html-textarea {
       flex: 1; width: 100%; resize: vertical; font-family: 'Consolas', 'Courier New', monospace;
       font-size: 0.775rem; line-height: 1.5; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px;
@@ -190,6 +198,9 @@ export class DocumentTemplatesAdminComponent implements OnInit {
   loading         = signal(true);
   pageError       = signal<string | null>(null);
   filterDocumentType = signal('');
+  /** Valeur choisie dans le select du panneau "Filtres", pas encore appliquée
+   * (appliquée seulement au clic sur "Appliquer" — cf. app-filter-panel). */
+  pendingDocType  = signal('');
   showInactive    = signal(false);
 
   // Modal state
@@ -221,6 +232,15 @@ export class DocumentTemplatesAdminComponent implements OnInit {
 
   typeLabel(value: string): string {
     return this.documentTypes.find(t => t.value === value)?.label ?? value;
+  }
+
+  /** Options `daf-select` pour le type de document — avec l'entrée "Tous les types"
+   * pour le filtre de liste, sans pour le select requis de la modale. */
+  documentTypeSelectOptions(includeAll = true): SelectOption[] {
+    const base = this.documentTypes.map(t => ({ value: t.value, label: t.label }));
+    return includeAll
+      ? [{ value: '', label: this.translate.instant('ADMIN.DOCUMENT_TEMPLATES.ALL_TYPES') }, ...base]
+      : base;
   }
 
   readonly columns = computed<TableColumn[]>(() => {

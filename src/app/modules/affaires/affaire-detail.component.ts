@@ -970,13 +970,13 @@ export class AffaireDetailComponent implements OnInit {
    * slot pastille, et `delta` est exactement ça : une valeur secondaire à côté du chiffre.
    * `direction: 'neutral'` parce que c'est une part, pas une variation.
    *
-   * **`help` sur chacune** (lib 4.20.0) : la définition du chiffre, révélée au survol de
-   * la tuile — sans icône ni bouton, la tuile est identique tant qu'on ne la survole pas.
-   * Ces définitions en avaient besoin plus que les autres : trois d'entre elles mesurent
-   * autre chose que ce que leur nom suggère (« Total encaissé » est du PAYÉ et pas du
-   * facturé ; « Total facturé » exclut justement les factures payées ; le WIP est un
-   * cumul NET des factures). Ces réserves ne vivaient que dans les commentaires de ce
-   * fichier, donc nulle part pour qui lit la page.
+   * **`help` sur chacune** (lib 4.20.0) : une phrase, révélée au survol de la tuile —
+   * sans icône ni bouton, la tuile est identique tant qu'on ne la survole pas. Une
+   * INFOBULLE, pas de la documentation : elle dit ce que le chiffre représente, pas
+   * comment il est calculé. Les règles de calcul complètes, leurs cas limites et leurs
+   * pièges restent dans le bloc « D'où viennent les chiffres de la page » ci-dessous, à
+   * destination de qui lit le code — les y laisser évite d'imposer un pavé à qui survole
+   * simplement une carte.
    *
    * `helpPlacement` reste au défaut (`bottom`) : la rangée est en haut de la colonne, un
    * panneau au-dessus sortirait de l'écran.
@@ -1141,14 +1141,18 @@ export class AffaireDetailComponent implements OnInit {
   //     · totalFacture  = SUM(factures) dont le statut n'est PAS 'PAID' — à la lettre,
   //                       donc DRAFT et CANCELLED y entrent aussi.
   //     · backlog       = budgetPrevisionnel − totalFacture.
-  //     · wip           = totalFacture − somme des WIP déclarés (tous statuts), DANS CE
-  //                       SENS-LÀ : ce qui a été facturé au-delà de ce que l'onglet WIP a
-  //                       déclaré. Négatif quand le WIP déclaré dépasse le facturé.
+  //     · wip           = somme des WIP déclarés (tous statuts) − totalFacture : le
+  //                       constaté pas encore passé en facture. Négatif quand on a facturé
+  //                       plus que ce que l'onglet WIP a déclaré.
   //     · totalEncaisse = SUM(factures) au statut 'PAID' — complément exact de
   //                       totalFacture, donc totalFacture + totalEncaisse = tout le facturé.
   //   Un chiffre lu sur une tuile se retrouve donc tel quel dans le calcul des deux
   //   autres : budget = backlog + totalFacture, et la tuile WIP se lit à partir de la
   //   tuile « Total facturé » affichée juste à côté.
+  //
+  //   ⚠️ Le sens de la soustraction du WIP a été inversé le 21/09 (il valait
+  //   totalFacture − WIP du 18 au 21) : une capture d'écran de cette période se lit à
+  //   l'opposé de ce que la page affiche aujourd'hui.
   //
   //   ⚠️ `ca` (SUM(payments.amount_local)) n'est PLUS la tuile « Total encaissé » — celle-ci
   //   lit `totalEncaisse`, les factures au statut Encaissé. `ca` reste servi par l'API et

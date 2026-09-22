@@ -44,172 +44,241 @@
           <span class="material-symbols-outlined animate-spin">progress_activity</span>
           {{ 'AFFAIRES.billing.approval.loading' | translate }}
         </div>
-      } @else if (pendingLines().length === 0 && pendingLivrableBatches().length === 0) {
-        <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
-          <span class="material-symbols-outlined text-[32px]">check_circle</span>
-          <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
-        </div>
       } @else {
 
-        <!-- Billing lines -->
-        @if (pendingLines().length > 0) {
-          <div class="flex items-center gap-2 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">
-            <span class="material-symbols-outlined text-[18px]">receipt_long</span>
-            {{ 'AFFAIRES.billing.approval.section_lines' | translate:{ count: pendingLines().length } }}
-          </div>
-          <daf-data-table
-            [columns]="lineColumns()"
-            [rows]="pagedLineRows()"
-            [config]="lineTableConfig()"
-            (rowClick)="openDetail($any($event), 'line')">
+        <!-- Fond blanc partagé derrière le bandeau pill + la recherche/filtre — même
+             patron que la barre de catégories de l'admin listes (admin-list.component.html) :
+             --daf-tabs-fade doit suivre ce fond, sinon le dégradé des chevrons se fond vers
+             --color-surface par défaut.
 
-            <ng-template dafCell="affaire" let-row>
-              <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                (click)="$event.stopPropagation()">
-                {{ row['affaireRef'] }}
-              </a>
-              <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-            </ng-template>
+             La recherche/filtre est une instance daf-search-toolbar PAR sous-onglet (une
+             seule instance réutilisée en changeant juste [filterFields] ne suffirait pas :
+             daf-filter ne seed son état interne depuis initialValues qu'une seule fois par
+             instance, donc les clés de l'onglet précédent resteraient collées après un
+             changement d'onglet). Changer de sous-onglet détruit/recrée l'instance —
+             recherche et filtre de chaque tableau restent donc indépendants. -->
+        <div class="flex flex-wrap items-center gap-3 rounded-xl bg-white p-3">
+          <daf-tabs #dfSubTabsRef
+            style="--daf-tabs-fade: #fff"
+            [tabs]="dfSubTabItems()"
+            [active]="activeDfSubTab()"
+            (activeChange)="onDfSubTabChange($event)"
+            variant="pill"
+            idPrefix="billing-approval-df"
+            [tabsLabel]="'AFFAIRES.billing.approval.tab_df' | translate" />
 
-            <ng-template dafCell="reference" let-row>
-              <span class="cell-mono">{{ row['reference'] }}</span>
-            </ng-template>
+          @if (activeDfSubTab() === 'lines') {
+            <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
+              [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+              [value]="lineSearch()" (valueChange)="onLineSearch($event)"
+              [filterFields]="lineFilterFields()" [filterConfig]="lineFilterConfig()"
+              (filterApply)="onLineFilterApply($event)" />
+          }
+          @if (activeDfSubTab() === 'livrable') {
+            <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
+              [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+              [value]="livrableBatchSearch()" (valueChange)="onLivrableBatchSearch($event)"
+              [filterFields]="livrableBatchFilterFields()" [filterConfig]="livrableBatchFilterConfig()"
+              (filterApply)="onLivrableBatchFilterApply($event)" />
+          }
+          @if (activeDfSubTab() === 'creditNotes') {
+            <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
+              [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+              [value]="creditNoteSearch()" (valueChange)="onCreditNoteSearch($event)"
+              [filterFields]="creditNoteFilterFields()" [filterConfig]="creditNoteFilterConfig()"
+              (filterApply)="onCreditNoteFilterApply($event)" />
+          }
+        </div>
 
-            <ng-template dafCell="periode" let-row>
-              <span class="cell-muted">{{ row['periode'] || '—' }}</span>
-            </ng-template>
+        <div role="tabpanel"
+             [id]="dfSubTabsRef.panelId(activeDfSubTab())"
+             [attr.aria-labelledby]="dfSubTabsRef.tabId(activeDfSubTab())"
+             class="flex flex-col gap-4">
 
-            <ng-template dafCell="montantHt" let-row>
-              <span class="cell-bold">{{ row['montantHt'] }}</span>
-            </ng-template>
+          <!-- Billing lines -->
+          @if (activeDfSubTab() === 'lines') {
+            @if (pendingLines().length === 0) {
+              <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+                <span class="material-symbols-outlined text-[32px]">check_circle</span>
+                <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
+              </div>
+            } @else if (filteredLineRows().length === 0) {
+              <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+                <span class="material-symbols-outlined text-[32px]">search_off</span>
+                <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
+              </div>
+            } @else {
+              <daf-data-table
+                [columns]="lineColumns()"
+                [rows]="pagedLineRows()"
+                [config]="lineTableConfig()"
+                (rowClick)="openDetail($any($event), 'line')">
 
-            <ng-template dafCell="mode" let-row>
-              <span class="cell-mode">{{ row['mode'] }}</span>
-            </ng-template>
+                <ng-template dafCell="affaire" let-row>
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    (click)="$event.stopPropagation()">
+                    {{ row['affaireRef'] }}
+                  </a>
+                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                </ng-template>
 
-            <ng-template dafCell="statut" let-row>
-              <daf-badge [label]="lineStatusLabel(row['statut'])" [options]="{ variant: lineBadgeVariant(row['statut']) }" />
-            </ng-template>
+                <ng-template dafCell="reference" let-row>
+                  <span class="cell-mono">{{ row['reference'] }}</span>
+                </ng-template>
 
-          </daf-data-table>
+                <ng-template dafCell="periode" let-row>
+                  <span class="cell-muted">{{ row['periode'] || '—' }}</span>
+                </ng-template>
 
-          <daf-pagination
-            [currentPage]="linePage()"
-            [totalPages]="lineTotalPages()"
-            [totalElements]="lineRows().length"
-            [pageSize]="linePageSize()"
-            [pageSizeOptions]="[10, 20, 50, 100]"
-            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
-            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
-            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
-            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
-            (pageChange)="linePage.set($event)"
-            (pageSizeChange)="linePageSize.set($event); linePage.set(0)" />
-        }
+                <ng-template dafCell="montantHt" let-row>
+                  <span class="cell-bold">{{ row['montantHt'] }}</span>
+                </ng-template>
 
-        <!-- Livrable batches -->
-        @if (pendingLivrableBatches().length > 0) {
-          <div class="flex items-center gap-2 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">
-            <span class="material-symbols-outlined text-[18px]">folder_copy</span>
-            {{ 'AFFAIRES.billing.approval.section_livrable_batches' | translate:{ count: pendingLivrableBatches().length } }}
-          </div>
-          <daf-data-table
-            [columns]="livrableBatchColumns()"
-            [rows]="pagedLivrableBatchRows()"
-            [config]="livrableBatchTableConfig()"
-            (rowClick)="openDetail($any($event), 'livrable')">
+                <ng-template dafCell="mode" let-row>
+                  <span class="cell-mode">{{ row['mode'] }}</span>
+                </ng-template>
 
-            <ng-template dafCell="affaire" let-row>
-              <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                (click)="$event.stopPropagation()">
-                {{ row['affaireRef'] }}
-              </a>
-              <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-            </ng-template>
+                <ng-template dafCell="statut" let-row>
+                  <daf-badge [label]="lineStatusLabel(row['statut'])" [options]="{ variant: lineBadgeVariant(row['statut']) }" />
+                </ng-template>
 
-            <ng-template dafCell="documents" let-row>
-              {{ row['documents'] }}
-            </ng-template>
+              </daf-data-table>
 
-            <ng-template dafCell="montant" let-row>
-              <span class="cell-bold">{{ row['montant'] }}</span>
-            </ng-template>
+              <daf-pagination
+                [currentPage]="linePage()"
+                [totalPages]="lineTotalPages()"
+                [totalElements]="lineRows().length"
+                [pageSize]="linePageSize()"
+                [pageSizeOptions]="[10, 20, 50, 100]"
+                [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+                [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+                [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+                [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+                (pageChange)="linePage.set($event)"
+                (pageSizeChange)="linePageSize.set($event); linePage.set(0)" />
+            }
+          }
 
-            <ng-template dafCell="billingDate" let-row>
-              <span class="cell-muted">{{ row['billingDate'] }}</span>
-            </ng-template>
+          <!-- Livrable batches -->
+          @if (activeDfSubTab() === 'livrable') {
+            @if (pendingLivrableBatches().length === 0) {
+              <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+                <span class="material-symbols-outlined text-[32px]">check_circle</span>
+                <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
+              </div>
+            } @else if (filteredLivrableBatchRows().length === 0) {
+              <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+                <span class="material-symbols-outlined text-[32px]">search_off</span>
+                <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
+              </div>
+            } @else {
+              <daf-data-table
+                [columns]="livrableBatchColumns()"
+                [rows]="pagedLivrableBatchRows()"
+                [config]="livrableBatchTableConfig()"
+                (rowClick)="openDetail($any($event), 'livrable')">
 
-          </daf-data-table>
+                <ng-template dafCell="affaire" let-row>
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    (click)="$event.stopPropagation()">
+                    {{ row['affaireRef'] }}
+                  </a>
+                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                </ng-template>
 
-          <daf-pagination
-            [currentPage]="livrableBatchPage()"
-            [totalPages]="livrableBatchTotalPages()"
-            [totalElements]="livrableBatchRows().length"
-            [pageSize]="livrableBatchPageSize()"
-            [pageSizeOptions]="[10, 20, 50, 100]"
-            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
-            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
-            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
-            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
-            (pageChange)="livrableBatchPage.set($event)"
-            (pageSizeChange)="livrableBatchPageSize.set($event); livrableBatchPage.set(0)" />
-        }
+                <ng-template dafCell="documents" let-row>
+                  {{ row['documents'] }}
+                </ng-template>
 
-        <!-- Credit notes / avoirs — a real Invoice submitted directly at creation
-             (InvoiceService.createCreditNote), not a BillingLine; validating opens the
-             ordinary invoice detail page and calls the invoicing approve+emit endpoints
-             (see ApprovalQueueComponent.doValidateCreditNote). -->
-        @if (pendingCreditNotes().length > 0) {
-          <div class="flex items-center gap-2 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">
-            <span class="material-symbols-outlined text-[18px]">receipt_long</span>
-            {{ 'AFFAIRES.billing.approval.section_credit_notes' | translate:{ count: pendingCreditNotes().length } }}
-          </div>
-          <daf-data-table
-            [columns]="creditNoteColumns()"
-            [rows]="pagedCreditNoteRows()"
-            [config]="creditNoteTableConfig()"
-            (rowClick)="openCreditNoteDetail($any($event))">
+                <ng-template dafCell="montant" let-row>
+                  <span class="cell-bold">{{ row['montant'] }}</span>
+                </ng-template>
 
-            <ng-template dafCell="affaire" let-row>
-              <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                (click)="$event.stopPropagation()">
-                {{ row['affaireRef'] }}
-              </a>
-              <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-            </ng-template>
+                <ng-template dafCell="billingDate" let-row>
+                  <span class="cell-muted">{{ row['billingDate'] }}</span>
+                </ng-template>
 
-            <ng-template dafCell="reference" let-row>
-              <span class="cell-mono">{{ row['reference'] }}</span>
-            </ng-template>
+              </daf-data-table>
 
-            <ng-template dafCell="montant" let-row>
-              <span class="cell-bold">{{ row['montant'] }}</span>
-            </ng-template>
+              <daf-pagination
+                [currentPage]="livrableBatchPage()"
+                [totalPages]="livrableBatchTotalPages()"
+                [totalElements]="livrableBatchRows().length"
+                [pageSize]="livrableBatchPageSize()"
+                [pageSizeOptions]="[10, 20, 50, 100]"
+                [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+                [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+                [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+                [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+                (pageChange)="livrableBatchPage.set($event)"
+                (pageSizeChange)="livrableBatchPageSize.set($event); livrableBatchPage.set(0)" />
+            }
+          }
 
-            <ng-template dafCell="motif" let-row>
-              <span class="cell-muted">{{ row['motif'] }}</span>
-            </ng-template>
+          <!-- Credit notes / avoirs — a real Invoice submitted directly at creation
+               (InvoiceService.createCreditNote), not a BillingLine; validating opens the
+               ordinary invoice detail page and calls the invoicing approve+emit endpoints
+               (see ApprovalQueueComponent.doValidateCreditNote). -->
+          @if (activeDfSubTab() === 'creditNotes') {
+            @if (pendingCreditNotes().length === 0) {
+              <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+                <span class="material-symbols-outlined text-[32px]">check_circle</span>
+                <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
+              </div>
+            } @else if (filteredCreditNoteRows().length === 0) {
+              <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+                <span class="material-symbols-outlined text-[32px]">search_off</span>
+                <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
+              </div>
+            } @else {
+              <daf-data-table
+                [columns]="creditNoteColumns()"
+                [rows]="pagedCreditNoteRows()"
+                [config]="creditNoteTableConfig()"
+                (rowClick)="openCreditNoteDetail($any($event))">
 
-            <ng-template dafCell="soumis" let-row>
-              <span class="cell-muted">{{ row['soumis'] }}</span>
-            </ng-template>
+                <ng-template dafCell="affaire" let-row>
+                  <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    (click)="$event.stopPropagation()">
+                    {{ row['affaireRef'] }}
+                  </a>
+                  <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                </ng-template>
 
-          </daf-data-table>
+                <ng-template dafCell="reference" let-row>
+                  <span class="cell-mono">{{ row['reference'] }}</span>
+                </ng-template>
 
-          <daf-pagination
-            [currentPage]="creditNotePage()"
-            [totalPages]="creditNoteTotalPages()"
-            [totalElements]="creditNoteRows().length"
-            [pageSize]="creditNotePageSize()"
-            [pageSizeOptions]="[10, 20, 50, 100]"
-            [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
-            [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
-            [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
-            [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
-            (pageChange)="creditNotePage.set($event)"
-            (pageSizeChange)="creditNotePageSize.set($event); creditNotePage.set(0)" />
-        }
+                <ng-template dafCell="montant" let-row>
+                  <span class="cell-bold">{{ row['montant'] }}</span>
+                </ng-template>
 
+                <ng-template dafCell="motif" let-row>
+                  <span class="cell-muted">{{ row['motif'] }}</span>
+                </ng-template>
+
+                <ng-template dafCell="soumis" let-row>
+                  <span class="cell-muted">{{ row['soumis'] }}</span>
+                </ng-template>
+
+              </daf-data-table>
+
+              <daf-pagination
+                [currentPage]="creditNotePage()"
+                [totalPages]="creditNoteTotalPages()"
+                [totalElements]="creditNoteRows().length"
+                [pageSize]="creditNotePageSize()"
+                [pageSizeOptions]="[10, 20, 50, 100]"
+                [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+                [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+                [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+                [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+                (pageChange)="creditNotePage.set($event)"
+                (pageSizeChange)="creditNotePageSize.set($event); creditNotePage.set(0)" />
+            }
+          }
+
+        </div><!-- /df-subtabpanel -->
       }
     }
 

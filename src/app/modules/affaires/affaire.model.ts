@@ -161,9 +161,9 @@ export interface AffaireKpisDto {
   reference:                  string;
   /** Encaissé : somme des paiements reçus sur les factures de l'affaire. */
   ca:                         number;
-  /** `totalFacture − somme des WIP déclarés` — dans ce sens-là (règle de gestion) : ce qui
-   *  a été facturé AU-DELÀ de ce que l'onglet WIP a déclaré. Négatif quand le WIP déclaré
-   *  dépasse le facturé. 0 hors Forfait/Régie/Livrable. */
+  /** `somme des WIP déclarés (tous statuts) − totalFacture` : le constaté pas encore passé
+   *  en facture. Négatif quand on a facturé plus que ce que l'onglet WIP a déclaré.
+   *  0 hors Forfait/Régie/Livrable. */
   wip:                        number;
   raf:                        number;
   /** Toujours 0 côté backend (placeholder timesheet). */
