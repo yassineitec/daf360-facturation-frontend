@@ -53,7 +53,7 @@
 
              Les 3 onglets regroupent maintenant par MODE de facturation (FORFAIT/REGIE/
              LIVRABLE) plutôt que par type d'entité : un onglet peut empiler plusieurs
-             tableaux (ex. "Forfaitaire" = taux d'avancement + lignes + avoirs, tous mode
+             tableaux (ex. "Forfaitaire" = lignes (AV taux incluses) + avoirs, tous mode
              FORFAIT). Chaque tableau garde sa propre instance daf-search-toolbar — une
              seule instance réutilisée en changeant juste [filterFields] ne suffirait pas :
              daf-filter ne seed son état interne depuis initialValues qu'une seule fois par
@@ -75,9 +75,9 @@
           @if (activeDfSubTab() === 'forfaitaire') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
               [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
-              [value]="tauxSearch()" (valueChange)="onTauxSearch($event)"
-              [filterFields]="tauxFilterFields()" [filterConfig]="tauxFilterConfig()"
-              (filterApply)="onTauxFilterApply($event)" />
+              [value]="lineForfaitSearch()" (valueChange)="onLineForfaitSearch($event)"
+              [filterFields]="lineFilterFieldsForfait()" [filterConfig]="lineFilterConfigForfait()"
+              (filterApply)="onLineForfaitFilterApply($event)" />
           }
           @if (activeDfSubTab() === 'regie') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
@@ -103,71 +103,15 @@
           <!-- ══ Forfaitaire (mode FORFAIT) ══════════════════════════════════ -->
           @if (activeDfSubTab() === 'forfaitaire') {
 
-            @if (pendingTaux().length === 0 && linesForfait().length === 0) {
+            @if (linesForfait().length === 0) {
               <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
                 <span class="material-symbols-outlined text-[32px]">check_circle</span>
                 <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
               </div>
             } @else {
 
-              <!-- Taux d'avancement (AV) — toujours mode FORFAIT (ProgressBillingService.MODE).
-                   Validating one creates its BillingLine and the draft invoice in one shot
-                   (ProgressBillingService.validateTaux()). Section masquée s'il n'y en a aucun,
-                   pour éviter un message "vide" redondant avec celui des lignes juste en dessous. -->
-              @if (pendingTaux().length > 0) {
-                <div class="flex flex-col gap-3">
-                  @if (filteredTauxRows().length === 0) {
-                    <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
-                      <span class="material-symbols-outlined text-[32px]">search_off</span>
-                      <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
-                    </div>
-                  } @else {
-                    <daf-data-table
-                      [columns]="tauxColumns()"
-                      [rows]="pagedTauxRows()"
-                      [config]="tauxTableConfig()"
-                      (rowClick)="openDetail($any($event), 'taux')">
-
-                      <ng-template dafCell="affaire" let-row>
-                        <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
-                          (click)="$event.stopPropagation()">
-                          {{ row['affaireRef'] }}
-                        </a>
-                        <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
-                      </ng-template>
-
-                      <ng-template dafCell="taux" let-row>
-                        <span class="cell-bold">{{ row['taux'] }}%</span>
-                      </ng-template>
-
-                      <ng-template dafCell="valeur" let-row>
-                        {{ row['valeur'] }}
-                      </ng-template>
-
-                      <ng-template dafCell="soumis" let-row>
-                        <span class="cell-muted">{{ row['soumis'] }}</span>
-                      </ng-template>
-
-                    </daf-data-table>
-
-                    <daf-pagination
-                      [currentPage]="tauxPage()"
-                      [totalPages]="tauxTotalPages()"
-                      [totalElements]="tauxRows().length"
-                      [pageSize]="tauxPageSize()"
-                      [pageSizeOptions]="[10, 20, 50, 100]"
-                      [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
-                      [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
-                      [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
-                      [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
-                      (pageChange)="tauxPage.set($event)"
-                      (pageSizeChange)="tauxPageSize.set($event); tauxPage.set(0)" />
-                  }
-                </div>
-              }
-
-              <!-- Lignes de facturation — mode FORFAIT uniquement. Section masquée s'il n'y en
-                   a aucune (même raison que ci-dessus). -->
+              <!-- Lignes de facturation — mode FORFAIT uniquement (AV taux y sont incluses,
+                   voir loadDF() dans le .ts). -->
               @if (linesForfait().length > 0) {
                 <div class="flex flex-col gap-3">
                   @if (filteredLineRowsForfait().length === 0) {

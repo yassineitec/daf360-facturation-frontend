@@ -24,8 +24,8 @@ import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 type ActiveTab = 'df' | 'history';
 // Three tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
-// 'forfaitaire' shows both taux d'avancement (always mode FORFAIT, see
-// ProgressBillingService.MODE) and FORFAIT billing lines.
+// 'forfaitaire' shows both FORFAIT billing lines (AV taux included — see loadDF()) and
+// FORFAIT credit notes.
 type DfSubTab  = 'forfaitaire' | 'regie' | 'livrable';
 
 const LINE_STATUT_VARIANT: Record<string, BadgeVariant> = {
@@ -66,16 +66,13 @@ export class ApprovalQueueComponent implements OnInit {
   dfLoading     = signal(false);
   histLoading   = signal(false);
 
-  // ── Per-section search + filter state — every stacked table (taux, lines × mode,
-  // livrable batches, credit notes × mode) owns its own text/filter, kept independent
-  // of the others (switching tabs, or scrolling past another section, must not bleed
-  // one table's search into another's rows). A single shared daf-search-toolbar
-  // instance isn't reused across sections (see the .html): daf-filter seeds its
-  // internal state from `initialValues` only once per component instance, so swapping
-  // `filterFields` under a live instance wouldn't reset stale field keys from the
-  // previous section. ──
-  tauxSearch            = signal('');
-  tauxFilter            = signal<FilterResult>({});
+  // ── Per-section search + filter state — every stacked table (lines × mode, livrable
+  // batches, credit notes × mode) owns its own text/filter, kept independent of the
+  // others (switching tabs, or scrolling past another section, must not bleed one
+  // table's search into another's rows). A single shared daf-search-toolbar instance
+  // isn't reused across sections (see the .html): daf-filter seeds its internal state
+  // from `initialValues` only once per component instance, so swapping `filterFields`
+  // under a live instance wouldn't reset stale field keys from the previous section. ──
   lineForfaitSearch     = signal('');
   lineForfaitFilter     = signal<FilterResult>({});
   lineRegieSearch       = signal('');
@@ -131,9 +128,8 @@ export class ApprovalQueueComponent implements OnInit {
   });
 
   // ── Per-mode source lists — split from the flat pendingLines()/pendingCreditNotes()
-  // fetched by loadDF(). Taux d'avancement is always mode FORFAIT (see
-  // ProgressBillingService.MODE) and livrable batches are always mode LIVRABLE, so
-  // neither needs splitting. ──
+  // fetched by loadDF(). Livrable batches are always mode LIVRABLE, so they don't need
+  // splitting. ──
   readonly linesForfait        = computed(() => this.pendingLines().filter(l => l.mode === 'FORFAIT'));
   readonly linesRegie          = computed(() => this.pendingLines().filter(l => l.mode === 'REGIE'));
   readonly creditNotesForfait  = computed(() => this.pendingCreditNotes().filter(c => c.billingMode === 'FORFAIT'));
@@ -141,97 +137,12 @@ export class ApprovalQueueComponent implements OnInit {
   readonly creditNotesLivrable = computed(() => this.pendingCreditNotes().filter(c => c.billingMode === 'LIVRABLE'));
 
   readonly forfaitaireCount = computed(() =>
-    this.pendingTaux().length + this.linesForfait().length + this.creditNotesForfait().length
+    this.linesForfait().length + this.creditNotesForfait().length
   );
   readonly regieCount = computed(() => this.linesRegie().length + this.creditNotesRegie().length);
   readonly livrableCount = computed(() =>
     this.pendingLivrableBatches().length + this.creditNotesLivrable().length
   );
-
-  // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
-  readonly tauxColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    return [
-      { key: 'affaire', label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom', sortable: true,
-        sortAccessor: row => row['affaireRef'] },
-      { key: 'taux',    label: this.translate.instant('AFFAIRES.billing.approval.col_taux'),    type: 'custom', align: 'right', sortable: true },
-      { key: 'valeur',  label: this.translate.instant('AFFAIRES.billing.approval.col_valeur'),  type: 'custom', align: 'right', sortable: true,
-        // La cellule affiche un montant déjà formaté (fmtAmt) — trier dessus comparerait
-        // des chaînes ("1 000" avant "200"), pas des nombres. sortAccessor retombe sur la
-        // valeur brute portée par `_raw`.
-        sortAccessor: row => row['_raw'].montantIncremental },
-      { key: 'soumis',  label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),  type: 'custom', sortable: true,
-        sortAccessor: row => row['_raw'].submittedAt },
-    ];
-  });
-
-  readonly tauxRows = computed(() =>
-    this.pendingTaux().map(t => ({
-      id:              t.id,
-      affaireId:       t.affaireId,
-      affaireRef:      t.affaireRef,
-      affaireIntitule: t.affaireIntitule,
-      taux:            t.tauxSaisi,
-      valeur:          this.fmtAmt(t.montantIncremental),
-      soumis:          this.fmtDate(t.submittedAt),
-      _raw:            t,
-    }))
-  );
-
-  readonly tauxFilterFields = computed<FilterField[]>(() => {
-    this.translate.currentLang();
-    return [{
-      name:  'soumis',
-      label: this.translate.instant('AFFAIRES.billing.approval.filter_soumis'),
-      type:  'daterange',
-    }];
-  });
-
-  readonly tauxFilterConfig = computed<SearchToolbarFilterConfig>(() => {
-    this.translate.currentLang();
-    const t = (key: string) => this.translate.instant(key);
-    return {
-      title:         t('AFFAIRES.billing.approval.filter_title'),
-      applyLabel:    t('AFFAIRES.billing.approval.filter_apply'),
-      cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
-      resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
-      align:         'right',
-      initialValues: this.tauxFilter(),
-    };
-  });
-
-  onTauxSearch(value: string): void {
-    this.tauxSearch.set(value);
-    this.tauxPage.set(0);
-  }
-
-  onTauxFilterApply(result: FilterResult): void {
-    this.tauxFilter.set(result);
-    this.tauxPage.set(0);
-  }
-
-  readonly filteredTauxRows = computed(() => {
-    const q     = this.tauxSearch().trim().toLowerCase();
-    const range = this.tauxFilter()['soumis'] as Date[] | null;
-    return this.tauxRows().filter(r => {
-      if (q && !`${r.affaireRef} ${r.affaireIntitule}`.toLowerCase().includes(q)) return false;
-      if (range?.length === 2) {
-        const d = new Date(r._raw.submittedAt);
-        if (d < range[0] || d > range[1]) return false;
-      }
-      return true;
-    });
-  });
-
-  tauxPage     = signal(0);
-  tauxPageSize = signal(10);
-  readonly tauxTotalPages = computed(() => Math.ceil(this.filteredTauxRows().length / this.tauxPageSize()));
-  readonly pagedTauxRows = computed(() => {
-    const rows = this.filteredTauxRows();
-    const size = this.tauxPageSize();
-    const page = Math.min(this.tauxPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
-    return rows.slice(page * size, page * size + size);
-  });
 
   // ── daf-data-table: Billing lines (DF) ───────────────────────────────────────
   readonly lineColumns = computed<TableColumn[]>(() => {
@@ -645,19 +556,6 @@ export class ApprovalQueueComponent implements OnInit {
       resetLabel:        t('AFFAIRES.billing.approval.table_reset'),
     };
   }
-
-  readonly tauxTableConfig = computed<TableConfig>(() => {
-    this.translate.currentLang();
-    return {
-      hoverable: true,
-      showHeader: false,
-      ...this.tableExtras(),
-      actions: [
-        this.validateAction(row => this.doValidateTaux(row['id'])),
-        this.refuseAction(row => this.openRfRefuseModal(row['id'])),
-      ],
-    };
-  });
 
   readonly lineTableConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
