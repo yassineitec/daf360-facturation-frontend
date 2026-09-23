@@ -1,4 +1,5 @@
 import type { PageResponse } from '../affaires/affaire.model';
+import { currencyFractionDigits } from '../../shared/currency-decimals.util';
 export type { PageResponse };
 
 // ── Configurable list DTOs (match backend ListValueDto / ListTypeDto exactly) ──
@@ -287,7 +288,6 @@ export function formatAmountEur(amount: number | null): string {
   if (amount == null) return '—';
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency', currency: 'EUR',
-    minimumFractionDigits: 0, maximumFractionDigits: 0,
   }).format(amount);
 }
 
@@ -296,10 +296,9 @@ export function formatAmount(amount: number | null, currency = 'EUR'): string {
   try {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency,
-      minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(amount);
   } catch {
-    return `${amount.toFixed(0)} ${currency}`;
+    return `${amount.toFixed(currencyFractionDigits(currency))} ${currency}`;
   }
 }
 

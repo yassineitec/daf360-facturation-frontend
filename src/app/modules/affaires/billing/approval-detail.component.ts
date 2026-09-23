@@ -8,13 +8,13 @@ import {
   ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 import {
-  BillingService, TauxDetailDto, JalonDetailDto, LineDetailDto, EntityAuditLogDto,
+  BillingService, JalonDetailDto, LineDetailDto, EntityAuditLogDto,
 } from './billing.service';
 import { AffaireService } from '../affaire.service';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { LivrableBatchDto } from '../livrable.model';
-type DetailType = 'taux' | 'jalon' | 'line' | 'livrable';
+type DetailType = 'jalon' | 'line' | 'livrable';
 
 interface HistoryRow {
   id: number;
@@ -47,19 +47,17 @@ export class ApprovalDetailComponent implements OnInit {
   @ViewChild('refuseTpl') private refuseTpl!: TemplateRef<unknown>;
   @ViewChild('returnTpl') private returnTpl!: TemplateRef<unknown>;
 
-  type = signal<DetailType>('taux');
+  type = signal<DetailType>('jalon');
   id   = signal(0);
 
   loading  = signal(true);
   errorMsg = signal<string | null>(null);
 
-  taux  = signal<TauxDetailDto | null>(null);
   jalon = signal<JalonDetailDto | null>(null);
   line  = signal<LineDetailDto | null>(null);
   livrableBatch = signal<LivrableBatchDto | null>(null);
 
   affaire       = signal<AffaireDetail | null>(null);
-  siblingTaux   = signal<TauxDetailDto[]>([]);
   siblingJalons = signal<JalonDetailDto[]>([]);
   siblingLines  = signal<LineDetailDto[]>([]);
   auditTrail    = signal<EntityAuditLogDto[]>([]);
@@ -85,7 +83,6 @@ export class ApprovalDetailComponent implements OnInit {
   readonly detailTypeLabel = computed(() => {
     this.translate.currentLang();
     const key: Record<DetailType, string> = {
-      taux:     'AFFAIRES.billing.approval.detail.title_taux',
       jalon:    'AFFAIRES.billing.approval.detail.title_jalon',
       line:     'AFFAIRES.billing.approval.detail.title_line',
       livrable: 'AFFAIRES.billing.approval.detail.title_livrable',
@@ -108,26 +105,16 @@ export class ApprovalDetailComponent implements OnInit {
 
   readonly canAct = computed(() => {
     switch (this.type()) {
-      case 'taux':     return this.taux()?.statut === 'EN_ATTENTE';
       case 'jalon':    return this.jalon()?.statut === 'EN_ATTENTE_VALIDATION';
       case 'line':     return this.line()?.statut === 'EN_ATTENTE_DF';
       case 'livrable': return this.livrableBatch()?.statut === 'EN_ATTENTE_DF';
     }
   });
 
-  /** Unifies taux/jalon/line history into one shape so a single table can render whichever applies. */
+  /** Unifies jalon/line history into one shape so a single table can render whichever applies. */
   readonly historyRows = computed<HistoryRow[]>(() => {
     const currentId = this.id();
     switch (this.type()) {
-      case 'taux':
-        return this.siblingTaux().map(t => ({
-          id: t.id,
-          period: `${this.fmtDate(t.periodDateFrom)} – ${this.fmtDate(t.periodDateTo)}`,
-          label: `${t.tauxSaisi}%`,
-          value: t.montantIncremental,
-          statut: t.statut,
-          isCurrent: t.id === currentId,
-        }));
       case 'jalon':
         return this.siblingJalons().map(j => ({
           id: j.id,
@@ -209,12 +196,6 @@ export class ApprovalDetailComponent implements OnInit {
     const id = this.id();
 
     switch (this.type()) {
-      case 'taux':
-        this.svc.getTauxDetail(id).subscribe({
-          next: t => { this.taux.set(t); this.loading.set(false); this.loadContext(t.affaireId, 'TAUX_AVANCEMENT'); },
-          error: () => { this.loading.set(false); this.errorMsg.set(this.translate.instant('AFFAIRES.billing.approval.detail.load_error')); },
-        });
-        break;
       case 'jalon':
         this.svc.getJalonDetail(id).subscribe({
           next: j => { this.jalon.set(j); this.loading.set(false); this.loadContext(j.affaireId, 'JALON'); },
@@ -239,7 +220,6 @@ export class ApprovalDetailComponent implements OnInit {
   private loadContext(affaireId: number, entityType: string): void {
     this.affaireSvc.getAffaire(affaireId).subscribe({ next: a => this.affaire.set(a) });
     this.svc.getAuditByEntity(entityType, this.id()).subscribe({ next: a => this.auditTrail.set(a) });
-    if (this.type() === 'taux')  this.svc.getTauxHistoryDetailed(affaireId).subscribe({ next: h => this.siblingTaux.set(h) });
     if (this.type() === 'jalon') this.svc.getJalonsDetailed(affaireId).subscribe({ next: h => this.siblingJalons.set(h) });
     if (this.type() === 'line')  this.svc.getBillingLinesDetailed(affaireId).subscribe({ next: h => this.siblingLines.set(h) });
   }
@@ -269,7 +249,7 @@ export class ApprovalDetailComponent implements OnInit {
   }
 
   /** Coarse status → badge color, from the shared prefix/value conventions across
-   * taux/jalon/line/livrable statuses (EN_ATTENTE*, VALIDE*, FACTURE, RETOURNE, REFUSE/ANNULE). */
+   * jalon/line/livrable statuses (EN_ATTENTE*, VALIDE*, FACTURE, RETOURNE, REFUSE/ANNULE). */
   statusBadgeVariant(statut: string | null | undefined): BadgeVariant {
     if (!statut) return 'neutral';
     if (statut.startsWith('EN_ATTENTE')) return 'warning';
@@ -281,28 +261,6 @@ export class ApprovalDetailComponent implements OnInit {
   }
 
   // ── Actions ──────────────────────────────────────────────────────────────
-
-  validateTaux(): void {
-    // AV taux validation is now a DF action — it creates the draft invoice server-side in
-    // one shot (ProgressBillingService.validateTaux), so jump straight into the edit
-    // stepper, same as validateLine() does for billing lines.
-    this.actioning.set(true);
-    this.actionError.set(null);
-    this.svc.validateTaux(this.id()).subscribe({
-      next: line => {
-        if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
-        } else {
-          this.actioning.set(false);
-          this.loadItem();
-        }
-      },
-      error: (err: any) => {
-        this.actioning.set(false);
-        this.actionError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.billing.approval.detail.action_error'));
-      },
-    });
-  }
 
   openRefuseModal(): void {
     this.refuseMotif.set('');
@@ -326,7 +284,6 @@ export class ApprovalDetailComponent implements OnInit {
       return;
     }
     this.refuseRef?.close();
-    if (this.type() === 'taux') this.runAction(this.svc.refuseTaux(this.id(), motif));
     if (this.type() === 'jalon') this.runAction(this.svc.refuseJalon(this.id(), motif));
   }
 

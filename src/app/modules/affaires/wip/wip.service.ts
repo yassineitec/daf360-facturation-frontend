@@ -24,14 +24,6 @@ export class WipService {
     return this.http.post<WipTauxDto>(`${this.base}/av/${affaireId}/taux`, body, this.opts);
   }
 
-  validateTaux(tauxId: number): Observable<WipTauxDto> {
-    return this.http.post<WipTauxDto>(`${this.base}/av/taux/${tauxId}/validate`, {}, this.opts);
-  }
-
-  refuseTaux(tauxId: number, motif: string): Observable<WipTauxDto> {
-    return this.http.post<WipTauxDto>(`${this.base}/av/taux/${tauxId}/refuse`, { motif }, this.opts);
-  }
-
   updateTaux(
     tauxId: number,
     body: { periodDateFrom: string; periodDateTo: string; tauxSaisi: number; commentaire?: string | null },
@@ -43,9 +35,14 @@ export class WipService {
     return this.http.delete<void>(`${this.base}/av/taux/${tauxId}`, this.opts);
   }
 
-  createBillingLineFromTaux(affaireId: number, tauxId: number): Observable<unknown> {
-    return this.http.post(
-      `${this.base}/av/taux/${tauxId}/billing-line?affaireId=${affaireId}`, {}, this.opts);
+  /** Records what the client actually confirmed (read out of their email reply) — moves the
+   * linked line from EN_ATTENTE_CLIENT to EN_ATTENTE_DF, where the shared DF approval queue
+   * picks it up unchanged. Byte-for-byte the same shape as enterClientAmount() below (TM) —
+   * an independent AV-specific endpoint, matching this codebase's per-mode convention. */
+  enterAvClientAmount(affaireId: number, tauxId: number, clientApprovedAmount: number): Observable<unknown> {
+    return this.http.patch(
+      `${this.base}/av/${affaireId}/taux/${tauxId}/client-amount`,
+      { clientApprovedAmount }, this.opts);
   }
 
   // ── TM — new endpoints (WipTmController) ──────────────────────────────────────

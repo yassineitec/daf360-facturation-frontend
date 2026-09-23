@@ -13,7 +13,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService,
-  PendingTauxDto, PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto,
+  PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto,
   PendingCreditNoteDto, AuditLogEntryDto,
 } from './billing.service';
 // Not a BillingLine like the three sources above — a credit note already IS an Invoice
@@ -56,7 +56,6 @@ export class ApprovalQueueComponent implements OnInit {
   private readonly route      = inject(ActivatedRoute);
   private readonly modal      = inject(ModalService);
 
-  @ViewChild('rfRefuseTpl') private rfRefuseTpl!: TemplateRef<unknown>;
   @ViewChild('dfRetourTpl') private dfRetourTpl!: TemplateRef<unknown>;
 
   // Mirrors first-load skeleton pattern used elsewhere (see CostApprovalQueueComponent) —
@@ -90,17 +89,11 @@ export class ApprovalQueueComponent implements OnInit {
   creditNoteLivrableSearch = signal('');
   creditNoteLivrableFilter = signal<FilterResult>({});
 
-  pendingTaux   = signal<PendingTauxDto[]>([]);
   pendingJalons = signal<PendingJalonDto[]>([]);
   pendingLines  = signal<PendingBillingLineDto[]>([]);
   pendingLivrableBatches = signal<PendingLivrableBatchDto[]>([]);
   pendingCreditNotes     = signal<PendingCreditNoteDto[]>([]);
   auditLog      = signal<AuditLogEntryDto[]>([]);
-
-  rfRefuseMotif = signal('');
-  rfRefuseError = signal<string | null>(null);
-  private rfRefuseRef?: ModalRef;
-  private rfRefuseId   = 0;
 
   dfRetourMotif = signal('');
   dfRetourError = signal<string | null>(null);
@@ -113,7 +106,7 @@ export class ApprovalQueueComponent implements OnInit {
   readonly kpiHistoryOptions: MetricCardOptions = { icon: 'history', iconBg: 'bg-teal/10', iconColor: 'text-teal' };
 
   readonly dfCount = computed(() =>
-    this.pendingTaux().length + this.pendingLines().length + this.pendingLivrableBatches().length + this.pendingCreditNotes().length
+    this.pendingLines().length + this.pendingLivrableBatches().length + this.pendingCreditNotes().length
   );
 
   readonly tabItems = computed<TabItem[]>(() => {
@@ -632,14 +625,6 @@ export class ApprovalQueueComponent implements OnInit {
     };
   }
 
-  private refuseAction(onClick: (row: TableRow) => void): TableAction {
-    return {
-      id: 'refuse', icon: 'block', variant: 'danger',
-      tooltip: this.translate.instant('AFFAIRES.billing.approval.refuse'),
-      onClick,
-    };
-  }
-
   private returnAction(onClick: (row: TableRow) => void): TableAction {
     return {
       id: 'return', icon: 'undo',
@@ -731,15 +716,16 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   /**
-   * Row click on any of the three tables opens the detail page for that item.
+   * Row click on either of the two tables (line, livrable) opens the detail page for
+   * that item.
    *
    * No leading `..`: this component sits on the `approval` route's *empty-path* child, which
    * doesn't add a navigation hop of its own — so `this.route` already resolves at the
    * `approval` level, and `[type, id]` reaches its sibling `:type/:id` route directly. A
-   * leading `..` here overshoots past `approval` to `billing`, producing `billing/taux/1`
-   * instead of `billing/approval/taux/1` (a 404) — confirmed live 2026-08-24.
+   * leading `..` here overshoots past `approval` to `billing`, producing `billing/line/1`
+   * instead of `billing/approval/line/1` (a 404) — confirmed live 2026-08-24.
    */
-  openDetail(row: { id: number }, type: 'taux' | 'line' | 'livrable'): void {
+  openDetail(row: { id: number }, type: 'line' | 'livrable'): void {
     this.router.navigate([type, String(row.id)], { relativeTo: this.route });
   }
 
@@ -761,18 +747,17 @@ export class ApprovalQueueComponent implements OnInit {
     this.svc.getPendingJalons().subscribe({ next: j => this.pendingJalons.set(j) });
   }
 
-  // AV taux live here now, not under RF — validating one is a DF action (see
-  // ProgressBillingService.validateTaux()).
+  /** AV taux no longer have a queue of their own — a taux's BillingLine appears in
+   * pendingLines below exactly like every other mode, once the client has confirmed an
+   * amount (see docs/superpowers/specs/2026-09-21-av-client-confirmation-design.md). */
   private loadDF(): void {
     this.dfLoading.set(true);
     forkJoin({
-      taux: this.svc.getPendingTaux(),
       livrableBatches: this.svc.getPendingLivrableBatches(),
       lines: this.svc.getPendingDFLines(),
       creditNotes: this.svc.getPendingCreditNotes(),
     }).subscribe({
-      next: ({ taux, livrableBatches, lines, creditNotes }) => {
-        this.pendingTaux.set(taux);
+      next: ({ livrableBatches, lines, creditNotes }) => {
         this.pendingLivrableBatches.set(livrableBatches);
         this.pendingLines.set(lines);
         this.pendingCreditNotes.set(creditNotes);
@@ -788,47 +773,6 @@ export class ApprovalQueueComponent implements OnInit {
     this.svc.getAuditLog().subscribe({
       next:  a => { this.auditLog.set(a); this.histLoading.set(false); },
       error: () => this.histLoading.set(false),
-    });
-  }
-
-  doValidateTaux(id: number): void {
-    // Validating a taux creates the draft invoice server-side (ProgressBillingService) —
-    // jump straight into its edit stepper, same as doValidateDF() below.
-    this.svc.validateTaux(id).subscribe({
-      next: line => {
-        if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
-        } else {
-          this.loadDF();
-        }
-      },
-    });
-  }
-
-  openRfRefuseModal(id: number): void {
-    this.rfRefuseId   = id;
-    this.rfRefuseMotif.set('');
-    this.rfRefuseError.set(null);
-    this.rfRefuseRef = this.modal.open({
-      title: this.translate.instant('AFFAIRES.billing.approval.modal_refuse_title'),
-      body: this.rfRefuseTpl,
-      size: 'sm',
-      closeOnBackdrop: false,
-      buttons: [
-        { label: this.translate.instant('AFFAIRES.billing.approval.modal_cancel'),     variant: 'secondary', action: r => r.close() },
-        { label: this.translate.instant('AFFAIRES.billing.approval.modal_refuse_btn'), variant: 'primary',   action: () => this.submitRfRefuse() },
-      ],
-    });
-  }
-
-  submitRfRefuse(): void {
-    const motif = this.rfRefuseMotif().trim();
-    if (!motif) {
-      this.rfRefuseError.set(this.translate.instant('AFFAIRES.billing.approval.modal_motif_required'));
-      return;
-    }
-    this.svc.refuseTaux(this.rfRefuseId, motif).subscribe({
-      next: () => { this.rfRefuseRef?.close(); this.loadDF(); },
     });
   }
 
@@ -932,9 +876,12 @@ export class ApprovalQueueComponent implements OnInit {
     return key ? this.translate.instant(key) : code;
   }
 
+  // No currency is known here — these rows span multiple affaires, each potentially in a
+  // different currency — so this always shows 2 decimals (the common case) rather than
+  // guessing a per-row currency.
   fmtAmt(v: number | null): string {
     if (v === null || v === undefined) return '—';
-    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
   }
 
   fmtDate(d: string | null): string {

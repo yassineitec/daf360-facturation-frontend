@@ -597,25 +597,6 @@
 </daf-page>
 
 <!-- ── Modal bodies — projected into ModalService's own host ──────────────────────── -->
-<ng-template #rfRefuseTpl>
-  <div class="flex flex-col gap-4">
-    <daf-form-field
-      [value]="rfRefuseMotif()"
-      (valueChange)="rfRefuseMotif.set($any($event) || '')"
-      [options]="{
-        type: 'textarea', rows: 3, required: true,
-        label: ('AFFAIRES.billing.approval.modal_refuse_title' | translate),
-        placeholder: ('AFFAIRES.billing.approval.modal_refuse_placeholder' | translate)
-      }" />
-    @if (rfRefuseError()) {
-      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-        <span class="material-symbols-outlined text-[18px]">error</span>
-        {{ rfRefuseError() }}
-      </div>
-    }
-  </div>
-</ng-template>
-
 <ng-template #dfRetourTpl>
   <div class="flex flex-col gap-4">
     <daf-form-field

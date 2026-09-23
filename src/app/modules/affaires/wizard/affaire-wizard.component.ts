@@ -13,6 +13,7 @@ import { AffaireWizardService }          from '../affaire-wizard.service';
 import { AffaireDraftState, mapDraftToState } from '../affaire-wizard.model';
 import { AffaireService }           from '../affaire.service';
 import { UserStore }                from '../../../core/user.store';
+import { currencyFractionDigits }   from '../../../shared/currency-decimals.util';
 import { AffaireDetail }            from '../affaire.model';
 import { EmployeeCostService }      from '../../cost/employee-costs/employee-cost.service';
 import { WizardStepDoc360Component }     from './steps/wizard-step-doc360.component';
@@ -735,7 +736,8 @@ export class AffaireWizardComponent implements OnInit {
   formatBudget(): string {
     const d = this.draft();
     if (!d.budgetPrevisionnel) return this.translate.instant('AFFAIRES.wizard.shell.dash');
-    return d.budgetPrevisionnel.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+    const digits = currencyFractionDigits(d.contractCurrency);
+    return d.budgetPrevisionnel.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits })
       + ' ' + (d.contractCurrency ?? 'EUR');
   }
 }

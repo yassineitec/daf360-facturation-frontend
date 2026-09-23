@@ -134,7 +134,6 @@ export class TsListComponent {
   formatAmount(v: number, devise = 'TND'): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: devise,
-      minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(v);
   }
 

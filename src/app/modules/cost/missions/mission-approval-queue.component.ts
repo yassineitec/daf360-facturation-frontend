@@ -10,6 +10,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 
 import { MissionApprovalService, MissionDto, MissionScope } from './mission-approval.service';
+import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import {
   MissionApprovalItem, MissionUrgency, daysUntil, localeOf, missionAmountLabel,
   missionDate, missionDestination, missionUrgency,
@@ -400,8 +401,9 @@ export class MissionApprovalQueueComponent implements OnInit {
   });
 
   private amount(value: number, currency: string | null): string {
+    const digits = currencyFractionDigits(currency);
     const formatted = new Intl.NumberFormat(this.locale(), {
-      minimumFractionDigits: 0, maximumFractionDigits: 3,
+      minimumFractionDigits: digits, maximumFractionDigits: digits,
     }).format(value);
     return currency ? `${formatted} ${currency}` : formatted;
   }

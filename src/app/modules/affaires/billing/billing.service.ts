@@ -6,7 +6,6 @@ import { LivrableBatchDto } from '../livrable.model';
 
 // ── Statut enums ──────────────────────────────────────────────────────────────
 
-export type TauxStatut       = 'EN_ATTENTE' | 'VALIDE' | 'REFUSE';
 export type BillingLineStatut= 'EN_ATTENTE_CLIENT' | 'EN_ATTENTE_DF' | 'VALIDE_DF' | 'FACTURE' | 'A_VERIFIER' | 'RETOURNE' | 'ANNULE';
 export type JalonStatut      = 'A_FACTURER' | 'EN_ATTENTE_VALIDATION' | 'FACTURE' | 'ANNULE';
 // Les quatre valeurs de la contrainte `CK_Expense_Statut`. `REFUSE` n'existe pas en
@@ -15,18 +14,6 @@ export type JalonStatut      = 'A_FACTURER' | 'EN_ATTENTE_VALIDATION' | 'FACTURE
 export type ExpenseStatut    = 'EN_ATTENTE' | 'VALIDE' | 'REJETE' | 'INTEGRE';
 
 // ── Core DTOs ─────────────────────────────────────────────────────────────────
-
-export interface TauxAvancementDto {
-  id:             number;
-  affaireId:      number;
-  taux:           number;
-  valeurCalculee: number;
-  statut:         TauxStatut;
-  commentaire:    string | null;
-  soumisAt:       string;
-  evalueAt:       string | null;
-  motifRefus:     string | null;
-}
 
 export interface BillingLineDto {
   id:          number;
@@ -97,29 +84,8 @@ export interface AuditLogEntryDto {
 
 // ── Extended DTOs for approval queue (backend adds affaire context) ────────────
 
-/**
- * Deliberately NOT `extends TauxAvancementDto` — that interface's field names
- * (`taux`, `valeurCalculee`, `soumisAt`, `evalueAt`) don't match what the backend actually
- * sends (`tauxSaisi`, `montantIncremental`, `submittedAt`, `validatedAt`); see the real
- * `TauxAvancementDto` Java record in `ProgressBillingController`. This interface mirrors the
- * backend's `PendingTauxDto` record field-for-field instead.
- */
-export interface PendingTauxDto {
-  id:                 number;
-  affaireId:          number;
-  affaireRef:         string;
-  affaireIntitule:    string;
-  periodDateFrom:     string;
-  periodDateTo:       string;
-  tauxSaisi:          number;
-  montantIncremental: number;
-  statut:             TauxStatut;
-  commentaire:        string | null;
-  submittedAt:        string;
-  motifRefus:         string | null;
-}
-
-/** See `PendingTauxDto`'s comment — same reason this doesn't extend `JalonDto`. */
+/** Deliberately not `extends JalonDto` — field names don't match what the backend actually
+ * sends; this interface mirrors the backend's record field-for-field instead. */
 export interface PendingJalonDto {
   id:                 number;
   affaireId:          number;
@@ -181,31 +147,6 @@ export class BillingService {
   private readonly base = `${environment.factApiUrl}/api/fact`;
   private readonly opts = { withCredentials: true };
 
-  // ── Taux d'avancement (AV) ─────────────────────────────────────────────────
-
-  getTauxHistory(affaireId: number): Observable<TauxAvancementDto[]> {
-    return this.http.get<TauxAvancementDto[]>(
-      `${this.base}/billing/av/${affaireId}/taux`, this.opts);
-  }
-
-  submitTaux(affaireId: number, body: { taux: number; commentaire?: string | null }): Observable<TauxAvancementDto> {
-    return this.http.post<TauxAvancementDto>(
-      `${this.base}/affaires/${affaireId}/taux-avancement`, body, this.opts);
-  }
-
-  /** Validating a taux is now a DF action — it creates the BillingLine and immediately
-   * generates the draft invoice server-side, so this returns the BillingLineDto (with its
-   * invoiceId), same shape validateDF() below returns for the same reason. */
-  validateTaux(tauxId: number): Observable<BillingLineDto> {
-    return this.http.post<BillingLineDto>(
-      `${this.base}/billing/av/taux/${tauxId}/validate`, {}, this.opts);
-  }
-
-  refuseTaux(tauxId: number, motif: string): Observable<TauxAvancementDto> {
-    return this.http.post<TauxAvancementDto>(
-      `${this.base}/billing/av/taux/${tauxId}/refuse`, { motif }, this.opts);
-  }
-
   // ── Jalons (JAL) ──────────────────────────────────────────────────────────
 
   getJalons(affaireId: number): Observable<JalonDto[]> {
@@ -233,11 +174,6 @@ export class BillingService {
   getBillingLines(affaireId: number): Observable<BillingLineDto[]> {
     return this.http.get<BillingLineDto[]>(
       `${this.base}/affaires/${affaireId}/billing-lines`, this.opts);
-  }
-
-  createBillingLineAV(affaireId: number, tauxId: number): Observable<BillingLineDto> {
-    return this.http.post<BillingLineDto>(
-      `${this.base}/affaires/${affaireId}/billing-lines/av`, { tauxId }, this.opts);
   }
 
   createBillingLineTM(affaireId: number, body: { periode: string; montantHt: number }): Observable<BillingLineDto> {
@@ -298,12 +234,6 @@ export class BillingService {
 
   // ── Approval Queues ────────────────────────────────────────────────────────
 
-  /** AV taux now belong to the DF queue, not RF — see ProgressBillingService.validateTaux(). */
-  getPendingTaux(): Observable<PendingTauxDto[]> {
-    return this.http.get<PendingTauxDto[]>(
-      `${this.base}/billing/pending-df/taux`, this.opts);
-  }
-
   getPendingJalons(): Observable<PendingJalonDto[]> {
     return this.http.get<PendingJalonDto[]>(
       `${this.base}/billing/pending-rf/jalons`, this.opts);
@@ -334,7 +264,7 @@ export class BillingService {
   }
 
   /** Validating creates one shared invoice server-side, emitted immediately — same
-   * redirect-on-invoiceId pattern as validateTaux()/validateDF() above. */
+   * redirect-on-invoiceId pattern as validateDF() above. */
   validateLivrableBatch(batchId: number): Observable<LivrableBatchDto> {
     return this.http.post<LivrableBatchDto>(
       `${this.base}/billing/livrable-batches/${batchId}/validate`, {}, this.opts);
@@ -361,12 +291,8 @@ export class BillingService {
   }
 
   // ── Approval detail page — single-item fetches ──────────────────────────────
-  // These mirror the REAL backend records field-for-field (see the comment on
-  // `PendingTauxDto` above for why: `TauxAvancementDto`/`JalonDto`/`BillingLineDto` don't).
-
-  getTauxDetail(tauxId: number): Observable<TauxDetailDto> {
-    return this.http.get<TauxDetailDto>(`${this.base}/billing/av/taux/${tauxId}`, this.opts);
-  }
+  // These mirror the REAL backend records field-for-field — their field names deliberately
+  // don't match `JalonDto`/`BillingLineDto` above.
 
   getJalonDetail(jalonId: number): Observable<JalonDetailDto> {
     return this.http.get<JalonDetailDto>(`${this.base}/billing/jal/jalons/${jalonId}`, this.opts);
@@ -376,11 +302,7 @@ export class BillingService {
     return this.http.get<LineDetailDto>(`${this.base}/billing/df/lines/${lineId}`, this.opts);
   }
 
-  /** Same endpoints as `getTauxHistory`/`getJalons`/`getBillingLines`, correctly typed for the detail page. */
-  getTauxHistoryDetailed(affaireId: number): Observable<TauxDetailDto[]> {
-    return this.http.get<TauxDetailDto[]>(`${this.base}/billing/av/${affaireId}/taux`, this.opts);
-  }
-
+  /** Same endpoints as `getJalons`/`getBillingLines`, correctly typed for the detail page. */
   getJalonsDetailed(affaireId: number): Observable<JalonDetailDto[]> {
     return this.http.get<JalonDetailDto[]>(`${this.base}/billing/jal/${affaireId}/jalons`, this.opts);
   }
@@ -404,24 +326,6 @@ export interface EntityAuditLogDto {
   timestampUtc: string;
   billingMode:  string | null;
   metadata:     string | null;
-}
-
-export interface TauxDetailDto {
-  id:                 number;
-  affaireId:          number;
-  periodDateFrom:     string;
-  periodDateTo:       string;
-  tauxPrecedent:      number;
-  tauxSaisi:          number;
-  montantIncremental: number;
-  commentaire:        string | null;
-  statut:             TauxStatut;
-  submittedBy:        number;
-  submittedAt:        string;
-  validatedBy:        number | null;
-  validatedAt:        string | null;
-  motifRefus:         string | null;
-  billingLineId:      number | null;
 }
 
 export interface JalonDetailDto {
