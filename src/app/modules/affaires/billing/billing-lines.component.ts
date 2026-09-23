@@ -4,6 +4,7 @@ import { FormsModule }                                        from '@angular/for
 import { BillingService, BillingLineDto }                     from './billing.service';
 import { UserStore }                                          from '../../../core/user.store';
 import { DisplayCurrencyPipe }                               from '../../../shared/display-currency.pipe';
+import { currencyFractionDigits }                             from '../../../shared/currency-decimals.util';
 
 const STATUT_CFG: Record<string, { label: string; bg: string; color: string; border: string }> = {
   EN_ATTENTE_DF: { label: 'En attente DF', bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
@@ -188,7 +189,8 @@ export class BillingLinesComponent implements OnInit {
 
   fmtAmt(v: number | null): string {
     if (v === null || v === undefined) return '—';
-    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(v);
+    const digits = currencyFractionDigits(this.devise);
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v);
   }
 
   fmtDate(d: string | null): string {

@@ -203,52 +203,38 @@
         </div>
       </daf-accordion-card>
 
-      <daf-data-table [columns]="tauxHistoryColumns()" [rows]="tauxHistoryRows()" [config]="tauxHistoryConfig()" />
+      <daf-data-table [columns]="tauxHistoryColumns()" [rows]="tauxHistoryRows()" [config]="tauxHistoryConfig()">
+        <ng-template dafCell="mtClient" let-row>
+          @if ($any(row['_line'])?.statut === 'EN_ATTENTE_CLIENT') {
+            <div class="inline-flex items-center w-28 border border-outline-variant rounded px-1 py-0.5">
+              <!-- (change), not (input): this is a plain DOM-controlled [value]/(event) pair, and
+                   writing back through `valueAsNumber` on every keystroke breaks natural decimal
+                   typing — an in-progress value like "1250." has no valid valueAsNumber (NaN per
+                   the HTML spec), and re-assigning a NaN to a number input's `.value` sanitizes
+                   it to "", so the field would blank itself the instant a decimal point is typed.
+                   (change) only reads/commits the final value on blur — which a click on the
+                   validate icon below already triggers first (a mousedown/click on another
+                   element blurs the current input before that element's own click handler
+                   runs), so nothing is lost by not tracking every keystroke live. -->
+              <input type="number" class="w-full min-w-0 text-right border-0 p-0 bg-transparent focus:outline-none"
+                min="0" [max]="$any(row['_line']).montantHt" step="0.001"
+                [title]="'AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate"
+                [value]="getAvClientAmountInput($any(row['_line']).id)"
+                (change)="setAvClientAmountInput($any(row['_line']).id, $any($event.target).value === '' ? null : $any($event.target).valueAsNumber)" />
+            </div>
+          } @else if ($any(row['_line'])?.clientApprovedAmount != null) {
+            {{ $any(row['_line']).clientApprovedAmount | displayCurrency : affaire.devise }}
+          } @else {
+            —
+          }
+        </ng-template>
+      </daf-data-table>
       </div>
       @if (deleteTauxError()) {
         <p class="mt-2 text-[12px] text-danger">{{ deleteTauxError() }}</p>
       }
-
-      <!-- ── Ligne en attente de réponse client — même carte que celle de Régie
-           (pendingClientLines plus bas), juste au-dessus, scopée à la ligne AV. ──────── -->
-      @if (avPendingClientLines().length) {
-        <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }">
-          <div class="flex flex-col gap-3">
-            <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
-              <span class="material-symbols-outlined text-[18px]">forward_to_inbox</span>
-              {{ 'AFFAIRES.WIP.PENDING_CLIENT_TITLE' | translate }}
-            </h3>
-            <p class="text-[12px] text-on-surface-variant">{{ 'AFFAIRES.WIP.PENDING_CLIENT_EXPLAIN' | translate }}</p>
-
-            @for (l of avPendingClientLines(); track l.id) {
-              <div class="rounded-lg bg-surface-variant/30 p-3 flex flex-col gap-2">
-                <div class="flex items-center justify-between text-[12px]">
-                  <span>
-                    @if (l.periodDateFrom && l.periodDateTo) { {{ formatWipPeriod(l.periodDateFrom, l.periodDateTo) }} }
-                    @else { {{ l.periodMonth }}/{{ l.periodYear }} }
-                  </span>
-                  <span>{{ 'AFFAIRES.WIP.CALCULATED' | translate }}: <strong>{{ l.montantHt | displayCurrency : affaire.devise }}</strong></span>
-                </div>
-                <div class="flex items-end gap-2">
-                  <daf-form-field
-                    [value]="getAvClientAmountInput(l.id)"
-                    (valueChange)="setAvClientAmountInput(l.id, $any($event))"
-                    [options]="{ label: ('AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate) + ' (' + affaire.devise + ')',
-                                 type: 'number', fullWidth: true,
-                                 hint: ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
-                  <daf-button [options]="{ variant: 'teal', label: ('AFFAIRES.WIP.CLIENT_AMOUNT_CONFIRM' | translate),
-                                            loading: submittingAvClientLine() === l.id,
-                                            disabled: getAvClientAmountInput(l.id) === null || getAvClientAmountInput(l.id)! < 0 || getAvClientAmountInput(l.id)! > l.montantHt }"
-                    (onClick)="confirmAvClientAmount(l)" />
-                </div>
-              </div>
-            }
-
-            @if (avClientAmountError()) {
-              <p class="text-[12px] text-danger">{{ avClientAmountError() }}</p>
-            }
-          </div>
-        </daf-card>
+      @if (avClientAmountError()) {
+        <p class="mt-2 text-[12px] text-danger">{{ avClientAmountError() }}</p>
       }
     }
 

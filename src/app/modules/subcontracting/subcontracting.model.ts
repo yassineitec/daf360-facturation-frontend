@@ -1,3 +1,5 @@
+import { currencyFractionDigits } from '../../shared/currency-decimals.util';
+
 export interface SousTraitantDto {
   id: number;
   paysId: number;
@@ -100,9 +102,9 @@ export function fmtAmt(v: number | null, devise = 'TND'): string {
   try {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: devise,
-      minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(v);
   } catch {
-    return `${v} ${devise}`;
+    const digits = currencyFractionDigits(devise);
+    return `${v.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${devise}`;
   }
 }

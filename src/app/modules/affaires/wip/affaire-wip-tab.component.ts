@@ -358,7 +358,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * sumValidatedTaux() change exactly. */
   readonly lastValidatedTaux = computed(() => {
     const vals = this.tauxHistory().filter(t => t.statut === 'VALIDE');
-    return vals.reduce((sum, t) => sum + t.tauxSaisi, 0);
+    // Rounded to 3 decimals: plain floating-point addition drifts (e.g. 33.846 + 11.109
+    // renders as 44.955000000000005) since binary floats can't represent most decimal
+    // fractions exactly, and this value is shown directly in the form hint below.
+    return Number(vals.reduce((sum, t) => sum + t.tauxSaisi, 0).toFixed(3));
   });
 
   readonly editingTaux = computed<WipTauxDto | null>(() =>
@@ -1084,8 +1087,11 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   }
 
   confirmAvClientAmount(line: LineDetailDto): void {
-    const amount = this.getAvClientAmountInput(line.id);
-    if (amount === null || amount < 0 || amount > line.montantHt || this.submittingAvClientLine() !== null) return;
+    // Empty input falls back to the calculated amount — clicking "validate" with nothing
+    // typed means the client accepted the WIP-calculated figure as-is (see
+    // docs/superpowers/specs/2026-09-22-av-inline-client-amount-design.md §4).
+    const amount = this.getAvClientAmountInput(line.id) ?? line.montantHt;
+    if (amount < 0 || amount > line.montantHt || this.submittingAvClientLine() !== null) return;
     this.submittingAvClientLine.set(line.id);
     this.avClientAmountError.set(null);
     this.svc.enterAvClientAmount(this.affaire.id, line.tauxAvancementId!, amount).subscribe({
@@ -1196,11 +1202,12 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     return [
-      { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
-      { key: 'taux',    label: t('AFFAIRES.WIP.COL_TAUX') },
-      { key: 'cumul',   label: t('AFFAIRES.WIP.COL_CUMUL') },
-      { key: 'montant', label: t('AFFAIRES.WIP.COL_INCREMENT') },
-      { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
+      { key: 'period',   label: t('AFFAIRES.WIP.COL_PERIOD') },
+      { key: 'taux',     label: t('AFFAIRES.WIP.COL_TAUX') },
+      { key: 'cumul',    label: t('AFFAIRES.WIP.COL_CUMUL') },
+      { key: 'montant',  label: t('AFFAIRES.WIP.COL_INCREMENT') },
+      { key: 'mtClient', label: t('AFFAIRES.WIP.COL_MT_CLIENT'), type: 'custom' },
+      { key: 'statut',   label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
     ];
   });
 
@@ -1213,17 +1220,29 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * total 15%) without needing to special-case pending/refused rows in the UI. */
   readonly tauxHistoryRows = computed<TableRow[]>(() => {
     let runningCumul = 0;
+    const lines = this.avLineHistory();
     return this.tauxHistory().map(t => {
-      runningCumul += t.tauxSaisi;
+      // Rounded to 3 decimals at every step, not just for display: plain floating-point
+      // addition drifts (e.g. 33.846 + 11.109 renders as 44.955000000000005) since binary
+      // floats can't represent most decimal fractions exactly. taux values themselves are
+      // never entered/stored with more than 3 decimals, so the running total shouldn't
+      // show more either.
+      runningCumul = Number((runningCumul + t.tauxSaisi).toFixed(3));
       return {
         id:      t.id,
         period:  this.formatWipPeriod(t.periodDateFrom, t.periodDateTo),
         taux:    `${t.tauxSaisi}%`,
         cumul:   `${runningCumul}%`,
         montant: this.currency.transform(t.montantIncremental, this.affaire.devise),
+        // mtClient itself isn't set here — it's a type: 'custom' column (see the
+        // dafCell="mtClient" template in the .html), rendered from `_line` directly,
+        // since its content is either an input, formatted text, or a dash depending on
+        // the linked line's own state (see
+        // docs/superpowers/specs/2026-09-22-av-inline-client-amount-design.md §3).
         statut:  { label: enumLabel(this.translate, 'WIP_TAUX_STATUT', t.statut),
                    options: { variant: WIP_TAUX_STATUT_BADGE[t.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
         _source: t,
+        _line:   lines.find(l => l.tauxAvancementId === t.id) ?? null,
       } satisfies TableRow;
     });
   });
@@ -1247,6 +1266,28 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         variant: 'danger',
         onClick: (row: TableRow) => this.deleteTaux((row['_source'] as WipTauxDto).id),
         hidden:  (row: TableRow) => !this.isTauxEditable((row['_source'] as WipTauxDto).statut),
+      },
+      {
+        id:      'validateClient',
+        icon:    'check_circle',
+        tooltip: this.translate.instant('AFFAIRES.WIP.VALIDATE_CLIENT_AMOUNT'),
+        onClick: (row: TableRow) => {
+          const line = row['_line'] as LineDetailDto | null;
+          if (line) this.confirmAvClientAmount(line);
+        },
+        hidden: (row: TableRow) => (row['_line'] as LineDetailDto | null)?.statut !== 'EN_ATTENTE_CLIENT',
+        // A null input is now a valid "accept the calculated amount" choice (see
+        // confirmAvClientAmount()'s fallback), so this only disables for an out-of-bounds
+        // typed value or while this row's own confirm request is in flight — mirroring the
+        // removed <daf-button>'s disabled condition, minus the now-invalid "null blocks
+        // submit" half of it. TableAction has no per-row loading state, so this doubles as
+        // the closest available substitute for the removed button's `loading` indicator.
+        disabled: (row: TableRow) => {
+          const line = row['_line'] as LineDetailDto | null;
+          if (!line) return false;
+          const input = this.getAvClientAmountInput(line.id);
+          return (input !== null && (input < 0 || input > line.montantHt)) || this.submittingAvClientLine() === line.id;
+        },
       },
     ],
   }));

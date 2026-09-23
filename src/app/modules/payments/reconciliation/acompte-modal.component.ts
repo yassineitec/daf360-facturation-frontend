@@ -160,7 +160,6 @@ export class AcompteModalComponent {
   formatAmount(v: number, devise = 'TND'): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: devise,
-      minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(v);
   }
 

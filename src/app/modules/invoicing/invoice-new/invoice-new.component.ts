@@ -254,7 +254,6 @@ export class InvoiceNewComponent implements OnInit {
     this.summaryTotal.set(
       new Intl.NumberFormat('fr-FR', {
         style: 'currency', currency: this.affaireValue()?.currency ?? 'TND',
-        minimumFractionDigits: 0, maximumFractionDigits: 0,
       }).format(ttc)
     );
     this.linesValue.set(v);

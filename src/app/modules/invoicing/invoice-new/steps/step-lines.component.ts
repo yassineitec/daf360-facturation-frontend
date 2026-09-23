@@ -991,7 +991,6 @@ export class StepLinesComponent {
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: this.affaireData().currency ?? 'TND',
-      minimumFractionDigits: 0, maximumFractionDigits: 2,
     }).format(v);
   }
 

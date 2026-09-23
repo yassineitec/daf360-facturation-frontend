@@ -645,9 +645,12 @@ export class ApprovalQueueComponent implements OnInit {
     return key ? this.translate.instant(key) : code;
   }
 
+  // No currency is known here — these rows span multiple affaires, each potentially in a
+  // different currency — so this always shows 2 decimals (the common case) rather than
+  // guessing a per-row currency.
   fmtAmt(v: number | null): string {
     if (v === null || v === undefined) return '—';
-    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
   }
 
   fmtDate(d: string | null): string {

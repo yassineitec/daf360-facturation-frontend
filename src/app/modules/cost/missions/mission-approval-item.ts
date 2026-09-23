@@ -1,5 +1,6 @@
 import { BadgeVariant } from '@khalilrebhiitec/daf360';
 import { MissionDto, MissionScope } from './mission-approval.service';
+import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 
 /**
  * The one shape both views of `/finance/cost/missions` render, mirroring `ApprovalItem` on
@@ -89,10 +90,11 @@ export function daysUntil(startIso: string, today = new Date()): number {
 export function missionAmountLabel(mission: MissionDto, locale = 'fr-FR'): string {
   const value = mission.expenses?.totalEstimatedCost;
   if (value === null || value === undefined) return '—';
-  const formatted = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 0, maximumFractionDigits: 3,
-  }).format(value);
   const currency = mission.expenses?.currency;
+  const digits = currencyFractionDigits(currency);
+  const formatted = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: digits, maximumFractionDigits: digits,
+  }).format(value);
   return currency ? `${formatted} ${currency}` : formatted;
 }
 
