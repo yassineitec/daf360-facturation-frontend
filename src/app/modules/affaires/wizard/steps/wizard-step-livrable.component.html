@@ -36,10 +36,15 @@
       <button
         class="disc-btn"
         [class.disc-btn--active]="selectedDisc()?.label === group.label"
+        [disabled]="!group.documentCount"
+        [attr.title]="!group.documentCount ? ('AFFAIRES.wizard.livrable.no_docs_disc_hint' | translate) : null"
         (click)="selectDiscipline(group)">
         <span class="disc-label">{{ group.label }}</span>
         @if (group.montant) {
           <span class="disc-montant">{{ fmtCurrency(group.montant) }}</span>
+        }
+        @if (!group.documentCount) {
+          <span class="disc-empty">{{ 'AFFAIRES.wizard.livrable.no_docs' | translate }}</span>
         }
       </button>
     }
@@ -85,8 +90,13 @@
             @for (wbs of wbsList(); track wbs.id) {
               <button class="wbs-btn"
                 [class.wbs-btn--active]="selectedWbs()?.id === wbs.id"
+                [disabled]="!wbs.documentCount"
+                [attr.title]="!wbs.documentCount ? ('AFFAIRES.wizard.livrable.no_docs_wbs_hint' | translate) : null"
                 (click)="selectWbs(wbs)">
                 {{ wbs.titre }}
+                @if (!wbs.documentCount) {
+                  <span class="wbs-empty">· {{ 'AFFAIRES.wizard.livrable.no_docs' | translate }}</span>
+                }
               </button>
             }
           </div>

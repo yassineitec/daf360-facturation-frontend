@@ -18,6 +18,7 @@ interface DiscGroup {
   label: string;
   ids: string[];
   montant: number;
+  documentCount: number;
 }
 
 @Component({
@@ -54,8 +55,11 @@ export class WizardStepLivrableComponent implements OnInit {
       if (existing) {
         existing.ids.push(d.id);
         existing.montant += d.montant ?? 0;
+        existing.documentCount += d.documentCount ?? 0;
       } else {
-        map.set(baseName, { label: baseName, ids: [d.id], montant: d.montant ?? 0 });
+        map.set(baseName, {
+          label: baseName, ids: [d.id], montant: d.montant ?? 0, documentCount: d.documentCount ?? 0,
+        });
       }
     }
     return Array.from(map.values());
@@ -124,7 +128,7 @@ export class WizardStepLivrableComponent implements OnInit {
   }
 
   selectDiscipline(group: DiscGroup): void {
-    if (this.locked) return;
+    if (this.locked || !group.documentCount) return;
     this.selectedDisc.set(group);
     this.selectedWbs.set(null);
     this.documents.set([]);
@@ -171,7 +175,7 @@ export class WizardStepLivrableComponent implements OnInit {
   // ── WBS ───────────────────────────────────────────────────────────────────
 
   selectWbs(wbs: WbsExtDto): void {
-    if (this.locked) return;
+    if (this.locked || !wbs.documentCount) return;
     this.selectedWbs.set(wbs);
     this.isLoadingDocs.set(true);
     this.svc.getDocumentsByWbs(this.draft.id!, wbs.id).subscribe({
