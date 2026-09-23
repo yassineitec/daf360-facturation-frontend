@@ -20,6 +20,10 @@ $slate5: #64748B;
   font-size: 12px;
   color: $slate5;
   margin-top: 2px;
+  // Un intitulé sans espaces (un seul "mot" très long) ne peut pas être coupé par le
+  // retour à la ligne par défaut, qui ne coupe qu'aux espaces — il déborde de la colonne
+  // au lieu de s'enrouler. break-word autorise la coupure à l'intérieur du mot si besoin.
+  overflow-wrap: break-word;
 }
 
 .cell-bold   { font-weight: 700; }

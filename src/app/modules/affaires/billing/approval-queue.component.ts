@@ -22,7 +22,11 @@ import {
 import { InvoiceService } from '../../invoicing/invoice.service';
 import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 type ActiveTab = 'df' | 'history';
-type DfSubTab  = 'taux' | 'lines' | 'livrable' | 'creditNotes';
+// Three tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE) instead of by entity
+// type — each tab stacks the sections relevant to its mode (see the .html), e.g.
+// 'forfaitaire' shows both taux d'avancement (always mode FORFAIT, see
+// ProgressBillingService.MODE) and FORFAIT billing lines.
+type DfSubTab  = 'forfaitaire' | 'regie' | 'livrable';
 
 const LINE_STATUT_VARIANT: Record<string, BadgeVariant> = {
   EN_ATTENTE_DF: 'warning',
@@ -59,24 +63,32 @@ export class ApprovalQueueComponent implements OnInit {
   // only the very first fetch shows the daf-page skeleton, tab switches never do.
   firstLoad     = signal(true);
   activeTab     = signal<ActiveTab>('df');
-  activeDfSubTab = signal<DfSubTab>('taux');
+  activeDfSubTab = signal<DfSubTab>('forfaitaire');
   dfLoading     = signal(false);
   histLoading   = signal(false);
 
-  // ── Per-sub-tab search + filter state — each of the 4 "df" tables owns its own
-  // text/filter, kept independent of the others (switching tabs must not bleed one
-  // table's search into another's rows). A single shared daf-search-toolbar instance
-  // isn't reused across tabs (see the .html): daf-filter seeds its internal state
-  // from `initialValues` only once per component instance, so swapping `filterFields`
-  // under a live instance wouldn't reset stale field keys from the previous tab. ──
+  // ── Per-section search + filter state — every stacked table (taux, lines × mode,
+  // livrable batches, credit notes × mode) owns its own text/filter, kept independent
+  // of the others (switching tabs, or scrolling past another section, must not bleed
+  // one table's search into another's rows). A single shared daf-search-toolbar
+  // instance isn't reused across sections (see the .html): daf-filter seeds its
+  // internal state from `initialValues` only once per component instance, so swapping
+  // `filterFields` under a live instance wouldn't reset stale field keys from the
+  // previous section. ──
   tauxSearch            = signal('');
   tauxFilter            = signal<FilterResult>({});
-  lineSearch            = signal('');
-  lineFilter            = signal<FilterResult>({});
+  lineForfaitSearch     = signal('');
+  lineForfaitFilter     = signal<FilterResult>({});
+  lineRegieSearch       = signal('');
+  lineRegieFilter       = signal<FilterResult>({});
   livrableBatchSearch   = signal('');
   livrableBatchFilter   = signal<FilterResult>({});
-  creditNoteSearch      = signal('');
-  creditNoteFilter      = signal<FilterResult>({});
+  creditNoteForfaitSearch  = signal('');
+  creditNoteForfaitFilter  = signal<FilterResult>({});
+  creditNoteRegieSearch    = signal('');
+  creditNoteRegieFilter    = signal<FilterResult>({});
+  creditNoteLivrableSearch = signal('');
+  creditNoteLivrableFilter = signal<FilterResult>({});
 
   pendingTaux   = signal<PendingTauxDto[]>([]);
   pendingJalons = signal<PendingJalonDto[]>([]);
@@ -112,28 +124,51 @@ export class ApprovalQueueComponent implements OnInit {
     ];
   });
 
-  // ── "df" sub-strip (daf-tabs, variant="pill") — the 4 pending-item tables used to sit
-  // stacked one under the other; each now lives in its own panel, same pattern as
-  // CostConfigComponent's nested section/list-type strips. ──
+  // ── "df" sub-strip (daf-tabs, variant="pill") — now grouped by billing mode
+  // (FORFAIT/REGIE/LIVRABLE) instead of by entity type: each tab stacks every section
+  // that belongs to its mode (see the .html). ──
   readonly dfSubTabItems = computed<TabItem[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { id: 'taux',        label: t('AFFAIRES.billing.approval.tab_taux'),             icon: 'percent',      count: this.pendingTaux().length || null },
-      { id: 'lines',       label: t('AFFAIRES.billing.approval.tab_lines'),             icon: 'receipt_long', count: this.pendingLines().length || null },
-      { id: 'livrable',    label: t('AFFAIRES.billing.approval.tab_livrable_batches'),  icon: 'folder_copy',  count: this.pendingLivrableBatches().length || null },
-      { id: 'creditNotes', label: t('AFFAIRES.billing.approval.tab_credit_notes'),      icon: 'request_quote', count: this.pendingCreditNotes().length || null },
+      { id: 'forfaitaire', label: t('AFFAIRES.billing.approval.tab_forfaitaire'),      count: this.forfaitaireCount() || null },
+      { id: 'regie',       label: t('AFFAIRES.billing.approval.tab_regie'),            count: this.regieCount() || null },
+      { id: 'livrable',    label: t('AFFAIRES.billing.approval.tab_livrable_batches'), count: this.livrableCount() || null },
     ];
   });
+
+  // ── Per-mode source lists — split from the flat pendingLines()/pendingCreditNotes()
+  // fetched by loadDF(). Taux d'avancement is always mode FORFAIT (see
+  // ProgressBillingService.MODE) and livrable batches are always mode LIVRABLE, so
+  // neither needs splitting. ──
+  readonly linesForfait        = computed(() => this.pendingLines().filter(l => l.mode === 'FORFAIT'));
+  readonly linesRegie          = computed(() => this.pendingLines().filter(l => l.mode === 'REGIE'));
+  readonly creditNotesForfait  = computed(() => this.pendingCreditNotes().filter(c => c.billingMode === 'FORFAIT'));
+  readonly creditNotesRegie    = computed(() => this.pendingCreditNotes().filter(c => c.billingMode === 'REGIE'));
+  readonly creditNotesLivrable = computed(() => this.pendingCreditNotes().filter(c => c.billingMode === 'LIVRABLE'));
+
+  readonly forfaitaireCount = computed(() =>
+    this.pendingTaux().length + this.linesForfait().length + this.creditNotesForfait().length
+  );
+  readonly regieCount = computed(() => this.linesRegie().length + this.creditNotesRegie().length);
+  readonly livrableCount = computed(() =>
+    this.pendingLivrableBatches().length + this.creditNotesLivrable().length
+  );
 
   // ── daf-data-table: Taux d'avancement (RF) ──────────────────────────────────
   readonly tauxColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'affaire', label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom' },
-      { key: 'taux',    label: this.translate.instant('AFFAIRES.billing.approval.col_taux'),    type: 'custom', align: 'right' },
-      { key: 'valeur',  label: this.translate.instant('AFFAIRES.billing.approval.col_valeur'),  type: 'custom', align: 'right' },
-      { key: 'soumis',  label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),  type: 'custom' },
+      { key: 'affaire', label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom', sortable: true,
+        sortAccessor: row => row['affaireRef'] },
+      { key: 'taux',    label: this.translate.instant('AFFAIRES.billing.approval.col_taux'),    type: 'custom', align: 'right', sortable: true },
+      { key: 'valeur',  label: this.translate.instant('AFFAIRES.billing.approval.col_valeur'),  type: 'custom', align: 'right', sortable: true,
+        // La cellule affiche un montant déjà formaté (fmtAmt) — trier dessus comparerait
+        // des chaînes ("1 000" avant "200"), pas des nombres. sortAccessor retombe sur la
+        // valeur brute portée par `_raw`.
+        sortAccessor: row => row['_raw'].montantIncremental },
+      { key: 'soumis',  label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),  type: 'custom', sortable: true,
+        sortAccessor: row => row['_raw'].submittedAt },
     ];
   });
 
@@ -209,17 +244,19 @@ export class ApprovalQueueComponent implements OnInit {
   readonly lineColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),    type: 'custom' },
-      { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'),  type: 'custom' },
-      { key: 'periode',   label: this.translate.instant('AFFAIRES.billing.approval.col_periode'),    type: 'custom' },
-      { key: 'montantHt', label: this.translate.instant('AFFAIRES.billing.approval.col_montant_ht'), type: 'custom', align: 'right' },
-      { key: 'mode',      label: this.translate.instant('AFFAIRES.billing.approval.col_mode'),        type: 'custom' },
-      { key: 'statut',    label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),      type: 'custom' },
+      { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),    type: 'custom', sortable: true,
+        sortAccessor: row => row['affaireRef'] },
+      { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'),  type: 'custom', sortable: true },
+      { key: 'periode',   label: this.translate.instant('AFFAIRES.billing.approval.col_periode'),    type: 'custom', sortable: true },
+      { key: 'montantHt', label: this.translate.instant('AFFAIRES.billing.approval.col_montant_ht'), type: 'custom', align: 'right', sortable: true,
+        sortAccessor: row => row['_raw'].montantHt },
+      { key: 'mode',      label: this.translate.instant('AFFAIRES.billing.approval.col_mode'),        type: 'custom', sortable: true },
+      { key: 'statut',    label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),      type: 'custom', sortable: true },
     ];
   });
 
-  readonly lineRows = computed(() =>
-    this.pendingLines().map(line => ({
+  private mapLineRows(lines: PendingBillingLineDto[]) {
+    return lines.map(line => ({
       id:              line.id,
       affaireId:       line.affaireId,
       affaireRef:      line.affaireRef,
@@ -230,34 +267,36 @@ export class ApprovalQueueComponent implements OnInit {
       mode:            line.mode,
       statut:          line.statut,
       _raw:            line,
-    }))
-  );
+    }));
+  }
 
-  // Options derived from the pending rows themselves rather than hardcoded — `mode` is
-  // a free-form string server-side and `statut` is expected to sit at EN_ATTENTE_DF for
-  // everything in this list, so guessing a fixed enum here would drift from reality.
-  readonly lineFilterFields = computed<FilterField[]>(() => {
+  readonly lineRowsForfait = computed(() => this.mapLineRows(this.linesForfait()));
+  readonly lineRowsRegie   = computed(() => this.mapLineRows(this.linesRegie()));
+
+  // Options derived from the pending rows themselves rather than hardcoded — `statut`
+  // is expected to sit at EN_ATTENTE_DF for everything in this list, so guessing a
+  // fixed enum here would drift from reality. No `mode` filter here: each section is
+  // already scoped to one mode.
+  private statutFilterFields(lines: PendingBillingLineDto[]): FilterField[] {
+    const statuts = [...new Set(lines.map(l => l.statut).filter(Boolean))];
+    return [{
+      name:    'statut',
+      label:   this.translate.instant('AFFAIRES.billing.approval.filter_statut'),
+      type:    'select',
+      options: statuts.map(s => ({ value: s, label: this.lineStatusLabel(s) })),
+    }];
+  }
+
+  readonly lineFilterFieldsForfait = computed<FilterField[]>(() => {
     this.translate.currentLang();
-    const modes   = [...new Set(this.pendingLines().map(l => l.mode).filter(Boolean))];
-    const statuts = [...new Set(this.pendingLines().map(l => l.statut).filter(Boolean))];
-    return [
-      {
-        name:    'mode',
-        label:   this.translate.instant('AFFAIRES.billing.approval.filter_mode'),
-        type:    'select',
-        options: modes.map(m => ({ value: m, label: m })),
-      },
-      {
-        name:    'statut',
-        label:   this.translate.instant('AFFAIRES.billing.approval.filter_statut'),
-        type:    'select',
-        options: statuts.map(s => ({ value: s, label: this.lineStatusLabel(s) })),
-      },
-    ];
+    return this.statutFilterFields(this.linesForfait());
+  });
+  readonly lineFilterFieldsRegie = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    return this.statutFilterFields(this.linesRegie());
   });
 
-  readonly lineFilterConfig = computed<SearchToolbarFilterConfig>(() => {
-    this.translate.currentLang();
+  private lineFilterConfigFor(filter: FilterResult): SearchToolbarFilterConfig {
     const t = (key: string) => this.translate.instant(key);
     return {
       title:         t('AFFAIRES.billing.approval.filter_title'),
@@ -265,51 +304,86 @@ export class ApprovalQueueComponent implements OnInit {
       cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
       resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
       align:         'right',
-      initialValues: this.lineFilter(),
+      initialValues: filter,
     };
+  }
+
+  readonly lineFilterConfigForfait = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    return this.lineFilterConfigFor(this.lineForfaitFilter());
+  });
+  readonly lineFilterConfigRegie = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    return this.lineFilterConfigFor(this.lineRegieFilter());
   });
 
-  onLineSearch(value: string): void {
-    this.lineSearch.set(value);
-    this.linePage.set(0);
+  onLineForfaitSearch(value: string): void {
+    this.lineForfaitSearch.set(value);
+    this.lineForfaitPage.set(0);
   }
 
-  onLineFilterApply(result: FilterResult): void {
-    this.lineFilter.set(result);
-    this.linePage.set(0);
+  onLineForfaitFilterApply(result: FilterResult): void {
+    this.lineForfaitFilter.set(result);
+    this.lineForfaitPage.set(0);
   }
 
-  readonly filteredLineRows = computed(() => {
-    const q      = this.lineSearch().trim().toLowerCase();
-    const filter = this.lineFilter();
-    const mode   = filter['mode'] as string | null;
+  onLineRegieSearch(value: string): void {
+    this.lineRegieSearch.set(value);
+    this.lineRegiePage.set(0);
+  }
+
+  onLineRegieFilterApply(result: FilterResult): void {
+    this.lineRegieFilter.set(result);
+    this.lineRegiePage.set(0);
+  }
+
+  private filterLineRows(
+    rows: ReturnType<typeof this.mapLineRows>,
+    search: string,
+    filter: FilterResult,
+  ) {
+    const q      = search.trim().toLowerCase();
     const statut = filter['statut'] as string | null;
-    return this.lineRows().filter(r => {
+    return rows.filter(r => {
       if (q && !`${r.affaireRef} ${r.affaireIntitule} ${r.reference}`.toLowerCase().includes(q)) return false;
-      if (mode && r._raw.mode !== mode) return false;
       if (statut && r._raw.statut !== statut) return false;
       return true;
     });
-  });
+  }
 
-  linePage     = signal(0);
-  linePageSize = signal(10);
-  readonly lineTotalPages = computed(() => Math.ceil(this.filteredLineRows().length / this.linePageSize()));
-  readonly pagedLineRows = computed(() => {
-    const rows = this.filteredLineRows();
-    const size = this.linePageSize();
-    const page = Math.min(this.linePage(), Math.max(0, Math.ceil(rows.length / size) - 1));
-    return rows.slice(page * size, page * size + size);
-  });
+  readonly filteredLineRowsForfait = computed(() =>
+    this.filterLineRows(this.lineRowsForfait(), this.lineForfaitSearch(), this.lineForfaitFilter()));
+  readonly filteredLineRowsRegie = computed(() =>
+    this.filterLineRows(this.lineRowsRegie(), this.lineRegieSearch(), this.lineRegieFilter()));
+
+  private pageRows<T>(rows: T[], page: number, size: number): T[] {
+    const p = Math.min(page, Math.max(0, Math.ceil(rows.length / size) - 1));
+    return rows.slice(p * size, p * size + size);
+  }
+
+  lineForfaitPage     = signal(0);
+  lineForfaitPageSize = signal(10);
+  readonly lineForfaitTotalPages = computed(() => Math.ceil(this.filteredLineRowsForfait().length / this.lineForfaitPageSize()));
+  readonly pagedLineRowsForfait = computed(() =>
+    this.pageRows(this.filteredLineRowsForfait(), this.lineForfaitPage(), this.lineForfaitPageSize()));
+
+  lineRegiePage     = signal(0);
+  lineRegiePageSize = signal(10);
+  readonly lineRegieTotalPages = computed(() => Math.ceil(this.filteredLineRowsRegie().length / this.lineRegiePageSize()));
+  readonly pagedLineRowsRegie = computed(() =>
+    this.pageRows(this.filteredLineRowsRegie(), this.lineRegiePage(), this.lineRegiePageSize()));
 
   // ── daf-data-table: Livrable batches (DF) ────────────────────────────────────
   readonly livrableBatchColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'affaire',     label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom' },
-      { key: 'documents',   label: this.translate.instant('AFFAIRES.billing.approval.col_documents'), type: 'custom', align: 'right' },
-      { key: 'montant',     label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
-      { key: 'billingDate', label: this.translate.instant('AFFAIRES.billing.approval.col_date'), type: 'custom' },
+      { key: 'affaire',     label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom', sortable: true,
+        sortAccessor: row => row['affaireRef'] },
+      { key: 'documents',   label: this.translate.instant('AFFAIRES.billing.approval.col_documents'), type: 'custom', align: 'right', sortable: true },
+      { key: 'montant',     label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right', sortable: true,
+        sortAccessor: row => row['_raw'].combinedMontant },
+      { key: 'billingDate', label: this.translate.instant('AFFAIRES.billing.approval.col_date'), type: 'custom', sortable: true,
+        sortAccessor: row => row['_raw'].billingDate },
     ];
   });
 
@@ -385,16 +459,19 @@ export class ApprovalQueueComponent implements OnInit {
   readonly creditNoteColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),  type: 'custom' },
-      { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'), type: 'custom' },
-      { key: 'montant',   label: this.translate.instant('AFFAIRES.billing.approval.col_montant'),  type: 'custom', align: 'right' },
-      { key: 'motif',     label: this.translate.instant('AFFAIRES.billing.approval.col_motif'),    type: 'custom' },
-      { key: 'soumis',    label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),   type: 'custom' },
+      { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),  type: 'custom', sortable: true,
+        sortAccessor: row => row['affaireRef'] },
+      { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'), type: 'custom', sortable: true },
+      { key: 'montant',   label: this.translate.instant('AFFAIRES.billing.approval.col_montant'),  type: 'custom', align: 'right', sortable: true,
+        sortAccessor: row => Math.abs(row['_raw'].montantTtc) },
+      { key: 'motif',     label: this.translate.instant('AFFAIRES.billing.approval.col_motif'),    type: 'custom', sortable: true },
+      { key: 'soumis',    label: this.translate.instant('AFFAIRES.billing.approval.col_soumis'),   type: 'custom', sortable: true,
+        sortAccessor: row => row['_raw'].submittedAt },
     ];
   });
 
-  readonly creditNoteRows = computed(() =>
-    this.pendingCreditNotes().map(cn => ({
+  private mapCreditNoteRows(notes: PendingCreditNoteDto[]) {
+    return notes.map(cn => ({
       id:              cn.id,
       affaireId:       cn.affaireId,
       affaireRef:      cn.affaireRef,
@@ -406,8 +483,12 @@ export class ApprovalQueueComponent implements OnInit {
       motif:           this.creditNoteReasonLabel(cn.creditNoteReason),
       soumis:          this.fmtDate(cn.submittedAt),
       _raw:            cn,
-    }))
-  );
+    }));
+  }
+
+  readonly creditNoteRowsForfait  = computed(() => this.mapCreditNoteRows(this.creditNotesForfait()));
+  readonly creditNoteRowsRegie    = computed(() => this.mapCreditNoteRows(this.creditNotesRegie()));
+  readonly creditNoteRowsLivrable = computed(() => this.mapCreditNoteRows(this.creditNotesLivrable()));
 
   readonly creditNoteFilterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
@@ -421,8 +502,7 @@ export class ApprovalQueueComponent implements OnInit {
     }];
   });
 
-  readonly creditNoteFilterConfig = computed<SearchToolbarFilterConfig>(() => {
-    this.translate.currentLang();
+  private creditNoteFilterConfigFor(filter: FilterResult): SearchToolbarFilterConfig {
     const t = (key: string) => this.translate.instant(key);
     return {
       title:         t('AFFAIRES.billing.approval.filter_title'),
@@ -430,39 +510,82 @@ export class ApprovalQueueComponent implements OnInit {
       cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
       resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
       align:         'right',
-      initialValues: this.creditNoteFilter(),
+      initialValues: filter,
     };
-  });
-
-  onCreditNoteSearch(value: string): void {
-    this.creditNoteSearch.set(value);
-    this.creditNotePage.set(0);
   }
 
-  onCreditNoteFilterApply(result: FilterResult): void {
-    this.creditNoteFilter.set(result);
-    this.creditNotePage.set(0);
+  readonly creditNoteFilterConfigForfait = computed(() => this.creditNoteFilterConfigFor(this.creditNoteForfaitFilter()));
+  readonly creditNoteFilterConfigRegie   = computed(() => this.creditNoteFilterConfigFor(this.creditNoteRegieFilter()));
+  readonly creditNoteFilterConfigLivrable = computed(() => this.creditNoteFilterConfigFor(this.creditNoteLivrableFilter()));
+
+  onCreditNoteForfaitSearch(value: string): void {
+    this.creditNoteForfaitSearch.set(value);
+    this.creditNoteForfaitPage.set(0);
   }
 
-  readonly filteredCreditNoteRows = computed(() => {
-    const q     = this.creditNoteSearch().trim().toLowerCase();
-    const motif = this.creditNoteFilter()['motif'] as string | null;
-    return this.creditNoteRows().filter(r => {
+  onCreditNoteForfaitFilterApply(result: FilterResult): void {
+    this.creditNoteForfaitFilter.set(result);
+    this.creditNoteForfaitPage.set(0);
+  }
+
+  onCreditNoteRegieSearch(value: string): void {
+    this.creditNoteRegieSearch.set(value);
+    this.creditNoteRegiePage.set(0);
+  }
+
+  onCreditNoteRegieFilterApply(result: FilterResult): void {
+    this.creditNoteRegieFilter.set(result);
+    this.creditNoteRegiePage.set(0);
+  }
+
+  onCreditNoteLivrableSearch(value: string): void {
+    this.creditNoteLivrableSearch.set(value);
+    this.creditNoteLivrablePage.set(0);
+  }
+
+  onCreditNoteLivrableFilterApply(result: FilterResult): void {
+    this.creditNoteLivrableFilter.set(result);
+    this.creditNoteLivrablePage.set(0);
+  }
+
+  private filterCreditNoteRows(
+    rows: ReturnType<typeof this.mapCreditNoteRows>,
+    search: string,
+    filter: FilterResult,
+  ) {
+    const q     = search.trim().toLowerCase();
+    const motif = filter['motif'] as string | null;
+    return rows.filter(r => {
       if (q && !`${r.affaireRef} ${r.affaireIntitule} ${r.reference}`.toLowerCase().includes(q)) return false;
       if (motif && r._raw.creditNoteReason !== motif) return false;
       return true;
     });
-  });
+  }
 
-  creditNotePage     = signal(0);
-  creditNotePageSize = signal(10);
-  readonly creditNoteTotalPages = computed(() => Math.ceil(this.filteredCreditNoteRows().length / this.creditNotePageSize()));
-  readonly pagedCreditNoteRows = computed(() => {
-    const rows = this.filteredCreditNoteRows();
-    const size = this.creditNotePageSize();
-    const page = Math.min(this.creditNotePage(), Math.max(0, Math.ceil(rows.length / size) - 1));
-    return rows.slice(page * size, page * size + size);
-  });
+  readonly filteredCreditNoteRowsForfait = computed(() =>
+    this.filterCreditNoteRows(this.creditNoteRowsForfait(), this.creditNoteForfaitSearch(), this.creditNoteForfaitFilter()));
+  readonly filteredCreditNoteRowsRegie = computed(() =>
+    this.filterCreditNoteRows(this.creditNoteRowsRegie(), this.creditNoteRegieSearch(), this.creditNoteRegieFilter()));
+  readonly filteredCreditNoteRowsLivrable = computed(() =>
+    this.filterCreditNoteRows(this.creditNoteRowsLivrable(), this.creditNoteLivrableSearch(), this.creditNoteLivrableFilter()));
+
+  creditNoteForfaitPage     = signal(0);
+  creditNoteForfaitPageSize = signal(10);
+  readonly creditNoteForfaitTotalPages = computed(() => Math.ceil(this.filteredCreditNoteRowsForfait().length / this.creditNoteForfaitPageSize()));
+  readonly pagedCreditNoteRowsForfait = computed(() =>
+    this.pageRows(this.filteredCreditNoteRowsForfait(), this.creditNoteForfaitPage(), this.creditNoteForfaitPageSize()));
+
+  creditNoteRegiePage     = signal(0);
+  creditNoteRegiePageSize = signal(10);
+  readonly creditNoteRegieTotalPages = computed(() => Math.ceil(this.filteredCreditNoteRowsRegie().length / this.creditNoteRegiePageSize()));
+  readonly pagedCreditNoteRowsRegie = computed(() =>
+    this.pageRows(this.filteredCreditNoteRowsRegie(), this.creditNoteRegiePage(), this.creditNoteRegiePageSize()));
+
+  creditNoteLivrablePage     = signal(0);
+  creditNoteLivrablePageSize = signal(10);
+  readonly creditNoteLivrableTotalPages = computed(() => Math.ceil(this.filteredCreditNoteRowsLivrable().length / this.creditNoteLivrablePageSize()));
+  readonly pagedCreditNoteRowsLivrable = computed(() =>
+    this.pageRows(this.filteredCreditNoteRowsLivrable(), this.creditNoteLivrablePage(), this.creditNoteLivrablePageSize()));
 
   // ── daf-data-table: Audit history ────────────────────────────────────────────
   readonly historyColumns = computed<TableColumn[]>(() => {
@@ -525,11 +648,25 @@ export class ApprovalQueueComponent implements OnInit {
     };
   }
 
+  // Colonnes triables/déplaçables/redimensionnables — même trio de propriétés sur les 4
+  // configs ci-dessous, factorisé ici pour ne pas le répéter à chaque fois.
+  private tableExtras(): Pick<TableConfig, 'resizableColumns' | 'resizableRows' | 'columnPicker' | 'columnPickerLabel' | 'resetLabel'> {
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      resizableColumns:  true,
+      resizableRows:     true,
+      columnPicker:      true,
+      columnPickerLabel: t('AFFAIRES.billing.approval.table_columns'),
+      resetLabel:        t('AFFAIRES.billing.approval.table_reset'),
+    };
+  }
+
   readonly tauxTableConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
     return {
       hoverable: true,
       showHeader: false,
+      ...this.tableExtras(),
       actions: [
         this.validateAction(row => this.doValidateTaux(row['id'])),
         this.refuseAction(row => this.openRfRefuseModal(row['id'])),
@@ -542,6 +679,7 @@ export class ApprovalQueueComponent implements OnInit {
     return {
       hoverable: true,
       showHeader: false,
+      ...this.tableExtras(),
       actions: [
         this.validateAction(row => this.doValidateDF(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'])),
@@ -554,6 +692,7 @@ export class ApprovalQueueComponent implements OnInit {
     return {
       hoverable: true,
       showHeader: false,
+      ...this.tableExtras(),
       actions: [
         this.validateAction(row => this.doValidateLivrableBatch(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'], 'livrableBatch')),
@@ -566,6 +705,7 @@ export class ApprovalQueueComponent implements OnInit {
     return {
       hoverable: true,
       showHeader: false,
+      ...this.tableExtras(),
       actions: [
         this.validateAction(row => this.doValidateCreditNote(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'], 'creditNote')),

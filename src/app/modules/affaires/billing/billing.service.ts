@@ -168,6 +168,9 @@ export interface PendingCreditNoteDto {
   creditNoteReason:     string | null;
   creditNoteReasonFree: string | null;
   submittedAt:          string;
+  /** Copied from the original invoice at creation — FORFAIT/REGIE/LIVRABLE, routes this
+   * credit note into the matching approval-queue tab. */
+  billingMode:          string | null;
 }
 
 // ── Service ──────────────────────────────────────────────────────────────────
