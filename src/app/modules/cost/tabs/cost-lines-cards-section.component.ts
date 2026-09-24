@@ -56,7 +56,7 @@ export class CostLinesCardsSectionComponent {
   private readonly currency  = inject(DisplayCurrencyPipe);
 
   lines         = input.required<CostLineDto[]>();
-  categoryFor   = input.required<(id: number | null) => string>();
+  categoryFor   = input.required<(line: CostLineDto) => string>();
   loading       = input(false);
   emptyMessage  = input('');
   skeletonCount = input(6);
@@ -85,7 +85,7 @@ export class CostLinesCardsSectionComponent {
           image: { initials: initials(line.label) },
           metadata: {
             title:       line.label ?? '—',
-            subtitle:    [line.reference, cat(line.categoryId)].filter(Boolean).join(' · '),
+            subtitle:    [line.reference, line.costCategoryLabel ? cat(line) : null].filter(Boolean).join(' · '),
             status:      STATUS_ENTITY_STATUS[line.status] ?? 'pending',
             statusLabel: t(statusKey(line.status)),
           },

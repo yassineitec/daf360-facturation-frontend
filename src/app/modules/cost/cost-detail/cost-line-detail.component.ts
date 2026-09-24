@@ -21,7 +21,7 @@ import { SupplierService } from '../../suppliers/supplier.service';
 import type { UserRefDto } from '../../affaires/affaire.model';
 import type { SupplierDto } from '../../suppliers/supplier.model';
 import {
-  CostCategoryDto, CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto, SupplierLedgerRowDto,
+  CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto, SupplierLedgerRowDto, costCategoryDisplay,
 } from '../cost.model';
 import {
   APPROVAL_BADGE_VARIANT, DECISION_BADGE_VARIANT, DECISION_ICON, STATUS_BADGE_VARIANT,
@@ -123,7 +123,6 @@ export class CostLineDetailComponent implements OnInit {
   costLine   = signal<CostLineDto | null>(null);
   ledger     = signal<SupplierLedgerDto | null>(null);
   allUsers   = signal<UserRefDto[]>([]);
-  categories = signal<CostCategoryDto[]>([]);
 
   /**
    * Tab 2's ledger table has 12 columns, cramped into the 70%-wide right column — this
@@ -167,16 +166,11 @@ export class CostLineDetailComponent implements OnInit {
 
   // ═══ Résolution catégorie / approbateur ═══════════════════════════════════
 
-  /** Même mécanisme que cost-lines.component.ts — ne pas en inventer un second.
-   *  Arrow-function property (not a method): 'supplier'/'unassigned' modes pass this
-   *  as a bound [categoryFor] input to the reused CostLinesTableSectionComponent, and a
-   *  plain method reference would lose its `this` binding when called from there. */
-  readonly categoryMap = computed(() => new Map(this.categories().map(c => [c.id, c.labelFr])));
-
-  readonly categoryFor = (id: number | null): string => {
-    if (id == null) return '—';
-    return this.categoryMap().get(id) ?? this.translate.instant('COST.LINES.CAT_FALLBACK', { id });
-  };
+  /** Même mécanisme que cost-lines.component.ts — ne pas en inventer un second : le
+   *  libellé voyage sur la ligne (costCategoryLabel, résolu côté serveur depuis la source
+   *  unique des catégories). Passée en [categoryFor] au CostLinesTableSectionComponent
+   *  réutilisé par les modes 'supplier'/'unassigned'. */
+  readonly categoryFor = (line: CostLineDto): string => costCategoryDisplay(line);
 
   /** Même mécanisme que affaire-ressources-tab.component.ts — ne pas en inventer un second. */
   approverName(id: number | null): string {
@@ -266,7 +260,7 @@ export class CostLineDetailComponent implements OnInit {
     return [
       { label: 'COST.DETAIL.INFO.TRANSACTION_DATE', value: formatDate(cl.transactionDate) },
       { label: 'COST.DETAIL.INFO.CURRENCY',         value: cl.currency ?? '—' },
-      { label: 'COST.DETAIL.INFO.CATEGORY',         value: this.categoryFor(cl.categoryId) },
+      { label: 'COST.DETAIL.INFO.CATEGORY',         value: this.categoryFor(cl) },
       {
         label: 'COST.DETAIL.INFO.SUPPLIER',
         value: this.supplierName() ?? this.translate.instant('COST.DETAIL.INFO.NO_SUPPLIER'),
@@ -579,7 +573,6 @@ export class CostLineDetailComponent implements OnInit {
         this.ledger.set(ledger);
         this.allUsers.set(users);
         this.loading.set(false);
-        this.svc.getCategories(costLine.paysId).subscribe(cats => this.categories.set(cats));
       },
       error: () => {
         this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR'));
@@ -623,7 +616,6 @@ export class CostLineDetailComponent implements OnInit {
           ?? null,
         );
         this.loading.set(false);
-        this.svc.getCategories(paysId).subscribe(cats => this.categories.set(cats));
       },
       error: () => {
         this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR'));

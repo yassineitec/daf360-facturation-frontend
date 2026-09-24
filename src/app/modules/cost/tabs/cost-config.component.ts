@@ -9,10 +9,8 @@ import { FactListService } from '../../../core/fact-list.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { CostImportPanelComponent } from '../import/cost-import-panel.component';
 import {
-  CostCategoryDto, CostApprovalThresholdDto, ListValueDto, ListTypeDto,
-  UpdateCostCategoryLabelRequest, CreateCostCategoryRequest, CreateCostApprovalThresholdRequest,
+  CostApprovalThresholdDto, ListValueDto, ListTypeDto, CreateCostApprovalThresholdRequest,
 } from '../cost.model';
-import { forkJoin } from 'rxjs';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
   SelectComponent, SelectOption, TabsComponent, TabItem, ButtonComponent,
@@ -21,7 +19,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 
 type ListTab = 'CURRENCY' | 'COST_TYPE' | 'PAYMENT_METHOD' | 'RECURRENCE_FREQUENCY';
-type ConfigSection = 'thresholds' | 'categories' | 'lists';
+type ConfigSection = 'thresholds' | 'lists';
 
 @Component({
   selector: 'app-cost-config',
@@ -67,9 +65,7 @@ export class CostConfigComponent {
       const pid = this.paysId();
       if (!pid) return;
       this.editThreshold.set({});
-      this.editingCategoryId.set(null);
       this.showAddThreshold.set(false);
-      this.showAddCategory.set(false);
       this.showAddValue.set(false);
       this.loadAll();
     });
@@ -94,15 +90,9 @@ export class CostConfigComponent {
     { value: 'L4', label: 'L4' },
   ];
 
-  // ── Categories ────────────────────────────────────────────────────────────
-  categories         = signal<CostCategoryDto[]>([]);
-  editingCategoryId  = signal<number | null>(null);
-  isSavingCategory   = signal(false);
-  categoryEditForm   = signal<UpdateCostCategoryLabelRequest>({});
-  showAddCategory    = signal(false);
-  isCreatingCategory = signal(false);
-  createCatError     = signal<string | null>(null);
-  newCat = { code: '', labelFr: '', labelEn: '', categoryNumber: null as number | null, isCapex: false, isDirect: false, isOverhead: false };
+  // Categories are not managed here any more: V84 made the COST_CATEGORY /
+  // COST_SUB_CATEGORY lists (Admin → Listes) the single source, and retired the legacy
+  // cost_categories table this section used to edit.
 
   // ── List management ───────────────────────────────────────────────────────
   activeListTab = signal<ListTab>('CURRENCY');
@@ -136,8 +126,8 @@ export class CostConfigComponent {
   serverError = signal<string | null>(null);
 
   // ── Section strip (daf-tabs) ─────────────────────────────────────────────────
-  // Seuils / Catégories / Listes vivaient empilés en trois <section> l'un sous l'autre ;
-  // `daf-tabs` les bascule en panneaux, un seul visible à la fois.
+  // Seuils / Listes vivaient empilés en <section> l'un sous l'autre ; `daf-tabs` les
+  // bascule en panneaux, un seul visible à la fois.
   activeConfigSection = signal<ConfigSection>('thresholds');
 
   readonly configSectionTabs = computed<TabItem[]>(() => {
@@ -145,7 +135,6 @@ export class CostConfigComponent {
     const t = (key: string) => this.translate.instant(key);
     return [
       { id: 'thresholds', label: t('COST.CONFIG.THRESHOLDS_TITLE'),   icon: 'price_check' },
-      { id: 'categories', label: t('COST.CONFIG.CATEGORIES_TITLE'),   icon: 'category'    },
       { id: 'lists',      label: t('COST.CONFIG.LIST_VALUES_TITLE'),  icon: 'checklist'   },
     ];
   });
@@ -233,89 +222,6 @@ export class CostConfigComponent {
     return e.minAmountEur !== undefined || e.approverRoleCode !== undefined;
   }
 
-  readonly categoryColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    return [
-      { key: 'categoryNumber',    label: this.translate.instant('COST.CONFIG.CAT_NUM'),      type: 'custom' },
-      { key: 'code',              label: this.translate.instant('COST.CONFIG.CAT_CODE'),     type: 'custom' },
-      { key: 'labelFr',           label: this.translate.instant('COST.CONFIG.CAT_LABEL_FR'), type: 'custom' },
-      { key: 'labelEn',           label: this.translate.instant('COST.CONFIG.CAT_LABEL_EN'), type: 'custom' },
-      { key: 'source',            label: this.translate.instant('COST.CONFIG.CAT_SOURCE'),   type: 'custom' },
-      { key: 'isCapex',           label: this.translate.instant('COST.CONFIG.CAT_CAPEX'),    type: 'custom', align: 'center' },
-      { key: 'isDirect',          label: this.translate.instant('COST.CONFIG.CAT_DIRECT'),   type: 'custom', align: 'center' },
-      { key: 'isStrictScrutiny',  label: this.translate.instant('COST.CONFIG.CAT_SCRUTINY'), type: 'custom', align: 'center' },
-    ];
-  });
-
-  readonly categoryTableConfig = computed<TableConfig>(() => {
-    const t = (key: string) => this.translate.instant(key);
-    return {
-      hoverable: true,
-      emptyMessage: t('COST.CONFIG.CATEGORY_EMPTY'),
-      actions: [
-        {
-          id: 'save-new', icon: 'add', tooltip: t('COST.CONFIG.ADD'),
-          hidden: row => !row['_isNew'],
-          disabled: () => this.isCreatingCategory(),
-          onClick: () => this.saveNewCategory(),
-        },
-        {
-          id: 'cancel-new', icon: 'close', tooltip: t('COST.CONFIG.CANCEL'),
-          hidden: row => !row['_isNew'],
-          onClick: () => this.showAddCategory.set(false),
-        },
-        {
-          id: 'save-edit', icon: 'check', tooltip: t('COST.CONFIG.SAVE'),
-          hidden: row => row['_isNew'] || this.editingCategoryId() !== row['id'],
-          disabled: () => this.isSavingCategory(),
-          onClick: row => this.saveCategoryLabel(row['_raw']),
-        },
-        {
-          id: 'cancel-edit', icon: 'close', tooltip: t('COST.CONFIG.CANCEL'),
-          hidden: row => row['_isNew'] || this.editingCategoryId() !== row['id'],
-          onClick: () => this.cancelCategoryEdit(),
-        },
-        {
-          id: 'edit', icon: 'edit', tooltip: t('COST.CONFIG.EDIT_LABEL'),
-          hidden: row => row['_isNew'] || this.editingCategoryId() === row['id'],
-          onClick: row => this.startEditCategory(row['_raw']),
-        },
-        {
-          id: 'delete', icon: 'delete', tooltip: t('COST.CONFIG.DEACTIVATE'), variant: 'danger',
-          hidden: row => row['_isNew'] || this.editingCategoryId() === row['id'],
-          onClick: row => this.deleteCategory(row['id']),
-        },
-      ],
-    };
-  });
-
-  readonly categoryRows = computed(() => {
-    const rows = this.categories().map(cat => ({
-      id:              cat.id,
-      categoryNumber:  cat.categoryNumber,
-      code:            cat.code,
-      labelFr:         cat.labelFr,
-      labelEn:         cat.labelEn,
-      descriptionFr:   cat.descriptionFr,
-      source:          cat.sourceType,
-      autoPushModule:  cat.autoPushModule,
-      isCapex:         cat.isCapex,
-      isDirect:        cat.isDirect,
-      isStrictScrutiny: cat.isStrictScrutiny,
-      _isNew:          false,
-      _raw:            cat,
-    }));
-    if (this.showAddCategory()) {
-      rows.push({
-        id: '__new-category__' as unknown as number, categoryNumber: null as unknown as number,
-        code: '', labelFr: '', labelEn: '', descriptionFr: null, source: 'MANUAL', autoPushModule: null,
-        isCapex: false, isDirect: false, isStrictScrutiny: false, _isNew: true,
-        _raw: null as unknown as CostCategoryDto,
-      });
-    }
-    return rows;
-  });
-
   readonly listValueColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
@@ -379,13 +285,9 @@ export class CostConfigComponent {
     if (!pid) return;
     this.isLoading.set(true);
     this.serverError.set(null);
-    forkJoin([
-      this.svc.getThresholds(pid),
-      this.svc.getCategories(pid),
-    ]).subscribe({
-      next: ([thresholds, categories]) => {
+    this.svc.getThresholds(pid).subscribe({
+      next: thresholds => {
         this.thresholds.set(thresholds);
-        this.categories.set(categories);
         this.isLoading.set(false);
       },
       error: err => {
@@ -471,86 +373,6 @@ export class CostConfigComponent {
     this.svc.deactivateThreshold(id).subscribe({
       next: () => this.thresholds.update(list => list.filter(t => t.id !== id)),
       error: err => this.thresholdError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.DEACTIVATE_ERROR')),
-    });
-  }
-
-  // ── Category CRUD ─────────────────────────────────────────────────────────
-
-  startEditCategory(cat: CostCategoryDto): void {
-    this.showAddCategory.set(false);
-    this.editingCategoryId.set(cat.id);
-    this.categoryEditForm.set({
-      labelFr:       cat.labelFr,
-      labelEn:       cat.labelEn       ?? '',
-      descriptionFr: cat.descriptionFr ?? '',
-      descriptionEn: cat.descriptionEn ?? '',
-    });
-  }
-
-  cancelCategoryEdit(): void {
-    this.editingCategoryId.set(null);
-    this.categoryEditForm.set({});
-  }
-
-  saveCategoryLabel(cat: CostCategoryDto): void {
-    const form = this.categoryEditForm();
-    this.isSavingCategory.set(true);
-    this.svc.updateCategory(cat.id, form).subscribe({
-      next: updated => {
-        this.categories.update(list => list.map(c => c.id === updated.id ? updated : c));
-        this.editingCategoryId.set(null);
-        this.categoryEditForm.set({});
-        this.isSavingCategory.set(false);
-      },
-      error: err => {
-        this.serverError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.SAVE_ERROR'));
-        this.isSavingCategory.set(false);
-      },
-    });
-  }
-
-  patchCategoryForm(field: keyof UpdateCostCategoryLabelRequest, value: string): void {
-    this.categoryEditForm.update(f => ({ ...f, [field]: value }));
-  }
-
-  saveNewCategory(): void {
-    if (!this.newCat.code || !this.newCat.labelFr || !this.newCat.labelEn || this.newCat.categoryNumber === null) {
-      this.createCatError.set(this.translate.instant('COST.CONFIG.CAT_REQUIRED'));
-      return;
-    }
-    const dto: CreateCostCategoryRequest = {
-      paysId:         this.paysId(),
-      code:           this.newCat.code.trim().toUpperCase(),
-      labelFr:        this.newCat.labelFr.trim(),
-      labelEn:        this.newCat.labelEn.trim(),
-      categoryNumber: Number(this.newCat.categoryNumber),
-      isCapex:        this.newCat.isCapex,
-      isDirect:       this.newCat.isDirect,
-      isOverhead:     this.newCat.isOverhead,
-    };
-    this.isCreatingCategory.set(true);
-    this.createCatError.set(null);
-    this.svc.createCategory(dto).subscribe({
-      next: created => {
-        this.categories.update(list =>
-          [...list, created].sort((a, b) => a.categoryNumber - b.categoryNumber),
-        );
-        this.newCat = { code: '', labelFr: '', labelEn: '', categoryNumber: null, isCapex: false, isDirect: false, isOverhead: false };
-        this.showAddCategory.set(false);
-        this.isCreatingCategory.set(false);
-      },
-      error: err => {
-        this.createCatError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.CREATE_ERROR'));
-        this.isCreatingCategory.set(false);
-      },
-    });
-  }
-
-  deleteCategory(id: number): void {
-    if (!confirm(this.translate.instant('COST.CONFIG.CONFIRM_DEACTIVATE_CATEGORY'))) return;
-    this.svc.deactivateCategory(id).subscribe({
-      next: () => this.categories.update(list => list.filter(c => c.id !== id)),
-      error: err => this.serverError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.DEACTIVATE_ERROR')),
     });
   }
 

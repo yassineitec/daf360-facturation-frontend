@@ -39,6 +39,46 @@ export interface ListValueDto {
   isStrictScrutiny?: boolean | null;
   descriptionFr?: string | null;
   descriptionEn?: string | null;
+  /**
+   * COST_SUB_CATEGORY only: the `code` of the parent category. Sub-categories are matched
+   * to a category by CODE — a country override of a global category is a new row (new
+   * id), while the global sub-categories keep pointing at the global row's id.
+   */
+  parentValueCode?: string | null;
+}
+
+/** Body of `POST /admin/lists/{type}/values` — taxonomy fields only read for COST_CATEGORY / COST_SUB_CATEGORY. */
+export interface CreateListValueBody extends TaxonomyFields {
+  typeCode: string;
+  paysId: number;
+  code: string;
+  labelFr: string;
+  labelEn?: string;
+  displayOrder?: number;
+  isDefault?: boolean;
+  /** Justificatif obligatoire — n'a de sens que pour EXPENSE_CATEGORY. */
+  requiresReceipt?: boolean;
+}
+
+/** Body of `PATCH /admin/lists/values/{id}` — `undefined` = unchanged. */
+export interface UpdateListValueBody extends TaxonomyFields {
+  labelFr?: string;
+  labelEn?: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+  requiresReceipt?: boolean;
+}
+
+export interface TaxonomyFields {
+  parentValueId?: number;
+  isCapex?: boolean;
+  isOverhead?: boolean;
+  isDirect?: boolean;
+  sourceType?: 'MANUAL' | 'AUTO_PUSH';
+  autoPushModule?: string;
+  isStrictScrutiny?: boolean;
+  descriptionFr?: string;
+  descriptionEn?: string;
 }
 
 export interface ListTypeDto {
@@ -50,71 +90,17 @@ export interface ListTypeDto {
   isActive: boolean;
 }
 
-// ── Cost category (matches backend CostCategoryDto record exactly) ─────────────
-
-export interface CostCategoryDto {
-  id: number;
-  paysId: number;
-  code: string;
-  labelFr: string;
-  labelEn: string | null;
-  categoryNumber: number;
-  isCapex: boolean | null;
-  isOverhead: boolean | null;
-  isDirect: boolean | null;
-  parentId: number | null;
-  isActive: boolean;
-  budgetAllocationPct: number | null;
-  requiresSupplier: boolean | null;
-  requiresDocument: boolean | null;
-  approvalRequiredFromAmount: number | null;
-  displayOrder: number | null;
-  // V14 fields
-  sourceType: string | null;           // 'MANUAL' | 'AUTO_PUSH'
-  autoPushModule: string | null;       // 'LEASE' | 'IT_ASSET' | 'SUBCONTRACT' | 'MAINTENANCE'
-  isStrictScrutiny: boolean | null;
-  descriptionFr: string | null;
-  descriptionEn: string | null;
-}
-
-export interface UpdateCostCategoryLabelRequest {
-  labelFr?: string;
-  labelEn?: string;
-  descriptionFr?: string;
-  descriptionEn?: string;
-}
-
-export interface CreateCostCategoryRequest {
-  paysId: number;
-  code: string;
-  labelFr: string;
-  labelEn: string;
-  categoryNumber: number;
-  isCapex?: boolean | null;
-  isOverhead?: boolean | null;
-  isDirect?: boolean | null;
-  parentId?: number | null;
-  displayOrder?: number | null;
-}
+// Cost categories are ListValueDto rows of type COST_CATEGORY / COST_SUB_CATEGORY
+// (one source since V84 — the legacy CostCategoryDto / cost_categories is gone).
 
 export interface CreateCostApprovalThresholdRequest {
   paysId: number;
-  categoryId?: number | null;
+  /** COST_CATEGORY list value; null = every category of the pays. */
+  costCategoryId?: number | null;
   level: string;
   minAmountEur: number;
   maxAmountEur?: number | null;
   approverRoleCode?: string | null;
-}
-
-/** Categories whose lines are auto-pushed from external modules — manual entry blocked. */
-const AUTO_PUSH_CATEGORY_NUMBERS = new Set([2, 3, 8, 11]);
-
-export function isManualSource(cat: CostCategoryDto): boolean {
-  return !AUTO_PUSH_CATEGORY_NUMBERS.has(cat.categoryNumber);
-}
-
-export function isCategoryStrictScrutiny(cat: CostCategoryDto): boolean {
-  return cat.categoryNumber === 12;
 }
 
 // ── Approval threshold (matches backend CostApprovalThresholdDto) ─────────────
@@ -122,7 +108,8 @@ export function isCategoryStrictScrutiny(cat: CostCategoryDto): boolean {
 export interface CostApprovalThresholdDto {
   id: number;
   paysId: number;
-  categoryId: number | null;
+  /** COST_CATEGORY list value; null = every category of the pays. */
+  costCategoryId: number | null;
   level: string;            // L1 | L2 | L3 | L4
   minAmountEur: number;
   maxAmountEur: number | null;
@@ -158,9 +145,10 @@ export interface CostLineDto {
   periodYear: number;
   periodMonth: number;
   transactionDate: string | null;
-  /** Legacy — old cost_categories taxonomy. Null for lines created under the new taxonomy. */
+  /** Legacy cost_categories id, history only. Read costCategoryId/costCategoryLabel instead
+   *  (V84 backfilled them for every legacy line). */
   categoryId: number | null;
-  /** New taxonomy (V78) — COST_CATEGORY configurable list. */
+  /** COST_CATEGORY configurable list — the category of the line. */
   costCategoryId: number | null;
   costCategoryLabel: string | null;
   /** New taxonomy (V78) — COST_SUB_CATEGORY configurable list. Null if no sub-category chosen. */
@@ -205,17 +193,22 @@ export interface CostLineDto {
   dualApprovalDone: boolean | null;
 }
 
+/**
+ * "Catégorie › Sous-catégorie" as shown in lists, cards and the detail page — read from
+ * the labels the backend resolves on the line, so every screen shows the same thing.
+ */
+export function costCategoryDisplay(line: Pick<CostLineDto, 'costCategoryLabel' | 'costSubCategoryLabel'>): string {
+  if (!line.costCategoryLabel) return '—';
+  return line.costSubCategoryLabel
+    ? `${line.costCategoryLabel} › ${line.costSubCategoryLabel}`
+    : line.costCategoryLabel;
+}
+
 // ── Create/update request (matches backend CreateCostLineRequest record) ────────
 
 export interface CreateCostLineRequest {
   paysId: number;
-  /**
-   * Legacy — old cost_categories taxonomy. Kept optional only because the shared
-   * backend record still accepts it (CSV import's back-compat path); the live
-   * CostFormComponent never sets it — it sends costCategoryId instead. Left
-   * optional here (rather than removed) so CostCreateComponent/CostLineFormComponent
-   * (confirmed dead code, deliberately untouched by this plan) keep compiling.
-   */
+  /** Legacy cost_categories id — never sent by the UI (old CSV files only, mapped server-side). */
   categoryId?: number;
   /** New taxonomy (V78) — required by the live create form's own canSave() gate; the
    *  backend enforces @NotNull for manual creation via CostLineController. */

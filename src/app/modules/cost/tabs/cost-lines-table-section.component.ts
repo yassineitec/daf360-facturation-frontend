@@ -64,7 +64,7 @@ export class CostLinesTableSectionComponent {
   private readonly currency  = inject(DisplayCurrencyPipe);
 
   lines        = input.required<CostLineDto[]>();
-  categoryFor  = input.required<(id: number | null) => string>();
+  categoryFor  = input.required<(line: CostLineDto) => string>();
   loading      = input(false);
   emptyMessage = input('');
   pageSize     = input(25);
@@ -108,7 +108,7 @@ export class CostLinesTableSectionComponent {
       const levelKey = approvalLevelKey(line.approvalLevelRequired);
       return {
         id:       line.id,
-        category: cat(line.categoryId),
+        category: cat(line),
         date:     formatDate(line.transactionDate),
         net:      this.currency.transform(line.netAmountLocal, line.currency ?? 'TND'),
         ttc:      this.currency.transform(line.grossAmountLocal, line.currency ?? 'TND'),

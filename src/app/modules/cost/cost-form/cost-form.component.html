@@ -80,11 +80,11 @@
                 (selectedChange)="onPaysChange($event[0] ? +$event[0] : null)">
               </daf-select>
             </div>
-            <!-- Catégorie de coût (D3 taxonomy migration, V78) -->
+            <!-- Catégorie de coût (D3 taxonomy, V78) — per pays, so disabled until one is picked -->
             <div>
               <daf-select
                 [options]="costCategorySelectOptions()"
-                [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true }"
+                [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true, disabled: !paysId() }"
                 [selected]="costCategoryId() !== null ? [costCategoryId() + '|' + costCategoryLabel()] : []"
                 (selectedChange)="onCostCategorySelect($event)">
               </daf-select>

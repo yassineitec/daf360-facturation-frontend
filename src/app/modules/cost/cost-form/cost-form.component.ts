@@ -40,9 +40,9 @@ export class CostFormComponent implements OnInit {
   affaires   = signal<AffaireListItem[]>([]);
   suppliers  = signal<SupplierSearchItem[]>([]);
 
-  // D3 cost-management taxonomy migration (V78) — global lists (COST_CATEGORY has
-  // pays_id = NULL for all 12 rows), loaded once in ngOnInit(), independent of the
-  // chosen pays (unlike the old per-pays cost_categories dropdown it replaces).
+  // D3 cost-management taxonomy (V78) — loaded per pays in onPaysChange(), like every
+  // other list on this form: the backend returns that country's own rows plus the global
+  // ones it has not overridden or switched off.
   costCategories    = signal<ListValueDto[]>([]);
   costSubCategories = signal<ListValueDto[]>([]);
 
@@ -98,10 +98,23 @@ export class CostFormComponent implements OnInit {
   // supplier-new.component.ts (typeSelectOptions/onTypeSelect). Categories whose
   // sourceType is AUTO_PUSH are excluded — manual creation is blocked for them
   // server-side too (CostLineService.doCreateCostLine()).
+  //
+  // The option VALUE keeps the FR label (`id|labelFr`) because edit mode rebuilds the
+  // selection from the line's own `costCategoryLabel`, which the backend sends in FR;
+  // only the visible LABEL follows the UI language.
   readonly costCategorySelectOptions = computed<SelectOption[]>(() =>
     this.costCategories()
       .filter(c => c.sourceType !== 'AUTO_PUSH')
-      .map(c => ({ value: c.id + '|' + c.labelFr, label: c.labelFr })));
+      .map(c => ({ value: c.id + '|' + c.labelFr, label: this.valueLabel(c) })));
+
+  /** EN label in English (falling back to FR when a row has none), FR otherwise. */
+  private valueLabel(v: ListValueDto): string {
+    return this.translate.currentLang() === 'en' ? (v.labelEn || v.labelFr) : v.labelFr;
+  }
+
+  /** Code of the selected category — the key sub-categories are matched on. */
+  private readonly selectedCategoryCode = computed(() =>
+    this.costCategories().find(c => c.id === this.costCategoryId())?.code ?? null);
 
   onCostCategorySelect(values: string[]): void {
     const value = values[0] ?? '';
@@ -118,7 +131,8 @@ export class CostFormComponent implements OnInit {
     this.costSubCategoryId.set(null);
     this.costSubCategoryLabel.set('');
     // Nice-to-have: auto-select when the category has exactly one sub-category.
-    const matches = this.costSubCategories().filter(s => s.parentValueId === id);
+    const code = this.costCategories().find(c => c.id === id)?.code;
+    const matches = this.costSubCategories().filter(s => !!code && s.parentValueCode === code);
     if (matches.length === 1) {
       this.costSubCategoryId.set(matches[0].id);
       this.costSubCategoryLabel.set(matches[0].labelFr);
@@ -126,11 +140,15 @@ export class CostFormComponent implements OnInit {
     this.onAmountOrCurrencyChange();
   }
 
-  readonly filteredCostSubCategories = computed<ListValueDto[]>(() =>
-    this.costSubCategories().filter(s => s.parentValueId === this.costCategoryId()));
+  // Matched by parent CODE, not parentValueId: when a country overrides a global category
+  // (new row, new id) the global sub-categories still point at the global row's id.
+  readonly filteredCostSubCategories = computed<ListValueDto[]>(() => {
+    const code = this.selectedCategoryCode();
+    return code ? this.costSubCategories().filter(s => s.parentValueCode === code) : [];
+  });
 
   readonly costSubCategorySelectOptions = computed<SelectOption[]>(() =>
-    this.filteredCostSubCategories().map(s => ({ value: s.id + '|' + s.labelFr, label: s.labelFr })));
+    this.filteredCostSubCategories().map(s => ({ value: s.id + '|' + s.labelFr, label: this.valueLabel(s) })));
 
   onCostSubCategorySelect(values: string[]): void {
     const value = values[0] ?? '';
@@ -239,15 +257,6 @@ export class CostFormComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(list => this.paysList.set(list));
 
-    // Global lists (pays=0 sentinel), independent of the chosen pays -- same idiom
-    // already established for SUPPLIER_CATEGORY in supplier-new.component.ts.
-    this.costSvc.getListValues('COST_CATEGORY', 0)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(v => this.costCategories.set(v));
-    this.costSvc.getListValues('COST_SUB_CATEGORY', 0)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(v => this.costSubCategories.set(v));
-
     this.supplierSearch$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -331,6 +340,51 @@ export class CostFormComponent implements OnInit {
     this.affaireSvc.getAffaires({ paysId: pid, size: 200 })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(p => this.affaires.set(p.content));
+
+    this.costSvc.getListValues('COST_CATEGORY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.costCategories();
+      this.costCategories.set(v);
+      this.reconcileCategory(previous, v);
+    });
+    this.costSvc.getListValues('COST_SUB_CATEGORY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.costSubCategories();
+      this.costSubCategories.set(v);
+      this.reconcileSubCategory(previous, v);
+    });
+  }
+
+  /**
+   * Keeps the chosen category valid when the pays changes. Same code in the new country
+   * (global row, or that country's override of it) → re-point to that row; no longer
+   * available → clear it, with its sub-category. A selection absent from the PREVIOUS
+   * list too is left alone: that is edit mode's first load, where the line's own
+   * category is set before any list has arrived.
+   */
+  private reconcileCategory(previous: ListValueDto[], next: ListValueDto[]): void {
+    const id = this.costCategoryId();
+    if (id === null || next.some(c => c.id === id)) return;
+    const code = previous.find(c => c.id === id)?.code;
+    if (!code) return;
+    const match = next.find(c => c.code === code && c.sourceType !== 'AUTO_PUSH');
+    if (match) {
+      this.costCategoryId.set(match.id);
+      this.costCategoryLabel.set(match.labelFr);
+    } else {
+      this.costCategoryId.set(null);  this.costCategoryLabel.set('');
+      this.costSubCategoryId.set(null); this.costSubCategoryLabel.set('');
+    }
+    this.onAmountOrCurrencyChange();
+  }
+
+  /** Same rule as reconcileCategory(), for the sub-category. */
+  private reconcileSubCategory(previous: ListValueDto[], next: ListValueDto[]): void {
+    const id = this.costSubCategoryId();
+    if (id === null || next.some(s => s.id === id)) return;
+    const code = previous.find(s => s.id === id)?.code;
+    if (!code) return;
+    const match = next.find(s => s.code === code);
+    this.costSubCategoryId.set(match?.id ?? null);
+    this.costSubCategoryLabel.set(match?.labelFr ?? '');
   }
 
   onSupplierQueryChange(q: string): void {
@@ -385,7 +439,7 @@ export class CostFormComponent implements OnInit {
     }
     this.costSvc.getForexPreview(ttcAmount, currencyCode).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: fx => {
-        this.costSvc.getCircuitPreview(fx.montantEur, paysId, null, this.costCategoryId())
+        this.costSvc.getCircuitPreview(fx.montantEur, paysId, this.costCategoryId())
           .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: cp => { this.circuitPreview.set(cp); this.previewLoading.set(false); },
           error: () => this.previewLoading.set(false),

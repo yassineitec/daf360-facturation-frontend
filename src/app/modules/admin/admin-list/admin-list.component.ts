@@ -15,13 +15,13 @@ import {
   RadioGroupComponent, RadioGroupConfig, RadioOption,
   ToggleComponent, ToggleOptions,
   FormFieldComponent, StatusBadgeComponent,
-  TabsComponent, TabItem, SearchToolbarComponent,
+  TabsComponent, TabItem, SearchToolbarComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
 import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-set.service';
 import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-api-config.service';
-import { ListValueDto, ListTypeDto } from '../../cost/cost.model';
+import { ListValueDto, ListTypeDto, TaxonomyFields } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
@@ -29,6 +29,38 @@ import { UserStore } from '../../../core/user.store';
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders';
 
 const PAGE_SIZE = 10;
+
+const COST_CATEGORY_TYPE     = 'COST_CATEGORY';
+const COST_SUB_CATEGORY_TYPE = 'COST_SUB_CATEGORY';
+
+interface ValueForm {
+  code: string;
+  labelFr: string;
+  labelEn: string;
+  isDefault: boolean;
+  requiresReceipt: boolean;
+  // COST_SUB_CATEGORY — the parent is picked by CODE (see ListValueDto.parentValueCode)
+  parentCode: string;
+  // COST_CATEGORY
+  sourceType: 'MANUAL' | 'AUTO_PUSH';
+  autoPushModule: string;
+  isStrictScrutiny: boolean;
+  isDirect: boolean;
+  isOverhead: boolean;
+  isCapex: boolean;
+  // COST_CATEGORY + COST_SUB_CATEGORY
+  descriptionFr: string;
+  descriptionEn: string;
+}
+
+function emptyValueForm(): ValueForm {
+  return {
+    code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false,
+    parentCode: '', sourceType: 'MANUAL', autoPushModule: '',
+    isStrictScrutiny: false, isDirect: false, isOverhead: false, isCapex: false,
+    descriptionFr: '', descriptionEn: '',
+  };
+}
 
 interface ForexRow {
   code: string;
@@ -44,7 +76,7 @@ interface ForexRow {
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
     FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
-    PaysFlagSelectComponent,
+    SelectComponent, PaysFlagSelectComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
     CostConfigComponent,
   ],
@@ -81,15 +113,35 @@ export class AdminListComponent implements OnInit {
   readonly showsReceiptRule = computed(() =>
     this.activeListType() === AdminListComponent.RECEIPT_RULE_TYPE);
 
+  /** The two cost-taxonomy types carry extra fields (parent, source, strict scrutiny…). */
+  readonly isCategoryType    = computed(() => this.activeListType() === COST_CATEGORY_TYPE);
+  readonly isSubCategoryType = computed(() => this.activeListType() === COST_SUB_CATEGORY_TYPE);
+  readonly isTaxonomyType    = computed(() => this.isCategoryType() || this.isSubCategoryType());
+
   readonly listColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
     const cols: TableColumn[] = [
-      { key: 'code',      label: this.translate.instant('ADMIN.LISTS.COL_CODE'),      width: '120px' },
-      { key: 'labelFr',   label: this.translate.instant('ADMIN.LISTS.COL_LABEL_FR') },
-      { key: 'labelEn',   label: this.translate.instant('ADMIN.LISTS.COL_LABEL_EN') },
+      { key: 'code',      label: t('ADMIN.LISTS.COL_CODE'),      width: '120px' },
     ];
+    if (this.isSubCategoryType()) {
+      cols.push({ key: 'parent', label: t('ADMIN.LISTS.COL_PARENT') });
+    }
+    cols.push(
+      { key: 'labelFr',   label: t('ADMIN.LISTS.COL_LABEL_FR') },
+      { key: 'labelEn',   label: t('ADMIN.LISTS.COL_LABEL_EN') },
+    );
+    if (this.isCategoryType()) {
+      cols.push(
+        { key: 'sourceType',       label: t('ADMIN.LISTS.COL_SOURCE'), width: '170px' },
+        { key: 'isStrictScrutiny', label: t('ADMIN.LISTS.COL_STRICT'), align: 'center', width: '130px' },
+      );
+    }
+    if (this.isTaxonomyType()) {
+      cols.push({ key: 'scope', label: t('ADMIN.LISTS.COL_SCOPE'), align: 'center', width: '110px' });
+    }
     if (this.showsReceiptRule()) {
-      cols.push({ key: 'requiresReceipt', label: this.translate.instant('ADMIN.LISTS.COL_RECEIPT'),
+      cols.push({ key: 'requiresReceipt', label: t('ADMIN.LISTS.COL_RECEIPT'),
                   align: 'center', width: '130px' });
     }
     cols.push(
@@ -159,7 +211,16 @@ export class AdminListComponent implements OnInit {
   forexCurrentPage = signal(0);
 
   readonly listTotalPages = computed(() =>
-    Math.max(1, Math.ceil(this.listValues().length / PAGE_SIZE)));
+    Math.max(1, Math.ceil(this.sortedListValues().length / PAGE_SIZE)));
+
+  /** Sub-categories are grouped under their parent; every other list keeps backend order. */
+  private readonly sortedListValues = computed(() => {
+    const values = this.listValues();
+    if (!this.isSubCategoryType()) return values;
+    return [...values].sort((a, b) =>
+      this.parentLabel(a.parentValueCode).localeCompare(this.parentLabel(b.parentValueCode))
+      || (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  });
 
   readonly forexTotalPages = computed(() =>
     Math.max(1, Math.ceil(this.forexRows().length / PAGE_SIZE)));
@@ -169,7 +230,7 @@ export class AdminListComponent implements OnInit {
 
   private readonly pagedListValues = computed(() => {
     const start = this.listCurrentPage() * PAGE_SIZE;
-    return this.listValues().slice(start, start + PAGE_SIZE);
+    return this.sortedListValues().slice(start, start + PAGE_SIZE);
   });
 
   private readonly pagedForexRows = computed(() => {
@@ -182,9 +243,75 @@ export class AdminListComponent implements OnInit {
       id: v.id, code: v.code, labelFr: v.labelFr, labelEn: v.labelEn,
       isDefault: v.isDefault, isActive: v.isActive,
       requiresReceipt: v.requiresReceipt === true,
+      parent: this.parentLabel(v.parentValueCode),
+      sourceType: v.sourceType ?? 'MANUAL',
+      autoPushModule: v.autoPushModule,
+      isStrictScrutiny: v.isStrictScrutiny === true,
+      isGlobal: v.paysId === null,
       _source: v,
     })),
   );
+
+  // ── Cost taxonomy (COST_CATEGORY / COST_SUB_CATEGORY) ─────────────────────
+  /** The selected country's categories — parents offered to a sub-category. */
+  parentCategories = signal<ListValueDto[]>([]);
+
+  readonly parentOptions = computed<SelectOption[]>(() =>
+    this.parentCategories()
+      .filter(c => c.isActive)
+      .map(c => ({ value: c.code, label: `${c.labelFr} (${c.code})` })));
+
+  parentLabel(code: string | null | undefined): string {
+    if (!code) return '—';
+    return this.parentCategories().find(c => c.code === code)?.labelFr ?? code;
+  }
+
+  readonly sourceTypeOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: 'MANUAL',    label: this.translate.instant('ADMIN.LISTS.SOURCE_MANUAL') },
+      { value: 'AUTO_PUSH', label: this.translate.instant('ADMIN.LISTS.SOURCE_AUTO_PUSH') },
+    ];
+  });
+
+  private loadParentCategories(): void {
+    const paysId = this.paysId();
+    if (!paysId || !this.isTaxonomyType()) { this.parentCategories.set([]); return; }
+    this.factListSvc.getAdminListValues(COST_CATEGORY_TYPE, paysId)
+      .subscribe(values => this.parentCategories.set(values));
+  }
+
+  /**
+   * The taxonomy part of a create/update body, or an i18n error key. `undefined` fields
+   * stay out of the JSON, which the backend reads as "unchanged".
+   */
+  private taxonomyBody(): TaxonomyFields | string {
+    const f = this.valueForm;
+    if (this.isSubCategoryType()) {
+      const parent = this.parentCategories().find(c => c.code === f.parentCode && c.isActive);
+      if (!parent) return 'ADMIN.LISTS.ERR_PARENT_REQUIRED';
+      return {
+        parentValueId: parent.id,
+        descriptionFr: f.descriptionFr.trim(),
+        descriptionEn: f.descriptionEn.trim(),
+      };
+    }
+    if (this.isCategoryType()) {
+      const autoPush = f.sourceType === 'AUTO_PUSH';
+      if (autoPush && !f.autoPushModule.trim()) return 'ADMIN.LISTS.ERR_AUTO_PUSH_MODULE_REQUIRED';
+      return {
+        sourceType: f.sourceType,
+        autoPushModule: autoPush ? f.autoPushModule.trim().toUpperCase() : undefined,
+        isStrictScrutiny: f.isStrictScrutiny,
+        isDirect: f.isDirect,
+        isOverhead: f.isOverhead,
+        isCapex: f.isCapex,
+        descriptionFr: f.descriptionFr.trim(),
+        descriptionEn: f.descriptionEn.trim(),
+      };
+    }
+    return {};
+  }
 
   readonly forexTableRows = computed<TableRow[]>(() =>
     this.pagedForexRows().map(r => ({
@@ -295,8 +422,7 @@ export class AdminListComponent implements OnInit {
   valueModalError  = signal<string | null>(null);
   private valueModalRef: ModalRef | null = null;
   private editingValue: ListValueDto | null = null;
-  valueForm: { code: string; labelFr: string; labelEn: string; isDefault: boolean; requiresReceipt: boolean } =
-    { code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false };
+  valueForm: ValueForm = emptyValueForm();
 
   // ── Forex tab ─────────────────────────────────────────────────────────────
   allParams    = signal<ParameterSetDto[]>([]);
@@ -378,6 +504,7 @@ export class AdminListComponent implements OnInit {
     this.paysId.set(id);
     this.listCurrentPage.set(0);
     this.loadListValues();
+    this.loadParentCategories();
   }
 
   // ── Lists ──────────────────────────────────────────────────────────────────
@@ -487,6 +614,7 @@ export class AdminListComponent implements OnInit {
     this.activeListType.set(code);
     this.listCurrentPage.set(0);
     this.loadListValues();
+    this.loadParentCategories();
   }
 
   backToListTypes(): void {
@@ -515,7 +643,7 @@ export class AdminListComponent implements OnInit {
   openCreateValueModal(): void {
     this.valueModalMode.set('create');
     this.editingValue = null;
-    this.valueForm = { code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false };
+    this.valueForm = emptyValueForm();
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_ADD'));
   }
@@ -523,7 +651,19 @@ export class AdminListComponent implements OnInit {
   openEditValueModal(v: ListValueDto): void {
     this.valueModalMode.set('edit');
     this.editingValue = v;
-    this.valueForm = { code: v.code, labelFr: v.labelFr, labelEn: v.labelEn ?? '', isDefault: v.isDefault, requiresReceipt: v.requiresReceipt === true };
+    this.valueForm = {
+      code: v.code, labelFr: v.labelFr, labelEn: v.labelEn ?? '',
+      isDefault: v.isDefault, requiresReceipt: v.requiresReceipt === true,
+      parentCode: v.parentValueCode ?? '',
+      sourceType: v.sourceType === 'AUTO_PUSH' ? 'AUTO_PUSH' : 'MANUAL',
+      autoPushModule: v.autoPushModule ?? '',
+      isStrictScrutiny: v.isStrictScrutiny === true,
+      isDirect: v.isDirect === true,
+      isOverhead: v.isOverhead === true,
+      isCapex: v.isCapex === true,
+      descriptionFr: v.descriptionFr ?? '',
+      descriptionEn: v.descriptionEn ?? '',
+    };
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_EDIT', { code: v.code }));
   }
@@ -557,6 +697,11 @@ export class AdminListComponent implements OnInit {
         this.valueModalError.set(this.translate.instant('ADMIN.LISTS.ERR_CODE_LABEL_REQUIRED'));
         return;
       }
+      const taxonomy = this.taxonomyBody();
+      if (typeof taxonomy === 'string') {
+        this.valueModalError.set(this.translate.instant(taxonomy));
+        return;
+      }
       this.valueModalSaving.set(true);
       this.valueModalError.set(null);
       // Non-null: this modal only opens from the detail view, reachable only once
@@ -568,9 +713,11 @@ export class AdminListComponent implements OnInit {
         isDefault: this.valueForm.isDefault,
         // Non envoye pour les autres types : la colonne reste NULL (= non applicable).
         ...(this.showsReceiptRule() ? { requiresReceipt: this.valueForm.requiresReceipt } : {}),
+        ...taxonomy,
       }).subscribe({
         next: created => {
           this.listValues.update(list => [...list, created]);
+          if (this.isCategoryType()) this.loadParentCategories();
           this.valueModalSaving.set(false);
           this.valueModalRef?.close();
         },
@@ -585,15 +732,23 @@ export class AdminListComponent implements OnInit {
         this.valueModalError.set(this.translate.instant('ADMIN.LISTS.ERR_LABEL_FR_REQUIRED'));
         return;
       }
+      const taxonomy = this.taxonomyBody();
+      if (typeof taxonomy === 'string') {
+        this.valueModalError.set(this.translate.instant(taxonomy));
+        return;
+      }
       this.valueModalSaving.set(true);
       this.valueModalError.set(null);
       this.factListSvc.updateListValue(v.id, paysId, {
-        labelFr, labelEn,
+        // label_en is NOT NULL server-side: an emptied EN field falls back to the FR label.
+        labelFr, labelEn: labelEn || labelFr,
         ...(this.showsReceiptRule() ? { requiresReceipt: this.valueForm.requiresReceipt } : {}),
+        ...taxonomy,
       }).subscribe({
         next: updated => {
           // v.id and updated.id may differ when a global value was overridden with a country copy
           this.listValues.update(list => [...list.filter(x => x.id !== v.id), updated]);
+          if (this.isCategoryType()) this.loadParentCategories();
           this.valueModalSaving.set(false);
           this.valueModalRef?.close();
         },
@@ -617,21 +772,27 @@ export class AdminListComponent implements OnInit {
     });
   }
 
+  /**
+   * Scoped to the selected country: a GLOBAL value is switched off for this country only
+   * (the backend writes an inactive country row, with a new id), so the list is reloaded
+   * rather than patched in place.
+   */
   private doDeactivateValue(v: ListValueDto): void {
-    this.factListSvc.deactivateListValue(v.id).subscribe({
-      next: () => this.listValues.update(list =>
-        list.map(x => x.id === v.id ? { ...x, isActive: false } : x),
-      ),
+    this.factListSvc.deactivateListValue(v.id, this.paysId()).subscribe({
+      next: () => {
+        this.loadListValues();
+        if (this.isCategoryType()) this.loadParentCategories();
+      },
       error: err => this.listError.set(err.error?.message ?? this.translate.instant('ADMIN.LISTS.ERR_GENERIC')),
     });
   }
 
   reactivateValue(v: ListValueDto): void {
     this.factListSvc.updateListValue(v.id, this.paysId(), { isActive: true }).subscribe({
-      next: updated => this.listValues.update(list => [
-        ...list.filter(x => x.id !== v.id),
-        updated,
-      ]),
+      next: () => {
+        this.loadListValues();
+        if (this.isCategoryType()) this.loadParentCategories();
+      },
       error: err => this.listError.set(err.error?.message ?? this.translate.instant('ADMIN.LISTS.ERR_GENERIC')),
     });
   }

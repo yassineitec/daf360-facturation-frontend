@@ -3,7 +3,9 @@ import { HttpClient, HttpParams }            from '@angular/common/http';
 import { Observable, forkJoin, of }          from 'rxjs';
 import { catchError, map, tap }              from 'rxjs/operators';
 import { environment }                       from '../../environments/environment';
-import { ListValueDto, ListTypeDto }         from '../modules/cost/cost.model';
+import {
+  ListValueDto, ListTypeDto, CreateListValueBody, UpdateListValueBody,
+} from '../modules/cost/cost.model';
 
 @Injectable({ providedIn: 'root' })
 export class FactListService {
@@ -67,25 +69,23 @@ export class FactListService {
     );
   }
 
-  createListValue(typeCode: string, body: {
-    typeCode: string; paysId: number; code: string;
-    labelFr: string; labelEn?: string; displayOrder?: number; isDefault?: boolean;
-    /** Justificatif obligatoire — n'a de sens que pour EXPENSE_CATEGORY. */
-    requiresReceipt?: boolean;
-  }): Observable<ListValueDto> {
+  createListValue(typeCode: string, body: CreateListValueBody): Observable<ListValueDto> {
     return this.http.post<ListValueDto>(`${this.base}/admin/lists/${typeCode}/values`, body);
   }
 
-  updateListValue(id: number, paysId: number, body: {
-    labelFr?: string; labelEn?: string; isDefault?: boolean; isActive?: boolean;
-    requiresReceipt?: boolean;
-  }): Observable<ListValueDto> {
+  updateListValue(id: number, paysId: number, body: UpdateListValueBody): Observable<ListValueDto> {
     const params = new HttpParams().set('pays', String(paysId));
     return this.http.patch<ListValueDto>(`${this.base}/admin/lists/values/${id}`, body, { params });
   }
 
-  deactivateListValue(id: number): Observable<void> {
-    return this.http.post<void>(`${this.base}/admin/lists/values/${id}/deactivate`, {});
+  /**
+   * With `paysId`, a GLOBAL value is switched off for that country only (the backend
+   * writes an inactive country override); a country value is deactivated in place.
+   * Without it, the row itself is deactivated for every country (legacy behaviour).
+   */
+  deactivateListValue(id: number, paysId?: number): Observable<void> {
+    const params = paysId ? new HttpParams().set('pays', String(paysId)) : undefined;
+    return this.http.post<void>(`${this.base}/admin/lists/values/${id}/deactivate`, {}, { params });
   }
 
   getDefaultValue(typeCode: string, paysId: number): Observable<ListValueDto | null> {
