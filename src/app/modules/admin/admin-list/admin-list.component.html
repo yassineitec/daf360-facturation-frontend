@@ -1,30 +1,29 @@
-<div class="admin-page">
+<!-- `daf-page` porte le fond, le rythme vertical et le squelette de premier chargement
+     (`isLoading` ne couvre que ngOnInit) ; `daf-page-header` porte le h1. -->
+<daf-page [kpis]="0" [loading]="isLoading()" [loadingLabel]="'ADMIN.COMMON.LOADING' | translate">
 
-  <!-- Page header — title on the left, country picker on the right (same row) -->
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">{{ 'ADMIN.PAGE.TITLE' | translate }}</h1>
-      <p class="page-sub">{{ 'ADMIN.PAGE.SUBTITLE' | translate }}</p>
-    </div>
+  <daf-page-header
+    [title]="'ADMIN.PAGE.TITLE' | translate"
+    [subtitle]="'ADMIN.PAGE.SUBTITLE' | translate">
 
     <!-- Sélecteur de pays (multi-pays seulement), avec drapeau — `app-pays-flag-select`,
          pas `daf-select` : ses options n'affichent qu'une icône Material Symbol ou du
-         texte, pas une image par option. -->
-    @if (paysList().length > 1) {
-      <div class="pays-card">
+         texte, pas une image par option.
+
+         Le `div pageActions` est la racine STATIQUE et le `@if` vit dedans : un élément
+         imbriqué dans un `@if` vit dans une vue embarquée, et `<ng-content
+         select="[pageActions]">` ne le trouverait jamais (UI-PLAYBOOK §10f). -->
+    <div pageActions class="pays-card">
+      @if (paysList().length > 1) {
         <app-pays-flag-select
           [options]="paysOptions()"
           [selected]="paysId() ? [paysId().toString()] : []"
           [label]="paysSelectLabel()"
           [placeholder]="paysSelectPlaceholder()"
           (selectedChange)="onPaysSelected($event)" />
-      </div>
-    }
-  </div>
-
-  @if (isLoading()) {
-    <div class="loading-state">{{ 'ADMIN.COMMON.LOADING' | translate }}</div>
-  }
+      }
+    </div>
+  </daf-page-header>
 
   @if (pageError()) {
     <div class="banner-error">{{ pageError() }}</div>
@@ -508,4 +507,4 @@
         (valueChange)="forexForm.chf = $any($event) ?? ''" />
     </div>
   </ng-template>
-</div>
+</daf-page>

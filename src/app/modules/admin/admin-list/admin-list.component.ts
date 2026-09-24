@@ -16,6 +16,7 @@ import {
   ToggleComponent, ToggleOptions,
   FormFieldComponent, StatusBadgeComponent,
   TabsComponent, TabItem, SearchToolbarComponent, SelectComponent, SelectOption,
+  PageComponent, PageHeaderComponent,
 } from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
@@ -76,7 +77,7 @@ interface ForexRow {
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
     FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
-    SelectComponent, PaysFlagSelectComponent,
+    SelectComponent, PaysFlagSelectComponent, PageComponent, PageHeaderComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
     CostConfigComponent,
   ],

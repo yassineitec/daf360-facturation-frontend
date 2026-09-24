@@ -2856,6 +2856,7 @@
       "COL_APPROVAL": "Approval",
       "COL_ACTIONS": "Actions",
       "TABLE_EMPTY": "No cost line found.",
+      "VIEW": "View details",
       "EDIT": "Edit",
       "SUBMIT": "Submit",
       "CREATE_REGLEMENT": "Create payment",

@@ -271,6 +271,7 @@ export class CostLinesComponent implements OnInit {
   }
 
   openCreate(): void { this.router.navigate(['new'], { relativeTo: this.route }); }
+  openDetail(line: CostLineDto): void { this.router.navigate([line.id], { relativeTo: this.route }); }
   openEdit(line: CostLineDto): void { this.router.navigate([line.id, 'edit'], { relativeTo: this.route }); }
 
   /** Lazily loads the by-supplier aggregation the first time the toggle switches to

@@ -14,7 +14,7 @@ import { TableActionComponent } from '../../../shared/table-action.component';i
  * List view of the Lignes de coût tab on the house table style (UI-PLAYBOOK §6b): no
  * wrapper and no outer card, `showHeader: false`, `emptyMessage`, icon-only row actions.
  *
- * Stateless: lines in, `(edit)` / `(submitLine)` out.
+ * Stateless: lines in, `(view)` / `(edit)` / `(submitLine)` out.
  */
 @Component({
   selector: 'app-cost-lines-table-section',
@@ -69,6 +69,8 @@ export class CostLinesTableSectionComponent {
   emptyMessage = input('');
   pageSize     = input(25);
 
+  /** Row click — the read-only detail page, same as a card click. Editing stays on the pencil action. */
+  readonly view            = output<CostLineDto>();
   readonly edit            = output<CostLineDto>();
   readonly submitLine      = output<CostLineDto>();
   readonly createReglement = output<CostLineDto>();
@@ -144,6 +146,6 @@ export class CostLinesTableSectionComponent {
   }));
 
   protected onRowClick(row: TableRow): void {
-    this.edit.emit(row['_raw'] as CostLineDto);
+    this.view.emit(row['_raw'] as CostLineDto);
   }
 }

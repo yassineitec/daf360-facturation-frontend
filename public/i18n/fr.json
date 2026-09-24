@@ -2856,6 +2856,7 @@
       "COL_APPROVAL": "Approbation",
       "COL_ACTIONS": "Actions",
       "TABLE_EMPTY": "Aucune ligne de coût trouvée.",
+      "VIEW": "Voir le détail",
       "EDIT": "Modifier",
       "SUBMIT": "Soumettre",
       "CREATE_REGLEMENT": "Créer un règlement",
