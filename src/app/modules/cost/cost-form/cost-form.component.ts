@@ -2,7 +2,7 @@ import {
   Component, OnInit, inject, signal, computed, DestroyRef, WritableSignal,
 } from '@angular/core';
 import { CommonModule }         from '@angular/common';
-import { RouterLink, Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule }          from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { takeUntilDestroyed }   from '@angular/core/rxjs-interop';
@@ -15,13 +15,24 @@ import {
   ListValueDto, ForexPreviewDto, CircuitPreviewDto,
   SupplierSearchItem, formatAmount,
 } from '../cost.model';
-import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
+import {
+  ButtonComponent, ButtonOptions, CardComponent, FieldMessageComponent, FileUploadComponent,
+  FormFieldComponent, PageComponent, PageHeaderComponent, SelectComponent, SelectOption,
+} from '@khalilrebhiitec/daf360';
+import type {
+  BreadcrumbItem, CardOptions, FileUploadConfig, PageHeaderBadge, UploadedFile,
+} from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-cost-form',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, TranslatePipe, SelectComponent, FormFieldComponent],
+  imports: [
+    CommonModule, FormsModule, TranslatePipe,
+    PageComponent, PageHeaderComponent, CardComponent, ButtonComponent, FieldMessageComponent,
+    SelectComponent, FormFieldComponent, FileUploadComponent,
+  ],
   templateUrl: './cost-form.component.html',
+  styleUrl:    './cost-form.component.scss',
 })
 export class CostFormComponent implements OnInit {
   private readonly costSvc    = inject(CostService);
@@ -75,7 +86,22 @@ export class CostFormComponent implements OnInit {
   isPageLoading   = signal<boolean>(false);
   isSaving        = signal<boolean>(false);
   error           = signal<string | null>(null);
-  pendingFiles    = signal<File[]>([]);
+  pendingFiles    = signal<UploadedFile[]>([]);
+
+  /**
+   * The six form sections' card — the lib's `glass` card, with the hover lift used across
+   * the modules. The lift comes from `.glass-card:hover` itself, so `hoverable` is left
+   * off on purpose: it would only add `cursor-pointer`, which over text inputs and
+   * selects wrongly signals the whole card is clickable.
+   */
+  readonly sectionCard: CardOptions = { variant: 'glass', padding: 'lg', radius: 'xl' };
+
+  /** Same limits the former native input enforced: PDF/images, several at once, 10 MB each. */
+  readonly attachmentConfig: FileUploadConfig = {
+    accept:    '.pdf,.jpg,.jpeg,.png',
+    multiple:  true,
+    maxSizeMb: 10,
+  };
 
   private readonly supplierSearch$ = new Subject<string>();
 
@@ -178,6 +204,59 @@ export class CostFormComponent implements OnInit {
   );
 
   readonly formatAmt = formatAmount;
+
+  // ── En-tête de page (daf-page-header) ────────────────────────────────────────
+  // Absolute root link, like CostLineDetailComponent's own breadcrumbs: this form is
+  // reached at both cost/new and cost/:id/edit, so a relative link would differ by mode.
+  readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    this.translate.currentLang();
+    const root: BreadcrumbItem = { label: this.translate.instant('COST.TABS.LINES'), link: ['/finance/cost'] };
+    const id = this.editId();
+    if (id === null) {
+      return [root, { label: this.translate.instant('COST.FORM.TITLE_NEW') }];
+    }
+    return [
+      root,
+      { label: `#${id}`, link: ['/finance/cost', id] },
+      { label: this.translate.instant('COST.FORM.TITLE_EDIT') },
+    ];
+  });
+
+  readonly pageTitle = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(this.isEditMode() ? 'COST.FORM.TITLE_EDIT' : 'COST.FORM.TITLE_NEW');
+  });
+
+  readonly pageSubtitle = computed(() => {
+    this.translate.currentLang();
+    return this.isEditMode()
+      ? this.translate.instant('COST.FORM.SUB_EDIT', { id: this.editId() })
+      : this.translate.instant('COST.FORM.SUB_NEW');
+  });
+
+  /** The former hand-drawn pulsing "draft" pill, now a standard header badge. */
+  readonly headerBadges = computed<PageHeaderBadge[]>(() => {
+    this.translate.currentLang();
+    return [{ label: this.translate.instant('COST.FORM.DRAFT_BADGE'), variant: 'teal', dot: true }];
+  });
+
+  /** The bar's single drawn action — same teal pill as the affaire wizard's "Suivant". */
+  readonly submitButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant:   'teal',
+      pill:      true,
+      label:     this.translate.instant('COST.FORM.FOOT_SUBMIT'),
+      iconStart: 'send',
+      loading:   this.isSaving(),
+      disabled:  !this.canSave() || this.isSaving(),
+    };
+  });
+
+  /** Same destination as the former `routerLink=".."` Cancel link. */
+  cancel(): void {
+    this.router.navigate(['..'], { relativeTo: this.route });
+  }
 
   // ── D3 Tunisian tax fields (V78) ─────────────────────────────────────────────
   // Shown only once a real supplier is picked via the autocomplete -- NOT merely
@@ -519,18 +598,6 @@ export class CostFormComponent implements OnInit {
     this.refreshCircuitPreview(pid, curr.code);
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files) return;
-    const added = Array.from(input.files).filter(f => f.size <= 10 * 1024 * 1024);
-    this.pendingFiles.update(prev => [...prev, ...added]);
-    input.value = '';
-  }
-
-  removeFile(i: number): void {
-    this.pendingFiles.update(prev => prev.filter((_, idx) => idx !== i));
-  }
-
   saveDraft(): void { this.doSave(false); }
   submitLine(): void { this.doSave(true); }
 
@@ -568,8 +635,10 @@ export class CostFormComponent implements OnInit {
 
     save$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: line => {
-        const uploads = this.pendingFiles().map(f =>
-          lastValueFrom(this.costSvc.addAttachment(line.id, f)).catch(() => null)
+        // Files daf-file-upload flagged (over maxSizeMb) are never sent — the former
+        // input dropped them at selection time instead.
+        const uploads = this.pendingFiles().filter(f => !f.error).map(f =>
+          lastValueFrom(this.costSvc.addAttachment(line.id, f.file)).catch(() => null)
         );
         Promise.all(uploads).then(() => {
           this.pendingFiles.set([]);
@@ -589,12 +658,6 @@ export class CostFormComponent implements OnInit {
         this.error.set(err.error?.message ?? this.translate.instant('COST.FORM.GENERIC_ERROR'));
       },
     });
-  }
-
-  fmtFileSize(bytes: number): string {
-    if (bytes < 1024)     return this.translate.instant('COST.FORM.UNIT_BYTES', { n: bytes });
-    if (bytes < 1048576)  return this.translate.instant('COST.FORM.UNIT_KB', { n: (bytes / 1024).toFixed(1) });
-    return this.translate.instant('COST.FORM.UNIT_MB', { n: (bytes / 1048576).toFixed(1) });
   }
 
   levelBg(level: string): string {

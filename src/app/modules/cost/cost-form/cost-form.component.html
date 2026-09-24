@@ -1,51 +1,25 @@
-<div style="background:#F0F4F8;min-height:100vh;padding:2rem 2rem 6rem 2rem">
+<!-- Saisie / modification d'une ligne de coût — même squelette que les assistants
+     affaire et fournisseur : `daf-page` porte le fond et le rythme vertical,
+     `daf-page-header` le h1, le fil d'Ariane et la pastille « brouillon », et la barre
+     d'actions du bas reprend celle de l'assistant affaire.
 
-  <!-- ── Page header ─────────────────────────────────────────────────────── -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem">
-    <div style="display:flex;align-items:center;gap:1rem">
-      <a routerLink=".."
-         style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
-                justify-content:center;background:white;border:1px solid #e2e8f0;
-                color:#44474c;text-decoration:none;transition:all .2s">
-        <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
-      </a>
-      <div>
-        <h1 style="font-size:1.4rem;font-weight:900;color:#0b1c30;margin:0">
-          @if (isEditMode()) { {{ 'COST.FORM.TITLE_EDIT' | translate }} } @else { {{ 'COST.FORM.TITLE_NEW' | translate }} }
-        </h1>
-        <p style="font-size:0.8rem;color:#44474c;margin:2px 0 0 0">
-          @if (isEditMode()) { {{ 'COST.FORM.SUB_EDIT' | translate:{ id: editId() } }} }
-          @else { {{ 'COST.FORM.SUB_NEW' | translate }} }
-        </p>
-      </div>
-    </div>
-    <!-- Draft indicator -->
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
-                background:#006b5812;border:1px solid #006b5825">
-      <span style="width:8px;height:8px;border-radius:50%;background:#006b58;
-                   display:inline-block;animation:pulse 2s infinite"></span>
-      <span style="font-size:0.7rem;font-weight:900;color:#006b58;letter-spacing:.08em">{{ 'COST.FORM.DRAFT_BADGE' | translate }}</span>
-    </div>
-  </div>
+     La barre est `sticky` et vit DANS `daf-page` : le conteneur de défilement est
+     `.shell-content`, qui porte la marge de la barre latérale ; l'ancienne barre `fixed`
+     (left:0/right:0) se calait sur la fenêtre et passait sous la navigation latérale. -->
 
-  <!-- ── Page loading ─────────────────────────────────────────────────────── -->
-  @if (isPageLoading()) {
-    <div style="display:flex;align-items:center;justify-content:center;padding:5rem 0">
-      <span class="material-symbols-outlined animate-spin" style="font-size:2.5rem;color:#006b58">
-        progress_activity
-      </span>
-    </div>
-  }
+<daf-page [kpis]="0" [breadcrumbs]="true" [loading]="isPageLoading()"
+          [loadingLabel]="'COST.DETAIL.LOADING' | translate">
+
+  <daf-page-header
+    [title]="pageTitle()"
+    [subtitle]="pageSubtitle()"
+    [badges]="headerBadges()"
+    [breadcrumbs]="breadcrumbs()" />
 
   @if (!isPageLoading()) {
 
-    <!-- Error banner -->
-    @if (error()) {
-      <div style="margin-bottom:1.5rem;padding:1rem;border-radius:1rem;display:flex;
-                  align-items:flex-start;gap:.75rem;background:#ffdad6;color:#ba1a1a">
-        <span class="material-symbols-outlined" style="flex-shrink:0">error</span>
-        <p style="font-size:.875rem;font-weight:500;margin:0">{{ error() }}</p>
-      </div>
+    @if (error(); as err) {
+      <daf-field-message [error]="err" />
     }
 
     <!-- ── Two-column layout ───────────────────────────────────────────────── -->
@@ -55,9 +29,7 @@
       <div style="display:flex;flex-direction:column;gap:1.25rem">
 
         <!-- SECTION 1 — Contexte ───────────────────────────────────────────── -->
-        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                    padding:1.5rem">
+        <daf-card class="block" [options]="sectionCard">
           <!-- Header -->
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#006b5812;
@@ -115,12 +87,10 @@
               </daf-form-field>
             </div>
           </div>
-        </div>
+        </daf-card>
 
         <!-- SECTION 2 — Montants ────────────────────────────────────────────── -->
-        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                    padding:1.5rem">
+        <daf-card class="block" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#fef3c720;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -156,12 +126,13 @@
               {{ 'COST.FORM.NO_CURRENCY' | translate }}
             </p>
           }
-        </div>
+        </daf-card>
 
         <!-- SECTION 3 — Fournisseur ─────────────────────────────────────────── -->
-        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                    padding:1.5rem">
+        <!-- `section-card--overflow` : l'autocomplétion fournisseur est une liste en
+             `position:absolute`, que l'`overflow-hidden` de daf-card rognerait
+             (daf-select, lui, est porté sur <body> et n'est pas concerné). -->
+        <daf-card class="block section-card--overflow" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#dbeafe20;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -267,12 +238,10 @@
               }
             </div>
           }
-        </div>
+        </daf-card>
 
         <!-- SECTION 4 — Affectation ─────────────────────────────────────────── -->
-        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                    padding:1.5rem">
+        <daf-card class="block" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#f0fdf4;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -289,12 +258,10 @@
             [selected]="selArr(affaireId())"
             (selectedChange)="affaireId.set($event[0] ? +$event[0] : null)">
           </daf-select>
-        </div>
+        </daf-card>
 
         <!-- SECTION 5 — Options avancées ────────────────────────────────────── -->
-        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                    padding:1.5rem">
+        <daf-card class="block" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#f8fafc;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0;
@@ -324,62 +291,27 @@
               </daf-form-field>
             </div>
           </div>
-        </div>
+        </daf-card>
 
         <!-- SECTION 6 — Pièces jointes ──────────────────────────────────────── -->
-        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;
-                    box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-                    padding:1.5rem">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-            <div style="display:flex;align-items:center;gap:.75rem">
-              <div style="width:40px;height:40px;border-radius:12px;background:#f8fafc;
-                          display:flex;align-items:center;justify-content:center;flex-shrink:0;
-                          border:1px solid #e2e8f0">
-                <span class="material-symbols-outlined" style="font-size:1.2rem;color:#64748b">attach_file</span>
-              </div>
-              <div>
-                <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_ATTACH_TITLE' | translate }}</p>
-                <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_ATTACH_SUB' | translate }}</p>
-              </div>
+        <daf-card class="block" [options]="sectionCard">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+            <div style="width:40px;height:40px;border-radius:12px;background:#f8fafc;
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                        border:1px solid #e2e8f0">
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#64748b">attach_file</span>
             </div>
-            <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;
-                          border-radius:12px;border:1.5px dashed #bdc9c4;color:#44474c;
-                          font-size:.8rem;font-weight:700;cursor:pointer">
-              <span class="material-symbols-outlined" style="font-size:1rem">upload</span>
-              {{ 'COST.FORM.ADD' | translate }}
-              <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png"
-                (change)="onFileSelected($event)" style="display:none"/>
-            </label>
+            <div>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_ATTACH_TITLE' | translate }}</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_ATTACH_SUB' | translate }}</p>
+            </div>
           </div>
 
-          @if (pendingFiles().length > 0) {
-            <div style="display:flex;flex-direction:column;gap:.5rem">
-              @for (f of pendingFiles(); track $index; let i = $index) {
-                <div style="display:flex;align-items:center;gap:.75rem;padding:10px 14px;
-                            border-radius:12px;background:#eff4ff">
-                  <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">description</span>
-                  <div style="flex:1;min-width:0">
-                    <p style="font-size:.875rem;font-weight:500;color:#0b1c30;margin:0;
-                               white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</p>
-                    <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ fmtFileSize(f.size) }}</p>
-                  </div>
-                  <button type="button" (click)="removeFile(i)"
-                    style="padding:6px;border-radius:8px;border:none;cursor:pointer;
-                           background:transparent;color:#ba1a1a">
-                    <span class="material-symbols-outlined" style="font-size:1rem">delete</span>
-                  </button>
-                </div>
-              }
-            </div>
-          } @else {
-            <div style="padding:1.5rem;text-align:center;border-radius:12px;
-                        border:1.5px dashed #bdc9c4">
-              <span class="material-symbols-outlined" style="font-size:2rem;display:block;
-                           margin-bottom:4px;color:#bdc9c4">upload_file</span>
-              <p style="font-size:.75rem;color:#44474c80;margin:0">{{ 'COST.FORM.NO_FILES' | translate }}</p>
-            </div>
-          }
-        </div>
+          <!-- daf-file-upload owns picking (click or drag-and-drop), the file list, removal
+               and the 10 MB check: an oversized file stays listed with its error, and
+               doSave() skips it. -->
+          <daf-file-upload [config]="attachmentConfig" [(files)]="pendingFiles" />
+        </daf-card>
 
       </div>
       <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -559,59 +491,47 @@
     <!-- end two-column grid -->
   }
 
-</div>
+  <!-- ══════════════════════════════════════════════════════════════════════
+       BARRE D'ACTIONS — reprise de l'assistant affaire : une `daf-card`
+       `variant: 'floating'`, Annuler — zone centrale — action affirmative.
 
-<!-- ── FIXED BOTTOM ACTION BAR ─────────────────────────────────────────────── -->
-<footer style="position:fixed;bottom:0;left:0;right:0;z-index:50;
-               display:flex;align-items:center;justify-content:space-between;
-               padding:0 2.5rem;height:72px;
-               background:rgba(240,244,248,.95);
-               backdrop-filter:blur(12px);
-               border-top:1px solid #e2e8f0;
-               box-shadow:0 -4px 20px rgba(0,0,0,.06)">
+       Pas d'étapes ici, donc pas de `daf-stepper` : la zone centrale (entre les
+       deux filets) porte le rappel des champs obligatoires tant que la saisie est
+       incomplète.
 
-  <!-- Cancel -->
-  <a routerLink=".."
-     style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;
-            color:#44474c;border:1px solid #d1d5db;background:white;
-            font-size:.875rem;font-weight:500;text-decoration:none;transition:all .2s">
-    <span class="material-symbols-outlined" style="font-size:1rem">arrow_back</span>
-    {{ 'COST.FORM.FOOT_CANCEL' | translate }}
-  </a>
+       Une SEULE action dessinée : « Soumettre » en teal. « Annuler » et
+       « Enregistrer brouillon » sont des actions de TEXTE (`.footer-action`), gris au
+       repos, teal au survol — comme Retour/Annuler dans l'assistant affaire.
+       ══════════════════════════════════════════════════════════════════ -->
+  <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
+    <div class="action-bar__inner">
 
-  <!-- Right actions -->
-  <div style="display:flex;align-items:center;gap:.75rem">
-    @if (!canSave()) {
-      <span style="font-size:.75rem;color:#44474c90">{{ 'COST.FORM.FOOT_REQUIRED_HINT' | translate }}</span>
-    }
-    <!-- Save draft -->
-    <button type="button" (click)="saveDraft()" [disabled]="!canSave() || isSaving()"
-      style="padding:10px 24px;border-radius:12px;font-size:.875rem;font-weight:700;
-             border:1.5px solid #006b58;color:#006b58;background:white;cursor:pointer;
-             transition:all .2s;opacity:1"
-      [style.opacity]="(!canSave() || isSaving()) ? '0.5' : '1'">
-      @if (isSaving()) {
-        <span class="material-symbols-outlined" style="font-size:.875rem;vertical-align:middle;
-               animation:spin 1s linear infinite">progress_activity</span>
-      } @else {
-        {{ 'COST.FORM.FOOT_SAVE_DRAFT' | translate }}
-      }
-    </button>
-    <!-- Submit -->
-    <button type="button" (click)="submitLine()" [disabled]="!canSave() || isSaving()"
-      style="display:flex;align-items:center;gap:8px;padding:10px 24px;border-radius:12px;
-             font-size:.875rem;font-weight:700;color:white;background:#006b58;border:none;
-             cursor:pointer;transition:all .2s;
-             box-shadow:0 4px 14px rgba(0,107,88,.4)"
-      [style.opacity]="(!canSave() || isSaving()) ? '0.5' : '1'">
-      @if (isSaving()) {
-        <span class="material-symbols-outlined" style="font-size:1rem;
-               animation:spin 1s linear infinite">progress_activity</span>
-      } @else {
-        <span class="material-symbols-outlined" style="font-size:1rem">send</span>
-      }
-      {{ 'COST.FORM.FOOT_SUBMIT' | translate }}
-    </button>
-  </div>
+      <div class="action-bar__side">
+        <button type="button" class="footer-action" (click)="cancel()">
+          <span class="material-symbols-outlined">close</span>
+          {{ 'COST.FORM.FOOT_CANCEL' | translate }}
+        </button>
+      </div>
 
-</footer>
+      <div class="action-bar__rail">
+        @if (!canSave()) {
+          <p class="action-bar__hint">
+            <span class="material-symbols-outlined">info</span>
+            {{ 'COST.FORM.FOOT_REQUIRED_HINT' | translate }}
+          </p>
+        }
+      </div>
+
+      <div class="action-bar__side action-bar__side--end">
+        <button type="button" class="footer-action" (click)="saveDraft()"
+                [disabled]="!canSave() || isSaving()">
+          <span class="material-symbols-outlined">save</span>
+          {{ 'COST.FORM.FOOT_SAVE_DRAFT' | translate }}
+        </button>
+        <daf-button [options]="submitButtonOptions()" (onClick)="submitLine()" />
+      </div>
+
+    </div>
+  </daf-card>
+
+</daf-page>
