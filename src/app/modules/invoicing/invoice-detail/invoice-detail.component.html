@@ -262,9 +262,8 @@
 </daf-page>
 
 <!-- ══ Modales — à la racine de la page (§10e) ══ -->
-@if (showPaymentModal() && invoice()) {
-  <app-payment-modal [invoice]="invoice()!" (closed)="onPaymentClosed($event)" />
-}
+<!-- Monté sans @if : le dialogue appartient à ModalService, on l'ouvre par .open(). -->
+<app-payment-modal #paymentModal />
 @if (showCreditNote() && invoice()) {
   <app-credit-note-modal [invoice]="invoice()!" (closed)="onCreditNoteClosed($event)" />
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
@@ -92,7 +92,7 @@ export class RecouvrementDetailComponent implements OnInit {
   error       = signal<string | null>(null);
   actionError = signal<string | null>(null);
 
-  showPaymentModal = signal(false);
+  private readonly paymentModal = viewChild.required<PaymentModalComponent>('paymentModal');
   showSuspendForm  = signal(false);
   suspendReason    = signal('');
 
@@ -459,12 +459,8 @@ export class RecouvrementDetailComponent implements OnInit {
 
   openPaymentModal(): void {
     this.actionError.set(null);
-    this.showPaymentModal.set(true);
-  }
-
-  onPaymentClosed(saved: boolean): void {
-    this.showPaymentModal.set(false);
-    if (saved) this.refresh();
+    const inv = this.invoice();
+    if (inv) this.paymentModal().open(inv, () => this.refresh());
   }
 
   openSuspend(): void {

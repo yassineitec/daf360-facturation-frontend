@@ -589,6 +589,7 @@
       "SAVING": "Saving…",
       "SAVE": "Save",
       "DRAFT": "Draft",
+      "TOTAL_TTC": "Total incl. tax",
       "ERROR": "Error while saving."
     },
     "CREDIT_NOTE_MODAL": {

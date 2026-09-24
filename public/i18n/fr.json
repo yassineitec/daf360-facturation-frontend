@@ -589,6 +589,7 @@
       "SAVING": "Enregistrement…",
       "SAVE": "Enregistrer",
       "DRAFT": "Brouillon",
+      "TOTAL_TTC": "Montant TTC",
       "ERROR": "Erreur lors de l'enregistrement."
     },
     "CREDIT_NOTE_MODAL": {
