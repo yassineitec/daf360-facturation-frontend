@@ -244,6 +244,12 @@ export class AdminListComponent implements OnInit {
       isDefault: v.isDefault, isActive: v.isActive,
       requiresReceipt: v.requiresReceipt === true,
       parent: this.parentLabel(v.parentValueCode),
+      // A sub-category only reaches the cost form when its parent category is active FOR
+      // THIS COUNTRY — e.g. the global V78 sub-categories in a country whose own
+      // categories replaced the global set (V84). Flagged so the admin can re-attach it
+      // to one of the country's categories (edit → parent) or switch it off.
+      parentHidden: !!v.parentValueCode
+        && !this.parentCategories().some(c => c.code === v.parentValueCode && c.isActive),
       sourceType: v.sourceType ?? 'MANUAL',
       autoPushModule: v.autoPushModule,
       isStrictScrutiny: v.isStrictScrutiny === true,
@@ -717,6 +723,7 @@ export class AdminListComponent implements OnInit {
       }).subscribe({
         next: created => {
           this.listValues.update(list => [...list, created]);
+          this.factListSvc.invalidateCache();
           if (this.isCategoryType()) this.loadParentCategories();
           this.valueModalSaving.set(false);
           this.valueModalRef?.close();
@@ -748,6 +755,7 @@ export class AdminListComponent implements OnInit {
         next: updated => {
           // v.id and updated.id may differ when a global value was overridden with a country copy
           this.listValues.update(list => [...list.filter(x => x.id !== v.id), updated]);
+          this.factListSvc.invalidateCache();
           if (this.isCategoryType()) this.loadParentCategories();
           this.valueModalSaving.set(false);
           this.valueModalRef?.close();
@@ -780,6 +788,7 @@ export class AdminListComponent implements OnInit {
   private doDeactivateValue(v: ListValueDto): void {
     this.factListSvc.deactivateListValue(v.id, this.paysId()).subscribe({
       next: () => {
+        this.factListSvc.invalidateCache();
         this.loadListValues();
         if (this.isCategoryType()) this.loadParentCategories();
       },
@@ -790,6 +799,7 @@ export class AdminListComponent implements OnInit {
   reactivateValue(v: ListValueDto): void {
     this.factListSvc.updateListValue(v.id, this.paysId(), { isActive: true }).subscribe({
       next: () => {
+        this.factListSvc.invalidateCache();
         this.loadListValues();
         if (this.isCategoryType()) this.loadParentCategories();
       },

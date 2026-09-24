@@ -3782,6 +3782,8 @@
       "FIELD_DESCRIPTION_FR": "Description FR",
       "FIELD_DESCRIPTION_EN": "Description EN",
       "ERR_PARENT_REQUIRED": "Choose the parent category.",
+      "PARENT_HIDDEN": "Parent inactive here",
+      "PARENT_HIDDEN_HINT": "The parent category is not active for this entity, so this sub-category does not appear on the form. Edit it to attach it to one of the entity's categories, or deactivate it.",
       "ERR_AUTO_PUSH_MODULE_REQUIRED": "Enter the feeding module (e.g. PAYROLL)."
     },
     "FOREX": {

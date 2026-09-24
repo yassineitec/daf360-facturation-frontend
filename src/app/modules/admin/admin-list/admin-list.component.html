@@ -152,6 +152,11 @@
             <!-- Cost taxonomy columns (COST_CATEGORY / COST_SUB_CATEGORY only) -->
             <ng-template dafCell="parent" let-row>
               {{ row['parent'] }}
+              @if (row['parentHidden']) {
+                <span class="badge-inactive" [title]="'ADMIN.LISTS.PARENT_HIDDEN_HINT' | translate">
+                  {{ 'ADMIN.LISTS.PARENT_HIDDEN' | translate }}
+                </span>
+              }
             </ng-template>
 
             <ng-template dafCell="sourceType" let-row>
@@ -432,7 +437,7 @@
           [options]="parentOptions()"
           [config]="{ label: ('ADMIN.LISTS.FIELD_PARENT' | translate), placeholder: ('ADMIN.LISTS.PLACEHOLDER_PARENT' | translate), required: true, searchable: true }"
           [selected]="valueForm.parentCode ? [valueForm.parentCode] : []"
-          (selectedChange)="valueForm.parentCode = $event[0] ?? ''" />
+          (selectedChange)="valueForm.parentCode = $event[0] || ''" />
       }
 
       <!-- Catégorie de coût : source, contrôle renforcé et classification. -->

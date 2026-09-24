@@ -415,6 +415,7 @@ export class CostConfigComponent {
       isDefault: this.newValue.isDefault,
     }).subscribe({
       next: created => {
+        this.factListSvc.invalidateCache();
         this.listValues.update(list => [...list, created]);
         this.newValue = { code: '', labelFr: '', labelEn: '', isDefault: false };
         this.showAddValue.set(false);
@@ -427,10 +428,18 @@ export class CostConfigComponent {
     });
   }
 
+  /**
+   * Scoped to the country picked at the top of the admin page, exactly like Admin →
+   * Listes: a global value is switched off for this country only (the backend writes an
+   * inactive country row). Without `paysId` it used to be switched off for EVERY country.
+   */
   deactivate(id: number): void {
     if (!confirm(this.translate.instant('COST.CONFIG.CONFIRM_DEACTIVATE_VALUE'))) return;
-    this.factListSvc.deactivateListValue(id).subscribe({
-      next: () => this.listValues.update(list => list.filter(v => v.id !== id)),
+    this.factListSvc.deactivateListValue(id, this.paysId()).subscribe({
+      next: () => {
+        this.factListSvc.invalidateCache();
+        this.listValues.update(list => list.filter(v => v.id !== id));
+      },
       error: err => this.listError.set(err.error?.message ?? this.translate.instant('COST.CONFIG.GENERIC_ERROR')),
     });
   }

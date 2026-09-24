@@ -1,5 +1,5 @@
 import {
-  Component, OnInit, inject, signal, computed, DestroyRef,
+  Component, OnInit, inject, signal, computed, DestroyRef, WritableSignal,
 } from '@angular/core';
 import { CommonModule }         from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
@@ -79,18 +79,21 @@ export class CostFormComponent implements OnInit {
 
   private readonly supplierSearch$ = new Subject<string>();
 
+  /** Edit mode: the line's currency code, used to re-point a currency the pays overrides. */
+  private lineCurrencyCode: string | null = null;
+
   // ── daf-select option lists ─────────────────────────────────────────────────
   paysOptions = computed<SelectOption[]>(() =>
     this.paysList().map(p => ({ value: String(p.id), label: `${p.frenchLabel} (${p.isoCode})` }))
   );
   currencyOptions = computed<SelectOption[]>(() =>
-    this.currencies().map(c => ({ value: String(c.id), label: `${c.code} — ${c.labelFr}` }))
+    this.currencies().map(c => ({ value: String(c.id), label: `${c.code} — ${this.valueLabel(c)}` }))
   );
   affaireOptions = computed<SelectOption[]>(() =>
     this.affaires().map(a => ({ value: String(a.id), label: `${a.reference} — ${a.intitule}` }))
   );
   costTypeOptions = computed<SelectOption[]>(() =>
-    this.costTypes().map(t => ({ value: String(t.id), label: t.labelFr }))
+    this.costTypes().map(t => ({ value: String(t.id), label: this.valueLabel(t) }))
   );
 
   // ── D3 taxonomy migration (V78): cascading category / sub-category ──────────
@@ -283,6 +286,9 @@ export class CostFormComponent implements OnInit {
         this.costSubCategoryLabel.set(line.costSubCategoryLabel ?? '');
         this.netAmountLocal.set(line.netAmountLocal);
         this.currencyId.set(line.currencyId);
+        // The line carries its currency CODE: if the pays list shows a country override
+        // of that currency (new row, new id), reconcileListValue() re-points by code.
+        this.lineCurrencyCode = line.currency;
         this.supplierId.set(line.supplierId);
         if (line.supplierId != null) {
           this.costSvc.getSupplier(line.supplierId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -335,11 +341,32 @@ export class CostFormComponent implements OnInit {
     this.paysId.set(pid);
     if (!pid) return;
 
-    this.costSvc.getListValues('CURRENCY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => this.currencies.set(v));
-    this.costSvc.getListValues('COST_TYPE', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => this.costTypes.set(v));
+    // Every per-pays list gets the same treatment as the category: a selection carried
+    // over from the previous pays is re-pointed (same code) or cleared, never left
+    // pointing at another country's row — the backend now rejects those (RG_LIST_VALUE_PAYS).
+    this.costSvc.getListValues('CURRENCY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.currencies();
+      this.currencies.set(v);
+      if (this.reconcileListValue(previous, v, this.currencyId, this.lineCurrencyCode)) {
+        this.onAmountOrCurrencyChange();
+      }
+    });
+    this.costSvc.getListValues('COST_TYPE', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.costTypes();
+      this.costTypes.set(v);
+      this.reconcileListValue(previous, v, this.costTypeId);
+    });
     this.affaireSvc.getAffaires({ paysId: pid, size: 200 })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(p => this.affaires.set(p.content));
+      .subscribe(p => {
+        const previous = this.affaires();
+        this.affaires.set(p.content);
+        // Affaires have no shared code across countries: one from the old pays is simply dropped.
+        const id = this.affaireId();
+        if (id !== null && !p.content.some(a => a.id === id) && previous.some(a => a.id === id)) {
+          this.affaireId.set(null);
+        }
+      });
 
     this.costSvc.getListValues('COST_CATEGORY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
       const previous = this.costCategories();
@@ -374,6 +401,35 @@ export class CostFormComponent implements OnInit {
       this.costSubCategoryId.set(null); this.costSubCategoryLabel.set('');
     }
     this.onAmountOrCurrencyChange();
+  }
+
+  /**
+   * Generic form of reconcileCategory() for the plain per-pays lists (devise, type de
+   * coût). Returns true when the selection changed. `knownCode` covers edit mode's first
+   * load, where the selected id is not in any previous list yet but its code is known.
+   */
+  private reconcileListValue(previous: ListValueDto[], next: ListValueDto[],
+                             selected: WritableSignal<number | null>, knownCode?: string | null): boolean {
+    const id = selected();
+    if (id === null || next.some(v => v.id === id)) return false;
+    const code = previous.find(v => v.id === id)?.code ?? knownCode ?? null;
+    if (!code) return false;
+    selected.set(next.find(v => v.code === code)?.id ?? null);
+    return true;
+  }
+
+  /**
+   * The pays picker itself (a user choice, unlike edit-mode / query-param preloads). A
+   * supplier belongs to exactly one pays and has no counterpart elsewhere, so it is
+   * dropped when the pays really changes — the search box is scoped to the new pays.
+   */
+  onPaysSelected(id: number | null): void {
+    if (id !== this.paysId()) {
+      this.supplierId.set(null);
+      this.supplierQuery.set('');
+      this.suppliers.set([]);
+    }
+    this.onPaysChange(id);
   }
 
   /** Same rule as reconcileCategory(), for the sub-category. */
