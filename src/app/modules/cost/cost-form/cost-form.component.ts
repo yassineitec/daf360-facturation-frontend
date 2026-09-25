@@ -56,6 +56,9 @@ export class CostFormComponent implements OnInit {
   // ones it has not overridden or switched off.
   costCategories    = signal<ListValueDto[]>([]);
   costSubCategories = signal<ListValueDto[]>([]);
+  // VAT_RATE (configurable) — replaces the former hardcoded tvaOptions list. Loaded per
+  // pays in onPaysChange(), same as every other list on this form.
+  vatRates          = signal<ListValueDto[]>([]);
 
   paysId              = signal<number | null>(null);
   costCategoryId      = signal<number | null>(null);
@@ -272,14 +275,18 @@ export class CostFormComponent implements OnInit {
     ];
   });
 
+  /**
+   * Built from the VAT_RATE configurable list (loaded per pays in onPaysChange()), not
+   * the former hardcoded FR/EN option labels. `tvaRate` itself keeps storing/computing a
+   * FRACTION (0.19, not 19) — only the list of available options now comes from the
+   * backend, whose `ratePct` is a whole percentage that must be converted back down.
+   */
   readonly tvaOptions = computed<SelectOption[]>(() => {
     this.translate.currentLang();
-    return [
-      { value: '0.19', label: this.translate.instant('COST.FORM.TAX.TVA_OPT_19') },
-      { value: '0.13', label: this.translate.instant('COST.FORM.TAX.TVA_OPT_13') },
-      { value: '0.07', label: this.translate.instant('COST.FORM.TAX.TVA_OPT_7') },
-      { value: '0',    label: this.translate.instant('COST.FORM.TAX.TVA_OPT_0') },
-    ];
+    return this.vatRates().map(v => ({
+      value: v.ratePct != null ? (v.ratePct / 100).toString() : '0',
+      label: this.valueLabel(v),
+    }));
   });
 
   readonly timbreOptions = computed<SelectOption[]>(() => {
@@ -434,6 +441,11 @@ export class CostFormComponent implements OnInit {
       const previous = this.costTypes();
       this.costTypes.set(v);
       this.reconcileListValue(previous, v, this.costTypeId);
+    });
+    // VAT_RATE — no selected-id to reconcile (tvaRate stores a plain fraction, not a list
+    // value id), so this just refreshes the options tvaOptions() rebuilds from.
+    this.costSvc.getListValues('VAT_RATE', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      this.vatRates.set(v);
     });
     this.affaireSvc.getAffaires({ paysId: pid, size: 200 })
       .pipe(takeUntilDestroyed(this.destroyRef))

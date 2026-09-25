@@ -179,6 +179,11 @@
               </span>
             </ng-template>
 
+            <!-- VAT_RATE only -->
+            <ng-template dafCell="ratePct" let-row>
+              {{ row['ratePct'] != null ? row['ratePct'] + '%' : '—' }}
+            </ng-template>
+
           </daf-data-table>
 
           @if (listTotalPages() > 1) {
@@ -428,6 +433,14 @@
           {{ 'ADMIN.LISTS.RECEIPT_REQUIRED' | translate }}
         </label>
         <p class="form-hint">{{ 'ADMIN.LISTS.RECEIPT_HINT' | translate }}</p>
+      }
+
+      <!-- Taux de TVA : pourcentage entier (19, pas 0.19) — VAT_RATE uniquement. -->
+      @if (isVatRateType()) {
+        <daf-form-field
+          [options]="{ label: ('ADMIN.LISTS.FIELD_RATE_PCT' | translate), type: 'number', placeholder: '19' }"
+          [value]="valueForm.ratePct"
+          (valueChange)="valueForm.ratePct = clampRatePct($event)" />
       }
 
       <!-- Sous-catégorie de coût : rattachement obligatoire à une catégorie de l'entité. -->

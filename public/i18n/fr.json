@@ -3806,7 +3806,9 @@
       "ERR_PARENT_REQUIRED": "Choisissez la catégorie parente.",
       "PARENT_HIDDEN": "Parente inactive ici",
       "PARENT_HIDDEN_HINT": "La catégorie parente n'est pas active pour cette entité : cette sous-catégorie n'apparaît pas dans le formulaire. Modifiez-la pour la rattacher à une catégorie de l'entité, ou désactivez-la.",
-      "ERR_AUTO_PUSH_MODULE_REQUIRED": "Indiquez le module d'alimentation (ex. PAYROLL)."
+      "ERR_AUTO_PUSH_MODULE_REQUIRED": "Indiquez le module d'alimentation (ex. PAYROLL).",
+      "FIELD_RATE_PCT": "Taux (%)",
+      "COL_RATE_PCT": "Taux (%)"
     },
     "FOREX": {
       "INFO_1": "Les taux convertissent les montants des lignes de coût vers EUR et CHF lors des calculs P&L. Le taux CHF est calculé automatiquement (",

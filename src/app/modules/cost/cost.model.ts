@@ -45,6 +45,11 @@ export interface ListValueDto {
    * id), while the global sub-categories keep pointing at the global row's id.
    */
   parentValueCode?: string | null;
+  /**
+   * Whole percentage (e.g. `19`, not `0.19`) — only populated for `VAT_RATE` rows.
+   * `null` for every other list type.
+   */
+  ratePct?: number | null;
 }
 
 /** Body of `POST /admin/lists/{type}/values` — taxonomy fields only read for COST_CATEGORY / COST_SUB_CATEGORY. */
@@ -58,6 +63,8 @@ export interface CreateListValueBody extends TaxonomyFields {
   isDefault?: boolean;
   /** Justificatif obligatoire — n'a de sens que pour EXPENSE_CATEGORY. */
   requiresReceipt?: boolean;
+  /** Whole percentage (e.g. `19`) — n'a de sens que pour VAT_RATE. */
+  ratePct?: number;
 }
 
 /** Body of `PATCH /admin/lists/values/{id}` — `undefined` = unchanged. */
@@ -67,6 +74,8 @@ export interface UpdateListValueBody extends TaxonomyFields {
   isDefault?: boolean;
   isActive?: boolean;
   requiresReceipt?: boolean;
+  /** Whole percentage (e.g. `19`) — n'a de sens que pour VAT_RATE. */
+  ratePct?: number;
 }
 
 export interface TaxonomyFields {
