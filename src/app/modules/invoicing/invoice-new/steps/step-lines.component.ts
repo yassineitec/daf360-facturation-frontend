@@ -3,7 +3,6 @@ import {
   ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators,
 } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { TVA_RATES } from '../../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { InvoiceService } from '../../invoice.service';
 import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.service';
@@ -212,8 +211,8 @@ export interface StepLinesValue {
               <!-- TVA (toujours présente) -->
               <td>
                 <select formControlName="tauxTva" class="td-input td-num" (change)="recalc(i)">
-                  @for (r of tvaRates; track r) {
-                    <option [value]="r">{{ r }}%</option>
+                  @for (r of vatRateOptions(); track r.id) {
+                    <option [value]="r.ratePct">{{ r.ratePct }}%</option>
                   }
                 </select>
               </td>
@@ -293,8 +292,8 @@ export interface StepLinesValue {
                 </td>
                 <td>
                   <select formControlName="tauxTva" class="td-input td-num" (change)="recalc(i)">
-                    @for (r of tvaRates; track r) {
-                      <option [value]="r">{{ r }}%</option>
+                    @for (r of vatRateOptions(); track r.id) {
+                      <option [value]="r.ratePct">{{ r.ratePct }}%</option>
                     }
                   </select>
                 </td>
@@ -359,7 +358,14 @@ export class StepLinesComponent {
   prevStep    = output<void>();
   nextStep    = output<StepLinesValue>();
 
-  readonly tvaRates = TVA_RATES;
+  /**
+   * Référentiel VAT_RATE (configurable, chargé par pays) — remplace l'ancienne constante
+   * `TVA_RATES` codée en dur. Chargé dès qu'un pays est connu (cf. l'effect dédié dans le
+   * constructeur), quel que soit le mode de facturation : la TVA est universelle,
+   * contrairement aux frais remboursables ci-dessous qui ne concernent qu'AV/T&M/Livrable.
+   */
+  private readonly vatRates = signal<ListValueDto[]>([]);
+  readonly vatRateOptions = computed(() => this.vatRates());
 
   /** Données chargées depuis GET /invoices/affaire/{id}/progress — null hors mode AV */
   readonly progress = signal<{ budgetTotal: number; pctFacture: number } | null>(null);
@@ -446,6 +452,21 @@ export class StepLinesComponent {
         });
       } else {
         this.progress.set(null);
+      }
+    });
+
+    // Charge le référentiel VAT_RATE dès qu'un pays est connu — contrairement à l'effect
+    // suivant (frais remboursables), PAS limité à AV/T&M/Livrable : la TVA est universelle,
+    // le mode standard/RMB a lui aussi besoin d'un dropdown de taux fonctionnel.
+    effect(() => {
+      const aff = this.affaireData();
+      if (aff.paysId) {
+        this.listSvc.getListValues('VAT_RATE', aff.paysId).subscribe({
+          next:  v  => this.vatRates.set(v),
+          error: () => this.vatRates.set([]),
+        });
+      } else {
+        this.vatRates.set([]);
       }
     });
 
