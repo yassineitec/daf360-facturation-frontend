@@ -499,27 +499,45 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   @ViewChild('avDatePickerTrigger', { read: ElementRef })
   private avDatePickerTriggerRef?: ElementRef<HTMLElement>;
 
-  avDateRange(): Date[] {
-    return [
-      new Date(this.periodDateFrom + 'T00:00:00'),
-      new Date(this.periodDateTo + 'T00:00:00'),
-    ];
+  /** Vrai quand la sélection du calendrier AV a été vidée ("Effacer", le "x" d'une date, ou
+   * le 1er clic d'une nouvelle plage — les trois font émettre `null` à la lib) : le
+   * calendrier s'affiche alors vide, mais periodDateFrom/periodDateTo gardent la dernière
+   * période valide tant qu'une nouvelle plage complète n'a pas été choisie. */
+  private avPickerCleared = signal(false);
+  @ViewChild('avPicker') private avPickerRef?: MultiDatePickerComponent;
+
+  /** Référence mise en cache : `[value]` est relu à chaque détection de changements, et un
+   * nouveau tableau à chaque fois ré-imposerait l'ancienne plage à la lib (annulant
+   * "Effacer" et la date de début en attente d'une nouvelle plage). */
+  private avRangeCache: { from: string; to: string; range: Date[] } | null = null;
+
+  avDateRange(): Date[] | null {
+    if (this.avPickerCleared()) return null;
+    const c = this.avRangeCache;
+    if (!c || c.from !== this.periodDateFrom || c.to !== this.periodDateTo) {
+      this.avRangeCache = {
+        from: this.periodDateFrom,
+        to: this.periodDateTo,
+        range: [
+          new Date(this.periodDateFrom + 'T00:00:00'),
+          new Date(this.periodDateTo + 'T00:00:00'),
+        ],
+      };
+    }
+    return this.avRangeCache!.range;
   }
 
   onAvDateRangeChange(value: Date | Date[] | null): void {
-    // `value` arrive à `null` quand on clique "Effacer" dans le calendrier (reset() de
-    // daf-multi-date-picker) — un AV a toujours besoin d'une période, donc il n'y a rien
-    // de valide à appliquer ; on se contente de refermer le panneau. Sans ce cas, le
-    // `return` du garde ci-dessous avalait l'événement en silence et "Effacer" ne
-    // semblait rien faire (le panneau restait ouvert, la période affichée ne changeait
-    // pas).
+    // `null` = sélection vidée ("Effacer", "x" d'une date, ou 1er clic d'une nouvelle
+    // plage) : on vide le calendrier et on le laisse ouvert pour choisir une nouvelle plage.
     if (value === null) {
-      this.closeAvDatePicker();
+      this.avPickerCleared.set(true);
       return;
     }
     if (!Array.isArray(value) || value.length !== 2) return;
     this.periodDateFrom = this.toIso(value[0]);
     this.periodDateTo = this.toIso(value[1]);
+    this.avPickerCleared.set(false);
     // Ne referme plus tout seul une fois les deux dates posées — seul le bouton
     // "Confirmer" (ou Échap) referme désormais, pour laisser le temps de vérifier/corriger
     // la plage avant de la valider.
@@ -540,6 +558,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   closeAvDatePicker(): void {
     this.showAvDatePicker.set(false);
     this.avDatePickerPositioned.set(false);
+    // Fermé sans plage complète : on abandonne la date de début en attente (la lib ne le
+    // fait pas elle-même en mode inline) et le calendrier réaffiche la période conservée.
+    if (this.avPickerRef?.pendingRangeStart()) this.avPickerRef.reset();
+    this.avPickerCleared.set(false);
   }
 
   // ── TM ──────────────────────────────────────────────────────────────────
@@ -552,24 +574,26 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   /** TEST : un seul daf-multi-date-picker (selectionMode 'range') à la place des deux
    * daf-form-field Date début / Date fin — fait le pont vers les mêmes tmDateFrom/tmDateTo
    * ISO que le reste du composant utilise déjà (export Excel, aperçu, validation). */
-  readonly tmDateRange = computed<Date[]>(() => [
+  /** Même rôle que avPickerCleared, pour le calendrier Régie/TM. */
+  private tmPickerCleared = signal(false);
+  @ViewChild('tmPicker') private tmPickerRef?: MultiDatePickerComponent;
+
+  readonly tmDateRange = computed<Date[] | null>(() => this.tmPickerCleared() ? null : [
     new Date(this.tmDateFrom() + 'T00:00:00'),
     new Date(this.tmDateTo() + 'T00:00:00'),
   ]);
 
   onTmDateRangeChange(value: Date | Date[] | null): void {
-    // `value` arrive à `null` quand on clique "Effacer" (reset() de daf-multi-date-picker) —
-    // même cas que onAvDateRangeChange : un TM a toujours besoin d'une période pour son
-    // aperçu, donc rien de valide à appliquer ; on se contente de refermer le panneau. Sans
-    // ce cas, le `return` du garde ci-dessous avalait l'événement en silence et "Effacer"
-    // ne semblait rien faire du tout (pas même refermer le panneau).
+    // Même cas que onAvDateRangeChange : `null` vide le calendrier et le laisse ouvert ;
+    // tmDateFrom/tmDateTo (et donc l'aperçu) gardent la dernière période valide.
     if (value === null) {
-      this.closeDatePicker();
+      this.tmPickerCleared.set(true);
       return;
     }
     if (!Array.isArray(value) || value.length !== 2) return;
     this.tmDateFrom.set(this.toIso(value[0]));
     this.tmDateTo.set(this.toIso(value[1]));
+    this.tmPickerCleared.set(false);
     this.loadTmPreview();
     // Ne referme plus tout seul une fois les deux bornes posées — seul le bouton
     // "Confirmer" (ou Échap) referme désormais, pour laisser le temps de vérifier/corriger
@@ -778,6 +802,9 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   closeDatePicker(): void {
     this.showTmDatePicker.set(false);
     this.datePickerPositioned.set(false);
+    // Voir closeAvDatePicker.
+    if (this.tmPickerRef?.pendingRangeStart()) this.tmPickerRef.reset();
+    this.tmPickerCleared.set(false);
   }
 
   private positionDatePicker(): void {
@@ -835,6 +862,40 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   // onTmDateRangeChange) — seuls le bouton "Confirmer" ou Échap (onEscapeForDatePicker)
   // les referment désormais.
 
+  /** En mode plage, le "x" d'une date de daf-multi-date-picker (removeDate()) vide TOUTE la
+   * sélection, et n'indique pas quelle date a été cliquée (il émet juste `null`). On
+   * intercepte donc le clic en phase de capture, AVANT le bouton de la lib : on retrouve la
+   * date retirée par la position de sa pastille (même ordre que la plage : début, fin), et
+   * l'AUTRE date devient le début d'une nouvelle plage en attente — un seul clic suffit
+   * ensuite pour choisir la nouvelle borne.
+   *
+   * Écouté sur `document` (et non sur chaque panneau une fois pour toutes) : les panneaux
+   * vivent sous des `@if` (ex. `loadingTaux()` pour AV) et n'existent pas encore au premier
+   * rendu — les refs sont donc relues à chaque clic. Dépend du gabarit interne de la lib
+   * (pastilles `span.rounded-full > button`) : si elle change, le clic retombe simplement sur
+   * son comportement d'origine (tout vider). */
+  private readonly onChipRemoveCapture = (event: MouseEvent): void => {
+    this.keepOtherDateOnChipRemove(event, this.avDatePickerPanelRef?.nativeElement, this.avPickerRef)
+      || this.keepOtherDateOnChipRemove(event, this.calDatePickerPanelRef?.nativeElement, this.tmPickerRef);
+  };
+
+  private keepOtherDateOnChipRemove(
+    event: MouseEvent, panel: HTMLElement | undefined, picker: MultiDatePickerComponent | undefined,
+  ): boolean {
+    const chipButtons = 'span.rounded-full > button';
+    const btn = (event.target as HTMLElement | null)?.closest?.(chipButtons);
+    const range = picker?.value();
+    if (!panel || !picker || !btn || !panel.contains(btn) || !Array.isArray(range) || range.length !== 2) {
+      return false;
+    }
+    const idx = Array.from(panel.querySelectorAll(chipButtons)).indexOf(btn);
+    if (idx !== 0 && idx !== 1) return false;
+    event.stopPropagation();
+    picker.value.set(null); // → onAv/onTmDateRangeChange(null) : calendrier vidé, reste ouvert
+    picker.pendingRangeStart.set(range[1 - idx]);
+    return true;
+  }
+
   @HostListener('document:keydown.escape')
   onEscapeForDatePicker(): void {
     if (this.showTmDatePicker()) this.closeDatePicker();
@@ -845,6 +906,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     // Les panneaux ont pu être déplacés sous <body> : Angular ne les nettoiera pas tout
     // seul puisqu'ils ne se trouvent plus là où le template les a créés (même raison que
     // le `onCleanup` de `portalPanel()` dans la lib, pour son propre portail).
+    this.document.removeEventListener('click', this.onChipRemoveCapture, true);
     this.calDatePickerPanelRef?.nativeElement.remove();
     this.avDatePickerPanelRef?.nativeElement.remove();
     this.historyOverlayPortaled?.remove();
@@ -1046,6 +1108,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     if (this.affaire.billingMode === 'FORFAIT') { this.loadTauxHistory(); this.loadAvLineHistory(); }
     if (this.affaire.billingMode === 'REGIE') { this.loadTmPreview(); this.loadTmHistory(); }
     if (this.affaire.billingMode === 'LIVRABLE') { this.loadLivrables(); this.loadActiveBatches(); }
+    // Voir onChipRemoveCapture — capture (true) pour passer avant le bouton "x" de la lib.
+    this.document.addEventListener('click', this.onChipRemoveCapture, true);
   }
 
   // ── AV actions ────────────────────────────────────────────────────────────

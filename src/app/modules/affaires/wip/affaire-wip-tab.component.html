@@ -62,7 +62,7 @@
           [style.display]="showAvDatePicker() ? 'block' : 'none'"
           [style.visibility]="avDatePickerVisible() ? 'visible' : 'hidden'"
           class="wip-date-picker-panel shadow-xl rounded-lg">
-          <daf-multi-date-picker
+          <daf-multi-date-picker #avPicker
             [value]="avDateRange()"
             (valueChange)="onAvDateRangeChange($event)"
             [config]="{ selectionMode: 'range', inline: true, fullWidth: false }" />
@@ -299,7 +299,7 @@
           [style.display]="showTmDatePicker() ? 'block' : 'none'"
           [style.visibility]="datePickerVisible() ? 'visible' : 'hidden'"
           class="wip-date-picker-panel shadow-xl rounded-lg">
-          <daf-multi-date-picker
+          <daf-multi-date-picker #tmPicker
             [value]="tmDateRange()"
             (valueChange)="onTmDateRangeChange($event)"
             [config]="{ selectionMode: 'range', inline: true, fullWidth: false }" />
