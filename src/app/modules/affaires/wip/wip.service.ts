@@ -4,6 +4,16 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { WipTauxDto, WipTmPreviewDto } from './wip.model';
 
+/** `montantSaisi` is set only in "Montant" mode: the backend then stores that amount as-is
+ * and re-derives `tauxSaisi` from it (the one sent here is only indicative). */
+export interface WipTauxSubmitBody {
+  periodDateFrom: string;
+  periodDateTo: string;
+  tauxSaisi: number;
+  commentaire?: string | null;
+  montantSaisi?: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class WipService {
   private readonly http = inject(HttpClient);
@@ -19,14 +29,14 @@ export class WipService {
 
   submitTaux(
     affaireId: number,
-    body: { periodDateFrom: string; periodDateTo: string; tauxSaisi: number; commentaire?: string | null },
+    body: WipTauxSubmitBody,
   ): Observable<WipTauxDto> {
     return this.http.post<WipTauxDto>(`${this.base}/av/${affaireId}/taux`, body, this.opts);
   }
 
   updateTaux(
     tauxId: number,
-    body: { periodDateFrom: string; periodDateTo: string; tauxSaisi: number; commentaire?: string | null },
+    body: WipTauxSubmitBody,
   ): Observable<WipTauxDto> {
     return this.http.put<WipTauxDto>(`${this.base}/av/taux/${tauxId}`, body, this.opts);
   }

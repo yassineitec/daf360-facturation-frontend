@@ -6,7 +6,7 @@ import { FormFieldComponent } from '@khalilrebhiitec/daf360';
 
 import { CostService }       from '../../../cost/cost.service';
 import { AffaireDraftState } from '../../affaire-wizard.model';
-import { CostCategoryDto }   from '../../../cost/cost.model';
+import { ListValueDto }      from '../../../cost/cost.model';
 
 @Component({
   selector: 'app-wizard-step-cp',
@@ -22,12 +22,13 @@ export class WizardStepCpComponent implements OnInit {
 
   private readonly costSvc = inject(CostService);
 
-  categories = signal<CostCategoryDto[]>([]);
+  /** The pays' cost categories — the same COST_CATEGORY list the cost form offers. */
+  categories = signal<ListValueDto[]>([]);
 
   ngOnInit(): void {
     const paysId = Number(this.draft.paysId);
     if (paysId) {
-      this.costSvc.getCategories(paysId).subscribe(c => this.categories.set(c));
+      this.costSvc.getListValues('COST_CATEGORY', paysId).subscribe(c => this.categories.set(c));
     }
   }
 

@@ -1,67 +1,25 @@
 :host { display: contents; }
 
-.admin-page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 24px;
-  width: 100%;
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-}
-
-// ── Header ────────────────────────────────────────────────────────────────────
-
-.page-header {
-  position: relative;
-  // `backdrop-filter` below creates a stacking context — without lifting the whole
-  // header above it, the pays dropdown panel (z-index scoped to *inside* that
-  // context) gets painted over by the list-type cards that follow it in the DOM,
-  // themselves each their own stacking context (glass daf-card also uses
-  // backdrop-filter). This must beat both the cards' own z-index and daf-card's
-  // internal one.
-  z-index: 100;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-  border-radius: var(--radius-xl, 16px);
-}
-
-.page-title {
-  font-family: var(--font-sans);
-  font-size: var(--text-headline-lg);
-  font-weight: 700;
-  color: var(--color-on-surface);
-  margin: 0 0 4px;
-}
-
-.page-sub {
-  font-size: var(--text-body-sm);
-  color: var(--color-on-surface-variant);
-  margin: 0;
-}
-// Même aspect que la variante « glass » de daf-card, mais SANS overflow:hidden : daf-card
-// rogne son contenu sur ses coins arrondis, ce qui coupait le panneau de la liste
-// déroulante en dessous.
+// Page shell, background, vertical rhythm and h1 belong to daf-page / daf-page-header
+// now — the former `.admin-page` / `.page-header` / `.page-title` / `.page-sub` went
+// with the hand-rolled markup they styled.
 
 // ── Pays selector (flag + search dropdown) ─────────────────────────────────────
 
-// No background of its own anymore — it now sits directly on `.page-header`'s own
-// glass background, so title and country picker read as one bar, not two stacked
-// cards. Just positioning, for `app-pays-flag-select`'s dropdown panel below the
-// trigger button (position: absolute, anchored on the component's own host) — this
-// z-index and the header's overflow: visible above are what give it room.
+// Sits in daf-page-header's `pageActions` slot. Just positioning, for
+// `app-pays-flag-select`'s dropdown panel below the trigger button (position:
+// absolute, anchored on the component's own host): the z-index lifts it above the
+// glass cards that follow in the DOM — each is its own stacking context
+// (backdrop-filter, z-index auto) and would otherwise paint over the open panel.
+//
+// ⚠️ Keep it BELOW 50. The shell's `daf-header` is `fixed … z-50` in the same root
+// stacking context, and on a tie the later element in the DOM (this page) wins: at 50
+// the selector painted over the shell's language / notification / user menus and
+// scrolled over the top bar itself. The former `.page-header` was at 100 — that is the
+// "language menu cut off on Administration" bug. Any positive value beats the cards.
 .pays-card {
   position: relative;
-  z-index: 50;
+  z-index: 10;
 }
 
 // ── Main tabs ─────────────────────────────────────────────────────────────────

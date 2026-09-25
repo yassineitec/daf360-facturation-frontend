@@ -1,8 +1,8 @@
 import {
-  Component, OnInit, inject, signal, computed, DestroyRef,
+  Component, OnInit, inject, signal, computed, DestroyRef, WritableSignal,
 } from '@angular/core';
 import { CommonModule }         from '@angular/common';
-import { RouterLink, Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule }          from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { takeUntilDestroyed }   from '@angular/core/rxjs-interop';
@@ -15,13 +15,24 @@ import {
   ListValueDto, ForexPreviewDto, CircuitPreviewDto,
   SupplierSearchItem, formatAmount,
 } from '../cost.model';
-import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
+import {
+  ButtonComponent, ButtonOptions, CardComponent, FieldMessageComponent, FileUploadComponent,
+  FormFieldComponent, PageComponent, PageHeaderComponent, SelectComponent, SelectOption,
+} from '@khalilrebhiitec/daf360';
+import type {
+  BreadcrumbItem, CardOptions, FileUploadConfig, PageHeaderBadge, UploadedFile,
+} from '@khalilrebhiitec/daf360';
 
 @Component({
   selector: 'app-cost-form',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, TranslatePipe, SelectComponent, FormFieldComponent],
+  imports: [
+    CommonModule, FormsModule, TranslatePipe,
+    PageComponent, PageHeaderComponent, CardComponent, ButtonComponent, FieldMessageComponent,
+    SelectComponent, FormFieldComponent, FileUploadComponent,
+  ],
   templateUrl: './cost-form.component.html',
+  styleUrl:    './cost-form.component.scss',
 })
 export class CostFormComponent implements OnInit {
   private readonly costSvc    = inject(CostService);
@@ -40,9 +51,9 @@ export class CostFormComponent implements OnInit {
   affaires   = signal<AffaireListItem[]>([]);
   suppliers  = signal<SupplierSearchItem[]>([]);
 
-  // D3 cost-management taxonomy migration (V78) — global lists (COST_CATEGORY has
-  // pays_id = NULL for all 12 rows), loaded once in ngOnInit(), independent of the
-  // chosen pays (unlike the old per-pays cost_categories dropdown it replaces).
+  // D3 cost-management taxonomy (V78) — loaded per pays in onPaysChange(), like every
+  // other list on this form: the backend returns that country's own rows plus the global
+  // ones it has not overridden or switched off.
   costCategories    = signal<ListValueDto[]>([]);
   costSubCategories = signal<ListValueDto[]>([]);
 
@@ -75,22 +86,40 @@ export class CostFormComponent implements OnInit {
   isPageLoading   = signal<boolean>(false);
   isSaving        = signal<boolean>(false);
   error           = signal<string | null>(null);
-  pendingFiles    = signal<File[]>([]);
+  pendingFiles    = signal<UploadedFile[]>([]);
+
+  /**
+   * The six form sections' card — the lib's `glass` card, with the hover lift used across
+   * the modules. The lift comes from `.glass-card:hover` itself, so `hoverable` is left
+   * off on purpose: it would only add `cursor-pointer`, which over text inputs and
+   * selects wrongly signals the whole card is clickable.
+   */
+  readonly sectionCard: CardOptions = { variant: 'glass', padding: 'lg', radius: 'xl' };
+
+  /** Same limits the former native input enforced: PDF/images, several at once, 10 MB each. */
+  readonly attachmentConfig: FileUploadConfig = {
+    accept:    '.pdf,.jpg,.jpeg,.png',
+    multiple:  true,
+    maxSizeMb: 10,
+  };
 
   private readonly supplierSearch$ = new Subject<string>();
+
+  /** Edit mode: the line's currency code, used to re-point a currency the pays overrides. */
+  private lineCurrencyCode: string | null = null;
 
   // ── daf-select option lists ─────────────────────────────────────────────────
   paysOptions = computed<SelectOption[]>(() =>
     this.paysList().map(p => ({ value: String(p.id), label: `${p.frenchLabel} (${p.isoCode})` }))
   );
   currencyOptions = computed<SelectOption[]>(() =>
-    this.currencies().map(c => ({ value: String(c.id), label: `${c.code} — ${c.labelFr}` }))
+    this.currencies().map(c => ({ value: String(c.id), label: `${c.code} — ${this.valueLabel(c)}` }))
   );
   affaireOptions = computed<SelectOption[]>(() =>
     this.affaires().map(a => ({ value: String(a.id), label: `${a.reference} — ${a.intitule}` }))
   );
   costTypeOptions = computed<SelectOption[]>(() =>
-    this.costTypes().map(t => ({ value: String(t.id), label: t.labelFr }))
+    this.costTypes().map(t => ({ value: String(t.id), label: this.valueLabel(t) }))
   );
 
   // ── D3 taxonomy migration (V78): cascading category / sub-category ──────────
@@ -98,10 +127,23 @@ export class CostFormComponent implements OnInit {
   // supplier-new.component.ts (typeSelectOptions/onTypeSelect). Categories whose
   // sourceType is AUTO_PUSH are excluded — manual creation is blocked for them
   // server-side too (CostLineService.doCreateCostLine()).
+  //
+  // The option VALUE keeps the FR label (`id|labelFr`) because edit mode rebuilds the
+  // selection from the line's own `costCategoryLabel`, which the backend sends in FR;
+  // only the visible LABEL follows the UI language.
   readonly costCategorySelectOptions = computed<SelectOption[]>(() =>
     this.costCategories()
       .filter(c => c.sourceType !== 'AUTO_PUSH')
-      .map(c => ({ value: c.id + '|' + c.labelFr, label: c.labelFr })));
+      .map(c => ({ value: c.id + '|' + c.labelFr, label: this.valueLabel(c) })));
+
+  /** EN label in English (falling back to FR when a row has none), FR otherwise. */
+  private valueLabel(v: ListValueDto): string {
+    return this.translate.currentLang() === 'en' ? (v.labelEn || v.labelFr) : v.labelFr;
+  }
+
+  /** Code of the selected category — the key sub-categories are matched on. */
+  private readonly selectedCategoryCode = computed(() =>
+    this.costCategories().find(c => c.id === this.costCategoryId())?.code ?? null);
 
   onCostCategorySelect(values: string[]): void {
     const value = values[0] ?? '';
@@ -118,7 +160,8 @@ export class CostFormComponent implements OnInit {
     this.costSubCategoryId.set(null);
     this.costSubCategoryLabel.set('');
     // Nice-to-have: auto-select when the category has exactly one sub-category.
-    const matches = this.costSubCategories().filter(s => s.parentValueId === id);
+    const code = this.costCategories().find(c => c.id === id)?.code;
+    const matches = this.costSubCategories().filter(s => !!code && s.parentValueCode === code);
     if (matches.length === 1) {
       this.costSubCategoryId.set(matches[0].id);
       this.costSubCategoryLabel.set(matches[0].labelFr);
@@ -126,11 +169,15 @@ export class CostFormComponent implements OnInit {
     this.onAmountOrCurrencyChange();
   }
 
-  readonly filteredCostSubCategories = computed<ListValueDto[]>(() =>
-    this.costSubCategories().filter(s => s.parentValueId === this.costCategoryId()));
+  // Matched by parent CODE, not parentValueId: when a country overrides a global category
+  // (new row, new id) the global sub-categories still point at the global row's id.
+  readonly filteredCostSubCategories = computed<ListValueDto[]>(() => {
+    const code = this.selectedCategoryCode();
+    return code ? this.costSubCategories().filter(s => s.parentValueCode === code) : [];
+  });
 
   readonly costSubCategorySelectOptions = computed<SelectOption[]>(() =>
-    this.filteredCostSubCategories().map(s => ({ value: s.id + '|' + s.labelFr, label: s.labelFr })));
+    this.filteredCostSubCategories().map(s => ({ value: s.id + '|' + s.labelFr, label: this.valueLabel(s) })));
 
   onCostSubCategorySelect(values: string[]): void {
     const value = values[0] ?? '';
@@ -157,6 +204,59 @@ export class CostFormComponent implements OnInit {
   );
 
   readonly formatAmt = formatAmount;
+
+  // ── En-tête de page (daf-page-header) ────────────────────────────────────────
+  // Absolute root link, like CostLineDetailComponent's own breadcrumbs: this form is
+  // reached at both cost/new and cost/:id/edit, so a relative link would differ by mode.
+  readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    this.translate.currentLang();
+    const root: BreadcrumbItem = { label: this.translate.instant('COST.TABS.LINES'), link: ['/finance/cost'] };
+    const id = this.editId();
+    if (id === null) {
+      return [root, { label: this.translate.instant('COST.FORM.TITLE_NEW') }];
+    }
+    return [
+      root,
+      { label: `#${id}`, link: ['/finance/cost', id] },
+      { label: this.translate.instant('COST.FORM.TITLE_EDIT') },
+    ];
+  });
+
+  readonly pageTitle = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant(this.isEditMode() ? 'COST.FORM.TITLE_EDIT' : 'COST.FORM.TITLE_NEW');
+  });
+
+  readonly pageSubtitle = computed(() => {
+    this.translate.currentLang();
+    return this.isEditMode()
+      ? this.translate.instant('COST.FORM.SUB_EDIT', { id: this.editId() })
+      : this.translate.instant('COST.FORM.SUB_NEW');
+  });
+
+  /** The former hand-drawn pulsing "draft" pill, now a standard header badge. */
+  readonly headerBadges = computed<PageHeaderBadge[]>(() => {
+    this.translate.currentLang();
+    return [{ label: this.translate.instant('COST.FORM.DRAFT_BADGE'), variant: 'teal', dot: true }];
+  });
+
+  /** The bar's single drawn action — same teal pill as the affaire wizard's "Suivant". */
+  readonly submitButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant:   'teal',
+      pill:      true,
+      label:     this.translate.instant('COST.FORM.FOOT_SUBMIT'),
+      iconStart: 'send',
+      loading:   this.isSaving(),
+      disabled:  !this.canSave() || this.isSaving(),
+    };
+  });
+
+  /** Same destination as the former `routerLink=".."` Cancel link. */
+  cancel(): void {
+    this.router.navigate(['..'], { relativeTo: this.route });
+  }
 
   // ── D3 Tunisian tax fields (V78) ─────────────────────────────────────────────
   // Shown only once a real supplier is picked via the autocomplete -- NOT merely
@@ -239,15 +339,6 @@ export class CostFormComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(list => this.paysList.set(list));
 
-    // Global lists (pays=0 sentinel), independent of the chosen pays -- same idiom
-    // already established for SUPPLIER_CATEGORY in supplier-new.component.ts.
-    this.costSvc.getListValues('COST_CATEGORY', 0)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(v => this.costCategories.set(v));
-    this.costSvc.getListValues('COST_SUB_CATEGORY', 0)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(v => this.costSubCategories.set(v));
-
     this.supplierSearch$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -274,6 +365,9 @@ export class CostFormComponent implements OnInit {
         this.costSubCategoryLabel.set(line.costSubCategoryLabel ?? '');
         this.netAmountLocal.set(line.netAmountLocal);
         this.currencyId.set(line.currencyId);
+        // The line carries its currency CODE: if the pays list shows a country override
+        // of that currency (new row, new id), reconcileListValue() re-points by code.
+        this.lineCurrencyCode = line.currency;
         this.supplierId.set(line.supplierId);
         if (line.supplierId != null) {
           this.costSvc.getSupplier(line.supplierId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -326,11 +420,106 @@ export class CostFormComponent implements OnInit {
     this.paysId.set(pid);
     if (!pid) return;
 
-    this.costSvc.getListValues('CURRENCY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => this.currencies.set(v));
-    this.costSvc.getListValues('COST_TYPE', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => this.costTypes.set(v));
+    // Every per-pays list gets the same treatment as the category: a selection carried
+    // over from the previous pays is re-pointed (same code) or cleared, never left
+    // pointing at another country's row — the backend now rejects those (RG_LIST_VALUE_PAYS).
+    this.costSvc.getListValues('CURRENCY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.currencies();
+      this.currencies.set(v);
+      if (this.reconcileListValue(previous, v, this.currencyId, this.lineCurrencyCode)) {
+        this.onAmountOrCurrencyChange();
+      }
+    });
+    this.costSvc.getListValues('COST_TYPE', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.costTypes();
+      this.costTypes.set(v);
+      this.reconcileListValue(previous, v, this.costTypeId);
+    });
     this.affaireSvc.getAffaires({ paysId: pid, size: 200 })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(p => this.affaires.set(p.content));
+      .subscribe(p => {
+        const previous = this.affaires();
+        this.affaires.set(p.content);
+        // Affaires have no shared code across countries: one from the old pays is simply dropped.
+        const id = this.affaireId();
+        if (id !== null && !p.content.some(a => a.id === id) && previous.some(a => a.id === id)) {
+          this.affaireId.set(null);
+        }
+      });
+
+    this.costSvc.getListValues('COST_CATEGORY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.costCategories();
+      this.costCategories.set(v);
+      this.reconcileCategory(previous, v);
+    });
+    this.costSvc.getListValues('COST_SUB_CATEGORY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.costSubCategories();
+      this.costSubCategories.set(v);
+      this.reconcileSubCategory(previous, v);
+    });
+  }
+
+  /**
+   * Keeps the chosen category valid when the pays changes. Same code in the new country
+   * (global row, or that country's override of it) → re-point to that row; no longer
+   * available → clear it, with its sub-category. A selection absent from the PREVIOUS
+   * list too is left alone: that is edit mode's first load, where the line's own
+   * category is set before any list has arrived.
+   */
+  private reconcileCategory(previous: ListValueDto[], next: ListValueDto[]): void {
+    const id = this.costCategoryId();
+    if (id === null || next.some(c => c.id === id)) return;
+    const code = previous.find(c => c.id === id)?.code;
+    if (!code) return;
+    const match = next.find(c => c.code === code && c.sourceType !== 'AUTO_PUSH');
+    if (match) {
+      this.costCategoryId.set(match.id);
+      this.costCategoryLabel.set(match.labelFr);
+    } else {
+      this.costCategoryId.set(null);  this.costCategoryLabel.set('');
+      this.costSubCategoryId.set(null); this.costSubCategoryLabel.set('');
+    }
+    this.onAmountOrCurrencyChange();
+  }
+
+  /**
+   * Generic form of reconcileCategory() for the plain per-pays lists (devise, type de
+   * coût). Returns true when the selection changed. `knownCode` covers edit mode's first
+   * load, where the selected id is not in any previous list yet but its code is known.
+   */
+  private reconcileListValue(previous: ListValueDto[], next: ListValueDto[],
+                             selected: WritableSignal<number | null>, knownCode?: string | null): boolean {
+    const id = selected();
+    if (id === null || next.some(v => v.id === id)) return false;
+    const code = previous.find(v => v.id === id)?.code ?? knownCode ?? null;
+    if (!code) return false;
+    selected.set(next.find(v => v.code === code)?.id ?? null);
+    return true;
+  }
+
+  /**
+   * The pays picker itself (a user choice, unlike edit-mode / query-param preloads). A
+   * supplier belongs to exactly one pays and has no counterpart elsewhere, so it is
+   * dropped when the pays really changes — the search box is scoped to the new pays.
+   */
+  onPaysSelected(id: number | null): void {
+    if (id !== this.paysId()) {
+      this.supplierId.set(null);
+      this.supplierQuery.set('');
+      this.suppliers.set([]);
+    }
+    this.onPaysChange(id);
+  }
+
+  /** Same rule as reconcileCategory(), for the sub-category. */
+  private reconcileSubCategory(previous: ListValueDto[], next: ListValueDto[]): void {
+    const id = this.costSubCategoryId();
+    if (id === null || next.some(s => s.id === id)) return;
+    const code = previous.find(s => s.id === id)?.code;
+    if (!code) return;
+    const match = next.find(s => s.code === code);
+    this.costSubCategoryId.set(match?.id ?? null);
+    this.costSubCategoryLabel.set(match?.labelFr ?? '');
   }
 
   onSupplierQueryChange(q: string): void {
@@ -385,7 +574,7 @@ export class CostFormComponent implements OnInit {
     }
     this.costSvc.getForexPreview(ttcAmount, currencyCode).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: fx => {
-        this.costSvc.getCircuitPreview(fx.montantEur, paysId, null, this.costCategoryId())
+        this.costSvc.getCircuitPreview(fx.montantEur, paysId, this.costCategoryId())
           .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: cp => { this.circuitPreview.set(cp); this.previewLoading.set(false); },
           error: () => this.previewLoading.set(false),
@@ -407,18 +596,6 @@ export class CostFormComponent implements OnInit {
     if (!curr || !pid) return;
     this.previewLoading.set(true);
     this.refreshCircuitPreview(pid, curr.code);
-  }
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files) return;
-    const added = Array.from(input.files).filter(f => f.size <= 10 * 1024 * 1024);
-    this.pendingFiles.update(prev => [...prev, ...added]);
-    input.value = '';
-  }
-
-  removeFile(i: number): void {
-    this.pendingFiles.update(prev => prev.filter((_, idx) => idx !== i));
   }
 
   saveDraft(): void { this.doSave(false); }
@@ -458,8 +635,10 @@ export class CostFormComponent implements OnInit {
 
     save$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: line => {
-        const uploads = this.pendingFiles().map(f =>
-          lastValueFrom(this.costSvc.addAttachment(line.id, f)).catch(() => null)
+        // Files daf-file-upload flagged (over maxSizeMb) are never sent — the former
+        // input dropped them at selection time instead.
+        const uploads = this.pendingFiles().filter(f => !f.error).map(f =>
+          lastValueFrom(this.costSvc.addAttachment(line.id, f.file)).catch(() => null)
         );
         Promise.all(uploads).then(() => {
           this.pendingFiles.set([]);
@@ -479,12 +658,6 @@ export class CostFormComponent implements OnInit {
         this.error.set(err.error?.message ?? this.translate.instant('COST.FORM.GENERIC_ERROR'));
       },
     });
-  }
-
-  fmtFileSize(bytes: number): string {
-    if (bytes < 1024)     return this.translate.instant('COST.FORM.UNIT_BYTES', { n: bytes });
-    if (bytes < 1048576)  return this.translate.instant('COST.FORM.UNIT_KB', { n: (bytes / 1024).toFixed(1) });
-    return this.translate.instant('COST.FORM.UNIT_MB', { n: (bytes / 1048576).toFixed(1) });
   }
 
   levelBg(level: string): string {

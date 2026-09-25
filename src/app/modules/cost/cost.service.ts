@@ -3,7 +3,6 @@ import { HttpClient, HttpParams }        from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment }                   from '../../../environments/environment';
 import {
-  CostCategoryDto, UpdateCostCategoryLabelRequest, CreateCostCategoryRequest,
   CostApprovalThresholdDto, CreateCostApprovalThresholdRequest,
   CostLineDto, CreateCostLineRequest,
   CostImportResult, PageResponse,
@@ -19,26 +18,9 @@ export class CostService {
   private readonly base = `${environment.factApiUrl}/api/fact`;
   private readonly http = inject(HttpClient);
 
-  // ── Categories ───────────────────────────────────────────────────────────────
-
-  getCategories(paysId: number): Observable<CostCategoryDto[]> {
-    const params = new HttpParams().set('paysId', String(paysId));
-    return this.http.get<CostCategoryDto[]>(`${this.base}/cost-categories`, { params }).pipe(
-      catchError(() => of([] as CostCategoryDto[])),
-    );
-  }
-
-  updateCategory(id: number, dto: UpdateCostCategoryLabelRequest): Observable<CostCategoryDto> {
-    return this.http.patch<CostCategoryDto>(`${this.base}/cost-categories/${id}`, dto);
-  }
-
-  createCategory(dto: CreateCostCategoryRequest): Observable<CostCategoryDto> {
-    return this.http.post<CostCategoryDto>(`${this.base}/cost-categories`, dto);
-  }
-
-  deactivateCategory(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/cost-categories/${id}`);
-  }
+  // Cost categories: no dedicated endpoint any more. They are the COST_CATEGORY /
+  // COST_SUB_CATEGORY configurable lists — read them with getListValues(type, paysId),
+  // manage them in Admin → Listes (V84 retired /cost-categories and its table).
 
   // ── Approval thresholds ───────────────────────────────────────────────────────
 
@@ -203,13 +185,11 @@ export class CostService {
   }
 
   getCircuitPreview(
-    amountEur: number, paysId: number,
-    categoryId?: number | null, costCategoryId?: number | null,
+    amountEur: number, paysId: number, costCategoryId?: number | null,
   ): Observable<CircuitPreviewDto> {
     let params = new HttpParams()
       .set('amountEur', String(amountEur))
       .set('paysId', String(paysId));
-    if (categoryId != null) params = params.set('categoryId', String(categoryId));
     if (costCategoryId != null) params = params.set('costCategoryId', String(costCategoryId));
     return this.http.get<CircuitPreviewDto>(`${this.base}/cost-lines/circuit-preview`, { params });
   }
@@ -278,15 +258,20 @@ export class CostService {
     return this.http.post<RateComputationDto>(`${this.base}/rate-computations/${id}/validate`, {});
   }
 
+  /**
+   * Same columns, same order, as CostImportService.parseCsvRow() reads them. The old
+   * template (date first, a category NUMBER, a currency CODE…) matched nothing the
+   * backend parses. `categoryCode` is a category or sub-category code from Admin →
+   * Listes for the importing pays; `currencyId` is the CURRENCY list value id.
+   */
   downloadCsvTemplate(): void {
     const headers = [
-      'date', 'category_number', 'description',
-      'amount', 'currency_code', 'vat_amount',
-      'notes', 'supplier', 'document_ref',
+      'paysId', 'categoryCode', 'transactionDate', 'periodYear', 'periodMonth',
+      'description', 'netAmountLocal', 'vatAmountLocal', 'currencyId',
     ].join(',');
     const sample = [
-      '2026-06-01', '1', 'Prestation topographie',
-      '3500.000', 'EUR', '0', '', 'GeoSurvey SARL', 'FAC-2026-001',
+      '178', 'LOYER', '2026-06-01', '2026', '6',
+      'Loyer juin', '1500.000', '0', '13',
     ].join(',');
     const csv  = headers + '\n' + sample + '\n';
     const blob = new Blob([csv], { type: 'text/csv' });

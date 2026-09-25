@@ -53,6 +53,7 @@
       [loading]="isLoading()"
       [skeletonCount]="size()"
       [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
+      (view)="openDetail($event)"
       (edit)="openEdit($event)"
       (submitLine)="submitLine($event)"
       (createReglement)="openReglementForLine($event)" />
@@ -63,6 +64,7 @@
       [loading]="isLoading()"
       [pageSize]="size()"
       [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
+      (view)="openDetail($event)"
       (edit)="openEdit($event)"
       (submitLine)="submitLine($event)"
       (createReglement)="openReglementForLine($event)" />

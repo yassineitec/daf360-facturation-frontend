@@ -35,6 +35,7 @@ export class InvoiceListComponent implements OnInit {
   private readonly translate = inject(TranslateService);
 
   @ViewChild('approvalTpl') approvalTpl!: TemplateRef<unknown>;
+  @ViewChild('paymentModal', { static: true }) private paymentModal!: PaymentModalComponent;
   private approvalRef: ModalRef | null = null;
 
   invoices      = signal<InvoiceListItem[]>([]);
@@ -62,7 +63,6 @@ export class InvoiceListComponent implements OnInit {
     ];
   });
 
-  paymentTarget    = signal<InvoiceListItem | null>(null);
   approvalTarget   = signal<InvoiceListItem | null>(null);
   approvalDecision = signal<ApprovalDecision>('APPROVE');
   approvalCommentSig = signal('');
@@ -236,12 +236,7 @@ export class InvoiceListComponent implements OnInit {
     });
   }
 
-  openPaymentModal(item: InvoiceListItem): void { this.paymentTarget.set(item); }
-
-  onPaymentDone(saved: boolean): void {
-    this.paymentTarget.set(null);
-    if (saved) this.load();
-  }
+  openPaymentModal(item: InvoiceListItem): void { this.paymentModal.open(item, () => this.load()); }
 
   openApprovalModal(item: InvoiceListItem): void {
     this.approvalTarget.set(item);

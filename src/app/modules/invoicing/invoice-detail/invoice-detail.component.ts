@@ -72,6 +72,7 @@ export class InvoiceDetailComponent implements OnInit {
   private readonly route     = inject(ActivatedRoute);
 
   private readonly commentTpl = viewChild.required<TemplateRef<unknown>>('commentTpl');
+  private readonly paymentModal = viewChild.required<PaymentModalComponent>('paymentModal');
 
   id = input<string>();
 
@@ -82,7 +83,6 @@ export class InvoiceDetailComponent implements OnInit {
   saving      = signal(false);
   exportingPdf = signal(false);
 
-  showPaymentModal = signal(false);
   showCreditNote   = signal(false);
 
   /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
@@ -383,7 +383,7 @@ export class InvoiceDetailComponent implements OnInit {
       case 'APPROVED':       return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.EMIT'),     'outbox'),      run: () => this.emit() };
       case 'EMITTED':        return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.MARK_SENT'), 'mark_email_read'), run: () => this.markSent() };
       case 'SENT':
-      case 'PARTIALLY_PAID': return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.RECORD_PAYMENT'), 'payments'), run: () => this.showPaymentModal.set(true) };
+      case 'PARTIALLY_PAID': return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.RECORD_PAYMENT'), 'payments'), run: () => this.openPaymentModal() };
       case 'DISPUTED':       return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.RESOLVE'),  'gavel'),       run: () => this.openResolveModal() };
       // PAID, CANCELLED et CREDIT_NOTED sont terminaux pour l'action principale : aucune
       // action à proposer. L'avoir n'en fait PLUS partie (voir canEmitCreditNote) — il ne
@@ -523,7 +523,10 @@ export class InvoiceDetailComponent implements OnInit {
     this.run(id => this.svc.resolveDispute(id, notes));
   }
 
-  onPaymentClosed(saved: boolean): void    { this.showPaymentModal.set(false); if (saved) this.refresh(); }
+  openPaymentModal(): void {
+    const inv = this.invoice();
+    if (inv) this.paymentModal().open(inv, () => this.refresh());
+  }
   onCreditNoteClosed(saved: boolean): void { this.showCreditNote.set(false);   if (saved) this.refresh(); }
 
   /**

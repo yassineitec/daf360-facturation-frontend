@@ -1,30 +1,29 @@
-<div class="admin-page">
+<!-- `daf-page` porte le fond, le rythme vertical et le squelette de premier chargement
+     (`isLoading` ne couvre que ngOnInit) ; `daf-page-header` porte le h1. -->
+<daf-page [kpis]="0" [loading]="isLoading()" [loadingLabel]="'ADMIN.COMMON.LOADING' | translate">
 
-  <!-- Page header — title on the left, country picker on the right (same row) -->
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">{{ 'ADMIN.PAGE.TITLE' | translate }}</h1>
-      <p class="page-sub">{{ 'ADMIN.PAGE.SUBTITLE' | translate }}</p>
-    </div>
+  <daf-page-header
+    [title]="'ADMIN.PAGE.TITLE' | translate"
+    [subtitle]="'ADMIN.PAGE.SUBTITLE' | translate">
 
     <!-- Sélecteur de pays (multi-pays seulement), avec drapeau — `app-pays-flag-select`,
          pas `daf-select` : ses options n'affichent qu'une icône Material Symbol ou du
-         texte, pas une image par option. -->
-    @if (paysList().length > 1) {
-      <div class="pays-card">
+         texte, pas une image par option.
+
+         Le `div pageActions` est la racine STATIQUE et le `@if` vit dedans : un élément
+         imbriqué dans un `@if` vit dans une vue embarquée, et `<ng-content
+         select="[pageActions]">` ne le trouverait jamais (UI-PLAYBOOK §10f). -->
+    <div pageActions class="pays-card">
+      @if (paysList().length > 1) {
         <app-pays-flag-select
           [options]="paysOptions()"
           [selected]="paysId() ? [paysId().toString()] : []"
           [label]="paysSelectLabel()"
           [placeholder]="paysSelectPlaceholder()"
           (selectedChange)="onPaysSelected($event)" />
-      </div>
-    }
-  </div>
-
-  @if (isLoading()) {
-    <div class="loading-state">{{ 'ADMIN.COMMON.LOADING' | translate }}</div>
-  }
+      }
+    </div>
+  </daf-page-header>
 
   @if (pageError()) {
     <div class="banner-error">{{ pageError() }}</div>
@@ -110,6 +109,12 @@
               (onClick)="openCreateValueModal()" />
           </div>
 
+          <!-- Catégories / sous-catégories de coût : la portée d'une modification n'est pas
+               évidente (valeur globale vs valeur de l'entité), d'où ce rappel. -->
+          @if (isTaxonomyType()) {
+            <p class="config-hint">{{ 'ADMIN.LISTS.TAXONOMY_SCOPE_HINT' | translate }}</p>
+          }
+
           <daf-data-table [columns]="listColumns()" [rows]="listRows()" [config]="listTableConfig()">
 
             <ng-template dafCell="code" let-row>
@@ -140,6 +145,37 @@
             <ng-template dafCell="requiresReceipt" let-row>
               <span [class]="row['requiresReceipt'] ? 'badge-active' : 'badge-inactive'">
                 {{ (row['requiresReceipt'] ? 'ADMIN.LISTS.RECEIPT_YES' : 'ADMIN.LISTS.RECEIPT_NO') | translate }}
+              </span>
+            </ng-template>
+
+            <!-- Cost taxonomy columns (COST_CATEGORY / COST_SUB_CATEGORY only) -->
+            <ng-template dafCell="parent" let-row>
+              {{ row['parent'] }}
+              @if (row['parentHidden']) {
+                <span class="badge-inactive" [title]="'ADMIN.LISTS.PARENT_HIDDEN_HINT' | translate">
+                  {{ 'ADMIN.LISTS.PARENT_HIDDEN' | translate }}
+                </span>
+              }
+            </ng-template>
+
+            <ng-template dafCell="sourceType" let-row>
+              @if (row['sourceType'] === 'AUTO_PUSH') {
+                <span class="badge-inactive">{{ 'ADMIN.LISTS.SOURCE_AUTO_PUSH' | translate }}</span>
+                @if (row['autoPushModule']) {
+                  <span class="cell-secondary"> · {{ row['autoPushModule'] }}</span>
+                }
+              } @else {
+                <span class="badge-active">{{ 'ADMIN.LISTS.SOURCE_MANUAL' | translate }}</span>
+              }
+            </ng-template>
+
+            <ng-template dafCell="isStrictScrutiny" let-row>
+              {{ (row['isStrictScrutiny'] ? 'ADMIN.LISTS.YES' : 'ADMIN.LISTS.NO') | translate }}
+            </ng-template>
+
+            <ng-template dafCell="scope" let-row>
+              <span class="cell-secondary">
+                {{ (row['isGlobal'] ? 'ADMIN.LISTS.SCOPE_GLOBAL' : 'ADMIN.LISTS.SCOPE_PAYS') | translate }}
               </span>
             </ng-template>
 
@@ -393,6 +429,56 @@
         </label>
         <p class="form-hint">{{ 'ADMIN.LISTS.RECEIPT_HINT' | translate }}</p>
       }
+
+      <!-- Sous-catégorie de coût : rattachement obligatoire à une catégorie de l'entité. -->
+      @if (isSubCategoryType()) {
+        <daf-select
+          [options]="parentOptions()"
+          [config]="{ label: ('ADMIN.LISTS.FIELD_PARENT' | translate), placeholder: ('ADMIN.LISTS.PLACEHOLDER_PARENT' | translate), required: true, searchable: true }"
+          [selected]="valueForm.parentCode ? [valueForm.parentCode] : []"
+          (selectedChange)="valueForm.parentCode = $event[0] || ''" />
+      }
+
+      <!-- Catégorie de coût : source, contrôle renforcé et classification. -->
+      @if (isCategoryType()) {
+        <daf-select
+          [options]="sourceTypeOptions()"
+          [config]="{ label: ('ADMIN.LISTS.FIELD_SOURCE' | translate) }"
+          [selected]="[valueForm.sourceType]"
+          (selectedChange)="valueForm.sourceType = $event[0] === 'AUTO_PUSH' ? 'AUTO_PUSH' : 'MANUAL'" />
+        <p class="config-hint">{{ 'ADMIN.LISTS.SOURCE_HINT' | translate }}</p>
+        @if (valueForm.sourceType === 'AUTO_PUSH') {
+          <daf-form-field
+            [options]="{ label: ('ADMIN.LISTS.FIELD_AUTO_PUSH_MODULE' | translate), placeholder: 'PAYROLL', required: true }"
+            [value]="valueForm.autoPushModule"
+            (valueChange)="valueForm.autoPushModule = $any($event) ?? ''" />
+        }
+        <label class="form-check">
+          <input type="checkbox" [(ngModel)]="valueForm.isStrictScrutiny">
+          {{ 'ADMIN.LISTS.STRICT_SCRUTINY' | translate }}
+        </label>
+        <p class="config-hint">{{ 'ADMIN.LISTS.STRICT_HINT' | translate }}</p>
+        <label class="form-check">
+          <input type="checkbox" [(ngModel)]="valueForm.isDirect"> {{ 'ADMIN.LISTS.IS_DIRECT' | translate }}
+        </label>
+        <label class="form-check">
+          <input type="checkbox" [(ngModel)]="valueForm.isOverhead"> {{ 'ADMIN.LISTS.IS_OVERHEAD' | translate }}
+        </label>
+        <label class="form-check">
+          <input type="checkbox" [(ngModel)]="valueForm.isCapex"> {{ 'ADMIN.LISTS.IS_CAPEX' | translate }}
+        </label>
+      }
+
+      @if (isTaxonomyType()) {
+        <daf-form-field
+          [options]="{ type: 'textarea', label: ('ADMIN.LISTS.FIELD_DESCRIPTION_FR' | translate), rows: 2 }"
+          [value]="valueForm.descriptionFr"
+          (valueChange)="valueForm.descriptionFr = $any($event) ?? ''" />
+        <daf-form-field
+          [options]="{ type: 'textarea', label: ('ADMIN.LISTS.FIELD_DESCRIPTION_EN' | translate), rows: 2 }"
+          [value]="valueForm.descriptionEn"
+          (valueChange)="valueForm.descriptionEn = $any($event) ?? ''" />
+      }
     </div>
   </ng-template>
 
@@ -421,4 +507,4 @@
         (valueChange)="forexForm.chf = $any($event) ?? ''" />
     </div>
   </ng-template>
-</div>
+</daf-page>

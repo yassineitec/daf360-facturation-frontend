@@ -5,6 +5,7 @@ export interface DisciplineExtDto {
   label: string;        // Discipline
   montant?: number;     // MontantDiscipline
   paysId?: string;      // FK_ID_PAYS
+  documentCount: number; // documents across all its WBS — 0 → disabled in the wizard
 }
 
 export interface WbsExtDto {
@@ -12,6 +13,7 @@ export interface WbsExtDto {
   subWbs?: string;      // Sub_WBS
   titre: string;        // Titre_WBS
   idSubWbs?: number;
+  documentCount: number; // 0 → disabled in the wizard
 }
 
 export interface DocumentExtDto {

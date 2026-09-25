@@ -98,9 +98,8 @@
 
 <!-- Modals live at the page root, outside daf-page: they are position: fixed and a
      glass card ancestor would become their containing block (UI-PLAYBOOK §10e). -->
-@if (paymentTarget()) {
-  <app-payment-modal [invoice]="paymentTarget()!" (closed)="onPaymentDone($event)" />
-}
+<!-- Monté sans @if : le dialogue appartient à ModalService, on l'ouvre par .open(). -->
+<app-payment-modal #paymentModal />
 
 <!-- Approval modal body — projected into daf-modal by ModalService -->
 <ng-template #approvalTpl>

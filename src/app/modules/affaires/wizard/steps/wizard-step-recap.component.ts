@@ -5,11 +5,10 @@ import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
 } from '@khalilrebhiitec/daf360';
 
-import { CostService }       from '../../../cost/cost.service';
 import { FactListService }   from '../../../../core/fact-list.service';
 import { AffaireDraftState, BILLING_MODES, BUDGET_LABEL } from '../../affaire-wizard.model';
 import { ClientContactService } from '../../../clients/contacts/client-contact.service';
-import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
+import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
 @Component({
   selector: 'app-wizard-step-recap',
   standalone: true,
@@ -22,7 +21,6 @@ export class WizardStepRecapComponent implements OnInit {
   @Input() draftId!: number | null;
 
   private readonly translate = inject(TranslateService);
-  private readonly costSvc   = inject(CostService);
   private readonly listSvc   = inject(FactListService);
   private readonly contactSvc = inject(ClientContactService);
 
@@ -58,11 +56,9 @@ export class WizardStepRecapComponent implements OnInit {
     if (!paysId) return;
 
     if (this.draft.eligibleCostCategoryIds.length) {
-      this.costSvc.getCategories(paysId).subscribe(list =>
-        this.costCategories.set(list.map(c => ({
-          id: c.id,
-          label: `${String(c.categoryNumber).padStart(2, '0')} — ${c.labelFr}`,
-        }))));
+      // Same COST_CATEGORY list the CP step offers (single category source since V84).
+      this.listSvc.getListValues('COST_CATEGORY', paysId).subscribe(list =>
+        this.costCategories.set(list.map(c => ({ id: c.id, label: c.labelFr }))));
     }
     if (this.draft.eligibleExpenseCategoryIds.length) {
       this.listSvc.getListValues('EXPENSE_CATEGORY', paysId).subscribe(list =>

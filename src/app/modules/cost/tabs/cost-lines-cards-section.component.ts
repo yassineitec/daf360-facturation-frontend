@@ -35,8 +35,8 @@ import {
         @for (card of cards(); track card.id) {
           <daf-entity-card
             [options]="card.options"
-            (cardClick)="edit.emit(card.raw)"
-            (viewClick)="edit.emit(card.raw)"
+            (cardClick)="view.emit(card.raw)"
+            (viewClick)="view.emit(card.raw)"
             (actionClick)="onAction(card.raw, $event.id)" />
         } @empty {
           <div class="col-span-full flex flex-col items-center gap-2 rounded-xl
@@ -56,11 +56,13 @@ export class CostLinesCardsSectionComponent {
   private readonly currency  = inject(DisplayCurrencyPipe);
 
   lines         = input.required<CostLineDto[]>();
-  categoryFor   = input.required<(id: number | null) => string>();
+  categoryFor   = input.required<(line: CostLineDto) => string>();
   loading       = input(false);
   emptyMessage  = input('');
   skeletonCount = input(6);
 
+  /** Card click / "view" button — the read-only detail page. Editing stays on the pencil action. */
+  readonly view            = output<CostLineDto>();
   readonly edit            = output<CostLineDto>();
   readonly submitLine      = output<CostLineDto>();
   readonly createReglement = output<CostLineDto>();
@@ -85,7 +87,7 @@ export class CostLinesCardsSectionComponent {
           image: { initials: initials(line.label) },
           metadata: {
             title:       line.label ?? '—',
-            subtitle:    [line.reference, cat(line.categoryId)].filter(Boolean).join(' · '),
+            subtitle:    [line.reference, line.costCategoryLabel ? cat(line) : null].filter(Boolean).join(' · '),
             status:      STATUS_ENTITY_STATUS[line.status] ?? 'pending',
             statusLabel: t(statusKey(line.status)),
           },
@@ -97,7 +99,7 @@ export class CostLinesCardsSectionComponent {
             { label: t('COST.LINES.COL_APPROVAL'),   value: levelKey ? t(levelKey) : '—' },
           ],
           actions: this.actionsFor(line, t),
-          viewLabel: t('COST.LINES.EDIT'),
+          viewLabel: t('COST.LINES.VIEW'),
         } satisfies EntityCardOptions,
       };
     });

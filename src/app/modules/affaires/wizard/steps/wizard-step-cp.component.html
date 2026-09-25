@@ -36,14 +36,12 @@
             (change)="toggleCategory(cat.id, $any($event.target).checked)"
             class="category-checkbox" />
           <div class="category-text">
-            <span class="category-name">
-              {{ cat.categoryNumber.toString().padStart(2, '0') }} — {{ cat.labelFr }}
-            </span>
+            <span class="category-name">{{ cat.labelFr }}</span>
             @if (cat.descriptionFr) {
               <p class="category-desc">{{ cat.descriptionFr }}</p>
             }
           </div>
-          @if (cat.sourceType !== 'MANUAL' && cat.sourceType !== null) {
+          @if (cat.sourceType === 'AUTO_PUSH') {
             <span class="auto-badge">{{ 'AFFAIRES.wizard.cp.auto' | translate }}</span>
           }
         </label>

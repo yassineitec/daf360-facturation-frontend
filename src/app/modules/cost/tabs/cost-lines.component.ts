@@ -6,7 +6,7 @@ import {
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { CostService } from '../cost.service';
-import { COST_STATUS_CONFIG, CostCategoryDto, CostLineDto, SupplierCostSummaryDto } from '../cost.model';
+import { COST_STATUS_CONFIG, CostLineDto, SupplierCostSummaryDto, costCategoryDisplay } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import { statusKey } from '../cost-display';
 import { CostLinesCardsSectionComponent } from './cost-lines-cards-section.component';
@@ -65,18 +65,30 @@ export class CostLinesComponent implements OnInit {
 
   @ViewChild('reglementModal') private reglementModal!: ReglementModalComponent;
 
-  categories  = signal<CostCategoryDto[]>([]);
-  categoryMap = computed(() => new Map(this.categories().map(c => [c.id, c.labelFr])));
+  /**
+   * Passed to both sections as an input rather than each rebuilding it, so the card and
+   * the table can never label a category differently. The label travels on the line
+   * itself (CostLineDto.costCategoryLabel, resolved server-side from the single category
+   * source) — no second lookup against a separate category table.
+   */
+  readonly categoryFor = (line: CostLineDto): string => costCategoryDisplay(line);
 
   /**
-   * Passed to both sections as an input rather than each rebuilding the lookup, so the
-   * card and the table can never label a category differently.
+   * Category filter options = the categories present on the loaded lines. The filter is
+   * client-side over the loaded page anyway, and taking them from the lines guarantees
+   * every option matches something (a line created before a country overrode a global
+   * category still carries the global row's id).
    */
-  readonly categoryFor = (id: number | null): string => {
-    if (id == null) return '—';
-    return this.categoryMap().get(id)
-      ?? this.translate.instant('COST.LINES.CAT_FALLBACK', { id });
-  };
+  private readonly lineCategories = computed(() => {
+    const seen = new Map<number, string>();
+    for (const l of this.lines()) {
+      if (l.costCategoryId != null && !seen.has(l.costCategoryId)) {
+        seen.set(l.costCategoryId, l.costCategoryLabel ?? String(l.costCategoryId));
+      }
+    }
+    return [...seen].map(([value, label]) => ({ value: String(value), label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  });
 
   /** Client-side over the loaded page — the endpoint takes `status` but no free text, no
    *  category, no date range and no amount range. Same limit as the search box: only the
@@ -89,7 +101,7 @@ export class CostLinesComponent implements OnInit {
     const amountMin = this.amountMinFilter() ? Number(this.amountMinFilter()) : null;
     const amountMax = this.amountMaxFilter() ? Number(this.amountMaxFilter()) : null;
     return this.lines()
-      .filter(l => !cat || l.categoryId === +cat)
+      .filter(l => !cat || l.costCategoryId === +cat)
       .filter(l => !q || (l.label ?? '').toLowerCase().includes(q) || (l.reference ?? '').toLowerCase().includes(q))
       .filter(l => {
         if (!dateFrom && !dateTo) return true;
@@ -157,7 +169,7 @@ export class CostLinesComponent implements OnInit {
         type: 'select',
         placeholder: t('COST.LINES.CATEGORY_FILTER_PLACEHOLDER'),
         searchable: true,
-        options: this.categories().map(c => ({ value: String(c.id), label: c.labelFr })),
+        options: this.lineCategories(),
       },
       {
         name: 'dateRange',
@@ -205,10 +217,6 @@ export class CostLinesComponent implements OnInit {
         if (paysId != null && paysId > 0) {
           this.paysId.set(paysId);
           this.load();
-          this.svc.getCategories(paysId).subscribe({
-            next: cats => this.categories.set(cats),
-            error: () => {},
-          });
         } else {
           this.serverError.set(this.translate.instant('COST.LINES.NO_PAYS'));
         }
@@ -263,6 +271,7 @@ export class CostLinesComponent implements OnInit {
   }
 
   openCreate(): void { this.router.navigate(['new'], { relativeTo: this.route }); }
+  openDetail(line: CostLineDto): void { this.router.navigate([line.id], { relativeTo: this.route }); }
   openEdit(line: CostLineDto): void { this.router.navigate([line.id, 'edit'], { relativeTo: this.route }); }
 
   /** Lazily loads the by-supplier aggregation the first time the toggle switches to

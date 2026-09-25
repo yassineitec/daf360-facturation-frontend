@@ -72,11 +72,6 @@ export const COST_ROUTES: Routes = [
     loadComponent: () =>
       import('./cost.component').then(m => m.CostComponent),
   },
-  {
-    path: 'create',
-    loadComponent: () =>
-      import('./cost-create.component').then(m => m.CostCreateComponent),
-  },
   /**
    * Cost-lines-by-supplier cards (2026-09-09 plan) — both routes below are
    * TWO-segment paths ("supplier/none" / "supplier/<id>") and never collide with the
@@ -109,7 +104,7 @@ export const COST_ROUTES: Routes = [
    * reached from the approval queue's "view details" action. Deliberately LAST in this
    * array: `:id` is a single-segment wildcard, and placing it earlier would greedily
    * match the literal single-segment paths above it (`approval`, `missions`, `new`,
-   * `rate-computations`, `employee-costs`, `create`).
+   * `rate-computations`, `employee-costs`).
    */
   {
     path: ':id',
