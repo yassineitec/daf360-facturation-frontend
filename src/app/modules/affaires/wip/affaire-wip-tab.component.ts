@@ -358,11 +358,23 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * sumValidatedTaux() change exactly. */
   readonly lastValidatedTaux = computed(() => {
     const vals = this.tauxHistory().filter(t => t.statut === 'VALIDE');
-    // Rounded to 3 decimals: plain floating-point addition drifts (e.g. 33.846 + 11.109
-    // renders as 44.955000000000005) since binary floats can't represent most decimal
-    // fractions exactly, and this value is shown directly in the form hint below.
-    return Number(vals.reduce((sum, t) => sum + t.tauxSaisi, 0).toFixed(3));
+    // Rounded to 6 decimals (taux_saisi's column scale since V86): plain floating-point
+    // addition drifts (e.g. 33.846 + 11.109 renders as 44.955000000000005) since binary
+    // floats can't represent most decimal fractions exactly, and this value is shown
+    // directly in the form hint below.
+    return Number(vals.reduce((sum, t) => sum + t.tauxSaisi, 0).toFixed(6));
   });
+
+  /** Amount counterpart of lastValidatedTaux — the stored VALIDE increments summed, mirroring
+   * the backend's sumValidatedMontant(). What's left to declare is contract − this, read as
+   * an amount rather than rebuilt from a percentage. */
+  readonly lastValidatedMontant = computed(() => {
+    const vals = this.tauxHistory().filter(t => t.statut === 'VALIDE');
+    return Number(vals.reduce((sum, t) => sum + t.montantIncremental, 0).toFixed(3));
+  });
+
+  readonly remainingMontant = computed(() =>
+    Number(((this.affaire.contractAmount ?? 0) - this.lastValidatedMontant()).toFixed(3)));
 
   readonly editingTaux = computed<WipTauxDto | null>(() =>
     this.tauxHistory().find(t => t.id === this.editingTauxId()) ?? null);
@@ -394,17 +406,20 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     return 0;                                                  // step 1
   });
 
-  /** The single percentage every existing consumer (validation, preview, submit payload)
-   * reads — regardless of whether the user is currently typing a percentage or an amount.
-   * In MONTANT mode, converts amount -> percentage at the same 3-decimal precision
-   * ProgressBillingService already uses for every currency calculation in this flow, so a
-   * displayed amount never silently disagrees with what actually gets submitted. */
+  /** The percentage shown and checked in both modes. In MONTANT mode it is only DERIVED from
+   * the typed amount (6 decimals, taux_saisi's scale) for display — the amount itself is what
+   * gets submitted (montantSaisi, see submitTaux()), and the backend re-derives this same
+   * percentage from it. Converting the amount to a rounded percentage and letting the backend
+   * rebuild the amount from that is what used to change the saved amount (up to 0.0005 % of
+   * the contract, e.g. 1 000 000 saved as 999 975). */
   readonly effectiveTauxPercent = computed<number | null>(() => {
     if (this.avInputMode() === 'POURCENTAGE') return this.newTauxValue();
     const amount = this.newAmountValue();
     const contractAmount = this.affaire.contractAmount;
     if (amount === null || !contractAmount) return null;
-    return Number(((amount / contractAmount) * 100).toFixed(3));
+    // The exact remainder closes the cumul at exactly 100 %, same as the backend.
+    if (amount === this.remainingMontant()) return Number((100 - this.lastValidatedTaux()).toFixed(6));
+    return Number(((amount / contractAmount) * 100).toFixed(6));
   });
 
   /** Mirrors the backend's own 2 new rules exactly (see ProgressBillingService.
@@ -415,15 +430,28 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * required strictly exceeding it (>); that distinction doesn't have an equivalent meaning
    * once each entry is its own independent increment, so both cases now use the same rule. */
   readonly canSubmitTaux = computed(() => {
+    if (this.avInputMode() === 'MONTANT') {
+      // Checked as an amount, like the backend: a derived percentage could round a hair
+      // over 100 % for an amount that fits exactly.
+      const amount = this.newAmountValue();
+      return amount !== null && amount > 0 && !!this.affaire.contractAmount
+        && amount <= this.remainingMontant();
+    }
     const taux = this.effectiveTauxPercent();
     if (taux === null || taux <= 0) return false;
-    return this.lastValidatedTaux() + taux <= 100;
+    return Number((this.lastValidatedTaux() + taux).toFixed(6)) <= 100;
   });
 
+  /** POURCENTAGE-mode preview of the amount the backend will store: taux % of the contract,
+   * or — when this entry brings the cumul to exactly 100 % — the contract remainder, so the
+   * affaire always totals its contract amount (see ProgressBillingService.resolveIncrement). */
   readonly avWipPreview = computed<number | null>(() => {
     const taux = this.effectiveTauxPercent();
     if (taux === null || !this.affaire.contractAmount) return null;
-    return (taux / 100) * this.affaire.contractAmount;
+    if (Number((this.lastValidatedTaux() + taux).toFixed(6)) === 100 && this.remainingMontant() > 0) {
+      return this.remainingMontant();
+    }
+    return Number(((taux * this.affaire.contractAmount) / 100).toFixed(3));
   });
 
   /** Inverse of avWipPreview, shown only in MONTANT mode: the equivalent percentage for
@@ -441,10 +469,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * pipe inside the template's `[options]` object-literal string concatenation — this file's
    * own convention is "format in a computed, read it plainly in the template" (see
    * avWipPreview()'s own top-level `| displayCurrency` usage), not deeply nested pipes. */
-  readonly lastValidatedAmountHint = computed(() => {
-    const amount = (this.lastValidatedTaux() / 100) * (this.affaire.contractAmount ?? 0);
-    return this.currency.transform(amount, this.affaire.devise);
-  });
+  readonly lastValidatedAmountHint = computed(() =>
+    this.currency.transform(this.lastValidatedMontant(), this.affaire.devise));
 
   /** Same 4 i18n keys RÉGIE's own wipStepperSteps already uses (STEP_REVIEW/STEP_VERIFY/
    * STEP_VALIDATE/STEP_CLIENT) — no new i18n keys needed, matching this file's own
@@ -1121,11 +1147,16 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.editingTauxId.set(t.id);
     this.periodDateFrom = t.periodDateFrom;
     this.periodDateTo = t.periodDateTo;
-    // Always opens in POURCENTAGE mode — tauxSaisi is what's actually stored, so that's the
-    // faithful starting point for an edit. The user can still switch to MONTANT mid-edit.
-    this.avInputMode.set('POURCENTAGE');
-    this.newTauxValue.set(t.tauxSaisi);
-    this.newAmountValue.set(null);
+    // Reopens in whichever mode reproduces the stored pair exactly: if taux % of the contract
+    // gives back the stored amount it was a percentage entry; otherwise (an amount entry, or
+    // a 100 % closing entry billed at the contract remainder) re-submitting the percentage
+    // would shift the amount, so the stored amount is prefilled instead. The user can still
+    // switch mode mid-edit.
+    const fromPercent = Number(((t.tauxSaisi * (this.affaire.contractAmount ?? 0)) / 100).toFixed(3));
+    const isAmountEntry = !!this.affaire.contractAmount && fromPercent !== t.montantIncremental;
+    this.avInputMode.set(isAmountEntry ? 'MONTANT' : 'POURCENTAGE');
+    this.newTauxValue.set(isAmountEntry ? null : t.tauxSaisi);
+    this.newAmountValue.set(isAmountEntry ? t.montantIncremental : null);
     this.tauxComment = t.commentaire ?? '';
     this.tauxError.set(null);
     // Re-editing a value the user already reviewed once shouldn't force them to re-tick the
@@ -1158,6 +1189,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       periodDateTo: this.periodDateTo,
       tauxSaisi: taux,
       commentaire: this.tauxComment.trim() || null,
+      // MONTANT mode: the typed amount is the source of truth, stored as-is server-side.
+      montantSaisi: this.avInputMode() === 'MONTANT' ? this.newAmountValue() : null,
     };
     const request$ = editingId !== null
       ? this.svc.updateTaux(editingId, body)
@@ -1222,12 +1255,12 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     let runningCumul = 0;
     const lines = this.avLineHistory();
     return this.tauxHistory().map(t => {
-      // Rounded to 3 decimals at every step, not just for display: plain floating-point
+      // Rounded to 6 decimals at every step, not just for display: plain floating-point
       // addition drifts (e.g. 33.846 + 11.109 renders as 44.955000000000005) since binary
       // floats can't represent most decimal fractions exactly. taux values themselves are
-      // never entered/stored with more than 3 decimals, so the running total shouldn't
-      // show more either.
-      runningCumul = Number((runningCumul + t.tauxSaisi).toFixed(3));
+      // never stored with more than 6 decimals (NUMERIC(9,6) since V86), so the running
+      // total shouldn't show more either.
+      runningCumul = Number((runningCumul + t.tauxSaisi).toFixed(6));
       return {
         id:      t.id,
         period:  this.formatWipPeriod(t.periodDateFrom, t.periodDateTo),
