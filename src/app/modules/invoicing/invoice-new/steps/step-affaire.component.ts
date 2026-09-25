@@ -9,7 +9,7 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { InvoiceService } from '../../invoice.service';
 import { AffaireListItem, RafDetailsDto, TsDto } from '../../../affaires/affaire.model';
 import { AffaireService } from '../../../affaires/affaire.service';
-import { SelectComponent } from '@khalilrebhiitec/daf360';
+import { FormFieldComponent, SelectComponent } from '@khalilrebhiitec/daf360';
 import { FactListService } from '../../../../core/fact-list.service';
 import { ListValueDto } from '../../../cost/cost.model';
 
@@ -32,20 +32,21 @@ export interface StepAffaireValue {
 @Component({
   selector: 'app-step-affaire',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe, SelectComponent],
+  imports: [ReactiveFormsModule, TranslatePipe, SelectComponent, FormFieldComponent],
   template: `
 <div class="step-affaire">
 
   <!-- Affaire search -->
   <div class="field">
-    <label>{{ 'INVOICING.STEP_AFFAIRE.AFFAIRE_LABEL' | translate }}</label>
-    <div class="search-wrap">
-      <span class="material-symbols-outlined search-icon-prefix">search</span>
-      <input type="search" class="form-input form-input--search"
-        [placeholder]="'INVOICING.STEP_AFFAIRE.SEARCH_PLACEHOLDER' | translate"
-        [value]="searchQuery()" (input)="onSearchInput($event)"
-        maxlength="100" autocomplete="off" />
-    </div>
+    <daf-form-field
+      [options]="{
+        label: ('INVOICING.STEP_AFFAIRE.AFFAIRE_LABEL' | translate),
+        placeholder: ('INVOICING.STEP_AFFAIRE.SEARCH_PLACEHOLDER' | translate),
+        type: 'search',
+        prefixIcon: 'search'
+      }"
+      [value]="searchQuery()"
+      (valueChange)="onSearchInput($event)" />
 
     @if (searching()) {
       <div class="search-hint">{{ 'INVOICING.STEP_AFFAIRE.SEARCHING' | translate }}</div>
@@ -295,8 +296,8 @@ export class StepAffaireComponent implements OnInit {
     });
   }
 
-  onSearchInput(e: Event): void {
-    const q = (e.target as HTMLInputElement).value;
+  onSearchInput(value: string | number | null): void {
+    const q = String(value ?? '').slice(0, 100);
     this.searchQuery.set(q);
     if (q.trim().length >= 2) this.search$.next(q.trim());
     else this.searchResults.set([]);

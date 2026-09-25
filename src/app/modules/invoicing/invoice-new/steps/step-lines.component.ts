@@ -1,8 +1,11 @@
 import { Component, inject, input, output, signal, computed, effect } from '@angular/core';
 import {
-  ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators,
+  ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators, AbstractControl,
 } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import {
+  FormFieldComponent, FormFieldOptions, SelectComponent, SelectOption,
+} from '@khalilrebhiitec/daf360';
 import { StepAffaireValue } from './step-affaire.component';
 import { InvoiceService } from '../../invoice.service';
 import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.service';
@@ -38,7 +41,7 @@ export interface StepLinesValue {
 @Component({
   selector: 'app-step-lines',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe],
+  imports: [ReactiveFormsModule, TranslatePipe, FormFieldComponent, SelectComponent],
   template: `
 <div class="step-lines">
 
@@ -127,10 +130,14 @@ export interface StepLinesValue {
 
               <!-- Description (toujours présente) -->
               <td>
-                <input type="text" formControlName="description" class="td-input"
-                  [class.invalid]="lg.get('description')!.invalid && lg.get('description')!.touched"
-                  maxlength="255"
-                  [placeholder]="'INVOICING.STEP_LINES.DESC_PLACEHOLDER' | translate" />
+                <daf-form-field
+                  [options]="{
+                    placeholder: ('INVOICING.STEP_LINES.DESC_PLACEHOLDER' | translate),
+                    error: lg.get('description')!.invalid && lg.get('description')!.touched
+                      ? ('INVOICING.STEP_LINES.FIELD_REQUIRED' | translate) : undefined
+                  }"
+                  [value]="lg.get('description')!.value"
+                  (valueChange)="setText(lg, 'description', $event)" />
               </td>
 
               @if (isAv()) {
@@ -140,11 +147,14 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ formatPct(progress()?.pctFacture ?? 0) }}</td>
                 <!-- % avancement à date (saisie utilisateur) -->
                 <td>
-                  <input type="number" formControlName="pctAvancement" class="td-input td-num"
-                    min="0" max="100" step="0.01"
-                    [class.invalid]="lg.get('pctAvancement')!.touched && !lg.get('pctAvancement')!.value"
-                    (input)="recalc(i)"
-                    placeholder="0.00" />
+                  <daf-form-field
+                    [options]="{
+                      type: 'number', align: 'end', suffixText: '%', placeholder: '0.00',
+                      error: lg.get('pctAvancement')!.touched && !lg.get('pctAvancement')!.value
+                        ? ('INVOICING.STEP_LINES.FIELD_REQUIRED' | translate) : undefined
+                    }"
+                    [value]="lg.get('pctAvancement')!.value"
+                    (valueChange)="setNum(lg, 'pctAvancement', $event)" />
                 </td>
                 <!-- % à facturer = pctAvancement - pctFacture (calculé) -->
                 <td class="td-computed">{{ formatPct(pctAFacturer(i)) }}</td>
@@ -162,8 +172,9 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td>
-                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                    min="0" step="0.01" (input)="recalc(i)" />
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('prixUnitaireHt')!.value"
+                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
               } @else if (isLivrable()) {
                 <!-- Livrable : les quatre colonnes d'avancement portent de VRAIES valeurs,
@@ -193,28 +204,31 @@ export interface StepLinesValue {
                   <td class="td-computed">{{ formatAmount(lineHtLivrable(i)) }}</td>
                 } @else {
                   <td>
-                    <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                      min="0" step="0.01" (input)="recalc(i)" />
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                   </td>
                 }
               } @else {
                 <td>
-                  <input type="number" formControlName="quantite" class="td-input td-num"
-                    min="0.01" step="0.01" (input)="recalc(i)" />
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('quantite')!.value"
+                    (valueChange)="setNum(lg, 'quantite', $event)" />
                 </td>
                 <td>
-                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                    min="0" step="0.01" (input)="recalc(i)" />
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('prixUnitaireHt')!.value"
+                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
               }
 
               <!-- TVA (toujours présente) -->
-              <td>
-                <select formControlName="tauxTva" class="td-input td-num" (change)="recalc(i)">
-                  @for (r of vatRateOptions(); track r.id) {
-                    <option [value]="r.ratePct">{{ r.ratePct }}%</option>
-                  }
-                </select>
+              <td class="td-vat">
+                <daf-select
+                  [options]="vatRateOptions()"
+                  [selected]="vatSelected(lg)"
+                  [ariaLabel]="'INVOICING.STEP_LINES.VAT' | translate"
+                  (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
               </td>
 
               @if (isAv()) {
@@ -284,18 +298,21 @@ export interface StepLinesValue {
             @for (lg of expenseLinesArray.controls; track $index; let i = $index) {
               <tr [formGroupName]="i" class="line-row">
                 <td>
-                  <input type="text" formControlName="description" class="td-input" maxlength="255" />
+                  <daf-form-field
+                    [value]="lg.get('description')!.value"
+                    (valueChange)="setText(lg, 'description', $event)" />
                 </td>
                 <td>
-                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                    min="0" step="0.01" (input)="recalc(i)" />
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('prixUnitaireHt')!.value"
+                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
-                <td>
-                  <select formControlName="tauxTva" class="td-input td-num" (change)="recalc(i)">
-                    @for (r of vatRateOptions(); track r.id) {
-                      <option [value]="r.ratePct">{{ r.ratePct }}%</option>
-                    }
-                  </select>
+                <td class="td-vat">
+                  <daf-select
+                    [options]="vatRateOptions()"
+                    [selected]="vatSelected(lg)"
+                    [ariaLabel]="'INVOICING.STEP_LINES.VAT' | translate"
+                    (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
                 </td>
                 <td class="td-computed">{{ formatAmount(lineTtcExpense(i)) }}</td>
                 <td>
@@ -365,7 +382,37 @@ export class StepLinesComponent {
    * contrairement aux frais remboursables ci-dessous qui ne concernent qu'AV/T&M/Livrable.
    */
   private readonly vatRates = signal<ListValueDto[]>([]);
-  readonly vatRateOptions = computed(() => this.vatRates());
+  readonly vatRateOptions = computed<SelectOption[]>(() => this.vatRates()
+    .filter(r => r.ratePct != null)
+    .map(r => ({ value: String(r.ratePct), label: `${r.ratePct}%` })));
+
+  /** Champs numériques des tableaux de lignes (quantité, PU / montant HT). */
+  readonly numOptions: FormFieldOptions = { type: 'number', align: 'end', placeholder: '0.00' };
+
+  /** Valeur sélectionnée du daf-select TVA — ses options portent le taux en chaîne. */
+  vatSelected(g: AbstractControl): string[] {
+    const v = g.get('tauxTva')?.value;
+    return v == null ? [] : [String(v)];
+  }
+
+  /**
+   * Pont daf-form-field / daf-select → FormControl (ni l'un ni l'autre n'est un
+   * ControlValueAccessor). daf-form-field émet toujours une chaîne, même en type
+   * 'number' : son <input> ne reçoit pas le NumberValueAccessor, d'où la conversion.
+   */
+  setNum(g: AbstractControl, key: string, v: string | number | null): void {
+    const c = g.get(key)!;
+    c.setValue(v === '' || v == null ? null : Number(v));
+    c.markAsTouched();
+  }
+
+  /** Plafonné à 255 (colonne description) — l'ancien maxlength natif, sans le compteur
+   * que daf-form-field afficherait sous chaque cellule avec `maxLength`. */
+  setText(g: AbstractControl, key: string, v: string | number | null): void {
+    const c = g.get(key)!;
+    c.setValue(v == null ? '' : String(v).slice(0, 255));
+    c.markAsTouched();
+  }
 
   /** Données chargées depuis GET /invoices/affaire/{id}/progress — null hors mode AV */
   readonly progress = signal<{ budgetTotal: number; pctFacture: number } | null>(null);
@@ -745,7 +792,6 @@ export class StepLinesComponent {
     return this.expenseLinesArray.controls.reduce((s, _, i) => s + this.lineTtcExpense(i), 0);
   }
 
-  recalc(_i: number): void { /* le template se recalcule via les getters sur chaque changement */ }
 
   // ── Picker de frais remboursables (RMB) ──────────────────────────────────────
 

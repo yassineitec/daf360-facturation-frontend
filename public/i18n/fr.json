@@ -501,6 +501,7 @@
       "DESC_PLACEHOLDER": "Description de la prestation",
       "TOTALS": "Totaux",
       "ERROR": "Toutes les lignes doivent être remplies correctement.",
+      "FIELD_REQUIRED": "Requis",
       "BACK": "Retour",
       "NEXT": "Suivant",
       "BUDGET_AFFAIRE": "Budget affaire",

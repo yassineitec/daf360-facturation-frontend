@@ -501,6 +501,7 @@
       "DESC_PLACEHOLDER": "Service description",
       "TOTALS": "Totals",
       "ERROR": "All lines must be filled in correctly.",
+      "FIELD_REQUIRED": "Required",
       "BACK": "Back",
       "NEXT": "Next",
       "BUDGET_AFFAIRE": "Contract budget",
