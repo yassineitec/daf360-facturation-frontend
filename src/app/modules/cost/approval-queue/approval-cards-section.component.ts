@@ -6,7 +6,7 @@ import {
 import { ApprovalItem, kindKey } from './approval-item';
 import { initials, urgencyKey } from '../cost-display';
 
-/** One decision the queue can emit, for either kind of request. */
+/** One decision the queue can emit, for any kind of request. */
 export type ApprovalDecision = 'approve' | 'return' | 'reject' | 'candidate' | 'view';
 
 /**
@@ -86,7 +86,9 @@ export class ApprovalCardsSectionComponent {
           status:      item.urgency === 'urgent' ? 'pending' : 'active',
           statusLabel: item.kind === 'cost'
             ? t(urgencyKey(item.level))
-            : t('COST.APPROVAL_QUEUE.KIND_HIRING'),
+            : item.kind === 'advance'
+              ? t(`FACTURATION.ADVANCES.STATUS.${item.advance!.status}`)
+              : t('COST.APPROVAL_QUEUE.KIND_HIRING'),
         },
         metricsColumns: 2,
         metrics: item.metrics,
@@ -104,6 +106,13 @@ export class ApprovalCardsSectionComponent {
     // Additive: the existing modal-based decision flow is untouched.
     if (item.kind === 'cost') {
       actions.push({ id: 'view', icon: 'visibility', tooltip: t('COST.APPROVAL_QUEUE.VIEW_DETAILS') });
+    }
+
+    // Finance only decides; the payout and the deductions are payroll's.
+    if (item.kind === 'advance') {
+      actions.push({ id: 'approve', icon: 'check_circle', tooltip: t('COST.APPROVAL_QUEUE.APPROVE_REQUEST') });
+      actions.push({ id: 'reject', icon: 'block', tooltip: t('COST.APPROVAL_QUEUE.REJECT'), variant: 'danger' });
+      return actions;
     }
 
     // Cost approval is permission-gated; the hiring queue has no equivalent code today.

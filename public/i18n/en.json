@@ -51,6 +51,24 @@
       "SECTION": "FINANCE",
       "MENU": "Menu"
     },
+    "ADVANCES": {
+      "COL_TERMS": "Repayment",
+      "FIRST_MONTH": "First deduction",
+      "COL_AMOUNT": "Amount",
+      "TERMS": "{{monthly}} × {{count}} from {{month}}",
+      "EMPLOYEE_SAID": "Employee:",
+      "STATUS": {
+        "PENDING_FINANCE": "Finance decision",
+        "REJECTED": "Rejected",
+        "APPROVED": "Approved — to pay out",
+        "REPAYING": "Being repaid",
+        "REPAID": "Repaid",
+        "CANCELLED": "Cancelled"
+      },
+      "DECISION_TITLE": "Decision on the advance",
+      "COL_ASKED_ON": "Requested on",
+      "AFTER_APPROVAL": "Once approved, payroll pays it out and recovers it through salary deductions."
+    },
     "MISSIONS": {
       "TITLE": "Mission orders",
       "SUBTITLE": "Final decision on the cost of HR-approved missions",
@@ -2518,11 +2536,13 @@
       "KIND": "Type",
       "KIND_COST": "Billing",
       "KIND_HIRING": "Recruitment",
+      "KIND_ADVANCE": "Salary advance",
       "REFERENCE": "Reference",
       "VIEW_CANDIDATE": "View candidate",
       "VIEW_DETAILS": "View details",
       "FILTER_ALL": "All",
       "SPLIT": "{{costs}} billing · {{hiring}} recruitment",
+      "SPLIT_WITH_ADVANCES": "{{costs}} billing · {{hiring}} recruitment · {{advances}} advances",
       "HIRING_ERROR_PREFIX": "Recruitment approvals:",
       "HIRING_MODAL_TITLE": "Decision — salary cost",
       "LOADED_COST": "Estimated loaded cost",

@@ -51,6 +51,24 @@
       "SECTION": "FINANCE",
       "MENU": "Menu"
     },
+    "ADVANCES": {
+      "COL_TERMS": "Remboursement",
+      "FIRST_MONTH": "Première retenue",
+      "COL_AMOUNT": "Montant",
+      "TERMS": "{{monthly}} × {{count}} dès {{month}}",
+      "EMPLOYEE_SAID": "Collaborateur :",
+      "STATUS": {
+        "PENDING_FINANCE": "Décision finance",
+        "REJECTED": "Refusée",
+        "APPROVED": "Approuvée — à verser",
+        "REPAYING": "En remboursement",
+        "REPAID": "Remboursée",
+        "CANCELLED": "Annulée"
+      },
+      "DECISION_TITLE": "Décision sur l'avance",
+      "COL_ASKED_ON": "Demandée le",
+      "AFTER_APPROVAL": "Une fois approuvée, la paie la verse et la récupère par retenue sur les salaires."
+    },
     "MISSIONS": {
       "TITLE": "Ordres de mission",
       "SUBTITLE": "Décision finale sur le coût des missions validées par RH",
@@ -2518,11 +2536,13 @@
       "KIND": "Type",
       "KIND_COST": "Facturation",
       "KIND_HIRING": "Recrutement",
+      "KIND_ADVANCE": "Avance sur salaire",
       "REFERENCE": "Référence",
       "VIEW_CANDIDATE": "Voir le candidat",
       "VIEW_DETAILS": "Voir le détail",
       "FILTER_ALL": "Tous",
       "SPLIT": "{{costs}} facturation · {{hiring}} recrutement",
+      "SPLIT_WITH_ADVANCES": "{{costs}} facturation · {{hiring}} recrutement · {{advances}} avances",
       "HIRING_ERROR_PREFIX": "Approbations recrutement :",
       "HIRING_MODAL_TITLE": "Décision — coût salarial",
       "LOADED_COST": "Coût chargé estimé",

@@ -6,6 +6,8 @@ import {
   MetricCardOptions, MetricDelta, ModalRef, ModalService, PageComponent, PageHeaderComponent,
   SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
+import { SalaryAdvanceApprovalService, SalaryAdvanceDto } from '../salary-advances/salary-advance-approval.service';
+import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import { CostService } from '../cost.service';
 import { ClientService } from '../../clients/client.service';
 import { UserStore } from '../../../core/user.store';
@@ -43,11 +45,14 @@ export class CostApprovalQueueComponent implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly userStore = inject(UserStore);
+  private readonly advanceSvc = inject(SalaryAdvanceApprovalService);
 
   @ViewChild('approvalTpl')       private approvalTpl!:       TemplateRef<unknown>;
   @ViewChild('hiringApprovalTpl') private hiringApprovalTpl!: TemplateRef<unknown>;
+  @ViewChild('advanceDecisionTpl') private advanceDecisionTpl!: TemplateRef<unknown>;
   private approvalRef:       ModalRef | null = null;
   private hiringApprovalRef: ModalRef | null = null;
+  private advanceRef:        ModalRef | null = null;
 
   paysId        = signal<number>(0);
   costs         = signal<CostLineDto[]>([]);
@@ -63,6 +68,21 @@ export class CostApprovalQueueComponent implements OnInit {
   viewMode       = signal<ViewMode>('grid');
 
   readonly canApproveCost = computed(() => this.userStore.hasPermission('FACT_APPROVE_COST_L1'));
+
+  // ── Salary advances (payroll V25) ──────────────────────────────────────────
+  /**
+   * Awaiting finance's decision. Finance is only the decision hub: once approved, the payout,
+   * the monthly deductions and the rules are payroll's (/payroll/salary-advances).
+   */
+  advances         = signal<SalaryAdvanceDto[]>([]);
+  advancesLoading  = signal(false);
+  selectedAdvance  = signal<SalaryAdvanceDto | null>(null);
+  advanceDecision  = signal<'approve' | 'reject'>('approve');
+  advanceComment   = signal('');
+  advanceModalError = signal<string | null>(null);
+
+  /** FACT_APPROVE_SALARY_ADVANCE — the code payroll-service enforces on the decision endpoints. */
+  readonly canDecideAdvance = computed(() => this.userStore.hasPermission('FACT_APPROVE_SALARY_ADVANCE'));
 
   // ── Cost decision modal ────────────────────────────────────────────────────
   selectedCost       = signal<CostLineDto | null>(null);
@@ -129,7 +149,30 @@ export class CostApprovalQueueComponent implements OnInit {
       };
     });
 
-    return [...costItems, ...hiringItems];
+    const advanceItems: ApprovalItem[] = this.advances().map(a => {
+      const amount = this.advanceAmount(a.amount, a.currency);
+      return {
+        key:       `advance-${a.id}`,
+        kind:      'advance',
+        id:        a.id,
+        reference: `AVS-${a.id}`,
+        title:     a.employeeName ?? '—',
+        level:     null,
+        urgency:   itemUrgency('advance', null),
+        dateLabel: formatDate(a.createdAt),
+        amountLabel: amount,
+        metrics: [
+          { label: t('FACTURATION.ADVANCES.COL_AMOUNT'), value: amount },
+          { label: t('FACTURATION.ADVANCES.COL_TERMS'),
+            value: `${this.advanceAmount(a.monthlyAmount, a.currency)} × ${a.installments}` },
+          { label: t('FACTURATION.ADVANCES.FIRST_MONTH'), value: this.advanceMonth(a.firstDeductionMonth) },
+          { label: t('FACTURATION.ADVANCES.COL_ASKED_ON'), value: formatDate(a.createdAt) },
+        ],
+        advance: a,
+      };
+    });
+
+    return [...costItems, ...hiringItems, ...advanceItems];
   });
 
   /** Search + the two filters, all client-side: each queue arrives whole in one call. */
@@ -158,10 +201,13 @@ export class CostApprovalQueueComponent implements OnInit {
   /** Says how the total splits between the two queues, which the single number hides. */
   readonly pendingDelta = computed<MetricDelta>(() => {
     this.translate.currentLang();
-    const costs  = this.items().filter(i => i.kind === 'cost').length;
-    const hiring = this.items().filter(i => i.kind === 'hiring').length;
+    const costs    = this.items().filter(i => i.kind === 'cost').length;
+    const hiring   = this.items().filter(i => i.kind === 'hiring').length;
+    const advances = this.items().filter(i => i.kind === 'advance').length;
     return {
-      value: this.translate.instant('COST.APPROVAL_QUEUE.SPLIT', { costs, hiring }),
+      value: this.translate.instant(
+        advances ? 'COST.APPROVAL_QUEUE.SPLIT_WITH_ADVANCES' : 'COST.APPROVAL_QUEUE.SPLIT',
+        { costs, hiring, advances }),
       direction: 'neutral',
     };
   });
@@ -189,14 +235,15 @@ export class CostApprovalQueueComponent implements OnInit {
         placeholder: t('COST.APPROVAL_QUEUE.FILTER_ALL'),
         // Le filtre « Embauches » disparaît pour qui ne peut pas les décider — sinon il
         // filtre sur une file que l'API ne lui rend pas.
-        options: this.canDecideHiring()
-          ? [
-              { value: 'cost',   label: t('COST.APPROVAL_QUEUE.KIND_COST')   },
-              { value: 'hiring', label: t('COST.APPROVAL_QUEUE.KIND_HIRING') },
-            ]
-          : [
-              { value: 'cost',   label: t('COST.APPROVAL_QUEUE.KIND_COST')   },
-            ],
+        // A kind appears only for who may decide it — otherwise it filters on a queue the
+        // API does not return to them.
+        options: [
+          { value: 'cost', label: t('COST.APPROVAL_QUEUE.KIND_COST') },
+          ...(this.canDecideHiring()
+            ? [{ value: 'hiring', label: t('COST.APPROVAL_QUEUE.KIND_HIRING') }] : []),
+          ...(this.canDecideAdvance()
+            ? [{ value: 'advance', label: t('COST.APPROVAL_QUEUE.KIND_ADVANCE') }] : []),
+        ],
       },
       {
         name: 'priority',
@@ -271,6 +318,26 @@ export class CostApprovalQueueComponent implements OnInit {
       },
       error: () => { this.loadQueue(); this.loadHiringQueue(); },
     });
+    this.loadAdvances();
+  }
+
+  /**
+   * Not scoped by `paysId` here: payroll-service filters by the caller's own entity scope.
+   */
+  loadAdvances(): void {
+    if (!this.canDecideAdvance()) return;
+    this.advancesLoading.set(true);
+    this.advanceSvc.pending().subscribe({
+      next: pending => {
+        this.advances.set(pending);
+        this.advancesLoading.set(false);
+      },
+      error: err => {
+        this.hiringError.set(err?.error?.detail ?? err?.error?.message
+          ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR'));
+        this.advancesLoading.set(false);
+      },
+    });
   }
 
   loadQueue(): void {
@@ -326,6 +393,11 @@ export class CostApprovalQueueComponent implements OnInit {
     // window.open()s instead of opening a modal.
     if (decision === 'view' && item.kind === 'cost') {
       this.router.navigate(['..', item.id], { relativeTo: this.route });
+      return;
+    }
+
+    if (item.kind === 'advance') {
+      this.openAdvanceDecisionModal(item.advance!, decision === 'reject' ? 'reject' : 'approve');
       return;
     }
 
@@ -433,6 +505,67 @@ export class CostApprovalQueueComponent implements OnInit {
     });
   }
 
+  // ── Salary advances ────────────────────────────────────────────────────────
+  openAdvanceDecisionModal(advance: SalaryAdvanceDto, decision: 'approve' | 'reject'): void {
+    this.selectedAdvance.set(advance);
+    this.advanceDecision.set(decision);
+    this.advanceComment.set('');
+    this.advanceModalError.set(null);
+    const t = (key: string) => this.translate.instant(key);
+    this.advanceRef = this.modal.open({
+      title: t('FACTURATION.ADVANCES.DECISION_TITLE'),
+      body:  this.advanceDecisionTpl,
+      size:  'md',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: t('COST.APPROVAL_QUEUE.MODAL_CANCEL'),  variant: 'secondary', action: r => r.close() },
+        { label: t('COST.APPROVAL_QUEUE.MODAL_CONFIRM'), variant: 'primary',   action: () => this.submitAdvanceDecision() },
+      ],
+    });
+  }
+
+  /** Guarded here as well as server-side: a ModalButton has no reactive `disabled`. */
+  submitAdvanceDecision(): void {
+    const advance = this.selectedAdvance();
+    if (!advance) return;
+    const comment = this.advanceComment().trim();
+    if (this.advanceDecision() === 'reject' && !comment) {
+      this.advanceModalError.set(this.translate.instant('COST.APPROVAL_QUEUE.REJECT_COMMENT_REQUIRED'));
+      return;
+    }
+    this.advanceModalError.set(null);
+    const call$ = this.advanceDecision() === 'approve'
+      ? this.advanceSvc.approve(advance.id, comment || null)
+      : this.advanceSvc.reject(advance.id, comment);
+    call$.subscribe({
+      next: saved => {
+        this.advanceRef?.close();
+        // Off the queue either way — approved goes to payroll for the payout, rejected is final.
+        this.advances.update(list => list.filter(a => a.id !== saved.id));
+      },
+      error: err => this.advanceModalError.set(
+        err?.error?.detail ?? err?.error?.message ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR')),
+    });
+  }
+
+  /** The advance's own currency, with that currency's decimals — never converted. */
+  advanceAmount(value: number | null | undefined, currency: string | null): string {
+    if (value === null || value === undefined) return '—';
+    const digits = currencyFractionDigits(currency);
+    const locale = this.translate.currentLang() === 'en' ? 'en-GB' : 'fr-FR';
+    const formatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: digits, maximumFractionDigits: digits,
+    }).format(value);
+    return currency ? `${formatted} ${currency}` : formatted;
+  }
+
+  advanceMonth(ym: string | null): string {
+    if (!ym) return '—';
+    const [y, m] = ym.slice(0, 7).split('-').map(Number);
+    const locale = this.translate.currentLang() === 'en' ? 'en-GB' : 'fr-FR';
+    return new Date(y, (m || 1) - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+  }
+
   // ── Formatting used by the modal bodies ────────────────────────────────────
   costAmountLabel(cost: CostLineDto): string {
     return cost.netAmountEur != null
@@ -445,3 +578,4 @@ export class CostApprovalQueueComponent implements OnInit {
     return this.currency.transform(snap.loadedCost ?? null, snap.localCurrency ?? 'TND');
   }
 }
+

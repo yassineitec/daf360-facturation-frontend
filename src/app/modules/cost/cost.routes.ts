@@ -3,8 +3,9 @@ import { permissionGuard } from '@khalilrebhiitec/daf360';
 
 export const COST_ROUTES: Routes = [
   /**
-   * Deux files en une : les lignes de coût (FACT_APPROVE_COST_L1) et les demandes
-   * d'embauche chiffrées par RH (APPROVE_HIRING_COST).
+   * Trois files en une : les lignes de coût (FACT_APPROVE_COST_L1), les demandes
+   * d'embauche chiffrées par RH (APPROVE_HIRING_COST) et les avances sur salaire validées
+   * par RH (FACT_APPROVE_SALARY_ADVANCE — décision puis versement).
    *
    * Garde propre, comme `cost/missions` juste en dessous et pour la même raison : celui du
    * parent accepte quatre codes, dont de simples lecteurs de coûts, qui atteignaient donc
@@ -18,7 +19,7 @@ export const COST_ROUTES: Routes = [
   {
     path: 'approval',
     canActivate: [permissionGuard],
-    data: { permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST'] },
+    data: { permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST', 'FACT_APPROVE_SALARY_ADVANCE'] },
     loadComponent: () =>
       import('./approval-queue/cost-approval-queue.component').then(m => m.CostApprovalQueueComponent),
   },

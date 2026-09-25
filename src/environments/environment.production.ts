@@ -4,5 +4,6 @@ export const environment = {
   portalUrl:  '',
   factApiUrl: '',
   hrApiUrl:   '',
+  payrollApiUrl: '',
   stylesUrl:  '',
 };
