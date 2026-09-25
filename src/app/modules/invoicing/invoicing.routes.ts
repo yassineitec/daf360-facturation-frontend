@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { approvalDraftLeaveGuard } from './invoice-new/approval-draft-leave.guard';
 
 export const INVOICING_ROUTES: Routes = [
   {
@@ -12,6 +13,7 @@ export const INVOICING_ROUTES: Routes = [
   {
     path: ':id/edit',
     loadComponent: () => import('./invoice-new/invoice-new.component').then(m => m.InvoiceNewComponent),
+    canDeactivate: [approvalDraftLeaveGuard],
   },
   {
     path: ':id',

@@ -95,16 +95,17 @@
     </div>
 
     <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
+      <!-- « Annuler » à chaque étape — plus besoin de revenir à l'étape 1 pour abandonner. -->
+      <daf-button
+        [options]="{ variant: 'ghost', pill: true, iconStart: 'close',
+                     label: 'INVOICING.NEW.CANCEL' | translate,
+                     disabled: cancelling() }"
+        (onClick)="cancel()" />
       @if (step() > 1) {
         <daf-button
           [options]="{ variant: 'ghost', pill: true, iconStart: 'arrow_back',
                        label: 'INVOICING.NEW.BACK' | translate }"
           (onClick)="goPrev()" />
-      } @else {
-        <daf-button
-          [options]="{ variant: 'ghost', pill: true, iconStart: 'close',
-                       label: 'INVOICING.NEW.CANCEL' | translate }"
-          (onClick)="cancel()" />
       }
 
       <!-- « Enregistrer le brouillon » n'apparaît qu'au récapitulatif : avant, la

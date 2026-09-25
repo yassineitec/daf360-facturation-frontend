@@ -3,6 +3,7 @@ import { HttpClient }          from '@angular/common/http';
 import { Observable }          from 'rxjs';
 import { environment }         from '../../../../environments/environment';
 import { LivrableBatchDto } from '../livrable.model';
+import { UserStore }           from '../../../core/user.store';
 
 // ── Statut enums ──────────────────────────────────────────────────────────────
 
@@ -144,6 +145,7 @@ export interface PendingCreditNoteDto {
 @Injectable({ providedIn: 'root' })
 export class BillingService {
   private readonly http = inject(HttpClient);
+  private readonly store = inject(UserStore);
   private readonly base = `${environment.factApiUrl}/api/fact`;
   private readonly opts = { withCredentials: true };
 
@@ -268,6 +270,29 @@ export class BillingService {
   validateLivrableBatch(batchId: number): Observable<LivrableBatchDto> {
     return this.http.post<LivrableBatchDto>(
       `${this.base}/billing/livrable-batches/${batchId}/validate`, {}, this.opts);
+  }
+
+  /** Undoes validateDF()/validateLivrableBatch() when the user cancels the invoice stepper
+   * they redirect to — deletes the still-DRAFT invoice and puts its line(s) back to
+   * EN_ATTENTE_DF, logging a CANCEL_VALIDATE_DF history entry (DFValidationService.revertValidation). */
+  revertDfValidation(invoiceId: number): Observable<void> {
+    return this.http.post<void>(
+      `${this.base}/billing/df/invoices/${invoiceId}/revert`, {}, this.opts);
+  }
+
+  /** Same revert, fired while the tab is closing/reloading (InvoiceNewComponent.onPageHide).
+   * An HttpClient request is cancelled with the page, so this uses fetch with `keepalive`,
+   * which the browser completes after unload — and therefore bypasses the auth interceptor,
+   * hence the Bearer token set here by hand. Fire-and-forget: nobody is left to read the
+   * response. */
+  revertDfValidationOnUnload(invoiceId: number): void {
+    const token = this.store.user()?.rhToken;
+    fetch(`${this.base}/billing/df/invoices/${invoiceId}/revert`, {
+      method: 'POST',
+      keepalive: true,
+      credentials: 'include',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).catch(() => { /* page is gone — nothing to report to */ });
   }
 
   returnLivrableBatch(batchId: number, motif: string): Observable<LivrableBatchDto> {

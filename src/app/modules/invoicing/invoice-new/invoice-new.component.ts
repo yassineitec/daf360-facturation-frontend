@@ -1,8 +1,10 @@
-import { Component, OnInit, signal, computed, viewChild, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, viewChild, inject, effect, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { Observable } from 'rxjs';
 import {
   ButtonComponent, ButtonOptions, PageComponent, PageHeaderComponent, StepperComponent,
+  ModalService,
 } from '@khalilrebhiitec/daf360';
 import type {
   BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
@@ -13,6 +15,7 @@ import { StepConditionsComponent, StepConditionsValue } from './steps/step-condi
 import { StepRecapComponent } from './steps/step-recap.component';
 import { enumLabel } from '../../../shared/enum-labels';
 import { InvoiceService } from '../invoice.service';
+import { BillingService } from '../../affaires/billing/billing.service';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -34,6 +37,8 @@ export class InvoiceNewComponent implements OnInit {
   private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
   private readonly invSvc    = inject(InvoiceService);
+  private readonly billingSvc = inject(BillingService);
+  private readonly modal      = inject(ModalService);
 
   step            = signal<Step>(1);
   affaireValue    = signal<StepAffaireValue    | null>(null);
@@ -47,6 +52,81 @@ export class InvoiceNewComponent implements OnInit {
   initialLines       = signal<StepLinesValue      | null>(null);
   initialConditions  = signal<StepConditionsValue | null>(null);
   loadingExisting    = signal(false);
+
+  // ── Approval flow (`?fromApproval=1`) ─────────────────────────────────────
+  // The DF approval that opened this page already created the DRAFT and flipped its billing
+  // line(s) to FACTURE. Every way out that doesn't go through a save must undo that:
+  // "Annuler" (cancel()), any in-app navigation (canDeactivate(), via
+  // approvalDraftLeaveGuard) and closing/reloading the tab (onBeforeUnload/onPageHide).
+  private readonly fromApproval = this.route.snapshot.queryParamMap.get('fromApproval') === '1';
+  /** Read from the route rather than editInvoiceId(), which is only set once the invoice
+   * has loaded — leaving during that load must still revert. */
+  private readonly routeInvoiceId = Number(this.route.snapshot.paramMap.get('id')) || null;
+  cancelling = signal(false);
+  /** Sticky: step-recap (and its savedInvoiceId) is destroyed when the user steps back, so
+   * a save done at the recap must be remembered here for cancel() to respect it. */
+  private readonly draftSaved = signal(false);
+  /** The revert was attempted (or deliberately skipped) — never ask or send it twice. */
+  private settled = false;
+
+  constructor() {
+    effect(() => {
+      if (this.stepRecapRef()?.savedInvoiceId() != null) this.draftSaved.set(true);
+    });
+  }
+
+  /** True while leaving this page would strand an approval nobody confirmed. */
+  private get revertPending(): boolean {
+    return this.fromApproval && this.routeInvoiceId !== null && !this.draftSaved() && !this.settled;
+  }
+
+  private revert$(): Observable<void> {
+    this.settled = true;
+    return this.billingSvc.revertDfValidation(this.routeInvoiceId!);
+  }
+
+  /** In-app navigation away (breadcrumb, side nav, browser back) — asks first, then
+   * reverts. Called by approvalDraftLeaveGuard. */
+  canDeactivate(): boolean | Observable<boolean> {
+    if (!this.revertPending) return true;
+    const t = (key: string) => this.translate.instant(key);
+    return new Observable<boolean>(sub => {
+      const done = (leave: boolean) => { sub.next(leave); sub.complete(); };
+      this.modal.open({
+        title: t('INVOICING.NEW.LEAVE_TITLE'),
+        body:  t('INVOICING.NEW.LEAVE_BODY'),
+        size:  'sm',
+        closeOnBackdrop: false,
+        buttons: [
+          { label: t('INVOICING.NEW.LEAVE_STAY'), variant: 'secondary', action: r => { r.close(); done(false); } },
+          { label: t('INVOICING.NEW.LEAVE_CONFIRM'), variant: 'primary', action: r => {
+              r.close();
+              // Leave even if the revert fails (e.g. the invoice left DRAFT meanwhile) —
+              // the server kept the data consistent either way; trapping the user here
+              // would fix nothing.
+              this.revert$().subscribe({ next: () => done(true), error: () => done(true) });
+            } },
+        ],
+      });
+    });
+  }
+
+  /** Tab close / reload: the browser shows its own "leave site?" prompt... */
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(e: BeforeUnloadEvent): void {
+    if (!this.revertPending) return;
+    e.preventDefault();
+    e.returnValue = '';
+  }
+
+  /** ...and only once the page is really going away is the revert sent — as a keepalive
+   * request, since an ordinary HttpClient call dies with the page. */
+  @HostListener('window:pagehide')
+  onPageHide(): void {
+    if (!this.revertPending) return;
+    this.settled = true;
+    this.billingSvc.revertDfValidationOnUnload(this.routeInvoiceId!);
+  }
 
   ngOnInit(): void {
     const raw = this.route.snapshot.paramMap.get('id');
@@ -89,7 +169,15 @@ export class InvoiceNewComponent implements OnInit {
         });
         this.loadingExisting.set(false);
       },
-      error: () => this.loadingExisting.set(false),
+      error: () => {
+        this.loadingExisting.set(false);
+        // A reload of this page already reverted the approval on the way out (onPageHide),
+        // so the draft is gone — back to the queue, where the request is pending again.
+        if (this.fromApproval) {
+          this.settled = true;
+          this.router.navigate(['/finance/billing/approval']);
+        }
+      },
     });
   }
 
@@ -265,5 +353,24 @@ export class InvoiceNewComponent implements OnInit {
     this.step.set(4);
   }
 
-  cancel(): void { this.router.navigate(['/finance/invoicing']); }
+  /**
+   * "Annuler" is an explicit choice, so no confirmation: in the approval flow it reverts
+   * straight away (draft deleted, line(s) back in the queue — see the approval-flow block
+   * above), unless the user explicitly saved the draft at the recap step first.
+   */
+  cancel(): void {
+    if (!this.revertPending) {
+      this.router.navigate([this.fromApproval ? '/finance/billing/approval' : '/finance/invoicing']);
+      return;
+    }
+    if (this.cancelling()) return;
+    this.cancelling.set(true);
+    const id = this.routeInvoiceId!;
+    this.revert$().subscribe({
+      next:  () => this.router.navigate(['/finance/billing/approval']),
+      // Revert refused (e.g. the invoice already left DRAFT) — show the invoice as it
+      // really is rather than pretending the cancel happened.
+      error: () => { this.cancelling.set(false); this.router.navigate(['/finance/invoicing', id]); },
+    });
+  }
 }

@@ -300,7 +300,10 @@ export class ApprovalDetailComponent implements OnInit {
         // jump straight into its edit stepper instead of leaving the user on this page,
         // since there's nothing left for them to check here once the invoice exists.
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+          // fromApproval: the stepper's "Annuler" then reverts this validation instead of
+          // leaving the draft invoice behind (InvoiceNewComponent.cancel()).
+          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
         } else {
           this.actioning.set(false);
           this.loadItem();
@@ -322,7 +325,8 @@ export class ApprovalDetailComponent implements OnInit {
     this.svc.validateLivrableBatch(this.id()).subscribe({
       next: batch => {
         if (batch.invoiceId) {
-          this.router.navigate(['/finance/invoicing', batch.invoiceId, 'edit']);
+          this.router.navigate(['/finance/invoicing', batch.invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
         } else {
           this.actioning.set(false);
           this.loadItem();
