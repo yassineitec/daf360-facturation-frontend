@@ -522,7 +522,13 @@
       "REMBOURSABLE_COL_AMOUNT": "Montant",
       "REMBOURSABLE_COL_COMMENT": "Commentaire",
       "REMBOURSABLE_LINES_TITLE": "Frais remboursables ajoutés à cette facture",
-      "REMBOURSABLE_REMOVE": "Retirer cette ligne"
+      "REMBOURSABLE_REMOVE": "Retirer cette ligne",
+      "ADD_CARRY_FORWARD": "+ Ajouter un solde WIP non facturé",
+      "CARRY_FORWARD_EMPTY": "Aucun solde WIP non facturé disponible pour cette affaire.",
+      "CARRY_FORWARD_COL_MODE": "Mode",
+      "CARRY_FORWARD_COL_PERIOD": "Période",
+      "CARRY_FORWARD_COL_AVAILABLE": "Disponible",
+      "CARRY_FORWARD_COL_AMOUNT": "Montant à facturer"
     },
     "STEP_CONDITIONS": {
       "DUE_DATE_LABEL": "Date d'échéance *",
@@ -2197,6 +2203,9 @@
       "COL_CUMUL": "Cumul",
       "COL_INCREMENT": "Montant incrémental",
       "COL_MT_CLIENT": "MT Client",
+      "COL_FACTURE_PROGRESS": "Facturé",
+      "FACTURE_COMPLETE": "Complet",
+      "FACTURE_PARTIAL": "Partiel — {{amount}} restants",
       "COL_STATUS": "Statut",
       "COL_DATE": "Date",
       "COL_WEEK": "Semaine",

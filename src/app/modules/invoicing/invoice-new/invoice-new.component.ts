@@ -157,6 +157,7 @@ export class InvoiceNewComponent implements OnInit {
             pctAvancement:   l.pctAvancement,
             pctAFacturer:    l.pctAFacturer,
             sourceExpenseId: l.sourceExpenseId,
+            sourceCarriedForwardLineId: l.sourceCarriedForwardLineId,
           })),
           periodFrom: inv.periodFrom,
           periodTo:   inv.periodTo,

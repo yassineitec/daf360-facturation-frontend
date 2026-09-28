@@ -522,7 +522,13 @@
       "REMBOURSABLE_COL_AMOUNT": "Amount",
       "REMBOURSABLE_COL_COMMENT": "Comment",
       "REMBOURSABLE_LINES_TITLE": "Reimbursable expenses added to this invoice",
-      "REMBOURSABLE_REMOVE": "Remove this line"
+      "REMBOURSABLE_REMOVE": "Remove this line",
+      "ADD_CARRY_FORWARD": "+ Add uninvoiced WIP balance",
+      "CARRY_FORWARD_EMPTY": "No uninvoiced WIP balance available for this affaire.",
+      "CARRY_FORWARD_COL_MODE": "Mode",
+      "CARRY_FORWARD_COL_PERIOD": "Period",
+      "CARRY_FORWARD_COL_AVAILABLE": "Available",
+      "CARRY_FORWARD_COL_AMOUNT": "Amount to invoice"
     },
     "STEP_CONDITIONS": {
       "DUE_DATE_LABEL": "Due date *",
@@ -2197,6 +2203,9 @@
       "COL_CUMUL": "Cumulative",
       "COL_INCREMENT": "Incremental amount",
       "COL_MT_CLIENT": "MT Client",
+      "COL_FACTURE_PROGRESS": "Invoiced",
+      "FACTURE_COMPLETE": "Complete",
+      "FACTURE_PARTIAL": "Partial — {{amount}} remaining",
       "COL_STATUS": "Status",
       "COL_DATE": "Date",
       "COL_WEEK": "Week",

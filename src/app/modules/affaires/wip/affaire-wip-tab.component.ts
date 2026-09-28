@@ -1299,14 +1299,36 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     return [
-      { key: 'period',   label: t('AFFAIRES.WIP.COL_PERIOD') },
-      { key: 'taux',     label: t('AFFAIRES.WIP.COL_TAUX') },
-      { key: 'cumul',    label: t('AFFAIRES.WIP.COL_CUMUL') },
-      { key: 'montant',  label: t('AFFAIRES.WIP.COL_INCREMENT') },
-      { key: 'mtClient', label: t('AFFAIRES.WIP.COL_MT_CLIENT'), type: 'custom' },
-      { key: 'statut',   label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
+      { key: 'period',           label: t('AFFAIRES.WIP.COL_PERIOD') },
+      { key: 'taux',             label: t('AFFAIRES.WIP.COL_TAUX') },
+      { key: 'cumul',            label: t('AFFAIRES.WIP.COL_CUMUL') },
+      { key: 'montant',          label: t('AFFAIRES.WIP.COL_INCREMENT') },
+      { key: 'mtClient',         label: t('AFFAIRES.WIP.COL_MT_CLIENT'), type: 'custom' },
+      { key: 'factureProgress',  label: t('AFFAIRES.WIP.COL_FACTURE_PROGRESS'), type: 'custom' },
+      { key: 'statut',           label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
     ];
   });
+
+  /** Walks a taux row's originating billing line forward through every later billing line
+   * that claimed part of its unpaid carry-forward remainder (`carriedForwardFromLineId`
+   * pointing back at it), returning the chain's current tail. `avLineHistory()` already
+   * holds EVERY billing line ever created for this affaire — fresh taux submissions AND the
+   * later "consumer" lines a manual invoice creates when someone picks up part of a
+   * carry-forward remainder (see the reimbursable/carry-forward invoice-line picker) — so
+   * this needs no extra request, just a client-side walk over what's already fetched. The
+   * tail's own `wipCarriedForward` is what's STILL not invoiced right now for this WIP
+   * period, however many invoices have touched it since. Capped at 50 hops as cheap
+   * insurance against a corrupted chain that somehow cycles back on itself — not expected in
+   * practice for a chain this short-lived. */
+  private findChainTail(line: LineDetailDto, lines: LineDetailDto[]): LineDetailDto {
+    let tail = line;
+    for (let i = 0; i < 50; i++) {
+      const next = lines.find(l => l.carriedForwardFromLineId === tail.id);
+      if (!next) break;
+      tail = next;
+    }
+    return tail;
+  }
 
   /** `cumul` is a pure display aid — the running sum of `tauxSaisi` down the table in its
    * existing period-ascending order (the backend already returns tauxHistory() sorted by
@@ -1325,6 +1347,20 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       // never stored with more than 6 decimals (NUMERIC(9,6) since V86), so the running
       // total shouldn't show more either.
       runningCumul = Number((runningCumul + t.tauxSaisi).toFixed(6));
+      const line = lines.find(l => l.tauxAvancementId === t.id) ?? null;
+      // factureProgress column — how much of montantIncremental has ACTUALLY been invoiced
+      // so far, across every invoice touching this WIP period (the original MT Client amount
+      // AND any later carry-forward pickups), not just the first one. `line` may be null in
+      // the (not normally expected) case this row has no matching billing line at all —
+      // mirrors `_line`'s own `?? null` defensiveness above: no crash, just a dash.
+      const tail = line ? this.findChainTail(line, lines) : null;
+      const remainderPending = tail ? Number((tail.wipCarriedForward ?? 0).toFixed(3)) : null;
+      const montantFacture = remainderPending !== null
+        ? Number((t.montantIncremental - remainderPending).toFixed(3))
+        : null;
+      // Epsilon guard against float noise, same rounding-then-compare spirit as
+      // lastValidatedTaux()/canSubmitTaux() above (toFixed() before comparing).
+      const isComplete = remainderPending !== null && remainderPending < 0.01;
       return {
         id:      t.id,
         period:  this.formatWipPeriod(t.periodDateFrom, t.periodDateTo),
@@ -1339,7 +1375,13 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         statut:  { label: enumLabel(this.translate, 'WIP_TAUX_STATUT', t.statut),
                    options: { variant: WIP_TAUX_STATUT_BADGE[t.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
         _source: t,
-        _line:   lines.find(l => l.tauxAvancementId === t.id) ?? null,
+        _line:   line,
+        // factureProgress itself isn't set here either — same reason as mtClient (type:
+        // 'custom', see the dafCell="factureProgress" template) — these three are the raw
+        // values it renders from.
+        _remainderPending: remainderPending,
+        _montantFacture:   montantFacture,
+        _isComplete:       isComplete,
       } satisfies TableRow;
     });
   });

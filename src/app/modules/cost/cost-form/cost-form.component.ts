@@ -51,14 +51,17 @@ export class CostFormComponent implements OnInit {
   affaires   = signal<AffaireListItem[]>([]);
   suppliers  = signal<SupplierSearchItem[]>([]);
 
+  /** VAT_RATE configurable list (D3, backend `FactListService`) — replaces the former
+   *  static per-value i18n-key list (see `tvaOptions` below). Loaded per pays like every
+   *  other list on this form, in `onPaysChange()`, even though VAT_RATE's seeded values
+   *  are globally scoped: the endpoint is still called with `pays` like the others. */
+  vatRates   = signal<ListValueDto[]>([]);
+
   // D3 cost-management taxonomy (V78) — loaded per pays in onPaysChange(), like every
   // other list on this form: the backend returns that country's own rows plus the global
   // ones it has not overridden or switched off.
   costCategories    = signal<ListValueDto[]>([]);
   costSubCategories = signal<ListValueDto[]>([]);
-  // VAT_RATE (configurable) — replaces the former hardcoded tvaOptions list. Loaded per
-  // pays in onPaysChange(), same as every other list on this form.
-  vatRates          = signal<ListValueDto[]>([]);
 
   paysId              = signal<number | null>(null);
   costCategoryId      = signal<number | null>(null);

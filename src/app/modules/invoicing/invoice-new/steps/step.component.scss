@@ -295,6 +295,35 @@ $outline-var: #bdc9c4;        // outline-variant
 .rmb-picker-num     { text-align: right; }
 .rmb-picker-comment { color: #3e4945; white-space: normal; }
 
+// ── Carry-forward — picker de solde WIP non facturé ──────────────────────────────
+// Colonnes propres (mode / période / disponible / saisie), distinctes de celles du
+// picker de remboursables ci-dessus : réutiliser .rmb-picker-row ici désalignait tout,
+// ses 5 pistes étant dimensionnées pour [case à cocher][date][catégorie][montant]
+// [commentaire], alors que ce panneau n'émet que 4 colonnes.
+.carry-forward-picker-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 110px 110px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  color: #0b1c30;
+
+  &--header {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #3e4945;
+  }
+
+  input[type='number'] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
 .rmb-picker-actions {
   display: flex;
   justify-content: flex-end;

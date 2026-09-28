@@ -6,7 +6,7 @@ import {
   InvoiceListItem, InvoiceDetail, ReminderDto, InvoicePaymentDto,
   CreateDraftRequest, UpdateDraftRequest, ApproveDecisionRequest,
   RecordPaymentRequest, DisputeRequest, CreditNoteRequest,
-  InvoiceFilter, PageResponse,
+  InvoiceFilter, PageResponse, PendingCarryForwardDto,
 } from './invoice.model';
 import { AffaireListItem, AffaireDetail } from '../affaires/affaire.model';
 
@@ -103,11 +103,10 @@ export class InvoiceService {
     return this.http.get(`${this.base}/invoices/${id}/pdf-preview`, { params, responseType: 'blob' });
   }
 
-  // ── Invoice progress (step Lignes — mode AV) ──────────────────────────────
-
-  getAffaireInvoiceProgress(affaireId: number): Observable<{ budgetTotal: number; pctFacture: number }> {
-    return this.http.get<{ budgetTotal: number; pctFacture: number }>(
-      `${this.base}/invoices/affaire/${affaireId}/progress`,
+  /** WIP non facturé (période déjà clôturée) proposé au picker de la facture manuelle. */
+  getPendingCarryForward(affaireId: number): Observable<PendingCarryForwardDto[]> {
+    return this.http.get<PendingCarryForwardDto[]>(
+      `${this.base}/invoices/affaire/${affaireId}/pending-carry-forward`,
     );
   }
 

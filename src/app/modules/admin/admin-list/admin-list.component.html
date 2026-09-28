@@ -492,6 +492,17 @@
           [value]="valueForm.descriptionEn"
           (valueChange)="valueForm.descriptionEn = $any($event) ?? ''" />
       }
+
+      <!-- Taux de TVA : uniquement pour VAT_RATE, seul type de liste où une valeur porte
+           un pourcentage. `align: 'center'` + `suffixText: '%'` reprend le champ pourcentage
+           déjà utilisé pour la répartition contractuelle (wizard AV) ; 0–100 est resserré
+           côté client dans onRatePctChange(), la vraie validation reste côté backend. -->
+      @if (isVatRateType()) {
+        <daf-form-field
+          [options]="{ label: ('ADMIN.LISTS.FIELD_RATE_PCT' | translate), type: 'number', align: 'center', suffixText: '%', required: true }"
+          [value]="valueForm.ratePct"
+          (valueChange)="onRatePctChange($any($event))" />
+      }
     </div>
   </ng-template>
 

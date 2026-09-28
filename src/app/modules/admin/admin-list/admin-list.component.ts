@@ -33,6 +33,7 @@ const PAGE_SIZE = 10;
 
 const COST_CATEGORY_TYPE     = 'COST_CATEGORY';
 const COST_SUB_CATEGORY_TYPE = 'COST_SUB_CATEGORY';
+const VAT_RATE_TYPE          = 'VAT_RATE';
 
 interface ValueForm {
   code: string;
@@ -122,7 +123,7 @@ export class AdminListComponent implements OnInit {
   readonly isTaxonomyType    = computed(() => this.isCategoryType() || this.isSubCategoryType());
 
   /** VAT_RATE values carry a `ratePct` whole percentage, shown/edited only for this type. */
-  readonly isVatRateType = computed(() => this.activeListType() === 'VAT_RATE');
+  readonly isVatRateType = computed(() => this.activeListType() === VAT_RATE_TYPE);
 
   readonly listColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -697,6 +698,15 @@ export class AdminListComponent implements OnInit {
     };
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_EDIT', { code: v.code }));
+  }
+
+  /**
+   * VAT_RATE only. `daf-form-field` has no native min/max/step — clamping here is the
+   * light sanity guard instead (the backend already validates properly).
+   */
+  onRatePctChange(v: string | number | null): void {
+    if (v === null || v === '') { this.valueForm.ratePct = null; return; }
+    this.valueForm.ratePct = Math.min(100, Math.max(0, Number(v)));
   }
 
   private openValueModal(title: string): void {
