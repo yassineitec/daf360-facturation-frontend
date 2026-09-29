@@ -23,6 +23,12 @@ export class ClientService {
     if (filter.isActive != null)  params = params.set('isActive',  String(filter.isActive));
     if (filter.isKycDone != null) params = params.set('isKycDone', String(filter.isKycDone));
     if (filter.sector)            params = params.set('sector',    filter.sector);
+    // `countryId` is the CLIENT's own country (an address field), not the entity pays.
+    if (filter.countryId != null) params = params.set('countryId', String(filter.countryId));
+    if (filter.currency)          params = params.set('currency',  filter.currency);
+    if (filter.hasActiveAffaires != null) {
+      params = params.set('hasActiveAffaires', String(filter.hasActiveAffaires));
+    }
     return this.http.get<PageResponse<ClientListItemDto>>(`${this.base}/clients`, { params });
   }
 

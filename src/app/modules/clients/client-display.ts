@@ -47,6 +47,20 @@ export const CLIENT_STATE_ENTITY: Record<ClientState, 'active' | 'inactive' | 'p
   KYC_PENDING: 'pending',
 };
 
+/**
+ * Ce que la colonne « Adresse » de la liste affiche : « Ville, code postal ». La rue
+ * (jusqu'à 500 caractères) déborderait d'une cellule ; elle ne sert que de repli quand ni
+ * ville ni code postal ne sont saisis. L'adresse complète reste sur la fiche client.
+ */
+export function clientLocation(
+  c: Pick<ClientListItemDto, 'address' | 'city' | 'postalCode'>,
+): string {
+  const city   = c.city?.trim();
+  const postal = c.postalCode?.trim();
+  const short  = [city, postal].filter(Boolean).join(', ');
+  return short || c.address?.trim() || '—';
+}
+
 export function initials(name: string | null | undefined): string {
   if (!name) return '—';
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');

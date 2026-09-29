@@ -12,12 +12,27 @@ import type {
 } from '@khalilrebhiitec/daf360';
 import { SupplierService } from '../supplier.service';
 import { ClientService } from '../../clients/client.service';
-import { SupplierDto, SupplierStatsDto, SupplierStatusFilter } from '../supplier.model';
+import {
+  SupplierDto, SupplierExtraFilter, SupplierStatsDto, SupplierStatusFilter,
+} from '../supplier.model';
+import { FactListService } from '../../../core/fact-list.service';
+import { ListValueDto } from '../../cost/cost.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { SuppliersCardsSectionComponent } from './suppliers-cards-section.component';
 import { SuppliersTableSectionComponent } from './suppliers-table-section.component';
 
 type ViewMode = 'grid' | 'list';
+
+/** Présence d'une donnée (IBAN, n° TVA) — mapped to the backend `hasIban` / `hasTva` flags. */
+type PresenceFilter = '' | 'with' | 'without';
+
+function presenceToFlag(v: PresenceFilter): boolean | null {
+  return v === 'with' ? true : v === 'without' ? false : null;
+}
+
+function toPresence(raw: unknown): PresenceFilter {
+  return raw === 'with' || raw === 'without' ? raw : '';
+}
 
 /**
  * Liste des fournisseurs, refondue sur le squelette des autres listes finance.
@@ -53,6 +68,7 @@ type ViewMode = 'grid' | 'list';
 export class SupplierListComponent implements OnInit {
   private readonly svc        = inject(SupplierService);
   private readonly clientSvc  = inject(ClientService);
+  private readonly factListSvc = inject(FactListService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router     = inject(Router);
   private readonly route      = inject(ActivatedRoute);
@@ -86,20 +102,66 @@ export class SupplierListComponent implements OnInit {
    * référentiel utilisable, et c'est aussi ce que le serveur renvoie sans paramètre.
    */
   statusFilter = signal<SupplierStatusFilter>('ACTIVE');
+  /** Type de fournisseur (id de valeur SUPPLIER_CATEGORY, en chaîne) — sent as `typeId`. */
+  typeFilter   = signal('');
+  /** IBAN renseigné / manquant — sent as `hasIban`. */
+  ibanFilter   = signal<PresenceFilter>('');
+  /** N° TVA renseigné / manquant — sent as `hasTva`. */
+  tvaFilter    = signal<PresenceFilter>('');
+  /** Options du filtre « Type » : la liste configurable SUPPLIER_CATEGORY. */
+  supplierTypes = signal<ListValueDto[]>([]);
+
+  /** Type / IBAN / TVA, partagés par la liste et les tuiles. */
+  private extraFilter(): SupplierExtraFilter {
+    return {
+      typeId:  this.typeFilter() ? Number(this.typeFilter()) : null,
+      hasIban: presenceToFlag(this.ibanFilter()),
+      hasTva:  presenceToFlag(this.tvaFilter()),
+    };
+  }
 
   readonly filterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
-    return [{
-      name:  'status',
-      label: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS'),
-      type:  'select',
-      options: [
-        { value: 'ACTIVE',   label: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS_ACTIVE') },
-        { value: 'INACTIVE', label: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS_INACTIVE') },
-        { value: 'ALL',      label: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS_ALL') },
-      ],
-      hint: this.translate.instant('SUPPLIERS.LIST.FILTER.STATUS_HINT'),
-    }];
+    const t = (key: string) => this.translate.instant(key);
+    const presence = [
+      { value: 'with',    label: t('SUPPLIERS.LIST.FILTER.FILLED')  },
+      { value: 'without', label: t('SUPPLIERS.LIST.FILTER.MISSING') },
+    ];
+    return [
+      {
+        name:  'status',
+        label: t('SUPPLIERS.LIST.FILTER.STATUS'),
+        type:  'select',
+        options: [
+          { value: 'ACTIVE',   label: t('SUPPLIERS.LIST.FILTER.STATUS_ACTIVE') },
+          { value: 'INACTIVE', label: t('SUPPLIERS.LIST.FILTER.STATUS_INACTIVE') },
+          { value: 'ALL',      label: t('SUPPLIERS.LIST.FILTER.STATUS_ALL') },
+        ],
+        hint: t('SUPPLIERS.LIST.FILTER.STATUS_HINT'),
+      },
+      {
+        name:  'type',
+        label: t('SUPPLIERS.LIST.TABLE.TYPE'),
+        type:  'select',
+        placeholder: t('SUPPLIERS.LIST.FILTER.STATUS_ALL'),
+        options: this.supplierTypes().map(v => ({ value: String(v.id), label: v.labelFr })),
+      },
+      {
+        // « Manquant » est le cas utile : sans IBAN, on ne peut pas payer le fournisseur.
+        name:  'iban',
+        label: t('SUPPLIERS.LIST.TABLE.IBAN'),
+        type:  'select',
+        placeholder: t('SUPPLIERS.LIST.FILTER.STATUS_ALL'),
+        options: presence,
+      },
+      {
+        name:  'tva',
+        label: t('SUPPLIERS.LIST.TABLE.TVA'),
+        type:  'select',
+        placeholder: t('SUPPLIERS.LIST.FILTER.STATUS_ALL'),
+        options: presence,
+      },
+    ];
   });
 
   readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
@@ -112,7 +174,14 @@ export class SupplierListComponent implements OnInit {
       triggerLabel: this.translate.instant('SUPPLIERS.LIST.FILTERS'),
       // Les valeurs initiales du panneau suivent l'état réel de la page : réouvrir le
       // panneau après un filtrage doit montrer ce qui est appliqué, pas « Actifs ».
-      initialValues: { status: this.statusFilter() },
+      // Forme INTERNE du panneau : un `select` s'y lit en `string[]` — une chaîne nue
+      // semait un contrôle qui se relisait vide.
+      initialValues: {
+        status: [this.statusFilter()],
+        type:   this.typeFilter() ? [this.typeFilter()] : [],
+        iban:   this.ibanFilter() ? [this.ibanFilter()] : [],
+        tva:    this.tvaFilter()  ? [this.tvaFilter()]  : [],
+      },
     };
   });
 
@@ -177,6 +246,10 @@ export class SupplierListComponent implements OnInit {
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
   ngOnInit(): void {
+    this.factListSvc.getListValues('SUPPLIER_CATEGORY', 0)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => this.supplierTypes.set(list));
+
     this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: id => {
         if (id && id > 0) {
@@ -204,6 +277,7 @@ export class SupplierListComponent implements OnInit {
       paysId,
       search: this.searchText().trim() || undefined,
       status: this.statusFilter(),
+      ...this.extraFilter(),
       page:   this.currentPage(),
       size:   this.pageSize(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -225,7 +299,7 @@ export class SupplierListComponent implements OnInit {
   loadStats(): void {
     const paysId = this.paysId();
     if (!paysId) return;
-    this.svc.getStats(paysId).pipe(takeUntilDestroyed(this.destroyRef))
+    this.svc.getStats(paysId, this.extraFilter()).pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(s => this.stats.set(s));
   }
 
@@ -250,16 +324,24 @@ export class SupplierListComponent implements OnInit {
     const next: SupplierStatusFilter =
       raw === 'INACTIVE' || raw === 'ALL' ? raw : 'ACTIVE';
     this.statusFilter.set(next);
+    this.typeFilter.set((result['type'] as string | null) ?? '');
+    this.ibanFilter.set(toPresence(result['iban']));
+    this.tvaFilter.set(toPresence(result['tva']));
     this.currentPage.set(0);
     this.loadSuppliers();
-    // Les tuiles ne suivent pas le filtre : elles décrivent le référentiel ACTIF
-    // (`GET /suppliers` ne renvoie que lui) et le delta de la première le dit.
+    // Les tuiles suivent type / IBAN / TVA, pas le statut : elles décrivent toujours le
+    // référentiel ACTIF (`GET /suppliers` ne renvoie que lui) et le delta de la première le dit.
+    this.loadStats();
   }
 
   onFilterReset(): void {
     this.statusFilter.set('ACTIVE');
+    this.typeFilter.set('');
+    this.ibanFilter.set('');
+    this.tvaFilter.set('');
     this.currentPage.set(0);
     this.loadSuppliers();
+    this.loadStats();
   }
 
   goToPage(page: number): void {

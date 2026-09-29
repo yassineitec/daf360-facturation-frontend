@@ -639,9 +639,9 @@
               [debounce]="300"
               (valueChange)="tsSearch.set($event)"
               [filterFields]="tsFilterFields()"
-              [filterConfig]="filterConfig()"
-              (filterApply)="tsStatut.set(asFilterValue($event, 'statut'))"
-              (filterReset)="tsStatut.set('')"
+              [filterConfig]="tsFilterConfig()"
+              (filterApply)="onTsFilterApply($event)"
+              (filterReset)="onTsFilterReset()"
               [actions]="tsToolbarActions()"
               (action)="onTsToolbarAction($event)" />
 
@@ -680,9 +680,9 @@
               [debounce]="300"
               (valueChange)="invoiceSearch.set($event)"
               [filterFields]="invoiceFilterFields()"
-              [filterConfig]="filterConfig()"
-              (filterApply)="invoiceStatut.set(asFilterValue($event, 'statut'))"
-              (filterReset)="invoiceStatut.set('')"
+              [filterConfig]="invoiceFilterConfig()"
+              (filterApply)="onInvoiceFilterApply($event)"
+              (filterReset)="onInvoiceFilterReset()"
               [actions]="invoiceToolbarActions()"
               (action)="onInvoiceToolbarAction($event)" />
 
@@ -702,9 +702,9 @@
               [debounce]="300"
               (valueChange)="paymentSearch.set($event)"
               [filterFields]="paymentFilterFields()"
-              [filterConfig]="filterConfig()"
-              (filterApply)="paymentMethod.set(asFilterValue($event, 'method'))"
-              (filterReset)="paymentMethod.set('')"
+              [filterConfig]="paymentFilterConfig()"
+              (filterApply)="onPaymentFilterApply($event)"
+              (filterReset)="onPaymentFilterReset()"
               [actions]="paymentToolbarActions()"
               (action)="onPaymentToolbarAction($event)" />
 

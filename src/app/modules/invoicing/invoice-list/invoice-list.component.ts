@@ -13,6 +13,8 @@ import { InvoicesCardsSectionComponent } from './invoices-cards-section.componen
 import { InvoicesTableSectionComponent } from './invoices-table-section.component';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { AffaireService } from '../../affaires/affaire.service';
+import type { AffaireListItem, ClientDto } from '../../affaires/affaire.model';
 
 type ApprovalDecision = 'APPROVE' | 'RETURN' | 'REJECT';
 type ViewMode = 'grid' | 'list';
@@ -33,6 +35,7 @@ export class InvoiceListComponent implements OnInit {
   private readonly route     = inject(ActivatedRoute);
   private readonly modal     = inject(ModalService);
   private readonly translate = inject(TranslateService);
+  private readonly affaireSvc = inject(AffaireService);
 
   @ViewChild('approvalTpl') approvalTpl!: TemplateRef<unknown>;
   @ViewChild('paymentModal', { static: true }) private paymentModal!: PaymentModalComponent;
@@ -53,7 +56,34 @@ export class InvoiceListComponent implements OnInit {
   searchText      = signal('');
   filterStatut    = signal('');
   filterDateRange = signal<Date[] | null>(null);
-  viewMode        = signal<ViewMode>('grid');
+  /** Client id as a string ('' = all) — sent server-side as `clientId`. */
+  filterClient    = signal('');
+  /** Affaire id as a string ('' = all) — sent server-side as `affaireId`. */
+  filterAffaire   = signal('');
+  /** Due-date range (1 or 2 days) — sent server-side as `dueFrom` / `dueTo`. */
+  filterDueRange  = signal<Date[] | null>(null);
+  /** Minimum TTC as typed ('' = no bound) — sent server-side as `minTtc`. */
+  filterMinTtc    = signal('');
+  /** Maximum TTC as typed ('' = no bound) — sent server-side as `maxTtc`. */
+  filterMaxTtc    = signal('');
+  /** Overdue only (open, non-credit-note, due before today) — sent as `overdueOnly`. */
+  filterOverdue   = signal(false);
+  viewMode       = signal<ViewMode>('grid');
+
+  /** Reference lists for the client / affaire selects — the page's own rows only cover
+   *  the current page, which is too narrow for a server-side filter. */
+  private readonly clients  = signal<ClientDto[]>([]);
+  private readonly affaires = signal<AffaireListItem[]>([]);
+
+  private readonly clientOptions = computed(() =>
+    this.clients()
+      .map(c => ({ value: String(c.id), label: c.clientName }))
+      .sort((a, b) => a.label.localeCompare(b.label)));
+
+  private readonly affaireOptions = computed(() =>
+    this.affaires()
+      .map(a => ({ value: String(a.id), label: a.intitule ? `${a.reference} — ${a.intitule}` : a.reference }))
+      .sort((a, b) => a.label.localeCompare(b.label)));
 
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
     this.translate.currentLang();
@@ -139,6 +169,45 @@ export class InvoiceListComponent implements OnInit {
         type: 'daterange',
         placeholder: t('INVOICING.LIST.FILTER.PERIOD_PLACEHOLDER'),
       },
+      {
+        name: 'client',
+        label: t('INVOICING.LIST.TABLE.CLIENT'),
+        type: 'select',
+        searchable: true,
+        placeholder: t('INVOICING.LIST.FILTER.ALL'),
+        options: this.clientOptions(),
+      },
+      {
+        name: 'affaire',
+        label: t('INVOICING.DETAIL.INFO.AFFAIRE'),
+        type: 'select',
+        searchable: true,
+        placeholder: t('INVOICING.LIST.FILTER.ALL'),
+        options: this.affaireOptions(),
+      },
+      {
+        name: 'overdue',
+        label: t('INVOICING.LIST.FILTER.OVERDUE_ONLY'),
+        type: 'checkbox',
+      },
+      {
+        name: 'dueDates',
+        label: t('INVOICING.LIST.FILTER.DUE_PERIOD'),
+        type: 'daterange',
+        placeholder: t('INVOICING.LIST.FILTER.PERIOD_PLACEHOLDER'),
+      },
+      {
+        name: 'minTtc',
+        label: t('INVOICING.LIST.FILTER.AMOUNT_MIN'),
+        type: 'text',
+        placeholder: t('INVOICING.LIST.FILTER.AMOUNT_PH'),
+      },
+      {
+        name: 'maxTtc',
+        label: t('INVOICING.LIST.FILTER.AMOUNT_MAX'),
+        type: 'text',
+        placeholder: t('INVOICING.LIST.FILTER.AMOUNT_PH'),
+      },
     ];
   });
 
@@ -153,25 +222,47 @@ export class InvoiceListComponent implements OnInit {
       triggerLabel: t('INVOICING.LIST.FILTER.FILTERS'),
       // Seeded once, in the panel's internal shape — a select is a string[] there (§10b).
       initialValues: {
-        statut: this.filterStatut() ? [this.filterStatut()] : [],
-        dates:  this.filterDateRange(),
+        statut:  this.filterStatut()  ? [this.filterStatut()]  : [],
+        dates:   this.filterDateRange(),
+        client:  this.filterClient()  ? [this.filterClient()]  : [],
+        affaire: this.filterAffaire() ? [this.filterAffaire()] : [],
+        overdue:  this.filterOverdue(),
+        dueDates: this.filterDueRange(),
+        minTtc:   this.filterMinTtc(),
+        maxTtc:   this.filterMaxTtc(),
       },
     };
   });
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.load();
+    this.affaireSvc.getClients().subscribe(list => this.clients.set(list));
+    this.affaireSvc.getAffaires({ size: 200 }).subscribe({
+      next:  page => this.affaires.set(page.content),
+      error: () => this.affaires.set([]),
+    });
+  }
 
   load(): void {
     this.loading.set(true);
     this.error.set(null);
     const range = this.filterDateRange() ?? [];
+    const dueRange = this.filterDueRange() ?? [];
     const filter: InvoiceFilter = {
-      page:   this.currentPage(),
-      size:   this.pageSize(),
-      statut: this.filterStatut() || null,
-      from:   toIsoDate(range[0]),
-      to:     toIsoDate(range[1]),
-      search: this.searchText().trim() || null,
+      page:      this.currentPage(),
+      size:      this.pageSize(),
+      statut:    this.filterStatut() || null,
+      clientId:  this.filterClient()  ? +this.filterClient()  : null,
+      affaireId: this.filterAffaire() ? +this.filterAffaire() : null,
+      // A single picked day is a one-day range.
+      from:      toIsoDate(range[0]),
+      to:        toIsoDate(range[1] ?? range[0]),
+      dueFrom:   toIsoDate(dueRange[0]),
+      dueTo:     toIsoDate(dueRange[1] ?? dueRange[0]),
+      minTtc:    parseAmount(this.filterMinTtc()),
+      maxTtc:    parseAmount(this.filterMaxTtc()),
+      overdueOnly: this.filterOverdue(),
+      search:    this.searchText().trim() || null,
     };
     this.svc.getInvoices(filter).subscribe({
       next: res => {
@@ -198,7 +289,14 @@ export class InvoiceListComponent implements OnInit {
   applyFilters(result: FilterResult): void {
     this.filterStatut.set((result['statut'] as string | null) ?? '');
     const dates = result['dates'];
-    this.filterDateRange.set(Array.isArray(dates) ? (dates as Date[]) : null);
+    this.filterDateRange.set(Array.isArray(dates) && dates.length ? (dates as Date[]) : null);
+    this.filterClient.set((result['client'] as string | null) ?? '');
+    this.filterAffaire.set((result['affaire'] as string | null) ?? '');
+    this.filterOverdue.set(result['overdue'] === true);
+    const dueDates = result['dueDates'];
+    this.filterDueRange.set(Array.isArray(dueDates) && dueDates.length ? (dueDates as Date[]) : null);
+    this.filterMinTtc.set(((result['minTtc'] as string | null) ?? '').trim());
+    this.filterMaxTtc.set(((result['maxTtc'] as string | null) ?? '').trim());
     this.currentPage.set(0);
     this.load();
   }
@@ -269,5 +367,19 @@ export class InvoiceListComponent implements OnInit {
 
 /** `Date` → `YYYY-MM-DD`, the shape `InvoiceFilter.from` / `.to` expect. */
 function toIsoDate(d: unknown): string | null {
-  return d instanceof Date ? d.toISOString().split('T')[0] : null;
+  return d instanceof Date ? toIsoDay(d) : null;
+}
+
+/** Typed amount → number (accepts spaces and a decimal comma); blank or invalid → no bound. */
+function parseAmount(raw: string): number | null {
+  const s = raw.replace(/\s/g, '').replace(',', '.');
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Local calendar day as `YYYY-MM-DD` — never toISOString(), which shifts to UTC. */
+function toIsoDay(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }

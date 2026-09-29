@@ -13,9 +13,19 @@ import { ClientsCardsSectionComponent } from './clients-cards-section.component'
 import { ClientsTableSectionComponent } from './clients-table-section.component';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { PaysRefDto } from '../../affaires/affaire.model';
 
-/** The four states the status filter can express, mapped to the two backend flags. */
-type StatusFilter = '' | 'active' | 'inactive' | 'kyc';
+/** Activity states the status filter can express, mapped to the backend `isActive` flag. */
+type StatusFilter = '' | 'active' | 'inactive';
+
+/** KYC states the KYC filter can express, mapped to the backend `isKycDone` flag. */
+type KycFilter = '' | 'done' | 'pending';
+
+/** Affaires en cours — mapped to the backend `hasActiveAffaires` flag. */
+type AffairesFilter = '' | 'with' | 'without';
+
+/** Same fixed list as the client form's « Devise par défaut » select. */
+const CURRENCY_CODES = ['TND', 'EGP', 'EUR', 'USD'];
 
 /** Meme bascule que la liste des affaires : cartes ou tableau. */
 type ViewMode = 'grid' | 'list';
@@ -43,6 +53,8 @@ export class ClientListComponent implements OnInit {
   currentPage   = signal(0);
   pageSize      = signal(20);
   sectors       = signal<string[]>([]);
+  /** Référentiel `/ref/pays` — options du filtre « Pays » (pays du client). */
+  paysList      = signal<PaysRefDto[]>([]);
 
   /** `firstLoad` drives the whole-page skeleton, `loading` only the card grid (§5). */
   firstLoad = signal(true);
@@ -51,6 +63,14 @@ export class ClientListComponent implements OnInit {
   searchText   = signal('');
   filterSector = signal('');
   filterStatus = signal<StatusFilter>('');
+  /** KYC validé / en attente — sent as `isKycDone`, independent from the activity status. */
+  filterKyc    = signal<KycFilter>('');
+  /** Pays du CLIENT (`countryId`, id `pays_ref` en chaîne) — sent as `countryId`. */
+  filterCountry = signal('');
+  /** Devise par défaut du client — sent as `currency`. */
+  filterCurrency = signal('');
+  /** Avec / sans affaire EN_COURS — sent as `hasActiveAffaires`. */
+  filterAffaires = signal<AffairesFilter>('');
   viewMode     = signal<ViewMode>('grid');
 
   /** `totalElements` is the real result-set size, so this tile is not page-scoped. */
@@ -71,6 +91,9 @@ export class ClientListComponent implements OnInit {
 
   readonly deltaAllCountries = computed<MetricDelta>(() => {
     this.translate.currentLang();
+    // With the « Pays » filter on, the total is that country's — say so instead of « tous pays ».
+    const country = this.paysList().find(p => String(p.id) === this.filterCountry());
+    if (country) return { value: country.frenchLabel, direction: 'neutral' };
     return { value: this.translate.instant('CLIENTS.LIST.KPI.ALL_COUNTRIES'), direction: 'neutral' };
   });
 
@@ -92,10 +115,9 @@ export class ClientListComponent implements OnInit {
    * Sector and status live *inside* the filter panel — never as loose selects or a
    * pill row next to the search (§1).
    *
-   * ⚠️ There is deliberately **no country filter**. `ClientService.getClients` does not
-   * send `paysId` at all (the list is not pays-scoped, which is what avoids the
-   * pays-isolation 403 on that endpoint), so the old "Pays" dropdown filtered nothing —
-   * it only cost two extra requests per page load to populate itself.
+   * ⚠️ The « Pays » filter is the CLIENT's country (`countryId`, an address field), never
+   * the entity `paysId`: the list stays un-scoped by pays, which is what avoids the
+   * pays-isolation 403 on that endpoint.
    */
   /** Cartes ou tableau — mêmes icônes et mêmes intitulés que la liste des affaires. */
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
@@ -125,7 +147,44 @@ export class ClientListComponent implements OnInit {
         options: [
           { value: 'active',   label: t('CLIENTS.LIST.FILTER.ACTIVE')   },
           { value: 'inactive', label: t('CLIENTS.LIST.FILTER.INACTIVE') },
-          { value: 'kyc',      label: t('CLIENTS.LIST.FILTER.KYC')      },
+        ],
+      },
+      {
+        // Split out of « Statut » : the old single select could only ask for « KYC
+        // validé », never « KYC en attente » (the clients still to onboard), nor combine
+        // KYC with active/inactive — the backend takes both flags independently.
+        name: 'kyc',
+        label: t('CLIENTS.LIST.FILTER.KYC_STATUS'),
+        type: 'select',
+        placeholder: t('CLIENTS.LIST.FILTER.ALL'),
+        options: [
+          { value: 'done',    label: t('CLIENTS.LIST.CARD.KYC_DONE')    },
+          { value: 'pending', label: t('CLIENTS.LIST.CARD.KYC_PENDING') },
+        ],
+      },
+      {
+        name: 'country',
+        label: t('CLIENTS.LIST.CARD.COUNTRY'),
+        type: 'select',
+        placeholder: t('CLIENTS.LIST.FILTER.ALL'),
+        searchable: true,
+        options: this.paysList().map(p => ({ value: String(p.id), label: p.frenchLabel })),
+      },
+      {
+        name: 'currency',
+        label: t('CLIENTS.FORM.CURRENCY_LABEL'),
+        type: 'select',
+        placeholder: t('CLIENTS.LIST.FILTER.ALL'),
+        options: CURRENCY_CODES.map(code => ({ value: code, label: t(`CLIENTS.FORM.CURRENCY.${code}`) })),
+      },
+      {
+        name: 'affaires',
+        label: t('CLIENTS.LIST.CARD.ACTIVE_PROJECTS'),
+        type: 'select',
+        placeholder: t('CLIENTS.LIST.FILTER.ALL'),
+        options: [
+          { value: 'with',    label: t('CLIENTS.LIST.FILTER.WITH_ACTIVE_PROJECTS')    },
+          { value: 'without', label: t('CLIENTS.LIST.FILTER.WITHOUT_ACTIVE_PROJECTS') },
         ],
       },
     ];
@@ -147,12 +206,17 @@ export class ClientListComponent implements OnInit {
       initialValues: {
         sector: this.filterSector() ? [this.filterSector()] : [],
         status: this.filterStatus() ? [this.filterStatus()] : [],
+        kyc:    this.filterKyc()    ? [this.filterKyc()]    : [],
+        country:  this.filterCountry()  ? [this.filterCountry()]  : [],
+        currency: this.filterCurrency() ? [this.filterCurrency()] : [],
+        affaires: this.filterAffaires() ? [this.filterAffaires()] : [],
       },
     };
   });
 
   ngOnInit(): void {
     this.loadSectors();
+    this.svc.getPays().subscribe(list => this.paysList.set(list));
     this.load();
   }
 
@@ -160,13 +224,18 @@ export class ClientListComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     const status = this.filterStatus();
+    const kyc    = this.filterKyc();
+    const affaires = this.filterAffaires();
     const filter: ClientFilter = {
       page:      this.currentPage(),
       size:      this.pageSize(),
       search:    this.searchText().trim() || null,
       isActive:  status === 'active' ? true : status === 'inactive' ? false : null,
-      isKycDone: status === 'kyc' ? true : null,
+      isKycDone: kyc === 'done' ? true : kyc === 'pending' ? false : null,
       sector:    this.filterSector() || null,
+      countryId: this.filterCountry() ? Number(this.filterCountry()) : null,
+      currency:  this.filterCurrency() || null,
+      hasActiveAffaires: affaires === 'with' ? true : affaires === 'without' ? false : null,
     };
     this.svc.getClients(filter).subscribe({
       next: res => {
@@ -197,6 +266,10 @@ export class ClientListComponent implements OnInit {
   applyFilters(result: FilterResult): void {
     this.filterSector.set((result['sector'] as string | null) ?? '');
     this.filterStatus.set(((result['status'] as string | null) ?? '') as StatusFilter);
+    this.filterKyc.set(((result['kyc'] as string | null) ?? '') as KycFilter);
+    this.filterCountry.set((result['country'] as string | null) ?? '');
+    this.filterCurrency.set((result['currency'] as string | null) ?? '');
+    this.filterAffaires.set(((result['affaires'] as string | null) ?? '') as AffairesFilter);
     this.currentPage.set(0);
     this.load();
   }

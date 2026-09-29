@@ -119,7 +119,8 @@
       "REASON_PLACEHOLDER": "Explain the rejection",
       "REASON_REQUIRED": "A reason is required to reject.",
       "CLOSE": "Close",
-      "NOTES_PLACEHOLDER": "Optional comment on the decision"
+      "NOTES_PLACEHOLDER": "Optional comment on the decision",
+      "FILTER_COUNTRY": "Destination country"
     }
   },
   "HOME": {
@@ -229,7 +230,12 @@
         "PANEL_TITLE": "Filter invoices",
         "PERIOD": "Issue period",
         "PERIOD_PLACEHOLDER": "Date or date range",
-        "RESET": "Reset"
+        "RESET": "Reset",
+        "OVERDUE_ONLY": "Overdue only",
+        "DUE_PERIOD": "Due date range",
+        "AMOUNT_MIN": "Min. amount (incl. tax)",
+        "AMOUNT_MAX": "Max. amount (incl. tax)",
+        "AMOUNT_PH": "e.g. 1000"
       },
       "VIEW_GRID": "Grid view",
       "VIEW_LIST": "List view",
@@ -702,7 +708,10 @@
         "PANEL_TITLE": "Filter clients",
         "APPLY": "Apply",
         "CANCEL": "Cancel",
-        "RESET": "Reset"
+        "RESET": "Reset",
+        "KYC_STATUS": "KYC status",
+        "WITH_ACTIVE_PROJECTS": "With ongoing projects",
+        "WITHOUT_ACTIVE_PROJECTS": "No ongoing project"
       },
       "SEARCH": "Name, code, sector…",
       "CARD": {
@@ -724,6 +733,7 @@
       "TABLE": {
         "CODE": "Code",
         "NAME": "Client",
+        "ADDRESS": "Address",
         "SECTOR": "Sector",
         "STATE": "Status"
       }
@@ -990,7 +1000,11 @@
       },
       "CLIENT_FILTER": "Projects for {{client}}",
       "CLIENT_FILTER_FALLBACK": "the selected client",
-      "CLIENT_FILTER_CLEAR": "Show all projects"
+      "CLIENT_FILTER_CLEAR": "Show all projects",
+      "FILTER_ALL_CLIENTS": "All clients",
+      "FILTER_ALL_PAYS": "All countries",
+      "FILTER_ALL_MANAGERS": "All managers",
+      "FILTER_DATE_DEBUT": "Start date"
     },
     "DETAIL": {
       "LOADING": "Loading project…",
@@ -1056,7 +1070,14 @@
         "VIEW": "View",
         "EDIT": "Edit",
         "EDIT_LOCKED": "Not editable at this status",
-        "NO_MATCH": "No row matches the filter."
+        "NO_MATCH": "No row matches the filter.",
+        "CREATED_PERIOD": "Creation date",
+        "AMOUNT_MIN": "Min amount",
+        "AMOUNT_MAX": "Max amount",
+        "AMOUNT_PH": "e.g. 1000",
+        "EMITTED_PERIOD": "Issue date",
+        "OVERDUE_ONLY": "Overdue only",
+        "PAYMENT_PERIOD": "Payment date"
       },
       "OVERVIEW": {
         "HEALTH_TITLE": "Project health",
@@ -1919,7 +1940,13 @@
           "current": "Current",
           "load_error": "Error while loading.",
           "action_error": "Error while performing the action."
-        }
+        },
+        "filter_amount_ht_min": "Min net amount",
+        "filter_amount_ht_max": "Max net amount",
+        "filter_amount_min": "Min amount",
+        "filter_amount_max": "Max amount",
+        "filter_amount_ph": "e.g. 1500.50",
+        "filter_multi_doc_only": "Multi-document batches only"
       },
       "modes": {
         "av": {
@@ -2092,7 +2119,10 @@
         "REFUSE": "Reject expense",
         "REFUSE_TITLE": "Reject expense",
         "REASON_LABEL": "Rejection reason",
-        "REASON_PH": "Explain the rejection…"
+        "REASON_PH": "Explain the rejection…",
+        "ALL_CATEGORIES": "All",
+        "FILTER_PERIOD": "Period",
+        "FILTER_NO_RECEIPT": "Without receipt only"
       }
     },
     "WIP": {
@@ -2211,7 +2241,11 @@
       "COL_PCT_ACTUEL": "% billed",
       "COL_NOUVEAU_PCT": "New %",
       "TOTAL_SELECTED": "Total to invoice",
-      "GENERATE_INVOICE": "Generate invoice"
+      "GENERATE_INVOICE": "Generate invoice",
+      "HISTORY_FILTER_AMOUNT_MIN": "Min amount (excl. tax)",
+      "HISTORY_FILTER_AMOUNT_MAX": "Max amount (excl. tax)",
+      "HISTORY_FILTER_BUDGET_MIN": "Min allocated budget",
+      "HISTORY_FILTER_AMOUNT_PH": "e.g. 1000"
     },
     "RESSOURCES": {
       "TITLE": "Time & Materials resources",
@@ -2532,7 +2566,10 @@
       "ANNUAL_COST": "Annual cost",
       "COUNTER_OFFER": "Counter-offer salary",
       "COUNTER_OFFER_PH": "Net amount proposed by management…",
-      "COUNTER_OFFER_HINT": "Optional — overrides the candidate HR net salary when set."
+      "COUNTER_OFFER_HINT": "Optional — overrides the candidate HR net salary when set.",
+      "FILTER_AMOUNT_MIN": "Min amount",
+      "FILTER_AMOUNT_MAX": "Max amount",
+      "FILTER_AMOUNT_PH": "e.g. 1500.50"
     },
     "IMPORT": {
       "TITLE": "CSV Import",
@@ -2982,7 +3019,9 @@
         "CONFIRM_DELETE": "Delete this règlement? The cost line will revert to Approved.",
         "DELETE_ERROR": "Unable to delete this règlement.",
         "NO_SUPPLIER": "No supplier is attached to this cost line — no account statement to show.",
-        "EMPTY": "No validated entries for this supplier."
+        "EMPTY": "No validated entries for this supplier.",
+        "FILTER_PERIOD": "Period",
+        "FILTER_COST_LINE": "Cost line"
       }
     }
   },
@@ -3425,7 +3464,9 @@
         "ACTIVE": "Active",
         "INACTIVE": "Inactive",
         "COUNTRIES": "Countries"
-      }
+      },
+      "FILTER_CREATED": "Creation date",
+      "FILTER_NO_TAX_ID": "Without tax ID only"
     },
     "SUBTITLE": "Manage external providers: directory, subcontracting orders per project, and the resulting margin.",
     "INTRO": {
@@ -3488,7 +3529,9 @@
         "STATUS_ALL": "All",
         "STATUS_HINT": "A deactivated supplier stays viewable, but no new spend should be attached to it.",
         "SCOPE_INACTIVE": "You are seeing deactivated suppliers only. The metrics above still describe the active directory.",
-        "SCOPE_ALL": "You are seeing both active and deactivated suppliers. The metrics above still describe the active directory."
+        "SCOPE_ALL": "You are seeing both active and deactivated suppliers. The metrics above still describe the active directory.",
+        "FILLED": "Provided",
+        "MISSING": "Missing"
       }
     },
     "DETAIL": {

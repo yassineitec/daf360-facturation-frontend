@@ -119,7 +119,8 @@
       "REASON_PLACEHOLDER": "Expliquez le refus",
       "REASON_REQUIRED": "Un motif est obligatoire pour refuser.",
       "CLOSE": "Fermer",
-      "NOTES_PLACEHOLDER": "Commentaire optionnel sur la décision"
+      "NOTES_PLACEHOLDER": "Commentaire optionnel sur la décision",
+      "FILTER_COUNTRY": "Pays de destination"
     }
   },
   "HOME": {
@@ -229,7 +230,12 @@
         "PANEL_TITLE": "Filtrer les factures",
         "PERIOD": "Période d'émission",
         "PERIOD_PLACEHOLDER": "Date ou plage de dates",
-        "RESET": "Réinitialiser"
+        "RESET": "Réinitialiser",
+        "OVERDUE_ONLY": "En retard uniquement",
+        "DUE_PERIOD": "Période d’échéance",
+        "AMOUNT_MIN": "Montant TTC min",
+        "AMOUNT_MAX": "Montant TTC max",
+        "AMOUNT_PH": "Ex. 1000"
       },
       "VIEW_GRID": "Vue grille",
       "VIEW_LIST": "Vue liste",
@@ -702,7 +708,10 @@
         "PANEL_TITLE": "Filtrer les clients",
         "APPLY": "Appliquer",
         "CANCEL": "Annuler",
-        "RESET": "Réinitialiser"
+        "RESET": "Réinitialiser",
+        "KYC_STATUS": "Statut KYC",
+        "WITH_ACTIVE_PROJECTS": "Avec affaires en cours",
+        "WITHOUT_ACTIVE_PROJECTS": "Sans affaire en cours"
       },
       "SEARCH": "Nom, code, secteur…",
       "CARD": {
@@ -724,6 +733,7 @@
       "TABLE": {
         "CODE": "Code",
         "NAME": "Client",
+        "ADDRESS": "Adresse",
         "SECTOR": "Secteur",
         "STATE": "État"
       }
@@ -990,7 +1000,11 @@
       },
       "CLIENT_FILTER": "Affaires du client {{client}}",
       "CLIENT_FILTER_FALLBACK": "sélectionné",
-      "CLIENT_FILTER_CLEAR": "Voir toutes les affaires"
+      "CLIENT_FILTER_CLEAR": "Voir toutes les affaires",
+      "FILTER_ALL_CLIENTS": "Tous les clients",
+      "FILTER_ALL_PAYS": "Tous les pays",
+      "FILTER_ALL_MANAGERS": "Tous les managers",
+      "FILTER_DATE_DEBUT": "Date de début"
     },
     "DETAIL": {
       "LOADING": "Chargement de l'affaire…",
@@ -1056,7 +1070,14 @@
         "VIEW": "Consulter",
         "EDIT": "Modifier",
         "EDIT_LOCKED": "Non modifiable à ce statut",
-        "NO_MATCH": "Aucune ligne ne correspond au filtre."
+        "NO_MATCH": "Aucune ligne ne correspond au filtre.",
+        "CREATED_PERIOD": "Date de création",
+        "AMOUNT_MIN": "Montant min",
+        "AMOUNT_MAX": "Montant max",
+        "AMOUNT_PH": "Ex. 1000",
+        "EMITTED_PERIOD": "Date d’émission",
+        "OVERDUE_ONLY": "En retard uniquement",
+        "PAYMENT_PERIOD": "Date de paiement"
       },
       "OVERVIEW": {
         "HEALTH_TITLE": "Santé du projet",
@@ -1919,7 +1940,13 @@
           "current": "Actuel",
           "load_error": "Erreur lors du chargement.",
           "action_error": "Erreur lors de l'action."
-        }
+        },
+        "filter_amount_ht_min": "Montant HT min",
+        "filter_amount_ht_max": "Montant HT max",
+        "filter_amount_min": "Montant min",
+        "filter_amount_max": "Montant max",
+        "filter_amount_ph": "Ex. 1 500,50",
+        "filter_multi_doc_only": "Lots multi-documents uniquement"
       },
       "modes": {
         "av": {
@@ -2092,7 +2119,10 @@
         "REFUSE": "Refuser le frais",
         "REFUSE_TITLE": "Refuser le frais",
         "REASON_LABEL": "Motif du refus",
-        "REASON_PH": "Expliquez le motif du refus…"
+        "REASON_PH": "Expliquez le motif du refus…",
+        "ALL_CATEGORIES": "Toutes",
+        "FILTER_PERIOD": "Période",
+        "FILTER_NO_RECEIPT": "Sans justificatif uniquement"
       }
     },
     "WIP": {
@@ -2211,7 +2241,11 @@
       "COL_PCT_ACTUEL": "% facturé",
       "COL_NOUVEAU_PCT": "Nouveau %",
       "TOTAL_SELECTED": "Total à facturer",
-      "GENERATE_INVOICE": "Générer facture"
+      "GENERATE_INVOICE": "Générer facture",
+      "HISTORY_FILTER_AMOUNT_MIN": "Montant HT min",
+      "HISTORY_FILTER_AMOUNT_MAX": "Montant HT max",
+      "HISTORY_FILTER_BUDGET_MIN": "Budget alloué min",
+      "HISTORY_FILTER_AMOUNT_PH": "Ex. 1000"
     },
     "RESSOURCES": {
       "TITLE": "Ressources Temps & Matériels",
@@ -2532,7 +2566,10 @@
       "ANNUAL_COST": "Coût annuel",
       "COUNTER_OFFER": "Salaire contre proposition",
       "COUNTER_OFFER_PH": "Montant net proposé par la direction…",
-      "COUNTER_OFFER_HINT": "Optionnel — écrase le salaire net RH du candidat si renseigné."
+      "COUNTER_OFFER_HINT": "Optionnel — écrase le salaire net RH du candidat si renseigné.",
+      "FILTER_AMOUNT_MIN": "Montant min",
+      "FILTER_AMOUNT_MAX": "Montant max",
+      "FILTER_AMOUNT_PH": "Ex. 1 500,50"
     },
     "IMPORT": {
       "TITLE": "Import CSV",
@@ -2982,7 +3019,9 @@
         "CONFIRM_DELETE": "Supprimer ce règlement ? La ligne de coût redeviendra Approuvée.",
         "DELETE_ERROR": "Impossible de supprimer ce règlement.",
         "NO_SUPPLIER": "Aucun fournisseur n'est associé à cette ligne de coût — aucun relevé de compte à afficher.",
-        "EMPTY": "Aucune écriture validée pour ce fournisseur."
+        "EMPTY": "Aucune écriture validée pour ce fournisseur.",
+        "FILTER_PERIOD": "Période",
+        "FILTER_COST_LINE": "Ligne de coût"
       }
     }
   },
@@ -3425,7 +3464,9 @@
         "ACTIVE": "Actifs",
         "INACTIVE": "Inactifs",
         "COUNTRIES": "Pays représentés"
-      }
+      },
+      "FILTER_CREATED": "Date de création",
+      "FILTER_NO_TAX_ID": "Sans n° fiscal uniquement"
     },
     "SUBTITLE": "Gérez les prestataires externes : annuaire, ordres de sous-traitance par affaire et marge résultante.",
     "INTRO": {
@@ -3488,7 +3529,9 @@
         "STATUS_ALL": "Tous",
         "STATUS_HINT": "Un fournisseur désactivé reste consultable, mais aucune nouvelle dépense ne devrait lui être rattachée.",
         "SCOPE_INACTIVE": "Vous ne voyez que les fournisseurs désactivés. Les indicateurs ci-dessus décrivent toujours le référentiel actif.",
-        "SCOPE_ALL": "Vous voyez les fournisseurs actifs et désactivés. Les indicateurs ci-dessus décrivent toujours le référentiel actif."
+        "SCOPE_ALL": "Vous voyez les fournisseurs actifs et désactivés. Les indicateurs ci-dessus décrivent toujours le référentiel actif.",
+        "FILLED": "Renseigné",
+        "MISSING": "Manquant"
       }
     },
     "DETAIL": {

@@ -18,6 +18,13 @@ import { ListValueDto } from '../../../cost/cost.model';
 import { DisplayCurrencyPipe } from '../../../../shared/display-currency.pipe';
 import { EXPENSE_STATUT_BADGE, humanise } from '../../../../shared/enum-labels';
 
+/** Jour local 'YYYY-MM-DD' — jamais `toISOString()`, qui décale d'un jour en UTC. */
+function toIsoDay(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 /**
  * Historique des frais remboursables d'une affaire — l'onglet « Frais » de la fiche.
  *
@@ -44,8 +51,7 @@ import { EXPENSE_STATUT_BADGE, humanise } from '../../../../shared/enum-labels';
         (valueChange)="search.set($event)"
         [filterFields]="filterFields()"
         [filterConfig]="filterConfig()"
-        (filterApply)="onFilter($event)"
-        (filterReset)="statut.set('')" />
+        (filterApply)="onFilter($event)" />
 
       <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()" />
     </div>
@@ -75,7 +81,14 @@ export class ExpenseHistoryComponent implements OnInit {
   readonly loading = signal(false);
 
   readonly search = signal('');
+  /** Statut du frais (EN_ATTENTE, VALIDE…) — '' = tous. */
   readonly statut = signal('');
+  /** Catégorie de frais (`expenseCategoryId` en chaîne) — '' = toutes. */
+  readonly categorie = signal('');
+  /** Période sur `expenseDate` : 1 date = un seul jour, 2 dates = plage incluse. */
+  readonly periode = signal<Date[] | null>(null);
+  /** Ne garder que les frais saisis sans justificatif — ceux qu'un valideur relance. */
+  readonly sansJustificatif = signal(false);
   readonly motif  = signal('');
   private refuseTarget: ExpenseDto | null = null;
 
@@ -98,18 +111,51 @@ export class ExpenseHistoryComponent implements OnInit {
 
   // ── Filtres ─────────────────────────────────────────────────────────────
 
+  /**
+   * Catégories présentes dans les frais chargés — chaque option correspond donc à au
+   * moins une ligne. Distinctes, triées par libellé.
+   */
+  private readonly categoryOptions = computed(() => {
+    const ids = [...new Set(this.expenses().map(e => e.expenseCategoryId))];
+    return ids
+      .map(id => ({ value: String(id), label: this.categoryLabel(id) }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  });
+
+  /** Filtres côté client : `GET …/expenses` renvoie tous les frais de l'affaire. */
   readonly filterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
-    return [{
-      name: 'statut',
-      label: this.translate.instant('AFFAIRES.EXPENSES.HISTORY.COL_STATUS'),
-      type: 'select',
-      placeholder: this.translate.instant('AFFAIRES.EXPENSES.HISTORY.ALL'),
-      options: Object.keys(EXPENSE_STATUT_BADGE).map(code => ({
-        value: code,
-        label: this.translate.instant('ENUMS.EXPENSE_STATUT.' + code),
-      })),
-    }];
+    const t = (k: string) => this.translate.instant('AFFAIRES.EXPENSES.HISTORY.' + k);
+    return [
+      {
+        name: 'statut',
+        label: t('COL_STATUS'),
+        type: 'select',
+        placeholder: t('ALL'),
+        options: Object.keys(EXPENSE_STATUT_BADGE).map(code => ({
+          value: code,
+          label: this.translate.instant('ENUMS.EXPENSE_STATUT.' + code),
+        })),
+      },
+      {
+        name: 'categorie',
+        label: t('COL_CATEGORY'),
+        type: 'select',
+        placeholder: t('ALL_CATEGORIES'),
+        searchable: true,
+        options: this.categoryOptions(),
+      },
+      {
+        name: 'periode',
+        label: t('FILTER_PERIOD'),
+        type: 'daterange',
+      },
+      {
+        name: 'sansJustificatif',
+        label: t('FILTER_NO_RECEIPT'),
+        type: 'checkbox',
+      },
+    ];
   });
 
   readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
@@ -120,12 +166,22 @@ export class ExpenseHistoryComponent implements OnInit {
       cancelLabel:  this.translate.instant('AFFAIRES.EXPENSES.HISTORY.CANCEL'),
       resetLabel:   this.translate.instant('AFFAIRES.EXPENSES.HISTORY.RESET'),
       triggerLabel: this.translate.instant('AFFAIRES.EXPENSES.HISTORY.FILTERS'),
-      initialValues: { statut: this.statut() ? [this.statut()] : [] },
+      // Seedé une fois, dans la forme interne du panneau — un select y est un string[].
+      initialValues: {
+        statut:           this.statut()    ? [this.statut()]    : [],
+        categorie:        this.categorie() ? [this.categorie()] : [],
+        periode:          this.periode(),
+        sansJustificatif: this.sansJustificatif(),
+      },
     };
   });
 
   onFilter(r: FilterResult): void {
     this.statut.set((r['statut'] as string | null) ?? '');
+    this.categorie.set((r['categorie'] as string | null) ?? '');
+    const periode = r['periode'];
+    this.periode.set(Array.isArray(periode) && periode.length ? periode as Date[] : null);
+    this.sansJustificatif.set(r['sansJustificatif'] === true);
   }
 
   // ── Tableau ─────────────────────────────────────────────────────────────
@@ -145,9 +201,21 @@ export class ExpenseHistoryComponent implements OnInit {
 
   private readonly filtered = computed(() => {
     const q  = this.search().trim().toLowerCase();
-    const st = this.statut();
+    const st  = this.statut();
+    const catId = this.categorie();
+    const periode = this.periode();
+    const from = periode?.length ? toIsoDay(periode[0]) : null;
+    const to   = periode?.length ? toIsoDay(periode[1] ?? periode[0]) : null;
+    const sansJustificatif = this.sansJustificatif();
     return this.expenses().filter(e => {
       if (st && e.statut !== st) return false;
+      if (catId && String(e.expenseCategoryId) !== catId) return false;
+      if (from && to) {
+        // `expenseDate` est un LocalDate ('YYYY-MM-DD') : comparaison de chaînes ISO.
+        const day = (e.expenseDate ?? '').slice(0, 10);
+        if (!day || day < from || day > to) return false;
+      }
+      if (sansJustificatif && e.justificatifName) return false;
       if (!q) return true;
       const cat = this.categoryLabel(e.expenseCategoryId).toLowerCase();
       return cat.includes(q)

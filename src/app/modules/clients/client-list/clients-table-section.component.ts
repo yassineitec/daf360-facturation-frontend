@@ -7,7 +7,7 @@ import {
 import { ClientListItemDto } from '../client.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import {
-  CLIENT_STATE_BADGE, CLIENT_STATE_LABEL, clientState, initials,
+  CLIENT_STATE_BADGE, CLIENT_STATE_LABEL, clientLocation, clientState, initials,
 } from '../client-display';
 
 /**
@@ -53,6 +53,7 @@ export class ClientsTableSectionComponent {
       { key: 'code',     label: t('CLIENTS.LIST.TABLE.CODE'),     type: 'text'   },
       { key: 'client',   label: t('CLIENTS.LIST.TABLE.NAME'),     type: 'avatar' },
       { key: 'pays',     label: t('CLIENTS.LIST.CARD.COUNTRY'),   type: 'text'   },
+      { key: 'adresse',  label: t('CLIENTS.LIST.TABLE.ADDRESS'),  type: 'text'   },
       { key: 'secteur',  label: t('CLIENTS.LIST.TABLE.SECTOR'),   type: 'text'   },
       { key: 'projets',  label: t('CLIENTS.LIST.CARD.ACTIVE_PROJECTS'), type: 'text', align: 'right' },
       { key: 'ca',       label: t('CLIENTS.LIST.CARD.TOTAL_CA'),  type: 'text', align: 'right' },
@@ -77,6 +78,7 @@ export class ClientsTableSectionComponent {
           subtitle: c.defaultCurrency ?? undefined,
         } satisfies AvatarCell,
         pays:    c.countryLabel ?? '—',
+        adresse: clientLocation(c),
         secteur: c.sector ?? '—',
         projets: String(c.activeAffaireCount),
         ca:      this.currency.transform(c.totalCA, c.defaultCurrency ?? 'TND'),

@@ -10,7 +10,7 @@ import {
   ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent,
   StepperComponent, StepperStep, StepperConfig,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
-  SearchToolbarComponent, StatusBadgeComponent, FilterField, FilterResult,
+  SearchToolbarComponent, SearchToolbarFilterConfig, StatusBadgeComponent, FilterField, FilterResult,
   AccordionCardComponent, PaginationComponent, TabsComponent, TabItem,
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
@@ -215,6 +215,18 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   showHistoryPage = signal(false);
   historySearch = signal('');
   historyStatut = signal('');
+  /** Régie — jour ou plage [début, fin] chevauchant la période WIP de la ligne, ou null. */
+  historyPeriodRange = signal<Date[] | null>(null);
+  /** Régie — montant HT minimum, saisi en texte ('' = pas de borne). */
+  historyAmountMin = signal('');
+  /** Régie — montant HT maximum, saisi en texte ('' = pas de borne). */
+  historyAmountMax = signal('');
+  /** Livrable — discipline du document (`disciplineLabel`), '' = toutes. */
+  livrableHistoryDiscipline = signal('');
+  /** Livrable — WBS du document (`wbsTitre`), '' = tous. */
+  livrableHistoryWbs = signal('');
+  /** Livrable — budget alloué minimum, saisi en texte ('' = pas de borne). */
+  livrableHistoryBudgetMin = signal('');
 
   /** Portalé sous <body> pendant qu'elle est ouverte — même raison que positionPortal()
    * plus bas pour les calendriers : `position: fixed` se cale sur le premier ancêtre avec
@@ -284,8 +296,15 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.historyPage.set(0);
   }
 
+  /** Réinitialise tous les filtres des deux popups Historique (Régie et Livrable). */
   onHistoryStatutReset(): void {
     this.historyStatut.set('');
+    this.historyPeriodRange.set(null);
+    this.historyAmountMin.set('');
+    this.historyAmountMax.set('');
+    this.livrableHistoryDiscipline.set('');
+    this.livrableHistoryWbs.set('');
+    this.livrableHistoryBudgetMin.set('');
     this.historyPage.set(0);
   }
 
@@ -730,19 +749,66 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   /** Popup "Afficher tout" — recherche + filtre Statut, même mécanisme
    * (historySearch/historyStatut/onHistoryFilterApply, déjà génériques) que la popup
    * Historique WIP de la carte Régie. */
-  readonly livrableHistoryFilterFields = computed<FilterField[]>(() => [{
-    name:    'statut',
-    label:   this.translate.instant('AFFAIRES.WIP.COL_STATUS'),
-    type:    'select',
-    options: [...new Set(this.livrableHistory().map(l => l.statut))].sort()
-      .map(value => ({ value, label: this.translate.instant('AFFAIRES.WIP.BATCH_STATUS_' + value) })),
-  }]);
+  readonly livrableHistoryFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    const distinct = (values: (string | null | undefined)[]) =>
+      [...new Set(values.filter((v): v is string => !!v))].sort().map(value => ({ value, label: value }));
+    return [{
+      name:    'statut',
+      label:   t('AFFAIRES.WIP.COL_STATUS'),
+      type:    'select',
+      options: [...new Set(this.livrableHistory().map(l => l.statut))].sort()
+        .map(value => ({ value, label: t('AFFAIRES.WIP.BATCH_STATUS_' + value) })),
+    }, {
+      name:       'discipline',
+      label:      t('AFFAIRES.WIP.COL_DISCIPLINE'),
+      type:       'select',
+      searchable: true,
+      options:    distinct(this.livrableHistory().map(l => l.disciplineLabel)),
+    }, {
+      name:       'wbs',
+      label:      t('AFFAIRES.WIP.COL_WBS'),
+      type:       'select',
+      searchable: true,
+      options:    distinct(this.livrableHistory().map(l => l.wbsTitre)),
+    }, {
+      name:        'budgetMin',
+      label:       t('AFFAIRES.WIP.HISTORY_FILTER_BUDGET_MIN'),
+      type:        'text',
+      placeholder: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_PH'),
+    }];
+  });
+
+  /** Seedé à chaque réouverture de la popup (`@if showHistoryPage`) — forme interne du
+   * panneau : select → string[]. Libellés du panneau : défauts de la lib, comme avant. */
+  readonly livrableHistoryFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    initialValues: {
+      statut:     this.historyStatut()             ? [this.historyStatut()]             : [],
+      discipline: this.livrableHistoryDiscipline() ? [this.livrableHistoryDiscipline()] : [],
+      wbs:        this.livrableHistoryWbs()        ? [this.livrableHistoryWbs()]        : [],
+      budgetMin:  this.livrableHistoryBudgetMin(),
+    },
+  }));
+
+  onLivrableHistoryFilterApply(result: FilterResult): void {
+    this.historyStatut.set(this.asFilterValue(result, 'statut'));
+    this.livrableHistoryDiscipline.set(this.asFilterValue(result, 'discipline'));
+    this.livrableHistoryWbs.set(this.asFilterValue(result, 'wbs'));
+    this.livrableHistoryBudgetMin.set(typeof result['budgetMin'] === 'string' ? result['budgetMin'] as string : '');
+    this.historyPage.set(0);
+  }
 
   readonly filteredLivrableHistory = computed<AffaireLivrableDto[]>(() => {
     const q      = this.historySearch().trim().toLowerCase();
     const statut = this.historyStatut();
+    const discipline = this.livrableHistoryDiscipline(), wbs = this.livrableHistoryWbs();
+    const budgetMin  = this.parseAmount(this.livrableHistoryBudgetMin());
     return this.livrableHistory()
       .filter(l => !statut || l.statut === statut)
+      .filter(l => !discipline || l.disciplineLabel === discipline)
+      .filter(l => !wbs || l.wbsTitre === wbs)
+      .filter(l => budgetMin == null || (l.budgetAlloue ?? 0) >= budgetMin)
       .filter(l => !q || `${l.disciplineLabel} ${l.documentNom}`.toLowerCase().includes(q));
   });
 
@@ -1617,19 +1683,77 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   }));
 
   // ── Popup "Afficher tout" — recherche + filtre Statut sur l'historique complet ──────
-  readonly historyFilterFields = computed<FilterField[]>(() => [{
-    name:    'statut',
-    label:   this.translate.instant('AFFAIRES.WIP.COL_STATUS'),
-    type:    'select',
-    options: [...new Set(this.tmHistory().map(l => l.statut))].sort()
-      .map(value => ({ value, label: enumLabel(this.translate, 'BILLING_LINE_STATUT', value) })),
-  }]);
+  readonly historyFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [{
+      name:    'statut',
+      label:   t('AFFAIRES.WIP.COL_STATUS'),
+      type:    'select',
+      options: [...new Set(this.tmHistory().map(l => l.statut))].sort()
+        .map(value => ({ value, label: enumLabel(this.translate, 'BILLING_LINE_STATUT', value) })),
+    }, {
+      name:  'period',
+      label: t('AFFAIRES.WIP.COL_PERIOD'),
+      type:  'daterange',
+    }, {
+      name:        'amountMin',
+      label:       t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_MIN'),
+      type:        'text',
+      placeholder: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_PH'),
+    }, {
+      name:        'amountMax',
+      label:       t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_MAX'),
+      type:        'text',
+      placeholder: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_PH'),
+    }];
+  });
+
+  /** Seedé à chaque réouverture de la popup (`@if showHistoryPage`) — forme interne du
+   * panneau : select → string[], daterange → Date[] | null. Libellés : défauts de la lib. */
+  readonly historyFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    initialValues: {
+      statut:    this.historyStatut() ? [this.historyStatut()] : [],
+      period:    this.historyPeriodRange(),
+      amountMin: this.historyAmountMin(),
+      amountMax: this.historyAmountMax(),
+    },
+  }));
+
+  /** Période de la ligne (plage réelle, sinon le mois calendaire) en jours 'yyyy-MM-dd'. */
+  private lineDayBounds(l: LineDetailDto): [string, string] {
+    if (l.periodDateFrom && l.periodDateTo) return [l.periodDateFrom.slice(0, 10), l.periodDateTo.slice(0, 10)];
+    const first = new Date(l.periodYear, l.periodMonth - 1, 1);
+    const last  = new Date(l.periodYear, l.periodMonth, 0);
+    return [this.toIso(first), this.toIso(last)];
+  }
+
+  /** Borne de montant saisie en texte ('1 500,50' accepté) → nombre, ou null si vide/invalide. */
+  private parseAmount(raw: string): number | null {
+    const s = raw.replace(/\s/g, '').replace(',', '.');
+    if (!s) return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
 
   readonly filteredHistoryLines = computed<LineDetailDto[]>(() => {
     const q      = this.historySearch().trim().toLowerCase();
     const statut = this.historyStatut();
+    const range  = this.historyPeriodRange();
+    // 1 date = un seul jour ; comparaison en jours locaux (toIso), jamais toISOString().
+    const from   = range?.length ? this.toIso(range[0]) : null;
+    const to     = range?.length ? this.toIso(range[1] ?? range[0]) : null;
+    const min    = this.parseAmount(this.historyAmountMin());
+    const max    = this.parseAmount(this.historyAmountMax());
     return this.tmHistory()
       .filter(l => !statut || l.statut === statut)
+      // Chevauchement : la période WIP de la ligne croise la plage choisie.
+      .filter(l => {
+        if (!from || !to) return true;
+        const [start, end] = this.lineDayBounds(l);
+        return start <= to && end >= from;
+      })
+      .filter(l => (min == null || l.montantHt >= min) && (max == null || l.montantHt <= max))
       .filter(l => !q || `${l.periodDateFrom ?? ''} ${l.periodDateTo ?? ''} ${l.periodMonth}/${l.periodYear}`
         .toLowerCase().includes(q));
   });
@@ -1672,7 +1796,12 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   }
 
   onHistoryFilterApply(result: FilterResult): void {
+    const period = result['period'];
+    const text   = (key: string) => typeof result[key] === 'string' ? result[key] as string : '';
     this.historyStatut.set(this.asFilterValue(result, 'statut'));
+    this.historyPeriodRange.set(Array.isArray(period) && period.length ? period as Date[] : null);
+    this.historyAmountMin.set(text('amountMin'));
+    this.historyAmountMax.set(text('amountMax'));
     this.historyPage.set(0);
   }
 

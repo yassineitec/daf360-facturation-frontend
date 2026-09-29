@@ -8,6 +8,9 @@ export interface ClientListItemDto {
   /** Le pays du CLIENT (adresse) — à ne pas confondre avec l'entité qui le facture. */
   countryId:         number | null;
   countryLabel:      string | null;
+  address:           string | null;
+  city:              string | null;
+  postalCode:        string | null;
   sector:            string | null;
   paymentTermsDays:  number | null;
   defaultCurrency:   string | null;
@@ -109,6 +112,12 @@ export interface ClientFilter {
   isActive?:  boolean | null;
   isKycDone?: boolean | null;
   sector?:    string | null;
+  /** Pays du client (`countryId`, `pays_ref.id`) — pas l'entité `paysId`. */
+  countryId?: number | null;
+  /** Devise par défaut du client (`defaultCurrency`). */
+  currency?:  string | null;
+  /** true = au moins une affaire EN_COURS, false = aucune. */
+  hasActiveAffaires?: boolean | null;
   page?:      number;
   size?:      number;
 }

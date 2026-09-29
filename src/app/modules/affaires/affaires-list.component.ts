@@ -13,6 +13,9 @@ import { AffairesCardsSectionComponent } from './components/affaires-cards-secti
 import { AffairesTableSectionComponent } from './components/affaires-table-section.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 import { EmployeeAvatarService } from '../../core/employee-avatar.service';
+import { ClientService } from '../clients/client.service';
+import { BILLING_MODES } from './affaire-wizard.model';
+import { enumLabel } from '../../shared/enum-labels';
 
 type ViewMode = 'grid' | 'list';
 
@@ -35,6 +38,7 @@ export class AffairesListComponent implements OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly translate      = inject(TranslateService);
   private readonly avatarSvc      = inject(EmployeeAvatarService);
+  private readonly clientSvc      = inject(ClientService);
 
   /** Photos RH des responsables de la page courante, par `userId`. */
   readonly avatarUrls = signal<Map<number, string>>(new Map());
@@ -62,18 +66,35 @@ export class AffairesListComponent implements OnInit {
   loading   = signal(false);
 
   searchText   = signal('');
+  /** Statut de l'affaire (`statut`, filtre serveur) — '' = tous. */
   filterStatut = signal('');
+  /** Pays / entité de l'affaire (`paysId`, filtre serveur) — null = tous. */
+  filterPaysId = signal<number | null>(null);
+  /** Manager de l'affaire (`responsableId`, filtre serveur) — null = tous. */
+  filterResponsableId = signal<number | null>(null);
+  /** Mode de facturation (`billingMode`, filtre serveur) — '' = tous. */
+  filterBillingMode   = signal('');
+  /** Période de début de l'affaire (`dateDebutFrom`/`dateDebutTo`, bornes incluses) — null = toutes. */
+  filterDateDebut     = signal<Date[] | null>(null);
   viewMode     = signal<ViewMode>('grid');
 
   /**
-   * Restriction à un client, passée en `?clientId=` — c'est ce que suit « Voir les
-   * affaires » depuis une fiche client. Elle n'est PAS dans le panneau de filtres :
-   * elle vient du lien d'arrivée, et un filtre invisible dans le panneau donnerait une
-   * liste tronquée sans explication. D'où le bandeau de contexte, avec son bouton pour
-   * revenir à la liste complète.
+   * Restriction à un client (`clientId`, filtre serveur). Elle arrive soit par
+   * `?clientId=` — « Voir les affaires » depuis une fiche client —, soit par le panneau
+   * de filtres. Dans les deux cas le bandeau de contexte la rappelle, avec son bouton
+   * pour revenir à la liste complète.
    */
   filterClientId = signal<number | null>(null);
   clientName     = signal<string | null>(null);
+
+  /**
+   * Clients actifs proposés dans le panneau (`GET /clients/dropdown`, déjà trié par nom
+   * côté serveur). Vide si l'appel échoue — le filtre reste alors sans option.
+   */
+  private readonly clientOptions = signal<{ value: string; label: string }[]>([]);
+
+  /** Utilisateurs proposés comme manager (`GET /ref/users`), triés par nom. Vide si l'appel échoue. */
+  private readonly managerOptions = signal<{ value: string; label: string }[]>([]);
 
   /**
    * Agrégats des tuiles, renvoyés par `GET /affaires/summary` sur l'ENSEMBLE du jeu
@@ -107,7 +128,9 @@ export class AffairesListComponent implements OnInit {
 
   /** Un filtre est-il actif ? Décide seulement de la légende des tuiles. */
   readonly hasActiveFilter = computed(() =>
-    !!this.searchText().trim() || !!this.filterStatut() || this.filterClientId() !== null);
+    !!this.searchText().trim() || !!this.filterStatut() || this.filterClientId() !== null
+    || this.filterPaysId() !== null || this.filterResponsableId() !== null
+    || !!this.filterBillingMode() || !!this.filterDateDebut()?.length);
 
   /**
    * Même légende sur les quatre tuiles. Elle dit sur quoi porte le chiffre — tout le
@@ -140,6 +163,44 @@ export class AffairesListComponent implements OnInit {
         placeholder: t('AFFAIRES.LIST.FILTER_ALL'),
         options: Object.keys(STATUT_LABELS).map(k => ({ value: k, label: t(STATUT_LABELS[k]) })),
       },
+      {
+        name: 'client',
+        label: t('AFFAIRES.LIST.TABLE.HEADERS.CLIENT'),
+        type: 'select',
+        placeholder: t('AFFAIRES.LIST.FILTER_ALL_CLIENTS'),
+        searchable: true,
+        options: this.clientOptions(),
+      },
+      {
+        name: 'pays',
+        label: t('AFFAIRES.LIST.TABLE.HEADERS.PAYS'),
+        type: 'select',
+        placeholder: t('AFFAIRES.LIST.FILTER_ALL_PAYS'),
+        searchable: true,
+        options: [...this.paysLabels()]
+          .map(([id, label]) => ({ value: String(id), label }))
+          .sort((a, b) => a.label.localeCompare(b.label)),
+      },
+      {
+        name: 'manager',
+        label: t('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'),
+        type: 'select',
+        placeholder: t('AFFAIRES.LIST.FILTER_ALL_MANAGERS'),
+        searchable: true,
+        options: this.managerOptions(),
+      },
+      {
+        name: 'billingMode',
+        label: t('AFFAIRES.DETAIL.INFO.BILLING_MODE'),
+        type: 'select',
+        placeholder: t('AFFAIRES.LIST.FILTER_ALL'),
+        options: BILLING_MODES.map(m => ({ value: m.code, label: enumLabel(this.translate, 'BILLING_MODE', m.code) })),
+      },
+      {
+        name: 'dateDebut',
+        label: t('AFFAIRES.LIST.FILTER_DATE_DEBUT'),
+        type: 'daterange',
+      },
     ];
   });
 
@@ -159,6 +220,11 @@ export class AffairesListComponent implements OnInit {
       triggerLabel: t('AFFAIRES.LIST.TABLE.FILTERS'),
       initialValues: {
         statut: this.filterStatut() ? [this.filterStatut()] : [],
+        client: this.filterClientId() !== null ? [String(this.filterClientId())] : [],
+        pays:   this.filterPaysId()   !== null ? [String(this.filterPaysId())]   : [],
+        manager:     this.filterResponsableId() !== null ? [String(this.filterResponsableId())] : [],
+        billingMode: this.filterBillingMode() ? [this.filterBillingMode()] : [],
+        dateDebut:   this.filterDateDebut(),
       },
     };
   });
@@ -177,6 +243,14 @@ export class AffairesListComponent implements OnInit {
     }
     this.svc.getPays().subscribe(list =>
       this.paysLabels.set(new Map(list.map(p => [p.id, p.frenchLabel]))));
+    // `pays=0` : tous les clients actifs, toutes entités confondues (comme l'assistant).
+    this.clientSvc.getDropdown(0).subscribe(list =>
+      this.clientOptions.set(list.map(c => ({ value: String(c.id), label: c.clientName }))));
+    this.svc.getUsers().subscribe(list =>
+      this.managerOptions.set(list
+        .filter(u => !!u.fullName)
+        .map(u => ({ value: String(u.id), label: u.fullName }))
+        .sort((a, b) => a.label.localeCompare(b.label))));
     this.load();
     this.loadSummary();
   }
@@ -217,10 +291,17 @@ export class AffairesListComponent implements OnInit {
 
   /** Le jeu décrit par les filtres courants, sans la pagination. */
   private currentFilter(): AffaireFilter {
+    const range = this.filterDateDebut();
     return {
       search:   this.searchText().trim() || null,
       statut:   this.filterStatut()      || null,
       clientId: this.filterClientId(),
+      paysId:   this.filterPaysId(),
+      responsableId: this.filterResponsableId(),
+      billingMode:   this.filterBillingMode() || null,
+      // Un seul jour choisi = une période d'un jour.
+      dateDebutFrom: range?.length ? toIsoDay(range[0]) : null,
+      dateDebutTo:   range?.length ? toIsoDay(range[range.length - 1]) : null,
     };
   }
 
@@ -272,6 +353,33 @@ export class AffairesListComponent implements OnInit {
 
   applyFilters(result: FilterResult): void {
     this.filterStatut.set((result['statut'] as string | null) ?? '');
+
+    const pays = Number(result['pays']);
+    this.filterPaysId.set(Number.isFinite(pays) && pays > 0 ? pays : null);
+
+    const manager = Number(result['manager']);
+    this.filterResponsableId.set(Number.isFinite(manager) && manager > 0 ? manager : null);
+
+    this.filterBillingMode.set((result['billingMode'] as string | null) ?? '');
+
+    const dateDebut = result['dateDebut'];
+    this.filterDateDebut.set(Array.isArray(dateDebut) && dateDebut.length ? dateDebut as Date[] : null);
+
+    const client = Number(result['client']);
+    const clientId = Number.isFinite(client) && client > 0 ? client : null;
+    if (clientId !== this.filterClientId()) {
+      this.filterClientId.set(clientId);
+      this.clientName.set(clientId === null ? null
+        : this.clientOptions().find(o => o.value === String(clientId))?.label ?? null);
+      // Le client choisi dans le panneau remplace celui du lien d'arrivée : on retire
+      // `?clientId=` de l'URL, sinon un rechargement ramènerait l'ancien.
+      this.router.navigate([], {
+        relativeTo: this.activatedRoute,
+        queryParams: { clientId: null, client: null },
+        queryParamsHandling: 'merge',
+      });
+    }
+
     this.currentPage.set(0);
     this.load();
     this.loadSummary();
@@ -312,4 +420,10 @@ export class AffairesListComponent implements OnInit {
   openNewForm(): void {
     this.router.navigate(['new'], { relativeTo: this.activatedRoute });
   }
+}
+
+/** Jour local `yyyy-MM-dd` — jamais `toISOString()`, qui recule d'un jour à l'est d'UTC. */
+function toIsoDay(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }

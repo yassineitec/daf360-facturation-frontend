@@ -23,7 +23,7 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { CostService } from '../../cost/cost.service';
 import { CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../../cost/cost.model';
 import { STATUS_BADGE_VARIANT, statusKey } from '../../cost/cost-display';
-import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 /**
  * Une ligne clé/valeur du panneau de détails. `label` est toujours une clé i18n.
  *
@@ -55,6 +55,13 @@ type SupplierTab = 'costs' | 'ledger';
  * elle applique déjà exactement le même plafond, pour la même raison.
  */
 const SUPPLIER_COST_PAGE_SIZE = 200;
+
+/** `YYYY-MM-DD` en heure LOCALE — `toISOString()` décalerait la journée d'un fuseau. */
+function toIsoDay(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 
 /**
  * Fiche fournisseur — `/finance/suppliers/:id`.
@@ -524,25 +531,67 @@ export class SupplierDetailComponent implements OnInit {
 
   costSearch = signal('');
   costStatus = signal('');
+  /** Catégorie de coût (`costCategoryLabel`) — vide = toutes. */
+  costCategory = signal('');
+  /** Devise de la ligne (`currency`) — vide = toutes. */
+  costCurrency = signal('');
+  /** Période sur `transactionDate` — 1 date = une journée, 2 dates = bornes incluses. */
+  costPeriod   = signal<Date[] | null>(null);
   costPage     = signal(0);
   costPageSize = signal(10);
 
   ledgerSearch = signal('');
   ledgerType   = signal('');
+  /** Période sur la date du règlement — 1 date = une journée, 2 dates = bornes incluses. */
+  ledgerPeriod   = signal<Date[] | null>(null);
+  /** Ligne de coût d'origine de l'écriture (`costLineId`, en chaîne) — vide = toutes. */
+  ledgerCostLine = signal('');
+  /** Catégorie de la ligne de coût d'origine, résolue via `costLines()` — vide = toutes. */
+  ledgerCategory = signal('');
   ledgerPage     = signal(0);
   ledgerPageSize = signal(10);
 
+  /**
+   * Un seul `filterConfig` pour les deux panneaux (le gabarit le partage) : les noms de
+   * champs sont donc uniques d'un onglet à l'autre, et chaque panneau ne sème que les
+   * clés de ses propres champs (`daf-filter` ignore les autres).
+   */
   readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    const one = (v: string) => (v ? [v] : []);
     return {
       title:        t('SUPPLIERS.DETAIL.TOOLBAR.FILTERS'),
       applyLabel:   t('SUPPLIERS.DETAIL.TOOLBAR.APPLY'),
       cancelLabel:  t('SUPPLIERS.DETAIL.TOOLBAR.CANCEL'),
       resetLabel:   t('SUPPLIERS.DETAIL.TOOLBAR.RESET'),
       triggerLabel: t('SUPPLIERS.DETAIL.TOOLBAR.FILTERS'),
+      initialValues: {
+        status:         one(this.costStatus()),
+        costCategory:   one(this.costCategory()),
+        costCurrency:   one(this.costCurrency()),
+        costPeriod:     this.costPeriod(),
+        type:           one(this.ledgerType()),
+        ledgerPeriod:   this.ledgerPeriod(),
+        ledgerCostLine: one(this.ledgerCostLine()),
+        ledgerCategory: one(this.ledgerCategory()),
+      },
     };
   });
+
+  /** `transactionDate` ou date de règlement — les 10 premiers caractères suffisent (ISO). */
+  private inPeriod(isoDate: string | null, period: Date[] | null): boolean {
+    if (!period || period.length === 0) return true;
+    if (!isoDate) return false;
+    const day  = isoDate.slice(0, 10);
+    const from = toIsoDay(period[0]);
+    const to   = toIsoDay(period[period.length - 1]);
+    return day >= from && day <= to;
+  }
+
+  /** `costLineId` → ligne chargée, pour nommer et catégoriser les écritures du relevé. */
+  private readonly costLineById = computed(() =>
+    new Map(this.costLines().map(l => [l.id, l] as const)));
 
   /** Désactivé quand il n'y a rien à écrire — même règle que la fiche affaire. */
   private exportAction(disabled: boolean): ToolbarAction[] {
@@ -565,13 +614,36 @@ export class SupplierDetailComponent implements OnInit {
    */
   readonly costFilterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
-    return [{
-      name:    'status',
-      label:   this.translate.instant('SUPPLIERS.DETAIL.COSTS.COL_STATUS'),
-      type:    'select',
-      options: [...new Set(this.costLines().map(l => l.status))].sort()
-        .map(value => ({ value, label: this.translate.instant(statusKey(value)) })),
-    }];
+    const lines = this.costLines();
+    const distinct = (values: (string | null | undefined)[]) =>
+      [...new Set(values.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
+    return [
+      {
+        name:    'status',
+        label:   this.translate.instant('SUPPLIERS.DETAIL.COSTS.COL_STATUS'),
+        type:    'select',
+        options: [...new Set(lines.map(l => l.status))].sort()
+          .map(value => ({ value, label: this.translate.instant(statusKey(value)) })),
+      },
+      {
+        name:       'costCategory',
+        label:      this.translate.instant('COST.LINES.CATEGORY_FILTER_LABEL'),
+        type:       'select',
+        searchable: true,
+        options:    distinct(lines.map(l => l.costCategoryLabel)).map(v => ({ value: v, label: v })),
+      },
+      {
+        name:    'costCurrency',
+        label:   this.translate.instant('SUPPLIERS.DETAIL.EXPORT.CURRENCY'),
+        type:    'select',
+        options: distinct(lines.map(l => l.currency)).map(v => ({ value: v, label: v })),
+      },
+      {
+        name:  'costPeriod',
+        label: this.translate.instant('COST.LINES.DATE_RANGE_FILTER_LABEL'),
+        type:  'daterange',
+      },
+    ];
   });
 
   /**
@@ -583,16 +655,50 @@ export class SupplierDetailComponent implements OnInit {
   readonly ledgerFilterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [{
-      name:    'type',
-      label:   t('SUPPLIERS.DETAIL.LEDGER.FILTER_TYPE'),
-      type:    'select',
-      options: [
-        { value: 'CREDIT',  label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_CREDIT') },
-        { value: 'DEBIT',   label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_DEBIT') },
-        { value: 'SETTLED', label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_SETTLED') },
-      ],
-    }];
+    const rows  = this.ledger()?.rows ?? [];
+    const byId  = this.costLineById();
+    // Les lignes réellement présentes dans le relevé, nommées par leur référence (ou
+    // leur libellé) quand la ligne fait partie des 200 chargées, sinon par leur id.
+    const lineOptions = [...new Set(rows.map(r => r.costLineId))]
+      .map(id => {
+        const l = byId.get(id);
+        return { value: String(id), label: l?.reference || l?.label || `#${id}` };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
+    const categories = [...new Set(rows
+      .map(r => byId.get(r.costLineId)?.costCategoryLabel)
+      .filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
+    return [
+      {
+        name:    'type',
+        label:   t('SUPPLIERS.DETAIL.LEDGER.FILTER_TYPE'),
+        type:    'select',
+        options: [
+          { value: 'CREDIT',  label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_CREDIT') },
+          { value: 'DEBIT',   label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_DEBIT') },
+          { value: 'SETTLED', label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_SETTLED') },
+        ],
+      },
+      {
+        name:  'ledgerPeriod',
+        label: t('COST.LINES.DATE_RANGE_FILTER_LABEL'),
+        type:  'daterange',
+      },
+      {
+        name:       'ledgerCostLine',
+        label:      t('COST.REGLEMENT.LINE'),
+        type:       'select',
+        searchable: true,
+        options:    lineOptions,
+      },
+      {
+        name:       'ledgerCategory',
+        label:      t('COST.LINES.CATEGORY_FILTER_LABEL'),
+        type:       'select',
+        searchable: true,
+        options:    categories.map(v => ({ value: v, label: v })),
+      },
+    ];
   });
 
   /** Le panneau renvoie `string | string[] | …` selon le type de champ. */
@@ -603,18 +709,42 @@ export class SupplierDetailComponent implements OnInit {
   }
 
   onCostSearch(value: string): void   { this.costSearch.set(value);   this.costPage.set(0); }
+  /** Un `daterange` émet `Date[]` (1 ou 2 dates) ; vide ou absent = pas de borne. */
+  private asPeriod(result: FilterResult, key: string): Date[] | null {
+    const v = result[key];
+    return Array.isArray(v) && v.length ? (v as Date[]) : null;
+  }
+
   onCostFilter(result: FilterResult): void {
     this.costStatus.set(this.asFilterValue(result, 'status'));
+    this.costCategory.set(this.asFilterValue(result, 'costCategory'));
+    this.costCurrency.set(this.asFilterValue(result, 'costCurrency'));
+    this.costPeriod.set(this.asPeriod(result, 'costPeriod'));
     this.costPage.set(0);
   }
-  onCostFilterReset(): void { this.costStatus.set(''); this.costPage.set(0); }
+  onCostFilterReset(): void {
+    this.costStatus.set('');
+    this.costCategory.set('');
+    this.costCurrency.set('');
+    this.costPeriod.set(null);
+    this.costPage.set(0);
+  }
 
   onLedgerSearch(value: string): void { this.ledgerSearch.set(value); this.ledgerPage.set(0); }
   onLedgerFilter(result: FilterResult): void {
     this.ledgerType.set(this.asFilterValue(result, 'type'));
+    this.ledgerPeriod.set(this.asPeriod(result, 'ledgerPeriod'));
+    this.ledgerCostLine.set(this.asFilterValue(result, 'ledgerCostLine'));
+    this.ledgerCategory.set(this.asFilterValue(result, 'ledgerCategory'));
     this.ledgerPage.set(0);
   }
-  onLedgerFilterReset(): void { this.ledgerType.set(''); this.ledgerPage.set(0); }
+  onLedgerFilterReset(): void {
+    this.ledgerType.set('');
+    this.ledgerPeriod.set(null);
+    this.ledgerCostLine.set('');
+    this.ledgerCategory.set('');
+    this.ledgerPage.set(0);
+  }
 
   onCostToolbarAction(id: string): void   { if (id === 'export') this.exportCostLines(); }
   onLedgerToolbarAction(id: string): void { if (id === 'export') this.exportLedger(); }
@@ -623,9 +753,15 @@ export class SupplierDetailComponent implements OnInit {
 
   readonly filteredCostLines = computed<CostLineDto[]>(() => {
     const q = this.costSearch().trim().toLowerCase();
-    const status = this.costStatus();
+    const status   = this.costStatus();
+    const category = this.costCategory();
+    const currency = this.costCurrency();
+    const period   = this.costPeriod();
     return this.costLines().filter(l =>
-      (!status || l.status === status) &&
+      (!status   || l.status === status) &&
+      (!category || l.costCategoryLabel === category) &&
+      (!currency || l.currency === currency) &&
+      this.inPeriod(l.transactionDate, period) &&
       (!q || `${l.reference ?? ''} ${l.label ?? ''}`.toLowerCase().includes(q)));
   });
 
@@ -710,8 +846,17 @@ export class SupplierDetailComponent implements OnInit {
 
   readonly filteredLedgerRows = computed(() => {
     const q = this.ledgerSearch().trim().toLowerCase();
-    const type = this.ledgerType();
+    const type     = this.ledgerType();
+    const period   = this.ledgerPeriod();
+    const line     = this.ledgerCostLine();
+    const category = this.ledgerCategory();
+    const byId     = this.costLineById();
     return (this.ledger()?.rows ?? []).filter(r => {
+      if (!this.inPeriod(r.date, period)) return false;
+      if (line && String(r.costLineId) !== line) return false;
+      // Une écriture dont la ligne n'est pas parmi les 200 chargées n'a pas de
+      // catégorie connue : elle sort du résultat dès qu'une catégorie est demandée.
+      if (category && byId.get(r.costLineId)?.costCategoryLabel !== category) return false;
       // « Soldé » = ni débit ni crédit : le règlement couvrait la ligne au centime.
       const matchesType =
         !type ||

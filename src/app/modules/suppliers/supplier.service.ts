@@ -4,6 +4,7 @@ import { Observable, map, catchError, of } from 'rxjs';
 import { environment }                   from '../../../environments/environment';
 import {
   SupplierDto, SupplierStatsDto, CreateSupplierRequest, PageResponse, SupplierStatusFilter,
+  SupplierExtraFilter,
 } from './supplier.model';
 
 @Injectable({ providedIn: 'root' })
@@ -11,8 +12,8 @@ export class SupplierService {
   private readonly base = `${environment.factApiUrl}/api/fact/suppliers`;
   private readonly http = inject(HttpClient);
 
-  /** Paginated search — uses GET /search?paysId=&q=&status=&page=&size= */
-  getSuppliers(params: {
+  /** Paginated search — uses GET /search?paysId=&q=&status=&typeId=&hasIban=&hasTva=&page=&size= */
+  getSuppliers(params: SupplierExtraFilter & {
     paysId: number;
     search?: string;
     /**
@@ -31,6 +32,7 @@ export class SupplierService {
     // `ACTIVE` n'est pas envoyé : c'est déjà le défaut serveur, et une requête sans
     // filtre est ce que les autres appelants émettent.
     if (params.status && params.status !== 'ACTIVE') p = p.set('status', params.status);
+    p = this.withExtraFilter(p, params);
     return this.http.get<PageResponse<SupplierDto>>(`${this.base}/search`, { params: p });
   }
 
@@ -43,8 +45,9 @@ export class SupplierService {
    * maintenant ce que la réponse contient réellement — complétude bancaire, complétude
    * fiscale, couverture géographique.
    */
-  getStats(paysId: number): Observable<SupplierStatsDto> {
-    const p = new HttpParams().set('paysId', String(paysId));
+  getStats(paysId: number, filter: SupplierExtraFilter = {}): Observable<SupplierStatsDto> {
+    // Mêmes filtres type / IBAN / TVA que la liste : les tuiles suivent le panneau.
+    const p = this.withExtraFilter(new HttpParams().set('paysId', String(paysId)), filter);
     return this.http.get<SupplierDto[]>(this.base, { params: p }).pipe(
       map(list => ({
         total:     list.length,
@@ -54,6 +57,14 @@ export class SupplierService {
       })),
       catchError(() => of({ total: 0, withIban: 0, withTva: 0, countries: 0 } as SupplierStatsDto)),
     );
+  }
+
+  /** Type / IBAN / TVA, communs à `/search` et à `GET /?paysId=` (tuiles). */
+  private withExtraFilter(p: HttpParams, f: SupplierExtraFilter): HttpParams {
+    if (f.typeId != null)  p = p.set('typeId',  String(f.typeId));
+    if (f.hasIban != null) p = p.set('hasIban', String(f.hasIban));
+    if (f.hasTva != null)  p = p.set('hasTva',  String(f.hasTva));
+    return p;
   }
 
   getSupplier(id: number): Observable<SupplierDto> {

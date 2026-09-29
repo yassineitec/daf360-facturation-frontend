@@ -577,6 +577,7 @@
                 [debounce]="200"
                 (valueChange)="onHistorySearchChange($event)"
                 [filterFields]="historyFilterFields()"
+                [filterConfig]="historyFilterConfig()"
                 (filterApply)="onHistoryFilterApply($event)"
                 (filterReset)="onHistoryStatutReset()" />
               <!-- Même bibliothèque (daf-button + xlsx) que la carte — exporte ici la
@@ -860,7 +861,8 @@
                 [debounce]="200"
                 (valueChange)="onHistorySearchChange($event)"
                 [filterFields]="livrableHistoryFilterFields()"
-                (filterApply)="onHistoryFilterApply($event)"
+                [filterConfig]="livrableHistoryFilterConfig()"
+                (filterApply)="onLivrableHistoryFilterApply($event)"
                 (filterReset)="onHistoryStatutReset()" />
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
                                         label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),

@@ -34,6 +34,17 @@ export interface SupplierDto {
 export type SupplierStatusFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
 
 /**
+ * Filtres optionnels de la liste, envoyés à `GET /suppliers/search` ET à
+ * `GET /suppliers?paysId=` (les tuiles) : `typeId` = valeur SUPPLIER_CATEGORY,
+ * `hasIban` / `hasTva` = true (renseigné) / false (manquant) ; absent = indifférent.
+ */
+export interface SupplierExtraFilter {
+  typeId?:  number | null;
+  hasIban?: boolean | null;
+  hasTva?:  boolean | null;
+}
+
+/**
  * Statistiques du référentiel, calculées côté client sur `GET /suppliers?paysId=`.
  *
  * ⚠️ Cet endpoint renvoie `findByPaysIdAndIsActiveTrue…` : **uniquement les actifs**.

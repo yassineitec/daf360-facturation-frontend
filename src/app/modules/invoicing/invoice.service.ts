@@ -26,6 +26,11 @@ export class InvoiceService {
     if (filter.clientId)  params = params.set('clientId',  String(filter.clientId));
     if (filter.from)      params = params.set('from',      filter.from);
     if (filter.to)        params = params.set('to',        filter.to);
+    if (filter.dueFrom)   params = params.set('dueFrom',   filter.dueFrom);
+    if (filter.dueTo)     params = params.set('dueTo',     filter.dueTo);
+    if (filter.minTtc != null) params = params.set('minTtc', String(filter.minTtc));
+    if (filter.maxTtc != null) params = params.set('maxTtc', String(filter.maxTtc));
+    if (filter.overdueOnly)    params = params.set('overdueOnly', 'true');
     if (filter.search)    params = params.set('search',    filter.search);
     return this.http.get<PageResponse<InvoiceListItem>>(`${this.base}/invoices`, { params });
   }

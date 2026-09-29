@@ -43,9 +43,10 @@
   </section>
 
   <!-- Recherche + filtre + bascule de vue.
-       Le panneau de filtres ne porte qu'UN champ, et c'est voulu : `GET
-       /suppliers/search` ne prend que `paysId`, `q` et `status`, et un filtre qui ne
-       part pas au serveur est un contrôle qui ne fait rien (§10b). Le champ « statut »
+       Chaque champ du panneau part au serveur (`status`, `typeId`, `hasIban`, `hasTva`
+       sur `GET /suppliers/search`) — un filtre qui ne part pas au serveur est un
+       contrôle qui ne fait rien (§10b). Type / IBAN / TVA filtrent aussi les tuiles.
+       Le champ « statut »
        est ce qui rend un fournisseur désactivé de nouveau atteignable — il ne l'était
        par aucun écran auparavant. -->
   <daf-search-toolbar

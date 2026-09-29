@@ -104,6 +104,41 @@ const SETTLED_INVOICE_STATUTS = new Set(['PAID', 'CANCELLED', 'CREDIT_NOTED']);
 /** Statuts où la facture accepte encore une modification (cf. son propre écran). */
 const EDITABLE_INVOICE_STATUTS = new Set(['DRAFT', 'RETURNED']);
 
+/** Jour calendaire local → 'yyyy-MM-dd' — jamais toISOString() (UTC, décale d'un jour). */
+function toIsoDay(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Un jour ('yyyy-MM-dd…' ou date-heure ISO) dans la plage du filtre `daterange` (1 date =
+ *  un seul jour). Sans plage : tout passe ; plage mais pas de date : exclu. */
+function inDayRange(value: string | null | undefined, range: Date[] | null): boolean {
+  if (!range || !range.length) return true;
+  if (!value) return false;
+  // Une date seule ('2026-09-01') est déjà un jour local ; une date-heure est ramenée au
+  // jour local du lecteur.
+  const day  = value.length <= 10 ? value : toIsoDay(new Date(value));
+  const from = toIsoDay(range[0]);
+  const to   = toIsoDay(range[1] ?? range[0]);
+  return day >= from && day <= to;
+}
+
+/** Borne de montant saisie en texte ('1 500,50' accepté) → nombre, ou null si vide/invalide. */
+function parseAmount(raw: string): number | null {
+  const s = raw.replace(/\s/g, '').replace(',', '.');
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Montant dans [min, max] ; une borne nulle est ignorée, un montant absent est exclu dès
+ *  qu'une borne est posée. */
+function inAmountRange(amount: number | null | undefined, min: number | null, max: number | null): boolean {
+  if (min == null && max == null) return true;
+  if (amount == null) return false;
+  return (min == null || amount >= min) && (max == null || amount <= max);
+}
+
 const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
   high: 'danger', medium: 'warning', standard: 'neutral',
 };
@@ -596,10 +631,28 @@ export class AffaireDetailComponent implements OnInit {
   // Filtres de tableaux
   tsSearch      = signal('');
   tsStatut      = signal('');
+  /** Jour ou plage [début, fin] de création du TS (`createdAt`), ou null. */
+  tsCreatedRange = signal<Date[] | null>(null);
+  /** Montant estimé minimum, saisi en texte ('' = pas de borne). */
+  tsAmountMin   = signal('');
+  /** Montant estimé maximum, saisi en texte ('' = pas de borne). */
+  tsAmountMax   = signal('');
   invoiceSearch = signal('');
   invoiceStatut = signal('');
+  /** Type de facture (`invoiceType`), '' = tous. */
+  invoiceType   = signal('');
+  /** Jour ou plage [début, fin] d'émission (`dateEmission`), ou null. */
+  invoiceEmittedRange = signal<Date[] | null>(null);
+  /** Échéance dépassée et facture non soldée (hors SETTLED_INVOICE_STATUTS). */
+  invoiceOverdueOnly = signal(false);
   paymentSearch = signal('');
   paymentMethod = signal('');
+  /** Jour ou plage [début, fin] de règlement (`paymentDate`), ou null. */
+  paymentDateRange = signal<Date[] | null>(null);
+  /** Montant réglé minimum, saisi en texte ('' = pas de borne). */
+  paymentAmountMin = signal('');
+  /** Montant réglé maximum, saisi en texte ('' = pas de borne). */
+  paymentAmountMax = signal('');
 
   get numId(): number { return Number(this.id()); }
 
@@ -1729,35 +1782,177 @@ export class AffaireDetailComponent implements OnInit {
   readonly invoiceToolbarActions = computed(() => this.exportAction(this.filteredInvoices().length === 0));
   readonly paymentToolbarActions = computed(() => this.exportAction(this.filteredPayments().length === 0));
 
-  readonly tsFilterFields = computed<FilterField[]>(() => [{
-    name:    'statut',
-    label:   this.translate.instant('AFFAIRES.DETAIL.INVOICES.STATUS'),
-    type:    'select',
-    options: [...new Set(this.tsList().map(t => t.statut))].sort()
-      .map(value => ({ value, label: this.enumText('TS_STATUT', value) })),
-  }]);
+  readonly tsFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [{
+      name:    'statut',
+      label:   t('AFFAIRES.DETAIL.INVOICES.STATUS'),
+      type:    'select',
+      options: [...new Set(this.tsList().map(ts => ts.statut))].sort()
+        .map(value => ({ value, label: this.enumText('TS_STATUT', value) })),
+    }, {
+      name:  'createdRange',
+      label: t('AFFAIRES.DETAIL.TOOLBAR.CREATED_PERIOD'),
+      type:  'daterange',
+    }, {
+      name:        'amountMin',
+      label:       t('AFFAIRES.DETAIL.TOOLBAR.AMOUNT_MIN'),
+      type:        'text',
+      placeholder: t('AFFAIRES.DETAIL.TOOLBAR.AMOUNT_PH'),
+    }, {
+      name:        'amountMax',
+      label:       t('AFFAIRES.DETAIL.TOOLBAR.AMOUNT_MAX'),
+      type:        'text',
+      placeholder: t('AFFAIRES.DETAIL.TOOLBAR.AMOUNT_PH'),
+    }];
+  });
 
-  readonly invoiceFilterFields = computed<FilterField[]>(() => [{
-    name:    'statut',
-    label:   this.translate.instant('AFFAIRES.DETAIL.INVOICES.STATUS'),
-    type:    'select',
-    options: [...new Set(this.invoices().map(i => i.statut).filter((s): s is string => !!s))]
-      .sort().map(value => ({ value, label: this.enumText('INVOICE_STATUT', value) })),
-  }]);
+  readonly invoiceFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [{
+      name:    'statut',
+      label:   t('AFFAIRES.DETAIL.INVOICES.STATUS'),
+      type:    'select',
+      options: [...new Set(this.invoices().map(i => i.statut).filter((s): s is string => !!s))]
+        .sort().map(value => ({ value, label: this.enumText('INVOICE_STATUT', value) })),
+    }, {
+      name:    'type',
+      label:   t('AFFAIRES.DETAIL.INVOICES.TYPE'),
+      type:    'select',
+      options: [...new Set(this.invoices().map(i => i.invoiceType).filter((s): s is string => !!s))]
+        .sort().map(value => ({ value, label: this.enumText('INVOICE_TYPE', value) })),
+    }, {
+      name:  'emittedRange',
+      label: t('AFFAIRES.DETAIL.TOOLBAR.EMITTED_PERIOD'),
+      type:  'daterange',
+    }, {
+      name:  'overdueOnly',
+      label: t('AFFAIRES.DETAIL.TOOLBAR.OVERDUE_ONLY'),
+      type:  'checkbox',
+    }];
+  });
 
-  readonly paymentFilterFields = computed<FilterField[]>(() => [{
-    name:    'method',
-    label:   this.translate.instant('AFFAIRES.DETAIL.PAYMENTS.METHOD'),
-    type:    'select',
-    options: [...new Set(this.payments().map(p => p.paymentMethod).filter((m): m is string => !!m))]
-      .sort().map(value => ({ value, label: this.enumText('PAYMENT_METHOD', value) })),
-  }]);
+  readonly paymentFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [{
+      name:    'method',
+      label:   t('AFFAIRES.DETAIL.PAYMENTS.METHOD'),
+      type:    'select',
+      options: [...new Set(this.payments().map(p => p.paymentMethod).filter((m): m is string => !!m))]
+        .sort().map(value => ({ value, label: this.enumText('PAYMENT_METHOD', value) })),
+    }, {
+      name:  'dateRange',
+      label: t('AFFAIRES.DETAIL.TOOLBAR.PAYMENT_PERIOD'),
+      type:  'daterange',
+    }, {
+      name:        'amountMin',
+      label:       t('AFFAIRES.DETAIL.TOOLBAR.AMOUNT_MIN'),
+      type:        'text',
+      placeholder: t('AFFAIRES.DETAIL.TOOLBAR.AMOUNT_PH'),
+    }, {
+      name:        'amountMax',
+      label:       t('AFFAIRES.DETAIL.TOOLBAR.AMOUNT_MAX'),
+      type:        'text',
+      placeholder: t('AFFAIRES.DETAIL.TOOLBAR.AMOUNT_PH'),
+    }];
+  });
+
+  // Un filterConfig par panneau : `daf-filter` ne seed son état qu'à la création, et chaque
+  // barre est recréée au changement d'onglet (`@if`) — sans initialValues, revenir sur un
+  // onglet montrait un panneau vide alors que le filtre restait appliqué. Forme interne du
+  // panneau : select → string[], checkbox → boolean, daterange → Date[] | null.
+  readonly tsFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    ...this.filterConfig(),
+    initialValues: {
+      statut:       this.tsStatut() ? [this.tsStatut()] : [],
+      createdRange: this.tsCreatedRange(),
+      amountMin:    this.tsAmountMin(),
+      amountMax:    this.tsAmountMax(),
+    },
+  }));
+
+  readonly invoiceFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    ...this.filterConfig(),
+    initialValues: {
+      statut:       this.invoiceStatut() ? [this.invoiceStatut()] : [],
+      type:         this.invoiceType()   ? [this.invoiceType()]   : [],
+      emittedRange: this.invoiceEmittedRange(),
+      overdueOnly:  this.invoiceOverdueOnly(),
+    },
+  }));
+
+  readonly paymentFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    ...this.filterConfig(),
+    initialValues: {
+      method:    this.paymentMethod() ? [this.paymentMethod()] : [],
+      dateRange: this.paymentDateRange(),
+      amountMin: this.paymentAmountMin(),
+      amountMax: this.paymentAmountMax(),
+    },
+  }));
 
   /** `daf-filter` renders a select as `string[]` internally and emits a scalar — normalise both. */
   asFilterValue(result: FilterResult, key: string): string {
     const v = result[key];
     if (Array.isArray(v)) return (v[0] as string) ?? '';
     return typeof v === 'string' ? v : '';
+  }
+
+  /** `daterange` émet Date[] (1 ou 2 dates) ; tout le reste → null. */
+  private asDateRange(result: FilterResult, key: string): Date[] | null {
+    const v = result[key];
+    return Array.isArray(v) && v.length ? v as Date[] : null;
+  }
+
+  private asText(result: FilterResult, key: string): string {
+    const v = result[key];
+    return typeof v === 'string' ? v : '';
+  }
+
+  // Listes chargées en entier (pas de pagination) : filtrage client, aucune page à remettre à 0.
+  onTsFilterApply(result: FilterResult): void {
+    this.tsStatut.set(this.asFilterValue(result, 'statut'));
+    this.tsCreatedRange.set(this.asDateRange(result, 'createdRange'));
+    this.tsAmountMin.set(this.asText(result, 'amountMin'));
+    this.tsAmountMax.set(this.asText(result, 'amountMax'));
+  }
+
+  onTsFilterReset(): void {
+    this.tsStatut.set('');
+    this.tsCreatedRange.set(null);
+    this.tsAmountMin.set('');
+    this.tsAmountMax.set('');
+  }
+
+  onInvoiceFilterApply(result: FilterResult): void {
+    this.invoiceStatut.set(this.asFilterValue(result, 'statut'));
+    this.invoiceType.set(this.asFilterValue(result, 'type'));
+    this.invoiceEmittedRange.set(this.asDateRange(result, 'emittedRange'));
+    this.invoiceOverdueOnly.set(result['overdueOnly'] === true);
+  }
+
+  onInvoiceFilterReset(): void {
+    this.invoiceStatut.set('');
+    this.invoiceType.set('');
+    this.invoiceEmittedRange.set(null);
+    this.invoiceOverdueOnly.set(false);
+  }
+
+  onPaymentFilterApply(result: FilterResult): void {
+    this.paymentMethod.set(this.asFilterValue(result, 'method'));
+    this.paymentDateRange.set(this.asDateRange(result, 'dateRange'));
+    this.paymentAmountMin.set(this.asText(result, 'amountMin'));
+    this.paymentAmountMax.set(this.asText(result, 'amountMax'));
+  }
+
+  onPaymentFilterReset(): void {
+    this.paymentMethod.set('');
+    this.paymentDateRange.set(null);
+    this.paymentAmountMin.set('');
+    this.paymentAmountMax.set('');
   }
 
   onTsToolbarAction(id: string): void      { if (id === 'export') this.exportTs(); }
@@ -1768,22 +1963,37 @@ export class AffaireDetailComponent implements OnInit {
 
   readonly filteredTs = computed(() => {
     const q = this.tsSearch().trim().toLowerCase(), statut = this.tsStatut();
+    const range = this.tsCreatedRange();
+    const min = parseAmount(this.tsAmountMin()), max = parseAmount(this.tsAmountMax());
     return this.tsList().filter(t =>
       (!statut || t.statut === statut) &&
+      inDayRange(t.createdAt, range) &&
+      inAmountRange(t.montantEstime, min, max) &&
       (!q || `${t.referenceTs} ${t.intitule}`.toLowerCase().includes(q)));
   });
 
   readonly filteredInvoices = computed(() => {
     const q = this.invoiceSearch().trim().toLowerCase(), statut = this.invoiceStatut();
+    const type = this.invoiceType(), range = this.invoiceEmittedRange();
+    const overdueOnly = this.invoiceOverdueOnly(), today = toIsoDay(new Date());
     return this.invoices().filter(i =>
       (!statut || i.statut === statut) &&
+      (!type || i.invoiceType === type) &&
+      inDayRange(i.dateEmission, range) &&
+      // Même règle que les échéances de la vue d'ensemble : échéance passée, pas soldée.
+      (!overdueOnly || (!!i.dateEcheance && i.dateEcheance.slice(0, 10) < today
+        && !(i.statut && SETTLED_INVOICE_STATUTS.has(i.statut)))) &&
       (!q || `${i.invoiceNumber ?? ''} ${i.invoiceType ?? ''}`.toLowerCase().includes(q)));
   });
 
   readonly filteredPayments = computed(() => {
     const q = this.paymentSearch().trim().toLowerCase(), method = this.paymentMethod();
+    const range = this.paymentDateRange();
+    const min = parseAmount(this.paymentAmountMin()), max = parseAmount(this.paymentAmountMax());
     return this.payments().filter(p =>
       (!method || p.paymentMethod === method) &&
+      inDayRange(p.paymentDate, range) &&
+      inAmountRange(p.amountLocal, min, max) &&
       (!q || `${p.invoiceNumber ?? ''} ${p.bankReference ?? ''}`.toLowerCase().includes(q)));
   });
 

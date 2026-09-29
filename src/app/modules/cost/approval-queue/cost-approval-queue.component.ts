@@ -12,7 +12,7 @@ import { UserStore } from '../../../core/user.store';
 import { HiringCostApprovalDto, HiringCostApprovalService } from '../hiring-cost-approval.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { CostLineDto } from '../cost.model';
-import { formatDate, urgencyKey } from '../cost-display';
+import { approvalLevelKey, formatDate, urgencyKey } from '../cost-display';
 import { ApprovalItem, ApprovalKind, itemUrgency, kindKey } from './approval-item';
 import { ApprovalCardsSectionComponent, ApprovalDecision } from './approval-cards-section.component';
 import { ApprovalTableSectionComponent } from './approval-table-section.component';
@@ -60,6 +60,20 @@ export class CostApprovalQueueComponent implements OnInit {
   searchTerm     = signal('');
   filterKind     = signal<'' | ApprovalKind>('');
   filterPriority = signal('');
+  /** Approval level (`L1`–`L4`) — cost lines only, hiring requests carry none. */
+  filterLevel     = signal('');
+  /** COST_CATEGORY id (as a string) — cost lines only. */
+  filterCategory  = signal('');
+  /** Date shown on the card (transaction date for a cost, submission date for a hiring request). */
+  filterDateRange = signal<Date[] | null>(null);
+  /** COST_SUB_CATEGORY id (as a string) — cost lines only. */
+  filterSubCategory = signal('');
+  /** Original currency code (cost line `currency`, hiring snapshot `localCurrency`), '' = all. */
+  filterCurrency  = signal('');
+  /** Minimum of the amount shown on the card, typed as text ('1 500,50' accepted, '' = no bound). */
+  filterAmountMin = signal('');
+  /** Maximum of the amount shown on the card, typed as text ('' = no bound). */
+  filterAmountMax = signal('');
   viewMode       = signal<ViewMode>('grid');
 
   readonly canApproveCost = computed(() => this.userStore.hasPermission('FACT_APPROVE_COST_L1'));
@@ -132,19 +146,87 @@ export class CostApprovalQueueComponent implements OnInit {
     return [...costItems, ...hiringItems];
   });
 
-  /** Search + the two filters, all client-side: each queue arrives whole in one call. */
+  /** Search + the filters, all client-side: each queue arrives whole in one call. */
   readonly visibleItems = computed<ApprovalItem[]>(() => {
-    const q    = this.searchTerm().toLowerCase().trim();
-    const kind = this.filterKind();
-    const prio = this.filterPriority();
+    const q     = this.searchTerm().toLowerCase().trim();
+    const kind  = this.filterKind();
+    const prio  = this.filterPriority();
+    const level = this.filterLevel();
+    const cat   = this.filterCategory();
+    const range = this.filterDateRange();
+    const from  = range?.length ? toIsoDay(range[0]) : null;
+    const to    = range?.length ? toIsoDay(range[range.length - 1]) : null;
+    const sub   = this.filterSubCategory();
+    const cur   = this.filterCurrency();
+    const min   = parseAmount(this.filterAmountMin());
+    const max   = parseAmount(this.filterAmountMax());
     return this.items().filter(item => {
       if (kind && item.kind !== kind)     return false;
       if (prio && item.urgency !== prio)  return false;
+      if (level && item.level !== level)  return false;
+      if (cat && item.cost?.costCategoryId !== +cat) return false;
+      if (sub && item.cost?.costSubCategoryId !== +sub) return false;
+      if (cur && this.itemCurrency(item) !== cur) return false;
+      if (min != null || max != null) {
+        const amount = this.itemAmount(item);
+        if (amount == null) return false;
+        if (min != null && amount < min) return false;
+        if (max != null && amount > max) return false;
+      }
+      if (from && to) {
+        const day = (item.kind === 'cost' ? item.cost?.transactionDate : item.hiring?.submittedAt)?.slice(0, 10);
+        if (!day || day < from || day > to) return false;
+      }
       if (!q) return true;
       return [item.title, item.reference, item.amountLabel]
         .some(v => (v ?? '').toLowerCase().includes(q));
     });
   });
+
+  /** Levels present on the loaded cost lines — every option matches something. */
+  private readonly costLevels = computed(() =>
+    [...new Set(this.costs().map(c => c.approvalLevelRequired).filter((l): l is string => !!l))].sort());
+
+  /** Categories present on the loaded cost lines, sorted by label. */
+  private readonly costCategories = computed(() => {
+    const seen = new Map<number, string>();
+    for (const c of this.costs()) {
+      if (c.costCategoryId != null && !seen.has(c.costCategoryId)) {
+        seen.set(c.costCategoryId, c.costCategoryLabel ?? String(c.costCategoryId));
+      }
+    }
+    return [...seen].map(([value, label]) => ({ value: String(value), label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  });
+
+  /** Sub-categories present on the loaded cost lines, sorted by label. */
+  private readonly costSubCategories = computed(() => {
+    const seen = new Map<number, string>();
+    for (const c of this.costs()) {
+      if (c.costSubCategoryId != null && !seen.has(c.costSubCategoryId)) {
+        seen.set(c.costSubCategoryId, c.costSubCategoryLabel ?? String(c.costSubCategoryId));
+      }
+    }
+    return [...seen].map(([value, label]) => ({ value: String(value), label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  });
+
+  /** Currencies present on the loaded items (both queues), sorted. */
+  private readonly itemCurrencies = computed(() =>
+    [...new Set(this.items().map(i => this.itemCurrency(i)).filter((c): c is string => !!c))].sort());
+
+  /** Original currency of an item — same fallback as its amount label. */
+  private itemCurrency(item: ApprovalItem): string | null {
+    if (item.kind === 'cost') return item.cost?.currency ?? null;
+    return this.hiringSvc.parseSnapshot(item.hiring!.simulationSnapshot).localCurrency ?? 'TND';
+  }
+
+  /** The number behind `amountLabel`: EUR net (else local net) for a cost, annual loaded cost for a hiring request. */
+  private itemAmount(item: ApprovalItem): number | null {
+    if (item.kind === 'cost') return item.cost?.netAmountEur ?? item.cost?.netAmountLocal ?? null;
+    const loaded = this.hiringSvc.parseSnapshot(item.hiring!.simulationSnapshot).loadedCost;
+    return loaded != null ? loaded * 12 : null;
+  }
 
   readonly pendingCount = computed(() => this.items().length);
   readonly urgentCount  = computed(() => this.items().filter(i => i.urgency === 'urgent').length);
@@ -209,6 +291,53 @@ export class CostApprovalQueueComponent implements OnInit {
           { value: 'low',    label: t('COST.URGENCY.LOW')    },
         ],
       },
+      {
+        name: 'level',
+        label: t('COST.DETAIL.INFO.APPROVAL_LEVEL'),
+        type: 'select',
+        placeholder: t('COST.APPROVAL_QUEUE.FILTER_ALL'),
+        options: this.costLevels().map(l => ({ value: l, label: t(approvalLevelKey(l)!) })),
+      },
+      {
+        name: 'category',
+        label: t('COST.LINES.CATEGORY_FILTER_LABEL'),
+        type: 'select',
+        placeholder: t('COST.LINES.CATEGORY_FILTER_PLACEHOLDER'),
+        searchable: true,
+        options: this.costCategories(),
+      },
+      {
+        name: 'dateRange',
+        label: t('COST.LINES.DATE_RANGE_FILTER_LABEL'),
+        type: 'daterange',
+      },
+      {
+        name: 'subCategory',
+        label: t('COST.FORM.SUB_CATEGORY_LABEL'),
+        type: 'select',
+        placeholder: t('COST.APPROVAL_QUEUE.FILTER_ALL'),
+        searchable: true,
+        options: this.costSubCategories(),
+      },
+      {
+        name: 'currency',
+        label: t('COST.FORM.CURRENCY_LABEL'),
+        type: 'select',
+        placeholder: t('COST.APPROVAL_QUEUE.FILTER_ALL'),
+        options: this.itemCurrencies().map(c => ({ value: c, label: c })),
+      },
+      {
+        name: 'amountMin',
+        label: t('COST.APPROVAL_QUEUE.FILTER_AMOUNT_MIN'),
+        type: 'text',
+        placeholder: t('COST.APPROVAL_QUEUE.FILTER_AMOUNT_PH'),
+      },
+      {
+        name: 'amountMax',
+        label: t('COST.APPROVAL_QUEUE.FILTER_AMOUNT_MAX'),
+        type: 'text',
+        placeholder: t('COST.APPROVAL_QUEUE.FILTER_AMOUNT_PH'),
+      },
     ];
   });
 
@@ -223,8 +352,15 @@ export class CostApprovalQueueComponent implements OnInit {
       triggerLabel: t('COST.APPROVAL_QUEUE.FILTERS'),
       // Seeded once, in the panel's internal shape — a select is a string[] (§10b).
       initialValues: {
-        kind:     this.filterKind() ? [this.filterKind()] : [],
-        priority: this.filterPriority() ? [this.filterPriority()] : [],
+        kind:      this.filterKind()     ? [this.filterKind()]     : [],
+        priority:  this.filterPriority() ? [this.filterPriority()] : [],
+        level:     this.filterLevel()    ? [this.filterLevel()]    : [],
+        category:  this.filterCategory() ? [this.filterCategory()] : [],
+        dateRange: this.filterDateRange(),
+        subCategory: this.filterSubCategory() ? [this.filterSubCategory()] : [],
+        currency:    this.filterCurrency()    ? [this.filterCurrency()]    : [],
+        amountMin:   this.filterAmountMin(),
+        amountMax:   this.filterAmountMax(),
       },
     };
   });
@@ -308,6 +444,14 @@ export class CostApprovalQueueComponent implements OnInit {
   applyFilters(result: FilterResult): void {
     this.filterKind.set(((result['kind'] as string | null) ?? '') as '' | ApprovalKind);
     this.filterPriority.set((result['priority'] as string | null) ?? '');
+    this.filterLevel.set((result['level'] as string | null) ?? '');
+    this.filterCategory.set((result['category'] as string | null) ?? '');
+    const range = result['dateRange'] as Date[] | null;
+    this.filterDateRange.set(range?.length ? range : null);
+    this.filterSubCategory.set((result['subCategory'] as string | null) ?? '');
+    this.filterCurrency.set((result['currency'] as string | null) ?? '');
+    this.filterAmountMin.set(typeof result['amountMin'] === 'string' ? result['amountMin'] : '');
+    this.filterAmountMax.set(typeof result['amountMax'] === 'string' ? result['amountMax'] : '');
   }
 
   navigateToNew(): void {
@@ -444,4 +588,19 @@ export class CostApprovalQueueComponent implements OnInit {
     const snap = this.hiringSvc.parseSnapshot(item.simulationSnapshot);
     return this.currency.transform(snap.loadedCost ?? null, snap.localCurrency ?? 'TND');
   }
+}
+
+/** Local calendar day as `YYYY-MM-DD` — never toISOString(), which shifts to UTC. */
+function toIsoDay(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Amount bound typed as text ('1 500,50' accepted) → number, or null when empty/invalid. */
+function parseAmount(raw: string): number | null {
+  // JS `\s` also covers the non-breaking/narrow spaces fr-FR number formatting inserts.
+  const s = raw.replace(/\s/g, '').replace(',', '.');
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
 }

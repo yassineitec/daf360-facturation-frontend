@@ -15,6 +15,13 @@ import { StTableSectionComponent } from './st-table-section.component';
 type ViewMode = 'grid' | 'list';
 type StatusFilter = '' | 'active' | 'inactive';
 
+/** Jour local 'YYYY-MM-DD' — jamais `toISOString()`, qui décale d'un jour en UTC. */
+function toIsoDay(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 @Component({
   selector: 'app-sous-traitants-tab',
   imports: [
@@ -42,7 +49,14 @@ export class SousTraitantsTabComponent {
   error   = signal<string | null>(null);
 
   searchText   = signal('');
+  /** Actif / inactif — '' = tous. */
   filterStatus = signal<StatusFilter>('');
+  /** Pays saisi sur la fiche (`country`, texte libre) — '' = tous. */
+  filterCountry = signal('');
+  /** Date de création : 1 date = un seul jour, 2 dates = plage incluse. */
+  filterCreated = signal<Date[] | null>(null);
+  /** Ne garder que les fiches sans n° fiscal — à compléter avant tout ordre ou paiement. */
+  filterNoTaxId = signal(false);
   viewMode     = signal<ViewMode>('grid');
 
   readonly canManage = computed(() => this.userStore.hasPermission('FACT_MANAGE_ST'));
@@ -56,10 +70,23 @@ export class SousTraitantsTabComponent {
    */
   readonly visibleList = computed<SousTraitantDto[]>(() => {
     const q = this.searchText().trim().toLowerCase();
-    const status = this.filterStatus();
+    const status  = this.filterStatus();
+    const country = this.filterCountry();
+    const created = this.filterCreated();
+    const from    = created?.length ? toIsoDay(created[0]) : null;
+    const to      = created?.length ? toIsoDay(created[1] ?? created[0]) : null;
+    const noTaxId = this.filterNoTaxId();
     return this.list().filter(st => {
       if (status === 'active'   && !st.isActive) return false;
       if (status === 'inactive' &&  st.isActive) return false;
+      if (country && (st.country ?? '').trim() !== country) return false;
+      if (from && to) {
+        // `createdAt` est un LocalDateTime sans fuseau : ses 10 premiers caractères
+        // sont le jour tel que saisi, comparable en chaîne ISO.
+        const day = (st.createdAt ?? '').slice(0, 10);
+        if (!day || day < from || day > to) return false;
+      }
+      if (noTaxId && (st.taxId ?? '').trim()) return false;
       if (!q) return true;
       return [st.name, st.contactEmail, st.contactPhone, st.taxId, st.country]
         .some(v => (v ?? '').toLowerCase().includes(q));
@@ -86,19 +113,45 @@ export class SousTraitantsTabComponent {
     ];
   });
 
+  /** Pays présents dans la liste chargée (texte libre, dédoublonné), triés par libellé. */
+  private readonly countryOptions = computed(() =>
+    [...new Set(this.list().map(st => (st.country ?? '').trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b))
+      .map(c => ({ value: c, label: c })));
+
   readonly filterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    return [{
-      name: 'status',
-      label: t('SUBCONTRACTING.ST.TABLE.STATUS'),
-      type: 'select',
-      placeholder: t('SUBCONTRACTING.ST.FILTER_ALL'),
-      options: [
-        { value: 'active',   label: t('SUBCONTRACTING.ST.ACTIVE')   },
-        { value: 'inactive', label: t('SUBCONTRACTING.ST.INACTIVE') },
-      ],
-    }];
+    return [
+      {
+        name: 'status',
+        label: t('SUBCONTRACTING.ST.TABLE.STATUS'),
+        type: 'select',
+        placeholder: t('SUBCONTRACTING.ST.FILTER_ALL'),
+        options: [
+          { value: 'active',   label: t('SUBCONTRACTING.ST.ACTIVE')   },
+          { value: 'inactive', label: t('SUBCONTRACTING.ST.INACTIVE') },
+        ],
+      },
+      {
+        name: 'country',
+        label: t('SUBCONTRACTING.ST.TABLE.COUNTRY'),
+        type: 'select',
+        placeholder: t('SUBCONTRACTING.ST.FILTER_ALL'),
+        searchable: true,
+        options: this.countryOptions(),
+      },
+      {
+        name: 'created',
+        label: t('SUBCONTRACTING.ST.FILTER_CREATED'),
+        type: 'daterange',
+      },
+      {
+        name: 'noTaxId',
+        label: t('SUBCONTRACTING.ST.FILTER_NO_TAX_ID'),
+        type: 'checkbox',
+      },
+    ];
   });
 
   readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
@@ -111,7 +164,12 @@ export class SousTraitantsTabComponent {
       resetLabel:   t('SUBCONTRACTING.ST.FILTER_RESET'),
       triggerLabel: t('SUBCONTRACTING.ST.FILTER_TITLE'),
       // Seeded once, in the panel's internal shape — a select is a string[] (§10b).
-      initialValues: { status: this.filterStatus() ? [this.filterStatus()] : [] },
+      initialValues: {
+        status:  this.filterStatus()  ? [this.filterStatus()]  : [],
+        country: this.filterCountry() ? [this.filterCountry()] : [],
+        created: this.filterCreated(),
+        noTaxId: this.filterNoTaxId(),
+      },
     };
   });
 
@@ -146,6 +204,10 @@ export class SousTraitantsTabComponent {
 
   applyFilters(result: FilterResult): void {
     this.filterStatus.set(((result['status'] as string | null) ?? '') as StatusFilter);
+    this.filterCountry.set((result['country'] as string | null) ?? '');
+    const created = result['created'];
+    this.filterCreated.set(Array.isArray(created) && created.length ? created as Date[] : null);
+    this.filterNoTaxId.set(result['noTaxId'] === true);
   }
 
   // ── Create / edit ───────────────────────────────────────────────────────────

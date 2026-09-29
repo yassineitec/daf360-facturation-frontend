@@ -265,6 +265,13 @@ export interface AffaireFilter {
   statut?:   string | null;
   clientId?: number | null;
   search?:   string | null;
+  /** Manager — `affaire_responsables` ou, en repli, `responsable_user_id`. */
+  responsableId?: number | null;
+  /** Mode de facturation (`FORFAIT` | `REGIE` | `LIVRABLE`). */
+  billingMode?:   string | null;
+  /** Date de début de l'affaire, bornes incluses, jours ISO `yyyy-MM-dd`. */
+  dateDebutFrom?: string | null;
+  dateDebutTo?:   string | null;
   page?:     number;
   size?:     number;
 }

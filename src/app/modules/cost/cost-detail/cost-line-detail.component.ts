@@ -139,6 +139,12 @@ export class CostLineDetailComponent implements OnInit {
   /** '' (no filter), or one of the `ledgerFilterFields()` option values below. Reset
    *  on navigation, same as `ledgerZoomed` -- a display preference, not data. */
   ledgerType = signal('');
+  /** Picked period on the row's date (one day or [from, to]); null = no filter. */
+  ledgerPeriod = signal<Date[] | null>(null);
+  /** Originating cost line id as a string ('' = every line of the supplier). */
+  ledgerCostLine = signal('');
+  /** Minimum Montant TTC (grossAmountLocal), as typed; '' = no minimum. */
+  ledgerAmountMin = signal('');
 
   /** 'supplier'/'unassigned' modes only: the reused Tab-1 line list, and the matching
    *  row from the by-supplier aggregation (authoritative count/total for the header and
@@ -404,26 +410,72 @@ export class CostLineDetailComponent implements OnInit {
   readonly ledgerFilterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    return [{
-      name:    'type',
-      label:   t('COST.DETAIL.LEDGER.FILTER_TYPE'),
-      type:    'select',
-      options: [
-        { value: 'CREDIT',  label: t('COST.DETAIL.LEDGER.TYPE_CREDIT') },
-        { value: 'DEBIT',   label: t('COST.DETAIL.LEDGER.TYPE_DEBIT') },
-        { value: 'SETTLED', label: t('COST.DETAIL.LEDGER.TYPE_SETTLED') },
-      ],
-    }];
+    return [
+      {
+        name:    'type',
+        label:   t('COST.DETAIL.LEDGER.FILTER_TYPE'),
+        type:    'select',
+        options: [
+          { value: 'CREDIT',  label: t('COST.DETAIL.LEDGER.TYPE_CREDIT') },
+          { value: 'DEBIT',   label: t('COST.DETAIL.LEDGER.TYPE_DEBIT') },
+          { value: 'SETTLED', label: t('COST.DETAIL.LEDGER.TYPE_SETTLED') },
+        ],
+      },
+      {
+        name:  'period',
+        label: t('COST.DETAIL.LEDGER.FILTER_PERIOD'),
+        type:  'daterange',
+      },
+      {
+        name:       'costLine',
+        label:      t('COST.DETAIL.LEDGER.FILTER_COST_LINE'),
+        type:       'select',
+        searchable: true,
+        options:    this.ledgerCostLineOptions(),
+      },
+      {
+        name:        'amountMin',
+        label:       t('COST.LINES.AMOUNT_MIN_FILTER_LABEL'),
+        type:        'text',
+        placeholder: t('COST.LINES.AMOUNT_MIN_FILTER_PLACEHOLDER'),
+      },
+    ];
+  });
+
+  /** The cost lines present in the loaded ledger — every option matches a row. */
+  private readonly ledgerCostLineOptions = computed(() => {
+    const seen = new Map<number, string>();
+    for (const r of this.ledger()?.rows ?? []) {
+      if (!seen.has(r.costLineId)) seen.set(r.costLineId, r.label || `#${r.costLineId}`);
+    }
+    return [...seen].map(([value, label]) => ({ value: String(value), label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   });
 
   onLedgerFilter(result: FilterResult): void {
-    const v = result['type'];
-    this.ledgerType.set(Array.isArray(v) ? (v[0] as string) ?? '' : (v as string) ?? '');
+    const one = (v: unknown): string => Array.isArray(v) ? (v[0] as string) ?? '' : (v as string) ?? '';
+    const period = result['period'];
+    this.ledgerType.set(one(result['type']));
+    this.ledgerPeriod.set(Array.isArray(period) && period.length ? period as Date[] : null);
+    this.ledgerCostLine.set(one(result['costLine']));
+    this.ledgerAmountMin.set(one(result['amountMin']).trim());
   }
 
+  /** Client-side: the whole ledger arrives in one call (no pagination on this endpoint). */
   readonly filteredLedgerRawRows = computed<SupplierLedgerRowDto[]>(() => {
     const type = this.ledgerType();
+    const period = this.ledgerPeriod();
+    const from = period?.length ? toIsoDay(period[0]) : null;
+    const to   = period?.length ? toIsoDay(period[period.length - 1]) : null;
+    const costLine = this.ledgerCostLine();
+    const min = this.ledgerAmountMin() ? Number(this.ledgerAmountMin().replace(',', '.')) : null;
     return (this.ledger()?.rows ?? []).filter(r => {
+      if (from && to) {
+        const day = (r.date ?? '').slice(0, 10);
+        if (!day || day < from || day > to) return false;
+      }
+      if (costLine && String(r.costLineId) !== costLine) return false;
+      if (min != null && !isNaN(min) && (r.grossAmountLocal == null || r.grossAmountLocal < min)) return false;
       if (!type) return true;
       if (type === 'CREDIT')  return r.credit != null;
       if (type === 'DEBIT')   return r.debit  != null;
@@ -713,4 +765,10 @@ export class CostLineDetailComponent implements OnInit {
       ],
     });
   }
+}
+
+/** Local calendar day as `YYYY-MM-DD` — never toISOString(), which shifts to UTC. */
+function toIsoDay(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }

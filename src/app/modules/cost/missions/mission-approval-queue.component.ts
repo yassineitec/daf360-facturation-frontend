@@ -74,6 +74,12 @@ export class MissionApprovalQueueComponent implements OnInit {
   readonly searchTerm = signal('');
   readonly scopeFilter = signal<'' | MissionScope>('');
   readonly urgencyFilter = signal<'' | MissionUrgency>('');
+  /** Employee user id as a string ('' = everyone) — the panel's select value. */
+  readonly employeeFilter = signal('');
+  /** Destination country label ('' = any) — only foreign destinations carry one. */
+  readonly countryFilter = signal('');
+  /** Picked period (one day or [from, to]) — keeps missions overlapping it. */
+  readonly periodFilter = signal<Date[] | null>(null);
 
   // ── Decision modal ───────────────────────────────────────────────────────
   readonly selected = signal<MissionApprovalItem | null>(null);
@@ -158,20 +164,41 @@ export class MissionApprovalQueueComponent implements OnInit {
     const term = this.searchTerm().trim().toLowerCase();
     const scope = this.scopeFilter();
     const urgency = this.urgencyFilter();
+    const employee = this.employeeFilter();
+    const country = this.countryFilter();
+    const period = this.periodFilter();
+    const from = period?.length ? toIsoDay(period[0]) : null;
+    const to = period?.length ? toIsoDay(period[period.length - 1]) : null;
     return this.items().filter(i => {
+      const m = i.mission;
       const matchesTerm = !term
         || i.employee.toLowerCase().includes(term)
         || i.title.toLowerCase().includes(term)
         || i.destination.toLowerCase().includes(term);
+      // Overlap on ISO days: the mission runs [startDate, endDate].
+      const matchesPeriod = !from || !to
+        || (m.startDate.slice(0, 10) <= to && (m.endDate ?? m.startDate).slice(0, 10) >= from);
       return matchesTerm
         && (!scope || i.scope === scope)
-        && (!urgency || i.urgency === urgency);
+        && (!urgency || i.urgency === urgency)
+        && (!employee || String(m.employeeUserId) === employee)
+        && (!country || m.countryLabel === country)
+        && matchesPeriod;
     });
   });
 
+  /** The employees present in the queue — the filter only offers choices that match. */
+  private readonly employeeOptions = computed(() => distinctOptions(this.missions(), m =>
+    ({ value: String(m.employeeUserId), label: m.employeeName || `#${m.employeeUserId}` })));
+
+  /** The destination countries present in the queue (foreign destinations carry one). */
+  private readonly countryOptions = computed(() => distinctOptions(this.missions(), m =>
+    m.countryLabel ? { value: m.countryLabel, label: m.countryLabel } : null));
+
   readonly emptyMessage = computed(() => {
     this.translate.currentLang();
-    const filtered = !!this.searchTerm().trim() || !!this.scopeFilter() || !!this.urgencyFilter();
+    const filtered = !!this.searchTerm().trim() || !!this.scopeFilter() || !!this.urgencyFilter()
+      || !!this.employeeFilter() || !!this.countryFilter() || !!this.periodFilter();
     return this.translate.instant(filtered
       ? 'FACTURATION.MISSIONS.EMPTY_FILTERED'
       : 'FACTURATION.MISSIONS.EMPTY');
@@ -228,6 +255,27 @@ export class MissionApprovalQueueComponent implements OnInit {
           { value: 'normal', label: t('FACTURATION.MISSIONS.URGENCY_NORMAL') },
         ],
       },
+      {
+        name: 'employee',
+        label: t('FACTURATION.MISSIONS.COL_EMPLOYEE'),
+        type: 'select',
+        searchable: true,
+        placeholder: t('FACTURATION.MISSIONS.FILTER_ALL'),
+        options: this.employeeOptions(),
+      },
+      {
+        name: 'country',
+        label: t('FACTURATION.MISSIONS.FILTER_COUNTRY'),
+        type: 'select',
+        searchable: true,
+        placeholder: t('FACTURATION.MISSIONS.FILTER_ALL'),
+        options: this.countryOptions(),
+      },
+      {
+        name: 'period',
+        label: t('FACTURATION.MISSIONS.COL_PERIOD'),
+        type: 'daterange',
+      },
     ];
   });
 
@@ -245,6 +293,9 @@ export class MissionApprovalQueueComponent implements OnInit {
       initialValues: {
         scope: this.scopeFilter() ? [this.scopeFilter()] : [],
         urgency: this.urgencyFilter() ? [this.urgencyFilter()] : [],
+        employee: this.employeeFilter() ? [this.employeeFilter()] : [],
+        country: this.countryFilter() ? [this.countryFilter()] : [],
+        period: this.periodFilter(),
       },
     };
   });
@@ -269,6 +320,10 @@ export class MissionApprovalQueueComponent implements OnInit {
     this.scopeFilter.set(scope === 'NATIONAL' || scope === 'INTERNATIONAL' ? scope : '');
     this.urgencyFilter.set(
       urgency === 'urgent' || urgency === 'soon' || urgency === 'normal' ? urgency : '');
+    this.employeeFilter.set(typeof result['employee'] === 'string' ? result['employee'] : '');
+    this.countryFilter.set(typeof result['country'] === 'string' ? result['country'] : '');
+    const period = result['period'];
+    this.periodFilter.set(Array.isArray(period) && period.length ? period as Date[] : null);
   }
 
   setView(mode: string): void {
@@ -419,4 +474,24 @@ function dropEmpty(rows: { label: string; value: string | null | undefined }[]):
   return rows
     .filter(r => r.value !== null && r.value !== undefined && r.value !== '' && r.value !== '—')
     .map(r => ({ label: r.label, value: r.value as string }));
+}
+
+/** One option per distinct value found in the queue, sorted by label. */
+function distinctOptions(
+  missions: MissionDto[],
+  pick: (m: MissionDto) => { value: string; label: string } | null,
+): { value: string; label: string }[] {
+  const byValue = new Map<string, string>();
+  for (const m of missions) {
+    const opt = pick(m);
+    if (opt && !byValue.has(opt.value)) byValue.set(opt.value, opt.label);
+  }
+  return [...byValue].map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** Local calendar day as `YYYY-MM-DD` — never toISOString(), which shifts to UTC. */
+function toIsoDay(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }

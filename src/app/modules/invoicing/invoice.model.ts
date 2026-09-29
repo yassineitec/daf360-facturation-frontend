@@ -180,8 +180,17 @@ export interface InvoiceFilter {
   statut?:    string | null;
   affaireId?: number | null;
   clientId?:  number | null;
+  /** Issue-date bounds (`emittedAt`), `YYYY-MM-DD`, inclusive. */
   from?:      string | null;
   to?:        string | null;
+  /** Due-date bounds, `YYYY-MM-DD`, inclusive. */
+  dueFrom?:   string | null;
+  dueTo?:     string | null;
+  /** TTC amount bounds (`totalLocal`), inclusive. */
+  minTtc?:    number | null;
+  maxTtc?:    number | null;
+  /** Open (EMITTED/SENT/PARTIALLY_PAID), non-credit-note, due before today. */
+  overdueOnly?: boolean;
   search?:    string | null;
   page?:      number;
   size?:      number;

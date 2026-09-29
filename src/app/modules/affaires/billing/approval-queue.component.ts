@@ -36,6 +36,93 @@ const LINE_STATUT_VARIANT: Record<string, BadgeVariant> = {
   ANNULE:        'danger',
 };
 
+/** Filtres d'une section « lignes de facturation » (FORFAIT ou RÉGIE) — un signal par champ. */
+class LineFilterState {
+  /** Statut de la ligne, '' = tous. */
+  readonly statut    = signal('');
+  /** Affaire de la ligne (id en texte), '' = toutes. */
+  readonly affaire   = signal('');
+  /** Période de la ligne ('MM/YYYY'), '' = toutes. */
+  readonly periode   = signal('');
+  /** Montant HT minimum, saisi en texte ('1 500,50' accepté, '' = pas de borne). */
+  readonly amountMin = signal('');
+  /** Montant HT maximum, saisi en texte ('' = pas de borne). */
+  readonly amountMax = signal('');
+
+  /** Relit chaque champ du panneau (un select émet un scalaire, un text une chaîne). */
+  apply(result: FilterResult): void {
+    this.statut.set(selectValue(result, 'statut'));
+    this.affaire.set(selectValue(result, 'affaire'));
+    this.periode.set(selectValue(result, 'periode'));
+    this.amountMin.set(textValue(result, 'amountMin'));
+    this.amountMax.set(textValue(result, 'amountMax'));
+  }
+}
+
+/** `select` : scalaire émis à l'apply (string[] en interne) — normalise les deux formes. */
+function selectValue(result: FilterResult, key: string): string {
+  const v = result[key];
+  if (Array.isArray(v)) return typeof v[0] === 'string' ? v[0] : '';
+  return typeof v === 'string' ? v : '';
+}
+
+function textValue(result: FilterResult, key: string): string {
+  const v = result[key];
+  return typeof v === 'string' ? v : '';
+}
+
+/** Jour calendaire local → 'yyyy-MM-dd' — jamais toISOString() (UTC, décale d'un jour). */
+function toIsoDay(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Jour ('yyyy-MM-dd' ou date-heure ISO) dans la plage `daterange` (1 date = un seul jour).
+ *  Sans plage : tout passe ; plage mais pas de date : exclu. */
+function inDayRange(value: string | null | undefined, range: Date[] | null): boolean {
+  if (!range || !range.length) return true;
+  if (!value) return false;
+  const day  = value.length <= 10 ? value : toIsoDay(new Date(value));
+  const from = toIsoDay(range[0]);
+  const to   = toIsoDay(range[range.length - 1]);
+  return day >= from && day <= to;
+}
+
+/** Borne de montant saisie en texte ('1 500,50' accepté) → nombre, ou null si vide/invalide. */
+function parseAmount(raw: string): number | null {
+  // `\s` couvre aussi les espaces insécables qu'insère le formatage fr-FR.
+  const s = raw.replace(/\s/g, '').replace(',', '.');
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Montant dans [min, max] ; borne nulle ignorée, montant absent exclu dès qu'une borne est posée. */
+function inAmountRange(amount: number | null | undefined, min: number | null, max: number | null): boolean {
+  if (min == null && max == null) return true;
+  if (amount == null) return false;
+  return (min == null || amount >= min) && (max == null || amount <= max);
+}
+
+/** 'MM/YYYY' → 'YYYY-MM', pour trier les périodes chronologiquement. */
+function periodeKey(p: string): string {
+  const [m, y] = p.split('/');
+  return `${y ?? ''}-${m ?? ''}`;
+}
+
+/** Affaires distinctes des lignes chargées (valeur = id), triées par référence. */
+function affaireOptions(rows: { affaireId: number | null; affaireRef: string | null; affaireIntitule: string | null }[]) {
+  const seen = new Map<number, string>();
+  for (const r of rows) {
+    if (r.affaireId != null && !seen.has(r.affaireId)) {
+      const label = [r.affaireRef, r.affaireIntitule].filter(Boolean).join(' — ');
+      seen.set(r.affaireId, label || `#${r.affaireId}`);
+    }
+  }
+  return [...seen].map(([id, label]) => ({ value: String(id), label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 @Component({
   selector: 'app-approval-queue',
   standalone: true,
@@ -74,11 +161,20 @@ export class ApprovalQueueComponent implements OnInit {
   // from `initialValues` only once per component instance, so swapping `filterFields`
   // under a live instance wouldn't reset stale field keys from the previous section. ──
   lineForfaitSearch     = signal('');
-  lineForfaitFilter     = signal<FilterResult>({});
+  readonly lineForfaitFilter = new LineFilterState();
   lineRegieSearch       = signal('');
-  lineRegieFilter       = signal<FilterResult>({});
+  readonly lineRegieFilter   = new LineFilterState();
   livrableBatchSearch   = signal('');
-  livrableBatchFilter   = signal<FilterResult>({});
+  /** Jour ou plage [début, fin] de `billingDate` du batch, ou null. */
+  livrableBatchDateRange   = signal<Date[] | null>(null);
+  /** Affaire du batch (id en texte), '' = toutes. */
+  livrableBatchAffaire     = signal('');
+  /** Montant cumulé minimum, saisi en texte ('1 500,50' accepté, '' = pas de borne). */
+  livrableBatchAmountMin   = signal('');
+  /** Montant cumulé maximum, saisi en texte ('' = pas de borne). */
+  livrableBatchAmountMax   = signal('');
+  /** Ne garder que les batches regroupant plusieurs documents. */
+  livrableBatchMultiDocOnly = signal(false);
   creditNoteForfaitSearch  = signal('');
   creditNoteForfaitFilter  = signal<FilterResult>({});
   creditNoteRegieSearch    = signal('');
@@ -181,13 +277,40 @@ export class ApprovalQueueComponent implements OnInit {
   // is expected to sit at EN_ATTENTE_DF for everything in this list, so guessing a
   // fixed enum here would drift from reality. No `mode` filter here: each section is
   // already scoped to one mode.
+  // Affaire / période options are likewise derived from the section's own rows, so every
+  // option matches at least one line.
   private statutFilterFields(lines: PendingBillingLineDto[]): FilterField[] {
-    const statuts = [...new Set(lines.map(l => l.statut).filter(Boolean))];
+    const t = (key: string) => this.translate.instant(key);
+    const statuts  = [...new Set(lines.map(l => l.statut).filter(Boolean))];
+    // 'MM/YYYY' (DFValidationService.getPendingDFGlobal) — trié chronologiquement.
+    const periodes = [...new Set(lines.map(l => l.periode).filter((p): p is string => !!p))]
+      .sort((a, b) => periodeKey(a).localeCompare(periodeKey(b)));
     return [{
       name:    'statut',
-      label:   this.translate.instant('AFFAIRES.billing.approval.filter_statut'),
+      label:   t('AFFAIRES.billing.approval.filter_statut'),
       type:    'select',
       options: statuts.map(s => ({ value: s, label: this.lineStatusLabel(s) })),
+    }, {
+      name:       'affaire',
+      label:      t('AFFAIRES.billing.approval.col_affaire'),
+      type:       'select',
+      searchable: true,
+      options:    affaireOptions(lines),
+    }, {
+      name:    'periode',
+      label:   t('AFFAIRES.billing.approval.col_periode'),
+      type:    'select',
+      options: periodes.map(p => ({ value: p, label: p })),
+    }, {
+      name:        'amountMin',
+      label:       t('AFFAIRES.billing.approval.filter_amount_ht_min'),
+      type:        'text',
+      placeholder: t('AFFAIRES.billing.approval.filter_amount_ph'),
+    }, {
+      name:        'amountMax',
+      label:       t('AFFAIRES.billing.approval.filter_amount_ht_max'),
+      type:        'text',
+      placeholder: t('AFFAIRES.billing.approval.filter_amount_ph'),
     }];
   }
 
@@ -200,7 +323,8 @@ export class ApprovalQueueComponent implements OnInit {
     return this.statutFilterFields(this.linesRegie());
   });
 
-  private lineFilterConfigFor(filter: FilterResult): SearchToolbarFilterConfig {
+  // Panel-internal shape: select → string[], text → string (see daf-filter).
+  private lineFilterConfigFor(filter: LineFilterState): SearchToolbarFilterConfig {
     const t = (key: string) => this.translate.instant(key);
     return {
       title:         t('AFFAIRES.billing.approval.filter_title'),
@@ -208,17 +332,23 @@ export class ApprovalQueueComponent implements OnInit {
       cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
       resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
       align:         'right',
-      initialValues: filter,
+      initialValues: {
+        statut:    filter.statut()  ? [filter.statut()]  : [],
+        affaire:   filter.affaire() ? [filter.affaire()] : [],
+        periode:   filter.periode() ? [filter.periode()] : [],
+        amountMin: filter.amountMin(),
+        amountMax: filter.amountMax(),
+      },
     };
   }
 
   readonly lineFilterConfigForfait = computed<SearchToolbarFilterConfig>(() => {
     this.translate.currentLang();
-    return this.lineFilterConfigFor(this.lineForfaitFilter());
+    return this.lineFilterConfigFor(this.lineForfaitFilter);
   });
   readonly lineFilterConfigRegie = computed<SearchToolbarFilterConfig>(() => {
     this.translate.currentLang();
-    return this.lineFilterConfigFor(this.lineRegieFilter());
+    return this.lineFilterConfigFor(this.lineRegieFilter);
   });
 
   onLineForfaitSearch(value: string): void {
@@ -227,7 +357,7 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   onLineForfaitFilterApply(result: FilterResult): void {
-    this.lineForfaitFilter.set(result);
+    this.lineForfaitFilter.apply(result);
     this.lineForfaitPage.set(0);
   }
 
@@ -237,28 +367,35 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   onLineRegieFilterApply(result: FilterResult): void {
-    this.lineRegieFilter.set(result);
+    this.lineRegieFilter.apply(result);
     this.lineRegiePage.set(0);
   }
 
   private filterLineRows(
     rows: ReturnType<typeof this.mapLineRows>,
     search: string,
-    filter: FilterResult,
+    filter: LineFilterState,
   ) {
-    const q      = search.trim().toLowerCase();
-    const statut = filter['statut'] as string | null;
+    const q       = search.trim().toLowerCase();
+    const statut  = filter.statut();
+    const affaire = filter.affaire();
+    const periode = filter.periode();
+    const min     = parseAmount(filter.amountMin());
+    const max     = parseAmount(filter.amountMax());
     return rows.filter(r => {
       if (q && !`${r.affaireRef} ${r.affaireIntitule} ${r.reference}`.toLowerCase().includes(q)) return false;
       if (statut && r._raw.statut !== statut) return false;
+      if (affaire && String(r._raw.affaireId) !== affaire) return false;
+      if (periode && r._raw.periode !== periode) return false;
+      if (!inAmountRange(r._raw.montantHt, min, max)) return false;
       return true;
     });
   }
 
   readonly filteredLineRowsForfait = computed(() =>
-    this.filterLineRows(this.lineRowsForfait(), this.lineForfaitSearch(), this.lineForfaitFilter()));
+    this.filterLineRows(this.lineRowsForfait(), this.lineForfaitSearch(), this.lineForfaitFilter));
   readonly filteredLineRowsRegie = computed(() =>
-    this.filterLineRows(this.lineRowsRegie(), this.lineRegieSearch(), this.lineRegieFilter()));
+    this.filterLineRows(this.lineRowsRegie(), this.lineRegieSearch(), this.lineRegieFilter));
 
   private pageRows<T>(rows: T[], page: number, size: number): T[] {
     const p = Math.min(page, Math.max(0, Math.ceil(rows.length / size) - 1));
@@ -306,10 +443,31 @@ export class ApprovalQueueComponent implements OnInit {
 
   readonly livrableBatchFilterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
     return [{
       name:  'billingDate',
-      label: this.translate.instant('AFFAIRES.billing.approval.filter_billing_date'),
+      label: t('AFFAIRES.billing.approval.filter_billing_date'),
       type:  'daterange',
+    }, {
+      name:       'affaire',
+      label:      t('AFFAIRES.billing.approval.col_affaire'),
+      type:       'select',
+      searchable: true,
+      options:    affaireOptions(this.pendingLivrableBatches()),
+    }, {
+      name:        'amountMin',
+      label:       t('AFFAIRES.billing.approval.filter_amount_min'),
+      type:        'text',
+      placeholder: t('AFFAIRES.billing.approval.filter_amount_ph'),
+    }, {
+      name:        'amountMax',
+      label:       t('AFFAIRES.billing.approval.filter_amount_max'),
+      type:        'text',
+      placeholder: t('AFFAIRES.billing.approval.filter_amount_ph'),
+    }, {
+      name:  'multiDocOnly',
+      label: t('AFFAIRES.billing.approval.filter_multi_doc_only'),
+      type:  'checkbox',
     }];
   });
 
@@ -322,7 +480,13 @@ export class ApprovalQueueComponent implements OnInit {
       cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
       resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
       align:         'right',
-      initialValues: this.livrableBatchFilter(),
+      initialValues: {
+        billingDate:  this.livrableBatchDateRange(),
+        affaire:      this.livrableBatchAffaire() ? [this.livrableBatchAffaire()] : [],
+        amountMin:    this.livrableBatchAmountMin(),
+        amountMax:    this.livrableBatchAmountMax(),
+        multiDocOnly: this.livrableBatchMultiDocOnly(),
+      },
     };
   });
 
@@ -332,19 +496,28 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   onLivrableBatchFilterApply(result: FilterResult): void {
-    this.livrableBatchFilter.set(result);
+    const range = result['billingDate'];
+    this.livrableBatchDateRange.set(Array.isArray(range) && range.length ? range as Date[] : null);
+    this.livrableBatchAffaire.set(selectValue(result, 'affaire'));
+    this.livrableBatchAmountMin.set(textValue(result, 'amountMin'));
+    this.livrableBatchAmountMax.set(textValue(result, 'amountMax'));
+    this.livrableBatchMultiDocOnly.set(result['multiDocOnly'] === true);
     this.livrableBatchPage.set(0);
   }
 
   readonly filteredLivrableBatchRows = computed(() => {
-    const q     = this.livrableBatchSearch().trim().toLowerCase();
-    const range = this.livrableBatchFilter()['billingDate'] as Date[] | null;
+    const q       = this.livrableBatchSearch().trim().toLowerCase();
+    const range   = this.livrableBatchDateRange();
+    const affaire = this.livrableBatchAffaire();
+    const min     = parseAmount(this.livrableBatchAmountMin());
+    const max     = parseAmount(this.livrableBatchAmountMax());
+    const multi   = this.livrableBatchMultiDocOnly();
     return this.livrableBatchRows().filter(r => {
       if (q && !`${r.affaireRef} ${r.affaireIntitule}`.toLowerCase().includes(q)) return false;
-      if (range?.length === 2) {
-        const d = new Date(r._raw.billingDate);
-        if (d < range[0] || d > range[1]) return false;
-      }
+      if (!inDayRange(r._raw.billingDate, range)) return false;
+      if (affaire && String(r._raw.affaireId) !== affaire) return false;
+      if (!inAmountRange(r._raw.combinedMontant, min, max)) return false;
+      if (multi && r._raw.documentCount < 2) return false;
       return true;
     });
   });

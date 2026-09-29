@@ -34,6 +34,10 @@ export class AffaireService {
     if (filter.statut)   params = params.set('statut',   filter.statut);
     if (filter.clientId) params = params.set('clientId', String(filter.clientId));
     if (filter.search)   params = params.set('search',   filter.search);
+    if (filter.responsableId) params = params.set('responsableId', String(filter.responsableId));
+    if (filter.billingMode)   params = params.set('billingMode',   filter.billingMode);
+    if (filter.dateDebutFrom) params = params.set('dateDebutFrom', filter.dateDebutFrom);
+    if (filter.dateDebutTo)   params = params.set('dateDebutTo',   filter.dateDebutTo);
 
     return this.http.get<PageResponse<AffaireListItem>>(`${this.base}/affaires`, { params });
   }
@@ -48,6 +52,10 @@ export class AffaireService {
     if (filter.statut)   params = params.set('statut',   filter.statut);
     if (filter.clientId) params = params.set('clientId', String(filter.clientId));
     if (filter.search)   params = params.set('search',   filter.search);
+    if (filter.responsableId) params = params.set('responsableId', String(filter.responsableId));
+    if (filter.billingMode)   params = params.set('billingMode',   filter.billingMode);
+    if (filter.dateDebutFrom) params = params.set('dateDebutFrom', filter.dateDebutFrom);
+    if (filter.dateDebutTo)   params = params.set('dateDebutTo',   filter.dateDebutTo);
 
     return this.http.get<AffairesSummary>(`${this.base}/affaires/summary`, { params });
   }
