@@ -854,7 +854,10 @@ export class ApprovalQueueComponent implements OnInit {
     this.svc.validateDF(lineId).subscribe({
       next: line => {
         if (line.invoiceId) {
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit']);
+          // fromApproval: the stepper's "Annuler" then reverts this validation instead of
+          // leaving the draft invoice behind (InvoiceNewComponent.cancel()).
+          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
         } else {
           this.loadDF();
         }
@@ -869,7 +872,8 @@ export class ApprovalQueueComponent implements OnInit {
     this.svc.validateLivrableBatch(batchId).subscribe({
       next: batch => {
         if (batch.invoiceId) {
-          this.router.navigate(['/finance/invoicing', batch.invoiceId, 'edit']);
+          this.router.navigate(['/finance/invoicing', batch.invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
         } else {
           this.loadDF();
         }

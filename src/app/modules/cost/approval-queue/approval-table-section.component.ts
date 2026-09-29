@@ -30,7 +30,12 @@ import { ApprovalDecision } from './approval-cards-section.component';
             <fact-table-action icon="visibility" [tooltip]="tips().view"
                                (action)="emit(row, 'view')" />
           }
-          @if (row['_canAct']) {
+          @if (row['_kind'] === 'advance') {
+            <fact-table-action icon="check_circle" [tooltip]="tips().approve"
+                               (action)="emit(row, 'approve')" />
+            <fact-table-action icon="block" variant="danger" [tooltip]="tips().reject"
+                               (action)="emit(row, 'reject')" />
+          } @else if (row['_canAct']) {
             <fact-table-action icon="check_circle" [tooltip]="tips().approve"
                                (action)="emit(row, 'approve')" />
             @if (row['_kind'] === 'cost') {
@@ -100,7 +105,9 @@ export class ApprovalTableSectionComponent {
         options: { variant: KIND_BADGE_VARIANT[item.kind], size: 'sm' },
       } satisfies BadgeCell,
       priority: {
-        label:   item.kind === 'cost' ? t(urgencyKey(item.level)) : '—',
+        label:   item.kind === 'cost' ? t(urgencyKey(item.level))
+               : item.kind === 'advance' ? t(`FACTURATION.ADVANCES.STATUS.${item.advance!.status}`)
+               : '—',
         options: { variant: URGENCY_BADGE_VARIANT[item.urgency], dot: true, size: 'sm' },
       } satisfies BadgeCell,
 

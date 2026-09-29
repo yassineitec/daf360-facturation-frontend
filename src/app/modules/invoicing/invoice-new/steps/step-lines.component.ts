@@ -1,9 +1,12 @@
 import { Component, inject, input, output, signal, computed, effect } from '@angular/core';
 import {
-  ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators,
+  ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators, AbstractControl,
 } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { TVA_RATES } from '../../invoice.model';
+import {
+  FormFieldComponent, FormFieldOptions, SelectComponent, SelectOption,
+} from '@khalilrebhiitec/daf360';
+import { PendingCarryForwardDto } from '../../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { InvoiceService } from '../../invoice.service';
 import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.service';
@@ -26,6 +29,9 @@ export interface StepLinesValue {
     pctAFacturer?:  number;
     // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
     sourceExpenseId?: number;
+    // Carry-forward — présent uniquement quand la ligne provient d'un solde WIP non
+    // facturé pické (cf. PendingCarryForwardDto)
+    sourceCarriedForwardLineId?: number;
     // T&M — collaborateur associé, présent uniquement en mode T&M
     profileUserId?: number;
   }[];
@@ -39,7 +45,7 @@ export interface StepLinesValue {
 @Component({
   selector: 'app-step-lines',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe],
+  imports: [ReactiveFormsModule, TranslatePipe, FormFieldComponent, SelectComponent],
   template: `
 <div class="step-lines">
 
@@ -55,6 +61,11 @@ export interface StepLinesValue {
         <button type="button" class="btn-add-line btn-add-rmb" [disabled]="!categoriesLoaded()"
           (click)="toggleRmbPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_REMBOURSABLE' | translate }}
+        </button>
+      }
+      @if (isAv() || isTm() || isLivrable()) {
+        <button type="button" class="btn-add-line btn-add-rmb" (click)="toggleCarryForwardPicker()">
+          {{ 'INVOICING.STEP_LINES.ADD_CARRY_FORWARD' | translate }}
         </button>
       }
     </div>
@@ -96,6 +107,40 @@ export interface StepLinesValue {
     </div>
   }
 
+  @if ((isAv() || isTm() || isLivrable()) && carryForwardPickerOpen()) {
+    <div class="rmb-picker-panel">
+      @if (pendingCarryForwardList().length === 0) {
+        <p class="rmb-picker-empty">{{ 'INVOICING.STEP_LINES.CARRY_FORWARD_EMPTY' | translate }}</p>
+      } @else {
+        <div class="carry-forward-picker-row carry-forward-picker-row--header">
+          <span>{{ 'INVOICING.STEP_LINES.CARRY_FORWARD_COL_MODE' | translate }}</span>
+          <span>{{ 'INVOICING.STEP_LINES.CARRY_FORWARD_COL_PERIOD' | translate }}</span>
+          <span class="rmb-picker-num">{{ 'INVOICING.STEP_LINES.CARRY_FORWARD_COL_AVAILABLE' | translate }}</span>
+          <span class="rmb-picker-num">{{ 'INVOICING.STEP_LINES.CARRY_FORWARD_COL_AMOUNT' | translate }}</span>
+        </div>
+        @for (p of pendingCarryForwardList(); track p.id) {
+          <div class="carry-forward-picker-row">
+            <span>{{ p.billingMode }}</span>
+            <span>{{ formatDate(p.periodDateTo) }}</span>
+            <span class="rmb-picker-num">{{ formatAmount(p.wipCarriedForward) }}</span>
+            <input type="number" min="0" [max]="p.wipCarriedForward" step="0.001"
+              [value]="carryForwardAmounts().get(p.id) ?? ''"
+              (input)="setCarryForwardAmount(p.id, $event.target)" />
+          </div>
+        }
+      }
+      <div class="rmb-picker-actions">
+        <button type="button" class="btn-back" (click)="closeCarryForwardPicker()">
+          {{ 'INVOICING.STEP_LINES.REMBOURSABLE_CANCEL' | translate }}
+        </button>
+        <button type="button" class="btn-next" [disabled]="carryForwardAmounts().size === 0"
+          (click)="addSelectedCarryForward()">
+          {{ 'INVOICING.STEP_LINES.REMBOURSABLE_ADD_SELECTED' | translate }}
+        </button>
+      </div>
+    </div>
+  }
+
   <div class="lines-table-wrap">
     <table class="lines-table">
       <thead>
@@ -128,29 +173,37 @@ export interface StepLinesValue {
 
               <!-- Description (toujours présente) -->
               <td>
-                <input type="text" formControlName="description" class="td-input"
-                  [class.invalid]="lg.get('description')!.invalid && lg.get('description')!.touched"
-                  maxlength="255"
-                  [placeholder]="'INVOICING.STEP_LINES.DESC_PLACEHOLDER' | translate" />
+                <daf-form-field
+                  [options]="{
+                    placeholder: ('INVOICING.STEP_LINES.DESC_PLACEHOLDER' | translate),
+                    error: lg.get('description')!.invalid && lg.get('description')!.touched
+                      ? ('INVOICING.STEP_LINES.FIELD_REQUIRED' | translate) : undefined
+                  }"
+                  [value]="lg.get('description')!.value"
+                  (valueChange)="setText(lg, 'description', $event)" />
               </td>
 
               @if (isAv()) {
-                <!-- Budget affaire (readonly — chargé depuis le backend) -->
-                <td class="td-computed">{{ formatAmount(progress()?.budgetTotal ?? 0) }}</td>
-                <!-- % déjà facturé (readonly — cumulé des factures actives) -->
-                <td class="td-computed">{{ formatPct(progress()?.pctFacture ?? 0) }}</td>
-                <!-- % avancement à date (saisie utilisateur) -->
-                <td>
-                  <input type="number" formControlName="pctAvancement" class="td-input td-num"
-                    min="0" max="100" step="0.01"
-                    [class.invalid]="lg.get('pctAvancement')!.touched && !lg.get('pctAvancement')!.value"
-                    (input)="recalc(i)"
-                    placeholder="0.00" />
-                </td>
-                <!-- % à facturer = pctAvancement - pctFacture (calculé) -->
-                <td class="td-computed">{{ formatPct(pctAFacturer(i)) }}</td>
-                <!-- Montant HT = budget × pctAFacturer / 100 (calculé) -->
-                <td class="td-computed">{{ formatAmount(lineHtAv(i)) }}</td>
+                <!-- Colonnes d'avancement : figées côté serveur à la génération de la facture depuis
+                     un WIP validé (DFValidationService.buildInvoiceLine, branche FORFAIT) — cette étape
+                     les affiche et les réémet telles quelles, sans jamais les recalculer, exactement
+                     comme en Livrable (cf. isLivrable() plus bas). Recalculer ici depuis un état global
+                     de l'affaire effacerait silencieusement une approbation client partielle
+                     (ProgressBillingService.enterClientApprovedAmount) et refacturerait le solde déjà
+                     mis de côté comme "à facturer plus tard" (wipCarriedForward). -->
+                <td class="td-computed">{{ avBudgetAffaireLabel(i) }}</td>
+                <td class="td-computed">{{ avPctFactureLabel(i) }}</td>
+                <td class="td-computed">{{ avPctAvancementLabel(i) }}</td>
+                <td class="td-computed">{{ avPctAFacturerLabel(i) }}</td>
+                @if (avHasAvancement(i)) {
+                  <td class="td-computed">{{ formatAmount(lineHtAv(i)) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
               } @else if (isTm()) {
                 <!-- T&M : une ligne ici facture la totalité du WIP déjà validé et calculé
                      côté serveur pour sa période — pas de budget d'affaire à comparer,
@@ -163,8 +216,9 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td>
-                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                    min="0" step="0.01" (input)="recalc(i)" />
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('prixUnitaireHt')!.value"
+                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
               } @else if (isLivrable()) {
                 <!-- Livrable : les quatre colonnes d'avancement portent de VRAIES valeurs,
@@ -194,28 +248,31 @@ export interface StepLinesValue {
                   <td class="td-computed">{{ formatAmount(lineHtLivrable(i)) }}</td>
                 } @else {
                   <td>
-                    <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                      min="0" step="0.01" (input)="recalc(i)" />
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                   </td>
                 }
               } @else {
                 <td>
-                  <input type="number" formControlName="quantite" class="td-input td-num"
-                    min="0.01" step="0.01" (input)="recalc(i)" />
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('quantite')!.value"
+                    (valueChange)="setNum(lg, 'quantite', $event)" />
                 </td>
                 <td>
-                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                    min="0" step="0.01" (input)="recalc(i)" />
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('prixUnitaireHt')!.value"
+                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
               }
 
               <!-- TVA (toujours présente) -->
-              <td>
-                <select formControlName="tauxTva" class="td-input td-num" (change)="recalc(i)">
-                  @for (r of tvaRates; track r) {
-                    <option [value]="r">{{ r }}%</option>
-                  }
-                </select>
+              <td class="td-vat">
+                <daf-select
+                  [options]="vatRateOptions()"
+                  [selected]="vatSelected(lg)"
+                  [ariaLabel]="'INVOICING.STEP_LINES.VAT' | translate"
+                  (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
               </td>
 
               @if (isAv()) {
@@ -285,18 +342,21 @@ export interface StepLinesValue {
             @for (lg of expenseLinesArray.controls; track $index; let i = $index) {
               <tr [formGroupName]="i" class="line-row">
                 <td>
-                  <input type="text" formControlName="description" class="td-input" maxlength="255" />
+                  <daf-form-field
+                    [value]="lg.get('description')!.value"
+                    (valueChange)="setText(lg, 'description', $event)" />
                 </td>
                 <td>
-                  <input type="number" formControlName="prixUnitaireHt" class="td-input td-num"
-                    min="0" step="0.01" (input)="recalc(i)" />
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('prixUnitaireHt')!.value"
+                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
-                <td>
-                  <select formControlName="tauxTva" class="td-input td-num" (change)="recalc(i)">
-                    @for (r of tvaRates; track r) {
-                      <option [value]="r">{{ r }}%</option>
-                    }
-                  </select>
+                <td class="td-vat">
+                  <daf-select
+                    [options]="vatRateOptions()"
+                    [selected]="vatSelected(lg)"
+                    [ariaLabel]="'INVOICING.STEP_LINES.VAT' | translate"
+                    (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
                 </td>
                 <td class="td-computed">{{ formatAmount(lineTtcExpense(i)) }}</td>
                 <td>
@@ -359,10 +419,44 @@ export class StepLinesComponent {
   prevStep    = output<void>();
   nextStep    = output<StepLinesValue>();
 
-  readonly tvaRates = TVA_RATES;
+  /**
+   * Référentiel VAT_RATE (configurable, chargé par pays) — remplace l'ancienne constante
+   * `TVA_RATES` codée en dur. Chargé dès qu'un pays est connu (cf. l'effect dédié dans le
+   * constructeur), quel que soit le mode de facturation : la TVA est universelle,
+   * contrairement aux frais remboursables ci-dessous qui ne concernent qu'AV/T&M/Livrable.
+   */
+  private readonly vatRates = signal<ListValueDto[]>([]);
+  readonly vatRateOptions = computed<SelectOption[]>(() => this.vatRates()
+    .filter(r => r.ratePct != null)
+    .map(r => ({ value: String(r.ratePct), label: `${r.ratePct}%` })));
 
-  /** Données chargées depuis GET /invoices/affaire/{id}/progress — null hors mode AV */
-  readonly progress = signal<{ budgetTotal: number; pctFacture: number } | null>(null);
+  /** Champs numériques des tableaux de lignes (quantité, PU / montant HT). */
+  readonly numOptions: FormFieldOptions = { type: 'number', align: 'end', placeholder: '0.00' };
+
+  /** Valeur sélectionnée du daf-select TVA — ses options portent le taux en chaîne. */
+  vatSelected(g: AbstractControl): string[] {
+    const v = g.get('tauxTva')?.value;
+    return v == null ? [] : [String(v)];
+  }
+
+  /**
+   * Pont daf-form-field / daf-select → FormControl (ni l'un ni l'autre n'est un
+   * ControlValueAccessor). daf-form-field émet toujours une chaîne, même en type
+   * 'number' : son <input> ne reçoit pas le NumberValueAccessor, d'où la conversion.
+   */
+  setNum(g: AbstractControl, key: string, v: string | number | null): void {
+    const c = g.get(key)!;
+    c.setValue(v === '' || v == null ? null : Number(v));
+    c.markAsTouched();
+  }
+
+  /** Plafonné à 255 (colonne description) — l'ancien maxlength natif, sans le compteur
+   * que daf-form-field afficherait sous chaque cellule avec `maxLength`. */
+  setText(g: AbstractControl, key: string, v: string | number | null): void {
+    const c = g.get(key)!;
+    c.setValue(v == null ? '' : String(v).slice(0, 255));
+    c.markAsTouched();
+  }
 
   /** Vrai si l'affaire est en mode Forfaitaire / Avancement (AV) */
   readonly isAv = computed(() => this.affaireData().billingMode === 'FORFAIT');
@@ -434,18 +528,29 @@ export class StepLinesComponent {
     this.billableExpenses().filter(e => !this.usedExpenseIds().has(e.id)),
   );
 
+  // ── Picker de solde WIP non facturé (carry-forward) ───────────────────────────
+
+  private readonly pendingCarryForward = signal<PendingCarryForwardDto[]>([]);
+
+  readonly carryForwardPickerOpen = signal(false);
+  /** Montant choisi par ligne en attente, indexé par BillingLine.id — pas un Set comme
+   * selectedExpenseIds : chaque pick porte aussi un montant saisi par l'utilisateur (le
+   * pick partiel est permis, contrairement au pick tout-ou-rien des remboursables). */
+  readonly carryForwardAmounts = signal<Map<number, number>>(new Map());
+
   constructor() {
-    // Charge les données de progression dès qu'on est en mode AV avec une affaire sélectionnée
+    // Charge le référentiel VAT_RATE dès qu'un pays est connu — contrairement à l'effect
+    // suivant (frais remboursables), PAS limité à AV/T&M/Livrable : la TVA est universelle,
+    // le mode standard/RMB a lui aussi besoin d'un dropdown de taux fonctionnel.
     effect(() => {
-      const av    = this.isAv();
-      const affId = this.affaireData().affaireId;
-      if (av && affId) {
-        this.svc.getAffaireInvoiceProgress(affId).subscribe({
-          next:  p  => this.progress.set(p),
-          error: () => this.progress.set({ budgetTotal: 0, pctFacture: 0 }),
+      const aff = this.affaireData();
+      if (aff.paysId) {
+        this.listSvc.getListValues('VAT_RATE', aff.paysId).subscribe({
+          next:  v  => this.vatRates.set(v),
+          error: () => this.vatRates.set([]),
         });
       } else {
-        this.progress.set(null);
+        this.vatRates.set([]);
       }
     });
 
@@ -472,6 +577,38 @@ export class StepLinesComponent {
         this.selectedExpenseIds.set(new Set());
         this.expenseLinesArray.clear();
         this.linesVersion.update(v => v + 1);
+      }
+
+      // VAT_RATE : chargé dès qu'un pays est connu, quel que soit le mode de facturation —
+      // contrairement au bloc ci-dessus (EXPENSE_CATEGORY), le sélecteur TVA est affiché
+      // dans TOUS les modes (y compris standard/RMB), donc ce fetch ne peut pas dépendre de
+      // `rmbOrAv`. Même style de gestion d'erreur : un échec retombe sur [] plutôt que de
+      // bloquer le rendu.
+      if (aff.paysId) {
+        this.listSvc.getListValues('VAT_RATE', aff.paysId).subscribe({
+          next:  v  => this.vatRates.set(v),
+          error: () => this.vatRates.set([]),
+        });
+      } else {
+        this.vatRates.set([]);
+      }
+    });
+
+    // Charge le solde WIP non facturé restant (carry-forward) dès qu'on est dans un des
+    // trois modes réels avec une affaire sélectionnée — même déclencheur que le
+    // chargement des frais remboursables ci-dessus.
+    effect(() => {
+      const anyRealMode = this.isAv() || this.isTm() || this.isLivrable();
+      const aff = this.affaireData();
+      if (anyRealMode && aff.affaireId) {
+        this.svc.getPendingCarryForward(aff.affaireId).subscribe({
+          next:  p  => this.pendingCarryForward.set(p),
+          error: () => this.pendingCarryForward.set([]),
+        });
+      } else {
+        this.pendingCarryForward.set([]);
+        this.carryForwardPickerOpen.set(false);
+        this.carryForwardAmounts.set(new Map());
       }
     });
 
@@ -516,6 +653,9 @@ export class StepLinesComponent {
     this.expenseLinesArray.clear();
 
     for (const l of initial.lines) {
+      // Un solde WIP non facturé va dans `lines` (voir addSelectedCarryForward), pas dans
+      // la table des remboursables : ce n'est pas un frais, c'est de l'avancement facturé
+      // en retard — seul un VRAI remboursable (sourceExpenseId) va dans expenseLines.
       if (this.isAv() && l.pctAvancement == null && l.sourceExpenseId != null) {
         const g = this.newExpenseLine();
         g.patchValue({
@@ -523,6 +663,7 @@ export class StepLinesComponent {
           prixUnitaireHt:  l.unitRate,
           tauxTva:         l.vatRatePct,
           sourceExpenseId: l.sourceExpenseId,
+          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId,
         });
         this.expenseLinesArray.push(g);
       } else {
@@ -533,14 +674,14 @@ export class StepLinesComponent {
           prixUnitaireHt:  l.unitRate,
           tauxTva:         l.vatRatePct,
           pctAvancement:   l.pctAvancement ?? null,
-          // Chargées pour le mode Livrable, qui les affiche et les réémet telles quelles
-          // (cf. isLivrable()). Inertes dans les autres modes : le Forfaitaire prend son
-          // budget et son % déjà facturé dans `progress()`, le T&M les fixe à 100 % et le
-          // mode standard n'a pas ces colonnes du tout.
+          // Chargées pour les modes Forfaitaire et Livrable, qui les affichent et les
+          // réémettent telles quelles (cf. isAv() / isLivrable()). Inertes dans les autres
+          // modes : le T&M les fixe à 100 % et le mode standard n'a pas ces colonnes du tout.
           budgetAffaire:   l.budgetAffaire ?? null,
           pctFacture:      l.pctFacture    ?? null,
           pctAFacturer:    l.pctAFacturer  ?? null,
           sourceExpenseId: l.sourceExpenseId ?? null,
+          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? null,
           profileUserId:   l.profileUserId ?? null,
         });
         this.linesArray.push(g);
@@ -577,18 +718,17 @@ export class StepLinesComponent {
       quantite:         [1,  [Validators.required, Validators.min(0.01)]],
       prixUnitaireHt:   [0,  [Validators.required, Validators.min(0)]],
       pctAvancement:    [null],
-      // Mode Livrable uniquement : les trois autres colonnes d'avancement de la ligne,
-      // telles que le serveur les a calculées à la génération de la facture. Sans ces
-      // contrôles, `seedFromInitialLines` n'avait nulle part où les charger et `next()`
-      // n'avait rien à réémettre — d'où les 100 % codés en dur qu'ils remplacent.
-      // Ni validateur ni valeur par défaut : le mode Forfaitaire lit son budget et son
-      // % déjà facturé depuis `progress()` (échelle affaire) et ignore ces contrôles,
-      // le mode T&M et le mode standard aussi — les ajouter ne change donc rien pour eux.
+      // Modes Forfaitaire et Livrable : les trois autres colonnes d'avancement de la
+      // ligne, telles que le serveur les a calculées à la génération de la facture. Sans
+      // ces contrôles, `seedFromInitialLines` n'avait nulle part où les charger et
+      // `next()` n'avait rien à réémettre. Ni validateur ni valeur par défaut : le mode
+      // T&M et le mode standard les ignorent — les ajouter ne change donc rien pour eux.
       budgetAffaire:    [null as number | null],
       pctFacture:       [null as number | null],
       pctAFacturer:     [null as number | null],
       tauxTva:          [19],
       sourceExpenseId:  [null as number | null],
+      sourceCarriedForwardLineId: [null as number | null],
       profileUserId:    [null as number | null],
     });
   }
@@ -702,6 +842,7 @@ export class StepLinesComponent {
       prixUnitaireHt:   [0,  [Validators.required, Validators.min(0)]],
       tauxTva:          [0],
       sourceExpenseId:  [null as number | null],
+      sourceCarriedForwardLineId: [null as number | null],
     });
   }
 
@@ -724,7 +865,6 @@ export class StepLinesComponent {
     return this.expenseLinesArray.controls.reduce((s, _, i) => s + this.lineTtcExpense(i), 0);
   }
 
-  recalc(_i: number): void { /* le template se recalcule via les getters sur chaque changement */ }
 
   // ── Picker de frais remboursables (RMB) ──────────────────────────────────────
 
@@ -804,25 +944,133 @@ export class StepLinesComponent {
       && v.sourceExpenseId == null;
   }
 
+  // ── Picker de solde WIP non facturé (carry-forward) ───────────────────────────
+
+  readonly pendingCarryForwardList = computed(() => this.pendingCarryForward());
+
+  toggleCarryForwardPicker(): void { this.carryForwardPickerOpen.update(v => !v); }
+
+  closeCarryForwardPicker(): void {
+    this.carryForwardPickerOpen.set(false);
+    this.carryForwardAmounts.set(new Map());
+  }
+
+  setCarryForwardAmount(id: number, target: EventTarget | null): void {
+    const raw = (target as HTMLInputElement | null)?.value ?? '';
+    const value = raw === '' ? null : Number(raw);
+    const m = new Map(this.carryForwardAmounts());
+    if (value == null || Number.isNaN(value) || value <= 0) m.delete(id); else m.set(id, value);
+    this.carryForwardAmounts.set(m);
+  }
+
+  /** Ajoute une ligne PAR montant saisi, toujours dans `lines` — jamais dans `expenseLines`,
+   * même en mode AV : un solde WIP non facturé n'est pas un frais remboursable, c'est de
+   * l'avancement déjà réel juste facturé en retard (cf. ProgressBillingService.
+   * enterClientApprovedAmount / wipCarriedForward), donc il appartient à la même table que
+   * les lignes d'avancement. Porte désormais les VRAIES colonnes budgetAffaire/pctFacture/
+   * pctAvancement (lues sur le PendingCarryForwardDto pické) + un pctAFacturer dérivé du
+   * montant saisi — `null` en RÉGIE (le backend ne les renseigne jamais pour ce mode), donc
+   * aucun changement de comportement pour ce mode. Renseignées, elles font passer
+   * avHasAvancement/livrableHasAvancement à `true` pour cette ligne : c'est voulu, c'est le
+   * même traitement lecture-seule qu'une ligne d'avancement normale, et c'est ce qui
+   * garantit que le montant affiché (lineHtAv/lineHtLivrable) et les pourcentages affichés
+   * ne peuvent jamais diverger l'un de l'autre. Même geste de courtoisie "retirer la ligne
+   * vierge par défaut d'abord" que addSelectedExpenses(). */
+  addSelectedCarryForward(): void {
+    const amounts = this.carryForwardAmounts();
+    if (amounts.size === 0) return;
+
+    if (this.linesArray.length === 1 && this.isDefaultBlankLine(this.linesArray.at(0) as FormGroup)) {
+      this.linesArray.removeAt(0);
+    }
+    amounts.forEach((amount, id) => {
+      const dto = this.pendingCarryForwardList().find(p => p.id === id);
+      const budgetAffaire = dto?.budgetAffaire ?? null;
+      const pctAFacturer = (budgetAffaire != null && budgetAffaire > 0)
+        ? amount * 100 / budgetAffaire
+        : null;
+      const g = this.newLine();
+      g.patchValue({
+        description:                'Solde WIP non facturé #' + id,
+        quantite:                   1,
+        prixUnitaireHt:             amount,
+        tauxTva:                    0,
+        sourceCarriedForwardLineId: id,
+        budgetAffaire:              budgetAffaire,
+        pctFacture:                 dto?.pctFacture ?? null,
+        pctAvancement:              dto?.pctAvancement ?? null,
+        pctAFacturer:               pctAFacturer,
+      });
+      this.linesArray.push(g);
+    });
+    this.linesVersion.update(v => v + 1);
+    this.closeCarryForwardPicker();
+    this.carryForwardAmounts.set(new Map());
+  }
+
   formatDate(d: string | null): string {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   // ── Calculs mode AV ─────────────────────────────────────────────────────────
+  //
+  // Lues sur le FormGroup de la ligne, jamais recalculées depuis le progrès global de
+  // l'affaire (progress()) : ce signal ignore qu'une ligne précise a pu être réduite par
+  // une approbation client partielle (cf. ProgressBillingService.enterClientApprovedAmount)
+  // ou qu'un solde a été mis de côté pour plus tard (wipCarriedForward). Les valeurs sont
+  // fixées une seule fois côté serveur à la génération de la facture depuis un WIP validé
+  // (DFValidationService.buildInvoiceLine, branche FORFAIT) — exactement le même principe
+  // qu'en Livrable (cf. livrableAvancement plus haut), reproduit ici à l'identique.
 
-  /** % à facturer sur cette ligne = pctAvancement saisi - pctFacture cumulé */
-  pctAFacturer(i: number): number {
-    const g       = this.linesArray.at(i) as FormGroup;
-    const pctFact = this.progress()?.pctFacture  ?? 0;
-    const pctAv   = g.value.pctAvancement ?? 0;
-    return Math.max(0, pctAv - pctFact);
+  private avAvancement(
+    i: number,
+    key: 'budgetAffaire' | 'pctFacture' | 'pctAvancement' | 'pctAFacturer',
+  ): number | null {
+    const v = (this.linesArray.at(i) as FormGroup).get(key)?.value;
+    return v == null || v === '' ? null : Number(v);
   }
 
-  /** Montant HT = budgetTotal × pctAFacturer / 100 */
+  avBudgetAffaireLabel(i: number): string {
+    const v = this.avAvancement(i, 'budgetAffaire');
+    return v == null ? '—' : this.formatAmount(v);
+  }
+
+  avPctFactureLabel(i: number): string {
+    const v = this.avAvancement(i, 'pctFacture');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  avPctAvancementLabel(i: number): string {
+    const v = this.avAvancement(i, 'pctAvancement');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  avPctAFacturerLabel(i: number): string {
+    const v = this.avAvancement(i, 'pctAFacturer');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  /** Vrai quand la ligne porte les deux colonnes dont le total dérive — c'est-à-dire une
+   * ligne générée depuis un WIP validé (DFValidationService.buildInvoiceLine, branche
+   * FORFAIT). Faux pour une ligne ajoutée à la main dans cette étape, qui garde alors la
+   * saisie directe du montant — même logique que livrableHasAvancement. */
+  avHasAvancement(i: number): boolean {
+    return this.avAvancement(i, 'budgetAffaire') != null
+        && this.avAvancement(i, 'pctAFacturer')  != null;
+  }
+
+  /** Montant HT = budgetAffaire × pctAFacturer / 100, lues sur CETTE ligne (jamais
+   * recalculées depuis le progrès global de l'affaire, qui ignore que cette ligne précise a
+   * pu être réduite par une approbation client partielle — cf.
+   * ProgressBillingService.enterClientApprovedAmount). Mirrors lineHtLivrable exactement,
+   * pour la même raison. Ligne ajoutée à la main (pas d'avancement) : montant saisi
+   * directement, comme lineHtLivrable retombe sur lineHtTm. */
   lineHtAv(i: number): number {
-    const budget = this.progress()?.budgetTotal ?? 0;
-    return budget * this.pctAFacturer(i) / 100;
+    if (!this.avHasAvancement(i)) return this.lineHtTm(i);
+    const budget = this.avAvancement(i, 'budgetAffaire') ?? 0;
+    const pct    = this.avAvancement(i, 'pctAFacturer')  ?? 0;
+    return budget * pct / 100;
   }
 
   /** Montant TTC = montantHT × (1 + tauxTVA / 100) */
@@ -857,37 +1105,31 @@ export class StepLinesComponent {
     if (this.form.invalid) return;
 
     if (this.isAv()) {
-      // Valider que pctAvancement est renseigné sur toutes les lignes
-      const anyMissing = this.linesArray.controls.some(
-        g => g.get('pctAvancement')?.value == null,
-      );
-      if (anyMissing) {
-        this.linesArray.controls.forEach(g => g.get('pctAvancement')?.markAsTouched());
-        return;
-      }
-
-      const budget   = this.progress()?.budgetTotal ?? 0;
-      const pctFactu = this.progress()?.pctFacture  ?? 0;
-
+      // Colonnes d'avancement réémises TELLES QUELLES depuis les valeurs déjà seedées sur
+      // chaque ligne (cf. avAvancement plus haut) — jamais recalculées depuis progress(),
+      // qui ignore qu'une ligne précise a pu être réduite par une approbation client
+      // partielle. Même pattern que livrableLines juste plus bas. Une ligne ajoutée à la
+      // main garde `pctAvancement=null` en permanence (pas de WIP à tracer) et utilise la
+      // saisie directe du montant à la place — donc pas de validation "champ requis" ici,
+      // contrairement à l'ancien comportement (cf. Livrable, qui n'en a pas non plus).
       const avancementLines = (this.linesArray.value as {
-        description: string; pctAvancement: number; tauxTva: number; sourceExpenseId: number | null;
+        description: string; tauxTva: number; sourceExpenseId: number | null;
+        sourceCarriedForwardLineId: number | null;
+        budgetAffaire: number | null; pctFacture: number | null;
+        pctAvancement: number | null; pctAFacturer: number | null;
       }[])
-        .map((l, i) => {
-          const pctAvancement = l.pctAvancement ?? 0;
-          const pctAFacturer  = Math.max(0, pctAvancement - pctFactu);
-          const montantHt     = budget * pctAFacturer / 100;
-          return {
-            description:     l.description,
-            quantity:        1,          // rétrocompat : quantity=1, unitRate=montantHt
-            unitRate:        montantHt,
-            vatRatePct:      l.tauxTva,
-            budgetAffaire:   budget,
-            pctFacture:      pctFactu,
-            pctAvancement:   pctAvancement,
-            pctAFacturer:    pctAFacturer,
-            sourceExpenseId: l.sourceExpenseId ?? undefined,
-          };
-        });
+        .map((l, i) => ({
+          description:     l.description,
+          quantity:        1,          // rétrocompat : quantity=1, unitRate=montantHt
+          unitRate:        this.lineHtAv(i),
+          vatRatePct:      l.tauxTva,
+          budgetAffaire:   l.budgetAffaire ?? undefined,
+          pctFacture:      l.pctFacture    ?? undefined,
+          pctAvancement:   l.pctAvancement ?? undefined,
+          pctAFacturer:    l.pctAFacturer  ?? undefined,
+          sourceExpenseId: l.sourceExpenseId ?? undefined,
+          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+        }));
 
       // Frais remboursables pickés (table séparée) : montant plat, aucun champ
       // d'avancement — le backend prend la branche "quantity × unitRate" (le calcul
@@ -895,12 +1137,14 @@ export class StepLinesComponent {
       // cf. InvoiceService.saveLines côté service).
       const expenseLines = (this.expenseLinesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number; sourceExpenseId: number | null;
+        sourceCarriedForwardLineId: number | null;
       }[]).map(l => ({
         description:     l.description,
         quantity:        1,
         unitRate:        l.prixUnitaireHt,
         vatRatePct:      l.tauxTva,
         sourceExpenseId: l.sourceExpenseId ?? undefined,
+        sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
       }));
 
       this.nextStep.emit({ lines: [...avancementLines, ...expenseLines] });
@@ -910,6 +1154,7 @@ export class StepLinesComponent {
       // cf. template.
       const tmLines = (this.linesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number;
+        sourceCarriedForwardLineId: number | null;
       }[]).map(l => {
         const montant = l.prixUnitaireHt ?? 0;
         return {
@@ -921,6 +1166,7 @@ export class StepLinesComponent {
           pctFacture:    100,
           pctAvancement: 100,
           pctAFacturer:  100,
+          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
         };
       });
       this.nextStep.emit({
@@ -950,6 +1196,7 @@ export class StepLinesComponent {
         description: string; prixUnitaireHt: number; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
+        sourceCarriedForwardLineId: number | null;
       }[]).map((l, i) => ({
         description:   l.description,
         quantity:      1,          // rétrocompat : quantity=1, unitRate=montant
@@ -959,6 +1206,7 @@ export class StepLinesComponent {
         pctFacture:    l.pctFacture    ?? undefined,
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
+        sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
       }));
       this.nextStep.emit({
         lines: livrableLines,
@@ -972,12 +1220,14 @@ export class StepLinesComponent {
         lines: (this.linesArray.value as {
           description: string; quantite: number; prixUnitaireHt: number; tauxTva: number;
           sourceExpenseId: number | null; profileUserId: number | null;
+          sourceCarriedForwardLineId: number | null;
         }[]).map(l => ({
           description:     l.description,
           quantity:        l.quantite,
           unitRate:        l.prixUnitaireHt,
           vatRatePct:      l.tauxTva,
           sourceExpenseId: l.sourceExpenseId ?? undefined,
+          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
           profileUserId:   l.profileUserId ?? undefined,
         })),
         periodFrom: null,

@@ -15,6 +15,24 @@
         "COST_MISSIONS": "المهام"
       }
     },
+    "ADVANCES": {
+      "COL_TERMS": "الاسترجاع",
+      "FIRST_MONTH": "أول اقتطاع",
+      "COL_AMOUNT": "المبلغ",
+      "TERMS": "{{monthly}} × {{count}} ابتداء من {{month}}",
+      "EMPLOYEE_SAID": "الموظف:",
+      "STATUS": {
+        "PENDING_FINANCE": "قرار المالية",
+        "REJECTED": "مرفوضة",
+        "APPROVED": "موافق عليها — للصرف",
+        "REPAYING": "قيد الاسترجاع",
+        "REPAID": "مسترجعة",
+        "CANCELLED": "ملغاة"
+      },
+      "DECISION_TITLE": "القرار في التسبقة",
+      "COL_ASKED_ON": "تاريخ الطلب",
+      "AFTER_APPROVAL": "بعد الموافقة، تصرفها مصلحة الأجور وتسترجعها بالاقتطاع من الأجر."
+    },
     "MISSIONS": {
       "TITLE": "أوامر المهام",
       "SUBTITLE": "القرار النهائي في تكلفة المهام المصادق عليها من الموارد البشرية",

@@ -228,6 +228,29 @@
             —
           }
         </ng-template>
+
+        <!-- Invoicing progress: montantFacture / montantIncremental (walked forward through
+             any later carry-forward pickup(s), see findChainTail()) + a "Complet"/"Partiel"
+             badge — same daf-badge component/variant convention as the LIVRABLE "statut"
+             custom cell further down (variant: 'success' | 'warning', size 'sm', dot). -->
+        <ng-template dafCell="factureProgress" let-row>
+          @if (row['_remainderPending'] === null) {
+            —
+          } @else {
+            <div class="flex flex-col gap-1">
+              <span class="text-[12px] whitespace-nowrap">
+                {{ row['_montantFacture'] | displayCurrency : affaire.devise }} / {{ $any(row['_source']).montantIncremental | displayCurrency : affaire.devise }}
+              </span>
+              @if (row['_isComplete']) {
+                <daf-badge [label]="'AFFAIRES.WIP.FACTURE_COMPLETE' | translate"
+                  [options]="{ variant: 'success', size: 'sm', dot: true }" />
+              } @else {
+                <daf-badge [label]="'AFFAIRES.WIP.FACTURE_PARTIAL' | translate:{ amount: (row['_remainderPending'] | displayCurrency:affaire.devise) }"
+                  [options]="{ variant: 'warning', size: 'sm', dot: true }" />
+              }
+            </div>
+          }
+        </ng-template>
       </daf-data-table>
       </div>
       @if (deleteTauxError()) {

@@ -22,6 +22,8 @@ export interface InvoiceLine {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
+  // WIP carry-forward — présent uniquement quand la ligne provient d'un solde WIP pické
+  sourceCarriedForwardLineId?: number;
 }
 
 export interface InvoiceListItem {
@@ -109,6 +111,26 @@ export interface InvoicePaymentDto {
   notes:         string | null;
 }
 
+/**
+ * `GET /invoices/affaire/{affaireId}/pending-carry-forward` → `PendingCarryForwardDto`.
+ *
+ * WIP non facturé restant sur une période déjà clôturée (ex. client n'a payé que 20k€
+ * sur 50k€ de WIP) — proposé au picker de la facture manuelle suivante pour cette affaire.
+ */
+export interface PendingCarryForwardDto {
+  id:                 number;
+  affaireId:          number;
+  billingMode:        string;
+  periodDateTo:       string | null;
+  wipCarriedForward:  number;
+  // Avancement — `null` en mode RÉGIE (pas de notion de "% d'un budget"). En FORFAIT :
+  // budget contractuel de l'affaire + % cumulé avant/après la soumission WIP d'origine.
+  // En LIVRABLE : budget alloué du document lié + ses propres % avant/après enregistrés.
+  budgetAffaire:      number | null;
+  pctFacture:         number | null;
+  pctAvancement:      number | null;
+}
+
 // ── Request types ─────────────────────────────────────────────────────────────
 
 export interface InvoiceLineRequest {
@@ -123,6 +145,8 @@ export interface InvoiceLineRequest {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
+  // WIP carry-forward — présent uniquement quand la ligne provient d'un solde WIP pické
+  sourceCarriedForwardLineId?: number;
   // T&M — collaborateur associé à cette ligne, présent uniquement en mode T&M
   profileUserId?: number;
 }

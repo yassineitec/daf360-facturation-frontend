@@ -33,6 +33,7 @@ const PAGE_SIZE = 10;
 
 const COST_CATEGORY_TYPE     = 'COST_CATEGORY';
 const COST_SUB_CATEGORY_TYPE = 'COST_SUB_CATEGORY';
+const VAT_RATE_TYPE          = 'VAT_RATE';
 
 interface ValueForm {
   code: string;
@@ -52,6 +53,8 @@ interface ValueForm {
   // COST_CATEGORY + COST_SUB_CATEGORY
   descriptionFr: string;
   descriptionEn: string;
+  // VAT_RATE — whole percentage (e.g. 19), null while unset
+  ratePct: number | null;
 }
 
 function emptyValueForm(): ValueForm {
@@ -59,7 +62,7 @@ function emptyValueForm(): ValueForm {
     code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false,
     parentCode: '', sourceType: 'MANUAL', autoPushModule: '',
     isStrictScrutiny: false, isDirect: false, isOverhead: false, isCapex: false,
-    descriptionFr: '', descriptionEn: '',
+    descriptionFr: '', descriptionEn: '', ratePct: null,
   };
 }
 
@@ -119,6 +122,9 @@ export class AdminListComponent implements OnInit {
   readonly isSubCategoryType = computed(() => this.activeListType() === COST_SUB_CATEGORY_TYPE);
   readonly isTaxonomyType    = computed(() => this.isCategoryType() || this.isSubCategoryType());
 
+  /** VAT_RATE values carry a `ratePct` whole percentage, shown/edited only for this type. */
+  readonly isVatRateType = computed(() => this.activeListType() === VAT_RATE_TYPE);
+
   readonly listColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
@@ -144,6 +150,10 @@ export class AdminListComponent implements OnInit {
     if (this.showsReceiptRule()) {
       cols.push({ key: 'requiresReceipt', label: t('ADMIN.LISTS.COL_RECEIPT'),
                   align: 'center', width: '130px' });
+    }
+    if (this.isVatRateType()) {
+      cols.push({ key: 'ratePct', label: t('ADMIN.LISTS.COL_RATE_PCT'),
+                  align: 'center', width: '110px' });
     }
     cols.push(
       { key: 'isDefault', label: this.translate.instant('ADMIN.LISTS.COL_DEFAULT'),   align: 'center', width: '90px' },
@@ -255,6 +265,7 @@ export class AdminListComponent implements OnInit {
       autoPushModule: v.autoPushModule,
       isStrictScrutiny: v.isStrictScrutiny === true,
       isGlobal: v.paysId === null,
+      ratePct: v.ratePct,
       _source: v,
     })),
   );
@@ -286,6 +297,19 @@ export class AdminListComponent implements OnInit {
     if (!paysId || !this.isTaxonomyType()) { this.parentCategories.set([]); return; }
     this.factListSvc.getAdminListValues(COST_CATEGORY_TYPE, paysId)
       .subscribe(values => this.parentCategories.set(values));
+  }
+
+  /**
+   * `daf-form-field` has no native min/max/step passthrough for a number field (see
+   * `FormFieldOptions` — no such properties), so the 0–100 clamp is done by hand here
+   * instead of relying on inert HTML attributes. Handles `null`/empty-string input
+   * without producing `NaN`.
+   */
+  clampRatePct(v: string | number | null): number | null {
+    if (v === null || v === '') return null;
+    const n = Number(v);
+    if (isNaN(n)) return null;
+    return Math.min(100, Math.max(0, n));
   }
 
   /**
@@ -670,9 +694,19 @@ export class AdminListComponent implements OnInit {
       isCapex: v.isCapex === true,
       descriptionFr: v.descriptionFr ?? '',
       descriptionEn: v.descriptionEn ?? '',
+      ratePct: v.ratePct ?? null,
     };
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_EDIT', { code: v.code }));
+  }
+
+  /**
+   * VAT_RATE only. `daf-form-field` has no native min/max/step — clamping here is the
+   * light sanity guard instead (the backend already validates properly).
+   */
+  onRatePctChange(v: string | number | null): void {
+    if (v === null || v === '') { this.valueForm.ratePct = null; return; }
+    this.valueForm.ratePct = Math.min(100, Math.max(0, Number(v)));
   }
 
   private openValueModal(title: string): void {
@@ -720,6 +754,7 @@ export class AdminListComponent implements OnInit {
         isDefault: this.valueForm.isDefault,
         // Non envoye pour les autres types : la colonne reste NULL (= non applicable).
         ...(this.showsReceiptRule() ? { requiresReceipt: this.valueForm.requiresReceipt } : {}),
+        ...(this.isVatRateType() ? { ratePct: this.valueForm.ratePct ?? undefined } : {}),
         ...taxonomy,
       }).subscribe({
         next: created => {
@@ -751,6 +786,7 @@ export class AdminListComponent implements OnInit {
         // label_en is NOT NULL server-side: an emptied EN field falls back to the FR label.
         labelFr, labelEn: labelEn || labelFr,
         ...(this.showsReceiptRule() ? { requiresReceipt: this.valueForm.requiresReceipt } : {}),
+        ...(this.isVatRateType() ? { ratePct: this.valueForm.ratePct ?? undefined } : {}),
         ...taxonomy,
       }).subscribe({
         next: updated => {

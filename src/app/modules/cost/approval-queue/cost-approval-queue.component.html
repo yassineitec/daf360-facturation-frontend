@@ -10,6 +10,7 @@
     </ng-container>
   </daf-page-header>
 
+
   <!-- Two tiles, both counted from the queues actually loaded. The third tile
        ("Performance d'approbation") is gone — see the component. -->
   <section class="grid grid-cols-2 gap-2 sm:gap-6">
@@ -49,14 +50,14 @@
   @if (viewMode() === 'grid') {
     <app-approval-cards-section
       [items]="visibleItems()"
-      [loading]="isLoading() || hiringLoading()"
+      [loading]="isLoading() || hiringLoading() || advancesLoading()"
       [canApproveCost]="canApproveCost()"
       [emptyMessage]="'COST.APPROVAL_QUEUE.EMPTY' | translate"
       (decide)="onDecide($event)" />
   } @else {
     <app-approval-table-section
       [items]="visibleItems()"
-      [loading]="isLoading() || hiringLoading()"
+      [loading]="isLoading() || hiringLoading() || advancesLoading()"
       [canApproveCost]="canApproveCost()"
       [emptyMessage]="'COST.APPROVAL_QUEUE.EMPTY' | translate"
       (decide)="onDecide($event)" />
@@ -176,3 +177,66 @@
 
   </div>
 </ng-template>
+
+<!-- Salary advance — the finance decision. Same three-part body as the two above: what is
+     being decided, the choice, then the comment. -->
+<ng-template #advanceDecisionTpl>
+  <div class="flex flex-col gap-5">
+
+    @if (selectedAdvance(); as a) {
+      <div class="flex flex-col gap-1 rounded-xl bg-surface-container-low px-4 py-3">
+        <span class="text-label-caps text-outline">{{ a.employeeName }} · AVS-{{ a.id }}</span>
+        <span class="text-[22px] font-black leading-tight text-on-surface">
+          {{ advanceAmount(a.amount, a.currency) }}
+        </span>
+        <span class="text-body-sm text-on-surface-variant">
+          {{ 'FACTURATION.ADVANCES.TERMS' | translate:{
+            monthly: advanceAmount(a.monthlyAmount, a.currency),
+            count: a.installments,
+            month: advanceMonth(a.firstDeductionMonth) } }}
+        </span>
+        <span class="text-body-sm text-on-surface-variant">{{ 'FACTURATION.ADVANCES.AFTER_APPROVAL' | translate }}</span>
+        @if (a.reason) {
+          <span class="mt-1 whitespace-pre-line text-body-sm text-on-surface-variant">
+            {{ 'FACTURATION.ADVANCES.EMPLOYEE_SAID' | translate }} « {{ a.reason }} »
+          </span>
+        }
+      </div>
+    }
+
+    <div class="flex flex-col gap-2">
+      <span class="text-label-caps text-outline">{{ 'COST.APPROVAL_QUEUE.DECISION_LABEL' | translate }}</span>
+      <div class="flex flex-wrap gap-2">
+        @for (opt of hiringDecisionOptions(); track opt.id) {
+          <button type="button"
+            class="flex items-center gap-2 rounded-lg border-2 px-4 py-2 text-body-md font-bold transition-all"
+            [class]="advanceDecision() === opt.id
+              ? 'border-tertiary bg-tertiary/10 text-primary'
+              : 'border-outline-variant/40 text-on-surface-variant hover:bg-surface-container'"
+            (click)="advanceDecision.set($any(opt.id))">
+            <span class="material-symbols-outlined text-[18px]">{{ opt.icon }}</span>
+            {{ opt.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <daf-form-field
+      [value]="advanceComment()"
+      (valueChange)="advanceComment.set($any($event) || '')"
+      [options]="{
+        type: 'textarea', rows: 3,
+        label: ('COST.APPROVAL_QUEUE.COMMENT_LABEL' | translate),
+        required: advanceDecision() === 'reject'
+      }" />
+
+    @if (advanceModalError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ advanceModalError() }}
+      </div>
+    }
+
+  </div>
+</ng-template>
+
