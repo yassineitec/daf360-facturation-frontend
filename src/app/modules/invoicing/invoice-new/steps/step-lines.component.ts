@@ -780,18 +780,14 @@ export class StepLinesComponent {
   }
 
   /**
-   * Montant HT d'une ligne Livrable = budgetAffaire × pctAFacturer / 100 — la formule du
-   * serveur, reproduite à l'identique pour que l'écran montre le montant qui sera
-   * réellement enregistré, et non celui du contrôle `prixUnitaireHt` (que le serveur
-   * ignore dès que la ligne a son avancement). Même rôle que `lineHtAv` en Forfaitaire.
-   * Ligne ajoutée à la main : pas d'avancement, le montant saisi fait foi côté serveur
-   * comme ici.
+   * Montant HT d'une ligne Livrable — toujours le contrôle `prixUnitaireHt` de cette ligne.
+   * Le serveur (InvoiceService.saveLines) retient désormais quantity × unitRate dans tous
+   * les cas ; recalculer ici depuis budgetAffaire × pctAFacturer ne ferait que reproduire
+   * l'ancienne dérive d'arrondi (pctAFacturer n'est qu'un pourcentage affiché, pas
+   * l'inverse exact du montant d'origine). Même rôle que `lineHtAv` en Forfaitaire.
    */
   lineHtLivrable(i: number): number {
-    if (!this.livrableHasAvancement(i)) return this.lineHtTm(i);
-    const budget = this.livrableAvancement(i, 'budgetAffaire') ?? 0;
-    const pct    = this.livrableAvancement(i, 'pctAFacturer')  ?? 0;
-    return budget * pct / 100;
+    return this.lineHtTm(i);
   }
 
   lineTtcLivrable(i: number): number {
@@ -1060,17 +1056,17 @@ export class StepLinesComponent {
         && this.avAvancement(i, 'pctAFacturer')  != null;
   }
 
-  /** Montant HT = budgetAffaire × pctAFacturer / 100, lues sur CETTE ligne (jamais
-   * recalculées depuis le progrès global de l'affaire, qui ignore que cette ligne précise a
-   * pu être réduite par une approbation client partielle — cf.
-   * ProgressBillingService.enterClientApprovedAmount). Mirrors lineHtLivrable exactement,
-   * pour la même raison. Ligne ajoutée à la main (pas d'avancement) : montant saisi
-   * directement, comme lineHtLivrable retombe sur lineHtTm. */
+  /** Montant HT — toujours le contrôle `prixUnitaireHt` de CETTE ligne, jamais recalculé
+   * depuis budgetAffaire/pctAFacturer : ces deux champs sont un contexte d'affichage figé
+   * (jamais le progrès global de l'affaire, qui ignore qu'une approbation client partielle
+   * a pu réduire cette ligne précise — cf. ProgressBillingService.enterClientApprovedAmount),
+   * mais pctAFacturer lui-même n'est qu'un pourcentage arrondi à l'affichage : recalculer
+   * le montant à partir de lui ne reproduit pas forcément le montant exact d'origine
+   * (dérive constatée de quelques centimes). `prixUnitaireHt` porte l'unique montant que
+   * le serveur retient — c'est donc l'unique source ici, avec ou sans avancement. Mirrors
+   * lineHtLivrable pour la même raison. */
   lineHtAv(i: number): number {
-    if (!this.avHasAvancement(i)) return this.lineHtTm(i);
-    const budget = this.avAvancement(i, 'budgetAffaire') ?? 0;
-    const pct    = this.avAvancement(i, 'pctAFacturer')  ?? 0;
-    return budget * pct / 100;
+    return this.lineHtTm(i);
   }
 
   /** Montant TTC = montantHT × (1 + tauxTVA / 100) */
