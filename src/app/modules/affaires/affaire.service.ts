@@ -38,6 +38,7 @@ export class AffaireService {
     if (filter.billingMode)   params = params.set('billingMode',   filter.billingMode);
     if (filter.dateDebutFrom) params = params.set('dateDebutFrom', filter.dateDebutFrom);
     if (filter.dateDebutTo)   params = params.set('dateDebutTo',   filter.dateDebutTo);
+    if (filter.sort)          params = params.set('sort',          filter.sort);
 
     return this.http.get<PageResponse<AffaireListItem>>(`${this.base}/affaires`, { params });
   }

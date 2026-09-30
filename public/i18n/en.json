@@ -14,6 +14,11 @@
       "SUMMARY": "{start}–{end} of {total}",
       "FIRST": "First page",
       "LAST": "Last page"
+    },
+    "TABLE": {
+      "COLUMN_PICKER": "Choose columns",
+      "RESET": "Reset table layout",
+      "SORT_BY": "Sort by {column}"
     }
   },
   "FACTURATION": {

@@ -10,7 +10,7 @@ import { AffaireService } from './affaire.service';
 import { AffaireFilter, AffaireListItem, AffairesSummary, STATUT_LABELS } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
 import { AffairesCardsSectionComponent } from './components/affaires-cards-section.component';
-import { AffairesTableSectionComponent } from './components/affaires-table-section.component';
+import { AffaireSort, AffairesTableSectionComponent } from './components/affaires-table-section.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 import { EmployeeAvatarService } from '../../core/employee-avatar.service';
 import { ClientService } from '../clients/client.service';
@@ -77,6 +77,13 @@ export class AffairesListComponent implements OnInit {
   /** Période de début de l'affaire (`dateDebutFrom`/`dateDebutTo`, bornes incluses) — null = toutes. */
   filterDateDebut     = signal<Date[] | null>(null);
   viewMode     = signal<ViewMode>('grid');
+  /**
+   * Tri serveur choisi dans l'en-tête du tableau : `sort` tel qu'affiché (graine de la
+   * flèche), `sortParam` tel qu'envoyé à l'API. Il porte sur la LISTE seulement — les
+   * tuiles (`/summary`) ne dépendent pas de l'ordre. Conservé entre cartes et liste.
+   */
+  readonly sort      = signal<AffaireSort | null>(null);
+  private readonly sortParam = signal<string | null>(null);
 
   /**
    * Restriction à un client (`clientId`, filtre serveur). Elle arrive soit par
@@ -324,6 +331,7 @@ export class AffairesListComponent implements OnInit {
     this.error.set(null);
     const filter: AffaireFilter = {
       ...this.currentFilter(),
+      sort: this.sortParam(),
       page: this.currentPage(),
       size: this.pageSize(),
     };
@@ -383,6 +391,14 @@ export class AffairesListComponent implements OnInit {
     this.currentPage.set(0);
     this.load();
     this.loadSummary();
+  }
+
+  /** Un nouvel ordre est un nouveau jeu : retour à la première page (les tuiles ne bougent pas). */
+  onSortChange(change: { sort: AffaireSort | null; param: string | null }): void {
+    this.sort.set(change.sort);
+    this.sortParam.set(change.param);
+    this.currentPage.set(0);
+    this.load();
   }
 
   goToPage(page: number): void {

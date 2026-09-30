@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
-  AvatarCell, BadgeCell, DafCellDirective, DataTableComponent,
+  AvatarCell, BadgeCell, DafCellDirective, DataTableComponent, SortDirection,
   TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
 import { AffaireListItem } from '../affaire.model';
@@ -11,12 +11,41 @@ import {
   distinctResponsables, initials, rafTone, typeLabel,
 } from '../affaire-display';
 import { enumLabel } from '../../../shared/enum-labels';
+
+/** L'en-tête de tri tel que la page le garde — `null` = l'ordre du serveur. */
+export interface AffaireSort {
+  key: string;
+  dir: 'asc' | 'desc';
+}
+
+/**
+ * Colonne du tableau → champ de l'entité `Affaire` pour le tri serveur (`?sort=`, lu par le
+ * `Pageable` de `GET /affaires`). Seuls les champs portés par l'entité sont triables : le
+ * client, le pays (libellé), le responsable et le RAF viennent d'autres tables ou sont
+ * calculés, la base ne peut pas les ordonner. Le budget se trie sur le montant brut, sans
+ * conversion de devise.
+ */
+const SERVER_SORT_FIELD: Record<string, string> = {
+  reference:   'reference',
+  intitule:    'intitule',
+  billingMode: 'billingMode',
+  budget:      'budgetPrevisionnel',
+  statut:      'statut',
+};
+
 /**
  * List view of `/finance/affaires` on the house table style (UI-PLAYBOOK §6b):
  * no wrapper and no outer card (the lib already draws the border, the radius and
  * its own `overflow-x-auto`), `showHeader: false` so the page keeps exactly one
  * `h1`, `emptyMessage` instead of a bespoke empty state, and a single icon-only
  * row action in a trailing right-aligned column.
+ *
+ * Outils de tableau de la lib activés, comme sur les tableaux RH et pointage : en-têtes
+ * triables, colonnes et lignes redimensionnables, choix des colonnes, bouton de
+ * réinitialisation. **Tri serveur (`manualSort`)** : la liste est paginée côté serveur,
+ * un tri local ne réordonnerait que la page affichée — l'en-tête émet `sortChange` et la
+ * page recharge la première page triée (`sort` revient en `defaultSort` pour garder la
+ * flèche après un aller-retour cartes ↔ liste).
  *
  * Stateless: affaires in, `(open)` / `(rowActivate)` out.
  */
@@ -31,7 +60,9 @@ import { enumLabel } from '../../../shared/enum-labels';
       [columns]="columns()"
       [rows]="rows()"
       [config]="config()"
-      (rowClick)="onRowClick($event)">
+      (rowClick)="onRowClick($event)"
+      (sortChange)="onSortChange($event.key, $event.dir)"
+      (resetClick)="onSortChange('', null)">
 
       <ng-template dafCell="raf" let-row>
         <span class="font-bold" [class]="row['_rafClass']">{{ row['_rafLabel'] }}</span>
@@ -57,30 +88,34 @@ export class AffairesTableSectionComponent {
   avatarUrls   = input<Map<number, string>>(new Map());
   /** Libellés des pays par id — le endpoint de liste ne renvoie que `paysId`. */
   paysLabels   = input<Map<number, string>>(new Map());
+  /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
+  sort         = input<AffaireSort | null>(null);
 
   /** A row click opens the affaire; the trailing `view` action means the same thing. */
   readonly open = output<number>();
+  /** Valeur `sort` à envoyer à l'API (`reference,asc`…), ou `null` quand le tri est retiré. */
+  readonly sortChange = output<{ sort: AffaireSort | null; param: string | null }>();
 
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
+    const sortable = (key: string) => key in SERVER_SORT_FIELD;
     return [
-      { key: 'reference',   label: t('AFFAIRES.LIST.TABLE.HEADERS.REF'),     type: 'text'   },
-      { key: 'intitule',    label: t('AFFAIRES.LIST.TABLE.HEADERS.TITLE'),   type: 'text'   },
+      { key: 'reference',   label: t('AFFAIRES.LIST.TABLE.HEADERS.REF'),     type: 'text', sortable: sortable('reference') },
+      { key: 'intitule',    label: t('AFFAIRES.LIST.TABLE.HEADERS.TITLE'),   type: 'text', sortable: sortable('intitule') },
       // Le mode se range avec la référence et l'intitulé, pas à côté du statut : ce sont
       // les trois éléments qui identifient le contrat, et deux pastilles voisines se
       // liraient comme un seul bloc d'état.
-      { key: 'billingMode', label: t('AFFAIRES.LIST.TABLE.HEADERS.BILLING_MODE'), type: 'badge' },
+      { key: 'billingMode', label: t('AFFAIRES.LIST.TABLE.HEADERS.BILLING_MODE'), type: 'badge', sortable: sortable('billingMode') },
       { key: 'client',      label: t('AFFAIRES.LIST.TABLE.HEADERS.CLIENT'),  type: 'text'   },
       { key: 'pays',        label: t('AFFAIRES.LIST.TABLE.HEADERS.PAYS'),    type: 'text'   },
       { key: 'responsable', label: t('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'), type: 'avatar' },
-      { key: 'budget',      label: t('AFFAIRES.LIST.TABLE.HEADERS.BUDGET'),  type: 'text', align: 'right' },
+      { key: 'budget',      label: t('AFFAIRES.LIST.TABLE.HEADERS.BUDGET'),  type: 'text', align: 'right', sortable: sortable('budget') },
       { key: 'raf',         label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),     type: 'custom', align: 'right' },
-      { key: 'statut',      label: t('AFFAIRES.LIST.TABLE.HEADERS.STATUS'),  type: 'badge'  },
+      { key: 'statut',      label: t('AFFAIRES.LIST.TABLE.HEADERS.STATUS'),  type: 'badge', sortable: sortable('statut') },
     ];
-    // No column is `sortable`: the lib sorts client-side over the one page it was
-    // handed, and the list is server-paginated — the arrows would silently reorder
-    // just the visible rows (§10b).
+    // Tri serveur (`manualSort`) : la liste est paginée côté serveur, la lib ne trie donc
+    // pas elle-même — elle aurait seulement réordonné les lignes visibles (§10b).
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
@@ -141,12 +176,27 @@ export class AffairesTableSectionComponent {
 
   protected readonly config = computed<TableConfig>(() => {
     this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    // Graine lue une seule fois par le tableau — la suivre reconstruirait la config à chaque clic.
+    const sort = untracked(this.sort);
     return {
       showHeader:   false,
       hoverable:    true,
       loading:      this.loading(),
       skeletonRows: Math.min(this.pageSize(), 20),
       emptyMessage: this.emptyMessage(),
+      // Identité stable des lignes : hauteurs et tri s'y rattachent, pas à l'index d'affichage.
+      rowId:             (row: TableRow) => row['id'] as number,
+      resizableColumns:  true,
+      resizableRows:     true,
+      columnPicker:      true,
+      columnPickerLabel: t('COMMON.TABLE.COLUMN_PICKER'),
+      showReset:         true,
+      resetLabel:        t('COMMON.TABLE.RESET'),
+      sortLabel:         t('COMMON.TABLE.SORT_BY'),
+      // Lignes rendues dans l'ordre renvoyé par l'API ; sortChange est tout de même émis.
+      manualSort:        true,
+      ...(sort ? { defaultSort: sort } : {}),
       actions: [{
         id:      'view',
         tooltip: this.translate.instant('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
@@ -154,6 +204,13 @@ export class AffairesTableSectionComponent {
       }],
     };
   });
+
+  /** Clic d'en-tête (ou bouton reset) → valeur `sort` pour l'API, ou `null` si retiré. */
+  protected onSortChange(key: string, dir: SortDirection): void {
+    const field = SERVER_SORT_FIELD[key];
+    const sort: AffaireSort | null = field && dir ? { key, dir } : null;
+    this.sortChange.emit({ sort, param: sort ? `${field},${sort.dir}` : null });
+  }
 
   protected onRowClick(row: TableRow): void {
     this.open.emit(row['id'] as number);

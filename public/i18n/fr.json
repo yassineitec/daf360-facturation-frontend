@@ -14,6 +14,11 @@
       "SUMMARY": "{start}–{end} sur {total}",
       "FIRST": "Première page",
       "LAST": "Dernière page"
+    },
+    "TABLE": {
+      "COLUMN_PICKER": "Choisir les colonnes",
+      "RESET": "Réinitialiser l'affichage du tableau",
+      "SORT_BY": "Trier par {column}"
     }
   },
   "FACTURATION": {

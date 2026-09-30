@@ -272,6 +272,11 @@ export interface AffaireFilter {
   /** Date de début de l'affaire, bornes incluses, jours ISO `yyyy-MM-dd`. */
   dateDebutFrom?: string | null;
   dateDebutTo?:   string | null;
+  /**
+   * Tri serveur, `champ,asc|desc` (champ de l'entité `Affaire`) — lu par le `Pageable`
+   * de `GET /affaires`. Absent = l'ordre du serveur. Sans effet sur `/affaires/summary`.
+   */
+  sort?:     string | null;
   page?:     number;
   size?:     number;
 }
