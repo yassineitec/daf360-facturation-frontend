@@ -4,7 +4,7 @@ import {
   AvatarCell, BadgeCell, DafCellDirective, DataTableComponent,
   TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
-import { SupplierDto } from '../supplier.model';import {
+import { SupplierDto, supplierTypeLabel } from '../supplier.model';import {
   SUPPLIER_STATE_BADGE, SUPPLIER_STATE_LABEL, initials, supplierCode, supplierState,
 } from '../supplier-display';
 
@@ -81,7 +81,7 @@ export class SuppliersTableSectionComponent {
           subtitle: supplierCode(s),
         } satisfies AvatarCell,
         pays: s.paysLabel ?? '—',
-        type: s.typeLabel ?? '—',
+        type: supplierTypeLabel(s, this.translate.currentLang()) ?? '—',
         tva:  s.numeroTva ?? '—',
         statut: {
           label:   t(SUPPLIER_STATE_LABEL[state]),

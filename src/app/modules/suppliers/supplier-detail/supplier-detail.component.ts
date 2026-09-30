@@ -15,7 +15,7 @@ import type {
 } from '@khalilrebhiitec/daf360';
 
 import { SupplierService } from '../supplier.service';
-import { SupplierDto } from '../supplier.model';
+import { SupplierDto, supplierTypeLabel } from '../supplier.model';
 import {
   SUPPLIER_STATE_BADGE, SUPPLIER_STATE_LABEL, supplierCode, supplierState,
 } from '../supplier-display';
@@ -362,7 +362,7 @@ export class SupplierDetailComponent implements OnInit {
     return [
       { label: 'SUPPLIERS.DETAIL.INFO.CODE',       value: supplierCode(s) },
       { label: 'SUPPLIERS.DETAIL.INFO.COUNTRY',    value: s.paysLabel ?? '—' },
-      { label: 'SUPPLIERS.DETAIL.INFO.TYPE',       value: s.typeLabel ?? '—' },
+      { label: 'SUPPLIERS.DETAIL.INFO.TYPE',       value: supplierTypeLabel(s, this.translate.currentLang()) ?? '—' },
       { label: 'SUPPLIERS.DETAIL.INFO.CREATED_AT', value: this.formatDate(s.createdAt) },
     ];
   });

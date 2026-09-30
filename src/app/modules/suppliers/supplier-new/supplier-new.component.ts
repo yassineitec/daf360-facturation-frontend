@@ -10,7 +10,7 @@ import type {
   BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
 } from '@khalilrebhiitec/daf360';
 import { SupplierService } from '../supplier.service';
-import { CreateSupplierRequest, SupplierDto } from '../supplier.model';
+import { CreateSupplierRequest, SupplierDto, supplierTypeLabel } from '../supplier.model';
 import { ClientService } from '../../clients/client.service';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import { FactListService } from '../../../core/fact-list.service';
@@ -91,7 +91,10 @@ export class SupplierNewComponent implements OnInit {
    */
   name      = signal('');
   typeId    = signal<number | null>(null);
+  /** Libellé connu avant le chargement de la liste (mode modification), dans la langue courante. */
   typeLabel = signal('');
+  /** Code de la catégorie : c'est lui qui retrouve l'option quand l'id a changé (surcharge pays). */
+  typeCode  = signal<string | null>(null);
   numeroTva = signal('');
   taxId     = signal('');
   iban      = signal('');
@@ -198,7 +201,7 @@ export class SupplierNewComponent implements OnInit {
     const badges: PageHeaderBadge[] = [];
     if (this.name().trim())  badges.push({ label: this.name().trim(), icon: 'storefront',      variant: 'neutral' });
     if (this.paysId())       badges.push({ label: this.paysSummary(), icon: 'public',          variant: 'neutral' });
-    if (this.typeLabel())    badges.push({ label: this.typeDisplayLabel(), icon: 'category',         variant: 'neutral' });
+    if (this.typeId() !== null) badges.push({ label: this.typeDisplayLabel(), icon: 'category',         variant: 'neutral' });
     if (this.numeroTva())    badges.push({ label: this.numeroTva(),   icon: 'receipt_long',    variant: 'neutral' });
     if (this.iban())         badges.push({ label: this.translate.instant('SUPPLIERS.NEW.BADGE_IBAN'), icon: 'account_balance', variant: 'secondary' });
     return badges;
@@ -218,12 +221,62 @@ export class SupplierNewComponent implements OnInit {
 
   onPaysSelect(values: string[]): void {
     this.paysId.set(Number(values[0] ?? 0));
+    this.loadSupplierTypes();
   }
 
   // ═══ Catégorie de fournisseur ═════════════════════════════════════════════
 
+  /**
+   * La liste SUPPLIER_CATEGORY **du pays du fournisseur** — la même que le panneau
+   * d'administration (Administration → Listes → Catégorie fournisseur), qui se
+   * paramètre pays par pays : une valeur ajoutée, renommée ou désactivée y est
+   * enregistrée comme ligne du pays sélectionné. L'ancien appel demandait le pays `0`
+   * et ne recevait donc que les valeurs globales semées par V79, sans aucune des
+   * modifications faites dans l'administration.
+   *
+   * Rechargée à chaque changement de pays (création) ; une réponse arrivée pour un
+   * pays qui n'est plus le pays courant est ignorée.
+   */
+  private loadSupplierTypes(): void {
+    const paysId = this.paysId();
+    if (!paysId) { this.supplierTypes.set([]); return; }
+    this.factListSvc.getListValues('SUPPLIER_CATEGORY', paysId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => {
+        if (paysId !== this.paysId()) return;
+        this.supplierTypes.set(list);
+        this.reconcileSelectedType(list);
+      });
+  }
+
+  /**
+   * Garde la sélection cohérente avec la liste du pays :
+   * - l'id est dans la liste → rien à faire ;
+   * - sinon une valeur de même **code** existe → c'est la surcharge pays de la valeur
+   *   globale choisie (l'admin a renommé/modifié la catégorie pour ce pays : nouvel id,
+   *   même code). On bascule dessus ; en modification, l'enregistrement repointera le
+   *   fournisseur sur la ligne du pays, ce qui est le bon état ;
+   * - sinon la catégorie n'existe pas (ou plus) pour ce pays → sélection effacée,
+   *   l'utilisateur doit en choisir une autre.
+   */
+  private reconcileSelectedType(list: ListValueDto[]): void {
+    const id = this.typeId();
+    if (id === null || list.some(t => t.id === id)) return;
+    const byCode = this.typeCode() ? list.find(t => t.code === this.typeCode()) : undefined;
+    if (byCode) { this.selectType(byCode); return; }
+    this.typeId.set(null);
+    this.typeCode.set(null);
+    this.typeLabel.set('');
+  }
+
+  private selectType(t: ListValueDto): void {
+    this.typeId.set(t.id);
+    this.typeCode.set(t.code);
+    this.typeLabel.set(this.valueLabel(t));
+  }
+
   readonly typeSelectOptions = computed<SelectOption[]>(() =>
-    this.supplierTypes().map(t => ({ value: t.id + '|' + t.labelFr, label: this.valueLabel(t) })));
+    this.supplierTypes().map(t => ({ value: String(t.id), label: this.valueLabel(t) })));
 
   /** Libellé EN en anglais (repli sur le FR si la ligne n'en a pas), FR sinon. */
   private valueLabel(v: ListValueDto): string {
@@ -236,27 +289,16 @@ export class SupplierNewComponent implements OnInit {
     return known ? this.valueLabel(known) : this.typeLabel();
   }
 
-  /**
-   * La valeur sélectionnée est reconstruite `id|label` pour retomber sur l'option
-   * correspondante. Le libellé est **relu dans la liste** quand elle est chargée,
-   * plutôt que repris du `typeLabel` du fournisseur : les deux viennent du même
-   * `label_fr` côté serveur, mais si l'un dérivait de l'autre, la chaîne ne
-   * correspondrait à aucune option et le select afficherait son placeholder alors que
-   * le fournisseur a bien une catégorie.
-   */
+  /** L'option est la valeur de liste elle-même (par id) ; libellé traduit à l'affichage. */
   readonly selectedTypeValue = computed<string[]>(() => {
     const id = this.typeId();
-    if (id === null) return [];
-    const known = this.supplierTypes().find(t => t.id === id);
-    return [id + '|' + (known?.labelFr ?? this.typeLabel())];
+    return id !== null && this.supplierTypes().some(t => t.id === id) ? [String(id)] : [];
   });
 
   onTypeSelect(values: string[]): void {
-    const value = values[0] ?? '';
-    if (!value) { this.typeId.set(null); this.typeLabel.set(''); return; }
-    const sep = value.indexOf('|');
-    this.typeId.set(Number(value.substring(0, sep)));
-    this.typeLabel.set(value.substring(sep + 1));
+    const picked = this.supplierTypes().find(t => String(t.id) === values[0]);
+    if (!picked) { this.typeId.set(null); this.typeCode.set(null); this.typeLabel.set(''); return; }
+    this.selectType(picked);
   }
 
   // ═══ Navigation ═══════════════════════════════════════════════════════════
@@ -303,10 +345,8 @@ export class SupplierNewComponent implements OnInit {
     this.clientSvc.getPays().pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(list => this.paysList.set(list));
 
-    this.factListSvc.getListValues('SUPPLIER_CATEGORY', 0)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(list => this.supplierTypes.set(list));
-
+    // Les catégories se chargent une fois le pays connu (loadSupplierTypes) : elles
+    // se paramètrent par pays dans l'administration.
     if (this.isEdit) {
       // Le pays vient du fournisseur, pas de l'utilisateur connecté : on peut modifier
       // un fournisseur d'un autre pays que le sien sans le lui réaffecter au passage.
@@ -315,7 +355,9 @@ export class SupplierNewComponent implements OnInit {
     }
 
     this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({ next: id => { if (id && id > 0) this.paysId.set(id); } });
+      .subscribe({ next: id => {
+        if (id && id > 0) { this.paysId.set(id); this.loadSupplierTypes(); }
+      } });
   }
 
   private loadForEdit(): void {
@@ -326,11 +368,13 @@ export class SupplierNewComponent implements OnInit {
         this.name.set(s.name ?? '');
         this.paysId.set(s.paysId ?? 0);
         this.typeId.set(s.typeId);
-        this.typeLabel.set(s.typeLabel ?? '');
+        this.typeCode.set(s.typeCode ?? null);
+        this.typeLabel.set(supplierTypeLabel(s, this.translate.currentLang()) ?? '');
         this.numeroTva.set(s.numeroTva ?? '');
         this.taxId.set(s.taxId ?? '');
         this.iban.set(s.iban ?? '');
         this.loading.set(false);
+        this.loadSupplierTypes();
       },
       error: () => {
         this.loading.set(false);

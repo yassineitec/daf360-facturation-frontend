@@ -22,6 +22,15 @@ export interface SupplierDto {
   paysLabel:  string | null;
   typeId:     number | null;
   typeLabel:  string | null;
+  /** Libellé EN de la catégorie (repli serveur sur le FR). */
+  typeLabelEn: string | null;
+  /** Code de la catégorie — stable entre la valeur globale et son surcharge pays. */
+  typeCode:   string | null;
+}
+
+/** Libellé de la catégorie d'un fournisseur dans la langue courante. */
+export function supplierTypeLabel(s: SupplierDto, lang: string | null | undefined): string | null {
+  return lang === 'en' ? (s.typeLabelEn || s.typeLabel) : s.typeLabel;
 }
 
 /**
