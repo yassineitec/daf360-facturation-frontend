@@ -198,7 +198,7 @@ export class SupplierNewComponent implements OnInit {
     const badges: PageHeaderBadge[] = [];
     if (this.name().trim())  badges.push({ label: this.name().trim(), icon: 'storefront',      variant: 'neutral' });
     if (this.paysId())       badges.push({ label: this.paysSummary(), icon: 'public',          variant: 'neutral' });
-    if (this.typeLabel())    badges.push({ label: this.typeLabel(),   icon: 'category',         variant: 'neutral' });
+    if (this.typeLabel())    badges.push({ label: this.typeDisplayLabel(), icon: 'category',         variant: 'neutral' });
     if (this.numeroTva())    badges.push({ label: this.numeroTva(),   icon: 'receipt_long',    variant: 'neutral' });
     if (this.iban())         badges.push({ label: this.translate.instant('SUPPLIERS.NEW.BADGE_IBAN'), icon: 'account_balance', variant: 'secondary' });
     return badges;
@@ -223,7 +223,18 @@ export class SupplierNewComponent implements OnInit {
   // ═══ Catégorie de fournisseur ═════════════════════════════════════════════
 
   readonly typeSelectOptions = computed<SelectOption[]>(() =>
-    this.supplierTypes().map(t => ({ value: t.id + '|' + t.labelFr, label: t.labelFr })));
+    this.supplierTypes().map(t => ({ value: t.id + '|' + t.labelFr, label: this.valueLabel(t) })));
+
+  /** Libellé EN en anglais (repli sur le FR si la ligne n'en a pas), FR sinon. */
+  private valueLabel(v: ListValueDto): string {
+    return this.translate.currentLang() === 'en' ? (v.labelEn || v.labelFr) : v.labelFr;
+  }
+
+  /** Libellé de la catégorie choisie dans la langue courante, pour la pastille d'en-tête. */
+  private typeDisplayLabel(): string {
+    const known = this.supplierTypes().find(t => t.id === this.typeId());
+    return known ? this.valueLabel(known) : this.typeLabel();
+  }
 
   /**
    * La valeur sélectionnée est reconstruite `id|label` pour retomber sur l'option
