@@ -13,7 +13,8 @@ import { ClientsCardsSectionComponent } from './clients-cards-section.component'
 import { ClientsTableSectionComponent } from './clients-table-section.component';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { PaysRefDto } from '../../affaires/affaire.model';
+import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
+import { TableSort, sortParam } from '../../../shared/table-tools';
 
 /** Activity states the status filter can express, mapped to the backend `isActive` flag. */
 type StatusFilter = '' | 'active' | 'inactive';
@@ -60,6 +61,8 @@ export class ClientListComponent implements OnInit {
   firstLoad = signal(true);
   loading   = signal(false);
 
+  /** Tri serveur choisi dans l'en-tête du tableau (clé de colonne), `null` = ordre par défaut. */
+  readonly sort = signal<TableSort | null>(null);
   searchText   = signal('');
   filterSector = signal('');
   filterStatus = signal<StatusFilter>('');
@@ -93,7 +96,7 @@ export class ClientListComponent implements OnInit {
     this.translate.currentLang();
     // With the « Pays » filter on, the total is that country's — say so instead of « tous pays ».
     const country = this.paysList().find(p => String(p.id) === this.filterCountry());
-    if (country) return { value: country.frenchLabel, direction: 'neutral' };
+    if (country) return { value: paysLabel(country, this.translate.currentLang()), direction: 'neutral' };
     return { value: this.translate.instant('CLIENTS.LIST.KPI.ALL_COUNTRIES'), direction: 'neutral' };
   });
 
@@ -168,7 +171,9 @@ export class ClientListComponent implements OnInit {
         type: 'select',
         placeholder: t('CLIENTS.LIST.FILTER.ALL'),
         searchable: true,
-        options: this.paysList().map(p => ({ value: String(p.id), label: p.frenchLabel })),
+        options: this.paysList()
+          .map(p => ({ value: String(p.id), label: paysLabel(p, this.translate.currentLang()) }))
+          .sort((a, b) => a.label.localeCompare(b.label)),
       },
       {
         name: 'currency',
@@ -236,6 +241,7 @@ export class ClientListComponent implements OnInit {
       countryId: this.filterCountry() ? Number(this.filterCountry()) : null,
       currency:  this.filterCurrency() || null,
       hasActiveAffaires: affaires === 'with' ? true : affaires === 'without' ? false : null,
+      sort:      sortParam(this.sort()),
     };
     this.svc.getClients(filter).subscribe({
       next: res => {
@@ -255,6 +261,13 @@ export class ClientListComponent implements OnInit {
 
   loadSectors(): void {
     this.svc.getSectors().subscribe(s => this.sectors.set(s));
+  }
+
+  /** Nouveau tri d'en-tête → retour à la première page, triée par le serveur. */
+  onSortChange(sort: TableSort | null): void {
+    this.sort.set(sort);
+    this.currentPage.set(0);
+    this.load();
   }
 
   onSearchTextChange(value: string): void {

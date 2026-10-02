@@ -14,7 +14,14 @@
                               title: ('AFFAIRES.DEPENSE.ZOOM_TOOLTIP' | translate) }"
       (onClick)="zoomOpen.set(true)" />
   </daf-search-toolbar>
+  @if (loading()) {
+    <p class="flex items-center gap-2 text-body-sm text-on-surface-variant m-0 px-1">
+      <span class="material-symbols-outlined animate-spin text-base">progress_activity</span>
+      {{ 'AFFAIRES.DEPENSE.LOADING' | translate }}
+    </p>
+  }
   <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()"
+    (sortChange)="onSort($event)" (resetClick)="onSort(null)"
     (rowClick)="collaboratorSelected.emit($any($event)['email'])" />
 </div>
 
@@ -59,7 +66,8 @@
                          disabled: !rows().length }"
             (onClick)="exportExcel()" />
         </div>
-        <daf-data-table [columns]="columns()" [rows]="paginatedRows()" [config]="config()" />
+        <daf-data-table [columns]="columns()" [rows]="paginatedRows()" [config]="config()"
+          (sortChange)="onSort($event)" (resetClick)="onSort(null)" />
         <!-- daf-pagination de la lib — même mécanisme que la popup Historique WIP, mais
              regroupée à droite (résumé + numéros de page + sélecteur) via l'override
              CSS ci-dessus, plutôt que répartie sur toute la largeur. -->

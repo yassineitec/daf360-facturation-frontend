@@ -610,7 +610,8 @@
                                         disabled: !filteredHistoryLines().length }"
                 (onClick)="exportHistoryExcel(filteredHistoryLines())" />
             </div>
-            <daf-data-table [columns]="tmHistoryColumns()" [rows]="paginatedHistoryRows()" [config]="tmHistoryConfig()" />
+            <daf-data-table [columns]="tmHistoryColumns()" [rows]="paginatedHistoryRows()" [config]="tmHistoryPopupConfig()"
+              (sortChange)="onHistoryPopupSort($event)" (resetClick)="onHistoryPopupSort(null)" />
             <!-- TEST : daf-pagination de la lib — mêmes signaux historyPage/historyPageSize
                  que la popup Historique du mode Livrable (une seule popup affichée à la
                  fois selon le mode, donc l'état partagé ne pose pas de conflit). -->
@@ -892,7 +893,8 @@
                                         disabled: !filteredLivrableHistory().length }"
                 (onClick)="exportLivrableHistoryExcel(filteredLivrableHistory())" />
             </div>
-            <daf-data-table [columns]="livrableHistoryColumns()" [rows]="paginatedLivrableHistoryRows()" [config]="livrableHistoryConfig()" />
+            <daf-data-table [columns]="livrableHistoryColumns()" [rows]="paginatedLivrableHistoryRows()" [config]="livrableHistoryPopupConfig()"
+              (sortChange)="onLivrableHistoryPopupSort($event)" (resetClick)="onLivrableHistoryPopupSort(null)" />
             <!-- TEST : daf-pagination de la lib — voir le commentaire détaillé sur la
                  popup Historique du mode Régie. -->
             <daf-pagination class="wip-pagination"

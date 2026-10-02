@@ -115,7 +115,8 @@
             <p class="config-hint">{{ 'ADMIN.LISTS.TAXONOMY_SCOPE_HINT' | translate }}</p>
           }
 
-          <daf-data-table [columns]="listColumns()" [rows]="listRows()" [config]="listTableConfig()">
+          <daf-data-table [columns]="listColumns()" [rows]="listRows()" [config]="listTableConfig()"
+            (sortChange)="onListSort($event)" (resetClick)="onListSort(null)">
 
             <ng-template dafCell="code" let-row>
               <span class="code-pill">{{ row['code'] }}</span>
@@ -222,7 +223,8 @@
             (onClick)="openCreateForexModal()" />
         </div>
 
-        <daf-data-table [columns]="forexColumns()" [rows]="forexTableRows()" [config]="forexTableConfig()">
+        <daf-data-table [columns]="forexColumns()" [rows]="forexTableRows()" [config]="forexTableConfig()"
+          (sortChange)="onForexSort($event)" (resetClick)="onForexSort(null)">
 
           <ng-template dafCell="code" let-row>
             <span class="code-pill">{{ row['code'] }}</span>

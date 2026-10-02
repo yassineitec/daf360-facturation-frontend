@@ -3,6 +3,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonComponent, DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { DepenseLigne } from './depense.model';
 import { isoWeek } from '../../../shared/iso-week';
+import { tableTools } from '../../../shared/table-tools';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 /**
@@ -45,14 +46,21 @@ export class DepenseCollaboratorDetailComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
+    // Tri local (toutes les lignes du collaborateur, sans pagination), sur les valeurs
+    // brutes : la date formatée et le montant formaté se trieraient mal en texte.
+    const src = (row: TableRow) => row['_source'] as DepenseLigne;
     return [
-      { key: 'date', label: t('AFFAIRES.WIP.COL_DATE'), type: 'text' },
-      { key: 'week', label: t('AFFAIRES.WIP.COL_WEEK'), type: 'text' },
-      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'), type: 'text' },
-      { key: 'wbs', label: t('AFFAIRES.WIP.COL_WBS'), type: 'text' },
-      { key: 'document', label: t('AFFAIRES.WIP.COL_DOCUMENT'), type: 'text' },
-      { key: 'hours', label: t('AFFAIRES.WIP.COL_HOURS'), type: 'text', align: 'right' },
-      { key: 'cost', label: t('AFFAIRES.WIP.COL_COST'), type: 'text', align: 'right' },
+      { key: 'date', label: t('AFFAIRES.WIP.COL_DATE'), type: 'text', sortable: true,
+        sortAccessor: row => src(row).date },
+      { key: 'week', label: t('AFFAIRES.WIP.COL_WEEK'), type: 'text', sortable: true,
+        sortAccessor: row => src(row).date },
+      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'), type: 'text', sortable: true },
+      { key: 'wbs', label: t('AFFAIRES.WIP.COL_WBS'), type: 'text', sortable: true },
+      { key: 'document', label: t('AFFAIRES.WIP.COL_DOCUMENT'), type: 'text', sortable: true },
+      { key: 'hours', label: t('AFFAIRES.WIP.COL_HOURS'), type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).hours },
+      { key: 'cost', label: t('AFFAIRES.WIP.COL_COST'), type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).costAmount },
     ];
   });
 
@@ -69,13 +77,15 @@ export class DepenseCollaboratorDetailComponent {
         document: l.document ?? '—',
         hours: l.hours.toFixed(2),
         cost: this.fmtAmt(l.costAmount),
+        _source: l,
       })),
   );
 
   protected readonly config = computed<TableConfig>(() => ({
-    showHeader: true,
+    showHeader: false,
     hoverable: true,
     emptyMessage: this.translate.instant('AFFAIRES.DEPENSE.EMPTY_DETAIL'),
+    ...tableTools(this.translate),
   }));
 
   protected fmtDate(iso: string): string {

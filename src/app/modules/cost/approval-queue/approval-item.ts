@@ -32,6 +32,9 @@ export interface ApprovalItem {
   urgency:   Urgency;
   dateLabel: string;
   amountLabel: string;
+  /** Valeurs brutes derrière `dateLabel` / `amountLabel`, pour le tri du tableau. */
+  sortDate:   string | null;
+  sortAmount: number | null;
   metrics:   ApprovalMetric[];
   /** Exactly one of these is set, per `kind`. */
   cost?:     CostLineDto;

@@ -13,12 +13,15 @@ import {
 import { AffaireService } from '../affaire.service';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { tableTools } from '../../../shared/table-tools';
 import { LivrableBatchDto } from '../livrable.model';
 type DetailType = 'jalon' | 'line' | 'livrable';
 
 interface HistoryRow {
   id: number;
   period: string;
+  /** Clé de tri de `period` (date ISO ou AAAA-MM) : la période affichée est jj/mm ou MM/AAAA. */
+  _periodKey: string;
   label: string;
   value: number;
   statut: string;
@@ -119,6 +122,7 @@ export class ApprovalDetailComponent implements OnInit {
         return this.siblingJalons().map(j => ({
           id: j.id,
           period: this.fmtDate(j.datePrevisionnelle),
+          _periodKey: j.datePrevisionnelle ?? '',
           label: j.label,
           value: j.montant,
           statut: j.statut,
@@ -128,6 +132,7 @@ export class ApprovalDetailComponent implements OnInit {
         return this.siblingLines().map(l => ({
           id: l.id,
           period: `${String(l.periodMonth).padStart(2, '0')}/${l.periodYear}`,
+          _periodKey: `${l.periodYear}-${String(l.periodMonth).padStart(2, '0')}`,
           label: l.billingMode,
           value: l.montantHt,
           statut: l.statut,
@@ -140,22 +145,28 @@ export class ApprovalDetailComponent implements OnInit {
 
   readonly historyColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
+    // Tri local sur les trois tableaux de la fiche : tout arrive en un appel, sans
+    // pagination. Les cellules projetées portent des valeurs brutes (montant, taux,
+    // horodatage), la lib les trie donc directement ; la période passe par sa clé.
     return [
-      { key: 'period',  label: this.translate.instant('AFFAIRES.billing.approval.col_periode'), type: 'text' },
-      { key: 'label',   label: this.translate.instant('AFFAIRES.billing.approval.detail.item'), type: 'custom' },
-      { key: 'value',   label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
-      { key: 'statut',  label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),  type: 'text' },
+      { key: 'period',  label: this.translate.instant('AFFAIRES.billing.approval.col_periode'), type: 'text', sortable: true,
+        sortAccessor: row => row['_periodKey'] as string },
+      { key: 'label',   label: this.translate.instant('AFFAIRES.billing.approval.detail.item'), type: 'custom', sortable: true },
+      { key: 'value',   label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right', sortable: true },
+      { key: 'statut',  label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),  type: 'text', sortable: true },
     ];
   });
 
   readonly auditColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'timestampUtc', label: this.translate.instant('AFFAIRES.billing.approval.col_date'),    type: 'custom' },
-      { key: 'action',       label: this.translate.instant('AFFAIRES.billing.approval.col_action'),  type: 'text' },
-      { key: 'transition',   label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),  type: 'custom' },
-      { key: 'actorRole',    label: this.translate.instant('AFFAIRES.billing.approval.col_user'),    type: 'text' },
-      { key: 'commentaire',  label: this.translate.instant('AFFAIRES.billing.approval.col_comment'), type: 'text' },
+      { key: 'timestampUtc', label: this.translate.instant('AFFAIRES.billing.approval.col_date'),    type: 'custom', sortable: true },
+      { key: 'action',       label: this.translate.instant('AFFAIRES.billing.approval.col_action'),  type: 'text',   sortable: true },
+      // La transition se trie sur le statut d'arrivée.
+      { key: 'transition',   label: this.translate.instant('AFFAIRES.billing.approval.col_statut'),  type: 'custom', sortable: true,
+        sortAccessor: row => row['statutApres'] as string | null },
+      { key: 'actorRole',    label: this.translate.instant('AFFAIRES.billing.approval.col_user'),    type: 'text',   sortable: true },
+      { key: 'commentaire',  label: this.translate.instant('AFFAIRES.billing.approval.col_comment'), type: 'text',   sortable: true },
     ];
   });
 
@@ -163,10 +174,10 @@ export class ApprovalDetailComponent implements OnInit {
   readonly livrableEntryColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'document',     label: this.translate.instant('AFFAIRES.WIP.COL_DOCUMENT'), type: 'text' },
-      { key: 'pctPrecedent', label: this.translate.instant('AFFAIRES.billing.approval.detail.taux_precedent'), type: 'custom', align: 'right' },
-      { key: 'pctSaisi',     label: this.translate.instant('AFFAIRES.billing.approval.col_taux'), type: 'custom', align: 'right' },
-      { key: 'montant',      label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right' },
+      { key: 'document',     label: this.translate.instant('AFFAIRES.WIP.COL_DOCUMENT'), type: 'text', sortable: true },
+      { key: 'pctPrecedent', label: this.translate.instant('AFFAIRES.billing.approval.detail.taux_precedent'), type: 'custom', align: 'right', sortable: true },
+      { key: 'pctSaisi',     label: this.translate.instant('AFFAIRES.billing.approval.col_taux'), type: 'custom', align: 'right', sortable: true },
+      { key: 'montant',      label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right', sortable: true },
     ];
   });
 
@@ -180,7 +191,8 @@ export class ApprovalDetailComponent implements OnInit {
     }))
   );
 
-  readonly tableConfig = computed<TableConfig>(() => ({ hoverable: false }));
+  /** Outils de tableau communs (`tableTools`), comme sur `/finance/affaires`. */
+  readonly tableConfig = computed<TableConfig>(() => ({ hoverable: false, ...tableTools(this.translate) }));
 
   ngOnInit(): void {
     const type = this.route.snapshot.paramMap.get('type') as DetailType;

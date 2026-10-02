@@ -11,6 +11,7 @@ import {
   REMINDER_TEMPLATE_TOKENS, ReminderRule, SaveReminderRuleRequest,
 } from '../../payments/reminder-rule.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { tableTools } from '../../../shared/table-tools';
 import { offsetLabel } from '../../payments/payments-display';
 
 /**
@@ -104,12 +105,19 @@ export class ReminderRulesAdminComponent implements OnInit {
   readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Tri local (toutes les règles arrivent en un appel, sans pagination). Le palier se
+    // trie sur son décalage en jours (J-5 avant J+30), la règle sur son libellé dans la
+    // langue affichée, les destinataires sur leur nombre.
+    const en = this.translate.currentLang() === 'en';
     return [
-      { key: 'offset',    label: t('ADMIN.REMINDERS.COL_OFFSET'),  type: 'badge'  },
-      { key: 'rule',      label: t('ADMIN.REMINDERS.COL_RULE'),    type: 'custom' },
-      { key: 'audience',  label: t('ADMIN.REMINDERS.COL_ROLES'),   type: 'custom' },
-      { key: 'scope',     label: t('ADMIN.REMINDERS.COL_SCOPE'),   type: 'text'   },
-      { key: 'state',     label: t('ADMIN.REMINDERS.COL_STATE'),   type: 'badge'  },
+      { key: 'offset',    label: t('ADMIN.REMINDERS.COL_OFFSET'),  type: 'badge',  sortable: true,
+        sortAccessor: row => row['_offsetDays'] as number },
+      { key: 'rule',      label: t('ADMIN.REMINDERS.COL_RULE'),    type: 'custom', sortable: true,
+        sortAccessor: row => ((en ? row['_labelEn'] : row['_labelFr']) as string | null) ?? (row['_code'] as string) },
+      { key: 'audience',  label: t('ADMIN.REMINDERS.COL_ROLES'),   type: 'custom', sortable: true,
+        sortAccessor: row => ((row['_roles'] as unknown[] | null)?.length ?? 0) + (row['_notifyClient'] ? 1 : 0) },
+      { key: 'scope',     label: t('ADMIN.REMINDERS.COL_SCOPE'),   type: 'text',   sortable: true },
+      { key: 'state',     label: t('ADMIN.REMINDERS.COL_STATE'),   type: 'badge',  sortable: true },
     ];
   });
 
@@ -125,6 +133,7 @@ export class ReminderRulesAdminComponent implements OnInit {
         // Avant échéance vs après : ce ne sont pas les mêmes gestes, la couleur le dit.
         options: { variant: r.offsetDays > 0 ? 'warning' : 'info', size: 'sm' },
       } satisfies BadgeCell,
+      _offsetDays:  r.offsetDays,
       _code:        r.code,
       _labelFr:     r.labelFr,
       _labelEn:     r.labelEn,
@@ -148,6 +157,7 @@ export class ReminderRulesAdminComponent implements OnInit {
       loading:      this.loading(),
       skeletonRows: 7,
       emptyMessage: this.translate.instant('ADMIN.REMINDERS.EMPTY'),
+      ...tableTools(this.translate),
       actions: [
         {
           id:      'edit',

@@ -3,14 +3,15 @@ import { NgTemplateOutlet } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, FormFieldComponent, SelectComponent, SelectOption,
-  DataTableComponent, DafCellDirective, TableColumn, TableConfig,
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
   CardComponent, StatusBadgeComponent, AvatarComponent, ProgressBarComponent,
 } from '@khalilrebhiitec/daf360';
 
 import { AffaireService } from '../affaire.service';
 import { LivrableService } from '../livrable.service';
 import { CollaborateurTauxDto } from '../livrable.model';
-import { AffaireDetail, AffaireRessourceManageDto, AffaireWorkedHoursSummaryDto, UserRefDto } from '../affaire.model';
+import { AffaireDetail, AffaireRessourceManageDto, AffaireWorkedHoursSummaryDto, UserRefDto } from '../affaire.model';
+import { tableTools } from '../../../shared/table-tools';
 type RateSource = 'EXTERNAL' | 'INTERNAL';
 
 /** Where the (single, shared) add-resource form is currently rendered: `'top'` next to the
@@ -101,11 +102,18 @@ export class AffaireRessourcesTabComponent implements OnInit {
   readonly ressourcesColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Toutes les cellules sont projetées (`custom`) : chaque colonne dit sur quoi elle se
+    // trie. Tri local — les ressources de l'affaire arrivent entières, sans pagination.
+    const src = (row: TableRow) => row['_raw'] as AffaireRessourceManageDto;
     return [
-      { key: 'collaborateur', label: t('AFFAIRES.RESSOURCES.COL_NAME'),   type: 'custom' },
-      { key: 'rate',          label: t('AFFAIRES.RESSOURCES.COL_RATE'),   type: 'custom', align: 'right' },
-      { key: 'type',          label: t('AFFAIRES.RESSOURCES.COL_TYPE'),   type: 'custom' },
-      { key: 'status',        label: t('AFFAIRES.RESSOURCES.COL_STATUS'), type: 'custom' },
+      { key: 'collaborateur', label: t('AFFAIRES.RESSOURCES.COL_NAME'),   type: 'custom', sortable: true,
+        sortAccessor: row => src(row).userFullName ?? src(row).userEmail },
+      { key: 'rate',          label: t('AFFAIRES.RESSOURCES.COL_RATE'),   type: 'custom', align: 'right', sortable: true,
+        sortAccessor: row => src(row).rateAmount },
+      { key: 'type',          label: t('AFFAIRES.RESSOURCES.COL_TYPE'),   type: 'custom', sortable: true,
+        sortAccessor: row => src(row).rateType },
+      { key: 'status',        label: t('AFFAIRES.RESSOURCES.COL_STATUS'), type: 'custom', sortable: true,
+        sortAccessor: row => (src(row).isActive ? 1 : 0) },
       { key: '_actions',      label: '',                                  type: 'custom', align: 'right', width: '220px' },
     ];
   });
@@ -113,7 +121,12 @@ export class AffaireRessourcesTabComponent implements OnInit {
   readonly ressourcesRows = computed(() =>
     this.ressources().map(r => ({ id: r.id, isActive: r.isActive, _raw: r })));
 
-  readonly ressourcesTableConfig = computed<TableConfig>(() => ({ hoverable: true }));
+  /** Outils de tableau communs (`tableTools`), comme sur `/finance/affaires`. */
+  readonly ressourcesTableConfig = computed<TableConfig>(() => ({
+    showHeader: false,
+    hoverable: true,
+    ...tableTools(this.translate),
+  }));
 
   // ── Worked-hours table: native <table>, not daf-data-table — an inline add-form row
   // needs to be spliced in right under whichever row triggered it, which means owning

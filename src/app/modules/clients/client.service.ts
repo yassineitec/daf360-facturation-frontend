@@ -29,6 +29,7 @@ export class ClientService {
     if (filter.hasActiveAffaires != null) {
       params = params.set('hasActiveAffaires', String(filter.hasActiveAffaires));
     }
+    if (filter.sort)              params = params.set('sort',      filter.sort);
     return this.http.get<PageResponse<ClientListItemDto>>(`${this.base}/clients`, { params });
   }
 

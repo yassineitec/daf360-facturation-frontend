@@ -1,5 +1,5 @@
 import {
-  Component, OnInit, inject, signal, computed, ViewChild, TemplateRef,
+  Component, OnInit, inject, signal, computed, untracked, ViewChild, TemplateRef,
 } from '@angular/core';
 import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
@@ -27,6 +27,7 @@ import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { UserStore } from '../../../core/user.store';
+import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders';
 
 const PAGE_SIZE = 10;
@@ -159,17 +160,49 @@ export class AdminListComponent implements OnInit {
       { key: 'isDefault', label: this.translate.instant('ADMIN.LISTS.COL_DEFAULT'),   align: 'center', width: '90px' },
       { key: 'isActive',  label: this.translate.instant('ADMIN.LISTS.COL_STATUS'),    align: 'center', width: '90px' },
     );
+    // Toutes triables. La liste est paginée ici, côté client : le tri porte sur toutes les
+    // valeurs AVANT la découpe (`sortTableRows`, voir `listRows`). Le taux de TVA se trie
+    // comme un nombre, la portée globale/pays sur son drapeau.
+    const src = (row: TableRow) => row['_source'] as ListValueDto;
+    for (const c of cols) c.sortable = true;
+    const ratePct = cols.find(c => c.key === 'ratePct');
+    if (ratePct) ratePct.sortAccessor = row => src(row).ratePct ?? null;
+    const scope = cols.find(c => c.key === 'scope');
+    if (scope) scope.sortAccessor = row => (src(row).paysId === null ? 0 : 1);
     return cols;
   });
 
   readonly forexColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
+    // Taux triés comme des nombres : `paramValue` est une chaîne côté API, et le CHF
+    // automatique se déduit de l'EUR (même calcul que `chfFallback`).
+    const r = (row: TableRow) => row['_source'] as ForexRow;
+    const num = (v: string | null | undefined) => {
+      const n = v == null ? NaN : parseFloat(v);
+      return Number.isFinite(n) ? n : null;
+    };
     return [
-      { key: 'code',     label: this.translate.instant('ADMIN.FOREX.COL_CODE'),  width: '100px' },
-      { key: 'eur',      label: this.translate.instant('ADMIN.FOREX.COL_EUR'),   align: 'right', width: '180px' },
-      { key: 'chf',      label: this.translate.instant('ADMIN.FOREX.COL_CHF'),   align: 'right', width: '200px' },
+      { key: 'code',     label: this.translate.instant('ADMIN.FOREX.COL_CODE'),  width: '100px', sortable: true },
+      { key: 'eur',      label: this.translate.instant('ADMIN.FOREX.COL_EUR'),   align: 'right', width: '180px', sortable: true,
+        sortAccessor: row => num(r(row).eurParam?.paramValue) },
+      { key: 'chf',      label: this.translate.instant('ADMIN.FOREX.COL_CHF'),   align: 'right', width: '200px', sortable: true,
+        sortAccessor: row => num(r(row).chfParam?.paramValue ?? this.chfFallback(r(row))) },
     ];
   });
+
+  /** Tri d'en-tête des deux tableaux paginés de l'écran (voir `listRows` / `forexTableRows`). */
+  readonly listSort  = signal<TableSort | null>(null);
+  readonly forexSort = signal<TableSort | null>(null);
+
+  onListSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.listSort.set(toTableSort(event));
+    this.listCurrentPage.set(0);
+  }
+
+  onForexSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.forexSort.set(toTableSort(event));
+    this.forexCurrentPage.set(0);
+  }
 
   /** Native `TableConfig.actions`, not a hand-placed `_actions` column — same
    * convention as the Relances / Maquettes de documents tables on this page. */
@@ -177,8 +210,11 @@ export class AdminListComponent implements OnInit {
     const t = (key: string) => this.translate.instant(key);
     return {
       hoverable:    true,
+      showHeader:   false,
       loading:      this.listLoading(),
       emptyMessage: t('ADMIN.LISTS.EMPTY'),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.listSort)),
       actions: [
         {
           id: 'edit', icon: 'edit', tooltip: t('ADMIN.COMMON.EDIT'),
@@ -202,8 +238,11 @@ export class AdminListComponent implements OnInit {
     const t = (key: string) => this.translate.instant(key);
     return {
       hoverable:    true,
+      showHeader:   false,
       loading:      this.forexLoading(),
       emptyMessage: t('ADMIN.FOREX.EMPTY'),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.forexSort)),
       actions: [
         {
           id: 'edit', icon: 'edit', tooltip: t('ADMIN.COMMON.EDIT'),
@@ -239,18 +278,14 @@ export class AdminListComponent implements OnInit {
   onListPageChange(page: number): void  { this.listCurrentPage.set(page); }
   onForexPageChange(page: number): void { this.forexCurrentPage.set(page); }
 
-  private readonly pagedListValues = computed(() => {
-    const start = this.listCurrentPage() * PAGE_SIZE;
-    return this.sortedListValues().slice(start, start + PAGE_SIZE);
-  });
-
-  private readonly pagedForexRows = computed(() => {
-    const start = this.forexCurrentPage() * PAGE_SIZE;
-    return this.forexRows().slice(start, start + PAGE_SIZE);
-  });
+  /** La page courante de `rows`, après le tri d'en-tête — trié sur tout le jeu, puis découpé. */
+  private page(rows: TableRow[], columns: TableColumn[], sort: TableSort | null, page: number): TableRow[] {
+    const start = page * PAGE_SIZE;
+    return sortTableRows(rows, columns, sort).slice(start, start + PAGE_SIZE);
+  }
 
   readonly listRows = computed<TableRow[]>(() =>
-    this.pagedListValues().map(v => ({
+    this.page(this.sortedListValues().map(v => ({
       id: v.id, code: v.code, labelFr: v.labelFr, labelEn: v.labelEn,
       isDefault: v.isDefault, isActive: v.isActive,
       requiresReceipt: v.requiresReceipt === true,
@@ -267,7 +302,7 @@ export class AdminListComponent implements OnInit {
       isGlobal: v.paysId === null,
       ratePct: v.ratePct,
       _source: v,
-    })),
+    })), this.listColumns(), this.listSort(), this.listCurrentPage()),
   );
 
   // ── Cost taxonomy (COST_CATEGORY / COST_SUB_CATEGORY) ─────────────────────
@@ -345,13 +380,14 @@ export class AdminListComponent implements OnInit {
   }
 
   readonly forexTableRows = computed<TableRow[]>(() =>
-    this.pagedForexRows().map(r => ({
+    this.page(this.forexRows().map(r => ({
+      id:   r.code,
       code: r.code,
       eur:  r.eurParam?.paramValue ?? '—',
       chf:  r.chfParam ? r.chfParam.paramValue : `auto ${this.chfFallback(r)}`,
       chfAuto: !r.chfParam,
       _source: r,
-    })),
+    })), this.forexColumns(), this.forexSort(), this.forexCurrentPage()),
   );
 
   readonly activeListTypeLabel = computed(() => {
@@ -579,7 +615,15 @@ export class AdminListComponent implements OnInit {
     ACTIVITE: 'Activités',
   };
 
+  /** In English the card title comes from ADMIN.LISTS.TYPE_LABEL.* (the backend's
+   * `labelEn` is often empty for list types), then `labelEn`, then `labelFr`. */
   listTypeLabel(t: ListTypeDto): string {
+    if (this.translate.currentLang() === 'en') {
+      const key = 'ADMIN.LISTS.TYPE_LABEL.' + t.code;
+      const translated = this.translate.instant(key);
+      if (translated !== key) return translated;
+      if (t.labelEn) return t.labelEn;
+    }
     return AdminListComponent.TYPE_LABEL_OVERRIDE[t.code] ?? t.labelFr;
   }
 

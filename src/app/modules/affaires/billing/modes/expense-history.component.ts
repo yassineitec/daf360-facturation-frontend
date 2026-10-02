@@ -14,9 +14,10 @@ import { BillingService, ExpenseDto } from '../billing.service';
 import { FactListService } from '../../../../core/fact-list.service';
 import { UserStore } from '../../../../core/user.store';
 import { AffaireDetail } from '../../affaire.model';
-import { ListValueDto } from '../../../cost/cost.model';
+import { ListValueDto, localizedLabel } from '../../../cost/cost.model';
 import { DisplayCurrencyPipe } from '../../../../shared/display-currency.pipe';
 import { EXPENSE_STATUT_BADGE, humanise } from '../../../../shared/enum-labels';
+import { tableTools } from '../../../../shared/table-tools';
 
 /** Jour local 'YYYY-MM-DD' — jamais `toISOString()`, qui décale d'un jour en UTC. */
 function toIsoDay(d: Date): string {
@@ -189,13 +190,18 @@ export class ExpenseHistoryComponent implements OnInit {
   readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant('AFFAIRES.EXPENSES.HISTORY.' + k);
+    // Tri local (les frais de l'affaire arrivent entiers, sans pagination), sur les
+    // valeurs brutes pour la date et le montant.
+    const src = (row: TableRow) => row['_raw'] as ExpenseDto;
     return [
-      { key: 'date',      label: t('COL_DATE'),     type: 'text' },
-      { key: 'categorie', label: t('COL_CATEGORY'), type: 'text' },
-      { key: 'montant',   label: t('COL_AMOUNT'),   type: 'text', align: 'right' },
-      { key: 'receipt',   label: t('COL_RECEIPT'),  type: 'text' },
-      { key: 'statut',    label: t('COL_STATUS'),   type: 'badge' },
-      { key: 'motif',     label: t('COL_REASON'),   type: 'text' },
+      { key: 'date',      label: t('COL_DATE'),     type: 'text', sortable: true,
+        sortAccessor: row => src(row).expenseDate },
+      { key: 'categorie', label: t('COL_CATEGORY'), type: 'text', sortable: true },
+      { key: 'montant',   label: t('COL_AMOUNT'),   type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).montant },
+      { key: 'receipt',   label: t('COL_RECEIPT'),  type: 'text', sortable: true },
+      { key: 'statut',    label: t('COL_STATUS'),   type: 'badge', sortable: true },
+      { key: 'motif',     label: t('COL_REASON'),   type: 'text', sortable: true },
     ];
   });
 
@@ -251,6 +257,7 @@ export class ExpenseHistoryComponent implements OnInit {
       hoverable:    true,
       loading:      this.loading(),
       emptyMessage: this.translate.instant('AFFAIRES.EXPENSES.HISTORY.EMPTY'),
+      ...tableTools(this.translate),
       actions: [
         {
           id: 'validate',
@@ -318,7 +325,9 @@ export class ExpenseHistoryComponent implements OnInit {
   // ── Rendu ───────────────────────────────────────────────────────────────
 
   private categoryLabel(id: number): string {
-    return this.categories().find(c => c.id === id)?.labelFr ?? humanise(String(id));
+    // Reads currentLang() so every computed calling this follows a language switch.
+    const c = this.categories().find(v => v.id === id);
+    return localizedLabel(c?.labelFr, c?.labelEn, this.translate.currentLang()) ?? humanise(String(id));
   }
 
   private formatDate(d: string | null): string {

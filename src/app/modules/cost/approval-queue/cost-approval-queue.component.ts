@@ -13,7 +13,7 @@ import { ClientService } from '../../clients/client.service';
 import { UserStore } from '../../../core/user.store';
 import { HiringCostApprovalDto, HiringCostApprovalService } from '../hiring-cost-approval.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { CostLineDto } from '../cost.model';
+import { CostLineDto, localizedLabel } from '../cost.model';
 import { approvalLevelKey, formatDate, urgencyKey } from '../cost-display';
 import { ApprovalItem, ApprovalKind, itemUrgency, kindKey } from './approval-item';
 import { ApprovalCardsSectionComponent, ApprovalDecision } from './approval-cards-section.component';
@@ -130,6 +130,8 @@ export class CostApprovalQueueComponent implements OnInit {
       urgency:   itemUrgency('cost', c.approvalLevelRequired),
       dateLabel: formatDate(c.transactionDate),
       amountLabel: this.costAmountLabel(c),
+      sortDate:   c.transactionDate,
+      sortAmount: c.netAmountEur ?? c.netAmountLocal ?? null,
       metrics: [
         { label: t('COST.APPROVAL_QUEUE.PRIORITY'),     value: t(urgencyKey(c.approvalLevelRequired)) },
         { label: t('COST.APPROVAL_QUEUE.DATE'),         value: formatDate(c.transactionDate) },
@@ -153,6 +155,8 @@ export class CostApprovalQueueComponent implements OnInit {
         urgency:   itemUrgency('hiring', null),
         dateLabel: formatDate(h.submittedAt),
         amountLabel: this.currency.transform(annual, cur),
+        sortDate:   h.submittedAt,
+        sortAmount: annual,
         metrics: [
           { label: t('COST.APPROVAL_QUEUE.POSITION'),      value: h.appliedPosition ?? '—' },
           { label: t('COST.APPROVAL_QUEUE.ENTITY'),        value: h.candidateLocation ?? '—' },
@@ -175,6 +179,8 @@ export class CostApprovalQueueComponent implements OnInit {
         urgency:   itemUrgency('advance', null),
         dateLabel: formatDate(a.createdAt),
         amountLabel: amount,
+        sortDate:   a.createdAt,
+        sortAmount: a.amount,
         metrics: [
           { label: t('FACTURATION.ADVANCES.COL_AMOUNT'), value: amount },
           { label: t('FACTURATION.ADVANCES.COL_TERMS'),
@@ -232,10 +238,12 @@ export class CostApprovalQueueComponent implements OnInit {
 
   /** Categories present on the loaded cost lines, sorted by label. */
   private readonly costCategories = computed(() => {
+    const lang = this.translate.currentLang();
     const seen = new Map<number, string>();
     for (const c of this.costs()) {
       if (c.costCategoryId != null && !seen.has(c.costCategoryId)) {
-        seen.set(c.costCategoryId, c.costCategoryLabel ?? String(c.costCategoryId));
+        seen.set(c.costCategoryId,
+          localizedLabel(c.costCategoryLabel, c.costCategoryLabelEn, lang) ?? String(c.costCategoryId));
       }
     }
     return [...seen].map(([value, label]) => ({ value: String(value), label }))
@@ -244,10 +252,12 @@ export class CostApprovalQueueComponent implements OnInit {
 
   /** Sub-categories present on the loaded cost lines, sorted by label. */
   private readonly costSubCategories = computed(() => {
+    const lang = this.translate.currentLang();
     const seen = new Map<number, string>();
     for (const c of this.costs()) {
       if (c.costSubCategoryId != null && !seen.has(c.costSubCategoryId)) {
-        seen.set(c.costSubCategoryId, c.costSubCategoryLabel ?? String(c.costSubCategoryId));
+        seen.set(c.costSubCategoryId,
+          localizedLabel(c.costSubCategoryLabel, c.costSubCategoryLabelEn, lang) ?? String(c.costSubCategoryId));
       }
     }
     return [...seen].map(([value, label]) => ({ value: String(value), label }))

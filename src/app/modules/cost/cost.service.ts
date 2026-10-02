@@ -56,6 +56,8 @@ export class CostService {
     noSupplier?: boolean;
     page?: number;
     size?: number;
+    /** `champ,asc|desc` pour le `Pageable` de `GET /cost-lines` (champs de `CostLine`). */
+    sort?: string | null;
   }): Observable<PageResponse<CostLineDto>> {
     let params = new HttpParams()
       .set('paysId', String(filter.paysId))
@@ -64,6 +66,7 @@ export class CostService {
     if (filter.status)             params = params.set('status', filter.status);
     if (filter.supplierId != null) params = params.set('supplierId', String(filter.supplierId));
     if (filter.noSupplier)         params = params.set('noSupplier', 'true');
+    if (filter.sort)               params = params.set('sort', filter.sort);
     return this.http.get<PageResponse<CostLineDto>>(`${this.base}/cost-lines`, { params });
   }
 

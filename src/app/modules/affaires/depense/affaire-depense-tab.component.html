@@ -16,8 +16,10 @@
     <app-depense-summary-table
       [lignes]="filteredLignes()"
       [devise]="affaire.devise"
+      [loading]="loading()"
       [monthOptions]="monthFilterOptions()"
       [yearOptions]="yearFilterOptions()"
+      [paysOptions]="paysFilterOptions()"
       (collaboratorSelected)="onCollaboratorSelected($event)"
       (periodApply)="onFilterApply($event)" />
   }

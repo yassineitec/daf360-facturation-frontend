@@ -7,6 +7,7 @@ import {
 import { SousTraitantDto } from '../subcontracting.model';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { initials } from '../subcontracting-display';
+import { tableTools } from '../../../shared/table-tools';
 
 /**
  * List view of the Sous-traitants tab on the house table style (UI-PLAYBOOK §6b): no
@@ -65,11 +66,12 @@ export class StTableSectionComponent {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'name',    label: t('SUBCONTRACTING.ST.TABLE.NAME'),    type: 'avatar' },
-      { key: 'email',   label: t('SUBCONTRACTING.ST.TABLE.EMAIL'),   type: 'text'   },
-      { key: 'phone',   label: t('SUBCONTRACTING.ST.TABLE.PHONE'),   type: 'text'   },
-      { key: 'taxId',   label: t('SUBCONTRACTING.ST.TABLE.TAX_ID'),  type: 'text'   },
-      { key: 'status',  label: t('SUBCONTRACTING.ST.TABLE.STATUS'),  type: 'badge'  },
+      // Tri local : la liste des sous-traitants arrive entière, sans pagination.
+      { key: 'name',    label: t('SUBCONTRACTING.ST.TABLE.NAME'),    type: 'avatar', sortable: true },
+      { key: 'email',   label: t('SUBCONTRACTING.ST.TABLE.EMAIL'),   type: 'text',   sortable: true },
+      { key: 'phone',   label: t('SUBCONTRACTING.ST.TABLE.PHONE'),   type: 'text',   sortable: true },
+      { key: 'taxId',   label: t('SUBCONTRACTING.ST.TABLE.TAX_ID'),  type: 'text',   sortable: true },
+      { key: 'status',  label: t('SUBCONTRACTING.ST.TABLE.STATUS'),  type: 'badge',  sortable: true },
       { key: '_actions', label: '', align: 'right', width: '1%' },
     ];
   });
@@ -105,5 +107,6 @@ export class StTableSectionComponent {
     loading:      this.loading(),
     skeletonRows: 6,
     emptyMessage: this.emptyMessage(),
+    ...tableTools(this.translate),
   }));
 }

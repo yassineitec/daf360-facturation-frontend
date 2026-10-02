@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   AvatarCell, BadgeCell, DafCellDirective, DataTableComponent,
@@ -7,6 +7,7 @@ import {
 import { AgingRow } from '../payment.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { formatDate, initials, partiallyPaid, reminderLabel, retardVariant } from '../payments-display';
+import { TableSort, delegatedSort, tableTools, toTableSort } from '../../../shared/table-tools';
 
 /**
  * List view of `/finance/payments` on the house table style (UI-PLAYBOOK §6b): no
@@ -26,7 +27,9 @@ import { formatDate, initials, partiallyPaid, reminderLabel, retardVariant } fro
       [columns]="columns()"
       [rows]="rows()"
       [config]="config()"
-      (rowClick)="onRowClick($event)">
+      (rowClick)="onRowClick($event)"
+      (sortChange)="sortChange.emit(toTableSort($event))"
+      (resetClick)="sortChange.emit(null)">
 
       <!-- Le reste dû en tête, le montant facturé en dessous et seulement s'il en
            diffère : sur une facture jamais réglée les deux chiffres sont identiques, et
@@ -61,6 +64,12 @@ export class AgingTableSectionComponent {
   emptyMessage = input('');
   /** Current page size — the skeleton draws that many rows, capped at 20 (§6b rule 7). */
   pageSize     = input(20);
+  /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
+  sort         = input<TableSort | null>(null);
+  /** Nouveau tri d'en-tête (clé de colonne), ou `null` quand il est retiré. */
+  readonly sortChange = output<TableSort | null>();
+
+  protected readonly toTableSort = toTableSort;
 
   /** Emits the invoice id — a row and its view action both mean "open this invoice". */
   readonly open = output<number>();
@@ -69,15 +78,16 @@ export class AgingTableSectionComponent {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'client',     label: t('PAYMENTS.DASHBOARD.TABLE.CLIENT'),          type: 'avatar' },
-      { key: 'invoice',    label: t('PAYMENTS.DASHBOARD.TABLE.INVOICE'),         type: 'text'   },
-      { key: 'amount',     label: t('PAYMENTS.DASHBOARD.TABLE.OUTSTANDING'),     type: 'custom' },
-      { key: 'due',        label: t('PAYMENTS.DASHBOARD.TABLE.DUE'),             type: 'text'   },
-      { key: 'daysLate',   label: t('PAYMENTS.DASHBOARD.TABLE.DAYS_LATE'),       type: 'badge'  },
-      { key: 'reminder',   label: t('PAYMENTS.DASHBOARD.TABLE.REMINDER_STATUS'), type: 'custom' },
+      { key: 'client',     label: t('PAYMENTS.DASHBOARD.TABLE.CLIENT'),          type: 'avatar', sortable: true },
+      { key: 'invoice',    label: t('PAYMENTS.DASHBOARD.TABLE.INVOICE'),         type: 'text',   sortable: true },
+      { key: 'amount',     label: t('PAYMENTS.DASHBOARD.TABLE.OUTSTANDING'),     type: 'custom', sortable: true },
+      { key: 'due',        label: t('PAYMENTS.DASHBOARD.TABLE.DUE'),             type: 'text',   sortable: true },
+      { key: 'daysLate',   label: t('PAYMENTS.DASHBOARD.TABLE.DAYS_LATE'),       type: 'badge',  sortable: true },
+      { key: 'reminder',   label: t('PAYMENTS.DASHBOARD.TABLE.REMINDER_STATUS'), type: 'custom', sortable: true },
     ];
-    // No column is `sortable`: the lib sorts client-side over the one page it was
-    // handed, and this list is server-paginated (§10b).
+    // Toutes triables, par le serveur (`manualSort`) : la liste est paginée côté serveur,
+    // la clé de colonne part en `?sort=` et `PaymentDashboardService.AGING_SORT_COLUMNS`
+    // la traduit (reste dû, dernière relance… par sous-requête).
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
@@ -122,6 +132,8 @@ export class AgingTableSectionComponent {
       loading:      this.loading(),
       skeletonRows: Math.min(this.pageSize(), 20),
       emptyMessage: this.emptyMessage(),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.sort)),
       // Unconditional, so it belongs on config.actions rather than a projected cell —
       // the lib's actions cell already stops propagation (§6b rule 4).
       actions: [{

@@ -289,7 +289,9 @@
               <daf-data-table
                 [columns]="costColumns()"
                 [rows]="costRows()"
-                [config]="costConfig()" />
+                [config]="costConfig()"
+                (sortChange)="onCostSort($event)"
+                (resetClick)="onCostSort(null)" />
 
               <p class="border-t border-outline-variant/30 bg-surface-container px-6 py-4
                         text-body-sm text-on-surface-variant">
@@ -332,7 +334,9 @@
               <daf-data-table
                 [columns]="ledgerColumns()"
                 [rows]="ledgerRows()"
-                [config]="ledgerConfig()" />
+                [config]="ledgerConfig()"
+                (sortChange)="onLedgerSort($event)"
+                (resetClick)="onLedgerSort(null)" />
 
               <p class="border-t border-outline-variant/30 bg-surface-container px-6 py-4
                         text-body-sm text-on-surface-variant">

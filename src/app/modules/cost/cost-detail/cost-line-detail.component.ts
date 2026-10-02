@@ -30,6 +30,7 @@ import {
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { TableActionComponent } from '../../../shared/table-action.component';
+import { tableTools } from '../../../shared/table-tools';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
 import { UserStore } from '../../../core/user.store';
@@ -343,12 +344,16 @@ export class CostLineDetailComponent implements OnInit {
   readonly approvalColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Tri local (le circuit d'une ligne compte quelques étapes, sans pagination) ; la date
+    // se trie sur sa valeur brute, la décision sur son libellé.
     return [
-      { key: 'level',    label: t('COST.DETAIL.APPROVALS.COL_LEVEL'),    type: 'text'   },
-      { key: 'decision', label: t('COST.DETAIL.APPROVALS.COL_DECISION'), type: 'custom' },
-      { key: 'approver', label: t('COST.DETAIL.APPROVALS.COL_APPROVER'), type: 'text'   },
-      { key: 'date',     label: t('COST.DETAIL.APPROVALS.COL_DATE'),     type: 'text'   },
-      { key: 'comment',  label: t('COST.DETAIL.APPROVALS.COL_COMMENT'),  type: 'text'   },
+      { key: 'level',    label: t('COST.DETAIL.APPROVALS.COL_LEVEL'),    type: 'text',   sortable: true },
+      { key: 'decision', label: t('COST.DETAIL.APPROVALS.COL_DECISION'), type: 'custom', sortable: true,
+        sortAccessor: row => row['_decisionLabel'] as string },
+      { key: 'approver', label: t('COST.DETAIL.APPROVALS.COL_APPROVER'), type: 'text',   sortable: true },
+      { key: 'date',     label: t('COST.DETAIL.APPROVALS.COL_DATE'),     type: 'text',   sortable: true,
+        sortAccessor: row => row['_decisionDate'] as string | null },
+      { key: 'comment',  label: t('COST.DETAIL.APPROVALS.COL_COMMENT'),  type: 'text',   sortable: true },
     ];
   });
 
@@ -356,6 +361,7 @@ export class CostLineDetailComponent implements OnInit {
     const t = (k: string) => this.translate.instant(k);
     return (this.costLine()?.approvals ?? []).map((a, i) => ({
       id:       a.id ?? i,
+      _decisionDate: a.decisionDate,
       level:    a.level,
       approver: this.approverName(a.approverId),
       date:     formatDate(a.decisionDate),
@@ -373,6 +379,7 @@ export class CostLineDetailComponent implements OnInit {
       hoverable:    false,
       loading:      false,
       emptyMessage: this.translate.instant('COST.DETAIL.APPROVALS.EMPTY'),
+      ...tableTools(this.translate),
     };
   });
 
@@ -381,19 +388,23 @@ export class CostLineDetailComponent implements OnInit {
   readonly ledgerColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Tri local (le relevé arrive entier, sans pagination), sur les valeurs brutes : la
+    // date et les montants sont formatés pour l'affichage.
+    const raw = (field: keyof SupplierLedgerRowDto) =>
+      (row: TableRow) => (row['_source'] as SupplierLedgerRowDto)[field] as string | number | null;
     const cols: TableColumn[] = [
-      { key: 'date',            label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text' },
-      { key: 'label',           label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text' },
-      { key: 'netAmount',       label: t('COST.DETAIL.LEDGER.COL_NET_AMOUNT'),      type: 'text', align: 'right' },
-      { key: 'fodec',           label: t('COST.DETAIL.LEDGER.COL_FODEC'),           type: 'text', align: 'right' },
-      { key: 'tva',             label: t('COST.DETAIL.LEDGER.COL_TVA'),             type: 'text', align: 'right' },
-      { key: 'timbre',          label: t('COST.DETAIL.LEDGER.COL_TIMBRE'),          type: 'text', align: 'right' },
-      { key: 'autresTaxes',     label: t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES'),    type: 'text', align: 'right' },
-      { key: 'grossAmount',     label: t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT'),    type: 'text', align: 'right' },
-      { key: 'debit',           label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right' },
-      { key: 'credit',          label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right' },
-      { key: 'soldeDebiteur',   label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right' },
-      { key: 'soldeCrediteur',  label: t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right' },
+      { key: 'date',            label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text', sortable: true, sortAccessor: raw('date') },
+      { key: 'label',           label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text', sortable: true },
+      { key: 'netAmount',       label: t('COST.DETAIL.LEDGER.COL_NET_AMOUNT'),      type: 'text', align: 'right', sortable: true, sortAccessor: raw('netAmountLocal') },
+      { key: 'fodec',           label: t('COST.DETAIL.LEDGER.COL_FODEC'),           type: 'text', align: 'right', sortable: true, sortAccessor: raw('fodecAmount') },
+      { key: 'tva',             label: t('COST.DETAIL.LEDGER.COL_TVA'),             type: 'text', align: 'right', sortable: true, sortAccessor: raw('vatAmountLocal') },
+      { key: 'timbre',          label: t('COST.DETAIL.LEDGER.COL_TIMBRE'),          type: 'text', align: 'right', sortable: true, sortAccessor: raw('timbreAmount') },
+      { key: 'autresTaxes',     label: t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('autresTaxesAmount') },
+      { key: 'grossAmount',     label: t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('grossAmountLocal') },
+      { key: 'debit',           label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right', sortable: true, sortAccessor: raw('debit') },
+      { key: 'credit',          label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right', sortable: true, sortAccessor: raw('credit') },
+      { key: 'soldeDebiteur',   label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right', sortable: true, sortAccessor: raw('soldeDebiteur') },
+      { key: 'soldeCrediteur',  label: t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right', sortable: true, sortAccessor: raw('soldeCrediteur') },
     ];
     if (this.canManageReglements()) {
       cols.push({ key: 'actions', label: '', type: 'custom' });
@@ -485,8 +496,11 @@ export class CostLineDetailComponent implements OnInit {
 
   readonly ledgerRows = computed<TableRow[]>(() => {
     this.translate.currentLang();
-    return this.filteredLedgerRawRows().map((r, i) => ({
-      id:             i,
+    return this.filteredLedgerRawRows().map(r => ({
+      // Une écriture = un règlement : l'id reste celui de la ligne quand on trie,
+      // contrairement à l'index d'affichage.
+      id:             r.reglementId,
+      _source:        r,
       date:           formatDate(r.date),
       label:          r.label ?? '—',
       netAmount:      this.fmtAmount(r.netAmountLocal),
@@ -526,6 +540,7 @@ export class CostLineDetailComponent implements OnInit {
       emptyMessage: this.hasSupplier()
         ? this.translate.instant('COST.DETAIL.LEDGER.EMPTY')
         : this.translate.instant('COST.DETAIL.LEDGER.NO_SUPPLIER'),
+      ...tableTools(this.translate),
     };
   });
 

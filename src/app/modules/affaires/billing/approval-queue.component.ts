@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, untracked, ViewChild, TemplateRef } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
 import { forkJoin, Observable, switchMap }    from 'rxjs';
@@ -21,6 +21,7 @@ import {
 // ordinary invoicing lifecycle endpoints instead of BillingService.
 import { InvoiceService } from '../../invoicing/invoice.service';
 import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
+import { TableSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 type ActiveTab = 'df' | 'history';
 // Three tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
@@ -247,7 +248,8 @@ export class ApprovalQueueComponent implements OnInit {
       { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),    type: 'custom', sortable: true,
         sortAccessor: row => row['affaireRef'] },
       { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'),  type: 'custom', sortable: true },
-      { key: 'periode',   label: this.translate.instant('AFFAIRES.billing.approval.col_periode'),    type: 'custom', sortable: true },
+      { key: 'periode',   label: this.translate.instant('AFFAIRES.billing.approval.col_periode'),    type: 'custom', sortable: true,
+        sortAccessor: row => row['periode'] ? periodeKey(row['periode']) : null },
       { key: 'montantHt', label: this.translate.instant('AFFAIRES.billing.approval.col_montant_ht'), type: 'custom', align: 'right', sortable: true,
         sortAccessor: row => row['_raw'].montantHt },
       { key: 'mode',      label: this.translate.instant('AFFAIRES.billing.approval.col_mode'),        type: 'custom', sortable: true },
@@ -402,17 +404,48 @@ export class ApprovalQueueComponent implements OnInit {
     return rows.slice(p * size, p * size + size);
   }
 
+  /**
+   * Tri d'en-tête, un par sorte de tableau. Les listes sont paginées côté client : le tri
+   * porte sur tout le jeu filtré AVANT la découpe en pages (`sortTableRows`), et les
+   * configs passent `manualSort` pour que la lib ne retrie pas la seule page affichée.
+   * Forfait et régie partagent le tri des lignes (et des avoirs) : un seul de ces
+   * onglets est visible à la fois, et le tableau recréé reprend la flèche (`defaultSort`).
+   */
+  readonly lineSort          = signal<TableSort | null>(null);
+  readonly livrableBatchSort = signal<TableSort | null>(null);
+  readonly creditNoteSort    = signal<TableSort | null>(null);
+
+  onLineSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.lineSort.set(toTableSort(event));
+    this.lineForfaitPage.set(0);
+    this.lineRegiePage.set(0);
+  }
+
+  onLivrableBatchSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.livrableBatchSort.set(toTableSort(event));
+    this.livrableBatchPage.set(0);
+  }
+
+  onCreditNoteSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.creditNoteSort.set(toTableSort(event));
+    this.creditNoteForfaitPage.set(0);
+    this.creditNoteRegiePage.set(0);
+    this.creditNoteLivrablePage.set(0);
+  }
+
   lineForfaitPage     = signal(0);
   lineForfaitPageSize = signal(10);
   readonly lineForfaitTotalPages = computed(() => Math.ceil(this.filteredLineRowsForfait().length / this.lineForfaitPageSize()));
   readonly pagedLineRowsForfait = computed(() =>
-    this.pageRows(this.filteredLineRowsForfait(), this.lineForfaitPage(), this.lineForfaitPageSize()));
+    this.pageRows(sortTableRows(this.filteredLineRowsForfait(), this.lineColumns(), this.lineSort()),
+      this.lineForfaitPage(), this.lineForfaitPageSize()));
 
   lineRegiePage     = signal(0);
   lineRegiePageSize = signal(10);
   readonly lineRegieTotalPages = computed(() => Math.ceil(this.filteredLineRowsRegie().length / this.lineRegiePageSize()));
   readonly pagedLineRowsRegie = computed(() =>
-    this.pageRows(this.filteredLineRowsRegie(), this.lineRegiePage(), this.lineRegiePageSize()));
+    this.pageRows(sortTableRows(this.filteredLineRowsRegie(), this.lineColumns(), this.lineSort()),
+      this.lineRegiePage(), this.lineRegiePageSize()));
 
   // ── daf-data-table: Livrable batches (DF) ────────────────────────────────────
   readonly livrableBatchColumns = computed<TableColumn[]>(() => {
@@ -526,7 +559,7 @@ export class ApprovalQueueComponent implements OnInit {
   livrableBatchPageSize = signal(10);
   readonly livrableBatchTotalPages = computed(() => Math.ceil(this.filteredLivrableBatchRows().length / this.livrableBatchPageSize()));
   readonly pagedLivrableBatchRows = computed(() => {
-    const rows = this.filteredLivrableBatchRows();
+    const rows = sortTableRows(this.filteredLivrableBatchRows(), this.livrableBatchColumns(), this.livrableBatchSort());
     const size = this.livrableBatchPageSize();
     const page = Math.min(this.livrableBatchPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
     return rows.slice(page * size, page * size + size);
@@ -650,29 +683,33 @@ export class ApprovalQueueComponent implements OnInit {
   creditNoteForfaitPageSize = signal(10);
   readonly creditNoteForfaitTotalPages = computed(() => Math.ceil(this.filteredCreditNoteRowsForfait().length / this.creditNoteForfaitPageSize()));
   readonly pagedCreditNoteRowsForfait = computed(() =>
-    this.pageRows(this.filteredCreditNoteRowsForfait(), this.creditNoteForfaitPage(), this.creditNoteForfaitPageSize()));
+    this.pageRows(sortTableRows(this.filteredCreditNoteRowsForfait(), this.creditNoteColumns(), this.creditNoteSort()),
+      this.creditNoteForfaitPage(), this.creditNoteForfaitPageSize()));
 
   creditNoteRegiePage     = signal(0);
   creditNoteRegiePageSize = signal(10);
   readonly creditNoteRegieTotalPages = computed(() => Math.ceil(this.filteredCreditNoteRowsRegie().length / this.creditNoteRegiePageSize()));
   readonly pagedCreditNoteRowsRegie = computed(() =>
-    this.pageRows(this.filteredCreditNoteRowsRegie(), this.creditNoteRegiePage(), this.creditNoteRegiePageSize()));
+    this.pageRows(sortTableRows(this.filteredCreditNoteRowsRegie(), this.creditNoteColumns(), this.creditNoteSort()),
+      this.creditNoteRegiePage(), this.creditNoteRegiePageSize()));
 
   creditNoteLivrablePage     = signal(0);
   creditNoteLivrablePageSize = signal(10);
   readonly creditNoteLivrableTotalPages = computed(() => Math.ceil(this.filteredCreditNoteRowsLivrable().length / this.creditNoteLivrablePageSize()));
   readonly pagedCreditNoteRowsLivrable = computed(() =>
-    this.pageRows(this.filteredCreditNoteRowsLivrable(), this.creditNoteLivrablePage(), this.creditNoteLivrablePageSize()));
+    this.pageRows(sortTableRows(this.filteredCreditNoteRowsLivrable(), this.creditNoteColumns(), this.creditNoteSort()),
+      this.creditNoteLivrablePage(), this.creditNoteLivrablePageSize()));
 
   // ── daf-data-table: Audit history ────────────────────────────────────────────
   readonly historyColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'createdAt',   label: this.translate.instant('AFFAIRES.billing.approval.col_date'),    type: 'custom' },
-      { key: 'userNom',     label: this.translate.instant('AFFAIRES.billing.approval.col_user'),    type: 'custom' },
-      { key: 'action',      label: this.translate.instant('AFFAIRES.billing.approval.col_action'),  type: 'custom' },
-      { key: 'entity',      label: this.translate.instant('AFFAIRES.billing.approval.col_entity'),  type: 'custom' },
-      { key: 'commentaire', label: this.translate.instant('AFFAIRES.billing.approval.col_comment'), type: 'custom' },
+      { key: 'createdAt',   label: this.translate.instant('AFFAIRES.billing.approval.col_date'),    type: 'custom', sortable: true,
+        sortAccessor: row => row['_createdAt'] },
+      { key: 'userNom',     label: this.translate.instant('AFFAIRES.billing.approval.col_user'),    type: 'custom', sortable: true },
+      { key: 'action',      label: this.translate.instant('AFFAIRES.billing.approval.col_action'),  type: 'custom', sortable: true },
+      { key: 'entity',      label: this.translate.instant('AFFAIRES.billing.approval.col_entity'),  type: 'custom', sortable: true },
+      { key: 'commentaire', label: this.translate.instant('AFFAIRES.billing.approval.col_comment'), type: 'custom', sortable: true },
     ];
   });
 
@@ -680,6 +717,8 @@ export class ApprovalQueueComponent implements OnInit {
     this.auditLog().map(entry => ({
       id:          entry.id,
       createdAt:   this.fmtDateTime(entry.createdAt),
+      // Horodatage brut pour le tri : la date affichée est formatée jour/mois.
+      _createdAt:  entry.createdAt,
       userNom:     entry.userNom,
       action:      entry.action,
       entity:      `${entry.entityType} #${entry.entityId}`,
@@ -687,17 +726,28 @@ export class ApprovalQueueComponent implements OnInit {
     }))
   );
 
+  /** Tri de l'historique — sur tout le journal, avant la découpe en pages (voir `lineSort`). */
+  readonly historySort = signal<TableSort | null>(null);
+
+  onHistorySort(event: Parameters<typeof toTableSort>[0]): void {
+    this.historySort.set(toTableSort(event));
+    this.historyPage.set(0);
+  }
+
   historyPage     = signal(0);
   historyPageSize = signal(10);
   readonly historyTotalPages = computed(() => Math.ceil(this.historyRows().length / this.historyPageSize()));
   readonly pagedHistoryRows = computed(() => {
-    const rows = this.historyRows();
+    const rows = sortTableRows(this.historyRows(), this.historyColumns(), this.historySort());
     const size = this.historyPageSize();
     const page = Math.min(this.historyPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
     return rows.slice(page * size, page * size + size);
   });
 
-  readonly tableConfig = computed<TableConfig>(() => ({ hoverable: true, showHeader: false }));
+  readonly tableConfig = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return { hoverable: true, showHeader: false, ...this.tableExtras(this.historySort) };
+  });
 
   // ── Row action buttons — rendered as icon buttons in a trailing column by
   // daf-data-table itself (config.actions), same as the library demo's table. ──
@@ -717,16 +767,16 @@ export class ApprovalQueueComponent implements OnInit {
     };
   }
 
-  // Colonnes triables/déplaçables/redimensionnables — même trio de propriétés sur les 4
-  // configs ci-dessous, factorisé ici pour ne pas le répéter à chaque fois.
-  private tableExtras(): Pick<TableConfig, 'resizableColumns' | 'resizableRows' | 'columnPicker' | 'columnPickerLabel' | 'resetLabel'> {
-    const t = (key: string) => this.translate.instant(key);
+  // Outils de tableau communs (`tableTools`, comme sur `/finance/affaires`) + tri fait par
+  // la page sur tout le jeu filtré (`manualSort`), la graine `defaultSort` redonnant la
+  // flèche quand un onglet recrée son tableau. Lue une seule fois (`untracked`) : la suivre
+  // reconstruirait la config à chaque clic d'en-tête.
+  private tableExtras(sort: () => TableSort | null): TableConfig {
+    const seed = untracked(sort);
     return {
-      resizableColumns:  true,
-      resizableRows:     true,
-      columnPicker:      true,
-      columnPickerLabel: t('AFFAIRES.billing.approval.table_columns'),
-      resetLabel:        t('AFFAIRES.billing.approval.table_reset'),
+      ...tableTools(this.translate),
+      manualSort: true,
+      ...(seed ? { defaultSort: seed } : {}),
     };
   }
 
@@ -735,7 +785,7 @@ export class ApprovalQueueComponent implements OnInit {
     return {
       hoverable: true,
       showHeader: false,
-      ...this.tableExtras(),
+      ...this.tableExtras(this.lineSort),
       actions: [
         this.validateAction(row => this.doValidateDF(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'])),
@@ -748,7 +798,7 @@ export class ApprovalQueueComponent implements OnInit {
     return {
       hoverable: true,
       showHeader: false,
-      ...this.tableExtras(),
+      ...this.tableExtras(this.livrableBatchSort),
       actions: [
         this.validateAction(row => this.doValidateLivrableBatch(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'], 'livrableBatch')),
@@ -761,7 +811,7 @@ export class ApprovalQueueComponent implements OnInit {
     return {
       hoverable: true,
       showHeader: false,
-      ...this.tableExtras(),
+      ...this.tableExtras(this.creditNoteSort),
       actions: [
         this.validateAction(row => this.doValidateCreditNote(row['id'])),
         this.returnAction(row => this.openDfRetourModal(row['id'], 'creditNote')),

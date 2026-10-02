@@ -1,7 +1,7 @@
 import {
   Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output,
   Renderer2, ViewChild, WritableSignal,
-  effect, inject, signal, computed, viewChild,
+  effect, inject, signal, computed, untracked, viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -22,6 +22,7 @@ import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../li
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
+import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 import { BILLING_LINE_STATUT_BADGE, WIP_TAUX_STATUT_BADGE, LIVRABLE_STATUT_BADGE, LIVRABLE_BATCH_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
 import { WipTmDetailTableComponent } from './wip-tm-detail-table.component';
 import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.component';
@@ -679,14 +680,22 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly livrablePendingColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Tri local (les livrables de l'affaire arrivent entiers, sans pagination), sur les
+    // valeurs brutes. Sauf « Nouveau % » : c'est un champ de saisie — trier dessus ferait
+    // changer les lignes de place pendant la frappe.
+    const src = (row: TableRow) => row['_raw'] as AffaireLivrableDto;
     return [
-      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE') },
-      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT') },
-      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE') },
-      { key: 'pctActuel',  label: t('AFFAIRES.WIP.COL_PCT_ACTUEL') },
+      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'), sortable: true },
+      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT'), sortable: true },
+      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE'), sortable: true,
+        sortAccessor: row => src(row).budgetAlloue },
+      { key: 'pctActuel',  label: t('AFFAIRES.WIP.COL_PCT_ACTUEL'), sortable: true,
+        sortAccessor: row => src(row).pctFacture },
       { key: 'nouveauPct', label: t('AFFAIRES.WIP.COL_NOUVEAU_PCT'), type: 'custom' },
-      { key: 'montant',    label: t('AFFAIRES.WIP.COL_AMOUNT') },
-      { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'custom' },
+      { key: 'montant',    label: t('AFFAIRES.WIP.COL_AMOUNT'), sortable: true,
+        sortAccessor: row => this.incrementalAmount(src(row)) },
+      { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'custom', sortable: true,
+        sortAccessor: row => this.livrableBatchStatus(row['id'] as number) ?? null },
     ];
   });
 
@@ -701,10 +710,11 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   } satisfies TableRow)));
 
   readonly livrablePendingConfig = computed<TableConfig>(() => ({
-    showHeader:   true,
+    showHeader:   false,
     hoverable:    true,
     loading:      this.loadingLivrables(),
     emptyMessage: this.translate.instant('AFFAIRES.WIP.LIVRABLE_EMPTY'),
+    ...tableTools(this.translate),
   }));
 
   /** Batches `EN_ATTENTE_CLIENT` uniquement — même principe que `pendingClientLines` pour
@@ -718,17 +728,20 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly livrableHistoryColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    const src = (row: TableRow) => row['_source'] as AffaireLivrableDto;
     return [
-      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE') },
-      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT') },
-      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE') },
-      { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
+      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'), sortable: true },
+      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT'), sortable: true },
+      { key: 'budget',     label: t('AFFAIRES.WIP.COL_BUDGET_ALLOUE'), sortable: true,
+        sortAccessor: row => src(row).budgetAlloue },
+      { key: 'statut',     label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge', sortable: true },
     ];
   });
 
   private toLivrableHistoryRow(l: AffaireLivrableDto): TableRow {
     return {
       id:         l.id,
+      _source:    l,
       discipline: l.disciplineLabel,
       document:   l.documentNom,
       budget:     this.currency.transform(l.budgetAlloue, this.affaire.devise),
@@ -741,9 +754,39 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.livrableHistory().map(l => this.toLivrableHistoryRow(l)));
 
   readonly livrableHistoryConfig = computed<TableConfig>(() => ({
-    showHeader:   true,
+    showHeader:   false,
     hoverable:    false,
     emptyMessage: this.translate.instant('AFFAIRES.WIP.NO_HISTORY'),
+    ...tableTools(this.translate),
+  }));
+
+  /**
+   * Tri des deux popups « Afficher tout » (historique WIP et historique Livrable). Elles
+   * paginent côté client : le tri porte sur tout le jeu filtré AVANT la découpe
+   * (`sortTableRows`), et leur config passe `manualSort` pour que la lib ne retrie pas la
+   * seule page affichée. Une seule popup est ouverte à la fois, chacune garde son tri.
+   */
+  readonly historyPopupSort         = signal<TableSort | null>(null);
+  readonly livrableHistoryPopupSort = signal<TableSort | null>(null);
+
+  onHistoryPopupSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.historyPopupSort.set(toTableSort(event));
+    this.historyPage.set(0);
+  }
+
+  onLivrableHistoryPopupSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.livrableHistoryPopupSort.set(toTableSort(event));
+    this.historyPage.set(0);
+  }
+
+  readonly tmHistoryPopupConfig = computed<TableConfig>(() => ({
+    ...this.tmHistoryConfig(),
+    ...delegatedSort(untracked(this.historyPopupSort)),
+  }));
+
+  readonly livrableHistoryPopupConfig = computed<TableConfig>(() => ({
+    ...this.livrableHistoryConfig(),
+    ...delegatedSort(untracked(this.livrableHistoryPopupSort)),
   }));
 
   /** Popup "Afficher tout" — recherche + filtre Statut, même mécanisme
@@ -823,7 +866,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly paginatedLivrableHistoryRows = computed<TableRow[]>(() => {
     const size = this.historyPageSize();
     const page = Math.min(this.historyPage(), this.livrableHistoryTotalPages() - 1);
-    return this.filteredLivrableHistoryRows().slice(page * size, page * size + size);
+    return sortTableRows(this.filteredLivrableHistoryRows(), this.livrableHistoryColumns(), this.livrableHistoryPopupSort())
+      .slice(page * size, page * size + size);
   });
 
   /** Même bibliothèque (xlsx) et même schéma d'export que exportHistoryExcel() — appelé
@@ -1364,14 +1408,24 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly tauxHistoryColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Tri local (l'historique arrive entier, sans pagination), sur les valeurs brutes. Le
+    // cumul reste celui de la ligne — calculé dans l'ordre des périodes, il ne change pas
+    // quand on trie autrement.
+    const src = (row: TableRow) => row['_source'] as WipTauxDto;
     return [
-      { key: 'period',           label: t('AFFAIRES.WIP.COL_PERIOD') },
-      { key: 'taux',             label: t('AFFAIRES.WIP.COL_TAUX') },
-      { key: 'cumul',            label: t('AFFAIRES.WIP.COL_CUMUL') },
-      { key: 'montant',          label: t('AFFAIRES.WIP.COL_INCREMENT') },
-      { key: 'mtClient',         label: t('AFFAIRES.WIP.COL_MT_CLIENT'), type: 'custom' },
-      { key: 'factureProgress',  label: t('AFFAIRES.WIP.COL_FACTURE_PROGRESS'), type: 'custom' },
-      { key: 'statut',           label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
+      { key: 'period',           label: t('AFFAIRES.WIP.COL_PERIOD'), sortable: true,
+        sortAccessor: row => src(row).periodDateFrom },
+      { key: 'taux',             label: t('AFFAIRES.WIP.COL_TAUX'), sortable: true,
+        sortAccessor: row => src(row).tauxSaisi },
+      { key: 'cumul',            label: t('AFFAIRES.WIP.COL_CUMUL'), sortable: true,
+        sortAccessor: row => row['_cumul'] as number },
+      { key: 'montant',          label: t('AFFAIRES.WIP.COL_INCREMENT'), sortable: true,
+        sortAccessor: row => src(row).montantIncremental },
+      { key: 'mtClient',         label: t('AFFAIRES.WIP.COL_MT_CLIENT'), type: 'custom', sortable: true,
+        sortAccessor: row => (row['_line'] as LineDetailDto | null)?.montantHt ?? null },
+      { key: 'factureProgress',  label: t('AFFAIRES.WIP.COL_FACTURE_PROGRESS'), type: 'custom', sortable: true,
+        sortAccessor: row => row['_montantFacture'] as number | null },
+      { key: 'statut',           label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge', sortable: true },
     ];
   });
 
@@ -1432,6 +1486,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         period:  this.formatWipPeriod(t.periodDateFrom, t.periodDateTo),
         taux:    `${t.tauxSaisi}%`,
         cumul:   `${runningCumul}%`,
+        _cumul:  runningCumul,
         montant: this.currency.transform(t.montantIncremental, this.affaire.devise),
         // mtClient itself isn't set here — it's a type: 'custom' column (see the
         // dafCell="mtClient" template in the .html), rendered from `_line` directly,
@@ -1453,9 +1508,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   });
 
   readonly tauxHistoryConfig = computed<TableConfig>(() => ({
-    showHeader: true,
+    showHeader: false,
     hoverable:  false,
     emptyMessage: this.translate.instant('AFFAIRES.WIP.NO_HISTORY'),
+    ...tableTools(this.translate),
     actions: [
       {
         id:      'edit',
@@ -1688,10 +1744,15 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly tmHistoryColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Tri local, sur les valeurs brutes : l'historique arrive entier, sans pagination.
+    const src = (row: TableRow) => row['_source'] as LineDetailDto;
     return [
-      { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD') },
-      { key: 'montant', label: t('AFFAIRES.WIP.COL_AMOUNT') },
-      { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge' },
+      { key: 'period',  label: t('AFFAIRES.WIP.COL_PERIOD'), sortable: true,
+        sortAccessor: row => src(row).periodDateFrom
+          ?? `${src(row).periodYear}-${String(src(row).periodMonth).padStart(2, '0')}` },
+      { key: 'montant', label: t('AFFAIRES.WIP.COL_AMOUNT'), sortable: true,
+        sortAccessor: row => src(row).montantHt },
+      { key: 'statut',  label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge', sortable: true },
     ];
   });
 
@@ -1709,9 +1770,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly tmHistoryRows = computed<TableRow[]>(() => this.tmHistory().map(l => this.toHistoryRow(l)));
 
   readonly tmHistoryConfig = computed<TableConfig>(() => ({
-    showHeader: true,
+    showHeader: false,
     hoverable:  false,
     emptyMessage: this.translate.instant('AFFAIRES.WIP.NO_HISTORY'),
+    ...tableTools(this.translate),
     actions: [
       {
         id:      'cancel',
@@ -1810,7 +1872,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly paginatedHistoryRows = computed<TableRow[]>(() => {
     const size = this.historyPageSize();
     const page = Math.min(this.historyPage(), this.historyTotalPages() - 1);
-    return this.filteredHistoryRows().slice(page * size, page * size + size);
+    return sortTableRows(this.filteredHistoryRows(), this.tmHistoryColumns(), this.historyPopupSort())
+      .slice(page * size, page * size + size);
   });
 
   /** Même bibliothèque (xlsx) et même schéma d'export que exportWipExcel() ci-dessus —

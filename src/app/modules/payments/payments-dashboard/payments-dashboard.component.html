@@ -90,6 +90,8 @@
       [loading]="loadingRows()"
       [pageSize]="pageSize()"
       [emptyMessage]="'PAYMENTS.DASHBOARD.TABLE.EMPTY' | translate"
+      [sort]="sort()"
+      (sortChange)="onSortChange($event)"
       (open)="navigateToInvoice($event)" />
   }
 

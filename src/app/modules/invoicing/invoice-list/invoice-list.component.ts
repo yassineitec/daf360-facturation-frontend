@@ -13,6 +13,7 @@ import { InvoicesCardsSectionComponent } from './invoices-cards-section.componen
 import { InvoicesTableSectionComponent } from './invoices-table-section.component';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TableSort, sortParam } from '../../../shared/table-tools';
 import { AffaireService } from '../../affaires/affaire.service';
 import type { AffaireListItem, ClientDto } from '../../affaires/affaire.model';
 
@@ -47,6 +48,8 @@ export class InvoiceListComponent implements OnInit {
   totalElements = signal(0);
   totalPages    = signal(0);
   currentPage   = signal(0);
+  /** Tri serveur choisi dans l'en-tête du tableau (clé de colonne), `null` = ordre par défaut. */
+  readonly sort = signal<TableSort | null>(null);
   pageSize      = signal(20);
 
   /** `firstLoad` drives the whole-page skeleton, `loading` only the table (§5). */
@@ -263,6 +266,7 @@ export class InvoiceListComponent implements OnInit {
       maxTtc:    parseAmount(this.filterMaxTtc()),
       overdueOnly: this.filterOverdue(),
       search:    this.searchText().trim() || null,
+      sort:      sortParam(this.sort()),
     };
     this.svc.getInvoices(filter).subscribe({
       next: res => {
@@ -278,6 +282,13 @@ export class InvoiceListComponent implements OnInit {
         this.firstLoad.set(false);
       },
     });
+  }
+
+  /** Nouveau tri d'en-tête → retour à la première page, triée par le serveur. */
+  onSortChange(sort: TableSort | null): void {
+    this.sort.set(sort);
+    this.currentPage.set(0);
+    this.load();
   }
 
   onSearchTextChange(value: string): void {

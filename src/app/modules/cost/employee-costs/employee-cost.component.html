@@ -121,6 +121,7 @@
         [costs]="pagedRows()"
         [loading]="isLoading()"
         [pageSize]="size()"
+        [sort]="currentSort()"
         [emptyMessage]="'COST.EMPLOYEE_COST.EMPTY' | translate"
         (edit)="edit($event)"
         (remove)="remove($event)"

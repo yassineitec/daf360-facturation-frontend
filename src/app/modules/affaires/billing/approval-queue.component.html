@@ -124,6 +124,8 @@
                       [columns]="lineColumns()"
                       [rows]="pagedLineRowsForfait()"
                       [config]="lineTableConfig()"
+                      (sortChange)="onLineSort($event)"
+                      (resetClick)="onLineSort(null)"
                       (rowClick)="openDetail($any($event), 'line')">
 
                       <ng-template dafCell="affaire" let-row>
@@ -187,6 +189,8 @@
                     [columns]="creditNoteColumns()"
                     [rows]="pagedCreditNoteRowsForfait()"
                     [config]="creditNoteTableConfig()"
+                    (sortChange)="onCreditNoteSort($event)"
+                    (resetClick)="onCreditNoteSort(null)"
                     (rowClick)="openCreditNoteDetail($any($event))">
 
                     <ng-template dafCell="affaire" let-row>
@@ -252,6 +256,8 @@
                   [columns]="lineColumns()"
                   [rows]="pagedLineRowsRegie()"
                   [config]="lineTableConfig()"
+                  (sortChange)="onLineSort($event)"
+                  (resetClick)="onLineSort(null)"
                   (rowClick)="openDetail($any($event), 'line')">
 
                   <ng-template dafCell="affaire" let-row>
@@ -313,6 +319,8 @@
                     [columns]="creditNoteColumns()"
                     [rows]="pagedCreditNoteRowsRegie()"
                     [config]="creditNoteTableConfig()"
+                    (sortChange)="onCreditNoteSort($event)"
+                    (resetClick)="onCreditNoteSort(null)"
                     (rowClick)="openCreditNoteDetail($any($event))">
 
                     <ng-template dafCell="affaire" let-row>
@@ -378,6 +386,8 @@
                   [columns]="livrableBatchColumns()"
                   [rows]="pagedLivrableBatchRows()"
                   [config]="livrableBatchTableConfig()"
+                  (sortChange)="onLivrableBatchSort($event)"
+                  (resetClick)="onLivrableBatchSort(null)"
                   (rowClick)="openDetail($any($event), 'livrable')">
 
                   <ng-template dafCell="affaire" let-row>
@@ -431,6 +441,8 @@
                     [columns]="creditNoteColumns()"
                     [rows]="pagedCreditNoteRowsLivrable()"
                     [config]="creditNoteTableConfig()"
+                    (sortChange)="onCreditNoteSort($event)"
+                    (resetClick)="onCreditNoteSort(null)"
                     (rowClick)="openCreditNoteDetail($any($event))">
 
                     <ng-template dafCell="affaire" let-row>
@@ -497,7 +509,9 @@
         <daf-data-table
           [columns]="historyColumns()"
           [rows]="pagedHistoryRows()"
-          [config]="tableConfig()">
+          [config]="tableConfig()"
+          (sortChange)="onHistorySort($event)"
+          (resetClick)="onHistorySort(null)">
 
           <ng-template dafCell="createdAt" let-row>
             <span class="cell-muted cell-nowrap">{{ row['createdAt'] }}</span>

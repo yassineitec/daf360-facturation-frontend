@@ -1,5 +1,5 @@
 import {
-  Component, effect, inject, input, signal, computed, ViewChild, TemplateRef,
+  Component, effect, inject, input, signal, computed, untracked, ViewChild, TemplateRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +7,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 import { CostImportPanelComponent } from '../import/cost-import-panel.component';
 import {
   CostApprovalThresholdDto, ListValueDto, ListTypeDto, CreateCostApprovalThresholdRequest,
@@ -143,13 +144,26 @@ export class CostConfigComponent {
 
   readonly thresholdColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
+    // Cellules projetées (champs éditables) mais valeurs brutes dans la ligne : la lib
+    // retombe dessus pour trier, sans `sortAccessor`.
     return [
-      { key: 'level',            label: this.translate.instant('COST.CONFIG.TH_LEVEL'),   type: 'custom' },
-      { key: 'approverRoleCode', label: this.translate.instant('COST.CONFIG.TH_ROLE'),    type: 'custom' },
-      { key: 'minAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MIN_EUR'), type: 'custom', align: 'right' },
-      { key: 'maxAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MAX_EUR'), type: 'custom', align: 'right' },
+      { key: 'level',            label: this.translate.instant('COST.CONFIG.TH_LEVEL'),   type: 'custom', sortable: true },
+      { key: 'approverRoleCode', label: this.translate.instant('COST.CONFIG.TH_ROLE'),    type: 'custom', sortable: true },
+      { key: 'minAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MIN_EUR'), type: 'custom', align: 'right', sortable: true },
+      { key: 'maxAmountEur',     label: this.translate.instant('COST.CONFIG.TH_MAX_EUR'), type: 'custom', align: 'right', sortable: true },
     ];
   });
+
+  /**
+   * Tri d'en-tête des deux tableaux éditables. Fait ici plutôt que par la lib
+   * (`manualSort`) : la ligne de saisie « nouveau » doit rester EN DERNIER, or le tri de la
+   * lib la rangerait parmi les autres. On trie les lignes existantes, puis on l'ajoute.
+   */
+  readonly thresholdSort = signal<TableSort | null>(null);
+  readonly listValueSort = signal<TableSort | null>(null);
+
+  onThresholdSort(event: Parameters<typeof toTableSort>[0]): void { this.thresholdSort.set(toTableSort(event)); }
+  onListValueSort(event: Parameters<typeof toTableSort>[0]): void { this.listValueSort.set(toTableSort(event)); }
 
   /** Row actions via `TableConfig.actions`, not a hand-rolled `dafCell="_actions"`
    * column — same convention as admin-list's `listTableConfig`. Four actions cover
@@ -159,7 +173,10 @@ export class CostConfigComponent {
     const t = (key: string) => this.translate.instant(key);
     return {
       hoverable: true,
+      showHeader: false,
       emptyMessage: t('COST.CONFIG.THRESHOLD_EMPTY'),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.thresholdSort)),
       actions: [
         {
           id: 'save-new', icon: 'add', tooltip: t('COST.CONFIG.ADD'),
@@ -198,7 +215,7 @@ export class CostConfigComponent {
   });
 
   readonly thresholdRows = computed(() => {
-    const rows = this.thresholds().map(t => ({
+    const rows = sortTableRows(this.thresholds().map(t => ({
       id:               t.id,
       level:            t.level,
       approverRoleCode: t.approverRoleCode,
@@ -206,7 +223,7 @@ export class CostConfigComponent {
       maxAmountEur:     t.maxAmountEur,
       _isNew:           false,
       _raw:             t,
-    }));
+    })), this.thresholdColumns(), this.thresholdSort());
     if (this.showAddThreshold()) {
       rows.push({
         id: '__new-threshold__' as unknown as number, level: '', approverRoleCode: '',
@@ -225,11 +242,12 @@ export class CostConfigComponent {
   readonly listValueColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
-      { key: 'code',         label: this.translate.instant('COST.CONFIG.LV_CODE'),     type: 'custom' },
-      { key: 'labelFr',      label: this.translate.instant('COST.CONFIG.LV_LABEL_FR'), type: 'custom' },
-      { key: 'labelEn',      label: this.translate.instant('COST.CONFIG.LV_LABEL_EN'), type: 'custom' },
-      { key: 'isDefault',    label: this.translate.instant('COST.CONFIG.LV_DEFAULT'),  type: 'custom', align: 'center' },
-      { key: 'displayOrder', label: this.translate.instant('COST.CONFIG.LV_ORDER'),    type: 'custom', align: 'center' },
+      { key: 'code',         label: this.translate.instant('COST.CONFIG.LV_CODE'),     type: 'custom', sortable: true },
+      { key: 'labelFr',      label: this.translate.instant('COST.CONFIG.LV_LABEL_FR'), type: 'custom', sortable: true },
+      { key: 'labelEn',      label: this.translate.instant('COST.CONFIG.LV_LABEL_EN'), type: 'custom', sortable: true },
+      { key: 'isDefault',    label: this.translate.instant('COST.CONFIG.LV_DEFAULT'),  type: 'custom', align: 'center', sortable: true,
+        sortAccessor: row => (row['isDefault'] ? 1 : 0) },
+      { key: 'displayOrder', label: this.translate.instant('COST.CONFIG.LV_ORDER'),    type: 'custom', align: 'center', sortable: true },
     ];
   });
 
@@ -237,7 +255,10 @@ export class CostConfigComponent {
     const t = (key: string) => this.translate.instant(key);
     return {
       hoverable: true,
+      showHeader: false,
       emptyMessage: t('COST.CONFIG.LIST_VALUE_EMPTY'),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.listValueSort)),
       actions: [
         {
           id: 'save-new', icon: 'add', tooltip: t('COST.CONFIG.ADD'),
@@ -260,7 +281,7 @@ export class CostConfigComponent {
   });
 
   readonly listValueRows = computed(() => {
-    const rows = this.listValues().map(v => ({
+    const rows = sortTableRows(this.listValues().map(v => ({
       id:            v.id,
       code:          v.code,
       labelFr:       v.labelFr,
@@ -269,7 +290,7 @@ export class CostConfigComponent {
       displayOrder:  v.displayOrder,
       _isNew:        false,
       _raw:          v,
-    }));
+    })), this.listValueColumns(), this.listValueSort());
     if (this.showAddValue()) {
       rows.push({
         id: '__new-value__' as unknown as number, code: '', labelFr: '', labelEn: null,

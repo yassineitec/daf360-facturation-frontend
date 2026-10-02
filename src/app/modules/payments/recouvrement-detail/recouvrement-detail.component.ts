@@ -23,6 +23,10 @@ import { PaymentModalComponent } from '../../invoicing/payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { daysPastDue, formatDate, offsetLabel, retardVariant } from '../payments-display';
+import { tableTools } from '../../../shared/table-tools';
+
+/** Tri de la colonne statut des relances : l'ordre du cycle d'une relance. */
+const REMINDER_STATE_RANK: Record<string, number> = { pending: 0, suspended: 1, sent: 2 };
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -290,11 +294,19 @@ export class RecouvrementDetailComponent implements OnInit {
   readonly reminderColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Tri local (relances et encaissements de la facture arrivent entiers, sans
+    // pagination), sur les valeurs brutes : les dates sont formatées pour l'affichage.
+    const src = (row: TableRow) => row['_source'] as ReminderDto;
     return [
-      { key: 'type',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_TYPE'),      type: 'custom' },
-      { key: 'scheduled', label: t('PAYMENTS.DETAIL.REMINDERS.COL_SCHEDULED'), type: 'text'   },
-      { key: 'sent',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_SENT'),      type: 'text'   },
-      { key: 'state',     label: t('PAYMENTS.DETAIL.REMINDERS.COL_STATUS'),    type: 'custom' },
+      { key: 'type',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_TYPE'),      type: 'custom', sortable: true,
+        sortAccessor: row => src(row).offsetDays },
+      { key: 'scheduled', label: t('PAYMENTS.DETAIL.REMINDERS.COL_SCHEDULED'), type: 'text',   sortable: true,
+        sortAccessor: row => src(row).scheduledDate },
+      { key: 'sent',      label: t('PAYMENTS.DETAIL.REMINDERS.COL_SENT'),      type: 'text',   sortable: true,
+        sortAccessor: row => src(row).sentAt },
+      // En attente, puis suspendue, puis envoyée — l'ordre du cycle d'une relance.
+      { key: 'state',     label: t('PAYMENTS.DETAIL.REMINDERS.COL_STATUS'),    type: 'custom', sortable: true,
+        sortAccessor: row => REMINDER_STATE_RANK[row['_state'] as string] ?? 0 },
     ];
   });
 
@@ -310,6 +322,7 @@ export class RecouvrementDetailComponent implements OnInit {
       const label = lang === 'en' ? r.labelEn : r.labelFr;
       return {
         id: r.id,
+        _source: r,
         _label:   label ?? t('PAYMENTS.DETAIL.REMINDERS.RETIRED_STAGE'),
         _code:    label ? '' : r.reminderType,
         _offset:  offsetLabel(r.offsetDays, t),
@@ -329,6 +342,7 @@ export class RecouvrementDetailComponent implements OnInit {
       hoverable:    false,
       loading:      false,
       emptyMessage: this.translate.instant('PAYMENTS.DETAIL.REMINDERS.EMPTY'),
+      ...tableTools(this.translate),
     };
   });
 
@@ -344,11 +358,15 @@ export class RecouvrementDetailComponent implements OnInit {
   readonly paymentColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    const src = (row: TableRow) => row['_source'] as InvoicePaymentDto;
     return [
-      { key: 'date',   label: t('PAYMENTS.DETAIL.PAYMENTS.COL_DATE'),   type: 'custom' },
-      { key: 'method', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_METHOD'), type: 'custom' },
-      { key: 'notes',  label: t('PAYMENTS.DETAIL.PAYMENTS.COL_NOTES'),  type: 'text'   },
-      { key: 'amount', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_AMOUNT'), type: 'text', align: 'right' },
+      { key: 'date',   label: t('PAYMENTS.DETAIL.PAYMENTS.COL_DATE'),   type: 'custom', sortable: true,
+        sortAccessor: row => src(row).paymentDate },
+      { key: 'method', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_METHOD'), type: 'custom', sortable: true,
+        sortAccessor: row => row['_method'] as string },
+      { key: 'notes',  label: t('PAYMENTS.DETAIL.PAYMENTS.COL_NOTES'),  type: 'text',   sortable: true },
+      { key: 'amount', label: t('PAYMENTS.DETAIL.PAYMENTS.COL_AMOUNT'), type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).amountLocal },
     ];
   });
 
@@ -357,6 +375,7 @@ export class RecouvrementDetailComponent implements OnInit {
     const devise = this.invoice()?.devise ?? '';
     return this.payments().map(p => ({
       id:     p.id,
+      _source: p,
       notes:  p.notes?.trim() || '—',
       amount: this.currency.transform(p.amountLocal, p.currency || devise),
       // Rendus par les gabarits projetés : chacun une valeur et sa précision en dessous.
@@ -398,6 +417,7 @@ export class RecouvrementDetailComponent implements OnInit {
       hoverable:    false,
       loading:      false,
       emptyMessage: this.translate.instant('PAYMENTS.DETAIL.PAYMENTS.EMPTY'),
+      ...tableTools(this.translate),
     };
   });
 

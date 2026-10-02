@@ -49,7 +49,8 @@
         <daf-data-table
           [columns]="thresholdColumns()"
           [rows]="thresholdRows()"
-          [config]="thresholdTableConfig()">
+          [config]="thresholdTableConfig()"
+          (sortChange)="onThresholdSort($event)" (resetClick)="onThresholdSort(null)">
 
           <ng-template dafCell="level" let-row>
             @if (row['_isNew']) {
@@ -158,7 +159,8 @@
           <daf-data-table
             [columns]="listValueColumns()"
             [rows]="listValueRows()"
-            [config]="listValueTableConfig()">
+            [config]="listValueTableConfig()"
+            (sortChange)="onListValueSort($event)" (resetClick)="onListValueSort(null)">
 
             <ng-template dafCell="code" let-row>
               @if (row['_isNew']) {

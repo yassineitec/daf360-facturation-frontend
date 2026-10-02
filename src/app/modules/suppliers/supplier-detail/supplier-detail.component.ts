@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
@@ -21,9 +21,26 @@ import {
 } from '../supplier-display';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { CostService } from '../../cost/cost.service';
-import { CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto } from '../../cost/cost.model';
+import { CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto, SupplierLedgerRowDto, localizedLabel } from '../../cost/cost.model';
+
+/**
+ * Distinct cost categories of these lines for a filter: `value` stays the FRENCH label —
+ * the filters compare it with `costCategoryLabel` — while the shown label follows the UI
+ * language (English name from the admin lists when there is one).
+ */
+function categoryFilterOptions(lines: CostLineDto[], lang: string | null | undefined): { value: string; label: string }[] {
+  const byFr = new Map<string, string>();
+  for (const l of lines) {
+    if (l.costCategoryLabel && !byFr.has(l.costCategoryLabel)) {
+      byFr.set(l.costCategoryLabel, localizedLabel(l.costCategoryLabel, l.costCategoryLabelEn, lang)!);
+    }
+  }
+  return [...byFr].map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
 import { STATUS_BADGE_VARIANT, statusKey } from '../../cost/cost-display';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 /**
  * Une ligne clé/valeur du panneau de détails. `label` est toujours une clé i18n.
  *
@@ -613,7 +630,7 @@ export class SupplierDetailComponent implements OnInit {
    * vider le tableau. Même construction que `tsFilterFields()` sur la fiche affaire.
    */
   readonly costFilterFields = computed<FilterField[]>(() => {
-    this.translate.currentLang();
+    const lang  = this.translate.currentLang();
     const lines = this.costLines();
     const distinct = (values: (string | null | undefined)[]) =>
       [...new Set(values.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
@@ -630,7 +647,7 @@ export class SupplierDetailComponent implements OnInit {
         label:      this.translate.instant('COST.LINES.CATEGORY_FILTER_LABEL'),
         type:       'select',
         searchable: true,
-        options:    distinct(lines.map(l => l.costCategoryLabel)).map(v => ({ value: v, label: v })),
+        options:    categoryFilterOptions(lines, lang),
       },
       {
         name:    'costCurrency',
@@ -653,7 +670,7 @@ export class SupplierDetailComponent implements OnInit {
    * SupplierLedgerService).
    */
   readonly ledgerFilterFields = computed<FilterField[]>(() => {
-    this.translate.currentLang();
+    const lang = this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     const rows  = this.ledger()?.rows ?? [];
     const byId  = this.costLineById();
@@ -665,9 +682,8 @@ export class SupplierDetailComponent implements OnInit {
         return { value: String(id), label: l?.reference || l?.label || `#${id}` };
       })
       .sort((a, b) => a.label.localeCompare(b.label));
-    const categories = [...new Set(rows
-      .map(r => byId.get(r.costLineId)?.costCategoryLabel)
-      .filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
+    const categories = categoryFilterOptions(
+      rows.map(r => byId.get(r.costLineId)).filter((l): l is CostLineDto => !!l), lang);
     return [
       {
         name:    'type',
@@ -696,7 +712,7 @@ export class SupplierDetailComponent implements OnInit {
         label:      t('COST.LINES.CATEGORY_FILTER_LABEL'),
         type:       'select',
         searchable: true,
-        options:    categories.map(v => ({ value: v, label: v })),
+        options:    categories,
       },
     ];
   });
@@ -765,38 +781,56 @@ export class SupplierDetailComponent implements OnInit {
       (!q || `${l.reference ?? ''} ${l.label ?? ''}`.toLowerCase().includes(q)));
   });
 
-  /**
-   * La page courante, bornée : vider un filtre depuis la page 4 laisserait sinon un
-   * tableau vide alors qu'il reste des lignes. Les gestionnaires ci-dessus remettent
-   * déjà `costPage` à 0 sur chaque changement, ceci protège le cas où les DONNÉES
-   * rétrécissent sous la page (une suppression, un rechargement).
-   */
-  readonly pagedCostLines = computed<CostLineDto[]>(() => {
-    const rows = this.filteredCostLines();
-    const size = this.costPageSize();
-    const page = Math.min(this.costPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
-    return rows.slice(page * size, page * size + size);
-  });
-
   readonly costTotalPages = computed(() =>
     Math.ceil(this.filteredCostLines().length / this.costPageSize()));
+
+  /**
+   * Tri d'en-tête des deux onglets. Les listes sont paginées ici, côté client : le tri
+   * porte sur tout le jeu filtré AVANT la découpe (`sortTableRows`), et les configs passent
+   * `manualSort` pour que la lib ne retrie pas la seule page affichée.
+   */
+  readonly costSort   = signal<TableSort | null>(null);
+  readonly ledgerSort = signal<TableSort | null>(null);
+
+  onCostSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.costSort.set(toTableSort(event));
+    this.costPage.set(0);
+  }
+
+  onLedgerSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.ledgerSort.set(toTableSort(event));
+    this.ledgerPage.set(0);
+  }
+
+  /** La page `page` de `rows`, bornée : vider un filtre depuis la page 4 laisserait sinon
+   *  un tableau vide alors qu'il reste des lignes. Les gestionnaires ci-dessus remettent
+   *  déjà la page à 0 sur chaque changement, ceci protège le cas où les DONNÉES
+   *  rétrécissent sous la page (une suppression, un rechargement). */
+  private pageOf<T>(rows: T[], page: number, size: number): T[] {
+    const p = Math.min(page, Math.max(0, Math.ceil(rows.length / size) - 1));
+    return rows.slice(p * size, p * size + size);
+  }
 
   readonly costColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    const src = (row: TableRow) => row['_source'] as CostLineDto;
     return [
-      { key: 'reference', label: t('SUPPLIERS.DETAIL.COSTS.COL_REF'),    type: 'text' },
-      { key: 'label',     label: t('SUPPLIERS.DETAIL.COSTS.COL_LABEL'),  type: 'text' },
-      { key: 'date',      label: t('SUPPLIERS.DETAIL.COSTS.COL_DATE'),   type: 'text' },
-      { key: 'status',    label: t('SUPPLIERS.DETAIL.COSTS.COL_STATUS'), type: 'badge' },
-      { key: 'gross',     label: t('SUPPLIERS.DETAIL.COSTS.COL_GROSS'),  type: 'text', align: 'right' },
+      { key: 'reference', label: t('SUPPLIERS.DETAIL.COSTS.COL_REF'),    type: 'text', sortable: true },
+      { key: 'label',     label: t('SUPPLIERS.DETAIL.COSTS.COL_LABEL'),  type: 'text', sortable: true },
+      { key: 'date',      label: t('SUPPLIERS.DETAIL.COSTS.COL_DATE'),   type: 'text', sortable: true,
+        sortAccessor: row => src(row).transactionDate },
+      { key: 'status',    label: t('SUPPLIERS.DETAIL.COSTS.COL_STATUS'), type: 'badge', sortable: true },
+      { key: 'gross',     label: t('SUPPLIERS.DETAIL.COSTS.COL_GROSS'),  type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).grossAmountLocal },
     ];
   });
 
   readonly costRows = computed<TableRow[]>(() => {
     this.translate.currentLang();
-    return this.pagedCostLines().map(l => ({
+    const all = this.filteredCostLines().map(l => ({
       id:        l.id,
+      _source:   l,
       reference: l.reference ?? '—',
       label:     l.label ?? '—',
       date:      this.formatDate(l.transactionDate),
@@ -808,6 +842,8 @@ export class SupplierDetailComponent implements OnInit {
       },
       gross:     this.currency.transform(l.grossAmountLocal, l.currency ?? 'TND'),
     }));
+    return this.pageOf(sortTableRows(all, this.costColumns(), this.costSort()),
+      this.costPage(), this.costPageSize());
   });
 
   readonly costConfig = computed<TableConfig>(() => {
@@ -821,6 +857,8 @@ export class SupplierDetailComponent implements OnInit {
       emptyMessage: this.translate.instant(this.costLines().length === 0
         ? 'SUPPLIERS.DETAIL.COSTS.EMPTY'
         : 'SUPPLIERS.DETAIL.TOOLBAR.NO_MATCH'),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.costSort)),
     };
   });
 
@@ -834,13 +872,20 @@ export class SupplierDetailComponent implements OnInit {
   readonly ledgerColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    // Valeurs brutes : les montants sont formatés (« 1 240,500 ») et la date en jj/mm.
+    const src = (row: TableRow) => row['_source'] as SupplierLedgerRowDto;
     return [
-      { key: 'date',           label: t('SUPPLIERS.DETAIL.LEDGER.COL_DATE'),            type: 'text' },
-      { key: 'label',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_LABEL'),           type: 'text' },
-      { key: 'debit',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right' },
-      { key: 'credit',         label: t('SUPPLIERS.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right' },
-      { key: 'soldeDebiteur',  label: t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right' },
-      { key: 'soldeCrediteur', label: t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right' },
+      { key: 'date',           label: t('SUPPLIERS.DETAIL.LEDGER.COL_DATE'),            type: 'text', sortable: true,
+        sortAccessor: row => src(row).date },
+      { key: 'label',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_LABEL'),           type: 'text', sortable: true },
+      { key: 'debit',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).debit },
+      { key: 'credit',         label: t('SUPPLIERS.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).credit },
+      { key: 'soldeDebiteur',  label: t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).soldeDebiteur },
+      { key: 'soldeCrediteur', label: t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).soldeCrediteur },
     ];
   });
 
@@ -867,13 +912,6 @@ export class SupplierDetailComponent implements OnInit {
     });
   });
 
-  readonly pagedLedgerRows = computed(() => {
-    const rows = this.filteredLedgerRows();
-    const size = this.ledgerPageSize();
-    const page = Math.min(this.ledgerPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
-    return rows.slice(page * size, page * size + size);
-  });
-
   readonly ledgerTotalPages = computed(() =>
     Math.ceil(this.filteredLedgerRows().length / this.ledgerPageSize()));
 
@@ -883,16 +921,20 @@ export class SupplierDetailComponent implements OnInit {
    * confondrait deux lignes différentes d'une page à l'autre. `reglementId` est
    * garanti par le back sur chaque écriture (une écriture = un règlement).
    */
-  readonly ledgerRows = computed<TableRow[]>(() =>
-    this.pagedLedgerRows().map(r => ({
+  readonly ledgerRows = computed<TableRow[]>(() => {
+    const all = this.filteredLedgerRows().map(r => ({
       id:             r.reglementId,
+      _source:        r,
       date:           this.formatDate(r.date),
       label:          r.label ?? '—',
       debit:          this.fmtAmount(r.debit),
       credit:         this.fmtAmount(r.credit),
       soldeDebiteur:  this.fmtAmount(r.soldeDebiteur),
       soldeCrediteur: this.fmtAmount(r.soldeCrediteur),
-    })));
+    }));
+    return this.pageOf(sortTableRows(all, this.ledgerColumns(), this.ledgerSort()),
+      this.ledgerPage(), this.ledgerPageSize());
+  });
 
   readonly ledgerConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
@@ -903,6 +945,8 @@ export class SupplierDetailComponent implements OnInit {
       emptyMessage: this.translate.instant((this.ledger()?.rows ?? []).length === 0
         ? 'SUPPLIERS.DETAIL.LEDGER.EMPTY'
         : 'SUPPLIERS.DETAIL.TOOLBAR.NO_MATCH'),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.ledgerSort)),
     };
   });
 

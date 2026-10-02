@@ -8,6 +8,9 @@ import { DepenseCollaboratorDetailComponent } from './depense-collaborator-detai
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
+/** Filter value for lines whose collaborator has no country (no matching DAF360 user_ref). */
+const NO_PAYS = '__NONE__';
+
 /**
  * "Dépense" tab — read-only visibility into Timesheet-logged hours for FORFAIT/LIVRABLE
  * affaires, valued at internal cost. No write path anywhere in this tab: no validate, no
@@ -44,6 +47,9 @@ export class AffaireDepenseTabComponent implements OnInit {
   protected readonly filterRangeDates = signal<Date | Date[] | null>(null);
   protected readonly filterMonth = signal<{ year: number; month: number } | null>(null);
   protected readonly filterYear = signal<number | null>(null);
+  /** Pays (collaborator's country) — independent of the Période/Mois/Année mode above, so it
+   * combines with whichever is active. Values are `String(paysId)` or `NO_PAYS`. */
+  protected readonly filterPays = signal<string[]>([]);
 
   /** Same `this.currency.transform(v, devise)` convention `affaire-detail.component.ts`'s
    * own `money()` helper and `AffaireWipTabComponent` already use — internal cost is still a
@@ -55,12 +61,15 @@ export class AffaireDepenseTabComponent implements OnInit {
     const totalHours = lignes.reduce((s, l) => s + l.hours, 0);
     const totalCost = lignes.reduce((s, l) => s + l.costAmount, 0);
     const collaboratorCount = new Set(lignes.map(l => l.userEmail)).size;
+    // While the preview is still loading, show "—" rather than 0 — a 0 would read as
+    // "this affaire has no hours" before we actually know.
+    const loading = this.loading();
     return [
-      { label: t('AFFAIRES.DEPENSE.KPI_HOURS'), value: totalHours.toFixed(2) + ' h',
+      { label: t('AFFAIRES.DEPENSE.KPI_HOURS'), value: loading ? '—' : totalHours.toFixed(2) + ' h',
         options: { icon: 'schedule', iconColor: 'text-primary', iconBg: 'bg-primary/10' } },
-      { label: t('AFFAIRES.DEPENSE.KPI_COST'), value: this.currency.transform(totalCost, this.affaire.devise),
+      { label: t('AFFAIRES.DEPENSE.KPI_COST'), value: loading ? '—' : this.currency.transform(totalCost, this.affaire.devise),
         options: { icon: 'payments', iconColor: 'text-secondary', iconBg: 'bg-secondary/10' } },
-      { label: t('AFFAIRES.DEPENSE.KPI_COLLABORATORS'), value: collaboratorCount,
+      { label: t('AFFAIRES.DEPENSE.KPI_COLLABORATORS'), value: loading ? '—' : collaboratorCount,
         options: { icon: 'groups', iconColor: 'text-tertiary', iconBg: 'bg-tertiary/10' } },
     ];
   });
@@ -115,12 +124,31 @@ export class AffaireDepenseTabComponent implements OnInit {
     this.availableYears().map(y => ({ value: String(y), label: String(y) })),
   );
 
+  /** Same "from the UNFILTERED preview" rule as Mois/Année. Collaborators with no DAF360
+   * user_ref (paysId null) are grouped under a "Non renseigné" option, listed last. */
+  protected readonly paysFilterOptions = computed<FilterOption[]>(() => {
+    const isEn = (this.translate.currentLang() ?? '').startsWith('en');
+    const seen = new Map<string, string>();
+    let hasNone = false;
+    for (const l of this.preview()?.lignes ?? []) {
+      if (l.paysId == null) hasNone = true;
+      else seen.set(String(l.paysId), (isEn && l.paysLabelEn) || l.paysLabel || String(l.paysId));
+    }
+    const options: FilterOption[] = [...seen.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+    if (hasNone) options.push({ value: NO_PAYS, label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_COUNTRY_NONE') });
+    return options;
+  });
+
   /** Single source of truth every consumer reads instead of `preview()?.lignes` directly —
    * `kpiTiles` below, and (from Task 6 onward) both child tables' `[lignes]` binding. ISO
    * string comparison is lexicographically correct for both the range and the `startsWith`
    * prefix checks — no `Date` parsing needed. */
   protected readonly filteredLignes = computed<DepenseLigne[]>(() => {
-    const all = this.preview()?.lignes ?? [];
+    const pays = this.filterPays();
+    const all = (this.preview()?.lignes ?? []).filter(l =>
+      pays.length === 0 || pays.includes(l.paysId == null ? NO_PAYS : String(l.paysId)));
     switch (this.filterMode()) {
       case 'PERIOD': {
         const r = this.filterRange();
@@ -171,11 +199,15 @@ export class AffaireDepenseTabComponent implements OnInit {
    * the Période/Mois/Année part of its result up here so `filteredLignes()` (and the KPI
    * tiles that read it) stay in sync with whatever the table's panel applies. Checked in
    * this order because the three fields are mutually exclusive filters, not independent
-   * ones; whichever is actually set wins. Nothing set across all three means 'ALL'. */
+   * ones; whichever is actually set wins. Nothing set across all three means 'ALL'.
+   * Pays is applied independently, on top of whichever mode wins. */
   onFilterApply(result: FilterResult): void {
     const period = result['period'];
     const month  = result['month'];
     const year   = result['year'];
+    const pays   = result['pays'];
+
+    this.filterPays.set(Array.isArray(pays) ? pays as string[] : pays ? [String(pays)] : []);
 
     if (Array.isArray(period) && period.length === 2) {
       this.setFilterMode('PERIOD');

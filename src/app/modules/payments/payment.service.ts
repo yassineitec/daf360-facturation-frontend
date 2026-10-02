@@ -23,6 +23,7 @@ export class PaymentService {
     if (filter.to)          params = params.set('to',          filter.to);
     if (filter.overdueOnly) params = params.set('overdueOnly', 'true');
     if (filter.search?.trim()) params = params.set('search', filter.search.trim());
+    if (filter.sort)        params = params.set('sort',        filter.sort);
     return this.http.get<PageResponse<AgingRow>>(`${this.base}/payments/aging`, { params });
   }
 }

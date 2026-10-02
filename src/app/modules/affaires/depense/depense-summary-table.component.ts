@@ -1,6 +1,6 @@
 import {
   ChangeDetectionStrategy, Component, ElementRef, OnDestroy, computed, effect, inject, input,
-  output, signal, viewChild,
+  output, signal, untracked, viewChild,
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
@@ -10,6 +10,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { DepenseLigne } from './depense.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 
 /**
  * "Dépense" preview, aggregated one row per collaborator — same reasoning as
@@ -41,13 +42,20 @@ export class DepenseSummaryTableComponent implements OnDestroy {
 
   lignes = input.required<DepenseLigne[]>();
   devise = input.required<string>();
+  /** True while the parent is still fetching the preview — shows skeleton rows + a
+   * "Chargement…" line instead of the EMPTY message, which must only appear once we know
+   * the affaire really has no hours. */
+  loading = input(false);
   /** Full-range Mois/Année options, computed by the parent tab from the UNFILTERED preview
    * (this component only ever sees `lignes` already narrowed by whatever Période/Mois/Année
    * is active) — so switching, say, Année never offers only the year currently applied. */
   monthOptions = input<FilterOption[]>([]);
   yearOptions = input<FilterOption[]>([]);
+  /** Collaborator-country options, same "computed by the parent from the unfiltered
+   * preview" rule as Mois/Année. */
+  paysOptions = input<FilterOption[]>([]);
   collaboratorSelected = output<string>();
-  /** Bubbles the Période/Mois/Année part of this panel's result up to the parent tab, whose
+  /** Bubbles the Pays/Période/Mois/Année part of this panel's result up to the parent tab, whose
    * `filteredLignes()` also drives the KPI tiles — Discipline stays local (see
    * `onFilterApply`), it never affects the cards. */
   periodApply = output<FilterResult>();
@@ -58,6 +66,11 @@ export class DepenseSummaryTableComponent implements OnDestroy {
    * popup already uses, just without the popup. */
   protected readonly search = signal('');
   protected readonly disciplineFilter = signal<string[]>([]);
+  /** Coût min/max — bounds on each collaborator's AGGREGATED cost (the "Coût" column), not on
+   * individual lines. Table-only like Discipline: never bubbled up, never affects the KPI
+   * tiles. `null` = no bound (empty or unparsable input). */
+  protected readonly costMin = signal<number | null>(null);
+  protected readonly costMax = signal<number | null>(null);
 
   /** Fullscreen "zoom" popup — same overlay/panel markup as the WIP tab's own Historique
    * popup (`affaire-wip-tab.component.html`), reused rather than `daf-modal` because that
@@ -135,9 +148,15 @@ export class DepenseSummaryTableComponent implements OnDestroy {
     this.translate.currentLang();
     return [
       { name: 'discipline', label: this.translate.instant('AFFAIRES.WIP.COL_DISCIPLINE'), type: 'multiselect', options: this.disciplineOptions() },
+      { name: 'pays',       label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_COUNTRY'), type: 'multiselect', options: this.paysOptions() },
       { name: 'period',     label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_PERIOD'), type: 'daterange' },
       { name: 'month',      label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_MONTH'),  type: 'select', options: this.monthOptions() },
       { name: 'year',       label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_YEAR'),   type: 'select', options: this.yearOptions() },
+      // daf-filter has no numeric field type — plain text, parsed by `parseAmount`.
+      { name: 'costMin',    label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_COST_MIN'), type: 'text',
+        placeholder: this.translate.instant('AFFAIRES.DEPENSE.FILTER_COST_PLACEHOLDER') },
+      { name: 'costMax',    label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_COST_MAX'), type: 'text',
+        placeholder: this.translate.instant('AFFAIRES.DEPENSE.FILTER_COST_PLACEHOLDER') },
     ];
   });
 
@@ -160,6 +179,8 @@ export class DepenseSummaryTableComponent implements OnDestroy {
   protected onFilterApply(result: FilterResult): void {
     const v = result['discipline'];
     this.disciplineFilter.set(Array.isArray(v) ? v as string[] : v ? [String(v)] : []);
+    this.costMin.set(this.parseAmount(result['costMin']));
+    this.costMax.set(this.parseAmount(result['costMax']));
     this.periodApply.emit(result);
     this.zoomPage.set(0);
   }
@@ -172,6 +193,8 @@ export class DepenseSummaryTableComponent implements OnDestroy {
   protected readonly aggregates = computed(() => {
     const disciplines = this.disciplineFilter();
     const q = this.search().trim().toLowerCase();
+    const min = this.costMin();
+    const max = this.costMax();
 
     const byEmail = new Map<string, { email: string; userFullName: string; totalHours: number; totalCost: number; days: Set<string> }>();
     for (const l of this.lignes()) {
@@ -191,6 +214,7 @@ export class DepenseSummaryTableComponent implements OnDestroy {
         return { email: e.email, userFullName: e.userFullName, totalHours: e.totalHours, totalCost: e.totalCost, periodLabel };
       })
       .filter(a => !q || a.userFullName.toLowerCase().includes(q) || a.email.toLowerCase().includes(q))
+      .filter(a => (min == null || a.totalCost >= min) && (max == null || a.totalCost <= max))
       .sort((a, b) => b.totalCost - a.totalCost);
   });
 
@@ -198,28 +222,48 @@ export class DepenseSummaryTableComponent implements OnDestroy {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'user', label: t('AFFAIRES.WIP.COL_COLLABORATOR'), type: 'text', clickable: true },
-      { key: 'period', label: t('AFFAIRES.DEPENSE.COL_PERIOD'), type: 'text' },
-      { key: 'hours', label: t('AFFAIRES.WIP.COL_HOURS'), type: 'text', align: 'right' },
-      { key: 'cost', label: t('AFFAIRES.WIP.COL_COST'), type: 'text', align: 'right' },
+      { key: 'user', label: t('AFFAIRES.WIP.COL_COLLABORATOR'), type: 'text', clickable: true, sortable: true },
+      { key: 'period', label: t('AFFAIRES.DEPENSE.COL_PERIOD'), type: 'text', sortable: true },
+      { key: 'hours', label: t('AFFAIRES.WIP.COL_HOURS'), type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => row['_hours'] as number },
+      { key: 'cost', label: t('AFFAIRES.WIP.COL_COST'), type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => row['_cost'] as number },
     ];
   });
 
+  /**
+   * Tri d'en-tête, partagé par le tableau et sa vue « zoom ». Le zoom pagine côté client :
+   * le tri porte donc sur toutes les lignes AVANT la découpe (`sortTableRows`), et la config
+   * passe `manualSort` pour que la lib ne retrie pas la seule page affichée.
+   */
+  protected readonly sort = signal<TableSort | null>(null);
+
+  protected onSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.sort.set(toTableSort(event));
+    this.zoomPage.set(0);
+  }
+
   protected readonly rows = computed<TableRow[]>(() =>
-    this.aggregates().map(a => ({
+    sortTableRows(this.aggregates().map(a => ({
       id: a.email,
       email: a.email,
       user: a.userFullName,
       period: a.periodLabel,
       hours: a.totalHours.toFixed(2),
       cost: this.fmtAmt(a.totalCost),
-    })),
+      _hours: a.totalHours,
+      _cost: a.totalCost,
+    })), this.columns(), this.sort()),
   );
 
   protected readonly config = computed<TableConfig>(() => ({
-    showHeader: true,
+    showHeader: false,
     hoverable: true,
     emptyMessage: this.translate.instant('AFFAIRES.DEPENSE.EMPTY'),
+    loading: this.loading(),
+    skeletonRows: 5,
+    ...tableTools(this.translate),
+    ...delegatedSort(untracked(this.sort)),
   }));
 
   /** Same xlsx/schema convention as `exportWipExcel()`/`exportHistoryExcel()` (WIP tab) —
@@ -240,6 +284,16 @@ export class DepenseSummaryTableComponent implements OnDestroy {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('AFFAIRES.DEPENSE.ZOOM_TITLE'));
     XLSX.writeFile(wb, 'Depenses.xlsx');
+  }
+
+  /** Lenient amount parsing for the Coût min/max text fields: accepts `1000`, `1 000`,
+   * `1000,50` or `1000.50`. Empty or unparsable input → `null` (no bound). */
+  private parseAmount(v: unknown): number | null {
+    if (typeof v !== 'string') return null;
+    const s = v.replace(/[\s  ]/g, '').replace(',', '.');
+    if (!s) return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
   }
 
   private fmtAmt(v: number): string {

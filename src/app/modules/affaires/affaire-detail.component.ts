@@ -36,6 +36,7 @@ import { AffaireDepenseTabComponent } from './depense/affaire-depense-tab.compon
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
 import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
+import { tableTools } from '../../shared/table-tools';
 import { STATUT_BADGE_VARIANT } from './affaire-display';
 import {
   INVOICE_STATUT_BADGE, TS_STATUT_BADGE, enumLabel,
@@ -142,6 +143,9 @@ function inAmountRange(amount: number | null | undefined, min: number | null, ma
 const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
   high: 'danger', medium: 'warning', standard: 'neutral',
 };
+
+/** Tri de la colonne priorité des échéances : de la moins à la plus urgente. */
+const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 };
 
 @Component({
   selector: 'app-affaire-detail',
@@ -1997,24 +2001,30 @@ export class AffaireDetailComponent implements OnInit {
       (!q || `${p.invoiceNumber ?? ''} ${p.bankReference ?? ''}`.toLowerCase().includes(q)));
   });
 
-  // Aucune colonne `sortable` : la lib trie côté client sur les lignes qu'on lui
-  // donne, et une colonne `badge` compare "[object Object]" (§10b).
+  // Toutes les colonnes sont triables, en local : les TS, factures et paiements de
+  // l'affaire arrivent entiers et ne sont pas paginés, la lib trie donc bien tout le
+  // résultat. Les montants et les dates se trient sur la valeur brute (`sortAccessor`),
+  // pas sur le texte formaté ; une pastille se trie sur son libellé (repli de la lib).
 
   readonly tsColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    const src = (row: TableRow) => row['_source'] as TsDto;
     return [
-      { key: 'reference', label: t('AFFAIRES.DETAIL.MODAL.TS_TITLE') },
-      { key: 'intitule',  label: t('AFFAIRES.DETAIL.MODAL.TS_INTITULE') },
+      { key: 'reference', label: t('AFFAIRES.DETAIL.MODAL.TS_TITLE'), sortable: true },
+      { key: 'intitule',  label: t('AFFAIRES.DETAIL.MODAL.TS_INTITULE'), sortable: true },
       // Clé propre au TS : `INVOICES.AMOUNT` est le montant d'une facture, or c'est ici
       // le `montant_estime` d'un travail supplémentaire, qui n'est pas encore facturé.
-      { key: 'montant',   label: t('AFFAIRES.DETAIL.MODAL.TS_AMOUNT'), align: 'right' },
-      { key: 'statut',    label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge' },
-      { key: 'integre',   label: t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT') },
+      { key: 'montant',   label: t('AFFAIRES.DETAIL.MODAL.TS_AMOUNT'), align: 'right', sortable: true,
+        sortAccessor: row => src(row).montantEstime },
+      { key: 'statut',    label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge', sortable: true },
+      { key: 'integre',   label: t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT'), sortable: true,
+        sortAccessor: row => src(row).integreAuBudgetAt },
     ];
   });
 
   readonly tsRows = computed<TableRow[]>(() => this.filteredTs().map(ts => ({
+    id:        ts.id,
     reference: ts.referenceTs,
     intitule:  ts.intitule,
     montant:   this.currency.transform(ts.montantEstime, ts.devise || this.affaireDevise()),
@@ -2030,22 +2040,28 @@ export class AffaireDetailComponent implements OnInit {
     emptyMessage: this.translate.instant(
       this.tsList().length === 0 ? 'AFFAIRES.DETAIL.OVERVIEW.NO_TS' : 'AFFAIRES.DETAIL.TOOLBAR.NO_MATCH'),
     actions: this.tsActions(),
+    ...tableTools(this.translate),
   }));
 
   readonly invoiceColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    const src = (row: TableRow) => row['_source'] as AffaireInvoiceItem;
     return [
-      { key: 'numero',   label: t('AFFAIRES.DETAIL.INVOICES.NUMBER') },
-      { key: 'type',     label: t('AFFAIRES.DETAIL.INVOICES.TYPE') },
-      { key: 'emission', label: t('AFFAIRES.DETAIL.INVOICES.EMITTED') },
-      { key: 'echeance', label: t('AFFAIRES.DETAIL.INVOICES.DUE') },
-      { key: 'montant',  label: t('AFFAIRES.DETAIL.INVOICES.AMOUNT'), align: 'right' },
-      { key: 'statut',   label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge' },
+      { key: 'numero',   label: t('AFFAIRES.DETAIL.INVOICES.NUMBER'), sortable: true },
+      { key: 'type',     label: t('AFFAIRES.DETAIL.INVOICES.TYPE'), sortable: true },
+      { key: 'emission', label: t('AFFAIRES.DETAIL.INVOICES.EMITTED'), sortable: true,
+        sortAccessor: row => src(row).dateEmission },
+      { key: 'echeance', label: t('AFFAIRES.DETAIL.INVOICES.DUE'), sortable: true,
+        sortAccessor: row => src(row).dateEcheance },
+      { key: 'montant',  label: t('AFFAIRES.DETAIL.INVOICES.AMOUNT'), align: 'right', sortable: true,
+        sortAccessor: row => src(row).montantTtc },
+      { key: 'statut',   label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge', sortable: true },
     ];
   });
 
   readonly invoiceRows = computed<TableRow[]>(() => this.filteredInvoices().map(inv => ({
+    id:       inv.id,
     numero:   inv.invoiceNumber ?? '—',
     type:     this.enumText('INVOICE_TYPE', inv.invoiceType),
     emission: this.formatDate(inv.dateEmission),
@@ -2065,21 +2081,26 @@ export class AffaireDetailComponent implements OnInit {
     emptyMessage: this.translate.instant(
       this.invoices().length === 0 ? 'AFFAIRES.DETAIL.SECTIONS.NO_INVOICES' : 'AFFAIRES.DETAIL.TOOLBAR.NO_MATCH'),
     actions: this.invoiceActions(),
+    ...tableTools(this.translate),
   }));
 
   readonly paymentColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    const src = (row: TableRow) => row['_source'] as AffairePaymentItem;
     return [
-      { key: 'date',     label: t('AFFAIRES.DETAIL.PAYMENTS.DATE') },
-      { key: 'facture',  label: t('AFFAIRES.DETAIL.PAYMENTS.INVOICE') },
-      { key: 'methode',  label: t('AFFAIRES.DETAIL.PAYMENTS.METHOD') },
-      { key: 'ref',      label: t('AFFAIRES.DETAIL.PAYMENTS.REFERENCE') },
-      { key: 'montant',  label: t('AFFAIRES.DETAIL.PAYMENTS.AMOUNT'), align: 'right' },
+      { key: 'date',     label: t('AFFAIRES.DETAIL.PAYMENTS.DATE'), sortable: true,
+        sortAccessor: row => src(row).paymentDate },
+      { key: 'facture',  label: t('AFFAIRES.DETAIL.PAYMENTS.INVOICE'), sortable: true },
+      { key: 'methode',  label: t('AFFAIRES.DETAIL.PAYMENTS.METHOD'), sortable: true },
+      { key: 'ref',      label: t('AFFAIRES.DETAIL.PAYMENTS.REFERENCE'), sortable: true },
+      { key: 'montant',  label: t('AFFAIRES.DETAIL.PAYMENTS.AMOUNT'), align: 'right', sortable: true,
+        sortAccessor: row => src(row).amountLocal },
     ];
   });
 
   readonly paymentRows = computed<TableRow[]>(() => this.filteredPayments().map(p => ({
+    id:      p.id,
     date:    this.formatDate(p.paymentDate),
     facture: p.invoiceNumber ?? '—',
     methode: this.enumText('PAYMENT_METHOD', p.paymentMethod),
@@ -2094,6 +2115,7 @@ export class AffaireDetailComponent implements OnInit {
     emptyMessage: this.translate.instant(
       this.payments().length === 0 ? 'AFFAIRES.DETAIL.SECTIONS.NO_PAYMENTS' : 'AFFAIRES.DETAIL.TOOLBAR.NO_MATCH'),
     actions: this.paymentActions(),
+    ...tableTools(this.translate),
   }));
 
   // ── Actions de ligne ─────────────────────────────────────────────────────
@@ -2200,9 +2222,12 @@ export class AffaireDetailComponent implements OnInit {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     return [
-      { key: 'tache',    label: t('AFFAIRES.DETAIL.OVERVIEW.TASK') },
-      { key: 'echeance', label: t('AFFAIRES.DETAIL.INVOICES.DUE') },
-      { key: 'priorite', label: t('AFFAIRES.DETAIL.OVERVIEW.PRIORITY'), type: 'badge', align: 'right' },
+      { key: 'tache',    label: t('AFFAIRES.DETAIL.OVERVIEW.TASK'), sortable: true },
+      { key: 'echeance', label: t('AFFAIRES.DETAIL.INVOICES.DUE'), sortable: true,
+        sortAccessor: row => row['_date'] as string },
+      // Rang d'urgence, pas l'ordre alphabétique du libellé.
+      { key: 'priorite', label: t('AFFAIRES.DETAIL.OVERVIEW.PRIORITY'), type: 'badge', align: 'right', sortable: true,
+        sortAccessor: row => PRIORITY_RANK[row['_priority'] as string] ?? 0 },
     ];
   });
 
@@ -2233,7 +2258,10 @@ export class AffaireDetailComponent implements OnInit {
     return rows
       .sort((x, y) => new Date(x.date).getTime() - new Date(y.date).getTime())
       .slice(0, 6)
-      .map(r => ({
+      .map((r, i) => ({
+        id:       i,
+        _date:    r.date,
+        _priority: r.priority,
         tache:    r.tache,
         echeance: this.formatDate(r.date),
         priorite: {
@@ -2246,6 +2274,7 @@ export class AffaireDetailComponent implements OnInit {
   readonly deadlineConfig = computed<TableConfig>(() => ({
     showHeader:   false,
     emptyMessage: this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.NO_DEADLINES'),
+    ...tableTools(this.translate),
   }));
 
   readonly activities = computed<ActivityRow[]>(() => {

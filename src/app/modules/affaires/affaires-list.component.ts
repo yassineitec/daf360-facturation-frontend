@@ -7,7 +7,7 @@ import {
   MetricCardComponent, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { AffaireService } from './affaire.service';
-import { AffaireFilter, AffaireListItem, AffairesSummary, STATUT_LABELS } from './affaire.model';
+import { AffaireFilter, AffaireListItem, AffairesSummary, PaysRefDto, STATUT_LABELS, paysLabel } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
 import { AffairesCardsSectionComponent } from './components/affaires-cards-section.component';
 import { AffaireSort, AffairesTableSectionComponent } from './components/affaires-table-section.component';
@@ -48,7 +48,12 @@ export class AffairesListComponent implements OnInit {
    * référentiel est petit, immuable et mémorisé pour la session par `AffaireService`,
    * donc une seule requête sert la liste entière, les deux vues et les changements de page.
    */
-  readonly paysLabels = signal<Map<number, string>>(new Map());
+  private readonly paysList = signal<PaysRefDto[]>([]);
+  /** id → nom du pays dans la langue de l'interface (recalculé au changement de langue). */
+  readonly paysLabels = computed(() => {
+    const lang = this.translate.currentLang();
+    return new Map(this.paysList().map(p => [p.id, paysLabel(p, lang)]));
+  });
 
   affaires      = signal<AffaireListItem[]>([]);
   error         = signal<string | null>(null);
@@ -248,8 +253,7 @@ export class AffairesListComponent implements OnInit {
       this.filterClientId.set(clientId);
       this.clientName.set(this.activatedRoute.snapshot.queryParamMap.get('client'));
     }
-    this.svc.getPays().subscribe(list =>
-      this.paysLabels.set(new Map(list.map(p => [p.id, p.frenchLabel]))));
+    this.svc.getPays().subscribe(list => this.paysList.set(list));
     // `pays=0` : tous les clients actifs, toutes entités confondues (comme l'assistant).
     this.clientSvc.getDropdown(0).subscribe(list =>
       this.clientOptions.set(list.map(c => ({ value: String(c.id), label: c.clientName }))));

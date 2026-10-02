@@ -96,6 +96,8 @@
       [loading]="loading()"
       [pageSize]="pageSize()"
       [emptyMessage]="'SUPPLIERS.LIST.TABLE.EMPTY' | translate"
+      [sort]="sort()"
+      (sortChange)="onSortChange($event)"
       (open)="navigateToDetail($event)" />
   }
 

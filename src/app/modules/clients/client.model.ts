@@ -120,4 +120,6 @@ export interface ClientFilter {
   hasActiveAffaires?: boolean | null;
   page?:      number;
   size?:      number;
+  /** `colonne,asc|desc` — clé de colonne du tableau, traduite côté serveur (ClientService.SORT_COLUMNS). */
+  sort?:      string | null;
 }

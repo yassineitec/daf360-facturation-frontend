@@ -67,6 +67,8 @@ export interface AgingFilter {
   search?:     string | null;
   page?:       number;
   size?:       number;
+  /** `colonne,asc|desc` — clé de colonne du tableau, traduite côté serveur (PaymentDashboardService.AGING_SORT_COLUMNS). */
+  sort?:       string | null;
 }
 
 export interface BankTransaction {

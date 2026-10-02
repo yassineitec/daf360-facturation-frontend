@@ -18,20 +18,6 @@ export interface AffaireSort {
   dir: 'asc' | 'desc';
 }
 
-/**
- * Colonne du tableau → champ de l'entité `Affaire` pour le tri serveur (`?sort=`, lu par le
- * `Pageable` de `GET /affaires`). Seuls les champs portés par l'entité sont triables : le
- * client, le pays (libellé), le responsable et le RAF viennent d'autres tables ou sont
- * calculés, la base ne peut pas les ordonner. Le budget se trie sur le montant brut, sans
- * conversion de devise.
- */
-const SERVER_SORT_FIELD: Record<string, string> = {
-  reference:   'reference',
-  intitule:    'intitule',
-  billingMode: 'billingMode',
-  budget:      'budgetPrevisionnel',
-  statut:      'statut',
-};
 
 /**
  * List view of `/finance/affaires` on the house table style (UI-PLAYBOOK §6b):
@@ -99,23 +85,25 @@ export class AffairesTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
-    const sortable = (key: string) => key in SERVER_SORT_FIELD;
     return [
-      { key: 'reference',   label: t('AFFAIRES.LIST.TABLE.HEADERS.REF'),     type: 'text', sortable: sortable('reference') },
-      { key: 'intitule',    label: t('AFFAIRES.LIST.TABLE.HEADERS.TITLE'),   type: 'text', sortable: sortable('intitule') },
+      { key: 'reference',   label: t('AFFAIRES.LIST.TABLE.HEADERS.REF'),     type: 'text', sortable: true },
+      { key: 'intitule',    label: t('AFFAIRES.LIST.TABLE.HEADERS.TITLE'),   type: 'text', sortable: true },
       // Le mode se range avec la référence et l'intitulé, pas à côté du statut : ce sont
       // les trois éléments qui identifient le contrat, et deux pastilles voisines se
       // liraient comme un seul bloc d'état.
-      { key: 'billingMode', label: t('AFFAIRES.LIST.TABLE.HEADERS.BILLING_MODE'), type: 'badge', sortable: sortable('billingMode') },
-      { key: 'client',      label: t('AFFAIRES.LIST.TABLE.HEADERS.CLIENT'),  type: 'text'   },
-      { key: 'pays',        label: t('AFFAIRES.LIST.TABLE.HEADERS.PAYS'),    type: 'text'   },
-      { key: 'responsable', label: t('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'), type: 'avatar' },
-      { key: 'budget',      label: t('AFFAIRES.LIST.TABLE.HEADERS.BUDGET'),  type: 'text', align: 'right', sortable: sortable('budget') },
-      { key: 'raf',         label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),     type: 'custom', align: 'right' },
-      { key: 'statut',      label: t('AFFAIRES.LIST.TABLE.HEADERS.STATUS'),  type: 'badge', sortable: sortable('statut') },
+      { key: 'billingMode', label: t('AFFAIRES.LIST.TABLE.HEADERS.BILLING_MODE'), type: 'badge', sortable: true },
+      { key: 'client',      label: t('AFFAIRES.LIST.TABLE.HEADERS.CLIENT'),  type: 'text',   sortable: true },
+      { key: 'pays',        label: t('AFFAIRES.LIST.TABLE.HEADERS.PAYS'),    type: 'text',   sortable: true },
+      { key: 'responsable', label: t('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'), type: 'avatar', sortable: true },
+      { key: 'budget',      label: t('AFFAIRES.LIST.TABLE.HEADERS.BUDGET'),  type: 'text', align: 'right', sortable: true },
+      { key: 'raf',         label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),     type: 'custom', align: 'right', sortable: true },
+      { key: 'statut',      label: t('AFFAIRES.LIST.TABLE.HEADERS.STATUS'),  type: 'badge', sortable: true },
     ];
     // Tri serveur (`manualSort`) : la liste est paginée côté serveur, la lib ne trie donc
-    // pas elle-même — elle aurait seulement réordonné les lignes visibles (§10b).
+    // pas elle-même — elle aurait seulement réordonné les lignes visibles (§10b). La clé
+    // de colonne part en `?sort=` et `AffaireService.SORT_COLUMNS` la traduit (client,
+    // pays, responsable principal et RAF par sous-requête). Le budget se trie sur le
+    // montant brut, sans conversion de devise.
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
@@ -207,9 +195,8 @@ export class AffairesTableSectionComponent {
 
   /** Clic d'en-tête (ou bouton reset) → valeur `sort` pour l'API, ou `null` si retiré. */
   protected onSortChange(key: string, dir: SortDirection): void {
-    const field = SERVER_SORT_FIELD[key];
-    const sort: AffaireSort | null = field && dir ? { key, dir } : null;
-    this.sortChange.emit({ sort, param: sort ? `${field},${sort.dir}` : null });
+    const sort: AffaireSort | null = key && dir ? { key, dir } : null;
+    this.sortChange.emit({ sort, param: sort ? `${sort.key},${sort.dir}` : null });
   }
 
   protected onRowClick(row: TableRow): void {

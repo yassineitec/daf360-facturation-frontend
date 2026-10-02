@@ -160,9 +160,12 @@ export interface CostLineDto {
   /** COST_CATEGORY configurable list — the category of the line. */
   costCategoryId: number | null;
   costCategoryLabel: string | null;
+  /** English label of the same list value (admin → listes) — display-only. */
+  costCategoryLabelEn?: string | null;
   /** New taxonomy (V78) — COST_SUB_CATEGORY configurable list. Null if no sub-category chosen. */
   costSubCategoryId: number | null;
   costSubCategoryLabel: string | null;
+  costSubCategoryLabelEn?: string | null;
   reference?: string | null;
   label: string | null;           // backend field name is "label"
   originModule: string | null;
@@ -200,6 +203,16 @@ export interface CostLineDto {
   notes: string | null;
   approvals: CostApprovalRecordDto[];
   dualApprovalDone: boolean | null;
+}
+
+/**
+ * A configurable-list label in the UI language (`lang` = `translate.currentLang()`):
+ * the English one when the UI is in English and the admin filled it, the French one otherwise.
+ */
+export function localizedLabel(
+  fr: string | null | undefined, en: string | null | undefined, lang: string | null | undefined,
+): string | null {
+  return ((lang ?? '').startsWith('en') && en) || fr || null;
 }
 
 /**

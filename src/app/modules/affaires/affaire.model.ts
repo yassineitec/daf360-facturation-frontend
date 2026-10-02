@@ -357,6 +357,13 @@ export interface PaysRefDto {
   id:           number;
   isoCode:      string;
   frenchLabel:  string;
+  /** `pays_ref.english_label` — display-only; blank falls back to `frenchLabel`. */
+  englishLabel?: string | null;
+}
+
+/** The country name in the UI language (`lang` = `translate.currentLang()`). */
+export function paysLabel(p: PaysRefDto, lang: string | null | undefined): string {
+  return ((lang ?? '').startsWith('en') && p.englishLabel) || p.frenchLabel;
 }
 
 /**

@@ -218,6 +218,8 @@ export interface InvoiceFilter {
   search?:    string | null;
   page?:      number;
   size?:      number;
+  /** `colonne,asc|desc` — clé de colonne du tableau, traduite côté serveur (InvoiceService.LIST_SORT_COLUMNS). */
+  sort?:      string | null;
 }
 
 // ── Display config ─────────────────────────────────────────────────────────────

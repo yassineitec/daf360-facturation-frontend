@@ -16,8 +16,9 @@ import {
   SupplierDto, SupplierExtraFilter, SupplierStatsDto, SupplierStatusFilter,
 } from '../supplier.model';
 import { FactListService } from '../../../core/fact-list.service';
-import { ListValueDto } from '../../cost/cost.model';
+import { ListValueDto, localizedLabel } from '../../cost/cost.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
+import { TableSort, sortParam } from '../../../shared/table-tools';
 import { SuppliersCardsSectionComponent } from './suppliers-cards-section.component';
 import { SuppliersTableSectionComponent } from './suppliers-table-section.component';
 
@@ -83,6 +84,8 @@ export class SupplierListComponent implements OnInit {
   totalElements = signal(0);
   totalPages    = signal(0);
   currentPage   = signal(0);
+  /** Tri serveur choisi dans l'en-tête du tableau (clé de colonne), `null` = ordre par défaut. */
+  readonly sort = signal<TableSort | null>(null);
   pageSize      = signal(20);
 
   /** `firstLoad` pilote le squelette de page entière, `loading` seulement la section (§5). */
@@ -144,7 +147,9 @@ export class SupplierListComponent implements OnInit {
         label: t('SUPPLIERS.LIST.TABLE.TYPE'),
         type:  'select',
         placeholder: t('SUPPLIERS.LIST.FILTER.STATUS_ALL'),
-        options: this.supplierTypes().map(v => ({ value: String(v.id), label: v.labelFr })),
+        options: this.supplierTypes().map(v => ({
+          value: String(v.id), label: localizedLabel(v.labelFr, v.labelEn, this.translate.currentLang()) ?? v.code,
+        })),
       },
       {
         // « Manquant » est le cas utile : sans IBAN, on ne peut pas payer le fournisseur.
@@ -280,6 +285,7 @@ export class SupplierListComponent implements OnInit {
       ...this.extraFilter(),
       page:   this.currentPage(),
       size:   this.pageSize(),
+      sort:   sortParam(this.sort()),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: r => {
         this.suppliers.set(r.content);
@@ -308,6 +314,13 @@ export class SupplierListComponent implements OnInit {
    * de `daf-search-toolbar` — le `Subject` + `debounceTime` + `distinctUntilChanged`
    * qu'on tenait à la main faisait exactement cela.
    */
+  /** Nouveau tri d'en-tête → retour à la première page, triée par le serveur. */
+  onSortChange(sort: TableSort | null): void {
+    this.sort.set(sort);
+    this.currentPage.set(0);
+    this.loadSuppliers();
+  }
+
   onSearchTextChange(value: string): void {
     this.searchText.set(value);
     this.currentPage.set(0);

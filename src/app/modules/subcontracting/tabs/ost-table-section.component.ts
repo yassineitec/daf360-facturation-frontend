@@ -7,6 +7,7 @@ import {
 import { OSTDto } from '../subcontracting.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableActionComponent } from '../../../shared/table-action.component';
+import { tableTools } from '../../../shared/table-tools';
 import {
   OST_BADGE_VARIANT, budgetPct, budgetVariant, initials, isOver, ostStatutKey,
 } from '../subcontracting-display';
@@ -95,12 +96,16 @@ export class OstTableSectionComponent {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'reference',   label: t('SUBCONTRACTING.OST.TABLE.REF'),        type: 'text'   },
-      { key: 'subcontractor', label: t('SUBCONTRACTING.OST.TABLE.ST'),       type: 'avatar' },
-      { key: 'budget',      label: t('SUBCONTRACTING.OST.BUDGET'),           type: 'text', align: 'right' },
-      { key: 'realized',    label: t('SUBCONTRACTING.OST.REALIZED'),         type: 'text', align: 'right' },
-      { key: 'consumption', label: t('SUBCONTRACTING.OST.CARD.CONSUMED'),    type: 'custom' },
-      { key: 'statut',      label: t('SUBCONTRACTING.OST.TABLE.STATUS'),     type: 'badge'  },
+      // Tri local (les ordres arrivent entiers, sans pagination), sur les valeurs brutes.
+      { key: 'reference',   label: t('SUBCONTRACTING.OST.TABLE.REF'),        type: 'text',   sortable: true },
+      { key: 'subcontractor', label: t('SUBCONTRACTING.OST.TABLE.ST'),       type: 'avatar', sortable: true },
+      { key: 'budget',      label: t('SUBCONTRACTING.OST.BUDGET'),           type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => (row['_raw'] as OSTDto).montantBudget },
+      { key: 'realized',    label: t('SUBCONTRACTING.OST.REALIZED'),         type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => (row['_raw'] as OSTDto).montantRealise },
+      { key: 'consumption', label: t('SUBCONTRACTING.OST.CARD.CONSUMED'),    type: 'custom', sortable: true,
+        sortAccessor: row => row['_pct'] as number },
+      { key: 'statut',      label: t('SUBCONTRACTING.OST.TABLE.STATUS'),     type: 'badge',  sortable: true },
       { key: '_actions',    label: '', align: 'right', width: '1%' },
     ];
   });
@@ -142,6 +147,7 @@ export class OstTableSectionComponent {
     loading:      this.loading(),
     skeletonRows: 6,
     emptyMessage: this.emptyMessage(),
+    ...tableTools(this.translate),
   }));
 
   /** A row click opens the costs drawer — the same thing the payments action does. */

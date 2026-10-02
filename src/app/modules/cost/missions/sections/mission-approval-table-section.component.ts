@@ -11,6 +11,10 @@ import {
   missionScopeKey, missionUrgencyKey,
 } from '../mission-approval-item';
 import { MissionDecisionKind } from './mission-approval-cards-section.component';
+import { tableTools } from '../../../../shared/table-tools';
+
+/** Tri de la colonne urgence : de la moins à la plus pressante. */
+const URGENCY_RANK: Record<string, number> = { normal: 0, soon: 1, urgent: 2 };
 
 /**
  * List view of `/finance/cost/missions` on the house table style (§6b), over the same
@@ -65,14 +69,20 @@ export class MissionApprovalTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
+    // Tri local : la file des ordres de mission arrive entière, sans pagination. Période,
+    // montant et urgence se trient sur leur valeur, pas sur le libellé affiché.
+    const item = (row: TableRow) => row['_item'] as MissionApprovalItem;
     return [
-      { key: 'employee',    label: t('FACTURATION.MISSIONS.COL_EMPLOYEE'), type: 'avatar' },
-      { key: 'scope',       label: t('FACTURATION.MISSIONS.SCOPE'), type: 'badge' },
-      { key: 'destination', label: t('FACTURATION.MISSIONS.COL_DESTINATION') },
-      { key: 'period',      label: t('FACTURATION.MISSIONS.COL_PERIOD') },
-      { key: 'validatedBy', label: t('FACTURATION.MISSIONS.COL_HR') },
-      { key: 'amount',      label: t('FACTURATION.MISSIONS.COL_TOTAL'), align: 'right' },
-      { key: 'urgency',     label: t('FACTURATION.MISSIONS.COL_URGENCY'), type: 'badge' },
+      { key: 'employee',    label: t('FACTURATION.MISSIONS.COL_EMPLOYEE'), type: 'avatar', sortable: true },
+      { key: 'scope',       label: t('FACTURATION.MISSIONS.SCOPE'), type: 'badge', sortable: true },
+      { key: 'destination', label: t('FACTURATION.MISSIONS.COL_DESTINATION'), sortable: true },
+      { key: 'period',      label: t('FACTURATION.MISSIONS.COL_PERIOD'), sortable: true,
+        sortAccessor: row => item(row).mission.startDate },
+      { key: 'validatedBy', label: t('FACTURATION.MISSIONS.COL_HR'), sortable: true },
+      { key: 'amount',      label: t('FACTURATION.MISSIONS.COL_TOTAL'), align: 'right', sortable: true,
+        sortAccessor: row => item(row).amount },
+      { key: 'urgency',     label: t('FACTURATION.MISSIONS.COL_URGENCY'), type: 'badge', sortable: true,
+        sortAccessor: row => URGENCY_RANK[item(row).urgency] },
       { key: '_actions',    label: '', align: 'right', width: '1%' },
     ];
   });
@@ -82,6 +92,7 @@ export class MissionApprovalTableSectionComponent {
     const t = (key: string) => this.translate.instant(key);
 
     return this.items().map(item => ({
+      id: item.id,
       // §6b rule 6: one identity column carrying the secondary line.
       employee: {
         name: item.employee,
@@ -110,6 +121,7 @@ export class MissionApprovalTableSectionComponent {
     loading: this.loading(),
     skeletonRows: Math.min(this.skeletonRows(), 20),
     emptyMessage: this.emptyMessage(),
+    ...tableTools(this.translate),
   }));
 
   protected emit(row: TableRow, decision: MissionDecisionKind): void {

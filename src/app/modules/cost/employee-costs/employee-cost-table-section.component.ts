@@ -1,9 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, DataTableComponent, SortDirection, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
-import { EmployeeCostDto } from './employee-cost.model';import {
+import { EmployeeCostDto } from './employee-cost.model';
+import { tableTools } from '../../../shared/table-tools';
+import {
   STATUS_BADGE_VARIANT, displayName, formatAmount, formatPeriod, initials, statusKey,
 } from './employee-cost-display';
 
@@ -15,14 +17,12 @@ import { EmployeeCostDto } from './employee-cost.model';import {
  * in this codebase (see `TableAction`'s doc comment), so no custom cell template is
  * needed here.
  *
- * Sorting: `daf-data-table` sorts whatever page of rows it's handed, which would
- * normally only reorder the current page (§10b elsewhere in this app). Here that's
- * safe — the parent sorts the FULL filtered set before slicing into this page (see
- * `EmployeeCostComponent.sortedRows`), so `(sortChange)` is forwarded up to drive
- * that real sort, and the table's own redundant re-sort of the page it already
- * received either agrees with it or (for the `employee` avatar-object column, where
- * `row['employee']` isn't a plain string) compares everything equal and leaves the
- * parent's order untouched.
+ * Sorting: the parent sorts the FULL filtered set before slicing into this page (see
+ * `EmployeeCostComponent.sortedRows`), so `(sortChange)` is forwarded up to drive that
+ * real sort, and `manualSort` keeps the table from re-sorting the page it was handed on
+ * its formatted strings. The reset button clears that sort too.
+ *
+ * Outils de tableau de la lib activés, comme sur `/finance/affaires` (`tableTools`).
  *
  * Stateless: rows in, `(edit)` / `(remove)` / `(sortChange)` out.
  */
@@ -37,7 +37,8 @@ import { EmployeeCostDto } from './employee-cost.model';import {
       [rows]="rows()"
       [config]="config()"
       (rowClick)="edit.emit($event['_raw'])"
-      (sortChange)="sortChange.emit($event)" />
+      (sortChange)="sortChange.emit($event)"
+      (resetClick)="sortChange.emit({ key: '', dir: null })" />
   `,
 })
 export class EmployeeCostTableSectionComponent {
@@ -47,6 +48,8 @@ export class EmployeeCostTableSectionComponent {
   loading      = input(false);
   emptyMessage = input('');
   pageSize     = input(25);
+  /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
+  sort         = input<{ key: string; dir: 'asc' | 'desc' } | null>(null);
 
   readonly edit       = output<EmployeeCostDto>();
   readonly remove     = output<EmployeeCostDto>();
@@ -64,9 +67,8 @@ export class EmployeeCostTableSectionComponent {
       { key: 'period',   label: t('COST.EMPLOYEE_COST.COL_PERIOD'),   type: 'text', sortable: true },
       { key: 'status',   label: t('COST.EMPLOYEE_COST.COL_STATUS'),   type: 'badge', sortable: true },
     ];
-    // `sortable` here only drives the header arrow + a redundant re-sort of the page
-    // this component was already handed — the real, full-set sort lives one level up
-    // (see the class doc comment above).
+    // `sortable` here only drives the header arrow — the real, full-set sort lives one
+    // level up (see the class doc comment above).
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
@@ -103,12 +105,18 @@ export class EmployeeCostTableSectionComponent {
   protected readonly config = computed<TableConfig>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
+    // Graine lue une seule fois par le tableau — la suivre reconstruirait la config à chaque clic.
+    const sort = untracked(this.sort);
     return {
       showHeader:   true,
       hoverable:    true,
       loading:      this.loading(),
       skeletonRows: Math.min(this.pageSize(), 20),
       emptyMessage: this.emptyMessage(),
+      ...tableTools(this.translate),
+      // Rows arrive already sorted by the parent; the header still emits sortChange.
+      manualSort:   true,
+      ...(sort ? { defaultSort: sort } : {}),
       actions: [
         { id: 'history', icon: 'history', tooltip: t('COST.EMPLOYEE_COST.HISTORY'),
           onClick: row => this.history.emit(row['_raw']) },

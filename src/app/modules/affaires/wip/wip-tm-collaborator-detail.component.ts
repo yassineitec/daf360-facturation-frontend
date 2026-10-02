@@ -3,6 +3,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonComponent, DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { WipTmHourDto } from './wip.model';
 import { isoWeek } from '../../../shared/iso-week';
+import { tableTools } from '../../../shared/table-tools';
 /**
  * Drill-down for one collaborator out of a WIP T&M preview — the "most important
  * information" summary strip (hours, cost, average rate, days worked) plus the full
@@ -48,14 +49,21 @@ export class WipTmCollaboratorDetailComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
+    // Tri local (toutes les heures du collaborateur, sans pagination), sur les valeurs
+    // brutes : la date formatée jj/mm et le montant formaté se trieraient mal en texte.
+    const src = (row: TableRow) => row['_source'] as WipTmHourDto;
     return [
-      { key: 'workDate',   label: t('AFFAIRES.WIP.COL_DATE'),       type: 'text' },
-      { key: 'week',       label: t('AFFAIRES.WIP.COL_WEEK'),       type: 'text' },
-      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'), type: 'text' },
-      { key: 'wbs',        label: t('AFFAIRES.WIP.COL_WBS'),        type: 'text' },
-      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT'),   type: 'text' },
-      { key: 'hours',      label: t('AFFAIRES.WIP.COL_HOURS'),      type: 'text' },
-      { key: 'cost',       label: t('AFFAIRES.WIP.COL_COST'),       type: 'text' },
+      { key: 'workDate',   label: t('AFFAIRES.WIP.COL_DATE'),       type: 'text', sortable: true,
+        sortAccessor: row => src(row).workDate },
+      { key: 'week',       label: t('AFFAIRES.WIP.COL_WEEK'),       type: 'text', sortable: true,
+        sortAccessor: row => src(row).workDate },
+      { key: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'), type: 'text', sortable: true },
+      { key: 'wbs',        label: t('AFFAIRES.WIP.COL_WBS'),        type: 'text', sortable: true },
+      { key: 'document',   label: t('AFFAIRES.WIP.COL_DOCUMENT'),   type: 'text', sortable: true },
+      { key: 'hours',      label: t('AFFAIRES.WIP.COL_HOURS'),      type: 'text', sortable: true,
+        sortAccessor: row => src(row).hoursValidated },
+      { key: 'cost',       label: t('AFFAIRES.WIP.COL_COST'),       type: 'text', sortable: true,
+        sortAccessor: row => src(row).costAmount },
     ];
   });
 
@@ -72,13 +80,15 @@ export class WipTmCollaboratorDetailComponent {
         document:   h.document ?? '—',
         hours:      h.hoursValidated.toFixed(2),
         cost:       this.fmtAmt(h.costAmount),
+        _source:    h,
       })),
   );
 
   protected readonly config = computed<TableConfig>(() => ({
-    showHeader: true,
+    showHeader: false,
     hoverable: true,
     emptyMessage: this.translate.instant('AFFAIRES.WIP.EMPTY_DETAIL'),
+    ...tableTools(this.translate),
   }));
 
   protected fmtDate(iso: string): string {

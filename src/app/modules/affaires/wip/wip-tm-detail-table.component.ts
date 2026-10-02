@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { TranslateService } from '@ngx-translate/core';
 import { DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { WipTmHourDto } from './wip.model';
+import { tableTools } from '../../../shared/table-tools';
 /**
  * WIP T&M preview, aggregated one row per collaborator — the flat Date -> Collaborateur ->
  * Discipline -> WBS -> Document list this used to render directly became unreadable on a
@@ -46,10 +47,13 @@ export class WipTmDetailTableComponent {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'user',       label: t('AFFAIRES.WIP.COL_COLLABORATOR'), type: 'text', clickable: true },
-      { key: 'daysWorked', label: t('AFFAIRES.WIP.COL_DAYS'),         type: 'text' },
-      { key: 'hours',      label: t('AFFAIRES.WIP.COL_HOURS'),        type: 'text' },
-      { key: 'cost',       label: t('AFFAIRES.WIP.COL_COST'),         type: 'text' },
+      // Tri local (agrégats de la période, sans pagination), sur les valeurs brutes.
+      { key: 'user',       label: t('AFFAIRES.WIP.COL_COLLABORATOR'), type: 'text', clickable: true, sortable: true },
+      { key: 'daysWorked', label: t('AFFAIRES.WIP.COL_DAYS'),         type: 'text', sortable: true },
+      { key: 'hours',      label: t('AFFAIRES.WIP.COL_HOURS'),        type: 'text', sortable: true,
+        sortAccessor: row => row['_hours'] as number },
+      { key: 'cost',       label: t('AFFAIRES.WIP.COL_COST'),         type: 'text', sortable: true,
+        sortAccessor: row => row['_cost'] as number },
     ];
   });
 
@@ -61,13 +65,16 @@ export class WipTmDetailTableComponent {
       daysWorked: a.daysWorked,
       hours:      a.totalHours.toFixed(2),
       cost:       this.fmtAmt(a.totalCost),
+      _hours:     a.totalHours,
+      _cost:      a.totalCost,
     })),
   );
 
   protected readonly config = computed<TableConfig>(() => ({
-    showHeader: true,
+    showHeader: false,
     hoverable: true,
     emptyMessage: this.translate.instant('AFFAIRES.WIP.EMPTY_DETAIL'),
+    ...tableTools(this.translate),
   }));
 
   private fmtAmt(v: number): string {

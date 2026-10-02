@@ -23,6 +23,7 @@ import { PaymentModalComponent } from '../payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { tableTools } from '../../../shared/table-tools';
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
 
@@ -310,27 +311,30 @@ export class InvoiceDetailComponent implements OnInit {
   });
 
   readonly lineTableColumns = computed((): TableColumn[] => {
+    // Toutes triables, en local : les lignes de la facture arrivent entières, sans
+    // pagination. Les cellules portent les valeurs brutes (le formatage est dans le
+    // template), donc montants, quantités et pourcentages se trient comme des nombres.
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     if (this.usesAvancementColumns()) {
       return [
-        { key: 'description',    label: t('INVOICING.DETAIL.LINES.DESC'),                type: 'custom' },
-        { key: 'budgetAffaire',  label: t('INVOICING.STEP_LINES.BUDGET_AFFAIRE'),  type: 'custom', align: 'right' },
-        { key: 'pctFacture',     label: t('INVOICING.STEP_LINES.PCT_FACTURE'),     type: 'custom', align: 'right' },
-        { key: 'pctAvancement',  label: t('INVOICING.STEP_LINES.PCT_AVANCEMENT'),  type: 'custom', align: 'right' },
-        { key: 'pctAFacturer',   label: t('INVOICING.STEP_LINES.PCT_A_FACTURER'),  type: 'custom', align: 'right' },
-        { key: 'lineTotal',      label: t('INVOICING.STEP_LINES.MONTANT_HT'),      type: 'custom', align: 'right' },
-        { key: 'vatRatePct',     label: t('INVOICING.DETAIL.LINES.VAT'),                type: 'custom', align: 'right' },
-        { key: 'lineTtc',        label: t('INVOICING.DETAIL.LINES.TOTAL_TTC'),          type: 'custom', align: 'right' },
+        { key: 'description',    label: t('INVOICING.DETAIL.LINES.DESC'),                type: 'custom', sortable: true },
+        { key: 'budgetAffaire',  label: t('INVOICING.STEP_LINES.BUDGET_AFFAIRE'),  type: 'custom', align: 'right', sortable: true },
+        { key: 'pctFacture',     label: t('INVOICING.STEP_LINES.PCT_FACTURE'),     type: 'custom', align: 'right', sortable: true },
+        { key: 'pctAvancement',  label: t('INVOICING.STEP_LINES.PCT_AVANCEMENT'),  type: 'custom', align: 'right', sortable: true },
+        { key: 'pctAFacturer',   label: t('INVOICING.STEP_LINES.PCT_A_FACTURER'),  type: 'custom', align: 'right', sortable: true },
+        { key: 'lineTotal',      label: t('INVOICING.STEP_LINES.MONTANT_HT'),      type: 'custom', align: 'right', sortable: true },
+        { key: 'vatRatePct',     label: t('INVOICING.DETAIL.LINES.VAT'),                type: 'custom', align: 'right', sortable: true },
+        { key: 'lineTtc',        label: t('INVOICING.DETAIL.LINES.TOTAL_TTC'),          type: 'custom', align: 'right', sortable: true },
       ];
     }
     return [
-      { key: 'description', label: t('INVOICING.DETAIL.LINES.DESC'),       type: 'custom' },
-      { key: 'quantity',    label: t('INVOICING.DETAIL.LINES.QTY'),        type: 'number', align: 'right' },
-      { key: 'unitRate',    label: t('INVOICING.DETAIL.LINES.UNIT_PRICE'), type: 'custom', align: 'right' },
-      { key: 'vatRatePct',  label: t('INVOICING.DETAIL.LINES.VAT'),        type: 'custom', align: 'right' },
-      { key: 'lineTotal',   label: t('INVOICING.DETAIL.LINES.TOTAL_HT'),   type: 'custom', align: 'right' },
-      { key: 'lineTtc',     label: t('INVOICING.DETAIL.LINES.TOTAL_TTC'),  type: 'custom', align: 'right' },
+      { key: 'description', label: t('INVOICING.DETAIL.LINES.DESC'),       type: 'custom', sortable: true },
+      { key: 'quantity',    label: t('INVOICING.DETAIL.LINES.QTY'),        type: 'number', align: 'right', sortable: true },
+      { key: 'unitRate',    label: t('INVOICING.DETAIL.LINES.UNIT_PRICE'), type: 'custom', align: 'right', sortable: true },
+      { key: 'vatRatePct',  label: t('INVOICING.DETAIL.LINES.VAT'),        type: 'custom', align: 'right', sortable: true },
+      { key: 'lineTotal',   label: t('INVOICING.DETAIL.LINES.TOTAL_HT'),   type: 'custom', align: 'right', sortable: true },
+      { key: 'lineTtc',     label: t('INVOICING.DETAIL.LINES.TOTAL_TTC'),  type: 'custom', align: 'right', sortable: true },
     ];
     // La colonne « statut » de ligne et le bouton crayon ont disparu : le bouton
     // n'était relié à rien (aucune API de mise à jour ligne à ligne) et le statut
@@ -341,6 +345,7 @@ export class InvoiceDetailComponent implements OnInit {
     showHeader:   false,
     hoverable:    true,
     emptyMessage: this.translate.instant('INVOICING.DETAIL.LINES.EMPTY'),
+    ...tableTools(this.translate),
   }));
 
   readonly lineTableRows = computed(() => {

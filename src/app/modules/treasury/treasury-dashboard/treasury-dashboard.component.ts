@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, untracked } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -17,6 +17,7 @@ import {
   TREASURY_HORIZONS, TreasuryHorizon,
 } from '../treasury.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 
 interface KpiTile {
   label:   string;
@@ -251,12 +252,22 @@ export class TreasuryDashboardComponent implements OnInit {
     // `text-left`, pour l'en-tête comme pour la cellule. Les gabarits projetés de `net`
     // et `cumul` forçaient déjà leur texte à droite de leur côté, donc l'en-tête restait
     // seul à gauche au-dessus de chiffres alignés à droite.
+    //
+    // Tri local (l'horizon arrive entier, sans pagination), sur les montants bruts. Le
+    // cumulé de chaque ligne reste celui de la projection chronologique : il ne se recalcule
+    // pas quand on trie sur une autre colonne.
+    const b = (row: TableRow) => row['_bucket'] as TreasuryBucket;
     return [
-      { key: 'period', label: t('TREASURY.TABLE.PERIOD'), type: 'custom' },
-      { key: 'in',     label: t('TREASURY.TABLE.IN'),     type: 'text',   align: 'right' },
-      { key: 'out',    label: t('TREASURY.TABLE.OUT'),    type: 'text',   align: 'right' },
-      { key: 'net',    label: t('TREASURY.TABLE.NET'),    type: 'custom', align: 'right' },
-      { key: 'cumul',  label: t('TREASURY.TABLE.CUMUL'),  type: 'custom', align: 'right' },
+      { key: 'period', label: t('TREASURY.TABLE.PERIOD'), type: 'custom', sortable: true,
+        sortAccessor: row => b(row).periodKey },
+      { key: 'in',     label: t('TREASURY.TABLE.IN'),     type: 'text',   align: 'right', sortable: true,
+        sortAccessor: row => b(row).encaissements },
+      { key: 'out',    label: t('TREASURY.TABLE.OUT'),    type: 'text',   align: 'right', sortable: true,
+        sortAccessor: row => b(row).decaissements },
+      { key: 'net',    label: t('TREASURY.TABLE.NET'),    type: 'custom', align: 'right', sortable: true,
+        sortAccessor: row => b(row).net },
+      { key: 'cumul',  label: t('TREASURY.TABLE.CUMUL'),  type: 'custom', align: 'right', sortable: true,
+        sortAccessor: row => b(row).cumule },
     ];
   });
 
@@ -268,6 +279,7 @@ export class TreasuryDashboardComponent implements OnInit {
 
     return s.buckets.map(b => ({
       id:         b.periodKey,
+      _bucket:    b,
       // Rendus par les gabarits projetés : la période porte un marqueur « échu », et le
       // net comme le cumulé sont signés — une valeur négative doit se voir.
       _period:    b.overdue ? this.translate.instant('TREASURY.TABLE.OVERDUE_ROW') : this.periodLabel(b.periodKey),
@@ -290,6 +302,7 @@ export class TreasuryDashboardComponent implements OnInit {
       loading:      this.reloading(),
       skeletonRows: this.horizon() + 1,
       emptyMessage: this.translate.instant('TREASURY.TABLE.EMPTY'),
+      ...tableTools(this.translate),
     };
   });
 
@@ -298,12 +311,34 @@ export class TreasuryDashboardComponent implements OnInit {
   readonly flowColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
+    const f = (row: TableRow) => row['_flow'] as TreasuryFlow;
     return [
-      { key: 'tiers',  label: t('TREASURY.FLOWS.COUNTERPARTY'), type: 'custom' },
-      { key: 'due',    label: t('TREASURY.FLOWS.DUE'),          type: 'custom' },
-      { key: 'amount', label: t('TREASURY.FLOWS.AMOUNT'),       type: 'custom', align: 'right' },
+      { key: 'tiers',  label: t('TREASURY.FLOWS.COUNTERPARTY'), type: 'custom', sortable: true,
+        sortAccessor: row => row['_tiers'] as string },
+      { key: 'due',    label: t('TREASURY.FLOWS.DUE'),          type: 'custom', sortable: true,
+        sortAccessor: row => f(row).dateEcheance },
+      { key: 'amount', label: t('TREASURY.FLOWS.AMOUNT'),       type: 'custom', align: 'right', sortable: true,
+        sortAccessor: row => f(row).montant },
     ];
   });
+
+  /**
+   * Tri d'en-tête des deux tableaux de flux. Ils sont paginés ici, côté client : le tri
+   * porte sur tous les flux AVANT la découpe (`sortTableRows`), et leur config passe
+   * `manualSort` pour que la lib ne retrie pas la seule page affichée.
+   */
+  readonly inflowSort  = signal<TableSort | null>(null);
+  readonly outflowSort = signal<TableSort | null>(null);
+
+  onInflowSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.inflowSort.set(toTableSort(event));
+    this.inflowPage.set(0);
+  }
+
+  onOutflowSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.outflowSort.set(toTableSort(event));
+    this.outflowPage.set(0);
+  }
 
   // ── Pagination ────────────────────────────────────────────────────────────
   //
@@ -325,16 +360,18 @@ export class TreasuryDashboardComponent implements OnInit {
   readonly outflowTotal = computed(() => this.allOutflows().length);
 
   readonly inflowRows  = computed<TableRow[]>(() =>
-    this.toFlowRows(this.slice(this.allInflows(), this.inflowPage())));
+    this.slice(sortTableRows(this.toFlowRows(this.allInflows()), this.flowColumns(), this.inflowSort()),
+      this.inflowPage()));
 
   readonly outflowRows = computed<TableRow[]>(() =>
-    this.toFlowRows(this.slice(this.allOutflows(), this.outflowPage())));
+    this.slice(sortTableRows(this.toFlowRows(this.allOutflows()), this.flowColumns(), this.outflowSort()),
+      this.outflowPage()));
 
   private pageCount(total: number): number {
     return Math.max(1, Math.ceil(total / this.flowPageSize()));
   }
 
-  private slice(flows: TreasuryFlow[], page: number): TreasuryFlow[] {
+  private slice<T>(flows: T[], page: number): T[] {
     const size = this.flowPageSize();
     return flows.slice(page * size, page * size + size);
   }
@@ -359,6 +396,7 @@ export class TreasuryDashboardComponent implements OnInit {
     this.translate.currentLang();
     return flows.map(f => ({
       id:        `${f.source}-${f.id}`,
+      _flow:     f,
       _tiers:    f.tiers || '—',
       _label:    f.libelle || f.reference || '—',
       _due:      this.formatDate(f.dateEcheance),
@@ -379,11 +417,15 @@ export class TreasuryDashboardComponent implements OnInit {
     return `${f.montantOrigine.toLocaleString(this.locale(), { maximumFractionDigits: 3 })} ${f.deviseOrigine}`;
   }
 
-  readonly inflowFlowConfig = computed<TableConfig>(() =>
-    this.flowConfig('TREASURY.FLOWS.TOP_IN', 'TREASURY.FLOWS.EMPTY_IN'));
+  readonly inflowFlowConfig = computed<TableConfig>(() => ({
+    ...this.flowConfig('TREASURY.FLOWS.TOP_IN', 'TREASURY.FLOWS.EMPTY_IN'),
+    ...delegatedSort(untracked(this.inflowSort)),
+  }));
 
-  readonly outflowFlowConfig = computed<TableConfig>(() =>
-    this.flowConfig('TREASURY.FLOWS.TOP_OUT', 'TREASURY.FLOWS.EMPTY_OUT'));
+  readonly outflowFlowConfig = computed<TableConfig>(() => ({
+    ...this.flowConfig('TREASURY.FLOWS.TOP_OUT', 'TREASURY.FLOWS.EMPTY_OUT'),
+    ...delegatedSort(untracked(this.outflowSort)),
+  }));
 
   /**
    * `showHeader: true` **avec** un `title` — l'exception à UI-PLAYBOOK §6b règle 2, qui
@@ -405,6 +447,7 @@ export class TreasuryDashboardComponent implements OnInit {
       loading:      this.reloading(),
       skeletonRows: this.flowPageSize(),
       emptyMessage: this.translate.instant(emptyKey),
+      ...tableTools(this.translate),
     };
   }
 

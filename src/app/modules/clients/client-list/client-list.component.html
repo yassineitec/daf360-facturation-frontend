@@ -71,6 +71,8 @@
       [loading]="loading()"
       [pageSize]="pageSize()"
       [emptyMessage]="'CLIENTS.LIST.EMPTY.TITLE' | translate"
+      [sort]="sort()"
+      (sortChange)="onSortChange($event)"
       (open)="navigateToDetail($event)" />
   }
 

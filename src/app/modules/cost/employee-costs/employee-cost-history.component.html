@@ -89,7 +89,8 @@
       <!-- Table view — one row per EVENT, "Coût"/"Coût de vente interne"/"Coût de vente
            externe" showing the resulting cost snapshot on every row (see TimelineEvent's
            own doc comment in the .ts file). All plain text columns, no custom cells. -->
-      <daf-data-table [columns]="auditColumns()" [rows]="tableRows()" [config]="tableConfig()" />
+      <daf-data-table [columns]="auditColumns()" [rows]="tableRows()" [config]="tableConfig()"
+        (sortChange)="onTableSort($event)" (resetClick)="onTableSort(null)" />
     }
 
     @if (!loading() && historyTotalElements() > 0) {

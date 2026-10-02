@@ -2,7 +2,9 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { environment } from '../../../../environments/environment';import {
+import { environment } from '../../../../environments/environment';
+import { tableTools } from '../../../shared/table-tools';
+import {
   ButtonComponent, CardComponent, CheckboxComponent, PageHeaderComponent, BreadcrumbItem, AccordionCardComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
 } from '@khalilrebhiitec/daf360';
@@ -171,10 +173,20 @@ export class FactRolesAdminComponent implements OnInit {
   checkedSet     = signal<Set<string>>(new Set());
   expandedGroups = signal<Set<string>>(new Set());
 
-  readonly roleColumns = computed<TableColumn[]>(() => [
-    { key: 'name',  label: '', type: 'custom' },
-    { key: 'badge', label: '', type: 'badge', align: 'right' },
-  ]);
+  // Libellés nommés (ils étaient vides) : le choix des colonnes et les flèches de tri en
+  // ont besoin. Tri local — la liste des rôles arrive entière, sans pagination ; la
+  // pastille se trie sur le nombre de permissions, les rôles « Admin » (tout voir) en tête
+  // du tri décroissant.
+  readonly roleColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    const role = (row: TableRow) => row['_raw'] as RoleListItem;
+    return [
+      { key: 'name',  label: t('ADMIN.ROLES.COL_NAME'), type: 'custom', sortable: true },
+      { key: 'badge', label: t('ADMIN.ROLES.COL_PERMISSIONS'), type: 'badge', align: 'right', sortable: true,
+        sortAccessor: row => (role(row).showAll ? Number.MAX_SAFE_INTEGER : role(row).permissionCount) },
+    ];
+  });
 
   readonly roleRows = computed<TableRow[]>(() => {
     this.translate.currentLang();
@@ -195,6 +207,7 @@ export class FactRolesAdminComponent implements OnInit {
     hoverable:  true,
     loading:    this.loadingRoles(),
     emptyMessage: this.translate.instant('ADMIN.ROLES.NO_ROLES'),
+    ...tableTools(this.translate),
   }));
 
   ngOnInit(): void {

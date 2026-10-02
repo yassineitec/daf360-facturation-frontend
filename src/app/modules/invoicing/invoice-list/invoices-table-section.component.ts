@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   AvatarCell, BadgeCell, DafCellDirective, DataTableComponent,
@@ -11,6 +11,7 @@ import {
   STATUT_BADGE_VARIANT, canApprove, canEmit, canMarkSent, canRecordPayment,
   formatDate, initials, isOverdue, overdueDays,
 } from '../invoice-display';
+import { TableSort, delegatedSort, tableTools, toTableSort } from '../../../shared/table-tools';
 
 /**
  * List view of `/finance/invoicing` on the house table style (UI-PLAYBOOK §6b): no
@@ -31,7 +32,9 @@ import {
       [columns]="columns()"
       [rows]="rows()"
       [config]="config()"
-      (rowClick)="onRowClick($event)">
+      (rowClick)="onRowClick($event)"
+      (sortChange)="sortChange.emit(toTableSort($event))"
+      (resetClick)="sortChange.emit(null)">
 
       <!-- Échéance carries the overdue signal: the old table put a separate "+N jours"
            tag next to the status badge, which a badge column cannot hold. -->
@@ -76,8 +79,14 @@ export class InvoicesTableSectionComponent {
   emptyMessage = input('');
   /** Current page size — the skeleton draws that many rows, capped at 20 (§6b rule 7). */
   pageSize     = input(20);
+  /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
+  sort         = input<TableSort | null>(null);
 
   readonly open          = output<number>();
+  /** Nouveau tri d'en-tête (clé de colonne), ou `null` quand il est retiré. */
+  readonly sortChange    = output<TableSort | null>();
+
+  protected readonly toTableSort = toTableSort;
   readonly approve       = output<InvoiceListItem>();
   readonly emitInvoice   = output<InvoiceListItem>();
   readonly markSent      = output<InvoiceListItem>();
@@ -99,17 +108,17 @@ export class InvoicesTableSectionComponent {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'reference', label: t('INVOICING.LIST.TABLE.REF'),    type: 'text'   },
-      { key: 'client',    label: t('INVOICING.LIST.TABLE.CLIENT'), type: 'avatar' },
-      { key: 'amount',    label: t('INVOICING.LIST.TABLE.AMOUNT'), type: 'text' },
-      { key: 'statut',    label: t('INVOICING.LIST.TABLE.STATUS'), type: 'badge'  },
-      { key: 'date',      label: t('INVOICING.LIST.TABLE.DATE'),   type: 'custom' },
+      { key: 'reference', label: t('INVOICING.LIST.TABLE.REF'),    type: 'text',   sortable: true },
+      { key: 'client',    label: t('INVOICING.LIST.TABLE.CLIENT'), type: 'avatar', sortable: true },
+      { key: 'amount',    label: t('INVOICING.LIST.TABLE.AMOUNT'), type: 'text',   sortable: true },
+      { key: 'statut',    label: t('INVOICING.LIST.TABLE.STATUS'), type: 'badge',  sortable: true },
+      { key: 'date',      label: t('INVOICING.LIST.TABLE.DATE'),   type: 'custom', sortable: true },
       // Never `clickable: true` on a projected actions column — that styles the cell as
       // a link rather than an action (§6b rule 4).
       { key: '_actions',  label: '', width: '1%' },
     ];
-    // No column is `sortable`: the lib sorts client-side over the one page it was
-    // handed, and this list is server-paginated (§10b).
+    // Toutes triables, par le serveur (`manualSort`) : la liste est paginée côté serveur,
+    // la clé de colonne part en `?sort=` et `InvoiceService.LIST_SORT_COLUMNS` la traduit.
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
@@ -151,13 +160,18 @@ export class InvoicesTableSectionComponent {
     });
   });
 
-  protected readonly config = computed<TableConfig>(() => ({
-    showHeader:   false,
-    hoverable:    true,
-    loading:      this.loading(),
-    skeletonRows: Math.min(this.pageSize(), 20),
-    emptyMessage: this.emptyMessage(),
-  }));
+  protected readonly config = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return {
+      showHeader:   false,
+      hoverable:    true,
+      loading:      this.loading(),
+      skeletonRows: Math.min(this.pageSize(), 20),
+      emptyMessage: this.emptyMessage(),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.sort)),
+    };
+  });
 
   protected onRowClick(row: TableRow): void {
     this.open.emit(row['id'] as number);

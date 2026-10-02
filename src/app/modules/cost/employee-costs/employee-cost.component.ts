@@ -74,6 +74,12 @@ export class EmployeeCostComponent implements OnInit {
    * be wrong (see employee-cost-table-section.component.ts's class doc comment). */
   sortKey = signal<string | null>(null);
   sortDir = signal<SortDirection>(null);
+  /** Graine de la flèche du tableau quand il est (re)créé (retour de la vue cartes). */
+  readonly currentSort = computed(() => {
+    const key = this.sortKey();
+    const dir = this.sortDir();
+    return key && dir ? { key, dir } : null;
+  });
 
   isSaving   = signal(false);
   saveError  = signal<string | null>(null);

@@ -10,6 +10,7 @@ import { PaymentService } from '../payment.service';
 import { AgingFilter, AgingRow, PaymentsDashboardStats } from '../payment.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { TableSort, sortParam } from '../../../shared/table-tools';
 import { AgingCardsSectionComponent } from './aging-cards-section.component';
 import { AgingTableSectionComponent } from './aging-table-section.component';
 
@@ -37,6 +38,8 @@ export class PaymentsDashboardComponent implements OnInit {
   totalElements = signal(0);
   totalPages    = signal(0);
   currentPage   = signal(0);
+  /** Tri serveur choisi dans l'en-tête du tableau (clé de colonne), `null` = ordre par défaut. */
+  readonly sort = signal<TableSort | null>(null);
   pageSize      = signal(20);
 
   /** `firstLoad` drives the whole-page skeleton, `loadingRows` only the section (§5). */
@@ -204,6 +207,7 @@ export class PaymentsDashboardComponent implements OnInit {
       to:          toIsoDate(range[1]),
       overdueOnly: this.filterOverdueOnly() || undefined,
       search:      this.searchText().trim() || null,
+      sort:        sortParam(this.sort()),
     };
     this.svc.getAgingRows(filter).subscribe({
       next: res => {
@@ -219,6 +223,13 @@ export class PaymentsDashboardComponent implements OnInit {
         this.firstLoad.set(false);
       },
     });
+  }
+
+  /** Nouveau tri d'en-tête → retour à la première page, triée par le serveur. */
+  onSortChange(sort: TableSort | null): void {
+    this.sort.set(sort);
+    this.currentPage.set(0);
+    this.loadRows();
   }
 
   /**

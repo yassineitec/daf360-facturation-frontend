@@ -151,6 +151,8 @@
           [columns]="flowColumns()"
           [rows]="inflowRows()"
           [config]="inflowFlowConfig()"
+          (sortChange)="onInflowSort($event)"
+          (resetClick)="onInflowSort(null)"
           (rowClick)="onFlowClick($event)">
 
           <ng-template dafCell="tiers" let-row>
@@ -199,7 +201,9 @@
         <daf-data-table
           [columns]="flowColumns()"
           [rows]="outflowRows()"
-          [config]="outflowFlowConfig()">
+          [config]="outflowFlowConfig()"
+          (sortChange)="onOutflowSort($event)"
+          (resetClick)="onOutflowSort(null)">
 
           <ng-template dafCell="tiers" let-row>
             <div class="flex flex-col leading-snug">

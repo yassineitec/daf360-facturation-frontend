@@ -32,6 +32,7 @@ export class InvoiceService {
     if (filter.maxTtc != null) params = params.set('maxTtc', String(filter.maxTtc));
     if (filter.overdueOnly)    params = params.set('overdueOnly', 'true');
     if (filter.search)    params = params.set('search',    filter.search);
+    if (filter.sort)      params = params.set('sort',      filter.sort);
     return this.http.get<PageResponse<InvoiceListItem>>(`${this.base}/invoices`, { params });
   }
 

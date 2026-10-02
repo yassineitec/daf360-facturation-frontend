@@ -23,6 +23,8 @@ export class SupplierService {
     status?: SupplierStatusFilter;
     page?: number;
     size?: number;
+    /** `colonne,asc|desc` — clé de colonne du tableau, traduite côté serveur (SupplierService.SORT_COLUMNS). */
+    sort?: string | null;
   }): Observable<PageResponse<SupplierDto>> {
     let p = new HttpParams()
       .set('paysId', String(params.paysId))
@@ -33,6 +35,7 @@ export class SupplierService {
     // filtre est ce que les autres appelants émettent.
     if (params.status && params.status !== 'ACTIVE') p = p.set('status', params.status);
     p = this.withExtraFilter(p, params);
+    if (params.sort) p = p.set('sort', params.sort);
     return this.http.get<PageResponse<SupplierDto>>(`${this.base}/search`, { params: p });
   }
 

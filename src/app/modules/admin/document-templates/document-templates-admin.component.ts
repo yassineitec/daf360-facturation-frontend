@@ -7,11 +7,13 @@ import {
   ModalService, ModalRef, ButtonComponent, SelectComponent, SelectOption, CheckboxComponent, FormFieldComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
 } from '@khalilrebhiitec/daf360';
-import { DocumentTemplateService } from './document-template.service';import {
+import { DocumentTemplateService } from './document-template.service';
+import {
   FactDocumentTemplateDto, SaveFactDocumentTemplateRequest,
   DOCUMENT_TYPES, INVOICE_TEMPLATE_VARIABLES, TemplateVariableDef,
 } from './document-template.model';
 import { FilterPanelComponent } from '../../../shared/filter-panel/filter-panel.component';
+import { tableTools } from '../../../shared/table-tools';
 
 /**
  * Admin des maquettes de documents facturation éditables — même principe que
@@ -247,9 +249,10 @@ export class DocumentTemplatesAdminComponent implements OnInit {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'type',   label: t('ADMIN.DOCUMENT_TEMPLATES.COL_TYPE'),   type: 'badge' },
-      { key: 'name',   label: t('ADMIN.DOCUMENT_TEMPLATES.COL_NAME'),   type: 'custom' },
-      { key: 'status', label: t('ADMIN.DOCUMENT_TEMPLATES.COL_STATUS'), type: 'badge' },
+      // Tri local : tous les modèles arrivent en un appel, sans pagination.
+      { key: 'type',   label: t('ADMIN.DOCUMENT_TEMPLATES.COL_TYPE'),   type: 'badge',  sortable: true },
+      { key: 'name',   label: t('ADMIN.DOCUMENT_TEMPLATES.COL_NAME'),   type: 'custom', sortable: true },
+      { key: 'status', label: t('ADMIN.DOCUMENT_TEMPLATES.COL_STATUS'), type: 'badge',  sortable: true },
     ];
   });
 
@@ -273,8 +276,10 @@ export class DocumentTemplatesAdminComponent implements OnInit {
     const t = (key: string) => this.translate.instant(key);
     return {
       hoverable:    true,
+      showHeader:   false,
       loading:      this.loading(),
       emptyMessage: t('ADMIN.DOCUMENT_TEMPLATES.EMPTY'),
+      ...tableTools(this.translate),
       actions: [
         {
           id: 'edit', icon: 'edit', tooltip: t('ADMIN.COMMON.EDIT'),

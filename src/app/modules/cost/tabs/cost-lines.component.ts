@@ -6,11 +6,11 @@ import {
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { CostService } from '../cost.service';
-import { COST_STATUS_CONFIG, CostLineDto, SupplierCostSummaryDto, costCategoryDisplay } from '../cost.model';
+import { COST_STATUS_CONFIG, CostLineDto, SupplierCostSummaryDto, costCategoryDisplay, localizedLabel } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import { statusKey } from '../cost-display';
 import { CostLinesCardsSectionComponent } from './cost-lines-cards-section.component';
-import { CostLinesTableSectionComponent } from './cost-lines-table-section.component';
+import { CostLineSort, CostLinesTableSectionComponent } from './cost-lines-table-section.component';
 import { CostSupplierCardsSectionComponent } from './cost-supplier-cards-section.component';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
 
@@ -50,6 +50,14 @@ export class CostLinesComponent implements OnInit {
   searchText      = signal('');
   viewMode        = signal<ViewMode>('grid');
 
+  /**
+   * Tri serveur choisi dans l'en-tête du tableau : `sort` tel qu'affiché (graine de la
+   * flèche), `sortParam` tel qu'envoyé à l'API. Il porte sur la liste paginée — les
+   * cartes suivent le même ordre puisqu'elles lisent la même page.
+   */
+  readonly sort      = signal<CostLineSort | null>(null);
+  private readonly sortParam = signal<string | null>(null);
+
   /** "By supplier" cards view (2026-09-09 plan) -- loaded lazily, the first time the
    *  toggle switches to 'supplier', not on every ngOnInit. `supplierSummariesLoaded`
    *  (not `.length === 0`) is what gates re-fetching -- mirrors step-lines.component.ts's
@@ -80,10 +88,12 @@ export class CostLinesComponent implements OnInit {
    * category still carries the global row's id).
    */
   private readonly lineCategories = computed(() => {
+    const lang = this.translate.currentLang();
     const seen = new Map<number, string>();
     for (const l of this.lines()) {
       if (l.costCategoryId != null && !seen.has(l.costCategoryId)) {
-        seen.set(l.costCategoryId, l.costCategoryLabel ?? String(l.costCategoryId));
+        seen.set(l.costCategoryId,
+          localizedLabel(l.costCategoryLabel, l.costCategoryLabelEn, lang) ?? String(l.costCategoryId));
       }
     }
     return [...seen].map(([value, label]) => ({ value: String(value), label }))
@@ -234,6 +244,7 @@ export class CostLinesComponent implements OnInit {
       status: this.statusFilter() || null,
       page:   this.page(),
       size:   this.size(),
+      sort:   this.sortParam(),
     }).subscribe({
       next: p => {
         this.lines.set(p.content);
@@ -253,6 +264,14 @@ export class CostLinesComponent implements OnInit {
     this.dateRangeFilter.set((result['dateRange'] as Date[] | null) ?? null);
     this.amountMinFilter.set((result['amountMin'] as string | null) ?? '');
     this.amountMaxFilter.set((result['amountMax'] as string | null) ?? '');
+    this.page.set(0);
+    this.load();
+  }
+
+  /** Nouveau tri d'en-tête → retour à la première page, triée par le serveur. */
+  onSortChange(change: { sort: CostLineSort | null; param: string | null }): void {
+    this.sort.set(change.sort);
+    this.sortParam.set(change.param);
     this.page.set(0);
     this.load();
   }

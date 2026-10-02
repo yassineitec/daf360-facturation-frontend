@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   AvatarCell, BadgeCell, DafCellDirective, DataTableComponent,
@@ -7,6 +7,7 @@ import {
 import { SupplierDto } from '../supplier.model';import {
   SUPPLIER_STATE_BADGE, SUPPLIER_STATE_LABEL, initials, supplierCode, supplierState,
 } from '../supplier-display';
+import { TableSort, delegatedSort, tableTools, toTableSort } from '../../../shared/table-tools';
 
 /**
  * Vue liste de `/finance/suppliers`, sur le style de table maison (UI-PLAYBOOK §6b) :
@@ -25,7 +26,9 @@ import { SupplierDto } from '../supplier.model';import {
       [columns]="columns()"
       [rows]="rows()"
       [config]="config()"
-      (rowClick)="onRowClick($event)">
+      (rowClick)="onRowClick($event)"
+      (sortChange)="sortChange.emit(toTableSort($event))"
+      (resetClick)="sortChange.emit(null)">
 
       <ng-template dafCell="bank" let-row>
         @if (row['_iban']) {
@@ -46,22 +49,28 @@ export class SuppliersTableSectionComponent {
   emptyMessage = input('');
   /** Taille de page courante — le squelette dessine autant de lignes, plafonné à 20 (§6b règle 7). */
   pageSize     = input(20);
+  /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
+  sort         = input<TableSort | null>(null);
 
   readonly open = output<number>();
+  /** Nouveau tri d'en-tête (clé de colonne), ou `null` quand il est retiré. */
+  readonly sortChange = output<TableSort | null>();
+
+  protected readonly toTableSort = toTableSort;
 
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'supplier', label: t('SUPPLIERS.LIST.TABLE.NAME'),    type: 'avatar' },
-      { key: 'pays',     label: t('SUPPLIERS.LIST.TABLE.COUNTRY'), type: 'text'   },
-      { key: 'type',     label: t('SUPPLIERS.LIST.TABLE.TYPE'),    type: 'text'   },
-      { key: 'tva',      label: t('SUPPLIERS.LIST.TABLE.TVA'),     type: 'text'   },
-      { key: 'bank',     label: t('SUPPLIERS.LIST.TABLE.IBAN'),    type: 'custom' },
-      { key: 'statut',   label: t('SUPPLIERS.LIST.TABLE.STATUS'),  type: 'badge'  },
+      { key: 'supplier', label: t('SUPPLIERS.LIST.TABLE.NAME'),    type: 'avatar', sortable: true },
+      { key: 'pays',     label: t('SUPPLIERS.LIST.TABLE.COUNTRY'), type: 'text',   sortable: true },
+      { key: 'type',     label: t('SUPPLIERS.LIST.TABLE.TYPE'),    type: 'text',   sortable: true },
+      { key: 'tva',      label: t('SUPPLIERS.LIST.TABLE.TVA'),     type: 'text',   sortable: true },
+      { key: 'bank',     label: t('SUPPLIERS.LIST.TABLE.IBAN'),    type: 'custom', sortable: true },
+      { key: 'statut',   label: t('SUPPLIERS.LIST.TABLE.STATUS'),  type: 'badge',  sortable: true },
     ];
-    // Aucune colonne `sortable` : la lib trie côté client sur la seule page qu'on lui a
-    // donnée, et cette liste est paginée côté serveur (§10b).
+    // Toutes triables, par le serveur (`manualSort`) : la liste est paginée côté serveur,
+    // la clé de colonne part en `?sort=` et `SupplierService.SORT_COLUMNS` la traduit.
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
@@ -103,6 +112,8 @@ export class SuppliersTableSectionComponent {
       loading:      this.loading(),
       skeletonRows: Math.min(this.pageSize(), 20),
       emptyMessage: this.emptyMessage(),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.sort)),
       // Inconditionnelle, donc sur `config.actions` plutôt qu'en cellule projetée — la
       // cellule d'actions de la lib arrête déjà la propagation (§6b règle 4).
       actions: [{

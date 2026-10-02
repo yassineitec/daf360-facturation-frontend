@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
@@ -14,6 +14,7 @@ import { formatAmount, formatDate } from './employee-cost-display';
 import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 import { AffaireService } from '../../affaires/affaire.service';
 import { UserRefDto } from '../../affaires/affaire.model';
+import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 
 interface TimelineDiff {
   label:  string;
@@ -48,6 +49,14 @@ interface TimelineEvent {
    * — same snapshot reasoning as the 3 cost fields above, formatted with `formatDate()`
    * (not `formatAmount()`) since it's a calendar date, not a currency amount. */
   expirationDate: string;
+  /** Valeurs brutes derrière les colonnes formatées ci-dessus, pour le tri du tableau. */
+  sortValues: {
+    timestamp: string;
+    basicCost: number | null;
+    internalCost: number | null;
+    externalCost: number | null;
+    expirationDate: string | null;
+  };
 }
 
 /** The Excel export's flat shape — one row per changed field (spreadsheets can't group
@@ -180,23 +189,48 @@ export class EmployeeCostHistoryComponent implements OnInit {
    * open-ended diff. */
   readonly auditColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
+    // Valeurs brutes (`sortValues`) : date, coûts et date de fin sont formatés en texte.
+    const sv = (row: TableRow) => (row['_event'] as TimelineEvent).sortValues;
     return [
-      { key: 'dateDisplay',     label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DATE'),   type: 'text' },
-      { key: 'actor',           label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_USER'),   type: 'text' },
-      { key: 'basicCost',       label: this.translate.instant('COST.EMPLOYEE_COST.BASIC_COST'),         type: 'text' },
-      { key: 'internalCost',    label: this.translate.instant('COST.EMPLOYEE_COST.COL_INTERNAL'),       type: 'text' },
-      { key: 'externalCost',    label: this.translate.instant('COST.EMPLOYEE_COST.COL_EXTERNAL'),       type: 'text' },
-      { key: 'expirationDate',  label: this.translate.instant('COST.EMPLOYEE_COST.DATE_FIN'),           type: 'text' },
-      { key: 'action',          label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'), type: 'text' },
+      { key: 'dateDisplay',     label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_DATE'),   type: 'text', sortable: true,
+        sortAccessor: row => sv(row).timestamp },
+      { key: 'actor',           label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_USER'),   type: 'text', sortable: true },
+      { key: 'basicCost',       label: this.translate.instant('COST.EMPLOYEE_COST.BASIC_COST'),         type: 'text', sortable: true,
+        sortAccessor: row => sv(row).basicCost },
+      { key: 'internalCost',    label: this.translate.instant('COST.EMPLOYEE_COST.COL_INTERNAL'),       type: 'text', sortable: true,
+        sortAccessor: row => sv(row).internalCost },
+      { key: 'externalCost',    label: this.translate.instant('COST.EMPLOYEE_COST.COL_EXTERNAL'),       type: 'text', sortable: true,
+        sortAccessor: row => sv(row).externalCost },
+      { key: 'expirationDate',  label: this.translate.instant('COST.EMPLOYEE_COST.DATE_FIN'),           type: 'text', sortable: true,
+        sortAccessor: row => sv(row).expirationDate },
+      { key: 'action',          label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'), type: 'text', sortable: true },
     ];
   });
 
-  readonly tableConfig = computed<TableConfig>(() => ({ hoverable: false }));
+  /**
+   * Tri d'en-tête de la vue tableau. L'historique est paginé ici, côté client : le tri porte
+   * sur tous les événements filtrés AVANT la découpe (`sortTableRows`), et la config passe
+   * `manualSort` pour que la lib ne retrie pas la seule page affichée. La vue chronologique
+   * (cartes) garde son ordre, du plus récent au plus ancien.
+   */
+  readonly tableSort = signal<TableSort | null>(null);
+
+  onTableSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.tableSort.set(toTableSort(event));
+    this.historyPage.set(0);
+  }
+
+  readonly tableConfig = computed<TableConfig>(() => ({
+    hoverable: false,
+    ...tableTools(this.translate),
+    ...delegatedSort(untracked(this.tableSort)),
+  }));
 
   /** Table view's rows: one per EVENT, same set the timeline shows. */
-  readonly tableRows = computed<TableRow[]>(() =>
-    this.pagedEvents().map(ev => ({
+  readonly tableRows = computed<TableRow[]>(() => {
+    const all = this.filteredEvents().map(ev => ({
       id: ev.id,
+      _event: ev,
       dateDisplay: ev.dateDisplay,
       actor: ev.actor,
       action: ev.action,
@@ -204,7 +238,10 @@ export class EmployeeCostHistoryComponent implements OnInit {
       internalCost: ev.internalCost,
       externalCost: ev.externalCost,
       expirationDate: ev.expirationDate,
-    })));
+    }));
+    const start = this.historyPage() * this.historySize();
+    return sortTableRows(all, this.auditColumns(), this.tableSort()).slice(start, start + this.historySize());
+  });
 
   /** Options built from whatever actually occurs in this record's own trail, same
    * pattern as affaire-wip-tab.component.ts's own `historyFilterFields`. */
@@ -216,7 +253,7 @@ export class EmployeeCostHistoryComponent implements OnInit {
         label: this.translate.instant('COST.EMPLOYEE_COST.HISTORY_COL_ACTION'),
         type: 'select',
         options: [...new Set(this.historyTrail().map(e => e.action))].sort()
-          .map(value => ({ value, label: value })),
+          .map(value => ({ value, label: this.actionLabel(value) })),
       },
       {
         name: 'date',
@@ -296,7 +333,7 @@ export class EmployeeCostHistoryComponent implements OnInit {
     return {
       id:           e.id,
       dateDisplay:  this.fmtDateTime(e.timestampUtc),
-      action:       e.action,
+      action:       this.actionLabel(e.action),
       actor:        this.actorName(e.actorId, e.actorRole),
       diffs,
       statusChange,
@@ -304,7 +341,33 @@ export class EmployeeCostHistoryComponent implements OnInit {
       internalCost:   this.snapshotValue(e.metadata, 'internalSellingCost', v => formatAmount(Number(v))),
       externalCost:   this.snapshotValue(e.metadata, 'externalSellingCost', v => formatAmount(Number(v))),
       expirationDate: this.snapshotValue(e.metadata, 'dateFin', v => formatDate(String(v))),
+      sortValues: {
+        timestamp:      e.timestampUtc,
+        basicCost:      this.rawNumber(e.metadata, 'basicCost'),
+        internalCost:   this.rawNumber(e.metadata, 'internalSellingCost'),
+        externalCost:   this.rawNumber(e.metadata, 'externalSellingCost'),
+        expirationDate: this.rawValue(e.metadata, 'dateFin'),
+      },
     };
+  }
+
+  /** La même valeur que `snapshotValue`, sans mise en forme — `null` à la place du « — ». */
+  private rawValue(
+    metadata: string | null | undefined,
+    key: 'basicCost' | 'internalSellingCost' | 'externalSellingCost' | 'dateFin',
+  ): string | null {
+    let found = false;
+    const v = this.snapshotValue(metadata, key, raw => { found = true; return String(raw); });
+    return found ? v : null;
+  }
+
+  private rawNumber(
+    metadata: string | null | undefined,
+    key: 'basicCost' | 'internalSellingCost' | 'externalSellingCost',
+  ): number | null {
+    const v = this.rawValue(metadata, key);
+    const n = v === null ? NaN : Number(v);
+    return Number.isFinite(n) ? n : null;
   }
 
   /** Resulting value of one field at this point in the record's history: the event's
@@ -415,6 +478,16 @@ export class EmployeeCostHistoryComponent implements OnInit {
   private actorName(actorId: number, actorRole: string | null): string {
     const user = this.users().find(u => u.id === actorId);
     return user?.fullName ?? actorRole ?? '—';
+  }
+
+  /** Audit action code (CREATE/UPDATE/DELETE/STATUS_NORMALIZED) → its label in the UI
+   * language; an unknown code shows as itself. Reads currentLang() so callers inside a
+   * computed follow a language switch. The filter's VALUE stays the raw code. */
+  private actionLabel(code: string): string {
+    this.translate.currentLang();
+    const key = 'COST.EMPLOYEE_COST.HISTORY_ACTION.' + code;
+    const label = this.translate.instant(key);
+    return label === key ? code : label;
   }
 
   /** The event block's header line — "{date} — {action} par {actor}" — built through

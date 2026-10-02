@@ -14,6 +14,12 @@ export interface DepenseLigne {
   wbsName: string | null;
   hours: number;
   costAmount: number;
+  /** The COLLABORATOR's country (user_ref.pays_id), not the affaire's — null when the
+   * Timesheet email has no matching DAF360 user_ref. Drives the "Pays" filter. */
+  paysId: number | null;
+  paysLabel: string | null;
+  /** English name of the same country — display-only. */
+  paysLabelEn?: string | null;
 }
 
 export interface DepensePreview {

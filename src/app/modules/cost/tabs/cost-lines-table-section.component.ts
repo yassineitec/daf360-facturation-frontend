@@ -1,20 +1,52 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
-  BadgeCell, DafCellDirective, DataTableComponent, TableColumn, TableConfig, TableRow,
+  BadgeCell, DafCellDirective, DataTableComponent, SortDirection, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
 import { CostLineDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { TableActionComponent } from '../../../shared/table-action.component';import {
+import { TableActionComponent } from '../../../shared/table-action.component';
+import { tableTools } from '../../../shared/table-tools';
+import {
   APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit, canReglement,
   canSubmit, formatDate, statusKey,
 } from '../cost-display';
+
+/** L'en-tête de tri tel que la page le garde — `null` = l'ordre du serveur. */
+export interface CostLineSort {
+  key: string;
+  dir: 'asc' | 'desc';
+}
+
+/**
+ * Colonne du tableau → champ de l'entité `CostLine` pour le tri serveur (`?sort=`, lu par
+ * le `Pageable` de `GET /cost-lines`). La catégorie se trie sur le libellé affiché
+ * (`costCategory.labelFr`) : Spring Data en fait une jointure externe, une ligne sans
+ * catégorie reste donc dans la liste.
+ */
+const SERVER_SORT_FIELD: Record<string, string> = {
+  label:    'label',
+  category: 'costCategory.labelFr',
+  date:     'transactionDate',
+  net:      'netAmountLocal',
+  ttc:      'grossAmountLocal',
+  status:   'status',
+  approval: 'approvalLevelRequired',
+};
 
 /**
  * List view of the Lignes de coût tab on the house table style (UI-PLAYBOOK §6b): no
  * wrapper and no outer card, `showHeader: false`, `emptyMessage`, icon-only row actions.
  *
- * Stateless: lines in, `(view)` / `(edit)` / `(submitLine)` out.
+ * Outils de tableau de la lib activés, comme sur `/finance/affaires` (`tableTools`). Deux
+ * modes de tri :
+ * - `serverSort` (onglet Lignes de coût, paginé côté serveur) : `manualSort`, seules les
+ *   colonnes de `SERVER_SORT_FIELD` sont triables, l'en-tête émet `sortChange` et la page
+ *   recharge la première page triée ;
+ * - sinon (fiche fournisseur, toutes les lignes en une fois) : tri local de la lib, sur
+ *   les valeurs brutes (`sortAccessor`) plutôt que sur les chaînes formatées.
+ *
+ * Stateless: lines in, `(view)` / `(edit)` / `(submitLine)` / `(sortChange)` out.
  */
 @Component({
   selector: 'app-cost-lines-table-section',
@@ -27,7 +59,9 @@ import { TableActionComponent } from '../../../shared/table-action.component';i
       [columns]="columns()"
       [rows]="rows()"
       [config]="config()"
-      (rowClick)="onRowClick($event)">
+      (rowClick)="onRowClick($event)"
+      (sortChange)="onSortChange($event.key, $event.dir)"
+      (resetClick)="onSortChange('', null)">
 
       <!-- Description carries its reference as a second line rather than spending a
            whole column on it. -->
@@ -68,12 +102,18 @@ export class CostLinesTableSectionComponent {
   loading      = input(false);
   emptyMessage = input('');
   pageSize     = input(25);
+  /** Tri délégué au serveur — à activer quand `lines` n'est qu'une page du résultat. */
+  serverSort   = input(false);
+  /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
+  sort         = input<CostLineSort | null>(null);
 
   /** Row click — the read-only detail page, same as a card click. Editing stays on the pencil action. */
   readonly view            = output<CostLineDto>();
   readonly edit            = output<CostLineDto>();
   readonly submitLine      = output<CostLineDto>();
   readonly createReglement = output<CostLineDto>();
+  /** Valeur `sort` à envoyer à l'API (`label,asc`…), ou `null` quand le tri est retiré. */
+  readonly sortChange      = output<{ sort: CostLineSort | null; param: string | null }>();
 
   protected readonly tips = computed(() => {
     this.translate.currentLang();
@@ -87,18 +127,23 @@ export class CostLinesTableSectionComponent {
   protected readonly columns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
+    // En tri serveur, seules les colonnes portées par l'entité ; en tri local, toutes.
+    const sortable = (key: string) => !this.serverSort() || key in SERVER_SORT_FIELD;
+    const raw = (row: TableRow) => row['_raw'] as CostLineDto;
     return [
-      { key: 'label',    label: t('COST.LINES.COL_DESCRIPTION'), type: 'custom' },
-      { key: 'category', label: t('COST.LINES.COL_CATEGORY'),    type: 'text'   },
-      { key: 'date',     label: t('COST.LINES.COL_DATE'),        type: 'text'   },
-      { key: 'net',      label: t('COST.LINES.COL_NET_AMOUNT'),  type: 'text' },
-      { key: 'ttc',      label: t('COST.LINES.COL_TTC'),         type: 'text' },
-      { key: 'status',   label: t('COST.LINES.COL_STATUS'),      type: 'badge'  },
-      { key: 'approval', label: t('COST.LINES.COL_APPROVAL'),    type: 'badge'  },
+      { key: 'label',    label: t('COST.LINES.COL_DESCRIPTION'), type: 'custom', sortable: sortable('label'),
+        sortAccessor: row => (raw(row).label ?? '').toLowerCase() },
+      { key: 'category', label: t('COST.LINES.COL_CATEGORY'),    type: 'text',   sortable: sortable('category') },
+      { key: 'date',     label: t('COST.LINES.COL_DATE'),        type: 'text',   sortable: sortable('date'),
+        sortAccessor: row => raw(row).transactionDate },
+      { key: 'net',      label: t('COST.LINES.COL_NET_AMOUNT'),  type: 'text',   sortable: sortable('net'),
+        sortAccessor: row => raw(row).netAmountLocal },
+      { key: 'ttc',      label: t('COST.LINES.COL_TTC'),         type: 'text',   sortable: sortable('ttc'),
+        sortAccessor: row => raw(row).grossAmountLocal },
+      { key: 'status',   label: t('COST.LINES.COL_STATUS'),      type: 'badge',  sortable: sortable('status') },
+      { key: 'approval', label: t('COST.LINES.COL_APPROVAL'),    type: 'badge',  sortable: sortable('approval') },
       { key: '_actions', label: '', width: '1%' },
     ];
-    // No column is `sortable`: the lib sorts client-side over the one page it was
-    // handed, and this list is server-paginated (§10b).
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
@@ -137,13 +182,30 @@ export class CostLinesTableSectionComponent {
     });
   });
 
-  protected readonly config = computed<TableConfig>(() => ({
-    showHeader:   false,
-    hoverable:    true,
-    loading:      this.loading(),
-    skeletonRows: Math.min(this.pageSize(), 20),
-    emptyMessage: this.emptyMessage(),
-  }));
+  protected readonly config = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    // Graine lue une seule fois par le tableau — la suivre reconstruirait la config à chaque clic.
+    const sort = untracked(this.sort);
+    return {
+      showHeader:   false,
+      hoverable:    true,
+      loading:      this.loading(),
+      skeletonRows: Math.min(this.pageSize(), 20),
+      emptyMessage: this.emptyMessage(),
+      ...tableTools(this.translate),
+      // Lignes rendues dans l'ordre renvoyé par l'API ; sortChange est tout de même émis.
+      manualSort:   this.serverSort(),
+      ...(sort ? { defaultSort: sort } : {}),
+    };
+  });
+
+  /** Clic d'en-tête (ou bouton reset) → valeur `sort` pour l'API, ou `null` si retiré. */
+  protected onSortChange(key: string, dir: SortDirection): void {
+    if (!this.serverSort()) return;
+    const field = SERVER_SORT_FIELD[key];
+    const sort: CostLineSort | null = field && dir ? { key, dir } : null;
+    this.sortChange.emit({ sort, param: sort ? `${field},${sort.dir}` : null });
+  }
 
   protected onRowClick(row: TableRow): void {
     this.view.emit(row['_raw'] as CostLineDto);
