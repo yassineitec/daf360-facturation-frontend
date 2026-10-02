@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
-import { SupplierDto } from '../supplier.model';
+import { SupplierDto, supplierTypeLabel } from '../supplier.model';
 import {
   SUPPLIER_STATE_ENTITY, SUPPLIER_STATE_LABEL, supplierCode, supplierState,
 } from '../supplier-display';
@@ -89,7 +89,7 @@ export class SuppliersCardsSectionComponent {
           metricsColumns: 2,
           metrics: [
             { label: t('SUPPLIERS.LIST.CARD.COUNTRY'), value: s.paysLabel ?? '—' },
-            { label: t('SUPPLIERS.LIST.CARD.TYPE'),    value: s.typeLabel ?? '—' },
+            { label: t('SUPPLIERS.LIST.CARD.TYPE'),    value: supplierTypeLabel(s, this.translate.currentLang()) ?? '—' },
             { label: t('SUPPLIERS.LIST.CARD.TVA'),     value: s.numeroTva ?? '—' },
             { label: t('SUPPLIERS.LIST.CARD.IBAN'),    value: s.iban ?? t('SUPPLIERS.LIST.CARD.NO_IBAN') },
           ],

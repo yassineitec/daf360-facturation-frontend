@@ -16,7 +16,7 @@ import {
   SupplierDto, SupplierExtraFilter, SupplierStatsDto, SupplierStatusFilter,
 } from '../supplier.model';
 import { FactListService } from '../../../core/fact-list.service';
-import { ListValueDto, localizedLabel } from '../../cost/cost.model';
+import { ListValueDto } from '../../cost/cost.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { TableSort, sortParam } from '../../../shared/table-tools';
 import { SuppliersCardsSectionComponent } from './suppliers-cards-section.component';
@@ -148,7 +148,8 @@ export class SupplierListComponent implements OnInit {
         type:  'select',
         placeholder: t('SUPPLIERS.LIST.FILTER.STATUS_ALL'),
         options: this.supplierTypes().map(v => ({
-          value: String(v.id), label: localizedLabel(v.labelFr, v.labelEn, this.translate.currentLang()) ?? v.code,
+          value: String(v.id),
+          label: this.translate.currentLang() === 'en' ? (v.labelEn || v.labelFr) : v.labelFr,
         })),
       },
       {
@@ -251,14 +252,15 @@ export class SupplierListComponent implements OnInit {
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
   ngOnInit(): void {
-    this.factListSvc.getListValues('SUPPLIER_CATEGORY', 0)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(list => this.supplierTypes.set(list));
-
     this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: id => {
         if (id && id > 0) {
           this.paysId.set(id);
+          // Catégories du pays, comme dans l'administration (paramétrage par pays) —
+          // le pays `0` ne renvoyait que les valeurs globales d'origine.
+          this.factListSvc.getListValues('SUPPLIER_CATEGORY', id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(list => this.supplierTypes.set(list));
           this.loadSuppliers();
           this.loadStats();
         } else {
