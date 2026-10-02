@@ -53,6 +53,40 @@ $slate5: #64748B;
   font-family: monospace;
 }
 
+// ── Historique : réinitialiser + choix des colonnes à droite du bouton Filtres ────
+// Dessinés comme le sélecteur de vue Cartes / Tableau de daf-search-toolbar, avec ses
+// classes (cadre dans l'.html, boutons p-2.5). Aucune taille d'icône forcée ici : elles
+// suivent la même cascade que les icônes de ce sélecteur, donc rendent à l'identique.
+// Le déclencheur du daf-select (taille, bordure et fond figés dans la lib) est ramené à
+// un bouton de ce bloc : même padding, taille donnée par son contenu. Cette page seulement.
+
+// daf-select empile déclencheur + ligne erreur/aide (`daf-field-message`) dans une colonne
+// `gap-1.5` : même vide, cette ligne compte et ajoute 6px sous le déclencheur — le cadre
+// grandissait, et le fond du bouton (survol / ouvert) n'allait plus jusqu'en bas. Ce
+// sélecteur n'a ni erreur ni aide : on retire la ligne.
+.hist-tools ::ng-deep daf-select daf-field-message { display: none; }
+
+.hist-tools ::ng-deep [data-trigger] {
+  width: auto;
+  height: auto;
+  padding: 10px;          // p-2.5, comme les boutons du sélecteur de vue
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--color-outline);
+
+  &:hover { background: var(--color-surface-container); }
+
+  // Panneau ouvert : même état que l'option active du sélecteur de vue.
+  &[aria-expanded='true'] {
+    background: color-mix(in srgb, var(--color-tertiary) 15%, transparent);
+    color: var(--color-teal);
+  }
+
+  .material-symbols-outlined { color: inherit; }
+}
+
 .action-chip {
   display: inline-block;
   padding: 3px 10px;

@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
 import {
-  ButtonComponent, CardComponent, DafCellDirective, DataTableComponent, FilterField,
+  ButtonComponent, CardComponent, DafCellDirective, DataTableComponent, FieldMessageComponent, FilterField,
   FilterResult, FormFieldComponent, MetricCardOptions, ModalRef, ModalService,
   MultiDatePickerComponent, MultiDatePickerConfig, PageComponent, PageHeaderComponent,
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, SelectComponent,
@@ -14,7 +14,7 @@ import { AffaireService } from '../../affaires/affaire.service';
 import { UserRefDto } from '../../affaires/affaire.model';
 import { EmployeeCostService } from './employee-cost.service';
 import {
-  EmployeeCostDto, EmployeeCostDriverField, deriveEmployeeCostFields,
+  EmployeeCostDto, EmployeeCostDriverField, deriveEmployeeCostFields, latestCostFor, nextPeriodAfter,
 } from './employee-cost.model';
 import { displayName, formatAmount, formatDate, statusKey } from './employee-cost-display';
 import { EmployeeCostTableSectionComponent } from './employee-cost-table-section.component';
@@ -31,7 +31,7 @@ type ViewMode = 'list' | 'grid';
   standalone: true,
   imports: [
     TranslatePipe, ButtonComponent, CardComponent, DafCellDirective, DataTableComponent,
-    FormFieldComponent, MultiDatePickerComponent, PageComponent, PageHeaderComponent,
+    FieldMessageComponent, FormFieldComponent, MultiDatePickerComponent, PageComponent, PageHeaderComponent,
     PaginationComponent, SearchToolbarComponent, SelectComponent, EmployeeCostTableSectionComponent,
     EmployeeCostCardsSectionComponent,
   ],
@@ -202,6 +202,23 @@ export class EmployeeCostComponent implements OnInit {
       options.unshift({ value: current, label: current });
     }
     return options;
+  });
+
+  /** En création seulement : le dernier coût déjà enregistré pour le collaborateur choisi,
+   * affiché sous le sélecteur pour que la personne sache quelle période est déjà couverte.
+   * Lu dans `rows()` (déjà chargé par la page) — aucun appel réseau en plus. */
+  readonly latestCost = computed<EmployeeCostDto | null>(() =>
+    this.editingId() === null ? latestCostFor(this.rows(), this.selectedEmail()) : null);
+
+  readonly latestCostHint = computed(() => {
+    this.translate.currentLang();
+    const c = this.latestCost();
+    if (!c) return '';
+    return this.translate.instant('COST.EMPLOYEE_COST.LATEST_COST_HINT', {
+      amount: formatAmount(c.basicCost, c.currency),
+      debut:  formatDate(c.dateDebut),
+      fin:    formatDate(c.dateFin),
+    });
   });
 
   // ── KPIs — counted over every loaded row, unaffected by the search box below, same
@@ -485,8 +502,20 @@ export class EmployeeCostComponent implements OnInit {
     this.modalRef?.close();
   }
 
+  /** En création, la période proposée suit le dernier coût du collaborateur (lendemain de
+   * sa date de fin → 31/12) au lieu de l'année en cours entière, qui chevauchait presque
+   * toujours un coût existant et faisait refuser l'enregistrement (RG_EMPLOYEE_COST_OVERLAP).
+   * Sans coût existant, retour aux valeurs par défaut (01/01 → 31/12 de l'année en cours). */
   onEmployeeSelect(values: string[]): void {
     this.selectedEmail.set(values[0] ?? '');
+    if (this.editingId() !== null) return;
+
+    const latest = this.latestCost();
+    const period = latest
+      ? nextPeriodAfter(latest.dateFin)
+      : { dateDebut: `${this.currentYear}-01-01`, dateFin: `${this.currentYear}-12-31` };
+    this.newRecord.dateDebut = period.dateDebut;
+    this.newRecord.dateFin = period.dateFin;
   }
 
   onCurrencyChange(values: string[]): void {
@@ -508,18 +537,26 @@ export class EmployeeCostComponent implements OnInit {
     this.newRecord.basicCost = derived.basicCost;
     this.newRecord.internalSellingCost = derived.internalSellingCost;
     this.newRecord.externalSellingCost = derived.externalSellingCost;
+
+    // Le champ en cours de saisie garde exactement ce qui a été tapé : le recalcul aller-
+    // retour (ex. interne 10,5 → base 9,55 → interne 10,51) le réécrivait sous les doigts.
+    // Seuls les deux AUTRES champs sont recalculés.
+    if (driver === 'internal') this.newRecord.internalSellingCost = value;
+    if (driver === 'external') this.newRecord.externalSellingCost = value;
   }
 
   save(): void {
-    if (!this.selectedEmail() || this.newRecord.basicCost === null) {
-      this.saveError.set(this.translate.instant('COST.EMPLOYEE_COST.FIELDS_REQUIRED'));
+    const invalid = this.validationError();
+    const basicCost = this.newRecord.basicCost;
+    if (invalid || basicCost === null) {
+      this.saveError.set(this.translate.instant(invalid ?? 'COST.EMPLOYEE_COST.FIELDS_REQUIRED'));
       return;
     }
     this.isSaving.set(true);
     this.saveError.set(null);
 
     const req = {
-      basicCost: this.newRecord.basicCost,
+      basicCost,
       currency: this.newRecord.currency,
       dateDebut: this.newRecord.dateDebut,
       dateFin: this.newRecord.dateFin,
@@ -538,10 +575,41 @@ export class EmployeeCostComponent implements OnInit {
         this.load();
       },
       error: err => {
-        this.saveError.set(err.error?.detail ?? this.translate.instant('COST.EMPLOYEE_COST.SAVE_ERROR'));
+        this.saveError.set(this.saveErrorMessage(err));
         this.isSaving.set(false);
       },
     });
+  }
+
+  /** Mêmes règles que le backend (@NotNull/@Positive des DTO, RG_EMPLOYEE_COST_DATE_RANGE),
+   * vérifiées avant l'appel : sinon une date vidée part en `""` et revient en 400 opaque.
+   * Renvoie la clé i18n du premier problème, ou null si le formulaire est valide. */
+  private validationError(): string | null {
+    const r = this.newRecord;
+    if (!this.selectedEmail() || r.basicCost === null) return 'COST.EMPLOYEE_COST.FIELDS_REQUIRED';
+    if (r.basicCost <= 0) return 'COST.EMPLOYEE_COST.ERRORS.BASIC_COST_POSITIVE';
+    if (!r.dateDebut || !r.dateFin) return 'COST.EMPLOYEE_COST.ERRORS.DATES_REQUIRED';
+    // Comparaison de chaînes ISO yyyy-MM-dd = ordre chronologique.
+    if (r.dateFin < r.dateDebut) return 'COST.EMPLOYEE_COST.ERRORS.RG_EMPLOYEE_COST_DATE_RANGE';
+    return null;
+  }
+
+  /** Le `detail` du ProblemDetail est un texte technique en anglais — jamais affiché tel
+   * quel. Une règle métier connue (`rule`, ex. RG_EMPLOYEE_COST_OVERLAP) a son propre
+   * message traduit ; sinon le statut HTTP choisit un message générique. */
+  private saveErrorMessage(err: { status?: number; error?: { rule?: string } }): string {
+    const rule = err.error?.rule;
+    if (rule) {
+      const key = `COST.EMPLOYEE_COST.ERRORS.${rule}`;
+      const msg = this.translate.instant(key);
+      if (msg !== key) return msg; // instant() renvoie la clé elle-même quand elle est absente
+    }
+    switch (err.status) {
+      case 400: return this.translate.instant('COST.EMPLOYEE_COST.ERRORS.INVALID_DATA');
+      case 403: return this.translate.instant('COST.EMPLOYEE_COST.ERRORS.FORBIDDEN');
+      case 404: return this.translate.instant('COST.EMPLOYEE_COST.ERRORS.NOT_FOUND');
+      default:  return this.translate.instant('COST.EMPLOYEE_COST.SAVE_ERROR');
+    }
   }
 
   edit(row: EmployeeCostDto): void {

@@ -66,6 +66,32 @@ export function deriveEmployeeCostFields(
   };
 }
 
+/** Le coût le plus récent (date de début la plus tardive) d'un collaborateur, ou null s'il
+ * n'en a aucun — même ordre que le backend pour décider du statut « Current »
+ * (EmployeeCostService.normalizeStatuses). Email comparé sans la casse. */
+export function latestCostFor(rows: EmployeeCostDto[], email: string): EmployeeCostDto | null {
+  const target = email.trim().toLowerCase();
+  if (!target) return null;
+  return rows
+    .filter(r => r.employeeEmail.toLowerCase() === target)
+    .reduce<EmployeeCostDto | null>(
+      (best, r) => !best || r.dateDebut > best.dateDebut || (r.dateDebut === best.dateDebut && r.id > best.id) ? r : best,
+      null,
+    );
+}
+
+/** Période proposée pour un nouveau coût qui suit un coût se terminant le `previousDateFin`
+ * (ISO yyyy-MM-dd) : du lendemain au 31/12 de l'année de ce lendemain — la convention
+ * annuelle déjà utilisée par les valeurs par défaut du formulaire. Calcul en UTC pour
+ * qu'aucun fuseau horaire ne décale le jour. */
+export function nextPeriodAfter(previousDateFin: string): { dateDebut: string; dateFin: string } {
+  const [y, m, d] = previousDateFin.split('-').map(Number);
+  const next = new Date(Date.UTC(y, m - 1, d + 1));
+  const year = next.getUTCFullYear();
+  const dateDebut = `${year}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+  return { dateDebut, dateFin: `${year}-12-31` };
+}
+
 function round2(v: number): number {
   return Math.round(v * 100) / 100;
 }

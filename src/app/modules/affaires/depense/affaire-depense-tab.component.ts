@@ -50,6 +50,11 @@ export class AffaireDepenseTabComponent implements OnInit {
   /** Pays (collaborator's country) — independent of the Période/Mois/Année mode above, so it
    * combines with whichever is active. Values are `String(paysId)` or `NO_PAYS`. */
   protected readonly filterPays = signal<string[]>([]);
+  /** Coût min/max — bounds on each collaborator's total cost over the lines left by the
+   * filters above (Pays + Période/Mois/Année); a collaborator outside them is dropped whole,
+   * so the KPI tiles follow the table. `null` = no bound. */
+  protected readonly filterCostMin = signal<number | null>(null);
+  protected readonly filterCostMax = signal<number | null>(null);
 
   /** Same `this.currency.transform(v, devise)` convention `affaire-detail.component.ts`'s
    * own `money()` helper and `AffaireWipTabComponent` already use — internal cost is still a
@@ -146,6 +151,19 @@ export class AffaireDepenseTabComponent implements OnInit {
    * string comparison is lexicographically correct for both the range and the `startsWith`
    * prefix checks — no `Date` parsing needed. */
   protected readonly filteredLignes = computed<DepenseLigne[]>(() => {
+    const lignes = this.dateAndPaysLignes();
+    const min = this.filterCostMin();
+    const max = this.filterCostMax();
+    if (min == null && max == null) return lignes;
+    const totals = new Map<string, number>();
+    for (const l of lignes) totals.set(l.userEmail, (totals.get(l.userEmail) ?? 0) + l.costAmount);
+    return lignes.filter(l => {
+      const total = totals.get(l.userEmail)!;
+      return (min == null || total >= min) && (max == null || total <= max);
+    });
+  });
+
+  private readonly dateAndPaysLignes = computed<DepenseLigne[]>(() => {
     const pays = this.filterPays();
     const all = (this.preview()?.lignes ?? []).filter(l =>
       pays.length === 0 || pays.includes(l.paysId == null ? NO_PAYS : String(l.paysId)));
@@ -208,6 +226,11 @@ export class AffaireDepenseTabComponent implements OnInit {
     const pays   = result['pays'];
 
     this.filterPays.set(Array.isArray(pays) ? pays as string[] : pays ? [String(pays)] : []);
+    // Already parsed to `number | null` by the summary table before bubbling up.
+    const costMin = result['costMin'];
+    const costMax = result['costMax'];
+    this.filterCostMin.set(typeof costMin === 'number' ? costMin : null);
+    this.filterCostMax.set(typeof costMax === 'number' ? costMax : null);
 
     if (Array.isArray(period) && period.length === 2) {
       this.setFilterMode('PERIOD');

@@ -67,8 +67,9 @@ export class DepenseSummaryTableComponent implements OnDestroy {
   protected readonly search = signal('');
   protected readonly disciplineFilter = signal<string[]>([]);
   /** Coût min/max — bounds on each collaborator's AGGREGATED cost (the "Coût" column), not on
-   * individual lines. Table-only like Discipline: never bubbled up, never affects the KPI
-   * tiles. `null` = no bound (empty or unparsable input). */
+   * individual lines. Also bubbled up via `periodApply` so the parent applies them to the KPI
+   * tiles (like Pays); kept here too so the table's own totals — which can be narrowed further
+   * by Discipline — still respect the bounds. `null` = no bound (empty or unparsable input). */
   protected readonly costMin = signal<number | null>(null);
   protected readonly costMax = signal<number | null>(null);
 
@@ -181,7 +182,8 @@ export class DepenseSummaryTableComponent implements OnDestroy {
     this.disciplineFilter.set(Array.isArray(v) ? v as string[] : v ? [String(v)] : []);
     this.costMin.set(this.parseAmount(result['costMin']));
     this.costMax.set(this.parseAmount(result['costMax']));
-    this.periodApply.emit(result);
+    // Bubbled up already parsed (`number | null`), so the parent doesn't re-parse the text.
+    this.periodApply.emit({ ...result, costMin: this.costMin(), costMax: this.costMax() } as FilterResult);
     this.zoomPage.set(0);
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, untracked, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, untracked, viewChild, ViewChild, TemplateRef } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
 import { forkJoin, Observable, switchMap }    from 'rxjs';
@@ -9,6 +9,7 @@ import {
   StatusBadgeComponent, BadgeVariant,
   FormFieldComponent,
   SearchToolbarComponent, SearchToolbarFilterConfig, FilterField, FilterResult,
+  SelectComponent, SelectOption,
   ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 import {
@@ -131,7 +132,7 @@ function affaireOptions(rows: { affaireId: number | null; affaireRef: string | n
     RouterLink, TranslatePipe, DataTableComponent, DafCellDirective,
     PageComponent, PageHeaderComponent, MetricCardComponent,
     TabsComponent, StatusBadgeComponent, FormFieldComponent, PaginationComponent,
-    SearchToolbarComponent,
+    SearchToolbarComponent, SelectComponent,
   ],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
@@ -182,6 +183,8 @@ export class ApprovalQueueComponent implements OnInit {
   creditNoteRegieFilter    = signal<FilterResult>({});
   creditNoteLivrableSearch = signal('');
   creditNoteLivrableFilter = signal<FilterResult>({});
+  historySearch            = signal('');
+  historyFilter            = signal<FilterResult>({});
 
   pendingJalons = signal<PendingJalonDto[]>([]);
   pendingLines  = signal<PendingBillingLineDto[]>([]);
@@ -722,6 +725,7 @@ export class ApprovalQueueComponent implements OnInit {
       userNom:     entry.userNom,
       action:      entry.action,
       entity:      `${entry.entityType} #${entry.entityId}`,
+      _entityType: entry.entityType,
       commentaire: entry.commentaire,
     }))
   );
@@ -734,11 +738,86 @@ export class ApprovalQueueComponent implements OnInit {
     this.historyPage.set(0);
   }
 
+  /** Options d'un filtre tirées du journal chargé : seules les valeurs présentes, triées. */
+  private historyOptions(pick: (e: AuditLogEntryDto) => string | null | undefined) {
+    const values = new Set(this.auditLog().map(pick).filter((v): v is string => !!v));
+    return [...values].sort((a, b) => a.localeCompare(b)).map(value => ({ value, label: value }));
+  }
+
+  readonly historyFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return [{
+      name:  'createdAt',
+      label: t('AFFAIRES.billing.approval.col_date'),
+      type:  'daterange',
+    }, {
+      name:       'action',
+      label:      t('AFFAIRES.billing.approval.col_action'),
+      type:       'multiselect',
+      searchable: true,
+      options:    this.historyOptions(e => e.action),
+    }, {
+      name:       'user',
+      label:      t('AFFAIRES.billing.approval.col_user'),
+      type:       'select',
+      searchable: true,
+      options:    this.historyOptions(e => e.userNom),
+    }, {
+      name:    'entityType',
+      label:   t('AFFAIRES.billing.approval.filter_entity_type'),
+      type:    'multiselect',
+      options: this.historyOptions(e => e.entityType),
+    }];
+  });
+
+  readonly historyFilterConfig = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      title:         t('AFFAIRES.billing.approval.filter_title'),
+      applyLabel:    t('AFFAIRES.billing.approval.filter_apply'),
+      cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
+      resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
+      align:         'right',
+      initialValues: this.historyFilter(),
+    };
+  });
+
+  onHistorySearch(value: string): void {
+    this.historySearch.set(value);
+    this.historyPage.set(0);
+  }
+
+  onHistoryFilterApply(result: FilterResult): void {
+    this.historyFilter.set(result);
+    this.historyPage.set(0);
+  }
+
+  /** Recherche (utilisateur, action, entité, commentaire) + filtres, avant tri et pages. */
+  readonly filteredHistoryRows = computed(() => {
+    const q       = this.historySearch().trim().toLowerCase();
+    const filter  = this.historyFilter();
+    const range   = Array.isArray(filter['createdAt']) && filter['createdAt'].length
+      ? filter['createdAt'] as Date[] : null;
+    const actions = Array.isArray(filter['action']) ? filter['action'] as string[] : [];
+    const user    = selectValue(filter, 'user');
+    const types   = Array.isArray(filter['entityType']) ? filter['entityType'] as string[] : [];
+    return this.historyRows().filter(r => {
+      if (q && !`${r.userNom} ${r.action} ${r.entity} ${r.commentaire ?? ''}`.toLowerCase().includes(q)) return false;
+      if (!inDayRange(r._createdAt, range)) return false;
+      if (actions.length && !actions.includes(r.action)) return false;
+      if (user && r.userNom !== user) return false;
+      if (types.length && !types.includes(r._entityType)) return false;
+      return true;
+    });
+  });
+
   historyPage     = signal(0);
   historyPageSize = signal(10);
-  readonly historyTotalPages = computed(() => Math.ceil(this.historyRows().length / this.historyPageSize()));
+  readonly historyTotalPages = computed(() => Math.ceil(this.filteredHistoryRows().length / this.historyPageSize()));
   readonly pagedHistoryRows = computed(() => {
-    const rows = sortTableRows(this.historyRows(), this.historyColumns(), this.historySort());
+    const rows = sortTableRows(this.filteredHistoryRows(), this.historyColumns(), this.historySort());
     const size = this.historyPageSize();
     const page = Math.min(this.historyPage(), Math.max(0, Math.ceil(rows.length / size) - 1));
     return rows.slice(page * size, page * size + size);
@@ -746,8 +825,19 @@ export class ApprovalQueueComponent implements OnInit {
 
   readonly tableConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
-    return { hoverable: true, showHeader: false, ...this.tableExtras(this.historySort) };
+    // Test : choix des colonnes + réinitialiser sortis de la ligne de la lib (masquée ici)
+    // et posés dans le bandeau de recherche, au-dessus du tableau — voir l'.html.
+    return {
+      hoverable: true, showHeader: false, ...this.tableExtras(this.historySort),
+      columnPicker: false, showReset: false,
+    };
   });
+
+  /** Tableau de l'historique : ses colonnes visibles et son reset sont pilotés depuis le bandeau. */
+  readonly historyTable = viewChild<DataTableComponent>('historyTable');
+
+  readonly historyColumnOptions = computed<SelectOption[]>(() =>
+    this.historyColumns().map(col => ({ value: col.key, label: col.label })));
 
   // ── Row action buttons — rendered as icon buttons in a trailing column by
   // daf-data-table itself (config.actions), same as the library demo's table. ──

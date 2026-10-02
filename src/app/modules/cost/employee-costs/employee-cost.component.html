@@ -162,23 +162,32 @@
                   searchable: true, required: true, fullWidth: true,
                   disabled: editingId() !== null || usersLoading() }" />
 
+    <!-- Création seulement : rappel du dernier coût du collaborateur choisi — la période
+         proposée ci-dessous commence le lendemain de sa date de fin. -->
+    @if (latestCostHint(); as hint) {
+      <daf-field-message [hint]="hint" />
+    }
+
     <!-- Any one of these three drives the other two — the fixed 1.1 / 1.2 markup formula
          (explained in the page subtitle above) makes it impossible to save numbers that
          don't satisfy it. -->
     <daf-form-field
       [value]="newRecord.basicCost"
       (valueChange)="onFieldInput('basic', $any($event))"
-      [options]="{ label: ('COST.EMPLOYEE_COST.BASIC_COST' | translate), type: 'number', required: true, fullWidth: true }" />
+      [options]="{ label: ('COST.EMPLOYEE_COST.BASIC_COST' | translate), hint: ('COST.EMPLOYEE_COST.BASIC_COST_HINT' | translate),
+                   type: 'number', required: true, fullWidth: true }" />
 
     <daf-form-field
       [value]="newRecord.internalSellingCost"
       (valueChange)="onFieldInput('internal', $any($event))"
-      [options]="{ label: ('COST.EMPLOYEE_COST.INTERNAL_SELLING_COST' | translate), type: 'number', fullWidth: true }" />
+      [options]="{ label: ('COST.EMPLOYEE_COST.INTERNAL_SELLING_COST' | translate), hint: ('COST.EMPLOYEE_COST.INTERNAL_SELLING_COST_HINT' | translate),
+                   type: 'number', fullWidth: true }" />
 
     <daf-form-field
       [value]="newRecord.externalSellingCost"
       (valueChange)="onFieldInput('external', $any($event))"
-      [options]="{ label: ('COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST' | translate), type: 'number', fullWidth: true }" />
+      [options]="{ label: ('COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST' | translate), hint: ('COST.EMPLOYEE_COST.EXTERNAL_SELLING_COST_HINT' | translate),
+                   type: 'number', fullWidth: true }" />
 
     <daf-select
       [options]="currencyOptions()"
@@ -197,8 +206,10 @@
         [(value)]="dateFinValue" />
     </div>
 
-    @if (saveError()) {
-      <p class="text-[12px]" style="color:var(--color-danger)">{{ saveError() }}</p>
+    <!-- `daf-field-message` : la ligne d'erreur de la lib (icône + ton `danger`,
+         `role="alert"`), à la place du <p> coloré à la main. -->
+    @if (saveError(); as err) {
+      <daf-field-message [error]="err" />
     }
   </div>
 
