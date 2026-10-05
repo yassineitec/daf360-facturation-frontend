@@ -84,9 +84,9 @@ export class CostLinesCardsSectionComponent {
         options: {
           variant: 'glass',
           clickable: true,
-          image: { initials: initials(line.label) },
+          image: { initials: initials(line.supplierName) },
           metadata: {
-            title:       line.label ?? '—',
+            title:       line.supplierName ?? t('COST.LINES.NO_SUPPLIER_CARD'),
             subtitle:    [line.reference, line.costCategoryLabel ? cat(line) : null].filter(Boolean).join(' · '),
             status:      STATUS_ENTITY_STATUS[line.status] ?? 'pending',
             statusLabel: t(statusKey(line.status)),

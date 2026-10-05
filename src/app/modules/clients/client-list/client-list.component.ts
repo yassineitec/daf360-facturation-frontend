@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -42,6 +42,9 @@ type ViewMode = 'grid' | 'list';
   templateUrl: './client-list.component.html',
 })
 export class ClientListComponent implements OnInit {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(ClientsTableSectionComponent);
+
   private readonly svc            = inject(ClientService);
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);

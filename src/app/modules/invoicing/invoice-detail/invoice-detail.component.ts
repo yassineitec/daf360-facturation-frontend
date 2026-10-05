@@ -5,12 +5,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, ButtonOptions, DafCellDirective, DataTableComponent,
-  FormFieldComponent, MetricCardComponent, ModalService, PageComponent,
-  PageHeaderComponent, SectionCardComponent, TabsComponent,
+  FormFieldComponent, MetricCardComponent, ModalService, MultiDatePickerComponent, PageComponent,
+  PageHeaderComponent, SearchToolbarComponent, SectionCardComponent, TabsComponent,
   tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
-  BreadcrumbItem, MetricCardOptions, MetricDelta, PageHeaderBadge,
+  BreadcrumbItem, MetricCardOptions, MetricDelta, MultiDatePickerConfig, PageHeaderBadge,
   TabItem, TableColumn, TableConfig,
 } from '@khalilrebhiitec/daf360';
 
@@ -23,7 +23,14 @@ import { PaymentModalComponent } from '../payment-modal.component';
 import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
+/** `yyyy-MM-dd` en heure locale — `toISOString()` décalerait d'un jour avant minuit UTC. */
+function toIsoDate(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
 
@@ -57,8 +64,8 @@ interface PrimaryAction {
   imports: [
     TranslatePipe, DisplayCurrencyPipe,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
-    MetricCardComponent, ButtonComponent, FormFieldComponent,
-    DataTableComponent, DafCellDirective,
+    MetricCardComponent, ButtonComponent, FormFieldComponent, MultiDatePickerComponent,
+    DataTableComponent, DafCellDirective, SearchToolbarComponent,
     PaymentModalComponent, CreditNoteModalComponent, RemindersPanelComponent,
   ],
   providers: [DisplayCurrencyPipe],
@@ -73,6 +80,7 @@ export class InvoiceDetailComponent implements OnInit {
   private readonly route     = inject(ActivatedRoute);
 
   private readonly commentTpl = viewChild.required<TemplateRef<unknown>>('commentTpl');
+  private readonly emitDateTpl = viewChild.required<TemplateRef<unknown>>('emitDateTpl');
   private readonly paymentModal = viewChild.required<PaymentModalComponent>('paymentModal');
 
   id = input<string>();
@@ -92,6 +100,10 @@ export class InvoiceDetailComponent implements OnInit {
   /** Texte partagé par les trois modales à commentaire (retour, litige, résolution). */
   readonly commentText = signal('');
   private commentFieldKey = signal('INVOICING.LIFECYCLE.COMMENT');
+
+  /** Date d'émission saisie dans la modale « Émettre » (aujourd'hui par défaut). */
+  readonly emitDate      = signal<Date | null>(null);
+  readonly emitDateError = signal(false);
 
   // ═══ Statut ═══════════════════════════════════════════════════════════════
 
@@ -367,6 +379,11 @@ export class InvoiceDetailComponent implements OnInit {
     }));
   });
 
+  /** Recherche de la barre au-dessus des lignes — filtre local (lignes reçues entières). */
+  readonly lineSearch = signal('');
+  readonly filteredLineTableRows = computed(() =>
+    searchTableRows(this.lineTableRows(), this.lineTableColumns(), this.lineSearch()));
+
   // ═══ Cycle de vie ═════════════════════════════════════════════════════════
 
   /**
@@ -385,7 +402,7 @@ export class InvoiceDetailComponent implements OnInit {
       case 'DRAFT':          return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.SUBMIT'),   'send'),        run: () => this.submitForReview() };
       case 'RETURNED':       return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.RESUBMIT'), 'send'),        run: () => this.submitForReview() };
       case 'SUBMITTED':      return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.CONFIRM'),  'check_circle'), run: () => this.approve('APPROVE') };
-      case 'APPROVED':       return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.EMIT'),     'outbox'),      run: () => this.emit() };
+      case 'APPROVED':       return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.EMIT'),     'outbox'),      run: () => this.openEmitModal() };
       case 'EMITTED':        return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.MARK_SENT'), 'mark_email_read'), run: () => this.markSent() };
       case 'SENT':
       case 'PARTIALLY_PAID': return { options: btn(t('INVOICING.LIFECYCLE.ACTIONS.RECORD_PAYMENT'), 'payments'), run: () => this.openPaymentModal() };
@@ -442,6 +459,52 @@ export class InvoiceDetailComponent implements OnInit {
   private openResolveModal(): void {
     this.openCommentModal('INVOICING.LIFECYCLE.RESOLVE_TITLE', 'INVOICING.LIFECYCLE.RESOLVE_NOTES',
       () => this.submitResolve());
+  }
+
+  readonly emitDateConfig = computed<MultiDatePickerConfig>(() => {
+    this.translate.currentLang();
+    return {
+      label:         this.translate.instant('INVOICING.LIFECYCLE.EMIT_DATE'),
+      hint:          this.translate.instant('INVOICING.LIFECYCLE.EMIT_DATE_HINT'),
+      error:         this.emitDateError() ? this.translate.instant('INVOICING.LIFECYCLE.EMIT_DATE_REQUIRED') : undefined,
+      selectionMode: 'single',
+      required:      true,
+      allowPastDays: true,
+      allowWeekends: true,
+      maxDate:       new Date(),
+      fullWidth:     true,
+      inline:        true,
+    };
+  });
+
+  /** « Émettre » demande d'abord la date d'émission — elle devient `dateEmission`. */
+  private openEmitModal(): void {
+    this.emitDate.set(new Date());
+    this.emitDateError.set(false);
+    const ref = this.modals.open({
+      title: this.translate.instant('INVOICING.LIFECYCLE.EMIT_TITLE'),
+      size:  'md',
+      body:  this.emitDateTpl(),
+      buttons: [
+        { label: this.translate.instant('INVOICING.DETAIL.CANCEL'), variant: 'secondary', action: r => r.close() },
+        {
+          label: this.translate.instant('INVOICING.LIFECYCLE.ACTIONS.EMIT'),
+          variant: 'primary',
+          action: () => {
+            const date = this.emitDate();
+            if (!date) { this.emitDateError.set(true); return; }
+            ref.close();
+            this.emit(date);
+          },
+        },
+      ],
+    });
+  }
+
+  onEmitDateChange(v: Date | Date[] | null): void {
+    const d = Array.isArray(v) ? (v[0] ?? null) : v;
+    this.emitDate.set(d);
+    if (d) this.emitDateError.set(false);
   }
 
   private openCommentModal(titleKey: string, fieldKey: string, run: () => void, required = false): void {
@@ -509,7 +572,7 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   submitForReview(): void { this.run(id => this.svc.submit(id)); }
-  emit():            void { this.run(id => this.svc.emit(id)); }
+  emit(date: Date):  void { this.run(id => this.svc.emit(id, toIsoDate(date))); }
   markSent():        void { this.run(id => this.svc.markSent(id)); }
 
   approve(decision: 'APPROVE' | 'RETURN' | 'REJECT'): void {

@@ -25,7 +25,14 @@
       (onClick)="openCreate()" />
   </div>
 
-  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()">
+  <!-- Recherche + outils du tableau (réinitialiser, colonnes) à droite. -->
+  <daf-search-toolbar
+    [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+    [value]="search()" [debounce]="200"
+    (valueChange)="search.set($event)"
+    [table]="rulesTable" />
+
+  <daf-data-table #rulesTable [columns]="columns()" [rows]="filteredRows()" [config]="config()">
 
     <ng-template dafCell="rule" let-row>
       <div class="flex flex-col leading-snug">

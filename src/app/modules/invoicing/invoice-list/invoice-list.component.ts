@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -31,6 +31,9 @@ type ViewMode = 'grid' | 'list';
   templateUrl: './invoice-list.component.html',
 })
 export class InvoiceListComponent implements OnInit {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(InvoicesTableSectionComponent);
+
   private readonly svc       = inject(InvoiceService);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);

@@ -93,9 +93,15 @@
     </div>
 
     <!-- ── Projection mois par mois ─────────────────────────────────────── -->
-    <daf-data-table
+    <daf-search-toolbar
+      [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+      [value]="bucketSearch()" [debounce]="200"
+      (valueChange)="bucketSearch.set($event)"
+      [table]="bucketTable" />
+
+    <daf-data-table #bucketTable
       [columns]="bucketColumns()"
-      [rows]="bucketRows()"
+      [rows]="filteredBucketRows()"
       [config]="bucketConfig()">
 
       <ng-template dafCell="period" let-row>
@@ -147,7 +153,13 @@
     <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start">
 
       <div style="flex:1 1 380px; min-width:0">
-        <daf-data-table
+        <daf-search-toolbar class="mb-4 block"
+          [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+          [value]="inflowSearch()" [debounce]="200"
+          (valueChange)="onInflowSearch($event)"
+          [table]="inflowTable" />
+
+        <daf-data-table #inflowTable
           [columns]="flowColumns()"
           [rows]="inflowRows()"
           [config]="inflowFlowConfig()"
@@ -198,7 +210,13 @@
       </div>
 
       <div style="flex:1 1 380px; min-width:0">
-        <daf-data-table
+        <daf-search-toolbar class="mb-4 block"
+          [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+          [value]="outflowSearch()" [debounce]="200"
+          (valueChange)="onOutflowSearch($event)"
+          [table]="outflowTable" />
+
+        <daf-data-table #outflowTable
           [columns]="flowColumns()"
           [rows]="outflowRows()"
           [config]="outflowFlowConfig()"

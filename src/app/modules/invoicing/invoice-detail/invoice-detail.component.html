@@ -175,9 +175,15 @@
             <!-- Une seule table : `daf-data-table` gère déjà son propre défilement
                  horizontal, ce qui remplace la version « mobile » en cartes qui
                  dupliquait chaque montant dans un second balisage. -->
-            <daf-data-table
+            <daf-search-toolbar
+              [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+              [value]="lineSearch()" [debounce]="200"
+              (valueChange)="lineSearch.set($event)"
+              [table]="linesTable" />
+
+            <daf-data-table #linesTable
               [columns]="lineTableColumns()"
-              [rows]="lineTableRows()"
+              [rows]="filteredLineTableRows()"
               [config]="lineTableConfig()">
 
               <ng-template dafCell="description" let-row>
@@ -267,6 +273,14 @@
 @if (showCreditNote() && invoice()) {
   <app-credit-note-modal [invoice]="invoice()!" (closed)="onCreditNoteClosed($event)" />
 }
+
+<!-- Corps de modale « Émettre » : date d'émission -->
+<ng-template #emitDateTpl>
+  <daf-multi-date-picker
+    [config]="emitDateConfig()"
+    [value]="emitDate()"
+    (valueChange)="onEmitDateChange($event)" />
+</ng-template>
 
 <!-- Corps de modale : commentaire de retour / motif de litige / note de résolution -->
 <ng-template #commentTpl>

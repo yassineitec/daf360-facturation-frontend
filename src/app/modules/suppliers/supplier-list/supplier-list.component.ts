@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -67,6 +67,9 @@ function toPresence(raw: unknown): PresenceFilter {
   templateUrl: './supplier-list.component.html',
 })
 export class SupplierListComponent implements OnInit {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(SuppliersTableSectionComponent);
+
   private readonly svc        = inject(SupplierService);
   private readonly clientSvc  = inject(ClientService);
   private readonly factListSvc = inject(FactListService);

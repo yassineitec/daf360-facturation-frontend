@@ -45,8 +45,15 @@
         <div class="banner-error">{{ createThresholdError() }}</div>
       }
 
+      <!-- `[card]="false"` : déjà dans la daf-section-card. -->
+      <daf-search-toolbar [card]="false"
+        [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+        [value]="thresholdSearch()" [debounce]="200"
+        (valueChange)="thresholdSearch.set($event)"
+        [table]="thresholdTable" />
+
       <div class="table-wrap">
-        <daf-data-table
+        <daf-data-table #thresholdTable
           [columns]="thresholdColumns()"
           [rows]="thresholdRows()"
           [config]="thresholdTableConfig()"
@@ -155,8 +162,14 @@
       @if (listLoading()) {
         <div class="loading-state">{{ 'COST.CONFIG.LIST_LOADING' | translate }}</div>
       } @else {
+        <daf-search-toolbar [card]="false"
+          [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+          [value]="listValueSearch()" [debounce]="200"
+          (valueChange)="listValueSearch.set($event)"
+          [table]="listValueTable" />
+
         <div class="table-wrap">
-          <daf-data-table
+          <daf-data-table #listValueTable
             [columns]="listValueColumns()"
             [rows]="listValueRows()"
             [config]="listValueTableConfig()"

@@ -1,4 +1,4 @@
-import { Component, TemplateRef, ViewChild, computed, inject, input, signal } from '@angular/core';
+import { Component, TemplateRef, ViewChild, computed, inject, input, signal, viewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, CardComponent, DrawerComponent, DrawerConfig, FormFieldComponent,
@@ -34,6 +34,9 @@ type ViewMode = 'grid' | 'list';
   templateUrl: './ordres-st-tab.component.html',
 })
 export class OrdresStTabComponent {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(OstTableSectionComponent);
+
   paysId = input<number | null>(null);
 
   private readonly svc        = inject(SubcontractingService);

@@ -203,7 +203,16 @@
         </div>
       </daf-accordion-card>
 
-      <daf-data-table [columns]="tauxHistoryColumns()" [rows]="tauxHistoryRows()" [config]="tauxHistoryConfig()">
+      <!-- Barre ajoutée pour porter [table] : réinitialiser + choix des colonnes à droite. -->
+      <daf-search-toolbar
+        [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+        [value]="tauxHistorySearch()" [debounce]="200"
+        (valueChange)="tauxHistorySearch.set($event)"
+        [filterFields]="tauxHistoryFilterFields()"
+        [filterConfig]="tauxHistoryFilterConfig()"
+        (filterApply)="onTauxHistoryFilterApply($event)"
+        [table]="tauxHistoryTable" />
+      <daf-data-table #tauxHistoryTable [columns]="tauxHistoryColumns()" [rows]="filteredTauxHistoryRows()" [config]="tauxHistoryConfig()">
         <ng-template dafCell="mtClient" let-row>
           @if ($any(row['_line'])?.statut === 'EN_ATTENTE_CLIENT') {
             <div class="inline-flex items-center w-28 border border-outline-variant rounded px-1 py-0.5">
@@ -464,7 +473,17 @@
       @if (loadingTmHistory()) {
         <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.LOADING' | translate }}</p>
       } @else {
-        <daf-data-table [columns]="tmHistoryColumns()" [rows]="tmHistoryRows()" [config]="tmHistoryConfig()" />
+        <!-- Barre ajoutée pour porter [table] : réinitialiser + choix des colonnes à droite.
+             card="false" : déjà dans la daf-card de l'historique. -->
+        <daf-search-toolbar [card]="false"
+          [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+          [value]="tmHistoryCardSearch()" [debounce]="200"
+          (valueChange)="tmHistoryCardSearch.set($event)"
+          [filterFields]="historyFilterFields()"
+          [filterConfig]="tmHistoryCardFilterConfig()"
+          (filterApply)="onTmHistoryCardFilterApply($event)"
+          [table]="tmHistoryTable" />
+        <daf-data-table #tmHistoryTable [columns]="tmHistoryColumns()" [rows]="filteredTmHistoryRows()" [config]="tmHistoryConfig()" />
         @if (cancelLineError()) {
           <p class="mt-2 text-[12px] text-danger">{{ cancelLineError() }}</p>
         }
@@ -602,7 +621,8 @@
                 [filterFields]="historyFilterFields()"
                 [filterConfig]="historyFilterConfig()"
                 (filterApply)="onHistoryFilterApply($event)"
-                (filterReset)="onHistoryStatutReset()" />
+                (filterReset)="onHistoryStatutReset()"
+                [table]="tmHistoryPopupTable" />
               <!-- Même bibliothèque (daf-button + xlsx) que la carte — exporte ici la
                    sélection filtrée plutôt que tout l'historique. -->
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
@@ -610,7 +630,7 @@
                                         disabled: !filteredHistoryLines().length }"
                 (onClick)="exportHistoryExcel(filteredHistoryLines())" />
             </div>
-            <daf-data-table [columns]="tmHistoryColumns()" [rows]="paginatedHistoryRows()" [config]="tmHistoryPopupConfig()"
+            <daf-data-table #tmHistoryPopupTable [columns]="tmHistoryColumns()" [rows]="paginatedHistoryRows()" [config]="tmHistoryPopupConfig()"
               (sortChange)="onHistoryPopupSort($event)" (resetClick)="onHistoryPopupSort(null)" />
             <!-- TEST : daf-pagination de la lib — mêmes signaux historyPage/historyPageSize
                  que la popup Historique du mode Livrable (une seule popup affichée à la
@@ -660,9 +680,18 @@
         } @else {
           <!-- Colonnes "Nouveau %" (input éditable) et "Statut" (badge du batch en cours)
                en `dafCell`, même mécanisme que affaire-ressources-tab.component.html. -->
-          <daf-data-table
+          <!-- Barre ajoutée pour porter [table] : réinitialiser + choix des colonnes à droite. -->
+          <daf-search-toolbar [card]="false"
+            [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+            [value]="livrablePendingSearch()" [debounce]="200"
+            (valueChange)="livrablePendingSearch.set($event)"
+            [filterFields]="livrablePendingFilterFields()"
+            [filterConfig]="livrablePendingFilterConfig()"
+            (filterApply)="onLivrablePendingFilterApply($event)"
+            [table]="livrablePendingTable" />
+          <daf-data-table #livrablePendingTable
             [columns]="livrablePendingColumns()"
-            [rows]="livrablePendingRows()"
+            [rows]="filteredLivrablePendingRows()"
             [config]="livrablePendingConfig()">
 
             <ng-template dafCell="nouveauPct" let-row>
@@ -850,7 +879,17 @@
           </div>
         </div>
       </div>
-      <daf-data-table [columns]="livrableHistoryColumns()" [rows]="livrableHistoryRows()" [config]="livrableHistoryConfig()" />
+      <!-- Barre ajoutée pour porter [table] : réinitialiser + choix des colonnes à droite.
+           card="false" : déjà dans la daf-card de l'historique. -->
+      <daf-search-toolbar [card]="false"
+        [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+        [value]="livrableHistoryCardSearch()" [debounce]="200"
+        (valueChange)="livrableHistoryCardSearch.set($event)"
+        [filterFields]="livrableHistoryCardFilterFields()"
+        [filterConfig]="livrableHistoryCardFilterConfig()"
+        (filterApply)="onLivrableHistoryCardFilterApply($event)"
+        [table]="livrableHistoryTable" />
+      <daf-data-table #livrableHistoryTable [columns]="livrableHistoryColumns()" [rows]="searchedLivrableHistoryCardRows()" [config]="livrableHistoryConfig()" />
     </daf-card>
     }
 
@@ -887,13 +926,14 @@
                 [filterFields]="livrableHistoryFilterFields()"
                 [filterConfig]="livrableHistoryFilterConfig()"
                 (filterApply)="onLivrableHistoryFilterApply($event)"
-                (filterReset)="onHistoryStatutReset()" />
+                (filterReset)="onHistoryStatutReset()"
+                [table]="livrableHistoryPopupTable" />
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
                                         label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
                                         disabled: !filteredLivrableHistory().length }"
                 (onClick)="exportLivrableHistoryExcel(filteredLivrableHistory())" />
             </div>
-            <daf-data-table [columns]="livrableHistoryColumns()" [rows]="paginatedLivrableHistoryRows()" [config]="livrableHistoryPopupConfig()"
+            <daf-data-table #livrableHistoryPopupTable [columns]="livrableHistoryColumns()" [rows]="paginatedLivrableHistoryRows()" [config]="livrableHistoryPopupConfig()"
               (sortChange)="onLivrableHistoryPopupSort($event)" (resetClick)="onLivrableHistoryPopupSort(null)" />
             <!-- TEST : daf-pagination de la lib — voir le commentaire détaillé sur la
                  popup Historique du mode Régie. -->

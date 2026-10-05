@@ -49,7 +49,8 @@
     (filterApply)="applyFilters($event)"
     [views]="viewOptions()"
     [view]="viewMode()"
-    (viewChange)="viewMode.set($any($event))" />
+    (viewChange)="viewMode.set($any($event))"
+    [table]="tableSection()?.table() ?? null" />
 
   <!-- `daf-field-message` : la ligne de message de la lib, la même sur toutes les pages. -->
   @if (error(); as err) {

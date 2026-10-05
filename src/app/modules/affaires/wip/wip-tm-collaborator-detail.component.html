@@ -25,6 +25,12 @@
     </div>
   </div>
 
-  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()" />
+  <!-- Barre ajoutée pour porter [table] : réinitialiser + choix des colonnes à droite. -->
+  <daf-search-toolbar [card]="false"
+    [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+    [value]="search()" [debounce]="200"
+    (valueChange)="search.set($event)"
+    [table]="detailTable" />
+  <daf-data-table #detailTable [columns]="columns()" [rows]="filteredRows()" [config]="config()" />
 
 </div>

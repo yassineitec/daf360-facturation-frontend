@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked, viewChild } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, DafCellDirective, DataTableComponent, SortDirection, TableColumn, TableConfig, TableRow,
@@ -24,8 +24,9 @@ export interface CostLineSort {
  * (`costCategory.labelFr`) : Spring Data en fait une jointure externe, une ligne sans
  * catégorie reste donc dans la liste.
  */
+// Pas de `supplier` : le nom d'un fournisseur lié n'est pas un champ de `CostLine`
+// (seul supplierId l'est) — la colonne ne se trie qu'en tri local.
 const SERVER_SORT_FIELD: Record<string, string> = {
-  label:    'label',
   category: 'costCategory.labelFr',
   date:     'transactionDate',
   net:      'netAmountLocal',
@@ -63,11 +64,11 @@ const SERVER_SORT_FIELD: Record<string, string> = {
       (sortChange)="onSortChange($event.key, $event.dir)"
       (resetClick)="onSortChange('', null)">
 
-      <!-- Description carries its reference as a second line rather than spending a
+      <!-- Supplier carries the line's reference as a second line rather than spending a
            whole column on it. -->
-      <ng-template dafCell="label" let-row>
+      <ng-template dafCell="supplier" let-row>
         <div class="flex flex-col leading-snug">
-          <span class="font-medium text-on-surface">{{ row['_label'] }}</span>
+          <span class="font-medium text-on-surface">{{ row['_supplier'] }}</span>
           @if (row['_reference']) {
             <span class="font-mono text-[11px] text-outline">{{ row['_reference'] }}</span>
           }
@@ -95,6 +96,10 @@ const SERVER_SORT_FIELD: Record<string, string> = {
 })
 export class CostLinesTableSectionComponent {
   private readonly translate = inject(TranslateService);
+
+  /** Le tableau rendu — la page le passe à `daf-search-toolbar` (`[table]`) pour placer
+   *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
+  readonly table = viewChild(DataTableComponent);
   private readonly currency  = inject(DisplayCurrencyPipe);
 
   lines        = input.required<CostLineDto[]>();
@@ -131,8 +136,8 @@ export class CostLinesTableSectionComponent {
     const sortable = (key: string) => !this.serverSort() || key in SERVER_SORT_FIELD;
     const raw = (row: TableRow) => row['_raw'] as CostLineDto;
     return [
-      { key: 'label',    label: t('COST.LINES.COL_DESCRIPTION'), type: 'custom', sortable: sortable('label'),
-        sortAccessor: row => (raw(row).label ?? '').toLowerCase() },
+      { key: 'supplier', label: t('COST.LINES.COL_SUPPLIER'),    type: 'custom', sortable: sortable('supplier'),
+        sortAccessor: row => (raw(row).supplierName ?? '').toLowerCase() },
       { key: 'category', label: t('COST.LINES.COL_CATEGORY'),    type: 'text',   sortable: sortable('category') },
       { key: 'date',     label: t('COST.LINES.COL_DATE'),        type: 'text',   sortable: sortable('date'),
         sortAccessor: row => raw(row).transactionDate },
@@ -172,7 +177,7 @@ export class CostLinesTableSectionComponent {
         } satisfies BadgeCell,
 
         // Rendered by the projected cells above.
-        _label:      line.label ?? '—',
+        _supplier:   line.supplierName ?? t('COST.LINES.NO_SUPPLIER_CARD'),
         _reference:  line.reference ?? '',
         _canEdit:      canEdit(line),
         _canSubmit:    canSubmit(line),

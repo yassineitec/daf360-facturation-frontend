@@ -43,7 +43,8 @@
       (filterReset)="resetHistoryFilters()"
       [views]="viewOptions()"
       [view]="viewMode()"
-      (viewChange)="onViewChange($any($event))" />
+      (viewChange)="onViewChange($any($event))"
+      [table]="table() ?? null" />
 
     @if (loadError()) {
       <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">

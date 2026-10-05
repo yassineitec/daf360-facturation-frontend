@@ -9,7 +9,6 @@ import {
   StatusBadgeComponent, BadgeVariant,
   FormFieldComponent,
   SearchToolbarComponent, SearchToolbarFilterConfig, FilterField, FilterResult,
-  SelectComponent, SelectOption,
   ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 import {
@@ -22,7 +21,7 @@ import {
 // ordinary invoicing lifecycle endpoints instead of BillingService.
 import { InvoiceService } from '../../invoicing/invoice.service';
 import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
-import { TableSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
+import { TableSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 type ActiveTab = 'df' | 'history';
 // Three tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
@@ -132,7 +131,7 @@ function affaireOptions(rows: { affaireId: number | null; affaireRef: string | n
     RouterLink, TranslatePipe, DataTableComponent, DafCellDirective,
     PageComponent, PageHeaderComponent, MetricCardComponent,
     TabsComponent, StatusBadgeComponent, FormFieldComponent, PaginationComponent,
-    SearchToolbarComponent, SelectComponent,
+    SearchToolbarComponent,
   ],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
@@ -666,13 +665,16 @@ export class ApprovalQueueComponent implements OnInit {
     search: string,
     filter: FilterResult,
   ) {
-    const q     = search.trim().toLowerCase();
     const motif = filter['motif'] as string | null;
-    return rows.filter(r => {
-      if (q && !`${r.affaireRef} ${r.affaireIntitule} ${r.reference}`.toLowerCase().includes(q)) return false;
-      if (motif && r._raw.creditNoteReason !== motif) return false;
-      return true;
-    });
+    // Recherche sur les colonnes affichées (searchTableRows : casse et accents ignorés,
+    // chaque mot doit se trouver dans une colonne) + l'intitulé d'affaire, affiché sous la
+    // référence mais absent de la valeur de la colonne « affaire » (affaireRef).
+    const searchCols: TableColumn[] = [
+      ...this.creditNoteColumns(),
+      { key: 'affaireIntitule', label: 'intitule' },
+    ];
+    return searchTableRows(rows, searchCols, search)
+      .filter(r => !motif || r._raw.creditNoteReason === motif);
   }
 
   readonly filteredCreditNoteRowsForfait = computed(() =>
@@ -825,19 +827,22 @@ export class ApprovalQueueComponent implements OnInit {
 
   readonly tableConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
-    // Test : choix des colonnes + réinitialiser sortis de la ligne de la lib (masquée ici)
-    // et posés dans le bandeau de recherche, au-dessus du tableau — voir l'.html.
-    return {
-      hoverable: true, showHeader: false, ...this.tableExtras(this.historySort),
-      columnPicker: false, showReset: false,
-    };
+    return { hoverable: true, showHeader: false, ...this.tableExtras(this.historySort) };
   });
 
-  /** Tableau de l'historique : ses colonnes visibles et son reset sont pilotés depuis le bandeau. */
+  /** Tableau de l'historique — passé au `[table]` de sa barre : réinitialiser + choix des
+   *  colonnes à droite du bouton Filtres. */
   readonly historyTable = viewChild<DataTableComponent>('historyTable');
 
-  readonly historyColumnOptions = computed<SelectOption[]>(() =>
-    this.historyColumns().map(col => ({ value: col.key, label: col.label })));
+  /** Tableau PRINCIPAL du sous-onglet DF actif (lignes forfait / régie, ou batches livrables),
+   *  passé au `[table]` de la barre du bandeau. Un seul existe à la fois (blocs @if exclusifs).
+   *  Les tableaux d'avoirs ont leur propre barre, voir `creditNoteTable`. */
+  readonly dfMainTable = viewChild<DataTableComponent>('dfMainTable');
+
+  /** Tableau d'avoirs du sous-onglet DF actif, passé au `[table]` de sa propre barre
+   *  (au-dessus de lui) : réinitialiser + choix des colonnes à droite du bouton Filtres.
+   *  Un seul existe à la fois (un par onglet, blocs @if exclusifs). */
+  readonly creditNoteTable = viewChild<DataTableComponent>('creditNoteTable');
 
   // ── Row action buttons — rendered as icon buttons in a trailing column by
   // daf-data-table itself (config.actions), same as the library demo's table. ──

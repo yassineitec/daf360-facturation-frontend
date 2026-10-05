@@ -5,7 +5,7 @@ import { forkJoin } from 'rxjs';
 import {
   ButtonComponent, DafCellDirective, DataTableComponent,
   FormFieldComponent, MetricCardComponent, PageComponent, PageHeaderComponent,
-  SectionCardComponent, TabsComponent,
+  SearchToolbarComponent, SectionCardComponent, TabsComponent,
   tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
@@ -23,7 +23,7 @@ import { PaymentModalComponent } from '../../invoicing/payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { daysPastDue, formatDate, offsetLabel, retardVariant } from '../payments-display';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 
 /** Tri de la colonne statut des relances : l'ordre du cycle d'une relance. */
 const REMINDER_STATE_RANK: Record<string, number> = { pending: 0, suspended: 1, sent: 2 };
@@ -68,7 +68,7 @@ interface KpiTile {
     TranslatePipe, PermissionDirective,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent, FormFieldComponent,
-    DataTableComponent, DafCellDirective, PaymentModalComponent,
+    DataTableComponent, DafCellDirective, SearchToolbarComponent, PaymentModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -335,6 +335,27 @@ export class RecouvrementDetailComponent implements OnInit {
     });
   });
 
+  /**
+   * Recherche de la barre au-dessus de l'échéancier — filtre local (liste entière).
+   * Les accesseurs de tri lisent des valeurs brutes (décalage, rang) : la recherche lit
+   * plutôt le texte affiché par les gabarits (palier, pastille de statut, motif).
+   */
+  readonly reminderSearch = signal('');
+  readonly filteredReminderRows = computed(() => {
+    const t = (k: string) => this.translate.instant(k);
+    const STATE_KEY: Record<string, string> = {
+      sent:      'PAYMENTS.DETAIL.REMINDERS.STATUS_SENT',
+      suspended: 'PAYMENTS.DETAIL.REMINDERS.STATUS_SUSPENDED',
+      pending:   'PAYMENTS.DETAIL.REMINDERS.STATUS_PENDING',
+    };
+    const columns = this.reminderColumns().map((c): TableColumn => {
+      if (c.key === 'type')  return { ...c, sortAccessor: row => `${row['_label']} ${row['_offset']} ${row['_code']}` };
+      if (c.key === 'state') return { ...c, sortAccessor: row => `${t(STATE_KEY[row['_state'] as string] ?? '')} ${row['_reason']}` };
+      return { ...c, sortAccessor: undefined };
+    });
+    return searchTableRows(this.reminderRows(), columns, this.reminderSearch());
+  });
+
   readonly reminderConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
     return {
@@ -387,6 +408,20 @@ export class RecouvrementDetailComponent implements OnInit {
       _method: this.paymentModeLabel(p.paymentMethod),
       _ref:    p.bankReference?.trim() || '',
     }));
+  });
+
+  /**
+   * Recherche de la barre au-dessus des encaissements — filtre local (liste entière),
+   * sur le texte affiché (dates formatées, mode + référence, montant formaté).
+   */
+  readonly paymentSearch = signal('');
+  readonly filteredPaymentRows = computed(() => {
+    const columns = this.paymentColumns().map((c): TableColumn => {
+      if (c.key === 'date')   return { ...c, sortAccessor: row => `${row['_date']} ${row['_recordedAt']}` };
+      if (c.key === 'method') return { ...c, sortAccessor: row => `${row['_method']} ${row['_ref']}` };
+      return { ...c, sortAccessor: undefined };
+    });
+    return searchTableRows(this.paymentRows(), columns, this.paymentSearch());
   });
 
   /**

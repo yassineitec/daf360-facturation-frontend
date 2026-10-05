@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -36,6 +36,9 @@ type CostDecision = 'approve' | 'return' | 'reject';
   templateUrl: './cost-approval-queue.component.html',
 })
 export class CostApprovalQueueComponent implements OnInit {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(ApprovalTableSectionComponent);
+
   private readonly svc       = inject(CostService);
   private readonly clientSvc = inject(ClientService);
   private readonly hiringSvc = inject(HiringCostApprovalService);

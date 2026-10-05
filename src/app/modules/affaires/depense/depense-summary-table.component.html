@@ -9,7 +9,8 @@
     (valueChange)="search.set($event)"
     [filterFields]="filterFields()"
     [filterConfig]="filterConfig()"
-    (filterApply)="onFilterApply($event)">
+    (filterApply)="onFilterApply($event)"
+    [table]="summaryTable">
     <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full',
                               title: ('AFFAIRES.DEPENSE.ZOOM_TOOLTIP' | translate) }"
       (onClick)="zoomOpen.set(true)" />
@@ -20,7 +21,7 @@
       {{ 'AFFAIRES.DEPENSE.LOADING' | translate }}
     </p>
   }
-  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()"
+  <daf-data-table #summaryTable [columns]="columns()" [rows]="rows()" [config]="config()"
     (sortChange)="onSort($event)" (resetClick)="onSort(null)"
     (rowClick)="collaboratorSelected.emit($any($event)['email'])" />
 </div>
@@ -59,14 +60,15 @@
             (valueChange)="onSearchChange($event)"
             [filterFields]="filterFields()"
             [filterConfig]="filterConfig()"
-            (filterApply)="onFilterApply($event)" />
+            (filterApply)="onFilterApply($event)"
+            [table]="zoomTable" />
           <daf-button
             [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
                          label: ('AFFAIRES.DEPENSE.EXPORT_EXCEL' | translate),
                          disabled: !rows().length }"
             (onClick)="exportExcel()" />
         </div>
-        <daf-data-table [columns]="columns()" [rows]="paginatedRows()" [config]="config()"
+        <daf-data-table #zoomTable [columns]="columns()" [rows]="paginatedRows()" [config]="config()"
           (sortChange)="onSort($event)" (resetClick)="onSort(null)" />
         <!-- daf-pagination de la lib — même mécanisme que la popup Historique WIP, mais
              regroupée à droite (résumé + numéros de page + sélecteur) via l'override

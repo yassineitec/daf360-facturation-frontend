@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { TranslateService } from '@ngx-translate/core';
-import { DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { DataTableComponent, SearchToolbarComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { WipTmHourDto } from './wip.model';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 /**
  * WIP T&M preview, aggregated one row per collaborator — the flat Date -> Collaborateur ->
  * Discipline -> WBS -> Document list this used to render directly became unreadable on a
@@ -16,10 +16,16 @@ import { tableTools } from '../../../shared/table-tools';
 @Component({
   selector: 'app-wip-tm-detail-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableComponent],
+  imports: [DataTableComponent, SearchToolbarComponent, TranslatePipe],
   host: { class: 'block' },
   template: `
-    <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()"
+    <!-- Barre ajoutée pour porter [table] : réinitialiser + choix des colonnes à droite. -->
+    <daf-search-toolbar [card]="false"
+      [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+      [value]="search()" [debounce]="200"
+      (valueChange)="search.set($event)"
+      [table]="detailTable" />
+    <daf-data-table #detailTable [columns]="columns()" [rows]="filteredRows()" [config]="config()"
       (rowClick)="collaboratorSelected.emit($any($event)['userId'])" />
   `,
 })
@@ -69,6 +75,10 @@ export class WipTmDetailTableComponent {
       _cost:      a.totalCost,
     })),
   );
+
+  /** Recherche de la barre au-dessus du tableau, filtrée côté client. */
+  protected readonly search = signal('');
+  protected readonly filteredRows = computed(() => searchTableRows(this.rows(), this.columns(), this.search()));
 
   protected readonly config = computed<TableConfig>(() => ({
     showHeader: false,

@@ -52,9 +52,10 @@ function toIsoDay(d: Date): string {
         (valueChange)="search.set($event)"
         [filterFields]="filterFields()"
         [filterConfig]="filterConfig()"
-        (filterApply)="onFilter($event)" />
+        (filterApply)="onFilter($event)"
+        [table]="expenseTable" />
 
-      <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()" />
+      <daf-data-table #expenseTable [columns]="columns()" [rows]="rows()" [config]="config()" />
     </div>
 
     <ng-template #refuseTpl>

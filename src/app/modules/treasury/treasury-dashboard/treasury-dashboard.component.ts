@@ -4,7 +4,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   BarChartComponent, ButtonComponent, DafCellDirective, DataTableComponent,
   MetricCardComponent, PageComponent, PageHeaderComponent, PaginationComponent,
-  SectionCardComponent,
+  SearchToolbarComponent, SectionCardComponent,
 } from '@khalilrebhiitec/daf360';
 import type {
   BarChartBar, BarChartOptions, ButtonOptions, MetricCardOptions, MetricDelta,
@@ -17,7 +17,7 @@ import {
   TREASURY_HORIZONS, TreasuryHorizon,
 } from '../treasury.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
+import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 
 interface KpiTile {
   label:   string;
@@ -54,7 +54,7 @@ interface KpiTile {
     TranslatePipe, DisplayCurrencyPipe,
     PageComponent, PageHeaderComponent, SectionCardComponent,
     MetricCardComponent, ButtonComponent, BarChartComponent,
-    DataTableComponent, DafCellDirective, PaginationComponent,
+    DataTableComponent, DafCellDirective, PaginationComponent, SearchToolbarComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -294,6 +294,21 @@ export class TreasuryDashboardComponent implements OnInit {
     }));
   });
 
+  /**
+   * Recherche de la barre au-dessus de la projection — filtre local (horizon entier).
+   * Les accesseurs de tri lisent les montants bruts : la recherche lit le texte affiché
+   * (« août 2026 », montants formatés).
+   */
+  readonly bucketSearch = signal('');
+  readonly filteredBucketRows = computed(() => {
+    const shown: Record<string, string> = { period: '_period', net: '_net', cumul: '_cumul' };
+    const columns = this.bucketColumns().map((c): TableColumn => {
+      const key = shown[c.key];
+      return { ...c, sortAccessor: key ? row => row[key] as string : undefined };
+    });
+    return searchTableRows(this.bucketRows(), columns, this.bucketSearch());
+  });
+
   readonly bucketConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
     return {
@@ -354,17 +369,50 @@ export class TreasuryDashboardComponent implements OnInit {
   private readonly allInflows  = computed(() => this.summary()?.topEncaissements ?? []);
   private readonly allOutflows = computed(() => this.summary()?.topDecaissements ?? []);
 
-  readonly inflowTotalPages  = computed(() => this.pageCount(this.allInflows().length));
-  readonly outflowTotalPages = computed(() => this.pageCount(this.allOutflows().length));
-  readonly inflowTotal  = computed(() => this.allInflows().length);
-  readonly outflowTotal = computed(() => this.allOutflows().length);
+  // ── Recherche ─────────────────────────────────────────────────────────────
+  //
+  // Locale, AVANT tri et découpe : la pagination compte les flux trouvés, et une
+  // nouvelle recherche revient en première page.
+
+  readonly inflowSearch  = signal('');
+  readonly outflowSearch = signal('');
+
+  onInflowSearch(q: string): void {
+    this.inflowSearch.set(q);
+    this.inflowPage.set(0);
+  }
+
+  onOutflowSearch(q: string): void {
+    this.outflowSearch.set(q);
+    this.outflowPage.set(0);
+  }
+
+  /** Colonnes de recherche : le texte affiché par les gabarits, pas les valeurs de tri. */
+  private readonly flowSearchColumns = computed(() => {
+    const shown: Record<string, (row: TableRow) => string> = {
+      tiers:  row => `${row['_tiers']} ${row['_label']}`,
+      due:    row => row['_due'] as string,
+      amount: row => `${row['amount']} ${row['_origin'] ?? ''}`,
+    };
+    return this.flowColumns().map((c): TableColumn => ({ ...c, sortAccessor: shown[c.key] }));
+  });
+
+  private readonly filteredInflows = computed(() =>
+    searchTableRows(this.toFlowRows(this.allInflows()), this.flowSearchColumns(), this.inflowSearch()));
+  private readonly filteredOutflows = computed(() =>
+    searchTableRows(this.toFlowRows(this.allOutflows()), this.flowSearchColumns(), this.outflowSearch()));
+
+  readonly inflowTotalPages  = computed(() => this.pageCount(this.filteredInflows().length));
+  readonly outflowTotalPages = computed(() => this.pageCount(this.filteredOutflows().length));
+  readonly inflowTotal  = computed(() => this.filteredInflows().length);
+  readonly outflowTotal = computed(() => this.filteredOutflows().length);
 
   readonly inflowRows  = computed<TableRow[]>(() =>
-    this.slice(sortTableRows(this.toFlowRows(this.allInflows()), this.flowColumns(), this.inflowSort()),
+    this.slice(sortTableRows(this.filteredInflows(), this.flowColumns(), this.inflowSort()),
       this.inflowPage()));
 
   readonly outflowRows = computed<TableRow[]>(() =>
-    this.slice(sortTableRows(this.toFlowRows(this.allOutflows()), this.flowColumns(), this.outflowSort()),
+    this.slice(sortTableRows(this.filteredOutflows(), this.flowColumns(), this.outflowSort()),
       this.outflowPage()));
 
   private pageCount(total: number): number {

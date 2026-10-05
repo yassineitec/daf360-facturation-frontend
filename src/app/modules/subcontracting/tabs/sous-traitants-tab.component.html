@@ -35,7 +35,8 @@
     (filterApply)="applyFilters($event)"
     [views]="viewOptions()"
     [view]="viewMode()"
-    (viewChange)="viewMode.set($any($event))">
+    (viewChange)="viewMode.set($any($event))"
+    [table]="tableSection()?.table() ?? null">
     <daf-button
       *appHasPermission="'FACT_MANAGE_ST'"
       [options]="{ variant: 'teal', label: 'SUBCONTRACTING.ST.NEW' | translate, iconStart: 'add' }"

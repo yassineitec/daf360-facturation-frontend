@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -27,6 +27,9 @@ type ViewMode = 'grid' | 'list';
   templateUrl: './payments-dashboard.component.html',
 })
 export class PaymentsDashboardComponent implements OnInit {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(AgingTableSectionComponent);
+
   private readonly svc       = inject(PaymentService);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);

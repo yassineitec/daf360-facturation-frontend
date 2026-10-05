@@ -36,7 +36,7 @@ import { AffaireDepenseTabComponent } from './depense/affaire-depense-tab.compon
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
 import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
-import { tableTools } from '../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../shared/table-tools';
 import { STATUT_BADGE_VARIANT } from './affaire-display';
 import {
   INVOICE_STATUT_BADGE, TS_STATUT_BADGE, enumLabel,
@@ -2270,6 +2270,12 @@ export class AffaireDetailComponent implements OnInit {
         } satisfies BadgeCell,
       }));
   });
+
+  /** Recherche de la barre ajoutée au-dessus des échéances (elle porte `[table]` :
+   * réinitialiser + choix des colonnes). Filtre côté client sur les 6 lignes affichées. */
+  readonly deadlineSearch = signal('');
+  readonly filteredDeadlineRows = computed(() =>
+    searchTableRows(this.deadlineRows(), this.deadlineColumns(), this.deadlineSearch()));
 
   readonly deadlineConfig = computed<TableConfig>(() => ({
     showHeader:   false,

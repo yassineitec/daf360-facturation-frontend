@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked, viewChild } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, DataTableComponent, SortDirection, TableColumn, TableConfig, TableRow,
@@ -43,6 +43,10 @@ import {
 })
 export class EmployeeCostTableSectionComponent {
   private readonly translate = inject(TranslateService);
+
+  /** Le tableau rendu — la page le passe à `daf-search-toolbar` (`[table]`) pour placer
+   *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
+  readonly table = viewChild(DataTableComponent);
 
   costs        = input.required<EmployeeCostDto[]>();
   loading      = input(false);

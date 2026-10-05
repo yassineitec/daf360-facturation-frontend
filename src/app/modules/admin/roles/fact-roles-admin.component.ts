@@ -3,10 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { environment } from '../../../../environments/environment';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import {
   ButtonComponent, CardComponent, CheckboxComponent, PageHeaderComponent, BreadcrumbItem, AccordionCardComponent,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
+  SearchToolbarComponent,
 } from '@khalilrebhiitec/daf360';
 
 interface PermissionCodeItem { code: string; label: string; }
@@ -25,7 +26,7 @@ interface RoleListItem {
   standalone: true,
   imports: [
     FormsModule, TranslatePipe, ButtonComponent, CardComponent, CheckboxComponent, PageHeaderComponent, AccordionCardComponent,
-    DataTableComponent, DafCellDirective,
+    DataTableComponent, DafCellDirective, SearchToolbarComponent,
   ],
   template: `
 @if (!selectedRole()) {
@@ -45,7 +46,14 @@ interface RoleListItem {
     <!-- Fond partagé pour le tableau de rôles — même variante glass que la carte
          du bandeau d'onglets principal, au lieu d'un tableau nu sans arrière-plan. -->
     <daf-card [options]="{ variant: 'glass', padding: 'sm', radius: 'xl' }">
-      <daf-data-table [columns]="roleColumns()" [rows]="roleRows()" [config]="roleTableConfig()"
+      <!-- card="false" : déjà dans la daf-card ci-dessus. Recherche + outils du tableau à droite. -->
+      <daf-search-toolbar [card]="false"
+        [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+        [value]="roleSearch()" [debounce]="200"
+        (valueChange)="roleSearch.set($event)"
+        [table]="roleTable" />
+
+      <daf-data-table #roleTable [columns]="roleColumns()" [rows]="filteredRoleRows()" [config]="roleTableConfig()"
         (rowClick)="selectRole($event['_raw'])">
         <ng-template dafCell="name" let-row>
           <span class="role-name">{{ row['name'] }}</span>
@@ -201,6 +209,11 @@ export class FactRolesAdminComponent implements OnInit {
       _raw: r,
     }));
   });
+
+  /** Recherche texte côté client (tous les rôles arrivent en un appel). */
+  readonly roleSearch = signal('');
+  readonly filteredRoleRows = computed<TableRow[]>(() =>
+    searchTableRows(this.roleRows(), this.roleColumns(), this.roleSearch()));
 
   readonly roleTableConfig = computed<TableConfig>(() => ({
     showHeader: false,

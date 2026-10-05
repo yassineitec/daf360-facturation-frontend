@@ -76,9 +76,15 @@
             <!-- ── Tab 1 ─────────────────────────────────────────────────────── -->
             @if (activeTab() === 'info') {
               @if (mode === 'line') {
-                <daf-data-table
+                <daf-search-toolbar
+                  [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+                  [value]="approvalSearch()" [debounce]="200"
+                  (valueChange)="approvalSearch.set($event)"
+                  [table]="approvalTable" />
+
+                <daf-data-table #approvalTable
                   [columns]="approvalColumns()"
-                  [rows]="approvalRows()"
+                  [rows]="filteredApprovalRows()"
                   [config]="approvalConfig()">
 
                   <ng-template dafCell="decision" let-row>
@@ -323,6 +329,13 @@
             </span>
             <span class="text-body-md font-bold text-on-surface">{{ supplierName() ?? '—' }}</span>
           </div>
+          <!-- Recherche + outils du tableau (réinitialiser, colonnes) dans cette rangée
+               d'entête : `[card]="false"`, elle est déjà posée sur le fond du bandeau. -->
+          <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
+            [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+            [value]="ledgerSearch()" [debounce]="200"
+            (valueChange)="ledgerSearch.set($event)"
+            [table]="ledgerTable" />
           <div class="flex flex-wrap items-center gap-2">
             <!-- Mode 'supplier' a déjà ce bouton dans la carte d'identité (juste sous
                  "Nouvelle ligne de coût") -- le répéter ici serait redondant. Mode 'line'
@@ -349,7 +362,7 @@
             <daf-button
               [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
                            title: 'COST.DETAIL.LEDGER.EXPORT_EXCEL' | translate,
-                           disabled: !filteredLedgerRawRows().length }"
+                           disabled: !filteredLedgerRows().length }"
               (onClick)="exportLedgerExcel()" />
             <!-- Sans fond (`ghost`) : posé dans cette ligne de texte, pas au-dessus d'un
                  tableau -- une icône seule s'y fond mieux qu'un bouton plein. -->
@@ -362,9 +375,9 @@
         </div>
       }
 
-      <daf-data-table
+      <daf-data-table #ledgerTable
         [columns]="ledgerColumns()"
-        [rows]="ledgerRows()"
+        [rows]="filteredLedgerRows()"
         [config]="ledgerConfig()">
 
       <ng-template dafCell="actions" let-row>

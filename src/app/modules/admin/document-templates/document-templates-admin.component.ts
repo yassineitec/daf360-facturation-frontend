@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   ModalService, ModalRef, ButtonComponent, SelectComponent, SelectOption, CheckboxComponent, FormFieldComponent,
-  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell, SearchToolbarComponent,
 } from '@khalilrebhiitec/daf360';
 import { DocumentTemplateService } from './document-template.service';
 import {
@@ -13,7 +13,7 @@ import {
   DOCUMENT_TYPES, INVOICE_TEMPLATE_VARIABLES, TemplateVariableDef,
 } from './document-template.model';
 import { FilterPanelComponent } from '../../../shared/filter-panel/filter-panel.component';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 
 /**
  * Admin des maquettes de documents facturation éditables — même principe que
@@ -30,7 +30,7 @@ import { tableTools } from '../../../shared/table-tools';
   standalone: true,
   imports: [
     FormsModule, TranslatePipe, ButtonComponent, SelectComponent, CheckboxComponent, FormFieldComponent,
-    DataTableComponent, DafCellDirective, FilterPanelComponent,
+    DataTableComponent, DafCellDirective, FilterPanelComponent, SearchToolbarComponent,
   ],
   template: `
 <div class="tmpl-page">
@@ -64,7 +64,14 @@ import { tableTools } from '../../../shared/table-tools';
     <div class="banner banner--error">{{ pageError() }}</div>
   }
 
-  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="tableConfig()">
+  <!-- Recherche + outils du tableau (réinitialiser, colonnes) à droite. -->
+  <daf-search-toolbar
+    [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+    [value]="search()" [debounce]="200"
+    (valueChange)="search.set($event)"
+    [table]="tmplTable" />
+
+  <daf-data-table #tmplTable [columns]="columns()" [rows]="filteredRows()" [config]="tableConfig()">
     <ng-template dafCell="name" let-row>
       <div class="tmpl-name">{{ row['name'] }}</div>
       @if (row['_description']) { <div class="tmpl-desc">{{ row['_description'] }}</div> }
@@ -271,6 +278,11 @@ export class DocumentTemplatesAdminComponent implements OnInit {
       _raw: tpl,
     }));
   });
+
+  /** Recherche texte côté client (tous les modèles sont chargés en un appel). */
+  readonly search = signal('');
+  readonly filteredRows = computed<TableRow[]>(() =>
+    searchTableRows(this.rows(), this.columns(), this.search()));
 
   readonly tableConfig = computed<TableConfig>(() => {
     const t = (key: string) => this.translate.instant(key);

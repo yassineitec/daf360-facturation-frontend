@@ -240,7 +240,8 @@
     "TABLE": {
       "COLUMN_PICKER": "اختيار الأعمدة",
       "RESET": "إعادة تعيين عرض الجدول",
-      "SORT_BY": "ترتيب حسب {column}"
+      "SORT_BY": "ترتيب حسب {column}",
+      "SEARCH_PLACEHOLDER": "بحث…"
     }
   }
 }

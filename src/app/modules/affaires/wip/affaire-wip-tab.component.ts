@@ -22,10 +22,14 @@ import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../li
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
-import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
+import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 import { BILLING_LINE_STATUT_BADGE, WIP_TAUX_STATUT_BADGE, LIVRABLE_STATUT_BADGE, LIVRABLE_BATCH_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
 import { WipTmDetailTableComponent } from './wip-tm-detail-table.component';
 import { WipTmCollaboratorDetailComponent } from './wip-tm-collaborator-detail.component';
+
+/** Valeurs d'un panneau Filtres, à plat : select → code (`''` = tous), plage de dates →
+ *  `Date[] | null`, champ texte → texte saisi. Forme gardée par les tableaux de l'onglet WIP. */
+type WipFilterValues = Record<string, string | Date[] | null>;
 
 @Component({
   selector: 'app-affaire-wip-tab',
@@ -228,6 +232,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   livrableHistoryWbs = signal('');
   /** Livrable — budget alloué minimum, saisi en texte ('' = pas de borne). */
   livrableHistoryBudgetMin = signal('');
+  livrableHistoryBudgetMax = signal('');
 
   /** Portalé sous <body> pendant qu'elle est ouverte — même raison que positionPortal()
    * plus bas pour les calendriers : `position: fixed` se cale sur le premier ancêtre avec
@@ -306,6 +311,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.livrableHistoryDiscipline.set('');
     this.livrableHistoryWbs.set('');
     this.livrableHistoryBudgetMin.set('');
+    this.livrableHistoryBudgetMax.set('');
     this.historyPage.set(0);
   }
 
@@ -709,6 +715,70 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     _raw:       l,
   } satisfies TableRow)));
 
+  /** Recherche de la barre ajoutée au-dessus du tableau « Livrables en attente » (elle
+   * porte `[table]` : réinitialiser + choix des colonnes). Filtre côté client. */
+  readonly livrablePendingSearch  = signal('');
+  readonly livrablePendingFilters = signal<WipFilterValues>({});
+
+  readonly livrablePendingFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    const items = this.pendingLivrables();
+    // « Statut » = la colonne du tableau : le lot en cours du document, ou aucun.
+    const batchStatuses = [...new Set(items.map(l => this.livrableBatchStatus(l.id))
+      .filter((v): v is LivrableBatchStatut => !!v))].sort();
+    return [{
+      name:    'statut',
+      label:   t('AFFAIRES.WIP.COL_STATUS'),
+      type:    'select',
+      options: [
+        { value: 'NONE', label: t('AFFAIRES.WIP.FILTER_NO_BATCH') },
+        ...batchStatuses.map(value => ({ value, label: t('AFFAIRES.WIP.BATCH_STATUS_' + value) })),
+      ],
+    }, {
+      name: 'discipline', label: t('AFFAIRES.WIP.COL_DISCIPLINE'), type: 'select', searchable: true,
+      options: this.distinctOptions(items.map(l => l.disciplineLabel)),
+    }, {
+      name: 'wbs', label: t('AFFAIRES.WIP.COL_WBS'), type: 'select', searchable: true,
+      options: this.distinctOptions(items.map(l => l.wbsTitre)),
+    }, ...this.budgetRangeFields(), {
+      name:    'progress',
+      label:   t('AFFAIRES.WIP.FILTER_PROGRESS'),
+      type:    'select',
+      options: (['ZERO', 'IN_PROGRESS', 'ALMOST'] as const)
+        .map(value => ({ value, label: t('AFFAIRES.WIP.FILTER_PROGRESS_' + value) })),
+    }];
+  });
+
+  readonly livrablePendingFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    initialValues: this.filterSeed(this.livrablePendingFilters(), ['statut', 'discipline', 'wbs', 'progress']),
+  }));
+
+  onLivrablePendingFilterApply(result: FilterResult): void {
+    this.livrablePendingFilters.set(this.normalizeFilters(result));
+  }
+
+  /** % déjà facturé → tranche du filtre « Avancement actuel ». */
+  private progressBucket(pct: number): 'ZERO' | 'IN_PROGRESS' | 'ALMOST' {
+    return pct <= 0 ? 'ZERO' : pct >= 80 ? 'ALMOST' : 'IN_PROGRESS';
+  }
+
+  readonly filteredLivrablePendingRows = computed(() => {
+    const f        = this.livrablePendingFilters();
+    const statut   = this.filterText(f, 'statut');
+    const progress = this.filterText(f, 'progress');
+    const kept = this.filterLivrables(this.pendingLivrables(), {
+      discipline: this.filterText(f, 'discipline'), wbs: this.filterText(f, 'wbs'),
+      budgetMin: this.parseAmount(this.filterText(f, 'budgetMin')),
+      budgetMax: this.parseAmount(this.filterText(f, 'budgetMax')),
+    })
+      .filter(l => !statut || (this.livrableBatchStatus(l.id) ?? 'NONE') === statut)
+      .filter(l => !progress || this.progressBucket(l.pctFacture) === progress);
+    const ids = new Set(kept.map(l => l.id));
+    return searchTableRows(this.livrablePendingRows().filter(r => ids.has(r['id'] as number)),
+      this.livrablePendingColumns(), this.livrablePendingSearch());
+  });
+
   readonly livrablePendingConfig = computed<TableConfig>(() => ({
     showHeader:   false,
     hoverable:    true,
@@ -752,6 +822,35 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
 
   readonly livrableHistoryRows = computed<TableRow[]>(() =>
     this.livrableHistory().map(l => this.toLivrableHistoryRow(l)));
+
+  /** Recherche de la barre ajoutée au-dessus de l'historique Livrable de la carte (pas la
+   * popup « Afficher tout », qui a sa propre recherche `historySearch`). */
+  readonly livrableHistoryCardSearch  = signal('');
+  /** Filtres de la carte — ceux de la popup sauf « Statut » (l'historique ne liste que des
+   *  livrables facturés : une seule valeur). État à part de la popup, comme pour Régie. */
+  readonly livrableHistoryCardFilters = signal<WipFilterValues>({});
+
+  readonly livrableHistoryCardFilterFields = computed<FilterField[]>(() =>
+    this.livrableHistoryFilterFields().filter(field => field.name !== 'statut'));
+
+  readonly livrableHistoryCardFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    initialValues: this.filterSeed(this.livrableHistoryCardFilters(), ['discipline', 'wbs']),
+  }));
+
+  onLivrableHistoryCardFilterApply(result: FilterResult): void {
+    this.livrableHistoryCardFilters.set(this.normalizeFilters(result));
+  }
+
+  readonly searchedLivrableHistoryCardRows = computed(() => {
+    const f = this.livrableHistoryCardFilters();
+    const kept = this.filterLivrables(this.livrableHistory(), {
+      discipline: this.filterText(f, 'discipline'), wbs: this.filterText(f, 'wbs'),
+      budgetMin: this.parseAmount(this.filterText(f, 'budgetMin')),
+      budgetMax: this.parseAmount(this.filterText(f, 'budgetMax')),
+    });
+    return searchTableRows(kept.map(l => this.toLivrableHistoryRow(l)),
+      this.livrableHistoryColumns(), this.livrableHistoryCardSearch());
+  });
 
   readonly livrableHistoryConfig = computed<TableConfig>(() => ({
     showHeader:   false,
@@ -815,13 +914,20 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       type:       'select',
       searchable: true,
       options:    distinct(this.livrableHistory().map(l => l.wbsTitre)),
+    }, ...this.budgetRangeFields()];
+  });
+
+  /** Champs « Budget alloué min / max » — popup Livrable et tableaux Livrable de l'onglet. */
+  private budgetRangeFields(): FilterField[] {
+    const t = (k: string) => this.translate.instant(k);
+    return [{
+      name: 'budgetMin', label: t('AFFAIRES.WIP.HISTORY_FILTER_BUDGET_MIN'), type: 'text',
+      placeholder: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_PH'),
     }, {
-      name:        'budgetMin',
-      label:       t('AFFAIRES.WIP.HISTORY_FILTER_BUDGET_MIN'),
-      type:        'text',
+      name: 'budgetMax', label: t('AFFAIRES.WIP.HISTORY_FILTER_BUDGET_MAX'), type: 'text',
       placeholder: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_PH'),
     }];
-  });
+  }
 
   /** Seedé à chaque réouverture de la popup (`@if showHistoryPage`) — forme interne du
    * panneau : select → string[]. Libellés du panneau : défauts de la lib, comme avant. */
@@ -831,6 +937,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       discipline: this.livrableHistoryDiscipline() ? [this.livrableHistoryDiscipline()] : [],
       wbs:        this.livrableHistoryWbs()        ? [this.livrableHistoryWbs()]        : [],
       budgetMin:  this.livrableHistoryBudgetMin(),
+      budgetMax:  this.livrableHistoryBudgetMax(),
     },
   }));
 
@@ -839,6 +946,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.livrableHistoryDiscipline.set(this.asFilterValue(result, 'discipline'));
     this.livrableHistoryWbs.set(this.asFilterValue(result, 'wbs'));
     this.livrableHistoryBudgetMin.set(typeof result['budgetMin'] === 'string' ? result['budgetMin'] as string : '');
+    this.livrableHistoryBudgetMax.set(typeof result['budgetMax'] === 'string' ? result['budgetMax'] as string : '');
     this.historyPage.set(0);
   }
 
@@ -847,11 +955,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     const statut = this.historyStatut();
     const discipline = this.livrableHistoryDiscipline(), wbs = this.livrableHistoryWbs();
     const budgetMin  = this.parseAmount(this.livrableHistoryBudgetMin());
-    return this.livrableHistory()
-      .filter(l => !statut || l.statut === statut)
-      .filter(l => !discipline || l.disciplineLabel === discipline)
-      .filter(l => !wbs || l.wbsTitre === wbs)
-      .filter(l => budgetMin == null || (l.budgetAlloue ?? 0) >= budgetMin)
+    const budgetMax  = this.parseAmount(this.livrableHistoryBudgetMax());
+    return this.filterLivrables(this.livrableHistory(), { statut, discipline, wbs, budgetMin, budgetMax })
       .filter(l => !q || `${l.disciplineLabel} ${l.documentNom}`.toLowerCase().includes(q));
   });
 
@@ -1507,6 +1612,79 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     });
   });
 
+  /** Recherche + Filtres de la barre ajoutée au-dessus de l'historique des taux (AV). */
+  readonly tauxHistorySearch  = signal('');
+  readonly tauxHistoryFilters = signal<WipFilterValues>({});
+
+  readonly tauxHistoryFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [{
+      name:    'statut',
+      label:   t('AFFAIRES.WIP.COL_STATUS'),
+      type:    'select',
+      options: [...new Set(this.tauxHistory().map(x => x.statut))].sort()
+        .map(value => ({ value, label: enumLabel(this.translate, 'WIP_TAUX_STATUT', value) })),
+    }, {
+      name:  'period',
+      label: t('AFFAIRES.WIP.COL_PERIOD'),
+      type:  'daterange',
+    }, ...this.amountRangeFields(), {
+      name:    'invoicing',
+      label:   t('AFFAIRES.WIP.FILTER_INVOICING'),
+      type:    'select',
+      options: (['NONE', 'PARTIAL', 'FULL'] as const)
+        .map(value => ({ value, label: t('AFFAIRES.WIP.FILTER_INVOICING_' + value) })),
+    }, {
+      name:    'clientAmount',
+      label:   t('AFFAIRES.WIP.FILTER_CLIENT_AMOUNT'),
+      type:    'select',
+      options: (['PENDING', 'ENTERED'] as const)
+        .map(value => ({ value, label: t('AFFAIRES.WIP.FILTER_CLIENT_AMOUNT_' + value) })),
+    }];
+  });
+
+  readonly tauxHistoryFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    initialValues: this.filterSeed(this.tauxHistoryFilters(), ['statut', 'invoicing', 'clientAmount']),
+  }));
+
+  onTauxHistoryFilterApply(result: FilterResult): void {
+    this.tauxHistoryFilters.set(this.normalizeFilters(result, ['period']));
+  }
+
+  /** Avancement de la facturation d'une ligne de taux — mêmes valeurs que la colonne
+   *  « Facturé » (`_isComplete` / `_montantFacture`, voir tauxHistoryRows). */
+  private tauxInvoicing(row: TableRow): 'NONE' | 'PARTIAL' | 'FULL' {
+    if (row['_isComplete']) return 'FULL';
+    const done = row['_montantFacture'] as number | null;
+    return done != null && done >= 0.01 ? 'PARTIAL' : 'NONE';
+  }
+
+  readonly filteredTauxHistoryRows = computed(() => {
+    const f       = this.tauxHistoryFilters();
+    const statut  = this.filterText(f, 'statut');
+    const range   = this.dayRange(f['period']);
+    const min     = this.parseAmount(this.filterText(f, 'amountMin'));
+    const max     = this.parseAmount(this.filterText(f, 'amountMax'));
+    const billed  = this.filterText(f, 'invoicing');
+    const client  = this.filterText(f, 'clientAmount');
+    // Filtré sur les lignes déjà construites : le cumul reste celui de l'historique complet.
+    const rows = this.tauxHistoryRows().filter(row => {
+      const t    = row['_source'] as WipTauxDto;
+      const line = row['_line'] as (LineDetailDto & { clientApprovedAmount?: number | null }) | null;
+      if (statut && t.statut !== statut) return false;
+      // Chevauchement : la période du taux croise la plage choisie.
+      if (range && !(t.periodDateFrom.slice(0, 10) <= range[1] && t.periodDateTo.slice(0, 10) >= range[0])) return false;
+      if (min != null && t.montantIncremental < min) return false;
+      if (max != null && t.montantIncremental > max) return false;
+      if (billed && this.tauxInvoicing(row) !== billed) return false;
+      if (client === 'PENDING' && line?.statut !== 'EN_ATTENTE_CLIENT') return false;
+      if (client === 'ENTERED' && line?.clientApprovedAmount == null) return false;
+      return true;
+    });
+    return searchTableRows(rows, this.tauxHistoryColumns(), this.tauxHistorySearch());
+  });
+
   readonly tauxHistoryConfig = computed<TableConfig>(() => ({
     showHeader: false,
     hoverable:  false,
@@ -1769,6 +1947,28 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
 
   readonly tmHistoryRows = computed<TableRow[]>(() => this.tmHistory().map(l => this.toHistoryRow(l)));
 
+  /** Recherche de la barre ajoutée au-dessus de l'historique WIP de la carte Régie (pas la
+   * popup « Afficher tout », qui a sa propre recherche `historySearch`). */
+  readonly tmHistoryCardSearch  = signal('');
+  /** Filtres de la carte — mêmes champs que la popup (`historyFilterFields`), état à part :
+   *  filtrer la carte ne change pas ce qu'affiche « Afficher tout », et inversement. */
+  readonly tmHistoryCardFilters = signal<WipFilterValues>({});
+
+  readonly tmHistoryCardFilterConfig = computed<SearchToolbarFilterConfig>(() => ({
+    initialValues: this.filterSeed(this.tmHistoryCardFilters(), ['statut']),
+  }));
+
+  onTmHistoryCardFilterApply(result: FilterResult): void {
+    this.tmHistoryCardFilters.set(this.normalizeFilters(result, ['period']));
+  }
+
+  readonly filteredTmHistoryRows = computed(() => {
+    const f = this.tmHistoryCardFilters();
+    const lines = this.filterTmLines(this.tmHistory(), this.filterText(f, 'statut'), this.dayRange(f['period']),
+      this.parseAmount(this.filterText(f, 'amountMin')), this.parseAmount(this.filterText(f, 'amountMax')));
+    return searchTableRows(lines.map(l => this.toHistoryRow(l)), this.tmHistoryColumns(), this.tmHistoryCardSearch());
+  });
+
   readonly tmHistoryConfig = computed<TableConfig>(() => ({
     showHeader: false,
     hoverable:  false,
@@ -1832,6 +2032,82 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     return [this.toIso(first), this.toIso(last)];
   }
 
+  /** Statut, période (chevauchement) et bornes de montant — partagé par la carte Régie et sa
+   *  popup « Afficher tout ». `range` en jours 'yyyy-MM-dd'. */
+  private filterTmLines(lines: LineDetailDto[], statut: string, range: [string, string] | null,
+                        min: number | null, max: number | null): LineDetailDto[] {
+    return lines
+      .filter(l => !statut || l.statut === statut)
+      .filter(l => {
+        if (!range) return true;
+        const [start, end] = this.lineDayBounds(l);
+        return start <= range[1] && end >= range[0];
+      })
+      .filter(l => (min == null || l.montantHt >= min) && (max == null || l.montantHt <= max));
+  }
+
+  /** Discipline, WBS, statut et bornes de budget — partagé par les deux tableaux Livrable de
+   *  l'onglet et la popup « Afficher tout ». */
+  private filterLivrables(items: AffaireLivrableDto[], f: {
+    statut?: string; discipline: string; wbs: string; budgetMin: number | null; budgetMax: number | null;
+  }): AffaireLivrableDto[] {
+    return items
+      .filter(l => !f.statut || l.statut === f.statut)
+      .filter(l => !f.discipline || l.disciplineLabel === f.discipline)
+      .filter(l => !f.wbs || l.wbsTitre === f.wbs)
+      .filter(l => f.budgetMin == null || (l.budgetAlloue ?? 0) >= f.budgetMin)
+      .filter(l => f.budgetMax == null || (l.budgetAlloue ?? 0) <= f.budgetMax);
+  }
+
+  /** Champs « Montant HT min / max » communs aux panneaux Filtres de l'onglet. */
+  private amountRangeFields(): FilterField[] {
+    const t = (k: string) => this.translate.instant(k);
+    return [{
+      name: 'amountMin', label: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_MIN'), type: 'text',
+      placeholder: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_PH'),
+    }, {
+      name: 'amountMax', label: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_MAX'), type: 'text',
+      placeholder: t('AFFAIRES.WIP.HISTORY_FILTER_AMOUNT_PH'),
+    }];
+  }
+
+  /** Valeurs distinctes non vides, triées, en options de select (libellé = valeur). */
+  private distinctOptions(values: (string | null | undefined)[]): { value: string; label: string }[] {
+    return [...new Set(values.filter((v): v is string => !!v))].sort().map(value => ({ value, label: value }));
+  }
+
+  /** Résultat du panneau Filtres → valeurs à plat (voir `WipFilterValues`). */
+  private normalizeFilters(result: FilterResult, dateKeys: string[] = []): WipFilterValues {
+    const out: WipFilterValues = {};
+    for (const key of Object.keys(result)) {
+      const v = result[key];
+      out[key] = dateKeys.includes(key)
+        ? (Array.isArray(v) && v.length ? v as Date[] : null)
+        : this.asFilterValue(result, key);
+    }
+    return out;
+  }
+
+  /** Valeurs à plat → `initialValues` du panneau (un select y attend `string[]`). */
+  private filterSeed(values: WipFilterValues, selectKeys: string[]): FilterResult {
+    const seed: Record<string, string | string[] | Date[] | null> = {};
+    for (const [key, v] of Object.entries(values)) {
+      seed[key] = selectKeys.includes(key) ? (typeof v === 'string' && v ? [v] : []) : v;
+    }
+    return seed as FilterResult;
+  }
+
+  private filterText(values: WipFilterValues, key: string): string {
+    const v = values[key];
+    return typeof v === 'string' ? v : '';
+  }
+
+  /** Plage du panneau (1 ou 2 dates) → bornes en jours 'yyyy-MM-dd', ou null si vide. */
+  private dayRange(v: unknown): [string, string] | null {
+    if (!Array.isArray(v) || !v.length) return null;
+    return [this.toIso(v[0] as Date), this.toIso((v[1] ?? v[0]) as Date)];
+  }
+
   /** Borne de montant saisie en texte ('1 500,50' accepté) → nombre, ou null si vide/invalide. */
   private parseAmount(raw: string): number | null {
     const s = raw.replace(/\s/g, '').replace(',', '.');
@@ -1849,15 +2125,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     const to     = range?.length ? this.toIso(range[1] ?? range[0]) : null;
     const min    = this.parseAmount(this.historyAmountMin());
     const max    = this.parseAmount(this.historyAmountMax());
-    return this.tmHistory()
-      .filter(l => !statut || l.statut === statut)
-      // Chevauchement : la période WIP de la ligne croise la plage choisie.
-      .filter(l => {
-        if (!from || !to) return true;
-        const [start, end] = this.lineDayBounds(l);
-        return start <= to && end >= from;
-      })
-      .filter(l => (min == null || l.montantHt >= min) && (max == null || l.montantHt <= max))
+    return this.filterTmLines(this.tmHistory(), statut, from && to ? [from, to] : null, min, max)
       .filter(l => !q || `${l.periodDateFrom ?? ''} ${l.periodDateTo ?? ''} ${l.periodMonth}/${l.periodYear}`
         .toLowerCase().includes(q));
   });

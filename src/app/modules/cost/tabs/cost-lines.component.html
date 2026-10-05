@@ -32,7 +32,8 @@
     (filterApply)="applyFilters($event)"
     [views]="viewOptions()"
     [view]="viewMode()"
-    (viewChange)="setViewMode($any($event))">
+    (viewChange)="setViewMode($any($event))"
+    [table]="tableSection()?.table() ?? null">
     <daf-button
       [options]="{ variant: 'teal', label: 'COST.LINES.NEW_LINE' | translate, iconStart: 'add' }"
       (onClick)="openCreate()" />

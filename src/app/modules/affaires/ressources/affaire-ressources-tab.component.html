@@ -107,8 +107,14 @@
       {{ 'AFFAIRES.RESSOURCES.LOADING' | translate }}
     </div>
   } @else if (ressources().length) {
+    <!-- Barre ajoutée pour porter [table] : réinitialiser + choix des colonnes à droite. -->
+    <daf-search-toolbar class="block mb-3"
+      [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+      [value]="ressourcesSearch()" [debounce]="200"
+      (valueChange)="ressourcesSearch.set($event)"
+      [table]="ressourcesTable" />
     <div class="res-table-wrap">
-      <daf-data-table [columns]="ressourcesColumns()" [rows]="ressourcesRows()" [config]="ressourcesTableConfig()">
+      <daf-data-table #ressourcesTable [columns]="ressourcesColumns()" [rows]="filteredRessourcesRows()" [config]="ressourcesTableConfig()">
 
         <ng-template dafCell="collaborateur" let-row>
           <div class="cell-person">

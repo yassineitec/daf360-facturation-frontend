@@ -71,27 +71,32 @@
 
           <!-- Barre recherche/filtre du tableau PRINCIPAL de l'onglet actif, sur la même
                ligne que les pill-tabs — les tableaux secondaires (lignes forfaitaire,
-               avoirs) gardent la leur au-dessus d'eux, plus bas. -->
+               avoirs) gardent la leur au-dessus d'eux, plus bas.
+               `[table]` : réinitialiser + choix des colonnes du tableau principal à droite
+               du bouton Filtres (daf-table-tools de la lib). -->
           @if (activeDfSubTab() === 'forfaitaire') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
               [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
               [value]="lineForfaitSearch()" (valueChange)="onLineForfaitSearch($event)"
               [filterFields]="lineFilterFieldsForfait()" [filterConfig]="lineFilterConfigForfait()"
-              (filterApply)="onLineForfaitFilterApply($event)" />
+              (filterApply)="onLineForfaitFilterApply($event)"
+              [table]="dfMainTable() ?? null" />
           }
           @if (activeDfSubTab() === 'regie') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
               [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
               [value]="lineRegieSearch()" (valueChange)="onLineRegieSearch($event)"
               [filterFields]="lineFilterFieldsRegie()" [filterConfig]="lineFilterConfigRegie()"
-              (filterApply)="onLineRegieFilterApply($event)" />
+              (filterApply)="onLineRegieFilterApply($event)"
+              [table]="dfMainTable() ?? null" />
           }
           @if (activeDfSubTab() === 'livrable') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
               [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
               [value]="livrableBatchSearch()" (valueChange)="onLivrableBatchSearch($event)"
               [filterFields]="livrableBatchFilterFields()" [filterConfig]="livrableBatchFilterConfig()"
-              (filterApply)="onLivrableBatchFilterApply($event)" />
+              (filterApply)="onLivrableBatchFilterApply($event)"
+              [table]="dfMainTable() ?? null" />
           }
         </div>
 
@@ -120,7 +125,7 @@
                       <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
                     </div>
                   } @else {
-                    <daf-data-table
+                    <daf-data-table #dfMainTable
                       [columns]="lineColumns()"
                       [rows]="pagedLineRowsForfait()"
                       [config]="lineTableConfig()"
@@ -179,13 +184,25 @@
             @if (creditNotesForfait().length > 0) {
               <div class="flex flex-col gap-3">
 
+                <!-- Barre propre au tableau d'avoirs (recherche + filtre motif) ; `[table]` y
+                     place réinitialiser + choix des colonnes, à droite du bouton Filtres. -->
+                <div class="flex items-center rounded-xl bg-white p-3">
+                  <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
+                    [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+                    [value]="creditNoteForfaitSearch()" [debounce]="200"
+                    (valueChange)="onCreditNoteForfaitSearch($event)"
+                    [filterFields]="creditNoteFilterFields()" [filterConfig]="creditNoteFilterConfigForfait()"
+                    (filterApply)="onCreditNoteForfaitFilterApply($event)"
+                    [table]="creditNoteTable() ?? null" />
+                </div>
+
                 @if (filteredCreditNoteRowsForfait().length === 0) {
                   <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
                     <span class="material-symbols-outlined text-[32px]">search_off</span>
                     <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
                   </div>
                 } @else {
-                  <daf-data-table
+                  <daf-data-table #creditNoteTable
                     [columns]="creditNoteColumns()"
                     [rows]="pagedCreditNoteRowsForfait()"
                     [config]="creditNoteTableConfig()"
@@ -222,7 +239,7 @@
                   <daf-pagination
                     [currentPage]="creditNoteForfaitPage()"
                     [totalPages]="creditNoteForfaitTotalPages()"
-                    [totalElements]="creditNotesForfait().length"
+                    [totalElements]="filteredCreditNoteRowsForfait().length"
                     [pageSize]="creditNoteForfaitPageSize()"
                     [pageSizeOptions]="[10, 20, 50, 100]"
                     [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
@@ -252,7 +269,7 @@
                   <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
                 </div>
               } @else {
-                <daf-data-table
+                <daf-data-table #dfMainTable
                   [columns]="lineColumns()"
                   [rows]="pagedLineRowsRegie()"
                   [config]="lineTableConfig()"
@@ -309,13 +326,25 @@
             @if (creditNotesRegie().length > 0) {
               <div class="flex flex-col gap-3">
 
+                <!-- Barre propre au tableau d'avoirs (recherche + filtre motif) ; `[table]` y
+                     place réinitialiser + choix des colonnes, à droite du bouton Filtres. -->
+                <div class="flex items-center rounded-xl bg-white p-3">
+                  <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
+                    [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+                    [value]="creditNoteRegieSearch()" [debounce]="200"
+                    (valueChange)="onCreditNoteRegieSearch($event)"
+                    [filterFields]="creditNoteFilterFields()" [filterConfig]="creditNoteFilterConfigRegie()"
+                    (filterApply)="onCreditNoteRegieFilterApply($event)"
+                    [table]="creditNoteTable() ?? null" />
+                </div>
+
                 @if (filteredCreditNoteRowsRegie().length === 0) {
                   <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
                     <span class="material-symbols-outlined text-[32px]">search_off</span>
                     <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
                   </div>
                 } @else {
-                  <daf-data-table
+                  <daf-data-table #creditNoteTable
                     [columns]="creditNoteColumns()"
                     [rows]="pagedCreditNoteRowsRegie()"
                     [config]="creditNoteTableConfig()"
@@ -352,7 +381,7 @@
                   <daf-pagination
                     [currentPage]="creditNoteRegiePage()"
                     [totalPages]="creditNoteRegieTotalPages()"
-                    [totalElements]="creditNotesRegie().length"
+                    [totalElements]="filteredCreditNoteRowsRegie().length"
                     [pageSize]="creditNoteRegiePageSize()"
                     [pageSizeOptions]="[10, 20, 50, 100]"
                     [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
@@ -382,7 +411,7 @@
                   <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
                 </div>
               } @else {
-                <daf-data-table
+                <daf-data-table #dfMainTable
                   [columns]="livrableBatchColumns()"
                   [rows]="pagedLivrableBatchRows()"
                   [config]="livrableBatchTableConfig()"
@@ -431,13 +460,25 @@
             @if (creditNotesLivrable().length > 0) {
               <div class="flex flex-col gap-3">
 
+                <!-- Barre propre au tableau d'avoirs (recherche + filtre motif) ; `[table]` y
+                     place réinitialiser + choix des colonnes, à droite du bouton Filtres. -->
+                <div class="flex items-center rounded-xl bg-white p-3">
+                  <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
+                    [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+                    [value]="creditNoteLivrableSearch()" [debounce]="200"
+                    (valueChange)="onCreditNoteLivrableSearch($event)"
+                    [filterFields]="creditNoteFilterFields()" [filterConfig]="creditNoteFilterConfigLivrable()"
+                    (filterApply)="onCreditNoteLivrableFilterApply($event)"
+                    [table]="creditNoteTable() ?? null" />
+                </div>
+
                 @if (filteredCreditNoteRowsLivrable().length === 0) {
                   <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
                     <span class="material-symbols-outlined text-[32px]">search_off</span>
                     <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
                   </div>
                 } @else {
-                  <daf-data-table
+                  <daf-data-table #creditNoteTable
                     [columns]="creditNoteColumns()"
                     [rows]="pagedCreditNoteRowsLivrable()"
                     [config]="creditNoteTableConfig()"
@@ -474,7 +515,7 @@
                   <daf-pagination
                     [currentPage]="creditNoteLivrablePage()"
                     [totalPages]="creditNoteLivrableTotalPages()"
-                    [totalElements]="creditNotesLivrable().length"
+                    [totalElements]="filteredCreditNoteRowsLivrable().length"
                     [pageSize]="creditNoteLivrablePageSize()"
                     [pageSizeOptions]="[10, 20, 50, 100]"
                     [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
@@ -508,40 +549,13 @@
       } @else {
         <!-- Recherche + filtre (date, action, utilisateur, type d'entité) dans le même bandeau
              blanc que les sous-onglets de l'onglet DF. -->
-        <!-- pr-7/sm:pr-8 = 12px du bandeau + p-4/sm:p-5 internes de la barre : les icônes
-             s'arrêtent au même bord droit que le reste. -->
-        <div class="flex items-center rounded-xl bg-white p-3 pr-7 sm:pr-8">
+        <div class="flex items-center rounded-xl bg-white p-3">
           <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
             [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
             [value]="historySearch()" (valueChange)="onHistorySearch($event)"
             [filterFields]="historyFilterFields()" [filterConfig]="historyFilterConfig()"
-            (filterApply)="onHistoryFilterApply($event)" />
-          <!-- Test : réinitialiser + choix des colonnes du tableau ci-dessous, à DROITE du bouton
-               Filtres (hors du daf-search-toolbar, dont le contenu projeté passe toujours avant
-               le filtre), plutôt que dans la ligne que la lib dessine au-dessus des en-têtes
-               (désactivée dans `tableConfig`). Ils pilotent le tableau via `historyTable()`. -->
-          @if (historyTable(); as table) {
-            <!-- Même bloc que le sélecteur de vue Cartes / Tableau de daf-search-toolbar
-                 (`views`), mêmes classes : cadre arrondi à bordure claire, boutons p-2.5, icônes
-                 `text-[20px]` — donc la même taille rendue que ce sélecteur. -->
-            <div class="hist-tools -ml-1 flex shrink-0 overflow-hidden rounded-lg border-2 border-outline-variant/30 bg-surface-container-lowest sm:-ml-2">
-              @if (table.dirty()) {
-                <button type="button"
-                  [title]="'COMMON.TABLE.RESET' | translate"
-                  [attr.aria-label]="'COMMON.TABLE.RESET' | translate"
-                  class="flex cursor-pointer items-center gap-1.5 p-2.5 text-outline transition-all hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-tertiary"
-                  (click)="table.reset()">
-                  <span class="material-symbols-outlined text-[20px]">restart_alt</span>
-                </button>
-              }
-              <daf-select
-                [options]="historyColumnOptions()"
-                [selected]="table.selectedColumnKeys()"
-                (selectedChange)="table.selectedColumnKeys.set($event)"
-                [ariaLabel]="'COMMON.TABLE.COLUMN_PICKER' | translate"
-                [config]="{ placeholder: ('COMMON.TABLE.COLUMN_PICKER' | translate), multiple: true, searchable: true, staticLabel: true, triggerIcon: 'view_column', triggerIconOnly: true }" />
-            </div>
-          }
+            (filterApply)="onHistoryFilterApply($event)"
+            [table]="historyTable() ?? null" />
         </div>
 
         @if (filteredHistoryRows().length === 0) {

@@ -115,7 +115,14 @@
             <p class="config-hint">{{ 'ADMIN.LISTS.TAXONOMY_SCOPE_HINT' | translate }}</p>
           }
 
-          <daf-data-table [columns]="listColumns()" [rows]="listRows()" [config]="listTableConfig()"
+          <!-- Recherche dans les valeurs + outils du tableau (réinitialiser, colonnes) à droite. -->
+          <daf-search-toolbar
+            [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+            [value]="listValueSearch()" [debounce]="200"
+            (valueChange)="onListValueSearch($event)"
+            [table]="listTable" />
+
+          <daf-data-table #listTable [columns]="listColumns()" [rows]="listRows()" [config]="listTableConfig()"
             (sortChange)="onListSort($event)" (resetClick)="onListSort(null)">
 
             <ng-template dafCell="code" let-row>
@@ -192,7 +199,7 @@
               <daf-pagination
                 [currentPage]="listCurrentPage()"
                 [totalPages]="listTotalPages()"
-                [totalElements]="listValues().length"
+                [totalElements]="listFilteredRows().length"
                 [config]="paginationConfig"
                 (pageChange)="onListPageChange($event)" />
             </div>
@@ -223,7 +230,14 @@
             (onClick)="openCreateForexModal()" />
         </div>
 
-        <daf-data-table [columns]="forexColumns()" [rows]="forexTableRows()" [config]="forexTableConfig()"
+        <!-- Recherche + outils du tableau (réinitialiser, colonnes) à droite. -->
+        <daf-search-toolbar
+          [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+          [value]="forexSearch()" [debounce]="200"
+          (valueChange)="onForexSearch($event)"
+          [table]="forexTable" />
+
+        <daf-data-table #forexTable [columns]="forexColumns()" [rows]="forexTableRows()" [config]="forexTableConfig()"
           (sortChange)="onForexSort($event)" (resetClick)="onForexSort(null)">
 
           <ng-template dafCell="code" let-row>
@@ -249,7 +263,7 @@
             <daf-pagination
               [currentPage]="forexCurrentPage()"
               [totalPages]="forexTotalPages()"
-              [totalElements]="forexRows().length"
+              [totalElements]="forexFilteredRows().length"
               [config]="paginationConfig"
               (pageChange)="onForexPageChange($event)" />
           </div>

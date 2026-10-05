@@ -283,10 +283,11 @@
               (filterApply)="onCostFilter($event)"
               (filterReset)="onCostFilterReset()"
               [actions]="costToolbarActions()"
-              (action)="onCostToolbarAction($event)" />
+              (action)="onCostToolbarAction($event)"
+              [table]="costTable" />
 
             <daf-section-card>
-              <daf-data-table
+              <daf-data-table #costTable
                 [columns]="costColumns()"
                 [rows]="costRows()"
                 [config]="costConfig()"
@@ -328,10 +329,11 @@
               (filterApply)="onLedgerFilter($event)"
               (filterReset)="onLedgerFilterReset()"
               [actions]="ledgerToolbarActions()"
-              (action)="onLedgerToolbarAction($event)" />
+              (action)="onLedgerToolbarAction($event)"
+              [table]="ledgerTable" />
 
             <daf-section-card>
-              <daf-data-table
+              <daf-data-table #ledgerTable
                 [columns]="ledgerColumns()"
                 [rows]="ledgerRows()"
                 [config]="ledgerConfig()"

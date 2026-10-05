@@ -2,10 +2,10 @@ import { Component, OnInit, inject, signal, computed, ViewChild, TemplateRef } f
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  DataTableComponent, DafCellDirective, TableColumn, TableConfig,
+  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
   PageComponent, PageHeaderComponent, CardComponent, BreadcrumbItem,
   ButtonComponent, StatusBadgeComponent, BadgeVariant, FormFieldComponent,
-  ModalService, ModalRef,
+  ModalService, ModalRef, SearchToolbarComponent,
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService, JalonDetailDto, LineDetailDto, EntityAuditLogDto,
@@ -13,7 +13,7 @@ import {
 import { AffaireService } from '../affaire.service';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { LivrableBatchDto } from '../livrable.model';
 type DetailType = 'jalon' | 'line' | 'livrable';
 
@@ -34,7 +34,7 @@ interface HistoryRow {
   imports: [
     TranslatePipe, DataTableComponent, DafCellDirective, DisplayCurrencyPipe,
     PageComponent, PageHeaderComponent, CardComponent,
-    ButtonComponent, StatusBadgeComponent, FormFieldComponent,
+    ButtonComponent, StatusBadgeComponent, FormFieldComponent, SearchToolbarComponent,
   ],
   templateUrl: './approval-detail.component.html',
   styleUrl: './approval-detail.component.scss',
@@ -190,6 +190,25 @@ export class ApprovalDetailComponent implements OnInit {
       montant:      e.montantHt,
     }))
   );
+
+  // ── Recherche locale des trois tableaux (tout est chargé d'un coup, sans pagination) ──
+  readonly livrableEntrySearch = signal('');
+  readonly historySearch       = signal('');
+  readonly auditSearch         = signal('');
+
+  readonly filteredLivrableEntryRows = computed(() =>
+    searchTableRows(this.livrableEntryRows(), this.livrableEntryColumns(), this.livrableEntrySearch()));
+  readonly filteredHistoryRows = computed(() =>
+    searchTableRows(this.historyRows(), this.historyColumns(), this.historySearch()));
+  // L'horodatage brut (ISO) ne correspond pas à ce qui est affiché : on cherche sur la
+  // date formatée, et la transition sur ses deux statuts.
+  readonly filteredAuditTrail = computed(() => {
+    const cols = this.auditColumns().map(c =>
+      c.key === 'timestampUtc' ? { ...c, sortAccessor: (row: TableRow) => this.fmtDateTime(row['timestampUtc'] as string | null) }
+      : c.key === 'transition' ? { ...c, sortAccessor: (row: TableRow) => `${row['statutAvant'] ?? ''} ${row['statutApres'] ?? ''}` }
+      : c);
+    return searchTableRows(this.auditTrail(), cols, this.auditSearch());
+  });
 
   /** Outils de tableau communs (`tableTools`), comme sur `/finance/affaires`. */
   readonly tableConfig = computed<TableConfig>(() => ({ hoverable: false, ...tableTools(this.translate) }));

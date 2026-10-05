@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal, untracked } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, untracked, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
@@ -103,6 +103,10 @@ type HistoryViewMode = 'timeline' | 'table';
   templateUrl: './employee-cost-history.component.html',
 })
 export class EmployeeCostHistoryComponent implements OnInit {
+  /** Vue tableau uniquement (undefined en vue timeline) — va au `[table]` de la toolbar pour placer
+   *  réinitialiser + choix des colonnes à droite de Filtres. */
+  readonly table = viewChild(DataTableComponent);
+
   private readonly svc        = inject(EmployeeCostService);
   private readonly translate  = inject(TranslateService);
   private readonly route      = inject(ActivatedRoute);

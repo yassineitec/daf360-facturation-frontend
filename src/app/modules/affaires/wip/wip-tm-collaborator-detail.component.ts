@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { ButtonComponent, DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
+import { ButtonComponent, DataTableComponent, SearchToolbarComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { WipTmHourDto } from './wip.model';
 import { isoWeek } from '../../../shared/iso-week';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 /**
  * Drill-down for one collaborator out of a WIP T&M preview — the "most important
  * information" summary strip (hours, cost, average rate, days worked) plus the full
@@ -14,7 +14,7 @@ import { tableTools } from '../../../shared/table-tools';
   selector: 'app-wip-tm-collaborator-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [DataTableComponent, ButtonComponent, TranslatePipe],
+  imports: [DataTableComponent, ButtonComponent, SearchToolbarComponent, TranslatePipe],
   host: { class: 'block' },
   templateUrl: './wip-tm-collaborator-detail.component.html',
 })
@@ -83,6 +83,10 @@ export class WipTmCollaboratorDetailComponent {
         _source:    h,
       })),
   );
+
+  /** Recherche de la barre au-dessus du tableau, filtrée côté client. */
+  protected readonly search = signal('');
+  protected readonly filteredRows = computed(() => searchTableRows(this.rows(), this.columns(), this.search()));
 
   protected readonly config = computed<TableConfig>(() => ({
     showHeader: false,

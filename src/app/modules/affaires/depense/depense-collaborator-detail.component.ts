@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { ButtonComponent, DataTableComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
+import { ButtonComponent, DataTableComponent, SearchToolbarComponent, TableColumn, TableConfig, TableRow } from '@khalilrebhiitec/daf360';
 import { DepenseLigne } from './depense.model';
 import { isoWeek } from '../../../shared/iso-week';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
 /**
@@ -16,7 +16,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
   selector: 'app-depense-collaborator-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [DataTableComponent, ButtonComponent, TranslatePipe],
+  imports: [DataTableComponent, ButtonComponent, SearchToolbarComponent, TranslatePipe],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
   templateUrl: './depense-collaborator-detail.component.html',
@@ -80,6 +80,10 @@ export class DepenseCollaboratorDetailComponent {
         _source: l,
       })),
   );
+
+  /** Recherche de la barre au-dessus du tableau, filtrée côté client. */
+  protected readonly search = signal('');
+  protected readonly filteredRows = computed(() => searchTableRows(this.rows(), this.columns(), this.search()));
 
   protected readonly config = computed<TableConfig>(() => ({
     showHeader: false,

@@ -175,6 +175,8 @@ export interface CostLineDto {
   affaireId: number | null;
   supplierId: number | null;
   supplierNameFree: string | null;
+  /** Display name: the linked supplier's name, else `supplierNameFree` (resolved server-side). */
+  supplierName?: string | null;
   netAmountLocal: number | null;
   vatAmountLocal: number | null;
   grossAmountLocal: number | null;

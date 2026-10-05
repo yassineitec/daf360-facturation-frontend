@@ -7,7 +7,7 @@ import * as XLSX from 'xlsx';
 import {
   ButtonComponent, DafCellDirective, DataTableComponent, FilterComponent,
   MetricCardComponent, ModalService, PageComponent, PageHeaderComponent, SectionCardComponent,
-  StatusBadgeComponent, TabsComponent, tabParam,
+  SearchToolbarComponent, StatusBadgeComponent, TabsComponent, tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
   BreadcrumbItem, FilterField, FilterResult, MetricCardOptions, MetricDelta, PageHeaderBadge,
@@ -30,7 +30,7 @@ import {
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { TableActionComponent } from '../../../shared/table-action.component';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
 import { UserStore } from '../../../core/user.store';
@@ -90,7 +90,7 @@ const SUPPLIER_MODE_PAGE_SIZE = 200;
     TranslatePipe, PermissionDirective, NgTemplateOutlet,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent, StatusBadgeComponent, FilterComponent,
-    DataTableComponent, DafCellDirective, TableActionComponent,
+    DataTableComponent, DafCellDirective, TableActionComponent, SearchToolbarComponent,
     CostLinesTableSectionComponent, ReglementModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
@@ -372,6 +372,17 @@ export class CostLineDetailComponent implements OnInit {
     }));
   });
 
+  /**
+   * Recherche de la barre au-dessus de l'historique — filtre local (pas de pagination).
+   * La date se cherche sur son texte affiché, pas sur la valeur ISO qui sert au tri.
+   */
+  readonly approvalSearch = signal('');
+  readonly filteredApprovalRows = computed(() => {
+    const columns = this.approvalColumns().map((c): TableColumn =>
+      c.key === 'date' ? { ...c, sortAccessor: undefined } : c);
+    return searchTableRows(this.approvalRows(), columns, this.approvalSearch());
+  });
+
   readonly approvalConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
     return {
@@ -518,6 +529,17 @@ export class CostLineDetailComponent implements OnInit {
   });
 
   /**
+   * Recherche de la barre du relevé — s'ajoute aux filtres ci-dessus, en local. Toutes
+   * les cellules sont du texte formaté : on cherche dessus, pas sur les valeurs brutes
+   * des accesseurs de tri (date ISO, montants non formatés).
+   */
+  readonly ledgerSearch = signal('');
+  readonly filteredLedgerRows = computed(() => {
+    const columns = this.ledgerColumns().map((c): TableColumn => ({ ...c, sortAccessor: undefined }));
+    return searchTableRows(this.ledgerRows(), columns, this.ledgerSearch());
+  });
+
+  /**
    * SupplierLedgerRowDto carries no currency. Plain numeric formatting, deliberately
    * not routed through DisplayCurrencyPipe, which requires a currency code this DTO
    * does not have.
@@ -553,7 +575,9 @@ export class CostLineDetailComponent implements OnInit {
    */
   exportLedgerExcel(): void {
     const t = (k: string) => this.translate.instant(k);
-    const rows = this.filteredLedgerRawRows().map(r => ({
+    // Lignes filtrées ET recherchées : l'export suit exactement ce que montre le tableau.
+    const visible = this.filteredLedgerRows().map(row => row['_source'] as SupplierLedgerRowDto);
+    const rows = visible.map(r => ({
       [t('COST.DETAIL.LEDGER.COL_DATE')]:            formatDate(r.date),
       [t('COST.DETAIL.LEDGER.COL_LABEL')]:            r.label ?? '',
       [t('COST.DETAIL.LEDGER.COL_NET_AMOUNT')]:       r.netAmountLocal ?? '',

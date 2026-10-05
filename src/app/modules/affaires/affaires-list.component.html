@@ -46,7 +46,8 @@
     (filterApply)="applyFilters($event)"
     [views]="viewOptions()"
     [view]="viewMode()"
-    (viewChange)="viewMode.set($any($event))" />
+    (viewChange)="viewMode.set($any($event))"
+    [table]="tableSection()?.table() ?? null" />
 
   <!-- Bandeau de contexte quand la liste est restreinte à un client (arrivée depuis sa
        fiche) : sans lui, l'utilisateur verrait une liste amputée sans savoir pourquoi. -->

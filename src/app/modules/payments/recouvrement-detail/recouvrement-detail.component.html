@@ -166,9 +166,15 @@
 
           <!-- ── Échéancier de relances ───────────────────────────────── -->
           @if (activeTab() === 'reminders') {
-            <daf-data-table
+            <daf-search-toolbar
+              [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+              [value]="reminderSearch()" [debounce]="200"
+              (valueChange)="reminderSearch.set($event)"
+              [table]="reminderTable" />
+
+            <daf-data-table #reminderTable
               [columns]="reminderColumns()"
-              [rows]="reminderRows()"
+              [rows]="filteredReminderRows()"
               [config]="reminderConfig()">
 
               <!-- Le palier : son libellé configuré, et le décalage qui le définit.
@@ -226,9 +232,15 @@
 
           <!-- ── Encaissements reçus ──────────────────────────────────── -->
           @if (activeTab() === 'payments') {
-            <daf-data-table
+            <daf-search-toolbar
+              [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+              [value]="paymentSearch()" [debounce]="200"
+              (valueChange)="paymentSearch.set($event)"
+              [table]="paymentTable" />
+
+            <daf-data-table #paymentTable
               [columns]="paymentColumns()"
-              [rows]="paymentRows()"
+              [rows]="filteredPaymentRows()"
               [config]="paymentConfig()">
 
               <!-- Date de valeur, et en dessous la date de saisie quand elle diffère de

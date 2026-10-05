@@ -1,4 +1,4 @@
-import { Component, TemplateRef, ViewChild, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, TemplateRef, ViewChild, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent,
@@ -32,6 +32,9 @@ function toIsoDay(d: Date): string {
   templateUrl: './sous-traitants-tab.component.html',
 })
 export class SousTraitantsTabComponent {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(StTableSectionComponent);
+
   paysId = input<number | null>(null);
 
   private readonly svc       = inject(SubcontractingService);

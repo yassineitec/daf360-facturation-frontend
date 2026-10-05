@@ -18,7 +18,8 @@
     "TABLE": {
       "COLUMN_PICKER": "Choose columns",
       "RESET": "Reset table layout",
-      "SORT_BY": "Sort by {column}"
+      "SORT_BY": "Sort by {column}",
+      "SEARCH_PLACEHOLDER": "Search…"
     }
   },
   "FACTURATION": {
@@ -466,6 +467,10 @@
         "EDIT": "Edit draft"
       },
       "COMMENT": "Comment",
+      "EMIT_TITLE": "Issue the invoice",
+      "EMIT_DATE": "Issue date",
+      "EMIT_DATE_HINT": "Date printed on the invoice — today by default, no future date.",
+      "EMIT_DATE_REQUIRED": "Pick an issue date.",
       "RETURN_TITLE": "Return the invoice",
       "RETURN_COMMENT": "Reason for returning",
       "DISPUTE_TITLE": "Open a dispute",
@@ -2283,7 +2288,20 @@
       "HISTORY_FILTER_AMOUNT_MIN": "Min amount (excl. tax)",
       "HISTORY_FILTER_AMOUNT_MAX": "Max amount (excl. tax)",
       "HISTORY_FILTER_BUDGET_MIN": "Min allocated budget",
-      "HISTORY_FILTER_AMOUNT_PH": "e.g. 1000"
+      "HISTORY_FILTER_AMOUNT_PH": "e.g. 1000",
+      "HISTORY_FILTER_BUDGET_MAX": "Max allocated budget",
+      "FILTER_INVOICING": "Invoicing",
+      "FILTER_INVOICING_NONE": "Not invoiced",
+      "FILTER_INVOICING_PARTIAL": "Partially invoiced",
+      "FILTER_INVOICING_FULL": "Fully invoiced",
+      "FILTER_CLIENT_AMOUNT": "Client amount",
+      "FILTER_CLIENT_AMOUNT_PENDING": "Awaiting client",
+      "FILTER_CLIENT_AMOUNT_ENTERED": "Client amount entered",
+      "FILTER_PROGRESS": "Current progress",
+      "FILTER_PROGRESS_ZERO": "0%",
+      "FILTER_PROGRESS_IN_PROGRESS": "In progress (1 to 79%)",
+      "FILTER_PROGRESS_ALMOST": "Nearly done (80% and above)",
+      "FILTER_NO_BATCH": "No batch in progress"
     },
     "RESSOURCES": {
       "TITLE": "Time & Materials resources",
@@ -2950,6 +2968,7 @@
       "AMOUNT_MAX_FILTER_LABEL": "Max gross amount",
       "AMOUNT_MAX_FILTER_PLACEHOLDER": "No limit",
       "COL_DESCRIPTION": "Description",
+      "COL_SUPPLIER": "Supplier",
       "COL_CATEGORY": "Category",
       "COL_DATE": "Date",
       "COL_NET_AMOUNT": "Net amount",

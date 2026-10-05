@@ -58,8 +58,9 @@ export class InvoiceService {
     return this.http.post<void>(`${this.base}/invoices/${id}/approve`, dto);
   }
 
-  emit(id: number): Observable<void> {
-    return this.http.post<void>(`${this.base}/invoices/${id}/emit`, {});
+  /** `emissionDate` (`yyyy-MM-dd`) : date saisie dans la modale ; absente → aujourd'hui côté API. */
+  emit(id: number, emissionDate?: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/invoices/${id}/emit`, emissionDate ? { emissionDate } : {});
   }
 
   markSent(id: number): Observable<void> {

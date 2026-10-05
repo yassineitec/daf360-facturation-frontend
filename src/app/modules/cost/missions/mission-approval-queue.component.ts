@@ -55,6 +55,9 @@ interface DetailRow {
   templateUrl: './mission-approval-queue.component.html',
 })
 export class MissionApprovalQueueComponent implements OnInit {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(MissionApprovalTableSectionComponent);
+
   private readonly svc = inject(MissionApprovalService);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);

@@ -27,7 +27,7 @@ import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { UserStore } from '../../../core/user.store';
-import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
+import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders';
 
 const PAGE_SIZE = 10;
@@ -204,6 +204,21 @@ export class AdminListComponent implements OnInit {
     this.forexCurrentPage.set(0);
   }
 
+  /** Recherche des deux tableaux paginés (valeurs d'une liste / taux de change) — filtre
+   *  côté client avant tri et découpe ; distincte de `listSearch` (cartes des types). */
+  readonly listValueSearch = signal('');
+  readonly forexSearch     = signal('');
+
+  onListValueSearch(q: string): void {
+    this.listValueSearch.set(q);
+    this.listCurrentPage.set(0);
+  }
+
+  onForexSearch(q: string): void {
+    this.forexSearch.set(q);
+    this.forexCurrentPage.set(0);
+  }
+
   /** Native `TableConfig.actions`, not a hand-placed `_actions` column — same
    * convention as the Relances / Maquettes de documents tables on this page. */
   readonly listTableConfig = computed<TableConfig>(() => {
@@ -261,7 +276,7 @@ export class AdminListComponent implements OnInit {
   forexCurrentPage = signal(0);
 
   readonly listTotalPages = computed(() =>
-    Math.max(1, Math.ceil(this.sortedListValues().length / PAGE_SIZE)));
+    Math.max(1, Math.ceil(this.listFilteredRows().length / PAGE_SIZE)));
 
   /** Sub-categories are grouped under their parent; every other list keeps backend order. */
   private readonly sortedListValues = computed(() => {
@@ -273,7 +288,7 @@ export class AdminListComponent implements OnInit {
   });
 
   readonly forexTotalPages = computed(() =>
-    Math.max(1, Math.ceil(this.forexRows().length / PAGE_SIZE)));
+    Math.max(1, Math.ceil(this.forexFilteredRows().length / PAGE_SIZE)));
 
   onListPageChange(page: number): void  { this.listCurrentPage.set(page); }
   onForexPageChange(page: number): void { this.forexCurrentPage.set(page); }
@@ -284,8 +299,9 @@ export class AdminListComponent implements OnInit {
     return sortTableRows(rows, columns, sort).slice(start, start + PAGE_SIZE);
   }
 
-  readonly listRows = computed<TableRow[]>(() =>
-    this.page(this.sortedListValues().map(v => ({
+  /** Toutes les lignes de la liste, filtrées par la recherche — avant tri et découpe. */
+  readonly listFilteredRows = computed<TableRow[]>(() =>
+    searchTableRows(this.sortedListValues().map(v => ({
       id: v.id, code: v.code, labelFr: v.labelFr, labelEn: v.labelEn,
       isDefault: v.isDefault, isActive: v.isActive,
       requiresReceipt: v.requiresReceipt === true,
@@ -302,8 +318,11 @@ export class AdminListComponent implements OnInit {
       isGlobal: v.paysId === null,
       ratePct: v.ratePct,
       _source: v,
-    })), this.listColumns(), this.listSort(), this.listCurrentPage()),
+    })), this.listColumns(), this.listValueSearch()),
   );
+
+  readonly listRows = computed<TableRow[]>(() =>
+    this.page(this.listFilteredRows(), this.listColumns(), this.listSort(), this.listCurrentPage()));
 
   // ── Cost taxonomy (COST_CATEGORY / COST_SUB_CATEGORY) ─────────────────────
   /** The selected country's categories — parents offered to a sub-category. */
@@ -379,16 +398,20 @@ export class AdminListComponent implements OnInit {
     return {};
   }
 
-  readonly forexTableRows = computed<TableRow[]>(() =>
-    this.page(this.forexRows().map(r => ({
+  /** Tous les taux, filtrés par la recherche — avant tri et découpe. */
+  readonly forexFilteredRows = computed<TableRow[]>(() =>
+    searchTableRows(this.forexRows().map(r => ({
       id:   r.code,
       code: r.code,
       eur:  r.eurParam?.paramValue ?? '—',
       chf:  r.chfParam ? r.chfParam.paramValue : `auto ${this.chfFallback(r)}`,
       chfAuto: !r.chfParam,
       _source: r,
-    })), this.forexColumns(), this.forexSort(), this.forexCurrentPage()),
+    })), this.forexColumns(), this.forexSearch()),
   );
+
+  readonly forexTableRows = computed<TableRow[]>(() =>
+    this.page(this.forexFilteredRows(), this.forexColumns(), this.forexSort(), this.forexCurrentPage()));
 
   readonly activeListTypeLabel = computed(() => {
     const t = this.listTypes().find(x => x.code === this.activeListType());
@@ -687,6 +710,7 @@ export class AdminListComponent implements OnInit {
   selectListType(code: string): void {
     if (code === this.activeListType()) return;
     this.activeListType.set(code);
+    this.listValueSearch.set(''); // la recherche de la liste précédente ne s'applique plus
     this.listCurrentPage.set(0);
     this.loadListValues();
     this.loadParentCategories();

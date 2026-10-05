@@ -4,14 +4,14 @@ import { forkJoin } from 'rxjs';
 import {
   BadgeCell, ButtonComponent, DafCellDirective, DataTableComponent, DrawerComponent,
   FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
-  TableColumn, TableConfig, TableRow, ToggleComponent,
+  SearchToolbarComponent, TableColumn, TableConfig, TableRow, ToggleComponent,
 } from '@khalilrebhiitec/daf360';
 import { ReminderRuleService } from '../../payments/reminder-rule.service';
 import {
   REMINDER_TEMPLATE_TOKENS, ReminderRule, SaveReminderRuleRequest,
 } from '../../payments/reminder-rule.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { offsetLabel } from '../../payments/payments-display';
 
 /**
@@ -37,6 +37,7 @@ import { offsetLabel } from '../../payments/payments-display';
     TranslatePipe, PermissionDirective,
     DataTableComponent, DafCellDirective, ButtonComponent, DrawerComponent,
     FormFieldComponent, SelectComponent, ToggleComponent, FieldMessageComponent,
+    SearchToolbarComponent,
   ],
   host: { class: 'block' },
   templateUrl: './reminder-rules-admin.component.html',
@@ -148,6 +149,29 @@ export class ReminderRulesAdminComponent implements OnInit {
       _source: r,
     }));
   });
+
+  /** Recherche texte côté client (toutes les règles arrivent en un appel). */
+  readonly search = signal('');
+
+  /**
+   * Les `sortAccessor` du palier, de la règle et des destinataires rendent un nombre ou un
+   * seul libellé (bons pour trier, pas pour chercher) : la recherche lit ici le texte
+   * affiché — libellé du palier, code + deux libellés, rôles.
+   */
+  private readonly searchColumns = computed<TableColumn[]>(() =>
+    this.columns().map(c => {
+      switch (c.key) {
+        case 'offset':   return { ...c, sortAccessor: undefined };
+        case 'rule':     return { ...c, sortAccessor: (row: TableRow) =>
+          [row['_code'], row['_labelFr'], row['_labelEn']].filter(Boolean).join(' ') };
+        case 'audience': return { ...c, sortAccessor: (row: TableRow) =>
+          ((row['_roles'] as string[] | null) ?? []).join(' ') };
+        default:         return c;
+      }
+    }));
+
+  readonly filteredRows = computed<TableRow[]>(() =>
+    searchTableRows(this.rows(), this.searchColumns(), this.search()));
 
   readonly config = computed<TableConfig>(() => {
     this.translate.currentLang();

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, viewChild } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   AvatarCell, BadgeCell, DafCellDirective, DataTableComponent,
@@ -45,6 +45,10 @@ import { tableTools } from '../../../shared/table-tools';
 })
 export class StTableSectionComponent {
   private readonly translate = inject(TranslateService);
+
+  /** Le tableau rendu — la page le passe à `daf-search-toolbar` (`[table]`) pour placer
+   *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
+  readonly table = viewChild(DataTableComponent);
 
   list         = input.required<SousTraitantDto[]>();
   loading      = input(false);

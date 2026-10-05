@@ -170,7 +170,13 @@
           }
         </div>
 
-        <daf-data-table [columns]="livrableEntryColumns()" [rows]="livrableEntryRows()" [config]="tableConfig()">
+        <!-- Recherche locale ; `[table]` porte réinitialiser + choix des colonnes à droite. -->
+        <daf-search-toolbar class="mb-3 block" [card]="false"
+          [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+          [value]="livrableEntrySearch()" [debounce]="200"
+          (valueChange)="livrableEntrySearch.set($event)"
+          [table]="livrableEntryTable" />
+        <daf-data-table #livrableEntryTable [columns]="livrableEntryColumns()" [rows]="filteredLivrableEntryRows()" [config]="tableConfig()">
           <ng-template dafCell="pctPrecedent" let-row>{{ row['pctPrecedent'] }}%</ng-template>
           <ng-template dafCell="pctSaisi" let-row>{{ row['pctSaisi'] }}%</ng-template>
           <ng-template dafCell="montant" let-row>{{ row['montant'] | displayCurrency : (affaire()?.devise ?? 'EUR') }}</ng-template>
@@ -196,7 +202,12 @@
     @if (type() !== 'livrable') {
       <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }">
         <h3 class="text-title-md font-bold text-on-surface mb-4">{{ 'AFFAIRES.billing.approval.detail.history' | translate }}</h3>
-        <daf-data-table [columns]="historyColumns()" [rows]="historyRows()" [config]="tableConfig()">
+        <daf-search-toolbar class="mb-3 block" [card]="false"
+          [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+          [value]="historySearch()" [debounce]="200"
+          (valueChange)="historySearch.set($event)"
+          [table]="historyTable" />
+        <daf-data-table #historyTable [columns]="historyColumns()" [rows]="filteredHistoryRows()" [config]="tableConfig()">
           <ng-template dafCell="label" let-row>
             <span [class.font-bold]="row['isCurrent']">{{ row['label'] }}</span>
             @if (row['isCurrent']) {
@@ -213,7 +224,12 @@
     <!-- ── Audit trail ──────────────────────────────────────────────────── -->
     <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }">
       <h3 class="text-title-md font-bold text-on-surface mb-4">{{ 'AFFAIRES.billing.approval.detail.audit_trail' | translate }}</h3>
-      <daf-data-table [columns]="auditColumns()" [rows]="auditTrail()" [config]="tableConfig()">
+      <daf-search-toolbar class="mb-3 block" [card]="false"
+        [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+        [value]="auditSearch()" [debounce]="200"
+        (valueChange)="auditSearch.set($event)"
+        [table]="auditTable" />
+      <daf-data-table #auditTable [columns]="auditColumns()" [rows]="filteredAuditTrail()" [config]="tableConfig()">
         <ng-template dafCell="timestampUtc" let-row>
           {{ fmtDateTime(row['timestampUtc']) }}
         </ng-template>

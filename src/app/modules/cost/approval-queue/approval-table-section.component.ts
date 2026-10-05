@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, viewChild } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, DafCellDirective, DataTableComponent, TableColumn, TableConfig, TableRow,
@@ -66,6 +66,10 @@ const URGENCY_RANK: Record<string, number> = { low: 0, normal: 1, urgent: 2 };
 })
 export class ApprovalTableSectionComponent {
   private readonly translate = inject(TranslateService);
+
+  /** Le tableau rendu — la page le passe à `daf-search-toolbar` (`[table]`) pour placer
+   *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
+  readonly table = viewChild(DataTableComponent);
 
   items          = input.required<ApprovalItem[]>();
   loading        = input(false);

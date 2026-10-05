@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, untracked, viewChild } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   AvatarCell, BadgeCell, DafCellDirective, DataTableComponent,
@@ -72,6 +72,10 @@ import { TableSort, delegatedSort, tableTools, toTableSort } from '../../../shar
 })
 export class InvoicesTableSectionComponent {
   private readonly translate = inject(TranslateService);
+
+  /** Le tableau rendu — la page le passe à `daf-search-toolbar` (`[table]`) pour placer
+   *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
+  readonly table = viewChild(DataTableComponent);
   private readonly currency  = inject(DisplayCurrencyPipe);
 
   invoices     = input.required<InvoiceListItem[]>();

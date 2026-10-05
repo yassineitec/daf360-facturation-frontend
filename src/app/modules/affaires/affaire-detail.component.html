@@ -643,11 +643,12 @@
               (filterApply)="onTsFilterApply($event)"
               (filterReset)="onTsFilterReset()"
               [actions]="tsToolbarActions()"
-              (action)="onTsToolbarAction($event)" />
+              (action)="onTsToolbarAction($event)"
+              [table]="tsTable" />
 
             <!-- Actions sur config.actions : `TableAction.hidden` (4.17.0) rend les
                  validations conditionnelles sans colonne projetée (§6b rule 4). -->
-            <daf-data-table [columns]="tsColumns()" [rows]="tsRows()" [config]="tsConfig()" />
+            <daf-data-table #tsTable [columns]="tsColumns()" [rows]="tsRows()" [config]="tsConfig()" />
           }
 
           <!-- L'onglet « Facturation » (écrans par mode AV / JAL / TM / CP / RMB) est
@@ -684,9 +685,10 @@
               (filterApply)="onInvoiceFilterApply($event)"
               (filterReset)="onInvoiceFilterReset()"
               [actions]="invoiceToolbarActions()"
-              (action)="onInvoiceToolbarAction($event)" />
+              (action)="onInvoiceToolbarAction($event)"
+              [table]="invoiceTable" />
 
-            <daf-data-table [columns]="invoiceColumns()" [rows]="invoiceRows()" [config]="invoiceConfig()" />
+            <daf-data-table #invoiceTable [columns]="invoiceColumns()" [rows]="invoiceRows()" [config]="invoiceConfig()" />
           }
 
           <!-- ── Frais remboursables ──────────────────────────────────── -->
@@ -706,9 +708,10 @@
               (filterApply)="onPaymentFilterApply($event)"
               (filterReset)="onPaymentFilterReset()"
               [actions]="paymentToolbarActions()"
-              (action)="onPaymentToolbarAction($event)" />
+              (action)="onPaymentToolbarAction($event)"
+              [table]="paymentTable" />
 
-            <daf-data-table [columns]="paymentColumns()" [rows]="paymentRows()" [config]="paymentConfig()" />
+            <daf-data-table #paymentTable [columns]="paymentColumns()" [rows]="paymentRows()" [config]="paymentConfig()" />
           }
 
         </div>
@@ -766,7 +769,13 @@
 
   <section class="flex flex-col gap-4">
     <p class="text-body-md font-bold text-on-surface">{{ 'AFFAIRES.DETAIL.OVERVIEW.DEADLINES_TITLE' | translate }}</p>
-    <daf-data-table [columns]="deadlineColumns()" [rows]="deadlineRows()" [config]="deadlineConfig()" />
+    <!-- Barre ajoutée pour porter [table] : réinitialiser + choix des colonnes à droite. -->
+    <daf-search-toolbar [card]="false"
+      [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+      [value]="deadlineSearch()" [debounce]="200"
+      (valueChange)="deadlineSearch.set($event)"
+      [table]="deadlineTable" />
+    <daf-data-table #deadlineTable [columns]="deadlineColumns()" [rows]="filteredDeadlineRows()" [config]="deadlineConfig()" />
     <daf-button
       [options]="{ variant: 'ghost', size: 'sm', label: 'AFFAIRES.DETAIL.OVERVIEW.SEE_INVOICES' | translate, iconEnd: 'arrow_forward' }"
       (onClick)="activeTab.set('factures'); activityDrawerOpen.set(false)" />

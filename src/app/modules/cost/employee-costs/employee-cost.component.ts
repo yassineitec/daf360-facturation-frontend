@@ -38,6 +38,9 @@ type ViewMode = 'list' | 'grid';
   templateUrl: './employee-cost.component.html',
 })
 export class EmployeeCostComponent implements OnInit {
+  /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
+  readonly tableSection = viewChild(EmployeeCostTableSectionComponent);
+
   private readonly svc        = inject(EmployeeCostService);
   private readonly translate  = inject(TranslateService);
   private readonly modals     = inject(ModalService);

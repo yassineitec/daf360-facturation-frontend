@@ -7,7 +7,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { CostService } from '../cost.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
+import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 import { CostImportPanelComponent } from '../import/cost-import-panel.component';
 import {
   CostApprovalThresholdDto, ListValueDto, ListTypeDto, CreateCostApprovalThresholdRequest,
@@ -16,7 +16,7 @@ import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig,
   SelectComponent, SelectOption, TabsComponent, TabItem, ButtonComponent,
   FormFieldComponent, CheckboxComponent, StatusBadgeComponent, SectionTitleComponent,
-  SectionCardComponent, ModalService, ModalRef,
+  SectionCardComponent, SearchToolbarComponent, ModalService, ModalRef,
 } from '@khalilrebhiitec/daf360';
 
 type ListTab = 'CURRENCY' | 'COST_TYPE' | 'PAYMENT_METHOD' | 'RECURRENCE_FREQUENCY';
@@ -27,7 +27,7 @@ type ConfigSection = 'thresholds' | 'lists';
   standalone: true,
   imports: [CommonModule, FormsModule, DataTableComponent, DafCellDirective, TranslatePipe,
             SelectComponent, TabsComponent, ButtonComponent, FormFieldComponent,
-            CheckboxComponent, StatusBadgeComponent, SectionTitleComponent, SectionCardComponent,
+            CheckboxComponent, StatusBadgeComponent, SectionTitleComponent, SectionCardComponent, SearchToolbarComponent,
             DisplayCurrencyPipe, CostImportPanelComponent],
   templateUrl: './cost-config.component.html',
   styleUrl: './cost-config.component.scss',
@@ -214,8 +214,11 @@ export class CostConfigComponent {
     };
   });
 
+  /** Recherche de la barre au-dessus des seuils — filtre local, la ligne de saisie reste. */
+  readonly thresholdSearch = signal('');
+
   readonly thresholdRows = computed(() => {
-    const rows = sortTableRows(this.thresholds().map(t => ({
+    const rows = sortTableRows(searchTableRows(this.thresholds().map(t => ({
       id:               t.id,
       level:            t.level,
       approverRoleCode: t.approverRoleCode,
@@ -223,7 +226,7 @@ export class CostConfigComponent {
       maxAmountEur:     t.maxAmountEur,
       _isNew:           false,
       _raw:             t,
-    })), this.thresholdColumns(), this.thresholdSort());
+    })), this.thresholdColumns(), this.thresholdSearch()), this.thresholdColumns(), this.thresholdSort());
     if (this.showAddThreshold()) {
       rows.push({
         id: '__new-threshold__' as unknown as number, level: '', approverRoleCode: '',
@@ -280,8 +283,11 @@ export class CostConfigComponent {
     };
   });
 
+  /** Recherche de la barre au-dessus des valeurs — filtre local, la ligne de saisie reste. */
+  readonly listValueSearch = signal('');
+
   readonly listValueRows = computed(() => {
-    const rows = sortTableRows(this.listValues().map(v => ({
+    const rows = sortTableRows(searchTableRows(this.listValues().map(v => ({
       id:            v.id,
       code:          v.code,
       labelFr:       v.labelFr,
@@ -290,7 +296,7 @@ export class CostConfigComponent {
       displayOrder:  v.displayOrder,
       _isNew:        false,
       _raw:          v,
-    })), this.listValueColumns(), this.listValueSort());
+    })), this.listValueColumns(), this.listValueSearch()), this.listValueColumns(), this.listValueSort());
     if (this.showAddValue()) {
       rows.push({
         id: '__new-value__' as unknown as number, code: '', labelFr: '', labelEn: null,

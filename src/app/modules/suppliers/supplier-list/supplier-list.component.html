@@ -61,7 +61,8 @@
     (filterReset)="onFilterReset()"
     [views]="viewOptions()"
     [view]="viewMode()"
-    (viewChange)="viewMode.set($any($event))" />
+    (viewChange)="viewMode.set($any($event))"
+    [table]="tableSection()?.table() ?? null" />
 
   <!-- Quand on ne regarde plus les seuls actifs, le dire : les pastilles de statut de
        la table le montrent ligne par ligne, mais pas le fait que la LISTE a changé de

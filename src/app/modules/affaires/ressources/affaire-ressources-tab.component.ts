@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, FormFieldComponent, SelectComponent, SelectOption,
-  DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
+  DataTableComponent, DafCellDirective, SearchToolbarComponent, TableColumn, TableConfig, TableRow,
   CardComponent, StatusBadgeComponent, AvatarComponent, ProgressBarComponent,
 } from '@khalilrebhiitec/daf360';
 
@@ -11,7 +11,7 @@ import { AffaireService } from '../affaire.service';
 import { LivrableService } from '../livrable.service';
 import { CollaborateurTauxDto } from '../livrable.model';
 import { AffaireDetail, AffaireRessourceManageDto, AffaireWorkedHoursSummaryDto, UserRefDto } from '../affaire.model';
-import { tableTools } from '../../../shared/table-tools';
+import { searchTableRows, tableTools } from '../../../shared/table-tools';
 type RateSource = 'EXTERNAL' | 'INTERNAL';
 
 /** Where the (single, shared) add-resource form is currently rendered: `'top'` next to the
@@ -26,7 +26,7 @@ type AddFormAnchor = 'top' | string | null;
   imports: [
     NgTemplateOutlet, TranslatePipe, ButtonComponent, FormFieldComponent, SelectComponent,
     DataTableComponent, DafCellDirective, CardComponent, StatusBadgeComponent,
-    AvatarComponent, ProgressBarComponent,
+    AvatarComponent, ProgressBarComponent, SearchToolbarComponent,
   ],
   templateUrl: './affaire-ressources-tab.component.html',
   styleUrl: './affaire-ressources-tab.component.scss',
@@ -120,6 +120,12 @@ export class AffaireRessourcesTabComponent implements OnInit {
 
   readonly ressourcesRows = computed(() =>
     this.ressources().map(r => ({ id: r.id, isActive: r.isActive, _raw: r })));
+
+  /** Recherche de la barre ajoutée au-dessus du tableau (elle porte `[table]` : réinitialiser
+   * + choix des colonnes). Filtre côté client, via les `sortAccessor` (cellules projetées). */
+  readonly ressourcesSearch = signal('');
+  readonly filteredRessourcesRows = computed(() =>
+    searchTableRows(this.ressourcesRows(), this.ressourcesColumns(), this.ressourcesSearch()));
 
   /** Outils de tableau communs (`tableTools`), comme sur `/finance/affaires`. */
   readonly ressourcesTableConfig = computed<TableConfig>(() => ({

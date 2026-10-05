@@ -18,7 +18,8 @@
     "TABLE": {
       "COLUMN_PICKER": "Choisir les colonnes",
       "RESET": "Réinitialiser l'affichage du tableau",
-      "SORT_BY": "Trier par {column}"
+      "SORT_BY": "Trier par {column}",
+      "SEARCH_PLACEHOLDER": "Rechercher…"
     }
   },
   "FACTURATION": {
@@ -466,6 +467,10 @@
         "EDIT": "Modifier le brouillon"
       },
       "COMMENT": "Commentaire",
+      "EMIT_TITLE": "Émettre la facture",
+      "EMIT_DATE": "Date d'émission",
+      "EMIT_DATE_HINT": "Date imprimée sur la facture — aujourd'hui par défaut, pas de date future.",
+      "EMIT_DATE_REQUIRED": "Choisissez une date d'émission.",
       "RETURN_TITLE": "Retourner la facture",
       "RETURN_COMMENT": "Motif du retour",
       "DISPUTE_TITLE": "Ouvrir un litige",
@@ -2283,7 +2288,20 @@
       "HISTORY_FILTER_AMOUNT_MIN": "Montant HT min",
       "HISTORY_FILTER_AMOUNT_MAX": "Montant HT max",
       "HISTORY_FILTER_BUDGET_MIN": "Budget alloué min",
-      "HISTORY_FILTER_AMOUNT_PH": "Ex. 1000"
+      "HISTORY_FILTER_AMOUNT_PH": "Ex. 1000",
+      "HISTORY_FILTER_BUDGET_MAX": "Budget alloué max",
+      "FILTER_INVOICING": "Facturation",
+      "FILTER_INVOICING_NONE": "Non facturé",
+      "FILTER_INVOICING_PARTIAL": "Partiellement facturé",
+      "FILTER_INVOICING_FULL": "Entièrement facturé",
+      "FILTER_CLIENT_AMOUNT": "Montant client",
+      "FILTER_CLIENT_AMOUNT_PENDING": "En attente du client",
+      "FILTER_CLIENT_AMOUNT_ENTERED": "Montant client saisi",
+      "FILTER_PROGRESS": "Avancement actuel",
+      "FILTER_PROGRESS_ZERO": "0 %",
+      "FILTER_PROGRESS_IN_PROGRESS": "En cours (1 à 79 %)",
+      "FILTER_PROGRESS_ALMOST": "Presque terminé (80 % et plus)",
+      "FILTER_NO_BATCH": "Aucun lot en cours"
     },
     "RESSOURCES": {
       "TITLE": "Ressources Temps & Matériels",
@@ -2950,6 +2968,7 @@
       "AMOUNT_MAX_FILTER_LABEL": "Montant TTC max",
       "AMOUNT_MAX_FILTER_PLACEHOLDER": "Sans limite",
       "COL_DESCRIPTION": "Description",
+      "COL_SUPPLIER": "Fournisseur",
       "COL_CATEGORY": "Catégorie",
       "COL_DATE": "Date",
       "COL_NET_AMOUNT": "Montant HT",
