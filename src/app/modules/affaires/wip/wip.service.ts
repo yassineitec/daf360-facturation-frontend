@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { WipTauxDto, WipTmPreviewDto } from './wip.model';
+import { EmailPreviewDto, WipTauxDto, WipTmPreviewDto } from './wip.model';
 
 /** `montantSaisi` is set only in "Montant" mode: the backend then stores that amount as-is
  * and re-derives `tauxSaisi` from it (the one sent here is only indicative). */
@@ -45,6 +45,13 @@ export class WipService {
     return this.http.delete<void>(`${this.base}/av/taux/${tauxId}`, this.opts);
   }
 
+  /** Read-only: the exact client email submitTaux()/updateTaux() would send for this body,
+   * without persisting or sending anything — lets the WIP tab show a review-and-confirm popup
+   * before the user triggers the real submit. */
+  previewTauxEmail(affaireId: number, body: WipTauxSubmitBody): Observable<EmailPreviewDto> {
+    return this.http.post<EmailPreviewDto>(`${this.base}/av/${affaireId}/taux/preview-email`, body, this.opts);
+  }
+
   /** Records what the client actually confirmed (read out of their email reply) — moves the
    * linked line from EN_ATTENTE_CLIENT to EN_ATTENTE_DF, where the shared DF approval queue
    * picks it up unchanged. Byte-for-byte the same shape as enterClientAmount() below (TM) —
@@ -69,6 +76,15 @@ export class WipService {
     return this.http.post(
       `${this.base}/wip/tm/${affaireId}/validate?dateFrom=${dateFrom}&dateTo=${dateTo}`,
       {}, this.opts);
+  }
+
+  /** Read-only: the exact client email validateTm() would send for this period, without
+   * persisting or sending anything — lets the WIP tab show a review-and-confirm popup before
+   * the user triggers the real validate. */
+  previewValidateTmEmail(affaireId: number, dateFrom: string, dateTo: string): Observable<EmailPreviewDto> {
+    return this.http.get<EmailPreviewDto>(
+      `${this.base}/wip/tm/${affaireId}/validate/preview-email?dateFrom=${dateFrom}&dateTo=${dateTo}`,
+      this.opts);
   }
 
   /** Records what the client actually confirmed (read out of their email reply) — moves the

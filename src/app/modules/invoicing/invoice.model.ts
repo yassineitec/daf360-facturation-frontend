@@ -24,6 +24,14 @@ export interface InvoiceLine {
   sourceExpenseId?: number;
   // WIP carry-forward — présent uniquement quand la ligne provient d'un solde WIP pické
   sourceCarriedForwardLineId?: number;
+  // Colonnes de déduction personnalisées — position fixe (1/2/3), voir
+  // StepLinesValue.deductionColumns côté step-lines.component.ts pour le détail.
+  deductionPct1?:    number;
+  deductionAmount1?: number;
+  deductionPct2?:    number;
+  deductionAmount2?: number;
+  deductionPct3?:    number;
+  deductionAmount3?: number;
 }
 
 export interface InvoiceListItem {
@@ -51,6 +59,13 @@ export interface InvoiceListItem {
   paysId:           number;
   createdAt:        string;
   updatedAt:        string | null;
+  deductionLabel1:  string | null;
+  deductionTotal1:  number;
+  deductionLabel2:  string | null;
+  deductionTotal2:  number;
+  deductionLabel3:  string | null;
+  deductionTotal3:  number;
+  montantNetAPayer: number;
 }
 
 export interface InvoiceDetail extends InvoiceListItem {

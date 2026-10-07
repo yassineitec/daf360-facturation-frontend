@@ -330,7 +330,8 @@
         "TOTAL_TTC": "Total TTC",
         "ACTIVE": "Actif",
         "EMPTY": "Aucune ligne de facturation.",
-        "GRAND_TOTAL": "Total général"
+        "GRAND_TOTAL": "Total général",
+        "NET_PAYABLE": "Net à payer"
       },
       "INFO": {
         "TITLE": "Informations",
@@ -506,6 +507,7 @@
       },
       "TS_LABEL": "TS associé (optionnel)",
       "TS_NONE": "Aucun",
+      "TS_CARRY_FORWARD_TOGGLE": "Facturer le solde TS non facturé —",
       "CANCEL": "Annuler",
       "NEXT": "Suivant"
     },
@@ -544,7 +546,10 @@
       "CARRY_FORWARD_COL_MODE": "Mode",
       "CARRY_FORWARD_COL_PERIOD": "Période",
       "CARRY_FORWARD_COL_AVAILABLE": "Disponible",
-      "CARRY_FORWARD_COL_AMOUNT": "Montant à facturer"
+      "CARRY_FORWARD_COL_AMOUNT": "Montant à facturer",
+      "ADD_DEDUCTION_COLUMN": "+ Ajouter une colonne",
+      "DEDUCTION_LABEL_PLACEHOLDER": "Nom de la colonne",
+      "DEDUCTION_UNNAMED": "(sans nom)"
     },
     "STEP_CONDITIONS": {
       "DUE_DATE_LABEL": "Date d'échéance *",
@@ -597,7 +602,8 @@
       "SAVING": "Enregistrement…",
       "DRAFT": "Brouillon",
       "SENDING": "Envoi…",
-      "SUBMIT": "Soumettre"
+      "SUBMIT": "Soumettre",
+      "NET_PAYABLE": "Net à payer"
     },
     "REMINDERS": {
       "TITLE": "Rappels de paiement",
@@ -634,7 +640,7 @@
       "SAVING": "Enregistrement…",
       "SAVE": "Enregistrer",
       "DRAFT": "Brouillon",
-      "TOTAL_TTC": "Montant TTC",
+      "NET_A_PAYER": "Net à payer",
       "ERROR": "Erreur lors de l'enregistrement."
     },
     "CREDIT_NOTE_MODAL": {
@@ -1070,6 +1076,7 @@
       "TABS": {
         "OVERVIEW": "Vue générale",
         "BUDGET_TS": "Travaux supplémentaires",
+        "TS_WIP": "TS WIP",
         "INVOICES": "Factures",
         "PAYMENTS": "Paiements",
         "WIP": "WIP",
@@ -1287,6 +1294,7 @@
         "TS_PERIMETRE": "Périmètre",
         "TS_IMPACT": "Impact budgétaire",
         "TS_INTEGRATED_AT": "Intégré le",
+        "TS_INVOICE": "Facture",
         "OPEN_INVOICE": "Ouvrir la facture",
         "OPEN_PAYMENTS": "Ouvrir le module Paiements",
         "EXPENSES_TITLE": "Frais remboursables de l'affaire"
@@ -1900,12 +1908,16 @@
         "tab_taux": "Taux d'avancement",
         "tab_lines": "Lignes de facturation",
         "tab_livrable_batches": "Livrable",
+        "tab_ts": "TS",
         "tab_credit_notes": "Notes de crédit",
         "loading": "Chargement…",
         "empty_rf": "Aucun élément en attente de validation RF.",
         "empty_df": "Aucun élément en attente de validation DF.",
         "empty_filtered": "Aucun résultat pour ces critères.",
         "empty_history": "Aucun historique disponible.",
+        "bulk_validate": "Valider la sélection",
+        "bulk_selected_label": "ligne(s) sélectionnée(s)",
+        "bulk_cancel": "Annuler",
         "section_taux": "Taux d'avancement (FORFAIT) — {{count}}",
         "section_lines": "Lignes de facturation — {{count}}",
         "section_livrable_batches": "Batches Livrables — {{count}}",
@@ -1921,6 +1933,7 @@
         "col_periode": "Période",
         "col_montant_ht": "Montant HT",
         "col_documents": "Documents",
+        "col_ts_count": "TS",
         "col_mode": "Mode",
         "col_statut": "Statut",
         "col_date": "Date",
@@ -2168,6 +2181,24 @@
     "WIP": {
       "KPI_TS": "TS",
       "KPI_TS_HELP": "Montant des timesheets validés déjà intégrés dans le calcul du RAF de cette affaire.",
+      "TS_ELIGIBLE_TITLE": "TS prêts à facturer",
+      "TS_ELIGIBLE_EMPTY": "Aucun TS intégré disponible pour facturation.",
+      "TS_ACTIVE_TITLE": "Soumissions en cours",
+      "TS_ACTIVE_EMPTY": "Aucune soumission en cours.",
+      "TS_HISTORY_TITLE": "Historique",
+      "TS_HISTORY_EMPTY": "Aucun historique de facturation TS.",
+      "TS_COL_REFERENCE": "Référence",
+      "TS_COL_INTITULE": "Intitulé",
+      "TS_COL_MONTANT": "Montant",
+      "TS_COL_STATUT": "Statut",
+      "TS_COL_DATE": "Date",
+      "TS_COL_ACTIONS": "Actions",
+      "TS_SELECTED_COUNT": "{{count}} TS sélectionné(s)",
+      "TS_SUBMIT": "Soumettre la sélection",
+      "TS_SUBMIT_ERROR": "Erreur lors de la soumission.",
+      "TS_COL_MT_CLIENT": "MT Client",
+      "TS_CARRY_FORWARD_TITLE": "Solde non facturé",
+      "TS_CARRY_FORWARD_SUBMIT": "Facturer le solde",
       "AV_EXPLAIN": "WIP = budget du contrat × taux d'avancement à date. Soumettez un nouveau taux cumulé ci-dessous ; la valeur est calculée automatiquement.",
       "TM_EXPLAIN": "WIP = coût des heures Timesheet déjà validées pour cette période.",
       "TM_EXPLAIN_2": "Seules les heures au statut « Validé » sont comptées.",
@@ -2186,6 +2217,12 @@
       "STEP_VALIDATE": "Validation",
       "STEP_CLIENT": "Réponse client",
       "MANUAL_VERIFY_LABEL": "J'ai vérifié manuellement ces résultats par rapport aux autres sources et ils sont corrects.",
+      "EMAIL_PREVIEW_TITLE": "Email à envoyer au client",
+      "EMAIL_PREVIEW_INTRO": "Relisez l'email ci-dessous avant de l'envoyer au client. Une fois envoyé, vous attendrez sa réponse pour saisir le montant confirmé.",
+      "EMAIL_PREVIEW_SUBJECT": "Objet",
+      "EMAIL_PREVIEW_BODY": "Message",
+      "EMAIL_PREVIEW_CANCEL": "Annuler",
+      "EMAIL_PREVIEW_SEND": "Envoyer",
       "CARRIED_FORWARD_TITLE": "Reliquat de la période précédente",
       "CARRIED_FORWARD_PREVIOUS": "Reporté",
       "CARRIED_FORWARD_NEW": "Nouveau calcul",

@@ -1,0 +1,20 @@
+/* Même habillage "pastille d'icônes" que AffaireWipTabComponent (AV/Régie/Livrable) pour le
+   bouton Soumettre — daf-button garde son mécanisme (loading/disabled), seule son apparence
+   est retouchée ici, pas son mécanisme. Dupliqué depuis affaire-wip-tab.component.ts plutôt
+   que partagé : chaque composant WIP garde ses propres styles de confort, comme déjà établi
+   pour toute cette famille d'onglets. */
+::ng-deep .wip-icon-actions button {
+  padding: 9px;
+  border: none;
+  background: transparent;
+  color: var(--color-outline, #75777d);
+  border-radius: 8px;
+  box-shadow: none;
+}
+::ng-deep .wip-icon-actions button:hover:not(:disabled) {
+  color: var(--color-tertiary, #1a6b7c);
+  background: var(--color-surface-container, #eceef0);
+}
+::ng-deep .wip-icon-actions button .material-symbols-outlined {
+  font-size: 22px;
+}

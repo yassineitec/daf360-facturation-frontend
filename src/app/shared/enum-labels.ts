@@ -92,6 +92,18 @@ export const LIVRABLE_BATCH_STATUT_BADGE: Record<string, BadgeVariant> = {
   ANNULE:             'neutral',
 };
 
+/** Statut d'un batch de facturation TS (Travaux Supplémentaires) — `TsBatchDto.statut`.
+ * Même jeu de statuts que LIVRABLE_BATCH_STATUT_BADGE ci-dessus (TsBillingService suit
+ * exactement le même cycle de vie soumission -> client -> DF que LivrableBillingService). */
+export const TS_BATCH_STATUT_BADGE: Record<string, BadgeVariant> = {
+  EN_ATTENTE_CLIENT: 'warning',
+  EN_ATTENTE_DF:      'warning',
+  A_VERIFIER:         'warning',
+  RETOURNE:           'danger',
+  FACTURE:            'success',
+  ANNULE:             'neutral',
+};
+
 /** Statuts de ligne de facturation — `billing_lines.statut`. */
 export const BILLING_LINE_STATUT_BADGE: Record<string, BadgeVariant> = {
   BROUILLON:     'neutral',

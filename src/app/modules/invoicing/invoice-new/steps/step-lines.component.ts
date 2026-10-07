@@ -34,12 +34,31 @@ export interface StepLinesValue {
     sourceCarriedForwardLineId?: number;
     // T&M — collaborateur associé, présent uniquement en mode T&M
     profileUserId?: number;
+    // Colonnes de déduction personnalisées — pourcentage 1-100 pour la colonne à la
+    // position correspondante dans StepLinesValue.deductionColumns (index 0 ->
+    // deductionPct1, etc.) Le libellé de chaque colonne est porté une seule fois au
+    // niveau de la facture, pas répété par ligne.
+    deductionPct1?: number;
+    deductionPct2?: number;
+    deductionPct3?: number;
   }[];
   // Période facturée — les heures récupérées en T&M, la période de génération du lot en
   // Livrable ; renseignée par le serveur à la génération dans les deux cas et simplement
   // préservée telle quelle par cette étape. Null dans les autres modes.
   periodFrom?: string | null;
   periodTo?:   string | null;
+  /**
+   * Colonnes de déduction définies sur cette facture — TOUJOURS exactement 3 positions
+   * fixes (index 0 = colonne 1 = deductionPct1 sur chaque ligne, index 1 = colonne 2,
+   * index 2 = colonne 3), jamais un tableau compacté. `null` à une position = cette
+   * colonne n'est pas utilisée sur cette facture. Index fixe plutôt que tableau
+   * dynamique : une colonne retirée puis une autre ajoutée ne doit JAMAIS glisser les
+   * valeurs déjà saisies d'une colonne vers une autre, puisque chaque position est
+   * câblée en dur à un champ `deductionPctN` précis côté lignes ET côté backend
+   * (deductionLabel1/2/3, deductionPct1/2/3) — un tableau qui se recompacte à la
+   * suppression désynchroniserait l'index affiché du champ réellement mis à jour.
+   */
+  deductionColumns?: (string | null)[];
 }
 
 @Component({
@@ -52,7 +71,7 @@ export interface StepLinesValue {
   <div class="lines-header">
     <span class="section-title">{{ 'INVOICING.STEP_LINES.TITLE' | translate }}</span>
     <div class="lines-header-actions">
-      @if (!isAv() && !isTm() && !isLivrable()) {
+      @if (!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) {
         <button type="button" class="btn-add-line" (click)="addLine()">
           {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
         </button>
@@ -63,12 +82,31 @@ export interface StepLinesValue {
           {{ 'INVOICING.STEP_LINES.ADD_REMBOURSABLE' | translate }}
         </button>
       }
-      @if (isAv() || isTm() || isLivrable()) {
+      @if (isAv() || isTm() || isLivrable() || isTsCarryForward()) {
         <button type="button" class="btn-add-line btn-add-rmb" (click)="toggleCarryForwardPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_CARRY_FORWARD' | translate }}
         </button>
       }
     </div>
+  </div>
+
+  <div class="deduction-columns-bar">
+    @for (col of deductionColumns(); track $index) {
+      @if (col !== null) {
+        <span class="deduction-chip">
+          <input type="text" class="deduction-chip-input"
+            [value]="col"
+            (input)="renameDeductionColumn($index, $any($event.target).value)"
+            placeholder="{{ 'INVOICING.STEP_LINES.DEDUCTION_LABEL_PLACEHOLDER' | translate }}" />
+          <button type="button" class="deduction-chip-remove" (click)="removeDeductionColumn($index)">✕</button>
+        </span>
+      }
+    }
+    @if (deductionColumns().includes(null)) {
+      <button type="button" class="btn-add-line btn-add-deduction" (click)="addDeductionColumn()">
+        {{ 'INVOICING.STEP_LINES.ADD_DEDUCTION_COLUMN' | translate }}
+      </button>
+    }
   </div>
 
   @if ((isAv() || isTm() || isLivrable()) && rmbPickerOpen()) {
@@ -107,7 +145,7 @@ export interface StepLinesValue {
     </div>
   }
 
-  @if ((isAv() || isTm() || isLivrable()) && carryForwardPickerOpen()) {
+  @if ((isAv() || isTm() || isLivrable() || isTsCarryForward()) && carryForwardPickerOpen()) {
     <div class="rmb-picker-panel">
       @if (pendingCarryForwardList().length === 0) {
         <p class="rmb-picker-empty">{{ 'INVOICING.STEP_LINES.CARRY_FORWARD_EMPTY' | translate }}</p>
@@ -162,6 +200,11 @@ export interface StepLinesValue {
           } @else {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_HT' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_TTC' | translate }}</th>
+          }
+          @for (col of deductionColumns(); track $index) {
+            @if (col !== null) {
+              <th class="num deduction-col-header">{{ col || ('INVOICING.STEP_LINES.DEDUCTION_UNNAMED' | translate) }}</th>
+            }
           }
           <th class="col-action"></th>
         </tr>
@@ -289,6 +332,21 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ formatAmount(lineTtc(i)) }}</td>
               }
 
+              @for (col of deductionColumns(); track $index) {
+                @if (col !== null) {
+                  <td class="num deduction-col-cell">
+                    <daf-form-field [options]="pctOptions"
+                      [value]="lg.get('deductionPct' + ($index + 1))!.value"
+                      (valueChange)="setNum(lg, 'deductionPct' + ($index + 1), $event)" />
+                    @if (lg.get('deductionPct' + ($index + 1))?.value) {
+                      <span class="deduction-amount-preview">
+                        -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, currentLineHt(i))) }}
+                      </span>
+                    }
+                  </td>
+                }
+              }
+
               <td>
                 <button type="button" class="remove-line-btn" title="✕" (click)="removeLine(i)"
                   [disabled]="linesArray.length === 1">✕</button>
@@ -334,6 +392,11 @@ export interface StepLinesValue {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.MONTANT_HT' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.VAT' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_TTC' | translate }}</th>
+            @for (col of deductionColumns(); track $index) {
+              @if (col !== null) {
+                <th class="num deduction-col-header">{{ col || ('INVOICING.STEP_LINES.DEDUCTION_UNNAMED' | translate) }}</th>
+              }
+            }
             <th class="col-action"></th>
           </tr>
         </thead>
@@ -359,6 +422,20 @@ export interface StepLinesValue {
                     (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
                 </td>
                 <td class="td-computed">{{ formatAmount(lineTtcExpense(i)) }}</td>
+                @for (col of deductionColumns(); track $index) {
+                  @if (col !== null) {
+                    <td class="num deduction-col-cell">
+                      <daf-form-field [options]="pctOptions"
+                        [value]="lg.get('deductionPct' + ($index + 1))!.value"
+                        (valueChange)="setNum(lg, 'deductionPct' + ($index + 1), $event)" />
+                      @if (lg.get('deductionPct' + ($index + 1))?.value) {
+                        <span class="deduction-amount-preview">
+                          -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, lineHtExpense(i))) }}
+                        </span>
+                      }
+                    </td>
+                  }
+                }
                 <td>
                   <button type="button" class="remove-line-btn" [title]="'INVOICING.STEP_LINES.REMBOURSABLE_REMOVE' | translate"
                     (click)="removeExpenseLine(i)">✕</button>
@@ -433,6 +510,11 @@ export class StepLinesComponent {
   /** Champs numériques des tableaux de lignes (quantité, PU / montant HT). */
   readonly numOptions: FormFieldOptions = { type: 'number', align: 'end', placeholder: '0.00' };
 
+  /** Colonnes de déduction custom — même daf-form-field que les autres champs numériques du
+   * tableau (numOptions ci-dessus), suffixText: '%' plutôt qu'un '%' en dur dans le
+   * placeholder : rendu par la lib à l'intérieur du champ, annoncé par le lecteur d'écran. */
+  readonly pctOptions: FormFieldOptions = { type: 'number', align: 'end', placeholder: '0', suffixText: '%' };
+
   /** Valeur sélectionnée du daf-select TVA — ses options portent le taux en chaîne. */
   vatSelected(g: AbstractControl): string[] {
     const v = g.get('tauxTva')?.value;
@@ -480,6 +562,13 @@ export class StepLinesComponent {
    * effacerait son suivi d'avancement réel (elle tomberait dans la branche générique, qui
    * n'inclut pas ces colonnes du tout). */
   readonly isLivrable = computed(() => this.affaireData().billingMode === 'LIVRABLE');
+
+  /** Vrai pour une facture créée spécifiquement pour solder un reliquat TS non facturé
+   * (voir step-affaire.component's "Facturer le solde TS" toggle) — ne construit jamais de
+   * ligne à la main, uniquement via le picker de solde non facturé ci-dessous, réutilisé
+   * tel quel (PendingCarryForwardDto porte déjà son propre billingMode="TS"). Les lignes
+   * utilisent la branche standard (Qté/PU HT) du tableau, qui convient telle quelle. */
+  readonly isTsCarryForward = computed(() => this.affaireData().billingMode === 'TS');
 
   private readonly initialPeriodFrom = signal<string | null>(null);
   private readonly initialPeriodTo   = signal<string | null>(null);
@@ -598,10 +687,14 @@ export class StepLinesComponent {
     // trois modes réels avec une affaire sélectionnée — même déclencheur que le
     // chargement des frais remboursables ci-dessus.
     effect(() => {
-      const anyRealMode = this.isAv() || this.isTm() || this.isLivrable();
+      const anyRealMode = this.isAv() || this.isTm() || this.isLivrable() || this.isTsCarryForward();
       const aff = this.affaireData();
       if (anyRealMode && aff.affaireId) {
-        this.svc.getPendingCarryForward(aff.affaireId).subscribe({
+        // TS n'est jamais le mode propre de l'affaire (toujours FORFAIT/REGIE/LIVRABLE) --
+        // override explicite nécessaire ici ; les 3 modes réels continuent de laisser le
+        // backend déduire le mode depuis l'affaire elle-même, comportement inchangé.
+        const modeOverride = this.isTsCarryForward() ? 'TS' : undefined;
+        this.svc.getPendingCarryForward(aff.affaireId, modeOverride).subscribe({
           next:  p  => this.pendingCarryForward.set(p),
           error: () => this.pendingCarryForward.set([]),
         });
@@ -617,7 +710,7 @@ export class StepLinesComponent {
     // line here is the reimbursable-expense picker (see the "Ajouter une ligne" button's
     // new guard in the template, and the picker's own guard extended to all three modes).
     effect(() => {
-      const realMode = this.isAv() || this.isTm() || this.isLivrable();
+      const realMode = this.isAv() || this.isTm() || this.isLivrable() || this.isTsCarryForward();
       if (!this.isEditMode() && realMode) {
         this.linesArray.clear();
       }
@@ -647,6 +740,9 @@ export class StepLinesComponent {
    * save) — reimbursable lines never carry an avancement percentage.
    */
   private seedFromInitialLines(initial: StepLinesValue): void {
+    this.deductionColumns.set(
+      initial.deductionColumns ? [...initial.deductionColumns] : [null, null, null]);
+
     if (initial.lines.length === 0) return;
 
     this.linesArray.clear();
@@ -664,6 +760,9 @@ export class StepLinesComponent {
           tauxTva:         l.vatRatePct,
           sourceExpenseId: l.sourceExpenseId,
           sourceCarriedForwardLineId: l.sourceCarriedForwardLineId,
+          deductionPct1:   l.deductionPct1 ?? null,
+          deductionPct2:   l.deductionPct2 ?? null,
+          deductionPct3:   l.deductionPct3 ?? null,
         });
         this.expenseLinesArray.push(g);
       } else {
@@ -683,6 +782,9 @@ export class StepLinesComponent {
           sourceExpenseId: l.sourceExpenseId ?? null,
           sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? null,
           profileUserId:   l.profileUserId ?? null,
+          deductionPct1:   l.deductionPct1 ?? null,
+          deductionPct2:   l.deductionPct2 ?? null,
+          deductionPct3:   l.deductionPct3 ?? null,
         });
         this.linesArray.push(g);
       }
@@ -712,6 +814,64 @@ export class StepLinesComponent {
   get linesArray(): FormArray { return this.form.get('lines') as FormArray; }
   get expenseLinesArray(): FormArray { return this.form.get('expenseLines') as FormArray; }
 
+  // ── Colonnes de déduction personnalisées (3 positions fixes) ──────────────────
+  //
+  // Partagées par TOUTE la facture (lines ET expenseLines), pas par mode de facturation :
+  // le libellé se définit une seule fois ; chaque ligne porte ensuite sa propre valeur
+  // (ou aucune) pour chaque colonne existante. Toujours exactement 3 positions — null =
+  // colonne inutilisée — jamais un tableau qu'on recompacte en retirant un élément, pour
+  // qu'une position d'index reste câblée pour toujours au même champ `deductionPctN`
+  // (voir le commentaire sur StepLinesValue.deductionColumns pour le pourquoi).
+
+  readonly deductionColumns = signal<(string | null)[]>([null, null, null]);
+
+  addDeductionColumn(): void {
+    const cols = this.deductionColumns();
+    const freeIndex = cols.findIndex(c => c === null);
+    if (freeIndex === -1) return; // déjà 3 colonnes actives
+    const next = [...cols];
+    next[freeIndex] = '';
+    this.deductionColumns.set(next);
+  }
+
+  renameDeductionColumn(index: number, label: string): void {
+    const next = [...this.deductionColumns()];
+    next[index] = label;
+    this.deductionColumns.set(next);
+  }
+
+  removeDeductionColumn(index: number): void {
+    const next = [...this.deductionColumns()];
+    next[index] = null;
+    this.deductionColumns.set(next);
+    // Efface toute valeur déjà saisie sous cette position sur TOUTES les lignes, pour
+    // qu'une colonne réutilisée plus tard (ou une valeur restée orpheline) ne resurgisse
+    // jamais silencieusement à la réactivation de cette même position.
+    const controlName = `deductionPct${index + 1}`;
+    [...this.linesArray.controls, ...this.expenseLinesArray.controls].forEach(c =>
+      (c as FormGroup).get(controlName)?.setValue(null));
+    this.linesVersion.update(v => v + 1);
+  }
+
+  /** Montant HT de la ligne i dans le mode courant du tableau principal — sert uniquement
+   * à l'aperçu de déduction en direct (lineDeductionAmount), qui doit fonctionner de la
+   * même façon quel que soit le mode de facturation actif, sans dupliquer la cellule de
+   * déduction une fois par branche @if (isAv()/isTm()/isLivrable()/standard) comme le
+   * fait la colonne Total TTC juste au-dessus dans le gabarit. */
+  currentLineHt(i: number): number {
+    if (this.isAv()) return this.lineHtAv(i);
+    if (this.isTm()) return this.lineHtTm(i);
+    if (this.isLivrable()) return this.lineHtLivrable(i);
+    return this.lineHt(i);
+  }
+
+  /** Montant déduit en direct pour l'affichage (même patron que lineHt()/lineTtc() pour la
+   * TVA) — `lineHt` est le montant HT déjà calculé pour cette ligne dans le mode courant. */
+  lineDeductionAmount(group: FormGroup, columnPosition: number, lineHt: number): number {
+    const pct = group.get(`deductionPct${columnPosition}`)?.value;
+    return pct ? lineHt * (pct / 100) : 0;
+  }
+
   newLine(): FormGroup {
     return this.fb.group({
       description:      ['', Validators.required],
@@ -730,6 +890,14 @@ export class StepLinesComponent {
       sourceExpenseId:  [null as number | null],
       sourceCarriedForwardLineId: [null as number | null],
       profileUserId:    [null as number | null],
+      // Toujours créés, que des colonnes de déduction soient actives ou non sur la
+      // facture au moment où cette ligne est créée — un contrôle inutilisé ne coûte rien
+      // et évite tout ajout/retrait dynamique de contrôle (source du bug de
+      // désynchronisation évité par le modèle à 3 positions fixes, voir
+      // StepLinesValue.deductionColumns).
+      deductionPct1:    [null as number | null],
+      deductionPct2:    [null as number | null],
+      deductionPct3:    [null as number | null],
     });
   }
 
@@ -839,6 +1007,9 @@ export class StepLinesComponent {
       tauxTva:          [0],
       sourceExpenseId:  [null as number | null],
       sourceCarriedForwardLineId: [null as number | null],
+      deductionPct1:    [null as number | null],
+      deductionPct2:    [null as number | null],
+      deductionPct3:    [null as number | null],
     });
   }
 
@@ -1100,6 +1271,13 @@ export class StepLinesComponent {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
+    const deductionColumns = this.deductionColumns();
+    const dedFields = (l: { deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null }) => ({
+      deductionPct1: l.deductionPct1 ?? undefined,
+      deductionPct2: l.deductionPct2 ?? undefined,
+      deductionPct3: l.deductionPct3 ?? undefined,
+    });
+
     if (this.isAv()) {
       // Colonnes d'avancement réémises TELLES QUELLES depuis les valeurs déjà seedées sur
       // chaque ligne (cf. avAvancement plus haut) — jamais recalculées depuis progress(),
@@ -1113,6 +1291,7 @@ export class StepLinesComponent {
         sourceCarriedForwardLineId: number | null;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
       }[])
         .map((l, i) => ({
           description:     l.description,
@@ -1125,6 +1304,7 @@ export class StepLinesComponent {
           pctAFacturer:    l.pctAFacturer  ?? undefined,
           sourceExpenseId: l.sourceExpenseId ?? undefined,
           sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+          ...dedFields(l),
         }));
 
       // Frais remboursables pickés (table séparée) : montant plat, aucun champ
@@ -1134,6 +1314,7 @@ export class StepLinesComponent {
       const expenseLines = (this.expenseLinesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number; sourceExpenseId: number | null;
         sourceCarriedForwardLineId: number | null;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
       }[]).map(l => ({
         description:     l.description,
         quantity:        1,
@@ -1141,9 +1322,10 @@ export class StepLinesComponent {
         vatRatePct:      l.tauxTva,
         sourceExpenseId: l.sourceExpenseId ?? undefined,
         sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+        ...dedFields(l),
       }));
 
-      this.nextStep.emit({ lines: [...avancementLines, ...expenseLines] });
+      this.nextStep.emit({ lines: [...avancementLines, ...expenseLines], deductionColumns });
     } else if (this.isTm()) {
       // Les trois pourcentages sont toujours 100 % (une ligne T&M = la totalité du WIP
       // déjà calculé pour sa période) — Budget affaire égale toujours le montant saisi,
@@ -1151,6 +1333,7 @@ export class StepLinesComponent {
       const tmLines = (this.linesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number;
         sourceCarriedForwardLineId: number | null;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
       }[]).map(l => {
         const montant = l.prixUnitaireHt ?? 0;
         return {
@@ -1163,12 +1346,14 @@ export class StepLinesComponent {
           pctAvancement: 100,
           pctAFacturer:  100,
           sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+          ...dedFields(l),
         };
       });
       this.nextStep.emit({
         lines: tmLines,
         periodFrom: this.initialPeriodFrom(),
         periodTo:   this.initialPeriodTo(),
+        deductionColumns,
       });
     } else if (this.isLivrable()) {
       // Chaque ligne (un livrable groupé dans la facture) porte un VRAI pourcentage du
@@ -1193,6 +1378,7 @@ export class StepLinesComponent {
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         sourceCarriedForwardLineId: number | null;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
       }[]).map((l, i) => ({
         description:   l.description,
         quantity:      1,          // rétrocompat : quantity=1, unitRate=montant
@@ -1203,6 +1389,7 @@ export class StepLinesComponent {
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
         sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+        ...dedFields(l),
       }));
       this.nextStep.emit({
         lines: livrableLines,
@@ -1210,6 +1397,7 @@ export class StepLinesComponent {
         // vient du serveur et cette étape ne la rejoue pas (cf. seedFromInitialLines).
         periodFrom: this.initialPeriodFrom(),
         periodTo:   this.initialPeriodTo(),
+        deductionColumns,
       });
     } else {
       this.nextStep.emit({
@@ -1217,6 +1405,7 @@ export class StepLinesComponent {
           description: string; quantite: number; prixUnitaireHt: number; tauxTva: number;
           sourceExpenseId: number | null; profileUserId: number | null;
           sourceCarriedForwardLineId: number | null;
+          deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
         }[]).map(l => ({
           description:     l.description,
           quantity:        l.quantite,
@@ -1225,9 +1414,11 @@ export class StepLinesComponent {
           sourceExpenseId: l.sourceExpenseId ?? undefined,
           sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
           profileUserId:   l.profileUserId ?? undefined,
+          ...dedFields(l),
         })),
         periodFrom: null,
         periodTo:   null,
+        deductionColumns,
       });
     }
   }

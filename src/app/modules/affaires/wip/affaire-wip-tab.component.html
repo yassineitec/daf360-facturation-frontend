@@ -728,6 +728,17 @@
             </ng-template>
           </daf-data-table>
 
+          <!-- Nouveau pour la cohérence avec AV/Régie (voir livrableManualVerified dans le
+               .ts) — LIVRABLE n'avait aucune vérification manuelle avant. Visible dès qu'il
+               y a quelque chose à soumettre, comme la checkbox AV (avStepIndex() >= 1). -->
+          @if (hasLivrableChanges()) {
+            <label class="flex items-center gap-2 text-[12px] cursor-pointer">
+              <input type="checkbox" class="shrink-0" [checked]="livrableManualVerified()"
+                (change)="livrableManualVerified.set($any($event.target).checked)" />
+              <span>{{ 'AFFAIRES.WIP.MANUAL_VERIFY_LABEL' | translate }}</span>
+            </label>
+          }
+
           <div class="grid items-end gap-4" style="grid-template-columns: auto 1fr auto;">
             <div style="grid-column:1">
               <p class="text-[11px] uppercase tracking-wide text-on-surface-variant">{{ 'AFFAIRES.WIP.TOTAL_SELECTED' | translate }}</p>
@@ -742,7 +753,7 @@
                         bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant shadow-sm">
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send',
                                         title: (editingBatchId() !== null ? 'AFFAIRES.WIP.UPDATE' : 'AFFAIRES.WIP.SUBMIT') | translate,
-                                        loading: submittingLivrables(), disabled: !hasLivrableChanges() || submittingLivrables() }"
+                                        loading: submittingLivrables(), disabled: !hasLivrableChanges() || !livrableManualVerified() || submittingLivrables() }"
                 (onClick)="submitLivrables()" />
               @if (editingBatchId() !== null) {
                 <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', title: ('AFFAIRES.WIP.CANCEL_EDIT' | translate) }"
@@ -957,5 +968,10 @@
   } @else {
     <p class="text-[13px] text-on-surface-variant">{{ 'AFFAIRES.WIP.UNSUPPORTED_MODE' | translate }}</p>
   }
+
+  <!-- Montée une fois, hors des branches @if ci-dessus (les 3 modes la partagent) — même
+       intégration que app-payment-modal : aucun @if sur l'élément lui-même, pilotée via
+       emailPreviewModal().open(...). -->
+  <app-email-preview-modal #emailPreviewModal />
 
 </div>

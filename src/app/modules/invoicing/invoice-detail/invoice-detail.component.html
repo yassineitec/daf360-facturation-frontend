@@ -128,7 +128,7 @@
                              disabled: !inv.affaireId }"
                 (onClick)="goToAffaire()" />
 
-              @if (inv.billingMode === 'FORFAIT' || inv.billingMode === 'REGIE' || inv.billingMode === 'LIVRABLE') {
+              @if (usesAvancementColumns()) {
                 <daf-button
                   style="flex:1 1 100%"
                   [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'picture_as_pdf',
@@ -235,6 +235,29 @@
                 <span class="text-headline-md font-extrabold text-primary">
                   {{ inv.montantTtc | displayCurrency : inv.devise }}
                 </span>
+              </div>
+            }
+
+            <!-- Ventilation des colonnes de déduction personnalisées — n'apparaît que si
+                 au moins une colonne est utilisée sur cette facture (voir deductionBreakdown). -->
+            @if (deductionBreakdown().length > 0) {
+              <div class="flex flex-col items-end gap-2 rounded-xl bg-surface-container px-6 py-4">
+                @for (d of deductionBreakdown(); track d.label) {
+                  <div class="flex flex-wrap items-baseline gap-6">
+                    <span class="text-body-sm text-on-surface-variant">{{ d.label }}</span>
+                    <span class="text-body-md font-semibold text-on-surface-variant">
+                      -{{ d.total | displayCurrency : inv.devise }}
+                    </span>
+                  </div>
+                }
+                <div class="flex flex-wrap items-baseline gap-6">
+                  <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ 'INVOICING.DETAIL.LINES.NET_PAYABLE' | translate }}
+                  </span>
+                  <span class="text-headline-md font-extrabold text-primary">
+                    {{ inv.montantNetAPayer | displayCurrency : inv.devise }}
+                  </span>
+                </div>
               </div>
             }
           }

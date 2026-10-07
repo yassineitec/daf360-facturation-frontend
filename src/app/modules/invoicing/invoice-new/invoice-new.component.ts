@@ -158,9 +158,13 @@ export class InvoiceNewComponent implements OnInit {
             pctAFacturer:    l.pctAFacturer,
             sourceExpenseId: l.sourceExpenseId,
             sourceCarriedForwardLineId: l.sourceCarriedForwardLineId,
+            deductionPct1:   l.deductionPct1,
+            deductionPct2:   l.deductionPct2,
+            deductionPct3:   l.deductionPct3,
           })),
           periodFrom: inv.periodFrom,
           periodTo:   inv.periodTo,
+          deductionColumns: [inv.deductionLabel1, inv.deductionLabel2, inv.deductionLabel3],
         });
         this.initialConditions.set({
           dateEcheance:       inv.dateEcheance ?? '',

@@ -8,6 +8,7 @@ import {
   AffectationManuelleItem, AffaireLivrableDto, CollaborateurTauxDto, LivrableTauxEntry,
   LivrableBatchDto,
 } from './livrable.model';
+import { EmailPreviewDto } from './wip/wip.model';
 
 @Injectable({ providedIn: 'root' })
 export class LivrableService {
@@ -82,6 +83,20 @@ export class LivrableService {
   ): Observable<LivrableBatchDto> {
     return this.http.post<LivrableBatchDto>(
       `${this.base}/${affaireId}/livrables/submit`,
+      { entries, billingDate },
+      { withCredentials: true });
+  }
+
+  /** Read-only: the exact client email submitLivrables() would send for these entries,
+   * without persisting or sending anything — lets the WIP tab show a review-and-confirm popup
+   * before the user triggers the real submit. */
+  previewLivrablesEmail(
+    affaireId: number,
+    entries: LivrableTauxEntry[],
+    billingDate?: string,
+  ): Observable<EmailPreviewDto> {
+    return this.http.post<EmailPreviewDto>(
+      `${this.base}/${affaireId}/livrables/submit/preview-email`,
       { entries, billingDate },
       { withCredentials: true });
   }

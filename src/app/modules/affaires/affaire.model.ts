@@ -203,6 +203,8 @@ export interface TsDto {
   validCommercialeAt:  string | null;
   integreAuBudgetAt:   string | null;
   createdAt:           string;
+  /** Set once this TS is actually billed through the TS WIP tab — null until FACTURE. */
+  invoiceId:           number | null;
 }
 
 // Correspond exactement à UpdateAffaireRequest.java côté backend (PATCH

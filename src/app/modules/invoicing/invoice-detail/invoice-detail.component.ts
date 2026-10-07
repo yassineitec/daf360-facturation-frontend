@@ -248,15 +248,17 @@ export class InvoiceDetailComponent implements OnInit {
 
   /**
    * ⚠️ Le reste dû d'une facture partiellement payée est une ESTIMATION à la moitié du
-   * TTC : l'API ne renvoie pas le cumul encaissé sur la facture. La tuile le dit,
-   * plutôt que de présenter un chiffre inventé comme un solde exact.
+   * montant NET à payer (montantNetAPayer, qui tient compte des déductions V93 -- égal
+   * à montantTtc quand aucune colonne de déduction n'est utilisée) : l'API ne renvoie pas
+   * le cumul encaissé sur la facture. La tuile le dit, plutôt que de présenter un chiffre
+   * inventé comme un solde exact.
    */
   readonly montantRestant = computed(() => {
     const inv = this.invoice();
     if (!inv) return 0;
     if (inv.statut === 'PAID') return 0;
-    if (inv.statut === 'PARTIALLY_PAID') return inv.montantTtc / 2;
-    return inv.montantTtc;
+    if (inv.statut === 'PARTIALLY_PAID') return inv.montantNetAPayer / 2;
+    return inv.montantNetAPayer;
   });
 
   readonly kpiTiles = computed<KpiTile[]>(() => {
@@ -295,6 +297,23 @@ export class InvoiceDetailComponent implements OnInit {
       : this.translate.instant('INVOICING.DETAIL.KPI.NO_DUE');
   }
 
+  /**
+   * Ventilation des colonnes de déduction personnalisées (0 à 3 entrées) — même donnée
+   * que celle affichée au récapitulatif de création (step-recap.component.ts) et sur le
+   * PDF, pour que la fiche facture reste cohérente avec les deux. Seules les colonnes
+   * avec un libellé non vide comptent : une colonne sans libellé n'a, par construction
+   * (validateDeductionColumns côté service), jamais de montant associé non plus.
+   */
+  readonly deductionBreakdown = computed(() => {
+    const inv = this.invoice();
+    if (!inv) return [];
+    return [
+      { label: inv.deductionLabel1, total: inv.deductionTotal1 },
+      { label: inv.deductionLabel2, total: inv.deductionTotal2 },
+      { label: inv.deductionLabel3, total: inv.deductionTotal3 },
+    ].filter((d): d is { label: string; total: number } => !!d.label);
+  });
+
   // ═══ Onglets ══════════════════════════════════════════════════════════════
 
   readonly tabs = computed<TabItem[]>(() => {
@@ -319,7 +338,7 @@ export class InvoiceDetailComponent implements OnInit {
    */
   readonly usesAvancementColumns = computed(() => {
     const mode = this.invoice()?.billingMode;
-    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE';
+    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE' || mode === 'TS';
   });
 
   readonly lineTableColumns = computed((): TableColumn[] => {

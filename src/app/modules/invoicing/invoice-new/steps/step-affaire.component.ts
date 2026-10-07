@@ -9,9 +9,10 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { InvoiceService } from '../../invoice.service';
 import { AffaireListItem, RafDetailsDto, TsDto } from '../../../affaires/affaire.model';
 import { AffaireService } from '../../../affaires/affaire.service';
-import { FormFieldComponent, SelectComponent } from '@khalilrebhiitec/daf360';
+import { FormFieldComponent, SelectComponent, CheckboxComponent } from '@khalilrebhiitec/daf360';
 import { FactListService } from '../../../../core/fact-list.service';
 import { ListValueDto } from '../../../cost/cost.model';
+import { BillingService, TsPendingCarryForwardDto } from '../../../affaires/billing/billing.service';
 
 // `LIVRABLE` était absent : le mode existait mais était enregistré sous `JAL`, donc
 // il passait par inadvertance. Maintenant qu'il est persisté sous son propre code, son
@@ -32,7 +33,7 @@ export interface StepAffaireValue {
 @Component({
   selector: 'app-step-affaire',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe, SelectComponent, FormFieldComponent],
+  imports: [ReactiveFormsModule, TranslatePipe, SelectComponent, FormFieldComponent, CheckboxComponent],
   template: `
 <div class="step-affaire">
 
@@ -152,6 +153,21 @@ export interface StepAffaireValue {
     </div>
   }
 
+  <!-- Solde TS non facturé (carry-forward) : n'apparaît que si l'affaire en a un. Cocher
+       cette case bascule l'invoice.billingMode vers 'TS' pour CETTE facture uniquement,
+       quel que soit le mode propre de l'affaire (FORFAIT/REGIE/LIVRABLE) — voir next(). -->
+  @if (pendingTsCarryForward().length > 0) {
+    <div class="field ts-carry-forward-toggle">
+      <daf-checkbox
+        [checked]="invoiceTsCarryForward()"
+        (checkedChange)="invoiceTsCarryForward.set($event)" />
+      <span>
+        {{ 'INVOICING.STEP_AFFAIRE.TS_CARRY_FORWARD_TOGGLE' | translate }}
+        <strong>{{ formatAmount(pendingTsCarryForward()[0].montant, pendingTsCarryForward()[0].devise) }}</strong>
+      </span>
+    </div>
+  }
+
   @if (showActions()) {
     <div class="step-actions">
       <button type="button" class="btn-cancel" (click)="cancel.emit()">
@@ -175,6 +191,7 @@ export class StepAffaireComponent implements OnInit {
   private readonly fb          = inject(FormBuilder);
   private readonly translate   = inject(TranslateService);
   private readonly factListSvc = inject(FactListService);
+  private readonly billingSvc  = inject(BillingService);
 
   readonly billingModeOptions = [
     { value: 'FORFAIT',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.FORFAIT')  },
@@ -201,6 +218,9 @@ export class StepAffaireComponent implements OnInit {
   rafLoading      = signal(false);
   tsList          = signal<TsDto[]>([]);
   invoiceTypeOptions = signal<{ value: string; label: string }[]>([]);
+
+  pendingTsCarryForward = signal<TsPendingCarryForwardDto[]>([]);
+  invoiceTsCarryForward = signal(false);
 
   private readonly search$ = new Subject<string>();
 
@@ -327,6 +347,12 @@ export class StepAffaireComponent implements OnInit {
 
     this.affSvc.getTS(a.id).subscribe({ next: r => this.tsList.set(r), error: () => {} });
 
+    this.invoiceTsCarryForward.set(false);
+    this.billingSvc.getPendingTsCarryForward(a.id).subscribe({
+      next:  r => this.pendingTsCarryForward.set(r),
+      error: () => this.pendingTsCarryForward.set([]),
+    });
+
     this.factListSvc.getListValues('INVOICE_TYPE', a.paysId).subscribe(values => {
       this.invoiceTypeOptions.set(values.map((v: ListValueDto) => ({ value: v.code, label: v.labelFr })));
     });
@@ -339,6 +365,8 @@ export class StepAffaireComponent implements OnInit {
     this.searchResults.set([]);
     this.tsList.set([]);
     this.invoiceTypeOptions.set([]);
+    this.pendingTsCarryForward.set([]);
+    this.invoiceTsCarryForward.set(false);
     const bmCtrl = this.form.controls['billingMode'];
     bmCtrl.setValue('');
     bmCtrl.clearValidators();
@@ -358,7 +386,10 @@ export class StepAffaireComponent implements OnInit {
       clientId:    aff?.clientId ?? null,
       paysId:      aff?.paysId ?? 0,
       currency:    aff?.devise ?? 'TND',
-      billingMode: v.billingMode || this.validBillingModeFromAffaire() || '',
+      // La case "Facturer le solde TS" l'emporte sur le mode propre de l'affaire : un
+      // solde TS se facture toujours en mode "TS", jamais en FORFAIT/REGIE/LIVRABLE,
+      // quelle que soit l'affaire d'origine (voir step-lines.component's isTsCarryForward).
+      billingMode: this.invoiceTsCarryForward() ? 'TS' : (v.billingMode || this.validBillingModeFromAffaire() || ''),
     });
   }
 
