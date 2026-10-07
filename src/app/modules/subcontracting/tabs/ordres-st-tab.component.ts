@@ -7,6 +7,8 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { UserStore } from '../../../core/user.store';
+import { FactListService } from '../../../core/fact-list.service';
+import { ListValueDto } from '../../cost/cost.model';
 import { AffaireService } from '../../affaires/affaire.service';
 import { AffaireListItem } from '../../affaires/affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
@@ -44,6 +46,7 @@ export class OrdresStTabComponent {
   private readonly translate  = inject(TranslateService);
   private readonly modal      = inject(ModalService);
   private readonly userStore  = inject(UserStore);
+  private readonly listSvc    = inject(FactListService);
 
   @ViewChild('ostTpl')    private ostTpl!:    TemplateRef<unknown>;
   @ViewChild('statutTpl') private statutTpl!: TemplateRef<unknown>;
@@ -106,6 +109,25 @@ export class OrdresStTabComponent {
   readonly stOptions = computed<SelectOption[]>(() =>
     this.stList().map(s => ({ value: String(s.id), label: s.name })));
 
+  /** Devises de la liste admin `CURRENCY` (Finance → Admin → Listes) du pays de l'affaire. */
+  readonly currencies = signal<ListValueDto[]>([]);
+  /** Devise de l'OST en cours d'édition — gardée dans les options même si l'admin l'a désactivée depuis. */
+  private readonly editedDevise = signal<string | null>(null);
+  readonly ostCurrencyOptions = computed<SelectOption[]>(() => {
+    const options: SelectOption[] = this.currencies().map(c => ({ value: c.code, label: c.code }));
+    const current = this.editedDevise();
+    if (current && !options.some(o => o.value === current)) options.unshift({ value: current, label: current });
+    return options;
+  });
+
+  /** Devise proposée à la création : celle de l'affaire si l'admin la propose, sinon le défaut de l'admin. */
+  private defaultOstDevise(): string {
+    const values = this.currencies();
+    const affaireDevise = this.selectedAffaire()?.devise;
+    if (affaireDevise && values.some(v => v.code === affaireDevise)) return affaireDevise;
+    return (values.find(v => v.isDefault) ?? values[0])?.code ?? affaireDevise ?? '';
+  }
+
   // ── Changer statut ───────────────────────────────────────────────────
   statutTarget = signal<OSTDto | null>(null);
   newStatut    = signal('');
@@ -164,6 +186,8 @@ export class OrdresStTabComponent {
       next: list => { this.stList.set(list.filter(s => s.isActive)); this.stLoading.set(false); },
       error:    () => this.stLoading.set(false),
     });
+    this.currencies.set([]);
+    this.listSvc.getListValues('CURRENCY', a.paysId).subscribe(values => this.currencies.set(values));
   }
 
   clearAffaire(): void {
@@ -188,11 +212,12 @@ export class OrdresStTabComponent {
   // ── Create / Edit OST ────────────────────────────────────────────────
   openCreateOst(): void {
     this.editOstTarget.set(null);
+    this.editedDevise.set(null);
     this.ostForm = {
       sousTraitantId:       this.stList()[0]?.id ?? 0,
       perimetre:            '',
       montantBudget:        0,
-      devise:               'TND',
+      devise:               this.defaultOstDevise(),
       alerteDepassementPct: 10,
     };
     this.ostError.set(null);
@@ -201,6 +226,7 @@ export class OrdresStTabComponent {
 
   openEditOst(o: OSTDto): void {
     this.editOstTarget.set(o);
+    this.editedDevise.set(o.devise || null);
     this.ostForm = {
       sousTraitantId:       o.sousTraitantId,
       perimetre:            o.perimetre,

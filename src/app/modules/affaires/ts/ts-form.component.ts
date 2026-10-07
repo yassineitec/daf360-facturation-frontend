@@ -79,6 +79,8 @@ export class TsFormComponent implements OnInit {
   affaireId = input.required<number>();
   /** Devise par défaut : celle de l'affaire, pas une constante. */
   defaultDevise = input<string>('TND');
+  /** Pays de l'affaire : la liste `CURRENCY` de Finance → Admin est paramétrée par pays. */
+  paysId = input<number | null>(null);
 
   /** `true` après création réussie, `false` sur annulation — inchangé pour l'appelant. */
   closed = output<boolean>();
@@ -101,9 +103,13 @@ export class TsFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.devise.set(this.defaultDevise() || 'TND');
-    // paysId 0 : le référentiel des devises est global, comme partout ailleurs dans le module.
-    this.listSvc.getListValues('CURRENCY', 0)
-      .subscribe(v => this.currencies.set(v.filter(c => c.isActive)));
+    // Le pays de l'affaire, pas `0` : avec `0` seules les valeurs globales semées revenaient,
+    // et ce qui était ajouté, renommé ou désactivé dans Finance → Admin n'arrivait jamais ici.
+    const paysId = this.paysId();
+    if (paysId) {
+      this.listSvc.getListValues('CURRENCY', paysId)
+        .subscribe(v => this.currencies.set(v.filter(c => c.isActive)));
+    }
   }
 
   // ── Options des contrôles ───────────────────────────────────────────────

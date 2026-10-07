@@ -20,7 +20,8 @@ import { displayName, formatAmount, formatDate, statusKey } from './employee-cos
 import { EmployeeCostTableSectionComponent } from './employee-cost-table-section.component';
 import { EmployeeCostCardsSectionComponent } from './employee-cost-cards-section.component';
 import { FactListService } from '../../../core/fact-list.service';
-import { ListValueDto } from '../cost.model';
+import { ListValueDto, localizedLabel } from '../cost.model';
+import { ClientService } from '../../clients/client.service';
 import { CurrencyRateService } from '../../../core/currency-rate.service';
 import { CurrencyDisplayService } from '../../../core/currency-display.service';
 
@@ -46,6 +47,7 @@ export class EmployeeCostComponent implements OnInit {
   private readonly modals     = inject(ModalService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly listSvc    = inject(FactListService);
+  private readonly clientSvc  = inject(ClientService);
   private readonly ratesSvc   = inject(CurrencyRateService);
   private readonly displaySvc = inject(CurrencyDisplayService);
   private readonly router     = inject(Router);
@@ -97,13 +99,13 @@ export class EmployeeCostComponent implements OnInit {
    * backend-driven list when available, degrade to a known-good hardcoded set if the
    * configurable-list call fails or returns empty) — but the fallback labels here are bare
    * currency codes rather than the wizard's translated descriptions ("EUR — Euro"), since
-   * a code alone is enough context in this drawer's compact currency field. No
-   * `translate.currentLang()` read needed here (unlike the wizard's version): nothing in
-   * this fallback list is actually translated. */
+   * a code alone is enough context in this drawer's compact currency field. The backend
+   * labels follow the UI language (`currentLang()` read). */
   readonly currencyOptions = computed<SelectOption[]>(() => {
+    const lang = this.translate.currentLang();
     const list = this.currencies();
     if (list.length > 0) {
-      return list.map(c => ({ value: c.code, label: `${c.code} — ${c.labelFr}` }));
+      return list.map(c => ({ value: c.code, label: `${c.code} — ${localizedLabel(c.labelFr, c.labelEn, lang) ?? c.code}` }));
     }
     return [
       { value: 'EUR', label: 'EUR' },
@@ -422,9 +424,14 @@ export class EmployeeCostComponent implements OnInit {
       next:  u  => { this.users.set(u); this.usersLoading.set(false); },
       error: () => this.usersLoading.set(false),
     });
-    this.listSvc.getListValues('CURRENCY', 0).subscribe({
-      next: c => this.currencies.set(c),
-      error: () => this.currencies.set([]),
+    // Le pays de l'utilisateur, pas `0` : avec `0` seules les valeurs globales semées
+    // revenaient, et ce qui était paramétré dans Finance → Admin n'arrivait jamais ici.
+    this.clientSvc.getMyPays().subscribe(paysId => {
+      if (!paysId) return;
+      this.listSvc.getListValues('CURRENCY', paysId).subscribe({
+        next: c => this.currencies.set(c),
+        error: () => this.currencies.set([]),
+      });
     });
   }
 

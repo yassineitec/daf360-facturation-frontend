@@ -21,6 +21,8 @@ import {
 import { STATUT_BADGE_VARIANT } from '../../invoicing/invoice-display';
 import { PaymentModalComponent } from '../../invoicing/payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { FactListService } from '../../../core/fact-list.service';
+import { ListValueDto, localizedLabel } from '../../cost/cost.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { daysPastDue, formatDate, offsetLabel, retardVariant } from '../payments-display';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
@@ -77,6 +79,7 @@ interface KpiTile {
 export class RecouvrementDetailComponent implements OnInit {
   private readonly svc       = inject(InvoiceService);
   private readonly translate = inject(TranslateService);
+  private readonly listSvc   = inject(FactListService);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
@@ -89,6 +92,8 @@ export class RecouvrementDetailComponent implements OnInit {
   private readonly invoiceId = Number(this.route.snapshot.paramMap.get('id'));
 
   invoice     = signal<InvoiceDetail | null>(null);
+  /** Modes d'encaissement de l'admin (`PAYMENT_METHOD`), pour le libellé des encaissements. */
+  readonly paymentMethods = signal<ListValueDto[]>([]);
   reminders   = signal<ReminderDto[]>([]);
   payments    = signal<InvoicePaymentDto[]>([]);
 
@@ -486,6 +491,8 @@ export class RecouvrementDetailComponent implements OnInit {
         this.reminders.set(reminders);
         this.payments.set(payments);
         this.loading.set(false);
+        this.listSvc.getListValues('PAYMENT_METHOD', invoice.paysId)
+          .subscribe(values => this.paymentMethods.set(values));
       },
       error: () => {
         this.error.set(this.translate.instant('PAYMENTS.DETAIL.LOAD_ERROR'));
@@ -558,8 +565,15 @@ export class RecouvrementDetailComponent implements OnInit {
     return key ? this.translate.instant(key) : statut;
   }
 
+  /**
+   * Libellé du mode d'encaissement : d'abord la liste admin `PAYMENT_METHOD` (celle que
+   * propose la modale de paiement), puis l'ancienne table i18n pour un code qui n'y est
+   * plus, puis le code brut.
+   */
   private paymentModeLabel(mode: string | null): string {
     if (!mode) return '—';
+    const value = this.paymentMethods().find(m => m.code === mode);
+    if (value) return localizedLabel(value.labelFr, value.labelEn, this.translate.currentLang()) ?? mode;
     const key = PAYMENT_MODES[mode];
     return key ? this.translate.instant(key) : mode;
   }

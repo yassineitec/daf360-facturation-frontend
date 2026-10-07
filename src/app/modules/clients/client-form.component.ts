@@ -9,6 +9,8 @@ import { PaysRefDto } from '../affaires/affaire.model';
 import { ContactEditorComponent } from './contacts/contact-editor.component';
 import { ClientContactService }   from './contacts/client-contact.service';
 import { ContactDraft, toContactDraft } from './contacts/client-contact.model';
+import { FactListService } from '../../core/fact-list.service';
+import { ListValueDto, localizedLabel } from '../cost/cost.model';
 import {
   ButtonComponent, FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
@@ -65,8 +67,6 @@ function mergeSectors(...lists: (readonly (string | null | undefined)[])[]): str
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const CURRENCY_CODES = ['TND', 'EGP', 'EUR', 'USD'];
-
 @Component({
   selector: 'app-client-form',
   imports: [
@@ -85,6 +85,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
 
   private readonly svc = inject(ClientService);
   private readonly contactSvc = inject(ClientContactService);
+  private readonly listSvc = inject(FactListService);
   private readonly translate = inject(TranslateService);
 
   // ── Form field signals ─────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
 
   // daf-select signals (always string[])
   readonly selectedSector   = signal<string[]>([]);
-  readonly selectedCurrency = signal<string[]>(['TND']);
+  readonly selectedCurrency = signal<string[]>([]);
 
   // ── UI state ───────────────────────────────────────────────────────────────
   readonly saving         = signal(false);
@@ -112,6 +113,8 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly touched        = signal(false);
   /** Référentiel des pays, pour la liste déroulante « Pays ». */
   readonly paysList       = signal<PaysRefDto[]>([]);
+  /** Devises paramétrées dans Finance > Admin (liste CURRENCY) pour l'entité du client. */
+  readonly currencies     = signal<ListValueDto[]>([]);
 
   // ── Contacts ───────────────────────────────────────────────────────────────
   // Les trois champs `contactName` / `contactEmail` / `contactPhone` ont disparu :
@@ -131,12 +134,22 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly sectorSelectOptions = computed<SelectOption[]>(() =>
     this.sectors().map(s => ({ value: s, label: s }))
   );
+  /**
+   * La liste CURRENCY de l'admin. La colonne `default_currency` garde le CODE : une
+   * devise du client désactivée depuis reste proposée, sinon le select s'afficherait
+   * vide et l'enregistrement l'effacerait sans que personne l'ait choisi.
+   */
   readonly currencyOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    return CURRENCY_CODES.map(code => ({
-      value: code,
-      label: this.translate.instant(`CLIENTS.FORM.CURRENCY.${code}`),
+    const lang = this.translate.currentLang();
+    const options: SelectOption[] = this.currencies().map(c => ({
+      value: c.code,
+      label: `${c.code} — ${localizedLabel(c.labelFr, c.labelEn, lang) ?? c.code}`,
     }));
+    const current = this.client?.defaultCurrency;
+    if (current && !options.some(o => o.value === current)) {
+      options.unshift({ value: current, label: current });
+    }
+    return options;
   });
 
   // ── Select configs ─────────────────────────────────────────────────────────
@@ -256,6 +269,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
     if (changes['paysId']) {
       const effectiveId: number = this.client?.paysId ?? changes['paysId'].currentValue;
       if (effectiveId) {
+        this.loadCurrencies(effectiveId);
         this.loadingSectors.set(true);
         this.svc.getSectors().subscribe({
           next:  s  => { this.setSectors(s);   this.loadingSectors.set(false); },
@@ -266,6 +280,17 @@ export class ClientFormComponent implements OnInit, OnChanges {
       }
     }
 
+  }
+
+  /** Charge la liste CURRENCY du pays et, à la création, présélectionne la devise par défaut de l'admin. */
+  private loadCurrencies(paysId: number): void {
+    this.listSvc.getListValues('CURRENCY', paysId).subscribe(values => {
+      this.currencies.set(values);
+      if (!this.selectedCurrency()[0] && values.length) {
+        const def = values.find(v => v.isDefault) ?? values[0];
+        this.selectedCurrency.set([def.code]);
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -285,7 +310,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
       this.postalCode.set(c.postalCode ?? '');
       this.website.set(c.website ?? '');
       this.paymentTermsDays.set(c.paymentTermsDays != null ? String(c.paymentTermsDays) : '30');
-      this.selectedCurrency.set([c.defaultCurrency ?? 'TND']);
+      this.selectedCurrency.set(c.defaultCurrency ? [c.defaultCurrency] : []);
       this.notes.set(c.notes ?? '');
 
       // Actifs seulement : la réactivation d'un contact désactivé se fait depuis la
