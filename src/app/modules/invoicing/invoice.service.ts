@@ -110,10 +110,16 @@ export class InvoiceService {
     return this.http.get(`${this.base}/invoices/${id}/pdf-preview`, { params, responseType: 'blob' });
   }
 
-  /** WIP non facturé (période déjà clôturée) proposé au picker de la facture manuelle. */
-  getPendingCarryForward(affaireId: number): Observable<PendingCarryForwardDto[]> {
+  /** WIP non facturé (période déjà clôturée) proposé au picker de la facture manuelle.
+   * `billingMode` est un override optionnel : omis, le serveur déduit le mode de l'affaire
+   * elle-même (FORFAIT/REGIE/LIVRABLE) comme avant ; passé explicitement (ex. "TS"), il
+   * interroge ce mode précis à la place -- nécessaire pour le solde TS, qui n'est jamais
+   * le mode propre de l'affaire. */
+  getPendingCarryForward(affaireId: number, billingMode?: string): Observable<PendingCarryForwardDto[]> {
+    const params = billingMode ? new HttpParams().set('billingMode', billingMode) : undefined;
     return this.http.get<PendingCarryForwardDto[]>(
       `${this.base}/invoices/affaire/${affaireId}/pending-carry-forward`,
+      { params },
     );
   }
 

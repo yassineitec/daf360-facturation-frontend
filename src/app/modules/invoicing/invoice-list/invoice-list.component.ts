@@ -108,13 +108,17 @@ export class InvoiceListComponent implements OnInit {
   readonly statsEnRetard  = computed(() => this.invoices().filter(i => isOverdue(i)).length);
   readonly statsEnLitige  = computed(() => this.invoices().filter(i => i.statut === 'DISPUTED').length);
 
+  // amountTotal reste sur montantTtc : c'est le volume facturé (valeur faciale), pas un
+  // montant dû -- les 3 agrégats suivants représentent de l'argent encore à recouvrer et
+  // doivent donc refléter montantNetAPayer (= montantTtc quand aucune déduction V93
+  // n'est utilisée).
   readonly amountTotal     = computed(() => this.invoices().reduce((s, i) => s + (i.montantTtc ?? 0), 0));
   readonly amountEnAttente = computed(() =>
-    this.invoices().filter(i => PENDING_STATUTS.includes(i.statut)).reduce((s, i) => s + (i.montantTtc ?? 0), 0));
+    this.invoices().filter(i => PENDING_STATUTS.includes(i.statut)).reduce((s, i) => s + (i.montantNetAPayer ?? 0), 0));
   readonly amountEnRetard  = computed(() =>
-    this.invoices().filter(i => isOverdue(i)).reduce((s, i) => s + (i.montantTtc ?? 0), 0));
+    this.invoices().filter(i => isOverdue(i)).reduce((s, i) => s + (i.montantNetAPayer ?? 0), 0));
   readonly amountEnLitige  = computed(() =>
-    this.invoices().filter(i => i.statut === 'DISPUTED').reduce((s, i) => s + (i.montantTtc ?? 0), 0));
+    this.invoices().filter(i => i.statut === 'DISPUTED').reduce((s, i) => s + (i.montantNetAPayer ?? 0), 0));
 
   /** Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4). */
   readonly kpiTotal    : MetricCardOptions = { icon: 'receipt_long', iconColor: 'text-primary', iconBg: 'bg-primary/10' };

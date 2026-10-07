@@ -7,13 +7,14 @@ import {
   PageComponent, PageHeaderComponent, MetricCardComponent, MetricCardOptions,
   TabsComponent, TabItem, PaginationComponent,
   StatusBadgeComponent, BadgeVariant,
-  FormFieldComponent,
+  FormFieldComponent, CheckboxComponent,
   SearchToolbarComponent, SearchToolbarFilterConfig, FilterField, FilterResult,
   ModalService, ModalRef,
+  BulkActionBarComponent, BulkAction,
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService,
-  PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto,
+  PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto, PendingTsBatchDto,
   PendingCreditNoteDto, AuditLogEntryDto,
 } from './billing.service';
 // Not a BillingLine like the three sources above — a credit note already IS an Invoice
@@ -22,12 +23,13 @@ import {
 import { InvoiceService } from '../../invoicing/invoice.service';
 import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 import { TableSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
+import { RowSelection } from './row-selection';
 type ActiveTab = 'df' | 'history';
-// Three tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE) instead of by entity
+// Four tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE/TS) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
 // 'forfaitaire' shows both FORFAIT billing lines (AV taux included — see loadDF()) and
-// FORFAIT credit notes.
-type DfSubTab  = 'forfaitaire' | 'regie' | 'livrable';
+// FORFAIT credit notes. 'ts' has no credit-note section — TS never produces one.
+type DfSubTab  = 'forfaitaire' | 'regie' | 'livrable' | 'ts';
 
 const LINE_STATUT_VARIANT: Record<string, BadgeVariant> = {
   EN_ATTENTE_DF: 'warning',
@@ -131,7 +133,7 @@ function affaireOptions(rows: { affaireId: number | null; affaireRef: string | n
     RouterLink, TranslatePipe, DataTableComponent, DafCellDirective,
     PageComponent, PageHeaderComponent, MetricCardComponent,
     TabsComponent, StatusBadgeComponent, FormFieldComponent, PaginationComponent,
-    SearchToolbarComponent,
+    SearchToolbarComponent, CheckboxComponent, BulkActionBarComponent,
   ],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
@@ -188,21 +190,43 @@ export class ApprovalQueueComponent implements OnInit {
   pendingJalons = signal<PendingJalonDto[]>([]);
   pendingLines  = signal<PendingBillingLineDto[]>([]);
   pendingLivrableBatches = signal<PendingLivrableBatchDto[]>([]);
+  pendingTsBatches       = signal<PendingTsBatchDto[]>([]);
   pendingCreditNotes     = signal<PendingCreditNoteDto[]>([]);
   auditLog      = signal<AuditLogEntryDto[]>([]);
+
+  // ── Bulk-validate multi-select — one independent RowSelection per sub-tab table, so
+  // selecting rows in one doesn't disturb another's in-progress selection. Credit-note
+  // tables get none: a credit note is already a submitted Invoice (see the import comment
+  // above) and keeps its own single-action approve+emit flow untouched. ──
+  readonly forfaitSelection  = new RowSelection();
+  readonly regieSelection    = new RowSelection();
+  readonly livrableSelection = new RowSelection();
+  readonly tsSelection       = new RowSelection();
+
+  /** The one action every bulk bar offers — shared since Forfaitaire/Régie/Livrable all
+   * mean the same thing by it ("validate everything currently checked"). */
+  readonly bulkValidateActions = computed<BulkAction[]>(() => {
+    this.translate.currentLang();
+    return [{
+      id: 'validate',
+      label: this.translate.instant('AFFAIRES.billing.approval.bulk_validate'),
+      icon: 'check_circle',
+    }];
+  });
 
   dfRetourMotif = signal('');
   dfRetourError = signal<string | null>(null);
   private dfRetourRef?: ModalRef;
   private dfRetourEntityId = 0;
-  private dfRetourType: 'line' | 'livrableBatch' | 'creditNote' = 'line';
+  private dfRetourType: 'line' | 'livrableBatch' | 'tsBatch' | 'creditNote' = 'line';
 
   readonly kpiRfOptions: MetricCardOptions = { icon: 'pending_actions', iconBg: 'bg-warning/10', iconColor: 'text-warning' };
   readonly kpiDfOptions: MetricCardOptions = { icon: 'task_alt', iconBg: 'bg-tertiary/10', iconColor: 'text-tertiary' };
   readonly kpiHistoryOptions: MetricCardOptions = { icon: 'history', iconBg: 'bg-teal/10', iconColor: 'text-teal' };
 
   readonly dfCount = computed(() =>
-    this.pendingLines().length + this.pendingLivrableBatches().length + this.pendingCreditNotes().length
+    this.pendingLines().length + this.pendingLivrableBatches().length
+      + this.pendingTsBatches().length + this.pendingCreditNotes().length
   );
 
   readonly tabItems = computed<TabItem[]>(() => {
@@ -223,6 +247,7 @@ export class ApprovalQueueComponent implements OnInit {
       { id: 'forfaitaire', label: t('AFFAIRES.billing.approval.tab_forfaitaire'),      count: this.forfaitaireCount() || null },
       { id: 'regie',       label: t('AFFAIRES.billing.approval.tab_regie'),            count: this.regieCount() || null },
       { id: 'livrable',    label: t('AFFAIRES.billing.approval.tab_livrable_batches'), count: this.livrableCount() || null },
+      { id: 'ts',          label: t('AFFAIRES.billing.approval.tab_ts'),               count: this.tsCount() || null },
     ];
   });
 
@@ -242,11 +267,14 @@ export class ApprovalQueueComponent implements OnInit {
   readonly livrableCount = computed(() =>
     this.pendingLivrableBatches().length + this.creditNotesLivrable().length
   );
+  // TS has no credit-note section — a TS batch is never returned as a credit note.
+  readonly tsCount = computed(() => this.pendingTsBatches().length);
 
   // ── daf-data-table: Billing lines (DF) ───────────────────────────────────────
   readonly lineColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
+      { key: 'select',    label: '', type: 'custom', sortable: false },
       { key: 'affaire',   label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'),    type: 'custom', sortable: true,
         sortAccessor: row => row['affaireRef'] },
       { key: 'reference', label: this.translate.instant('AFFAIRES.billing.approval.col_reference'),  type: 'custom', sortable: true },
@@ -453,6 +481,7 @@ export class ApprovalQueueComponent implements OnInit {
   readonly livrableBatchColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
+      { key: 'select',      label: '', type: 'custom', sortable: false },
       { key: 'affaire',     label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom', sortable: true,
         sortAccessor: row => row['affaireRef'] },
       { key: 'documents',   label: this.translate.instant('AFFAIRES.billing.approval.col_documents'), type: 'custom', align: 'right', sortable: true },
@@ -475,6 +504,63 @@ export class ApprovalQueueComponent implements OnInit {
       _raw:            b,
     }))
   );
+
+  // ── daf-data-table: TS batches (DF) ──────────────────────────────────────────
+  // Deliberately simpler than the Livrable section above: a plain text search instead of
+  // the full date-range/affaire/amount filter panel. TS is a brand-new, low-volume mode —
+  // that richer apparatus can be added later if TS volume ever grows to need it.
+  readonly tsBatchColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'select',      label: '', type: 'custom', sortable: false },
+      { key: 'affaire',     label: this.translate.instant('AFFAIRES.billing.approval.col_affaire'), type: 'custom', sortable: true,
+        sortAccessor: row => row['affaireRef'] },
+      { key: 'tsCount',     label: this.translate.instant('AFFAIRES.billing.approval.col_ts_count'), type: 'custom', align: 'right', sortable: true },
+      { key: 'montant',     label: this.translate.instant('AFFAIRES.billing.approval.col_montant'), type: 'custom', align: 'right', sortable: true,
+        sortAccessor: row => row['_raw'].combinedMontant },
+      { key: 'billingDate', label: this.translate.instant('AFFAIRES.billing.approval.col_date'), type: 'custom', sortable: true,
+        sortAccessor: row => row['_raw'].billingDate },
+    ];
+  });
+
+  readonly tsBatchRows = computed(() =>
+    this.pendingTsBatches().map(b => ({
+      id:              b.batchId,
+      affaireId:       b.affaireId,
+      affaireRef:      b.affaireRef,
+      affaireIntitule: b.affaireIntitule,
+      tsCount:         b.tsCount,
+      montant:         this.fmtAmt(b.combinedMontant),
+      billingDate:     this.fmtDate(b.billingDate),
+      _raw:            b,
+    }))
+  );
+
+  tsBatchSearch = signal('');
+  onTsBatchSearch(value: string): void {
+    this.tsBatchSearch.set(value);
+    this.tsBatchPage.set(0);
+  }
+
+  readonly filteredTsBatchRows = computed(() => {
+    const q = this.tsBatchSearch().trim().toLowerCase();
+    if (!q) return this.tsBatchRows();
+    return this.tsBatchRows().filter(r =>
+      (r.affaireRef ?? '').toLowerCase().includes(q) || (r.affaireIntitule ?? '').toLowerCase().includes(q));
+  });
+
+  readonly tsBatchSort = signal<TableSort | null>(null);
+  onTsBatchSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.tsBatchSort.set(toTableSort(event));
+    this.tsBatchPage.set(0);
+  }
+
+  tsBatchPage     = signal(0);
+  tsBatchPageSize = signal(10);
+  readonly tsBatchTotalPages = computed(() => Math.ceil(this.filteredTsBatchRows().length / this.tsBatchPageSize()));
+  readonly pagedTsBatchRows = computed(() =>
+    this.pageRows(sortTableRows(this.filteredTsBatchRows(), this.tsBatchColumns(), this.tsBatchSort()),
+      this.tsBatchPage(), this.tsBatchPageSize()));
 
   readonly livrableBatchFilterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
@@ -901,6 +987,21 @@ export class ApprovalQueueComponent implements OnInit {
     };
   });
 
+  readonly tsBatchTableConfig = computed<TableConfig>(() => {
+    this.translate.currentLang();
+    return {
+      // No hoverable — unlike the other tables, a TS batch row has no (rowClick) detail
+      // page to hint at.
+      hoverable: false,
+      showHeader: false,
+      ...this.tableExtras(this.tsBatchSort),
+      actions: [
+        this.validateAction(row => this.doValidateTsBatch(row['id'])),
+        this.returnAction(row => this.openDfRetourModal(row['id'], 'tsBatch')),
+      ],
+    };
+  });
+
   readonly creditNoteTableConfig = computed<TableConfig>(() => {
     this.translate.currentLang();
     return {
@@ -970,11 +1071,13 @@ export class ApprovalQueueComponent implements OnInit {
     this.dfLoading.set(true);
     forkJoin({
       livrableBatches: this.svc.getPendingLivrableBatches(),
+      tsBatches: this.svc.getPendingTsBatches(),
       lines: this.svc.getPendingDFLines(),
       creditNotes: this.svc.getPendingCreditNotes(),
     }).subscribe({
-      next: ({ livrableBatches, lines, creditNotes }) => {
+      next: ({ livrableBatches, tsBatches, lines, creditNotes }) => {
         this.pendingLivrableBatches.set(livrableBatches);
+        this.pendingTsBatches.set(tsBatches);
         this.pendingLines.set(lines);
         this.pendingCreditNotes.set(creditNotes);
         this.dfLoading.set(false);
@@ -1026,6 +1129,79 @@ export class ApprovalQueueComponent implements OnInit {
     });
   }
 
+  doValidateTsBatch(batchId: number): void {
+    // Same as doValidateLivrableBatch() above — TsBillingService also creates a shared
+    // DRAFT invoice via DFValidationService.generateFromBillingLines.
+    this.svc.validateTsBatch(batchId).subscribe({
+      next: batch => {
+        if (batch.invoiceId) {
+          this.router.navigate(['/finance/invoicing', batch.invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
+        } else {
+          this.loadDF();
+        }
+      },
+    });
+  }
+
+  /** Bulk variant of doValidateTsBatch() — combines several selected TS batches into one
+   * shared invoice. */
+  doValidateTsSelection(): void {
+    const batchIds = [...this.tsSelection.ids()];
+    if (batchIds.length === 0) return;
+    this.svc.validateTsBatchBatch(batchIds).subscribe({
+      next: batches => {
+        this.tsSelection.clear();
+        const invoiceId = batches[0]?.invoiceId;
+        if (invoiceId) {
+          this.router.navigate(['/finance/invoicing', invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
+        } else {
+          this.loadDF();
+        }
+      },
+    });
+  }
+
+  /** Bulk variant of doValidateDF() — shared by the Forfaitaire and Régie tabs, each with
+   * their own RowSelection instance. Every returned line carries the same invoiceId. */
+  doValidateSelection(selection: RowSelection): void {
+    const ids = [...selection.ids()];
+    if (ids.length === 0) return;
+    this.svc.validateDFBatch(ids).subscribe({
+      next: lines => {
+        selection.clear();
+        const invoiceId = lines[0]?.invoiceId;
+        if (invoiceId) {
+          this.router.navigate(['/finance/invoicing', invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
+        } else {
+          this.loadDF();
+        }
+      },
+    });
+  }
+
+  /** Bulk variant of doValidateLivrableBatch() — combines several selected batches into one
+   * shared invoice. Its own method since it hits a different endpoint/response shape than
+   * doValidateSelection(). */
+  doValidateLivrableSelection(): void {
+    const batchIds = [...this.livrableSelection.ids()];
+    if (batchIds.length === 0) return;
+    this.svc.validateLivrableBatchBatch(batchIds).subscribe({
+      next: batches => {
+        this.livrableSelection.clear();
+        const invoiceId = batches[0]?.invoiceId;
+        if (invoiceId) {
+          this.router.navigate(['/finance/invoicing', invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
+        } else {
+          this.loadDF();
+        }
+      },
+    });
+  }
+
   /**
    * A credit note is already a full Invoice (SUBMITTED at creation, see
    * InvoiceService.createCreditNote) — there's no BillingLine here for
@@ -1042,7 +1218,7 @@ export class ApprovalQueueComponent implements OnInit {
     });
   }
 
-  openDfRetourModal(entityId: number, type: 'line' | 'livrableBatch' | 'creditNote' = 'line'): void {
+  openDfRetourModal(entityId: number, type: 'line' | 'livrableBatch' | 'tsBatch' | 'creditNote' = 'line'): void {
     this.dfRetourEntityId = entityId;
     this.dfRetourType = type;
     this.dfRetourMotif.set('');
@@ -1071,6 +1247,8 @@ export class ApprovalQueueComponent implements OnInit {
     // and every branch's follow-up is identical anyway.
     const request$: Observable<unknown> = this.dfRetourType === 'livrableBatch'
       ? this.svc.returnLivrableBatch(this.dfRetourEntityId, motif)
+      : this.dfRetourType === 'tsBatch'
+      ? this.svc.returnTsBatch(this.dfRetourEntityId, motif)
       : this.dfRetourType === 'creditNote'
       ? this.invoiceSvc.approve(this.dfRetourEntityId, { decision: 'RETURN', comment: motif })
       : this.svc.returnDF(this.dfRetourEntityId, motif);

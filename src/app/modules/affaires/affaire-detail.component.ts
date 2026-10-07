@@ -1,10 +1,10 @@
 import { Component, OnInit, TemplateRef, computed, inject, input, signal, viewChild } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   AvatarGroupComponent, BarChartComponent, ButtonComponent, ButtonOptions,
-  ChipGroupComponent, DataTableComponent, MetricCardComponent,
+  ChipGroupComponent, DafCellDirective, DataTableComponent, MetricCardComponent,
   DrawerComponent, FormFieldComponent, FormFieldOptions, GaugeComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
   RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, StatusBadgeComponent,
@@ -30,6 +30,7 @@ import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
+import { AffaireTsWipTabComponent } from './ts/affaire-ts-wip-tab.component';
 import { AffaireWipTabComponent } from './wip/affaire-wip-tab.component';
 import { AffaireRessourcesTabComponent } from './ressources/affaire-ressources-tab.component';
 import { AffaireDepenseTabComponent } from './depense/affaire-depense-tab.component';
@@ -150,12 +151,12 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
 @Component({
   selector: 'app-affaire-detail',
   imports: [
-    TranslatePipe, DisplayCurrencyPipe, DecimalPipe, PermissionDirective,
+    TranslatePipe, DisplayCurrencyPipe, DecimalPipe, PermissionDirective, RouterLink, DafCellDirective,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, ButtonComponent,
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
     GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
-    TsFormComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
+    TsFormComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,
@@ -1728,6 +1729,9 @@ export class AffaireDetailComponent implements OnInit {
     const tabs: TabItem[] = [
       { id: 'overview', label: t('AFFAIRES.DETAIL.TABS.OVERVIEW') },
       { id: 'ts',       label: t('AFFAIRES.DETAIL.TABS.BUDGET_TS'), count: this.tsList().length },
+      // TS WIP (submit -> client confirms -> DF validates) is unconditional, like Budget
+      // TS above — a TS can exist on any affaire regardless of billingMode.
+      { id: 'ts-wip',   label: t('AFFAIRES.DETAIL.TABS.TS_WIP') },
     ];
     // WIP n'a de sens que pour Forfaitaire, Régie et Livrable — les autres modes n'ont
     // pas de notion de travail en cours (ou de livrables à facturer) à valider avant
@@ -2020,6 +2024,9 @@ export class AffaireDetailComponent implements OnInit {
       { key: 'statut',    label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge', sortable: true },
       { key: 'integre',   label: t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT'), sortable: true,
         sortAccessor: row => src(row).integreAuBudgetAt },
+      // Custom, not a plain text/link column type: empty for every statut but FACTURE, where
+      // it links to the invoice TsBillingService created (see affaire-ts-wip-tab.component.ts).
+      { key: 'invoice',   label: t('AFFAIRES.DETAIL.MODAL.TS_INVOICE'), type: 'custom' },
     ];
   });
 
@@ -2031,6 +2038,7 @@ export class AffaireDetailComponent implements OnInit {
     statut:    { label: this.enumText('TS_STATUT', ts.statut),
                  options: { variant: TS_STATUT_BADGE[ts.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
     integre:   this.formatDate(ts.integreAuBudgetAt),
+    invoiceId: ts.invoiceId,
     _source:   ts,
   })));
 

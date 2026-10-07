@@ -98,6 +98,13 @@
               (filterApply)="onLivrableBatchFilterApply($event)"
               [table]="dfMainTable() ?? null" />
           }
+          @if (activeDfSubTab() === 'ts') {
+            <!-- Plain text search only, no filter panel — see tsBatchColumns' comment. -->
+            <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
+              [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+              [value]="tsBatchSearch()" (valueChange)="onTsBatchSearch($event)"
+              [filterFields]="[]" [filterConfig]="{}" />
+          }
         </div>
 
         <div role="tabpanel"
@@ -133,6 +140,14 @@
                       (resetClick)="onLineSort(null)"
                       (rowClick)="openDetail($any($event), 'line')">
 
+                      <ng-template dafCell="select" let-row>
+                        <daf-checkbox
+                          [checked]="forfaitSelection.ids().has(row['id'])"
+                          [options]="{ disabled: forfaitSelection.isDisabledFor(row['affaireId']) }"
+                          (checkedChange)="forfaitSelection.toggle(row['id'], row['affaireId'])"
+                          (click)="$event.stopPropagation()" />
+                      </ng-template>
+
                       <ng-template dafCell="affaire" let-row>
                         <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
                           (click)="$event.stopPropagation()">
@@ -162,6 +177,16 @@
                       </ng-template>
 
                     </daf-data-table>
+
+                    @if (forfaitSelection.ids().size > 0) {
+                      <daf-bulk-action-bar
+                        [count]="forfaitSelection.ids().size"
+                        [actions]="bulkValidateActions()"
+                        [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
+                        [cancelLabel]="'AFFAIRES.billing.approval.bulk_cancel' | translate"
+                        (actionClick)="doValidateSelection(forfaitSelection)"
+                        (cancel)="forfaitSelection.clear()" />
+                    }
 
                     <daf-pagination
                       [currentPage]="lineForfaitPage()"
@@ -277,6 +302,14 @@
                   (resetClick)="onLineSort(null)"
                   (rowClick)="openDetail($any($event), 'line')">
 
+                  <ng-template dafCell="select" let-row>
+                    <daf-checkbox
+                      [checked]="regieSelection.ids().has(row['id'])"
+                      [options]="{ disabled: regieSelection.isDisabledFor(row['affaireId']) }"
+                      (checkedChange)="regieSelection.toggle(row['id'], row['affaireId'])"
+                      (click)="$event.stopPropagation()" />
+                  </ng-template>
+
                   <ng-template dafCell="affaire" let-row>
                     <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
                       (click)="$event.stopPropagation()">
@@ -306,6 +339,16 @@
                   </ng-template>
 
                 </daf-data-table>
+
+                @if (regieSelection.ids().size > 0) {
+                  <daf-bulk-action-bar
+                    [count]="regieSelection.ids().size"
+                    [actions]="bulkValidateActions()"
+                    [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
+                    [cancelLabel]="'AFFAIRES.billing.approval.bulk_cancel' | translate"
+                    (actionClick)="doValidateSelection(regieSelection)"
+                    (cancel)="regieSelection.clear()" />
+                }
 
                 <daf-pagination
                   [currentPage]="lineRegiePage()"
@@ -419,6 +462,14 @@
                   (resetClick)="onLivrableBatchSort(null)"
                   (rowClick)="openDetail($any($event), 'livrable')">
 
+                  <ng-template dafCell="select" let-row>
+                    <daf-checkbox
+                      [checked]="livrableSelection.ids().has(row['id'])"
+                      [options]="{ disabled: livrableSelection.isDisabledFor(row['affaireId']) }"
+                      (checkedChange)="livrableSelection.toggle(row['id'], row['affaireId'])"
+                      (click)="$event.stopPropagation()" />
+                  </ng-template>
+
                   <ng-template dafCell="affaire" let-row>
                     <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
                       (click)="$event.stopPropagation()">
@@ -440,6 +491,16 @@
                   </ng-template>
 
                 </daf-data-table>
+
+                @if (livrableSelection.ids().size > 0) {
+                  <daf-bulk-action-bar
+                    [count]="livrableSelection.ids().size"
+                    [actions]="bulkValidateActions()"
+                    [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
+                    [cancelLabel]="'AFFAIRES.billing.approval.bulk_cancel' | translate"
+                    (actionClick)="doValidateLivrableSelection()"
+                    (cancel)="livrableSelection.clear()" />
+                }
 
                 <daf-pagination
                   [currentPage]="livrableBatchPage()"
@@ -527,6 +588,88 @@
                 }
               </div>
             }
+          }
+
+          @if (activeDfSubTab() === 'ts') {
+
+            <!-- Batches TS (Travaux Supplémentaires) — no credit-note section: a TS never
+                 produces one. -->
+            <div class="flex flex-col gap-3">
+              @if (pendingTsBatches().length === 0) {
+                <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[32px]">check_circle</span>
+                  <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
+                </div>
+              } @else if (filteredTsBatchRows().length === 0) {
+                <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[32px]">search_off</span>
+                  <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
+                </div>
+              } @else {
+                <!-- No (rowClick): unlike Forfaitaire/Régie/Livrable, there's no TS batch
+                     detail page — the list + validate/return actions here are the whole
+                     TS approval flow. -->
+                <daf-data-table
+                  [columns]="tsBatchColumns()"
+                  [rows]="pagedTsBatchRows()"
+                  [config]="tsBatchTableConfig()"
+                  (sortChange)="onTsBatchSort($event)"
+                  (resetClick)="onTsBatchSort(null)">
+
+                  <ng-template dafCell="select" let-row>
+                    <daf-checkbox
+                      [checked]="tsSelection.ids().has(row['id'])"
+                      [options]="{ disabled: tsSelection.isDisabledFor(row['affaireId']) }"
+                      (checkedChange)="tsSelection.toggle(row['id'], row['affaireId'])"
+                      (click)="$event.stopPropagation()" />
+                  </ng-template>
+
+                  <ng-template dafCell="affaire" let-row>
+                    <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                      (click)="$event.stopPropagation()">
+                      {{ row['affaireRef'] }}
+                    </a>
+                    <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
+                  </ng-template>
+
+                  <ng-template dafCell="tsCount" let-row>
+                    {{ row['tsCount'] }}
+                  </ng-template>
+
+                  <ng-template dafCell="montant" let-row>
+                    <span class="cell-bold">{{ row['montant'] }}</span>
+                  </ng-template>
+
+                  <ng-template dafCell="billingDate" let-row>
+                    <span class="cell-muted">{{ row['billingDate'] }}</span>
+                  </ng-template>
+
+                </daf-data-table>
+
+                @if (tsSelection.ids().size > 0) {
+                  <daf-bulk-action-bar
+                    [count]="tsSelection.ids().size"
+                    [actions]="bulkValidateActions()"
+                    [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
+                    [cancelLabel]="'AFFAIRES.billing.approval.bulk_cancel' | translate"
+                    (actionClick)="doValidateTsSelection()"
+                    (cancel)="tsSelection.clear()" />
+                }
+
+                <daf-pagination
+                  [currentPage]="tsBatchPage()"
+                  [totalPages]="tsBatchTotalPages()"
+                  [totalElements]="tsBatchRows().length"
+                  [pageSize]="tsBatchPageSize()"
+                  [pageSizeOptions]="[10, 20, 50, 100]"
+                  [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+                  [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+                  [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+                  [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+                  (pageChange)="tsBatchPage.set($event)"
+                  (pageSizeChange)="tsBatchPageSize.set($event); tsBatchPage.set(0)" />
+              }
+            </div>
           }
 
         </div><!-- /df-subtabpanel -->

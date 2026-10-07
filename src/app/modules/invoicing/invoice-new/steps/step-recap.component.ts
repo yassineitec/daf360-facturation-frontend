@@ -148,6 +148,21 @@ import { enumLabel } from '../../../../shared/enum-labels';
     </table>
   </div>
 
+  @if (deductionBreakdown().length > 0) {
+    <div class="recap-section deduction-breakdown">
+      @for (d of deductionBreakdown(); track d.label) {
+        <div class="reminder-preview-row">
+          <span class="rp-label">{{ d.label }}</span>
+          <span class="rp-date">-{{ formatAmount(d.total) }}</span>
+        </div>
+      }
+      <div class="reminder-preview-row net-payable-row">
+        <span class="rp-label">{{ 'INVOICING.STEP_RECAP.NET_PAYABLE' | translate }}</span>
+        <span class="rp-date">{{ formatAmount(netPayable()) }}</span>
+      </div>
+    </div>
+  }
+
   <!-- Rappels planifiés -->
   <div class="recap-section">
     <h3>{{ 'INVOICING.STEP_RECAP.REMINDERS_TITLE' | translate }}</h3>
@@ -173,7 +188,7 @@ import { enumLabel } from '../../../../shared/enum-labels';
       <span class="material-symbols-outlined">check_circle</span>
       <span>{{ 'INVOICING.STEP_RECAP.SAVED_MSG' | translate }}</span>
       <div class="recap-success-actions">
-        @if (affaireData().billingMode === 'FORFAIT' || affaireData().billingMode === 'REGIE' || affaireData().billingMode === 'LIVRABLE') {
+        @if (usesAvancementColumns()) {
           <button type="button" class="btn-draft" [disabled]="exportingPdf()" (click)="exportPdf(invId)">
             <span class="material-symbols-outlined">picture_as_pdf</span>
             {{ exportingPdf() ? ('INVOICING.STEP_RECAP.EXPORTING' | translate) : ('INVOICING.STEP_RECAP.EXPORT_PDF' | translate) }}
@@ -284,7 +299,7 @@ export class StepRecapComponent {
    * de ce que l'utilisateur vient de saisir/valider. */
   readonly usesAvancementColumns = computed(() => {
     const mode = this.affaireData().billingMode;
-    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE';
+    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE' || mode === 'TS';
   });
 
   readonly totalHt = computed(() =>
@@ -292,6 +307,25 @@ export class StepRecapComponent {
   );
   readonly totalTtc = computed(() =>
     this.linesData().lines.reduce((s, l) => s + l.quantity * l.unitRate * (1 + l.vatRatePct / 100), 0)
+  );
+
+  private deductionTotalFor(columnPosition: 1 | 2 | 3): number {
+    return this.linesData().lines.reduce((s, l) => {
+      const pct = (l as unknown as Record<string, number | undefined>)[`deductionPct${columnPosition}`];
+      if (!pct) return s;
+      return s + l.quantity * l.unitRate * (pct / 100);
+    }, 0);
+  }
+
+  readonly deductionBreakdown = computed(() => {
+    const cols = this.linesData().deductionColumns ?? [null, null, null];
+    return [0, 1, 2]
+      .map(i => ({ label: cols[i], total: this.deductionTotalFor((i + 1) as 1 | 2 | 3) }))
+      .filter((d): d is { label: string; total: number } => !!d.label && d.total > 0);
+  });
+
+  readonly netPayable = computed(() =>
+    this.totalTtc() - this.deductionBreakdown().reduce((s, d) => s + d.total, 0)
   );
 
   readonly reminderPreview = computed(() => {
@@ -319,6 +353,7 @@ export class StepRecapComponent {
 
   private buildRequest() {
     const a = this.affaireData(), l = this.linesData(), c = this.conditionsData();
+    const cols = l.deductionColumns ?? [null, null, null];
     return {
       paysId:        a.paysId,
       affaireId:     a.affaireId,
@@ -330,6 +365,9 @@ export class StepRecapComponent {
       dueDate:       c.dateEcheance,
       notes:         c.notes,
       bonDeCommande: c.bonDeCommande,
+      deductionLabel1: cols[0] ?? null,
+      deductionLabel2: cols[1] ?? null,
+      deductionLabel3: cols[2] ?? null,
       lines:         l.lines,
       periodFrom:    l.periodFrom,
       periodTo:      l.periodTo,

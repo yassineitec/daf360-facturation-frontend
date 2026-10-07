@@ -648,7 +648,23 @@
 
             <!-- Actions sur config.actions : `TableAction.hidden` (4.17.0) rend les
                  validations conditionnelles sans colonne projetée (§6b rule 4). -->
-            <daf-data-table #tsTable [columns]="tsColumns()" [rows]="tsRows()" [config]="tsConfig()" />
+            <daf-data-table #tsTable [columns]="tsColumns()" [rows]="tsRows()" [config]="tsConfig()">
+              <ng-template dafCell="invoice" let-row>
+                <!-- invoiceId is only ever set once FACTURE (see TsBillingService), so its
+                     presence alone is enough — no need to also check row['statut']. -->
+                @if (row['invoiceId']) {
+                  <a [routerLink]="['/finance/invoicing', row['invoiceId']]"
+                    class="text-body-sm font-semibold text-tertiary hover:underline">
+                    {{ 'AFFAIRES.DETAIL.MODAL.OPEN_INVOICE' | translate }}
+                  </a>
+                }
+              </ng-template>
+            </daf-data-table>
+          }
+
+          <!-- ── TS WIP — soumission -> confirmation client -> validation DF ── -->
+          @if (activeTab() === 'ts-wip') {
+            <app-affaire-ts-wip-tab [affaire]="aff" (dataChanged)="refreshIndicators()" />
           }
 
           <!-- L'onglet « Facturation » (écrans par mode AV / JAL / TM / CP / RMB) est

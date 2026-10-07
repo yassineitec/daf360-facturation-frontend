@@ -51,10 +51,10 @@ import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
           </div>
           <div class="flex flex-col items-end gap-0.5">
             <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-              {{ 'INVOICING.PAYMENT_MODAL.TOTAL_TTC' | translate }}
+              {{ 'INVOICING.PAYMENT_MODAL.NET_A_PAYER' | translate }}
             </span>
             <span class="text-body-md font-bold text-on-surface">
-              {{ invoice()?.montantTtc | displayCurrency : invoice()?.devise }}
+              {{ invoice()?.montantNetAPayer | displayCurrency : invoice()?.devise }}
             </span>
           </div>
         </div>

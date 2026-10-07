@@ -330,7 +330,8 @@
         "TOTAL_TTC": "Total incl. tax",
         "ACTIVE": "Active",
         "EMPTY": "No billing lines.",
-        "GRAND_TOTAL": "Grand total"
+        "GRAND_TOTAL": "Grand total",
+        "NET_PAYABLE": "Net to pay"
       },
       "INFO": {
         "TITLE": "Information",
@@ -506,6 +507,7 @@
       },
       "TS_LABEL": "Associated TS (optional)",
       "TS_NONE": "None",
+      "TS_CARRY_FORWARD_TOGGLE": "Invoice the uninvoiced TS balance —",
       "CANCEL": "Cancel",
       "NEXT": "Next"
     },
@@ -544,7 +546,10 @@
       "CARRY_FORWARD_COL_MODE": "Mode",
       "CARRY_FORWARD_COL_PERIOD": "Period",
       "CARRY_FORWARD_COL_AVAILABLE": "Available",
-      "CARRY_FORWARD_COL_AMOUNT": "Amount to invoice"
+      "CARRY_FORWARD_COL_AMOUNT": "Amount to invoice",
+      "ADD_DEDUCTION_COLUMN": "+ Add column",
+      "DEDUCTION_LABEL_PLACEHOLDER": "Column name",
+      "DEDUCTION_UNNAMED": "(unnamed)"
     },
     "STEP_CONDITIONS": {
       "DUE_DATE_LABEL": "Due date *",
@@ -597,7 +602,8 @@
       "SAVING": "Saving…",
       "DRAFT": "Draft",
       "SENDING": "Sending…",
-      "SUBMIT": "Submit"
+      "SUBMIT": "Submit",
+      "NET_PAYABLE": "Net to pay"
     },
     "REMINDERS": {
       "TITLE": "Payment reminders",
@@ -634,7 +640,7 @@
       "SAVING": "Saving…",
       "SAVE": "Save",
       "DRAFT": "Draft",
-      "TOTAL_TTC": "Total incl. tax",
+      "NET_A_PAYER": "Net to pay",
       "ERROR": "Error while saving."
     },
     "CREDIT_NOTE_MODAL": {
@@ -1070,6 +1076,7 @@
       "TABS": {
         "OVERVIEW": "Overview",
         "BUDGET_TS": "Additional work",
+        "TS_WIP": "Extra Work WIP",
         "INVOICES": "Invoices",
         "PAYMENTS": "Payments",
         "WIP": "WIP",
@@ -1287,6 +1294,7 @@
         "TS_PERIMETRE": "Scope",
         "TS_IMPACT": "Budget impact",
         "TS_INTEGRATED_AT": "Added to budget on",
+        "TS_INVOICE": "Invoice",
         "OPEN_INVOICE": "Open the invoice",
         "OPEN_PAYMENTS": "Open the Payments module",
         "EXPENSES_TITLE": "Project reimbursable expenses"
@@ -1900,12 +1908,16 @@
         "tab_taux": "Progress rate",
         "tab_lines": "Billing lines",
         "tab_livrable_batches": "Deliverables",
+        "tab_ts": "Extra Work",
         "tab_credit_notes": "Credit notes",
         "loading": "Loading…",
         "empty_rf": "No item pending RF validation.",
         "empty_df": "No item pending DF validation.",
         "empty_filtered": "No results for these criteria.",
         "empty_history": "No history available.",
+        "bulk_validate": "Validate selection",
+        "bulk_selected_label": "line(s) selected",
+        "bulk_cancel": "Cancel",
         "section_taux": "Progress rate (FORFAIT) — {{count}}",
         "section_lines": "Billing lines — {{count}}",
         "section_livrable_batches": "Livrable batches — {{count}}",
@@ -1921,6 +1933,7 @@
         "col_periode": "Period",
         "col_montant_ht": "Amount excl. tax",
         "col_documents": "Documents",
+        "col_ts_count": "Extra works",
         "col_mode": "Mode",
         "col_statut": "Status",
         "col_date": "Date",
@@ -2168,6 +2181,24 @@
     "WIP": {
       "KPI_TS": "TS integrated",
       "KPI_TS_HELP": "Amount of validated timesheets already integrated into this affaire's RAF calculation.",
+      "TS_ELIGIBLE_TITLE": "Extra work ready to bill",
+      "TS_ELIGIBLE_EMPTY": "No integrated extra work available for billing.",
+      "TS_ACTIVE_TITLE": "Submissions in progress",
+      "TS_ACTIVE_EMPTY": "No submission in progress.",
+      "TS_HISTORY_TITLE": "History",
+      "TS_HISTORY_EMPTY": "No extra work billing history.",
+      "TS_COL_REFERENCE": "Reference",
+      "TS_COL_INTITULE": "Title",
+      "TS_COL_MONTANT": "Amount",
+      "TS_COL_STATUT": "Status",
+      "TS_COL_DATE": "Date",
+      "TS_COL_ACTIONS": "Actions",
+      "TS_SELECTED_COUNT": "{{count}} item(s) selected",
+      "TS_SUBMIT": "Submit selection",
+      "TS_SUBMIT_ERROR": "Error during submission.",
+      "TS_COL_MT_CLIENT": "Client amount",
+      "TS_CARRY_FORWARD_TITLE": "Uninvoiced balance",
+      "TS_CARRY_FORWARD_SUBMIT": "Invoice the balance",
       "AV_EXPLAIN": "WIP = contract budget × progress rate to date. Submit a new cumulative rate below; the value is calculated automatically.",
       "TM_EXPLAIN": "WIP = cost of Timesheet hours already validated for this period.",
       "TM_EXPLAIN_2": "Only hours with status \"Validated\" are counted.",
@@ -2186,6 +2217,12 @@
       "STEP_VALIDATE": "Validation",
       "STEP_CLIENT": "Client response",
       "MANUAL_VERIFY_LABEL": "I have manually checked these results against other sources and they are correct.",
+      "EMAIL_PREVIEW_TITLE": "Email to send to the client",
+      "EMAIL_PREVIEW_INTRO": "Review the email below before sending it to the client. Once sent, you'll wait for their reply to enter the confirmed amount.",
+      "EMAIL_PREVIEW_SUBJECT": "Subject",
+      "EMAIL_PREVIEW_BODY": "Message",
+      "EMAIL_PREVIEW_CANCEL": "Cancel",
+      "EMAIL_PREVIEW_SEND": "Send",
       "CARRIED_FORWARD_TITLE": "Remainder from the previous period",
       "CARRIED_FORWARD_PREVIOUS": "Carried forward",
       "CARRIED_FORWARD_NEW": "New calculation",

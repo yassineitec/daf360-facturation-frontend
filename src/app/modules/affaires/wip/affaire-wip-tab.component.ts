@@ -14,8 +14,9 @@ import {
   AccordionCardComponent, PaginationComponent, TabsComponent, TabItem,
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
-import { WipService } from './wip.service';
+import { WipService, WipTauxSubmitBody } from './wip.service';
 import { WipTauxDto, WipTauxStatut, WipTmHourDto, WipTmPreviewDto } from './wip.model';
+import { EmailPreviewModalComponent } from './email-preview-modal.component';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
 import { LivrableService } from '../livrable.service';
 import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../livrable.model';
@@ -38,6 +39,7 @@ type WipFilterValues = Record<string, string | Date[] | null>;
     TranslatePipe, ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent, StepperComponent,
     DataTableComponent, DafCellDirective, DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
     SearchToolbarComponent, StatusBadgeComponent, AccordionCardComponent, PaginationComponent, TabsComponent,
+    EmailPreviewModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-wip-tab.component.html',
@@ -213,6 +215,11 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
+
+  /** Popup partagée Forfaitaire/Régie/Livrable montrant l'email de confirmation client avant
+   * le vrai envoi — même intégration que PaymentModalComponent (viewChild + .open(...)),
+   * montée une fois dans le template (voir email-preview-modal.component.ts). */
+  private readonly emailPreviewModal = viewChild.required<EmailPreviewModalComponent>('emailPreviewModal');
 
   /** "Historique WIP" en plein écran (remplace la carte + le stepper) — tout
    * l'historique avec recherche + filtre Statut, plutôt qu'une popup plafonnée à
@@ -1186,6 +1193,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   enteredPct           = signal<Map<number, number>>(new Map());
   submittingLivrables  = signal(false);
   livrableError        = signal<string | null>(null);
+  /** New for consistency with AV's avManualVerified/Régie's wipManualVerified — LIVRABLE had
+   * no manual-verification step at all before; same meaning, same i18n key
+   * (MANUAL_VERIFY_LABEL), never sent to the backend, purely local like the other two. */
+  livrableManualVerified = signal(false);
   editingBatchId        = signal<number | null>(null);
   activeBatches         = signal<LivrableBatchDto[]>([]);
   loadingActiveBatches  = signal(false);
@@ -1456,6 +1467,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.periodDateTo = this.preEditDateTo;
   }
 
+  /** Fetches the read-only email preview and opens the shared popup — the real submit
+   * (doSubmitTaux below, byte-for-byte what this method used to do directly) only runs if
+   * the user clicks "Envoyer" inside it. See docs/superpowers/specs (WIP email-preview
+   * design) — same two-step pattern for validateTm()/submitLivrables() below. */
   submitTaux(): void {
     const taux = this.effectiveTauxPercent();
     if (taux === null || this.submittingTaux()) return;
@@ -1463,7 +1478,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     if (!this.canSubmitTaux()) return;
     this.submittingTaux.set(true);
     this.tauxError.set(null);
-    const body = {
+    const body: WipTauxSubmitBody = {
       periodDateFrom: this.periodDateFrom,
       periodDateTo: this.periodDateTo,
       tauxSaisi: taux,
@@ -1471,12 +1486,25 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       // MONTANT mode: the typed amount is the source of truth, stored as-is server-side.
       montantSaisi: this.avInputMode() === 'MONTANT' ? this.newAmountValue() : null,
     };
+    this.svc.previewTauxEmail(this.affaire.id, body).subscribe({
+      next: preview => {
+        this.submittingTaux.set(false);
+        this.emailPreviewModal().open(preview, done => this.doSubmitTaux(editingId, body, done));
+      },
+      error: err => {
+        this.submittingTaux.set(false);
+        this.tauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.SUBMIT_ERROR'));
+      },
+    });
+  }
+
+  private doSubmitTaux(editingId: number | null, body: WipTauxSubmitBody, done: (errorMessage?: string) => void): void {
     const request$ = editingId !== null
       ? this.svc.updateTaux(editingId, body)
       : this.svc.submitTaux(this.affaire.id, body);
     request$.subscribe({
       next: () => {
-        this.submittingTaux.set(false);
+        done();
         this.avInputMode.set('POURCENTAGE');
         this.newTauxValue.set(null);
         this.newAmountValue.set(null);
@@ -1487,10 +1515,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         this.loadAvLineHistory();
         this.dataChanged.emit();
       },
-      error: err => {
-        this.submittingTaux.set(false);
-        this.tauxError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.SUBMIT_ERROR'));
-      },
+      error: err => done(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.SUBMIT_ERROR')),
     });
   }
 
@@ -1858,13 +1883,28 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** See submitTaux()'s comment above for the two-step preview-then-confirm pattern. */
   validateTm(): void {
     if (this.validatingTm() || this.tmDateFrom() > this.tmDateTo() || !this.wipManualVerified()) return;
     this.validatingTm.set(true);
     this.tmError.set(null);
-    this.svc.validateTm(this.affaire.id, this.tmDateFrom(), this.tmDateTo()).subscribe({
-      next: () => {
+    const dateFrom = this.tmDateFrom(), dateTo = this.tmDateTo();
+    this.svc.previewValidateTmEmail(this.affaire.id, dateFrom, dateTo).subscribe({
+      next: preview => {
         this.validatingTm.set(false);
+        this.emailPreviewModal().open(preview, done => this.doValidateTm(dateFrom, dateTo, done));
+      },
+      error: err => {
+        this.validatingTm.set(false);
+        this.tmError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.VALIDATE_ERROR'));
+      },
+    });
+  }
+
+  private doValidateTm(dateFrom: string, dateTo: string, done: (errorMessage?: string) => void): void {
+    this.svc.validateTm(this.affaire.id, dateFrom, dateTo).subscribe({
+      next: () => {
+        done();
         this.showTmDetails.set(false);
         this.loadTmPreview();
         this.loadTmHistory();
@@ -1874,10 +1914,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         this.wipStep.set(4);
         this.dataChanged.emit();
       },
-      error: err => {
-        this.validatingTm.set(false);
-        this.tmError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.VALIDATE_ERROR'));
-      },
+      error: err => done(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.VALIDATE_ERROR')),
     });
   }
 
@@ -2265,6 +2302,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     batch.entries.forEach(e => map.set(e.livrableId, e.pctSaisi));
     this.enteredPct.set(map);
     this.livrableError.set(null);
+    // Re-editing is effectively a fresh submission — same reasoning as AV's editTaux().
+    this.livrableManualVerified.set(false);
   }
 
   cancelEditBatch(): void {
@@ -2273,6 +2312,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       this.livrables().filter(x => x.statut !== 'FACTURE' && x.statut !== 'ANNULE').map(x => [x.id, x.pctFacture]),
     ));
     this.livrableError.set(null);
+    this.livrableManualVerified.set(false);
   }
 
   /** Submits every document whose entered % was actually raised as one batch — lands on
@@ -2280,27 +2320,43 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * docs/superpowers/specs/2026-09-04-livrable-df-approval-design.md). While editing an
    * existing batch, this calls editBatch instead, which returns a NEW batchId — the old one
    * is discarded either way once this resolves. */
+  /** See submitTaux()'s comment above for the two-step preview-then-confirm pattern. */
   submitLivrables(): void {
     const entries = this.changedEntries();
-    if (entries.length === 0 || this.submittingLivrables()) return;
+    if (entries.length === 0 || this.submittingLivrables() || !this.livrableManualVerified()) return;
     this.submittingLivrables.set(true);
     this.livrableError.set(null);
     const editingId = this.editingBatchId();
-    const request$ = editingId !== null
-      ? this.livrableSvc.editBatch(this.affaire.id, editingId, entries)
-      : this.livrableSvc.submitLivrables(this.affaire.id, entries);
-    request$.subscribe({
-      next: () => {
+    this.livrableSvc.previewLivrablesEmail(this.affaire.id, entries).subscribe({
+      next: preview => {
         this.submittingLivrables.set(false);
-        this.editingBatchId.set(null);
-        this.loadLivrables();
-        this.loadActiveBatches();
-        this.dataChanged.emit();
+        this.emailPreviewModal().open(preview, done => this.doSubmitLivrables(editingId, entries, done));
       },
       error: err => {
         this.submittingLivrables.set(false);
         this.livrableError.set(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.LIVRABLE_ERROR'));
       },
+    });
+  }
+
+  private doSubmitLivrables(
+    editingId: number | null,
+    entries: { livrableId: number; pctSaisi: number }[],
+    done: (errorMessage?: string) => void,
+  ): void {
+    const request$ = editingId !== null
+      ? this.livrableSvc.editBatch(this.affaire.id, editingId, entries)
+      : this.livrableSvc.submitLivrables(this.affaire.id, entries);
+    request$.subscribe({
+      next: () => {
+        done();
+        this.editingBatchId.set(null);
+        this.livrableManualVerified.set(false);
+        this.loadLivrables();
+        this.loadActiveBatches();
+        this.dataChanged.emit();
+      },
+      error: err => done(err?.error?.detail ?? this.translate.instant('AFFAIRES.WIP.LIVRABLE_ERROR')),
     });
   }
 

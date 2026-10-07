@@ -44,3 +44,12 @@ export interface WipTmPreviewDto {
   carriedForwardAmount: number;
   carriedForwardFromLineId: number | null;
 }
+
+/** Matches the backend's EmailPreviewDto record exactly (ProgressBillingService/WipTmService/
+ * LivrableBillingService's previewXxxEmail() methods) — the exact subject/body a submit action
+ * would send to the client, computed read-only so the WIP tab can show it in a
+ * review-and-confirm popup before the user triggers the real submit. */
+export interface EmailPreviewDto {
+  subject: string;
+  body: string;
+}
