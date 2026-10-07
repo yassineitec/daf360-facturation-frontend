@@ -46,11 +46,16 @@ export interface ListValueDto {
    */
   parentValueCode?: string | null;
   /**
-   * Whole percentage (e.g. `19`, not `0.19`) — only populated for `VAT_RATE` rows.
-   * `null` for every other list type.
+   * Whole percentage (e.g. `19`, not `0.19`) — only populated for `VAT_RATE` and
+   * `WITHHOLDING_RATE` rows. `null` for every other list type.
    */
   ratePct?: number | null;
+  /** `WITHHOLDING_RATE` only (V92): what the rate applies to. */
+  taxBase?: WithholdingBase | null;
 }
+
+/** Base of a retenue à la source rate: HT, TTC (HT + FODEC + TVA) or the TVA amount. */
+export type WithholdingBase = 'HT' | 'TTC' | 'TVA';
 
 /** Body of `POST /admin/lists/{type}/values` — taxonomy fields only read for COST_CATEGORY / COST_SUB_CATEGORY. */
 export interface CreateListValueBody extends TaxonomyFields {
@@ -63,8 +68,10 @@ export interface CreateListValueBody extends TaxonomyFields {
   isDefault?: boolean;
   /** Justificatif obligatoire — n'a de sens que pour EXPENSE_CATEGORY. */
   requiresReceipt?: boolean;
-  /** Whole percentage (e.g. `19`) — n'a de sens que pour VAT_RATE. */
+  /** Whole percentage (e.g. `19`) — n'a de sens que pour VAT_RATE / WITHHOLDING_RATE. */
   ratePct?: number;
+  /** WITHHOLDING_RATE uniquement. */
+  taxBase?: WithholdingBase;
 }
 
 /** Body of `PATCH /admin/lists/values/{id}` — `undefined` = unchanged. */
@@ -74,8 +81,10 @@ export interface UpdateListValueBody extends TaxonomyFields {
   isDefault?: boolean;
   isActive?: boolean;
   requiresReceipt?: boolean;
-  /** Whole percentage (e.g. `19`) — n'a de sens que pour VAT_RATE. */
+  /** Whole percentage (e.g. `19`) — n'a de sens que pour VAT_RATE / WITHHOLDING_RATE. */
   ratePct?: number;
+  /** WITHHOLDING_RATE uniquement. */
+  taxBase?: WithholdingBase;
 }
 
 export interface TaxonomyFields {
@@ -186,6 +195,8 @@ export interface CostLineDto {
   tvaRate: number | null;
   autresTaxesRate: number | null;
   autresTaxesAmount: number | null;
+  /** Base the RS was computed on (V92) — `null` without RS. */
+  autresTaxesBase?: WithholdingBase | null;
   timbreAmount: number | null;
   currency: string | null;        // currency code string
   currencyId: number | null;
@@ -203,8 +214,177 @@ export interface CostLineDto {
   postedAt: string | null;
   documentUrl: string | null;
   notes: string | null;
+  /** Always empty since V93 — the approval history belongs to the invoice. */
   approvals: CostApprovalRecordDto[];
   dualApprovalDone: boolean | null;
+  /** The cost invoice holding this line (V93). */
+  costInvoiceId?: number | null;
+}
+
+// ── Cost invoice (V93) — a supplier invoice holding one or more cost lines ────────
+//
+// The invoice is the unit of entry, approval, payment and attachments. FODEC and TVA stay
+// per line (fixed formula); stamp duty and retenue à la source are applied once per
+// invoice. Matches backend CostInvoiceDto field-for-field.
+
+export interface CostInvoiceApprovalDto {
+  id: number;
+  costInvoiceId: number;
+  level: string;
+  approverId: number | null;
+  decision: string;          // APPROVED | AUTO_APPROVED | RETURNED | REJECTED
+  comment: string | null;
+  decisionDate: string | null;
+}
+
+export interface VatBreakdownDto {
+  /** Fraction (0.19); `null` = VAT typed by hand (no rate). */
+  tvaRate: number | null;
+  baseAmount: number;
+  vatAmount: number;
+}
+
+export interface CostInvoiceReglementDto {
+  id: number;
+  costInvoiceId: number;
+  montantPaye: number;
+  datePaiement: string;
+  comment: string | null;
+}
+
+export interface CostInvoiceDto {
+  id: number;
+  paysId: number;
+  reference: string;
+  supplierId: number | null;
+  /** Linked supplier's name, else `supplierNameFree`. */
+  supplierName: string | null;
+  supplierNameFree: string | null;
+  supplierInvoiceNumber: string | null;
+  invoiceDate: string;
+  periodYear: number;
+  periodMonth: number;
+  currency: string;
+  currencyId: number | null;
+  netAmountLocal: number;
+  fodecAmount: number | null;
+  vatAmountLocal: number;
+  timbreAmount: number | null;
+  grossAmountLocal: number;
+  netAmountEur: number | null;
+  grossAmountEur: number | null;
+  rsRate: number | null;
+  rsBase: WithholdingBase | null;
+  rsAmount: number | null;
+  /** TTC − retenue à la source: what is actually paid to the supplier. */
+  netToPay: number;
+  status: CostLineStatus;
+  approvalLevelRequired: string | null;
+  submittedBy: number | null;
+  submittedAt: string | null;
+  validatedBy: number | null;
+  validatedAt: string | null;
+  postedAt: string | null;
+  paymentDueDate: string | null;
+  notes: string | null;
+  originModule: string;
+  createdAt: string | null;
+  lines: CostLineDto[];
+  vatBreakdown: VatBreakdownDto[];
+  approvals: CostInvoiceApprovalDto[];
+  dualApprovalDone: boolean | null;
+  reglement: CostInvoiceReglementDto | null;
+}
+
+/** One line of the invoice form. `id` = existing line (kept), absent = new line. */
+export interface CostInvoiceLineRequest {
+  id?: number | null;
+  costCategoryId: number | null;
+  costSubCategoryId?: number | null;
+  description: string;
+  netAmountLocal: number;
+  /** Typed VAT — only used when no `tvaRate` applies (no supplier). */
+  vatAmountLocal?: number | null;
+  /** Fractions (0.01, 0.19) — supplier invoices only. */
+  fodecRate?: number | null;
+  tvaRate?: number | null;
+  affaireId?: number | null;
+  costTypeId?: number | null;
+}
+
+export interface CreateCostInvoiceRequest {
+  paysId: number;
+  supplierId?: number | null;
+  supplierNameFree?: string | null;
+  /** Required with a supplier; unique per supplier. */
+  supplierInvoiceNumber?: string | null;
+  invoiceDate: string;          // YYYY-MM-DD — the period derives from it
+  currencyId: number;
+  /** Once per invoice — supplier invoices only. */
+  timbreAmount?: number | null;
+  /** Fraction (0.015), once per invoice — supplier invoices only. */
+  rsRate?: number | null;
+  paymentDueDate?: string | null;
+  notes?: string | null;
+  lines: CostInvoiceLineRequest[];
+}
+
+// ── Edit after validation, DAF only (V94) ─────────────────────────────────────
+
+/** Permission for editing an APPROVED / POSTED cost invoice (workshop item #5). */
+export const FACT_EDIT_VALIDATED_COST = 'FACT_EDIT_VALIDATED_COST';
+
+/** Statuses a cost invoice can be edited in by the DAF (a draft is edited normally). */
+export const VALIDATED_EDITABLE_STATUSES: readonly string[] = ['APPROVED', 'VALIDATED', 'POSTED'];
+
+export interface CostInvoiceChangeEntry {
+  /** HEADER, LINE or TOTAL */
+  scope: 'HEADER' | 'LINE' | 'TOTAL';
+  /** The line concerned (LINE only). */
+  lineReference: string | null;
+  /** Stable code — translated with COST.CHANGES.FIELD.<field>. */
+  field: string;
+  before: string;
+  after: string;
+}
+
+export interface CostInvoiceChangeDto {
+  id: number;
+  costInvoiceId: number;
+  changedBy: number;
+  changedAt: string;
+  statusAtChange: string;
+  justification: string;
+  grossBefore: number | null;
+  grossAfter: number | null;
+  changes: CostInvoiceChangeEntry[];
+}
+
+// ── Historical import (V93, workshop item #4) ─────────────────────────────────
+
+export interface CostInvoiceImportResult {
+  batchId: number | null;
+  /** true = check only, nothing saved */
+  dryRun: boolean;
+  /** true = the invoices were saved */
+  committed: boolean;
+  totalRows: number;
+  invoiceCount: number;
+  errorCount: number;
+  errors: string[];
+  references: string[];
+}
+
+export interface CostInvoiceAttachmentDto {
+  id: number;
+  costInvoiceId: number;
+  fileName: string;
+  fileSizeBytes?: number | null;
+  fileType?: string | null;
+  uploadedBy?: number | null;
+  uploadedAt: string;
+  /** Relative API path — GET it with the HttpClient (auth header), not a plain link. */
+  downloadUrl?: string | null;
 }
 
 /**
@@ -228,52 +408,10 @@ export function costCategoryDisplay(line: Pick<CostLineDto, 'costCategoryLabel' 
     : line.costCategoryLabel;
 }
 
-// ── Create/update request (matches backend CreateCostLineRequest record) ────────
+// Cost lines are created and edited through their invoice since V93 — see
+// CreateCostInvoiceRequest above (the per-line CreateCostLineRequest is gone).
 
-export interface CreateCostLineRequest {
-  paysId: number;
-  /** Legacy cost_categories id — never sent by the UI (old CSV files only, mapped server-side). */
-  categoryId?: number;
-  /** New taxonomy (V78) — required by the live create form's own canSave() gate; the
-   *  backend enforces @NotNull for manual creation via CostLineController. */
-  costCategoryId?: number;
-  costSubCategoryId?: number;
-  transactionDate: string;   // YYYY-MM-DD
-  periodYear: number;
-  periodMonth: number;
-  description: string;       // backend maps this to CostLine.label
-  netAmountLocal: number;
-  vatAmountLocal?: number | null;
-  currencyId: number;
-  supplierId?: number | null;
-  supplierNameFree?: string | null;
-  documentUrl?: string | null;
-  notes?: string | null;
-  isRecurring?: boolean | null;
-  recurrenceFrequencyId?: number | null;
-  costTypeId?: number | null;
-  paymentMethodId?: number | null;
-  affaireId?: number | null;
-  // D3 Tunisian tax fields (V78) — only meaningful when supplierId is set.
-  fodecRate?: number | null;
-  tvaRate?: number | null;
-  timbreAmount?: number | null;
-  autresTaxesRate?: number | null;
-}
-
-// ── Import result ──────────────────────────────────────────────────────────────
-
-export interface CostImportResult {
-  totalRows: number;
-  successCount: number;
-  errorCount: number;
-  errors: CostImportError[];
-}
-
-export interface CostImportError {
-  row: number;
-  message: string;
-}
+// The import result is CostInvoiceImportResult (historical import, V93) — see above.
 
 // ── UI helpers ─────────────────────────────────────────────────────────────────
 
@@ -320,17 +458,6 @@ export function formatAmount(amount: number | null, currency = 'EUR'): string {
 }
 
 // ── D3-115/127 additional types ───────────────────────────────────────────────
-
-export interface CostAttachmentDto {
-  id: number;
-  costLineId: number;
-  fileName: string;
-  fileSizeBytes?: number | null;
-  fileType?: string | null;
-  uploadedBy?: number | null;
-  uploadedAt: string;
-  downloadUrl?: string | null;
-}
 
 export interface ForexPreviewDto {
   local: number;
@@ -430,34 +557,23 @@ export interface SupplierLedgerRowDto {
   credit: number | null;
   soldeDebiteur: number | null;
   soldeCrediteur: number | null;
-  costLineId: number;
-  /** Manual règlement feature (2026-09-10 plan) -- addresses the règlement this row
-   *  came from, for Edit/Delete. Every row now originates from exactly one règlement. */
+  /** The paid cost invoice this row comes from (V93 — was a cost line). */
+  costInvoiceId: number;
+  /** Addresses the règlement this row came from, for Edit/Delete. */
   reglementId: number;
-  /** The originating cost line's OWN tax breakdown -- not derived from the règlement,
-   *  unrelated to the debit/credit/solde reconciliation above. All null when the line
-   *  had no supplier/tax data. */
+  /** The invoice's own totals — unrelated to the debit/credit/solde reconciliation above. */
   netAmountLocal: number | null;    // Montant HT
   fodecAmount: number | null;
   vatAmountLocal: number | null;    // TVA
   timbreAmount: number | null;
+  /** Retenue à la source of the invoice. */
   autresTaxesAmount: number | null;
   grossAmountLocal: number | null;  // Montant TTC
 }
 
 export interface SupplierLedgerDto {
-  supplier: SupplierSummaryDto | null;   // null when the cost line has no supplier attached
+  supplier: SupplierSummaryDto | null;   // null when the invoice has no supplier attached
   rows: SupplierLedgerRowDto[];
-}
-
-// ── Manual règlement (payment) feature (2026-09-10 plan) ───────────────────────
-
-export interface CostLineReglementDto {
-  id: number;
-  costLineId: number;
-  montantPaye: number;
-  datePaiement: string; // ISO LocalDate, e.g. "2026-09-10"
-  comment: string | null;
 }
 
 export interface CreateReglementRequest {
@@ -472,18 +588,19 @@ export interface UpdateReglementRequest {
   comment?: string | null;
 }
 
-// ── Cost-lines-by-supplier cards (2026-09-09 plan) ──────────────────────────────
+// ── Costs-by-supplier cards ─────────────────────────────────────────────────────
 
 /**
- * `GET /cost-lines/by-supplier` — one row per distinct supplier for this pays, plus one
- * `supplierId: null` row ("Sans fournisseur") when any cost line has no supplier
- * attached. Deliberately ALL statuses, not just APPROVED/POSTED like the ledger.
+ * `GET /cost-invoices/by-supplier` — one row per distinct supplier for this pays, plus one
+ * `supplierId: null` row ("Sans fournisseur") when any invoice has no supplier.
+ * Deliberately ALL statuses, not just POSTED like the ledger.
  */
 export interface SupplierCostSummaryDto {
   supplierId: number | null;
   supplierName: string | null;
   supplierCode: string | null;
-  lineCount: number;
+  /** Number of cost invoices (V93 — was the number of cost lines). */
+  invoiceCount: number;
   /** Montant HT, EUR. Kept, but not what the card shows — see `totalGrossEur`. */
   totalNetEur: number;
   /**
@@ -491,7 +608,7 @@ export interface SupplierCostSummaryDto {
    * shows per line and the TTC the approval tier resolves from (V82).
    *
    * Reads 0 for lines created before V82 added `gross_amount_eur` (nullable, never
-   * backfilled), so a supplier with a real `lineCount` and a 0 total means those lines
+   * backfilled), so a supplier with a real `invoiceCount` and a 0 total means those lines
    * predate the column — a backfill signal, not a bug.
    */
   totalGrossEur: number;

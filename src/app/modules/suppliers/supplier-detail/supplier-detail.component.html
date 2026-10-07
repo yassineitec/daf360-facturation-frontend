@@ -263,8 +263,9 @@
              [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
              class="flex flex-col gap-6">
 
-          <!-- ══ Onglet « Lignes de coût » ═════════════════════════════════
-               La liste, en lecture. Soumettre, régler ou éditer une ligne se fait
+          <!-- ══ Onglet « Factures » (V93 : factures de coût, plus des lignes) ══
+               La liste, en lecture ; un clic ouvre la fiche de la facture
+               (/finance/cost/:id). Soumettre, régler ou éditer une facture se fait
                depuis le module coûts, qui porte déjà les gardes de statut de chaque
                action — d'où le renvoi dans le centre d'actions plutôt qu'une seconde
                implantation de ces boutons ici. -->
@@ -291,6 +292,7 @@
                 [columns]="costColumns()"
                 [rows]="costRows()"
                 [config]="costConfig()"
+                (rowClick)="onCostRowClick($event)"
                 (sortChange)="onCostSort($event)"
                 (resetClick)="onCostSort(null)" />
 
@@ -303,7 +305,7 @@
             <daf-pagination
               [currentPage]="costPage()"
               [totalPages]="costTotalPages()"
-              [totalElements]="filteredCostLines().length"
+              [totalElements]="filteredCostInvoices().length"
               [pageSize]="costPageSize()"
               [pageSizeOptions]="[10, 20, 50, 100]"
               [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
@@ -337,6 +339,7 @@
                 [columns]="ledgerColumns()"
                 [rows]="ledgerRows()"
                 [config]="ledgerConfig()"
+                (rowClick)="onLedgerRowClick($event)"
                 (sortChange)="onLedgerSort($event)"
                 (resetClick)="onLedgerSort(null)" />
 

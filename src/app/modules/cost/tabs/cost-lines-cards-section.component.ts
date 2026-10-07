@@ -3,17 +3,19 @@ import { TranslateService } from '@ngx-translate/core';
 import {
   EntityCardAction, EntityCardComponent, EntityCardOptions, SkeletonComponent,
 } from '@khalilrebhiitec/daf360';
-import { CostLineDto } from '../cost.model';
+import { CostInvoiceDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import {
-  STATUS_ENTITY_STATUS, approvalLevelKey, canEdit, canReglement, canSubmit, formatDate,
-  initials, statusKey,
+  STATUS_ENTITY_STATUS, approvalLevelKey, formatDate, initials, statusKey,
 } from '../cost-display';
+import {
+  canEditInvoice, canReglementInvoice, canSubmitInvoice, invoiceCategorySummary,
+} from './cost-invoice-display';
 
 /**
- * Card view of the Lignes de coût tab — one `daf-entity-card` per line.
+ * Card view of the cost tab — one `daf-entity-card` per cost INVOICE (V93).
  *
- * Stateless: lines in, the same two outputs the table section exposes out, so neither
+ * Stateless: invoices in, the same outputs the table section exposes out, so neither
  * view can offer an action the other doesn't.
  */
 @Component({
@@ -55,68 +57,71 @@ export class CostLinesCardsSectionComponent {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
 
-  lines         = input.required<CostLineDto[]>();
-  categoryFor   = input.required<(line: CostLineDto) => string>();
+  invoices      = input.required<CostInvoiceDto[]>();
   loading       = input(false);
   emptyMessage  = input('');
   skeletonCount = input(6);
 
-  /** Card click / "view" button — the read-only detail page. Editing stays on the pencil action. */
-  readonly view            = output<CostLineDto>();
-  readonly edit            = output<CostLineDto>();
-  readonly submitLine      = output<CostLineDto>();
-  readonly createReglement = output<CostLineDto>();
+  /** Card click / "view" button — the read-only invoice detail page. Editing stays on the pencil action. */
+  readonly view            = output<CostInvoiceDto>();
+  readonly edit            = output<CostInvoiceDto>();
+  readonly submitInvoice   = output<CostInvoiceDto>();
+  readonly createReglement = output<CostInvoiceDto>();
 
   protected readonly skeletonSlots = computed(() =>
     Array.from({ length: Math.max(1, this.skeletonCount()) }, (_, i) => i),
   );
 
-  protected readonly cards = computed<{ id: number; raw: CostLineDto; options: EntityCardOptions }[]>(() => {
-    this.translate.currentLang();
-    const t = (key: string) => this.translate.instant(key);
-    const cat = this.categoryFor();
+  protected readonly cards = computed<{ id: number; raw: CostInvoiceDto; options: EntityCardOptions }[]>(() => {
+    const lang = this.translate.currentLang();
+    const t  = (key: string) => this.translate.instant(key);
+    const tp = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
 
-    return this.lines().map(line => {
-      const levelKey = approvalLevelKey(line.approvalLevelRequired);
+    return this.invoices().map(inv => {
+      const levelKey = approvalLevelKey(inv.approvalLevelRequired);
+      const category = invoiceCategorySummary(inv, lang, tp);
       return {
-        id:  line.id,
-        raw: line,
+        id:  inv.id,
+        raw: inv,
         options: {
           variant: 'glass',
           clickable: true,
-          image: { initials: initials(line.supplierName) },
+          image: { initials: initials(inv.supplierName) },
           metadata: {
-            title:       line.supplierName ?? t('COST.LINES.NO_SUPPLIER_CARD'),
-            subtitle:    [line.reference, line.costCategoryLabel ? cat(line) : null].filter(Boolean).join(' · '),
-            status:      STATUS_ENTITY_STATUS[line.status] ?? 'pending',
-            statusLabel: t(statusKey(line.status)),
+            title:       inv.supplierName ?? t('COST.LINES.NO_SUPPLIER_CARD'),
+            subtitle:    [inv.reference, inv.supplierInvoiceNumber, category !== '—' ? category : null]
+                           .filter(Boolean).join(' · '),
+            status:      STATUS_ENTITY_STATUS[inv.status] ?? 'pending',
+            statusLabel: t(statusKey(inv.status)),
           },
           metricsColumns: 2,
           metrics: [
-            { label: t('COST.LINES.COL_NET_AMOUNT'), value: this.currency.transform(line.netAmountLocal, line.currency ?? 'TND') },
-            { label: t('COST.LINES.COL_EUR'),        value: this.currency.transform(line.netAmountEur, 'EUR') },
-            { label: t('COST.LINES.COL_DATE'),       value: formatDate(line.transactionDate) },
-            { label: t('COST.LINES.COL_APPROVAL'),   value: levelKey ? t(levelKey) : '—' },
+            { label: t('COST.LINES.COL_TTC'),          value: this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'TND') },
+            { label: t('COST.LINES.COL_EUR'),          value: this.currency.transform(inv.grossAmountEur, 'EUR') },
+            { label: t('COST.LINES.COL_INVOICE_DATE'), value: formatDate(inv.invoiceDate) },
+            { label: t('COST.LINES.COL_LINES'),        value: String(inv.lines?.length ?? 0) },
+            { label: t('COST.LINES.COL_NET_AMOUNT'),   value: this.currency.transform(inv.netAmountLocal, inv.currency ?? 'TND') },
+            { label: t('COST.LINES.COL_APPROVAL'),     value: levelKey ? t(levelKey) : '—' },
           ],
-          actions: this.actionsFor(line, t),
+          actions: this.actionsFor(inv, t),
           viewLabel: t('COST.LINES.VIEW'),
         } satisfies EntityCardOptions,
       };
     });
   });
 
-  /** Same gates as the table's row actions — both read `cost-display.ts`. */
-  private actionsFor(line: CostLineDto, t: (key: string) => string): EntityCardAction[] {
+  /** Same gates as the table's row actions — both read `cost-invoice-display.ts`. */
+  private actionsFor(inv: CostInvoiceDto, t: (key: string) => string): EntityCardAction[] {
     const actions: EntityCardAction[] = [];
-    if (canSubmit(line))    actions.push({ id: 'submit',    icon: 'send',     tooltip: t('COST.LINES.SUBMIT') });
-    if (canEdit(line))      actions.push({ id: 'edit',      icon: 'stylus',   tooltip: t('COST.LINES.EDIT')   });
-    if (canReglement(line)) actions.push({ id: 'reglement', icon: 'payments', tooltip: t('COST.LINES.CREATE_REGLEMENT') });
+    if (canSubmitInvoice(inv))    actions.push({ id: 'submit',    icon: 'send',     tooltip: t('COST.LINES.SUBMIT') });
+    if (canEditInvoice(inv))      actions.push({ id: 'edit',      icon: 'stylus',   tooltip: t('COST.LINES.EDIT')   });
+    if (canReglementInvoice(inv)) actions.push({ id: 'reglement', icon: 'payments', tooltip: t('COST.LINES.CREATE_REGLEMENT') });
     return actions;
   }
 
-  protected onAction(line: CostLineDto, id: string): void {
-    if (id === 'submit')    this.submitLine.emit(line);
-    if (id === 'edit')      this.edit.emit(line);
-    if (id === 'reglement') this.createReglement.emit(line);
+  protected onAction(inv: CostInvoiceDto, id: string): void {
+    if (id === 'submit')    this.submitInvoice.emit(inv);
+    if (id === 'edit')      this.edit.emit(inv);
+    if (id === 'reglement') this.createReglement.emit(inv);
   }
 }

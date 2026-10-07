@@ -2421,7 +2421,7 @@
   },
   "COST": {
     "TABS": {
-      "LINES": "Cost lines",
+      "LINES": "Cost invoices",
       "APPROVALS": "Approvals",
       "CONFIG": "Configuration"
     },
@@ -2530,16 +2530,45 @@
       }
     },
     "FORM": {
-      "LOAD_ERROR": "Unable to load this cost line.",
-      "SUBMIT_ERROR": "Error while submitting.",
+      "LOAD_ERROR": "Unable to load this cost invoice.",
+      "SUBMIT_ERROR": "Invoice saved as a draft, but submission failed.",
       "GENERIC_ERROR": "An error occurred.",
       "UNIT_BYTES": "{{n}} B",
       "UNIT_KB": "{{n}} KB",
       "UNIT_MB": "{{n}} MB",
-      "TITLE_EDIT": "Edit cost line",
-      "TITLE_NEW": "New cost line",
-      "SUB_EDIT": "Updating line #{{id}}",
-      "SUB_NEW": "Entry of an expense into the approval circuit",
+      "TITLE_EDIT": "Edit cost invoice",
+      "TITLE_NEW": "New cost invoice",
+      "SUB_EDIT": "Updating invoice {{id}}",
+      "SUB_NEW": "Supplier invoice (one or more lines) submitted to the approval circuit",
+      "SECTION_INVOICE_TITLE": "Invoice",
+      "SECTION_INVOICE_SUB": "Entity, supplier, invoice number, dates and currency",
+      "NO_SUPPLIER_HINT": "Without a supplier: no FODEC, stamp duty or withholding — enter the VAT as an amount on each line.",
+      "INVOICE_NUMBER_LABEL": "Supplier invoice number",
+      "INVOICE_NUMBER_PLACEHOLDER": "e.g. FA-2026-0142",
+      "INVOICE_NUMBER_HINT": "Required. The same invoice can only be entered once per supplier.",
+      "INVOICE_DATE_LABEL": "Invoice date",
+      "DUE_DATE_LABEL": "Due date",
+      "SECTION_LINES_TITLE": "Invoice lines",
+      "SECTION_LINES_SUB_SUPPLIER": "Each line has its own category, project, FODEC and VAT",
+      "SECTION_LINES_SUB_NO_SUPPLIER": "Each line has its own category, project and VAT amount",
+      "LINE_N": "Line {{n}}",
+      "LINE_TTC": "Line gross",
+      "ADD_LINE": "Add a line",
+      "REMOVE_LINE": "Remove the line",
+      "VAT_AMOUNT_LABEL": "VAT (amount)",
+      "SECTION_TAXES_TITLE": "Invoice taxes and totals",
+      "SECTION_TAXES_SUB": "Stamp duty and withholding tax: once for the whole invoice",
+      "SECTION_TAXES_SUB_NO_SUPPLIER": "Invoice totals",
+      "TOTAL_HT": "Total net (HT)",
+      "TOTAL_FODEC": "FODEC",
+      "TOTAL_VAT_RATE": "VAT {{rate}}% (on {{base}})",
+      "TOTAL_VAT_MANUAL": "VAT entered",
+      "TOTAL_TIMBRE": "Stamp duty",
+      "TOTAL_TTC": "Total gross (TTC)",
+      "TOTAL_RS": "Withholding tax ({{base}})",
+      "NET_TO_PAY": "Net payable to the supplier",
+      "HELP_4": "Stamp duty and withholding tax apply once per invoice.",
+      "FOOT_NUMBER_HINT": "Enter the supplier's invoice number",
       "DRAFT_BADGE": "AUTOMATED DRAFT",
       "SECTION_CONTEXT_TITLE": "Context",
       "SECTION_CONTEXT_SUB": "Entity, category and date of the expense",
@@ -2572,14 +2601,10 @@
         "TIMBRE_OPT_1": "1.000 DT",
         "TIMBRE_OPT_0": "0 DT",
         "AUTRES_TAXES_LABEL": "Other Taxes (Withholding Tax)",
-        "AUTRES_TAXES_OPT_0": "0% (N/A)",
-        "AUTRES_TAXES_OPT_1": "1%",
-        "AUTRES_TAXES_OPT_1_5": "1.5%",
-        "AUTRES_TAXES_OPT_3": "3%",
-        "AUTRES_TAXES_OPT_5": "5%",
-        "AUTRES_TAXES_OPT_10": "10%",
-        "AUTRES_TAXES_OPT_15": "15%",
-        "AUTRES_TAXES_OPT_25": "25%",
+        "RS_BASE_HT": "on net (HT)",
+        "RS_BASE_TTC": "on gross (TTC)",
+        "RS_BASE_TVA": "on VAT",
+        "RS_PREVIEW_LABEL": "Withholding tax ({{base}}, estimated)",
         "TTC_LABEL": "Estimated Total (incl. tax)"
       },
       "SECTION_SUPPLIER_TITLE": "Supplier",
@@ -2621,7 +2646,15 @@
       "FOOT_CANCEL": "Cancel",
       "FOOT_REQUIRED_HINT": "Fill in the required fields to continue",
       "FOOT_SAVE_DRAFT": "Save draft",
-      "FOOT_SUBMIT": "Submit for approval"
+      "FOOT_SUBMIT": "Submit for approval",
+      "VALIDATED_BADGE": "EDIT AFTER VALIDATION",
+      "VALIDATED_TITLE": "Editing an already validated invoice ({{status}}) — reserved to the CFO (DAF)",
+      "VALIDATED_TEXT": "Status, approval and payment are kept. Every amount is recalculated and each change is recorded in the history with its justification.",
+      "JUSTIFICATION_LABEL": "Reason for the change",
+      "JUSTIFICATION_PLACEHOLDER": "E.g. net amount typo, credit note received from the supplier…",
+      "FOOT_SAVE_VALIDATED": "Save the change",
+      "FOOT_JUSTIFICATION_HINT": "Enter a justification (at least 5 characters)",
+      "LOCKED_ERROR": "This invoice ({{status}}) cannot be edited: only a draft can, or a validated invoice by the CFO (DAF)."
     },
     "APPROVAL_QUEUE": {
       "TITLE": "Approval queue",
@@ -2673,7 +2706,7 @@
       "FILTER_AMOUNT_PH": "e.g. 1500.50"
     },
     "IMPORT": {
-      "TITLE": "CSV Import",
+      "TITLE": "History import (CSV)",
       "DOWNLOAD_TEMPLATE": "Download template",
       "KB": "KB",
       "DRAG_HINT": "Drag your CSV file here or",
@@ -2688,7 +2721,17 @@
       "ERROR_ROW": "Row {{row}}",
       "NEW_IMPORT": "New import",
       "ONLY_CSV": "Only CSV files are accepted.",
-      "IMPORT_ERROR": "Error during import."
+      "IMPORT_ERROR": "Error during import.",
+      "HELP": "One file row = one cost line; rows with the same \"reference\" form one invoice. Check the file first: nothing is saved. The import saves nothing if a single row has an error.",
+      "CHANGE_FILE": "Change file",
+      "CHECK": "Check the file",
+      "CHECK_OK": "Valid file: {{invoices}} invoice(s) ready to be imported.",
+      "CHECK_KO": "File rejected: fix the errors below and check again. Nothing was saved.",
+      "UPLOAD_N": "Import {{invoices}} invoice(s)",
+      "RESULT_ROWS": "rows read",
+      "RESULT_INVOICES": "invoices",
+      "DONE": "Import complete: {{invoices}} invoice(s) created from {{rows}} row(s).",
+      "REFERENCES": "References created:"
     },
     "APPROVE_MODAL": {
       "CLOSE": "Close",
@@ -2993,8 +3036,8 @@
       "KPI_DRAFTS": "Drafts",
       "KPI_PENDING": "Pending",
       "KPI_APPROVED": "Approved",
-      "SEARCH_PLACEHOLDER": "Description, reference…",
-      "NEW_LINE": "New line",
+      "SEARCH_PLACEHOLDER": "Reference, supplier, invoice no.…",
+      "NEW_LINE": "New invoice",
       "STATUS_FILTER_LABEL": "Status",
       "STATUS_FILTER_PLACEHOLDER": "All statuses",
       "CATEGORY_FILTER_LABEL": "Cost category",
@@ -3014,27 +3057,33 @@
       "COL_STATUS": "Status",
       "COL_APPROVAL": "Approval",
       "COL_ACTIONS": "Actions",
-      "TABLE_EMPTY": "No cost line found.",
+      "TABLE_EMPTY": "No cost invoice found.",
       "VIEW": "View details",
       "EDIT": "Edit",
       "SUBMIT": "Submit",
       "CREATE_REGLEMENT": "Create payment",
       "NO_PAYS": "Country not found for your account.",
       "NO_PAYS_DETERMINE": "Unable to determine the country.",
-      "LOAD_ERROR": "Unable to load lines.",
+      "LOAD_ERROR": "Unable to load invoices.",
       "SUBMIT_ERROR": "Error while submitting.",
       "CAT_FALLBACK": "Cat. {{id}}",
       "VIEW_GRID": "Grid view",
       "VIEW_LIST": "List view",
       "VIEW_SUPPLIER": "Supplier view",
-      "SUPPLIER_CARD_COUNT": "Lines",
+      "SUPPLIER_CARD_COUNT": "Invoices",
       "SUPPLIER_CARD_TOTAL": "Total incl. tax (EUR)",
       "NO_SUPPLIER_CARD": "No supplier",
-      "SUPPLIER_VIEW_EMPTY": "No supplier has any cost lines.",
+      "SUPPLIER_VIEW_EMPTY": "No supplier has any cost invoices.",
       "FILTERS": "Filters",
       "FILTER_APPLY": "Apply",
       "FILTER_CANCEL": "Cancel",
-      "FILTER_RESET": "Reset"
+      "FILTER_RESET": "Reset",
+      "COL_REFERENCE": "Reference",
+      "COL_INVOICE_NUMBER": "Supplier invoice no.",
+      "COL_INVOICE_DATE": "Invoice date",
+      "COL_LINES": "Lines",
+      "CATEGORY_MORE": "{{first}} +{{count}}",
+      "LINES_COUNT": "{{count}} line(s)"
     },
     "REGLEMENT": {
       "NEW_TITLE": "New payment",
@@ -3052,15 +3101,22 @@
       "CANCEL": "Cancel",
       "SAVE": "Save",
       "CREATE": "Create",
-      "GENERIC_ERROR": "An error occurred."
+      "GENERIC_ERROR": "An error occurred.",
+      "INVOICE": "Cost invoice",
+      "INVOICE_NUMBER": "Invoice #{{id}}",
+      "SUPPLIER_INVOICE_NUMBER": "Supplier invoice no.: {{number}}",
+      "INVOICE_PICKER": "Invoice to settle",
+      "INVOICE_PICKER_PLACEHOLDER": "Select an invoice…",
+      "ERR_INVOICE_REQUIRED": "Choose an invoice.",
+      "NET_TO_PAY_HINT": "Net to pay (incl. tax − withholding tax): {{amount}}"
     },
     "DETAIL": {
-      "LOADING": "Loading cost line…",
-      "LOAD_ERROR": "Unable to load this cost line.",
-      "BACK": "Cost lines",
+      "LOADING": "Loading cost invoice…",
+      "LOAD_ERROR": "Unable to load this cost invoice.",
+      "BACK": "Cost invoices",
       "BREADCRUMB_ARIA": "Breadcrumb",
-      "TABS_ARIA": "Cost line sections",
-      "UNNAMED": "Cost line",
+      "TABS_ARIA": "Cost invoice sections",
+      "UNNAMED": "Cost invoice",
       "UNASSIGNED_TITLE": "No supplier",
       "KPI": {
         "NET": "Net amount",
@@ -3068,7 +3124,8 @@
         "GROSS": "Gross amount",
         "EUR": "Net amount (EUR)",
         "EUR_TTC": "Amount incl. tax (EUR)",
-        "LINE_COUNT": "Number of lines"
+        "LINE_COUNT": "Number of lines",
+        "INVOICE_COUNT": "Number of invoices"
       },
       "INFO": {
         "REFERENCE": "Reference",
@@ -3082,20 +3139,28 @@
         "SUPPLIER_TAX_ID": "Tax ID",
         "SUPPLIER_COUNTRY": "Country",
         "NO_SUPPLIER": "No supplier",
-        "APPROVAL_LEVEL": "Approval level"
+        "APPROVAL_LEVEL": "Approval level",
+        "STATUS": "Status"
       },
       "TABS": {
-        "INFO": "Details",
+        "INFO": "Lines and totals",
         "LINES": "Cost lines",
-        "LEDGER": "Settlement"
+        "LEDGER": "Settlement",
+        "INVOICES": "Invoices",
+        "APPROVALS": "Approvals",
+        "ATTACHMENTS": "Attachments",
+        "CHANGES": "Change history"
       },
       "SUPPLIER": {
-        "SUBTITLE": "{{count}} cost line(s)",
-        "LINES_EMPTY": "No cost lines for this supplier.",
-        "NEW_LINE": "New cost line"
+        "SUBTITLE": "{{count}} cost invoice(s)",
+        "LINES_EMPTY": "No cost invoice for this supplier.",
+        "NEW_LINE": "New invoice"
       },
       "ACTIONS": {
-        "EDIT": "Edit"
+        "EDIT": "Edit",
+        "SUBMIT": "Submit for approval",
+        "EDIT_VALIDATED": "Edit (CFO)",
+        "EDIT_VALIDATED_HINT": "Validated invoice: editing is reserved to the CFO (DAF), with a justification and a history."
       },
       "APPROVALS": {
         "COL_LEVEL": "Level",
@@ -3103,7 +3168,7 @@
         "COL_APPROVER": "Approver",
         "COL_DATE": "Date",
         "COL_COMMENT": "Comment",
-        "EMPTY": "No approval history for this line.",
+        "EMPTY": "No approval history for this invoice.",
         "DECISION_APPROVED": "Approved",
         "DECISION_AUTO_APPROVED": "Auto-approved",
         "DECISION_RETURNED": "Returned",
@@ -3137,12 +3202,73 @@
         "NEW_REGLEMENT": "New règlement",
         "EDIT_REGLEMENT": "Edit règlement",
         "DELETE_REGLEMENT": "Delete règlement",
-        "CONFIRM_DELETE": "Delete this règlement? The cost line will revert to Approved.",
+        "CONFIRM_DELETE": "Delete this payment? The invoice will go back to Approved.",
         "DELETE_ERROR": "Unable to delete this règlement.",
-        "NO_SUPPLIER": "No supplier is attached to this cost line — no account statement to show.",
+        "NO_SUPPLIER": "No supplier is attached to this invoice — no account statement to show.",
         "EMPTY": "No validated entries for this supplier.",
         "FILTER_PERIOD": "Period",
-        "FILTER_COST_LINE": "Cost line"
+        "FILTER_COST_LINE": "Cost line",
+        "FILTER_INVOICE": "Invoice"
+      },
+      "TOTALS_TITLE": "Invoice totals",
+      "LINES": {
+        "COL_CATEGORY": "Category",
+        "COL_DESCRIPTION": "Description",
+        "COL_AFFAIRE": "Project",
+        "COL_NET": "Net",
+        "COL_FODEC": "FODEC",
+        "COL_VAT_RATE": "VAT rate",
+        "COL_VAT": "VAT",
+        "COL_GROSS": "Gross",
+        "EMPTY": "No line on this invoice."
+      },
+      "ATTACHMENTS": {
+        "COL_NAME": "File",
+        "COL_SIZE": "Size",
+        "COL_DATE": "Added on",
+        "EMPTY": "No attachment on this invoice.",
+        "DOWNLOAD": "Download",
+        "DELETE": "Delete attachment",
+        "CONFIRM_DELETE": "Delete \"{{name}}\"? This cannot be undone.",
+        "DELETE_ERROR": "Unable to delete this attachment.",
+        "DOWNLOAD_ERROR": "Unable to download this attachment."
+      },
+      "CHANGES": {
+        "EMPTY": "No change after validation.",
+        "STATUS_AT": "Status: {{status}}",
+        "GROSS": "Gross",
+        "JUSTIFICATION": "Justification",
+        "COL_FIELD": "Item",
+        "COL_BEFORE": "Before",
+        "COL_AFTER": "After"
+      }
+    },
+    "CHANGES": {
+      "LINE_PREFIX": "Line {{ref}}",
+      "FIELD": {
+        "SUPPLIER": "Supplier",
+        "SUPPLIER_INVOICE_NUMBER": "Supplier invoice number",
+        "INVOICE_DATE": "Invoice date",
+        "DUE_DATE": "Due date",
+        "CURRENCY": "Currency",
+        "STAMP_DUTY": "Stamp duty",
+        "RS_RATE": "Withholding tax rate",
+        "NOTES": "Notes",
+        "CATEGORY": "Category",
+        "SUB_CATEGORY": "Sub-category",
+        "DESCRIPTION": "Description",
+        "NET_AMOUNT": "Net amount",
+        "FODEC_RATE": "FODEC",
+        "VAT_RATE": "VAT rate",
+        "VAT_AMOUNT": "VAT",
+        "AFFAIRE": "Project",
+        "COST_TYPE": "Cost type",
+        "LINE_ADDED": "Line added",
+        "LINE_REMOVED": "Line removed",
+        "TOTAL_NET": "Total net",
+        "TOTAL_VAT": "Total VAT",
+        "TOTAL_GROSS": "Total gross",
+        "RS_AMOUNT": "Withholding tax"
       }
     }
   },
@@ -3674,14 +3800,14 @@
       },
       "ACTIONS": {
         "QUICK_TITLE": "Quick actions",
-        "NEW_COST_LINE": "New cost line",
+        "NEW_COST_LINE": "New supplier invoice",
         "EDIT": "Edit",
         "COST_VIEW": "View costs"
       },
       "DEACTIVATING": "Deactivating…",
       "TOOLBAR": {
-        "SEARCH_COSTS": "Search by reference or label…",
-        "SEARCH_LEDGER": "Search by label…",
+        "SEARCH_COSTS": "Search by reference, invoice no. or label…",
+        "SEARCH_LEDGER": "Search by label or invoice…",
         "FILTERS": "Filters",
         "APPLY": "Apply",
         "CANCEL": "Cancel",
@@ -3703,11 +3829,11 @@
       "DEACTIVATE_CONFIRM": "Deactivate",
       "TABS_ARIA": "Supplier record sections",
       "TABS": {
-        "COSTS": "Cost lines",
+        "COSTS": "Invoices",
         "LEDGER": "Settlement"
       },
       "KPI": {
-        "LINES": "Cost lines",
+        "LINES": "Invoices",
         "TOTAL_TTC": "Total incl. tax (EUR)",
         "REGLEMENTS": "Settlements",
         "BALANCE": "Balance due",
@@ -3716,11 +3842,14 @@
       "COSTS": {
         "COL_REF": "Reference",
         "COL_LABEL": "Label",
-        "COL_DATE": "Date",
+        "COL_DATE": "Invoice date",
         "COL_STATUS": "Status",
         "COL_GROSS": "Amount incl. tax",
-        "EMPTY": "No cost line attached to this supplier.",
-        "HINT": "All statuses, up to 200 lines."
+        "EMPTY": "No cost invoice attached to this supplier.",
+        "HINT": "All statuses, up to 200 invoices. Click an invoice to open it.",
+        "COL_SUPPLIER_INVOICE_NO": "Supplier invoice no.",
+        "COL_LINES": "Lines",
+        "COL_NET": "Amount excl. tax"
       },
       "LEDGER": {
         "COL_DATE": "Date",
@@ -3730,11 +3859,13 @@
         "COL_SOLDE_DEBITEUR": "Debit balance",
         "COL_SOLDE_CREDITEUR": "Credit balance",
         "EMPTY": "No settlement recorded for this supplier.",
-        "HINT": "Read-only: a settlement is recorded from its cost line. Balances are cumulative across the whole statement.",
+        "HINT": "Read-only: a settlement is recorded from its cost invoice (click an entry to open it). Balances are cumulative across the whole statement.",
         "FILTER_TYPE": "Movement type",
         "TYPE_CREDIT": "Credit (still owed)",
         "TYPE_DEBIT": "Debit (overpaid)",
-        "TYPE_SETTLED": "Settled"
+        "TYPE_SETTLED": "Settled",
+        "COL_INVOICE": "Invoice",
+        "FILTER_INVOICE": "Invoice"
       }
     },
     "EDIT": {
@@ -3891,7 +4022,8 @@
         "EXPENSE_CATEGORY": "Expense categories",
         "BILLING_PERIOD": "Billing periods",
         "BILLING_PERMISSION": "Billing permissions",
-        "INVOICE_TYPE": "Invoice types"
+        "INVOICE_TYPE": "Invoice types",
+        "WITHHOLDING_RATE": "Withholding tax rates"
       },
       "TYPE_DESC": {
         "RECURRENCE_FREQUENCY": "Recurrence cadences used for periodic costs and billing.",
@@ -3908,7 +4040,8 @@
         "EXPENSE_CATEGORY": "Reimbursable expense categories, with receipt requirement rule.",
         "BILLING_PERIOD": "Billing periods offered.",
         "BILLING_PERMISSION": "Permissions related to the billing module.",
-        "INVOICE_TYPE": "Invoice types available for issuance."
+        "INVOICE_TYPE": "Invoice types available for issuance.",
+        "WITHHOLDING_RATE": "Withholding tax rates on supplier costs, each with its base (net, gross or VAT)."
       },
       "COL_CODE": "Code",
       "COL_LABEL_FR": "Label FR",
@@ -3971,7 +4104,13 @@
       "PARENT_HIDDEN_HINT": "The parent category is not active for this entity, so this sub-category does not appear on the form. Edit it to attach it to one of the entity's categories, or deactivate it.",
       "ERR_AUTO_PUSH_MODULE_REQUIRED": "Enter the feeding module (e.g. PAYROLL).",
       "FIELD_RATE_PCT": "Rate (%)",
-      "COL_RATE_PCT": "Rate (%)"
+      "COL_RATE_PCT": "Rate (%)",
+      "FIELD_TAX_BASE": "Base",
+      "COL_TAX_BASE": "Base",
+      "TAX_BASE_HT": "Net amount (HT)",
+      "TAX_BASE_TTC": "Gross amount (HT + FODEC + VAT)",
+      "TAX_BASE_TVA": "VAT amount",
+      "TAX_BASE_HINT": "Amount the withholding rate is applied to. Stamp duty is never part of the base. Lines already entered keep their original base."
     },
     "FOREX": {
       "INFO_1": "Rates convert cost line amounts to EUR and CHF during P&L calculations. The CHF rate is calculated automatically (",

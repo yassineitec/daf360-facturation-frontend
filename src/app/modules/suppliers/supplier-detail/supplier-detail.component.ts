@@ -21,22 +21,29 @@ import {
 } from '../supplier-display';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { CostService } from '../../cost/cost.service';
-import { CostLineDto, SupplierCostSummaryDto, SupplierLedgerDto, SupplierLedgerRowDto, localizedLabel } from '../../cost/cost.model';
+import {
+  CostInvoiceDto, SupplierCostSummaryDto, SupplierLedgerDto, SupplierLedgerRowDto, localizedLabel,
+} from '../../cost/cost.model';
 
 /**
- * Distinct cost categories of these lines for a filter: `value` stays the FRENCH label —
- * the filters compare it with `costCategoryLabel` — while the shown label follows the UI
- * language (English name from the admin lists when there is one).
+ * Distinct cost categories of these invoices' lines for a filter: `value` stays the FRENCH
+ * label — the filters compare it with `costCategoryLabel` — while the shown label follows
+ * the UI language (English name from the admin lists when there is one).
  */
-function categoryFilterOptions(lines: CostLineDto[], lang: string | null | undefined): { value: string; label: string }[] {
+function categoryFilterOptions(invoices: CostInvoiceDto[], lang: string | null | undefined): { value: string; label: string }[] {
   const byFr = new Map<string, string>();
-  for (const l of lines) {
+  for (const l of invoices.flatMap(inv => inv.lines ?? [])) {
     if (l.costCategoryLabel && !byFr.has(l.costCategoryLabel)) {
       byFr.set(l.costCategoryLabel, localizedLabel(l.costCategoryLabel, l.costCategoryLabelEn, lang)!);
     }
   }
   return [...byFr].map(([value, label]) => ({ value, label }))
     .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** true when at least one line of the invoice carries this (French) category label. */
+function invoiceHasCategory(inv: CostInvoiceDto | undefined, category: string): boolean {
+  return !!inv && (inv.lines ?? []).some(l => l.costCategoryLabel === category);
 }
 import { STATUS_BADGE_VARIANT, statusKey } from '../../cost/cost-display';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
@@ -330,7 +337,8 @@ export class SupplierDetailComponent implements OnInit {
   // parfois un fournisseur rattaché à une autre entité, et prendre le pays du lecteur
   // afficherait alors zéro ligne sans dire pourquoi.
   summary   = signal<SupplierCostSummaryDto | null>(null);
-  costLines = signal<CostLineDto[]>([]);
+  /** Les factures de coût du fournisseur (V93 — une facture porte une ou plusieurs lignes). */
+  costInvoices = signal<CostInvoiceDto[]>([]);
   ledger    = signal<SupplierLedgerDto | null>(null);
   /** Le volet financier charge après la fiche : il ne doit pas retarder l'identité. */
   loadingFinance = signal(false);
@@ -491,7 +499,7 @@ export class SupplierDetailComponent implements OnInit {
     return [
       {
         label: 'SUPPLIERS.DETAIL.KPI.LINES',
-        value: String(s?.lineCount ?? 0),
+        value: String(s?.invoiceCount ?? 0),
         delta: null,
         options: { icon: 'receipt_long', iconColor: 'text-primary', iconBg: 'bg-primary/10' },
       },
@@ -528,7 +536,7 @@ export class SupplierDetailComponent implements OnInit {
     this.translate.currentLang();
     return [
       { id: 'costs',  label: this.translate.instant('SUPPLIERS.DETAIL.TABS.COSTS'),
-        count: this.costLines().length || null },
+        count: this.costInvoices().length || null },
       { id: 'ledger', label: this.translate.instant('SUPPLIERS.DETAIL.TABS.LEDGER'),
         count: (this.ledger()?.rows ?? []).length || null },
     ];
@@ -548,11 +556,11 @@ export class SupplierDetailComponent implements OnInit {
 
   costSearch = signal('');
   costStatus = signal('');
-  /** Catégorie de coût (`costCategoryLabel`) — vide = toutes. */
+  /** Catégorie de coût (`costCategoryLabel` d'au moins une ligne de la facture) — vide = toutes. */
   costCategory = signal('');
-  /** Devise de la ligne (`currency`) — vide = toutes. */
+  /** Devise de la facture (`currency`) — vide = toutes. */
   costCurrency = signal('');
-  /** Période sur `transactionDate` — 1 date = une journée, 2 dates = bornes incluses. */
+  /** Période sur `invoiceDate` — 1 date = une journée, 2 dates = bornes incluses. */
   costPeriod   = signal<Date[] | null>(null);
   costPage     = signal(0);
   costPageSize = signal(10);
@@ -561,9 +569,9 @@ export class SupplierDetailComponent implements OnInit {
   ledgerType   = signal('');
   /** Période sur la date du règlement — 1 date = une journée, 2 dates = bornes incluses. */
   ledgerPeriod   = signal<Date[] | null>(null);
-  /** Ligne de coût d'origine de l'écriture (`costLineId`, en chaîne) — vide = toutes. */
-  ledgerCostLine = signal('');
-  /** Catégorie de la ligne de coût d'origine, résolue via `costLines()` — vide = toutes. */
+  /** Facture de coût d'origine de l'écriture (`costInvoiceId`, en chaîne) — vide = toutes. */
+  ledgerInvoice  = signal('');
+  /** Catégorie des lignes de la facture d'origine, résolue via `costInvoices()` — vide = toutes. */
   ledgerCategory = signal('');
   ledgerPage     = signal(0);
   ledgerPageSize = signal(10);
@@ -590,7 +598,7 @@ export class SupplierDetailComponent implements OnInit {
         costPeriod:     this.costPeriod(),
         type:           one(this.ledgerType()),
         ledgerPeriod:   this.ledgerPeriod(),
-        ledgerCostLine: one(this.ledgerCostLine()),
+        ledgerInvoice:  one(this.ledgerInvoice()),
         ledgerCategory: one(this.ledgerCategory()),
       },
     };
@@ -606,9 +614,9 @@ export class SupplierDetailComponent implements OnInit {
     return day >= from && day <= to;
   }
 
-  /** `costLineId` → ligne chargée, pour nommer et catégoriser les écritures du relevé. */
-  private readonly costLineById = computed(() =>
-    new Map(this.costLines().map(l => [l.id, l] as const)));
+  /** `costInvoiceId` → facture chargée, pour nommer et catégoriser les écritures du relevé. */
+  private readonly costInvoiceById = computed(() =>
+    new Map(this.costInvoices().map(inv => [inv.id, inv] as const)));
 
   /** Désactivé quand il n'y a rien à écrire — même règle que la fiche affaire. */
   private exportAction(disabled: boolean): ToolbarAction[] {
@@ -621,17 +629,17 @@ export class SupplierDetailComponent implements OnInit {
     }];
   }
 
-  readonly costToolbarActions   = computed(() => this.exportAction(this.filteredCostLines().length === 0));
+  readonly costToolbarActions   = computed(() => this.exportAction(this.filteredCostInvoices().length === 0));
   readonly ledgerToolbarActions = computed(() => this.exportAction(this.filteredLedgerRows().length === 0));
 
   /**
    * Les statuts RÉELLEMENT présents, pas la liste des huit statuts possibles : proposer
-   * « Rejetée » à qui n'a que des lignes approuvées offre un filtre qui ne peut que
+   * « Rejetée » à qui n'a que des factures approuvées offre un filtre qui ne peut que
    * vider le tableau. Même construction que `tsFilterFields()` sur la fiche affaire.
    */
   readonly costFilterFields = computed<FilterField[]>(() => {
     const lang  = this.translate.currentLang();
-    const lines = this.costLines();
+    const invoices = this.costInvoices();
     const distinct = (values: (string | null | undefined)[]) =>
       [...new Set(values.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
     return [
@@ -639,7 +647,7 @@ export class SupplierDetailComponent implements OnInit {
         name:    'status',
         label:   this.translate.instant('SUPPLIERS.DETAIL.COSTS.COL_STATUS'),
         type:    'select',
-        options: [...new Set(lines.map(l => l.status))].sort()
+        options: [...new Set(invoices.map(inv => inv.status))].sort()
           .map(value => ({ value, label: this.translate.instant(statusKey(value)) })),
       },
       {
@@ -647,13 +655,13 @@ export class SupplierDetailComponent implements OnInit {
         label:      this.translate.instant('COST.LINES.CATEGORY_FILTER_LABEL'),
         type:       'select',
         searchable: true,
-        options:    categoryFilterOptions(lines, lang),
+        options:    categoryFilterOptions(invoices, lang),
       },
       {
         name:    'costCurrency',
         label:   this.translate.instant('SUPPLIERS.DETAIL.EXPORT.CURRENCY'),
         type:    'select',
-        options: distinct(lines.map(l => l.currency)).map(v => ({ value: v, label: v })),
+        options: distinct(invoices.map(inv => inv.currency)).map(v => ({ value: v, label: v })),
       },
       {
         name:  'costPeriod',
@@ -673,17 +681,14 @@ export class SupplierDetailComponent implements OnInit {
     const lang = this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     const rows  = this.ledger()?.rows ?? [];
-    const byId  = this.costLineById();
-    // Les lignes réellement présentes dans le relevé, nommées par leur référence (ou
-    // leur libellé) quand la ligne fait partie des 200 chargées, sinon par leur id.
-    const lineOptions = [...new Set(rows.map(r => r.costLineId))]
-      .map(id => {
-        const l = byId.get(id);
-        return { value: String(id), label: l?.reference || l?.label || `#${id}` };
-      })
+    const byId  = this.costInvoiceById();
+    // Les factures réellement présentes dans le relevé, nommées par leur référence (et
+    // leur n° fournisseur) quand la facture fait partie des 200 chargées, sinon par leur id.
+    const invoiceOptions = [...new Set(rows.map(r => r.costInvoiceId))]
+      .map(id => ({ value: String(id), label: this.invoiceName(id) }))
       .sort((a, b) => a.label.localeCompare(b.label));
     const categories = categoryFilterOptions(
-      rows.map(r => byId.get(r.costLineId)).filter((l): l is CostLineDto => !!l), lang);
+      rows.map(r => byId.get(r.costInvoiceId)).filter((inv): inv is CostInvoiceDto => !!inv), lang);
     return [
       {
         name:    'type',
@@ -701,11 +706,11 @@ export class SupplierDetailComponent implements OnInit {
         type:  'daterange',
       },
       {
-        name:       'ledgerCostLine',
-        label:      t('COST.REGLEMENT.LINE'),
+        name:       'ledgerInvoice',
+        label:      t('SUPPLIERS.DETAIL.LEDGER.FILTER_INVOICE'),
         type:       'select',
         searchable: true,
-        options:    lineOptions,
+        options:    invoiceOptions,
       },
       {
         name:       'ledgerCategory',
@@ -750,39 +755,41 @@ export class SupplierDetailComponent implements OnInit {
   onLedgerFilter(result: FilterResult): void {
     this.ledgerType.set(this.asFilterValue(result, 'type'));
     this.ledgerPeriod.set(this.asPeriod(result, 'ledgerPeriod'));
-    this.ledgerCostLine.set(this.asFilterValue(result, 'ledgerCostLine'));
+    this.ledgerInvoice.set(this.asFilterValue(result, 'ledgerInvoice'));
     this.ledgerCategory.set(this.asFilterValue(result, 'ledgerCategory'));
     this.ledgerPage.set(0);
   }
   onLedgerFilterReset(): void {
     this.ledgerType.set('');
     this.ledgerPeriod.set(null);
-    this.ledgerCostLine.set('');
+    this.ledgerInvoice.set('');
     this.ledgerCategory.set('');
     this.ledgerPage.set(0);
   }
 
-  onCostToolbarAction(id: string): void   { if (id === 'export') this.exportCostLines(); }
+  onCostToolbarAction(id: string): void   { if (id === 'export') this.exportCostInvoices(); }
   onLedgerToolbarAction(id: string): void { if (id === 'export') this.exportLedger(); }
 
-  // ═══ Onglet « Lignes de coût » ════════════════════════════════════════════
+  // ═══ Onglet « Factures » ══════════════════════════════════════════════════
 
-  readonly filteredCostLines = computed<CostLineDto[]>(() => {
+  /** La recherche couvre la référence, le n° de facture fournisseur et les libellés des lignes. */
+  readonly filteredCostInvoices = computed<CostInvoiceDto[]>(() => {
     const q = this.costSearch().trim().toLowerCase();
     const status   = this.costStatus();
     const category = this.costCategory();
     const currency = this.costCurrency();
     const period   = this.costPeriod();
-    return this.costLines().filter(l =>
-      (!status   || l.status === status) &&
-      (!category || l.costCategoryLabel === category) &&
-      (!currency || l.currency === currency) &&
-      this.inPeriod(l.transactionDate, period) &&
-      (!q || `${l.reference ?? ''} ${l.label ?? ''}`.toLowerCase().includes(q)));
+    return this.costInvoices().filter(inv =>
+      (!status   || inv.status === status) &&
+      (!category || invoiceHasCategory(inv, category)) &&
+      (!currency || inv.currency === currency) &&
+      this.inPeriod(inv.invoiceDate, period) &&
+      (!q || [inv.reference, inv.supplierInvoiceNumber, ...(inv.lines ?? []).map(l => l.label)]
+        .filter(Boolean).join(' ').toLowerCase().includes(q)));
   });
 
   readonly costTotalPages = computed(() =>
-    Math.ceil(this.filteredCostLines().length / this.costPageSize()));
+    Math.ceil(this.filteredCostInvoices().length / this.costPageSize()));
 
   /**
    * Tri d'en-tête des deux onglets. Les listes sont paginées ici, côté client : le tri
@@ -814,33 +821,39 @@ export class SupplierDetailComponent implements OnInit {
   readonly costColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
-    const src = (row: TableRow) => row['_source'] as CostLineDto;
+    const src = (row: TableRow) => row['_source'] as CostInvoiceDto;
     return [
-      { key: 'reference', label: t('SUPPLIERS.DETAIL.COSTS.COL_REF'),    type: 'text', sortable: true },
-      { key: 'label',     label: t('SUPPLIERS.DETAIL.COSTS.COL_LABEL'),  type: 'text', sortable: true },
-      { key: 'date',      label: t('SUPPLIERS.DETAIL.COSTS.COL_DATE'),   type: 'text', sortable: true,
-        sortAccessor: row => src(row).transactionDate },
-      { key: 'status',    label: t('SUPPLIERS.DETAIL.COSTS.COL_STATUS'), type: 'badge', sortable: true },
-      { key: 'gross',     label: t('SUPPLIERS.DETAIL.COSTS.COL_GROSS'),  type: 'text', align: 'right', sortable: true,
+      { key: 'reference',     label: t('SUPPLIERS.DETAIL.COSTS.COL_REF'),               type: 'text', sortable: true },
+      { key: 'supplierNo',    label: t('SUPPLIERS.DETAIL.COSTS.COL_SUPPLIER_INVOICE_NO'), type: 'text', sortable: true },
+      { key: 'date',          label: t('SUPPLIERS.DETAIL.COSTS.COL_DATE'),              type: 'text', sortable: true,
+        sortAccessor: row => src(row).invoiceDate },
+      { key: 'lineCount',     label: t('SUPPLIERS.DETAIL.COSTS.COL_LINES'),             type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => (src(row).lines ?? []).length },
+      { key: 'net',           label: t('SUPPLIERS.DETAIL.COSTS.COL_NET'),               type: 'text', align: 'right', sortable: true,
+        sortAccessor: row => src(row).netAmountLocal },
+      { key: 'gross',         label: t('SUPPLIERS.DETAIL.COSTS.COL_GROSS'),             type: 'text', align: 'right', sortable: true,
         sortAccessor: row => src(row).grossAmountLocal },
+      { key: 'status',        label: t('SUPPLIERS.DETAIL.COSTS.COL_STATUS'),            type: 'badge', sortable: true },
     ];
   });
 
   readonly costRows = computed<TableRow[]>(() => {
     this.translate.currentLang();
-    const all = this.filteredCostLines().map(l => ({
-      id:        l.id,
-      _source:   l,
-      reference: l.reference ?? '—',
-      label:     l.label ?? '—',
-      date:      this.formatDate(l.transactionDate),
+    const all = this.filteredCostInvoices().map(inv => ({
+      id:         inv.id,
+      _source:    inv,
+      reference:  inv.reference || '—',
+      supplierNo: inv.supplierInvoiceNumber || '—',
+      date:       this.formatDate(inv.invoiceDate),
+      lineCount:  String((inv.lines ?? []).length),
+      net:        this.currency.transform(inv.netAmountLocal, inv.currency || 'TND'),
+      gross:      this.currency.transform(inv.grossAmountLocal, inv.currency || 'TND'),
       // Une colonne `badge` attend un objet `{ label, options }` — pas un libellé
       // plus un champ de variante à côté (cf. cost-lines-table-section).
       status: {
-        label:   this.translate.instant(statusKey(l.status)),
-        options: { variant: STATUS_BADGE_VARIANT[l.status] ?? 'neutral', dot: true, size: 'sm' },
+        label:   this.translate.instant(statusKey(inv.status)),
+        options: { variant: STATUS_BADGE_VARIANT[inv.status] ?? 'neutral', dot: true, size: 'sm' },
       },
-      gross:     this.currency.transform(l.grossAmountLocal, l.currency ?? 'TND'),
     }));
     return this.pageOf(sortTableRows(all, this.costColumns(), this.costSort()),
       this.costPage(), this.costPageSize());
@@ -854,7 +867,7 @@ export class SupplierDetailComponent implements OnInit {
       loading:      this.loadingFinance(),
       // « Aucune ligne » et « aucun résultat » ne veulent pas dire la même chose : le
       // second se corrige en vidant la recherche, le premier non.
-      emptyMessage: this.translate.instant(this.costLines().length === 0
+      emptyMessage: this.translate.instant(this.costInvoices().length === 0
         ? 'SUPPLIERS.DETAIL.COSTS.EMPTY'
         : 'SUPPLIERS.DETAIL.TOOLBAR.NO_MATCH'),
       ...tableTools(this.translate),
@@ -864,10 +877,19 @@ export class SupplierDetailComponent implements OnInit {
 
   // ═══ Onglet « Règlement » ═════════════════════════════════════════════════
   //
-  // Le même relevé que l'onglet Règlement de la fiche ligne de coût, en lecture
-  // seule : créer ou modifier un règlement se fait depuis une ligne de coût, pas
-  // depuis le référentiel fournisseur. Les six colonnes de détail fiscal restent
-  // là-bas — ici on montre le mouvement de compte, pas la décomposition de TVA.
+  // Le même relevé que l'onglet Règlement de la fiche facture de coût, en lecture
+  // seule : créer ou modifier un règlement se fait depuis la facture (un règlement par
+  // facture depuis V93), pas depuis le référentiel fournisseur. Un clic sur une
+  // écriture ouvre sa facture. Les six colonnes de détail fiscal restent là-bas — ici
+  // on montre le mouvement de compte, pas la décomposition de TVA.
+
+  /** Nom lisible d'une facture du relevé : référence (+ n° fournisseur), sinon son id. */
+  private invoiceName(id: number): string {
+    const inv = this.costInvoiceById().get(id);
+    if (!inv) return '#' + id;
+    const ref = inv.reference || ('#' + id);
+    return inv.supplierInvoiceNumber ? ref + ' (' + inv.supplierInvoiceNumber + ')' : ref;
+  }
 
   readonly ledgerColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -877,6 +899,7 @@ export class SupplierDetailComponent implements OnInit {
     return [
       { key: 'date',           label: t('SUPPLIERS.DETAIL.LEDGER.COL_DATE'),            type: 'text', sortable: true,
         sortAccessor: row => src(row).date },
+      { key: 'invoice',        label: t('SUPPLIERS.DETAIL.LEDGER.COL_INVOICE'),         type: 'text', sortable: true },
       { key: 'label',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_LABEL'),           type: 'text', sortable: true },
       { key: 'debit',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right', sortable: true,
         sortAccessor: row => src(row).debit },
@@ -893,22 +916,23 @@ export class SupplierDetailComponent implements OnInit {
     const q = this.ledgerSearch().trim().toLowerCase();
     const type     = this.ledgerType();
     const period   = this.ledgerPeriod();
-    const line     = this.ledgerCostLine();
+    const invoice  = this.ledgerInvoice();
     const category = this.ledgerCategory();
-    const byId     = this.costLineById();
+    const byId     = this.costInvoiceById();
     return (this.ledger()?.rows ?? []).filter(r => {
       if (!this.inPeriod(r.date, period)) return false;
-      if (line && String(r.costLineId) !== line) return false;
-      // Une écriture dont la ligne n'est pas parmi les 200 chargées n'a pas de
+      if (invoice && String(r.costInvoiceId) !== invoice) return false;
+      // Une écriture dont la facture n'est pas parmi les 200 chargées n'a pas de
       // catégorie connue : elle sort du résultat dès qu'une catégorie est demandée.
-      if (category && byId.get(r.costLineId)?.costCategoryLabel !== category) return false;
-      // « Soldé » = ni débit ni crédit : le règlement couvrait la ligne au centime.
+      if (category && !invoiceHasCategory(byId.get(r.costInvoiceId), category)) return false;
+      // « Soldé » = ni débit ni crédit : le règlement couvrait la facture au centime.
       const matchesType =
         !type ||
         (type === 'CREDIT'  && r.credit != null) ||
         (type === 'DEBIT'   && r.debit  != null) ||
         (type === 'SETTLED' && r.credit == null && r.debit == null);
-      return matchesType && (!q || (r.label ?? '').toLowerCase().includes(q));
+      return matchesType && (!q || [r.label, this.invoiceName(r.costInvoiceId)]
+        .filter(Boolean).join(' ').toLowerCase().includes(q));
     });
   });
 
@@ -926,6 +950,7 @@ export class SupplierDetailComponent implements OnInit {
       id:             r.reglementId,
       _source:        r,
       date:           this.formatDate(r.date),
+      invoice:        this.invoiceName(r.costInvoiceId),
       label:          r.label ?? '—',
       debit:          this.fmtAmount(r.debit),
       credit:         this.fmtAmount(r.credit),
@@ -940,7 +965,8 @@ export class SupplierDetailComponent implements OnInit {
     this.translate.currentLang();
     return {
       showHeader:   true,
-      hoverable:    false,
+      // Survol actif : une écriture ouvre sa facture de coût (rowClick).
+      hoverable:    true,
       loading:      this.loadingFinance(),
       emptyMessage: this.translate.instant((this.ledger()?.rows ?? []).length === 0
         ? 'SUPPLIERS.DETAIL.LEDGER.EMPTY'
@@ -965,23 +991,26 @@ export class SupplierDetailComponent implements OnInit {
   // L'ensemble FILTRÉ, pas la page affichée : on exporte ce qu'on a demandé, pas ce
   // qui tient à l'écran. Même comportement que `exportTs()` sur la fiche affaire.
 
-  exportCostLines(): void {
+  exportCostInvoices(): void {
     const t = (k: string) => this.translate.instant(k);
     this.downloadCsv(
-      `FOURNISSEUR_${supplierCode(this.supplier()!)}_LIGNES`,
-      [t('SUPPLIERS.DETAIL.COSTS.COL_REF'), t('SUPPLIERS.DETAIL.COSTS.COL_LABEL'),
-       t('SUPPLIERS.DETAIL.COSTS.COL_DATE'), t('SUPPLIERS.DETAIL.COSTS.COL_STATUS'),
-       t('SUPPLIERS.DETAIL.COSTS.COL_GROSS'), t('SUPPLIERS.DETAIL.EXPORT.CURRENCY')],
-      this.filteredCostLines().map(l => [
-        l.reference ?? '',
-        l.label ?? '',
-        this.formatDate(l.transactionDate),
-        t(statusKey(l.status)),
+      `FOURNISSEUR_${supplierCode(this.supplier()!)}_FACTURES`,
+      [t('SUPPLIERS.DETAIL.COSTS.COL_REF'), t('SUPPLIERS.DETAIL.COSTS.COL_SUPPLIER_INVOICE_NO'),
+       t('SUPPLIERS.DETAIL.COSTS.COL_DATE'), t('SUPPLIERS.DETAIL.COSTS.COL_LINES'),
+       t('SUPPLIERS.DETAIL.COSTS.COL_NET'), t('SUPPLIERS.DETAIL.COSTS.COL_GROSS'),
+       t('SUPPLIERS.DETAIL.COSTS.COL_STATUS'), t('SUPPLIERS.DETAIL.EXPORT.CURRENCY')],
+      this.filteredCostInvoices().map(inv => [
+        inv.reference ?? '',
+        inv.supplierInvoiceNumber ?? '',
+        this.formatDate(inv.invoiceDate),
+        (inv.lines ?? []).length,
         // Le nombre NU dans le CSV, sans symbole ni séparateur de milliers : la
         // cellule doit rester un nombre pour le tableur qui l'ouvre. La devise part
         // dans sa propre colonne.
-        l.grossAmountLocal ?? '',
-        l.currency ?? '',
+        inv.netAmountLocal ?? '',
+        inv.grossAmountLocal ?? '',
+        t(statusKey(inv.status)),
+        inv.currency ?? '',
       ]));
   }
 
@@ -989,12 +1018,14 @@ export class SupplierDetailComponent implements OnInit {
     const t = (k: string) => this.translate.instant(k);
     this.downloadCsv(
       `FOURNISSEUR_${supplierCode(this.supplier()!)}_RELEVE`,
-      [t('SUPPLIERS.DETAIL.LEDGER.COL_DATE'), t('SUPPLIERS.DETAIL.LEDGER.COL_LABEL'),
+      [t('SUPPLIERS.DETAIL.LEDGER.COL_DATE'), t('SUPPLIERS.DETAIL.LEDGER.COL_INVOICE'),
+       t('SUPPLIERS.DETAIL.LEDGER.COL_LABEL'),
        t('SUPPLIERS.DETAIL.LEDGER.COL_DEBIT'), t('SUPPLIERS.DETAIL.LEDGER.COL_CREDIT'),
        t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),
        t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_CREDITEUR')],
       this.filteredLedgerRows().map(r => [
         this.formatDate(r.date),
+        this.invoiceName(r.costInvoiceId),
         r.label ?? '',
         r.debit ?? '',
         r.credit ?? '',
@@ -1063,13 +1094,13 @@ export class SupplierDetailComponent implements OnInit {
 
     this.loadingFinance.set(true);
     forkJoin({
-      summaries: this.costSvc.getCostLinesBySupplier(paysId),
-      lines:     this.costSvc.getCostLines({ paysId, supplierId: s.id, size: SUPPLIER_COST_PAGE_SIZE }),
+      summaries: this.costSvc.getCostInvoicesBySupplier(paysId),
+      invoices:  this.costSvc.getCostInvoices({ paysId, supplierId: s.id, size: SUPPLIER_COST_PAGE_SIZE }),
       ledger:    this.costSvc.getLedgerForSupplier(s.id),
     }).subscribe({
-      next: ({ summaries, lines, ledger }) => {
+      next: ({ summaries, invoices, ledger }) => {
         this.summary.set(summaries.find(x => x.supplierId === s.id) ?? null);
-        this.costLines.set(lines.content);
+        this.costInvoices.set(invoices.content);
         this.ledger.set(ledger);
         this.loadingFinance.set(false);
       },
@@ -1086,8 +1117,22 @@ export class SupplierDetailComponent implements OnInit {
     this.router.navigate(['/finance/cost/supplier', this.supplierId]);
   }
 
+  /** `/finance/cost/:id` est la fiche de la FACTURE de coût depuis V93. */
+  openInvoice(invoiceId: number | null | undefined): void {
+    if (invoiceId == null) return;
+    this.router.navigate(['/finance/cost', invoiceId]);
+  }
+
+  onCostRowClick(row: TableRow): void {
+    this.openInvoice((row['_source'] as CostInvoiceDto | undefined)?.id);
+  }
+
+  onLedgerRowClick(row: TableRow): void {
+    this.openInvoice((row['_source'] as SupplierLedgerRowDto | undefined)?.costInvoiceId);
+  }
+
   /**
-   * Le formulaire de création d'une ligne de coût, fournisseur et pays préremplis via
+   * Le formulaire de création d'une facture de coût, fournisseur et pays préremplis via
    * les paramètres de requête — le même point d'entrée que le bouton de la vue
    * fournisseur du module coûts (`CostFormComponent.prefillFromQueryParams()`), pour
    * ne pas avoir à rechercher au clavier le fournisseur qu'on a sous les yeux.

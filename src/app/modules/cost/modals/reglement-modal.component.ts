@@ -6,24 +6,44 @@ import {
   ButtonComponent, FormFieldComponent, ModalRef, ModalService,
   MultiDatePickerComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
-import { CostLineDto, CostLineReglementDto } from '../cost.model';
+import { CostInvoiceDto, CostInvoiceReglementDto, formatAmount } from '../cost.model';
 import { CostService } from '../cost.service';
 
+/**
+ * What `open()` takes. Since V93 a règlement pays a COST INVOICE (one règlement per
+ * invoice), never a single cost line.
+ *
+ * Three ways in:
+ *  - edit: `editing` set — the invoice is fixed to `editing.costInvoiceId`.
+ *  - create for a known invoice: `costInvoiceId` (+ `expectedAmount` = the invoice's
+ *    `netToPay`, proposed as the default "montant payé"; optional `invoiceReference` /
+ *    `supplierInvoiceNumber` shown in the header box).
+ *  - create with a picker: `payableInvoices` (no `costInvoiceId`) — the user chooses one;
+ *    a single-element array is auto-selected. The default amount is the chosen invoice's
+ *    `netToPay`.
+ */
 export interface ReglementModalData {
-  /** null when creating a NEW règlement (the line picker is shown); set when editing
-   *  an existing one (the line picker is hidden -- it's fixed to this one). */
-  editing: CostLineReglementDto | null;
-  /** Only used in create mode: that supplier's payable (APPROVED, no existing
-   *  règlement) cost lines to choose from. */
-  payableLines: CostLineDto[];
+  /** null when creating a NEW règlement; set when editing an existing one. */
+  editing: CostInvoiceReglementDto | null;
+  /** Create mode: the invoice to pay (hides the picker). */
+  costInvoiceId?: number | null;
+  /** Default "montant payé" — callers pass `invoice.netToPay` (TTC − retenue à la source). */
+  expectedAmount?: number | null;
+  /** Display only: the invoice's internal reference. */
+  invoiceReference?: string | null;
+  /** Display only: the supplier's own invoice number. */
+  supplierInvoiceNumber?: string | null;
+  /** Display only: currency of `expectedAmount`. */
+  currency?: string | null;
+  /** Create mode without `costInvoiceId`: the payable (APPROVED, unpaid) invoices to pick from. */
+  payableInvoices?: CostInvoiceDto[];
 }
 
 /**
- * Owns one `ModalService`-backed dialog, reused by both call sites (`cost-lines` and
- * `cost-line-detail`) — mount once per caller (`<app-reglement-modal #reglementModal />`,
- * unconditionally, no `@if`) and call `.open(data, onResolved)`. Replaces the previous
- * hand-rolled backdrop/box/header/footer component: the `<ng-template>` here is only ever
- * rendered inside the library's own dialog chrome, never on its own.
+ * Owns one `ModalService`-backed dialog, reused by both call sites (cost list and cost
+ * invoice detail) — mount once per caller (`<app-reglement-modal #reglementModal />`,
+ * unconditionally, no `@if`) and call `.open(data, onResolved)`. The `<ng-template>` here
+ * is only ever rendered inside the library's own dialog chrome, never on its own.
  *
  * Save/Cancel live inside the template body rather than `ModalConfig.buttons` — that array
  * is a non-reactive snapshot, and `saving()` needs to keep driving the confirm button's
@@ -39,32 +59,38 @@ export interface ReglementModalData {
     <ng-template #tpl>
       <div class="flex flex-col gap-4">
 
-        @if (isEditMode()) {
+        @if (fixedInvoice()) {
           <div class="flex flex-col gap-1 rounded-xl bg-surface-container p-3">
             <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-              {{ 'COST.REGLEMENT.LINE' | translate }}
+              {{ 'COST.REGLEMENT.INVOICE' | translate }}
             </span>
             <span class="text-body-md font-bold text-on-surface">
-              {{ 'COST.REGLEMENT.LINE_NUMBER' | translate:{ id: data.editing!.costLineId } }}
+              {{ invoiceReference() || ('COST.REGLEMENT.INVOICE_NUMBER' | translate:{ id: costInvoiceId() }) }}
             </span>
+            @if (supplierInvoiceNumber()) {
+              <span class="text-body-sm text-on-surface-variant">
+                {{ 'COST.REGLEMENT.SUPPLIER_INVOICE_NUMBER' | translate:{ number: supplierInvoiceNumber() } }}
+              </span>
+            }
           </div>
         } @else {
           <daf-select
-            [options]="lineOptions()"
-            [selected]="costLineId() != null ? [costLineId()!.toString()] : []"
+            [options]="invoiceOptions()"
+            [selected]="costInvoiceId() != null ? [costInvoiceId()!.toString()] : []"
             [config]="{
-              label: ('COST.REGLEMENT.LINE_PICKER' | translate),
-              placeholder: ('COST.REGLEMENT.LINE_PICKER_PLACEHOLDER' | translate),
+              label: ('COST.REGLEMENT.INVOICE_PICKER' | translate),
+              placeholder: ('COST.REGLEMENT.INVOICE_PICKER_PLACEHOLDER' | translate),
               required: true,
               searchable: true,
-              error: (touched() && costLineId() == null) ? ('COST.REGLEMENT.ERR_LINE_REQUIRED' | translate) : undefined
+              error: (touched() && costInvoiceId() == null) ? ('COST.REGLEMENT.ERR_INVOICE_REQUIRED' | translate) : undefined
             }"
-            (selectedChange)="onLineSelected($event)" />
+            (selectedChange)="onInvoiceSelected($event)" />
         }
 
         <daf-form-field
           [options]="{
             label: ('COST.REGLEMENT.AMOUNT' | translate), type: 'number', required: true,
+            hint: expectedAmount() != null ? ('COST.REGLEMENT.NET_TO_PAY_HINT' | translate:{ amount: expectedAmountLabel() }) : undefined,
             error: (touched() && !(montantPaye()! > 0)) ? ('COST.REGLEMENT.ERR_AMOUNT_REQUIRED' | translate) : undefined
           }"
           [value]="montantPaye()"
@@ -118,7 +144,13 @@ export class ReglementModalComponent {
 
   protected data!: ReglementModalData;
 
-  costLineId   = signal<number | null>(null);
+  costInvoiceId         = signal<number | null>(null);
+  /** true = the invoice is fixed (edit, or create for a known invoice): no picker. */
+  fixedInvoice          = signal(false);
+  invoiceReference      = signal<string | null>(null);
+  supplierInvoiceNumber = signal<string | null>(null);
+  expectedAmount        = signal<number | null>(null);
+  currency              = signal<string | null>(null);
   montantPaye  = signal<number | null>(null);
   comment      = signal<string>('');
   saving       = signal(false);
@@ -143,13 +175,17 @@ export class ReglementModalComponent {
 
   isEditMode(): boolean { return this.data.editing !== null; }
 
-  readonly lineOptions = signal<SelectOption[]>([]);
+  readonly invoiceOptions = signal<SelectOption[]>([]);
 
-  onLineSelected(values: string[]): void {
+  expectedAmountLabel(): string {
+    const amount = this.expectedAmount();
+    return amount == null ? '' : formatAmount(amount, this.currency() || 'EUR');
+  }
+
+  onInvoiceSelected(values: string[]): void {
     const id = Number(values[0]);
-    this.costLineId.set(Number.isFinite(id) ? id : null);
-    const line = this.data.payableLines.find(l => l.id === this.costLineId());
-    this.montantPaye.set(line?.grossAmountLocal ?? null);
+    this.costInvoiceId.set(values.length && Number.isFinite(id) ? id : null);
+    this.applyInvoice(this.findPayable(this.costInvoiceId()));
   }
 
   open(data: ReglementModalData, onResolved: () => void): void {
@@ -158,25 +194,44 @@ export class ReglementModalComponent {
     this.touched.set(false);
     this.saving.set(false);
     this.serverError.set(null);
-    this.lineOptions.set(data.payableLines.map(l => ({
-      value: String(l.id),
-      label: `${l.reference ?? ('#' + l.id)} — ${l.label ?? ''}`,
+
+    const payable = data.payableInvoices ?? [];
+    this.invoiceOptions.set(payable.map(inv => ({
+      value: String(inv.id),
+      label: this.invoiceOptionLabel(inv),
     })));
 
+    this.invoiceReference.set(data.invoiceReference ?? null);
+    this.supplierInvoiceNumber.set(data.supplierInvoiceNumber ?? null);
+    this.expectedAmount.set(data.expectedAmount ?? null);
+    this.currency.set(data.currency ?? null);
+
     if (data.editing) {
-      this.costLineId.set(data.editing.costLineId);
+      this.fixedInvoice.set(true);
+      this.costInvoiceId.set(data.editing.costInvoiceId);
+      // Fill the header from the picker list when the caller passed the invoice there.
+      const inv = this.findPayable(data.editing.costInvoiceId);
+      if (inv) this.applyInvoice(inv, false);
       this.montantPaye.set(data.editing.montantPaye);
       this.dateValue = new Date(data.editing.datePaiement);
       this.comment.set(data.editing.comment ?? '');
     } else {
-      this.costLineId.set(null);
-      this.montantPaye.set(null);
       this.dateValue = new Date();
       this.comment.set('');
-      if (data.payableLines.length === 1) {
-        const line = data.payableLines[0];
-        this.costLineId.set(line.id);
-        this.montantPaye.set(line.grossAmountLocal ?? null);
+      if (data.costInvoiceId != null) {
+        this.fixedInvoice.set(true);
+        this.costInvoiceId.set(data.costInvoiceId);
+        const inv = this.findPayable(data.costInvoiceId);
+        if (inv) this.applyInvoice(inv, false);
+        this.montantPaye.set(this.expectedAmount());
+      } else {
+        this.fixedInvoice.set(false);
+        this.costInvoiceId.set(null);
+        this.montantPaye.set(null);
+        if (payable.length === 1) {
+          this.costInvoiceId.set(payable[0].id);
+          this.applyInvoice(payable[0]);
+        }
       }
     }
 
@@ -190,7 +245,7 @@ export class ReglementModalComponent {
   }
 
   get canSave(): boolean {
-    return this.costLineId() != null && (this.montantPaye() ?? 0) > 0 && !!this.dateIso;
+    return this.costInvoiceId() != null && (this.montantPaye() ?? 0) > 0 && !!this.dateIso;
   }
 
   confirm(): void {
@@ -207,7 +262,7 @@ export class ReglementModalComponent {
 
     const call$ = this.isEditMode()
       ? this.svc.updateReglement(this.data.editing!.id, body)
-      : this.svc.createReglement(this.costLineId()!, body);
+      : this.svc.createReglement(this.costInvoiceId()!, body);
 
     call$.subscribe({
       next: () => {
@@ -221,5 +276,32 @@ export class ReglementModalComponent {
           ?? this.translate.instant('COST.REGLEMENT.GENERIC_ERROR'));
       },
     });
+  }
+
+  private findPayable(id: number | null): CostInvoiceDto | undefined {
+    if (id == null) return undefined;
+    return (this.data.payableInvoices ?? []).find(inv => inv.id === id);
+  }
+
+  /** Copies the invoice's display fields; `setAmount` also proposes its net to pay. */
+  private applyInvoice(inv: CostInvoiceDto | undefined, setAmount = true): void {
+    if (!inv) {
+      if (setAmount) {
+        this.expectedAmount.set(null);
+        this.montantPaye.set(null);
+      }
+      return;
+    }
+    this.invoiceReference.set(inv.reference ?? null);
+    this.supplierInvoiceNumber.set(inv.supplierInvoiceNumber ?? null);
+    this.currency.set(inv.currency ?? null);
+    this.expectedAmount.set(inv.netToPay ?? null);
+    if (setAmount) this.montantPaye.set(inv.netToPay ?? null);
+  }
+
+  private invoiceOptionLabel(inv: CostInvoiceDto): string {
+    const ref = inv.reference || ('#' + inv.id);
+    const supplierNo = inv.supplierInvoiceNumber ? ' (' + inv.supplierInvoiceNumber + ')' : '';
+    return ref + supplierNo + ' — ' + formatAmount(inv.netToPay, inv.currency || 'EUR');
   }
 }
