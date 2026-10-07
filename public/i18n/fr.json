@@ -469,7 +469,7 @@
       "COMMENT": "Commentaire",
       "EMIT_TITLE": "Émettre la facture",
       "EMIT_DATE": "Date d'émission",
-      "EMIT_DATE_HINT": "Date imprimée sur la facture — aujourd'hui par défaut, pas de date future.",
+      "EMIT_DATE_HINT": "Date imprimée sur la facture — aujourd'hui par défaut.",
       "EMIT_DATE_REQUIRED": "Choisissez une date d'émission.",
       "RETURN_TITLE": "Retourner la facture",
       "RETURN_COMMENT": "Motif du retour",
@@ -2956,7 +2956,7 @@
       "KPI_DRAFTS": "Brouillons",
       "KPI_PENDING": "En attente",
       "KPI_APPROVED": "Approuvés",
-      "SEARCH_PLACEHOLDER": "Description, référence…",
+      "SEARCH_PLACEHOLDER": "Fournisseur, description, référence…",
       "NEW_LINE": "Nouvelle ligne",
       "STATUS_FILTER_LABEL": "Statut",
       "STATUS_FILTER_PLACEHOLDER": "Tous les statuts",
@@ -4017,7 +4017,8 @@
       "ACTIVE_HINT": "Un palier inactif n’est plus planifié, mais l’historique déjà envoyé reste lisible.",
       "ERROR_LOAD": "Impossible de charger les paliers de relance.",
       "ERROR_SAVE": "Impossible d’enregistrer ce palier.",
-      "ERROR_DELETE": "Impossible de supprimer ce palier."
+      "ERROR_DELETE": "Impossible de supprimer ce palier.",
+      "ERROR_REQUIRED": "Renseignez le code, les deux libellés et un décalage en jours entier."
     }
   },
   "ENUMS": {

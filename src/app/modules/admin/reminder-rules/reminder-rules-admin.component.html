@@ -1,6 +1,6 @@
 <!-- Onglet « Relances » de l'administration finance — l'échéancier de recouvrement.
-     Le tableau est l'échéancier lui-même, dans l'ordre où les paliers tombent ; le
-     panneau latéral porte l'édition. -->
+     Le tableau est l'échéancier lui-même, dans l'ordre où les paliers tombent ; une
+     pop-up porte l'édition. -->
 
 <div class="flex flex-col gap-6">
 
@@ -75,15 +75,9 @@
 
 </div>
 
-<!-- ══ Panneau d'édition ══ -->
-<daf-drawer
-  [(open)]="drawerOpen"
-  [config]="{
-    title: (isEdit() ? 'ADMIN.REMINDERS.EDIT_TITLE' : 'ADMIN.REMINDERS.NEW_TITLE') | translate,
-    icon: 'notifications_active',
-    width: '460px',
-    showToggle: false
-  }">
+<!-- ══ Pop-up d'édition ══ — ModalService projette ce template dans son propre hôte ;
+     les boutons sont ceux du pied de la modale (voir `openFormModal`). -->
+<ng-template #formTpl>
 
   <div class="flex flex-col gap-5 p-1">
 
@@ -198,18 +192,5 @@
         hint: ('ADMIN.REMINDERS.ACTIVE_HINT' | translate)
       }" />
 
-    <div style="display:flex; gap:0.5rem">
-      <daf-button
-        style="flex:1 1 50%"
-        [options]="{ variant: 'ghost', fullWidth: true, label: 'ADMIN.COMMON.CANCEL' | translate }"
-        (onClick)="drawerOpen.set(false)" />
-      <daf-button
-        style="flex:1 1 50%"
-        [options]="{ variant: 'teal', fullWidth: true, iconStart: 'save',
-                     loading: saving(), disabled: !canSave() || saving(),
-                     label: 'ADMIN.COMMON.SAVE' | translate }"
-        (onClick)="save()" />
-    </div>
-
   </div>
-</daf-drawer>
+</ng-template>

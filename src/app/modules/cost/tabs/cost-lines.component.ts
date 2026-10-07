@@ -115,7 +115,8 @@ export class CostLinesComponent implements OnInit {
     const amountMax = this.amountMaxFilter() ? Number(this.amountMaxFilter()) : null;
     return this.lines()
       .filter(l => !cat || l.costCategoryId === +cat)
-      .filter(l => !q || (l.label ?? '').toLowerCase().includes(q) || (l.reference ?? '').toLowerCase().includes(q))
+      .filter(l => !q || (l.label ?? '').toLowerCase().includes(q) || (l.reference ?? '').toLowerCase().includes(q)
+        || (l.supplierName ?? '').toLowerCase().includes(q))
       .filter(l => {
         if (!dateFrom && !dateTo) return true;
         if (!l.transactionDate) return false;

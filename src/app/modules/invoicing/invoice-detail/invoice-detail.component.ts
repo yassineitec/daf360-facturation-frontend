@@ -471,7 +471,6 @@ export class InvoiceDetailComponent implements OnInit {
       required:      true,
       allowPastDays: true,
       allowWeekends: true,
-      maxDate:       new Date(),
       fullWidth:     true,
       inline:        true,
     };

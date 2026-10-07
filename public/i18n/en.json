@@ -469,7 +469,7 @@
       "COMMENT": "Comment",
       "EMIT_TITLE": "Issue the invoice",
       "EMIT_DATE": "Issue date",
-      "EMIT_DATE_HINT": "Date printed on the invoice — today by default, no future date.",
+      "EMIT_DATE_HINT": "Date printed on the invoice — today by default.",
       "EMIT_DATE_REQUIRED": "Pick an issue date.",
       "RETURN_TITLE": "Return the invoice",
       "RETURN_COMMENT": "Reason for returning",
@@ -2956,7 +2956,7 @@
       "KPI_DRAFTS": "Drafts",
       "KPI_PENDING": "Pending",
       "KPI_APPROVED": "Approved",
-      "SEARCH_PLACEHOLDER": "Description, reference…",
+      "SEARCH_PLACEHOLDER": "Supplier, description, reference…",
       "NEW_LINE": "New line",
       "STATUS_FILTER_LABEL": "Status",
       "STATUS_FILTER_PLACEHOLDER": "All statuses",
@@ -4034,7 +4034,8 @@
       "ACTIVE_HINT": "An inactive stage is no longer scheduled, but reminders already sent stay readable.",
       "ERROR_LOAD": "Unable to load the reminder stages.",
       "ERROR_SAVE": "Unable to save this stage.",
-      "ERROR_DELETE": "Unable to delete this stage."
+      "ERROR_DELETE": "Unable to delete this stage.",
+      "ERROR_REQUIRED": "Fill in the code, both labels and a whole number of days for the offset."
     }
   },
   "ENUMS": {
