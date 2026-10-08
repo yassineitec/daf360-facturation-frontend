@@ -1,5 +1,5 @@
 import {
-  Component, OnInit, inject, signal, computed, DestroyRef, WritableSignal,
+  Component, OnInit, inject, signal, computed, DestroyRef,
 } from '@angular/core';
 import { CommonModule }         from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -11,10 +11,12 @@ import { CostService }          from '../cost.service';
 import { AffaireService }       from '../../affaires/affaire.service';
 import type { AffaireListItem, PaysRefDto } from '../../affaires/affaire.model';
 import {
-  CreateCostLineRequest,
+  CreateCostInvoiceRequest, CostInvoiceDto,
   ListValueDto, ForexPreviewDto, CircuitPreviewDto,
   SupplierSearchItem, formatAmount,
+  FACT_EDIT_VALIDATED_COST, VALIDATED_EDITABLE_STATUSES, OTHER_TAX_TYPE_LIST,
 } from '../cost.model';
+import { UserStore } from '../../../core/user.store';
 import {
   ButtonComponent, ButtonOptions, CardComponent, FieldMessageComponent, FileUploadComponent,
   FormFieldComponent, PageComponent, PageHeaderComponent, SelectComponent, SelectOption,
@@ -23,6 +25,49 @@ import type {
   BreadcrumbItem, CardOptions, FileUploadConfig, PageHeaderBadge, UploadedFile,
 } from '@khalilrebhiitec/daf360';
 
+/**
+ * One line of the invoice being entered. `key` is a client-side identity for `@for`
+ * tracking; `id` is the server line id in edit mode (kept on save), null for a new line.
+ */
+interface LineForm {
+  key: number;
+  id: number | null;
+  costCategoryId: number | null;
+  costCategoryLabel: string;
+  costSubCategoryId: number | null;
+  costSubCategoryLabel: string;
+  description: string;
+  netAmountLocal: number | null;
+  /** Typed VAT — only used without a supplier (no tax block). */
+  vatAmountLocal: number | null;
+  /** Fractions (0.01, 0.19), like the backend. Supplier invoices only. */
+  fodecRate: number | null;
+  tvaRate: number | null;
+  affaireId: number | null;
+  costTypeId: number | null;
+}
+
+/** One "autre taxe" of the invoice (V95): a type and/or a free label, and a typed amount. */
+interface OtherTaxForm {
+  key: number;
+  taxTypeId: number | null;
+  label: string;
+  amountLocal: number | null;
+}
+
+/**
+ * Cost invoice entry (V93) — a supplier invoice holding one or more cost lines.
+ *
+ * Header: pays, supplier (optional), the supplier's invoice number (required with a
+ * supplier, unique per supplier — checked server-side), invoice date, due date, currency.
+ * Lines: category / sub-category, description, HT, and — with a supplier — their own
+ * FODEC and TVA rate (fixed formula, unchanged); without a supplier, a typed VAT amount.
+ * Invoice-level: stamp duty and retenue à la source, once per invoice (supplier only), and
+ * any number of "autres taxes" — free amounts, typed or labelled, added to the TTC (V95).
+ * TVA = (HT + FODEC) × rate; the RS applies to HT + FODEC (or to the TVA) and is deducted.
+ *
+ * Every amount shown here is a preview; the server recomputes all of them on save.
+ */
 @Component({
   selector: 'app-cost-form',
   standalone: true,
@@ -41,9 +86,26 @@ export class CostFormComponent implements OnInit {
   private readonly route      = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly translate  = inject(TranslateService);
+  private readonly userStore  = inject(UserStore);
 
-  editId     = signal<number | null>(null);
-  isEditMode = computed(() => this.editId() !== null);
+  editId        = signal<number | null>(null);
+  editReference = signal<string | null>(null);
+  isEditMode    = computed(() => this.editId() !== null);
+
+  // ── Edit after validation, DAF only (V94, workshop item #5) ──────────────────
+  /** Status of the invoice being edited (null on a new invoice). */
+  editStatus    = signal<string | null>(null);
+  /** Mandatory reason for an edit after validation, recorded in the change history. */
+  justification = signal<string>('');
+  readonly canEditValidated = computed(() => this.userStore.hasPermission(FACT_EDIT_VALIDATED_COST));
+  /** Editing an APPROVED / POSTED invoice as the DAF: status kept, justification required. */
+  readonly validatedMode = computed(() =>
+    this.editStatus() !== null && VALIDATED_EDITABLE_STATUSES.includes(this.editStatus()!) && this.canEditValidated());
+  /** Loaded invoice that this user may not edit at all (submitted, or validated without the DAF right). */
+  readonly lockedForUser = computed(() => {
+    const s = this.editStatus();
+    return s !== null && s !== 'DRAFT' && s !== 'RETURNED' && !this.validatedMode();
+  });
 
   paysList   = signal<PaysRefDto[]>([]);
   currencies = signal<ListValueDto[]>([]);
@@ -51,40 +113,36 @@ export class CostFormComponent implements OnInit {
   affaires   = signal<AffaireListItem[]>([]);
   suppliers  = signal<SupplierSearchItem[]>([]);
 
-  /** VAT_RATE configurable list (D3, backend `FactListService`) — replaces the former
-   *  static per-value i18n-key list (see `tvaOptions` below). Loaded per pays like every
-   *  other list on this form, in `onPaysChange()`, even though VAT_RATE's seeded values
-   *  are globally scoped: the endpoint is still called with `pays` like the others. */
+  /** VAT_RATE configurable list — the per-line TVA options (rates stay a fixed formula). */
   vatRates   = signal<ListValueDto[]>([]);
+  /** WITHHOLDING_RATE configurable list (V92) — RS rates of the pays, each with its base. */
+  withholdingRates = signal<ListValueDto[]>([]);
+  /** OTHER_TAX_TYPE configurable list (V95) — kinds of "autres taxes" of the pays. */
+  otherTaxTypes = signal<ListValueDto[]>([]);
 
-  // D3 cost-management taxonomy (V78) — loaded per pays in onPaysChange(), like every
-  // other list on this form: the backend returns that country's own rows plus the global
-  // ones it has not overridden or switched off.
   costCategories    = signal<ListValueDto[]>([]);
   costSubCategories = signal<ListValueDto[]>([]);
 
-  paysId              = signal<number | null>(null);
-  costCategoryId      = signal<number | null>(null);
-  costCategoryLabel   = signal<string>('');
-  costSubCategoryId   = signal<number | null>(null);
-  costSubCategoryLabel = signal<string>('');
-  transactionDate     = signal<string>('');
-  description         = signal<string>('');
-  netAmountLocal      = signal<number | null>(null);
-  currencyId          = signal<number | null>(null);
-  supplierId          = signal<number | null>(null);
-  supplierQuery       = signal<string>('');
-  affaireId           = signal<number | null>(null);
-  notes               = signal<string>('');
-  costTypeId          = signal<number | null>(null);
+  // ── Header ──────────────────────────────────────────────────────────────────
+  paysId                = signal<number | null>(null);
+  supplierId            = signal<number | null>(null);
+  supplierQuery         = signal<string>('');
+  supplierInvoiceNumber = signal<string>('');
+  invoiceDate           = signal<string>('');
+  paymentDueDate        = signal<string>('');
+  currencyId            = signal<number | null>(null);
+  notes                 = signal<string>('');
 
-  // D3 Tunisian tax fields (V78) — only meaningful once a real supplier is selected
-  // (see showTaxFields below). Rates are fractions (0.19, not 19), matching the
-  // static option values and the backend's storage convention.
-  fodecRate       = signal<number | null>(null);
-  tvaRate         = signal<number | null>(null);
-  timbreAmount    = signal<number | null>(null);
-  autresTaxesRate = signal<number | null>(null);
+  // ── Invoice-level taxes (supplier only) ─────────────────────────────────────
+  timbreAmount = signal<number | null>(null);
+  rsRate       = signal<number | null>(null);
+  /** "Autres taxes" (V95) — any invoice, with or without supplier. */
+  otherTaxes   = signal<OtherTaxForm[]>([]);
+  private nextTaxKey = 1;
+
+  // ── Lines ───────────────────────────────────────────────────────────────────
+  private nextKey = 1;
+  lines = signal<LineForm[]>([this.emptyLine()]);
 
   forexPreview    = signal<ForexPreviewDto | null>(null);
   circuitPreview  = signal<CircuitPreviewDto | null>(null);
@@ -94,15 +152,10 @@ export class CostFormComponent implements OnInit {
   error           = signal<string | null>(null);
   pendingFiles    = signal<UploadedFile[]>([]);
 
-  /**
-   * The six form sections' card — the lib's `glass` card, with the hover lift used across
-   * the modules. The lift comes from `.glass-card:hover` itself, so `hoverable` is left
-   * off on purpose: it would only add `cursor-pointer`, which over text inputs and
-   * selects wrongly signals the whole card is clickable.
-   */
   readonly sectionCard: CardOptions = { variant: 'glass', padding: 'lg', radius: 'xl' };
+  /** A line inside the lines card — flat, so it reads as part of the card, not a card of its own. */
+  readonly lineCard: CardOptions = { variant: 'outlined', padding: 'md', radius: 'lg' };
 
-  /** Same limits the former native input enforced: PDF/images, several at once, 10 MB each. */
   readonly attachmentConfig: FileUploadConfig = {
     accept:    '.pdf,.jpg,.jpeg,.png',
     multiple:  true,
@@ -110,110 +163,197 @@ export class CostFormComponent implements OnInit {
   };
 
   private readonly supplierSearch$ = new Subject<string>();
+  /** Any change that moves the totals or the categories → one debounced preview refresh. */
+  private readonly previewRefresh$ = new Subject<void>();
 
-  /** Edit mode: the line's currency code, used to re-point a currency the pays overrides. */
-  private lineCurrencyCode: string | null = null;
+  /** Edit mode: the invoice's currency code, used to re-point a currency the pays overrides. */
+  private invoiceCurrencyCode: string | null = null;
 
-  // ── daf-select option lists ─────────────────────────────────────────────────
+  // ── Option lists ────────────────────────────────────────────────────────────
   paysOptions = computed<SelectOption[]>(() =>
-    this.paysList().map(p => ({ value: String(p.id), label: `${p.frenchLabel} (${p.isoCode})` }))
-  );
+    this.paysList().map(p => ({ value: String(p.id), label: `${p.frenchLabel} (${p.isoCode})` })));
   currencyOptions = computed<SelectOption[]>(() =>
-    this.currencies().map(c => ({ value: String(c.id), label: `${c.code} — ${this.valueLabel(c)}` }))
-  );
+    this.currencies().map(c => ({ value: String(c.id), label: `${c.code} — ${this.valueLabel(c)}` })));
   affaireOptions = computed<SelectOption[]>(() =>
-    this.affaires().map(a => ({ value: String(a.id), label: `${a.reference} — ${a.intitule}` }))
-  );
+    this.affaires().map(a => ({ value: String(a.id), label: `${a.reference} — ${a.intitule}` })));
   costTypeOptions = computed<SelectOption[]>(() =>
-    this.costTypes().map(t => ({ value: String(t.id), label: this.valueLabel(t) }))
-  );
+    this.costTypes().map(t => ({ value: String(t.id), label: this.valueLabel(t) })));
 
-  // ── D3 taxonomy migration (V78): cascading category / sub-category ──────────
-  // Same id|label composite-value daf-select pattern as SUPPLIER_CATEGORY in
-  // supplier-new.component.ts (typeSelectOptions/onTypeSelect). Categories whose
-  // sourceType is AUTO_PUSH are excluded — manual creation is blocked for them
-  // server-side too (CostLineService.doCreateCostLine()).
-  //
-  // The option VALUE keeps the FR label (`id|labelFr`) because edit mode rebuilds the
-  // selection from the line's own `costCategoryLabel`, which the backend sends in FR;
-  // only the visible LABEL follows the UI language.
+  /** AUTO_PUSH categories are fed by other modules and refused for manual entry. Value = `id|labelFr`. */
   readonly costCategorySelectOptions = computed<SelectOption[]>(() =>
     this.costCategories()
       .filter(c => c.sourceType !== 'AUTO_PUSH')
       .map(c => ({ value: c.id + '|' + c.labelFr, label: this.valueLabel(c) })));
 
-  /** EN label in English (falling back to FR when a row has none), FR otherwise. */
+  /** Sub-categories of a line's category — matched by parent CODE (country overrides are new rows). */
+  subCategoryOptions(line: LineForm): SelectOption[] {
+    const code = this.costCategories().find(c => c.id === line.costCategoryId)?.code;
+    if (!code) return [];
+    return this.costSubCategories()
+      .filter(s => s.parentValueCode === code)
+      .map(s => ({ value: s.id + '|' + s.labelFr, label: this.valueLabel(s) }));
+  }
+
   private valueLabel(v: ListValueDto): string {
     return this.translate.currentLang() === 'en' ? (v.labelEn || v.labelFr) : v.labelFr;
-  }
-
-  /** Code of the selected category — the key sub-categories are matched on. */
-  private readonly selectedCategoryCode = computed(() =>
-    this.costCategories().find(c => c.id === this.costCategoryId())?.code ?? null);
-
-  onCostCategorySelect(values: string[]): void {
-    const value = values[0] ?? '';
-    if (!value) {
-      this.costCategoryId.set(null); this.costCategoryLabel.set('');
-      this.costSubCategoryId.set(null); this.costSubCategoryLabel.set('');
-      return;
-    }
-    const sep = value.indexOf('|');
-    const id  = Number(value.substring(0, sep));
-    this.costCategoryId.set(id);
-    this.costCategoryLabel.set(value.substring(sep + 1));
-    // Changing category invalidates any previously chosen sub-category.
-    this.costSubCategoryId.set(null);
-    this.costSubCategoryLabel.set('');
-    // Nice-to-have: auto-select when the category has exactly one sub-category.
-    const code = this.costCategories().find(c => c.id === id)?.code;
-    const matches = this.costSubCategories().filter(s => !!code && s.parentValueCode === code);
-    if (matches.length === 1) {
-      this.costSubCategoryId.set(matches[0].id);
-      this.costSubCategoryLabel.set(matches[0].labelFr);
-    }
-    this.onAmountOrCurrencyChange();
-  }
-
-  // Matched by parent CODE, not parentValueId: when a country overrides a global category
-  // (new row, new id) the global sub-categories still point at the global row's id.
-  readonly filteredCostSubCategories = computed<ListValueDto[]>(() => {
-    const code = this.selectedCategoryCode();
-    return code ? this.costSubCategories().filter(s => s.parentValueCode === code) : [];
-  });
-
-  readonly costSubCategorySelectOptions = computed<SelectOption[]>(() =>
-    this.filteredCostSubCategories().map(s => ({ value: s.id + '|' + s.labelFr, label: this.valueLabel(s) })));
-
-  onCostSubCategorySelect(values: string[]): void {
-    const value = values[0] ?? '';
-    if (!value) { this.costSubCategoryId.set(null); this.costSubCategoryLabel.set(''); return; }
-    const sep = value.indexOf('|');
-    this.costSubCategoryId.set(Number(value.substring(0, sep)));
-    this.costSubCategoryLabel.set(value.substring(sep + 1));
   }
 
   /** Wrap a numeric id into the string[] shape daf-select's `selected` expects. */
   selArr(id: number | null): string[] { return [id !== null ? String(id) : '']; }
 
   selectedCurrencyCode = computed(() =>
-    this.currencies().find(c => c.id === this.currencyId())?.code ?? null
-  );
+    this.currencies().find(c => c.id === this.currencyId())?.code ?? null);
+
+  // ── Taxes (fixed, unchanged) ────────────────────────────────────────────────
+
+  /** Tax block (FODEC / TVA rate / stamp / RS) only with a real supplier. */
+  readonly hasSupplier = computed(() => this.supplierId() !== null);
+
+  readonly fodecOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: '0',    label: this.translate.instant('COST.FORM.TAX.FODEC_OPT_0') },
+      { value: '0.01', label: this.translate.instant('COST.FORM.TAX.FODEC_OPT_1') },
+    ];
+  });
+
+  /** VAT_RATE list → fraction values (ratePct 19 → '0.19'). */
+  readonly tvaOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return this.vatRates().map(v => ({
+      value: v.ratePct != null ? (v.ratePct / 100).toString() : '0',
+      label: this.valueLabel(v),
+    }));
+  });
+
+  /** Value '1', not '1.000': selArr() round-trips the number through String(). */
+  readonly timbreOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: '1', label: this.translate.instant('COST.FORM.TAX.TIMBRE_OPT_1') },
+      { value: '0', label: this.translate.instant('COST.FORM.TAX.TIMBRE_OPT_0') },
+    ];
+  });
+
+  /** WITHHOLDING_RATE list → fraction values; the label names the base. */
+  readonly rsOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return this.withholdingRates()
+      .filter(v => v.ratePct != null)
+      .map(v => ({
+        value: (v.ratePct! / 100).toString(),
+        label: `${this.valueLabel(v)} — ${this.translate.instant('COST.FORM.TAX.RS_BASE_' + (v.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC'))}`,
+      }));
+  });
+
+  /** RS base of the chosen rate: the TVA amount, else HT + FODEC (old HT / TTC bases included). */
+  private readonly selectedRsBase = computed<'HT_FODEC' | 'TVA'>(() => {
+    const rate = this.rsRate();
+    if (rate == null) return 'HT_FODEC';
+    const pct = Math.round(rate * 10000) / 100;
+    return this.withholdingRates().find(v => v.ratePct === pct)?.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC';
+  });
+
+  /** OTHER_TAX_TYPE list as select options. */
+  readonly otherTaxTypeOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return this.otherTaxTypes().map(v => ({ value: String(v.id), label: this.valueLabel(v) }));
+  });
+
+  readonly rsBaseLabel = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant('COST.FORM.TAX.RS_BASE_' + this.selectedRsBase());
+  });
+
+  // ── Amount previews (mirror CostInvoiceService; rounded to 3 decimals like it) ─
+
+  private static r3(n: number): number { return Math.round(n * 1000) / 1000; }
+
+  lineFodec(l: LineForm): number {
+    return this.hasSupplier() && l.fodecRate ? CostFormComponent.r3((l.netAmountLocal ?? 0) * l.fodecRate) : 0;
+  }
+
+  /** TVA = (HT + FODEC) × rate (V95). */
+  lineVat(l: LineForm): number {
+    if (this.hasSupplier() && l.tvaRate != null) {
+      return CostFormComponent.r3(((l.netAmountLocal ?? 0) + this.lineFodec(l)) * l.tvaRate);
+    }
+    return l.vatAmountLocal ?? 0;
+  }
+
+  lineTtc(l: LineForm): number {
+    return (l.netAmountLocal ?? 0) + this.lineFodec(l) + this.lineVat(l);
+  }
+
+  readonly totals = computed(() => {
+    const lines = this.lines();
+    let ht = 0, fodec = 0, vat = 0, linesTtc = 0;
+    for (const l of lines) {
+      ht += l.netAmountLocal ?? 0;
+      fodec += this.lineFodec(l);
+      vat += this.lineVat(l);
+      linesTtc += this.lineTtc(l);
+    }
+    const timbre = this.hasSupplier() ? (this.timbreAmount() ?? 0) : 0;
+    const other = this.otherTaxes().reduce((sum, t) => sum + CostFormComponent.r3(t.amountLocal ?? 0), 0);
+    // Autres taxes are added to the TTC; the RS is deducted from what is paid.
+    const ttc = linesTtc + timbre + other;
+    let rs = 0;
+    const rate = this.hasSupplier() ? this.rsRate() : null;
+    if (rate) {
+      const amount = this.selectedRsBase() === 'TVA' ? vat : ht + fodec;
+      rs = CostFormComponent.r3(amount * rate);
+    }
+    return { ht, fodec, vat, timbre, other, ttc, rs, netToPay: ttc - rs };
+  });
+
+  /** TVA per rate, like the invoice detail's breakdown: rates ascending, typed VAT last. */
+  readonly vatBreakdown = computed(() => {
+    const byRate = new Map<string, { rate: number | null; base: number; vat: number }>();
+    for (const l of this.lines()) {
+      const rate = this.hasSupplier() && l.tvaRate != null ? l.tvaRate : null;
+      const key = rate === null ? 'manual' : String(rate);
+      const acc = byRate.get(key) ?? { rate, base: 0, vat: 0 };
+      acc.base += (l.netAmountLocal ?? 0) + this.lineFodec(l);   // TVA base = HT + FODEC
+      acc.vat += this.lineVat(l);
+      byRate.set(key, acc);
+    }
+    return [...byRate.values()]
+      .filter(b => b.vat !== 0 || b.rate !== null)
+      .sort((a, b) => (a.rate ?? 99) - (b.rate ?? 99));
+  });
+
+  pct(rate: number): string { return String(Math.round(rate * 10000) / 100); }
+
+  // ── Validation ──────────────────────────────────────────────────────────────
+
+  /** An "autre taxe" needs a non-zero amount and a type or a label (as the server checks). */
+  otherTaxComplete(t: OtherTaxForm): boolean {
+    return !!t.amountLocal && (t.taxTypeId !== null || t.label.trim().length > 0);
+  }
+
+  private lineComplete(l: LineForm): boolean {
+    return !!l.costCategoryId && l.description.trim().length > 0 && (l.netAmountLocal ?? 0) > 0;
+  }
+
+  readonly invoiceNumberMissing = computed(() =>
+    this.hasSupplier() && this.supplierInvoiceNumber().trim().length === 0);
 
   canSave = computed(() =>
+    !this.lockedForUser() &&
+    (!this.validatedMode() || this.justification().trim().length >= 5) &&
     !!this.paysId() &&
-    !!this.costCategoryId() &&
-    !!this.transactionDate() &&
-    this.description().trim().length > 0 &&
-    (this.netAmountLocal() ?? 0) > 0 &&
-    !!this.currencyId()
-  );
+    !!this.invoiceDate() &&
+    !!this.currencyId() &&
+    !this.invoiceNumberMissing() &&
+    this.lines().length > 0 &&
+    this.lines().every(l => this.lineComplete(l)) &&
+    this.otherTaxes().every(t => this.otherTaxComplete(t)));
 
   readonly formatAmt = formatAmount;
 
-  // ── En-tête de page (daf-page-header) ────────────────────────────────────────
-  // Absolute root link, like CostLineDetailComponent's own breadcrumbs: this form is
-  // reached at both cost/new and cost/:id/edit, so a relative link would differ by mode.
+  // ── Page header ─────────────────────────────────────────────────────────────
+
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
     const root: BreadcrumbItem = { label: this.translate.instant('COST.TABS.LINES'), link: ['/finance/cost'] };
@@ -223,7 +363,7 @@ export class CostFormComponent implements OnInit {
     }
     return [
       root,
-      { label: `#${id}`, link: ['/finance/cost', id] },
+      { label: this.editReference() ?? `#${id}`, link: ['/finance/cost', id] },
       { label: this.translate.instant('COST.FORM.TITLE_EDIT') },
     ];
   });
@@ -236,104 +376,54 @@ export class CostFormComponent implements OnInit {
   readonly pageSubtitle = computed(() => {
     this.translate.currentLang();
     return this.isEditMode()
-      ? this.translate.instant('COST.FORM.SUB_EDIT', { id: this.editId() })
+      ? this.translate.instant('COST.FORM.SUB_EDIT', { id: this.editReference() ?? this.editId() })
       : this.translate.instant('COST.FORM.SUB_NEW');
   });
 
-  /** The former hand-drawn pulsing "draft" pill, now a standard header badge. */
   readonly headerBadges = computed<PageHeaderBadge[]>(() => {
     this.translate.currentLang();
-    return [{ label: this.translate.instant('COST.FORM.DRAFT_BADGE'), variant: 'teal', dot: true }];
+    return this.validatedMode()
+      ? [{ label: this.translate.instant('COST.FORM.VALIDATED_BADGE'), variant: 'warning', dot: true }]
+      : [{ label: this.translate.instant('COST.FORM.DRAFT_BADGE'), variant: 'teal', dot: true }];
   });
 
-  /** The bar's single drawn action — same teal pill as the affaire wizard's "Suivant". */
   readonly submitButtonOptions = computed<ButtonOptions>(() => {
     this.translate.currentLang();
     return {
       variant:   'teal',
       pill:      true,
-      label:     this.translate.instant('COST.FORM.FOOT_SUBMIT'),
-      iconStart: 'send',
+      label:     this.translate.instant(this.validatedMode() ? 'COST.FORM.FOOT_SAVE_VALIDATED' : 'COST.FORM.FOOT_SUBMIT'),
+      iconStart: this.validatedMode() ? 'save' : 'send',
       loading:   this.isSaving(),
       disabled:  !this.canSave() || this.isSaving(),
     };
   });
 
-  /** Same destination as the former `routerLink=".."` Cancel link. */
+  readonly addLineButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant: 'secondary', size: 'sm', iconStart: 'add',
+      label: this.translate.instant('COST.FORM.ADD_LINE'),
+      disabled: !this.paysId(),
+    };
+  });
+
+  readonly addOtherTaxButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant: 'secondary', size: 'sm', iconStart: 'add',
+      label: this.translate.instant('COST.FORM.OTHER_TAX.ADD'),
+      disabled: !this.paysId(),
+    };
+  });
+
+  /** From an edit, back to the invoice itself; from a new invoice, back to the list. */
   cancel(): void {
-    this.router.navigate(['..'], { relativeTo: this.route });
+    const id = this.editId();
+    this.router.navigate(id !== null ? ['/finance/cost', id] : ['/finance/cost']);
   }
 
-  // ── D3 Tunisian tax fields (V78) ─────────────────────────────────────────────
-  // Shown only once a real supplier is picked via the autocomplete -- NOT merely
-  // when the Libre/Base toggle is flipped, per the confirmed reading of "if we
-  // don't have a supplier, the amount is enough with the principal columns."
-  readonly showTaxFields = computed(() => this.supplierId() !== null);
-
-  readonly fodecOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    return [
-      { value: '0',    label: this.translate.instant('COST.FORM.TAX.FODEC_OPT_0') },
-      { value: '0.01', label: this.translate.instant('COST.FORM.TAX.FODEC_OPT_1') },
-    ];
-  });
-
-  /**
-   * Built from the VAT_RATE configurable list (loaded per pays in onPaysChange()), not
-   * the former hardcoded FR/EN option labels. `tvaRate` itself keeps storing/computing a
-   * FRACTION (0.19, not 19) — only the list of available options now comes from the
-   * backend, whose `ratePct` is a whole percentage that must be converted back down.
-   */
-  readonly tvaOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    return this.vatRates().map(v => ({
-      value: v.ratePct != null ? (v.ratePct / 100).toString() : '0',
-      label: this.valueLabel(v),
-    }));
-  });
-
-  readonly timbreOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    // NOTE: value is '1', not '1.000' -- selArr()/[selected] round-trips the stored
-    // number through String(), and String(+'1.000') is '1', not '1.000'. Using a
-    // non-canonical value string here would make the daf-select fail to show the
-    // option as selected after the user picks it. The *label* still reads "1.000 DT"
-    // as specified; only the underlying value is normalized.
-    return [
-      { value: '1', label: this.translate.instant('COST.FORM.TAX.TIMBRE_OPT_1') },
-      { value: '0', label: this.translate.instant('COST.FORM.TAX.TIMBRE_OPT_0') },
-    ];
-  });
-
-  readonly autresTaxesOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    // Same canonical-value note as timbreOptions above: '0.1', not '0.10'.
-    return [
-      { value: '0',     label: this.translate.instant('COST.FORM.TAX.AUTRES_TAXES_OPT_0') },
-      { value: '0.01',  label: this.translate.instant('COST.FORM.TAX.AUTRES_TAXES_OPT_1') },
-      { value: '0.015', label: this.translate.instant('COST.FORM.TAX.AUTRES_TAXES_OPT_1_5') },
-      { value: '0.03',  label: this.translate.instant('COST.FORM.TAX.AUTRES_TAXES_OPT_3') },
-      { value: '0.05',  label: this.translate.instant('COST.FORM.TAX.AUTRES_TAXES_OPT_5') },
-      { value: '0.1',   label: this.translate.instant('COST.FORM.TAX.AUTRES_TAXES_OPT_10') },
-      { value: '0.15',  label: this.translate.instant('COST.FORM.TAX.AUTRES_TAXES_OPT_15') },
-      { value: '0.25',  label: this.translate.instant('COST.FORM.TAX.AUTRES_TAXES_OPT_25') },
-    ];
-  });
-
-  /**
-   * Client-side live preview only — mirrors the exact server-side formula in
-   * CostLineService.doCreateCostLine() (HT + FODEC + TVA + Timbre; RS excluded).
-   * The authoritative computation always happens server-side on save.
-   */
-  readonly ttcPreview = computed<number | null>(() => {
-    if (!this.showTaxFields()) return null;
-    const ht = this.netAmountLocal();
-    if (ht == null) return null;
-    const fodecAmt = ht * (this.fodecRate() ?? 0);
-    const tvaAmt   = ht * (this.tvaRate() ?? 0);
-    const timbre   = this.timbreAmount() ?? 0;
-    return ht + fodecAmt + tvaAmt + timbre;
-  });
+  // ── Lifecycle ───────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
     const idStr = this.route.snapshot.paramMap.get('id');
@@ -341,7 +431,7 @@ export class CostFormComponent implements OnInit {
       this.editId.set(+idStr);
       this.loadExisting(+idStr);
     } else {
-      this.transactionDate.set(new Date().toISOString().slice(0, 10));
+      this.invoiceDate.set(new Date().toISOString().slice(0, 10));
       this.prefillFromQueryParams();
     }
 
@@ -359,39 +449,17 @@ export class CostFormComponent implements OnInit {
       }),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(list => this.suppliers.set(list));
+
+    this.previewRefresh$.pipe(debounceTime(400), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refreshPreviews());
   }
 
   private loadExisting(id: number): void {
     this.isPageLoading.set(true);
-    this.costSvc.getCostLine(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: line => {
+    this.costSvc.getCostInvoice(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: inv => {
         this.isPageLoading.set(false);
-        if (line.paysId) this.onPaysChange(line.paysId);
-        if (line.transactionDate) this.transactionDate.set(line.transactionDate.slice(0, 10));
-        this.description.set(line.label ?? '');
-        this.costCategoryId.set(line.costCategoryId);
-        this.costCategoryLabel.set(line.costCategoryLabel ?? '');
-        this.costSubCategoryId.set(line.costSubCategoryId);
-        this.costSubCategoryLabel.set(line.costSubCategoryLabel ?? '');
-        this.netAmountLocal.set(line.netAmountLocal);
-        this.currencyId.set(line.currencyId);
-        // The line carries its currency CODE: if the pays list shows a country override
-        // of that currency (new row, new id), reconcileListValue() re-points by code.
-        this.lineCurrencyCode = line.currency;
-        this.supplierId.set(line.supplierId);
-        if (line.supplierId != null) {
-          this.costSvc.getSupplier(line.supplierId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: s => this.supplierQuery.set(s.name),
-            error: () => {}, // supplier lookup failing here shouldn't block loading the rest of the line
-          });
-        }
-        this.affaireId.set(line.affaireId);
-        this.notes.set(line.notes ?? '');
-        this.costTypeId.set(line.costTypeId);
-        this.fodecRate.set(line.fodecRate);
-        this.tvaRate.set(line.tvaRate);
-        this.timbreAmount.set(line.timbreAmount);
-        this.autresTaxesRate.set(line.autresTaxesRate);
+        this.fillFrom(inv);
       },
       error: () => {
         this.isPageLoading.set(false);
@@ -400,123 +468,164 @@ export class CostFormComponent implements OnInit {
     });
   }
 
-  /**
-   * Pre-fills Pays + Fournisseur when this form is opened from a supplier's own detail
-   * page (its "Nouvelle ligne de coût" button — see
-   * CostLineDetailComponent.goToNewLineForSupplier()). Absent for every other entry
-   * point into this route (e.g. the flat list page's own "Nouvelle ligne" button passes
-   * no query params at all), so this is a pure no-op there.
-   */
+  private fillFrom(inv: CostInvoiceDto): void {
+    this.editReference.set(inv.reference);
+    this.editStatus.set(inv.status);
+    if (this.lockedForUser()) {
+      this.error.set(this.translate.instant('COST.FORM.LOCKED_ERROR', { status: inv.status }));
+    }
+    this.invoiceCurrencyCode = inv.currency;
+    this.onPaysChange(inv.paysId);
+    this.supplierId.set(inv.supplierId);
+    this.supplierQuery.set(inv.supplierName ?? '');
+    this.supplierInvoiceNumber.set(inv.supplierInvoiceNumber ?? '');
+    this.invoiceDate.set(inv.invoiceDate?.slice(0, 10) ?? '');
+    this.paymentDueDate.set(inv.paymentDueDate?.slice(0, 10) ?? '');
+    this.currencyId.set(inv.currencyId);
+    this.notes.set(inv.notes ?? '');
+    this.timbreAmount.set(inv.timbreAmount);
+    this.rsRate.set(inv.rsRate);
+    this.otherTaxes.set((inv.otherTaxes ?? []).map(t => ({
+      key: this.nextTaxKey++,
+      taxTypeId: t.taxTypeId,
+      label: t.label ?? '',
+      amountLocal: t.amountLocal,
+    })));
+    this.lines.set(inv.lines.map(l => ({
+      key: this.nextKey++,
+      id: l.id,
+      costCategoryId: l.costCategoryId,
+      costCategoryLabel: l.costCategoryLabel ?? '',
+      costSubCategoryId: l.costSubCategoryId,
+      costSubCategoryLabel: l.costSubCategoryLabel ?? '',
+      description: l.label ?? '',
+      netAmountLocal: l.netAmountLocal,
+      vatAmountLocal: l.vatAmountLocal,
+      fodecRate: l.fodecRate,
+      tvaRate: l.tvaRate,
+      affaireId: l.affaireId,
+      costTypeId: l.costTypeId,
+    })));
+    this.schedulePreview();
+  }
+
+  /** Pays + supplier pre-filled when opened from a supplier page ("Nouvelle facture"). */
   private prefillFromQueryParams(): void {
     const params = this.route.snapshot.queryParamMap;
     const paysIdParam = params.get('paysId');
     const supplierIdParam = params.get('supplierId');
-
-    if (paysIdParam) {
-      this.onPaysChange(+paysIdParam);
-    }
+    if (paysIdParam) this.onPaysChange(+paysIdParam);
     if (supplierIdParam) {
       const sid = +supplierIdParam;
       this.supplierId.set(sid);
       this.costSvc.getSupplier(sid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: s => this.supplierQuery.set(s.name),
-        error: () => {}, // supplier lookup failing here shouldn't block the rest of the form
+        error: () => {},
       });
     }
   }
+
+  // ── Pays & per-pays lists ───────────────────────────────────────────────────
 
   onPaysChange(id: number | null): void {
     const pid = id ? Number(id) : null;
     this.paysId.set(pid);
     if (!pid) return;
 
-    // Every per-pays list gets the same treatment as the category: a selection carried
-    // over from the previous pays is re-pointed (same code) or cleared, never left
-    // pointing at another country's row — the backend now rejects those (RG_LIST_VALUE_PAYS).
     this.costSvc.getListValues('CURRENCY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
       const previous = this.currencies();
       this.currencies.set(v);
-      if (this.reconcileListValue(previous, v, this.currencyId, this.lineCurrencyCode)) {
-        this.onAmountOrCurrencyChange();
+      const cur = this.currencyId();
+      if (cur !== null && !v.some(c => c.id === cur)) {
+        const code = previous.find(c => c.id === cur)?.code ?? this.invoiceCurrencyCode;
+        if (code) this.currencyId.set(v.find(c => c.code === code)?.id ?? null);
       }
+      this.schedulePreview();
     });
     this.costSvc.getListValues('COST_TYPE', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
       const previous = this.costTypes();
       this.costTypes.set(v);
-      this.reconcileListValue(previous, v, this.costTypeId);
+      this.reconcileLineIds(previous, v, 'costTypeId');
     });
-    // VAT_RATE — no selected-id to reconcile (tvaRate stores a plain fraction, not a list
-    // value id), so this just refreshes the options tvaOptions() rebuilds from.
-    this.costSvc.getListValues('VAT_RATE', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
-      this.vatRates.set(v);
+    this.costSvc.getListValues('VAT_RATE', pid).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(v => this.vatRates.set(v));
+    this.costSvc.getListValues('WITHHOLDING_RATE', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      this.withholdingRates.set(v);
+      const rate = this.rsRate();
+      if (rate != null && !v.some(r => r.ratePct === Math.round(rate * 10000) / 100)) this.rsRate.set(null);
     });
-    this.affaireSvc.getAffaires({ paysId: pid, size: 200 })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(p => {
-        const previous = this.affaires();
-        this.affaires.set(p.content);
-        // Affaires have no shared code across countries: one from the old pays is simply dropped.
-        const id = this.affaireId();
-        if (id !== null && !p.content.some(a => a.id === id) && previous.some(a => a.id === id)) {
-          this.affaireId.set(null);
-        }
-      });
-
+    this.costSvc.getListValues(OTHER_TAX_TYPE_LIST, pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.otherTaxTypes();
+      this.otherTaxTypes.set(v);
+      // Same code in the new pays → re-pointed; gone → the row keeps its label only.
+      this.otherTaxes.update(ts => ts.map(t => {
+        if (t.taxTypeId === null || v.some(x => x.id === t.taxTypeId)) return t;
+        const code = previous.find(x => x.id === t.taxTypeId)?.code;
+        if (!code) return t;
+        return { ...t, taxTypeId: v.find(x => x.code === code)?.id ?? null };
+      }));
+    });
+    this.affaireSvc.getAffaires({ paysId: pid, size: 200 }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => {
+      const previous = this.affaires();
+      this.affaires.set(p.content);
+      // Affaires have no shared code across countries: one from the old pays is dropped.
+      this.lines.update(ls => ls.map(l =>
+        l.affaireId !== null && !p.content.some(a => a.id === l.affaireId) && previous.some(a => a.id === l.affaireId)
+          ? { ...l, affaireId: null } : l));
+    });
     this.costSvc.getListValues('COST_CATEGORY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
       const previous = this.costCategories();
       this.costCategories.set(v);
-      this.reconcileCategory(previous, v);
+      this.reconcileCategories(previous, v);
     });
     this.costSvc.getListValues('COST_SUB_CATEGORY', pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
       const previous = this.costSubCategories();
       this.costSubCategories.set(v);
-      this.reconcileSubCategory(previous, v);
+      this.reconcileSubCategories(previous, v);
     });
   }
 
   /**
-   * Keeps the chosen category valid when the pays changes. Same code in the new country
-   * (global row, or that country's override of it) → re-point to that row; no longer
-   * available → clear it, with its sub-category. A selection absent from the PREVIOUS
-   * list too is left alone: that is edit mode's first load, where the line's own
-   * category is set before any list has arrived.
+   * Keeps each line's category valid when the pays changes: same code in the new country
+   * → re-pointed; gone → cleared with its sub-category. A selection absent from the
+   * PREVIOUS list too is left alone (edit mode's first load).
    */
-  private reconcileCategory(previous: ListValueDto[], next: ListValueDto[]): void {
-    const id = this.costCategoryId();
-    if (id === null || next.some(c => c.id === id)) return;
-    const code = previous.find(c => c.id === id)?.code;
-    if (!code) return;
-    const match = next.find(c => c.code === code && c.sourceType !== 'AUTO_PUSH');
-    if (match) {
-      this.costCategoryId.set(match.id);
-      this.costCategoryLabel.set(match.labelFr);
-    } else {
-      this.costCategoryId.set(null);  this.costCategoryLabel.set('');
-      this.costSubCategoryId.set(null); this.costSubCategoryLabel.set('');
-    }
-    this.onAmountOrCurrencyChange();
+  private reconcileCategories(previous: ListValueDto[], next: ListValueDto[]): void {
+    this.lines.update(ls => ls.map(l => {
+      const id = l.costCategoryId;
+      if (id === null || next.some(c => c.id === id)) return l;
+      const code = previous.find(c => c.id === id)?.code;
+      if (!code) return l;
+      const match = next.find(c => c.code === code && c.sourceType !== 'AUTO_PUSH');
+      return match
+        ? { ...l, costCategoryId: match.id, costCategoryLabel: match.labelFr }
+        : { ...l, costCategoryId: null, costCategoryLabel: '', costSubCategoryId: null, costSubCategoryLabel: '' };
+    }));
+    this.schedulePreview();
   }
 
-  /**
-   * Generic form of reconcileCategory() for the plain per-pays lists (devise, type de
-   * coût). Returns true when the selection changed. `knownCode` covers edit mode's first
-   * load, where the selected id is not in any previous list yet but its code is known.
-   */
-  private reconcileListValue(previous: ListValueDto[], next: ListValueDto[],
-                             selected: WritableSignal<number | null>, knownCode?: string | null): boolean {
-    const id = selected();
-    if (id === null || next.some(v => v.id === id)) return false;
-    const code = previous.find(v => v.id === id)?.code ?? knownCode ?? null;
-    if (!code) return false;
-    selected.set(next.find(v => v.code === code)?.id ?? null);
-    return true;
+  private reconcileSubCategories(previous: ListValueDto[], next: ListValueDto[]): void {
+    this.lines.update(ls => ls.map(l => {
+      const id = l.costSubCategoryId;
+      if (id === null || next.some(s => s.id === id)) return l;
+      const code = previous.find(s => s.id === id)?.code;
+      if (!code) return l;
+      const match = next.find(s => s.code === code);
+      return { ...l, costSubCategoryId: match?.id ?? null, costSubCategoryLabel: match?.labelFr ?? '' };
+    }));
   }
 
-  /**
-   * The pays picker itself (a user choice, unlike edit-mode / query-param preloads). A
-   * supplier belongs to exactly one pays and has no counterpart elsewhere, so it is
-   * dropped when the pays really changes — the search box is scoped to the new pays.
-   */
+  private reconcileLineIds(previous: ListValueDto[], next: ListValueDto[], field: 'costTypeId'): void {
+    this.lines.update(ls => ls.map(l => {
+      const id = l[field];
+      if (id === null || next.some(v => v.id === id)) return l;
+      const code = previous.find(v => v.id === id)?.code;
+      if (!code) return l;
+      return { ...l, [field]: next.find(v => v.code === code)?.id ?? null };
+    }));
+  }
+
+  /** The pays picker itself: a supplier belongs to one pays, so it is dropped on a real change. */
   onPaysSelected(id: number | null): void {
     if (id !== this.paysId()) {
       this.supplierId.set(null);
@@ -526,20 +635,11 @@ export class CostFormComponent implements OnInit {
     this.onPaysChange(id);
   }
 
-  /** Same rule as reconcileCategory(), for the sub-category. */
-  private reconcileSubCategory(previous: ListValueDto[], next: ListValueDto[]): void {
-    const id = this.costSubCategoryId();
-    if (id === null || next.some(s => s.id === id)) return;
-    const code = previous.find(s => s.id === id)?.code;
-    if (!code) return;
-    const match = next.find(s => s.code === code);
-    this.costSubCategoryId.set(match?.id ?? null);
-    this.costSubCategoryLabel.set(match?.labelFr ?? '');
-  }
+  // ── Supplier ────────────────────────────────────────────────────────────────
 
   onSupplierQueryChange(q: string): void {
     this.supplierQuery.set(q);
-    if (!q) this.supplierId.set(null);
+    if (!q) { this.supplierId.set(null); this.schedulePreview(); }
     this.supplierSearch$.next(q);
   }
 
@@ -547,125 +647,212 @@ export class CostFormComponent implements OnInit {
     this.supplierId.set(s.id);
     this.supplierQuery.set(s.name);
     this.suppliers.set([]);
+    this.schedulePreview();
   }
 
-  onAmountOrCurrencyChange(): void {
-    const amount = this.netAmountLocal();
-    const currId = this.currencyId();
-    const pid    = this.paysId();
-    if (!amount || !currId || !pid) {
+  // ── Lines ───────────────────────────────────────────────────────────────────
+
+  private emptyLine(): LineForm {
+    return {
+      key: this.nextKey++, id: null,
+      costCategoryId: null, costCategoryLabel: '', costSubCategoryId: null, costSubCategoryLabel: '',
+      description: '', netAmountLocal: null, vatAmountLocal: null,
+      fodecRate: null, tvaRate: null, affaireId: null, costTypeId: null,
+    };
+  }
+
+  addLine(): void {
+    this.lines.update(ls => [...ls, this.emptyLine()]);
+  }
+
+  removeLine(key: number): void {
+    this.lines.update(ls => ls.length > 1 ? ls.filter(l => l.key !== key) : ls);
+    this.schedulePreview();
+  }
+
+  patchLine(key: number, patch: Partial<LineForm>, refreshPreview = true): void {
+    this.lines.update(ls => ls.map(l => l.key === key ? { ...l, ...patch } : l));
+    if (refreshPreview) this.schedulePreview();
+  }
+
+  onLineCategorySelect(line: LineForm, values: string[]): void {
+    const value = values[0] ?? '';
+    if (!value) {
+      this.patchLine(line.key, { costCategoryId: null, costCategoryLabel: '', costSubCategoryId: null, costSubCategoryLabel: '' });
+      return;
+    }
+    const sep = value.indexOf('|');
+    const id = Number(value.substring(0, sep));
+    const code = this.costCategories().find(c => c.id === id)?.code;
+    const subs = this.costSubCategories().filter(s => !!code && s.parentValueCode === code);
+    // A category with exactly one sub-category picks it straight away.
+    this.patchLine(line.key, {
+      costCategoryId: id, costCategoryLabel: value.substring(sep + 1),
+      costSubCategoryId: subs.length === 1 ? subs[0].id : null,
+      costSubCategoryLabel: subs.length === 1 ? subs[0].labelFr : '',
+    });
+  }
+
+  onLineSubCategorySelect(line: LineForm, values: string[]): void {
+    const value = values[0] ?? '';
+    if (!value) { this.patchLine(line.key, { costSubCategoryId: null, costSubCategoryLabel: '' }, false); return; }
+    const sep = value.indexOf('|');
+    this.patchLine(line.key, {
+      costSubCategoryId: Number(value.substring(0, sep)), costSubCategoryLabel: value.substring(sep + 1),
+    }, false);
+  }
+
+  /** `$event[0]` of a daf-select holding fractions → number | null. */
+  rateOf(values: string[]): number | null {
+    return values[0] !== undefined && values[0] !== '' ? +values[0] : null;
+  }
+
+  numberOf(v: unknown): number | null {
+    return v === null || v === undefined || v === '' ? null : +v;
+  }
+
+  trackLine = (_: number, l: LineForm) => l.key;
+
+  // ── Autres taxes (V95) ──────────────────────────────────────────────────────
+
+  addOtherTax(): void {
+    this.otherTaxes.update(ts => [...ts, { key: this.nextTaxKey++, taxTypeId: null, label: '', amountLocal: null }]);
+  }
+
+  removeOtherTax(key: number): void {
+    this.otherTaxes.update(ts => ts.filter(t => t.key !== key));
+    this.schedulePreview();
+  }
+
+  /** "Type (label)", the type alone, or the label alone — for the totals. */
+  otherTaxName(t: OtherTaxForm): string {
+    const v = this.otherTaxTypes().find(x => x.id === t.taxTypeId);
+    const type = v ? this.valueLabel(v) : null;
+    const label = t.label.trim();
+    if (type && label) return type + ' (' + label + ')';
+    return type ?? (label || this.translate.instant('COST.FORM.OTHER_TAX.TITLE'));
+  }
+
+  patchOtherTax(key: number, patch: Partial<OtherTaxForm>): void {
+    this.otherTaxes.update(ts => ts.map(t => t.key === key ? { ...t, ...patch } : t));
+    this.schedulePreview();
+  }
+
+  // ── Previews (forex on the HT total, approval route on the TTC) ─────────────
+
+  schedulePreview(): void { this.previewRefresh$.next(); }
+
+  /**
+   * Forex panel: the invoice HT total. Approval route: the invoice TTC converted to EUR,
+   * against every category of its lines — the same inputs CostApprovalService uses on submit.
+   */
+  private refreshPreviews(): void {
+    const t = this.totals();
+    const pid = this.paysId();
+    const curr = this.currencies().find(c => c.id === this.currencyId());
+    if (!t.ht || !curr || !pid) {
       this.forexPreview.set(null);
       this.circuitPreview.set(null);
       return;
     }
-    const curr = this.currencies().find(c => c.id === currId);
-    if (!curr) return;
     this.previewLoading.set(true);
-    this.costSvc.getForexPreview(amount, curr.code).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: fx => {
-        this.forexPreview.set(fx);
-        this.refreshCircuitPreview(pid, curr.code);
-      },
-      error: () => { this.forexPreview.set(null); this.previewLoading.set(false); },
+    this.costSvc.getForexPreview(t.ht, curr.code).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: fx => this.forexPreview.set(fx),
+      error: () => this.forexPreview.set(null),
+    });
+    const categoryIds = this.lines().map(l => l.costCategoryId);
+    this.costSvc.getForexPreview(t.ttc, curr.code).pipe(
+      switchMap(fx => this.costSvc.getCircuitPreview(fx.montantEur, pid, categoryIds)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: cp => { this.circuitPreview.set(cp); this.previewLoading.set(false); },
+      error: () => { this.circuitPreview.set(null); this.previewLoading.set(false); },
     });
   }
 
-  /**
-   * The approval circuit is keyed on the line's own TTC (gross) amount, mirroring
-   * CostApprovalService.submitForApproval()'s server-side threshold check — NOT the HT
-   * amount shown in the "Devise" forex panel above, which stays HT-based on purpose.
-   * Re-run whenever the HT amount, currency, or any tax field changes: ttcPreview()
-   * already recomputes from all of those, this just re-converts it to EUR and re-fetches
-   * the circuit preview. Falls back to the HT amount when there's no supplier/tax
-   * context yet (ttcPreview() returns null in that case, and gross == net server-side
-   * too when there's no supplier — see doCreateCostLine()'s useTaxBlock branch).
-   */
-  private refreshCircuitPreview(paysId: number, currencyCode: string): void {
-    const ttcAmount = this.ttcPreview() ?? this.netAmountLocal();
-    if (!ttcAmount) {
-      this.circuitPreview.set(null);
-      this.previewLoading.set(false);
-      return;
-    }
-    this.costSvc.getForexPreview(ttcAmount, currencyCode).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: fx => {
-        this.costSvc.getCircuitPreview(fx.montantEur, paysId, this.costCategoryId())
-          .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-          next: cp => { this.circuitPreview.set(cp); this.previewLoading.set(false); },
-          error: () => this.previewLoading.set(false),
-        });
-      },
-      error: () => this.previewLoading.set(false),
-    });
-  }
-
-  /**
-   * Tax-rate changes (FODEC/TVA/Timbre Fiscal) affect ttcPreview() and therefore the
-   * approval circuit, but NOT the HT amount or its forex conversion — so only the
-   * circuit preview needs to be refreshed here, unlike onAmountOrCurrencyChange().
-   */
-  onTaxFieldChange(): void {
-    const currId = this.currencyId();
-    const pid    = this.paysId();
-    const curr   = this.currencies().find(c => c.id === currId);
-    if (!curr || !pid) return;
-    this.previewLoading.set(true);
-    this.refreshCircuitPreview(pid, curr.code);
-  }
+  // ── Save ────────────────────────────────────────────────────────────────────
 
   saveDraft(): void { this.doSave(false); }
-  submitLine(): void { this.doSave(true); }
+  submitInvoice(): void { this.doSave(true); }
+
+  private buildRequest(): CreateCostInvoiceRequest {
+    const withSupplier = this.hasSupplier();
+    return {
+      paysId:                this.paysId()!,
+      supplierId:            this.supplierId(),
+      supplierInvoiceNumber: withSupplier ? this.supplierInvoiceNumber().trim() : null,
+      invoiceDate:           this.invoiceDate(),
+      paymentDueDate:        this.paymentDueDate() || null,
+      currencyId:            this.currencyId()!,
+      timbreAmount:          withSupplier ? this.timbreAmount() : null,
+      rsRate:                withSupplier ? this.rsRate() : null,
+      notes:                 this.notes().trim() || null,
+      otherTaxes: this.otherTaxes().map(t => ({
+        taxTypeId:   t.taxTypeId,
+        label:       t.label.trim() || null,
+        amountLocal: t.amountLocal!,
+      })),
+      lines: this.lines().map(l => ({
+        id:                l.id,
+        costCategoryId:    l.costCategoryId,
+        costSubCategoryId: l.costSubCategoryId,
+        description:       l.description.trim(),
+        netAmountLocal:    l.netAmountLocal!,
+        vatAmountLocal:    withSupplier ? null : l.vatAmountLocal,
+        fodecRate:         withSupplier ? l.fodecRate : null,
+        tvaRate:           withSupplier ? l.tvaRate : null,
+        affaireId:         l.affaireId,
+        costTypeId:        l.costTypeId,
+      })),
+    };
+  }
 
   private doSave(submit: boolean): void {
-    if (!this.canSave()) return;
-    const date = this.transactionDate();
-    const [year, month] = date.split('-').map(Number);
-    const hasSupplier = this.supplierId() !== null;
-    const req: CreateCostLineRequest = {
-      paysId:            this.paysId()!,
-      costCategoryId:    this.costCategoryId()!,
-      costSubCategoryId: this.costSubCategoryId() ?? undefined,
-      transactionDate:   date,
-      periodYear:        year,
-      periodMonth:       month,
-      description:       this.description().trim(),
-      netAmountLocal:    this.netAmountLocal()!,
-      currencyId:        this.currencyId()!,
-      supplierId:        this.supplierId() ?? undefined,
-      affaireId:         this.affaireId() ?? undefined,
-      notes:             this.notes() || undefined,
-      costTypeId:        this.costTypeId() ?? undefined,
-      fodecRate:         hasSupplier ? (this.fodecRate() ?? undefined) : undefined,
-      tvaRate:           hasSupplier ? (this.tvaRate() ?? undefined) : undefined,
-      timbreAmount:      hasSupplier ? (this.timbreAmount() ?? undefined) : undefined,
-      autresTaxesRate:   hasSupplier ? (this.autresTaxesRate() ?? undefined) : undefined,
-    };
-
+    if (!this.canSave() || this.isSaving()) return;
     this.isSaving.set(true);
     this.error.set(null);
+    const req = this.buildRequest();
 
+    if (this.validatedMode()) {
+      // DAF edit of an APPROVED / POSTED invoice: status kept, change recorded with its reason.
+      this.costSvc.editValidatedCostInvoice(this.editId()!, req, this.justification().trim())
+        .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+          next: inv => {
+            const uploads = this.pendingFiles().filter(f => !f.error).map(f =>
+              lastValueFrom(this.costSvc.addAttachment(inv.id, f.file)).catch(() => null));
+            Promise.all(uploads).then(() => {
+              this.isSaving.set(false);
+              this.router.navigate(['/finance/cost', inv.id]);   // back to the invoice
+            });
+          },
+          error: err => {
+            this.isSaving.set(false);
+            this.error.set(err.error?.message ?? this.translate.instant('COST.FORM.GENERIC_ERROR'));
+          },
+        });
+      return;
+    }
     const save$ = this.editId()
-      ? this.costSvc.updateCostLine(this.editId()!, req)
-      : this.costSvc.createCostLine(req);
+      ? this.costSvc.updateCostInvoice(this.editId()!, req)
+      : this.costSvc.createCostInvoice(req);
 
     save$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: line => {
-        // Files daf-file-upload flagged (over maxSizeMb) are never sent — the former
-        // input dropped them at selection time instead.
+      next: inv => {
+        // Oversized files (flagged by daf-file-upload) are never sent.
         const uploads = this.pendingFiles().filter(f => !f.error).map(f =>
-          lastValueFrom(this.costSvc.addAttachment(line.id, f.file)).catch(() => null)
-        );
+          lastValueFrom(this.costSvc.addAttachment(inv.id, f.file)).catch(() => null));
         Promise.all(uploads).then(() => {
           this.pendingFiles.set([]);
-          if (submit) {
-            this.costSvc.submitCostLine(line.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-              next:  () => { this.isSaving.set(false); this.router.navigate(this.isEditMode() ? ['../..'] : ['..'], { relativeTo: this.route }); },
-              error: err => { this.isSaving.set(false); this.error.set(err.error?.message ?? this.translate.instant('COST.FORM.SUBMIT_ERROR')); },
-            });
-          } else {
-            this.isSaving.set(false);
-            this.router.navigate(this.isEditMode() ? ['../..'] : ['..'], { relativeTo: this.route });
-          }
+          if (!submit) { this.done(); return; }
+          this.costSvc.submitCostInvoice(inv.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next:  () => this.done(),
+            error: err => {
+              // Saved, but not submitted: stay in edit mode on the saved draft.
+              this.isSaving.set(false);
+              this.error.set(err.error?.message ?? this.translate.instant('COST.FORM.SUBMIT_ERROR'));
+              if (!this.editId()) this.router.navigate(['/finance/cost', inv.id, 'edit']);
+            },
+          });
         });
       },
       error: err => {
@@ -673,6 +860,11 @@ export class CostFormComponent implements OnInit {
         this.error.set(err.error?.message ?? this.translate.instant('COST.FORM.GENERIC_ERROR'));
       },
     });
+  }
+
+  private done(): void {
+    this.isSaving.set(false);
+    this.router.navigate(['/finance/cost']);
   }
 
   levelBg(level: string): string {

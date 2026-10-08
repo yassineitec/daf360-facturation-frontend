@@ -8,6 +8,143 @@
 // rognage.
 .section-card--overflow ::ng-deep > div { overflow: visible; }
 
+// ── Modification après validation (DAF, V94) ────────────────────────────────
+
+.validated-banner {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  margin-bottom: 1.25rem;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+}
+
+.validated-banner__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .875rem;
+  font-weight: 800;
+  color: #92400e;
+
+  .material-symbols-outlined { font-size: 1.1rem; }
+}
+
+.validated-banner__text {
+  margin: 0;
+  font-size: .75rem;
+  color: #78350f;
+}
+
+// ── Lignes de la facture (V93) ──────────────────────────────────────────────
+
+// Supprimer une ligne : action d'icône discrète, rouge au survol.
+.line-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &:hover { background: #ffdad6; color: #ba1a1a; }
+}
+
+// ── Autres taxes (V95) ──────────────────────────────────────────────────────
+
+.other-taxes {
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+  margin-bottom: 1rem;
+  padding: 12px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+}
+
+.other-taxes__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.other-taxes__title {
+  margin: 0;
+  font-size: .8rem;
+  font-weight: 800;
+  color: #0b1c30;
+}
+
+.other-taxes__hint {
+  margin: 1px 0 0 0;
+  font-size: .7rem;
+  color: #64748b;
+}
+
+// Type — libellé — montant — supprimer ; empilé sous 640 px.
+.other-taxes__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, .8fr) auto;
+  align-items: end;
+  gap: .75rem;
+}
+
+.other-taxes__remove { margin-bottom: 4px; }
+
+.other-taxes__error {
+  margin: -4px 0 0 0;
+  font-size: .7rem;
+  color: #ba1a1a;
+}
+
+@media (max-width: 640px) {
+  .other-taxes__row { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
+// ── Totaux de la facture ────────────────────────────────────────────────────
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.totals__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 4px 0;
+  font-size: .8rem;
+  color: #44474c;
+
+  span:last-child { font-variant-numeric: tabular-nums; color: #0b1c30; font-weight: 600; }
+
+  &--strong {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+    font-weight: 800;
+    color: #0b1c30;
+
+    span:last-child { font-size: .95rem; font-weight: 900; color: #006b58; }
+  }
+
+  &--rs span:last-child { color: #b45309; }
+}
+
 // ── Barre d'actions ─────────────────────────────────────────────────────────
 //
 // Reprise de `affaire-wizard.component.scss` : les formulaires de la finance doivent

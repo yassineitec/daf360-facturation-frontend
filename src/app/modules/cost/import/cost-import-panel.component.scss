@@ -121,6 +121,29 @@
   font-size: 0.8125rem;
 }
 
+.banner-success {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.panel-help {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.references {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #1e293b;
+  word-break: break-word;
+}
+
 .btn-cancel-sm {
   height: 34px;
   padding: 0 16px;
