@@ -2,7 +2,7 @@ import { Component, inject, input, output, signal, computed, effect } from '@ang
 import {
   ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators, AbstractControl,
 } from '@angular/forms';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   FormFieldComponent, FormFieldOptions, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
@@ -12,7 +12,7 @@ import { InvoiceService } from '../../invoice.service';
 import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.service';
 import { FactListService } from '../../../../core/fact-list.service';
 import { ListValueDto } from '../../../cost/cost.model';
-import { humanise } from '../../../../shared/enum-labels';
+import { enumLabel, humanise } from '../../../../shared/enum-labels';
 export interface StepLinesValue {
   lines: {
     description:    string;
@@ -158,7 +158,7 @@ export interface StepLinesValue {
         </div>
         @for (p of pendingCarryForwardList(); track p.id) {
           <div class="carry-forward-picker-row">
-            <span>{{ p.billingMode }}</span>
+            <span>{{ billingModeLabel(p.billingMode) }}</span>
             <span>{{ formatDate(p.periodDateTo) }}</span>
             <span class="rmb-picker-num">{{ formatAmount(p.wipCarriedForward) }}</span>
             <input type="number" min="0" [max]="p.wipCarriedForward" step="0.001"
@@ -480,6 +480,7 @@ export class StepLinesComponent {
   private readonly svc       = inject(InvoiceService);
   private readonly billingSvc = inject(BillingService);
   private readonly listSvc   = inject(FactListService);
+  private readonly translate = inject(TranslateService);
 
   showActions = input<boolean>(true);
   affaireData = input.required<StepAffaireValue>();
@@ -620,6 +621,11 @@ export class StepLinesComponent {
   // ── Picker de solde WIP non facturé (carry-forward) ───────────────────────────
 
   private readonly pendingCarryForward = signal<PendingCarryForwardDto[]>([]);
+  /** The SAME affaire's TS balance, fetched in parallel so it shows up in the SAME picker
+   * as the affaire's own mode's remainders (see pendingCarryForwardList below) — empty
+   * when this invoice is already dedicated to TS (isTsCarryForward()), since that case's
+   * normal fetch above already covers it. */
+  private readonly pendingTsCarryForwardExtra = signal<PendingCarryForwardDto[]>([]);
 
   readonly carryForwardPickerOpen = signal(false);
   /** Montant choisi par ligne en attente, indexé par BillingLine.id — pas un Set comme
@@ -698,8 +704,23 @@ export class StepLinesComponent {
           next:  p  => this.pendingCarryForward.set(p),
           error: () => this.pendingCarryForward.set([]),
         });
+        // Le solde TS de cette affaire est fusionné dans le MÊME picker "Ajouter un solde
+        // WIP non facturé" plutôt que de rester caché derrière la case "Facturer le solde
+        // TS" de l'étape Affaire — un utilisateur ne la trouvait pas depuis l'étape Lignes
+        // (voir conversation). Même endpoint que la ligne ci-dessus, juste avec l'override
+        // explicite -- pas la peine de le refaire si cette facture EST déjà dédiée au TS
+        // (le fetch ci-dessus le couvre déjà).
+        if (!this.isTsCarryForward()) {
+          this.svc.getPendingCarryForward(aff.affaireId, 'TS').subscribe({
+            next:  p  => this.pendingTsCarryForwardExtra.set(p),
+            error: () => this.pendingTsCarryForwardExtra.set([]),
+          });
+        } else {
+          this.pendingTsCarryForwardExtra.set([]);
+        }
       } else {
         this.pendingCarryForward.set([]);
+        this.pendingTsCarryForwardExtra.set([]);
         this.carryForwardPickerOpen.set(false);
         this.carryForwardAmounts.set(new Map());
       }
@@ -1113,13 +1134,29 @@ export class StepLinesComponent {
 
   // ── Picker de solde WIP non facturé (carry-forward) ───────────────────────────
 
-  readonly pendingCarryForwardList = computed(() => this.pendingCarryForward());
+  readonly pendingCarryForwardList = computed(() =>
+    [...this.pendingCarryForward(), ...this.pendingTsCarryForwardExtra()]);
 
   toggleCarryForwardPicker(): void { this.carryForwardPickerOpen.update(v => !v); }
 
   closeCarryForwardPicker(): void {
     this.carryForwardPickerOpen.set(false);
     this.carryForwardAmounts.set(new Map());
+  }
+
+  /** True once this row's billingMode is 'TS' — a TS pick can sit in the same selection as a
+   * FORFAIT/REGIE/LIVRABLE one (InvoiceService.linkAndReleaseCarriedForward stamps each
+   * consumer BillingLine with its OWN source's billingMode, not the invoice's), used only to
+   * give the resulting line a distinct description (see addSelectedCarryForward below). */
+  isTsCarryForwardRow(p: PendingCarryForwardDto): boolean {
+    return p.billingMode === 'TS';
+  }
+
+  /** Was a plain, untranslated `p.billingMode` before this picker could ever show more than
+   * one mode's rows together — now that TS and the affaire's own mode share the same list
+   * (see pendingCarryForwardList), a readable label matters for telling them apart. */
+  billingModeLabel(mode: string): string {
+    return enumLabel(this.translate, 'BILLING_MODE', mode);
   }
 
   setCarryForwardAmount(id: number, target: EventTarget | null): void {
@@ -1156,9 +1193,14 @@ export class StepLinesComponent {
       const pctAFacturer = (budgetAffaire != null && budgetAffaire > 0)
         ? amount * 100 / budgetAffaire
         : null;
+      // Differentiated now that a TS row can be picked alongside the affaire's own mode in
+      // the SAME selection (see pendingCarryForwardList) — the resulting lines need their own
+      // description to tell them apart on the invoice, where billingModeLabel's "Mode" column
+      // from the picker itself no longer applies.
+      const label = dto && this.isTsCarryForwardRow(dto) ? 'Solde TS non facturé #' : 'Solde WIP non facturé #';
       const g = this.newLine();
       g.patchValue({
-        description:                'Solde WIP non facturé #' + id,
+        description:                label + id,
         quantite:                   1,
         prixUnitaireHt:             amount,
         tauxTva:                    0,

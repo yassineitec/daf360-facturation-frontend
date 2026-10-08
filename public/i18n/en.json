@@ -4154,7 +4154,8 @@
     "BILLING_MODE": {
       "FORFAIT": "Lump Sum",
       "REGIE": "Time & Materials",
-      "LIVRABLE": "Deliverables"
+      "LIVRABLE": "Deliverables",
+      "TS": "Extra work"
     },
     "BILLING_PERIOD": {
       "MONTHLY": "Monthly",

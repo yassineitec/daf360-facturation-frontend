@@ -4137,7 +4137,8 @@
     "BILLING_MODE": {
       "FORFAIT": "Forfaitaire",
       "REGIE": "Régie",
-      "LIVRABLE": "Livrables"
+      "LIVRABLE": "Livrables",
+      "TS": "Travaux supplémentaires"
     },
     "BILLING_PERIOD": {
       "MONTHLY": "Mensuelle",
