@@ -460,6 +460,13 @@ export class CostLineDetailComponent implements OnInit {
       });
     }
     if (inv.timbreAmount) rows.push({ label: t('COST.FORM.TOTAL_TIMBRE'), value: this.fmtCur(inv.timbreAmount) });
+    // Autres taxes (V95): one row each, all included in the TTC.
+    const en = this.translate.currentLang() === 'en';
+    for (const o of inv.otherTaxes ?? []) {
+      const type = en ? (o.taxTypeLabelEn || o.taxTypeLabel) : o.taxTypeLabel;
+      const name = type && o.label ? type + ' (' + o.label + ')' : (type || o.label || t('COST.FORM.OTHER_TAX.TITLE'));
+      rows.push({ label: t('COST.FORM.TOTAL_OTHER_TAX', { name }), value: this.fmtCur(o.amountLocal) });
+    }
     rows.push({ label: t('COST.FORM.TOTAL_TTC'), value: this.fmtCur(inv.grossAmountLocal), strong: true });
     if (inv.rsAmount) {
       const baseLabel = inv.rsBase ? t('COST.FORM.TAX.RS_BASE_' + inv.rsBase) : '';
@@ -618,8 +625,9 @@ export class CostLineDetailComponent implements OnInit {
       { key: 'fodec',           label: t('COST.DETAIL.LEDGER.COL_FODEC'),           type: 'text', align: 'right', sortable: true, sortAccessor: raw('fodecAmount') },
       { key: 'tva',             label: t('COST.DETAIL.LEDGER.COL_TVA'),             type: 'text', align: 'right', sortable: true, sortAccessor: raw('vatAmountLocal') },
       { key: 'timbre',          label: t('COST.DETAIL.LEDGER.COL_TIMBRE'),          type: 'text', align: 'right', sortable: true, sortAccessor: raw('timbreAmount') },
-      { key: 'autresTaxes',     label: t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('autresTaxesAmount') },
+      { key: 'autresTaxes',     label: t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('otherTaxesAmount') },
       { key: 'grossAmount',     label: t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('grossAmountLocal') },
+      { key: 'rs',              label: t('COST.DETAIL.LEDGER.COL_RS'),              type: 'text', align: 'right', sortable: true, sortAccessor: raw('rsAmount') },
       { key: 'debit',           label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right', sortable: true, sortAccessor: raw('debit') },
       { key: 'credit',          label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right', sortable: true, sortAccessor: raw('credit') },
       { key: 'soldeDebiteur',   label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right', sortable: true, sortAccessor: raw('soldeDebiteur') },
@@ -718,8 +726,9 @@ export class CostLineDetailComponent implements OnInit {
       fodec:          this.fmtAmount(r.fodecAmount),
       tva:            this.fmtAmount(r.vatAmountLocal),
       timbre:         this.fmtAmount(r.timbreAmount),
-      autresTaxes:    this.fmtAmount(r.autresTaxesAmount),
+      autresTaxes:    this.fmtAmount(r.otherTaxesAmount),
       grossAmount:    this.fmtAmount(r.grossAmountLocal),
+      rs:             this.fmtAmount(r.rsAmount),
       debit:          this.fmtAmount(r.debit),
       credit:         this.fmtAmount(r.credit),
       soldeDebiteur:  this.fmtAmount(r.soldeDebiteur),
@@ -776,8 +785,9 @@ export class CostLineDetailComponent implements OnInit {
       [t('COST.DETAIL.LEDGER.COL_FODEC')]:            r.fodecAmount ?? '',
       [t('COST.DETAIL.LEDGER.COL_TVA')]:              r.vatAmountLocal ?? '',
       [t('COST.DETAIL.LEDGER.COL_TIMBRE')]:           r.timbreAmount ?? '',
-      [t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES')]:     r.autresTaxesAmount ?? '',
+      [t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES')]:     r.otherTaxesAmount ?? '',
       [t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT')]:     r.grossAmountLocal ?? '',
+      [t('COST.DETAIL.LEDGER.COL_RS')]:               r.rsAmount ?? '',
       [t('COST.DETAIL.LEDGER.COL_DEBIT')]:            r.debit ?? '',
       [t('COST.DETAIL.LEDGER.COL_CREDIT')]:           r.credit ?? '',
       [t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR')]:   r.soldeDebiteur ?? '',

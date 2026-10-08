@@ -2557,17 +2557,17 @@
       "REMOVE_LINE": "Remove the line",
       "VAT_AMOUNT_LABEL": "VAT (amount)",
       "SECTION_TAXES_TITLE": "Invoice taxes and totals",
-      "SECTION_TAXES_SUB": "Stamp duty and withholding tax: once for the whole invoice",
+      "SECTION_TAXES_SUB": "Stamp duty and withholding tax once per invoice, free other taxes added to the total incl. tax",
       "SECTION_TAXES_SUB_NO_SUPPLIER": "Invoice totals",
       "TOTAL_HT": "Total net (HT)",
       "TOTAL_FODEC": "FODEC",
-      "TOTAL_VAT_RATE": "VAT {{rate}}% (on {{base}})",
+      "TOTAL_VAT_RATE": "VAT {{rate}} % (on net + FODEC {{base}})",
       "TOTAL_VAT_MANUAL": "VAT entered",
       "TOTAL_TIMBRE": "Stamp duty",
       "TOTAL_TTC": "Total gross (TTC)",
-      "TOTAL_RS": "Withholding tax ({{base}})",
+      "TOTAL_RS": "Withholding tax ({{base}}) — deducted",
       "NET_TO_PAY": "Net payable to the supplier",
-      "HELP_4": "Stamp duty and withholding tax apply once per invoice.",
+      "HELP_4": "VAT = (net + FODEC) × rate. Stamp duty and withholding tax apply once per invoice; the withholding is computed on net + FODEC (or on the VAT) and deducted from the amount to pay. Other taxes are free amounts added to the total incl. tax.",
       "FOOT_NUMBER_HINT": "Enter the supplier's invoice number",
       "DRAFT_BADGE": "AUTOMATED DRAFT",
       "SECTION_CONTEXT_TITLE": "Context",
@@ -2601,11 +2601,14 @@
         "TIMBRE_OPT_1": "1.000 DT",
         "TIMBRE_OPT_0": "0 DT",
         "AUTRES_TAXES_LABEL": "Other Taxes (Withholding Tax)",
-        "RS_BASE_HT": "on net (HT)",
-        "RS_BASE_TTC": "on gross (TTC)",
+        "RS_BASE_HT": "on net (former base)",
+        "RS_BASE_TTC": "on total incl. tax (former base)",
         "RS_BASE_TVA": "on VAT",
         "RS_PREVIEW_LABEL": "Withholding tax ({{base}}, estimated)",
-        "TTC_LABEL": "Estimated Total (incl. tax)"
+        "TTC_LABEL": "Estimated Total (incl. tax)",
+        "RS_LABEL": "Withholding tax",
+        "RS_NONE": "— No withholding —",
+        "RS_BASE_HT_FODEC": "on net + FODEC"
       },
       "SECTION_SUPPLIER_TITLE": "Supplier",
       "SECTION_SUPPLIER_SUB": "Supplier linked to this expense",
@@ -2654,7 +2657,20 @@
       "JUSTIFICATION_PLACEHOLDER": "E.g. net amount typo, credit note received from the supplier…",
       "FOOT_SAVE_VALIDATED": "Save the change",
       "FOOT_JUSTIFICATION_HINT": "Enter a justification (at least 5 characters)",
-      "LOCKED_ERROR": "This invoice ({{status}}) cannot be edited: only a draft can, or a validated invoice by the CFO (DAF)."
+      "LOCKED_ERROR": "This invoice ({{status}}) cannot be edited: only a draft can, or a validated invoice by the CFO (DAF).",
+      "TOTAL_OTHER_TAX": "Other tax: {{name}}",
+      "OTHER_TAX": {
+        "TITLE": "Other taxes",
+        "HINT": "Amounts typed freely (no formula), added to the total incl. tax. Pick a type or write a label.",
+        "ADD": "Add a tax",
+        "REMOVE": "Remove the tax",
+        "TYPE_LABEL": "Tax type",
+        "TYPE_NONE": "— No type —",
+        "LABEL_LABEL": "Label",
+        "LABEL_PLACEHOLDER": "E.g. TCL, handling fee…",
+        "AMOUNT_LABEL": "Amount",
+        "INCOMPLETE": "Enter a non-zero amount and a type or a label."
+      }
     },
     "APPROVAL_QUEUE": {
       "TITLE": "Approval queue",
@@ -2722,7 +2738,7 @@
       "NEW_IMPORT": "New import",
       "ONLY_CSV": "Only CSV files are accepted.",
       "IMPORT_ERROR": "Error during import.",
-      "HELP": "One file row = one cost line; rows with the same \"reference\" form one invoice. Check the file first: nothing is saved. The import saves nothing if a single row has an error.",
+      "HELP": "One file row = one cost line; rows sharing a \"reference\" form one invoice. A VAT given in vat_amount is kept as is; otherwise it is computed on net + FODEC. Optional columns other_tax_type / other_tax_label / other_tax_amount: one other tax per row, added to the invoice total incl. tax. Check the file first: nothing is saved. The import saves nothing if a single row is in error.",
       "CHANGE_FILE": "Change file",
       "CHECK": "Check the file",
       "CHECK_OK": "Valid file: {{invoices}} invoice(s) ready to be imported.",
@@ -3181,7 +3197,7 @@
         "COL_FODEC": "FODEC",
         "COL_TVA": "VAT",
         "COL_TIMBRE": "Stamp Duty",
-        "COL_AUTRES_TAXES": "Other Taxes",
+        "COL_AUTRES_TAXES": "Other taxes",
         "COL_GROSS_AMOUNT": "Gross Amount",
         "COL_DEBIT": "Debit",
         "COL_CREDIT": "Credit",
@@ -3208,7 +3224,8 @@
         "EMPTY": "No validated entries for this supplier.",
         "FILTER_PERIOD": "Period",
         "FILTER_COST_LINE": "Cost line",
-        "FILTER_INVOICE": "Invoice"
+        "FILTER_INVOICE": "Invoice",
+        "COL_RS": "Withholding tax"
       },
       "TOTALS_TITLE": "Invoice totals",
       "LINES": {
@@ -3268,7 +3285,9 @@
         "TOTAL_NET": "Total net",
         "TOTAL_VAT": "Total VAT",
         "TOTAL_GROSS": "Total gross",
-        "RS_AMOUNT": "Withholding tax"
+        "RS_AMOUNT": "Withholding tax",
+        "OTHER_TAXES": "Other taxes",
+        "TOTAL_OTHER_TAXES": "Total other taxes"
       }
     }
   },
@@ -4023,7 +4042,8 @@
         "BILLING_PERIOD": "Billing periods",
         "BILLING_PERMISSION": "Billing permissions",
         "INVOICE_TYPE": "Invoice types",
-        "WITHHOLDING_RATE": "Withholding tax rates"
+        "WITHHOLDING_RATE": "Withholding tax rates",
+        "OTHER_TAX_TYPE": "Other taxes (types)"
       },
       "TYPE_DESC": {
         "RECURRENCE_FREQUENCY": "Recurrence cadences used for periodic costs and billing.",
@@ -4107,10 +4127,11 @@
       "COL_RATE_PCT": "Rate (%)",
       "FIELD_TAX_BASE": "Base",
       "COL_TAX_BASE": "Base",
-      "TAX_BASE_HT": "Net amount (HT)",
-      "TAX_BASE_TTC": "Gross amount (HT + FODEC + VAT)",
-      "TAX_BASE_TVA": "VAT amount",
-      "TAX_BASE_HINT": "Amount the withholding rate is applied to. Stamp duty is never part of the base. Lines already entered keep their original base."
+      "TAX_BASE_HT": "Net amount (former base)",
+      "TAX_BASE_TTC": "Total incl. tax (former base)",
+      "TAX_BASE_TVA": "VAT amount (withholding on VAT)",
+      "TAX_BASE_HINT": "Amount the withholding rate applies to: net + FODEC, or the VAT amount. Stamp duty and other taxes never enter the base. Invoices already entered keep their amounts.",
+      "TAX_BASE_HT_FODEC": "Net + FODEC"
     },
     "FOREX": {
       "INFO_1": "Rates convert cost line amounts to EUR and CHF during P&L calculations. The CHF rate is calculated automatically (",

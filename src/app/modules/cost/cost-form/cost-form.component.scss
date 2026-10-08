@@ -58,6 +58,59 @@
   &:hover { background: #ffdad6; color: #ba1a1a; }
 }
 
+// ── Autres taxes (V95) ──────────────────────────────────────────────────────
+
+.other-taxes {
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+  margin-bottom: 1rem;
+  padding: 12px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+}
+
+.other-taxes__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.other-taxes__title {
+  margin: 0;
+  font-size: .8rem;
+  font-weight: 800;
+  color: #0b1c30;
+}
+
+.other-taxes__hint {
+  margin: 1px 0 0 0;
+  font-size: .7rem;
+  color: #64748b;
+}
+
+// Type — libellé — montant — supprimer ; empilé sous 640 px.
+.other-taxes__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, .8fr) auto;
+  align-items: end;
+  gap: .75rem;
+}
+
+.other-taxes__remove { margin-bottom: 4px; }
+
+.other-taxes__error {
+  margin: -4px 0 0 0;
+  font-size: .7rem;
+  color: #ba1a1a;
+}
+
+@media (max-width: 640px) {
+  .other-taxes__row { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
 // ── Totaux de la facture ────────────────────────────────────────────────────
 
 .totals {

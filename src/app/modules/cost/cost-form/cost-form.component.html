@@ -282,12 +282,51 @@
               </daf-select>
               <daf-select
                 [options]="rsOptions()"
-                [config]="{ label: ('COST.FORM.TAX.AUTRES_TAXES_LABEL' | translate) }"
+                [config]="{ label: ('COST.FORM.TAX.RS_LABEL' | translate), placeholder: ('COST.FORM.TAX.RS_NONE' | translate) }"
                 [selected]="selArr(rsRate())"
                 (selectedChange)="rsRate.set(rateOf($event))">
               </daf-select>
             </div>
           }
+
+          <!-- Autres taxes (V95) — montants libres, ajoutés au TTC -->
+          <div class="other-taxes">
+            <div class="other-taxes__head">
+              <div>
+                <p class="other-taxes__title">{{ 'COST.FORM.OTHER_TAX.TITLE' | translate }}</p>
+                <p class="other-taxes__hint">{{ 'COST.FORM.OTHER_TAX.HINT' | translate }}</p>
+              </div>
+              <daf-button [options]="addOtherTaxButtonOptions()" (onClick)="addOtherTax()" />
+            </div>
+            @for (tax of otherTaxes(); track tax.key) {
+              <div class="other-taxes__row">
+                <daf-select
+                  [options]="otherTaxTypeOptions()"
+                  [config]="{ label: ('COST.FORM.OTHER_TAX.TYPE_LABEL' | translate), placeholder: ('COST.FORM.OTHER_TAX.TYPE_NONE' | translate) }"
+                  [selected]="selArr(tax.taxTypeId)"
+                  (selectedChange)="patchOtherTax(tax.key, { taxTypeId: rateOf($event) })">
+                </daf-select>
+                <daf-form-field
+                  [options]="{ type: 'text', label: ('COST.FORM.OTHER_TAX.LABEL_LABEL' | translate), placeholder: ('COST.FORM.OTHER_TAX.LABEL_PLACEHOLDER' | translate), required: tax.taxTypeId === null }"
+                  [value]="tax.label"
+                  (valueChange)="patchOtherTax(tax.key, { label: $any($event) ?? '' })">
+                </daf-form-field>
+                <daf-form-field
+                  [options]="{ type: 'number', label: ('COST.FORM.OTHER_TAX.AMOUNT_LABEL' | translate), placeholder: '0.000', required: true }"
+                  [value]="tax.amountLocal"
+                  (valueChange)="patchOtherTax(tax.key, { amountLocal: numberOf($event) })">
+                </daf-form-field>
+                <button type="button" class="line-remove other-taxes__remove" (click)="removeOtherTax(tax.key)"
+                        [attr.aria-label]="'COST.FORM.OTHER_TAX.REMOVE' | translate"
+                        [title]="'COST.FORM.OTHER_TAX.REMOVE' | translate">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+              @if (!otherTaxComplete(tax)) {
+                <p class="other-taxes__error">{{ 'COST.FORM.OTHER_TAX.INCOMPLETE' | translate }}</p>
+              }
+            }
+          </div>
 
           <!-- Totaux — aperçu ; le serveur recalcule tout à l'enregistrement -->
           <div class="totals">
@@ -318,6 +357,14 @@
                 <span>{{ 'COST.FORM.TOTAL_TIMBRE' | translate }}</span>
                 <span>{{ totals().timbre | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
               </div>
+            }
+            @for (tax of otherTaxes(); track tax.key) {
+              @if (tax.amountLocal) {
+                <div class="totals__row">
+                  <span>{{ 'COST.FORM.TOTAL_OTHER_TAX' | translate:{ name: otherTaxName(tax) } }}</span>
+                  <span>{{ tax.amountLocal | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+                </div>
+              }
             }
             <div class="totals__row totals__row--strong">
               <span>{{ 'COST.FORM.TOTAL_TTC' | translate }}</span>

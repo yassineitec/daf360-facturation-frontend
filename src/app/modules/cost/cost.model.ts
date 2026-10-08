@@ -54,8 +54,17 @@ export interface ListValueDto {
   taxBase?: WithholdingBase | null;
 }
 
-/** Base of a retenue à la source rate: HT, TTC (HT + FODEC + TVA) or the TVA amount. */
-export type WithholdingBase = 'HT' | 'TTC' | 'TVA';
+/**
+ * Base of a retenue à la source rate (V95): HT + FODEC, or the TVA amount (retenue sur TVA).
+ * 'HT' / 'TTC' only survive on invoices saved before V95 (their stored amounts are kept).
+ */
+export type WithholdingBase = 'HT_FODEC' | 'TVA' | 'HT' | 'TTC';
+
+/** Bases offered when configuring a WITHHOLDING_RATE value. */
+export const WITHHOLDING_BASES: readonly WithholdingBase[] = ['HT_FODEC', 'TVA'];
+
+/** List type of the "autres taxes" kinds (V95) — Admin → Listes. */
+export const OTHER_TAX_TYPE_LIST = 'OTHER_TAX_TYPE';
 
 /** Body of `POST /admin/lists/{type}/values` — taxonomy fields only read for COST_CATEGORY / COST_SUB_CATEGORY. */
 export interface CreateListValueBody extends TaxonomyFields {
@@ -270,6 +279,8 @@ export interface CostInvoiceDto {
   fodecAmount: number | null;
   vatAmountLocal: number;
   timbreAmount: number | null;
+  /** Σ "autres taxes" (V95) — added to the TTC. */
+  otherTaxesAmount: number | null;
   grossAmountLocal: number;
   netAmountEur: number | null;
   grossAmountEur: number | null;
@@ -291,6 +302,7 @@ export interface CostInvoiceDto {
   createdAt: string | null;
   lines: CostLineDto[];
   vatBreakdown: VatBreakdownDto[];
+  otherTaxes: CostInvoiceOtherTaxDto[];
   approvals: CostInvoiceApprovalDto[];
   dualApprovalDone: boolean | null;
   reglement: CostInvoiceReglementDto | null;
@@ -327,6 +339,25 @@ export interface CreateCostInvoiceRequest {
   paymentDueDate?: string | null;
   notes?: string | null;
   lines: CostInvoiceLineRequest[];
+  /** Free "autres taxes" (V95), replaced as a whole on each save. */
+  otherTaxes?: CostInvoiceOtherTaxRequest[];
+}
+
+/** One "autre taxe" of an invoice: a type (OTHER_TAX_TYPE) and/or a label, and a free amount. */
+export interface CostInvoiceOtherTaxRequest {
+  taxTypeId: number | null;
+  label: string | null;
+  amountLocal: number;
+}
+
+export interface CostInvoiceOtherTaxDto {
+  id: number;
+  taxTypeId: number | null;
+  taxTypeCode: string | null;
+  taxTypeLabel: string | null;
+  taxTypeLabelEn: string | null;
+  label: string | null;
+  amountLocal: number;
 }
 
 // ── Edit after validation, DAF only (V94) ─────────────────────────────────────
@@ -566,9 +597,11 @@ export interface SupplierLedgerRowDto {
   fodecAmount: number | null;
   vatAmountLocal: number | null;    // TVA
   timbreAmount: number | null;
-  /** Retenue à la source of the invoice. */
-  autresTaxesAmount: number | null;
+  /** Σ "autres taxes" of the invoice (V95) — included in the TTC. */
+  otherTaxesAmount: number | null;
   grossAmountLocal: number | null;  // Montant TTC
+  /** Retenue à la source of the invoice — deducted from what is paid. */
+  rsAmount: number | null;
 }
 
 export interface SupplierLedgerDto {

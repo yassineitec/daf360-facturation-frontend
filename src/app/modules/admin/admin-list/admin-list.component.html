@@ -518,7 +518,7 @@
           [options]="taxBaseOptions()"
           [config]="{ label: ('ADMIN.LISTS.FIELD_TAX_BASE' | translate), required: true }"
           [selected]="[valueForm.taxBase]"
-          (selectedChange)="valueForm.taxBase = $event[0] === 'TTC' ? 'TTC' : $event[0] === 'TVA' ? 'TVA' : 'HT'" />
+          (selectedChange)="valueForm.taxBase = $event[0] === 'TVA' ? 'TVA' : 'HT_FODEC'" />
         <p class="config-hint">{{ 'ADMIN.LISTS.TAX_BASE_HINT' | translate }}</p>
       }
     </div>

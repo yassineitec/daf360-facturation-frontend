@@ -14,7 +14,7 @@ import {
   CreateCostInvoiceRequest, CostInvoiceDto,
   ListValueDto, ForexPreviewDto, CircuitPreviewDto,
   SupplierSearchItem, formatAmount,
-  FACT_EDIT_VALIDATED_COST, VALIDATED_EDITABLE_STATUSES,
+  FACT_EDIT_VALIDATED_COST, VALIDATED_EDITABLE_STATUSES, OTHER_TAX_TYPE_LIST,
 } from '../cost.model';
 import { UserStore } from '../../../core/user.store';
 import {
@@ -47,6 +47,14 @@ interface LineForm {
   costTypeId: number | null;
 }
 
+/** One "autre taxe" of the invoice (V95): a type and/or a free label, and a typed amount. */
+interface OtherTaxForm {
+  key: number;
+  taxTypeId: number | null;
+  label: string;
+  amountLocal: number | null;
+}
+
 /**
  * Cost invoice entry (V93) — a supplier invoice holding one or more cost lines.
  *
@@ -54,7 +62,9 @@ interface LineForm {
  * supplier, unique per supplier — checked server-side), invoice date, due date, currency.
  * Lines: category / sub-category, description, HT, and — with a supplier — their own
  * FODEC and TVA rate (fixed formula, unchanged); without a supplier, a typed VAT amount.
- * Invoice-level: stamp duty and retenue à la source, once per invoice (supplier only).
+ * Invoice-level: stamp duty and retenue à la source, once per invoice (supplier only), and
+ * any number of "autres taxes" — free amounts, typed or labelled, added to the TTC (V95).
+ * TVA = (HT + FODEC) × rate; the RS applies to HT + FODEC (or to the TVA) and is deducted.
  *
  * Every amount shown here is a preview; the server recomputes all of them on save.
  */
@@ -107,6 +117,8 @@ export class CostFormComponent implements OnInit {
   vatRates   = signal<ListValueDto[]>([]);
   /** WITHHOLDING_RATE configurable list (V92) — RS rates of the pays, each with its base. */
   withholdingRates = signal<ListValueDto[]>([]);
+  /** OTHER_TAX_TYPE configurable list (V95) — kinds of "autres taxes" of the pays. */
+  otherTaxTypes = signal<ListValueDto[]>([]);
 
   costCategories    = signal<ListValueDto[]>([]);
   costSubCategories = signal<ListValueDto[]>([]);
@@ -124,6 +136,9 @@ export class CostFormComponent implements OnInit {
   // ── Invoice-level taxes (supplier only) ─────────────────────────────────────
   timbreAmount = signal<number | null>(null);
   rsRate       = signal<number | null>(null);
+  /** "Autres taxes" (V95) — any invoice, with or without supplier. */
+  otherTaxes   = signal<OtherTaxForm[]>([]);
+  private nextTaxKey = 1;
 
   // ── Lines ───────────────────────────────────────────────────────────────────
   private nextKey = 1;
@@ -227,15 +242,22 @@ export class CostFormComponent implements OnInit {
       .filter(v => v.ratePct != null)
       .map(v => ({
         value: (v.ratePct! / 100).toString(),
-        label: `${this.valueLabel(v)} — ${this.translate.instant('COST.FORM.TAX.RS_BASE_' + (v.taxBase ?? 'HT'))}`,
+        label: `${this.valueLabel(v)} — ${this.translate.instant('COST.FORM.TAX.RS_BASE_' + (v.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC'))}`,
       }));
   });
 
-  private readonly selectedRsBase = computed<string>(() => {
+  /** RS base of the chosen rate: the TVA amount, else HT + FODEC (old HT / TTC bases included). */
+  private readonly selectedRsBase = computed<'HT_FODEC' | 'TVA'>(() => {
     const rate = this.rsRate();
-    if (rate == null) return 'HT';
+    if (rate == null) return 'HT_FODEC';
     const pct = Math.round(rate * 10000) / 100;
-    return this.withholdingRates().find(v => v.ratePct === pct)?.taxBase ?? 'HT';
+    return this.withholdingRates().find(v => v.ratePct === pct)?.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC';
+  });
+
+  /** OTHER_TAX_TYPE list as select options. */
+  readonly otherTaxTypeOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return this.otherTaxTypes().map(v => ({ value: String(v.id), label: this.valueLabel(v) }));
   });
 
   readonly rsBaseLabel = computed(() => {
@@ -251,9 +273,10 @@ export class CostFormComponent implements OnInit {
     return this.hasSupplier() && l.fodecRate ? CostFormComponent.r3((l.netAmountLocal ?? 0) * l.fodecRate) : 0;
   }
 
+  /** TVA = (HT + FODEC) × rate (V95). */
   lineVat(l: LineForm): number {
     if (this.hasSupplier() && l.tvaRate != null) {
-      return CostFormComponent.r3((l.netAmountLocal ?? 0) * l.tvaRate);
+      return CostFormComponent.r3(((l.netAmountLocal ?? 0) + this.lineFodec(l)) * l.tvaRate);
     }
     return l.vatAmountLocal ?? 0;
   }
@@ -272,15 +295,16 @@ export class CostFormComponent implements OnInit {
       linesTtc += this.lineTtc(l);
     }
     const timbre = this.hasSupplier() ? (this.timbreAmount() ?? 0) : 0;
-    const ttc = linesTtc + timbre;
+    const other = this.otherTaxes().reduce((sum, t) => sum + CostFormComponent.r3(t.amountLocal ?? 0), 0);
+    // Autres taxes are added to the TTC; the RS is deducted from what is paid.
+    const ttc = linesTtc + timbre + other;
     let rs = 0;
     const rate = this.hasSupplier() ? this.rsRate() : null;
     if (rate) {
-      const base = this.selectedRsBase();
-      const amount = base === 'TTC' ? ht + fodec + vat : base === 'TVA' ? vat : ht;
+      const amount = this.selectedRsBase() === 'TVA' ? vat : ht + fodec;
       rs = CostFormComponent.r3(amount * rate);
     }
-    return { ht, fodec, vat, timbre, ttc, rs, netToPay: ttc - rs };
+    return { ht, fodec, vat, timbre, other, ttc, rs, netToPay: ttc - rs };
   });
 
   /** TVA per rate, like the invoice detail's breakdown: rates ascending, typed VAT last. */
@@ -290,7 +314,7 @@ export class CostFormComponent implements OnInit {
       const rate = this.hasSupplier() && l.tvaRate != null ? l.tvaRate : null;
       const key = rate === null ? 'manual' : String(rate);
       const acc = byRate.get(key) ?? { rate, base: 0, vat: 0 };
-      acc.base += l.netAmountLocal ?? 0;
+      acc.base += (l.netAmountLocal ?? 0) + this.lineFodec(l);   // TVA base = HT + FODEC
       acc.vat += this.lineVat(l);
       byRate.set(key, acc);
     }
@@ -302,6 +326,11 @@ export class CostFormComponent implements OnInit {
   pct(rate: number): string { return String(Math.round(rate * 10000) / 100); }
 
   // ── Validation ──────────────────────────────────────────────────────────────
+
+  /** An "autre taxe" needs a non-zero amount and a type or a label (as the server checks). */
+  otherTaxComplete(t: OtherTaxForm): boolean {
+    return !!t.amountLocal && (t.taxTypeId !== null || t.label.trim().length > 0);
+  }
 
   private lineComplete(l: LineForm): boolean {
     return !!l.costCategoryId && l.description.trim().length > 0 && (l.netAmountLocal ?? 0) > 0;
@@ -318,7 +347,8 @@ export class CostFormComponent implements OnInit {
     !!this.currencyId() &&
     !this.invoiceNumberMissing() &&
     this.lines().length > 0 &&
-    this.lines().every(l => this.lineComplete(l)));
+    this.lines().every(l => this.lineComplete(l)) &&
+    this.otherTaxes().every(t => this.otherTaxComplete(t)));
 
   readonly formatAmt = formatAmount;
 
@@ -374,6 +404,15 @@ export class CostFormComponent implements OnInit {
     return {
       variant: 'secondary', size: 'sm', iconStart: 'add',
       label: this.translate.instant('COST.FORM.ADD_LINE'),
+      disabled: !this.paysId(),
+    };
+  });
+
+  readonly addOtherTaxButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    return {
+      variant: 'secondary', size: 'sm', iconStart: 'add',
+      label: this.translate.instant('COST.FORM.OTHER_TAX.ADD'),
       disabled: !this.paysId(),
     };
   });
@@ -446,6 +485,12 @@ export class CostFormComponent implements OnInit {
     this.notes.set(inv.notes ?? '');
     this.timbreAmount.set(inv.timbreAmount);
     this.rsRate.set(inv.rsRate);
+    this.otherTaxes.set((inv.otherTaxes ?? []).map(t => ({
+      key: this.nextTaxKey++,
+      taxTypeId: t.taxTypeId,
+      label: t.label ?? '',
+      amountLocal: t.amountLocal,
+    })));
     this.lines.set(inv.lines.map(l => ({
       key: this.nextKey++,
       id: l.id,
@@ -508,6 +553,17 @@ export class CostFormComponent implements OnInit {
       this.withholdingRates.set(v);
       const rate = this.rsRate();
       if (rate != null && !v.some(r => r.ratePct === Math.round(rate * 10000) / 100)) this.rsRate.set(null);
+    });
+    this.costSvc.getListValues(OTHER_TAX_TYPE_LIST, pid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
+      const previous = this.otherTaxTypes();
+      this.otherTaxTypes.set(v);
+      // Same code in the new pays → re-pointed; gone → the row keeps its label only.
+      this.otherTaxes.update(ts => ts.map(t => {
+        if (t.taxTypeId === null || v.some(x => x.id === t.taxTypeId)) return t;
+        const code = previous.find(x => x.id === t.taxTypeId)?.code;
+        if (!code) return t;
+        return { ...t, taxTypeId: v.find(x => x.code === code)?.id ?? null };
+      }));
     });
     this.affaireSvc.getAffaires({ paysId: pid, size: 200 }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => {
       const previous = this.affaires();
@@ -657,6 +713,31 @@ export class CostFormComponent implements OnInit {
 
   trackLine = (_: number, l: LineForm) => l.key;
 
+  // ── Autres taxes (V95) ──────────────────────────────────────────────────────
+
+  addOtherTax(): void {
+    this.otherTaxes.update(ts => [...ts, { key: this.nextTaxKey++, taxTypeId: null, label: '', amountLocal: null }]);
+  }
+
+  removeOtherTax(key: number): void {
+    this.otherTaxes.update(ts => ts.filter(t => t.key !== key));
+    this.schedulePreview();
+  }
+
+  /** "Type (label)", the type alone, or the label alone — for the totals. */
+  otherTaxName(t: OtherTaxForm): string {
+    const v = this.otherTaxTypes().find(x => x.id === t.taxTypeId);
+    const type = v ? this.valueLabel(v) : null;
+    const label = t.label.trim();
+    if (type && label) return type + ' (' + label + ')';
+    return type ?? (label || this.translate.instant('COST.FORM.OTHER_TAX.TITLE'));
+  }
+
+  patchOtherTax(key: number, patch: Partial<OtherTaxForm>): void {
+    this.otherTaxes.update(ts => ts.map(t => t.key === key ? { ...t, ...patch } : t));
+    this.schedulePreview();
+  }
+
   // ── Previews (forex on the HT total, approval route on the TTC) ─────────────
 
   schedulePreview(): void { this.previewRefresh$.next(); }
@@ -706,6 +787,11 @@ export class CostFormComponent implements OnInit {
       timbreAmount:          withSupplier ? this.timbreAmount() : null,
       rsRate:                withSupplier ? this.rsRate() : null,
       notes:                 this.notes().trim() || null,
+      otherTaxes: this.otherTaxes().map(t => ({
+        taxTypeId:   t.taxTypeId,
+        label:       t.label.trim() || null,
+        amountLocal: t.amountLocal!,
+      })),
       lines: this.lines().map(l => ({
         id:                l.id,
         costCategoryId:    l.costCategoryId,

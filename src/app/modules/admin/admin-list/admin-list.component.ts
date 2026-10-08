@@ -22,7 +22,7 @@ import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
 import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-set.service';
 import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-api-config.service';
-import { ListValueDto, ListTypeDto, TaxonomyFields, WithholdingBase } from '../../cost/cost.model';
+import { ListValueDto, ListTypeDto, TaxonomyFields, WithholdingBase, WITHHOLDING_BASES } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
@@ -66,7 +66,7 @@ function emptyValueForm(): ValueForm {
     code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false,
     parentCode: '', sourceType: 'MANUAL', autoPushModule: '',
     isStrictScrutiny: false, isDirect: false, isOverhead: false, isCapex: false,
-    descriptionFr: '', descriptionEn: '', ratePct: null, taxBase: 'HT',
+    descriptionFr: '', descriptionEn: '', ratePct: null, taxBase: 'HT_FODEC',
   };
 }
 
@@ -130,12 +130,12 @@ export class AdminListComponent implements OnInit {
   readonly isVatRateType = computed(() =>
     this.activeListType() === VAT_RATE_TYPE || this.activeListType() === WITHHOLDING_RATE_TYPE);
 
-  /** WITHHOLDING_RATE (retenue à la source, V92) values also carry the base the rate applies to. */
+  /** WITHHOLDING_RATE (retenue à la source, V92) values also carry the base: HT + FODEC or the TVA (V95). */
   readonly isWithholdingType = computed(() => this.activeListType() === WITHHOLDING_RATE_TYPE);
 
   readonly taxBaseOptions = computed<SelectOption[]>(() => {
     this.translate.currentLang();
-    return (['HT', 'TTC', 'TVA'] as const).map(b => ({
+    return WITHHOLDING_BASES.map(b => ({
       value: b, label: this.translate.instant('ADMIN.LISTS.TAX_BASE_' + b),
     }));
   });
@@ -643,6 +643,7 @@ export class AdminListComponent implements OnInit {
     INVOICE_TYPE:             'description',
     VAT_RATE:                 'percent',
     WITHHOLDING_RATE:         'percent',
+    OTHER_TAX_TYPE:           'add_circle',
   };
 
   listTypeIcon(code: string): string {
@@ -681,6 +682,7 @@ export class AdminListComponent implements OnInit {
     COST_LINE_ORIGIN:         'costs',
     RECURRENCE_FREQUENCY:     'costs',
     WITHHOLDING_RATE:         'costs',
+    OTHER_TAX_TYPE:           'costs',
     BILLING_PERIOD:           'billing',
     INVOICE_TYPE:             'billing',
     AFFAIRE_REPARTITION_TYPE: 'billing',
@@ -785,7 +787,7 @@ export class AdminListComponent implements OnInit {
       descriptionFr: v.descriptionFr ?? '',
       descriptionEn: v.descriptionEn ?? '',
       ratePct: v.ratePct ?? null,
-      taxBase: v.taxBase ?? 'HT',
+      taxBase: v.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC',
     };
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_EDIT', { code: v.code }));
