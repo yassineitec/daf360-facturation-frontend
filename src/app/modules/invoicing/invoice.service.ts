@@ -3,7 +3,7 @@ import { HttpClient, HttpParams }       from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  InvoiceListItem, InvoiceDetail, ReminderDto, InvoicePaymentDto,
+  InvoiceListItem, InvoiceDetail, ReminderDto, InvoicePaymentDto, BillingAuditLogDto,
   CreateDraftRequest, UpdateDraftRequest, ApproveDecisionRequest,
   RecordPaymentRequest, DisputeRequest, CreditNoteRequest,
   InvoiceFilter, PageResponse, PendingCarryForwardDto,
@@ -46,6 +46,12 @@ export class InvoiceService {
 
   updateDraft(id: number, dto: UpdateDraftRequest): Observable<InvoiceDetail> {
     return this.http.patch<InvoiceDetail>(`${this.base}/invoices/${id}`, dto);
+  }
+
+  /** Edits an EMITTED/SENT invoice (zero payments recorded) — same payload shape as
+   * updateDraft, same invoice number, PDF regenerated server-side. */
+  amendEmittedInvoice(id: number, dto: UpdateDraftRequest): Observable<InvoiceDetail> {
+    return this.http.post<InvoiceDetail>(`${this.base}/invoices/${id}/amend`, dto);
   }
 
   // ── Lifecycle actions ──────────────────────────────────────────────────────
@@ -101,6 +107,13 @@ export class InvoiceService {
   getPayments(id: number): Observable<InvoicePaymentDto[]> {
     return this.http.get<InvoicePaymentDto[]>(`${this.base}/invoices/${id}/payments`).pipe(
       catchError(() => of([] as InvoicePaymentDto[])),
+    );
+  }
+
+  /** Before/after diff history for an invoice — populated only by amendEmittedInvoice. */
+  getAuditHistory(id: number): Observable<BillingAuditLogDto[]> {
+    return this.http.get<BillingAuditLogDto[]>(`${this.base}/invoices/${id}/audit-history`).pipe(
+      catchError(() => of([] as BillingAuditLogDto[])),
     );
   }
 

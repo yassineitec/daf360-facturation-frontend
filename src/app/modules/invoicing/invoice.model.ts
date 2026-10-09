@@ -126,6 +126,24 @@ export interface InvoicePaymentDto {
   notes:         string | null;
 }
 
+/** `GET /invoices/{id}/audit-history` → `BillingAuditLogDto` (backend record, same shape). */
+export interface BillingAuditLogDto {
+  id:            number;
+  affaireId:     number | null;
+  entityType:    string;
+  entityId:      number;
+  action:        string;
+  actorId:       number;
+  actorRole:     string | null;
+  statutAvant:   string | null;
+  statutApres:   string | null;
+  commentaire:   string | null;
+  timestampUtc:  string;
+  billingMode:   string | null;
+  /** JSON string: `{"before": {...}, "after": {...}}` — parse with JSON.parse before display. */
+  metadata:      string | null;
+}
+
 /**
  * `GET /invoices/affaire/{affaireId}/pending-carry-forward` → `PendingCarryForwardDto`.
  *
