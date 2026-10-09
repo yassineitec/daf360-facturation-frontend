@@ -3,12 +3,13 @@ import { HttpClient, HttpParams }       from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  InvoiceListItem, InvoiceDetail, ReminderDto, InvoicePaymentDto, BillingAuditLogDto,
+  InvoiceListItem, InvoiceDetail, ReminderDto, InvoicePaymentDto,
   CreateDraftRequest, UpdateDraftRequest, ApproveDecisionRequest,
   RecordPaymentRequest, DisputeRequest, CreditNoteRequest,
   InvoiceFilter, PageResponse, PendingCarryForwardDto,
 } from './invoice.model';
 import { AffaireListItem, AffaireDetail } from '../affaires/affaire.model';
+import { EntityAuditLogDto } from '../affaires/billing/billing.service';
 
 @Injectable({ providedIn: 'root' })
 export class InvoiceService {
@@ -111,9 +112,9 @@ export class InvoiceService {
   }
 
   /** Before/after diff history for an invoice — populated only by amendEmittedInvoice. */
-  getAuditHistory(id: number): Observable<BillingAuditLogDto[]> {
-    return this.http.get<BillingAuditLogDto[]>(`${this.base}/invoices/${id}/audit-history`).pipe(
-      catchError(() => of([] as BillingAuditLogDto[])),
+  getAuditHistory(id: number): Observable<EntityAuditLogDto[]> {
+    return this.http.get<EntityAuditLogDto[]>(`${this.base}/invoices/${id}/audit-history`).pipe(
+      catchError(() => of([] as EntityAuditLogDto[])),
     );
   }
 
