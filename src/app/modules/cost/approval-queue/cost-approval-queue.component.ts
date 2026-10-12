@@ -285,14 +285,18 @@ export class CostApprovalQueueComponent implements OnInit {
 
   /** Original currency of an item — same fallback as its amount label. */
   private itemCurrency(item: ApprovalItem): string | null {
-    if (item.kind === 'cost') return item.cost?.currency ?? null;
-    return this.hiringSvc.parseSnapshot(item.hiring!.simulationSnapshot).localCurrency ?? 'TND';
+    if (item.kind === 'cost')    return item.cost?.currency ?? null;
+    if (item.kind === 'advance') return item.advance?.currency ?? null;
+    if (!item.hiring) return null;
+    return this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).localCurrency ?? 'TND';
   }
 
-  /** The number behind the amount filter: invoice TTC in EUR (else local TTC) for a cost, annual loaded cost for a hiring request. */
+  /** The number behind the amount filter: invoice TTC in EUR (else local TTC) for a cost, the requested amount for an advance, annual loaded cost for a hiring request. */
   private itemAmount(item: ApprovalItem): number | null {
-    if (item.kind === 'cost') return item.cost ? this.costAmount(item.cost) : null;
-    const loaded = this.hiringSvc.parseSnapshot(item.hiring!.simulationSnapshot).loadedCost;
+    if (item.kind === 'cost')    return item.cost ? this.costAmount(item.cost) : null;
+    if (item.kind === 'advance') return item.advance?.amount ?? null;
+    if (!item.hiring) return null;
+    const loaded = this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).loadedCost;
     return loaded != null ? loaded * 12 : null;
   }
 
