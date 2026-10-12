@@ -99,11 +99,12 @@
               [table]="dfMainTable() ?? null" />
           }
           @if (activeDfSubTab() === 'ts') {
-            <!-- Plain text search only, no filter panel — see tsBatchColumns' comment. -->
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
               [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
               [value]="tsBatchSearch()" (valueChange)="onTsBatchSearch($event)"
-              [filterFields]="[]" [filterConfig]="{}" />
+              [filterFields]="tsBatchFilterFields()" [filterConfig]="tsBatchFilterConfig()"
+              (filterApply)="onTsBatchFilterApply($event)"
+              [table]="dfMainTable() ?? null" />
           }
         </div>
 
@@ -609,7 +610,7 @@
                 <!-- No (rowClick): unlike Forfaitaire/Régie/Livrable, there's no TS batch
                      detail page — the list + validate/return actions here are the whole
                      TS approval flow. -->
-                <daf-data-table
+                <daf-data-table #dfMainTable
                   [columns]="tsBatchColumns()"
                   [rows]="pagedTsBatchRows()"
                   [config]="tsBatchTableConfig()"

@@ -182,7 +182,9 @@ export class ClientNewComponent implements OnInit {
     this.translate.currentLang();
     const badges: PageHeaderBadge[] = [];
 
-    const sector   = f.selectedSector()[0];
+    // La sélection est un id : le libellé affiché est celui de l'option correspondante.
+    const sectorId = f.selectedSector()[0];
+    const sector   = f.sectorSelectOptions().find(o => o.value === sectorId)?.label;
     const city     = f.city()?.trim();
     const currency = f.selectedCurrency()[0];
 

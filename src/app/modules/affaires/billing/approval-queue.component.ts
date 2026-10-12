@@ -178,6 +178,11 @@ export class ApprovalQueueComponent implements OnInit {
   livrableBatchAmountMax   = signal('');
   /** Ne garder que les batches regroupant plusieurs documents. */
   livrableBatchMultiDocOnly = signal(false);
+  /** Filtres TS : mêmes champs que Livrable (sans « plusieurs documents »). */
+  tsBatchDateRange = signal<Date[] | null>(null);
+  tsBatchAffaire   = signal('');
+  tsBatchAmountMin = signal('');
+  tsBatchAmountMax = signal('');
   creditNoteForfaitSearch  = signal('');
   creditNoteForfaitFilter  = signal<FilterResult>({});
   creditNoteRegieSearch    = signal('');
@@ -506,9 +511,7 @@ export class ApprovalQueueComponent implements OnInit {
   );
 
   // ── daf-data-table: TS batches (DF) ──────────────────────────────────────────
-  // Deliberately simpler than the Livrable section above: a plain text search instead of
-  // the full date-range/affaire/amount filter panel. TS is a brand-new, low-volume mode —
-  // that richer apparatus can be added later if TS volume ever grows to need it.
+  // Same search + filter panel (date/affaire/amount) as the Livrable section below.
   readonly tsBatchColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     return [
@@ -542,11 +545,72 @@ export class ApprovalQueueComponent implements OnInit {
     this.tsBatchPage.set(0);
   }
 
+  readonly tsBatchFilterFields = computed<FilterField[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return [{
+      name:  'billingDate',
+      label: t('AFFAIRES.billing.approval.filter_billing_date'),
+      type:  'daterange',
+    }, {
+      name:       'affaire',
+      label:      t('AFFAIRES.billing.approval.col_affaire'),
+      type:       'select',
+      searchable: true,
+      options:    affaireOptions(this.pendingTsBatches()),
+    }, {
+      name:        'amountMin',
+      label:       t('AFFAIRES.billing.approval.filter_amount_min'),
+      type:        'text',
+      placeholder: t('AFFAIRES.billing.approval.filter_amount_ph'),
+    }, {
+      name:        'amountMax',
+      label:       t('AFFAIRES.billing.approval.filter_amount_max'),
+      type:        'text',
+      placeholder: t('AFFAIRES.billing.approval.filter_amount_ph'),
+    }];
+  });
+
+  readonly tsBatchFilterConfig = computed<SearchToolbarFilterConfig>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      title:         t('AFFAIRES.billing.approval.filter_title'),
+      applyLabel:    t('AFFAIRES.billing.approval.filter_apply'),
+      cancelLabel:   t('AFFAIRES.billing.approval.filter_cancel'),
+      resetLabel:    t('AFFAIRES.billing.approval.filter_reset'),
+      align:         'right',
+      initialValues: {
+        billingDate: this.tsBatchDateRange(),
+        affaire:     this.tsBatchAffaire() ? [this.tsBatchAffaire()] : [],
+        amountMin:   this.tsBatchAmountMin(),
+        amountMax:   this.tsBatchAmountMax(),
+      },
+    };
+  });
+
+  onTsBatchFilterApply(result: FilterResult): void {
+    const range = result['billingDate'];
+    this.tsBatchDateRange.set(Array.isArray(range) && range.length ? range as Date[] : null);
+    this.tsBatchAffaire.set(selectValue(result, 'affaire'));
+    this.tsBatchAmountMin.set(textValue(result, 'amountMin'));
+    this.tsBatchAmountMax.set(textValue(result, 'amountMax'));
+    this.tsBatchPage.set(0);
+  }
+
   readonly filteredTsBatchRows = computed(() => {
-    const q = this.tsBatchSearch().trim().toLowerCase();
-    if (!q) return this.tsBatchRows();
-    return this.tsBatchRows().filter(r =>
-      (r.affaireRef ?? '').toLowerCase().includes(q) || (r.affaireIntitule ?? '').toLowerCase().includes(q));
+    const q       = this.tsBatchSearch().trim().toLowerCase();
+    const range   = this.tsBatchDateRange();
+    const affaire = this.tsBatchAffaire();
+    const min     = parseAmount(this.tsBatchAmountMin());
+    const max     = parseAmount(this.tsBatchAmountMax());
+    return this.tsBatchRows().filter(r => {
+      if (q && !`${r.affaireRef ?? ''} ${r.affaireIntitule ?? ''}`.toLowerCase().includes(q)) return false;
+      if (!inDayRange(r._raw.billingDate, range)) return false;
+      if (affaire && String(r._raw.affaireId) !== affaire) return false;
+      if (!inAmountRange(r._raw.combinedMontant, min, max)) return false;
+      return true;
+    });
   });
 
   readonly tsBatchSort = signal<TableSort | null>(null);

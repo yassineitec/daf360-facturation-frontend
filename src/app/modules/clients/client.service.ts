@@ -22,7 +22,7 @@ export class ClientService {
     if (filter.search)            params = params.set('search',    filter.search);
     if (filter.isActive != null)  params = params.set('isActive',  String(filter.isActive));
     if (filter.isKycDone != null) params = params.set('isKycDone', String(filter.isKycDone));
-    if (filter.sector)            params = params.set('sector',    filter.sector);
+    if (filter.sectorCode)        params = params.set('sectorCode', filter.sectorCode);
     // `countryId` is the CLIENT's own country (an address field), not the entity pays.
     if (filter.countryId != null) params = params.set('countryId', String(filter.countryId));
     if (filter.currency)          params = params.set('currency',  filter.currency);
@@ -45,13 +45,6 @@ export class ClientService {
     const params = new HttpParams().set('pays', String(paysId));
     return this.http.get<ClientDropdownItemDto[]>(`${this.base}/clients/dropdown`, { params }).pipe(
       catchError(() => of([] as ClientDropdownItemDto[])),
-    );
-  }
-
-  getSectors(): Observable<string[]> {
-    // Sectors are global — no pays scoping (avoids the pays-isolation 403).
-    return this.http.get<string[]>(`${this.base}/clients/sectors`).pipe(
-      catchError(() => of([] as string[])),
     );
   }
 

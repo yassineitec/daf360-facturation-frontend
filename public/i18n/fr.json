@@ -2192,6 +2192,8 @@
       "TS_COL_MONTANT": "Montant",
       "TS_COL_STATUT": "Statut",
       "TS_COL_DATE": "Date",
+      "TS_FILTER_INTEGRE_AT": "Date d'intégration au budget",
+      "TS_FILTER_TS": "TS concerné",
       "TS_COL_ACTIONS": "Actions",
       "TS_SELECTED_COUNT": "{{count}} TS sélectionné(s)",
       "TS_SUBMIT": "Soumettre la sélection",
@@ -3891,7 +3893,8 @@
         "EXPENSE_CATEGORY": "Catégories de frais remboursables, avec règle de justificatif.",
         "BILLING_PERIOD": "Périodes de facturation proposées.",
         "BILLING_PERMISSION": "Permissions liées au module de facturation.",
-        "INVOICE_TYPE": "Types de facture disponibles à l'émission."
+        "INVOICE_TYPE": "Types de facture disponibles à l'émission.",
+        "CLIENT_SECTOR": "Secteurs d'activité proposés à la création ou modification d'un client."
       },
       "COL_CODE": "Code",
       "COL_LABEL_FR": "Libellé FR",

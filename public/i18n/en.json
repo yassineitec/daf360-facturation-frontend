@@ -2192,6 +2192,8 @@
       "TS_COL_MONTANT": "Amount",
       "TS_COL_STATUT": "Status",
       "TS_COL_DATE": "Date",
+      "TS_FILTER_INTEGRE_AT": "Budget integration date",
+      "TS_FILTER_TS": "Related TS",
       "TS_COL_ACTIONS": "Actions",
       "TS_SELECTED_COUNT": "{{count}} item(s) selected",
       "TS_SUBMIT": "Submit selection",
@@ -3891,7 +3893,8 @@
         "EXPENSE_CATEGORY": "Expense categories",
         "BILLING_PERIOD": "Billing periods",
         "BILLING_PERMISSION": "Billing permissions",
-        "INVOICE_TYPE": "Invoice types"
+        "INVOICE_TYPE": "Invoice types",
+        "CLIENT_SECTOR": "Business sectors"
       },
       "TYPE_DESC": {
         "RECURRENCE_FREQUENCY": "Recurrence cadences used for periodic costs and billing.",
@@ -3908,7 +3911,8 @@
         "EXPENSE_CATEGORY": "Reimbursable expense categories, with receipt requirement rule.",
         "BILLING_PERIOD": "Billing periods offered.",
         "BILLING_PERMISSION": "Permissions related to the billing module.",
-        "INVOICE_TYPE": "Invoice types available for issuance."
+        "INVOICE_TYPE": "Invoice types available for issuance.",
+        "CLIENT_SECTOR": "Business sectors offered when creating or editing a client."
       },
       "COL_CODE": "Code",
       "COL_LABEL_FR": "Label FR",

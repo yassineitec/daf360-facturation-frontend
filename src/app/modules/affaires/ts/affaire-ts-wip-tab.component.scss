@@ -18,3 +18,35 @@
 ::ng-deep .wip-icon-actions button .material-symbols-outlined {
   font-size: 22px;
 }
+
+/* Même correctif que .wip-accordion de affaire-wip-tab : la lib ne retire l'outline du
+   <button> d'en-tête de daf-accordion-card qu'en :focus-visible — sans ça, un clic souris
+   laisse un cadre noir autour de l'en-tête. Le focus clavier garde son anneau. */
+::ng-deep .wip-accordion button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* daf-loading prévoit min-h-[50vh] (pensé pour une page entière) : ramené à la hauteur
+   d'une section d'onglet, sinon chaque bloc en chargement occuperait la moitié de l'écran. */
+::ng-deep .ts-loading > div {
+  min-height: 10rem;
+}
+
+/* Pagination de la popup "Afficher tout" : résumé "1–20 sur 137" à droite et contrôles à
+   gauche, comme .wip-pagination de affaire-wip-tab (row-reverse sur l'unique <div> racine
+   de daf-pagination). Dupliqué ici : ce style n'est chargé qu'avec l'onglet WIP. */
+::ng-deep .wip-pagination > div {
+  flex-direction: row-reverse;
+}
+
+/* Titre posé dans la carte de la barre Recherche/Filtres : mêmes marges latérales que la
+   barre (p-4, puis sm:p-5 dès 640px), sans marge basse — le padding haut de la barre
+   sépare déjà le titre du champ de recherche. */
+.ts-toolbar-title {
+  padding: 1rem 1rem 0;
+}
+@media (min-width: 640px) {
+  .ts-toolbar-title {
+    padding: 1.25rem 1.25rem 0;
+  }
+}

@@ -622,6 +622,7 @@ export class AdminListComponent implements OnInit {
     BILLING_PERIOD:           'calendar_month',
     BILLING_PERMISSION:       'admin_panel_settings',
     INVOICE_TYPE:             'description',
+    CLIENT_SECTOR:            'domain',
   };
 
   listTypeIcon(code: string): string {
@@ -669,6 +670,7 @@ export class AdminListComponent implements OnInit {
     CURRENCY:                 'general',
     PAYMENT_METHOD:           'general',
     ACTIVITE:                 'general',
+    CLIENT_SECTOR:            'general',
   };
 
   listCategoryFilter = signal<string>('all');
