@@ -17,6 +17,12 @@ export interface EmployeeCostDto {
 export interface CreateEmployeeCostRequest {
   employeeEmail: string;
   basicCost: number;
+  /** Optional standalone overrides — when provided (non-null), the backend persists them
+   * exactly as sent instead of deriving them from basicCost (see
+   * CreateEmployeeCostRequest/UpdateEmployeeCostRequest on the service side). Omitted/null
+   * keeps the old derive-from-basicCost behavior. */
+  internalSellingCost?: number | null;
+  externalSellingCost?: number | null;
   currency: string;
   dateDebut: string;
   dateFin: string;
@@ -24,6 +30,8 @@ export interface CreateEmployeeCostRequest {
 
 export interface UpdateEmployeeCostRequest {
   basicCost: number;
+  internalSellingCost?: number | null;
+  externalSellingCost?: number | null;
   currency: string;
   dateDebut: string;
   dateFin: string;

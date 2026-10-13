@@ -55,10 +55,11 @@ export class ReminderRulesAdminComponent implements OnInit {
 
   // ── Panneau d'édition ─────────────────────────────────────────────────────
 
-  drawerOpen = signal(false);
-  editing    = signal<ReminderRule | null>(null);
-  saving     = signal(false);
-  formError  = signal<string | null>(null);
+  drawerOpen   = signal(false);
+  editing      = signal<ReminderRule | null>(null);
+  saving       = signal(false);
+  formError    = signal<string | null>(null);
+  dispatching  = signal(false);
 
   code         = signal('');
   labelFr      = signal('');
@@ -299,6 +300,14 @@ export class ReminderRulesAdminComponent implements OnInit {
         this.formError.set(err?.error?.message
           ?? this.translate.instant('ADMIN.REMINDERS.ERROR_SAVE'));
       },
+    });
+  }
+
+  triggerDispatch(): void {
+    this.dispatching.set(true);
+    this.svc.dispatch().subscribe({
+      next:  () => { this.dispatching.set(false); this.load(); },
+      error: () =>   this.dispatching.set(false),
     });
   }
 

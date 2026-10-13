@@ -358,7 +358,34 @@
       "CONFIRM": "Confirm",
       "TABS": {
         "REMINDERS": "Reminders",
+        "AUDIT_HISTORY": "Modification history",
         "TRACE": "Timeline"
+      },
+      "AUDIT": {
+        "EMPTY": "No modifications recorded.",
+        "UNKNOWN_ACTOR": "User",
+        "LINES_COUNT": "{{count}} line(s)",
+        "FIELD": {
+          "DUE_DATE": "Due date",
+          "PERIOD_FROM": "Period (from)",
+          "PERIOD_TO": "Period (to)",
+          "PROGRESS_PCT": "Progress percentage",
+          "NOTES": "Notes",
+          "BON_COMMANDE": "Purchase order",
+          "CLIENT_VALIDATION_DOC_URL": "Client validation document",
+          "CLIENT_VALIDATION_TYPE": "Client validation type",
+          "DEDUCTION_LABEL_1": "Deduction 1 label",
+          "DEDUCTION_TOTAL_1": "Deduction 1 amount",
+          "DEDUCTION_LABEL_2": "Deduction 2 label",
+          "DEDUCTION_TOTAL_2": "Deduction 2 amount",
+          "DEDUCTION_LABEL_3": "Deduction 3 label",
+          "DEDUCTION_TOTAL_3": "Deduction 3 amount",
+          "SUBTOTAL": "Subtotal",
+          "VAT": "VAT",
+          "TOTAL": "Total",
+          "NET_PAYABLE": "Net payable",
+          "LINES": "Invoice lines"
+        }
       },
       "ACTIONS": {
         "SEE_AFFAIRE": "View project",
@@ -378,6 +405,7 @@
       "LEAVE_CONFIRM": "Leave and cancel",
       "SAVING": "Saving…",
       "DRAFT": "Draft",
+      "SAVE_AMEND": "Save changes",
       "SUBMIT": "Submit",
       "NEXT": "Next",
       "SENDING": "Sending…",
@@ -465,7 +493,8 @@
         "CANCELLED": "Cancelled",
         "RETURN": "Return to sender",
         "DISPUTE": "Open a dispute",
-        "EDIT": "Edit draft"
+        "EDIT": "Edit draft",
+        "AMEND": "Edit"
       },
       "COMMENT": "Comment",
       "EMIT_TITLE": "Issue the invoice",
@@ -601,6 +630,7 @@
       "BACK": "Back",
       "SAVING": "Saving…",
       "DRAFT": "Draft",
+      "SAVE_AMEND": "Save changes",
       "SENDING": "Sending…",
       "SUBMIT": "Submit",
       "NET_PAYABLE": "Net to pay"
@@ -3148,7 +3178,125 @@
   },
   "REPORTING": {
     "TITLE": "P&L",
-    "WIP": "Module under development."
+    "SUBTITLE": "Profit & loss by country, submission workflow and budget reference.",
+    "PAYS": {
+      "LABEL": "Country / Entity",
+      "SEARCH": "Search a country..."
+    },
+    "ERROR_PAYS": "Could not determine your country.",
+    "LOAD_ERROR": "Could not load P&L periods.",
+    "EMPTY": "No P&L period for this country.",
+    "TABLE": {
+      "PERIOD": "Period",
+      "STATUS": "Status",
+      "EBITDA": "EBITDA",
+      "REPORT": "Report"
+    },
+    "PERIOD_STATUS": {
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "SUBMITTED": "Submitted",
+      "APPROVED": "Approved"
+    },
+    "REPORT_STATUS": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "CD_ENDORSED": "Endorsed (CD)",
+      "GROUP_ACCEPTED": "Accepted (Group)",
+      "AMENDMENT_REQUESTED": "Amendment requested",
+      "SUPERSEDED": "Superseded"
+    },
+    "NO_REPORT": "No report",
+    "GENERATE": "Generate report",
+    "GENERATE_ERROR": "Error generating the report.",
+    "BUDGET": {
+      "TITLE": "Budget reference",
+      "SUBTITLE": "Annual budget entry by country, month and group catalogue line.",
+      "YEAR": "Year",
+      "LINE": "Catalogue line",
+      "LOAD_ERROR": "Could not load the budget reference.",
+      "EMPTY": "No budget reference for {{year}}.",
+      "CREATE": "Create the {{year}} budget",
+      "SAVE": "Save",
+      "SAVE_SUCCESS": "Budget saved.",
+      "SAVE_ERROR": "Error saving the budget.",
+      "APPROVE_CD": "Approve (Country Director)",
+      "APPROVE_GROUP": "Approve (Group)",
+      "APPROVED_CD": "Approved (Country Director) on {{date}} by user #{{id}}.",
+      "NOT_APPROVED_CD": "Not approved (Country Director).",
+      "APPROVED_GROUP": "Approved (Group) on {{date}} by user #{{id}}.",
+      "NOT_APPROVED_GROUP": "Not approved (Group)."
+    },
+    "CALENDAR": {
+      "TITLE": "Submission calendar",
+      "SUBTITLE": "P&L report submission deadlines, by month.",
+      "YEAR": "Year",
+      "LOAD_ERROR": "Could not load the submission calendar.",
+      "EMPTY": "No deadline for this year.",
+      "SAVE_ROW": "Save",
+      "SAVE_SUCCESS": "Deadline saved.",
+      "SAVE_ERROR": "Error saving the deadline.",
+      "SET_BY_USER": "User #{{id}}",
+      "TABLE": {
+        "MONTH": "Month",
+        "DEADLINE": "Deadline",
+        "SET_BY": "Set by",
+        "SET_AT": "Set on"
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Loading report…",
+      "LOAD_ERROR": "Could not load the P&L report.",
+      "SECONDARY_LOAD_ERROR": "Could not load the report's additional information.",
+      "ACTION_ERROR": "An error occurred while performing this action.",
+      "BACK": "Back to P&L reports",
+      "BREADCRUMB_ARIA": "P&L report breadcrumb",
+      "TITLE_PREFIX": "P&L Report —",
+      "CANCEL": "Cancel",
+      "CONFIRM": "Confirm",
+      "RECAP": {
+        "TITLE": "Recap",
+        "LINE": "Catalogue line",
+        "ACTUAL": "Actual amount",
+        "BUDGET": "Budget",
+        "VARIANCE": "Variance %"
+      },
+      "COMMENTARY": {
+        "TITLE": "Variance commentary",
+        "NONE_YET": "No commentary generated for this line yet.",
+        "NARRATIVE_LABEL": "Commentary",
+        "SAVE": "Save",
+        "STATUS": {
+          "DRAFT": "Draft",
+          "UNDER_REVIEW": "Under review"
+        }
+      },
+      "SECTION": {
+        "TITLE": "Cross-cutting summary",
+        "REVENUE": "Revenue",
+        "COST": "Cost",
+        "EBITDA": "EBITDA",
+        "OTHER_NOTABLE": "Other notable items"
+      },
+      "ACTIONS": {
+        "SUBMIT": "Submit",
+        "ENDORSE": "Endorse",
+        "ACCEPT": "Accept",
+        "REQUEST_AMENDMENT": "Request amendment",
+        "REOPEN": "Reopen",
+        "REASON_LABEL": "Reason",
+        "EXPORT_XLSX": "Export to Excel",
+        "EXPORT_PDF": "Export to PDF",
+        "EXPORTING_XLSX": "Exporting Excel…",
+        "EXPORTING_PDF": "Exporting PDF…"
+      },
+      "REOPEN": {
+        "METHOD_LABEL": "Reopen method",
+        "OPTION_1_VERSIONED": "New version (the current report is archived; a new draft version is created)",
+        "OPTION_2_CONSUMED": "Correction in the next period (no new version; the correction is absorbed by the next period)",
+        "RATIONALE_LABEL": "Rationale"
+      }
+    }
   },
   "PAYMENTS": {
     "COMMON": {
@@ -3833,6 +3981,7 @@
       "DOCUMENT_TEMPLATES": "Document templates",
       "COST_CONFIG": "Cost configuration",
       "REMINDERS": "Reminders",
+      "WIP_EMAIL_TEMPLATES": "WIP Emails",
       "NAV_LABEL": "Admin navigation"
     },
     "DOCUMENT_TEMPLATES": {
@@ -4037,6 +4186,7 @@
       "INTRO": "These stages drive the collection schedule for every invoice: the generator applies them to each invoice's due date, and the daily scheduler sends the messages to the listed roles. A change applies to new invoices and to any invoice whose due date changes; reminders already sent are untouched.",
       "SECTION_TITLE": "Collection schedule",
       "ADD": "Add a stage",
+      "DISPATCH_NOW": "Run scheduler now",
       "EMPTY": "No stage configured — no reminder will be scheduled.",
       "COL_OFFSET": "Timing",
       "COL_RULE": "Stage",
@@ -4072,6 +4222,39 @@
       "ERROR_LOAD": "Unable to load the reminder stages.",
       "ERROR_SAVE": "Unable to save this stage.",
       "ERROR_DELETE": "Unable to delete this stage."
+    },
+    "WIP_EMAIL_TPLS": {
+      "INTRO": "These templates define the subject and body of the email automatically sent to the client when a WIP is validated. A global template (no country) applies to all countries; a country-specific template takes priority.",
+      "SECTION_TITLE": "WIP email templates",
+      "ADD": "Add a template",
+      "EDIT_TITLE": "Edit template",
+      "NEW_TITLE": "New template",
+      "COL_MODE": "Mode",
+      "COL_SCOPE": "Scope",
+      "COL_SUBJECT": "Subject",
+      "COL_STATE": "Status",
+      "MODE_TM": "Time & Material (TM)",
+      "MODE_AV": "Fixed-price (AV)",
+      "MODE_LIVRABLE": "Deliverable",
+      "MODE_TS": "Supplementary Work (TS)",
+      "SCOPE_GLOBAL": "Global",
+      "SCOPE_COUNTRY": "Country",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "EMPTY": "No template configured — the default message will be used.",
+      "ERROR_LOAD": "Unable to load WIP email templates.",
+      "ERROR_SAVE": "Unable to save this template.",
+      "ERROR_DELETE": "Unable to delete this template.",
+      "FIELD_MODE": "Billing mode",
+      "FIELD_PAYS_ID": "Country (ID)",
+      "PAYS_ID_PLACEHOLDER": "Leave empty for a global template",
+      "PAYS_ID_HINT": "Numeric ID of the country. Empty = global rule, applies to all countries.",
+      "FIELD_SUBJECT": "Message subject",
+      "FIELD_BODY": "Message body",
+      "TEMPLATE_HINT": "You can use the tokens below to personalise the message.",
+      "TOKENS_TITLE": "Available tokens",
+      "FIELD_ACTIVE": "Template active",
+      "ACTIVE_HINT": "An inactive template is no longer used; the default message takes over."
     }
   },
   "ENUMS": {

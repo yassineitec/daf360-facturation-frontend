@@ -80,10 +80,12 @@ export class LivrableService {
     affaireId: number,
     entries: LivrableTauxEntry[],
     billingDate?: string,
+    emailSubject?: string | null,
+    emailBody?: string | null,
   ): Observable<LivrableBatchDto> {
     return this.http.post<LivrableBatchDto>(
       `${this.base}/${affaireId}/livrables/submit`,
-      { entries, billingDate },
+      { entries, billingDate, emailSubject, emailBody },
       { withCredentials: true });
   }
 

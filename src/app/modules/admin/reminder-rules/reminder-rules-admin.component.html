@@ -19,10 +19,17 @@
     <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
       {{ 'ADMIN.REMINDERS.SECTION_TITLE' | translate }}
     </span>
-    <daf-button *appHasPermission="'FACT_SUPER_ADMIN'"
-      [options]="{ variant: 'teal', size: 'sm', iconStart: 'add',
-                   label: 'ADMIN.REMINDERS.ADD' | translate }"
-      (onClick)="openCreate()" />
+    <div class="flex items-center gap-2" *appHasPermission="'FACT_SUPER_ADMIN'">
+      <daf-button
+        [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send',
+                     loading: dispatching(), disabled: dispatching(),
+                     label: 'ADMIN.REMINDERS.DISPATCH_NOW' | translate }"
+        (onClick)="triggerDispatch()" />
+      <daf-button
+        [options]="{ variant: 'teal', size: 'sm', iconStart: 'add',
+                     label: 'ADMIN.REMINDERS.ADD' | translate }"
+        (onClick)="openCreate()" />
+    </div>
   </div>
 
   <!-- Recherche + outils du tableau (réinitialiser, colonnes) à droite. -->

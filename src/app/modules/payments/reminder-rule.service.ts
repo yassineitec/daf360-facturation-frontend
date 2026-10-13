@@ -38,4 +38,9 @@ export class ReminderRuleService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
   }
+
+  /** Déclenche manuellement le passage du planificateur sans attendre 08:00. */
+  dispatch(): Observable<void> {
+    return this.http.post<void>(`${this.base}/dispatch`, null);
+  }
 }

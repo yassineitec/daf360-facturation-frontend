@@ -24,6 +24,8 @@ import { CreditNoteModalComponent } from './credit-note-modal.component';
 import { RemindersPanelComponent } from './reminders-panel.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
+import { UserStore } from '../../../core/user.store';
+import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 /** `yyyy-MM-dd` en heure locale — `toISOString()` décalerait d'un jour avant minuit UTC. */
 function toIsoDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -78,6 +80,7 @@ export class InvoiceDetailComponent implements OnInit {
   private readonly modals    = inject(ModalService);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
+  private readonly userStore = inject(UserStore);
 
   private readonly commentTpl = viewChild.required<TemplateRef<unknown>>('commentTpl');
   private readonly emitDateTpl = viewChild.required<TemplateRef<unknown>>('emitDateTpl');
@@ -91,6 +94,10 @@ export class InvoiceDetailComponent implements OnInit {
   actionError = signal<string | null>(null);
   saving      = signal(false);
   exportingPdf = signal(false);
+
+  /** Before/after diff history — fetched alongside the invoice itself (see `load()`), so
+   * its count is ready for the `audit` tab label from the very first render. */
+  readonly auditHistory = signal<EntityAuditLogDto[]>([]);
 
   showCreditNote   = signal(false);
 
@@ -322,6 +329,7 @@ export class InvoiceDetailComponent implements OnInit {
     return [
       { id: 'lines',     label: t('INVOICING.DETAIL.LINES.TITLE'), count: this.invoice()?.lines.length ?? 0 },
       { id: 'reminders', label: t('INVOICING.DETAIL.TABS.REMINDERS') },
+      { id: 'audit',     label: t('INVOICING.DETAIL.TABS.AUDIT_HISTORY'), count: this.auditHistory().length },
       { id: 'trace',     label: t('INVOICING.DETAIL.TABS.TRACE') },
     ];
   });
@@ -452,6 +460,14 @@ export class InvoiceDetailComponent implements OnInit {
    */
   readonly canEmitCreditNote = computed(() => ['EMITTED', 'SENT', 'PARTIALLY_PAID'].includes(this.statut()));
 
+  /** Status alone is a reliable proxy for "zero payments recorded": recordPayment() always
+   * flips status to PARTIALLY_PAID/PAID the moment any payment lands, so EMITTED/SENT here
+   * already implies no payment exists — the backend's own guardAmendable() re-checks the
+   * real payment sum regardless, this is only the button's visibility gate. */
+  readonly canAmend = computed(() =>
+    ['EMITTED', 'SENT'].includes(this.statut())
+    && this.userStore.hasPermission('FACT_EDIT_EMITTED_INVOICE'));
+
   readonly commentFieldOptions = computed(() => {
     this.translate.currentLang();
     return {
@@ -567,6 +583,11 @@ export class InvoiceDetailComponent implements OnInit {
         this.loading.set(false);
       },
     });
+    // Reminders/payments are fetched by their own tab's child component on first render
+    // (see RemindersPanelComponent.ngOnInit) — but the audit tab's label needs a count
+    // up front, so it's loaded here instead, alongside the invoice itself. This also
+    // means a post-amend `refresh()` picks up the new entry immediately.
+    this.svc.getAuditHistory(id).subscribe(h => this.auditHistory.set(h));
   }
 
   refresh(): void {
@@ -690,5 +711,71 @@ export class InvoiceDetailComponent implements OnInit {
 
   conditionLabel(code: string): string {
     return CONDITIONS_PAIEMENT[code as keyof typeof CONDITIONS_PAIEMENT] ?? code;
+  }
+
+  /** Field labels for the diff view — extend as new amendable fields are added. Keys must
+   * stay in sync with the backend's `InvoiceService.snapshotInvoice()` (daf360-facturation-service),
+   * the source of truth for which top-level fields get captured in the before/after metadata. */
+  private static readonly AMEND_FIELD_LABELS: Record<string, string> = {
+    dueDate: 'INVOICING.DETAIL.AUDIT.FIELD.DUE_DATE',
+    periodFrom: 'INVOICING.DETAIL.AUDIT.FIELD.PERIOD_FROM',
+    periodTo: 'INVOICING.DETAIL.AUDIT.FIELD.PERIOD_TO',
+    progressPct: 'INVOICING.DETAIL.AUDIT.FIELD.PROGRESS_PCT',
+    notes: 'INVOICING.DETAIL.AUDIT.FIELD.NOTES',
+    bonDeCommande: 'INVOICING.DETAIL.AUDIT.FIELD.BON_COMMANDE',
+    clientValidationDocUrl: 'INVOICING.DETAIL.AUDIT.FIELD.CLIENT_VALIDATION_DOC_URL',
+    clientValidationType: 'INVOICING.DETAIL.AUDIT.FIELD.CLIENT_VALIDATION_TYPE',
+    deductionLabel1: 'INVOICING.DETAIL.AUDIT.FIELD.DEDUCTION_LABEL_1',
+    deductionTotal1Local: 'INVOICING.DETAIL.AUDIT.FIELD.DEDUCTION_TOTAL_1',
+    deductionLabel2: 'INVOICING.DETAIL.AUDIT.FIELD.DEDUCTION_LABEL_2',
+    deductionTotal2Local: 'INVOICING.DETAIL.AUDIT.FIELD.DEDUCTION_TOTAL_2',
+    deductionLabel3: 'INVOICING.DETAIL.AUDIT.FIELD.DEDUCTION_LABEL_3',
+    deductionTotal3Local: 'INVOICING.DETAIL.AUDIT.FIELD.DEDUCTION_TOTAL_3',
+    subtotalLocal: 'INVOICING.DETAIL.AUDIT.FIELD.SUBTOTAL',
+    vatAmountLocal: 'INVOICING.DETAIL.AUDIT.FIELD.VAT',
+    totalLocal: 'INVOICING.DETAIL.AUDIT.FIELD.TOTAL',
+    netPayableLocal: 'INVOICING.DETAIL.AUDIT.FIELD.NET_PAYABLE',
+    lines: 'INVOICING.DETAIL.AUDIT.FIELD.LINES',
+  };
+
+  /** Date-valued fields among the amendable set — their raw metadata value is an ISO
+   * `yyyy-MM-dd` string, shown through `formatDate()` rather than verbatim. */
+  private static readonly AMEND_DATE_FIELDS = new Set(['dueDate', 'periodFrom', 'periodTo']);
+
+  /** Parses one audit entry's `metadata` JSON and returns only the top-level keys that
+   * actually changed, each with its before/after value — entries with unparseable or null
+   * metadata return an empty list rather than throwing. Date fields are pre-formatted here
+   * (via `formatDate`) since `diffFor` is the only place that still knows the field's key;
+   * `formatDiffValue` downstream only ever sees a scalar or an array at that point. */
+  diffFor(entry: EntityAuditLogDto): { label: string; before: unknown; after: unknown }[] {
+    if (!entry.metadata) return [];
+    try {
+      const { before, after } = JSON.parse(entry.metadata) as { before: Record<string, unknown>; after: Record<string, unknown> };
+      return Object.keys(after)
+        .filter(key => JSON.stringify(before?.[key]) !== JSON.stringify(after[key]))
+        .map(key => {
+          const isDate = InvoiceDetailComponent.AMEND_DATE_FIELDS.has(key);
+          const toValue = (v: unknown): unknown => isDate ? this.formatDate((v as string | null) ?? null) : v;
+          return {
+            label: this.translate.instant(
+              InvoiceDetailComponent.AMEND_FIELD_LABELS[key] ?? key),
+            before: toValue(before?.[key]),
+            after: toValue(after[key]),
+          };
+        });
+    } catch {
+      return [];
+    }
+  }
+
+  /** Renders one diff value for display — the one non-scalar field (`lines`, an array of
+   * line snapshots) would otherwise print as `[object Object]` via default `toString()`,
+   * which is exactly the case most likely to bring someone to this tab (correcting a
+   * billed amount on an emitted invoice). Every other field is a scalar shown as-is. */
+  formatDiffValue(value: unknown): string {
+    if (Array.isArray(value)) {
+      return this.translate.instant('INVOICING.DETAIL.AUDIT.LINES_COUNT', { count: value.length });
+    }
+    return value == null ? '—' : String(value);
   }
 }

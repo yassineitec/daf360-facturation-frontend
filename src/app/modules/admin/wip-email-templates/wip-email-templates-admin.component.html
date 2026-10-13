@@ -1,0 +1,133 @@
+<!-- Templates d'email WIP — administration finance. -->
+
+<div class="flex flex-col gap-6">
+
+  <div class="flex items-start gap-3 rounded-xl bg-surface-container px-5 py-4 text-body-sm text-on-surface-variant">
+    <span class="material-symbols-outlined text-headline-lg">info</span>
+    <p>{{ 'ADMIN.WIP_EMAIL_TPLS.INTRO' | translate }}</p>
+  </div>
+
+  @if (error(); as err) {
+    <daf-field-message [error]="err" />
+  }
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+      {{ 'ADMIN.WIP_EMAIL_TPLS.SECTION_TITLE' | translate }}
+    </span>
+    <daf-button *appHasPermission="'FACT_SUPER_ADMIN'"
+      [options]="{ variant: 'teal', size: 'sm', iconStart: 'add',
+                   label: 'ADMIN.WIP_EMAIL_TPLS.ADD' | translate }"
+      (onClick)="openCreate()" />
+  </div>
+
+  <daf-data-table [columns]="columns()" [rows]="rows()" [config]="config()">
+
+    <ng-template dafCell="subject" let-row>
+      <span class="max-w-xs truncate text-body-sm text-on-surface" [title]="row['subject']">
+        {{ row['subject'] }}
+      </span>
+    </ng-template>
+
+  </daf-data-table>
+
+</div>
+
+<!-- ══ Panneau d'édition ══ -->
+<daf-drawer
+  [(open)]="drawerOpen"
+  [config]="{
+    title: (isEdit() ? 'ADMIN.WIP_EMAIL_TPLS.EDIT_TITLE' : 'ADMIN.WIP_EMAIL_TPLS.NEW_TITLE') | translate,
+    icon: 'mail_outline',
+    width: '520px',
+    showToggle: false
+  }">
+
+  <div class="flex flex-col gap-5 p-1">
+
+    @if (formError(); as err) {
+      <daf-field-message [error]="err" />
+    }
+
+    <daf-select
+      [options]="modeOptions()"
+      [selected]="[mode()]"
+      (selectedChange)="mode.set($any($event))"
+      [config]="{
+        label: ('ADMIN.WIP_EMAIL_TPLS.FIELD_MODE' | translate),
+        required: true,
+        fullWidth: true
+      }" />
+
+    <!-- paysId — facultatif: null = règle globale -->
+    <daf-form-field
+      [value]="paysId() !== null ? String(paysId()) : ''"
+      (valueChange)="paysId.set($any($event) ? Number($any($event)) : null)"
+      [options]="{
+        label: ('ADMIN.WIP_EMAIL_TPLS.FIELD_PAYS_ID' | translate),
+        type: 'number',
+        placeholder: ('ADMIN.WIP_EMAIL_TPLS.PAYS_ID_PLACEHOLDER' | translate),
+        fullWidth: true,
+        hint: ('ADMIN.WIP_EMAIL_TPLS.PAYS_ID_HINT' | translate)
+      }" />
+
+    <daf-form-field
+      [value]="subjectTemplate()"
+      (valueChange)="subjectTemplate.set($any($event) ?? '')"
+      [options]="{
+        label: ('ADMIN.WIP_EMAIL_TPLS.FIELD_SUBJECT' | translate),
+        required: true,
+        maxLength: 500,
+        fullWidth: true,
+        hint: ('ADMIN.WIP_EMAIL_TPLS.TEMPLATE_HINT' | translate)
+      }" />
+
+    <daf-form-field
+      [value]="bodyTemplate()"
+      (valueChange)="bodyTemplate.set($any($event) ?? '')"
+      [options]="{
+        label: ('ADMIN.WIP_EMAIL_TPLS.FIELD_BODY' | translate),
+        type: 'textarea',
+        rows: 10,
+        required: true,
+        fullWidth: true
+      }" />
+
+    <!-- Jetons disponibles pour le mode sélectionné -->
+    <div class="flex flex-col gap-1.5">
+      <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+        {{ 'ADMIN.WIP_EMAIL_TPLS.TOKENS_TITLE' | translate }}
+      </span>
+      <div class="flex flex-wrap items-center gap-1">
+        @for (t of tokens(); track t) {
+          <button type="button"
+                  class="inline-flex items-center rounded-full bg-surface-container px-2 py-0.5
+                         font-mono text-[11px] font-bold text-on-surface-variant
+                         hover:bg-primary/10 hover:text-primary"
+                  (click)="insertToken(t)">{{ t }}</button>
+        }
+      </div>
+    </div>
+
+    <daf-toggle
+      [(checked)]="active"
+      [options]="{
+        label: ('ADMIN.WIP_EMAIL_TPLS.FIELD_ACTIVE' | translate),
+        hint: ('ADMIN.WIP_EMAIL_TPLS.ACTIVE_HINT' | translate)
+      }" />
+
+    <div style="display:flex; gap:0.5rem">
+      <daf-button
+        style="flex:1 1 50%"
+        [options]="{ variant: 'ghost', fullWidth: true, label: 'ADMIN.COMMON.CANCEL' | translate }"
+        (onClick)="drawerOpen.set(false)" />
+      <daf-button
+        style="flex:1 1 50%"
+        [options]="{ variant: 'teal', fullWidth: true, iconStart: 'save',
+                     loading: saving(), disabled: !canSave() || saving(),
+                     label: 'ADMIN.COMMON.SAVE' | translate }"
+        (onClick)="save()" />
+    </div>
+
+  </div>
+</daf-drawer>

@@ -212,12 +212,16 @@ import { enumLabel } from '../../../../shared/enum-labels';
     <div class="recap-actions">
       <button type="button" class="btn-draft" [disabled]="saving()" (click)="saveDraft()">
         <span class="material-symbols-outlined">save</span>
-        {{ saving() ? ('INVOICING.STEP_RECAP.SAVING' | translate) : ('INVOICING.STEP_RECAP.DRAFT' | translate) }}
+        {{ saving()
+            ? ('INVOICING.STEP_RECAP.SAVING' | translate)
+            : (amendMode() ? ('INVOICING.STEP_RECAP.SAVE_AMEND' | translate) : ('INVOICING.STEP_RECAP.DRAFT' | translate)) }}
       </button>
-      <button type="button" class="btn-submit" [disabled]="saving()" (click)="saveAndSubmit()">
-        {{ saving() ? ('INVOICING.STEP_RECAP.SENDING' | translate) : ('INVOICING.STEP_RECAP.SUBMIT' | translate) }}
-        <span class="material-symbols-outlined">send</span>
-      </button>
+      @if (!amendMode()) {
+        <button type="button" class="btn-submit" [disabled]="saving()" (click)="saveAndSubmit()">
+          {{ saving() ? ('INVOICING.STEP_RECAP.SENDING' | translate) : ('INVOICING.STEP_RECAP.SUBMIT' | translate) }}
+          <span class="material-symbols-outlined">send</span>
+        </button>
+      }
     </div>
   </div>
   }
@@ -240,6 +244,9 @@ export class StepRecapComponent {
   /** Non-null when editing an existing DRAFT — saveDraft/saveAndSubmit then call
    * updateDraft() on this id instead of creating a new invoice. */
   editInvoiceId  = input<number | null>(null);
+  /** When true, saveOrUpdateDraft() calls amendEmittedInvoice() instead of updateDraft() —
+   * set by invoice-new.component.ts when the loaded invoice is EMITTED/SENT, not DRAFT. */
+  amendMode      = input<boolean>(false);
   prevStep       = output<void>();
 
   saving      = signal(false);
@@ -374,12 +381,14 @@ export class StepRecapComponent {
     };
   }
 
-  /** createDraft (new invoice) or updateDraft (editing an existing one) — same request shape. */
+  /** createDraft (new invoice), updateDraft (editing a DRAFT), or amendEmittedInvoice
+   * (editing an already-EMITTED/SENT invoice) — same request shape for all three. */
   private saveOrUpdateDraft() {
     const id = this.editInvoiceId();
-    return id != null
-      ? this.svc.updateDraft(id, this.buildRequest())
-      : this.svc.createDraft(this.buildRequest());
+    if (id == null) return this.svc.createDraft(this.buildRequest());
+    return this.amendMode()
+      ? this.svc.amendEmittedInvoice(id, this.buildRequest())
+      : this.svc.updateDraft(id, this.buildRequest());
   }
 
   saveDraft(): void {

@@ -519,7 +519,7 @@ export class AffaireTsWipTabComponent implements OnInit {
     this.svc.previewTsEmail(this.affaire.id, tsIds).subscribe({
       next: preview => {
         this.submitting.set(false);
-        this.emailPreviewModal().open(preview, done => this.doSubmitSelection(tsIds, done));
+        this.emailPreviewModal().open(preview, (subject, body, done) => this.doSubmitSelection(tsIds, subject, body, done));
       },
       error: err => {
         this.submitting.set(false);
@@ -528,8 +528,9 @@ export class AffaireTsWipTabComponent implements OnInit {
     });
   }
 
-  private doSubmitSelection(tsIds: number[], done: (errorMessage?: string) => void): void {
-    this.svc.submitTs(this.affaire.id, tsIds).subscribe({
+  private doSubmitSelection(tsIds: number[], subject: string, body: string,
+                             done: (errorMessage?: string) => void): void {
+    this.svc.submitTs(this.affaire.id, tsIds, subject, body).subscribe({
       next: () => {
         done();
         this.selection.clear();
