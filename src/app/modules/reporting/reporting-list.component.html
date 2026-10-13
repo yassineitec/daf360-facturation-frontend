@@ -1,0 +1,66 @@
+<!-- `daf-page` carries the background, vertical rhythm and first-load skeleton;
+     `daf-page-header` carries the h1. Same skeleton as the other finance list screens. -->
+<daf-page [kpis]="0" [loading]="firstLoad()" [loadingLabel]="'REPORTING.TITLE' | translate">
+
+  <daf-page-header
+    [title]="'REPORTING.TITLE' | translate"
+    [subtitle]="'REPORTING.SUBTITLE' | translate">
+    <ng-container pageActions>
+      <div class="flex items-center gap-3">
+        @if (paysList().length > 1) {
+          <app-pays-flag-select
+            [options]="paysOptions()"
+            [selected]="paysId() ? [paysId().toString()] : []"
+            [label]="paysSelectLabel()"
+            [placeholder]="paysSelectPlaceholder()"
+            (selectedChange)="onPaysSelected($event)" />
+        }
+        <daf-button
+          [options]="{ variant: 'secondary', label: ('REPORTING.BUDGET.TITLE' | translate), iconStart: 'request_quote' }"
+          (onClick)="goToBudget()" />
+        <daf-button
+          [options]="{ variant: 'secondary', label: ('REPORTING.CALENDAR.TITLE' | translate), iconStart: 'calendar_month' }"
+          (onClick)="goToCalendar()" />
+      </div>
+    </ng-container>
+  </daf-page-header>
+
+  @if (error()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Content sits free in the page — no outer container card (same as the cost approval queue). -->
+  <daf-data-table
+    [columns]="columns()"
+    [rows]="rows()"
+    [config]="config()"
+    (rowClick)="onRowClick($event)">
+
+    <!-- Either the current report's status badge, or "Aucun rapport" + a "Générer le
+         rapport" action (only enabled on a CLOSED period for someone with
+         FACT_MANAGE_PL_REPORT — see `_canGenerate`). -->
+    <ng-template dafCell="report" let-row>
+      @if (row['_reportBadge']) {
+        <daf-badge [label]="row['_reportBadge'].label" [options]="row['_reportBadge'].options" />
+      } @else {
+        <div class="flex items-center gap-2">
+          <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.NO_REPORT' | translate }}</span>
+          @if (row['_canGenerate']) {
+            <daf-button
+              [options]="{
+                variant: 'teal', size: 'sm', iconStart: 'auto_awesome',
+                label: ('REPORTING.GENERATE' | translate),
+                loading: generatingId() === row['id']
+              }"
+              (onClick)="onGenerate(row['_period'], $event)" />
+          }
+        </div>
+      }
+    </ng-template>
+
+  </daf-data-table>
+
+</daf-page>

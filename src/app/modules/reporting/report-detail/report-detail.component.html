@@ -1,0 +1,188 @@
+<!-- Fiche rapport P&L — même squelette (daf-page / daf-page-header / daf-section-card) que
+     invoice-detail.component.html. Une seule colonne : pas de grille deux-tiers/un-tiers ici,
+     le contenu (récap + commentaires + 4 sections transversales) est déjà long et vertical. -->
+
+<daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
+          [loadingLabel]="'REPORTING.DETAIL.LOADING' | translate">
+
+  @if (error() || actionError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+      <span class="material-symbols-outlined text-headline-md">error</span>
+      {{ error() ?? actionError() }}
+    </div>
+  }
+
+  @if (report(); as r) {
+    <div class="flex flex-col gap-6">
+
+      <daf-page-header
+        size="md"
+        [title]="headerTitle()"
+        [badges]="headerBadges()"
+        [breadcrumbs]="breadcrumbs()"
+        [breadcrumbLabel]="'REPORTING.DETAIL.BREADCRUMB_ARIA' | translate" />
+
+      <!-- ── Barre d'actions : cycle de vie + export ───────────────────────── -->
+      <daf-section-card>
+        <div class="flex flex-wrap items-center gap-2 p-6">
+          @if (canSubmit()) {
+            <daf-button
+              [options]="{ variant: 'teal', size: 'sm', iconStart: 'send', loading: actionSaving(), disabled: actionSaving(),
+                           label: ('REPORTING.DETAIL.ACTIONS.SUBMIT' | translate) }"
+              (onClick)="submit()" />
+          }
+          @if (canEndorse()) {
+            <daf-button
+              [options]="{ variant: 'teal', size: 'sm', iconStart: 'verified', loading: actionSaving(), disabled: actionSaving(),
+                           label: ('REPORTING.DETAIL.ACTIONS.ENDORSE' | translate) }"
+              (onClick)="endorse()" />
+          }
+          @if (canAccept()) {
+            <daf-button
+              [options]="{ variant: 'teal', size: 'sm', iconStart: 'check_circle', loading: actionSaving(), disabled: actionSaving(),
+                           label: ('REPORTING.DETAIL.ACTIONS.ACCEPT' | translate) }"
+              (onClick)="accept()" />
+          }
+          @if (canRequestAmendment()) {
+            <daf-button
+              [options]="{ variant: 'secondary', size: 'sm', iconStart: 'undo', disabled: actionSaving(),
+                           label: ('REPORTING.DETAIL.ACTIONS.REQUEST_AMENDMENT' | translate) }"
+              (onClick)="openRequestAmendmentModal()" />
+          }
+          @if (canReopen()) {
+            <daf-button
+              [options]="{ variant: 'secondary', size: 'sm', iconStart: 'lock_open', disabled: actionSaving(),
+                           label: ('REPORTING.DETAIL.ACTIONS.REOPEN' | translate) }"
+              (onClick)="openReopenModal()" />
+          }
+
+          <span class="grow"></span>
+
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'description', disabled: exportingXlsx(),
+                         label: (exportingXlsx() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_XLSX' : 'REPORTING.DETAIL.ACTIONS.EXPORT_XLSX') | translate }"
+            (onClick)="exportXlsx()" />
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'picture_as_pdf', disabled: exportingPdf(),
+                         label: (exportingPdf() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_PDF' : 'REPORTING.DETAIL.ACTIONS.EXPORT_PDF') | translate }"
+            (onClick)="exportPdf()" />
+        </div>
+      </daf-section-card>
+
+      <!-- ── Récapitulatif : 13 lignes + total EBITDA ──────────────────────── -->
+      <daf-section-card>
+        <div class="flex flex-col gap-4 p-6">
+          <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.RECAP.TITLE' | translate }}</h2>
+
+          <daf-data-table
+            [columns]="recapColumns()"
+            [rows]="recapRows()"
+            [config]="recapConfig()">
+          </daf-data-table>
+
+          <div class="flex flex-wrap items-baseline justify-end gap-6 rounded-xl bg-surface-container px-6 py-4">
+            <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+              {{ 'REPORTING.TABLE.EBITDA' | translate }}
+            </span>
+            <span class="text-headline-md font-extrabold text-primary">{{ ebitdaDisplay() }}</span>
+          </div>
+        </div>
+      </daf-section-card>
+
+      <!-- ── Commentaires de variance (par ligne) ──────────────────────────── -->
+      <daf-section-card>
+        <div class="flex flex-col gap-5 p-6">
+          <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.COMMENTARY.TITLE' | translate }}</h2>
+
+          @for (vm of lineCommentaryVms(); track vm.line.id) {
+            <div class="flex flex-col gap-2 border-t border-outline-variant/30 pt-4 first:border-t-0 first:pt-0">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-body-md font-semibold text-on-surface">{{ vm.line.catalogueLineLabelFr }}</span>
+                @if (vm.commentary) {
+                  <daf-badge [label]="statusBadge(vm.commentary.status).label" [options]="statusBadge(vm.commentary.status).options" />
+                }
+              </div>
+
+              @if (vm.commentary; as c) {
+                <daf-form-field
+                  [options]="commentaryFieldOptions(c)"
+                  [value]="draftFor(c)"
+                  (valueChange)="onDraftChange(c, $event)" />
+                <div>
+                  @if (canManageCommentary()) {
+                    <daf-button
+                      [options]="{ variant: 'secondary', size: 'sm', iconStart: 'save',
+                                   loading: isSavingCommentary(c), disabled: isSavingCommentary(c) || !isDirty(c),
+                                   label: ('REPORTING.DETAIL.COMMENTARY.SAVE' | translate) }"
+                      (onClick)="saveCommentary(c)" />
+                  }
+                </div>
+              } @else {
+                <p class="text-body-sm italic text-on-surface-variant">
+                  {{ 'REPORTING.DETAIL.COMMENTARY.NONE_YET' | translate }}
+                </p>
+              }
+            </div>
+          }
+        </div>
+      </daf-section-card>
+
+      <!-- ── 4 sections transversales (Revenue/Cost/EBITDA/Other) ──────────── -->
+      <daf-section-card>
+        <div class="flex flex-col gap-5 p-6">
+          <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.SECTION.TITLE' | translate }}</h2>
+
+          @for (c of sectionCommentaries(); track c.id) {
+            <div class="flex flex-col gap-2 border-t border-outline-variant/30 pt-4 first:border-t-0 first:pt-0">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-body-md font-semibold text-on-surface">{{ sectionLabel(c.sectionType) }}</span>
+                <daf-badge [label]="statusBadge(c.status).label" [options]="statusBadge(c.status).options" />
+              </div>
+
+              <daf-form-field
+                [options]="commentaryFieldOptions(c)"
+                [value]="draftFor(c)"
+                (valueChange)="onDraftChange(c, $event)" />
+              <div>
+                @if (canManageCommentary()) {
+                  <daf-button
+                    [options]="{ variant: 'secondary', size: 'sm', iconStart: 'save',
+                                 loading: isSavingCommentary(c), disabled: isSavingCommentary(c) || !isDirty(c),
+                                 label: ('REPORTING.DETAIL.COMMENTARY.SAVE' | translate) }"
+                    (onClick)="saveCommentary(c)" />
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </daf-section-card>
+
+    </div>
+  }
+
+</daf-page>
+
+<!-- ══ Modales — à la racine de la page ══ -->
+
+<!-- Corps de modale « Demander une modification » : un seul champ motif, requis. -->
+<ng-template #reasonTpl>
+  <daf-form-field
+    [options]="reasonFieldOptions()"
+    [value]="reasonText()"
+    (valueChange)="onReasonChange($event)" />
+</ng-template>
+
+<!-- Corps de modale « Rouvrir » : choix de méthode (radio) + justification (texte), requis. -->
+<ng-template #reopenTpl>
+  <div class="flex flex-col gap-5">
+    <daf-radio-group
+      [options]="reopenMethodOptions()"
+      [config]="{ label: ('REPORTING.DETAIL.REOPEN.METHOD_LABEL' | translate), layout: 'vertical' }"
+      [selected]="reopenMethod()"
+      (selectedChange)="onReopenMethodChange($event)" />
+    <daf-form-field
+      [options]="reopenRationaleFieldOptions()"
+      [value]="reopenRationale()"
+      (valueChange)="onReopenRationaleChange($event)" />
+  </div>
+</ng-template>

@@ -1,0 +1,120 @@
+<!-- `daf-page`/`daf-page-header` skeleton — same convention as reporting-list.component.html. -->
+<daf-page [kpis]="0" [loading]="firstLoad()" [loadingLabel]="'REPORTING.BUDGET.TITLE' | translate">
+
+  <daf-page-header
+    [title]="'REPORTING.BUDGET.TITLE' | translate"
+    [subtitle]="'REPORTING.BUDGET.SUBTITLE' | translate">
+    <ng-container pageActions>
+      <div class="flex items-center gap-3">
+        @if (paysList().length > 1) {
+          <app-pays-flag-select
+            [options]="paysOptions()"
+            [selected]="paysId() ? [paysId().toString()] : []"
+            [label]="paysSelectLabel()"
+            [placeholder]="paysSelectPlaceholder()"
+            (selectedChange)="onPaysSelected($event)" />
+        }
+        <daf-select
+          [options]="yearOptions()"
+          [selected]="[year().toString()]"
+          [ariaLabel]="'REPORTING.BUDGET.YEAR' | translate"
+          (selectedChange)="onYearSelected($event)" />
+      </div>
+    </ng-container>
+  </daf-page-header>
+
+  @if (error()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ error() }}
+    </div>
+  }
+  @if (successMessage()) {
+    <div class="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
+      <span class="material-symbols-outlined text-[18px]">check_circle</span>
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (showEmptyState()) {
+    <!-- No BudgetReference draft yet for this pays/year (204 from the backend) — expected,
+         not an error. Offer to create one. -->
+    <div class="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-outline/40 px-6 py-12 text-center">
+      <span class="material-symbols-outlined text-[32px] text-on-surface-variant">request_quote</span>
+      <p class="text-body-md text-on-surface-variant">{{ emptyStateText() }}</p>
+      @if (canManage()) {
+        <daf-button
+          [options]="{ variant: 'primary', label: createButtonLabel(), iconStart: 'add', loading: saving() }"
+          (onClick)="createBudget()" />
+      }
+    </div>
+  }
+
+  @if (budgetRef()) {
+    <div class="overflow-x-auto rounded-xl border border-outline/10">
+      <table class="w-full min-w-[960px] border-collapse text-body-sm">
+        <thead>
+          <tr class="border-b border-outline/10 bg-surface-variant/40">
+            <th class="sticky left-0 z-10 min-w-[220px] bg-surface-variant/40 px-3 py-2 text-left font-medium text-on-surface-variant">
+              {{ 'REPORTING.BUDGET.LINE' | translate }}
+            </th>
+            @for (label of monthLabels(); track $index) {
+              <th class="min-w-[90px] px-2 py-2 text-right font-medium text-on-surface-variant">{{ label }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody [formGroup]="form">
+          <ng-container formArrayName="grid">
+            @for (meta of catalogueLines(); track meta.code; let rowIndex = $index) {
+              <tr [formGroupName]="rowIndex" class="border-b border-outline/5 last:border-b-0">
+                <td class="sticky left-0 z-10 bg-surface px-3 py-1.5 text-on-surface">{{ lineLabel(meta) }}</td>
+                <ng-container formArrayName="months">
+                  @for (m of monthIndexes; track m) {
+                    <td class="px-1 py-1">
+                      <daf-form-field
+                        [options]="{ type: 'number', align: 'end', placeholder: '0', disabled: !canManage() }"
+                        [value]="monthControl(rowIndex, m).value"
+                        (valueChange)="setMonthValue(rowIndex, m, $event)" />
+                    </td>
+                  }
+                </ng-container>
+              </tr>
+            }
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
+    @if (canManage()) {
+      <div class="flex justify-end">
+        <daf-button
+          [options]="{
+            variant: 'primary', label: ('REPORTING.BUDGET.SAVE' | translate),
+            iconStart: 'save', loading: saving(), disabled: catalogueLines().length === 0
+          }"
+          (onClick)="save()" />
+      </div>
+    }
+
+    <!-- Approvals — status line + action, gated on FACT_ADMIN_PL_REPORT per Task 3.3's brief. -->
+    <div class="flex flex-col gap-3 rounded-xl bg-surface-variant/40 px-4 py-4">
+      <div class="flex items-center justify-between gap-3">
+        <span class="text-body-sm text-on-surface-variant">{{ approvedCdText() }}</span>
+        @if (canAdmin() && !budgetRef()!.approvedBy) {
+          <daf-button
+            [options]="{ variant: 'secondary', size: 'sm', label: ('REPORTING.BUDGET.APPROVE_CD' | translate) }"
+            (onClick)="approveCd()" />
+        }
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <span class="text-body-sm text-on-surface-variant">{{ approvedGroupText() }}</span>
+        @if (canAdmin() && !budgetRef()!.groupApprovedBy) {
+          <daf-button
+            [options]="{ variant: 'secondary', size: 'sm', label: ('REPORTING.BUDGET.APPROVE_GROUP' | translate) }"
+            (onClick)="approveGroup()" />
+        }
+      </div>
+    </div>
+  }
+
+</daf-page>
