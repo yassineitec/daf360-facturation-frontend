@@ -1,9 +1,9 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
 import {
-  BadgeCell, ButtonComponent, DafCellDirective, DataTableComponent, DrawerComponent,
-  FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
+  BadgeCell, ButtonComponent, DafCellDirective, DataTableComponent,
+  FieldMessageComponent, FormFieldComponent, ModalRef, ModalService, SelectComponent, SelectOption,
   SearchToolbarComponent, TableColumn, TableConfig, TableRow, ToggleComponent,
 } from '@khalilrebhiitec/daf360';
 import { ReminderRuleService } from '../../payments/reminder-rule.service';
@@ -35,7 +35,7 @@ import { offsetLabel } from '../../payments/payments-display';
   selector: 'app-reminder-rules-admin',
   imports: [
     TranslatePipe, PermissionDirective,
-    DataTableComponent, DafCellDirective, ButtonComponent, DrawerComponent,
+    DataTableComponent, DafCellDirective, ButtonComponent,
     FormFieldComponent, SelectComponent, ToggleComponent, FieldMessageComponent,
     SearchToolbarComponent,
   ],
@@ -45,21 +45,24 @@ import { offsetLabel } from '../../payments/payments-display';
 export class ReminderRulesAdminComponent implements OnInit {
   private readonly svc       = inject(ReminderRuleService);
   private readonly translate = inject(TranslateService);
+  private readonly modal     = inject(ModalService);
 
-  rules          = signal<ReminderRule[]>([]);
+  rules         = signal<ReminderRule[]>([]);
   availableRoles = signal<string[]>([]);
   loading        = signal(true);
   error          = signal<string | null>(null);
 
   readonly tokens = REMINDER_TEMPLATE_TOKENS;
 
-  // ── Panneau d'édition ─────────────────────────────────────────────────────
+  // ── Pop-up d'édition ──────────────────────────────────────────────────────
 
-  drawerOpen   = signal(false);
-  editing      = signal<ReminderRule | null>(null);
-  saving       = signal(false);
-  formError    = signal<string | null>(null);
-  dispatching  = signal(false);
+  private readonly formTpl = viewChild.required<TemplateRef<unknown>>('formTpl');
+  private formRef: ModalRef | null = null;
+
+  editing     = signal<ReminderRule | null>(null);
+  saving      = signal(false);
+  formError   = signal<string | null>(null);
+  dispatching = signal(false);
 
   code         = signal('');
   labelFr      = signal('');
@@ -232,7 +235,7 @@ export class ReminderRulesAdminComponent implements OnInit {
   openCreate(): void {
     this.editing.set(null);
     this.resetForm();
-    this.drawerOpen.set(true);
+    this.openFormModal();
   }
 
   openEdit(rule: ReminderRule): void {
@@ -247,7 +250,27 @@ export class ReminderRulesAdminComponent implements OnInit {
     this.emailSubject.set(rule.emailSubject ?? '');
     this.emailBody.set(rule.emailBody ?? '');
     this.isActive.set(rule.isActive);
-    this.drawerOpen.set(true);
+    this.openFormModal();
+  }
+
+  private openFormModal(): void {
+    const t = (k: string) => this.translate.instant(k);
+    this.formRef = this.modal.open({
+      title: t(this.isEdit() ? 'ADMIN.REMINDERS.EDIT_TITLE' : 'ADMIN.REMINDERS.NEW_TITLE'),
+      icon:  'notifications_active',
+      body:  this.formTpl(),
+      size:  'lg',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: t('ADMIN.COMMON.CANCEL'), variant: 'secondary', action: () => this.closeForm() },
+        { label: t('ADMIN.COMMON.SAVE'),   variant: 'primary', icon: 'save', action: () => this.save() },
+      ],
+    });
+  }
+
+  closeForm(): void {
+    this.formRef?.close();
+    this.formRef = null;
   }
 
   private resetForm(): void {
@@ -270,7 +293,13 @@ export class ReminderRulesAdminComponent implements OnInit {
     && Number.isInteger(Number(this.offsetDays())));
 
   save(): void {
-    if (!this.canSave()) return;
+    if (this.saving()) return;
+    if (!this.canSave()) {
+      // Le `disabled` des boutons de la modale est figé à l'ouverture : la validation
+      // des champs requis se signale ici plutôt qu'en grisant le bouton.
+      this.formError.set(this.translate.instant('ADMIN.REMINDERS.ERROR_REQUIRED'));
+      return;
+    }
     this.saving.set(true);
     this.formError.set(null);
 
@@ -294,7 +323,7 @@ export class ReminderRulesAdminComponent implements OnInit {
     const req = editing ? this.svc.update(editing.id, dto) : this.svc.create(dto);
 
     req.subscribe({
-      next: () => { this.saving.set(false); this.drawerOpen.set(false); this.load(); },
+      next: () => { this.saving.set(false); this.closeForm(); this.load(); },
       error: err => {
         this.saving.set(false);
         this.formError.set(err?.error?.message

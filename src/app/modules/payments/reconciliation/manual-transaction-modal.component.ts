@@ -1,10 +1,11 @@
-import { Component, inject, output, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, output, signal } from '@angular/core';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { SelectComponent, SelectOption, FormFieldComponent } from '@khalilrebhiitec/daf360';
 import { ReconciliationService } from '../reconciliation.service';
 import { BankTransaction } from '../payment.model';
-
-const DEVISES = ['TND', 'EUR', 'USD', 'GBP', 'CHF'];
+import { ClientService } from '../../clients/client.service';
+import { FactListService } from '../../../core/fact-list.service';
+import { ListValueDto } from '../../cost/cost.model';
 
 @Component({
   selector: 'app-manual-transaction-modal',
@@ -32,10 +33,10 @@ const DEVISES = ['TND', 'EUR', 'USD', 'GBP', 'CHF'];
         </div>
         <div class="field-section" style="width:90px">
           <daf-select
-            [options]="currencyOptions"
-            [selected]="[form.currency]"
+            [options]="currencyOptions()"
+            [selected]="form.currency ? [form.currency] : []"
             [config]="{ label: ('PAYMENTS.MANUAL_TX.CURRENCY' | translate), fullWidth: true }"
-            (selectedChange)="form.currency = $event[0] || 'TND'" />
+            (selectedChange)="form.currency = $event[0] || ''" />
         </div>
       </div>
 
@@ -122,16 +123,33 @@ const DEVISES = ['TND', 'EUR', 'USD', 'GBP', 'CHF'];
     }
   `],
 })
-export class ManualTransactionModalComponent {
+export class ManualTransactionModalComponent implements OnInit {
   private readonly svc       = inject(ReconciliationService);
   private readonly translate = inject(TranslateService);
+  private readonly clientSvc = inject(ClientService);
+  private readonly listSvc   = inject(FactListService);
 
   dismissed = output<void>();
   confirmed = output<BankTransaction>();
 
-  readonly currencyOptions: SelectOption[] = DEVISES.map(d => ({ value: d, label: d }));
+  /** Devises de la liste admin `CURRENCY` du pays de l'utilisateur (Finance → Admin → Listes). */
+  readonly currencies = signal<ListValueDto[]>([]);
+  readonly currencyOptions = computed<SelectOption[]>(() =>
+    this.currencies().map(c => ({ value: c.code, label: c.code })));
 
-  form = { transactionDate: '', amount: 0, currency: 'TND', reference: '', description: '' };
+  form = { transactionDate: '', amount: 0, currency: '', reference: '', description: '' };
+
+  ngOnInit(): void {
+    this.clientSvc.getMyPays().subscribe(paysId => {
+      if (!paysId) return;
+      this.listSvc.getListValues('CURRENCY', paysId).subscribe(values => {
+        this.currencies.set(values);
+        if (!this.form.currency && values.length) {
+          this.form.currency = (values.find(v => v.isDefault) ?? values[0]).code;
+        }
+      });
+    });
+  }
   saving      = signal(false);
   serverError = signal<string | null>(null);
 

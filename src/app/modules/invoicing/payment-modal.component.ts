@@ -5,8 +5,10 @@ import {
   MultiDatePickerComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import { InvoiceService } from './invoice.service';
-import { InvoiceListItem, InvoiceDetail, PAYMENT_MODES } from './invoice.model';
+import { InvoiceListItem, InvoiceDetail } from './invoice.model';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
+import { FactListService } from '../../core/fact-list.service';
+import { ListValueDto, localizedLabel } from '../cost/cost.model';
 
 /**
  * « Enregistrer un paiement » — un dialogue `ModalService`, même construction que
@@ -22,12 +24,11 @@ import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
  * tableau est un instantané non réactif, et `saving()` doit piloter le spinner.
  *
  * ── Source des modes de paiement ─────────────────────────────────────────────────
- * `PAYMENT_MODES` (invoice.model.ts) : 4 codes FIGÉS côté front — VIREMENT, CHEQUE,
- * ESPECES, AUTRE — chacun associé à une clé i18n `INVOICING.PAYMENT_MODE.*`. Le code
- * part tel quel dans `RecordPaymentRequest.paymentMethod` et est stocké en texte libre
- * dans `payments.payment_method` : le backend (InvoiceService.recordPayment) ne le
- * valide contre aucune liste. Ce n'est PAS la liste configurable `PAYMENT_METHOD`
- * (Admin → Listes, V12) utilisée par les lignes de coût, même si ses codes coïncident.
+ * La liste configurable `PAYMENT_METHOD` (Finance → Admin → Listes, V12) du pays de la
+ * facture. Le CODE part tel quel dans `RecordPaymentRequest.paymentMethod` et est
+ * stocké en texte libre dans `payments.payment_method` — les codes semés (VIREMENT,
+ * CHEQUE, CARTE, ESPECES, AUTRE) reprennent ceux de l'ancienne constante `PAYMENT_MODES`,
+ * donc les encaissements déjà enregistrés restent lisibles.
  */
 @Component({
   selector: 'app-payment-modal',
@@ -125,6 +126,7 @@ export class PaymentModalComponent {
   private readonly svc       = inject(InvoiceService);
   private readonly modal     = inject(ModalService);
   private readonly translate = inject(TranslateService);
+  private readonly listSvc   = inject(FactListService);
 
   protected modalRef?: ModalRef;
   private onSaved?: () => void;
@@ -137,12 +139,15 @@ export class PaymentModalComponent {
   readonly saving      = signal(false);
   readonly serverError = signal<string | null>(null);
   readonly touched     = signal(false);
+  readonly methods     = signal<ListValueDto[]>([]);
 
-  /** Codes of `PAYMENT_MODES`, labels translated — see the class comment for the source. */
+  /** The admin `PAYMENT_METHOD` values, label in the UI language — see the class comment. */
   readonly modeOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    return Object.entries(PAYMENT_MODES)
-      .map(([value, key]) => ({ value, label: this.translate.instant(key) }));
+    const lang = this.translate.currentLang();
+    return this.methods().map(m => ({
+      value: m.code,
+      label: localizedLabel(m.labelFr, m.labelEn, lang) ?? m.code,
+    }));
   });
 
   /** `daf-multi-date-picker` works in `Date`; the API wants yyyy-MM-dd — same pattern as app-reglement-modal. */
@@ -170,6 +175,14 @@ export class PaymentModalComponent {
     this.touched.set(false);
     this.saving.set(false);
     this.serverError.set(null);
+
+    this.methods.set([]);
+    this.listSvc.getListValues('PAYMENT_METHOD', invoice.paysId).subscribe(values => {
+      this.methods.set(values);
+      // Le mode par défaut de l'admin, tant que l'utilisateur n'en a pas choisi un.
+      const def = values.find(v => v.isDefault);
+      if (def && !this.mode()) this.mode.set(def.code);
+    });
 
     this.modalRef = this.modal.open({
       title: this.translate.instant('INVOICING.PAYMENT_MODAL.TITLE'),

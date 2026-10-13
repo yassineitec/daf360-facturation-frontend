@@ -242,10 +242,11 @@
         (valueChange)="ostForm.montantBudget = +($any($event) ?? 0)"
         [options]="{ type: 'number', required: true,
           label: ('SUBCONTRACTING.OST.MODAL.BUDGET_AMOUNT' | translate) }" />
-      <daf-form-field
-        [value]="ostForm.devise"
-        (valueChange)="ostForm.devise = asStr($event)"
-        [options]="{ type: 'text', label: ('SUBCONTRACTING.OST.MODAL.CURRENCY' | translate) }" />
+      <daf-select
+        [options]="ostCurrencyOptions()"
+        [config]="{ label: ('SUBCONTRACTING.OST.MODAL.CURRENCY' | translate), fullWidth: true }"
+        [selected]="ostForm.devise ? [ostForm.devise] : []"
+        (selectedChange)="ostForm.devise = $event[0] || ''" />
       <daf-form-field
         [value]="ostForm.alerteDepassementPct"
         (valueChange)="ostForm.alerteDepassementPct = +($any($event) ?? 0)"

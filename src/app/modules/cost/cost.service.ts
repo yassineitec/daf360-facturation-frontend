@@ -4,12 +4,13 @@ import { Observable, catchError, map, of } from 'rxjs';
 import { environment }                   from '../../../environments/environment';
 import {
   CostApprovalThresholdDto, CreateCostApprovalThresholdRequest,
-  CostLineDto, CreateCostLineRequest,
-  CostImportResult, PageResponse,
-  CostAttachmentDto, ForexPreviewDto, CircuitPreviewDto,
+  CostLineDto,
+  CostInvoiceDto, CreateCostInvoiceRequest, CostInvoiceAttachmentDto, CostInvoiceReglementDto,
+  CostInvoiceChangeDto, CostInvoiceImportResult, PageResponse,
+  ForexPreviewDto, CircuitPreviewDto,
   ListValueDto, SupplierSearchItem, SupplierLedgerDto, SupplierCostSummaryDto,
   RateComputationDto, CreateRateComputationRequest,
-  CostLineReglementDto, CreateReglementRequest, UpdateReglementRequest,
+  CreateReglementRequest, UpdateReglementRequest,
 } from './cost.model';
 
 @Injectable({ providedIn: 'root' })
@@ -74,108 +75,135 @@ export class CostService {
     return this.http.get<CostLineDto>(`${this.base}/cost-lines/${id}`);
   }
 
-  getSupplierLedger(costLineId: number): Observable<SupplierLedgerDto> {
-    return this.http.get<SupplierLedgerDto>(`${this.base}/cost-lines/${costLineId}/supplier-ledger`).pipe(
+  // ── Cost invoices (V93) — entry, approval, payment, attachments ──────────────
+
+  getCostInvoices(filter: {
+    paysId: number;
+    status?: string | null;
+    supplierId?: number | null;
+    noSupplier?: boolean;
+    page?: number;
+    size?: number;
+    /** `champ,asc|desc` pour le `Pageable` de `GET /cost-invoices` (champs de `CostInvoice`). */
+    sort?: string | null;
+  }): Observable<PageResponse<CostInvoiceDto>> {
+    let params = new HttpParams()
+      .set('paysId', String(filter.paysId))
+      .set('page', String(filter.page ?? 0))
+      .set('size', String(filter.size ?? 25));
+    if (filter.status)             params = params.set('status', filter.status);
+    if (filter.supplierId != null) params = params.set('supplierId', String(filter.supplierId));
+    if (filter.noSupplier)         params = params.set('noSupplier', 'true');
+    if (filter.sort)               params = params.set('sort', filter.sort);
+    return this.http.get<PageResponse<CostInvoiceDto>>(`${this.base}/cost-invoices`, { params });
+  }
+
+  getCostInvoice(id: number): Observable<CostInvoiceDto> {
+    return this.http.get<CostInvoiceDto>(`${this.base}/cost-invoices/${id}`);
+  }
+
+  createCostInvoice(req: CreateCostInvoiceRequest): Observable<CostInvoiceDto> {
+    return this.http.post<CostInvoiceDto>(`${this.base}/cost-invoices`, req);
+  }
+
+  /** Full replace of a DRAFT invoice (header + lines); the server recomputes every amount. */
+  updateCostInvoice(id: number, req: CreateCostInvoiceRequest): Observable<CostInvoiceDto> {
+    return this.http.put<CostInvoiceDto>(`${this.base}/cost-invoices/${id}`, req);
+  }
+
+  getSupplierLedger(invoiceId: number): Observable<SupplierLedgerDto> {
+    return this.http.get<SupplierLedgerDto>(`${this.base}/cost-invoices/${invoiceId}/supplier-ledger`).pipe(
       catchError(() => of({ supplier: null, rows: [] } as SupplierLedgerDto)),
     );
   }
 
-  // ── Cost-lines-by-supplier (2026-09-09 plan) ──────────────────────────────────
-
-  getCostLinesBySupplier(paysId: number): Observable<SupplierCostSummaryDto[]> {
+  /** "By supplier" cards — invoice count + EUR totals per supplier, all statuses. */
+  getCostInvoicesBySupplier(paysId: number): Observable<SupplierCostSummaryDto[]> {
     const params = new HttpParams().set('paysId', String(paysId));
-    return this.http.get<SupplierCostSummaryDto[]>(`${this.base}/cost-lines/by-supplier`, { params }).pipe(
+    return this.http.get<SupplierCostSummaryDto[]>(`${this.base}/cost-invoices/by-supplier`, { params }).pipe(
       catchError(() => of([] as SupplierCostSummaryDto[])),
     );
   }
 
-  /** Same ledger as `getSupplierLedger()`, entered directly by supplierId instead of
-   *  via a cost-line id -- used by the `cost/supplier/:supplierId` detail-page route. */
+  /** Same ledger as `getSupplierLedger()`, entered directly by supplierId. */
   getLedgerForSupplier(supplierId: number): Observable<SupplierLedgerDto> {
     return this.http.get<SupplierLedgerDto>(`${this.base}/suppliers/${supplierId}/cost-ledger`).pipe(
       catchError(() => of({ supplier: null, rows: [] } as SupplierLedgerDto)),
     );
   }
 
-  // ── Manual règlement (payment) feature (2026-09-10 plan) ───────────────────────
+  // ── Payment (règlement), one per invoice ──────────────────────────────────────
 
-  createReglement(costLineId: number, req: CreateReglementRequest): Observable<CostLineReglementDto> {
-    return this.http.post<CostLineReglementDto>(`${this.base}/cost-lines/${costLineId}/reglement`, req);
+  createReglement(invoiceId: number, req: CreateReglementRequest): Observable<CostInvoiceReglementDto> {
+    return this.http.post<CostInvoiceReglementDto>(`${this.base}/cost-invoices/${invoiceId}/reglement`, req);
   }
 
-  updateReglement(reglementId: number, req: UpdateReglementRequest): Observable<CostLineReglementDto> {
-    return this.http.put<CostLineReglementDto>(`${this.base}/reglements/${reglementId}`, req);
+  updateReglement(reglementId: number, req: UpdateReglementRequest): Observable<CostInvoiceReglementDto> {
+    return this.http.put<CostInvoiceReglementDto>(`${this.base}/cost-invoices/reglements/${reglementId}`, req);
   }
 
   deleteReglement(reglementId: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/reglements/${reglementId}`);
+    return this.http.delete<void>(`${this.base}/cost-invoices/reglements/${reglementId}`);
   }
 
-  getReglement(reglementId: number): Observable<CostLineReglementDto> {
-    return this.http.get<CostLineReglementDto>(`${this.base}/reglements/${reglementId}`);
+  getReglement(reglementId: number): Observable<CostInvoiceReglementDto> {
+    return this.http.get<CostInvoiceReglementDto>(`${this.base}/cost-invoices/reglements/${reglementId}`);
   }
 
-  createCostLine(dto: CreateCostLineRequest): Observable<CostLineDto> {
-    return this.http.post<CostLineDto>(`${this.base}/cost-lines`, dto);
+  // ── Approval workflow (per invoice) ───────────────────────────────────────────
+
+  submitCostInvoice(id: number): Observable<CostInvoiceDto> {
+    return this.http.post<CostInvoiceDto>(`${this.base}/cost-invoices/${id}/submit`, {});
   }
 
-  updateCostLine(id: number, dto: Partial<CreateCostLineRequest>): Observable<CostLineDto> {
-    return this.http.patch<CostLineDto>(`${this.base}/cost-lines/${id}`, dto);
-  }
-
-  // ── Approval workflow ─────────────────────────────────────────────────────────
-
-  submitCostLine(id: number): Observable<CostLineDto> {
-    return this.http.post<CostLineDto>(`${this.base}/cost-lines/${id}/submit`, {});
-  }
-
-  approveCostLine(id: number, level: string, comment?: string): Observable<CostLineDto> {
+  approveCostInvoice(id: number, level: string, comment?: string): Observable<CostInvoiceDto> {
     const params = new HttpParams().set('level', level);
-    return this.http.post<CostLineDto>(
-      `${this.base}/cost-lines/${id}/approve`,
-      { comment: comment ?? '' },
-      { params },
-    );
+    return this.http.post<CostInvoiceDto>(`${this.base}/cost-invoices/${id}/approve`,
+      { comment: comment ?? '' }, { params });
   }
 
-  returnCostLine(id: number, level: string, comment: string): Observable<CostLineDto> {
+  returnCostInvoice(id: number, level: string, comment: string): Observable<CostInvoiceDto> {
     const params = new HttpParams().set('level', level);
-    return this.http.post<CostLineDto>(
-      `${this.base}/cost-lines/${id}/return`,
-      { comment },
-      { params },
-    );
+    return this.http.post<CostInvoiceDto>(`${this.base}/cost-invoices/${id}/return`, { comment }, { params });
   }
 
-  rejectCostLine(id: number, level: string, comment: string): Observable<CostLineDto> {
+  rejectCostInvoice(id: number, level: string, comment: string): Observable<CostInvoiceDto> {
     const params = new HttpParams().set('level', level);
-    return this.http.post<CostLineDto>(
-      `${this.base}/cost-lines/${id}/reject`,
-      { comment },
-      { params },
-    );
-  }
-
-  postCostLine(id: number): Observable<CostLineDto> {
-    return this.http.post<CostLineDto>(`${this.base}/cost-lines/${id}/post`, {});
+    return this.http.post<CostInvoiceDto>(`${this.base}/cost-invoices/${id}/reject`, { comment }, { params });
   }
 
   // ── Pending approvals queue ────────────────────────────────────────────────
 
-  getPendingApprovals(paysId: number): Observable<CostLineDto[]> {
+  getPendingApprovals(paysId: number): Observable<CostInvoiceDto[]> {
     const params = new HttpParams().set('pays', String(paysId));
-    return this.http.get<CostLineDto[]>(`${this.base}/cost/approvals/pending`, { params }).pipe(
-      catchError(() => of([] as CostLineDto[])),
+    return this.http.get<CostInvoiceDto[]>(`${this.base}/cost/approvals/pending`, { params }).pipe(
+      catchError(() => of([] as CostInvoiceDto[])),
     );
   }
 
-  // ── CSV import ────────────────────────────────────────────────────────────────
+  // ── Edit after validation, DAF only (V94) ─────────────────────────────────────
 
-  importCsv(file: File, paysId: number): Observable<CostImportResult> {
+  /** APPROVED / POSTED invoice: full new content + mandatory justification; status kept. */
+  editValidatedCostInvoice(id: number, invoice: CreateCostInvoiceRequest, justification: string): Observable<CostInvoiceDto> {
+    return this.http.put<CostInvoiceDto>(`${this.base}/cost-invoices/${id}/validated-edit`, { invoice, justification });
+  }
+
+  /** Edits made after validation, newest first. */
+  getCostInvoiceChanges(id: number): Observable<CostInvoiceChangeDto[]> {
+    return this.http.get<CostInvoiceChangeDto[]>(`${this.base}/cost-invoices/${id}/changes`).pipe(
+      catchError(() => of([] as CostInvoiceChangeDto[])),
+    );
+  }
+
+  // ── Historical import (reprise de l'ancienne base) ─────────────────────────────
+
+  /** `dryRun` = check only. Any error → nothing saved (all or nothing). */
+  importCostInvoices(file: File, paysId: number, dryRun: boolean): Observable<CostInvoiceImportResult> {
     const form = new FormData();
     form.append('file', file);
     form.append('paysId', String(paysId));
-    return this.http.post<CostImportResult>(`${this.base}/cost-lines/import`, form);
+    form.append('dryRun', String(dryRun));
+    return this.http.post<CostInvoiceImportResult>(`${this.base}/cost-invoices/import`, form);
   }
 
   // ── D3-127: Forex preview ──────────────────────────────────────────────────
@@ -187,32 +215,41 @@ export class CostService {
     return this.http.get<ForexPreviewDto>(`${this.base}/cost-lines/forex-preview`, { params });
   }
 
+  /** Approval route of an invoice being entered: its TTC in EUR against every category of its lines. */
   getCircuitPreview(
-    amountEur: number, paysId: number, costCategoryId?: number | null,
+    amountEur: number, paysId: number, costCategoryIds: (number | null | undefined)[] = [],
   ): Observable<CircuitPreviewDto> {
     let params = new HttpParams()
       .set('amountEur', String(amountEur))
       .set('paysId', String(paysId));
-    if (costCategoryId != null) params = params.set('costCategoryId', String(costCategoryId));
+    for (const id of new Set(costCategoryIds.filter((c): c is number => c != null))) {
+      params = params.append('costCategoryIds', String(id));
+    }
     return this.http.get<CircuitPreviewDto>(`${this.base}/cost-lines/circuit-preview`, { params });
   }
 
-  // ── D3-124/125: Attachments ────────────────────────────────────────────────
+  // ── Attachments (per invoice) ──────────────────────────────────────────────
 
-  addAttachment(costId: number, file: File): Observable<CostAttachmentDto> {
+  addAttachment(invoiceId: number, file: File): Observable<CostInvoiceAttachmentDto> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<CostAttachmentDto>(`${this.base}/cost-lines/${costId}/attachments`, formData);
+    return this.http.post<CostInvoiceAttachmentDto>(`${this.base}/cost-invoices/${invoiceId}/attachments`, formData);
   }
 
-  listAttachments(costId: number): Observable<CostAttachmentDto[]> {
-    return this.http.get<CostAttachmentDto[]>(`${this.base}/cost-lines/${costId}/attachments`).pipe(
-      catchError(() => of([] as CostAttachmentDto[])),
+  listAttachments(invoiceId: number): Observable<CostInvoiceAttachmentDto[]> {
+    return this.http.get<CostInvoiceAttachmentDto[]>(`${this.base}/cost-invoices/${invoiceId}/attachments`).pipe(
+      catchError(() => of([] as CostInvoiceAttachmentDto[])),
     );
   }
 
-  removeAttachment(costId: number, attachId: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/cost-lines/${costId}/attachments/${attachId}`);
+  /** The file itself, through the HttpClient so the auth header goes with it. */
+  downloadAttachment(invoiceId: number, attachId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/cost-invoices/${invoiceId}/attachments/${attachId}/download`,
+      { responseType: 'blob' });
+  }
+
+  removeAttachment(invoiceId: number, attachId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/cost-invoices/${invoiceId}/attachments/${attachId}`);
   }
 
   // ── D3-112: Configurable list values ─────────────────────────────────────────
@@ -262,22 +299,34 @@ export class CostService {
   }
 
   /**
-   * Same columns, same order, as CostImportService.parseCsvRow() reads them. The old
-   * template (date first, a category NUMBER, a currency CODE…) matched nothing the
-   * backend parses. `categoryCode` is a category or sub-category code from Admin →
-   * Listes for the importing pays; `currencyId` is the CURRENCY list value id.
+   * Template of the historical import — the columns CostImportService reads, by HEADER
+   * NAME (order free). `;`-separated with a BOM so Excel (FR) opens it in columns. One row
+   * per cost LINE: rows sharing a `reference` form one invoice. Rates are percentages.
+   * The samples: a paid 2-line STEG invoice (VAT 19 % and 7 %, one "autre taxe"), then a cost
+   * without supplier. STEG: TTC = 1201,900 + 535,000 + timbre 1 + autre taxe 12 = 1749,900;
+   * RS 1,5 % of HT + FODEC (1510) = 22,650 → paid 1727,250. A vat_amount given is kept as is
+   * (old base); empty → (HT + FODEC) × vat_rate. other_tax_type = a code of the "Autres taxes"
+   * list of the pays (AUTRE by default), other_tax_label free, other_tax_amount free (V95).
    */
   downloadCsvTemplate(): void {
-    const headers = [
-      'paysId', 'categoryCode', 'transactionDate', 'periodYear', 'periodMonth',
-      'description', 'netAmountLocal', 'vatAmountLocal', 'currencyId',
-    ].join(',');
-    const sample = [
-      '178', 'LOYER', '2026-06-01', '2026', '6',
-      'Loyer juin', '1500.000', '0', '13',
-    ].join(',');
-    const csv  = headers + '\n' + sample + '\n';
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const rows = [
+      ['reference', 'supplier_code', 'supplier_name', 'supplier_invoice_number', 'invoice_date', 'due_date',
+       'currency', 'category', 'description', 'net_amount', 'fodec_rate', 'vat_rate', 'vat_amount',
+       'stamp_duty', 'rs_rate', 'affaire', 'status', 'paid_amount', 'paid_date', 'notes',
+       'other_tax_type', 'other_tax_label', 'other_tax_amount'],
+      ['ANC-2025-0001', 'STEG', '', 'FA-1234', '05/10/2025', '04/11/2025', 'TND', 'OFFICE_OVERHEAD',
+       'Électricité octobre', '1000,000', '1', '19', '', '1', '1,5', '', 'POSTED', '1727,250', '10/11/2025', '',
+       'AUTRE', 'TCL', '12,000'],
+      ['ANC-2025-0001', 'STEG', '', 'FA-1234', '05/10/2025', '04/11/2025', 'TND', 'CHARGES_BUREAU',
+       'Maintenance', '500,000', '', '7', '', '1', '1,5', '', 'POSTED', '1727,250', '10/11/2025', '',
+       '', '', ''],
+      ['ANC-2025-0002', '', 'Taxi Tunis', '', '12/10/2025', '', 'TND', 'TRAVEL_EXPENSES',
+       'Déplacement client', '40,000', '', '', '7,600', '', '', '', 'APPROVED', '', '', 'Sans fournisseur',
+       '', '', ''],
+    ];
+    // BOM first, so Excel reads the file as UTF-8 (accents).
+    const csv  = String.fromCharCode(0xFEFF) + rows.map(r => r.join(';')).join('\r\n') + '\r\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;

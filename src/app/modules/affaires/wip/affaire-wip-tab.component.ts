@@ -88,6 +88,13 @@ type WipFilterValues = Record<string, string | Date[] | null>;
       padding-bottom: 6px;
     }
 
+    /* Label "Montant d'avancement de la période (EUR)" sur une seule ligne : le champ
+       ne fait que w-1/2 de max-w-md, le label déborde à droite (au-dessus du spaceur
+       invisible de la colonne des boutons) au lieu de passer à la ligne. */
+    ::ng-deep .taux-field-compact label {
+      white-space: nowrap;
+    }
+
     /* TEST : daf-pagination place le résumé "1–20 sur 137" à gauche (justify-between,
        premier enfant) et les contrôles de page + sélecteur "par page" à droite (second
        enfant). On veut l'inverse : row-reverse sur son unique <div> racine inverse

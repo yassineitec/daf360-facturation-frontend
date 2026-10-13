@@ -9,63 +9,16 @@ import { PaysRefDto } from '../affaires/affaire.model';
 import { ContactEditorComponent } from './contacts/contact-editor.component';
 import { ClientContactService }   from './contacts/client-contact.service';
 import { ContactDraft, toContactDraft } from './contacts/client-contact.model';
+import { FactListService } from '../../core/fact-list.service';
+import { ListValueDto, localizedLabel } from '../cost/cost.model';
 import {
   ButtonComponent, FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 
-/**
- * Les secteurs proposés d'office, indépendamment de ce que contient la base.
- *
- * `GET /clients/sectors` ne renvoie QUE les secteurs déjà saisis sur des clients
- * existants : c'est un `distinct` sur une colonne libre, pas un référentiel. Seul,
- * il laisse la liste vide au premier client et n'offre jamais un secteur métier
- * tant que personne ne l'a tapé — d'où cette liste, fusionnée avec celle du back.
- */
-const CURATED_SECTORS = [
-  'Administrations et organismes publics',
-  'Agriculture', 'Agroalimentaire',
-  'Architectes et cabinets d’ingénierie',
-  'BTP & Construction', 'Commerce de détail', 'Commerce de gros',
-  'Éducation & Formation', 'Énergie & Utilities',
-  'Entreprises de construction / EPC',
-  'Entreprises de traitement de l’eau',
-  'Entreprises de travaux publics',
-  'Entreprises industrielles',
-  'Finance & Banque', 'Hôtellerie & Tourisme', 'Immobilier',
-  'Industrie & Manufacture', 'Informatique & Tech',
-  'Investisseurs et développeurs de projets',
-  'Logistique & Transport', 'Médias & Communication',
-  'Opérateurs de transport', 'Opérateurs énergétiques', 'Opérateurs Oil & Gas',
-  'Promoteurs immobiliers',
-  'Santé & Pharmacie', 'Services aux entreprises',
-  'Sociétés minières',
-  'Télécommunications', 'Textile & Mode',
-];
-
-/**
- * Fusionne les secteurs du référentiel figé et ceux remontés de la base, sans doublon.
- *
- * Le dédoublonnage ignore la casse et les espaces de bord : un client enregistré avec
- * « immobilier » ne doit pas créer une seconde ligne à côté d'« Immobilier ». En cas de
- * collision, c'est l'orthographe de {@link CURATED_SECTORS} qui l'emporte, puisqu'elle
- * est passée en premier.
- */
-function mergeSectors(...lists: (readonly (string | null | undefined)[])[]): string[] {
-  const seen = new Map<string, string>();
-  for (const list of lists) {
-    for (const raw of list ?? []) {
-      const value = raw?.trim();
-      if (!value) continue;
-      const key = value.toLocaleLowerCase('fr');
-      if (!seen.has(key)) seen.set(key, value);
-    }
-  }
-  return [...seen.values()].sort((a, b) => a.localeCompare(b, 'fr'));
-}
+/** Liste configurable du secteur d'activité (V95) — Administration → Listes. */
+const CLIENT_SECTOR = 'CLIENT_SECTOR';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const CURRENCY_CODES = ['TND', 'EGP', 'EUR', 'USD'];
 
 @Component({
   selector: 'app-client-form',
@@ -85,6 +38,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
 
   private readonly svc = inject(ClientService);
   private readonly contactSvc = inject(ClientContactService);
+  private readonly listSvc = inject(FactListService);
   private readonly translate = inject(TranslateService);
 
   // ── Form field signals ─────────────────────────────────────────────────────
@@ -101,17 +55,21 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly notes            = signal('');
 
   // daf-select signals (always string[])
+  /** L'id de la valeur CLIENT_SECTOR, en chaîne pour le `daf-select`. */
   readonly selectedSector   = signal<string[]>([]);
-  readonly selectedCurrency = signal<string[]>(['TND']);
+  readonly selectedCurrency = signal<string[]>([]);
 
   // ── UI state ───────────────────────────────────────────────────────────────
   readonly saving         = signal(false);
   readonly serverError    = signal<string | null>(null);
-  readonly sectors        = signal<string[]>([]);
+  /** Liste CLIENT_SECTOR de l'entité du client, paramétrée dans Finance > Admin. */
+  readonly sectors        = signal<ListValueDto[]>([]);
   readonly loadingSectors = signal(false);
   readonly touched        = signal(false);
   /** Référentiel des pays, pour la liste déroulante « Pays ». */
   readonly paysList       = signal<PaysRefDto[]>([]);
+  /** Devises paramétrées dans Finance > Admin (liste CURRENCY) pour l'entité du client. */
+  readonly currencies     = signal<ListValueDto[]>([]);
 
   // ── Contacts ───────────────────────────────────────────────────────────────
   // Les trois champs `contactName` / `contactEmail` / `contactPhone` ont disparu :
@@ -128,15 +86,29 @@ export class ClientFormComponent implements OnInit, OnChanges {
   private initialContacts: ContactDraft[] = [];
 
   // ── Select options ─────────────────────────────────────────────────────────
-  readonly sectorSelectOptions = computed<SelectOption[]>(() =>
-    this.sectors().map(s => ({ value: s, label: s }))
-  );
-  readonly currencyOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    return CURRENCY_CODES.map(code => ({
-      value: code,
-      label: this.translate.instant(`CLIENTS.FORM.CURRENCY.${code}`),
+  readonly sectorSelectOptions = computed<SelectOption[]>(() => {
+    const lang = this.translate.currentLang();
+    return this.sectors().map(s => ({
+      value: String(s.id),
+      label: localizedLabel(s.labelFr, s.labelEn, lang) ?? s.code,
     }));
+  });
+  /**
+   * La liste CURRENCY de l'admin. La colonne `default_currency` garde le CODE : une
+   * devise du client désactivée depuis reste proposée, sinon le select s'afficherait
+   * vide et l'enregistrement l'effacerait sans que personne l'ait choisi.
+   */
+  readonly currencyOptions = computed<SelectOption[]>(() => {
+    const lang = this.translate.currentLang();
+    const options: SelectOption[] = this.currencies().map(c => ({
+      value: c.code,
+      label: `${c.code} — ${localizedLabel(c.labelFr, c.labelEn, lang) ?? c.code}`,
+    }));
+    const current = this.client?.defaultCurrency;
+    if (current && !options.some(o => o.value === current)) {
+      options.unshift({ value: current, label: current });
+    }
+    return options;
   });
 
   // ── Select configs ─────────────────────────────────────────────────────────
@@ -242,30 +214,61 @@ export class ClientFormComponent implements OnInit, OnChanges {
 
   get isEditMode(): boolean { return !!this.client; }
 
-  /**
-   * Alimente la liste déroulante « Secteur » : référentiel figé + secteurs déjà en base,
-   * plus celui du client édité. Ce dernier compte : s'il porte une valeur historique
-   * absente des deux listes, l'omettre viderait en silence un champ obligatoire à
-   * l'ouverture du formulaire.
-   */
-  private setSectors(fromBackend: readonly string[]): void {
-    this.sectors.set(mergeSectors(CURATED_SECTORS, fromBackend, [this.client?.sector]));
-  }
-
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['paysId']) {
       const effectiveId: number = this.client?.paysId ?? changes['paysId'].currentValue;
       if (effectiveId) {
-        this.loadingSectors.set(true);
-        this.svc.getSectors().subscribe({
-          next:  s  => { this.setSectors(s);   this.loadingSectors.set(false); },
-          error: () => { this.setSectors([]);  this.loadingSectors.set(false); },
-        });
+        this.loadCurrencies(effectiveId);
+        this.loadSectors(effectiveId);
       } else {
-        this.setSectors([]);
+        this.sectors.set([]);
       }
     }
 
+  }
+
+  /**
+   * La liste CLIENT_SECTOR **de l'entité du client** — la même que l'administration
+   * (Administration → Listes → Secteurs d'activité), qui se paramètre entité par entité.
+   */
+  private loadSectors(paysId: number): void {
+    this.loadingSectors.set(true);
+    this.listSvc.getListValues(CLIENT_SECTOR, paysId).subscribe({
+      next: list => {
+        this.sectors.set(list);
+        this.reconcileSelectedSector(list);
+        this.loadingSectors.set(false);
+      },
+      error: () => { this.sectors.set([]); this.loadingSectors.set(false); },
+    });
+  }
+
+  /**
+   * Garde la sélection cohérente avec la liste de l'entité — même règle que la
+   * catégorie fournisseur (`supplier-new`) :
+   * - l'id est dans la liste → rien à faire ;
+   * - sinon une valeur de même **code** existe → c'est la surcharge de l'entité (l'admin
+   *   a renommé le secteur pour elle : nouvel id, même code). On bascule dessus ;
+   * - sinon le secteur n'existe pas (ou plus) pour cette entité → sélection effacée,
+   *   l'utilisateur doit en choisir un autre (le champ est obligatoire).
+   */
+  private reconcileSelectedSector(list: ListValueDto[]): void {
+    const id = this.selectedSector()[0];
+    if (!id || list.some(s => String(s.id) === id)) return;
+    const code = this.client?.sectorCode;
+    const byCode = code ? list.find(s => s.code === code) : undefined;
+    this.selectedSector.set(byCode ? [String(byCode.id)] : []);
+  }
+
+  /** Charge la liste CURRENCY du pays et, à la création, présélectionne la devise par défaut de l'admin. */
+  private loadCurrencies(paysId: number): void {
+    this.listSvc.getListValues('CURRENCY', paysId).subscribe(values => {
+      this.currencies.set(values);
+      if (!this.selectedCurrency()[0] && values.length) {
+        const def = values.find(v => v.isDefault) ?? values[0];
+        this.selectedCurrency.set([def.code]);
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -275,9 +278,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
     if (c) {
       this.clientName.set(c.clientName ?? '');
       this.clientCode.set(c.clientCode ?? '');
-      // Rogné comme dans `mergeSectors`, sinon la valeur sélectionnée ne retrouve pas
-      // son option dans la liste et le `daf-select` s'affiche vide.
-      this.selectedSector.set(c.sector?.trim() ? [c.sector.trim()] : []);
+      this.selectedSector.set(c.sectorId != null ? [String(c.sectorId)] : []);
       this.taxId.set(c.taxId ?? '');
       this.countryId.set(c.countryId != null ? String(c.countryId) : '');
       this.address.set(c.address ?? '');
@@ -285,7 +286,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
       this.postalCode.set(c.postalCode ?? '');
       this.website.set(c.website ?? '');
       this.paymentTermsDays.set(c.paymentTermsDays != null ? String(c.paymentTermsDays) : '30');
-      this.selectedCurrency.set([c.defaultCurrency ?? 'TND']);
+      this.selectedCurrency.set(c.defaultCurrency ? [c.defaultCurrency] : []);
       this.notes.set(c.notes ?? '');
 
       // Actifs seulement : la réactivation d'un contact désactivé se fait depuis la
@@ -310,7 +311,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
     const dto: Partial<CreateClientRequest> = {
       clientName:       this.clientName().trim(),
       clientCode:       this.clientCode().trim()     || null,
-      sector:           this.selectedSector()[0]     || null,
+      sectorId:         this.selectedSector()[0] ? Number(this.selectedSector()[0]) : null,
       taxId:            this.taxId().trim()           || null,
       countryId:        this.countryId() ? Number(this.countryId()) : null,
       address:          this.address().trim()         || null,

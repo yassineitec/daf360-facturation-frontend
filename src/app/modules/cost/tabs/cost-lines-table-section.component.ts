@@ -3,51 +3,56 @@ import { TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, DafCellDirective, DataTableComponent, SortDirection, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
-import { CostLineDto } from '../cost.model';
+import { CostInvoiceDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { tableTools } from '../../../shared/table-tools';
 import {
-  APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, canEdit, canReglement,
-  canSubmit, formatDate, statusKey,
+  APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, formatDate, statusKey,
 } from '../cost-display';
+import {
+  canEditInvoice, canReglementInvoice, canSubmitInvoice, invoiceCategorySummary,
+} from './cost-invoice-display';
 
 /** L'en-tête de tri tel que la page le garde — `null` = l'ordre du serveur. */
-export interface CostLineSort {
+export interface CostInvoiceSort {
   key: string;
   dir: 'asc' | 'desc';
 }
+/** @deprecated nom d'avant V93 — gardé pour les appelants existants. */
+export type CostLineSort = CostInvoiceSort;
 
 /**
- * Colonne du tableau → champ de l'entité `CostLine` pour le tri serveur (`?sort=`, lu par
- * le `Pageable` de `GET /cost-lines`). La catégorie se trie sur le libellé affiché
- * (`costCategory.labelFr`) : Spring Data en fait une jointure externe, une ligne sans
- * catégorie reste donc dans la liste.
+ * Colonne du tableau → champ de l'entité `CostInvoice` pour le tri serveur (`?sort=`, lu
+ * par le `Pageable` de `GET /cost-invoices`).
+ *
+ * Pas de `supplier` (le nom d'un fournisseur lié n'est pas un champ de `CostInvoice`), ni
+ * de `category` / `lines` (portés par les lignes) : ces colonnes ne se trient qu'en tri local.
  */
-// Pas de `supplier` : le nom d'un fournisseur lié n'est pas un champ de `CostLine`
-// (seul supplierId l'est) — la colonne ne se trie qu'en tri local.
 const SERVER_SORT_FIELD: Record<string, string> = {
-  category: 'costCategory.labelFr',
-  date:     'transactionDate',
-  net:      'netAmountLocal',
-  ttc:      'grossAmountLocal',
-  status:   'status',
-  approval: 'approvalLevelRequired',
+  reference:     'reference',
+  invoiceNumber: 'supplierInvoiceNumber',
+  date:          'invoiceDate',
+  net:           'netAmountLocal',
+  ttc:           'grossAmountLocal',
+  status:        'status',
+  approval:      'approvalLevelRequired',
 };
 
 /**
- * List view of the Lignes de coût tab on the house table style (UI-PLAYBOOK §6b): no
- * wrapper and no outer card, `showHeader: false`, `emptyMessage`, icon-only row actions.
+ * List view of the cost tab — one row per cost INVOICE (V93), on the house table style
+ * (UI-PLAYBOOK §6b): no wrapper and no outer card, `showHeader: false`, `emptyMessage`,
+ * icon-only row actions.
  *
- * Outils de tableau de la lib activés, comme sur `/finance/affaires` (`tableTools`). Deux
- * modes de tri :
- * - `serverSort` (onglet Lignes de coût, paginé côté serveur) : `manualSort`, seules les
- *   colonnes de `SERVER_SORT_FIELD` sont triables, l'en-tête émet `sortChange` et la page
- *   recharge la première page triée ;
- * - sinon (fiche fournisseur, toutes les lignes en une fois) : tri local de la lib, sur
- *   les valeurs brutes (`sortAccessor`) plutôt que sur les chaînes formatées.
+ * Deux modes de tri :
+ * - `serverSort` (liste paginée côté serveur) : `manualSort`, seules les colonnes de
+ *   `SERVER_SORT_FIELD` sont triables, l'en-tête émet `sortChange` et la page recharge la
+ *   première page triée ;
+ * - sinon (toutes les factures en une fois) : tri local de la lib, sur les valeurs brutes
+ *   (`sortAccessor`) plutôt que sur les chaînes formatées.
  *
- * Stateless: lines in, `(view)` / `(edit)` / `(submitLine)` / `(sortChange)` out.
+ * Stateless: invoices in, `(view)` / `(edit)` / `(submitInvoice)` / `(createReglement)` /
+ * `(sortChange)` out.
  */
 @Component({
   selector: 'app-cost-lines-table-section',
@@ -64,22 +69,19 @@ const SERVER_SORT_FIELD: Record<string, string> = {
       (sortChange)="onSortChange($event.key, $event.dir)"
       (resetClick)="onSortChange('', null)">
 
-      <!-- Supplier carries the line's reference as a second line rather than spending a
-           whole column on it. -->
+      <ng-template dafCell="reference" let-row>
+        <span class="font-mono text-[12px] font-semibold text-on-surface">{{ row['_reference'] }}</span>
+      </ng-template>
+
       <ng-template dafCell="supplier" let-row>
-        <div class="flex flex-col leading-snug">
-          <span class="font-medium text-on-surface">{{ row['_supplier'] }}</span>
-          @if (row['_reference']) {
-            <span class="font-mono text-[11px] text-outline">{{ row['_reference'] }}</span>
-          }
-        </div>
+        <span class="font-medium text-on-surface">{{ row['_supplier'] }}</span>
       </ng-template>
 
       <ng-template dafCell="_actions" let-row>
         <div class="flex items-center justify-end gap-2">
           @if (row['_canSubmit']) {
             <fact-table-action icon="send" [tooltip]="tips().submit"
-                               (action)="submitLine.emit(row['_raw'])" />
+                               (action)="submitInvoice.emit(row['_raw'])" />
           }
           @if (row['_canEdit']) {
             <fact-table-action id="edit" [tooltip]="tips().edit" (action)="edit.emit(row['_raw'])" />
@@ -102,23 +104,22 @@ export class CostLinesTableSectionComponent {
   readonly table = viewChild(DataTableComponent);
   private readonly currency  = inject(DisplayCurrencyPipe);
 
-  lines        = input.required<CostLineDto[]>();
-  categoryFor  = input.required<(line: CostLineDto) => string>();
+  invoices     = input.required<CostInvoiceDto[]>();
   loading      = input(false);
   emptyMessage = input('');
   pageSize     = input(25);
-  /** Tri délégué au serveur — à activer quand `lines` n'est qu'une page du résultat. */
+  /** Tri délégué au serveur — à activer quand `invoices` n'est qu'une page du résultat. */
   serverSort   = input(false);
   /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
-  sort         = input<CostLineSort | null>(null);
+  sort         = input<CostInvoiceSort | null>(null);
 
-  /** Row click — the read-only detail page, same as a card click. Editing stays on the pencil action. */
-  readonly view            = output<CostLineDto>();
-  readonly edit            = output<CostLineDto>();
-  readonly submitLine      = output<CostLineDto>();
-  readonly createReglement = output<CostLineDto>();
-  /** Valeur `sort` à envoyer à l'API (`label,asc`…), ou `null` quand le tri est retiré. */
-  readonly sortChange      = output<{ sort: CostLineSort | null; param: string | null }>();
+  /** Row click — the read-only invoice detail page. Editing stays on the pencil action. */
+  readonly view            = output<CostInvoiceDto>();
+  readonly edit            = output<CostInvoiceDto>();
+  readonly submitInvoice   = output<CostInvoiceDto>();
+  readonly createReglement = output<CostInvoiceDto>();
+  /** Valeur `sort` à envoyer à l'API (`invoiceDate,desc`…), ou `null` quand le tri est retiré. */
+  readonly sortChange      = output<{ sort: CostInvoiceSort | null; param: string | null }>();
 
   protected readonly tips = computed(() => {
     this.translate.currentLang();
@@ -134,55 +135,62 @@ export class CostLinesTableSectionComponent {
     const t = (key: string) => this.translate.instant(key);
     // En tri serveur, seules les colonnes portées par l'entité ; en tri local, toutes.
     const sortable = (key: string) => !this.serverSort() || key in SERVER_SORT_FIELD;
-    const raw = (row: TableRow) => row['_raw'] as CostLineDto;
+    const raw = (row: TableRow) => row['_raw'] as CostInvoiceDto;
     return [
-      { key: 'supplier', label: t('COST.LINES.COL_SUPPLIER'),    type: 'custom', sortable: sortable('supplier'),
+      { key: 'reference',     label: t('COST.LINES.COL_REFERENCE'),      type: 'custom', sortable: sortable('reference'),
+        sortAccessor: row => raw(row).reference },
+      { key: 'supplier',      label: t('COST.LINES.COL_SUPPLIER'),       type: 'custom', sortable: sortable('supplier'),
         sortAccessor: row => (raw(row).supplierName ?? '').toLowerCase() },
-      { key: 'category', label: t('COST.LINES.COL_CATEGORY'),    type: 'text',   sortable: sortable('category') },
-      { key: 'date',     label: t('COST.LINES.COL_DATE'),        type: 'text',   sortable: sortable('date'),
-        sortAccessor: row => raw(row).transactionDate },
-      { key: 'net',      label: t('COST.LINES.COL_NET_AMOUNT'),  type: 'text',   sortable: sortable('net'),
+      { key: 'invoiceNumber', label: t('COST.LINES.COL_INVOICE_NUMBER'), type: 'text',   sortable: sortable('invoiceNumber') },
+      { key: 'date',          label: t('COST.LINES.COL_INVOICE_DATE'),   type: 'text',   sortable: sortable('date'),
+        sortAccessor: row => raw(row).invoiceDate },
+      { key: 'lines',         label: t('COST.LINES.COL_LINES'),          type: 'text',   sortable: sortable('lines'),
+        sortAccessor: row => raw(row).lines?.length ?? 0 },
+      { key: 'category',      label: t('COST.LINES.COL_CATEGORY'),       type: 'text',   sortable: sortable('category') },
+      { key: 'net',           label: t('COST.LINES.COL_NET_AMOUNT'),     type: 'text',   sortable: sortable('net'),
         sortAccessor: row => raw(row).netAmountLocal },
-      { key: 'ttc',      label: t('COST.LINES.COL_TTC'),         type: 'text',   sortable: sortable('ttc'),
+      { key: 'ttc',           label: t('COST.LINES.COL_TTC'),            type: 'text',   sortable: sortable('ttc'),
         sortAccessor: row => raw(row).grossAmountLocal },
-      { key: 'status',   label: t('COST.LINES.COL_STATUS'),      type: 'badge',  sortable: sortable('status') },
-      { key: 'approval', label: t('COST.LINES.COL_APPROVAL'),    type: 'badge',  sortable: sortable('approval') },
-      { key: '_actions', label: '', width: '1%' },
+      { key: 'status',        label: t('COST.LINES.COL_STATUS'),         type: 'badge',  sortable: sortable('status') },
+      { key: 'approval',      label: t('COST.LINES.COL_APPROVAL'),       type: 'badge',  sortable: sortable('approval') },
+      { key: '_actions',      label: '', width: '1%' },
     ];
   });
 
   protected readonly rows = computed<TableRow[]>(() => {
-    this.translate.currentLang();
-    const t = (key: string) => this.translate.instant(key);
-    const cat = this.categoryFor();
+    const lang = this.translate.currentLang();
+    const t  = (key: string) => this.translate.instant(key);
+    const tp = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
 
-    return this.lines().map(line => {
-      const levelKey = approvalLevelKey(line.approvalLevelRequired);
+    return this.invoices().map(inv => {
+      const levelKey = approvalLevelKey(inv.approvalLevelRequired);
       return {
-        id:       line.id,
-        category: cat(line),
-        date:     formatDate(line.transactionDate),
-        net:      this.currency.transform(line.netAmountLocal, line.currency ?? 'TND'),
-        ttc:      this.currency.transform(line.grossAmountLocal, line.currency ?? 'TND'),
+        id:            inv.id,
+        invoiceNumber: inv.supplierInvoiceNumber ?? '—',
+        date:          formatDate(inv.invoiceDate),
+        lines:         String(inv.lines?.length ?? 0),
+        category:      invoiceCategorySummary(inv, lang, tp),
+        net:           this.currency.transform(inv.netAmountLocal, inv.currency ?? 'TND'),
+        ttc:           this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'TND'),
         status: {
-          label:   t(statusKey(line.status)),
-          options: { variant: STATUS_BADGE_VARIANT[line.status] ?? 'neutral', dot: true, size: 'sm' },
+          label:   t(statusKey(inv.status)),
+          options: { variant: STATUS_BADGE_VARIANT[inv.status] ?? 'neutral', dot: true, size: 'sm' },
         } satisfies BadgeCell,
         approval: {
           label:   levelKey ? t(levelKey) : '—',
           options: {
-            variant: APPROVAL_BADGE_VARIANT[line.approvalLevelRequired ?? ''] ?? 'neutral',
+            variant: APPROVAL_BADGE_VARIANT[inv.approvalLevelRequired ?? ''] ?? 'neutral',
             size: 'sm',
           },
         } satisfies BadgeCell,
 
         // Rendered by the projected cells above.
-        _supplier:   line.supplierName ?? t('COST.LINES.NO_SUPPLIER_CARD'),
-        _reference:  line.reference ?? '',
-        _canEdit:      canEdit(line),
-        _canSubmit:    canSubmit(line),
-        _canReglement: canReglement(line),
-        _raw:          line,
+        _reference:    inv.reference ?? `#${inv.id}`,
+        _supplier:     inv.supplierName ?? t('COST.LINES.NO_SUPPLIER_CARD'),
+        _canEdit:      canEditInvoice(inv),
+        _canSubmit:    canSubmitInvoice(inv),
+        _canReglement: canReglementInvoice(inv),
+        _raw:          inv,
       };
     });
   });
@@ -208,11 +216,11 @@ export class CostLinesTableSectionComponent {
   protected onSortChange(key: string, dir: SortDirection): void {
     if (!this.serverSort()) return;
     const field = SERVER_SORT_FIELD[key];
-    const sort: CostLineSort | null = field && dir ? { key, dir } : null;
+    const sort: CostInvoiceSort | null = field && dir ? { key, dir } : null;
     this.sortChange.emit({ sort, param: sort ? `${field},${sort.dir}` : null });
   }
 
   protected onRowClick(row: TableRow): void {
-    this.view.emit(row['_raw'] as CostLineDto);
+    this.view.emit(row['_raw'] as CostInvoiceDto);
   }
 }

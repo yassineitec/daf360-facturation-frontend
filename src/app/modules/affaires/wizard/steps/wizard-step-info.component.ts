@@ -18,7 +18,7 @@ import { ClientDropdownItemDto }  from '../../../clients/client.model';
 import { ClientContactService }   from '../../../clients/contacts/client-contact.service';
 import { ClientContactDto }       from '../../../clients/contacts/client-contact.model';
 import { PaysRefDto }             from '../../affaire.model';
-import { ListValueDto }           from '../../../cost/cost.model';
+import { ListValueDto, localizedLabel } from '../../../cost/cost.model';
 
 @Component({
   selector: 'app-wizard-step-info',
@@ -75,10 +75,10 @@ export class WizardStepInfoComponent implements OnInit {
 
   // ── daf-select currency options (list from backend, else hardcoded fallback) ──
   readonly currencyOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
+    const lang = this.translate.currentLang();
     const list = this.currencies();
     if (list.length > 0) {
-      return list.map(c => ({ value: c.code, label: `${c.code} — ${c.labelFr}` }));
+      return list.map(c => ({ value: c.code, label: `${c.code} — ${localizedLabel(c.labelFr, c.labelEn, lang) ?? c.code}` }));
     }
     return [
       { value: 'EUR', label: `EUR — ${this.translate.instant('AFFAIRES.wizard.info.cur_euro')}` },
@@ -127,9 +127,7 @@ export class WizardStepInfoComponent implements OnInit {
   ngOnInit(): void {
     this.clientInputValue.set(this.draft.clientName ?? '');
 
-    this.listSvc.getListValues('CURRENCY', 0)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(c => this.currencies.set(c));
+    this.loadCurrencies(this.draft.paysId);
 
     this.affaireSvc.getPays()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -194,6 +192,20 @@ export class WizardStepInfoComponent implements OnInit {
     const pays = this.paysList().find(p => p.id === id);
     this.draft = { ...this.draft, paysId: id || 0, paysLabel: pays?.frenchLabel };
     this.emit();
+    this.loadCurrencies(id);
+  }
+
+  /**
+   * Devises de la liste admin `CURRENCY` du pays de l'affaire. Avec `pays=0` le serveur
+   * ne rendait que les valeurs globales semées : un ajout, un renommage ou une
+   * désactivation faits dans Finance → Admin (toujours enregistrés par pays) n'arrivaient
+   * jamais ici. Sans pays choisi, la liste de repli de `currencyOptions` s'applique.
+   */
+  private loadCurrencies(paysId: number | null | undefined): void {
+    if (!paysId) { this.currencies.set([]); return; }
+    this.listSvc.getListValues('CURRENCY', paysId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(c => this.currencies.set(c));
   }
 
   budgetLabel(): string {

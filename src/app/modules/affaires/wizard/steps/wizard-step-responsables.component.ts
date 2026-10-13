@@ -12,7 +12,7 @@ import { AffaireWizardService } from '../../affaire-wizard.service';
 import { FactListService }    from '../../../../core/fact-list.service';
 import { AffaireDraftState, DisciplineDto, ResponsableItem } from '../../affaire-wizard.model';
 import { UserRefDto } from '../../affaire.model';
-import { ListValueDto } from '../../../cost/cost.model';
+import { ListValueDto, localizedLabel } from '../../../cost/cost.model';
 
 @Component({
   selector: 'app-wizard-step-responsables',
@@ -81,8 +81,14 @@ export class WizardStepResponsablesComponent implements OnInit {
   readonly userOptions = computed<SelectOption[]>(() =>
     this.allUsers().map(u => ({ value: String(u.id), label: u.fullName })));
 
-  readonly activiteOptions = computed<SelectOption[]>(() =>
-    this.activites().map(a => ({ value: a.id + '|' + a.labelFr, label: a.labelFr })));
+  // La valeur garde `labelFr` (c'est elle que la présélection compare) ; seul le libellé suit la langue.
+  readonly activiteOptions = computed<SelectOption[]>(() => {
+    const lang = this.translate.currentLang();
+    return this.activites().map(a => ({
+      value: a.id + '|' + a.labelFr,
+      label: localizedLabel(a.labelFr, a.labelEn, lang) ?? a.labelFr,
+    }));
+  });
 
   // `id|libellé`, l'identifiant pouvant être VIDE : une discipline déjà saisie librement
   // dans la base est reproposée sans identifiant DOC360, et `'null|Bridges'` partirait au
@@ -150,7 +156,11 @@ export class WizardStepResponsablesComponent implements OnInit {
         this.emit({ ...this.draft, responsables: resolved });
       }
     });
-    this.listSvc.getListValues('ACTIVITE', 0).subscribe(a => this.activites.set(a));
+    // Le pays de l'affaire, pas `0` : avec `0` seules les valeurs globales semées revenaient,
+    // et ce qui était ajouté, renommé ou désactivé dans Finance → Admin n'arrivait jamais ici.
+    if (this.draft.paysId) {
+      this.listSvc.getListValues('ACTIVITE', this.draft.paysId).subscribe(a => this.activites.set(a));
+    }
     // Une liste dans TOUS les cas. Sans référence DOC360 il n'y en avait aucune, et
     // l'étape basculait en saisie libre intégrale : c'est ce qui a mis `bim&cad` et
     // `bridgs` en base à côté d'un `BIM & CAD` qui existait déjà avec son identifiant.

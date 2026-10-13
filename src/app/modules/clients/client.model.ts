@@ -11,6 +11,9 @@ export interface ClientListItemDto {
   address:           string | null;
   city:              string | null;
   postalCode:        string | null;
+  /** Valeur CLIENT_SECTOR (liste configurable, Administration → Listes). */
+  sectorId:          number | null;
+  /** Libellé FR de `sectorId`, résolu par le serveur. */
   sector:            string | null;
   paymentTermsDays:  number | null;
   defaultCurrency:   string | null;
@@ -37,6 +40,11 @@ export interface ClientDetailDto {
   city:              string | null;
   postalCode:        string | null;
   website:           string | null;
+  /** Valeur CLIENT_SECTOR (liste configurable, Administration → Listes). */
+  sectorId:          number | null;
+  /** Code de `sectorId` : retrouve la surcharge de l'entité quand l'admin a renommé la valeur. */
+  sectorCode:        string | null;
+  /** Libellé FR de `sectorId`, résolu par le serveur. */
   sector:            string | null;
   notes:             string | null;
   kycApprovedByName: string | null;
@@ -85,7 +93,7 @@ export interface CreateClientRequest {
   city?:             string | null;
   postalCode?:       string | null;
   website?:          string | null;
-  sector?:           string | null;
+  sectorId?:         number | null;
   notes?:            string | null;
   /**
    * Contacts créés AVEC le client, dans la même transaction. AU MOINS UN à la création :
@@ -111,7 +119,11 @@ export interface ClientFilter {
   search?:    string | null;
   isActive?:  boolean | null;
   isKycDone?: boolean | null;
-  sector?:    string | null;
+  /**
+   * CODE de la valeur CLIENT_SECTOR, pas son id : la liste n'est pas limitée à une entité,
+   * et un secteur renommé pour une entité est une autre ligne qui garde le même code.
+   */
+  sectorCode?: string | null;
   /** Pays du client (`countryId`, `pays_ref.id`) — pas l'entité `paysId`. */
   countryId?: number | null;
   /** Devise par défaut du client (`defaultCurrency`). */

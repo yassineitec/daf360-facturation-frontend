@@ -15,6 +15,9 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
 import { TableSort, sortParam } from '../../../shared/table-tools';
+import { FactListService } from '../../../core/fact-list.service';
+import { ListValueDto, localizedLabel } from '../../cost/cost.model';
+import { switchMap } from 'rxjs';
 
 /** Activity states the status filter can express, mapped to the backend `isActive` flag. */
 type StatusFilter = '' | 'active' | 'inactive';
@@ -49,14 +52,16 @@ export class ClientListComponent implements OnInit {
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly translate      = inject(TranslateService);
+  private readonly listSvc        = inject(FactListService);
 
-  clients       = signal<ClientListItemDto[]>([]);
+  clients      = signal<ClientListItemDto[]>([]);
   error         = signal<string | null>(null);
   totalElements = signal(0);
   totalPages    = signal(0);
   currentPage   = signal(0);
   pageSize      = signal(20);
-  sectors       = signal<string[]>([]);
+  /** Liste CLIENT_SECTOR de l'entité de l'utilisateur — options du filtre « Secteur ». */
+  sectors       = signal<ListValueDto[]>([]);
   /** Référentiel `/ref/pays` — options du filtre « Pays » (pays du client). */
   paysList      = signal<PaysRefDto[]>([]);
 
@@ -67,6 +72,7 @@ export class ClientListComponent implements OnInit {
   /** Tri serveur choisi dans l'en-tête du tableau (clé de colonne), `null` = ordre par défaut. */
   readonly sort = signal<TableSort | null>(null);
   searchText   = signal('');
+  /** Code CLIENT_SECTOR — sent as `sectorCode`. */
   filterSector = signal('');
   filterStatus = signal<StatusFilter>('');
   /** KYC validé / en attente — sent as `isKycDone`, independent from the activity status. */
@@ -143,7 +149,11 @@ export class ClientListComponent implements OnInit {
         label: t('CLIENTS.LIST.FILTER.SECTOR'),
         type: 'select',
         placeholder: t('CLIENTS.LIST.FILTER.ALL'),
-        options: this.sectors().map(s => ({ value: s, label: s })),
+        searchable: true,
+        options: this.sectors().map(s => ({
+          value: s.code,
+          label: localizedLabel(s.labelFr, s.labelEn, this.translate.currentLang()) ?? s.code,
+        })),
       },
       {
         name: 'status',
@@ -240,7 +250,7 @@ export class ClientListComponent implements OnInit {
       search:    this.searchText().trim() || null,
       isActive:  status === 'active' ? true : status === 'inactive' ? false : null,
       isKycDone: kyc === 'done' ? true : kyc === 'pending' ? false : null,
-      sector:    this.filterSector() || null,
+      sectorCode: this.filterSector() || null,
       countryId: this.filterCountry() ? Number(this.filterCountry()) : null,
       currency:  this.filterCurrency() || null,
       hasActiveAffaires: affaires === 'with' ? true : affaires === 'without' ? false : null,
@@ -262,8 +272,15 @@ export class ClientListComponent implements OnInit {
     });
   }
 
+  /**
+   * La liste n'est pas limitée à une entité : les options viennent de l'entité de
+   * l'utilisateur (ses libellés), ou des seules valeurs globales s'il n'en a pas.
+   * Le filtre porte sur le CODE, donc il retrouve aussi les clients des autres entités.
+   */
   loadSectors(): void {
-    this.svc.getSectors().subscribe(s => this.sectors.set(s));
+    this.svc.getMyPays().pipe(
+      switchMap(paysId => this.listSvc.getListValues('CLIENT_SECTOR', paysId ?? 0)),
+    ).subscribe(s => this.sectors.set(s));
   }
 
   /** Nouveau tri d'en-tête → retour à la première page, triée par le serveur. */

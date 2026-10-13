@@ -1,12 +1,12 @@
 import { BadgeVariant } from '@khalilrebhiitec/daf360';
-import { CostLineDto } from '../cost.model';
+import { CostInvoiceDto } from '../cost.model';
 import { HiringCostApprovalDto } from '../hiring-cost-approval.service';
 import { SalaryAdvanceDto } from '../salary-advances/salary-advance-approval.service';
 import { Urgency, urgency } from '../cost-display';
 
 /**
- * This page merges **three independent queues** into one grid — cost lines awaiting a
- * finance decision, hiring (salary) cost approvals, and salary advances (rh V103). They
+ * This page merges **three independent queues** into one grid — cost invoices (V93)
+ * awaiting a finance decision, hiring (salary) cost approvals, and salary advances (rh V103). They
  * share nothing in the API, so the old template carried near-identical card blocks that
  * had already drifted apart (different chips, different dot colours, different action rows).
  *
@@ -27,7 +27,7 @@ export interface ApprovalItem {
   id:        number;
   reference: string;
   title:     string;
-  /** Approval level (`L1`–`L4`). Cost lines only — the other kinds carry no level. */
+  /** Approval level (`L1`–`L4`). Cost invoices only — the other kinds carry no level. */
   level:     string | null;
   urgency:   Urgency;
   dateLabel: string;
@@ -36,8 +36,8 @@ export interface ApprovalItem {
   sortDate:   string | null;
   sortAmount: number | null;
   metrics:   ApprovalMetric[];
-  /** Exactly one of these is set, per `kind`. */
-  cost?:     CostLineDto;
+  /** Exactly one of these is set, per `kind`. `cost` is a cost INVOICE (V93), decided as a whole. */
+  cost?:    CostInvoiceDto;
   hiring?:   HiringCostApprovalDto;
   /** A salary advance awaiting finance's decision (payroll owns everything after it). */
   advance?:  SalaryAdvanceDto;

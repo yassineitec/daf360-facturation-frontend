@@ -82,7 +82,8 @@ export class CostSupplierCardsSectionComponent {
           },
           metricsColumns: 2,
           metrics: [
-            { label: t('COST.LINES.SUPPLIER_CARD_COUNT'), value: String(s.lineCount) },
+            // Number of cost INVOICES since V93 (was the number of lines).
+            { label: t('COST.LINES.SUPPLIER_CARD_COUNT'), value: String(s.invoiceCount) },
             // TTC, not HT: the cost-lines table shows Montant TTC per line and the
             // approval tier resolves from the TTC EUR amount (V82), so an HT total
             // here read as "what we spent with this supplier" next to TTC rows.

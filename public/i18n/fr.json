@@ -499,7 +499,7 @@
       "COMMENT": "Commentaire",
       "EMIT_TITLE": "Émettre la facture",
       "EMIT_DATE": "Date d'émission",
-      "EMIT_DATE_HINT": "Date imprimée sur la facture — aujourd'hui par défaut, pas de date future.",
+      "EMIT_DATE_HINT": "Date imprimée sur la facture — aujourd'hui par défaut.",
       "EMIT_DATE_REQUIRED": "Choisissez une date d'émission.",
       "RETURN_TITLE": "Retourner la facture",
       "RETURN_COMMENT": "Motif du retour",
@@ -2222,6 +2222,8 @@
       "TS_COL_MONTANT": "Montant",
       "TS_COL_STATUT": "Statut",
       "TS_COL_DATE": "Date",
+      "TS_FILTER_INTEGRE_AT": "Date d'intégration au budget",
+      "TS_FILTER_TS": "TS concerné",
       "TS_COL_ACTIONS": "Actions",
       "TS_SELECTED_COUNT": "{{count}} TS sélectionné(s)",
       "TS_SUBMIT": "Soumettre la sélection",
@@ -2451,7 +2453,7 @@
   },
   "COST": {
     "TABS": {
-      "LINES": "Lignes de coût",
+      "LINES": "Factures de coût",
       "APPROVALS": "Approbations",
       "CONFIG": "Configuration"
     },
@@ -2560,16 +2562,45 @@
       }
     },
     "FORM": {
-      "LOAD_ERROR": "Impossible de charger cette ligne de coût.",
-      "SUBMIT_ERROR": "Erreur lors de la soumission.",
+      "LOAD_ERROR": "Impossible de charger cette facture de coût.",
+      "SUBMIT_ERROR": "Facture enregistrée en brouillon, mais la soumission a échoué.",
       "GENERIC_ERROR": "Une erreur est survenue.",
       "UNIT_BYTES": "{{n}} o",
       "UNIT_KB": "{{n}} Ko",
       "UNIT_MB": "{{n}} Mo",
-      "TITLE_EDIT": "Modifier la ligne de coût",
-      "TITLE_NEW": "Nouvelle ligne de coût",
-      "SUB_EDIT": "Mise à jour de la ligne #{{id}}",
-      "SUB_NEW": "Saisie d'une dépense dans le circuit d'approbation",
+      "TITLE_EDIT": "Modifier la facture de coût",
+      "TITLE_NEW": "Nouvelle facture de coût",
+      "SUB_EDIT": "Mise à jour de la facture {{id}}",
+      "SUB_NEW": "Facture fournisseur (une ou plusieurs lignes) soumise au circuit d'approbation",
+      "SECTION_INVOICE_TITLE": "Facture",
+      "SECTION_INVOICE_SUB": "Entité, fournisseur, n° de facture, dates et devise",
+      "NO_SUPPLIER_HINT": "Sans fournisseur : pas de FODEC, de timbre ni de retenue — saisissez la TVA en montant sur chaque ligne.",
+      "INVOICE_NUMBER_LABEL": "N° de facture du fournisseur",
+      "INVOICE_NUMBER_PLACEHOLDER": "ex. FA-2026-0142",
+      "INVOICE_NUMBER_HINT": "Obligatoire. Une même facture ne peut être saisie qu'une fois par fournisseur.",
+      "INVOICE_DATE_LABEL": "Date de facture",
+      "DUE_DATE_LABEL": "Date d'échéance",
+      "SECTION_LINES_TITLE": "Lignes de la facture",
+      "SECTION_LINES_SUB_SUPPLIER": "Chaque ligne a sa catégorie, son affaire et ses propres FODEC et TVA",
+      "SECTION_LINES_SUB_NO_SUPPLIER": "Chaque ligne a sa catégorie, son affaire et son montant de TVA",
+      "LINE_N": "Ligne {{n}}",
+      "LINE_TTC": "TTC ligne",
+      "ADD_LINE": "Ajouter une ligne",
+      "REMOVE_LINE": "Supprimer la ligne",
+      "VAT_AMOUNT_LABEL": "TVA (montant)",
+      "SECTION_TAXES_TITLE": "Taxes de la facture et totaux",
+      "SECTION_TAXES_SUB": "Timbre fiscal et retenue à la source une seule fois par facture, autres taxes libres ajoutées au TTC",
+      "SECTION_TAXES_SUB_NO_SUPPLIER": "Totaux de la facture",
+      "TOTAL_HT": "Total HT",
+      "TOTAL_FODEC": "FODEC",
+      "TOTAL_VAT_RATE": "TVA {{rate}} % (sur HT + FODEC {{base}})",
+      "TOTAL_VAT_MANUAL": "TVA saisie",
+      "TOTAL_TIMBRE": "Timbre fiscal",
+      "TOTAL_TTC": "Total TTC",
+      "TOTAL_RS": "Retenue à la source ({{base}}) — déduite",
+      "NET_TO_PAY": "Net à payer au fournisseur",
+      "HELP_4": "TVA = (HT + FODEC) × taux. Le timbre fiscal et la retenue à la source s'appliquent une seule fois par facture ; la retenue est calculée sur HT + FODEC (ou sur la TVA) et déduite du net à payer. Les autres taxes sont des montants libres ajoutés au TTC.",
+      "FOOT_NUMBER_HINT": "Renseignez le n° de facture du fournisseur",
       "DRAFT_BADGE": "BROUILLON AUTOMATISÉ",
       "SECTION_CONTEXT_TITLE": "Contexte",
       "SECTION_CONTEXT_SUB": "Entité, catégorie et date de la dépense",
@@ -2602,15 +2633,14 @@
         "TIMBRE_OPT_1": "1.000 DT",
         "TIMBRE_OPT_0": "0 DT",
         "AUTRES_TAXES_LABEL": "Autres Taxes (Retenue à la Source)",
-        "AUTRES_TAXES_OPT_0": "0% (N/A)",
-        "AUTRES_TAXES_OPT_1": "1%",
-        "AUTRES_TAXES_OPT_1_5": "1.5%",
-        "AUTRES_TAXES_OPT_3": "3%",
-        "AUTRES_TAXES_OPT_5": "5%",
-        "AUTRES_TAXES_OPT_10": "10%",
-        "AUTRES_TAXES_OPT_15": "15%",
-        "AUTRES_TAXES_OPT_25": "25%",
-        "TTC_LABEL": "Montant TTC (estimé)"
+        "RS_BASE_HT": "sur HT (ancienne assiette)",
+        "RS_BASE_TTC": "sur TTC (ancienne assiette)",
+        "RS_BASE_TVA": "sur TVA",
+        "RS_PREVIEW_LABEL": "Retenue à la source ({{base}}, estimée)",
+        "TTC_LABEL": "Montant TTC (estimé)",
+        "RS_LABEL": "Retenue à la source",
+        "RS_NONE": "— Aucune retenue —",
+        "RS_BASE_HT_FODEC": "sur HT + FODEC"
       },
       "SECTION_SUPPLIER_TITLE": "Fournisseur",
       "SECTION_SUPPLIER_SUB": "Fournisseur lié à cette dépense",
@@ -2651,7 +2681,28 @@
       "FOOT_CANCEL": "Annuler",
       "FOOT_REQUIRED_HINT": "Remplissez les champs obligatoires pour continuer",
       "FOOT_SAVE_DRAFT": "Enregistrer brouillon",
-      "FOOT_SUBMIT": "Soumettre pour approbation"
+      "FOOT_SUBMIT": "Soumettre pour approbation",
+      "VALIDATED_BADGE": "MODIFICATION APRÈS VALIDATION",
+      "VALIDATED_TITLE": "Modification d'une facture déjà validée ({{status}}) — réservée au DAF",
+      "VALIDATED_TEXT": "Le statut, l'approbation et le règlement sont conservés. Tous les montants sont recalculés et chaque modification est enregistrée dans l'historique avec sa justification.",
+      "JUSTIFICATION_LABEL": "Justification de la modification",
+      "JUSTIFICATION_PLACEHOLDER": "Ex. erreur de saisie du montant HT, avoir reçu du fournisseur…",
+      "FOOT_SAVE_VALIDATED": "Enregistrer la modification",
+      "FOOT_JUSTIFICATION_HINT": "Saisissez une justification (5 caractères minimum)",
+      "LOCKED_ERROR": "Cette facture ({{status}}) ne peut pas être modifiée : seul un brouillon se modifie, ou une facture validée par le DAF.",
+      "TOTAL_OTHER_TAX": "Autre taxe : {{name}}",
+      "OTHER_TAX": {
+        "TITLE": "Autres taxes",
+        "HINT": "Montants saisis librement (sans formule), ajoutés au TTC. Choisissez un type ou écrivez un libellé.",
+        "ADD": "Ajouter une taxe",
+        "REMOVE": "Supprimer la taxe",
+        "TYPE_LABEL": "Type de taxe",
+        "TYPE_NONE": "— Sans type —",
+        "LABEL_LABEL": "Libellé",
+        "LABEL_PLACEHOLDER": "Ex. TCL, frais de dossier…",
+        "AMOUNT_LABEL": "Montant",
+        "INCOMPLETE": "Saisissez un montant différent de zéro et un type ou un libellé."
+      }
     },
     "APPROVAL_QUEUE": {
       "TITLE": "File d'approbation",
@@ -2703,7 +2754,7 @@
       "FILTER_AMOUNT_PH": "Ex. 1 500,50"
     },
     "IMPORT": {
-      "TITLE": "Import CSV",
+      "TITLE": "Reprise de l'historique (CSV)",
       "DOWNLOAD_TEMPLATE": "Télécharger le modèle",
       "KB": "Ko",
       "DRAG_HINT": "Glissez votre fichier CSV ici ou",
@@ -2718,7 +2769,17 @@
       "ERROR_ROW": "Ligne {{row}}",
       "NEW_IMPORT": "Nouvel import",
       "ONLY_CSV": "Seuls les fichiers CSV sont acceptés.",
-      "IMPORT_ERROR": "Erreur lors de l'import."
+      "IMPORT_ERROR": "Erreur lors de l'import.",
+      "HELP": "Une ligne du fichier = une ligne de coût ; les lignes de même « reference » forment une facture. Une TVA donnée dans vat_amount est conservée telle quelle ; sinon elle est calculée sur HT + FODEC. Colonnes facultatives other_tax_type / other_tax_label / other_tax_amount : une autre taxe par ligne, ajoutée au TTC de la facture. Vérifiez d'abord le fichier : rien n'est enregistré. L'import n'enregistre rien si une seule ligne est en erreur.",
+      "CHANGE_FILE": "Changer de fichier",
+      "CHECK": "Vérifier le fichier",
+      "CHECK_OK": "Fichier valide : {{invoices}} facture(s) prête(s) à être importée(s).",
+      "CHECK_KO": "Fichier refusé : corrigez les erreurs ci-dessous puis vérifiez à nouveau. Rien n'a été enregistré.",
+      "UPLOAD_N": "Importer {{invoices}} facture(s)",
+      "RESULT_ROWS": "lignes lues",
+      "RESULT_INVOICES": "factures",
+      "DONE": "Import terminé : {{invoices}} facture(s) créée(s) à partir de {{rows}} ligne(s).",
+      "REFERENCES": "Références créées :"
     },
     "APPROVE_MODAL": {
       "CLOSE": "Fermer",
@@ -3023,8 +3084,8 @@
       "KPI_DRAFTS": "Brouillons",
       "KPI_PENDING": "En attente",
       "KPI_APPROVED": "Approuvés",
-      "SEARCH_PLACEHOLDER": "Description, référence…",
-      "NEW_LINE": "Nouvelle ligne",
+      "SEARCH_PLACEHOLDER": "Référence, fournisseur, n° de facture…",
+      "NEW_LINE": "Nouvelle facture",
       "STATUS_FILTER_LABEL": "Statut",
       "STATUS_FILTER_PLACEHOLDER": "Tous les statuts",
       "CATEGORY_FILTER_LABEL": "Catégorie de coût",
@@ -3044,27 +3105,33 @@
       "COL_STATUS": "Statut",
       "COL_APPROVAL": "Approbation",
       "COL_ACTIONS": "Actions",
-      "TABLE_EMPTY": "Aucune ligne de coût trouvée.",
+      "TABLE_EMPTY": "Aucune facture de coût trouvée.",
       "VIEW": "Voir le détail",
       "EDIT": "Modifier",
       "SUBMIT": "Soumettre",
       "CREATE_REGLEMENT": "Créer un règlement",
       "NO_PAYS": "Pays introuvable pour votre compte.",
       "NO_PAYS_DETERMINE": "Impossible de déterminer le pays.",
-      "LOAD_ERROR": "Impossible de charger les lignes.",
+      "LOAD_ERROR": "Impossible de charger les factures.",
       "SUBMIT_ERROR": "Erreur lors de la soumission.",
       "CAT_FALLBACK": "Cat. {{id}}",
       "VIEW_GRID": "Vue grille",
       "VIEW_LIST": "Vue liste",
       "VIEW_SUPPLIER": "Vue fournisseurs",
-      "SUPPLIER_CARD_COUNT": "Lignes",
+      "SUPPLIER_CARD_COUNT": "Factures",
       "SUPPLIER_CARD_TOTAL": "Total TTC (EUR)",
       "NO_SUPPLIER_CARD": "Sans fournisseur",
-      "SUPPLIER_VIEW_EMPTY": "Aucun fournisseur avec des lignes de coût.",
+      "SUPPLIER_VIEW_EMPTY": "Aucun fournisseur avec des factures de coût.",
       "FILTERS": "Filtres",
       "FILTER_APPLY": "Appliquer",
       "FILTER_CANCEL": "Annuler",
-      "FILTER_RESET": "Réinitialiser"
+      "FILTER_RESET": "Réinitialiser",
+      "COL_REFERENCE": "Référence",
+      "COL_INVOICE_NUMBER": "N° facture fournisseur",
+      "COL_INVOICE_DATE": "Date facture",
+      "COL_LINES": "Lignes",
+      "CATEGORY_MORE": "{{first}} +{{count}}",
+      "LINES_COUNT": "{{count}} ligne(s)"
     },
     "REGLEMENT": {
       "NEW_TITLE": "Nouveau règlement",
@@ -3082,15 +3149,22 @@
       "CANCEL": "Annuler",
       "SAVE": "Enregistrer",
       "CREATE": "Créer",
-      "GENERIC_ERROR": "Une erreur est survenue."
+      "GENERIC_ERROR": "Une erreur est survenue.",
+      "INVOICE": "Facture de coût",
+      "INVOICE_NUMBER": "Facture #{{id}}",
+      "SUPPLIER_INVOICE_NUMBER": "N° facture fournisseur : {{number}}",
+      "INVOICE_PICKER": "Facture à régler",
+      "INVOICE_PICKER_PLACEHOLDER": "Sélectionner une facture…",
+      "ERR_INVOICE_REQUIRED": "Choisissez une facture.",
+      "NET_TO_PAY_HINT": "Net à payer (TTC − retenue à la source) : {{amount}}"
     },
     "DETAIL": {
-      "LOADING": "Chargement de la ligne de coût…",
-      "LOAD_ERROR": "Impossible de charger cette ligne de coût.",
-      "BACK": "Lignes de coût",
+      "LOADING": "Chargement de la facture de coût…",
+      "LOAD_ERROR": "Impossible de charger cette facture de coût.",
+      "BACK": "Factures de coût",
       "BREADCRUMB_ARIA": "Fil d'ariane",
-      "TABS_ARIA": "Sections de la ligne de coût",
-      "UNNAMED": "Ligne de coût",
+      "TABS_ARIA": "Sections de la facture de coût",
+      "UNNAMED": "Facture de coût",
       "UNASSIGNED_TITLE": "Sans fournisseur",
       "KPI": {
         "NET": "Montant HT",
@@ -3098,7 +3172,8 @@
         "GROSS": "Montant TTC",
         "EUR": "Montant HT (EUR)",
         "EUR_TTC": "Montant TTC (EUR)",
-        "LINE_COUNT": "Nombre de lignes"
+        "LINE_COUNT": "Nombre de lignes",
+        "INVOICE_COUNT": "Nombre de factures"
       },
       "INFO": {
         "REFERENCE": "Référence",
@@ -3112,20 +3187,28 @@
         "SUPPLIER_TAX_ID": "Matricule fiscale",
         "SUPPLIER_COUNTRY": "Pays",
         "NO_SUPPLIER": "Aucun fournisseur",
-        "APPROVAL_LEVEL": "Niveau d'approbation"
+        "APPROVAL_LEVEL": "Niveau d'approbation",
+        "STATUS": "Statut"
       },
       "TABS": {
-        "INFO": "Détails",
+        "INFO": "Lignes et totaux",
         "LINES": "Lignes de coût",
-        "LEDGER": "Règlement"
+        "LEDGER": "Règlement",
+        "INVOICES": "Factures",
+        "APPROVALS": "Approbations",
+        "ATTACHMENTS": "Pièces jointes",
+        "CHANGES": "Historique des modifications"
       },
       "SUPPLIER": {
-        "SUBTITLE": "{{count}} ligne(s) de coût",
-        "LINES_EMPTY": "Aucune ligne de coût pour ce fournisseur.",
-        "NEW_LINE": "Nouvelle ligne de coût"
+        "SUBTITLE": "{{count}} facture(s) de coût",
+        "LINES_EMPTY": "Aucune facture de coût pour ce fournisseur.",
+        "NEW_LINE": "Nouvelle facture"
       },
       "ACTIONS": {
-        "EDIT": "Modifier"
+        "EDIT": "Modifier",
+        "SUBMIT": "Soumettre pour approbation",
+        "EDIT_VALIDATED": "Modifier (DAF)",
+        "EDIT_VALIDATED_HINT": "Facture validée : modification réservée au DAF, avec justification et historique."
       },
       "APPROVALS": {
         "COL_LEVEL": "Niveau",
@@ -3133,7 +3216,7 @@
         "COL_APPROVER": "Approbateur",
         "COL_DATE": "Date",
         "COL_COMMENT": "Commentaire",
-        "EMPTY": "Aucun historique d'approbation pour cette ligne.",
+        "EMPTY": "Aucun historique d'approbation pour cette facture.",
         "DECISION_APPROVED": "Approuvé",
         "DECISION_AUTO_APPROVED": "Auto-approuvé",
         "DECISION_RETURNED": "Retourné",
@@ -3146,7 +3229,7 @@
         "COL_FODEC": "FODEC",
         "COL_TVA": "TVA",
         "COL_TIMBRE": "Timbre Fiscal",
-        "COL_AUTRES_TAXES": "Autres Taxes",
+        "COL_AUTRES_TAXES": "Autres taxes",
         "COL_GROSS_AMOUNT": "Montant TTC",
         "COL_DEBIT": "Débit",
         "COL_CREDIT": "Crédit",
@@ -3167,12 +3250,76 @@
         "NEW_REGLEMENT": "Nouveau règlement",
         "EDIT_REGLEMENT": "Modifier le règlement",
         "DELETE_REGLEMENT": "Supprimer le règlement",
-        "CONFIRM_DELETE": "Supprimer ce règlement ? La ligne de coût redeviendra Approuvée.",
+        "CONFIRM_DELETE": "Supprimer ce règlement ? La facture redeviendra Approuvée.",
         "DELETE_ERROR": "Impossible de supprimer ce règlement.",
-        "NO_SUPPLIER": "Aucun fournisseur n'est associé à cette ligne de coût — aucun relevé de compte à afficher.",
+        "NO_SUPPLIER": "Aucun fournisseur n'est associé à cette facture — aucun relevé de compte à afficher.",
         "EMPTY": "Aucune écriture validée pour ce fournisseur.",
         "FILTER_PERIOD": "Période",
-        "FILTER_COST_LINE": "Ligne de coût"
+        "FILTER_COST_LINE": "Ligne de coût",
+        "FILTER_INVOICE": "Facture",
+        "COL_RS": "Retenue à la source"
+      },
+      "TOTALS_TITLE": "Totaux de la facture",
+      "LINES": {
+        "COL_CATEGORY": "Catégorie",
+        "COL_DESCRIPTION": "Description",
+        "COL_AFFAIRE": "Affaire",
+        "COL_NET": "HT",
+        "COL_FODEC": "FODEC",
+        "COL_VAT_RATE": "Taux TVA",
+        "COL_VAT": "TVA",
+        "COL_GROSS": "TTC",
+        "EMPTY": "Aucune ligne sur cette facture."
+      },
+      "ATTACHMENTS": {
+        "COL_NAME": "Fichier",
+        "COL_SIZE": "Taille",
+        "COL_DATE": "Ajouté le",
+        "EMPTY": "Aucune pièce jointe sur cette facture.",
+        "DOWNLOAD": "Télécharger",
+        "DELETE": "Supprimer la pièce jointe",
+        "CONFIRM_DELETE": "Supprimer « {{name}} » ? Cette action est définitive.",
+        "DELETE_ERROR": "Impossible de supprimer cette pièce jointe.",
+        "DOWNLOAD_ERROR": "Impossible de télécharger cette pièce jointe."
+      },
+      "CHANGES": {
+        "EMPTY": "Aucune modification après validation.",
+        "STATUS_AT": "Statut : {{status}}",
+        "GROSS": "TTC",
+        "JUSTIFICATION": "Justification",
+        "COL_FIELD": "Élément",
+        "COL_BEFORE": "Avant",
+        "COL_AFTER": "Après"
+      }
+    },
+    "CHANGES": {
+      "LINE_PREFIX": "Ligne {{ref}}",
+      "FIELD": {
+        "SUPPLIER": "Fournisseur",
+        "SUPPLIER_INVOICE_NUMBER": "N° de facture fournisseur",
+        "INVOICE_DATE": "Date de facture",
+        "DUE_DATE": "Date d'échéance",
+        "CURRENCY": "Devise",
+        "STAMP_DUTY": "Timbre fiscal",
+        "RS_RATE": "Taux de retenue à la source",
+        "NOTES": "Notes",
+        "CATEGORY": "Catégorie",
+        "SUB_CATEGORY": "Sous-catégorie",
+        "DESCRIPTION": "Description",
+        "NET_AMOUNT": "Montant HT",
+        "FODEC_RATE": "FODEC",
+        "VAT_RATE": "Taux de TVA",
+        "VAT_AMOUNT": "TVA",
+        "AFFAIRE": "Affaire",
+        "COST_TYPE": "Type de coût",
+        "LINE_ADDED": "Ligne ajoutée",
+        "LINE_REMOVED": "Ligne supprimée",
+        "TOTAL_NET": "Total HT",
+        "TOTAL_VAT": "Total TVA",
+        "TOTAL_GROSS": "Total TTC",
+        "RS_AMOUNT": "Retenue à la source",
+        "OTHER_TAXES": "Autres taxes",
+        "TOTAL_OTHER_TAXES": "Total autres taxes"
       }
     }
   },
@@ -3822,14 +3969,14 @@
       },
       "ACTIONS": {
         "QUICK_TITLE": "Actions rapides",
-        "NEW_COST_LINE": "Nouvelle ligne de coût",
+        "NEW_COST_LINE": "Nouvelle facture fournisseur",
         "EDIT": "Modifier",
         "COST_VIEW": "Voir les coûts"
       },
       "DEACTIVATING": "Désactivation en cours…",
       "TOOLBAR": {
-        "SEARCH_COSTS": "Rechercher par référence ou libellé…",
-        "SEARCH_LEDGER": "Rechercher par libellé…",
+        "SEARCH_COSTS": "Rechercher par référence, n° de facture ou libellé…",
+        "SEARCH_LEDGER": "Rechercher par libellé ou facture…",
         "FILTERS": "Filtres",
         "APPLY": "Appliquer",
         "CANCEL": "Annuler",
@@ -3851,11 +3998,11 @@
       "DEACTIVATE_CONFIRM": "Désactiver",
       "TABS_ARIA": "Sections de la fiche fournisseur",
       "TABS": {
-        "COSTS": "Lignes de coût",
+        "COSTS": "Factures",
         "LEDGER": "Règlement"
       },
       "KPI": {
-        "LINES": "Lignes de coût",
+        "LINES": "Factures",
         "TOTAL_TTC": "Total TTC (EUR)",
         "REGLEMENTS": "Règlements",
         "BALANCE": "Solde dû",
@@ -3864,11 +4011,14 @@
       "COSTS": {
         "COL_REF": "Référence",
         "COL_LABEL": "Libellé",
-        "COL_DATE": "Date",
+        "COL_DATE": "Date facture",
         "COL_STATUS": "Statut",
         "COL_GROSS": "Montant TTC",
-        "EMPTY": "Aucune ligne de coût rattachée à ce fournisseur.",
-        "HINT": "Tout statut confondu, 200 lignes au plus."
+        "EMPTY": "Aucune facture de coût rattachée à ce fournisseur.",
+        "HINT": "Tout statut confondu, 200 factures au plus. Cliquez sur une facture pour l’ouvrir.",
+        "COL_SUPPLIER_INVOICE_NO": "N° facture fournisseur",
+        "COL_LINES": "Lignes",
+        "COL_NET": "Montant HT"
       },
       "LEDGER": {
         "COL_DATE": "Date",
@@ -3878,11 +4028,13 @@
         "COL_SOLDE_DEBITEUR": "Solde débiteur",
         "COL_SOLDE_CREDITEUR": "Solde créditeur",
         "EMPTY": "Aucun règlement enregistré pour ce fournisseur.",
-        "HINT": "Lecture seule : un règlement se saisit depuis sa ligne de coût. Les soldes sont cumulatifs sur tout le relevé.",
+        "HINT": "Lecture seule : un règlement se saisit depuis sa facture de coût (cliquez sur une écriture pour l’ouvrir). Les soldes sont cumulatifs sur tout le relevé.",
         "FILTER_TYPE": "Type de mouvement",
         "TYPE_CREDIT": "Crédit (reste dû)",
         "TYPE_DEBIT": "Débit (trop-payé)",
-        "TYPE_SETTLED": "Soldé"
+        "TYPE_SETTLED": "Soldé",
+        "COL_INVOICE": "Facture",
+        "FILTER_INVOICE": "Facture"
       }
     },
     "EDIT": {
@@ -4040,7 +4192,9 @@
         "EXPENSE_CATEGORY": "Catégories de frais remboursables, avec règle de justificatif.",
         "BILLING_PERIOD": "Périodes de facturation proposées.",
         "BILLING_PERMISSION": "Permissions liées au module de facturation.",
-        "INVOICE_TYPE": "Types de facture disponibles à l'émission."
+        "INVOICE_TYPE": "Types de facture disponibles à l'émission.",
+        "CLIENT_SECTOR": "Secteurs d'activité proposés à la création ou modification d'un client.",
+        "WITHHOLDING_RATE": "Taux de retenue à la source sur les coûts fournisseurs, chacun avec son assiette (HT, TTC ou TVA)."
       },
       "COL_CODE": "Code",
       "COL_LABEL_FR": "Libellé FR",
@@ -4103,7 +4257,17 @@
       "PARENT_HIDDEN_HINT": "La catégorie parente n'est pas active pour cette entité : cette sous-catégorie n'apparaît pas dans le formulaire. Modifiez-la pour la rattacher à une catégorie de l'entité, ou désactivez-la.",
       "ERR_AUTO_PUSH_MODULE_REQUIRED": "Indiquez le module d'alimentation (ex. PAYROLL).",
       "FIELD_RATE_PCT": "Taux (%)",
-      "COL_RATE_PCT": "Taux (%)"
+      "COL_RATE_PCT": "Taux (%)",
+      "FIELD_TAX_BASE": "Assiette",
+      "COL_TAX_BASE": "Assiette",
+      "TAX_BASE_HT": "Montant HT (ancienne assiette)",
+      "TAX_BASE_TTC": "Montant TTC (ancienne assiette)",
+      "TAX_BASE_TVA": "Montant de la TVA (retenue sur TVA)",
+      "TAX_BASE_HINT": "Montant sur lequel le taux de retenue est appliqué : HT + FODEC, ou le montant de la TVA. Le timbre fiscal et les autres taxes n'entrent jamais dans l'assiette. Les factures déjà saisies gardent leurs montants.",
+      "TAX_BASE_HT_FODEC": "HT + FODEC",
+      "TYPE_LABEL": {
+        "OTHER_TAX_TYPE": "Autres taxes (types)"
+      }
     },
     "FOREX": {
       "INFO_1": "Les taux convertissent les montants des lignes de coût vers EUR et CHF lors des calculs P&L. Le taux CHF est calculé automatiquement (",
@@ -4204,7 +4368,8 @@
       "ACTIVE_HINT": "Un palier inactif n’est plus planifié, mais l’historique déjà envoyé reste lisible.",
       "ERROR_LOAD": "Impossible de charger les paliers de relance.",
       "ERROR_SAVE": "Impossible d’enregistrer ce palier.",
-      "ERROR_DELETE": "Impossible de supprimer ce palier."
+      "ERROR_DELETE": "Impossible de supprimer ce palier.",
+      "ERROR_REQUIRED": "Renseignez le code, les deux libellés et un décalage en jours entier."
     },
     "WIP_EMAIL_TPLS": {
       "INTRO": "Ces modèles définissent l'objet et le corps de l'email envoyé automatiquement au client lors de la validation d'un WIP. Un modèle global (sans pays) s'applique à tous les pays ; un modèle lié à un pays prend la priorité.",
