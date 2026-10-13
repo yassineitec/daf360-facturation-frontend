@@ -35,7 +35,7 @@
           <span class="file-size">{{ (selectedFile()!.size / 1024).toFixed(1) }} {{ 'COST.IMPORT.KB' | translate }}</span>
           <label class="btn-browse">
             {{ 'COST.IMPORT.CHANGE_FILE' | translate }}
-            <input type="file" accept=".csv" (change)="onFileInput($event)" hidden>
+            <input type="file" accept=".xlsx,.xls,.csv" (change)="onFileInput($event)" hidden>
           </label>
         </div>
       } @else {
@@ -44,7 +44,7 @@
           <p>{{ 'COST.IMPORT.DRAG_HINT' | translate }}</p>
           <label class="btn-browse">
             {{ 'COST.IMPORT.BROWSE' | translate }}
-            <input type="file" accept=".csv" (change)="onFileInput($event)" hidden>
+            <input type="file" accept=".xlsx,.xls,.csv" (change)="onFileInput($event)" hidden>
           </label>
         </div>
       }
@@ -76,6 +76,40 @@
           <div class="banner-success">{{ 'COST.IMPORT.CHECK_OK' | translate:{ invoices: r.invoiceCount } }}</div>
         } @else if (r.errors.length > 0) {
           <div class="banner-error">{{ 'COST.IMPORT.CHECK_KO' | translate }}</div>
+          @if (r.missingSuppliers.length) {
+            <!-- Suppliers are never created by the import: list them so they get created by hand. -->
+            <div class="missing-box">
+              <div class="missing-head">
+                <p class="missing-title">{{ 'COST.IMPORT.MISSING_SUPPLIERS_TITLE' | translate:{ count: r.missingSuppliers.length } }}</p>
+                <button class="btn-template" (click)="exportMissingSuppliers()">⬇ {{ 'COST.IMPORT.MISSING_SUPPLIERS_EXPORT' | translate }}</button>
+              </div>
+              <p class="missing-help">{{ 'COST.IMPORT.MISSING_SUPPLIERS_HELP' | translate }}</p>
+              <div class="missing-table-wrap">
+                <table class="missing-table">
+                  <thead>
+                    <tr>
+                      <th>{{ 'COST.IMPORT.MISSING_CODE' | translate }}</th>
+                      <th>{{ 'COST.IMPORT.MISSING_TAX_ID' | translate }}</th>
+                      <th>{{ 'COST.IMPORT.MISSING_NAME' | translate }}</th>
+                      <th class="num">{{ 'COST.IMPORT.MISSING_INVOICES' | translate }}</th>
+                      <th>{{ 'COST.IMPORT.MISSING_ROWS' | translate }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (m of r.missingSuppliers; track $index) {
+                      <tr>
+                        <td>{{ m.code || '—' }}</td>
+                        <td>{{ m.taxId || '—' }}</td>
+                        <td>{{ m.name || '—' }}</td>
+                        <td class="num">{{ m.invoiceCount }}</td>
+                        <td class="rows">{{ m.rows }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
           <div class="error-list">
             <p class="error-list-title">{{ 'COST.IMPORT.ERRORS_DETAIL' | translate }}</p>
             @for (e of r.errors; track $index) {
