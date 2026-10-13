@@ -21,6 +21,11 @@
         <daf-button
           [options]="{ variant: 'secondary', label: ('REPORTING.CALENDAR.TITLE' | translate), iconStart: 'calendar_month' }"
           (onClick)="goToCalendar()" />
+        @if (canManagePeriod()) {
+          <daf-button
+            [options]="{ variant: 'primary', label: ('REPORTING.NEW_PERIOD' | translate), iconStart: 'add_chart' }"
+            (onClick)="openCreatePeriod()" />
+        }
       </div>
     </ng-container>
   </daf-page-header>
@@ -38,6 +43,24 @@
     [rows]="rows()"
     [config]="config()"
     (rowClick)="onRowClick($event)">
+
+    <!-- The period's own status badge, plus a "Close" action on an OPEN period for someone
+         with FACT_MANAGE_COST (see `_canClose`) — closing snapshots EBITDA and is a
+         prerequisite for generating a report. -->
+    <ng-template dafCell="periodStatus" let-row>
+      <div class="flex items-center gap-2">
+        <daf-badge [label]="row['periodStatus'].label" [options]="row['periodStatus'].options" />
+        @if (row['_canClose']) {
+          <daf-button
+            [options]="{
+              variant: 'secondary', size: 'sm', iconStart: 'lock',
+              label: ('REPORTING.CLOSE_PERIOD' | translate),
+              loading: closingId() === row['id']
+            }"
+            (onClick)="closePeriod(row['_period'], $event)" />
+        }
+      </div>
+    </ng-template>
 
     <!-- Either the current report's status badge, or "Aucun rapport" + a "Générer le
          rapport" action (only enabled on a CLOSED period for someone with
@@ -62,5 +85,27 @@
     </ng-template>
 
   </daf-data-table>
+
+  <!-- Modal body for `openCreatePeriod()` — year + month for the already-selected country. -->
+  <ng-template #newPeriodTpl>
+    <div class="flex flex-col gap-4">
+      @if (createPeriodError()) {
+        <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+          <span class="material-symbols-outlined text-[18px]">error</span>
+          {{ createPeriodError() }}
+        </div>
+      }
+      <daf-select
+        [options]="newPeriodYearOptions()"
+        [selected]="[newPeriodYear().toString()]"
+        [ariaLabel]="'REPORTING.NEW_PERIOD_YEAR' | translate"
+        (selectedChange)="onNewPeriodYearSelected($event)" />
+      <daf-select
+        [options]="newPeriodMonthOptions()"
+        [selected]="[newPeriodMonth().toString()]"
+        [ariaLabel]="'REPORTING.NEW_PERIOD_MONTH' | translate"
+        (selectedChange)="onNewPeriodMonthSelected($event)" />
+    </div>
+  </ng-template>
 
 </daf-page>

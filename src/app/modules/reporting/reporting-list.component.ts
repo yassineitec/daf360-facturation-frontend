@@ -1,11 +1,12 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, BadgeOptions, ButtonComponent, DafCellDirective, DataTableComponent,
-  PageComponent, PageHeaderComponent, StatusBadgeComponent, TableColumn, TableConfig, TableRow,
+  ModalRef, ModalService, PageComponent, PageHeaderComponent, SelectComponent, SelectOption,
+  StatusBadgeComponent, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
 import { ClientService } from '../clients/client.service';
 import { PaysRefDto, paysLabel } from '../affaires/affaire.model';
@@ -48,6 +49,7 @@ const REPORT_STATUS_VARIANT: Record<PlReportStatus, NonNullable<BadgeOptions['va
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent,
     DataTableComponent, DafCellDirective, StatusBadgeComponent, PaysFlagSelectComponent,
+    SelectComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -63,6 +65,7 @@ export class ReportingListComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly modal     = inject(ModalService);
 
   // ── Pays selector — same pattern as admin-list.component.ts ────────────────
   paysList = signal<PaysRefDto[]>([]);
@@ -102,6 +105,13 @@ export class ReportingListComponent implements OnInit {
   generatingId = signal<number | null>(null);
 
   readonly canManage = computed(() => this.userStore.hasPermission('FACT_MANAGE_PL_REPORT'));
+
+  /** Create/close a period is a COST action, not a report action — enforced server-side on
+   *  `PlPeriodController` with `FACT_MANAGE_COST`, same permission as the rest of the cost-close
+   *  workflow (see `PlPeriodService`'s own doc comments). Deliberately separate from
+   *  `canManage` above: closing the cost period and drafting the P&L report are different
+   *  responsibilities that can belong to different people. */
+  readonly canManagePeriod = computed(() => this.userStore.hasPermission('FACT_MANAGE_COST'));
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
   ngOnInit(): void {
@@ -187,7 +197,8 @@ export class ReportingListComponent implements OnInit {
     const t = (key: string) => this.translate.instant(key);
     return [
       { key: 'period',       label: t('REPORTING.TABLE.PERIOD'), type: 'text',   sortable: true },
-      { key: 'periodStatus', label: t('REPORTING.TABLE.STATUS'), type: 'badge',  sortable: true },
+      { key: 'periodStatus', label: t('REPORTING.TABLE.STATUS'), type: 'custom', sortable: true,
+        sortAccessor: (row: TableRow) => (row['periodStatus'] as BadgeCell).label },
       { key: 'ebitda',       label: t('REPORTING.TABLE.EBITDA'), type: 'text',   sortable: true, align: 'right' },
       { key: 'report',       label: t('REPORTING.TABLE.REPORT'), type: 'custom' },
     ];
@@ -219,6 +230,7 @@ export class ReportingListComponent implements OnInit {
             : null,
           _reportId:     report?.id ?? null,
           _canGenerate:  period.status === 'CLOSED' && !report && this.canManage(),
+          _canClose:     period.status === 'OPEN' && this.canManagePeriod(),
           _period:       period,
         };
       });
@@ -261,6 +273,111 @@ export class ReportingListComponent implements OnInit {
       error: () => {
         this.generatingId.set(null);
         this.error.set(this.translate.instant('REPORTING.GENERATE_ERROR'));
+      },
+    });
+  }
+
+  // ── Create period ────────────────────────────────────────────────────────
+
+  private readonly newPeriodTpl = viewChild.required<TemplateRef<unknown>>('newPeriodTpl');
+  private newPeriodRef: ModalRef | null = null;
+
+  private readonly currentYear  = new Date().getFullYear();
+  private readonly currentMonth = new Date().getMonth() + 1;
+
+  newPeriodYear  = signal<number>(this.currentYear);
+  newPeriodMonth = signal<number>(this.currentMonth);
+  creatingPeriod = signal(false);
+  createPeriodError = signal<string | null>(null);
+
+  readonly newPeriodYearOptions = computed<SelectOption[]>(() =>
+    [this.currentYear - 1, this.currentYear, this.currentYear + 1]
+      .map(y => ({ value: String(y), label: String(y) })));
+
+  readonly newPeriodMonthOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    const locale = this.translate.currentLang() === 'en' ? 'en-GB' : 'fr-FR';
+    return Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+      const label = new Date(2000, m - 1, 1).toLocaleDateString(locale, { month: 'long' });
+      return { value: String(m), label: label.charAt(0).toUpperCase() + label.slice(1) };
+    });
+  });
+
+  onNewPeriodYearSelected(values: string[]): void {
+    const y = Number(values[0]);
+    if (Number.isFinite(y)) this.newPeriodYear.set(y);
+  }
+
+  onNewPeriodMonthSelected(values: string[]): void {
+    const m = Number(values[0]);
+    if (Number.isFinite(m)) this.newPeriodMonth.set(m);
+  }
+
+  openCreatePeriod(): void {
+    this.createPeriodError.set(null);
+    this.newPeriodYear.set(this.currentYear);
+    this.newPeriodMonth.set(this.currentMonth);
+    const t = (k: string) => this.translate.instant(k);
+    this.newPeriodRef = this.modal.open({
+      title: t('REPORTING.NEW_PERIOD_TITLE'),
+      icon:  'add_chart',
+      body:  this.newPeriodTpl(),
+      closeOnBackdrop: false,
+      buttons: [
+        { label: t('REPORTING.NEW_PERIOD_CANCEL'), variant: 'secondary', action: () => this.closeCreatePeriod() },
+        { label: t('REPORTING.NEW_PERIOD_CREATE'), variant: 'primary', icon: 'add', action: () => this.submitCreatePeriod() },
+      ],
+    });
+  }
+
+  closeCreatePeriod(): void {
+    this.newPeriodRef?.close();
+    this.newPeriodRef = null;
+  }
+
+  submitCreatePeriod(): void {
+    if (this.creatingPeriod()) return;
+    this.creatingPeriod.set(true);
+    this.createPeriodError.set(null);
+    this.periodSvc.createPeriod({
+      paysId:      this.paysId(),
+      periodYear:  this.newPeriodYear(),
+      periodMonth: this.newPeriodMonth(),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: period => {
+        this.creatingPeriod.set(false);
+        this.periods.update(list => [...list, period]);
+        this.closeCreatePeriod();
+      },
+      error: (err: unknown) => {
+        this.creatingPeriod.set(false);
+        const e = err as { error?: { detail?: string; message?: string } };
+        this.createPeriodError.set(e?.error?.detail ?? e?.error?.message
+          ?? this.translate.instant('REPORTING.NEW_PERIOD_ERROR'));
+      },
+    });
+  }
+
+  // ── Close period ─────────────────────────────────────────────────────────
+
+  closingId = signal<number | null>(null);
+
+  /** Projected button in the 'periodStatus' cell — stops the click from also firing `rowClick`. */
+  closePeriod(period: PlPeriodDto, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.closingId() != null) return;
+    this.closingId.set(period.id);
+    this.error.set(null);
+    this.periodSvc.closePeriod(period.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: closed => {
+        this.periods.update(list => list.map(p => (p.id === closed.id ? closed : p)));
+        this.closingId.set(null);
+      },
+      error: (err: unknown) => {
+        this.closingId.set(null);
+        const e = err as { error?: { detail?: string; message?: string } };
+        this.error.set(e?.error?.detail ?? e?.error?.message
+          ?? this.translate.instant('REPORTING.CLOSE_PERIOD_ERROR'));
       },
     });
   }
