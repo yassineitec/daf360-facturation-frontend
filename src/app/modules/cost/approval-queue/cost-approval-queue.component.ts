@@ -13,14 +13,18 @@ import { ClientService } from '../../clients/client.service';
 import { UserStore } from '../../../core/user.store';
 import { HiringCostApprovalDto, HiringCostApprovalService } from '../hiring-cost-approval.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { CostLineDto, localizedLabel } from '../cost.model';
-import { approvalLevelKey, formatDate, urgencyKey } from '../cost-display';
-import { ApprovalItem, ApprovalKind, itemUrgency, kindKey } from './approval-item';
+import { CostInvoiceDto } from '../cost.model';
+import { approvalLevelKey, formatDate } from '../cost-display';
+import {
+  invoiceCategories, invoiceCategorySummary, invoiceHasCategory, invoiceHasSubCategory,
+  invoiceMatchesText, invoiceSubCategories,
+} from '../tabs/cost-invoice-display';
+import { ApprovalItem, ApprovalKind, itemUrgency } from './approval-item';
 import { ApprovalCardsSectionComponent, ApprovalDecision } from './approval-cards-section.component';
 import { ApprovalTableSectionComponent } from './approval-table-section.component';
 
 type ViewMode = 'grid' | 'list';
-/** The three decisions a cost line supports — the service has an endpoint for each. */
+/** The three decisions a cost invoice supports — the service has an endpoint for each. */
 type CostDecision = 'approve' | 'return' | 'reject';
 
 @Component({
@@ -58,7 +62,8 @@ export class CostApprovalQueueComponent implements OnInit {
   private advanceRef:        ModalRef | null = null;
 
   paysId        = signal<number>(0);
-  costs         = signal<CostLineDto[]>([]);
+  /** Cost INVOICES awaiting a decision (V93 — the invoice is the unit of approval). */
+  costs         = signal<CostInvoiceDto[]>([]);
   hiringPending = signal<HiringCostApprovalDto[]>([]);
   isLoading     = signal(true);
   hiringLoading = signal(false);
@@ -68,15 +73,15 @@ export class CostApprovalQueueComponent implements OnInit {
   searchTerm     = signal('');
   filterKind     = signal<'' | ApprovalKind>('');
   filterPriority = signal('');
-  /** Approval level (`L1`–`L4`) — cost lines only, hiring requests carry none. */
+  /** Approval level (`L1`–`L4`) — cost invoices only, hiring requests carry none. */
   filterLevel     = signal('');
-  /** COST_CATEGORY id (as a string) — cost lines only. */
+  /** COST_CATEGORY id (as a string) — cost invoices only; matches when ANY line has it. */
   filterCategory  = signal('');
-  /** Date shown on the card (transaction date for a cost, submission date for a hiring request). */
+  /** Date shown on the card (invoice date for a cost, submission date for a hiring request). */
   filterDateRange = signal<Date[] | null>(null);
-  /** COST_SUB_CATEGORY id (as a string) — cost lines only. */
+  /** COST_SUB_CATEGORY id (as a string) — cost invoices only; matches when ANY line has it. */
   filterSubCategory = signal('');
-  /** Original currency code (cost line `currency`, hiring snapshot `localCurrency`), '' = all. */
+  /** Original currency code (invoice `currency`, hiring snapshot `localCurrency`), '' = all. */
   filterCurrency  = signal('');
   /** Minimum of the amount shown on the card, typed as text ('1 500,50' accepted, '' = no bound). */
   filterAmountMin = signal('');
@@ -102,7 +107,7 @@ export class CostApprovalQueueComponent implements OnInit {
   readonly canDecideAdvance = computed(() => this.userStore.hasPermission('FACT_APPROVE_SALARY_ADVANCE'));
 
   // ── Cost decision modal ────────────────────────────────────────────────────
-  selectedCost       = signal<CostLineDto | null>(null);
+  selectedCost       = signal<CostInvoiceDto | null>(null);
   modalDecision      = signal<CostDecision>('approve');
   approvalCommentSig = signal('');
   modalError         = signal<string | null>(null);
@@ -120,29 +125,37 @@ export class CostApprovalQueueComponent implements OnInit {
    * near-identical card blocks.
    */
   readonly items = computed<ApprovalItem[]>(() => {
-    this.translate.currentLang();
-    const t = (key: string) => this.translate.instant(key);
+    const lang = this.translate.currentLang();
+    const t  = (key: string) => this.translate.instant(key);
+    const tp = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
 
-    const costItems: ApprovalItem[] = this.costs().map(c => ({
-      key:       `cost-${c.id}`,
-      kind:      'cost',
-      id:        c.id,
-      reference: c.reference ?? `COUT-${c.id}`,
-      title:     c.label || '—',
-      level:     c.approvalLevelRequired,
-      urgency:   itemUrgency('cost', c.approvalLevelRequired),
-      dateLabel: formatDate(c.transactionDate),
-      amountLabel: this.costAmountLabel(c),
-      sortDate:   c.transactionDate,
-      sortAmount: c.netAmountEur ?? c.netAmountLocal ?? null,
-      metrics: [
-        { label: t('COST.APPROVAL_QUEUE.PRIORITY'),     value: t(urgencyKey(c.approvalLevelRequired)) },
-        { label: t('COST.APPROVAL_QUEUE.DATE'),         value: formatDate(c.transactionDate) },
-        { label: t('COST.APPROVAL_QUEUE.AMOUNT_TOTAL'), value: this.costAmountLabel(c) },
-        { label: t('COST.APPROVAL_QUEUE.KIND'),         value: t(kindKey('cost')) },
-      ],
-      cost: c,
-    }));
+    // One item per cost INVOICE (V93): supplier + supplier invoice number as the title,
+    // TTC (+ EUR) as the amount, the lines and their categories as metrics.
+    const costItems: ApprovalItem[] = this.costs().map(c => {
+      const levelKey = approvalLevelKey(c.approvalLevelRequired);
+      return {
+        key:       `cost-${c.id}`,
+        kind:      'cost',
+        id:        c.id,
+        reference: c.reference ?? `FC-${c.id}`,
+        title:     this.costTitle(c),
+        level:     c.approvalLevelRequired,
+        urgency:   itemUrgency('cost', c.approvalLevelRequired),
+        dateLabel: formatDate(c.invoiceDate),
+        amountLabel: this.costAmountLabel(c),
+        sortDate:   c.invoiceDate,
+        sortAmount: this.costAmount(c),
+        metrics: [
+          { label: t('COST.DETAIL.INFO.APPROVAL_LEVEL'),   value: levelKey ? t(levelKey) : '—' },
+          { label: t('COST.LINES.COL_INVOICE_DATE'),       value: formatDate(c.invoiceDate) },
+          { label: t('COST.LINES.COL_TTC'),                value: this.currency.transform(c.grossAmountLocal, c.currency ?? 'TND') },
+          { label: t('COST.LINES.COL_EUR'),                value: this.currency.transform(c.grossAmountEur, 'EUR') },
+          { label: t('COST.LINES.COL_LINES'),              value: String(c.lines?.length ?? 0) },
+          { label: t('COST.LINES.COL_CATEGORY'),           value: invoiceCategorySummary(c, lang, tp) },
+        ],
+        cost: c,
+      };
+    });
 
     const hiringItems: ApprovalItem[] = this.hiringPending().map(h => {
       const snap = this.hiringSvc.parseSnapshot(h.simulationSnapshot);
@@ -216,8 +229,9 @@ export class CostApprovalQueueComponent implements OnInit {
       if (kind && item.kind !== kind)     return false;
       if (prio && item.urgency !== prio)  return false;
       if (level && item.level !== level)  return false;
-      if (cat && item.cost?.costCategoryId !== +cat) return false;
-      if (sub && item.cost?.costSubCategoryId !== +sub) return false;
+      // An invoice matches a category / sub-category when ANY of its lines carries it.
+      if (cat && !(item.cost && invoiceHasCategory(item.cost, +cat))) return false;
+      if (sub && !(item.cost && invoiceHasSubCategory(item.cost, +sub))) return false;
       if (cur && this.itemCurrency(item) !== cur) return false;
       if (min != null || max != null) {
         const amount = this.itemAmount(item);
@@ -226,42 +240,40 @@ export class CostApprovalQueueComponent implements OnInit {
         if (max != null && amount > max) return false;
       }
       if (from && to) {
-        const day = (item.kind === 'cost' ? item.cost?.transactionDate : item.hiring?.submittedAt)?.slice(0, 10);
+        const day = (item.kind === 'cost' ? item.cost?.invoiceDate
+          : item.kind === 'advance' ? item.advance?.createdAt
+          : item.hiring?.submittedAt)?.slice(0, 10);
         if (!day || day < from || day > to) return false;
       }
       if (!q) return true;
       return [item.title, item.reference, item.amountLabel]
-        .some(v => (v ?? '').toLowerCase().includes(q));
+        .some(v => (v ?? '').toLowerCase().includes(q))
+        // A cost invoice is also found by its supplier invoice number and line descriptions.
+        || (!!item.cost && invoiceMatchesText(item.cost, q));
     });
   });
 
-  /** Levels present on the loaded cost lines — every option matches something. */
+  /** Levels present on the loaded cost invoices — every option matches something. */
   private readonly costLevels = computed(() =>
     [...new Set(this.costs().map(c => c.approvalLevelRequired).filter((l): l is string => !!l))].sort());
 
-  /** Categories present on the loaded cost lines, sorted by label. */
+  /** Categories present on the lines of the loaded cost invoices, sorted by label. */
   private readonly costCategories = computed(() => {
     const lang = this.translate.currentLang();
     const seen = new Map<number, string>();
     for (const c of this.costs()) {
-      if (c.costCategoryId != null && !seen.has(c.costCategoryId)) {
-        seen.set(c.costCategoryId,
-          localizedLabel(c.costCategoryLabel, c.costCategoryLabelEn, lang) ?? String(c.costCategoryId));
-      }
+      for (const cat of invoiceCategories(c, lang)) if (!seen.has(cat.id)) seen.set(cat.id, cat.label);
     }
     return [...seen].map(([value, label]) => ({ value: String(value), label }))
       .sort((a, b) => a.label.localeCompare(b.label));
   });
 
-  /** Sub-categories present on the loaded cost lines, sorted by label. */
+  /** Sub-categories present on the lines of the loaded cost invoices, sorted by label. */
   private readonly costSubCategories = computed(() => {
     const lang = this.translate.currentLang();
     const seen = new Map<number, string>();
     for (const c of this.costs()) {
-      if (c.costSubCategoryId != null && !seen.has(c.costSubCategoryId)) {
-        seen.set(c.costSubCategoryId,
-          localizedLabel(c.costSubCategoryLabel, c.costSubCategoryLabelEn, lang) ?? String(c.costSubCategoryId));
-      }
+      for (const sub of invoiceSubCategories(c, lang)) if (!seen.has(sub.id)) seen.set(sub.id, sub.label);
     }
     return [...seen].map(([value, label]) => ({ value: String(value), label }))
       .sort((a, b) => a.label.localeCompare(b.label));
@@ -273,14 +285,18 @@ export class CostApprovalQueueComponent implements OnInit {
 
   /** Original currency of an item — same fallback as its amount label. */
   private itemCurrency(item: ApprovalItem): string | null {
-    if (item.kind === 'cost') return item.cost?.currency ?? null;
-    return this.hiringSvc.parseSnapshot(item.hiring!.simulationSnapshot).localCurrency ?? 'TND';
+    if (item.kind === 'cost')    return item.cost?.currency ?? null;
+    if (item.kind === 'advance') return item.advance?.currency ?? null;
+    if (!item.hiring) return null;
+    return this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).localCurrency ?? 'TND';
   }
 
-  /** The number behind `amountLabel`: EUR net (else local net) for a cost, annual loaded cost for a hiring request. */
+  /** The number behind the amount filter: invoice TTC in EUR (else local TTC) for a cost, the requested amount for an advance, annual loaded cost for a hiring request. */
   private itemAmount(item: ApprovalItem): number | null {
-    if (item.kind === 'cost') return item.cost?.netAmountEur ?? item.cost?.netAmountLocal ?? null;
-    const loaded = this.hiringSvc.parseSnapshot(item.hiring!.simulationSnapshot).loadedCost;
+    if (item.kind === 'cost')    return item.cost ? this.costAmount(item.cost) : null;
+    if (item.kind === 'advance') return item.advance?.amount ?? null;
+    if (!item.hiring) return null;
+    const loaded = this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).loadedCost;
     return loaded != null ? loaded * 12 : null;
   }
 
@@ -548,6 +564,7 @@ export class CostApprovalQueueComponent implements OnInit {
     // decision modal. The existing approve/return/reject flow below is untouched --
     // this mirrors the existing 'candidate' branch for hiring items, which likewise
     // window.open()s instead of opening a modal.
+    // `cost/:id` is the INVOICE detail page since V93 (item.id = invoice id).
     if (decision === 'view' && item.kind === 'cost') {
       this.router.navigate(['..', item.id], { relativeTo: this.route });
       return;
@@ -569,7 +586,7 @@ export class CostApprovalQueueComponent implements OnInit {
     this.openDecisionModal(item.cost!, decision as CostDecision);
   }
 
-  openDecisionModal(cost: CostLineDto, decision: CostDecision): void {
+  openDecisionModal(cost: CostInvoiceDto, decision: CostDecision): void {
     this.selectedCost.set(cost);
     this.modalDecision.set(decision);
     this.approvalCommentSig.set('');
@@ -601,12 +618,11 @@ export class CostApprovalQueueComponent implements OnInit {
     const level = cost.approvalLevelRequired ?? 'L2';
     this.modalError.set(null);
 
-    // "Complément" now calls the RETURN endpoint. It used to call the approve handler,
-    // so pressing it approved the line outright instead of sending it back.
+    // The whole invoice is decided at once (V93). "Complément" calls the RETURN endpoint.
     const call$ =
-      decision === 'approve' ? this.svc.approveCostLine(cost.id, level, comment || undefined)
-      : decision === 'return' ? this.svc.returnCostLine(cost.id, level, comment)
-      :                         this.svc.rejectCostLine(cost.id, level, comment);
+      decision === 'approve' ? this.svc.approveCostInvoice(cost.id, level, comment || undefined)
+      : decision === 'return' ? this.svc.returnCostInvoice(cost.id, level, comment)
+      :                         this.svc.rejectCostInvoice(cost.id, level, comment);
 
     call$.subscribe({
       next: () => { this.approvalRef?.close(); this.loadQueue(); },
@@ -724,10 +740,30 @@ export class CostApprovalQueueComponent implements OnInit {
   }
 
   // ── Formatting used by the modal bodies ────────────────────────────────────
-  costAmountLabel(cost: CostLineDto): string {
-    return cost.netAmountEur != null
-      ? this.currency.transform(cost.netAmountEur, 'EUR')
-      : this.currency.transform(cost.netAmountLocal, cost.currency ?? 'TND');
+  /** Invoice TTC in its own currency, followed by the EUR equivalent when it differs. */
+  costAmountLabel(cost: CostInvoiceDto): string {
+    const cur   = cost.currency ?? 'TND';
+    const local = this.currency.transform(cost.grossAmountLocal, cur);
+    return cur !== 'EUR' && cost.grossAmountEur != null
+      ? `${local} (${this.currency.transform(cost.grossAmountEur, 'EUR')})`
+      : local;
+  }
+
+  /** Invoice TTC in EUR, else local TTC — the value the table sorts and the amount filter compares. */
+  costAmount(cost: CostInvoiceDto): number | null {
+    return cost.grossAmountEur ?? cost.grossAmountLocal ?? null;
+  }
+
+  /** "Supplier · N° facture" — an invoice without a supplier reads "Sans fournisseur". */
+  costTitle(cost: CostInvoiceDto): string {
+    const supplier = cost.supplierName ?? this.translate.instant('COST.LINES.NO_SUPPLIER_CARD');
+    return cost.supplierInvoiceNumber ? `${supplier} · ${cost.supplierInvoiceNumber}` : supplier;
+  }
+
+  /** Category summary of an invoice, for the decision modal header. */
+  costCategoryLabel(cost: CostInvoiceDto): string {
+    return invoiceCategorySummary(cost, this.translate.currentLang(),
+      (key, params) => this.translate.instant(key, params));
   }
 
   hiringLoadedCostLabel(item: HiringCostApprovalDto): string {

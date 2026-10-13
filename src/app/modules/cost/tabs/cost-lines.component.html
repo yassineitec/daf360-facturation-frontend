@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-8">
 
-  <!-- KPIs — counted over the page on screen, which is what the list endpoint returns -->
+  <!-- KPIs — invoices (V93), counted over the page on screen, which is what the list endpoint returns -->
   <section class="grid grid-cols-3 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'COST.LINES.KPI_DRAFTS' | translate"
@@ -49,19 +49,17 @@
   <!-- Content sits free in the page — no outer container card -->
   @if (viewMode() === 'grid') {
     <app-cost-lines-cards-section
-      [lines]="visibleLines()"
-      [categoryFor]="categoryFor"
+      [invoices]="visibleInvoices()"
       [loading]="isLoading()"
       [skeletonCount]="size()"
       [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
       (view)="openDetail($event)"
       (edit)="openEdit($event)"
-      (submitLine)="submitLine($event)"
-      (createReglement)="openReglementForLine($event)" />
+      (submitInvoice)="submitInvoice($event)"
+      (createReglement)="openReglementForInvoice($event)" />
   } @else if (viewMode() === 'list') {
     <app-cost-lines-table-section
-      [lines]="visibleLines()"
-      [categoryFor]="categoryFor"
+      [invoices]="visibleInvoices()"
       [loading]="isLoading()"
       [pageSize]="size()"
       [emptyMessage]="'COST.LINES.TABLE_EMPTY' | translate"
@@ -70,8 +68,8 @@
       (sortChange)="onSortChange($event)"
       (view)="openDetail($event)"
       (edit)="openEdit($event)"
-      (submitLine)="submitLine($event)"
-      (createReglement)="openReglementForLine($event)" />
+      (submitInvoice)="submitInvoice($event)"
+      (createReglement)="openReglementForInvoice($event)" />
   } @else {
     <!-- "By supplier" cards — an unpaginated aggregation over every distinct supplier
          for this pays, deliberately ALL statuses (see SupplierCostSummaryService). The

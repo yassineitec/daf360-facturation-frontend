@@ -22,7 +22,7 @@ import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
 import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-set.service';
 import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-api-config.service';
-import { ListValueDto, ListTypeDto, TaxonomyFields } from '../../cost/cost.model';
+import { ListValueDto, ListTypeDto, TaxonomyFields, WithholdingBase, WITHHOLDING_BASES } from '../../cost/cost.model';
 import { PaysRefDto }         from '../../affaires/affaire.model';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
@@ -35,6 +35,7 @@ const PAGE_SIZE = 10;
 const COST_CATEGORY_TYPE     = 'COST_CATEGORY';
 const COST_SUB_CATEGORY_TYPE = 'COST_SUB_CATEGORY';
 const VAT_RATE_TYPE          = 'VAT_RATE';
+const WITHHOLDING_RATE_TYPE  = 'WITHHOLDING_RATE';
 
 interface ValueForm {
   code: string;
@@ -54,8 +55,10 @@ interface ValueForm {
   // COST_CATEGORY + COST_SUB_CATEGORY
   descriptionFr: string;
   descriptionEn: string;
-  // VAT_RATE — whole percentage (e.g. 19), null while unset
+  // VAT_RATE / WITHHOLDING_RATE — whole percentage (e.g. 19), null while unset
   ratePct: number | null;
+  // WITHHOLDING_RATE — what the rate applies to
+  taxBase: WithholdingBase;
 }
 
 function emptyValueForm(): ValueForm {
@@ -63,7 +66,7 @@ function emptyValueForm(): ValueForm {
     code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false,
     parentCode: '', sourceType: 'MANUAL', autoPushModule: '',
     isStrictScrutiny: false, isDirect: false, isOverhead: false, isCapex: false,
-    descriptionFr: '', descriptionEn: '', ratePct: null,
+    descriptionFr: '', descriptionEn: '', ratePct: null, taxBase: 'HT_FODEC',
   };
 }
 
@@ -123,8 +126,19 @@ export class AdminListComponent implements OnInit {
   readonly isSubCategoryType = computed(() => this.activeListType() === COST_SUB_CATEGORY_TYPE);
   readonly isTaxonomyType    = computed(() => this.isCategoryType() || this.isSubCategoryType());
 
-  /** VAT_RATE values carry a `ratePct` whole percentage, shown/edited only for this type. */
-  readonly isVatRateType = computed(() => this.activeListType() === VAT_RATE_TYPE);
+  /** VAT_RATE and WITHHOLDING_RATE values carry a `ratePct` whole percentage, shown/edited only for them. */
+  readonly isVatRateType = computed(() =>
+    this.activeListType() === VAT_RATE_TYPE || this.activeListType() === WITHHOLDING_RATE_TYPE);
+
+  /** WITHHOLDING_RATE (retenue à la source, V92) values also carry the base: HT + FODEC or the TVA (V95). */
+  readonly isWithholdingType = computed(() => this.activeListType() === WITHHOLDING_RATE_TYPE);
+
+  readonly taxBaseOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return WITHHOLDING_BASES.map(b => ({
+      value: b, label: this.translate.instant('ADMIN.LISTS.TAX_BASE_' + b),
+    }));
+  });
 
   readonly listColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
@@ -155,6 +169,10 @@ export class AdminListComponent implements OnInit {
     if (this.isVatRateType()) {
       cols.push({ key: 'ratePct', label: t('ADMIN.LISTS.COL_RATE_PCT'),
                   align: 'center', width: '110px' });
+    }
+    if (this.isWithholdingType()) {
+      cols.push({ key: 'taxBase', label: t('ADMIN.LISTS.COL_TAX_BASE'),
+                  align: 'center', width: '140px' });
     }
     cols.push(
       { key: 'isDefault', label: this.translate.instant('ADMIN.LISTS.COL_DEFAULT'),   align: 'center', width: '90px' },
@@ -317,6 +335,7 @@ export class AdminListComponent implements OnInit {
       isStrictScrutiny: v.isStrictScrutiny === true,
       isGlobal: v.paysId === null,
       ratePct: v.ratePct,
+      taxBase: v.taxBase ? this.translate.instant('ADMIN.LISTS.TAX_BASE_' + v.taxBase) : '',
       _source: v,
     })), this.listColumns(), this.listValueSearch()),
   );
@@ -623,6 +642,9 @@ export class AdminListComponent implements OnInit {
     BILLING_PERMISSION:       'admin_panel_settings',
     INVOICE_TYPE:             'description',
     CLIENT_SECTOR:            'domain',
+    VAT_RATE:                 'percent',
+    WITHHOLDING_RATE:         'percent',
+    OTHER_TAX_TYPE:           'add_circle',
   };
 
   listTypeIcon(code: string): string {
@@ -660,6 +682,8 @@ export class AdminListComponent implements OnInit {
     COST_SUB_CATEGORY:        'costs',
     COST_LINE_ORIGIN:         'costs',
     RECURRENCE_FREQUENCY:     'costs',
+    WITHHOLDING_RATE:         'costs',
+    OTHER_TAX_TYPE:           'costs',
     BILLING_PERIOD:           'billing',
     INVOICE_TYPE:             'billing',
     AFFAIRE_REPARTITION_TYPE: 'billing',
@@ -765,6 +789,7 @@ export class AdminListComponent implements OnInit {
       descriptionFr: v.descriptionFr ?? '',
       descriptionEn: v.descriptionEn ?? '',
       ratePct: v.ratePct ?? null,
+      taxBase: v.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC',
     };
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_EDIT', { code: v.code }));
@@ -775,8 +800,7 @@ export class AdminListComponent implements OnInit {
    * light sanity guard instead (the backend already validates properly).
    */
   onRatePctChange(v: string | number | null): void {
-    if (v === null || v === '') { this.valueForm.ratePct = null; return; }
-    this.valueForm.ratePct = Math.min(100, Math.max(0, Number(v)));
+    this.valueForm.ratePct = this.clampRatePct(v);
   }
 
   private openValueModal(title: string): void {
@@ -825,6 +849,7 @@ export class AdminListComponent implements OnInit {
         // Non envoye pour les autres types : la colonne reste NULL (= non applicable).
         ...(this.showsReceiptRule() ? { requiresReceipt: this.valueForm.requiresReceipt } : {}),
         ...(this.isVatRateType() ? { ratePct: this.valueForm.ratePct ?? undefined } : {}),
+        ...(this.isWithholdingType() ? { taxBase: this.valueForm.taxBase } : {}),
         ...taxonomy,
       }).subscribe({
         next: created => {
@@ -857,6 +882,7 @@ export class AdminListComponent implements OnInit {
         labelFr, labelEn: labelEn || labelFr,
         ...(this.showsReceiptRule() ? { requiresReceipt: this.valueForm.requiresReceipt } : {}),
         ...(this.isVatRateType() ? { ratePct: this.valueForm.ratePct ?? undefined } : {}),
+        ...(this.isWithholdingType() ? { taxBase: this.valueForm.taxBase } : {}),
         ...taxonomy,
       }).subscribe({
         next: updated => {

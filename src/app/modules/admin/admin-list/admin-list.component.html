@@ -187,7 +187,7 @@
               </span>
             </ng-template>
 
-            <!-- VAT_RATE only -->
+            <!-- VAT_RATE / WITHHOLDING_RATE only -->
             <ng-template dafCell="ratePct" let-row>
               {{ row['ratePct'] != null ? row['ratePct'] + '%' : '—' }}
             </ng-template>
@@ -451,14 +451,6 @@
         <p class="form-hint">{{ 'ADMIN.LISTS.RECEIPT_HINT' | translate }}</p>
       }
 
-      <!-- Taux de TVA : pourcentage entier (19, pas 0.19) — VAT_RATE uniquement. -->
-      @if (isVatRateType()) {
-        <daf-form-field
-          [options]="{ label: ('ADMIN.LISTS.FIELD_RATE_PCT' | translate), type: 'number', placeholder: '19' }"
-          [value]="valueForm.ratePct"
-          (valueChange)="valueForm.ratePct = clampRatePct($event)" />
-      }
-
       <!-- Sous-catégorie de coût : rattachement obligatoire à une catégorie de l'entité. -->
       @if (isSubCategoryType()) {
         <daf-select
@@ -509,7 +501,7 @@
           (valueChange)="valueForm.descriptionEn = $any($event) ?? ''" />
       }
 
-      <!-- Taux de TVA : uniquement pour VAT_RATE, seul type de liste où une valeur porte
+      <!-- Taux : VAT_RATE et WITHHOLDING_RATE, seuls types de liste où une valeur porte
            un pourcentage. `align: 'center'` + `suffixText: '%'` reprend le champ pourcentage
            déjà utilisé pour la répartition contractuelle (wizard AV) ; 0–100 est resserré
            côté client dans onRatePctChange(), la vraie validation reste côté backend. -->
@@ -518,6 +510,16 @@
           [options]="{ label: ('ADMIN.LISTS.FIELD_RATE_PCT' | translate), type: 'number', align: 'center', suffixText: '%', required: true }"
           [value]="valueForm.ratePct"
           (valueChange)="onRatePctChange($any($event))" />
+      }
+
+      <!-- Retenue à la source : assiette du taux (HT, TTC = HT + FODEC + TVA, ou TVA). -->
+      @if (isWithholdingType()) {
+        <daf-select
+          [options]="taxBaseOptions()"
+          [config]="{ label: ('ADMIN.LISTS.FIELD_TAX_BASE' | translate), required: true }"
+          [selected]="[valueForm.taxBase]"
+          (selectedChange)="valueForm.taxBase = $event[0] === 'TVA' ? 'TVA' : 'HT_FODEC'" />
+        <p class="config-hint">{{ 'ADMIN.LISTS.TAX_BASE_HINT' | translate }}</p>
       }
     </div>
   </ng-template>

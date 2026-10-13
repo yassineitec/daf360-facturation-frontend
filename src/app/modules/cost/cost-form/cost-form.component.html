@@ -1,11 +1,9 @@
-<!-- Saisie / modification d'une ligne de coût — même squelette que les assistants
-     affaire et fournisseur : `daf-page` porte le fond et le rythme vertical,
-     `daf-page-header` le h1, le fil d'Ariane et la pastille « brouillon », et la barre
-     d'actions du bas reprend celle de l'assistant affaire.
-
-     La barre est `sticky` et vit DANS `daf-page` : le conteneur de défilement est
-     `.shell-content`, qui porte la marge de la barre latérale ; l'ancienne barre `fixed`
-     (left:0/right:0) se calait sur la fenêtre et passait sous la navigation latérale. -->
+<!-- Saisie / modification d'une FACTURE DE COÛT (V93) : un en-tête (fournisseur, n° de
+     facture, date, devise), une ou plusieurs lignes (catégorie, affaire, HT, FODEC et TVA
+     propres à chaque ligne), puis timbre fiscal et retenue à la source une seule fois pour
+     la facture. Même squelette que les assistants affaire et fournisseur : `daf-page`
+     porte le fond et le rythme vertical, la barre d'actions du bas reste `sticky` dans
+     `daf-page` (le conteneur de défilement est `.shell-content`). -->
 
 <daf-page [kpis]="0" [breadcrumbs]="true" [loading]="isPageLoading()"
           [loadingLabel]="'COST.DETAIL.LOADING' | translate">
@@ -22,278 +20,370 @@
       <daf-field-message [error]="err" />
     }
 
-    <!-- ── Two-column layout ───────────────────────────────────────────────── -->
+    <!-- Modification après validation (DAF) : le statut, l'approbation et le règlement
+         restent ; la justification est obligatoire et chaque modification est historisée. -->
+    @if (validatedMode()) {
+      <div class="validated-banner">
+        <div class="validated-banner__title">
+          <span class="material-symbols-outlined">admin_panel_settings</span>
+          {{ 'COST.FORM.VALIDATED_TITLE' | translate:{ status: ('COST.STATUS.' + editStatus() | translate) } }}
+        </div>
+        <p class="validated-banner__text">{{ 'COST.FORM.VALIDATED_TEXT' | translate }}</p>
+        <daf-form-field
+          [options]="{ type: 'textarea', label: ('COST.FORM.JUSTIFICATION_LABEL' | translate), placeholder: ('COST.FORM.JUSTIFICATION_PLACEHOLDER' | translate), rows: 2, required: true }"
+          [(value)]="justification">
+        </daf-form-field>
+      </div>
+    }
+
     <div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start">
 
       <!-- ═══════ LEFT: FORM SECTIONS ════════════════════════════════════════ -->
       <div style="display:flex;flex-direction:column;gap:1.25rem">
 
-        <!-- SECTION 1 — Contexte ───────────────────────────────────────────── -->
-        <daf-card class="block" [options]="sectionCard">
-          <!-- Header -->
+        <!-- SECTION 1 — Facture fournisseur ───────────────────────────────────
+             `section-card--overflow` : l'autocomplétion fournisseur est une liste en
+             `position:absolute`, que l'`overflow-hidden` de daf-card rognerait. -->
+        <daf-card class="block section-card--overflow" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#006b5812;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">pin_drop</span>
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">receipt_long</span>
             </div>
             <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_CONTEXT_TITLE' | translate }}</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_CONTEXT_SUB' | translate }}</p>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_INVOICE_TITLE' | translate }}</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_INVOICE_SUB' | translate }}</p>
             </div>
           </div>
-          <!-- Fields -->
+
           <div style="display:flex;flex-direction:column;gap:1rem">
             <!-- Pays -->
-            <div>
-              <daf-select
-                [options]="paysOptions()"
-                [config]="{ label: ('COST.FORM.PAYS_LABEL' | translate), placeholder: ('COST.FORM.PAYS_PLACEHOLDER' | translate), required: true, searchable: true }"
-                [selected]="selArr(paysId())"
-                (selectedChange)="onPaysSelected($event[0] ? +$event[0] : null)">
-              </daf-select>
+            <daf-select
+              [options]="paysOptions()"
+              [config]="{ label: ('COST.FORM.PAYS_LABEL' | translate), placeholder: ('COST.FORM.PAYS_PLACEHOLDER' | translate), required: true, searchable: true, disabled: isEditMode() }"
+              [selected]="selArr(paysId())"
+              (selectedChange)="onPaysSelected($event[0] ? +$event[0] : null)">
+            </daf-select>
+
+            <!-- Fournisseur (optionnel) -->
+            <div style="position:relative">
+              <p style="font-size:.75rem;font-weight:600;color:#44474c;margin:0 0 6px 0">{{ 'COST.FORM.SECTION_SUPPLIER_TITLE' | translate }}</p>
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;
+                          border-radius:12px;background:#eff4ff"
+                   [style.opacity]="paysId() ? 1 : 0.6">
+                <span class="material-symbols-outlined" style="font-size:1.2rem;color:#44474c">search</span>
+                <input type="text" [value]="supplierQuery()"
+                  (input)="onSupplierQueryChange($any($event.target).value)"
+                  [disabled]="!paysId()"
+                  [placeholder]="(paysId() ? 'COST.FORM.SUPPLIER_SEARCH_PLACEHOLDER' : 'COST.FORM.SUPPLIER_SEARCH_NEEDS_PAYS') | translate"
+                  style="flex:1;background:transparent;border:none;outline:none;
+                         font-size:.875rem;color:#0b1c30"/>
+              </div>
+              @if (!paysId()) {
+                <p style="font-size:.7rem;color:#94a3b8;margin-top:6px">{{ 'COST.FORM.SUPPLIER_SEARCH_NEEDS_PAYS_HINT' | translate }}</p>
+              }
+              @if (suppliers().length > 0) {
+                <div style="position:absolute;z-index:20;background:white;border-radius:12px;
+                            box-shadow:0 10px 25px rgba(0,0,0,.12);margin-top:4px;width:100%;
+                            max-height:192px;overflow-y:auto;border:1px solid #e2e8f0">
+                  @for (s of suppliers(); track s.id) {
+                    <button type="button" (click)="selectSupplier(s)"
+                      style="width:100%;padding:10px 16px;text-align:left;font-size:.875rem;
+                             background:transparent;border:none;cursor:pointer;
+                             display:flex;justify-content:space-between;align-items:center">
+                      <span style="color:#0b1c30">{{ s.name }}</span>
+                      @if (s.code) {
+                        <span style="font-size:.75rem;color:#44474c">{{ s.code }}</span>
+                      }
+                    </button>
+                  }
+                </div>
+              }
+              @if (supplierId()) {
+                <p style="font-size:.75rem;margin-top:6px;display:flex;align-items:center;gap:4px;color:#006b58">
+                  <span class="material-symbols-outlined" style="font-size:.875rem">check_circle</span>
+                  {{ 'COST.FORM.SUPPLIER_SELECTED' | translate:{ name: supplierQuery() } }}
+                </p>
+              } @else if (paysId()) {
+                <p style="font-size:.7rem;color:#94a3b8;margin-top:6px">{{ 'COST.FORM.NO_SUPPLIER_HINT' | translate }}</p>
+              }
             </div>
-            <!-- Catégorie de coût (D3 taxonomy, V78) — per pays, so disabled until one is picked -->
-            <div>
-              <daf-select
-                [options]="costCategorySelectOptions()"
-                [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true, disabled: !paysId() }"
-                [selected]="costCategoryId() !== null ? [costCategoryId() + '|' + costCategoryLabel()] : []"
-                (selectedChange)="onCostCategorySelect($event)">
-              </daf-select>
-            </div>
-            <!-- Sous-catégorie -- only appears once a category is chosen -->
-            @if (costCategoryId() !== null && costSubCategorySelectOptions().length > 0) {
+
+            <!-- N° de facture fournisseur — obligatoire avec un fournisseur, unique par fournisseur -->
+            @if (hasSupplier()) {
               <div>
-                <daf-select
-                  [options]="costSubCategorySelectOptions()"
-                  [config]="{ label: ('COST.FORM.SUB_CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.SUB_CATEGORY_PLACEHOLDER' | translate), searchable: true }"
-                  [selected]="costSubCategoryId() !== null ? [costSubCategoryId() + '|' + costSubCategoryLabel()] : []"
-                  (selectedChange)="onCostSubCategorySelect($event)">
-                </daf-select>
+                <daf-form-field
+                  [options]="{ type: 'text', label: ('COST.FORM.INVOICE_NUMBER_LABEL' | translate), placeholder: ('COST.FORM.INVOICE_NUMBER_PLACEHOLDER' | translate), required: true }"
+                  [(value)]="supplierInvoiceNumber">
+                </daf-form-field>
+                <p style="font-size:.7rem;color:#94a3b8;margin:4px 0 0 0">{{ 'COST.FORM.INVOICE_NUMBER_HINT' | translate }}</p>
               </div>
             }
-            <!-- Date -->
-            <div>
-              <daf-form-field
-                [options]="{ type: 'date', label: ('COST.FORM.DATE_LABEL' | translate), required: true }"
-                [(value)]="transactionDate">
-              </daf-form-field>
-            </div>
-            <!-- Description -->
-            <div>
-              <daf-form-field
-                [options]="{ type: 'text', label: ('COST.FORM.DESCRIPTION_LABEL' | translate), placeholder: ('COST.FORM.DESCRIPTION_PLACEHOLDER' | translate), required: true }"
-                [(value)]="description">
-              </daf-form-field>
-            </div>
-          </div>
-        </daf-card>
 
-        <!-- SECTION 2 — Montants ────────────────────────────────────────────── -->
-        <daf-card class="block" [options]="sectionCard">
-          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
-            <div style="width:40px;height:40px;border-radius:12px;background:#fef3c720;
-                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#d97706">payments</span>
-            </div>
-            <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_AMOUNT_TITLE' | translate }}</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_AMOUNT_SUB' | translate }}</p>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-            <!-- Montant HT -->
-            <div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
               <daf-form-field
-                [options]="{ type: 'number', label: ('COST.FORM.NET_LABEL' | translate), placeholder: '0.00', required: true }"
-                [value]="netAmountLocal()"
-                (valueChange)="netAmountLocal.set($event === null ? null : +$event); onAmountOrCurrencyChange()">
+                [options]="{ type: 'date', label: ('COST.FORM.INVOICE_DATE_LABEL' | translate), required: true }"
+                [(value)]="invoiceDate">
               </daf-form-field>
-            </div>
-            <!-- Devise -->
-            <div>
+              <daf-form-field
+                [options]="{ type: 'date', label: ('COST.FORM.DUE_DATE_LABEL' | translate) }"
+                [(value)]="paymentDueDate">
+              </daf-form-field>
               <daf-select
                 [options]="currencyOptions()"
                 [config]="{ label: ('COST.FORM.CURRENCY_LABEL' | translate), placeholder: ('COST.FORM.CURRENCY_PLACEHOLDER' | translate), required: true }"
                 [selected]="selArr(currencyId())"
-                (selectedChange)="currencyId.set($event[0] ? +$event[0] : null); onAmountOrCurrencyChange()">
+                (selectedChange)="currencyId.set($event[0] ? +$event[0] : null); schedulePreview()">
               </daf-select>
             </div>
-          </div>
-          @if (currencies().length === 0 && paysId()) {
-            <p style="font-size:.75rem;color:#44474c90;margin-top:.75rem">
-              <span class="material-symbols-outlined" style="font-size:.875rem;vertical-align:middle">info</span>
-              {{ 'COST.FORM.NO_CURRENCY' | translate }}
-            </p>
-          }
-        </daf-card>
-
-        <!-- SECTION 3 — Fournisseur ─────────────────────────────────────────── -->
-        <!-- `section-card--overflow` : l'autocomplétion fournisseur est une liste en
-             `position:absolute`, que l'`overflow-hidden` de daf-card rognerait
-             (daf-select, lui, est porté sur <body> et n'est pas concerné). -->
-        <daf-card class="block section-card--overflow" [options]="sectionCard">
-          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
-            <div style="width:40px;height:40px;border-radius:12px;background:#dbeafe20;
-                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#1d4ed8">business</span>
-            </div>
-            <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_SUPPLIER_TITLE' | translate }}</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_SUPPLIER_SUB' | translate }}</p>
-            </div>
-          </div>
-
-          <div style="position:relative">
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;
-                        border-radius:12px;background:#eff4ff"
-                 [style.opacity]="paysId() ? 1 : 0.6">
-              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#44474c">search</span>
-              <input type="text" [value]="supplierQuery()"
-                (input)="onSupplierQueryChange($any($event.target).value)"
-                [disabled]="!paysId()"
-                [placeholder]="(paysId() ? 'COST.FORM.SUPPLIER_SEARCH_PLACEHOLDER' : 'COST.FORM.SUPPLIER_SEARCH_NEEDS_PAYS') | translate"
-                style="flex:1;background:transparent;border:none;outline:none;
-                       font-size:.875rem;color:#0b1c30"/>
-            </div>
-            @if (!paysId()) {
-              <p style="font-size:.7rem;color:#94a3b8;margin-top:6px">{{ 'COST.FORM.SUPPLIER_SEARCH_NEEDS_PAYS_HINT' | translate }}</p>
-            }
-            @if (suppliers().length > 0) {
-              <div style="position:absolute;z-index:20;background:white;border-radius:12px;
-                          box-shadow:0 10px 25px rgba(0,0,0,.12);margin-top:4px;width:100%;
-                          max-height:192px;overflow-y:auto;border:1px solid #e2e8f0">
-                @for (s of suppliers(); track s.id) {
-                  <button type="button" (click)="selectSupplier(s)"
-                    style="width:100%;padding:10px 16px;text-align:left;font-size:.875rem;
-                           background:transparent;border:none;cursor:pointer;
-                           display:flex;justify-content:space-between;align-items:center">
-                    <span style="color:#0b1c30">{{ s.name }}</span>
-                    @if (s.code) {
-                      <span style="font-size:.75rem;color:#44474c">{{ s.code }}</span>
-                    }
-                  </button>
-                }
-              </div>
-            }
-            @if (supplierId()) {
-              <p style="font-size:.75rem;margin-top:6px;display:flex;align-items:center;
-                         gap:4px;color:#006b58">
-                <span class="material-symbols-outlined" style="font-size:.875rem">check_circle</span>
-                {{ 'COST.FORM.SUPPLIER_SELECTED' | translate:{ name: supplierQuery() } }}
+            @if (currencies().length === 0 && paysId()) {
+              <p style="font-size:.75rem;color:#44474c90;margin:0">
+                <span class="material-symbols-outlined" style="font-size:.875rem;vertical-align:middle">info</span>
+                {{ 'COST.FORM.NO_CURRENCY' | translate }}
               </p>
             }
           </div>
-
-          <!-- D3 Tunisian tax fields (V78) — shown only once a real supplier is picked
-               via the autocomplete (showTaxFields() reads supplierId(), not the toggle). -->
-          @if (showTaxFields()) {
-            <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #f0f4f8">
-              <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
-                <span class="material-symbols-outlined" style="font-size:1.1rem;color:#d97706">receipt_long</span>
-                <p style="font-size:.8rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.TAX.SECTION_TITLE' | translate }}</p>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-                <div>
-                  <daf-select
-                    [options]="fodecOptions()"
-                    [config]="{ label: ('COST.FORM.TAX.FODEC_LABEL' | translate) }"
-                    [selected]="selArr(fodecRate())"
-                    (selectedChange)="fodecRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
-                  </daf-select>
-                </div>
-                <div>
-                  <daf-select
-                    [options]="tvaOptions()"
-                    [config]="{ label: ('COST.FORM.TAX.TVA_LABEL' | translate) }"
-                    [selected]="selArr(tvaRate())"
-                    (selectedChange)="tvaRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
-                  </daf-select>
-                </div>
-                <div>
-                  <daf-select
-                    [options]="timbreOptions()"
-                    [config]="{ label: ('COST.FORM.TAX.TIMBRE_LABEL' | translate) }"
-                    [selected]="selArr(timbreAmount())"
-                    (selectedChange)="timbreAmount.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null); onTaxFieldChange()">
-                  </daf-select>
-                </div>
-                <div>
-                  <daf-select
-                    [options]="autresTaxesOptions()"
-                    [config]="{ label: ('COST.FORM.TAX.AUTRES_TAXES_LABEL' | translate) }"
-                    [selected]="selArr(autresTaxesRate())"
-                    (selectedChange)="autresTaxesRate.set($event[0] !== undefined && $event[0] !== '' ? +$event[0] : null)">
-                  </daf-select>
-                </div>
-              </div>
-              @if (ttcPreview(); as ttc) {
-                <div style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;
-                            padding:12px 16px;border-radius:12px;background:#f0fdf4">
-                  <span style="font-size:.8rem;font-weight:700;color:#0b1c30">{{ 'COST.FORM.TAX.TTC_LABEL' | translate }}</span>
-                  <span style="font-size:1rem;font-weight:900;color:#006b58">
-                    {{ ttc | number:'1.3-3' }} {{ selectedCurrencyCode() }}
-                  </span>
-                </div>
-              }
-            </div>
-          }
         </daf-card>
 
-        <!-- SECTION 4 — Affectation ─────────────────────────────────────────── -->
+        <!-- SECTION 2 — Lignes de la facture ─────────────────────────────────── -->
         <daf-card class="block" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
-            <div style="width:40px;height:40px;border-radius:12px;background:#f0fdf4;
+            <div style="width:40px;height:40px;border-radius:12px;background:#fef3c720;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#006b58">work</span>
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#d97706">format_list_numbered</span>
             </div>
-            <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_ALLOC_TITLE' | translate }}</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_ALLOC_SUB' | translate }}</p>
+            <div style="flex:1">
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">
+                {{ 'COST.FORM.SECTION_LINES_TITLE' | translate }} ({{ lines().length }})
+              </p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">
+                {{ (hasSupplier() ? 'COST.FORM.SECTION_LINES_SUB_SUPPLIER' : 'COST.FORM.SECTION_LINES_SUB_NO_SUPPLIER') | translate }}
+              </p>
             </div>
           </div>
-          <daf-select
-            [options]="affaireOptions()"
-            [config]="{ label: ('COST.FORM.AFFAIRE_LABEL' | translate), placeholder: ('COST.FORM.AFFAIRE_PLACEHOLDER' | translate), searchable: true, disabled: !paysId() }"
-            [selected]="selArr(affaireId())"
-            (selectedChange)="affaireId.set($event[0] ? +$event[0] : null)">
-          </daf-select>
+
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            @for (line of lines(); track line.key; let i = $index) {
+              <daf-card class="block" [options]="lineCard">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+                  <p style="font-size:.8rem;font-weight:800;color:#0b1c30;margin:0">
+                    {{ 'COST.FORM.LINE_N' | translate:{ n: i + 1 } }}
+                  </p>
+                  <div style="display:flex;align-items:center;gap:.75rem">
+                    <span style="font-size:.75rem;color:#44474c">
+                      {{ 'COST.FORM.LINE_TTC' | translate }} :
+                      <strong style="color:#006b58">{{ lineTtc(line) | number:'1.3-3' }} {{ selectedCurrencyCode() }}</strong>
+                    </span>
+                    @if (lines().length > 1) {
+                      <button type="button" class="line-remove" (click)="removeLine(line.key)"
+                              [attr.aria-label]="'COST.FORM.REMOVE_LINE' | translate"
+                              [title]="'COST.FORM.REMOVE_LINE' | translate">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem">
+                  <daf-select
+                    [options]="costCategorySelectOptions()"
+                    [config]="{ label: ('COST.FORM.CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.CATEGORY_PLACEHOLDER' | translate), required: true, searchable: true, disabled: !paysId() }"
+                    [selected]="line.costCategoryId !== null ? [line.costCategoryId + '|' + line.costCategoryLabel] : []"
+                    (selectedChange)="onLineCategorySelect(line, $event)">
+                  </daf-select>
+                  <daf-select
+                    [options]="subCategoryOptions(line)"
+                    [config]="{ label: ('COST.FORM.SUB_CATEGORY_LABEL' | translate), placeholder: ('COST.FORM.SUB_CATEGORY_PLACEHOLDER' | translate), searchable: true, disabled: subCategoryOptions(line).length === 0 }"
+                    [selected]="line.costSubCategoryId !== null ? [line.costSubCategoryId + '|' + line.costSubCategoryLabel] : []"
+                    (selectedChange)="onLineSubCategorySelect(line, $event)">
+                  </daf-select>
+
+                  <div style="grid-column:1 / -1">
+                    <daf-form-field
+                      [options]="{ type: 'text', label: ('COST.FORM.DESCRIPTION_LABEL' | translate), placeholder: ('COST.FORM.DESCRIPTION_PLACEHOLDER' | translate), required: true }"
+                      [value]="line.description"
+                      (valueChange)="patchLine(line.key, { description: $any($event) ?? '' }, false)">
+                    </daf-form-field>
+                  </div>
+
+                  <daf-form-field
+                    [options]="{ type: 'number', label: ('COST.FORM.NET_LABEL' | translate), placeholder: '0.000', required: true }"
+                    [value]="line.netAmountLocal"
+                    (valueChange)="patchLine(line.key, { netAmountLocal: numberOf($event) })">
+                  </daf-form-field>
+
+                  @if (hasSupplier()) {
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem">
+                      <daf-select
+                        [options]="fodecOptions()"
+                        [config]="{ label: ('COST.FORM.TAX.FODEC_LABEL' | translate) }"
+                        [selected]="selArr(line.fodecRate)"
+                        (selectedChange)="patchLine(line.key, { fodecRate: rateOf($event) })">
+                      </daf-select>
+                      <daf-select
+                        [options]="tvaOptions()"
+                        [config]="{ label: ('COST.FORM.TAX.TVA_LABEL' | translate) }"
+                        [selected]="selArr(line.tvaRate)"
+                        (selectedChange)="patchLine(line.key, { tvaRate: rateOf($event) })">
+                      </daf-select>
+                    </div>
+                  } @else {
+                    <daf-form-field
+                      [options]="{ type: 'number', label: ('COST.FORM.VAT_AMOUNT_LABEL' | translate), placeholder: '0.000' }"
+                      [value]="line.vatAmountLocal"
+                      (valueChange)="patchLine(line.key, { vatAmountLocal: numberOf($event) })">
+                    </daf-form-field>
+                  }
+
+                  <daf-select
+                    [options]="affaireOptions()"
+                    [config]="{ label: ('COST.FORM.AFFAIRE_LABEL' | translate), placeholder: ('COST.FORM.AFFAIRE_PLACEHOLDER' | translate), searchable: true, disabled: !paysId() }"
+                    [selected]="selArr(line.affaireId)"
+                    (selectedChange)="patchLine(line.key, { affaireId: $event[0] ? +$event[0] : null }, false)">
+                  </daf-select>
+                  <daf-select
+                    [options]="costTypeOptions()"
+                    [config]="{ label: ('COST.FORM.COST_TYPE_LABEL' | translate), placeholder: ('COST.FORM.COST_TYPE_PLACEHOLDER' | translate) }"
+                    [selected]="selArr(line.costTypeId)"
+                    (selectedChange)="patchLine(line.key, { costTypeId: $event[0] ? +$event[0] : null }, false)">
+                  </daf-select>
+                </div>
+              </daf-card>
+            }
+
+            <div>
+              <daf-button [options]="addLineButtonOptions()" (onClick)="addLine()" />
+            </div>
+          </div>
         </daf-card>
 
-        <!-- SECTION 5 — Options avancées ────────────────────────────────────── -->
+        <!-- SECTION 3 — Taxes de la facture et totaux ─────────────────────────── -->
         <daf-card class="block" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
-            <div style="width:40px;height:40px;border-radius:12px;background:#f8fafc;
-                        display:flex;align-items:center;justify-content:center;flex-shrink:0;
-                        border:1px solid #e2e8f0">
-              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#64748b">tune</span>
+            <div style="width:40px;height:40px;border-radius:12px;background:#dbeafe20;
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-outlined" style="font-size:1.2rem;color:#1d4ed8">calculate</span>
             </div>
             <div>
-              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_ADV_TITLE' | translate }}</p>
-              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_ADV_SUB' | translate }}</p>
+              <p style="font-size:.875rem;font-weight:800;color:#0b1c30;margin:0">{{ 'COST.FORM.SECTION_TAXES_TITLE' | translate }}</p>
+              <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">
+                {{ (hasSupplier() ? 'COST.FORM.SECTION_TAXES_SUB' : 'COST.FORM.SECTION_TAXES_SUB_NO_SUPPLIER') | translate }}
+              </p>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:1rem">
-            <!-- Type de coût -->
-            <div>
+
+          @if (hasSupplier()) {
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
               <daf-select
-                [options]="costTypeOptions()"
-                [config]="{ label: ('COST.FORM.COST_TYPE_LABEL' | translate), placeholder: ('COST.FORM.COST_TYPE_PLACEHOLDER' | translate) }"
-                [selected]="selArr(costTypeId())"
-                (selectedChange)="costTypeId.set($event[0] ? +$event[0] : null)">
+                [options]="timbreOptions()"
+                [config]="{ label: ('COST.FORM.TAX.TIMBRE_LABEL' | translate) }"
+                [selected]="selArr(timbreAmount())"
+                (selectedChange)="timbreAmount.set(rateOf($event)); schedulePreview()">
+              </daf-select>
+              <daf-select
+                [options]="rsOptions()"
+                [config]="{ label: ('COST.FORM.TAX.RS_LABEL' | translate), placeholder: ('COST.FORM.TAX.RS_NONE' | translate) }"
+                [selected]="selArr(rsRate())"
+                (selectedChange)="rsRate.set(rateOf($event))">
               </daf-select>
             </div>
-            <!-- Notes -->
-            <div>
-              <daf-form-field
-                [options]="{ type: 'textarea', label: ('COST.FORM.NOTES_LABEL' | translate), placeholder: ('COST.FORM.NOTES_PLACEHOLDER' | translate), rows: 3 }"
-                [(value)]="notes">
-              </daf-form-field>
+          }
+
+          <!-- Autres taxes (V95) — montants libres, ajoutés au TTC -->
+          <div class="other-taxes">
+            <div class="other-taxes__head">
+              <div>
+                <p class="other-taxes__title">{{ 'COST.FORM.OTHER_TAX.TITLE' | translate }}</p>
+                <p class="other-taxes__hint">{{ 'COST.FORM.OTHER_TAX.HINT' | translate }}</p>
+              </div>
+              <daf-button [options]="addOtherTaxButtonOptions()" (onClick)="addOtherTax()" />
             </div>
+            @for (tax of otherTaxes(); track tax.key) {
+              <div class="other-taxes__row">
+                <daf-select
+                  [options]="otherTaxTypeOptions()"
+                  [config]="{ label: ('COST.FORM.OTHER_TAX.TYPE_LABEL' | translate), placeholder: ('COST.FORM.OTHER_TAX.TYPE_NONE' | translate) }"
+                  [selected]="selArr(tax.taxTypeId)"
+                  (selectedChange)="patchOtherTax(tax.key, { taxTypeId: rateOf($event) })">
+                </daf-select>
+                <daf-form-field
+                  [options]="{ type: 'text', label: ('COST.FORM.OTHER_TAX.LABEL_LABEL' | translate), placeholder: ('COST.FORM.OTHER_TAX.LABEL_PLACEHOLDER' | translate), required: tax.taxTypeId === null }"
+                  [value]="tax.label"
+                  (valueChange)="patchOtherTax(tax.key, { label: $any($event) ?? '' })">
+                </daf-form-field>
+                <daf-form-field
+                  [options]="{ type: 'number', label: ('COST.FORM.OTHER_TAX.AMOUNT_LABEL' | translate), placeholder: '0.000', required: true }"
+                  [value]="tax.amountLocal"
+                  (valueChange)="patchOtherTax(tax.key, { amountLocal: numberOf($event) })">
+                </daf-form-field>
+                <button type="button" class="line-remove other-taxes__remove" (click)="removeOtherTax(tax.key)"
+                        [attr.aria-label]="'COST.FORM.OTHER_TAX.REMOVE' | translate"
+                        [title]="'COST.FORM.OTHER_TAX.REMOVE' | translate">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+              @if (!otherTaxComplete(tax)) {
+                <p class="other-taxes__error">{{ 'COST.FORM.OTHER_TAX.INCOMPLETE' | translate }}</p>
+              }
+            }
+          </div>
+
+          <!-- Totaux — aperçu ; le serveur recalcule tout à l'enregistrement -->
+          <div class="totals">
+            <div class="totals__row">
+              <span>{{ 'COST.FORM.TOTAL_HT' | translate }}</span>
+              <span>{{ totals().ht | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+            </div>
+            @if (hasSupplier() && totals().fodec) {
+              <div class="totals__row">
+                <span>{{ 'COST.FORM.TOTAL_FODEC' | translate }}</span>
+                <span>{{ totals().fodec | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+              </div>
+            }
+            @for (b of vatBreakdown(); track b.rate) {
+              <div class="totals__row">
+                <span>
+                  @if (b.rate !== null) {
+                    {{ 'COST.FORM.TOTAL_VAT_RATE' | translate:{ rate: pct(b.rate), base: (b.base | number:'1.3-3') } }}
+                  } @else {
+                    {{ 'COST.FORM.TOTAL_VAT_MANUAL' | translate }}
+                  }
+                </span>
+                <span>{{ b.vat | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+              </div>
+            }
+            @if (hasSupplier() && totals().timbre) {
+              <div class="totals__row">
+                <span>{{ 'COST.FORM.TOTAL_TIMBRE' | translate }}</span>
+                <span>{{ totals().timbre | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+              </div>
+            }
+            @for (tax of otherTaxes(); track tax.key) {
+              @if (tax.amountLocal) {
+                <div class="totals__row">
+                  <span>{{ 'COST.FORM.TOTAL_OTHER_TAX' | translate:{ name: otherTaxName(tax) } }}</span>
+                  <span>{{ tax.amountLocal | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+                </div>
+              }
+            }
+            <div class="totals__row totals__row--strong">
+              <span>{{ 'COST.FORM.TOTAL_TTC' | translate }}</span>
+              <span>{{ totals().ttc | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+            </div>
+            @if (hasSupplier() && totals().rs) {
+              <div class="totals__row totals__row--rs">
+                <span>{{ 'COST.FORM.TOTAL_RS' | translate:{ base: rsBaseLabel() } }}</span>
+                <span>− {{ totals().rs | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+              </div>
+              <div class="totals__row totals__row--strong">
+                <span>{{ 'COST.FORM.NET_TO_PAY' | translate }}</span>
+                <span>{{ totals().netToPay | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+              </div>
+            }
           </div>
         </daf-card>
 
-        <!-- SECTION 6 — Pièces jointes ──────────────────────────────────────── -->
+        <!-- SECTION 4 — Notes et pièces jointes ───────────────────────────────── -->
         <daf-card class="block" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#f8fafc;
@@ -306,22 +396,22 @@
               <p style="font-size:.7rem;color:#44474c;margin:1px 0 0 0">{{ 'COST.FORM.SECTION_ATTACH_SUB' | translate }}</p>
             </div>
           </div>
-
-          <!-- daf-file-upload owns picking (click or drag-and-drop), the file list, removal
-               and the 10 MB check: an oversized file stays listed with its error, and
-               doSave() skips it. -->
-          <daf-file-upload [config]="attachmentConfig" [(files)]="pendingFiles" />
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <daf-form-field
+              [options]="{ type: 'textarea', label: ('COST.FORM.NOTES_LABEL' | translate), placeholder: ('COST.FORM.NOTES_PLACEHOLDER' | translate), rows: 3 }"
+              [(value)]="notes">
+            </daf-form-field>
+            <daf-file-upload [config]="attachmentConfig" [(files)]="pendingFiles" />
+          </div>
         </daf-card>
 
       </div>
-      <!-- ═══════════════════════════════════════════════════════════════════ -->
 
       <!-- ═══════ RIGHT: SIDEBAR ════════════════════════════════════════════ -->
       <div style="display:flex;flex-direction:column;gap:1.25rem;position:sticky;top:2rem">
 
-        <!-- Forex dark card ─────────────────────────────────────────────────── -->
+        <!-- Forex (total HT) -->
         <div style="border-radius:1rem;overflow:hidden;background:#0b1c30">
-          <!-- Dark header bar -->
           <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;
                       border-bottom:1px solid rgba(255,255,255,.1)">
             <div style="width:32px;height:32px;border-radius:8px;background:rgba(74,222,128,.15);
@@ -340,33 +430,25 @@
                 </p>
                 <div style="display:flex;flex-direction:column;gap:6px;
                             border-top:1px solid rgba(255,255,255,.12);padding-top:14px">
-                  <!-- EUR rate -->
                   <div style="display:flex;justify-content:space-between;align-items:center;
                               padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.04)">
                     <span style="font-size:.75rem;color:#bdc9c4">{{ 'COST.FORM.FOREX_RATE_EUR' | translate }}</span>
                     <span style="font-size:.875rem;font-weight:700;color:white">{{ fx.tauxEur | number:'1.4-4' }}</span>
                   </div>
-                  <!-- EUR amount -->
                   <div style="display:flex;justify-content:space-between;align-items:center;
                               padding:10px 12px;border-radius:10px;background:rgba(74,222,128,.1)">
                     <span style="font-size:.75rem;color:#bdc9c4">≈ EUR</span>
-                    <span style="font-size:1.1rem;font-weight:900;color:#4ade80">
-                      {{ fx.montantEur | number:'1.0-2' }} €
-                    </span>
+                    <span style="font-size:1.1rem;font-weight:900;color:#4ade80">{{ fx.montantEur | number:'1.0-2' }} €</span>
                   </div>
-                  <!-- CHF rate -->
                   <div style="display:flex;justify-content:space-between;align-items:center;
                               padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.04)">
                     <span style="font-size:.75rem;color:#bdc9c4">{{ 'COST.FORM.FOREX_RATE_CHF' | translate }}</span>
                     <span style="font-size:.875rem;font-weight:700;color:white">{{ fx.tauxChf | number:'1.4-4' }}</span>
                   </div>
-                  <!-- CHF amount -->
                   <div style="display:flex;justify-content:space-between;align-items:center;
                               padding:10px 12px;border-radius:10px;background:rgba(96,165,250,.1)">
                     <span style="font-size:.75rem;color:#bdc9c4">≈ CHF</span>
-                    <span style="font-size:1.1rem;font-weight:900;color:#60a5fa">
-                      {{ fx.montantChf | number:'1.0-2' }} Fr.
-                    </span>
+                    <span style="font-size:1.1rem;font-weight:900;color:#60a5fa">{{ fx.montantChf | number:'1.0-2' }} Fr.</span>
                   </div>
                 </div>
               </div>
@@ -384,10 +466,9 @@
           </div>
         </div>
 
-        <!-- Circuit d'approbation ───────────────────────────────────────────── -->
+        <!-- Circuit d'approbation (TTC de la facture, toutes ses catégories) -->
         <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;overflow:hidden;
                     box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03)">
-          <!-- Header -->
           <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;
                       border-bottom:1px solid #f0f4f8;background:#fafbfc">
             <div style="width:32px;height:32px;border-radius:8px;background:#006b5812;
@@ -400,18 +481,15 @@
           <div style="padding:20px">
             @if (circuitPreview(); as cp) {
               <div style="display:flex;flex-direction:column;gap:.75rem">
-                <!-- Level badge + description -->
                 <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
                             border-radius:12px;background:#f8fafc">
-                  <span style="padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:900;
-                               flex-shrink:0"
+                  <span style="padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:900;flex-shrink:0"
                     [style.background]="levelBg(cp.level)"
                     [style.color]="levelColor(cp.level)">
                     {{ cp.level }}
                   </span>
                   <span style="font-size:.875rem;font-weight:700;color:#0b1c30">{{ cp.description }}</span>
                 </div>
-                <!-- Flags -->
                 @if (cp.autoApprove) {
                   <div style="display:flex;align-items:center;gap:6px;padding:8px 12px;
                               border-radius:10px;background:#f0fdf4">
@@ -426,7 +504,6 @@
                     <p style="font-size:.75rem;font-weight:500;color:#ba1a1a;margin:0">{{ 'COST.FORM.CIRCUIT_DUAL' | translate }}</p>
                   </div>
                 }
-                <!-- Approver roles — vertical stepper -->
                 @if (cp.approverRoles.length > 0) {
                   <div style="border-top:1px solid #f0f4f8;padding-top:12px">
                     <p style="font-size:.65rem;font-weight:900;text-transform:uppercase;
@@ -449,9 +526,7 @@
                 }
               </div>
             } @else if (!previewLoading()) {
-              <p style="font-size:.75rem;color:#44474c80;margin:0">
-                {{ 'COST.FORM.CIRCUIT_HINT' | translate }}
-              </p>
+              <p style="font-size:.75rem;color:#44474c80;margin:0">{{ 'COST.FORM.CIRCUIT_HINT' | translate }}</p>
             } @else {
               <div style="display:flex;align-items:center;gap:8px">
                 <span class="material-symbols-outlined" style="font-size:.875rem;color:#44474c;
@@ -462,47 +537,27 @@
           </div>
         </div>
 
-        <!-- Help card ───────────────────────────────────────────────────────── -->
-        <div style="border-radius:1rem;padding:1.2rem;background:#006b5810;
-                    border:1px solid #006b5830">
+        <!-- Bon à savoir -->
+        <div style="border-radius:1rem;padding:1.2rem;background:#006b5810;border:1px solid #006b5830">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
             <span class="material-symbols-outlined" style="font-size:1rem;color:#006b58">lightbulb</span>
             <p style="font-size:.75rem;font-weight:700;color:#006b58;margin:0">{{ 'COST.FORM.HELP_TITLE' | translate }}</p>
           </div>
           <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
-            <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
-              <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
-              {{ 'COST.FORM.HELP_1' | translate }}
-            </li>
-            <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
-              <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
-              {{ 'COST.FORM.HELP_2' | translate }}
-            </li>
-            <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
-              <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
-              {{ 'COST.FORM.HELP_3' | translate }}
-            </li>
+            @for (k of ['COST.FORM.HELP_1', 'COST.FORM.HELP_2', 'COST.FORM.HELP_3', 'COST.FORM.HELP_4']; track k) {
+              <li style="display:flex;align-items:flex-start;gap:8px;font-size:.75rem;color:#0b1c30">
+                <span class="material-symbols-outlined" style="font-size:.75rem;color:#006b58;margin-top:1px">circle</span>
+                {{ k | translate }}
+              </li>
+            }
           </ul>
         </div>
 
       </div>
-      <!-- ═════════════════════════════════════════════════════════════════ -->
     </div>
-    <!-- end two-column grid -->
   }
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       BARRE D'ACTIONS — reprise de l'assistant affaire : une `daf-card`
-       `variant: 'floating'`, Annuler — zone centrale — action affirmative.
-
-       Pas d'étapes ici, donc pas de `daf-stepper` : la zone centrale (entre les
-       deux filets) porte le rappel des champs obligatoires tant que la saisie est
-       incomplète.
-
-       Une SEULE action dessinée : « Soumettre » en teal. « Annuler » et
-       « Enregistrer brouillon » sont des actions de TEXTE (`.footer-action`), gris au
-       repos, teal au survol — comme Retour/Annuler dans l'assistant affaire.
-       ══════════════════════════════════════════════════════════════════ -->
+  <!-- Barre d'actions — Annuler · rappel des champs obligatoires · Enregistrer brouillon / Soumettre -->
   <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
     <div class="action-bar__inner">
 
@@ -514,21 +569,27 @@
       </div>
 
       <div class="action-bar__rail">
-        @if (!canSave()) {
+        @if (!canSave() && !lockedForUser()) {
           <p class="action-bar__hint">
             <span class="material-symbols-outlined">info</span>
-            {{ 'COST.FORM.FOOT_REQUIRED_HINT' | translate }}
+            @if (validatedMode() && justification().trim().length < 5) {
+              {{ 'COST.FORM.FOOT_JUSTIFICATION_HINT' | translate }}
+            } @else {
+              {{ (invoiceNumberMissing() ? 'COST.FORM.FOOT_NUMBER_HINT' : 'COST.FORM.FOOT_REQUIRED_HINT') | translate }}
+            }
           </p>
         }
       </div>
 
       <div class="action-bar__side action-bar__side--end">
-        <button type="button" class="footer-action" (click)="saveDraft()"
-                [disabled]="!canSave() || isSaving()">
-          <span class="material-symbols-outlined">save</span>
-          {{ 'COST.FORM.FOOT_SAVE_DRAFT' | translate }}
-        </button>
-        <daf-button [options]="submitButtonOptions()" (onClick)="submitLine()" />
+        @if (!validatedMode()) {
+          <button type="button" class="footer-action" (click)="saveDraft()"
+                  [disabled]="!canSave() || isSaving()">
+            <span class="material-symbols-outlined">save</span>
+            {{ 'COST.FORM.FOOT_SAVE_DRAFT' | translate }}
+          </button>
+        }
+        <daf-button [options]="submitButtonOptions()" (onClick)="submitInvoice()" />
       </div>
 
     </div>

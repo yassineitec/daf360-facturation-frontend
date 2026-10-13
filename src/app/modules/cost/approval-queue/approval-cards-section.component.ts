@@ -11,7 +11,7 @@ export type ApprovalDecision = 'approve' | 'return' | 'reject' | 'candidate' | '
 
 /**
  * Card view of `/finance/cost/approval` — one `daf-entity-card` per pending request,
- * cost lines and hiring requests in the same grid.
+ * cost invoices (V93), hiring requests and salary advances in the same grid.
  *
  * Stateless: items in, `(decide)` out.
  */
