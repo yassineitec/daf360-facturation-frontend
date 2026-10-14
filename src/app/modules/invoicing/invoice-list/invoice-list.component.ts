@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -16,6 +16,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableSort, sortParam } from '../../../shared/table-tools';
 import { AffaireService } from '../../affaires/affaire.service';
 import type { AffaireListItem, ClientDto } from '../../affaires/affaire.model';
+import { InvoiceListStateService } from './invoice-list-state.service';
 
 type ApprovalDecision = 'APPROVE' | 'RETURN' | 'REJECT';
 type ViewMode = 'grid' | 'list';
@@ -75,6 +76,32 @@ export class InvoiceListComponent implements OnInit {
   /** Overdue only (open, non-credit-note, due before today) — sent as `overdueOnly`. */
   filterOverdue   = signal(false);
   viewMode       = signal<ViewMode>('grid');
+
+  private readonly listState = inject(InvoiceListStateService);
+
+  /**
+   * Chaque changement de filtre, de tri, de page ou de vue est mémorisé, pour que le
+   * retour depuis le détail (fil d'Ariane) retrouve la liste telle qu'on l'a quittée.
+   * Le premier passage a lieu après `ngOnInit`, donc après la restauration : il réécrit
+   * l'état restauré, sans l'écraser par des valeurs vides.
+   */
+  private readonly persistState = effect(() => {
+    this.listState.save({
+      searchText: this.searchText(),
+      statut:     this.filterStatut(),
+      dateRange:  this.filterDateRange(),
+      client:     this.filterClient(),
+      affaire:    this.filterAffaire(),
+      dueRange:   this.filterDueRange(),
+      minTtc:     this.filterMinTtc(),
+      maxTtc:     this.filterMaxTtc(),
+      overdue:    this.filterOverdue(),
+      sort:       this.sort(),
+      page:       this.currentPage(),
+      pageSize:   this.pageSize(),
+      viewMode:   this.viewMode(),
+    });
+  });
 
   /** Reference lists for the client / affaire selects — the page's own rows only cover
    *  the current page, which is too narrow for a server-side filter. */
@@ -245,12 +272,35 @@ export class InvoiceListComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreState();
     this.load();
     this.affaireSvc.getClients().subscribe(list => this.clients.set(list));
     this.affaireSvc.getAffaires({ size: 200 }).subscribe({
       next:  page => this.affaires.set(page.content),
       error: () => this.affaires.set([]),
     });
+  }
+
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, le panneau
+   * doit donc naître avec les valeurs restaurées.
+   */
+  private restoreState(): void {
+    const s = this.listState.restore();
+    if (!s) return;
+    this.searchText.set(s.searchText);
+    this.filterStatut.set(s.statut);
+    this.filterDateRange.set(s.dateRange);
+    this.filterClient.set(s.client);
+    this.filterAffaire.set(s.affaire);
+    this.filterDueRange.set(s.dueRange);
+    this.filterMinTtc.set(s.minTtc);
+    this.filterMaxTtc.set(s.maxTtc);
+    this.filterOverdue.set(s.overdue);
+    this.sort.set(s.sort);
+    this.currentPage.set(s.page);
+    this.pageSize.set(s.pageSize);
+    this.viewMode.set(s.viewMode);
   }
 
   load(): void {
@@ -277,6 +327,13 @@ export class InvoiceListComponent implements OnInit {
     };
     this.svc.getInvoices(filter).subscribe({
       next: res => {
+        // Page restaurée devenue hors limites (factures supprimées entre-temps) :
+        // on retombe sur la première plutôt que d'afficher une liste vide.
+        if (res.content.length === 0 && this.currentPage() > 0) {
+          this.currentPage.set(0);
+          this.load();
+          return;
+        }
         this.invoices.set(res.content);
         this.totalElements.set(res.totalElements);
         this.totalPages.set(res.totalPages);

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal, untracked } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -18,6 +18,7 @@ import {
 } from '../treasury.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
+import { TreasuryDashboardStateService } from './treasury-dashboard-state.service';
 
 interface KpiTile {
   label:   string;
@@ -499,15 +500,63 @@ export class TreasuryDashboardComponent implements OnInit {
     };
   }
 
-  /** Seules les factures ont une fiche à ouvrir — une ligne de coût n'en a pas ici. */
+  /**
+   * Seules les factures ont une fiche à ouvrir — une ligne de coût n'en a pas ici.
+   * `from=tresorerie` : le fil d'Ariane de la fiche ramène alors ici, et non à la liste du
+   * Recouvrement — c'est ce retour qui retrouve la page telle qu'on l'a laissée.
+   */
   onFlowClick(row: TableRow): void {
     if (row['_source'] !== 'INVOICE') return;
-    this.router.navigate(['../recouvrement', row['_id']], { relativeTo: this.route });
+    this.router.navigate(['../recouvrement', row['_id']],
+      { relativeTo: this.route, queryParams: { from: 'tresorerie' } });
+  }
+
+  // ═══ Mémoire de la page ═══════════════════════════════════════════════════
+
+  private readonly pageState = inject(TreasuryDashboardStateService);
+
+  /**
+   * Chaque changement d'horizon, de recherche, de tri ou de page est mémorisé, pour que le
+   * retour depuis la fiche d'une facture retrouve la page telle qu'on l'a quittée. Le tri
+   * du tableau de projection, fait par la lib elle-même, n'en fait pas partie. Le premier
+   * passage a lieu après `ngOnInit`, donc après la restauration.
+   */
+  private readonly persistState = effect(() => {
+    this.pageState.save({
+      horizon:       this.horizon(),
+      bucketSearch:  this.bucketSearch(),
+      inflowSearch:  this.inflowSearch(),
+      outflowSearch: this.outflowSearch(),
+      inflowSort:    this.inflowSort(),
+      outflowSort:   this.outflowSort(),
+      inflowPage:    this.inflowPage(),
+      outflowPage:   this.outflowPage(),
+      flowPageSize:  this.flowPageSize(),
+    });
+  });
+
+  /**
+   * Avant le premier chargement : l'horizon décide de la requête, et les tableaux de flux
+   * ne lisent leur tri (`delegatedSort`) qu'à leur création.
+   */
+  private restoreState(): void {
+    const s = this.pageState.restore();
+    if (!s) return;
+    this.horizon.set(s.horizon);
+    this.bucketSearch.set(s.bucketSearch);
+    this.inflowSearch.set(s.inflowSearch);
+    this.outflowSearch.set(s.outflowSearch);
+    this.inflowSort.set(s.inflowSort);
+    this.outflowSort.set(s.outflowSort);
+    this.inflowPage.set(s.inflowPage);
+    this.outflowPage.set(s.outflowPage);
+    this.flowPageSize.set(s.flowPageSize);
   }
 
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
   ngOnInit(): void {
+    this.restoreState();
     this.load();
   }
 
@@ -517,6 +566,10 @@ export class TreasuryDashboardComponent implements OnInit {
     this.svc.getSummary(this.horizon()).subscribe({
       next: s => {
         this.summary.set(s);
+        // Pages restaurées devenues hors limites (factures soldées entre-temps) : on
+        // retombe sur la dernière page qui existe plutôt que sur une page vide.
+        this.inflowPage.update(p => Math.min(p, this.inflowTotalPages() - 1));
+        this.outflowPage.update(p => Math.min(p, this.outflowTotalPages() - 1));
         this.reloading.set(false);
         this.firstLoad.set(false);
       },

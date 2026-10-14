@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -21,6 +21,7 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { TableSort, sortParam } from '../../../shared/table-tools';
 import { SuppliersCardsSectionComponent } from './suppliers-cards-section.component';
 import { SuppliersTableSectionComponent } from './suppliers-table-section.component';
+import { SupplierListStateService } from './supplier-list-state.service';
 
 type ViewMode = 'grid' | 'list';
 
@@ -116,6 +117,46 @@ export class SupplierListComponent implements OnInit {
   tvaFilter    = signal<PresenceFilter>('');
   /** Options du filtre « Type » : la liste configurable SUPPLIER_CATEGORY. */
   supplierTypes = signal<ListValueDto[]>([]);
+
+  private readonly listState = inject(SupplierListStateService);
+
+  /**
+   * Chaque changement de filtre, de tri, de page ou de vue est mémorisé, pour que le
+   * retour depuis une fiche (fil d'Ariane) retrouve la liste telle qu'on l'a quittée.
+   * Le premier passage a lieu après `ngOnInit`, donc après la restauration : il réécrit
+   * l'état restauré, sans l'écraser par des valeurs par défaut.
+   */
+  private readonly persistState = effect(() => {
+    this.listState.save({
+      searchText:   this.searchText(),
+      statusFilter: this.statusFilter(),
+      typeFilter:   this.typeFilter(),
+      ibanFilter:   this.ibanFilter(),
+      tvaFilter:    this.tvaFilter(),
+      sort:         this.sort(),
+      page:         this.currentPage(),
+      pageSize:     this.pageSize(),
+      viewMode:     this.viewMode(),
+    });
+  });
+
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, le panneau
+   * doit donc naître avec les valeurs restaurées.
+   */
+  private restoreState(): void {
+    const s = this.listState.restore();
+    if (!s) return;
+    this.searchText.set(s.searchText);
+    this.statusFilter.set(s.statusFilter);
+    this.typeFilter.set(s.typeFilter);
+    this.ibanFilter.set(s.ibanFilter);
+    this.tvaFilter.set(s.tvaFilter);
+    this.sort.set(s.sort);
+    this.currentPage.set(s.page);
+    this.pageSize.set(s.pageSize);
+    this.viewMode.set(s.viewMode);
+  }
 
   /** Type / IBAN / TVA, partagés par la liste et les tuiles. */
   private extraFilter(): SupplierExtraFilter {
@@ -255,6 +296,7 @@ export class SupplierListComponent implements OnInit {
   // ═══ Chargement ═══════════════════════════════════════════════════════════
 
   ngOnInit(): void {
+    this.restoreState();
     this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: id => {
         if (id && id > 0) {
@@ -293,6 +335,13 @@ export class SupplierListComponent implements OnInit {
       sort:   sortParam(this.sort()),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: r => {
+        // Page restaurée devenue hors limites (fournisseurs désactivés entre-temps) :
+        // on retombe sur la première plutôt que d'afficher une liste vide.
+        if (r.content.length === 0 && this.currentPage() > 0) {
+          this.currentPage.set(0);
+          this.loadSuppliers();
+          return;
+        }
         this.suppliers.set(r.content);
         this.totalElements.set(r.totalElements);
         this.totalPages.set(r.totalPages);

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject, signal, computed, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, signal, computed, effect, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import * as XLSX from 'xlsx';
@@ -24,6 +24,7 @@ import { ListValueDto, localizedLabel } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import { CurrencyRateService } from '../../../core/currency-rate.service';
 import { CurrencyDisplayService } from '../../../core/currency-display.service';
+import { EmployeeCostListStateService } from './employee-cost-list-state.service';
 
 type ViewMode = 'list' | 'grid';
 
@@ -69,7 +70,11 @@ export class EmployeeCostComponent implements OnInit {
   statusFilter = signal<'all' | 'current' | 'expired'>('all');
   costMin      = signal<number | null>(null);
   costMax      = signal<number | null>(null);
-  viewMode     = signal<ViewMode>('grid');
+  /** Emails (en minuscules) des collaborateurs cochés — vide = tous. */
+  employeeFilter = signal<string[]>([]);
+  /** Plage `[début, fin]` émise par le `daterange` du panneau, ou null. */
+  periodFilter   = signal<Date[] | null>(null);
+  viewMode    = signal<ViewMode>('grid');
 
   page = signal(0);
   size = signal(25);
@@ -85,6 +90,51 @@ export class EmployeeCostComponent implements OnInit {
     const dir = this.sortDir();
     return key && dir ? { key, dir } : null;
   });
+
+  private readonly listState = inject(EmployeeCostListStateService);
+
+  /**
+   * Chaque changement de filtre, de tri, de page ou de vue est mémorisé, pour que le
+   * retour depuis l'historique d'un coût retrouve la liste telle qu'on l'a quittée. Le
+   * premier passage a lieu après `ngOnInit`, donc après la restauration : il réécrit
+   * l'état restauré, sans l'écraser par des valeurs vides.
+   */
+  private readonly persistState = effect(() => {
+    this.listState.save({
+      searchText:   this.searchText(),
+      statusFilter: this.statusFilter(),
+      costMin:      this.costMin(),
+      costMax:      this.costMax(),
+      employees:    this.employeeFilter(),
+      period:       this.periodFilter(),
+      viewMode:     this.viewMode(),
+      sortKey:      this.sortKey(),
+      sortDir:      this.sortDir(),
+      page:         this.page(),
+      size:         this.size(),
+    });
+  });
+
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, le panneau
+   * doit donc naître avec les valeurs restaurées. Une page devenue hors limites est
+   * ramenée sur la dernière par `load()`.
+   */
+  private restoreState(): void {
+    const s = this.listState.restore();
+    if (!s) return;
+    this.searchText.set(s.searchText);
+    this.statusFilter.set(s.statusFilter);
+    this.costMin.set(s.costMin);
+    this.costMax.set(s.costMax);
+    this.employeeFilter.set(s.employees);
+    this.periodFilter.set(s.period);
+    this.viewMode.set(s.viewMode);
+    this.sortKey.set(s.sortKey);
+    this.sortDir.set(s.sortDir);
+    this.page.set(s.page);
+    this.size.set(s.size);
+  }
 
   isSaving   = signal(false);
   saveError  = signal<string | null>(null);
@@ -318,6 +368,14 @@ export class EmployeeCostComponent implements OnInit {
     const t = (k: string) => this.translate.instant(k);
     return [
       {
+        name: 'employees',
+        label: t('COST.EMPLOYEE_COST.FILTER_EMPLOYEE_LABEL'),
+        type: 'multiselect',
+        placeholder: t('COST.EMPLOYEE_COST.FILTER_EMPLOYEE_PLACEHOLDER'),
+        searchable: true,
+        options: this.employeeOptions(),
+      },
+      {
         name: 'status',
         label: t('COST.EMPLOYEE_COST.FILTER_STATUS_LABEL'),
         type: 'select',
@@ -339,7 +397,22 @@ export class EmployeeCostComponent implements OnInit {
         type: 'text',
         placeholder: t('COST.EMPLOYEE_COST.FILTER_COST_MAX_PLACEHOLDER'),
       },
+      {
+        name: 'period',
+        label: t('COST.EMPLOYEE_COST.FILTER_PERIOD_LABEL'),
+        type: 'daterange',
+      },
     ];
+  });
+
+  /** Un collaborateur par email (nom affiché tiré de ses lignes), trié par nom — tiré
+   * des lignes chargées, comme le reste du filtrage. */
+  readonly employeeOptions = computed(() => {
+    const byEmail = new Map<string, string>();
+    for (const r of this.rows()) byEmail.set(r.employeeEmail.toLowerCase(), displayName(r));
+    return [...byEmail]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
   });
 
   readonly filterConfig = computed<SearchToolbarFilterConfig>(() => {
@@ -351,10 +424,14 @@ export class EmployeeCostComponent implements OnInit {
       cancelLabel:  t('COST.EMPLOYEE_COST.FILTER_CANCEL'),
       resetLabel:   t('COST.EMPLOYEE_COST.FILTER_RESET'),
       triggerLabel: t('COST.EMPLOYEE_COST.FILTERS'),
+      // Forme interne du panneau : un `select` y est un string[] (§10b) — une chaîne nue
+      // se relit vide, et un statut restauré n'apparaissait pas dans le panneau.
       initialValues: {
-        status:  this.statusFilter(),
+        status:  [this.statusFilter()],
         costMin: this.costMin() != null ? String(this.costMin()) : '',
         costMax: this.costMax() != null ? String(this.costMax()) : '',
+        employees:  this.employeeFilter(),
+        period:     this.periodFilter(),
       },
     };
   });
@@ -370,12 +447,27 @@ export class EmployeeCostComponent implements OnInit {
     const status = this.statusFilter();
     const min    = this.costMin();
     const max    = this.costMax();
+    const employees  = new Set(this.employeeFilter());
+    const [from, to] = this.periodBounds();
     return this.rows()
+      .filter(r => !employees.size || employees.has(r.employeeEmail.toLowerCase()))
+      // Chevauchement : le coût est valide à un moment de la plage choisie.
+      .filter(r => (!from || !r.dateFin || r.dateFin >= from) && (!to || !r.dateDebut || r.dateDebut <= to))
       .filter(r => status === 'all' || (status === 'current' ? r.sourceStatus === 'Current' : r.sourceStatus === 'Expired'))
       .filter(r => min == null || r.basicCost >= min)
       .filter(r => max == null || r.basicCost <= max)
       .filter(r => !q || displayName(r).toLowerCase().includes(q) || r.employeeEmail.toLowerCase().includes(q));
   });
+
+  /** Bornes yyyy-MM-dd (date locale, pour qu'aucun fuseau ne décale le jour) de la plage
+   * choisie, comparables directement aux chaînes ISO `dateDebut` / `dateFin`. */
+  private periodBounds(): [string | null, string | null] {
+    const range = this.periodFilter();
+    if (!range || range.length < 2 || !range[0] || !range[1]) return [null, null];
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return [iso(new Date(range[0])), iso(new Date(range[1]))];
+  }
 
   /** Raw-value comparator per sort key — plain fields sort correctly as strings
    * (ISO dates), numbers need a numeric comparison rather than `basicCost.toString()`
@@ -418,6 +510,7 @@ export class EmployeeCostComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.restoreState();
     this.load();
     this.usersLoading.set(true);
     this.affaireSvc.getUsers().subscribe({
@@ -471,6 +564,10 @@ export class EmployeeCostComponent implements OnInit {
     const max = Number(result['costMax']);
     this.costMin.set(result['costMin'] && !isNaN(min) ? min : null);
     this.costMax.set(result['costMax'] && !isNaN(max) ? max : null);
+
+    const employees = result['employees'];
+    this.employeeFilter.set(Array.isArray(employees) ? employees as string[] : []);
+    this.periodFilter.set((result['period'] as Date[] | null) ?? null);
 
     this.page.set(0);
   }

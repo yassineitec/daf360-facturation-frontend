@@ -111,13 +111,13 @@
             @if (avInputMode() === 'POURCENTAGE') {
               <daf-form-field
                 [value]="newTauxValue()"
-                (valueChange)="newTauxValue.set($any($event))"
+                (valueChange)="newTauxValue.set(parseNumberInput($event))"
                 [options]="{ label: ('AFFAIRES.WIP.NEW_TAUX' | translate) + ' (%)', type: 'number', fullWidth: true,
                              hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedTaux() + '%' }" />
             } @else {
               <daf-form-field
                 [value]="newAmountValue()"
-                (valueChange)="newAmountValue.set($any($event))"
+                (valueChange)="newAmountValue.set(parseNumberInput($event))"
                 [options]="{ label: ('AFFAIRES.WIP.NEW_MONTANT' | translate) + ' (' + affaire.devise + ')', type: 'number', fullWidth: true,
                              hint: ('AFFAIRES.WIP.LAST_VALIDATED' | translate) + ': ' + lastValidatedAmountHint() }" />
             }

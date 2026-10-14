@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, untracked, viewChild, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, untracked, viewChild, ViewChild, TemplateRef, WritableSignal } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
 import { forkJoin, Observable, switchMap }    from 'rxjs';
@@ -24,6 +24,7 @@ import { InvoiceService } from '../../invoicing/invoice.service';
 import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 import { TableSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 import { RowSelection } from './row-selection';
+import { ApprovalQueueStateService } from './approval-queue-state.service';
 type ActiveTab = 'df' | 'history';
 // Four tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE/TS) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
@@ -1079,11 +1080,102 @@ export class ApprovalQueueComponent implements OnInit {
     };
   });
 
+  // ── Mémoire de l'écran ───────────────────────────────────────────────────────
+  private readonly queueState = inject(ApprovalQueueStateService);
+
+  /**
+   * Les signaux qui décrivent l'écran tel que l'utilisateur l'a laissé — onglets,
+   * recherche, filtres, tri et pagination de chaque tableau —, par nom. Pas les
+   * sélections en cours : les lignes peuvent avoir été validées entre-temps.
+   */
+  private readonly persisted: Record<string, WritableSignal<any>> = {
+    activeTab:                  this.activeTab,
+    activeDfSubTab:             this.activeDfSubTab,
+    lineForfaitSearch:          this.lineForfaitSearch,
+    lineForfaitStatut:          this.lineForfaitFilter.statut,
+    lineForfaitAffaire:         this.lineForfaitFilter.affaire,
+    lineForfaitPeriode:         this.lineForfaitFilter.periode,
+    lineForfaitAmountMin:       this.lineForfaitFilter.amountMin,
+    lineForfaitAmountMax:       this.lineForfaitFilter.amountMax,
+    lineForfaitPage:            this.lineForfaitPage,
+    lineForfaitPageSize:        this.lineForfaitPageSize,
+    lineRegieSearch:            this.lineRegieSearch,
+    lineRegieStatut:            this.lineRegieFilter.statut,
+    lineRegieAffaire:           this.lineRegieFilter.affaire,
+    lineRegiePeriode:           this.lineRegieFilter.periode,
+    lineRegieAmountMin:         this.lineRegieFilter.amountMin,
+    lineRegieAmountMax:         this.lineRegieFilter.amountMax,
+    lineRegiePage:              this.lineRegiePage,
+    lineRegiePageSize:          this.lineRegiePageSize,
+    lineSort:                   this.lineSort,
+    livrableBatchSearch:        this.livrableBatchSearch,
+    livrableBatchDateRange:     this.livrableBatchDateRange,
+    livrableBatchAffaire:       this.livrableBatchAffaire,
+    livrableBatchAmountMin:     this.livrableBatchAmountMin,
+    livrableBatchAmountMax:     this.livrableBatchAmountMax,
+    livrableBatchMultiDocOnly:  this.livrableBatchMultiDocOnly,
+    livrableBatchSort:          this.livrableBatchSort,
+    livrableBatchPage:          this.livrableBatchPage,
+    livrableBatchPageSize:      this.livrableBatchPageSize,
+    tsBatchSearch:              this.tsBatchSearch,
+    tsBatchDateRange:           this.tsBatchDateRange,
+    tsBatchAffaire:             this.tsBatchAffaire,
+    tsBatchAmountMin:           this.tsBatchAmountMin,
+    tsBatchAmountMax:           this.tsBatchAmountMax,
+    tsBatchSort:                this.tsBatchSort,
+    tsBatchPage:                this.tsBatchPage,
+    tsBatchPageSize:            this.tsBatchPageSize,
+    creditNoteForfaitSearch:    this.creditNoteForfaitSearch,
+    creditNoteForfaitFilter:    this.creditNoteForfaitFilter,
+    creditNoteForfaitPage:      this.creditNoteForfaitPage,
+    creditNoteForfaitPageSize:  this.creditNoteForfaitPageSize,
+    creditNoteRegieSearch:      this.creditNoteRegieSearch,
+    creditNoteRegieFilter:      this.creditNoteRegieFilter,
+    creditNoteRegiePage:        this.creditNoteRegiePage,
+    creditNoteRegiePageSize:    this.creditNoteRegiePageSize,
+    creditNoteLivrableSearch:   this.creditNoteLivrableSearch,
+    creditNoteLivrableFilter:   this.creditNoteLivrableFilter,
+    creditNoteLivrablePage:     this.creditNoteLivrablePage,
+    creditNoteLivrablePageSize: this.creditNoteLivrablePageSize,
+    creditNoteSort:             this.creditNoteSort,
+    historySearch:              this.historySearch,
+    historyFilter:              this.historyFilter,
+    historySort:                this.historySort,
+    historyPage:                this.historyPage,
+    historyPageSize:            this.historyPageSize,
+  };
+
+  /**
+   * Chaque changement est mémorisé, pour que le retour depuis un détail retrouve l'écran
+   * tel qu'on l'a quitté. Le premier passage a lieu après `ngOnInit`, donc après la
+   * restauration : il réécrit l'état restauré, sans l'écraser par des valeurs vides.
+   */
+  private readonly persistState = effect(() => {
+    this.queueState.save(Object.fromEntries(
+      Object.entries(this.persisted).map(([key, sig]) => [key, sig()])));
+  });
+
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, les
+   * panneaux doivent donc naître avec les valeurs restaurées. La pagination est bornée
+   * au rendu (`pageRows`), une page restaurée hors limites retombe donc sur la dernière.
+   */
+  private restoreState(): void {
+    const s = this.queueState.restore();
+    if (!s) return;
+    for (const [key, sig] of Object.entries(this.persisted)) {
+      if (key in s) sig.set(s[key]);
+    }
+  }
+
   ngOnInit(): void {
+    this.restoreState();
     // Jalons no longer have a tab of their own, but the "En attente RF" KPI still
     // needs a count — fetched once here, independent of which tab is active.
     this.loadRF();
     this.loadDF();
+    // Retour sur l'onglet Historique : son journal n'est chargé qu'à l'ouverture de l'onglet.
+    if (this.activeTab() === 'history') this.loadHistory();
   }
 
   onTabChange(id: string): void {

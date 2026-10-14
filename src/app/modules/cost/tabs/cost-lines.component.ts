@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -16,6 +16,7 @@ import { ReglementModalComponent } from '../modals/reglement-modal.component';
 import {
   invoiceCategories, invoiceHasCategory, invoiceMatchesText, invoicePayableAmount,
 } from './cost-invoice-display';
+import { CostLinesStateService } from './cost-lines-state.service';
 
 type ViewMode = 'grid' | 'list' | 'supplier';
 
@@ -67,6 +68,50 @@ export class CostLinesComponent implements OnInit {
    */
   readonly sort      = signal<CostInvoiceSort | null>(null);
   private readonly sortParam = signal<string | null>(null);
+
+  private readonly listState = inject(CostLinesStateService);
+
+  /**
+   * Chaque changement de filtre, de tri, de page ou de vue est mémorisé, pour que le
+   * retour depuis une fiche (fil d'Ariane) retrouve la liste telle qu'on l'a quittée.
+   * Le premier passage a lieu après `ngOnInit`, donc après la restauration : il réécrit
+   * l'état restauré, sans l'écraser par des valeurs vides.
+   */
+  private readonly persistState = effect(() => {
+    this.listState.save({
+      searchText: this.searchText(),
+      status:     this.statusFilter(),
+      category:   this.categoryFilter(),
+      dateRange:  this.dateRangeFilter(),
+      amountMin:  this.amountMinFilter(),
+      amountMax:  this.amountMaxFilter(),
+      sort:       this.sort(),
+      sortParam:  this.sortParam(),
+      page:       this.page(),
+      size:       this.size(),
+      viewMode:   this.viewMode(),
+    });
+  });
+
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, le panneau
+   * doit donc naître avec les valeurs restaurées.
+   */
+  private restoreState(): void {
+    const s = this.listState.restore();
+    if (!s) return;
+    this.searchText.set(s.searchText);
+    this.statusFilter.set(s.status);
+    this.categoryFilter.set(s.category);
+    this.dateRangeFilter.set(s.dateRange);
+    this.amountMinFilter.set(s.amountMin);
+    this.amountMaxFilter.set(s.amountMax);
+    this.sort.set(s.sort);
+    this.sortParam.set(s.sortParam);
+    this.page.set(s.page);
+    this.size.set(s.size);
+    this.viewMode.set(s.viewMode);
+  }
 
   /** "By supplier" cards view -- loaded lazily, the first time the toggle switches to
    *  'supplier', not on every ngOnInit. `supplierSummariesLoaded` (not `.length === 0`)
@@ -222,11 +267,14 @@ export class CostLinesComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreState();
     this.clientSvc.getMyPays().subscribe({
       next: paysId => {
         if (paysId != null && paysId > 0) {
           this.paysId.set(paysId);
           this.load();
+          // Retour sur la vue « par fournisseur » : elle ne se charge qu'à la bascule.
+          if (this.viewMode() === 'supplier') this.loadSupplierSummaries();
         } else {
           this.serverError.set(this.translate.instant('COST.LINES.NO_PAYS'));
         }
@@ -247,6 +295,13 @@ export class CostLinesComponent implements OnInit {
       sort:   this.sortParam(),
     }).subscribe({
       next: p => {
+        // Page restaurée devenue hors limites (factures supprimées entre-temps) :
+        // on retombe sur la première plutôt que d'afficher une liste vide.
+        if (p.content.length === 0 && this.page() > 0) {
+          this.page.set(0);
+          this.load();
+          return;
+        }
         this.invoices.set(p.content);
         this.total.set(p.totalElements);
         this.isLoading.set(false);

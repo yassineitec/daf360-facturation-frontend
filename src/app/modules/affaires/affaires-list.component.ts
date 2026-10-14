@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, viewChild } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, viewChild, effect } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -16,6 +16,7 @@ import { EmployeeAvatarService } from '../../core/employee-avatar.service';
 import { ClientService } from '../clients/client.service';
 import { BILLING_MODES } from './affaire-wizard.model';
 import { enumLabel } from '../../shared/enum-labels';
+import { AffairesListStateService } from './affaires-list-state.service';
 
 type ViewMode = 'grid' | 'list';
 
@@ -42,6 +43,31 @@ export class AffairesListComponent implements OnInit {
   private readonly translate      = inject(TranslateService);
   private readonly avatarSvc      = inject(EmployeeAvatarService);
   private readonly clientSvc      = inject(ClientService);
+  private readonly listState      = inject(AffairesListStateService);
+
+  /**
+   * Chaque changement de filtre, de tri, de page ou de vue est mémorisé, pour que le
+   * retour depuis le détail (fil d'Ariane « Affaires ») retrouve la liste telle
+   * qu'on l'a quittée. Le premier passage a lieu après `ngOnInit`, donc après la
+   * restauration : il réécrit l'état restauré, sans l'écraser par des valeurs vides.
+   */
+  private readonly persistState = effect(() => {
+    this.listState.save({
+      searchText:    this.searchText(),
+      statut:        this.filterStatut(),
+      clientId:      this.filterClientId(),
+      clientName:    this.clientName(),
+      paysId:        this.filterPaysId(),
+      responsableId: this.filterResponsableId(),
+      billingMode:   this.filterBillingMode(),
+      dateDebut:     this.filterDateDebut(),
+      sort:          this.sort(),
+      sortParam:     this.sortParam(),
+      page:          this.currentPage(),
+      pageSize:      this.pageSize(),
+      viewMode:      this.viewMode(),
+    });
+  });
 
   /** Photos RH des responsables de la page courante, par `userId`. */
   readonly avatarUrls = signal<Map<number, string>>(new Map());
@@ -252,10 +278,17 @@ export class AffairesListComponent implements OnInit {
     // ?clientId= — arrivée depuis une fiche client. Le nom affiché dans le bandeau vient
     // du paramètre `client`, pour ne pas déclencher un appel de plus juste pour un libellé.
     const clientId = Number(this.activatedRoute.snapshot.queryParamMap.get('clientId'));
-    if (Number.isFinite(clientId) && clientId > 0) {
+    const hasClientParam = Number.isFinite(clientId) && clientId > 0;
+    if (hasClientParam) {
       this.filterClientId.set(clientId);
       this.clientName.set(this.activatedRoute.snapshot.queryParamMap.get('client'));
     }
+
+    // Sans paramètre d'arrivée, on reprend la liste telle qu'on l'a laissée (retour du
+    // détail). Un lien qui porte son propre filtre est une intention explicite : il
+    // repart d'une liste propre plutôt que de s'empiler sur l'ancien filtre.
+    if (!statut && !hasClientParam) this.restoreState();
+
     this.svc.getPays().subscribe(list => this.paysList.set(list));
     // `pays=0` : tous les clients actifs, toutes entités confondues (comme l'assistant).
     this.clientSvc.getDropdown(0).subscribe(list =>
@@ -303,6 +336,28 @@ export class AffairesListComponent implements OnInit {
     });
   }
 
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, le panneau
+   * doit donc naître avec les valeurs restaurées.
+   */
+  private restoreState(): void {
+    const s = this.listState.restore();
+    if (!s) return;
+    this.searchText.set(s.searchText);
+    this.filterStatut.set(s.statut);
+    this.filterClientId.set(s.clientId);
+    this.clientName.set(s.clientName);
+    this.filterPaysId.set(s.paysId);
+    this.filterResponsableId.set(s.responsableId);
+    this.filterBillingMode.set(s.billingMode);
+    this.filterDateDebut.set(s.dateDebut);
+    this.sort.set(s.sort);
+    this.sortParam.set(s.sortParam);
+    this.currentPage.set(s.page);
+    this.pageSize.set(s.pageSize);
+    this.viewMode.set(s.viewMode);
+  }
+
   /** Le jeu décrit par les filtres courants, sans la pagination. */
   private currentFilter(): AffaireFilter {
     const range = this.filterDateDebut();
@@ -344,6 +399,13 @@ export class AffairesListComponent implements OnInit {
     };
     this.svc.getAffaires(filter).subscribe({
       next: res => {
+        // Page restaurée devenue hors limites (affaires supprimées entre-temps) :
+        // on retombe sur la première plutôt que d'afficher une liste vide.
+        if (res.content.length === 0 && this.currentPage() > 0) {
+          this.currentPage.set(0);
+          this.load();
+          return;
+        }
         this.affaires.set(res.content);
         this.totalElements.set(res.totalElements);
         this.totalPages.set(res.totalPages);
