@@ -10,7 +10,7 @@ import type {
   BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
 } from '@khalilrebhiitec/daf360';
 import { SupplierService } from '../supplier.service';
-import { CreateSupplierRequest, SupplierDto, supplierTypeLabel } from '../supplier.model';
+import { CostCalcProfile, CreateSupplierRequest, SupplierDto, supplierTypeLabel } from '../supplier.model';
 import { ClientService } from '../../clients/client.service';
 import { PaysRefDto } from '../../affaires/affaire.model';
 import { FactListService } from '../../../core/fact-list.service';
@@ -98,6 +98,19 @@ export class SupplierNewComponent implements OnInit {
   numeroTva = signal('');
   taxId     = signal('');
   iban      = signal('');
+  /** V102 — comment les factures de coût de ce fournisseur se saisissent. */
+  calcProfile = signal<CostCalcProfile>('STANDARD');
+
+  readonly calcProfileOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return (['STANDARD', 'AGENCE_VOYAGE'] as const).map(p => ({
+      value: p, label: this.translate.instant('SUPPLIERS.CALC_PROFILE.' + p),
+    }));
+  });
+
+  onCalcProfileSelect(values: string[]): void {
+    if (values[0] === 'STANDARD' || values[0] === 'AGENCE_VOYAGE') this.calcProfile.set(values[0]);
+  }
 
   supplierTypes = signal<ListValueDto[]>([]);
 
@@ -203,6 +216,7 @@ export class SupplierNewComponent implements OnInit {
     if (this.paysId())       badges.push({ label: this.paysSummary(), icon: 'public',          variant: 'neutral' });
     if (this.typeId() !== null) badges.push({ label: this.typeDisplayLabel(), icon: 'category',         variant: 'neutral' });
     if (this.numeroTva())    badges.push({ label: this.numeroTva(),   icon: 'receipt_long',    variant: 'neutral' });
+    if (this.calcProfile() === 'AGENCE_VOYAGE') badges.push({ label: this.translate.instant('SUPPLIERS.CALC_PROFILE.AGENCE_VOYAGE'), icon: 'flight', variant: 'secondary' });
     if (this.iban())         badges.push({ label: this.translate.instant('SUPPLIERS.NEW.BADGE_IBAN'), icon: 'account_balance', variant: 'secondary' });
     return badges;
   });
@@ -373,6 +387,7 @@ export class SupplierNewComponent implements OnInit {
         this.numeroTva.set(s.numeroTva ?? '');
         this.taxId.set(s.taxId ?? '');
         this.iban.set(s.iban ?? '');
+        this.calcProfile.set(s.costCalcProfile ?? 'STANDARD');
         this.loading.set(false);
         this.loadSupplierTypes();
       },
@@ -402,6 +417,7 @@ export class SupplierNewComponent implements OnInit {
       numeroTva: this.numeroTva().trim() || undefined,
       taxId:     this.taxId().trim()     || undefined,
       iban:      this.iban().trim()      || undefined,
+      costCalcProfile: this.calcProfile(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       // La fiche du fournisseur créé, pas la liste : c'est là qu'on vérifie ce qu'on
       // vient de saisir, et c'est maintenant un écran à part entière.
@@ -448,6 +464,8 @@ export class SupplierNewComponent implements OnInit {
 
     const typeId = this.typeId();
     if (typeId !== null && typeId !== before.typeId) patch.typeId = typeId;
+
+    if (this.calcProfile() !== (before.costCalcProfile ?? 'STANDARD')) patch.costCalcProfile = this.calcProfile();
 
     // Rien touché : pas d'appel. Un PATCH vide ne renverrait qu'un `updated_at`
     // remis à l'heure, ce qui ferait passer une consultation pour une modification.

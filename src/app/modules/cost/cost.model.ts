@@ -55,13 +55,15 @@ export interface ListValueDto {
 }
 
 /**
- * Base of a retenue à la source rate (V95): HT + FODEC, or the TVA amount (retenue sur TVA).
- * 'HT' / 'TTC' only survive on invoices saved before V95 (their stored amounts are kept).
+ * Base of a retenue à la source rate (V101): HT + FODEC + TVA (timbre and autres taxes
+ * excluded), or the TVA amount alone (retenue sur TVA). The other codes only survive on
+ * invoices saved earlier, whose stored amounts are kept: 'HT_FODEC' (V95 → V101),
+ * 'HT' / 'TTC' (before V95).
  */
-export type WithholdingBase = 'HT_FODEC' | 'TVA' | 'HT' | 'TTC';
+export type WithholdingBase = 'HT_FOD_TVA' | 'TVA' | 'HT_FODEC' | 'HT' | 'TTC';
 
 /** Bases offered when configuring a WITHHOLDING_RATE value. */
-export const WITHHOLDING_BASES: readonly WithholdingBase[] = ['HT_FODEC', 'TVA'];
+export const WITHHOLDING_BASES: readonly WithholdingBase[] = ['HT_FOD_TVA', 'TVA'];
 
 /** List type of the "autres taxes" kinds (V95) — Admin → Listes. */
 export const OTHER_TAX_TYPE_LIST = 'OTHER_TAX_TYPE';
@@ -228,6 +230,10 @@ export interface CostLineDto {
   dualApprovalDone: boolean | null;
   /** The cost invoice holding this line (V93). */
   costInvoiceId?: number | null;
+  /** V102 — part of the HT subject to FODEC / TVA / RS; `null` = the whole HT. */
+  vatBaseLocal?: number | null;
+  /** V102 — HT − base: part outside the VAT scope (e.g. air fare); 0 on a standard line. */
+  nonTaxableAmountLocal?: number | null;
 }
 
 // ── Cost invoice (V93) — a supplier invoice holding one or more cost lines ────────
@@ -306,6 +312,8 @@ export interface CostInvoiceDto {
   approvals: CostInvoiceApprovalDto[];
   dualApprovalDone: boolean | null;
   reglement: CostInvoiceReglementDto | null;
+  /** V102 — Σ of the lines' part outside the VAT scope; 0 when none. */
+  nonTaxableAmountLocal?: number | null;
 }
 
 /** One line of the invoice form. `id` = existing line (kept), absent = new line. */
@@ -314,7 +322,10 @@ export interface CostInvoiceLineRequest {
   costCategoryId: number | null;
   costSubCategoryId?: number | null;
   description: string;
+  /** The whole cost of the line: taxable part + part outside the VAT scope. */
   netAmountLocal: number;
+  /** V102 — part of the HT subject to FODEC / TVA / RS (0 ≤ base ≤ HT); absent = the whole HT. */
+  vatBaseLocal?: number | null;
   /** Typed VAT — only used when no `tvaRate` applies (no supplier). */
   vatAmountLocal?: number | null;
   /** Fractions (0.01, 0.19) — supplier invoices only. */
@@ -582,6 +593,8 @@ export interface SupplierSearchItem {
   name: string;
   code: string | null;
   paysId: number | null;
+  /** V102 — STANDARD (HT + taux) or AGENCE_VOYAGE (TTC ligne + base TVA + taux). */
+  costCalcProfile?: 'STANDARD' | 'AGENCE_VOYAGE' | null;
 }
 
 // ── Supplier "Règlement" ledger (cost-line detail page, Tab 2) ─────────────────
@@ -613,6 +626,10 @@ export interface SupplierLedgerRowDto {
   grossAmountLocal: number | null;  // Montant TTC
   /** Retenue à la source of the invoice — deducted from what is paid. */
   rsAmount: number | null;
+  /** TTC − RS: what the supplier is owed — Débit/Crédit are measured against it. */
+  netToPay?: number | null;
+  /** The amount actually paid (the règlement). */
+  montantPaye?: number | null;
 }
 
 export interface SupplierLedgerDto {
