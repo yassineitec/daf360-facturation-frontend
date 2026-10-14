@@ -39,10 +39,29 @@ export interface PlPeriodDto {
   costCommunicationMarketing: number;
   totalOperatingCost: number;
   ebitda: number;
+  intercompanyInbound: number;
+  intersedeInbound: number;
+  intersedeOutbound: number;
+  wipPreviousYears: number;
+  wipBalanceAtClose: number;
+  grossRevenue1Local: number;
+  grossRevenue2Local: number;
+  netRevenueLocal: number;
+  ebitdaPct: number | null;
   closeStartedAt: string | null;
   submittedAt: string | null;
   approvedBy: number | null;
   approvedAt: string | null;
+}
+
+/** Body of POST /pl-periods/{id}/close -- the manual waterfall inputs. Every field optional;
+ *  the backend treats a missing/null value as zero. */
+export interface ClosePeriodRequest {
+  intercompanyInbound?: number | null;
+  intercompanyOutbound?: number | null;
+  intersedeInbound?: number | null;
+  intersedeOutbound?: number | null;
+  wipPreviousYears?: number | null;
 }
 
 export interface CreatePlPeriodRequest {
