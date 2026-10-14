@@ -404,11 +404,16 @@ export class CostLineDetailComponent implements OnInit {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     const raw = (field: string) => (row: TableRow) => row['_' + field] as number | null;
+    // V102 — the "hors champ" column only when a line of this invoice has such a part.
+    const nonTaxable: TableColumn[] = this.invoice()?.nonTaxableAmountLocal
+      ? [{ key: 'nonTaxable', label: t('COST.DETAIL.LINES.COL_NON_TAXABLE'), type: 'text', align: 'right', sortable: true, sortAccessor: raw('nonTaxable') }]
+      : [];
     return [
       { key: 'category',    label: t('COST.DETAIL.LINES.COL_CATEGORY'),    type: 'text', sortable: true },
       { key: 'description', label: t('COST.DETAIL.LINES.COL_DESCRIPTION'), type: 'text', sortable: true },
       { key: 'affaire',     label: t('COST.DETAIL.LINES.COL_AFFAIRE'),     type: 'text', sortable: true },
       { key: 'net',   label: t('COST.DETAIL.LINES.COL_NET'),      type: 'text', align: 'right', sortable: true, sortAccessor: raw('net') },
+      ...nonTaxable,
       { key: 'fodec', label: t('COST.DETAIL.LINES.COL_FODEC'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('fodec') },
       { key: 'tvaRate', label: t('COST.DETAIL.LINES.COL_VAT_RATE'), type: 'text', align: 'right', sortable: true, sortAccessor: raw('tvaRate') },
       { key: 'vat',   label: t('COST.DETAIL.LINES.COL_VAT'),      type: 'text', align: 'right', sortable: true, sortAccessor: raw('vat') },
@@ -425,6 +430,8 @@ export class CostLineDetailComponent implements OnInit {
       description: l.label || '—',
       affaire:     l.affaireId != null ? (labels.get(l.affaireId) ?? ('#' + l.affaireId)) : '—',
       net:         this.fmtCur(l.netAmountLocal),
+      nonTaxable:  l.nonTaxableAmountLocal ? this.fmtCur(l.nonTaxableAmountLocal) : '—',
+      _nonTaxable: l.nonTaxableAmountLocal ?? 0,
       fodec:       l.fodecAmount ? this.fmtCur(l.fodecAmount) : '—',
       tvaRate:     this.fmtPct(l.tvaRate),
       vat:         this.fmtCur(l.vatAmountLocal),
@@ -455,6 +462,9 @@ export class CostLineDetailComponent implements OnInit {
     this.translate.currentLang();
     const t = (k: string, p?: object) => this.translate.instant(k, p);
     const rows: TotalRow[] = [{ label: t('COST.FORM.TOTAL_HT'), value: this.fmtCur(inv.netAmountLocal) }];
+    if (inv.nonTaxableAmountLocal) {
+      rows.push({ label: t('COST.FORM.TOTAL_NON_TAXABLE'), value: this.fmtCur(inv.nonTaxableAmountLocal) });
+    }
     if (inv.fodecAmount) rows.push({ label: t('COST.FORM.TOTAL_FODEC'), value: this.fmtCur(inv.fodecAmount) });
     for (const v of inv.vatBreakdown ?? []) {
       rows.push({

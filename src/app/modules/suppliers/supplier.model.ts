@@ -26,7 +26,18 @@ export interface SupplierDto {
   typeLabelEn: string | null;
   /** Code de la catégorie — stable entre la valeur globale et son surcharge pays. */
   typeCode:   string | null;
+  /** V102 — comment le formulaire de coût saisit les lignes de ce fournisseur. */
+  costCalcProfile?: CostCalcProfile | null;
 }
+
+/**
+ * Profil de calcul d'un fournisseur (V102). Il ne change que la saisie : le calcul
+ * FODEC / TVA / RS est le même pour tous.
+ *  - STANDARD : HT + taux (par défaut) ;
+ *  - AGENCE_VOYAGE : montant TTC de la ligne + base TVA + taux, comme sur les factures
+ *    d'agence ; le reste de la ligne (billet) est hors champ TVA.
+ */
+export type CostCalcProfile = 'STANDARD' | 'AGENCE_VOYAGE';
 
 /** Libellé de la catégorie d'un fournisseur dans la langue courante. */
 export function supplierTypeLabel(s: SupplierDto, lang: string | null | undefined): string | null {
@@ -76,4 +87,6 @@ export interface CreateSupplierRequest {
   numeroTva?: string;
   iban?:      string;
   typeId?:    number;
+  /** Absent = STANDARD à la création, inchangé à la modification. */
+  costCalcProfile?: CostCalcProfile;
 }

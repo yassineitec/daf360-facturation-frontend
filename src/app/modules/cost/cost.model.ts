@@ -230,6 +230,10 @@ export interface CostLineDto {
   dualApprovalDone: boolean | null;
   /** The cost invoice holding this line (V93). */
   costInvoiceId?: number | null;
+  /** V102 — part of the HT subject to FODEC / TVA / RS; `null` = the whole HT. */
+  vatBaseLocal?: number | null;
+  /** V102 — HT − base: part outside the VAT scope (e.g. air fare); 0 on a standard line. */
+  nonTaxableAmountLocal?: number | null;
 }
 
 // ── Cost invoice (V93) — a supplier invoice holding one or more cost lines ────────
@@ -308,6 +312,8 @@ export interface CostInvoiceDto {
   approvals: CostInvoiceApprovalDto[];
   dualApprovalDone: boolean | null;
   reglement: CostInvoiceReglementDto | null;
+  /** V102 — Σ of the lines' part outside the VAT scope; 0 when none. */
+  nonTaxableAmountLocal?: number | null;
 }
 
 /** One line of the invoice form. `id` = existing line (kept), absent = new line. */
@@ -316,7 +322,10 @@ export interface CostInvoiceLineRequest {
   costCategoryId: number | null;
   costSubCategoryId?: number | null;
   description: string;
+  /** The whole cost of the line: taxable part + part outside the VAT scope. */
   netAmountLocal: number;
+  /** V102 — part of the HT subject to FODEC / TVA / RS (0 ≤ base ≤ HT); absent = the whole HT. */
+  vatBaseLocal?: number | null;
   /** Typed VAT — only used when no `tvaRate` applies (no supplier). */
   vatAmountLocal?: number | null;
   /** Fractions (0.01, 0.19) — supplier invoices only. */
@@ -584,6 +593,8 @@ export interface SupplierSearchItem {
   name: string;
   code: string | null;
   paysId: number | null;
+  /** V102 — STANDARD (HT + taux) or AGENCE_VOYAGE (TTC ligne + base TVA + taux). */
+  costCalcProfile?: 'STANDARD' | 'AGENCE_VOYAGE' | null;
 }
 
 // ── Supplier "Règlement" ledger (cost-line detail page, Tab 2) ─────────────────

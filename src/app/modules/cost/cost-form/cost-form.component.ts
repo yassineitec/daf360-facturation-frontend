@@ -18,7 +18,7 @@ import {
 } from '../cost.model';
 import { UserStore } from '../../../core/user.store';
 import {
-  ButtonComponent, ButtonOptions, CardComponent, FieldMessageComponent, FileUploadComponent,
+  ButtonComponent, ButtonOptions, CardComponent, CheckboxComponent, FieldMessageComponent, FileUploadComponent,
   FormFieldComponent, PageComponent, PageHeaderComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import type {
@@ -45,6 +45,15 @@ interface LineForm {
   tvaRate: number | null;
   affaireId: number | null;
   costTypeId: number | null;
+  /**
+   * V102 — part of the line is outside the VAT scope. Ticked by hand on a STANDARD supplier,
+   * always on for a travel agency. Supplier invoices only.
+   */
+  hasNonTaxable: boolean;
+  /** V102 — the part of the HT subject to FODEC / TVA / RS (used when hasNonTaxable). */
+  vatBaseLocal: number | null;
+  /** V102, travel agency only — the line amount as printed (TTC); the HT is derived from it. */
+  lineTtcInput: number | null;
 }
 
 /** One "autre taxe" of the invoice (V95): a type and/or a free label, and a typed amount. */
@@ -64,7 +73,12 @@ interface OtherTaxForm {
  * FODEC and TVA rate (fixed formula, unchanged); without a supplier, a typed VAT amount.
  * Invoice-level: stamp duty and retenue à la source, once per invoice (supplier only), and
  * any number of "autres taxes" — free amounts, typed or labelled, added to the TTC (V95).
- * TVA = (HT + FODEC) × rate; the RS applies to HT + FODEC (or to the TVA) and is deducted.
+ * TVA = (base + FODEC) × rate, base = the taxable part of the HT (the whole HT unless part of
+ * the line is outside the VAT scope, V102). The RS is applied only when ticked, on
+ * base + FODEC + TVA (or on the TVA), and is deducted.
+ *
+ * A travel-agency supplier (profile AGENCE_VOYAGE) is entered as printed: line TTC, base
+ * TVA, rate; the HT is derived (TTC − TVA) and HT − base is the part outside the VAT scope.
  *
  * Every amount shown here is a preview; the server recomputes all of them on save.
  */
@@ -73,7 +87,7 @@ interface OtherTaxForm {
   standalone: true,
   imports: [
     CommonModule, FormsModule, TranslatePipe,
-    PageComponent, PageHeaderComponent, CardComponent, ButtonComponent, FieldMessageComponent,
+    PageComponent, PageHeaderComponent, CardComponent, ButtonComponent, CheckboxComponent, FieldMessageComponent,
     SelectComponent, FormFieldComponent, FileUploadComponent,
   ],
   templateUrl: './cost-form.component.html',
@@ -135,7 +149,11 @@ export class CostFormComponent implements OnInit {
 
   // ── Invoice-level taxes (supplier only) ─────────────────────────────────────
   timbreAmount = signal<number | null>(null);
+  /** The finance manager ticks it to apply a retenue à la source; off by default. */
+  rsApplied    = signal<boolean>(false);
   rsRate       = signal<number | null>(null);
+  /** Calculation profile of the selected supplier (V102); STANDARD without supplier. */
+  supplierProfile = signal<'STANDARD' | 'AGENCE_VOYAGE'>('STANDARD');
   /** "Autres taxes" (V95) — any invoice, with or without supplier. */
   otherTaxes   = signal<OtherTaxForm[]>([]);
   private nextTaxKey = 1;
@@ -209,6 +227,9 @@ export class CostFormComponent implements OnInit {
   /** Tax block (FODEC / TVA rate / stamp / RS) only with a real supplier. */
   readonly hasSupplier = computed(() => this.supplierId() !== null);
 
+  /** Travel agency: lines entered as printed — line TTC, base TVA, rate (V102). */
+  readonly isAgency = computed(() => this.hasSupplier() && this.supplierProfile() === 'AGENCE_VOYAGE');
+
   readonly fodecOptions = computed<SelectOption[]>(() => {
     this.translate.currentLang();
     return [
@@ -269,14 +290,37 @@ export class CostFormComponent implements OnInit {
 
   private static r3(n: number): number { return Math.round(n * 1000) / 1000; }
 
-  lineFodec(l: LineForm): number {
-    return this.hasSupplier() && l.fodecRate ? CostFormComponent.r3((l.netAmountLocal ?? 0) * l.fodecRate) : 0;
+  /** Part of the line still to send as a base: only with a supplier and a split line. */
+  private usesVatBase(l: LineForm): boolean {
+    return this.hasSupplier() && (l.hasNonTaxable || this.isAgency());
   }
 
-  /** TVA = (HT + FODEC) × rate (V95). */
+  /** V102 — the part of the HT subject to FODEC / TVA / RS (the whole HT on a standard line). */
+  lineBase(l: LineForm): number {
+    return this.usesVatBase(l) ? (l.vatBaseLocal ?? 0) : (l.netAmountLocal ?? 0);
+  }
+
+  /** V102 — HT − base: the part outside the VAT scope. */
+  lineNonTaxable(l: LineForm): number {
+    return this.usesVatBase(l) ? CostFormComponent.r3((l.netAmountLocal ?? 0) - (l.vatBaseLocal ?? 0)) : 0;
+  }
+
+  /** A split line needs 0 ≤ base ≤ HT (an agency line: TTC ≥ base + TVA). */
+  lineBaseValid(l: LineForm): boolean {
+    if (!this.usesVatBase(l)) return true;
+    if (l.vatBaseLocal == null || l.vatBaseLocal < 0) return false;
+    return this.lineNonTaxable(l) >= 0;
+  }
+
+  lineFodec(l: LineForm): number {
+    if (this.isAgency()) return 0;   // agencies invoice no FODEC
+    return this.hasSupplier() && l.fodecRate ? CostFormComponent.r3(this.lineBase(l) * l.fodecRate) : 0;
+  }
+
+  /** TVA = (base + FODEC) × rate (V95, base V102). */
   lineVat(l: LineForm): number {
     if (this.hasSupplier() && l.tvaRate != null) {
-      return CostFormComponent.r3(((l.netAmountLocal ?? 0) + this.lineFodec(l)) * l.tvaRate);
+      return CostFormComponent.r3((this.lineBase(l) + this.lineFodec(l)) * l.tvaRate);
     }
     return l.vatAmountLocal ?? 0;
   }
@@ -285,11 +329,24 @@ export class CostFormComponent implements OnInit {
     return (l.netAmountLocal ?? 0) + this.lineFodec(l) + this.lineVat(l);
   }
 
+  /**
+   * Agency line: HT = printed TTC − TVA, the TVA coming from the base and the rate alone.
+   * Re-derived after every change of TTC, base or rate.
+   */
+  private deriveAgencyHt(l: LineForm): LineForm {
+    if (!this.isAgency()) return l;
+    const vat = l.tvaRate != null ? CostFormComponent.r3((l.vatBaseLocal ?? 0) * l.tvaRate) : 0;
+    const ht = l.lineTtcInput != null ? CostFormComponent.r3(l.lineTtcInput - vat) : null;
+    return { ...l, fodecRate: null, hasNonTaxable: true, netAmountLocal: ht };
+  }
+
   readonly totals = computed(() => {
     const lines = this.lines();
-    let ht = 0, fodec = 0, vat = 0, linesTtc = 0;
+    let ht = 0, base = 0, nonTaxable = 0, fodec = 0, vat = 0, linesTtc = 0;
     for (const l of lines) {
       ht += l.netAmountLocal ?? 0;
+      base += this.lineBase(l);
+      nonTaxable += this.lineNonTaxable(l);
       fodec += this.lineFodec(l);
       vat += this.lineVat(l);
       linesTtc += this.lineTtc(l);
@@ -299,13 +356,13 @@ export class CostFormComponent implements OnInit {
     // Autres taxes are added to the TTC; the RS is deducted from what is paid.
     const ttc = linesTtc + timbre + other;
     let rs = 0;
-    const rate = this.hasSupplier() ? this.rsRate() : null;
+    const rate = this.hasSupplier() && this.rsApplied() ? this.rsRate() : null;
     if (rate) {
-      // Timbre and autres taxes are never in the base (V101).
-      const amount = this.selectedRsBase() === 'TVA' ? vat : ht + fodec + vat;
+      // Timbre, autres taxes and the part outside the VAT scope are never in the base (V101, V102).
+      const amount = this.selectedRsBase() === 'TVA' ? vat : base + fodec + vat;
       rs = CostFormComponent.r3(amount * rate);
     }
-    return { ht, fodec, vat, timbre, other, ttc, rs, netToPay: ttc - rs };
+    return { ht, nonTaxable, fodec, vat, timbre, other, ttc, rs, netToPay: ttc - rs };
   });
 
   /** TVA per rate, like the invoice detail's breakdown: rates ascending, typed VAT last. */
@@ -315,7 +372,7 @@ export class CostFormComponent implements OnInit {
       const rate = this.hasSupplier() && l.tvaRate != null ? l.tvaRate : null;
       const key = rate === null ? 'manual' : String(rate);
       const acc = byRate.get(key) ?? { rate, base: 0, vat: 0 };
-      acc.base += (l.netAmountLocal ?? 0) + this.lineFodec(l);   // TVA base = HT + FODEC
+      acc.base += this.lineBase(l) + this.lineFodec(l);   // TVA base = base + FODEC
       acc.vat += this.lineVat(l);
       byRate.set(key, acc);
     }
@@ -334,11 +391,16 @@ export class CostFormComponent implements OnInit {
   }
 
   private lineComplete(l: LineForm): boolean {
-    return !!l.costCategoryId && l.description.trim().length > 0 && (l.netAmountLocal ?? 0) > 0;
+    return !!l.costCategoryId && l.description.trim().length > 0 && (l.netAmountLocal ?? 0) > 0
+      && this.lineBaseValid(l);
   }
 
   readonly invoiceNumberMissing = computed(() =>
     this.hasSupplier() && this.supplierInvoiceNumber().trim().length === 0);
+
+  /** RS ticked but no rate chosen. */
+  readonly rsRateMissing = computed(() =>
+    this.hasSupplier() && this.rsApplied() && this.rsRate() == null);
 
   canSave = computed(() =>
     !this.lockedForUser() &&
@@ -347,6 +409,7 @@ export class CostFormComponent implements OnInit {
     !!this.invoiceDate() &&
     !!this.currencyId() &&
     !this.invoiceNumberMissing() &&
+    !this.rsRateMissing() &&
     this.lines().length > 0 &&
     this.lines().every(l => this.lineComplete(l)) &&
     this.otherTaxes().every(t => this.otherTaxComplete(t)));
@@ -485,6 +548,7 @@ export class CostFormComponent implements OnInit {
     this.currencyId.set(inv.currencyId);
     this.notes.set(inv.notes ?? '');
     this.timbreAmount.set(inv.timbreAmount);
+    this.rsApplied.set(inv.rsRate != null);
     this.rsRate.set(inv.rsRate);
     this.otherTaxes.set((inv.otherTaxes ?? []).map(t => ({
       key: this.nextTaxKey++,
@@ -506,8 +570,57 @@ export class CostFormComponent implements OnInit {
       tvaRate: l.tvaRate,
       affaireId: l.affaireId,
       costTypeId: l.costTypeId,
+      hasNonTaxable: l.vatBaseLocal != null,
+      vatBaseLocal: l.vatBaseLocal ?? null,
+      lineTtcInput: l.grossAmountLocal,
     })));
+    if (inv.supplierId !== null) this.loadSupplierProfile(inv.supplierId);
     this.schedulePreview();
+  }
+
+  /** Reads the supplier's calculation profile (V102) and switches the line entry to it. */
+  private loadSupplierProfile(supplierId: number): void {
+    this.costSvc.getSupplier(supplierId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: s => this.setSupplierProfile(s.costCalcProfile ?? 'STANDARD'),
+      error: () => {},
+    });
+  }
+
+  /**
+   * Switching to a travel agency turns each line into "as printed": its current TTC becomes
+   * the typed line amount and its HT the base, so nothing entered is lost. Back to STANDARD,
+   * the lines keep their HT and base (the "partie hors champ" box stays ticked).
+   */
+  private setSupplierProfile(profile: 'STANDARD' | 'AGENCE_VOYAGE'): void {
+    const wasAgency = this.isAgency();
+    const ttcs = new Map(this.lines().map(l => [l.key, CostFormComponent.r3(this.lineTtc(l))]));
+    this.supplierProfile.set(profile);
+    if (this.isAgency() && !wasAgency) {
+      this.lines.update(ls => ls.map(l => this.deriveAgencyHt({
+        ...l,
+        vatBaseLocal: l.vatBaseLocal ?? l.netAmountLocal,
+        lineTtcInput: l.lineTtcInput ?? (l.netAmountLocal != null ? ttcs.get(l.key)! : null),
+      })));
+    }
+    this.schedulePreview();
+  }
+
+  /** The RS box: unticking drops the rate; ticking picks the rate when the pays has only one. */
+  onRsAppliedChange(applied: boolean): void {
+    this.rsApplied.set(applied);
+    if (!applied) {
+      this.rsRate.set(null);
+    } else if (this.rsRate() == null && this.withholdingRates().filter(v => v.ratePct != null).length === 1) {
+      this.rsRate.set(this.withholdingRates().find(v => v.ratePct != null)!.ratePct! / 100);
+    }
+  }
+
+  /** The "partie hors champ TVA" box of a standard line: the base starts at the whole HT. */
+  onNonTaxableToggle(line: LineForm, on: boolean): void {
+    this.patchLine(line.key, {
+      hasNonTaxable: on,
+      vatBaseLocal: on ? (line.vatBaseLocal ?? line.netAmountLocal) : null,
+    });
   }
 
   /** Pays + supplier pre-filled when opened from a supplier page ("Nouvelle facture"). */
@@ -520,7 +633,10 @@ export class CostFormComponent implements OnInit {
       const sid = +supplierIdParam;
       this.supplierId.set(sid);
       this.costSvc.getSupplier(sid).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: s => this.supplierQuery.set(s.name),
+        next: s => {
+          this.supplierQuery.set(s.name);
+          this.setSupplierProfile(s.costCalcProfile ?? 'STANDARD');
+        },
         error: () => {},
       });
     }
@@ -632,6 +748,7 @@ export class CostFormComponent implements OnInit {
       this.supplierId.set(null);
       this.supplierQuery.set('');
       this.suppliers.set([]);
+      this.setSupplierProfile('STANDARD');
     }
     this.onPaysChange(id);
   }
@@ -640,7 +757,7 @@ export class CostFormComponent implements OnInit {
 
   onSupplierQueryChange(q: string): void {
     this.supplierQuery.set(q);
-    if (!q) { this.supplierId.set(null); this.schedulePreview(); }
+    if (!q) { this.supplierId.set(null); this.setSupplierProfile('STANDARD'); }
     this.supplierSearch$.next(q);
   }
 
@@ -648,7 +765,7 @@ export class CostFormComponent implements OnInit {
     this.supplierId.set(s.id);
     this.supplierQuery.set(s.name);
     this.suppliers.set([]);
-    this.schedulePreview();
+    this.setSupplierProfile(s.costCalcProfile ?? 'STANDARD');
   }
 
   // ── Lines ───────────────────────────────────────────────────────────────────
@@ -659,6 +776,7 @@ export class CostFormComponent implements OnInit {
       costCategoryId: null, costCategoryLabel: '', costSubCategoryId: null, costSubCategoryLabel: '',
       description: '', netAmountLocal: null, vatAmountLocal: null,
       fodecRate: null, tvaRate: null, affaireId: null, costTypeId: null,
+      hasNonTaxable: false, vatBaseLocal: null, lineTtcInput: null,
     };
   }
 
@@ -672,7 +790,7 @@ export class CostFormComponent implements OnInit {
   }
 
   patchLine(key: number, patch: Partial<LineForm>, refreshPreview = true): void {
-    this.lines.update(ls => ls.map(l => l.key === key ? { ...l, ...patch } : l));
+    this.lines.update(ls => ls.map(l => l.key === key ? this.deriveAgencyHt({ ...l, ...patch }) : l));
     if (refreshPreview) this.schedulePreview();
   }
 
@@ -786,7 +904,7 @@ export class CostFormComponent implements OnInit {
       paymentDueDate:        this.paymentDueDate() || null,
       currencyId:            this.currencyId()!,
       timbreAmount:          withSupplier ? this.timbreAmount() : null,
-      rsRate:                withSupplier ? this.rsRate() : null,
+      rsRate:                withSupplier && this.rsApplied() ? this.rsRate() : null,
       notes:                 this.notes().trim() || null,
       otherTaxes: this.otherTaxes().map(t => ({
         taxTypeId:   t.taxTypeId,
@@ -799,8 +917,9 @@ export class CostFormComponent implements OnInit {
         costSubCategoryId: l.costSubCategoryId,
         description:       l.description.trim(),
         netAmountLocal:    l.netAmountLocal!,
+        vatBaseLocal:      this.usesVatBase(l) ? l.vatBaseLocal : null,
         vatAmountLocal:    withSupplier ? null : l.vatAmountLocal,
-        fodecRate:         withSupplier ? l.fodecRate : null,
+        fodecRate:         withSupplier && !this.isAgency() ? l.fodecRate : null,
         tvaRate:           withSupplier ? l.tvaRate : null,
         affaireId:         l.affaireId,
         costTypeId:        l.costTypeId,
