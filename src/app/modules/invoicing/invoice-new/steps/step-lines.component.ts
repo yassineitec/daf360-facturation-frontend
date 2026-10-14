@@ -184,7 +184,7 @@ export interface StepLinesValue {
       <thead>
         <tr>
           <th class="col-desc">{{ 'INVOICING.STEP_LINES.DESC' | translate }}</th>
-          @if (isAv() || isTm() || isLivrable()) {
+          @if (isAv() || isTm() || isLivrable() || isTsCarryForward()) {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.BUDGET_AFFAIRE' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.PCT_FACTURE' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.PCT_AVANCEMENT' | translate }}</th>
@@ -195,7 +195,7 @@ export interface StepLinesValue {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.UNIT_PRICE' | translate }}</th>
           }
           <th class="col-num">{{ 'INVOICING.STEP_LINES.VAT' | translate }}</th>
-          @if (isAv() || isTm() || isLivrable()) {
+          @if (isAv() || isTm() || isLivrable() || isTsCarryForward()) {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_TTC' | translate }}</th>
           } @else {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_HT' | translate }}</th>
@@ -238,7 +238,7 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ avPctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ avPctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ avPctAFacturerLabel(i) }}</td>
-                @if (avHasAvancement(i)) {
+                @if (avHasAvancement(i) && !amendMode()) {
                   <td class="td-computed">{{ formatAmount(lineHtAv(i)) }}</td>
                 } @else {
                   <td>
@@ -263,6 +263,17 @@ export interface StepLinesValue {
                     [value]="lg.get('prixUnitaireHt')!.value"
                     (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
+              } @else if (isTsCarryForward()) {
+                <!-- TS WIP : facturé en une seule fois à 100 % — même affichage que T&M. -->
+                <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
+                <td class="td-computed">{{ formatPct(100) }}</td>
+                <td class="td-computed">{{ formatPct(100) }}</td>
+                <td class="td-computed">{{ formatPct(100) }}</td>
+                <td>
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('prixUnitaireHt')!.value"
+                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                </td>
               } @else if (isLivrable()) {
                 <!-- Livrable : les quatre colonnes d'avancement portent de VRAIES valeurs,
                      propres au document facturé (budget alloué du livrable, % déjà facturé
@@ -274,20 +285,26 @@ export interface StepLinesValue {
                      sont en Forfaitaire : cette étape ne rejoue pas la saisie du pourcentage,
                      elle réaffiche puis réémet tel quel ce que la ligne porte déjà.
                      '—' pour une ligne ajoutée à la main ici, qui n'a aucun avancement.
-                     Le Montant HT en découle et n'est donc PAS saisissable, exactement
-                     comme en Forfaitaire : le serveur le recalcule de toute façon en
-                     budgetAffaire × pctAFacturer / 100 dès que ces deux colonnes sont
-                     renseignées (cf. InvoiceService.saveLines), donc un montant tapé ici
-                     serait purement et simplement ignoré à l'enregistrement — et pire,
-                     l'en-tête de la facture, lui calculé en quantity × unitRate, ne
-                     concorderait plus avec le total de la ligne. Seule une ligne ajoutée
-                     à la main (sans avancement) garde la saisie du montant : c'est le
-                     seul cas où le serveur retient bien quantity × unitRate. -->
+                     Le Montant HT reste NON saisissable en création/édition normale,
+                     mais ce n'est plus parce que le serveur l'ignorerait : InvoiceService.
+                     saveLines retient désormais TOUJOURS quantity × unitRate, y compris
+                     pour une ligne d'avancement (budgetAffaire/pctFacture/pctAvancement/
+                     pctAFacturer ne sont qu'un contexte d'affichage/audit figé, rejoué tel
+                     quel — une ancienne dérive de quelques centimes avait justement été
+                     causée par une re-dérivation depuis ces colonnes, d'où ce choix). Un
+                     montant tapé ici serait donc bien pris en compte à l'enregistrement —
+                     le champ reste simplement en lecture seule en mode normal par choix
+                     d'UI/de workflow, pour empêcher une saisie qui ferait silencieusement
+                     diverger la facture de la piste d'audit WIP/avancement. En amendMode
+                     (correction d'une facture déjà ÉMISE), ce garde-fou n'a plus lieu
+                     d'être : c'est précisément le but de ce mode qu'une correction
+                     délibérée et tracée du montant soit possible, d'où le champ éditable
+                     ci-dessous dans ce cas. -->
                 <td class="td-computed">{{ livrableBudgetAffaireLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctAFacturerLabel(i) }}</td>
-                @if (livrableHasAvancement(i)) {
+                @if (livrableHasAvancement(i) && !amendMode()) {
                   <td class="td-computed">{{ formatAmount(lineHtLivrable(i)) }}</td>
                 } @else {
                   <td>
@@ -320,7 +337,7 @@ export interface StepLinesValue {
 
               @if (isAv()) {
                 <td class="td-computed">{{ formatAmount(lineTtcAv(i)) }}</td>
-              } @else if (isTm()) {
+              } @else if (isTm() || isTsCarryForward()) {
                 <td class="td-computed">{{ formatAmount(lineTtcTm(i)) }}</td>
               } @else if (isLivrable()) {
                 <!-- Assis sur le même Montant HT que la colonne ci-dessus (budget ×
@@ -360,7 +377,7 @@ export interface StepLinesValue {
           @if (isAv()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcAv) }}</td>
-          } @else if (isTm()) {
+          } @else if (isTm() || isTsCarryForward()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcTm) }}</td>
           } @else if (isLivrable()) {
@@ -494,6 +511,11 @@ export class StepLinesComponent {
    * Needed so a brand-new FORFAIT/REGIE/LIVRABLE invoice never starts with the usual
    * default blank manual line — see the constructor effect below. */
   isEditMode = input<boolean>(false);
+  /** True only when amending an already-EMITTED/SENT invoice — set by
+   * invoice-new.component.ts's amendMode signal. Lets the AV/Livrable "Montant HT" cell
+   * render as an editable field instead of its usual read-only computed label, even for
+   * lines that carry avancement data (see avHasAvancement/livrableHasAvancement below). */
+  amendMode   = input<boolean>(false);
   prevStep    = output<void>();
   nextStep    = output<StepLinesValue>();
 
@@ -817,7 +839,7 @@ export class StepLinesComponent {
     // que les préserver. Ne les mémoriser qu'en T&M revenait à effacer la période facturée
     // d'une facture Livrable au premier réenregistrement depuis ce wizard : `next()` ne
     // pouvait plus la réémettre, et step-recap la transmet telle quelle dans la requête.
-    if (this.isTm() || this.isLivrable()) {
+    if (this.isTm() || this.isLivrable() || this.isTsCarryForward()) {
       this.initialPeriodFrom.set(initial.periodFrom ?? null);
       this.initialPeriodTo.set(initial.periodTo ?? null);
     }
@@ -881,7 +903,7 @@ export class StepLinesComponent {
    * fait la colonne Total TTC juste au-dessus dans le gabarit. */
   currentLineHt(i: number): number {
     if (this.isAv()) return this.lineHtAv(i);
-    if (this.isTm()) return this.lineHtTm(i);
+    if (this.isTm() || this.isTsCarryForward()) return this.lineHtTm(i);
     if (this.isLivrable()) return this.lineHtLivrable(i);
     return this.lineHt(i);
   }
@@ -1437,6 +1459,35 @@ export class StepLinesComponent {
         lines: livrableLines,
         // Période de génération du lot, telle que chargée — même raison qu'en T&M : elle
         // vient du serveur et cette étape ne la rejoue pas (cf. seedFromInitialLines).
+        periodFrom: this.initialPeriodFrom(),
+        periodTo:   this.initialPeriodTo(),
+        deductionColumns,
+      });
+    } else if (this.isTsCarryForward()) {
+      // TS WIP billing lines: billed in full in one shot — same flat 100%-everywhere
+      // convention as T&M.  Carry the period from the server-generated draft so it is
+      // preserved on re-save, same as isTm() / isLivrable().
+      const tsLines = (this.linesArray.value as {
+        description: string; prixUnitaireHt: number; tauxTva: number;
+        sourceCarriedForwardLineId: number | null;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
+      }[]).map(l => {
+        const montant = l.prixUnitaireHt ?? 0;
+        return {
+          description:   l.description,
+          quantity:      1,
+          unitRate:      montant,
+          vatRatePct:    l.tauxTva,
+          budgetAffaire: montant,
+          pctFacture:    100,
+          pctAvancement: 100,
+          pctAFacturer:  100,
+          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+          ...dedFields(l),
+        };
+      });
+      this.nextStep.emit({
+        lines: tsLines,
         periodFrom: this.initialPeriodFrom(),
         periodTo:   this.initialPeriodTo(),
         deductionColumns,

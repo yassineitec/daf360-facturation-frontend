@@ -96,6 +96,8 @@ export const routes: Routes = [
       },
       {
         path: 'reporting',
+        canActivate: [permissionGuard],
+        data: { permissions: ['FACT_VIEW_PL_REPORT'] },
         loadChildren: () =>
           import('./modules/reporting/reporting.routes').then(m => m.REPORTING_ROUTES),
       },

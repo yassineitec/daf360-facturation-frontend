@@ -404,6 +404,17 @@ export interface CostInvoiceImportResult {
   errorCount: number;
   errors: string[];
   references: string[];
+  /** Suppliers of the file absent from CORE360 — never created by the import; any entry blocks it. */
+  missingSuppliers: CostImportMissingSupplier[];
+}
+
+export interface CostImportMissingSupplier {
+  code: string | null;
+  taxId: string | null;
+  name: string | null;
+  /** File rows naming it, e.g. "12, 13, 40". */
+  rows: string;
+  invoiceCount: number;
 }
 
 export interface CostInvoiceAttachmentDto {

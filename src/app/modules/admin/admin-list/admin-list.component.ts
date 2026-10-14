@@ -5,6 +5,7 @@ import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
 import { FactRolesAdminComponent } from '../roles/fact-roles-admin.component';
 import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-admin.component';
+import { WipEmailTemplatesAdminComponent } from '../wip-email-templates/wip-email-templates-admin.component';
 import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
 import { CostConfigComponent } from '../../cost/tabs/cost-config.component';
 import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
@@ -28,7 +29,7 @@ import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { UserStore } from '../../../core/user.store';
 import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
-type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders';
+type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders' | 'wip-email-templates';
 
 const PAGE_SIZE = 10;
 
@@ -86,6 +87,7 @@ interface ForexRow {
     FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
     SelectComponent, PaysFlagSelectComponent, PageComponent, PageHeaderComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
+    WipEmailTemplatesAdminComponent,
     CostConfigComponent,
   ],
   templateUrl: './admin-list.component.html',
@@ -461,6 +463,7 @@ export class AdminListComponent implements OnInit {
     if (this.userStore.hasPermission('FACT_SUPER_ADMIN')) {
       items.push({ id: 'permissions',         label: t('ADMIN.TABS.PERMISSIONS'),         icon: 'admin_panel_settings' });
       items.push({ id: 'document-templates',  label: t('ADMIN.TABS.DOCUMENT_TEMPLATES'),  icon: 'description' });
+      items.push({ id: 'wip-email-templates', label: t('ADMIN.TABS.WIP_EMAIL_TEMPLATES'), icon: 'mark_email_unread' });
     }
     // Anciennement l'onglet « Config » de /finance/cost : déplacé ici, à côté des
     // Maquettes de documents. Ouvert aux mêmes profils que la route `cost` elle-même

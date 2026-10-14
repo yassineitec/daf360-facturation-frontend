@@ -1198,15 +1198,19 @@ export class AffaireDetailComponent implements OnInit {
   //   Les trois premières se calculent toutes sur le MÊME « facturé », `totalFacture` :
   //     · totalFacture  = SUM(factures) dont le statut n'est PAS 'PAID' — à la lettre,
   //                       donc DRAFT et CANCELLED y entrent aussi.
-  //     · backlog       = budgetPrevisionnel − totalFacture.
-  //     · wip           = somme des WIP déclarés (tous statuts) − totalFacture : le
-  //                       constaté pas encore passé en facture. Négatif quand on a facturé
-  //                       plus que ce que l'onglet WIP a déclaré.
+  //     · backlog       = budgetPrevisionnel − totalFacture + TS non facturé.
+  //     · wip           = somme des WIP déclarés (tous statuts) − totalFacture
+  //                       + TS non facturé : le constaté pas encore passé en facture.
+  //                       Le terme hors-TS est négatif quand on a facturé plus que ce
+  //                       que l'onglet WIP a déclaré.
   //     · totalEncaisse = SUM(factures) au statut 'PAID' — complément exact de
   //                       totalFacture, donc totalFacture + totalEncaisse = tout le facturé.
   //   Un chiffre lu sur une tuile se retrouve donc tel quel dans le calcul des deux
-  //   autres : budget = backlog + totalFacture, et la tuile WIP se lit à partir de la
-  //   tuile « Total facturé » affichée juste à côté.
+  //   autres : budget + TS non facturé = backlog + totalFacture (le TS non facturé
+  //   abonde les DEUX tuiles Backlog et WIP, règle du 2026-10-13 — les TS se vendent en
+  //   plus du contrat, au même titre que le budget, donc le travail TS déjà validé mais
+  //   pas encore en facture doit apparaître dans les deux). La tuile WIP se lit donc à
+  //   partir de la tuile « Total facturé » affichée juste à côté, plus ce même terme TS.
   //
   //   ⚠️ Le sens de la soustraction du WIP a été inversé le 21/09 (il valait
   //   totalFacture − WIP du 18 au 21) : une capture d'écran de cette période se lit à

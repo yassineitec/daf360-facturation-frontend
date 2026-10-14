@@ -48,6 +48,9 @@ export class InvoiceNewComponent implements OnInit {
   /** Non-null when editing an existing DRAFT (route `invoicing/:id/edit`) — passed down
    * to each step to pre-fill it, and to step-recap so it calls updateDraft() on save. */
   editInvoiceId      = signal<number | null>(null);
+  /** True when the invoice being edited is already EMITTED/SENT (not DRAFT) — step-recap then
+   * calls amendEmittedInvoice() instead of updateDraft() on save. */
+  amendMode          = signal(false);
   initialAffaire     = signal<StepAffaireValue    | null>(null);
   initialLines       = signal<StepLinesValue      | null>(null);
   initialConditions  = signal<StepConditionsValue | null>(null);
@@ -137,6 +140,7 @@ export class InvoiceNewComponent implements OnInit {
     this.invSvc.getInvoice(id).subscribe({
       next: inv => {
         this.editInvoiceId.set(id);
+        this.amendMode.set(inv.statut === 'EMITTED' || inv.statut === 'SENT');
         this.initialAffaire.set({
           affaireId:   inv.affaireId,
           tsId:        inv.tsId,

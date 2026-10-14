@@ -1,0 +1,58 @@
+<daf-page [kpis]="0" [loading]="firstLoad()" [loadingLabel]="'REPORTING.CALENDAR.TITLE' | translate">
+
+  <daf-page-header
+    [title]="'REPORTING.CALENDAR.TITLE' | translate"
+    [subtitle]="'REPORTING.CALENDAR.SUBTITLE' | translate">
+    <ng-container pageActions>
+      <daf-select
+        [options]="yearOptions()"
+        [selected]="[year().toString()]"
+        [ariaLabel]="'REPORTING.CALENDAR.YEAR' | translate"
+        (selectedChange)="onYearSelected($event)" />
+    </ng-container>
+  </daf-page-header>
+
+  @if (error()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ error() }}
+    </div>
+  }
+  @if (successMessage()) {
+    <div class="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
+      <span class="material-symbols-outlined text-[18px]">check_circle</span>
+      {{ successMessage() }}
+    </div>
+  }
+
+  <daf-data-table
+    [columns]="columns()"
+    [rows]="rows()"
+    [config]="config()">
+
+    <!-- Editable (FACT_ADMIN_PL_REPORT) date field + per-row "Enregistrer", or a plain
+         read-only formatted date otherwise. -->
+    <ng-template dafCell="deadline" let-row>
+      @if (canEdit()) {
+        <div class="flex items-center gap-2">
+          <daf-form-field
+            [options]="{ type: 'date' }"
+            [value]="row['deadline']"
+            (valueChange)="onDeadlineChange(row['month'], $event)" />
+          <daf-button
+            [options]="{
+              variant: 'secondary', size: 'sm', iconStart: 'save',
+              label: ('REPORTING.CALENDAR.SAVE_ROW' | translate),
+              loading: savingMonth() === row['month'],
+              disabled: !row['deadline']
+            }"
+            (onClick)="saveRow(row['month'])" />
+        </div>
+      } @else {
+        <span>{{ formatDeadline(row['deadline']) }}</span>
+      }
+    </ng-template>
+
+  </daf-data-table>
+
+</daf-page>

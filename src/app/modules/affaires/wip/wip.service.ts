@@ -5,13 +5,16 @@ import { environment } from '../../../../environments/environment';
 import { EmailPreviewDto, WipTauxDto, WipTmPreviewDto } from './wip.model';
 
 /** `montantSaisi` is set only in "Montant" mode: the backend then stores that amount as-is
- * and re-derives `tauxSaisi` from it (the one sent here is only indicative). */
+ * and re-derives `tauxSaisi` from it (the one sent here is only indicative).
+ * `emailSubject`/`emailBody` are the (potentially user-edited) email text from the preview modal. */
 export interface WipTauxSubmitBody {
   periodDateFrom: string;
   periodDateTo: string;
   tauxSaisi: number;
   commentaire?: string | null;
   montantSaisi?: number | null;
+  emailSubject?: string | null;
+  emailBody?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -72,10 +75,12 @@ export class WipService {
       this.opts);
   }
 
-  validateTm(affaireId: number, dateFrom: string, dateTo: string): Observable<unknown> {
-    return this.http.post(
-      `${this.base}/wip/tm/${affaireId}/validate?dateFrom=${dateFrom}&dateTo=${dateTo}`,
-      {}, this.opts);
+  validateTm(affaireId: number, dateFrom: string, dateTo: string,
+             emailSubject?: string | null, emailBody?: string | null): Observable<unknown> {
+    let url = `${this.base}/wip/tm/${affaireId}/validate?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+    if (emailSubject) url += `&emailSubject=${encodeURIComponent(emailSubject)}`;
+    if (emailBody)    url += `&emailBody=${encodeURIComponent(emailBody)}`;
+    return this.http.post(url, {}, this.opts);
   }
 
   /** Read-only: the exact client email validateTm() would send for this period, without

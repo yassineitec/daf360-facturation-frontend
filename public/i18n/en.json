@@ -358,7 +358,34 @@
       "CONFIRM": "Confirm",
       "TABS": {
         "REMINDERS": "Reminders",
+        "AUDIT_HISTORY": "Modification history",
         "TRACE": "Timeline"
+      },
+      "AUDIT": {
+        "EMPTY": "No modifications recorded.",
+        "UNKNOWN_ACTOR": "User",
+        "LINES_COUNT": "{{count}} line(s)",
+        "FIELD": {
+          "DUE_DATE": "Due date",
+          "PERIOD_FROM": "Period (from)",
+          "PERIOD_TO": "Period (to)",
+          "PROGRESS_PCT": "Progress percentage",
+          "NOTES": "Notes",
+          "BON_COMMANDE": "Purchase order",
+          "CLIENT_VALIDATION_DOC_URL": "Client validation document",
+          "CLIENT_VALIDATION_TYPE": "Client validation type",
+          "DEDUCTION_LABEL_1": "Deduction 1 label",
+          "DEDUCTION_TOTAL_1": "Deduction 1 amount",
+          "DEDUCTION_LABEL_2": "Deduction 2 label",
+          "DEDUCTION_TOTAL_2": "Deduction 2 amount",
+          "DEDUCTION_LABEL_3": "Deduction 3 label",
+          "DEDUCTION_TOTAL_3": "Deduction 3 amount",
+          "SUBTOTAL": "Subtotal",
+          "VAT": "VAT",
+          "TOTAL": "Total",
+          "NET_PAYABLE": "Net payable",
+          "LINES": "Invoice lines"
+        }
       },
       "ACTIONS": {
         "SEE_AFFAIRE": "View project",
@@ -378,6 +405,7 @@
       "LEAVE_CONFIRM": "Leave and cancel",
       "SAVING": "Saving…",
       "DRAFT": "Draft",
+      "SAVE_AMEND": "Save changes",
       "SUBMIT": "Submit",
       "NEXT": "Next",
       "SENDING": "Sending…",
@@ -465,7 +493,8 @@
         "CANCELLED": "Cancelled",
         "RETURN": "Return to sender",
         "DISPUTE": "Open a dispute",
-        "EDIT": "Edit draft"
+        "EDIT": "Edit draft",
+        "AMEND": "Edit"
       },
       "COMMENT": "Comment",
       "EMIT_TITLE": "Issue the invoice",
@@ -601,6 +630,7 @@
       "BACK": "Back",
       "SAVING": "Saving…",
       "DRAFT": "Draft",
+      "SAVE_AMEND": "Save changes",
       "SENDING": "Sending…",
       "SUBMIT": "Submit",
       "NET_PAYABLE": "Net to pay"
@@ -2724,10 +2754,19 @@
       "FILTER_AMOUNT_PH": "e.g. 1500.50"
     },
     "IMPORT": {
-      "TITLE": "History import (CSV)",
-      "DOWNLOAD_TEMPLATE": "Download template",
+      "TITLE": "History import",
+      "DOWNLOAD_TEMPLATE": "Download the Excel template",
+      "TEMPLATE_ERROR": "The template could not be generated.",
+      "MISSING_SUPPLIERS_TITLE": "{{count}} supplier(s) missing from CORE360",
+      "MISSING_SUPPLIERS_HELP": "The import never creates suppliers. Create them in Costs → Suppliers (same name, tax id), then check the file again.",
+      "MISSING_SUPPLIERS_EXPORT": "Export the list (Excel)",
+      "MISSING_CODE": "Code",
+      "MISSING_TAX_ID": "Tax id",
+      "MISSING_NAME": "Name",
+      "MISSING_ROWS": "File rows",
+      "MISSING_INVOICES": "Invoices",
       "KB": "KB",
-      "DRAG_HINT": "Drag your CSV file here or",
+      "DRAG_HINT": "Drag your Excel or CSV file here or",
       "BROWSE": "Browse",
       "CANCEL": "Cancel",
       "UPLOAD": "Import",
@@ -2738,9 +2777,9 @@
       "ERRORS_DETAIL": "Error details:",
       "ERROR_ROW": "Row {{row}}",
       "NEW_IMPORT": "New import",
-      "ONLY_CSV": "Only CSV files are accepted.",
+      "ONLY_CSV": "Only Excel (.xlsx, .xls) or CSV files are accepted.",
       "IMPORT_ERROR": "Error during import.",
-      "HELP": "One file row = one cost line; rows sharing a \"reference\" form one invoice. A VAT given in vat_amount is kept as is; otherwise it is computed on net + FODEC. Optional columns other_tax_type / other_tax_label / other_tax_amount: one other tax per row, added to the invoice total incl. tax. Check the file first: nothing is saved. The import saves nothing if a single row is in error.",
+      "HELP": "Download the country's Excel template (Instructions sheet, up-to-date drop-downs) and fill the \"Factures\" sheet: one row = one cost line, rows sharing a reference form one invoice. Suppliers must already exist in CORE360: missing ones are listed by the check. Check the file first: nothing is saved. The import saves nothing while a single error remains.",
       "CHANGE_FILE": "Change file",
       "CHECK": "Check the file",
       "CHECK_OK": "Valid file: {{invoices}} invoice(s) ready to be imported.",
@@ -3298,7 +3337,134 @@
   },
   "REPORTING": {
     "TITLE": "P&L",
-    "WIP": "Module under development."
+    "SUBTITLE": "Profit & loss by country, submission workflow and budget reference.",
+    "PAYS": {
+      "LABEL": "Country / Entity",
+      "SEARCH": "Search a country..."
+    },
+    "ERROR_PAYS": "Could not determine your country.",
+    "LOAD_ERROR": "Could not load P&L periods.",
+    "EMPTY": "No P&L period for this country.",
+    "TABLE": {
+      "PERIOD": "Period",
+      "STATUS": "Status",
+      "EBITDA": "EBITDA",
+      "REPORT": "Report"
+    },
+    "PERIOD_STATUS": {
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "SUBMITTED": "Submitted",
+      "APPROVED": "Approved"
+    },
+    "REPORT_STATUS": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "CD_ENDORSED": "Endorsed (CD)",
+      "GROUP_ACCEPTED": "Accepted (Group)",
+      "AMENDMENT_REQUESTED": "Amendment requested",
+      "SUPERSEDED": "Superseded"
+    },
+    "NO_REPORT": "No report",
+    "GENERATE": "Generate report",
+    "GENERATE_ERROR": "Error generating the report.",
+    "NEW_PERIOD": "New period",
+    "NEW_PERIOD_TITLE": "Create a P&L period",
+    "NEW_PERIOD_YEAR": "Year",
+    "NEW_PERIOD_MONTH": "Month",
+    "NEW_PERIOD_CREATE": "Create",
+    "NEW_PERIOD_CANCEL": "Cancel",
+    "NEW_PERIOD_ERROR": "Error creating the period.",
+    "CLOSE_PERIOD": "Close",
+    "CLOSE_PERIOD_ERROR": "Error closing the period.",
+    "BUDGET": {
+      "TITLE": "Budget reference",
+      "SUBTITLE": "Annual budget entry by country, month and group catalogue line.",
+      "YEAR": "Year",
+      "LINE": "Catalogue line",
+      "LOAD_ERROR": "Could not load the budget reference.",
+      "EMPTY": "No budget reference for {{year}}.",
+      "CREATE": "Create the {{year}} budget",
+      "SAVE": "Save",
+      "SAVE_SUCCESS": "Budget saved.",
+      "SAVE_ERROR": "Error saving the budget.",
+      "APPROVE_CD": "Approve (Country Director)",
+      "APPROVE_GROUP": "Approve (Group)",
+      "APPROVED_CD": "Approved (Country Director) on {{date}} by user #{{id}}.",
+      "NOT_APPROVED_CD": "Not approved (Country Director).",
+      "APPROVED_GROUP": "Approved (Group) on {{date}} by user #{{id}}.",
+      "NOT_APPROVED_GROUP": "Not approved (Group)."
+    },
+    "CALENDAR": {
+      "TITLE": "Submission calendar",
+      "SUBTITLE": "P&L report submission deadlines, by month.",
+      "YEAR": "Year",
+      "LOAD_ERROR": "Could not load the submission calendar.",
+      "EMPTY": "No deadline for this year.",
+      "SAVE_ROW": "Save",
+      "SAVE_SUCCESS": "Deadline saved.",
+      "SAVE_ERROR": "Error saving the deadline.",
+      "SET_BY_USER": "User #{{id}}",
+      "TABLE": {
+        "MONTH": "Month",
+        "DEADLINE": "Deadline",
+        "SET_BY": "Set by",
+        "SET_AT": "Set on"
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Loading report…",
+      "LOAD_ERROR": "Could not load the P&L report.",
+      "SECONDARY_LOAD_ERROR": "Could not load the report's additional information.",
+      "ACTION_ERROR": "An error occurred while performing this action.",
+      "BACK": "Back to P&L reports",
+      "BREADCRUMB_ARIA": "P&L report breadcrumb",
+      "TITLE_PREFIX": "P&L Report —",
+      "CANCEL": "Cancel",
+      "CONFIRM": "Confirm",
+      "RECAP": {
+        "TITLE": "Recap",
+        "LINE": "Catalogue line",
+        "ACTUAL": "Actual amount",
+        "BUDGET": "Budget",
+        "VARIANCE": "Variance %"
+      },
+      "COMMENTARY": {
+        "TITLE": "Variance commentary",
+        "NONE_YET": "No commentary generated for this line yet.",
+        "NARRATIVE_LABEL": "Commentary",
+        "SAVE": "Save",
+        "STATUS": {
+          "DRAFT": "Draft",
+          "UNDER_REVIEW": "Under review"
+        }
+      },
+      "SECTION": {
+        "TITLE": "Cross-cutting summary",
+        "REVENUE": "Revenue",
+        "COST": "Cost",
+        "EBITDA": "EBITDA",
+        "OTHER_NOTABLE": "Other notable items"
+      },
+      "ACTIONS": {
+        "SUBMIT": "Submit",
+        "ENDORSE": "Endorse",
+        "ACCEPT": "Accept",
+        "REQUEST_AMENDMENT": "Request amendment",
+        "REOPEN": "Reopen",
+        "REASON_LABEL": "Reason",
+        "EXPORT_XLSX": "Export to Excel",
+        "EXPORT_PDF": "Export to PDF",
+        "EXPORTING_XLSX": "Exporting Excel…",
+        "EXPORTING_PDF": "Exporting PDF…"
+      },
+      "REOPEN": {
+        "METHOD_LABEL": "Reopen method",
+        "OPTION_1_VERSIONED": "New version (the current report is archived; a new draft version is created)",
+        "OPTION_2_CONSUMED": "Correction in the next period (no new version; the correction is absorbed by the next period)",
+        "RATIONALE_LABEL": "Rationale"
+      }
+    }
   },
   "PAYMENTS": {
     "COMMON": {
@@ -3988,6 +4154,7 @@
       "DOCUMENT_TEMPLATES": "Document templates",
       "COST_CONFIG": "Cost configuration",
       "REMINDERS": "Reminders",
+      "WIP_EMAIL_TEMPLATES": "WIP Emails",
       "NAV_LABEL": "Admin navigation"
     },
     "DOCUMENT_TEMPLATES": {
@@ -4204,6 +4371,7 @@
       "INTRO": "These stages drive the collection schedule for every invoice: the generator applies them to each invoice's due date, and the daily scheduler sends the messages to the listed roles. A change applies to new invoices and to any invoice whose due date changes; reminders already sent are untouched.",
       "SECTION_TITLE": "Collection schedule",
       "ADD": "Add a stage",
+      "DISPATCH_NOW": "Run scheduler now",
       "EMPTY": "No stage configured — no reminder will be scheduled.",
       "COL_OFFSET": "Timing",
       "COL_RULE": "Stage",
@@ -4240,6 +4408,39 @@
       "ERROR_SAVE": "Unable to save this stage.",
       "ERROR_DELETE": "Unable to delete this stage.",
       "ERROR_REQUIRED": "Fill in the code, both labels and a whole number of days for the offset."
+    },
+    "WIP_EMAIL_TPLS": {
+      "INTRO": "These templates define the subject and body of the email automatically sent to the client when a WIP is validated. A global template (no country) applies to all countries; a country-specific template takes priority.",
+      "SECTION_TITLE": "WIP email templates",
+      "ADD": "Add a template",
+      "EDIT_TITLE": "Edit template",
+      "NEW_TITLE": "New template",
+      "COL_MODE": "Mode",
+      "COL_SCOPE": "Scope",
+      "COL_SUBJECT": "Subject",
+      "COL_STATE": "Status",
+      "MODE_TM": "Time & Material (TM)",
+      "MODE_AV": "Fixed-price (AV)",
+      "MODE_LIVRABLE": "Deliverable",
+      "MODE_TS": "Supplementary Work (TS)",
+      "SCOPE_GLOBAL": "Global",
+      "SCOPE_COUNTRY": "Country",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "EMPTY": "No template configured — the default message will be used.",
+      "ERROR_LOAD": "Unable to load WIP email templates.",
+      "ERROR_SAVE": "Unable to save this template.",
+      "ERROR_DELETE": "Unable to delete this template.",
+      "FIELD_MODE": "Billing mode",
+      "FIELD_PAYS_ID": "Country (ID)",
+      "PAYS_ID_PLACEHOLDER": "Leave empty for a global template",
+      "PAYS_ID_HINT": "Numeric ID of the country. Empty = global rule, applies to all countries.",
+      "FIELD_SUBJECT": "Message subject",
+      "FIELD_BODY": "Message body",
+      "TEMPLATE_HINT": "You can use the tokens below to personalise the message.",
+      "TOKENS_TITLE": "Available tokens",
+      "FIELD_ACTIVE": "Template active",
+      "ACTIVE_HINT": "An inactive template is no longer used; the default message takes over."
     }
   },
   "ENUMS": {

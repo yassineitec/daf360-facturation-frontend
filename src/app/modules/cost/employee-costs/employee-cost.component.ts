@@ -629,15 +629,21 @@ export class EmployeeCostComponent implements OnInit {
     this.newRecord.currency = values[0] ?? 'EUR';
   }
 
-  /** Whichever field the person types into becomes the driver; the other two
-   * immediately recompute — impossible to save numbers that don't satisfy the
-   * fixed 1.1 / 1.2 markup formula. */
+  /** Whichever field the person types into becomes the driver. For "basic"/"internal" the
+   * other two immediately recompute — impossible to save numbers that don't satisfy the
+   * fixed 1.1 / 1.2 markup formula. "external" is independent of that formula (see the
+   * backend's CreateEmployeeCostRequest/UpdateEmployeeCostRequest): editing it must NOT
+   * move basicCost/internalSellingCost, on screen or once saved. */
   onFieldInput(driver: EmployeeCostDriverField, value: number | null): void {
     this.newRecord.driver = driver;
     if (value === null || value === undefined) {
       this.newRecord.basicCost = null;
       this.newRecord.internalSellingCost = null;
       this.newRecord.externalSellingCost = null;
+      return;
+    }
+    if (driver === 'external') {
+      this.newRecord.externalSellingCost = value;
       return;
     }
     const derived = deriveEmployeeCostFields(driver, value);
@@ -649,7 +655,6 @@ export class EmployeeCostComponent implements OnInit {
     // retour (ex. interne 10,5 → base 9,55 → interne 10,51) le réécrivait sous les doigts.
     // Seuls les deux AUTRES champs sont recalculés.
     if (driver === 'internal') this.newRecord.internalSellingCost = value;
-    if (driver === 'external') this.newRecord.externalSellingCost = value;
   }
 
   save(): void {
@@ -664,6 +669,8 @@ export class EmployeeCostComponent implements OnInit {
 
     const req = {
       basicCost,
+      internalSellingCost: this.newRecord.internalSellingCost,
+      externalSellingCost: this.newRecord.externalSellingCost,
       currency: this.newRecord.currency,
       dateDebut: this.newRecord.dateDebut,
       dateFin: this.newRecord.dateFin,

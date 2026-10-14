@@ -383,6 +383,13 @@
       </div>
     }
 
+    <!-- ── WIP EMAIL TEMPLATES TAB ── -->
+    @if (activeTab() === 'wip-email-templates') {
+      <div class="tab-content">
+        <app-wip-email-templates-admin />
+      </div>
+    }
+
     <!-- ── PERMISSIONS TAB (finance role/permission management, embedded) ─── -->
     @if (activeTab() === 'permissions') {
       <div class="tab-content">

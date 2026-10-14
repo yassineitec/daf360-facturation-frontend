@@ -9,6 +9,7 @@ import {
   InvoiceFilter, PageResponse, PendingCarryForwardDto,
 } from './invoice.model';
 import { AffaireListItem, AffaireDetail } from '../affaires/affaire.model';
+import { EntityAuditLogDto } from '../affaires/billing/billing.service';
 
 @Injectable({ providedIn: 'root' })
 export class InvoiceService {
@@ -46,6 +47,12 @@ export class InvoiceService {
 
   updateDraft(id: number, dto: UpdateDraftRequest): Observable<InvoiceDetail> {
     return this.http.patch<InvoiceDetail>(`${this.base}/invoices/${id}`, dto);
+  }
+
+  /** Edits an EMITTED/SENT invoice (zero payments recorded) — same payload shape as
+   * updateDraft, same invoice number, PDF regenerated server-side. */
+  amendEmittedInvoice(id: number, dto: UpdateDraftRequest): Observable<InvoiceDetail> {
+    return this.http.post<InvoiceDetail>(`${this.base}/invoices/${id}/amend`, dto);
   }
 
   // ── Lifecycle actions ──────────────────────────────────────────────────────
@@ -101,6 +108,13 @@ export class InvoiceService {
   getPayments(id: number): Observable<InvoicePaymentDto[]> {
     return this.http.get<InvoicePaymentDto[]>(`${this.base}/invoices/${id}/payments`).pipe(
       catchError(() => of([] as InvoicePaymentDto[])),
+    );
+  }
+
+  /** Before/after diff history for an invoice — populated only by amendEmittedInvoice. */
+  getAuditHistory(id: number): Observable<EntityAuditLogDto[]> {
+    return this.http.get<EntityAuditLogDto[]>(`${this.base}/invoices/${id}/audit-history`).pipe(
+      catchError(() => of([] as EntityAuditLogDto[])),
     );
   }
 

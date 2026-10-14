@@ -48,6 +48,7 @@
               [affaireData]="affaireValue()!"
               [initialLines]="initialLines()"
               [isEditMode]="editInvoiceId() !== null"
+              [amendMode]="amendMode()"
               (prevStep)="goPrev()"
               (nextStep)="onLinesDone($event)" />
           }
@@ -67,6 +68,7 @@
               [linesData]="linesValue()!"
               [conditionsData]="conditionsValue()!"
               [editInvoiceId]="editInvoiceId()"
+              [amendMode]="amendMode()"
               (prevStep)="goPrev()" />
           }
         }
@@ -109,16 +111,20 @@
       }
 
       <!-- « Enregistrer le brouillon » n'apparaît qu'au récapitulatif : avant, la
-           facture n'a pas encore ses lignes et il n'y a rien à enregistrer. -->
+           facture n'a pas encore ses lignes et il n'y a rien à enregistrer. En mode
+           amendement (facture déjà émise), c'est le seul bouton de fin d'assistant —
+           « Soumettre » n'a pas de sens sur une facture qui n'est plus un brouillon. -->
       @if (step() === 4) {
         <daf-button
           [options]="{ variant: 'secondary', pill: true, iconStart: 'save',
-                       label: (isSaving() ? 'INVOICING.NEW.SAVING' : 'INVOICING.NEW.DRAFT') | translate,
+                       label: (isSaving() ? 'INVOICING.NEW.SAVING' : (amendMode() ? 'INVOICING.NEW.SAVE_AMEND' : 'INVOICING.NEW.DRAFT')) | translate,
                        disabled: isSaving() || alreadySaved() }"
           (onClick)="saveDraft()" />
       }
 
-      <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
+      @if (!(step() === 4 && amendMode())) {
+        <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
+      }
     </div>
 
   </div>

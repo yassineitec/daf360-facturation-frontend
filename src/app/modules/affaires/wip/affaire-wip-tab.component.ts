@@ -1507,7 +1507,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.svc.previewTauxEmail(this.affaire.id, body).subscribe({
       next: preview => {
         this.submittingTaux.set(false);
-        this.emailPreviewModal().open(preview, done => this.doSubmitTaux(editingId, body, done));
+        this.emailPreviewModal().open(preview, (subject, emailBody, done) =>
+          this.doSubmitTaux(editingId, { ...body, emailSubject: subject, emailBody }, done));
       },
       error: err => {
         this.submittingTaux.set(false);
@@ -1910,7 +1911,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.svc.previewValidateTmEmail(this.affaire.id, dateFrom, dateTo).subscribe({
       next: preview => {
         this.validatingTm.set(false);
-        this.emailPreviewModal().open(preview, done => this.doValidateTm(dateFrom, dateTo, done));
+        this.emailPreviewModal().open(preview, (subject, emailBody, done) =>
+          this.doValidateTm(dateFrom, dateTo, subject, emailBody, done));
       },
       error: err => {
         this.validatingTm.set(false);
@@ -1919,8 +1921,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     });
   }
 
-  private doValidateTm(dateFrom: string, dateTo: string, done: (errorMessage?: string) => void): void {
-    this.svc.validateTm(this.affaire.id, dateFrom, dateTo).subscribe({
+  private doValidateTm(dateFrom: string, dateTo: string,
+                        emailSubject: string, emailBody: string,
+                        done: (errorMessage?: string) => void): void {
+    this.svc.validateTm(this.affaire.id, dateFrom, dateTo, emailSubject, emailBody).subscribe({
       next: () => {
         done();
         this.showTmDetails.set(false);
@@ -2348,7 +2352,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.livrableSvc.previewLivrablesEmail(this.affaire.id, entries).subscribe({
       next: preview => {
         this.submittingLivrables.set(false);
-        this.emailPreviewModal().open(preview, done => this.doSubmitLivrables(editingId, entries, done));
+        this.emailPreviewModal().open(preview, (subject, emailBody, done) =>
+          this.doSubmitLivrables(editingId, entries, subject, emailBody, done));
       },
       error: err => {
         this.submittingLivrables.set(false);
@@ -2360,11 +2365,13 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   private doSubmitLivrables(
     editingId: number | null,
     entries: { livrableId: number; pctSaisi: number }[],
+    emailSubject: string,
+    emailBody: string,
     done: (errorMessage?: string) => void,
   ): void {
     const request$ = editingId !== null
       ? this.livrableSvc.editBatch(this.affaire.id, editingId, entries)
-      : this.livrableSvc.submitLivrables(this.affaire.id, entries);
+      : this.livrableSvc.submitLivrables(this.affaire.id, entries, undefined, emailSubject, emailBody);
     request$.subscribe({
       next: () => {
         done();

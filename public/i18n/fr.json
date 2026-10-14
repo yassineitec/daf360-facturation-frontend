@@ -358,7 +358,34 @@
       "CONFIRM": "Confirmer",
       "TABS": {
         "REMINDERS": "Relances",
+        "AUDIT_HISTORY": "Historique des modifications",
         "TRACE": "Suivi"
+      },
+      "AUDIT": {
+        "EMPTY": "Aucune modification enregistrée.",
+        "UNKNOWN_ACTOR": "Utilisateur",
+        "LINES_COUNT": "{{count}} ligne(s)",
+        "FIELD": {
+          "DUE_DATE": "Date d'échéance",
+          "PERIOD_FROM": "Période (début)",
+          "PERIOD_TO": "Période (fin)",
+          "PROGRESS_PCT": "Pourcentage d'avancement",
+          "NOTES": "Notes",
+          "BON_COMMANDE": "Bon de commande",
+          "CLIENT_VALIDATION_DOC_URL": "Document de validation client",
+          "CLIENT_VALIDATION_TYPE": "Type de validation client",
+          "DEDUCTION_LABEL_1": "Libellé déduction 1",
+          "DEDUCTION_TOTAL_1": "Montant déduction 1",
+          "DEDUCTION_LABEL_2": "Libellé déduction 2",
+          "DEDUCTION_TOTAL_2": "Montant déduction 2",
+          "DEDUCTION_LABEL_3": "Libellé déduction 3",
+          "DEDUCTION_TOTAL_3": "Montant déduction 3",
+          "SUBTOTAL": "Montant HT",
+          "VAT": "TVA",
+          "TOTAL": "Montant TTC",
+          "NET_PAYABLE": "Montant net à payer",
+          "LINES": "Lignes de facture"
+        }
       },
       "ACTIONS": {
         "SEE_AFFAIRE": "Voir l'affaire",
@@ -378,6 +405,7 @@
       "LEAVE_CONFIRM": "Quitter et annuler",
       "SAVING": "Enregistrement…",
       "DRAFT": "Brouillon",
+      "SAVE_AMEND": "Enregistrer les modifications",
       "SUBMIT": "Soumettre",
       "NEXT": "Suivant",
       "SENDING": "Envoi…",
@@ -465,7 +493,8 @@
         "CANCELLED": "Annulée",
         "RETURN": "Retourner à l'émetteur",
         "DISPUTE": "Ouvrir un litige",
-        "EDIT": "Modifier le brouillon"
+        "EDIT": "Modifier le brouillon",
+        "AMEND": "Modifier"
       },
       "COMMENT": "Commentaire",
       "EMIT_TITLE": "Émettre la facture",
@@ -601,6 +630,7 @@
       "BACK": "Retour",
       "SAVING": "Enregistrement…",
       "DRAFT": "Brouillon",
+      "SAVE_AMEND": "Enregistrer les modifications",
       "SENDING": "Envoi…",
       "SUBMIT": "Soumettre",
       "NET_PAYABLE": "Net à payer"
@@ -2724,10 +2754,19 @@
       "FILTER_AMOUNT_PH": "Ex. 1 500,50"
     },
     "IMPORT": {
-      "TITLE": "Reprise de l'historique (CSV)",
-      "DOWNLOAD_TEMPLATE": "Télécharger le modèle",
+      "TITLE": "Reprise de l'historique",
+      "DOWNLOAD_TEMPLATE": "Télécharger le modèle Excel",
+      "TEMPLATE_ERROR": "Le modèle n'a pas pu être généré.",
+      "MISSING_SUPPLIERS_TITLE": "{{count}} fournisseur(s) absent(s) de CORE360",
+      "MISSING_SUPPLIERS_HELP": "L'import ne crée jamais de fournisseur. Créez-les dans Coûts → Fournisseurs (même nom, matricule fiscal), puis vérifiez à nouveau le fichier.",
+      "MISSING_SUPPLIERS_EXPORT": "Exporter la liste (Excel)",
+      "MISSING_CODE": "Code",
+      "MISSING_TAX_ID": "Matricule fiscal",
+      "MISSING_NAME": "Nom",
+      "MISSING_ROWS": "Lignes du fichier",
+      "MISSING_INVOICES": "Factures",
       "KB": "Ko",
-      "DRAG_HINT": "Glissez votre fichier CSV ici ou",
+      "DRAG_HINT": "Glissez votre fichier Excel ou CSV ici ou",
       "BROWSE": "Parcourir",
       "CANCEL": "Annuler",
       "UPLOAD": "Importer",
@@ -2738,9 +2777,9 @@
       "ERRORS_DETAIL": "Détail des erreurs :",
       "ERROR_ROW": "Ligne {{row}}",
       "NEW_IMPORT": "Nouvel import",
-      "ONLY_CSV": "Seuls les fichiers CSV sont acceptés.",
+      "ONLY_CSV": "Seuls les fichiers Excel (.xlsx, .xls) ou CSV sont acceptés.",
       "IMPORT_ERROR": "Erreur lors de l'import.",
-      "HELP": "Une ligne du fichier = une ligne de coût ; les lignes de même « reference » forment une facture. Une TVA donnée dans vat_amount est conservée telle quelle ; sinon elle est calculée sur HT + FODEC. Colonnes facultatives other_tax_type / other_tax_label / other_tax_amount : une autre taxe par ligne, ajoutée au TTC de la facture. Vérifiez d'abord le fichier : rien n'est enregistré. L'import n'enregistre rien si une seule ligne est en erreur.",
+      "HELP": "Téléchargez le modèle Excel du pays (feuille Instructions, listes déroulantes à jour) et remplissez la feuille « Factures » : une ligne = une ligne de coût, les lignes de même référence forment une facture. Les fournisseurs doivent déjà exister dans CORE360 : ceux qui manquent sont listés à la vérification. Vérifiez d'abord le fichier : rien n'est enregistré. L'import n'enregistre rien s'il reste une seule erreur.",
       "CHANGE_FILE": "Changer de fichier",
       "CHECK": "Vérifier le fichier",
       "CHECK_OK": "Fichier valide : {{invoices}} facture(s) prête(s) à être importée(s).",
@@ -3298,7 +3337,134 @@
   },
   "REPORTING": {
     "TITLE": "P&L",
-    "WIP": "Module en cours de développement."
+    "SUBTITLE": "Compte de résultat par pays, workflow de soumission et budget de référence.",
+    "PAYS": {
+      "LABEL": "Pays / Entité",
+      "SEARCH": "Rechercher un pays..."
+    },
+    "ERROR_PAYS": "Impossible de déterminer votre pays.",
+    "LOAD_ERROR": "Impossible de charger les périodes P&L.",
+    "EMPTY": "Aucune période P&L pour ce pays.",
+    "TABLE": {
+      "PERIOD": "Période",
+      "STATUS": "Statut",
+      "EBITDA": "EBITDA",
+      "REPORT": "Rapport"
+    },
+    "PERIOD_STATUS": {
+      "OPEN": "Ouverte",
+      "CLOSED": "Clôturée",
+      "SUBMITTED": "Soumise",
+      "APPROVED": "Approuvée"
+    },
+    "REPORT_STATUS": {
+      "DRAFT": "Brouillon",
+      "SUBMITTED": "Soumis",
+      "CD_ENDORSED": "Endossé (DP)",
+      "GROUP_ACCEPTED": "Accepté (Groupe)",
+      "AMENDMENT_REQUESTED": "Amendement demandé",
+      "SUPERSEDED": "Remplacé"
+    },
+    "NO_REPORT": "Aucun rapport",
+    "GENERATE": "Générer le rapport",
+    "GENERATE_ERROR": "Erreur lors de la génération du rapport.",
+    "NEW_PERIOD": "Nouvelle période",
+    "NEW_PERIOD_TITLE": "Créer une période P&L",
+    "NEW_PERIOD_YEAR": "Année",
+    "NEW_PERIOD_MONTH": "Mois",
+    "NEW_PERIOD_CREATE": "Créer",
+    "NEW_PERIOD_CANCEL": "Annuler",
+    "NEW_PERIOD_ERROR": "Erreur lors de la création de la période.",
+    "CLOSE_PERIOD": "Clôturer",
+    "CLOSE_PERIOD_ERROR": "Erreur lors de la clôture de la période.",
+    "BUDGET": {
+      "TITLE": "Budget de référence",
+      "SUBTITLE": "Saisie du budget annuel par pays, mois et ligne du catalogue groupe.",
+      "YEAR": "Année",
+      "LINE": "Ligne du catalogue",
+      "LOAD_ERROR": "Impossible de charger le budget de référence.",
+      "EMPTY": "Aucun budget de référence pour {{year}}.",
+      "CREATE": "Créer le budget {{year}}",
+      "SAVE": "Enregistrer",
+      "SAVE_SUCCESS": "Budget enregistré.",
+      "SAVE_ERROR": "Erreur lors de l'enregistrement du budget.",
+      "APPROVE_CD": "Approuver (Directeur de pays)",
+      "APPROVE_GROUP": "Approuver (Groupe)",
+      "APPROVED_CD": "Approuvé (Directeur de pays) le {{date}} par l'utilisateur #{{id}}.",
+      "NOT_APPROVED_CD": "Non approuvé (Directeur de pays).",
+      "APPROVED_GROUP": "Approuvé (Groupe) le {{date}} par l'utilisateur #{{id}}.",
+      "NOT_APPROVED_GROUP": "Non approuvé (Groupe)."
+    },
+    "CALENDAR": {
+      "TITLE": "Calendrier de soumission",
+      "SUBTITLE": "Échéances de soumission du rapport P&L, par mois.",
+      "YEAR": "Année",
+      "LOAD_ERROR": "Impossible de charger le calendrier de soumission.",
+      "EMPTY": "Aucune échéance pour cette année.",
+      "SAVE_ROW": "Enregistrer",
+      "SAVE_SUCCESS": "Échéance enregistrée.",
+      "SAVE_ERROR": "Erreur lors de l'enregistrement de l'échéance.",
+      "SET_BY_USER": "Utilisateur #{{id}}",
+      "TABLE": {
+        "MONTH": "Mois",
+        "DEADLINE": "Échéance",
+        "SET_BY": "Défini par",
+        "SET_AT": "Défini le"
+      }
+    },
+    "DETAIL": {
+      "LOADING": "Chargement du rapport…",
+      "LOAD_ERROR": "Impossible de charger le rapport P&L.",
+      "SECONDARY_LOAD_ERROR": "Impossible de charger les informations complémentaires du rapport.",
+      "ACTION_ERROR": "Une erreur est survenue lors de cette action.",
+      "BACK": "Retour aux rapports P&L",
+      "BREADCRUMB_ARIA": "Fil d’Ariane du rapport P&L",
+      "TITLE_PREFIX": "Rapport P&L —",
+      "CANCEL": "Annuler",
+      "CONFIRM": "Confirmer",
+      "RECAP": {
+        "TITLE": "Récapitulatif",
+        "LINE": "Ligne du catalogue",
+        "ACTUAL": "Montant réel",
+        "BUDGET": "Budget",
+        "VARIANCE": "Écart %"
+      },
+      "COMMENTARY": {
+        "TITLE": "Commentaires de variance",
+        "NONE_YET": "Aucun commentaire généré pour cette ligne pour l’instant.",
+        "NARRATIVE_LABEL": "Commentaire",
+        "SAVE": "Enregistrer",
+        "STATUS": {
+          "DRAFT": "Brouillon",
+          "UNDER_REVIEW": "En relecture"
+        }
+      },
+      "SECTION": {
+        "TITLE": "Synthèse transversale",
+        "REVENUE": "Chiffre d’affaires",
+        "COST": "Coûts",
+        "EBITDA": "EBITDA",
+        "OTHER_NOTABLE": "Autres points notables"
+      },
+      "ACTIONS": {
+        "SUBMIT": "Soumettre",
+        "ENDORSE": "Endosser",
+        "ACCEPT": "Accepter",
+        "REQUEST_AMENDMENT": "Demander une modification",
+        "REOPEN": "Rouvrir",
+        "REASON_LABEL": "Motif",
+        "EXPORT_XLSX": "Exporter en Excel",
+        "EXPORT_PDF": "Exporter en PDF",
+        "EXPORTING_XLSX": "Export Excel en cours…",
+        "EXPORTING_PDF": "Export PDF en cours…"
+      },
+      "REOPEN": {
+        "METHOD_LABEL": "Méthode de réouverture",
+        "OPTION_1_VERSIONED": "Nouvelle version (le rapport actuel est archivé ; une nouvelle version en brouillon est créée)",
+        "OPTION_2_CONSUMED": "Correction au mois suivant (aucune nouvelle version ; la correction sera absorbée par la période suivante)",
+        "RATIONALE_LABEL": "Justification"
+      }
+    }
   },
   "PAYMENTS": {
     "COMMON": {
@@ -3988,6 +4154,7 @@
       "DOCUMENT_TEMPLATES": "Maquettes de documents",
       "COST_CONFIG": "Configuration des coûts",
       "REMINDERS": "Relances",
+      "WIP_EMAIL_TEMPLATES": "Emails WIP",
       "NAV_LABEL": "Navigation de l'administration"
     },
     "DOCUMENT_TEMPLATES": {
@@ -4187,6 +4354,7 @@
       "INTRO": "Ces paliers pilotent l’échéancier de recouvrement de toutes les factures : le générateur les applique à la date d’échéance de chaque facture, et le planificateur quotidien envoie les messages aux rôles indiqués. Une modification s’applique aux nouvelles factures et à toute facture dont l’échéance change ; les relances déjà envoyées ne bougent pas.",
       "SECTION_TITLE": "Échéancier de recouvrement",
       "ADD": "Ajouter un palier",
+      "DISPATCH_NOW": "Déclencher maintenant",
       "EMPTY": "Aucun palier configuré — aucune relance ne sera planifiée.",
       "COL_OFFSET": "Échéance",
       "COL_RULE": "Palier",
@@ -4223,6 +4391,39 @@
       "ERROR_SAVE": "Impossible d’enregistrer ce palier.",
       "ERROR_DELETE": "Impossible de supprimer ce palier.",
       "ERROR_REQUIRED": "Renseignez le code, les deux libellés et un décalage en jours entier."
+    },
+    "WIP_EMAIL_TPLS": {
+      "INTRO": "Ces modèles définissent l'objet et le corps de l'email envoyé automatiquement au client lors de la validation d'un WIP. Un modèle global (sans pays) s'applique à tous les pays ; un modèle lié à un pays prend la priorité.",
+      "SECTION_TITLE": "Modèles d'email WIP",
+      "ADD": "Ajouter un modèle",
+      "EDIT_TITLE": "Modifier le modèle",
+      "NEW_TITLE": "Nouveau modèle",
+      "COL_MODE": "Mode",
+      "COL_SCOPE": "Périmètre",
+      "COL_SUBJECT": "Objet",
+      "COL_STATE": "État",
+      "MODE_TM": "Régie (TM)",
+      "MODE_AV": "Forfait (AV)",
+      "MODE_LIVRABLE": "Livrable",
+      "MODE_TS": "Travaux Supplémentaires (TS)",
+      "SCOPE_GLOBAL": "Global",
+      "SCOPE_COUNTRY": "Pays",
+      "ACTIVE": "Actif",
+      "INACTIVE": "Inactif",
+      "EMPTY": "Aucun modèle configuré — le message standard sera utilisé.",
+      "ERROR_LOAD": "Impossible de charger les modèles d'email WIP.",
+      "ERROR_SAVE": "Impossible d'enregistrer ce modèle.",
+      "ERROR_DELETE": "Impossible de supprimer ce modèle.",
+      "FIELD_MODE": "Mode de facturation",
+      "FIELD_PAYS_ID": "Pays (ID)",
+      "PAYS_ID_PLACEHOLDER": "Laisser vide pour un modèle global",
+      "PAYS_ID_HINT": "Identifiant numérique du pays. Vide = règle globale, applicable à tous les pays.",
+      "FIELD_SUBJECT": "Objet du message",
+      "FIELD_BODY": "Corps du message",
+      "TEMPLATE_HINT": "Vous pouvez utiliser les jetons ci-dessous pour personnaliser le message.",
+      "TOKENS_TITLE": "Jetons disponibles",
+      "FIELD_ACTIVE": "Modèle actif",
+      "ACTIVE_HINT": "Un modèle inactif n'est plus utilisé ; le message standard reprend la main."
     }
   },
   "ENUMS": {

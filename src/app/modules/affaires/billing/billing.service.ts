@@ -370,9 +370,11 @@ export class BillingService {
 
   /** Submits one or more INTEGRE TS together as one billing batch — lands on
    * EN_ATTENTE_CLIENT, waiting for the client's confirmation before DF ever sees it. */
-  submitTs(affaireId: number, tsIds: number[]): Observable<TsBatchDto> {
+  submitTs(affaireId: number, tsIds: number[],
+           emailSubjectOverride?: string, emailBodyOverride?: string): Observable<TsBatchDto> {
     return this.http.post<TsBatchDto>(
-      `${this.base}/affaires/${affaireId}/ts/submit-wip`, { tsIds }, this.opts);
+      `${this.base}/affaires/${affaireId}/ts/submit-wip`,
+      { tsIds, emailSubjectOverride, emailBodyOverride }, this.opts);
   }
 
   /** Read-only: the exact client email submitTs() would send for these TS ids, without
