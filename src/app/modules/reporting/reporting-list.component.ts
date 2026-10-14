@@ -200,6 +200,7 @@ export class ReportingListComponent implements OnInit {
       { key: 'periodStatus', label: t('REPORTING.TABLE.STATUS'), type: 'custom', sortable: true,
         sortAccessor: (row: TableRow) => (row['periodStatus'] as BadgeCell).label },
       { key: 'ebitda',       label: t('REPORTING.TABLE.EBITDA'), type: 'text',   sortable: true, align: 'right' },
+      { key: 'ebitdaPct',    label: t('REPORTING.TABLE.EBITDA_PCT'), type: 'text', sortable: true, align: 'right' },
       { key: 'report',       label: t('REPORTING.TABLE.REPORT'), type: 'custom' },
     ];
   });
@@ -219,7 +220,8 @@ export class ReportingListComponent implements OnInit {
             label:   t(`REPORTING.PERIOD_STATUS.${period.status}`),
             options: { variant: PERIOD_STATUS_VARIANT[period.status] ?? 'neutral', dot: true, size: 'sm' },
           } satisfies BadgeCell,
-          ebitda: this.currency.transform(period.ebitda, 'TND'),
+          ebitda:    this.currency.transform(period.ebitda, 'TND'),
+          ebitdaPct: period.ebitdaPct == null ? '—' : `${period.ebitdaPct.toFixed(1)}%`,
 
           // Read by the projected 'report' cell template below.
           _reportBadge: report
