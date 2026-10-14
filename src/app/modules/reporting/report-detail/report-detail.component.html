@@ -80,11 +80,29 @@
             [config]="recapConfig()">
           </daf-data-table>
 
-          <div class="flex flex-wrap items-baseline justify-end gap-6 rounded-xl bg-surface-container px-6 py-4">
-            <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-              {{ 'REPORTING.TABLE.EBITDA' | translate }}
-            </span>
-            <span class="text-headline-md font-extrabold text-primary">{{ ebitdaDisplay() }}</span>
+          <div class="flex flex-col gap-2 rounded-xl bg-surface-container px-6 py-4">
+            <div class="flex flex-wrap items-baseline justify-between gap-4">
+              <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.WATERFALL.GROSS_REVENUE_1' | translate }}</span>
+              <span class="text-body-md font-semibold text-on-surface">{{ grossRevenue1Display() }}</span>
+            </div>
+            <div class="flex flex-wrap items-baseline justify-between gap-4">
+              <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.WATERFALL.GROSS_REVENUE_2' | translate }}</span>
+              <span class="text-body-md font-semibold text-on-surface">{{ grossRevenue2Display() }}</span>
+            </div>
+            <div class="flex flex-wrap items-baseline justify-between gap-4">
+              <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.WATERFALL.NET_REVENUE' | translate }}</span>
+              <span class="text-body-md font-semibold text-on-surface">{{ netRevenueDisplay() }}</span>
+            </div>
+            <div class="flex flex-wrap items-baseline justify-between gap-4 border-t border-outline-variant/30 pt-2">
+              <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'REPORTING.TABLE.EBITDA' | translate }}
+              </span>
+              <span class="text-headline-md font-extrabold text-primary">{{ ebitdaDisplay() }}</span>
+            </div>
+            <div class="flex flex-wrap items-baseline justify-between gap-4">
+              <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.WATERFALL.EBITDA_PCT' | translate }}</span>
+              <span class="text-body-md font-semibold text-on-surface">{{ ebitdaPctDisplay() }}</span>
+            </div>
           </div>
         </div>
       </daf-section-card>

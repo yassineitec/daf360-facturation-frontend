@@ -243,6 +243,16 @@ export class ReportDetailComponent implements OnInit {
   /** EBITDA total row — the joined `PlPeriodDto`'s own field, never recomputed client-side. */
   readonly ebitdaDisplay = computed(() => this.currency.transform(this.period()?.ebitda ?? null, 'TND'));
 
+  /** Revenue waterfall rows — all sourced straight from the joined `PlPeriodDto`, never
+   *  recomputed client-side (same approach as `ebitdaDisplay` above). */
+  readonly grossRevenue1Display = computed(() => this.currency.transform(this.period()?.grossRevenue1Local ?? null, 'TND'));
+  readonly grossRevenue2Display = computed(() => this.currency.transform(this.period()?.grossRevenue2Local ?? null, 'TND'));
+  readonly netRevenueDisplay    = computed(() => this.currency.transform(this.period()?.netRevenueLocal ?? null, 'TND'));
+  readonly ebitdaPctDisplay     = computed(() => {
+    const pct = this.period()?.ebitdaPct;
+    return pct == null ? '—' : `${pct.toFixed(1)}%`;
+  });
+
   // ── Variance commentary (per-line) ──────────────────────────────────────
 
   readonly lineCommentaryVms = computed<LineCommentaryVm[]>(() => {
