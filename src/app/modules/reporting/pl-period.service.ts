@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CreatePlPeriodRequest, PlPeriodDto } from './pl-reporting.model';
+import { ClosePeriodRequest, CreatePlPeriodRequest, PlPeriodDto } from './pl-reporting.model';
 
 /**
  * Thin wrapper over `GET/POST /api/fact/pl-periods` — period GETs need `FACT_VIEW_COST`,
@@ -26,8 +26,8 @@ export class PlPeriodService {
     return this.http.post<PlPeriodDto>(`${this.base}/pl-periods`, dto);
   }
 
-  closePeriod(id: number): Observable<PlPeriodDto> {
-    return this.http.post<PlPeriodDto>(`${this.base}/pl-periods/${id}/close`, {});
+  closePeriod(id: number, req: ClosePeriodRequest): Observable<PlPeriodDto> {
+    return this.http.post<PlPeriodDto>(`${this.base}/pl-periods/${id}/close`, req);
   }
 
   submitPeriod(id: number): Observable<PlPeriodDto> {
