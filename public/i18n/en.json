@@ -365,7 +365,12 @@
         "EMPTY": "No modifications recorded.",
         "UNKNOWN_ACTOR": "User",
         "LINES_COUNT": "{{count}} line(s)",
+        "NO_FIELD_CHANGES": "No field changes were recorded for this entry.",
+        "ACTION": {
+          "AMEND_EMITTED_INVOICE": "Invoice amended"
+        },
         "FIELD": {
+          "EMITTED_AT": "Issue date",
           "DUE_DATE": "Due date",
           "PERIOD_FROM": "Period (from)",
           "PERIOD_TO": "Period (to)",
@@ -581,6 +586,7 @@
       "DEDUCTION_UNNAMED": "(unnamed)"
     },
     "STEP_CONDITIONS": {
+      "ISSUE_DATE_LABEL": "Issue date",
       "DUE_DATE_LABEL": "Due date *",
       "DUE_DATE_REQUIRED": "Date required.",
       "CONDITIONS_LABEL": "Payment conditions *",
@@ -600,6 +606,7 @@
       "TYPE": "Type",
       "AFFAIRE": "Project",
       "CONDITIONS": "Conditions",
+      "ISSUE_DATE": "Issue date",
       "DUE_DATE": "Due date",
       "BDC": "PO",
       "CLIENT_TITLE": "Client",
@@ -3346,6 +3353,7 @@
       "PERIOD": "Period",
       "STATUS": "Status",
       "EBITDA": "EBITDA",
+      "EBITDA_PCT": "EBITDA %",
       "REPORT": "Report"
     },
     "PERIOD_STATUS": {
@@ -3374,6 +3382,19 @@
     "NEW_PERIOD_ERROR": "Error creating the period.",
     "CLOSE_PERIOD": "Close",
     "CLOSE_PERIOD_ERROR": "Error closing the period.",
+    "CLOSE_PERIOD_TITLE": "Close period",
+    "CLOSE_PERIOD_HELP": "All fields are optional and default to zero. There's no live connection to the Intercompany platform yet — enter the figures for this month by hand.",
+    "CLOSE_PERIOD_INTERCOMPANY_IN": "Intercompany billed to us",
+    "CLOSE_PERIOD_INTERCOMPANY_OUT": "Intercompany billed by us",
+    "CLOSE_PERIOD_INTERSEDE_IN": "Intersede (+)",
+    "CLOSE_PERIOD_INTERSEDE_OUT": "Intersede (−)",
+    "CLOSE_PERIOD_WIP_PRIOR": "WIP, prior years",
+    "WATERFALL": {
+      "GROSS_REVENUE_1": "Gross Revenue 1",
+      "GROSS_REVENUE_2": "Gross Revenue 2",
+      "NET_REVENUE": "Net Revenue",
+      "EBITDA_PCT": "EBITDA %"
+    },
     "BUDGET": {
       "TITLE": "Budget reference",
       "SUBTITLE": "Annual budget entry by country, month and group catalogue line.",

@@ -365,7 +365,12 @@
         "EMPTY": "Aucune modification enregistrée.",
         "UNKNOWN_ACTOR": "Utilisateur",
         "LINES_COUNT": "{{count}} ligne(s)",
+        "NO_FIELD_CHANGES": "Aucune modification de champ enregistrée pour cette entrée.",
+        "ACTION": {
+          "AMEND_EMITTED_INVOICE": "Facture modifiée"
+        },
         "FIELD": {
+          "EMITTED_AT": "Date d'émission",
           "DUE_DATE": "Date d'échéance",
           "PERIOD_FROM": "Période (début)",
           "PERIOD_TO": "Période (fin)",
@@ -581,6 +586,7 @@
       "DEDUCTION_UNNAMED": "(sans nom)"
     },
     "STEP_CONDITIONS": {
+      "ISSUE_DATE_LABEL": "Date d'émission",
       "DUE_DATE_LABEL": "Date d'échéance *",
       "DUE_DATE_REQUIRED": "Date requise.",
       "CONDITIONS_LABEL": "Conditions de paiement *",
@@ -600,6 +606,7 @@
       "TYPE": "Type",
       "AFFAIRE": "Affaire",
       "CONDITIONS": "Conditions",
+      "ISSUE_DATE": "Date d'émission",
       "DUE_DATE": "Échéance",
       "BDC": "BDC",
       "CLIENT_TITLE": "Client",
@@ -3346,6 +3353,7 @@
       "PERIOD": "Période",
       "STATUS": "Statut",
       "EBITDA": "EBITDA",
+      "EBITDA_PCT": "EBITDA %",
       "REPORT": "Rapport"
     },
     "PERIOD_STATUS": {
@@ -3374,6 +3382,19 @@
     "NEW_PERIOD_ERROR": "Erreur lors de la création de la période.",
     "CLOSE_PERIOD": "Clôturer",
     "CLOSE_PERIOD_ERROR": "Erreur lors de la clôture de la période.",
+    "CLOSE_PERIOD_TITLE": "Clôturer la période",
+    "CLOSE_PERIOD_HELP": "Tous les champs sont facultatifs et valent zéro par défaut. Il n'y a pas encore de connexion directe avec la plateforme Intercompagnie — saisissez les montants du mois à la main.",
+    "CLOSE_PERIOD_INTERCOMPANY_IN": "Intercompagnie facturée à nous",
+    "CLOSE_PERIOD_INTERCOMPANY_OUT": "Intercompagnie facturée par nous",
+    "CLOSE_PERIOD_INTERSEDE_IN": "Intersede (+)",
+    "CLOSE_PERIOD_INTERSEDE_OUT": "Intersede (−)",
+    "CLOSE_PERIOD_WIP_PRIOR": "En cours, années antérieures",
+    "WATERFALL": {
+      "GROSS_REVENUE_1": "Chiffre d'affaires brut 1",
+      "GROSS_REVENUE_2": "Chiffre d'affaires brut 2",
+      "NET_REVENUE": "Chiffre d'affaires net",
+      "EBITDA_PCT": "EBITDA %"
+    },
     "BUDGET": {
       "TITLE": "Budget de référence",
       "SUBTITLE": "Saisie du budget annuel par pays, mois et ligne du catalogue groupe.",
