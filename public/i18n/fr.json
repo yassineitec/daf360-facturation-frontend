@@ -2210,7 +2210,7 @@
     },
     "WIP": {
       "KPI_TS": "TS",
-      "KPI_TS_HELP": "Montant des timesheets validés déjà intégrés dans le calcul du RAF de cette affaire.",
+      "KPI_TS_HELP": "Somme des montants estimés des travaux supplémentaires (TS) validés techniquement et commercialement, pas encore facturés. Un TS sort de ce total une fois sa facture validée par la DF. Ce montant s'ajoute au budget dans le RAF.",
       "TS_ELIGIBLE_TITLE": "TS prêts à facturer",
       "TS_ELIGIBLE_EMPTY": "Aucun TS intégré disponible pour facturation.",
       "TS_ACTIVE_TITLE": "Soumissions en cours",

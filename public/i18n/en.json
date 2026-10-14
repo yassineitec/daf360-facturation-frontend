@@ -2210,7 +2210,7 @@
     },
     "WIP": {
       "KPI_TS": "TS integrated",
-      "KPI_TS_HELP": "Amount of validated timesheets already integrated into this affaire's RAF calculation.",
+      "KPI_TS_HELP": "Sum of the estimated amounts of additional works (TS) validated technically and commercially, not yet invoiced. A TS leaves this total once its invoice is validated by the DF. This amount is added to the budget in the RAF.",
       "TS_ELIGIBLE_TITLE": "Extra work ready to bill",
       "TS_ELIGIBLE_EMPTY": "No integrated extra work available for billing.",
       "TS_ACTIVE_TITLE": "Submissions in progress",
