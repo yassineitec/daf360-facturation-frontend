@@ -386,6 +386,17 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   onAvModeTabChange(id: string): void {
     if (id === 'POURCENTAGE' || id === 'MONTANT') this.avInputMode.set(id);
   }
+
+  /** `daf-form-field` binds its <input> with `[(ngModel)]` and a dynamic `[type]`, so only
+   * Angular's DefaultValueAccessor applies and `valueChange` emits the raw STRING ("10"), even
+   * for `type: 'number'`. Left as-is, `lastValidatedTaux() + taux` became a string
+   * concatenation ("010") and `.toFixed()` threw inside canSubmitTaux(), freezing the AV rail
+   * on step 1 in POURCENTAGE mode. Empty / non-numeric input maps to null. */
+  parseNumberInput(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const n = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
   tauxComment   = '';
   tauxError     = signal<string | null>(null);
   submittingTaux= signal(false);

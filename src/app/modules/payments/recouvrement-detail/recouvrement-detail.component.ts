@@ -174,10 +174,19 @@ export class RecouvrementDetailComponent implements OnInit {
     return badges;
   });
 
+  /**
+   * Ouverte depuis la Trésorerie (`?from=tresorerie`) : le retour y ramène, là où
+   * l'utilisateur a laissé son horizon et ses recherches, plutôt qu'à la liste du
+   * Recouvrement. Relatif (`../../tresorerie`), comme les autres liens de la page.
+   */
+  private readonly fromTreasury = this.route.snapshot.queryParamMap.get('from') === 'tresorerie';
+
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
     return [
-      { label: this.translate.instant('PAYMENTS.DETAIL.BACK'), link: ['..'] },
+      this.fromTreasury
+        ? { label: this.translate.instant('TREASURY.TITLE'), link: ['../../tresorerie'] }
+        : { label: this.translate.instant('PAYMENTS.DETAIL.BACK'), link: ['..'] },
       { label: this.invoice()?.invoiceNumber ?? this.translate.instant('PAYMENTS.COMMON.DRAFT') },
     ];
   });

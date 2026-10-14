@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -13,6 +13,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableSort, sortParam } from '../../../shared/table-tools';
 import { AgingCardsSectionComponent } from './aging-cards-section.component';
 import { AgingTableSectionComponent } from './aging-table-section.component';
+import { PaymentsDashboardStateService } from './payments-dashboard-state.service';
 
 type ViewMode = 'grid' | 'list';
 
@@ -57,6 +58,46 @@ export class PaymentsDashboardComponent implements OnInit {
   filterDateRange = signal<Date[] | null>(null);
   filterOverdueOnly = signal(false);
   viewMode        = signal<ViewMode>('grid');
+
+  private readonly listState = inject(PaymentsDashboardStateService);
+
+  /**
+   * Chaque changement de filtre, de tri, de page ou de vue est mémorisé, pour que le
+   * retour depuis une fiche (fil d'Ariane) retrouve la liste telle qu'on l'a quittée.
+   * Le premier passage a lieu après `ngOnInit`, donc après la restauration : il réécrit
+   * l'état restauré, sans l'écraser par des valeurs vides.
+   */
+  private readonly persistState = effect(() => {
+    this.listState.save({
+      searchText:  this.searchText(),
+      affaireId:   this.filterAffaireId(),
+      clientId:    this.filterClientId(),
+      dateRange:   this.filterDateRange(),
+      overdueOnly: this.filterOverdueOnly(),
+      sort:        this.sort(),
+      page:        this.currentPage(),
+      pageSize:    this.pageSize(),
+      viewMode:    this.viewMode(),
+    });
+  });
+
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, le panneau
+   * doit donc naître avec les valeurs restaurées.
+   */
+  private restoreState(): void {
+    const s = this.listState.restore();
+    if (!s) return;
+    this.searchText.set(s.searchText);
+    this.filterAffaireId.set(s.affaireId);
+    this.filterClientId.set(s.clientId);
+    this.filterDateRange.set(s.dateRange);
+    this.filterOverdueOnly.set(s.overdueOnly);
+    this.sort.set(s.sort);
+    this.currentPage.set(s.page);
+    this.pageSize.set(s.pageSize);
+    this.viewMode.set(s.viewMode);
+  }
 
   /**
    * Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4).
@@ -185,6 +226,7 @@ export class PaymentsDashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreState();
     this.loadStats();
     this.loadRows();
   }
@@ -214,6 +256,13 @@ export class PaymentsDashboardComponent implements OnInit {
     };
     this.svc.getAgingRows(filter).subscribe({
       next: res => {
+        // Page restaurée devenue hors limites (factures soldées entre-temps) :
+        // on retombe sur la première plutôt que d'afficher une liste vide.
+        if (res.content.length === 0 && this.currentPage() > 0) {
+          this.currentPage.set(0);
+          this.loadRows();
+          return;
+        }
         this.rows.set(res.content);
         this.totalElements.set(res.totalElements);
         this.totalPages.set(res.totalPages);

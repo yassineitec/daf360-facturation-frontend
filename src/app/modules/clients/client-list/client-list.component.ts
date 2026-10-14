@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, viewChild } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -18,6 +18,7 @@ import { TableSort, sortParam } from '../../../shared/table-tools';
 import { FactListService } from '../../../core/fact-list.service';
 import { ListValueDto, localizedLabel } from '../../cost/cost.model';
 import { switchMap } from 'rxjs';
+import { ClientListStateService } from './client-list-state.service';
 
 /** Activity states the status filter can express, mapped to the backend `isActive` flag. */
 type StatusFilter = '' | 'active' | 'inactive';
@@ -84,6 +85,50 @@ export class ClientListComponent implements OnInit {
   /** Avec / sans affaire EN_COURS — sent as `hasActiveAffaires`. */
   filterAffaires = signal<AffairesFilter>('');
   viewMode     = signal<ViewMode>('grid');
+
+  private readonly listState = inject(ClientListStateService);
+
+  /**
+   * Chaque changement de filtre, de tri, de page ou de vue est mémorisé, pour que le
+   * retour depuis une fiche (fil d'Ariane) retrouve la liste telle qu'on l'a quittée.
+   * Le premier passage a lieu après `ngOnInit`, donc après la restauration : il réécrit
+   * l'état restauré, sans l'écraser par des valeurs vides.
+   */
+  private readonly persistState = effect(() => {
+    this.listState.save({
+      searchText: this.searchText(),
+      sector:     this.filterSector(),
+      status:     this.filterStatus(),
+      kyc:        this.filterKyc(),
+      country:    this.filterCountry(),
+      currency:   this.filterCurrency(),
+      affaires:   this.filterAffaires(),
+      sort:       this.sort(),
+      page:       this.currentPage(),
+      pageSize:   this.pageSize(),
+      viewMode:   this.viewMode(),
+    });
+  });
+
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, le panneau
+   * doit donc naître avec les valeurs restaurées.
+   */
+  private restoreState(): void {
+    const s = this.listState.restore();
+    if (!s) return;
+    this.searchText.set(s.searchText);
+    this.filterSector.set(s.sector);
+    this.filterStatus.set(s.status);
+    this.filterKyc.set(s.kyc);
+    this.filterCountry.set(s.country);
+    this.filterCurrency.set(s.currency);
+    this.filterAffaires.set(s.affaires);
+    this.sort.set(s.sort);
+    this.currentPage.set(s.page);
+    this.pageSize.set(s.pageSize);
+    this.viewMode.set(s.viewMode);
+  }
 
   /** `totalElements` is the real result-set size, so this tile is not page-scoped. */
   readonly statsTotal   = computed(() => this.totalElements());
@@ -233,6 +278,7 @@ export class ClientListComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreState();
     this.loadSectors();
     this.svc.getPays().subscribe(list => this.paysList.set(list));
     this.load();
@@ -258,6 +304,13 @@ export class ClientListComponent implements OnInit {
     };
     this.svc.getClients(filter).subscribe({
       next: res => {
+        // Page restaurée devenue hors limites (clients supprimés entre-temps) :
+        // on retombe sur la première plutôt que d'afficher une liste vide.
+        if (res.content.length === 0 && this.currentPage() > 0) {
+          this.currentPage.set(0);
+          this.load();
+          return;
+        }
         this.clients.set(res.content);
         this.totalElements.set(res.totalElements);
         this.totalPages.set(res.totalPages);

@@ -259,11 +259,19 @@ export class CostLineDetailComponent implements OnInit {
     return badges;
   });
 
+  /**
+   * Ouverte depuis la file d'approbation (`?from=approval`) : le retour y ramène, là où
+   * l'utilisateur a laissé ses filtres, plutôt qu'à la liste des lignes de coût.
+   */
+  private readonly fromApproval = this.route.snapshot.queryParamMap.get('from') === 'approval';
+
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
     return [
       // Absolute: 'supplier'/'unassigned' modes are TWO segments deep.
-      { label: this.translate.instant('COST.DETAIL.BACK'), link: ['/finance/cost'] },
+      this.fromApproval
+        ? { label: this.translate.instant('COST.APPROVAL_QUEUE.TITLE'), link: ['/finance/cost/approval'] }
+        : { label: this.translate.instant('COST.DETAIL.BACK'), link: ['/finance/cost'] },
       { label: this.headerTitle() },
     ];
   });

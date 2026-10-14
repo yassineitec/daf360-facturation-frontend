@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -22,6 +22,7 @@ import {
 import { ApprovalItem, ApprovalKind, itemUrgency } from './approval-item';
 import { ApprovalCardsSectionComponent, ApprovalDecision } from './approval-cards-section.component';
 import { ApprovalTableSectionComponent } from './approval-table-section.component';
+import { CostApprovalQueueStateService } from './cost-approval-queue-state.service';
 
 type ViewMode = 'grid' | 'list';
 /** The three decisions a cost invoice supports — the service has an endpoint for each. */
@@ -88,6 +89,50 @@ export class CostApprovalQueueComponent implements OnInit {
   /** Maximum of the amount shown on the card, typed as text ('' = no bound). */
   filterAmountMax = signal('');
   viewMode       = signal<ViewMode>('grid');
+
+  private readonly queueState = inject(CostApprovalQueueStateService);
+
+  /**
+   * Chaque changement de recherche, de filtre ou de vue est mémorisé, pour que le retour
+   * depuis la fiche d'une facture retrouve la file telle qu'on l'a quittée. Le premier
+   * passage a lieu après `ngOnInit`, donc après la restauration : il réécrit l'état
+   * restauré, sans l'écraser par des valeurs vides.
+   */
+  private readonly persistState = effect(() => {
+    this.queueState.save({
+      searchTerm:  this.searchTerm(),
+      kind:        this.filterKind(),
+      priority:    this.filterPriority(),
+      level:       this.filterLevel(),
+      category:    this.filterCategory(),
+      dateRange:   this.filterDateRange(),
+      subCategory: this.filterSubCategory(),
+      currency:    this.filterCurrency(),
+      amountMin:   this.filterAmountMin(),
+      amountMax:   this.filterAmountMax(),
+      viewMode:    this.viewMode(),
+    });
+  });
+
+  /**
+   * Avant le premier rendu : `daf-filter` ne lit `initialValues` qu'une fois, le panneau
+   * doit donc naître avec les valeurs restaurées.
+   */
+  private restoreState(): void {
+    const s = this.queueState.restore();
+    if (!s) return;
+    this.searchTerm.set(s.searchTerm);
+    this.filterKind.set(s.kind);
+    this.filterPriority.set(s.priority);
+    this.filterLevel.set(s.level);
+    this.filterCategory.set(s.category);
+    this.filterDateRange.set(s.dateRange);
+    this.filterSubCategory.set(s.subCategory);
+    this.filterCurrency.set(s.currency);
+    this.filterAmountMin.set(s.amountMin);
+    this.filterAmountMax.set(s.amountMax);
+    this.viewMode.set(s.viewMode);
+  }
 
   readonly canApproveCost = computed(() => this.userStore.hasPermission('FACT_APPROVE_COST_L1'));
 
@@ -475,6 +520,7 @@ export class CostApprovalQueueComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreState();
     this.clientSvc.getMyPays().subscribe({
       next: id => {
         if (id != null && id > 0) this.paysId.set(id);
@@ -566,7 +612,9 @@ export class CostApprovalQueueComponent implements OnInit {
     // window.open()s instead of opening a modal.
     // `cost/:id` is the INVOICE detail page since V93 (item.id = invoice id).
     if (decision === 'view' && item.kind === 'cost') {
-      this.router.navigate(['..', item.id], { relativeTo: this.route });
+      // `from=approval` : le fil d'Ariane de la fiche ramène alors ici, et non à la
+      // liste des lignes de coût — c'est ce retour qui retrouve la file filtrée.
+      this.router.navigate(['..', item.id], { relativeTo: this.route, queryParams: { from: 'approval' } });
       return;
     }
 
