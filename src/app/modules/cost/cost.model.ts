@@ -626,6 +626,10 @@ export interface SupplierLedgerRowDto {
   grossAmountLocal: number | null;  // Montant TTC
   /** Retenue à la source of the invoice — deducted from what is paid. */
   rsAmount: number | null;
+  /** TTC − RS: what the supplier is owed — Débit/Crédit are measured against it. */
+  netToPay?: number | null;
+  /** The amount actually paid (the règlement). */
+  montantPaye?: number | null;
 }
 
 export interface SupplierLedgerDto {

@@ -3283,7 +3283,9 @@
         "FILTER_PERIOD": "Période",
         "FILTER_COST_LINE": "Ligne de coût",
         "FILTER_INVOICE": "Facture",
-        "COL_RS": "Retenue à la source"
+        "COL_RS": "Retenue à la source",
+        "COL_NET_TO_PAY": "Net à payer",
+        "COL_PAID": "Montant payé"
       },
       "TOTALS_TITLE": "Totaux de la facture",
       "LINES": {

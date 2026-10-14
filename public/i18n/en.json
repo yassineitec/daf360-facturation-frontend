@@ -3283,7 +3283,9 @@
         "FILTER_PERIOD": "Period",
         "FILTER_COST_LINE": "Cost line",
         "FILTER_INVOICE": "Invoice",
-        "COL_RS": "Withholding tax"
+        "COL_RS": "Withholding tax",
+        "COL_NET_TO_PAY": "Net to pay",
+        "COL_PAID": "Amount paid"
       },
       "TOTALS_TITLE": "Invoice totals",
       "LINES": {
