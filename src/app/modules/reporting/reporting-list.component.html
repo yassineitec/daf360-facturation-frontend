@@ -57,7 +57,7 @@
               label: ('REPORTING.CLOSE_PERIOD' | translate),
               loading: closingId() === row['id']
             }"
-            (onClick)="closePeriod(row['_period'], $event)" />
+            (onClick)="openClosePeriod(row['_period'], $event)" />
         }
       </div>
     </ng-template>
@@ -105,6 +105,35 @@
         [selected]="[newPeriodMonth().toString()]"
         [ariaLabel]="'REPORTING.NEW_PERIOD_MONTH' | translate"
         (selectedChange)="onNewPeriodMonthSelected($event)" />
+    </div>
+  </ng-template>
+
+  <!-- Modal body for `openClosePeriod()` — the waterfall's 5 manual inputs, all optional. -->
+  <ng-template #closePeriodTpl>
+    <div class="flex flex-col gap-4">
+      <p class="text-body-sm text-on-surface-variant">
+        {{ 'REPORTING.CLOSE_PERIOD_HELP' | translate }}
+      </p>
+      <daf-form-field
+        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_INTERCOMPANY_IN' | translate) }"
+        [value]="closeIntercompanyInbound()"
+        (valueChange)="closeIntercompanyInbound.set($event === null || $event === '' ? null : +$event)" />
+      <daf-form-field
+        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_INTERCOMPANY_OUT' | translate) }"
+        [value]="closeIntercompanyOutbound()"
+        (valueChange)="closeIntercompanyOutbound.set($event === null || $event === '' ? null : +$event)" />
+      <daf-form-field
+        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_INTERSEDE_IN' | translate) }"
+        [value]="closeIntersedeInbound()"
+        (valueChange)="closeIntersedeInbound.set($event === null || $event === '' ? null : +$event)" />
+      <daf-form-field
+        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_INTERSEDE_OUT' | translate) }"
+        [value]="closeIntersedeOutbound()"
+        (valueChange)="closeIntersedeOutbound.set($event === null || $event === '' ? null : +$event)" />
+      <daf-form-field
+        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_WIP_PRIOR' | translate) }"
+        [value]="closeWipPreviousYears()"
+        (valueChange)="closeWipPreviousYears.set($event === null || $event === '' ? null : +$event)" />
     </div>
   </ng-template>
 

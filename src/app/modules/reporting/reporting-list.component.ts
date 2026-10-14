@@ -5,7 +5,7 @@ import { forkJoin } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, BadgeOptions, ButtonComponent, DafCellDirective, DataTableComponent,
-  ModalRef, ModalService, PageComponent, PageHeaderComponent, SelectComponent, SelectOption,
+  FormFieldComponent, ModalRef, ModalService, PageComponent, PageHeaderComponent, SelectComponent, SelectOption,
   StatusBadgeComponent, TableColumn, TableConfig, TableRow,
 } from '@khalilrebhiitec/daf360';
 import { ClientService } from '../clients/client.service';
@@ -49,7 +49,7 @@ const REPORT_STATUS_VARIANT: Record<PlReportStatus, NonNullable<BadgeOptions['va
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent,
     DataTableComponent, DafCellDirective, StatusBadgeComponent, PaysFlagSelectComponent,
-    SelectComponent,
+    SelectComponent, FormFieldComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -360,18 +360,61 @@ export class ReportingListComponent implements OnInit {
 
   // ── Close period ─────────────────────────────────────────────────────────
 
+  private readonly closePeriodTpl = viewChild.required<TemplateRef<unknown>>('closePeriodTpl');
+  private closePeriodRef: ModalRef | null = null;
+  private periodBeingClosed: PlPeriodDto | null = null;
+
   closingId = signal<number | null>(null);
+  closeIntercompanyInbound  = signal<number | null>(null);
+  closeIntercompanyOutbound = signal<number | null>(null);
+  closeIntersedeInbound     = signal<number | null>(null);
+  closeIntersedeOutbound    = signal<number | null>(null);
+  closeWipPreviousYears     = signal<number | null>(null);
 
   /** Projected button in the 'periodStatus' cell — stops the click from also firing `rowClick`. */
-  closePeriod(period: PlPeriodDto, event: MouseEvent): void {
+  openClosePeriod(period: PlPeriodDto, event: MouseEvent): void {
     event.stopPropagation();
-    if (this.closingId() != null) return;
+    this.periodBeingClosed = period;
+    this.closeIntercompanyInbound.set(null);
+    this.closeIntercompanyOutbound.set(null);
+    this.closeIntersedeInbound.set(null);
+    this.closeIntersedeOutbound.set(null);
+    this.closeWipPreviousYears.set(null);
+    const t = (k: string) => this.translate.instant(k);
+    this.closePeriodRef = this.modal.open({
+      title: t('REPORTING.CLOSE_PERIOD_TITLE'),
+      icon:  'lock',
+      body:  this.closePeriodTpl(),
+      closeOnBackdrop: false,
+      buttons: [
+        { label: t('REPORTING.NEW_PERIOD_CANCEL'), variant: 'secondary', action: () => this.closeClosePeriodModal() },
+        { label: t('REPORTING.CLOSE_PERIOD'), variant: 'primary', icon: 'lock', action: () => this.submitClosePeriod() },
+      ],
+    });
+  }
+
+  closeClosePeriodModal(): void {
+    this.closePeriodRef?.close();
+    this.closePeriodRef = null;
+    this.periodBeingClosed = null;
+  }
+
+  submitClosePeriod(): void {
+    const period = this.periodBeingClosed;
+    if (!period || this.closingId() != null) return;
     this.closingId.set(period.id);
     this.error.set(null);
-    this.periodSvc.closePeriod(period.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.periodSvc.closePeriod(period.id, {
+      intercompanyInbound:  this.closeIntercompanyInbound(),
+      intercompanyOutbound: this.closeIntercompanyOutbound(),
+      intersedeInbound:     this.closeIntersedeInbound(),
+      intersedeOutbound:    this.closeIntersedeOutbound(),
+      wipPreviousYears:     this.closeWipPreviousYears(),
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: closed => {
         this.periods.update(list => list.map(p => (p.id === closed.id ? closed : p)));
         this.closingId.set(null);
+        this.closeClosePeriodModal();
       },
       error: (err: unknown) => {
         this.closingId.set(null);
