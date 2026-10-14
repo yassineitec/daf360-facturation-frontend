@@ -519,13 +519,13 @@
           (valueChange)="onRatePctChange($any($event))" />
       }
 
-      <!-- Retenue à la source : assiette du taux (HT, TTC = HT + FODEC + TVA, ou TVA). -->
+      <!-- Retenue à la source : assiette du taux (HT + FODEC + TVA, ou TVA seule). -->
       @if (isWithholdingType()) {
         <daf-select
           [options]="taxBaseOptions()"
           [config]="{ label: ('ADMIN.LISTS.FIELD_TAX_BASE' | translate), required: true }"
           [selected]="[valueForm.taxBase]"
-          (selectedChange)="valueForm.taxBase = $event[0] === 'TVA' ? 'TVA' : 'HT_FODEC'" />
+          (selectedChange)="valueForm.taxBase = $event[0] === 'TVA' ? 'TVA' : 'HT_FOD_TVA'" />
         <p class="config-hint">{{ 'ADMIN.LISTS.TAX_BASE_HINT' | translate }}</p>
       }
     </div>

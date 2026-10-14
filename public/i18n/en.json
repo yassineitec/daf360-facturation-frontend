@@ -2599,7 +2599,7 @@
       "TOTAL_TTC": "Total gross (TTC)",
       "TOTAL_RS": "Withholding tax ({{base}}) — deducted",
       "NET_TO_PAY": "Net payable to the supplier",
-      "HELP_4": "VAT = (net + FODEC) × rate. Stamp duty and withholding tax apply once per invoice; the withholding is computed on net + FODEC (or on the VAT) and deducted from the amount to pay. Other taxes are free amounts added to the total incl. tax.",
+      "HELP_4": "VAT = (net + FODEC) × rate. Stamp duty and withholding tax apply once per invoice; the withholding is computed on net + FODEC + VAT (or on the VAT alone), without the stamp duty or other taxes, and deducted from the amount to pay. Other taxes are free amounts added to the total incl. tax.",
       "FOOT_NUMBER_HINT": "Enter the supplier's invoice number",
       "DRAFT_BADGE": "AUTOMATED DRAFT",
       "SECTION_CONTEXT_TITLE": "Context",
@@ -2640,7 +2640,8 @@
         "TTC_LABEL": "Estimated Total (incl. tax)",
         "RS_LABEL": "Withholding tax",
         "RS_NONE": "— No withholding —",
-        "RS_BASE_HT_FODEC": "on net + FODEC"
+        "RS_BASE_HT_FODEC": "on net + FODEC (former base)",
+        "RS_BASE_HT_FOD_TVA": "on net + FODEC + VAT"
       },
       "SECTION_SUPPLIER_TITLE": "Supplier",
       "SECTION_SUPPLIER_SUB": "Supplier linked to this expense",
@@ -4304,8 +4305,9 @@
       "TAX_BASE_HT": "Net amount (former base)",
       "TAX_BASE_TTC": "Total incl. tax (former base)",
       "TAX_BASE_TVA": "VAT amount (withholding on VAT)",
-      "TAX_BASE_HINT": "Amount the withholding rate applies to: net + FODEC, or the VAT amount. Stamp duty and other taxes never enter the base. Invoices already entered keep their amounts.",
-      "TAX_BASE_HT_FODEC": "Net + FODEC"
+      "TAX_BASE_HINT": "Amount the withholding rate applies to: net + FODEC + VAT, or the VAT amount alone (withholding on VAT). Stamp duty and other taxes never enter the base. Invoices already entered keep their amounts.",
+      "TAX_BASE_HT_FODEC": "Net + FODEC (former base)",
+      "TAX_BASE_HT_FOD_TVA": "Net + FODEC + VAT (excl. stamp duty and other taxes)"
     },
     "FOREX": {
       "INFO_1": "Rates convert cost line amounts to EUR and CHF during P&L calculations. The CHF rate is calculated automatically (",

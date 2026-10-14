@@ -55,13 +55,15 @@ export interface ListValueDto {
 }
 
 /**
- * Base of a retenue à la source rate (V95): HT + FODEC, or the TVA amount (retenue sur TVA).
- * 'HT' / 'TTC' only survive on invoices saved before V95 (their stored amounts are kept).
+ * Base of a retenue à la source rate (V101): HT + FODEC + TVA (timbre and autres taxes
+ * excluded), or the TVA amount alone (retenue sur TVA). The other codes only survive on
+ * invoices saved earlier, whose stored amounts are kept: 'HT_FODEC' (V95 → V101),
+ * 'HT' / 'TTC' (before V95).
  */
-export type WithholdingBase = 'HT_FODEC' | 'TVA' | 'HT' | 'TTC';
+export type WithholdingBase = 'HT_FOD_TVA' | 'TVA' | 'HT_FODEC' | 'HT' | 'TTC';
 
 /** Bases offered when configuring a WITHHOLDING_RATE value. */
-export const WITHHOLDING_BASES: readonly WithholdingBase[] = ['HT_FODEC', 'TVA'];
+export const WITHHOLDING_BASES: readonly WithholdingBase[] = ['HT_FOD_TVA', 'TVA'];
 
 /** List type of the "autres taxes" kinds (V95) — Admin → Listes. */
 export const OTHER_TAX_TYPE_LIST = 'OTHER_TAX_TYPE';

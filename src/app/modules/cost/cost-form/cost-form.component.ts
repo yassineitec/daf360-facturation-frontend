@@ -242,16 +242,16 @@ export class CostFormComponent implements OnInit {
       .filter(v => v.ratePct != null)
       .map(v => ({
         value: (v.ratePct! / 100).toString(),
-        label: `${this.valueLabel(v)} — ${this.translate.instant('COST.FORM.TAX.RS_BASE_' + (v.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC'))}`,
+        label: `${this.valueLabel(v)} — ${this.translate.instant('COST.FORM.TAX.RS_BASE_' + (v.taxBase === 'TVA' ? 'TVA' : 'HT_FOD_TVA'))}`,
       }));
   });
 
-  /** RS base of the chosen rate: the TVA amount, else HT + FODEC (old HT / TTC bases included). */
-  private readonly selectedRsBase = computed<'HT_FODEC' | 'TVA'>(() => {
+  /** RS base of the chosen rate: the TVA amount, else HT + FODEC + TVA (older bases included). */
+  private readonly selectedRsBase = computed<'HT_FOD_TVA' | 'TVA'>(() => {
     const rate = this.rsRate();
-    if (rate == null) return 'HT_FODEC';
+    if (rate == null) return 'HT_FOD_TVA';
     const pct = Math.round(rate * 10000) / 100;
-    return this.withholdingRates().find(v => v.ratePct === pct)?.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC';
+    return this.withholdingRates().find(v => v.ratePct === pct)?.taxBase === 'TVA' ? 'TVA' : 'HT_FOD_TVA';
   });
 
   /** OTHER_TAX_TYPE list as select options. */
@@ -301,7 +301,8 @@ export class CostFormComponent implements OnInit {
     let rs = 0;
     const rate = this.hasSupplier() ? this.rsRate() : null;
     if (rate) {
-      const amount = this.selectedRsBase() === 'TVA' ? vat : ht + fodec;
+      // Timbre and autres taxes are never in the base (V101).
+      const amount = this.selectedRsBase() === 'TVA' ? vat : ht + fodec + vat;
       rs = CostFormComponent.r3(amount * rate);
     }
     return { ht, fodec, vat, timbre, other, ttc, rs, netToPay: ttc - rs };
