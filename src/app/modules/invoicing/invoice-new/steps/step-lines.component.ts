@@ -21,8 +21,9 @@ export interface StepLinesValue {
     vatRatePct:     number;
     // Avancement — présents en mode AV (Forfaitaire, calculé depuis le taux saisi),
     // Livrable (calculé par ligne/document côté serveur à la génération — cf.
-    // isLivrable() plus bas) et T&M (WIP validé, avancement toujours fixé à 100 % —
-    // cf. isTm() plus bas)
+    // isLivrable() plus bas), TS (calculé à la validation DF d'une déclaration
+    // TsTauxAvancement — cf. isTsCarryForward()/tsHasAvancement() plus bas) et T&M
+    // (WIP validé, avancement toujours fixé à 100 % — cf. isTm() plus bas)
     budgetAffaire?: number;
     pctFacture?:    number;
     pctAvancement?: number;
@@ -846,9 +847,10 @@ export class StepLinesComponent {
           prixUnitaireHt:  l.unitRate,
           tauxTva:         l.vatRatePct,
           pctAvancement:   l.pctAvancement ?? null,
-          // Chargées pour les modes Forfaitaire et Livrable, qui les affichent et les
-          // réémettent telles quelles (cf. isAv() / isLivrable()). Inertes dans les autres
-          // modes : le T&M les fixe à 100 % et le mode standard n'a pas ces colonnes du tout.
+          // Chargées pour les modes Forfaitaire, Livrable et TS, qui les affichent et les
+          // réémettent telles quelles (cf. isAv() / isLivrable() / isTsCarryForward()).
+          // Inertes dans les autres modes : le T&M les fixe à 100 % et le mode standard
+          // n'a pas ces colonnes du tout.
           budgetAffaire:   l.budgetAffaire ?? null,
           pctFacture:      l.pctFacture    ?? null,
           pctAFacturer:    l.pctAFacturer  ?? null,
@@ -951,7 +953,7 @@ export class StepLinesComponent {
       quantite:         [1,  [Validators.required, Validators.min(0.01)]],
       prixUnitaireHt:   [0,  [Validators.required, Validators.min(0)]],
       pctAvancement:    [null],
-      // Modes Forfaitaire et Livrable : les trois autres colonnes d'avancement de la
+      // Modes Forfaitaire, Livrable et TS : les trois autres colonnes d'avancement de la
       // ligne, telles que le serveur les a calculées à la génération de la facture. Sans
       // ces contrôles, `seedFromInitialLines` n'avait nulle part où les charger et
       // `next()` n'avait rien à réémettre. Ni validateur ni valeur par défaut : le mode
