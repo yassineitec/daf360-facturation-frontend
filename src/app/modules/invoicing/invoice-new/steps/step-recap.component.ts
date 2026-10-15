@@ -378,6 +378,7 @@ export class StepRecapComponent {
       emittedAt:     c.dateEmission || null,
       dueDate:       c.dateEcheance,
       notes:         c.notes,
+      conditionsPaiement: c.conditionsPaiement,
       bonDeCommande: c.bonDeCommande,
       deductionLabel1: cols[0] ?? null,
       deductionLabel2: cols[1] ?? null,
