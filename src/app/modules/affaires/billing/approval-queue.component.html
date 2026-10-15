@@ -101,9 +101,9 @@
           @if (activeDfSubTab() === 'ts') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
               [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
-              [value]="tsBatchSearch()" (valueChange)="onTsBatchSearch($event)"
-              [filterFields]="tsBatchFilterFields()" [filterConfig]="tsBatchFilterConfig()"
-              (filterApply)="onTsBatchFilterApply($event)"
+              [value]="tsSearch()" (valueChange)="onTsSearch($event)"
+              [filterFields]="lineFilterFieldsTs()" [filterConfig]="lineFilterConfigTs()"
+              (filterApply)="onTsFilterApply($event)"
               [table]="dfMainTable() ?? null" />
           }
         </div>
@@ -593,29 +593,31 @@
 
           @if (activeDfSubTab() === 'ts') {
 
-            <!-- Batches TS (Travaux Supplémentaires) — no credit-note section: a TS never
-                 produces one. -->
+            <!-- Lignes de facturation — mode TS uniquement. Depuis ce rework, une
+                 déclaration TS ne se groupe plus en lot : une ligne TS est structurellement
+                 identique à une ligne FORFAIT/REGIE (voir linesTs()/lineRowsTs() dans le .ts,
+                 qui réutilisent exactement les mêmes colonnes/config/actions génériques que
+                 la section Forfaitaire ci-dessus). Pas de section avoirs : un TS n'en produit
+                 jamais. -->
             <div class="flex flex-col gap-3">
-              @if (pendingTsBatches().length === 0) {
+              @if (linesTs().length === 0) {
                 <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
                   <span class="material-symbols-outlined text-[32px]">check_circle</span>
                   <p>{{ 'AFFAIRES.billing.approval.empty_df' | translate }}</p>
                 </div>
-              } @else if (filteredTsBatchRows().length === 0) {
+              } @else if (filteredLineRowsTs().length === 0) {
                 <div class="flex flex-col items-center gap-2 py-16 text-body-md text-on-surface-variant">
                   <span class="material-symbols-outlined text-[32px]">search_off</span>
                   <p>{{ 'AFFAIRES.billing.approval.empty_filtered' | translate }}</p>
                 </div>
               } @else {
-                <!-- No (rowClick): unlike Forfaitaire/Régie/Livrable, there's no TS batch
-                     detail page — the list + validate/return actions here are the whole
-                     TS approval flow. -->
                 <daf-data-table #dfMainTable
-                  [columns]="tsBatchColumns()"
-                  [rows]="pagedTsBatchRows()"
-                  [config]="tsBatchTableConfig()"
-                  (sortChange)="onTsBatchSort($event)"
-                  (resetClick)="onTsBatchSort(null)">
+                  [columns]="lineColumns()"
+                  [rows]="pagedLineRowsTs()"
+                  [config]="lineTableConfig()"
+                  (sortChange)="onLineSort($event)"
+                  (resetClick)="onLineSort(null)"
+                  (rowClick)="openDetail($any($event), 'line')">
 
                   <ng-template dafCell="select" let-row>
                     <daf-checkbox
@@ -633,16 +635,24 @@
                     <span class="cell-sub">{{ row['affaireIntitule'] }}</span>
                   </ng-template>
 
-                  <ng-template dafCell="tsCount" let-row>
-                    {{ row['tsCount'] }}
+                  <ng-template dafCell="reference" let-row>
+                    <span class="cell-mono">{{ row['reference'] }}</span>
                   </ng-template>
 
-                  <ng-template dafCell="montant" let-row>
-                    <span class="cell-bold">{{ row['montant'] }}</span>
+                  <ng-template dafCell="periode" let-row>
+                    <span class="cell-muted">{{ row['periode'] || '—' }}</span>
                   </ng-template>
 
-                  <ng-template dafCell="billingDate" let-row>
-                    <span class="cell-muted">{{ row['billingDate'] }}</span>
+                  <ng-template dafCell="montantHt" let-row>
+                    <span class="cell-bold">{{ row['montantHt'] }}</span>
+                  </ng-template>
+
+                  <ng-template dafCell="mode" let-row>
+                    <span class="cell-mode">{{ row['mode'] }}</span>
+                  </ng-template>
+
+                  <ng-template dafCell="statut" let-row>
+                    <daf-badge [label]="lineStatusLabel(row['statut'])" [options]="{ variant: lineBadgeVariant(row['statut']) }" />
                   </ng-template>
 
                 </daf-data-table>
@@ -653,22 +663,22 @@
                     [actions]="bulkValidateActions()"
                     [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
                     [cancelLabel]="'AFFAIRES.billing.approval.bulk_cancel' | translate"
-                    (actionClick)="doValidateTsSelection()"
+                    (actionClick)="doValidateSelection(tsSelection)"
                     (cancel)="tsSelection.clear()" />
                 }
 
                 <daf-pagination
-                  [currentPage]="tsBatchPage()"
-                  [totalPages]="tsBatchTotalPages()"
-                  [totalElements]="tsBatchRows().length"
-                  [pageSize]="tsBatchPageSize()"
+                  [currentPage]="tsPage()"
+                  [totalPages]="tsTotalPages()"
+                  [totalElements]="linesTs().length"
+                  [pageSize]="tsPageSize()"
                   [pageSizeOptions]="[10, 20, 50, 100]"
                   [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
                   [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
                   [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
                   [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
-                  (pageChange)="tsBatchPage.set($event)"
-                  (pageSizeChange)="tsBatchPageSize.set($event); tsBatchPage.set(0)" />
+                  (pageChange)="tsPage.set($event)"
+                  (pageSizeChange)="tsPageSize.set($event); tsPage.set(0)" />
               }
             </div>
           }
