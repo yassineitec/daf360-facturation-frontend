@@ -3,7 +3,6 @@ import { HttpClient }          from '@angular/common/http';
 import { Observable }          from 'rxjs';
 import { environment }         from '../../../../environments/environment';
 import { LivrableBatchDto } from '../livrable.model';
-import { TsDto } from '../affaire.model';
 import { EmailPreviewDto } from '../wip/wip.model';
 import { UserStore }           from '../../../core/user.store';
 
@@ -115,62 +114,6 @@ export interface PendingLivrableBatchDto {
   affaireRef:      string;
   affaireIntitule: string;
   documentCount:   number;
-  combinedMontant: number;
-  billingDate:     string;
-}
-
-export type TsBatchStatut =
-  'EN_ATTENTE_CLIENT' | 'EN_ATTENTE_DF' | 'FACTURE' | 'A_VERIFIER' | 'RETOURNE' | 'ANNULE';
-
-/** One TS's line within a TS billing batch — mirrors the backend's TsBatchEntryDto. Unlike
- * LivrableBatchEntryDto there's no pctPrecedent/pctSaisi: a TS bills its whole
- * montantEstime, no partial amount. */
-export interface TsBatchEntryDto {
-  billingLineId: number;
-  tsId:          number;
-  referenceTs:   string | null;
-  intitule:      string | null;
-  montantEstime: number;
-}
-
-/** One or more TS submitted together, sharing one client confirmation and one DF decision —
- * mirrors the backend's TsBatchDto field-for-field, including the client-amount/carry-forward
- * pair: the client may confirm less than combinedMontant, with the shortfall carried forward
- * to the TS's next submission — same mechanism as LivrableBatchDto. */
-export interface TsBatchDto {
-  batchId:              number;
-  affaireId:            number;
-  statut:               TsBatchStatut;
-  combinedMontant:      number;
-  /** Fixed at submission time (sum of each entry's TravauxSupplementaires.montantEstime),
-   * never reduced by a later client shortfall — the "Y" denominator for the Historique
-   * table's "Facturé X/Y" column, same role as WipTauxDto.montantIncremental for AV. */
-  originalMontant:      number;
-  clientApprovedAmount: number | null;
-  wipCarriedForward:    number | null;
-  invoiceId:            number | null;
-  billingDate:          string;
-  entries:              TsBatchEntryDto[];
-}
-
-/** The TS WIP's uninvoiced remainder for an affaire, if any — mirrors the backend's
- * TsPendingCarryForwardDto. Feeds the "Facturer le solde" button on the TS WIP tab. */
-export interface TsPendingCarryForwardDto {
-  sourceLineId: number;
-  tsId:         number;
-  tsReference:  string | null;
-  montant:      number;
-  devise:       string;
-}
-
-/** One row per TS batch sitting at EN_ATTENTE_DF, cross-affaire — mirrors the backend's
- * PendingTsBatchDto, same shape as PendingLivrableBatchDto one level down. */
-export interface PendingTsBatchDto {
-  batchId:         number;
-  affaireId:       number;
-  affaireRef:      string;
-  affaireIntitule: string;
-  tsCount:         number;
   combinedMontant: number;
   billingDate:     string;
 }
@@ -344,92 +287,6 @@ export class BillingService {
   validateLivrableBatchBatch(batchIds: number[]): Observable<LivrableBatchDto[]> {
     return this.http.post<LivrableBatchDto[]>(
       `${this.base}/billing/livrable-batches/validate-batch`, { batchIds }, this.opts);
-  }
-
-  // ── TS (Travaux Supplémentaires) WIP ───────────────────────────────────────
-
-  /** INTEGRE TS of this affaire with no in-flight submission — the "ready to submit" list
-   * on the TS WIP tab. */
-  getEligibleTs(affaireId: number): Observable<TsDto[]> {
-    return this.http.get<TsDto[]>(
-      `${this.base}/affaires/${affaireId}/ts/wip/eligible`, this.opts);
-  }
-
-  /** TS batches for this affaire still pre-FACTURE — the "Soumissions en cours" section. */
-  getActiveTsBatches(affaireId: number): Observable<TsBatchDto[]> {
-    return this.http.get<TsBatchDto[]>(
-      `${this.base}/affaires/${affaireId}/ts/wip/active`, this.opts);
-  }
-
-  /** Every TS billing line ever created for this affaire, any status — the "Historique"
-   * section. */
-  getAllTsLinesByAffaire(affaireId: number): Observable<TsBatchDto[]> {
-    return this.http.get<TsBatchDto[]>(
-      `${this.base}/affaires/${affaireId}/ts/wip/history`, this.opts);
-  }
-
-  /** Submits one or more INTEGRE TS together as one billing batch — lands on
-   * EN_ATTENTE_CLIENT, waiting for the client's confirmation before DF ever sees it. */
-  submitTs(affaireId: number, tsIds: number[],
-           emailSubjectOverride?: string, emailBodyOverride?: string): Observable<TsBatchDto> {
-    return this.http.post<TsBatchDto>(
-      `${this.base}/affaires/${affaireId}/ts/submit-wip`,
-      { tsIds, emailSubjectOverride, emailBodyOverride }, this.opts);
-  }
-
-  /** Read-only: the exact client email submitTs() would send for these TS ids, without
-   * persisting or sending anything — lets the TS WIP tab show a review-and-confirm popup
-   * before the user triggers the real submit. */
-  previewTsEmail(affaireId: number, tsIds: number[]): Observable<EmailPreviewDto> {
-    return this.http.post<EmailPreviewDto>(
-      `${this.base}/affaires/${affaireId}/ts/submit-wip/preview-email`, { tsIds }, this.opts);
-  }
-
-  /** The affaire's uninvoiced TS remainder, 0 or 1 entries — same list-not-Optional
-   * convention as getEligibleTs/getActiveTsBatches. */
-  getPendingTsCarryForward(affaireId: number): Observable<TsPendingCarryForwardDto[]> {
-    return this.http.get<TsPendingCarryForwardDto[]>(
-      `${this.base}/affaires/${affaireId}/ts/wip/pending-carry-forward`, this.opts);
-  }
-
-  /** Invoices the pending TS remainder on its own, straight to EN_ATTENTE_DF — no new
-   * client confirmation, the amount was already approved during the original partial
-   * confirmation (see enterClientAmountForBatch). */
-  submitTsCarryForward(affaireId: number): Observable<TsBatchDto> {
-    return this.http.post<TsBatchDto>(
-      `${this.base}/affaires/${affaireId}/ts/wip/submit-carry-forward`, {}, this.opts);
-  }
-
-  /** confirmedTotal may be less than the batch's calculated combinedMontant, never more —
-   * mirrors enterLivrableClientAmount's own contract exactly. */
-  confirmTsClient(affaireId: number, batchId: number, confirmedTotal: number): Observable<TsBatchDto> {
-    return this.http.patch<TsBatchDto>(
-      `${this.base}/affaires/${affaireId}/ts/wip/batches/${batchId}/client-amount`,
-      { confirmedTotal }, this.opts);
-  }
-
-  /** Cross-affaire TS pending-DF listing, for the approval queue's TS tab. */
-  getPendingTsBatches(): Observable<PendingTsBatchDto[]> {
-    return this.http.get<PendingTsBatchDto[]>(
-      `${this.base}/billing/pending-df/ts-batches`, this.opts);
-  }
-
-  validateTsBatch(batchId: number): Observable<TsBatchDto> {
-    return this.http.post<TsBatchDto>(
-      `${this.base}/billing/ts-batches/${batchId}/validate`, {}, this.opts);
-  }
-
-  /** Bulk variant of validateTsBatch() — several TS batches of the SAME affaire combined
-   * into one shared draft invoice. */
-  validateTsBatchBatch(batchIds: number[]): Observable<TsBatchDto[]> {
-    return this.http.post<TsBatchDto[]>(
-      `${this.base}/billing/ts-batches/validate-batch`, { batchIds }, this.opts);
-  }
-
-  returnTsBatch(batchId: number, motif: string): Observable<TsBatchDto> {
-    return this.http.post<TsBatchDto>(
-      `${this.base}/billing/ts-batches/${batchId}/return`,
-      { actionType: 'RETOURNE', motif }, this.opts);
   }
 
   /** Undoes validateDF()/validateLivrableBatch() when the user cancels the invoice stepper
