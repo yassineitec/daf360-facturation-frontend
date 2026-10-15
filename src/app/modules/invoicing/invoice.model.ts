@@ -22,8 +22,10 @@ export interface InvoiceLine {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
-  // WIP carry-forward — présent uniquement quand la ligne provient d'un solde WIP pické
-  sourceCarriedForwardLineId?: number;
+  // WIP carry-forward sources attributed to this line — zero for a plain line, one for the
+  // common case, several when same-contract picks were merged (see
+  // step-lines.component.ts's addSelectedCarryForward).
+  sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
   // Colonnes de déduction personnalisées — position fixe (1/2/3), voir
   // StepLinesValue.deductionColumns côté step-lines.component.ts pour le détail.
   deductionPct1?:    number;
@@ -160,8 +162,8 @@ export interface InvoiceLineRequest {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
-  // WIP carry-forward — présent uniquement quand la ligne provient d'un solde WIP pické
-  sourceCarriedForwardLineId?: number;
+  // WIP carry-forward sources attributed to this line — see InvoiceLine above.
+  sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
   // T&M — collaborateur associé à cette ligne, présent uniquement en mode T&M
   profileUserId?: number;
 }
