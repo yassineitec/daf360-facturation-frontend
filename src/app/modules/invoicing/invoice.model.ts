@@ -178,6 +178,10 @@ export interface CreateDraftRequest {
   tsId?:               number | null;
   lines:               InvoiceLineRequest[];
   notes?:              string | null;
+  // VIREMENT / CHEQUE / COMPTANT / 30_JOURS / 60_JOURS / 90_JOURS (see CONDITIONS_PAIEMENT
+  // below) — already computed by step-conditions.component.ts's next(), this was simply
+  // never forwarded into the outbound payload until now.
+  conditionsPaiement?: string | null;
   bonDeCommande?:      string | null;
   // Amend mode only (UpdateDraftRequest sent to PATCH /invoices/{id}/amend) — corrects the
   // calendar day of an already-EMITTED invoice's issue date. createDraft/updateDraft ignore it.
