@@ -58,6 +58,7 @@
               [affaireData]="affaireValue()!"
               [linesData]="linesValue()!"
               [initialValue]="initialConditions()"
+              [amendMode]="amendMode()"
               (prevStep)="goPrev()"
               (nextStep)="onConditionsDone($event)" />
           }

@@ -175,6 +175,7 @@ export class InvoiceNewComponent implements OnInit {
           conditionsPaiement: inv.conditionsPaiement ?? '',
           bonDeCommande:      inv.bonDeCommande,
           notes:              inv.notes,
+          dateEmission:       inv.dateEmission ?? '',
         });
         this.loadingExisting.set(false);
       },

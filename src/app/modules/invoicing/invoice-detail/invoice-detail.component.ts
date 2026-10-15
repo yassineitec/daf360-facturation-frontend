@@ -716,6 +716,7 @@ export class InvoiceDetailComponent implements OnInit {
    * stay in sync with the backend's `InvoiceService.snapshotInvoice()` (daf360-facturation-service),
    * the source of truth for which top-level fields get captured in the before/after metadata. */
   private static readonly AMEND_FIELD_LABELS: Record<string, string> = {
+    emittedAt: 'INVOICING.DETAIL.AUDIT.FIELD.EMITTED_AT',
     dueDate: 'INVOICING.DETAIL.AUDIT.FIELD.DUE_DATE',
     periodFrom: 'INVOICING.DETAIL.AUDIT.FIELD.PERIOD_FROM',
     periodTo: 'INVOICING.DETAIL.AUDIT.FIELD.PERIOD_TO',
@@ -739,7 +740,25 @@ export class InvoiceDetailComponent implements OnInit {
 
   /** Date-valued fields among the amendable set — their raw metadata value is an ISO
    * `yyyy-MM-dd` string, shown through `formatDate()` rather than verbatim. */
-  private static readonly AMEND_DATE_FIELDS = new Set(['dueDate', 'periodFrom', 'periodTo']);
+  private static readonly AMEND_DATE_FIELDS = new Set(['emittedAt', 'dueDate', 'periodFrom', 'periodTo']);
+
+  /** Translated label for an audit entry's `action` code — extend as new actions start
+   * logging against entityType "INVOICE" (today, only AMEND_EMITTED_INVOICE does). */
+  actionLabel(action: string): string {
+    const key = `INVOICING.DETAIL.AUDIT.ACTION.${action}`;
+    const translated = this.translate.instant(key);
+    return translated === key ? action : translated;
+  }
+
+  /** Full date + time for an audit entry's own timestamp — unlike `formatDate()`, which is
+   * used for the amendable fields themselves (plain calendar dates with no time component). */
+  formatDateTime(d: string | null): string {
+    if (!d) return '—';
+    const locale = this.translate.currentLang() === 'en' ? 'en-GB' : 'fr-FR';
+    return new Date(d).toLocaleString(locale, {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+  }
 
   /** Parses one audit entry's `metadata` JSON and returns only the top-level keys that
    * actually changed, each with its before/after value — entries with unparseable or null

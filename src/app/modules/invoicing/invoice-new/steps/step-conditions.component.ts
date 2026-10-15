@@ -15,6 +15,9 @@ export interface StepConditionsValue {
   conditionsPaiement: string;
   bonDeCommande:      string | null;
   notes:              string | null;
+  /** Only ever set/shown in amend mode — correcting the emission date of an already-
+   *  emitted invoice. Empty string outside amend mode (createDraft/updateDraft ignore it). */
+  dateEmission:       string;
 }
 
 @Component({
@@ -25,6 +28,18 @@ export interface StepConditionsValue {
 <div class="step-conditions">
 
   <div class="form-grid">
+    @if (amendMode()) {
+      <div class="field">
+        <daf-multi-date-picker
+          [config]="{
+            label: ('INVOICING.STEP_CONDITIONS.ISSUE_DATE_LABEL' | translate),
+            selectionMode: 'single'
+          }"
+          [value]="dateEmission()"
+          (valueChange)="setDateEmission($event)" />
+      </div>
+    }
+
     <div class="field">
       <daf-multi-date-picker
         [config]="{
@@ -98,6 +113,9 @@ export class StepConditionsComponent {
   linesData    = input.required<StepLinesValue>();
   /** Set when editing an existing draft — pre-fills the form with its saved values. */
   initialValue = input<StepConditionsValue | null>(null);
+  /** True when correcting an already-EMITTED/SENT invoice — the only case where the
+   *  emission date itself is shown and editable, next to the due date. */
+  amendMode    = input<boolean>(false);
   prevStep     = output<void>();
   nextStep     = output<StepConditionsValue>();
 
@@ -118,6 +136,13 @@ export class StepConditionsComponent {
       : '');
   }
 
+  setDateEmission(v: Date | Date[] | null): void {
+    const d = Array.isArray(v) ? v[0] : v;
+    this.setText('dateEmission', d
+      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      : '');
+  }
+
   /** Pont daf-form-field / daf-select → FormControl (ni l'un ni l'autre n'est un ControlValueAccessor). */
   setText(key: keyof typeof this.form.controls, v: string | number | null | undefined): void {
     const c = this.form.controls[key];
@@ -132,6 +157,8 @@ export class StepConditionsComponent {
     // de Validators.required conditionnel pour Forfait/Lump Sum (FINALE/INTERMEDIAIRE).
     bonDeCommande:      [''],
     notes:              [''],
+    // Amend mode only — never required, a correction is optional, not a mandatory re-entry.
+    dateEmission:       [''],
   });
 
   /**
@@ -146,6 +173,14 @@ export class StepConditionsComponent {
   );
   readonly dueDate = computed<Date | null>(() => {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(this.dueIso() ?? '');
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  });
+
+  private readonly emissionIso = toSignal(
+    this.form.controls.dateEmission.valueChanges.pipe(startWith(this.form.controls.dateEmission.value)),
+  );
+  readonly dateEmission = computed<Date | null>(() => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(this.emissionIso() ?? '');
     return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
   });
 
@@ -165,6 +200,7 @@ export class StepConditionsComponent {
           conditionsPaiement: iv.conditionsPaiement,
           bonDeCommande:      iv.bonDeCommande ?? '',
           notes:              iv.notes ?? '',
+          dateEmission:       iv.dateEmission ?? '',
         });
       }
     });
@@ -179,6 +215,7 @@ export class StepConditionsComponent {
       conditionsPaiement: v.conditionsPaiement!,
       bonDeCommande:      v.bonDeCommande?.trim() || null,
       notes:              v.notes?.trim()         || null,
+      dateEmission:       v.dateEmission ?? '',
     });
   }
 }

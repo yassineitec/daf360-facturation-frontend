@@ -279,25 +279,41 @@
 
           <!-- ── Historique des modifications ─────────────────────────── -->
           @if (activeTab() === 'audit') {
-            <div class="p-6" style="display:flex; flex-direction:column; gap:1rem">
+            <div class="flex flex-col gap-3 p-6">
               @if (auditHistory().length === 0) {
                 <p class="text-on-surface-variant">{{ 'INVOICING.DETAIL.AUDIT.EMPTY' | translate }}</p>
               }
               @for (entry of auditHistory(); track entry.id) {
-                <div class="border border-outline-variant/30 rounded-lg p-4">
-                  <div style="display:flex; justify-content:space-between; font-size:0.875rem; color:var(--on-surface-variant)">
-                    <span>{{ formatDate(entry.timestampUtc) }}</span>
-                    <span>{{ entry.actorRole ?? ('INVOICING.DETAIL.AUDIT.UNKNOWN_ACTOR' | translate) }}</span>
+                <div class="flex flex-col gap-3 rounded-xl border border-outline-variant/30 bg-surface px-5 py-4">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-[18px] text-primary">edit_note</span>
+                      <span class="text-body-md font-medium text-on-surface">{{ actionLabel(entry.action) }}</span>
+                    </div>
+                    <span class="text-body-sm text-on-surface-variant">{{ formatDateTime(entry.timestampUtc) }}</span>
                   </div>
-                  <ul style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.25rem">
-                    @for (diff of diffFor(entry); track diff.label) {
-                      <li>
-                        <strong>{{ diff.label }}</strong>:
-                        <span style="text-decoration:line-through; opacity:0.6">{{ formatDiffValue(diff.before) }}</span>
-                        → <span>{{ formatDiffValue(diff.after) }}</span>
-                      </li>
+                  <div class="flex flex-wrap items-center justify-between gap-2 text-body-sm text-on-surface-variant">
+                    @if (entry.commentaire) {
+                      <span>{{ entry.commentaire }}</span>
                     }
-                  </ul>
+                    <span class="ml-auto whitespace-nowrap">{{ entry.actorRole ?? ('INVOICING.DETAIL.AUDIT.UNKNOWN_ACTOR' | translate) }}</span>
+                  </div>
+                  @if (diffFor(entry).length > 0) {
+                    <ul class="flex flex-col gap-1.5 border-t border-outline-variant/20 pt-3">
+                      @for (diff of diffFor(entry); track diff.label) {
+                        <li class="flex flex-wrap items-baseline gap-x-2 text-body-sm">
+                          <span class="font-medium text-on-surface">{{ diff.label }} :</span>
+                          <span class="text-on-surface-variant line-through opacity-60">{{ formatDiffValue(diff.before) }}</span>
+                          <span class="material-symbols-outlined text-[14px] text-on-surface-variant">arrow_forward</span>
+                          <span class="text-on-surface">{{ formatDiffValue(diff.after) }}</span>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <p class="border-t border-outline-variant/20 pt-3 text-body-sm italic text-on-surface-variant">
+                      {{ 'INVOICING.DETAIL.AUDIT.NO_FIELD_CHANGES' | translate }}
+                    </p>
+                  }
                 </div>
               }
             </div>

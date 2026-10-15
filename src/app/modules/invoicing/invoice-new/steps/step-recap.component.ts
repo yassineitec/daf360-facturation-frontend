@@ -37,6 +37,12 @@ import { enumLabel } from '../../../../shared/enum-labels';
         <span class="recap-label">{{ 'INVOICING.STEP_RECAP.CONDITIONS' | translate }}</span>
         <span class="recap-val">{{ conditionLabel(conditionsData().conditionsPaiement) | translate }}</span>
       </div>
+      @if (amendMode() && conditionsData().dateEmission) {
+        <div class="recap-row">
+          <span class="recap-label">{{ 'INVOICING.STEP_RECAP.ISSUE_DATE' | translate }}</span>
+          <span class="recap-val">{{ formatDate(conditionsData().dateEmission) }}</span>
+        </div>
+      }
       <div class="recap-row">
         <span class="recap-label">{{ 'INVOICING.STEP_RECAP.DUE_DATE' | translate }}</span>
         <span class="recap-val">{{ formatDate(conditionsData().dateEcheance) }}</span>
@@ -369,6 +375,7 @@ export class StepRecapComponent {
       billingMode:   a.billingMode,
       currency:      a.currency,
       tsId:          a.tsId,
+      emittedAt:     c.dateEmission || null,
       dueDate:       c.dateEcheance,
       notes:         c.notes,
       bonDeCommande: c.bonDeCommande,

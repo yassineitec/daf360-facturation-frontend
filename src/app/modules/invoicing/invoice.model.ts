@@ -177,6 +177,9 @@ export interface CreateDraftRequest {
   lines:               InvoiceLineRequest[];
   notes?:              string | null;
   bonDeCommande?:      string | null;
+  // Amend mode only (UpdateDraftRequest sent to PATCH /invoices/{id}/amend) — corrects the
+  // calendar day of an already-EMITTED invoice's issue date. createDraft/updateDraft ignore it.
+  emittedAt?:          string | null;
   dueDate?:            string | null;
   // T&M — période facturée, source des heures récupérées ; présents uniquement en mode T&M
   periodFrom?:         string | null;
