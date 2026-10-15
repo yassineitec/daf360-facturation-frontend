@@ -1241,9 +1241,9 @@ export class StepLinesComponent {
       const dto = this.pendingCarryForwardList().find(p => p.id === id);
       const isTsRow = tsIds.has(id);
       const canMerge = isTsRow === this.isTsCarryForward();
-      const firstLine = this.linesArray.length > 0 ? (this.linesArray.at(0) as FormGroup) : null;
-      const targetLine = canMerge && firstLine && this.lineMatchesContract(firstLine, isTsRow)
-        ? firstLine : null;
+      const targetLine = canMerge
+        ? (this.linesArray.controls.find(c => this.lineMatchesContract(c as FormGroup, isTsRow)) as FormGroup | undefined) ?? null
+        : null;
 
       if (targetLine) {
         const sources = [
