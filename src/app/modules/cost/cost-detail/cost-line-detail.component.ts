@@ -1029,9 +1029,9 @@ export class CostLineDetailComponent implements OnInit {
     if (!paysId || !supplierId) return;
     this.svc.getCostInvoices({ paysId, status: 'APPROVED', supplierId, size: SUPPLIER_MODE_PAGE_SIZE }).subscribe({
       next: page => this.reglementModal.open(
-        { editing: null, payableInvoices: page.content.filter(i => !i.reglement) }, () => this.reloadCurrentMode()),
+        { editing: null, payableInvoices: page.content.filter(i => !i.reglement), paysId }, () => this.reloadCurrentMode()),
       error: () => this.reglementModal.open(
-        { editing: null, payableInvoices: [] }, () => this.reloadCurrentMode()),
+        { editing: null, payableInvoices: [], paysId }, () => this.reloadCurrentMode()),
     });
   }
 
@@ -1044,6 +1044,7 @@ export class CostLineDetailComponent implements OnInit {
       invoiceReference:      inv.reference,
       supplierInvoiceNumber: inv.supplierInvoiceNumber,
       currency:              inv.currency,
+      paysId:                inv.paysId,
     }, () => this.reloadCurrentMode());
   }
 
@@ -1060,6 +1061,7 @@ export class CostLineDetailComponent implements OnInit {
           invoiceReference:      inv?.reference ?? null,
           supplierInvoiceNumber: inv?.supplierInvoiceNumber ?? null,
           currency:              inv?.currency ?? null,
+          paysId:                inv?.paysId ?? null,
         }, () => this.reloadCurrentMode());
       },
       error: () => this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR')),
