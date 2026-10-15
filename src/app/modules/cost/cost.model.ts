@@ -264,6 +264,7 @@ export interface CostInvoiceReglementDto {
   costInvoiceId: number;
   montantPaye: number;
   datePaiement: string;
+  paymentMethodId: number | null;
   comment: string | null;
 }
 
@@ -640,12 +641,14 @@ export interface SupplierLedgerDto {
 export interface CreateReglementRequest {
   montantPaye: number;
   datePaiement: string; // YYYY-MM-DD
+  paymentMethodId: number;
   comment?: string | null;
 }
 
 export interface UpdateReglementRequest {
   montantPaye: number;
   datePaiement: string; // YYYY-MM-DD
+  paymentMethodId: number;
   comment?: string | null;
 }
 
