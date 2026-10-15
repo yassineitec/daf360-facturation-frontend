@@ -589,6 +589,7 @@
       "ISSUE_DATE_LABEL": "Date d'émission",
       "DUE_DATE_LABEL": "Date d'échéance *",
       "DUE_DATE_REQUIRED": "Date requise.",
+      "DUE_DATE_AUTO_HINT": "Calculée automatiquement selon les conditions de paiement — modifiable.",
       "CONDITIONS_LABEL": "Conditions de paiement *",
       "CONDITIONS_SELECT": "Sélectionner…",
       "CONDITIONS_REQUIRED": "Conditions requises.",

@@ -285,4 +285,17 @@ export const CONDITIONS_PAIEMENT: Record<string, string> = {
   '90_JOURS':'INVOICING.CONDITIONS.90_DAYS',
 };
 
+/** Days to add to the relevant anchor date (today's date while still a DRAFT, the entered
+ * emission date in amend mode) to auto-fill "Date d'échéance" once a condition is picked —
+ * see StepConditionsComponent.recalcDueDate(). Kept alongside CONDITIONS_PAIEMENT since the
+ * two are always edited together. */
+export const CONDITIONS_PAIEMENT_DAYS: Record<string, number> = {
+  VIREMENT:   30,
+  CHEQUE:      0,
+  COMPTANT:    0,
+  '30_JOURS': 30,
+  '60_JOURS': 60,
+  '90_JOURS': 90,
+};
+
 export const TVA_RATES = [0, 7, 13, 19];

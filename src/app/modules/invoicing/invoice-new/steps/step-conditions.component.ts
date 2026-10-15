@@ -6,7 +6,7 @@ import { startWith } from 'rxjs';
 import {
   FormFieldComponent, MultiDatePickerComponent, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
-import { CONDITIONS_PAIEMENT } from '../../invoice.model';
+import { CONDITIONS_PAIEMENT, CONDITIONS_PAIEMENT_DAYS } from '../../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 
@@ -50,6 +50,9 @@ export interface StepConditionsValue {
         }"
         [value]="dueDate()"
         (valueChange)="setDueDate($event)" />
+      @if (conditionOffsetDays() !== null) {
+        <p class="search-hint">{{ 'INVOICING.STEP_CONDITIONS.DUE_DATE_AUTO_HINT' | translate }}</p>
+      }
     </div>
 
     <div class="field">
@@ -62,7 +65,7 @@ export interface StepConditionsValue {
           error: form.controls['conditionsPaiement'].invalid && form.controls['conditionsPaiement'].touched
             ? ('INVOICING.STEP_CONDITIONS.CONDITIONS_REQUIRED' | translate) : undefined
         }"
-        (selectedChange)="setText('conditionsPaiement', $event[0])" />
+        (selectedChange)="onConditionsPaiementChange($event[0])" />
     </div>
 
     <div class="field field--full">
@@ -141,6 +144,38 @@ export class StepConditionsComponent {
     this.setText('dateEmission', d
       ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       : '');
+    // Amend mode's emission-date correction is one of the two inputs the due date is
+    // derived from (the other being the condition itself, see recalcDueDate()) — recompute
+    // whenever it changes, same "condition is always the source of truth" rule.
+    this.recalcDueDate();
+  }
+
+  onConditionsPaiementChange(value: string): void {
+    this.setText('conditionsPaiement', value);
+    this.recalcDueDate();
+  }
+
+  /** Offset (days) for the currently-selected condition, or null if none/unrecognized —
+   * drives both the calculation itself and whether the "auto-calculated" hint is shown. */
+  readonly conditionOffsetDays = computed<number | null>(() => {
+    const code = this.conditionCode();
+    return code && code in CONDITIONS_PAIEMENT_DAYS ? CONDITIONS_PAIEMENT_DAYS[code] : null;
+  });
+
+  /** Auto-fills "Date d'échéance" from the condition's offset, anchored on today's date
+   * while still a DRAFT (no fixed emission date exists yet) or on the entered/corrected
+   * emission date in amend mode. Still a plain editable field afterward — this only ever
+   * runs in response to the user picking a condition or (amend mode) changing the emission
+   * date, never on initial load, so it can't clobber an already-saved due date when editing
+   * an existing draft/invoice. */
+  private recalcDueDate(): void {
+    const offset = this.conditionOffsetDays();
+    if (offset === null) return;
+    const anchor = this.amendMode() ? this.dateEmission() : new Date();
+    if (!anchor) return;
+    const due = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + offset);
+    this.setText('dateEcheance',
+      `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`);
   }
 
   /** Pont daf-form-field / daf-select → FormControl (ni l'un ni l'autre n'est un ControlValueAccessor). */
@@ -183,6 +218,10 @@ export class StepConditionsComponent {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(this.emissionIso() ?? '');
     return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
   });
+
+  private readonly conditionCode = toSignal(
+    this.form.controls.conditionsPaiement.valueChanges.pipe(startWith(this.form.controls.conditionsPaiement.value)),
+  );
 
   constructor() {
     // Signal inputs are only bound by Angular AFTER the constructor runs — reading

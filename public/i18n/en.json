@@ -589,6 +589,7 @@
       "ISSUE_DATE_LABEL": "Issue date",
       "DUE_DATE_LABEL": "Due date *",
       "DUE_DATE_REQUIRED": "Date required.",
+      "DUE_DATE_AUTO_HINT": "Calculated automatically from the payment conditions — editable.",
       "CONDITIONS_LABEL": "Payment conditions *",
       "CONDITIONS_SELECT": "Select…",
       "CONDITIONS_REQUIRED": "Conditions required.",
