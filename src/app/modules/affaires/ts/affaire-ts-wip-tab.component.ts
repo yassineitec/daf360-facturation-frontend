@@ -189,6 +189,24 @@ import { EmailPreviewModalComponent } from '../wip/email-preview-modal.component
           <daf-loading class="ts-loading" [message]="'AFFAIRES.WIP.LOADING' | translate" />
         } @else if (tauxHistory().length > 0) {
           <daf-data-table [columns]="historyColumns()" [rows]="historyRows()" [config]="historyConfig()">
+            <ng-template dafCell="factureProgress" let-row>
+              @if (row['_remainderPending'] === null) {
+                —
+              } @else {
+                <div class="flex flex-col gap-1">
+                  <span class="text-[12px] whitespace-nowrap">
+                    {{ row['_montantFacture'] | displayCurrency : ts.devise }} / {{ row['_raw'].montantIncremental | displayCurrency : ts.devise }}
+                  </span>
+                  @if (row['_isComplete']) {
+                    <daf-badge [label]="'AFFAIRES.WIP.FACTURE_COMPLETE' | translate"
+                      [options]="{ variant: 'success', size: 'sm', dot: true }" />
+                  } @else {
+                    <daf-badge [label]="'AFFAIRES.WIP.FACTURE_PARTIAL' | translate:{ amount: (row['_remainderPending'] | displayCurrency:ts.devise) }"
+                      [options]="{ variant: 'warning', size: 'sm', dot: true }" />
+                  }
+                </div>
+              }
+            </ng-template>
             <ng-template dafCell="statut" let-row>
               <daf-badge [label]="'ENUMS.WIP_TAUX_STATUT.' + row['_raw'].statut | translate"
                 [options]="{ variant: tauxBadgeVariant(row['_raw'].statut), size: 'sm' }" />
@@ -442,6 +460,7 @@ export class AffaireTsWipTabComponent implements OnInit {
       { key: 'periode',  label: t('AFFAIRES.WIP.TS_COL_DATE') },
       { key: 'taux',     label: t('AFFAIRES.WIP.TAUX_MODE_PERCENT'), align: 'right' },
       { key: 'montant',  label: t('AFFAIRES.WIP.TS_COL_MONTANT'), align: 'right' },
+      { key: 'factureProgress', label: t('AFFAIRES.WIP.COL_FACTURE_PROGRESS'), type: 'custom' },
       { key: 'statut',   label: t('AFFAIRES.WIP.TS_COL_STATUT'), type: 'custom' },
       { key: 'actions',  label: '', type: 'custom', align: 'right' },
     ];
@@ -449,12 +468,14 @@ export class AffaireTsWipTabComponent implements OnInit {
 
   readonly historyRows = computed<TableRow[]>(() => {
     const ts = this.selectedTs();
+    const lines = this.lineHistory();
     return this.tauxHistory().map(t => ({
       id:       t.id,
       periode:  t.periodDateFrom + ' – ' + t.periodDateTo,
       taux:     t.tauxSaisi + '%',
       montant:  ts ? this.currency.transform(t.montantIncremental, ts.devise) : t.montantIncremental,
       _raw:     t,
+      ...this.factureProgress(t, lines),
     } satisfies TableRow));
   });
 
@@ -462,6 +483,37 @@ export class AffaireTsWipTabComponent implements OnInit {
 
   tauxBadgeVariant(statut: string) {
     return WIP_TAUX_STATUT_BADGE[statut] ?? 'neutral';
+  }
+
+  /** Same mechanic as AffaireWipTabComponent.findChainTail() (AV) / the old TS batch tab's
+   * own factureProgress(): a partial client confirmation never modifies the declaration's own
+   * BillingLine — it just sets that line's wipCarriedForward. Walking carriedForwardFromLineId
+   * forward finds whatever later line (if any) picked that remainder up; the tail's own
+   * wipCarriedForward is what's still genuinely outstanding right now. */
+  private findChainTail(line: LineDetailDto, lines: LineDetailDto[]): LineDetailDto {
+    let tail = line;
+    for (let i = 0; i < 50; i++) {
+      const next = lines.find(l => l.carriedForwardFromLineId === tail.id);
+      if (!next) break;
+      tail = next;
+    }
+    return tail;
+  }
+
+  /** Fields read by the history table's "Facturé" cell (factureProgress column): how much of
+   * this declaration's montantIncremental has actually been confirmed/billed so far. */
+  private factureProgress(taux: TsTauxDto, lines: LineDetailDto[]) {
+    const originLine = taux.billingLineId != null ? lines.find(l => l.id === taux.billingLineId) ?? null : null;
+    const tail = originLine ? this.findChainTail(originLine, lines) : null;
+    const remainderPending = tail ? Number((tail.wipCarriedForward ?? 0).toFixed(3)) : null;
+    const montantFacture = remainderPending !== null
+      ? Number((taux.montantIncremental - remainderPending).toFixed(3))
+      : null;
+    return {
+      _remainderPending: remainderPending,
+      _montantFacture:   montantFacture,
+      _isComplete:       remainderPending !== null && remainderPending < 0.01,
+    };
   }
 
   // ── Réponse client en attente ─────────────────────────────────────────────
