@@ -206,6 +206,32 @@
                     </daf-form-field>
                   </div>
 
+                  @if (isAgency()) {
+                    <!-- Agence de voyage (V102) : saisie telle qu'imprimée — TTC de la ligne, base TVA, taux -->
+                    <daf-form-field
+                      [options]="{ type: 'number', label: ('COST.FORM.AGENCY.LINE_TTC_LABEL' | translate), placeholder: '0.000', required: true }"
+                      [value]="line.lineTtcInput"
+                      (valueChange)="patchLine(line.key, { lineTtcInput: numberOf($event) })">
+                    </daf-form-field>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem">
+                      <daf-form-field
+                        [options]="{ type: 'number', label: ('COST.FORM.VAT_BASE_LABEL' | translate), placeholder: '0.000', required: true }"
+                        [value]="line.vatBaseLocal"
+                        (valueChange)="patchLine(line.key, { vatBaseLocal: numberOf($event) })">
+                      </daf-form-field>
+                      <daf-select
+                        [options]="tvaOptions()"
+                        [config]="{ label: ('COST.FORM.TAX.TVA_LABEL' | translate) }"
+                        [selected]="selArr(line.tvaRate)"
+                        (selectedChange)="patchLine(line.key, { tvaRate: rateOf($event) })">
+                      </daf-select>
+                    </div>
+                    <div class="line-split" style="grid-column:1 / -1">
+                      <span>{{ 'COST.FORM.AGENCY.DERIVED_VAT' | translate }} <strong>{{ lineVat(line) | number:'1.3-3' }}</strong></span>
+                      <span>{{ 'COST.FORM.NON_TAXABLE_LABEL' | translate }} <strong>{{ lineNonTaxable(line) | number:'1.3-3' }}</strong></span>
+                      <span>{{ 'COST.FORM.AGENCY.DERIVED_HT' | translate }} <strong>{{ (line.netAmountLocal ?? 0) | number:'1.3-3' }}</strong></span>
+                    </div>
+                  } @else {
                   <daf-form-field
                     [options]="{ type: 'number', label: ('COST.FORM.NET_LABEL' | translate), placeholder: '0.000', required: true }"
                     [value]="line.netAmountLocal"
@@ -227,12 +253,33 @@
                         (selectedChange)="patchLine(line.key, { tvaRate: rateOf($event) })">
                       </daf-select>
                     </div>
+                    <!-- Partie hors champ TVA (V102) — cas exceptionnel chez un fournisseur standard -->
+                    <div style="grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:flex-end;gap:.875rem">
+                      <daf-checkbox
+                        [checked]="line.hasNonTaxable"
+                        (checkedChange)="onNonTaxableToggle(line, $event)"
+                        [options]="{ label: ('COST.FORM.NON_TAXABLE_TOGGLE' | translate) }" />
+                      @if (line.hasNonTaxable) {
+                        <daf-form-field
+                          [options]="{ type: 'number', label: ('COST.FORM.VAT_BASE_LABEL' | translate), placeholder: '0.000', required: true }"
+                          [value]="line.vatBaseLocal"
+                          (valueChange)="patchLine(line.key, { vatBaseLocal: numberOf($event) })">
+                        </daf-form-field>
+                        <span class="line-split">
+                          <span>{{ 'COST.FORM.NON_TAXABLE_LABEL' | translate }} <strong>{{ lineNonTaxable(line) | number:'1.3-3' }}</strong></span>
+                        </span>
+                      }
+                    </div>
                   } @else {
                     <daf-form-field
                       [options]="{ type: 'number', label: ('COST.FORM.VAT_AMOUNT_LABEL' | translate), placeholder: '0.000' }"
                       [value]="line.vatAmountLocal"
                       (valueChange)="patchLine(line.key, { vatAmountLocal: numberOf($event) })">
                     </daf-form-field>
+                  }
+                  }
+                  @if (!lineBaseValid(line)) {
+                    <p class="other-taxes__error" style="grid-column:1 / -1">{{ 'COST.FORM.VAT_BASE_INVALID' | translate }}</p>
                   }
 
                   <daf-select
@@ -280,12 +327,21 @@
                 [selected]="selArr(timbreAmount())"
                 (selectedChange)="timbreAmount.set(rateOf($event)); schedulePreview()">
               </daf-select>
-              <daf-select
-                [options]="rsOptions()"
-                [config]="{ label: ('COST.FORM.TAX.RS_LABEL' | translate), placeholder: ('COST.FORM.TAX.RS_NONE' | translate) }"
-                [selected]="selArr(rsRate())"
-                (selectedChange)="rsRate.set(rateOf($event))">
-              </daf-select>
+              <!-- Retenue à la source : appliquée seulement si cochée -->
+              <div style="display:flex;flex-direction:column;gap:.625rem">
+                <daf-checkbox
+                  [checked]="rsApplied()"
+                  (checkedChange)="onRsAppliedChange($event)"
+                  [options]="{ label: ('COST.FORM.TAX.RS_APPLY' | translate), hint: ('COST.FORM.TAX.RS_APPLY_HINT' | translate) }" />
+                @if (rsApplied()) {
+                  <daf-select
+                    [options]="rsOptions()"
+                    [config]="{ label: ('COST.FORM.TAX.RS_LABEL' | translate), placeholder: ('COST.FORM.TAX.RS_PICK' | translate), required: true }"
+                    [selected]="selArr(rsRate())"
+                    (selectedChange)="rsRate.set(rateOf($event))">
+                  </daf-select>
+                }
+              </div>
             </div>
           }
 
@@ -334,6 +390,12 @@
               <span>{{ 'COST.FORM.TOTAL_HT' | translate }}</span>
               <span>{{ totals().ht | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
             </div>
+            @if (hasSupplier() && totals().nonTaxable) {
+              <div class="totals__row">
+                <span>{{ 'COST.FORM.TOTAL_NON_TAXABLE' | translate }}</span>
+                <span>{{ totals().nonTaxable | number:'1.3-3' }} {{ selectedCurrencyCode() }}</span>
+              </div>
+            }
             @if (hasSupplier() && totals().fodec) {
               <div class="totals__row">
                 <span>{{ 'COST.FORM.TOTAL_FODEC' | translate }}</span>

@@ -107,6 +107,17 @@
   color: #ba1a1a;
 }
 
+/* V102 — computed split of a line (TVA / hors champ / HT), read-only */
+.line-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.25rem;
+  font-size: .75rem;
+  color: #44474c;
+
+  strong { color: #0b1c30; font-weight: 700; }
+}
+
 @media (max-width: 640px) {
   .other-taxes__row { grid-template-columns: minmax(0, 1fr) auto; }
 }

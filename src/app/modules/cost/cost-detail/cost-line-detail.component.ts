@@ -404,11 +404,16 @@ export class CostLineDetailComponent implements OnInit {
     this.translate.currentLang();
     const t = (k: string) => this.translate.instant(k);
     const raw = (field: string) => (row: TableRow) => row['_' + field] as number | null;
+    // V102 — the "hors champ" column only when a line of this invoice has such a part.
+    const nonTaxable: TableColumn[] = this.invoice()?.nonTaxableAmountLocal
+      ? [{ key: 'nonTaxable', label: t('COST.DETAIL.LINES.COL_NON_TAXABLE'), type: 'text', align: 'right', sortable: true, sortAccessor: raw('nonTaxable') }]
+      : [];
     return [
       { key: 'category',    label: t('COST.DETAIL.LINES.COL_CATEGORY'),    type: 'text', sortable: true },
       { key: 'description', label: t('COST.DETAIL.LINES.COL_DESCRIPTION'), type: 'text', sortable: true },
       { key: 'affaire',     label: t('COST.DETAIL.LINES.COL_AFFAIRE'),     type: 'text', sortable: true },
       { key: 'net',   label: t('COST.DETAIL.LINES.COL_NET'),      type: 'text', align: 'right', sortable: true, sortAccessor: raw('net') },
+      ...nonTaxable,
       { key: 'fodec', label: t('COST.DETAIL.LINES.COL_FODEC'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('fodec') },
       { key: 'tvaRate', label: t('COST.DETAIL.LINES.COL_VAT_RATE'), type: 'text', align: 'right', sortable: true, sortAccessor: raw('tvaRate') },
       { key: 'vat',   label: t('COST.DETAIL.LINES.COL_VAT'),      type: 'text', align: 'right', sortable: true, sortAccessor: raw('vat') },
@@ -425,6 +430,8 @@ export class CostLineDetailComponent implements OnInit {
       description: l.label || '—',
       affaire:     l.affaireId != null ? (labels.get(l.affaireId) ?? ('#' + l.affaireId)) : '—',
       net:         this.fmtCur(l.netAmountLocal),
+      nonTaxable:  l.nonTaxableAmountLocal ? this.fmtCur(l.nonTaxableAmountLocal) : '—',
+      _nonTaxable: l.nonTaxableAmountLocal ?? 0,
       fodec:       l.fodecAmount ? this.fmtCur(l.fodecAmount) : '—',
       tvaRate:     this.fmtPct(l.tvaRate),
       vat:         this.fmtCur(l.vatAmountLocal),
@@ -455,6 +462,9 @@ export class CostLineDetailComponent implements OnInit {
     this.translate.currentLang();
     const t = (k: string, p?: object) => this.translate.instant(k, p);
     const rows: TotalRow[] = [{ label: t('COST.FORM.TOTAL_HT'), value: this.fmtCur(inv.netAmountLocal) }];
+    if (inv.nonTaxableAmountLocal) {
+      rows.push({ label: t('COST.FORM.TOTAL_NON_TAXABLE'), value: this.fmtCur(inv.nonTaxableAmountLocal) });
+    }
     if (inv.fodecAmount) rows.push({ label: t('COST.FORM.TOTAL_FODEC'), value: this.fmtCur(inv.fodecAmount) });
     for (const v of inv.vatBreakdown ?? []) {
       rows.push({
@@ -636,7 +646,9 @@ export class CostLineDetailComponent implements OnInit {
       { key: 'autresTaxes',     label: t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('otherTaxesAmount') },
       { key: 'grossAmount',     label: t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT'),    type: 'text', align: 'right', sortable: true, sortAccessor: raw('grossAmountLocal') },
       { key: 'rs',              label: t('COST.DETAIL.LEDGER.COL_RS'),              type: 'text', align: 'right', sortable: true, sortAccessor: raw('rsAmount') },
-      { key: 'debit',           label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right', sortable: true, sortAccessor: raw('debit') },
+      { key: 'netToPay',        label: t('COST.DETAIL.LEDGER.COL_NET_TO_PAY'),      type: 'text', align: 'right', sortable: true, sortAccessor: raw('netToPay') },
+      { key: 'paid',            label: t('COST.DETAIL.LEDGER.COL_PAID'),            type: 'text', align: 'right', sortable: true, sortAccessor: raw('montantPaye') },
+      { key: 'debit',          label: t('COST.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right', sortable: true, sortAccessor: raw('debit') },
       { key: 'credit',          label: t('COST.DETAIL.LEDGER.COL_CREDIT'),          type: 'text', align: 'right', sortable: true, sortAccessor: raw('credit') },
       { key: 'soldeDebiteur',   label: t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),  type: 'text', align: 'right', sortable: true, sortAccessor: raw('soldeDebiteur') },
       { key: 'soldeCrediteur',  label: t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR'), type: 'text', align: 'right', sortable: true, sortAccessor: raw('soldeCrediteur') },
@@ -737,6 +749,8 @@ export class CostLineDetailComponent implements OnInit {
       autresTaxes:    this.fmtAmount(r.otherTaxesAmount),
       grossAmount:    this.fmtAmount(r.grossAmountLocal),
       rs:             this.fmtAmount(r.rsAmount),
+      netToPay:       this.fmtAmount(r.netToPay ?? null),
+      paid:           this.fmtAmount(r.montantPaye ?? null),
       debit:          this.fmtAmount(r.debit),
       credit:         this.fmtAmount(r.credit),
       soldeDebiteur:  this.fmtAmount(r.soldeDebiteur),
@@ -796,7 +810,9 @@ export class CostLineDetailComponent implements OnInit {
       [t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES')]:     r.otherTaxesAmount ?? '',
       [t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT')]:     r.grossAmountLocal ?? '',
       [t('COST.DETAIL.LEDGER.COL_RS')]:               r.rsAmount ?? '',
-      [t('COST.DETAIL.LEDGER.COL_DEBIT')]:            r.debit ?? '',
+      [t('COST.DETAIL.LEDGER.COL_NET_TO_PAY')]:       r.netToPay ?? '',
+      [t('COST.DETAIL.LEDGER.COL_PAID')]:             r.montantPaye ?? '',
+      [t('COST.DETAIL.LEDGER.COL_DEBIT')]:           r.debit ?? '',
       [t('COST.DETAIL.LEDGER.COL_CREDIT')]:           r.credit ?? '',
       [t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR')]:   r.soldeDebiteur ?? '',
       [t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR')]:  r.soldeCrediteur ?? '',

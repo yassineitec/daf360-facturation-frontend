@@ -2611,18 +2611,28 @@
       "ADD_LINE": "Add a line",
       "REMOVE_LINE": "Remove the line",
       "VAT_AMOUNT_LABEL": "VAT (amount)",
+      "VAT_BASE_LABEL": "VAT base",
+      "NON_TAXABLE_TOGGLE": "Part outside the VAT scope",
+      "NON_TAXABLE_LABEL": "Outside VAT scope:",
+      "VAT_BASE_INVALID": "The VAT base must lie between 0 and the line's net amount (for an agency: gross ≥ VAT base + VAT).",
+      "TOTAL_NON_TAXABLE": "of which outside the VAT scope (untaxed, no withholding)",
+      "AGENCY": {
+        "LINE_TTC_LABEL": "Line amount (gross, as printed)",
+        "DERIVED_VAT": "VAT:",
+        "DERIVED_HT": "Net amount:"
+      },
       "SECTION_TAXES_TITLE": "Invoice taxes and totals",
       "SECTION_TAXES_SUB": "Stamp duty and withholding tax once per invoice, free other taxes added to the total incl. tax",
       "SECTION_TAXES_SUB_NO_SUPPLIER": "Invoice totals",
       "TOTAL_HT": "Total net (HT)",
       "TOTAL_FODEC": "FODEC",
-      "TOTAL_VAT_RATE": "VAT {{rate}} % (on net + FODEC {{base}})",
+      "TOTAL_VAT_RATE": "VAT {{rate}} % (on base + FODEC {{base}})",
       "TOTAL_VAT_MANUAL": "VAT entered",
       "TOTAL_TIMBRE": "Stamp duty",
       "TOTAL_TTC": "Total gross (TTC)",
       "TOTAL_RS": "Withholding tax ({{base}}) — deducted",
       "NET_TO_PAY": "Net payable to the supplier",
-      "HELP_4": "VAT = (net + FODEC) × rate. Stamp duty and withholding tax apply once per invoice; the withholding is computed on net + FODEC (or on the VAT) and deducted from the amount to pay. Other taxes are free amounts added to the total incl. tax.",
+      "HELP_4": "VAT = (VAT base + FODEC) × rate; the VAT base is the net amount, except a part outside the VAT scope (a travel agency's air fare…), which stays in the cost and the total incl. tax untaxed. Stamp duty applies once per invoice. The withholding tax is applied only when ticked: it is computed on VAT base + FODEC + VAT (or on the VAT alone), without the stamp duty, other taxes or the part outside the VAT scope, and deducted from the amount to pay. Other taxes are free amounts added to the total incl. tax.",
       "FOOT_NUMBER_HINT": "Enter the supplier's invoice number",
       "DRAFT_BADGE": "AUTOMATED DRAFT",
       "SECTION_CONTEXT_TITLE": "Context",
@@ -2663,7 +2673,11 @@
         "TTC_LABEL": "Estimated Total (incl. tax)",
         "RS_LABEL": "Withholding tax",
         "RS_NONE": "— No withholding —",
-        "RS_BASE_HT_FODEC": "on net + FODEC"
+        "RS_APPLY": "Apply withholding tax",
+        "RS_APPLY_HINT": "Not applied by default: tick it, then pick the rate.",
+        "RS_PICK": "— Pick the rate —",
+        "RS_BASE_HT_FODEC": "on net + FODEC (former base)",
+        "RS_BASE_HT_FOD_TVA": "on VAT base + FODEC + VAT"
       },
       "SECTION_SUPPLIER_TITLE": "Supplier",
       "SECTION_SUPPLIER_SUB": "Supplier linked to this expense",
@@ -3292,7 +3306,9 @@
         "FILTER_PERIOD": "Period",
         "FILTER_COST_LINE": "Cost line",
         "FILTER_INVOICE": "Invoice",
-        "COL_RS": "Withholding tax"
+        "COL_RS": "Withholding tax",
+        "COL_NET_TO_PAY": "Net to pay",
+        "COL_PAID": "Amount paid"
       },
       "TOTALS_TITLE": "Invoice totals",
       "LINES": {
@@ -3300,6 +3316,7 @@
         "COL_DESCRIPTION": "Description",
         "COL_AFFAIRE": "Project",
         "COL_NET": "Net",
+        "COL_NON_TAXABLE": "of which outside VAT scope",
         "COL_FODEC": "FODEC",
         "COL_VAT_RATE": "VAT rate",
         "COL_VAT": "VAT",
@@ -3342,6 +3359,7 @@
         "SUB_CATEGORY": "Sub-category",
         "DESCRIPTION": "Description",
         "NET_AMOUNT": "Net amount",
+        "VAT_BASE": "VAT base",
         "FODEC_RATE": "FODEC",
         "VAT_RATE": "VAT rate",
         "VAT_AMOUNT": "VAT",
@@ -3950,6 +3968,10 @@
     }
   },
   "SUPPLIERS": {
+    "CALC_PROFILE": {
+      "STANDARD": "Standard (net + rate)",
+      "AGENCE_VOYAGE": "Travel agency"
+    },
     "COMMON": {
       "CANCEL": "Cancel"
     },
@@ -4125,6 +4147,8 @@
       "TVA_HINT": "Must be unique: an already-used number makes the creation fail.",
       "TAX_ID": "Tax ID",
       "TAX_ID_PLACEHOLDER": "Local tax identifier",
+      "CALC_PROFILE": "Invoice calculation profile",
+      "CALC_PROFILE_HINT": "Travel agency: each line is entered as printed (gross amount, VAT base, rate); the rest (the fare) is outside the VAT scope and the withholding.",
       "IBAN": "IBAN",
       "IBAN_PLACEHOLDER": "FR76 3000 1234 5678…",
       "IBAN_HINT": "Used for bank transfer payments.",
@@ -4341,8 +4365,9 @@
       "TAX_BASE_HT": "Net amount (former base)",
       "TAX_BASE_TTC": "Total incl. tax (former base)",
       "TAX_BASE_TVA": "VAT amount (withholding on VAT)",
-      "TAX_BASE_HINT": "Amount the withholding rate applies to: net + FODEC, or the VAT amount. Stamp duty and other taxes never enter the base. Invoices already entered keep their amounts.",
-      "TAX_BASE_HT_FODEC": "Net + FODEC"
+      "TAX_BASE_HINT": "Amount the withholding rate applies to: net + FODEC + VAT, or the VAT amount alone (withholding on VAT). Stamp duty and other taxes never enter the base. Invoices already entered keep their amounts.",
+      "TAX_BASE_HT_FODEC": "Net + FODEC (former base)",
+      "TAX_BASE_HT_FOD_TVA": "Net + FODEC + VAT (excl. stamp duty and other taxes)"
     },
     "FOREX": {
       "INFO_1": "Rates convert cost line amounts to EUR and CHF during P&L calculations. The CHF rate is calculated automatically (",

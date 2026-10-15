@@ -2611,18 +2611,28 @@
       "ADD_LINE": "Ajouter une ligne",
       "REMOVE_LINE": "Supprimer la ligne",
       "VAT_AMOUNT_LABEL": "TVA (montant)",
+      "VAT_BASE_LABEL": "Base TVA",
+      "NON_TAXABLE_TOGGLE": "Partie hors champ TVA",
+      "NON_TAXABLE_LABEL": "Hors champ TVA :",
+      "VAT_BASE_INVALID": "La base TVA doit être comprise entre 0 et le montant HT de la ligne (pour une agence : TTC ≥ base TVA + TVA).",
+      "TOTAL_NON_TAXABLE": "dont hors champ TVA (non taxé, hors retenue)",
+      "AGENCY": {
+        "LINE_TTC_LABEL": "Montant de la ligne (TTC, tel qu'imprimé)",
+        "DERIVED_VAT": "TVA :",
+        "DERIVED_HT": "Montant HT :"
+      },
       "SECTION_TAXES_TITLE": "Taxes de la facture et totaux",
       "SECTION_TAXES_SUB": "Timbre fiscal et retenue à la source une seule fois par facture, autres taxes libres ajoutées au TTC",
       "SECTION_TAXES_SUB_NO_SUPPLIER": "Totaux de la facture",
       "TOTAL_HT": "Total HT",
       "TOTAL_FODEC": "FODEC",
-      "TOTAL_VAT_RATE": "TVA {{rate}} % (sur HT + FODEC {{base}})",
+      "TOTAL_VAT_RATE": "TVA {{rate}} % (sur base + FODEC {{base}})",
       "TOTAL_VAT_MANUAL": "TVA saisie",
       "TOTAL_TIMBRE": "Timbre fiscal",
       "TOTAL_TTC": "Total TTC",
       "TOTAL_RS": "Retenue à la source ({{base}}) — déduite",
       "NET_TO_PAY": "Net à payer au fournisseur",
-      "HELP_4": "TVA = (HT + FODEC) × taux. Le timbre fiscal et la retenue à la source s'appliquent une seule fois par facture ; la retenue est calculée sur HT + FODEC (ou sur la TVA) et déduite du net à payer. Les autres taxes sont des montants libres ajoutés au TTC.",
+      "HELP_4": "TVA = (base TVA + FODEC) × taux ; la base TVA est le HT, sauf partie hors champ TVA (billet d'avion d'une agence de voyage…), qui reste dans le coût et le TTC sans être taxée. Le timbre fiscal s'applique une fois par facture. La retenue à la source n'est appliquée que si elle est cochée : elle est calculée sur base TVA + FODEC + TVA (ou sur la TVA seule), sans le timbre, les autres taxes ni la partie hors champ, et déduite du net à payer. Les autres taxes sont des montants libres ajoutés au TTC.",
       "FOOT_NUMBER_HINT": "Renseignez le n° de facture du fournisseur",
       "DRAFT_BADGE": "BROUILLON AUTOMATISÉ",
       "SECTION_CONTEXT_TITLE": "Contexte",
@@ -2663,7 +2673,11 @@
         "TTC_LABEL": "Montant TTC (estimé)",
         "RS_LABEL": "Retenue à la source",
         "RS_NONE": "— Aucune retenue —",
-        "RS_BASE_HT_FODEC": "sur HT + FODEC"
+        "RS_APPLY": "Appliquer la retenue à la source",
+        "RS_APPLY_HINT": "Non appliquée par défaut : cochez puis choisissez le taux.",
+        "RS_PICK": "— Choisir le taux —",
+        "RS_BASE_HT_FODEC": "sur HT + FODEC (ancienne assiette)",
+        "RS_BASE_HT_FOD_TVA": "sur base TVA + FODEC + TVA"
       },
       "SECTION_SUPPLIER_TITLE": "Fournisseur",
       "SECTION_SUPPLIER_SUB": "Fournisseur lié à cette dépense",
@@ -3292,7 +3306,9 @@
         "FILTER_PERIOD": "Période",
         "FILTER_COST_LINE": "Ligne de coût",
         "FILTER_INVOICE": "Facture",
-        "COL_RS": "Retenue à la source"
+        "COL_RS": "Retenue à la source",
+        "COL_NET_TO_PAY": "Net à payer",
+        "COL_PAID": "Montant payé"
       },
       "TOTALS_TITLE": "Totaux de la facture",
       "LINES": {
@@ -3300,6 +3316,7 @@
         "COL_DESCRIPTION": "Description",
         "COL_AFFAIRE": "Affaire",
         "COL_NET": "HT",
+        "COL_NON_TAXABLE": "dont hors champ TVA",
         "COL_FODEC": "FODEC",
         "COL_VAT_RATE": "Taux TVA",
         "COL_VAT": "TVA",
@@ -3342,6 +3359,7 @@
         "SUB_CATEGORY": "Sous-catégorie",
         "DESCRIPTION": "Description",
         "NET_AMOUNT": "Montant HT",
+        "VAT_BASE": "Base TVA",
         "FODEC_RATE": "FODEC",
         "VAT_RATE": "Taux de TVA",
         "VAT_AMOUNT": "TVA",
@@ -3950,6 +3968,10 @@
     }
   },
   "SUPPLIERS": {
+    "CALC_PROFILE": {
+      "STANDARD": "Standard (HT + taux)",
+      "AGENCE_VOYAGE": "Agence de voyage"
+    },
     "COMMON": {
       "CANCEL": "Annuler"
     },
@@ -4125,6 +4147,8 @@
       "TVA_HINT": "Doit être unique : un numéro déjà utilisé fait échouer la création.",
       "TAX_ID": "Identifiant fiscal",
       "TAX_ID_PLACEHOLDER": "Matricule fiscal local",
+      "CALC_PROFILE": "Profil de calcul des factures",
+      "CALC_PROFILE_HINT": "Agence de voyage : chaque ligne se saisit telle qu'imprimée (montant TTC, base TVA, taux) ; le reste (billet) est hors champ TVA et hors retenue.",
       "IBAN": "IBAN",
       "IBAN_PLACEHOLDER": "FR76 3000 1234 5678…",
       "IBAN_HINT": "Utilisé pour les paiements par virement bancaire.",
@@ -4321,11 +4345,12 @@
       "TAX_BASE_HT": "Montant HT (ancienne assiette)",
       "TAX_BASE_TTC": "Montant TTC (ancienne assiette)",
       "TAX_BASE_TVA": "Montant de la TVA (retenue sur TVA)",
-      "TAX_BASE_HINT": "Montant sur lequel le taux de retenue est appliqué : HT + FODEC, ou le montant de la TVA. Le timbre fiscal et les autres taxes n'entrent jamais dans l'assiette. Les factures déjà saisies gardent leurs montants.",
-      "TAX_BASE_HT_FODEC": "HT + FODEC",
+      "TAX_BASE_HINT": "Montant sur lequel le taux de retenue est appliqué : HT + FODEC + TVA, ou le montant de la TVA seul (retenue sur TVA). Le timbre fiscal et les autres taxes n'entrent jamais dans l'assiette. Les factures déjà saisies gardent leurs montants.",
+      "TAX_BASE_HT_FODEC": "HT + FODEC (ancienne assiette)",
       "TYPE_LABEL": {
         "OTHER_TAX_TYPE": "Autres taxes (types)"
-      }
+      },
+      "TAX_BASE_HT_FOD_TVA": "HT + FODEC + TVA (hors timbre et autres taxes)"
     },
     "FOREX": {
       "INFO_1": "Les taux convertissent les montants des lignes de coût vers EUR et CHF lors des calculs P&L. Le taux CHF est calculé automatiquement (",

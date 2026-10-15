@@ -67,7 +67,7 @@ function emptyValueForm(): ValueForm {
     code: '', labelFr: '', labelEn: '', isDefault: false, requiresReceipt: false,
     parentCode: '', sourceType: 'MANUAL', autoPushModule: '',
     isStrictScrutiny: false, isDirect: false, isOverhead: false, isCapex: false,
-    descriptionFr: '', descriptionEn: '', ratePct: null, taxBase: 'HT_FODEC',
+    descriptionFr: '', descriptionEn: '', ratePct: null, taxBase: 'HT_FOD_TVA',
   };
 }
 
@@ -132,7 +132,7 @@ export class AdminListComponent implements OnInit {
   readonly isVatRateType = computed(() =>
     this.activeListType() === VAT_RATE_TYPE || this.activeListType() === WITHHOLDING_RATE_TYPE);
 
-  /** WITHHOLDING_RATE (retenue à la source, V92) values also carry the base: HT + FODEC or the TVA (V95). */
+  /** WITHHOLDING_RATE (retenue à la source, V92) values also carry the base: HT + FODEC + TVA or the TVA (V101). */
   readonly isWithholdingType = computed(() => this.activeListType() === WITHHOLDING_RATE_TYPE);
 
   readonly taxBaseOptions = computed<SelectOption[]>(() => {
@@ -792,7 +792,7 @@ export class AdminListComponent implements OnInit {
       descriptionFr: v.descriptionFr ?? '',
       descriptionEn: v.descriptionEn ?? '',
       ratePct: v.ratePct ?? null,
-      taxBase: v.taxBase === 'TVA' ? 'TVA' : 'HT_FODEC',
+      taxBase: v.taxBase === 'TVA' ? 'TVA' : 'HT_FOD_TVA',
     };
     this.valueModalError.set(null);
     this.openValueModal(this.translate.instant('ADMIN.LISTS.MODAL_EDIT', { code: v.code }));
