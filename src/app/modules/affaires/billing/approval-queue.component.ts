@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed, effect, untracked, viewChild, ViewChild, TemplateRef, WritableSignal } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
+import { FinancePaths } from '../../../core/finance-paths';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
 import { forkJoin, Observable, switchMap }    from 'rxjs';
 import {
@@ -146,6 +147,7 @@ export class ApprovalQueueComponent implements OnInit {
   private readonly invoiceSvc = inject(InvoiceService);
   private readonly translate  = inject(TranslateService);
   private readonly router     = inject(Router);
+  protected readonly paths    = inject(FinancePaths);
   private readonly route      = inject(ActivatedRoute);
   private readonly modal      = inject(ModalService);
 
@@ -1103,7 +1105,7 @@ export class ApprovalQueueComponent implements OnInit {
    * route here — its row opens the ordinary invoice detail page directly (absolute
    * navigation, unlike openDetail() above which stays relative under this route). */
   openCreditNoteDetail(row: { id: number }): void {
-    this.router.navigate(['/finance/invoicing', row.id]);
+    this.router.navigate(this.paths.invoice(row.id));
   }
 
   setTab(tab: ActiveTab): void {
@@ -1155,7 +1157,7 @@ export class ApprovalQueueComponent implements OnInit {
         if (line.invoiceId) {
           // fromApproval: the stepper's "Annuler" then reverts this validation instead of
           // leaving the draft invoice behind (InvoiceNewComponent.cancel()).
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit'],
+          this.router.navigate(this.paths.invoiceEdit(line.invoiceId),
             { queryParams: { fromApproval: 1 } });
         } else {
           this.loadDF();
@@ -1171,7 +1173,7 @@ export class ApprovalQueueComponent implements OnInit {
     this.svc.validateLivrableBatch(batchId).subscribe({
       next: batch => {
         if (batch.invoiceId) {
-          this.router.navigate(['/finance/invoicing', batch.invoiceId, 'edit'],
+          this.router.navigate(this.paths.invoiceEdit(batch.invoiceId),
             { queryParams: { fromApproval: 1 } });
         } else {
           this.loadDF();
@@ -1190,7 +1192,7 @@ export class ApprovalQueueComponent implements OnInit {
         selection.clear();
         const invoiceId = lines[0]?.invoiceId;
         if (invoiceId) {
-          this.router.navigate(['/finance/invoicing', invoiceId, 'edit'],
+          this.router.navigate(this.paths.invoiceEdit(invoiceId),
             { queryParams: { fromApproval: 1 } });
         } else {
           this.loadDF();
@@ -1210,7 +1212,7 @@ export class ApprovalQueueComponent implements OnInit {
         this.livrableSelection.clear();
         const invoiceId = batches[0]?.invoiceId;
         if (invoiceId) {
-          this.router.navigate(['/finance/invoicing', invoiceId, 'edit'],
+          this.router.navigate(this.paths.invoiceEdit(invoiceId),
             { queryParams: { fromApproval: 1 } });
         } else {
           this.loadDF();
@@ -1230,7 +1232,7 @@ export class ApprovalQueueComponent implements OnInit {
     this.invoiceSvc.approve(id, { decision: 'APPROVE' }).pipe(
       switchMap(() => this.invoiceSvc.emit(id)),
     ).subscribe({
-      next: () => this.router.navigate(['/finance/invoicing', id]),
+      next: () => this.router.navigate(this.paths.invoice(id)),
       error: () => this.loadDF(),
     });
   }

@@ -400,6 +400,7 @@
     },
     "NEW": {
       "TITLE": "Nouvelle facture",
+      "EDIT_TITLE": "Modifier la facture",
       "SUBTITLE": "Composez la facture, étape par étape.",
       "STEP_OF": "Étape {{step}} sur {{total}}",
       "BACK": "Retour",

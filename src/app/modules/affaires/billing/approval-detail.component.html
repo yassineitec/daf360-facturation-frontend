@@ -4,11 +4,6 @@
     [title]="pageTitle()"
     [subtitle]="affaire()?.clientName ?? undefined"
     [breadcrumbs]="breadcrumbItems()">
-    <ng-container pageActions>
-      <daf-button
-        [options]="{ variant: 'ghost', iconStart: 'arrow_back', label: ('AFFAIRES.billing.approval.detail.back' | translate) }"
-        (onClick)="back()" />
-    </ng-container>
   </daf-page-header>
 
   @if (errorMsg()) {

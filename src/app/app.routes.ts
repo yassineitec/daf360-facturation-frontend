@@ -2,6 +2,7 @@ import { Routes }                        from '@angular/router';
 import { provideEnvironmentInitializer, inject } from '@angular/core';
 import { of } from 'rxjs';
 import { authGuard }                      from './core/auth.guard';
+import { FINANCE_ROOT_ROUTE }             from './core/finance-paths';
 import { FactShellComponent }             from './layout/fact-shell.component';
 import { permissionGuard, provideDafAccess } from '@khalilrebhiitec/daf360';
 import { environment }                    from '../environments/environment';
@@ -32,6 +33,8 @@ export const routes: Routes = [
     path: '',
     component: FactShellComponent,
     canActivate: [authGuard],
+    // Lets FinancePaths find this app's mount point (`/finance` under the shell, `/` alone).
+    data: { [FINANCE_ROOT_ROUTE]: true },
     providers: [
       // Feeds the lib permission guard: unauthenticated → shell login; a permission
       // denial → the shell's /forbidden page (federation shares one Router).

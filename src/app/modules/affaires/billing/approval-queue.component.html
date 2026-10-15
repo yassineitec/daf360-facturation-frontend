@@ -150,7 +150,7 @@
                       </ng-template>
 
                       <ng-template dafCell="affaire" let-row>
-                        <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                        <a [routerLink]="paths.affaire(row['affaireId'])" class="cell-link"
                           (click)="$event.stopPropagation()">
                           {{ row['affaireRef'] }}
                         </a>
@@ -237,7 +237,7 @@
                     (rowClick)="openCreditNoteDetail($any($event))">
 
                     <ng-template dafCell="affaire" let-row>
-                      <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                      <a [routerLink]="paths.affaire(row['affaireId'])" class="cell-link"
                         (click)="$event.stopPropagation()">
                         {{ row['affaireRef'] }}
                       </a>
@@ -312,7 +312,7 @@
                   </ng-template>
 
                   <ng-template dafCell="affaire" let-row>
-                    <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    <a [routerLink]="paths.affaire(row['affaireId'])" class="cell-link"
                       (click)="$event.stopPropagation()">
                       {{ row['affaireRef'] }}
                     </a>
@@ -397,7 +397,7 @@
                     (rowClick)="openCreditNoteDetail($any($event))">
 
                     <ng-template dafCell="affaire" let-row>
-                      <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                      <a [routerLink]="paths.affaire(row['affaireId'])" class="cell-link"
                         (click)="$event.stopPropagation()">
                         {{ row['affaireRef'] }}
                       </a>
@@ -472,7 +472,7 @@
                   </ng-template>
 
                   <ng-template dafCell="affaire" let-row>
-                    <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    <a [routerLink]="paths.affaire(row['affaireId'])" class="cell-link"
                       (click)="$event.stopPropagation()">
                       {{ row['affaireRef'] }}
                     </a>
@@ -549,7 +549,7 @@
                     (rowClick)="openCreditNoteDetail($any($event))">
 
                     <ng-template dafCell="affaire" let-row>
-                      <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                      <a [routerLink]="paths.affaire(row['affaireId'])" class="cell-link"
                         (click)="$event.stopPropagation()">
                         {{ row['affaireRef'] }}
                       </a>
@@ -628,7 +628,7 @@
                   </ng-template>
 
                   <ng-template dafCell="affaire" let-row>
-                    <a [routerLink]="['/fact/affaires', row['affaireId']]" class="cell-link"
+                    <a [routerLink]="paths.affaire(row['affaireId'])" class="cell-link"
                       (click)="$event.stopPropagation()">
                       {{ row['affaireRef'] }}
                     </a>

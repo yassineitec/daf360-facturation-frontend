@@ -400,6 +400,7 @@
     },
     "NEW": {
       "TITLE": "New invoice",
+      "EDIT_TITLE": "Edit invoice",
       "SUBTITLE": "Build the invoice, step by step.",
       "STEP_OF": "Step {{step}} of {{total}}",
       "BACK": "Back",
