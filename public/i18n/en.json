@@ -581,6 +581,8 @@
       "CARRY_FORWARD_COL_PERIOD": "Period",
       "CARRY_FORWARD_COL_AVAILABLE": "Available",
       "CARRY_FORWARD_COL_AMOUNT": "Amount to invoice",
+      "CARRY_FORWARD_INCLUDED_COUNT": "{{count}} WIP balances included",
+      "CARRY_FORWARD_REMOVE_SOURCE": "Remove this balance from the line",
       "ADD_DEDUCTION_COLUMN": "+ Add column",
       "DEDUCTION_LABEL_PLACEHOLDER": "Column name",
       "DEDUCTION_UNNAMED": "(unnamed)"

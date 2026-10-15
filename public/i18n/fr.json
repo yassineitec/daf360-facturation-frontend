@@ -581,6 +581,8 @@
       "CARRY_FORWARD_COL_PERIOD": "Période",
       "CARRY_FORWARD_COL_AVAILABLE": "Disponible",
       "CARRY_FORWARD_COL_AMOUNT": "Montant à facturer",
+      "CARRY_FORWARD_INCLUDED_COUNT": "{{count}} soldes WIP inclus",
+      "CARRY_FORWARD_REMOVE_SOURCE": "Retirer ce solde de la ligne",
       "ADD_DEDUCTION_COLUMN": "+ Ajouter une colonne",
       "DEDUCTION_LABEL_PLACEHOLDER": "Nom de la colonne",
       "DEDUCTION_UNNAMED": "(sans nom)"
