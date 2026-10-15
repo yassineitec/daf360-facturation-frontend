@@ -282,16 +282,28 @@ export interface StepLinesValue {
                     (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
               } @else if (isTsCarryForward()) {
-                <!-- TS WIP : facturé en une seule fois à 100 % — même affichage que T&M. -->
-                <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
-                <td class="td-computed">{{ formatPct(100) }}</td>
-                <td class="td-computed">{{ formatPct(100) }}</td>
-                <td class="td-computed">{{ formatPct(100) }}</td>
-                <td>
-                  <daf-form-field [options]="numOptions"
-                    [value]="lg.get('prixUnitaireHt')!.value"
-                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
-                </td>
+                <!-- TS WIP : les quatre colonnes d'avancement portent de VRAIES valeurs,
+                     calculées une seule fois côté serveur à la validation DF d'une
+                     déclaration TsTauxAvancement (DFValidationService.buildInvoiceLine,
+                     branche TS) -- exactement le même principe qu'en Forfaitaire (cf.
+                     isAv() ci-dessus). Un solde TS repris via le picker de carry-forward
+                     calcule ces mêmes colonnes côté serveur (InvoiceService.
+                     toPendingCarryForwardDto, branche TS). '—' uniquement pour une
+                     InvoiceLine historique persistée avant que cette branche ne calcule
+                     de vraies valeurs. -->
+                <td class="td-computed">{{ tsBudgetAffaireLabel(i) }}</td>
+                <td class="td-computed">{{ tsPctFactureLabel(i) }}</td>
+                <td class="td-computed">{{ tsPctAvancementLabel(i) }}</td>
+                <td class="td-computed">{{ tsPctAFacturerLabel(i) }}</td>
+                @if (tsHasAvancement(i) && !amendMode()) {
+                  <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
               } @else if (isLivrable()) {
                 <!-- Livrable : les quatre colonnes d'avancement portent de VRAIES valeurs,
                      propres au document facturé (budget alloué du livrable, % déjà facturé
@@ -1378,6 +1390,57 @@ export class StepLinesComponent {
         && this.avAvancement(i, 'pctAFacturer')  != null;
   }
 
+  // ── Calculs mode TS — colonnes d'avancement de la ligne ─────────────────────────
+  //
+  // Lues sur le FormGroup de la ligne, jamais recalculées : fixées une seule fois côté
+  // serveur à la validation DF d'une déclaration TsTauxAvancement (DFValidationService.
+  // buildInvoiceLine, branche TS), exactement le même principe qu'en Forfaitaire (cf.
+  // avAvancement ci-dessus). `null` quand la ligne n'a pas d'avancement réel -- soit un
+  // solde TS repris via le picker de carry-forward dont le calcul a échoué pour une
+  // raison quelconque, soit (cas historique) une InvoiceLine persistée avant que la
+  // branche TS de buildInvoiceLine ne calcule de vraies valeurs -- affichée '—' dans ce
+  // cas plutôt que le 100 % systématique erroné d'avant.
+
+  private tsAvancement(
+    i: number,
+    key: 'budgetAffaire' | 'pctFacture' | 'pctAvancement' | 'pctAFacturer',
+  ): number | null {
+    const v = (this.linesArray.at(i) as FormGroup).get(key)?.value;
+    return v == null || v === '' ? null : Number(v);
+  }
+
+  tsBudgetAffaireLabel(i: number): string {
+    const v = this.tsAvancement(i, 'budgetAffaire');
+    return v == null ? '—' : this.formatAmount(v);
+  }
+
+  tsPctFactureLabel(i: number): string {
+    const v = this.tsAvancement(i, 'pctFacture');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  tsPctAvancementLabel(i: number): string {
+    const v = this.tsAvancement(i, 'pctAvancement');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  tsPctAFacturerLabel(i: number): string {
+    const v = this.tsAvancement(i, 'pctAFacturer');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  /** Vrai quand la ligne porte les deux colonnes dont le total dérive — c'est-à-dire une
+   * ligne générée depuis une déclaration TS validée par un DF (DFValidationService.
+   * buildInvoiceLine, branche TS) ou reprise via le picker de solde WIP non facturé
+   * (InvoiceService.toPendingCarryForwardDto, branche TS) — les deux chemins calculent
+   * désormais de vraies valeurs. Faux uniquement pour une InvoiceLine historique
+   * persistée avant ce calcul, qui garde alors l'ancien repli (montant éditable, '—'
+   * partout) plutôt que d'afficher un faux 100 %. */
+  tsHasAvancement(i: number): boolean {
+    return this.tsAvancement(i, 'budgetAffaire') != null
+        && this.tsAvancement(i, 'pctAFacturer')  != null;
+  }
+
   /** Montant HT — toujours le contrôle `prixUnitaireHt` de CETTE ligne, jamais recalculé
    * depuis budgetAffaire/pctAFacturer : ces deux champs sont un contexte d'affichage figé
    * (jamais le progrès global de l'affaire, qui ignore qu'une approbation client partielle
@@ -1551,28 +1614,31 @@ export class StepLinesComponent {
         deductionColumns,
       });
     } else if (this.isTsCarryForward()) {
-      // TS WIP billing lines: billed in full in one shot — same flat 100%-everywhere
-      // convention as T&M.  Carry the period from the server-generated draft so it is
-      // preserved on re-save, same as isTm() / isLivrable().
+      // TS WIP billing lines: the four avancement columns carry REAL values computed
+      // once server-side at DF validation of a TsTauxAvancement declaration
+      // (DFValidationService.buildInvoiceLine, branche TS) or at carry-forward pickup
+      // (InvoiceService.toPendingCarryForwardDto, branche TS) -- reread and reemitted
+      // here exactly as-is, never recalculated, same principle as isAv() above. Carry
+      // the period from the server-generated draft so it is preserved on re-save, same
+      // as isTm() / isLivrable().
       const tsLines = (this.linesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number;
+        budgetAffaire: number | null; pctFacture: number | null;
+        pctAvancement: number | null; pctAFacturer: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map(l => {
-        const montant = l.prixUnitaireHt ?? 0;
-        return {
-          description:   l.description,
-          quantity:      1,
-          unitRate:      montant,
-          vatRatePct:    l.tauxTva,
-          budgetAffaire: montant,
-          pctFacture:    100,
-          pctAvancement: 100,
-          pctAFacturer:  100,
-          sourceCarryForwards: l.sourceCarryForwards ?? undefined,
-          ...dedFields(l),
-        };
-      });
+      }[]).map((l, i) => ({
+        description:   l.description,
+        quantity:      1,
+        unitRate:      this.lineHtTm(i),
+        vatRatePct:    l.tauxTva,
+        budgetAffaire: l.budgetAffaire ?? undefined,
+        pctFacture:    l.pctFacture    ?? undefined,
+        pctAvancement: l.pctAvancement ?? undefined,
+        pctAFacturer:  l.pctAFacturer  ?? undefined,
+        sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...dedFields(l),
+      }));
       this.nextStep.emit({
         lines: tsLines,
         periodFrom: this.initialPeriodFrom(),
