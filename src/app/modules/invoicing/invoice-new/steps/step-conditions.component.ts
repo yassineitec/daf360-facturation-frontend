@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, input, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, ValidatorFn, Validators } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { startWith } from 'rxjs';
 import {
@@ -22,6 +22,12 @@ export interface StepConditionsValue {
    *  Empty string outside amend mode (createDraft/updateDraft ignore it). */
   invoiceNumber:      string;
 }
+
+/** Validators.required alone only checks length === 0 — a whitespace-only value would pass
+ *  it, then the backend's own trim-then-no-op-if-blank logic would silently discard it,
+ *  leaving the user thinking they'd entered/changed a number when nothing was saved. */
+const requiredTrimmed: ValidatorFn = control =>
+  ((control.value ?? '') as string).trim() ? null : { required: true };
 
 @Component({
   selector: 'app-step-conditions',
@@ -269,7 +275,7 @@ export class StepConditionsComponent {
     // even shown outside amend mode (see the template's @if (amendMode()) block above).
     effect(() => {
       const control = this.form.controls.invoiceNumber;
-      control.setValidators(this.amendMode() ? [Validators.required] : []);
+      control.setValidators(this.amendMode() ? [requiredTrimmed] : []);
       control.updateValueAndValidity({ emitEvent: false });
     });
   }
@@ -284,7 +290,7 @@ export class StepConditionsComponent {
       bonDeCommande:      v.bonDeCommande?.trim() || null,
       notes:              v.notes?.trim()         || null,
       dateEmission:       v.dateEmission ?? '',
-      invoiceNumber:      v.invoiceNumber ?? '',
+      invoiceNumber:      v.invoiceNumber?.trim() ?? '',
     });
   }
 }
