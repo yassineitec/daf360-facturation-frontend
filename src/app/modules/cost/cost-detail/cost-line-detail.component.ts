@@ -36,6 +36,7 @@ import { TableActionComponent } from '../../../shared/table-action.component';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
+import { CostRemindersPanelComponent } from './cost-reminders-panel.component';
 import { canEditInvoice, canReglementInvoice, invoicePayableAmount } from '../tabs/cost-invoice-display';
 import { UserStore } from '../../../core/user.store';
 
@@ -91,7 +92,7 @@ const SUPPLIER_MODE_PAGE_SIZE = 200;
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent, StatusBadgeComponent, FilterComponent,
     DataTableComponent, DafCellDirective, TableActionComponent, SearchToolbarComponent,
-    CostLinesTableSectionComponent, ReglementModalComponent,
+    CostLinesTableSectionComponent, ReglementModalComponent, CostRemindersPanelComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -385,6 +386,7 @@ export class CostLineDetailComponent implements OnInit {
       { id: 'approvals',   label: t('COST.DETAIL.TABS.APPROVALS'),   count: inv?.approvals.length || null },
       { id: 'attachments', label: t('COST.DETAIL.TABS.ATTACHMENTS'), count: this.attachments().length || null },
       { id: 'changes',     label: t('COST.DETAIL.TABS.CHANGES'),     count: this.changes().length || null },
+      { id: 'reminders',   label: t('COST.DETAIL.TABS.REMINDERS') },
       ledgerTab,
     ];
   });

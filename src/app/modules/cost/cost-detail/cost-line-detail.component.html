@@ -218,6 +218,13 @@
               }
             }
 
+            <!-- ── Relances de la facture (mode 'line') ───────────────────────── -->
+            @if (activeTab() === 'reminders' && mode === 'line') {
+              @if (invoice(); as inv) {
+                <app-cost-reminders-panel [costInvoiceId]="inv.id" />
+              }
+            }
+
             <!-- ── Relevé de compte fournisseur ──────────────────────────────── -->
             @if (activeTab() === 'reglement') {
               <ng-container [ngTemplateOutlet]="ledgerPanel" />
