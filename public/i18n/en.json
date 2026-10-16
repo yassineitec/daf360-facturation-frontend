@@ -589,6 +589,9 @@
     },
     "STEP_CONDITIONS": {
       "ISSUE_DATE_LABEL": "Issue date",
+      "INVOICE_NUMBER_LABEL": "Invoice number",
+      "INVOICE_NUMBER_PLACEHOLDER": "e.g. FAC-2026-0001",
+      "INVOICE_NUMBER_REQUIRED": "Invoice number required.",
       "DUE_DATE_LABEL": "Due date *",
       "DUE_DATE_REQUIRED": "Date required.",
       "DUE_DATE_AUTO_HINT": "Calculated automatically from the payment conditions — editable.",
