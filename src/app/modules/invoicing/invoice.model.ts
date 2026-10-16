@@ -190,6 +190,9 @@ export interface CreateDraftRequest {
   // T&M — période facturée, source des heures récupérées ; présents uniquement en mode T&M
   periodFrom?:         string | null;
   periodTo?:           string | null;
+  // Amend mode only — overrides an already-emitted invoice's number. createDraft/updateDraft
+  // ignore it (a DRAFT has no number to correct).
+  invoiceNumber?:      string | null;
 }
 
 export type UpdateDraftRequest = CreateDraftRequest;

@@ -386,6 +386,7 @@ export class StepRecapComponent {
       lines:         l.lines,
       periodFrom:    l.periodFrom,
       periodTo:      l.periodTo,
+      invoiceNumber: c.invoiceNumber || null,
     };
   }
 

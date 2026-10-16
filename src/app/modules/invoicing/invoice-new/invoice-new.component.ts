@@ -176,6 +176,7 @@ export class InvoiceNewComponent implements OnInit {
           bonDeCommande:      inv.bonDeCommande,
           notes:              inv.notes,
           dateEmission:       inv.dateEmission ?? '',
+          invoiceNumber:      inv.invoiceNumber ?? '',
         });
         this.loadingExisting.set(false);
       },
