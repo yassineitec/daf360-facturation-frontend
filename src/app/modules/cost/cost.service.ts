@@ -7,6 +7,7 @@ import {
   CostLineDto,
   CostInvoiceDto, CreateCostInvoiceRequest, CostInvoiceAttachmentDto, CostInvoiceReglementDto,
   CostInvoiceChangeDto, CostInvoiceImportResult, PageResponse,
+  CostReminderDto,
   ForexPreviewDto, CircuitPreviewDto,
   ListValueDto, SupplierSearchItem, SupplierLedgerDto, SupplierCostSummaryDto,
   RateComputationDto, CreateRateComputationRequest,
@@ -193,6 +194,22 @@ export class CostService {
     return this.http.get<CostInvoiceChangeDto[]>(`${this.base}/cost-invoices/${id}/changes`).pipe(
       catchError(() => of([] as CostInvoiceChangeDto[])),
     );
+  }
+
+  // ── Reminders (per invoice) ───────────────────────────────────────────────────
+
+  getCostInvoiceReminders(id: number): Observable<CostReminderDto[]> {
+    return this.http.get<CostReminderDto[]>(`${this.base}/cost-invoices/${id}/reminders`).pipe(
+      catchError(() => of([] as CostReminderDto[])),
+    );
+  }
+
+  suspendCostInvoiceReminders(id: number, reason: string | null): Observable<void> {
+    return this.http.post<void>(`${this.base}/cost-invoices/${id}/suspend-reminders`, { reason });
+  }
+
+  reactivateCostInvoiceReminders(id: number): Observable<void> {
+    return this.http.post<void>(`${this.base}/cost-invoices/${id}/reactivate-reminders`, {});
   }
 
   // ── Historical import (reprise de l'ancienne base) ─────────────────────────────

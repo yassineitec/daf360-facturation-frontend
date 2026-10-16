@@ -268,6 +268,20 @@ export interface CostInvoiceReglementDto {
   comment: string | null;
 }
 
+export interface CostReminderDto {
+  id:               number;
+  costInvoiceId:    number;
+  reminderType:     string;
+  labelFr:          string | null;
+  labelEn:          string | null;
+  offsetDays:       number | null;
+  scheduledDate:    string;
+  sentAt:           string | null;
+  isSent:           boolean;
+  isSuspended:      boolean;
+  suspensionReason: string | null;
+}
+
 export interface CostInvoiceDto {
   id: number;
   paysId: number;
