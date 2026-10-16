@@ -3252,7 +3252,8 @@
         "INVOICES": "Factures",
         "APPROVALS": "Approbations",
         "ATTACHMENTS": "Pièces jointes",
-        "CHANGES": "Historique des modifications"
+        "CHANGES": "Historique des modifications",
+        "REMINDERS": "Relances"
       },
       "SUPPLIER": {
         "SUBTITLE": "{{count}} facture(s) de coût",
@@ -3349,6 +3350,17 @@
         "COL_BEFORE": "Avant",
         "COL_AFTER": "Après"
       }
+    },
+    "REMINDERS": {
+      "TITLE": "Rappels de paiement",
+      "ACTIVE": "Actifs",
+      "SUSPENDED": "Suspendus",
+      "SUSPEND": "Suspendre",
+      "REACTIVATE": "Réactiver",
+      "LOADING": "Chargement des relances…",
+      "STATUS": { "SENT": "Envoyée", "SUSPENDED": "Suspendue", "PENDING": "En attente" },
+      "EMPTY": "Aucune relance planifiée.",
+      "SUSPEND_FORM": { "LABEL": "Motif de suspension", "PLACEHOLDER": "Optionnel", "CANCEL": "Annuler", "CONFIRM": "Confirmer" }
     },
     "CHANGES": {
       "LINE_PREFIX": "Ligne {{ref}}",
@@ -4221,6 +4233,7 @@
       "DOCUMENT_TEMPLATES": "Maquettes de documents",
       "COST_CONFIG": "Configuration des coûts",
       "REMINDERS": "Relances",
+      "COST_REMINDERS": "Relances fournisseurs",
       "WIP_EMAIL_TEMPLATES": "Emails WIP",
       "NAV_LABEL": "Navigation de l'administration"
     },
@@ -4459,6 +4472,45 @@
       "ERROR_SAVE": "Impossible d’enregistrer ce palier.",
       "ERROR_DELETE": "Impossible de supprimer ce palier.",
       "ERROR_REQUIRED": "Renseignez le code, les deux libellés et un décalage en jours entier."
+    },
+    "COST_REMINDERS": {
+      "INTRO": "Configurez l'échéancier de relance qui rappelle au personnel interne de payer les fournisseurs à temps, en fonction de la date d'échéance de chaque facture.",
+      "SECTION_TITLE": "Échéancier de paiement",
+      "DISPATCH_NOW": "Déclencher maintenant",
+      "ADD": "Ajouter un palier",
+      "COL_OFFSET": "Décalage",
+      "COL_RULE": "Relance",
+      "COL_ROLES": "Destinataires",
+      "COL_SCOPE": "Périmètre",
+      "COL_STATE": "Statut",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "ORPHAN_HINT": "Ce rôle n'existe pas dans l'annuaire — ce palier n'a aucun destinataire.",
+      "DELETE": "Supprimer",
+      "EMPTY": "Aucun palier de relance configuré.",
+      "ERROR_LOAD": "Échec du chargement des règles de relance.",
+      "EDIT_TITLE": "Modifier le palier de relance",
+      "NEW_TITLE": "Nouveau palier de relance",
+      "FIELD_CODE": "Code",
+      "CODE_LOCKED": "Verrouillé — des relances portent déjà ce code.",
+      "CODE_HINT": "Majuscules, chiffres et underscores uniquement.",
+      "FIELD_LABEL_FR": "Libellé (français)",
+      "FIELD_LABEL_EN": "Libellé (anglais)",
+      "FIELD_OFFSET": "Décalage par rapport à l'échéance (jours)",
+      "OFFSET_HINT": "Négatif = avant l'échéance, positif = après.",
+      "FIELD_ROLES": "Rôles destinataires",
+      "ROLES_PLACEHOLDER": "Sélectionnez un ou plusieurs rôles",
+      "ROLES_HINT": "Seuls les rôles existant dans l'annuaire peuvent recevoir une relance.",
+      "FIELD_SUBJECT": "Objet de l'e-mail",
+      "SUBJECT_PLACEHOLDER": "Laisser vide pour l'objet par défaut",
+      "TEMPLATE_HINT": "Cliquez sur un jeton ci-dessous pour l'insérer.",
+      "FIELD_BODY": "Corps de l'e-mail",
+      "BODY_HINT": "Laisser vide pour le message par défaut.",
+      "FIELD_ACTIVE": "Active",
+      "ACTIVE_HINT": "Une règle inactive ne génère plus de nouvelles relances, mais garde son historique.",
+      "ERROR_REQUIRED": "Le code, les deux libellés et un décalage entier sont obligatoires.",
+      "ERROR_SAVE": "Échec de l'enregistrement de la règle de relance.",
+      "ERROR_DELETE": "Échec de la suppression de la règle de relance."
     },
     "WIP_EMAIL_TPLS": {
       "INTRO": "Ces modèles définissent l'objet et le corps de l'email envoyé automatiquement au client lors de la validation d'un WIP. Un modèle global (sans pays) s'applique à tous les pays ; un modèle lié à un pays prend la priorité.",
