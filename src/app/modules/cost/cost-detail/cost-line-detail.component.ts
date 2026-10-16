@@ -4,7 +4,6 @@ import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
-import * as XLSX from 'xlsx';
 import {
   ButtonComponent, DafCellDirective, DataTableComponent, FilterComponent,
   MetricCardComponent, ModalService, PageComponent, PageHeaderComponent, SectionCardComponent,
@@ -38,6 +37,7 @@ import { ReglementModalComponent } from '../modals/reglement-modal.component';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
 import { canEditInvoice, canReglementInvoice, invoicePayableAmount } from '../tabs/cost-invoice-display';
 import { UserStore } from '../../../core/user.store';
+import { ExportService } from '../../../core/export.service';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -109,6 +109,9 @@ export class CostLineDetailComponent implements OnInit {
   private readonly userStore   = inject(UserStore);
   private readonly modal       = inject(ModalService);
   private readonly destroyRef  = inject(DestroyRef);
+  private readonly exportSvc   = inject(ExportService);
+  /** Export Excel du relevé en cours — état de chargement du bouton. */
+  readonly exportingLedger = signal(false);
 
   @ViewChild('reglementModal') private reglementModal!: ReglementModalComponent;
 
@@ -793,34 +796,17 @@ export class CostLineDetailComponent implements OnInit {
     this.router.navigate(['/finance/cost', id]);
   }
 
-  /**
-   * Excel export of the ledger (xlsx, same scheme as the affaire page exports). Raw
-   * numbers, follows the active filter + search.
-   */
+  /** Export généré par le backend (CostExportController) : les règlements affichés
+   * (filtres + recherche appliqués), dans l'ordre de l'écran — le serveur relit le relevé
+   * du fournisseur et n'en garde que ces lignes. */
   exportLedgerExcel(): void {
-    const t = (k: string) => this.translate.instant(k);
-    const visible = this.filteredLedgerRows().map(row => row['_source'] as SupplierLedgerRowDto);
-    const rows = visible.map(r => ({
-      [t('COST.DETAIL.LEDGER.COL_DATE')]:            formatDate(r.date),
-      [t('COST.DETAIL.LEDGER.COL_LABEL')]:            r.label ?? '',
-      [t('COST.DETAIL.LEDGER.COL_NET_AMOUNT')]:       r.netAmountLocal ?? '',
-      [t('COST.DETAIL.LEDGER.COL_FODEC')]:            r.fodecAmount ?? '',
-      [t('COST.DETAIL.LEDGER.COL_TVA')]:              r.vatAmountLocal ?? '',
-      [t('COST.DETAIL.LEDGER.COL_TIMBRE')]:           r.timbreAmount ?? '',
-      [t('COST.DETAIL.LEDGER.COL_AUTRES_TAXES')]:     r.otherTaxesAmount ?? '',
-      [t('COST.DETAIL.LEDGER.COL_GROSS_AMOUNT')]:     r.grossAmountLocal ?? '',
-      [t('COST.DETAIL.LEDGER.COL_RS')]:               r.rsAmount ?? '',
-      [t('COST.DETAIL.LEDGER.COL_NET_TO_PAY')]:       r.netToPay ?? '',
-      [t('COST.DETAIL.LEDGER.COL_PAID')]:             r.montantPaye ?? '',
-      [t('COST.DETAIL.LEDGER.COL_DEBIT')]:           r.debit ?? '',
-      [t('COST.DETAIL.LEDGER.COL_CREDIT')]:           r.credit ?? '',
-      [t('COST.DETAIL.LEDGER.COL_SOLDE_DEBITEUR')]:   r.soldeDebiteur ?? '',
-      [t('COST.DETAIL.LEDGER.COL_SOLDE_CREDITEUR')]:  r.soldeCrediteur ?? '',
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('COST.DETAIL.TABS.LEDGER'));
-    const supplierPart = (this.supplierName() ?? 'RELEVE').replace(/[^a-z0-9]+/gi, '_');
-    XLSX.writeFile(wb, supplierPart + '_releve.xlsx');
+    const supplier = this.ledger()?.supplier;
+    const rows = this.filteredLedgerRows();
+    if (!supplier || !rows.length) return;
+    this.exportSvc.download(
+      this.exportSvc.supplierLedger(supplier.id, rows.map(r => r['_reglementId'] as number)),
+      `Releve_${(supplier.code || 'S-' + supplier.id).replace(/[^A-Za-z0-9-]+/g, '_')}.xlsx`,
+      this.exportingLedger);
   }
 
   /** Unified across all three modes: the pays this page is currently scoped to. */

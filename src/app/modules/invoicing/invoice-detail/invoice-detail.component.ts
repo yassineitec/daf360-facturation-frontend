@@ -25,6 +25,7 @@ import { RemindersPanelComponent } from './reminders-panel.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { UserStore } from '../../../core/user.store';
+import { InvoiceTypeLabels } from '../../../core/invoice-type-labels.service';
 import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 /** `yyyy-MM-dd` en heure locale — `toISOString()` décalerait d'un jour avant minuit UTC. */
 function toIsoDate(d: Date): string {
@@ -81,6 +82,7 @@ export class InvoiceDetailComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly userStore = inject(UserStore);
+  private readonly typeLabels = inject(InvoiceTypeLabels);
 
   private readonly commentTpl = viewChild.required<TemplateRef<unknown>>('commentTpl');
   private readonly emitDateTpl = viewChild.required<TemplateRef<unknown>>('emitDateTpl');
@@ -215,7 +217,7 @@ export class InvoiceDetailComponent implements OnInit {
     const inv = this.invoice();
     if (!inv) return [];
     const fields: DetailField[] = [
-      { label: 'INVOICING.DETAIL.INFO.TYPE',       value: inv.invoiceType ?? '—' },
+      { label: 'INVOICING.DETAIL.INFO.TYPE',       value: this.typeLabels.label(inv.invoiceType, inv.paysId) },
       { label: 'INVOICING.DETAIL.INFO.CURRENCY',   value: inv.devise },
       { label: 'INVOICING.DETAIL.INFO.ISSUE_DATE', value: this.formatDate(inv.dateEmission) },
       { label: 'INVOICING.DETAIL.INFO.DUE_DATE',   value: this.formatDate(inv.dateEcheance) },
@@ -576,7 +578,7 @@ export class InvoiceDetailComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     this.svc.getInvoice(id).subscribe({
-      next:  inv => { this.invoice.set(inv); this.loading.set(false); },
+      next:  inv => { this.typeLabels.ensure([inv.paysId]); this.invoice.set(inv); this.loading.set(false); },
       error: () => {
         this.error.set(this.translate.instant('INVOICING.DETAIL.LOAD_ERROR'));
         this.loading.set(false);

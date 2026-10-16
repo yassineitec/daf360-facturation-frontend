@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, computed, inject, input, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -28,6 +28,8 @@ import {
 } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
+import { InvoiceTypeLabels } from '../../core/invoice-type-labels.service';
+import { ExportService } from '../../core/export.service';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
 import { AffaireTsWipTabComponent } from './ts/affaire-ts-wip-tab.component';
@@ -580,10 +582,14 @@ export class AffaireDetailComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly exportSvc = inject(ExportService);
+  /** Export Excel en cours (TS, factures ou paiements) — grise les boutons d'export. */
+  readonly exporting = signal(false);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly modals    = inject(ModalService);
   private readonly avatarSvc = inject(EmployeeAvatarService);
   private readonly contactSvc = inject(ClientContactService);
+  private readonly typeLabels = inject(InvoiceTypeLabels);
 
   private readonly rowDetailTpl   = viewChild.required<TemplateRef<unknown>>('rowDetailTpl');
   private readonly statutTpl      = viewChild.required<TemplateRef<unknown>>('statutTpl');
@@ -597,6 +603,8 @@ export class AffaireDetailComponent implements OnInit {
   private tsFormModalRef: { close: () => void } | null = null;
 
   affaire  = signal<AffaireDetail | null>(null);
+  /** Libellés INVOICE_TYPE (/finance/admin) du pays de l'affaire — onglet Factures. */
+  private readonly loadInvoiceTypes = effect(() => this.typeLabels.ensure([this.affaire()?.paysId]));
   raf      = signal<RafDetailsDto | null>(null);
   kpis     = signal<AffaireKpisDto | null>(null);
   tsList   = signal<TsDto[]>([]);
@@ -675,6 +683,11 @@ export class AffaireDetailComponent implements OnInit {
    */
   private enumText(domain: string, code: string | null | undefined): string {
     return enumLabel(this.translate, domain, code);
+  }
+
+  /** Type de facture : libellé de la liste paramétrée dans /finance/admin. */
+  private invoiceTypeText(code: string | null | undefined): string {
+    return this.typeLabels.label(code, this.affaire()?.paysId);
   }
 
   /**
@@ -1786,7 +1799,7 @@ export class AffaireDetailComponent implements OnInit {
       icon:     'download',
       label:    this.translate.instant('AFFAIRES.DETAIL.TOOLBAR.EXPORT'),
       position: 'right',
-      disabled,
+      disabled: disabled || this.exporting(),
     }];
   }
 
@@ -1834,7 +1847,7 @@ export class AffaireDetailComponent implements OnInit {
       label:   t('AFFAIRES.DETAIL.INVOICES.TYPE'),
       type:    'select',
       options: [...new Set(this.invoices().map(i => i.invoiceType).filter((s): s is string => !!s))]
-        .sort().map(value => ({ value, label: this.enumText('INVOICE_TYPE', value) })),
+        .sort().map(value => ({ value, label: this.invoiceTypeText(value) })),
     }, {
       name:  'emittedRange',
       label: t('AFFAIRES.DETAIL.TOOLBAR.EMITTED_PERIOD'),
@@ -1995,7 +2008,7 @@ export class AffaireDetailComponent implements OnInit {
       // Même règle que les échéances de la vue d'ensemble : échéance passée, pas soldée.
       (!overdueOnly || (!!i.dateEcheance && i.dateEcheance.slice(0, 10) < today
         && !(i.statut && SETTLED_INVOICE_STATUTS.has(i.statut)))) &&
-      (!q || `${i.invoiceNumber ?? ''} ${i.invoiceType ?? ''}`.toLowerCase().includes(q)));
+      (!q || `${i.invoiceNumber ?? ''} ${i.invoiceType ?? ''} ${this.invoiceTypeText(i.invoiceType)}`.toLowerCase().includes(q)));
   });
 
   readonly filteredPayments = computed(() => {
@@ -2075,7 +2088,7 @@ export class AffaireDetailComponent implements OnInit {
   readonly invoiceRows = computed<TableRow[]>(() => this.filteredInvoices().map(inv => ({
     id:       inv.id,
     numero:   inv.invoiceNumber ?? '—',
-    type:     this.enumText('INVOICE_TYPE', inv.invoiceType),
+    type:     this.invoiceTypeText(inv.invoiceType),
     emission: this.formatDate(inv.dateEmission),
     echeance: this.formatDate(inv.dateEcheance),
     montant:  this.currency.transform(inv.montantTtc, inv.devise || this.affaireDevise()),
@@ -2679,7 +2692,7 @@ export class AffaireDetailComponent implements OnInit {
   openInvoiceView(inv: AffaireInvoiceItem): void {
     const devise = inv.devise || this.affaireDevise();
     const fields: DetailField[] = [
-      { label: 'AFFAIRES.DETAIL.INVOICES.TYPE',    value: this.enumText('INVOICE_TYPE', inv.invoiceType) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.TYPE',    value: this.invoiceTypeText(inv.invoiceType) },
       { label: 'AFFAIRES.DETAIL.INVOICES.STATUS',  value: this.enumText('INVOICE_STATUT', inv.statut) },
       { label: 'AFFAIRES.DETAIL.INFO.CLIENT',      value: inv.clientNom ?? this.affaire()?.clientName ?? '—' },
     ];
@@ -2844,65 +2857,28 @@ export class AffaireDetailComponent implements OnInit {
     if (saved) { this.loadTs(); this.refreshIndicators(); }
   }
 
-  // ═══ Export CSV ═══════════════════════════════════════════════════════════
+  // ═══ Export Excel ═════════════════════════════════════════════════════════
+  //
+  // Générés par le backend (AffaireExportController) : on envoie les ids des lignes
+  // filtrées (pas seulement la page affichée), le serveur relit TS / factures / paiements
+  // de l'affaire et les écrit dans cet ordre. Remplace les anciens CSV faits ici.
 
   exportTs(): void {
-    const t = (k: string) => this.translate.instant(k);
-    this.downloadCsv(
-      `TS_${this.affaire()?.reference ?? this.numId}`,
-      [t('AFFAIRES.DETAIL.MODAL.TS_TITLE'), t('AFFAIRES.DETAIL.MODAL.TS_INTITULE'),
-       t('AFFAIRES.DETAIL.MODAL.TS_AMOUNT'), t('AFFAIRES.DETAIL.INFO.CURRENCY'),
-       t('AFFAIRES.DETAIL.INVOICES.STATUS'), t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT')],
-      this.filteredTs().map(ts => [
-        ts.referenceTs, ts.intitule, ts.montantEstime, ts.devise,
-        this.enumText('TS_STATUT', ts.statut), this.formatDate(ts.integreAuBudgetAt),
-      ]),
-    );
+    const ref = this.affaire()?.reference ?? this.numId;
+    this.exportSvc.download(this.exportSvc.affaireTs(this.numId, this.filteredTs().map(ts => ts.id)),
+      `TS_${ref}.xlsx`, this.exporting);
   }
 
   exportInvoices(): void {
-    const t = (k: string) => this.translate.instant(k);
-    this.downloadCsv(
-      `Factures_${this.affaire()?.reference ?? this.numId}`,
-      [t('AFFAIRES.DETAIL.INVOICES.NUMBER'), t('AFFAIRES.DETAIL.INVOICES.TYPE'),
-       t('AFFAIRES.DETAIL.INVOICES.EMITTED'), t('AFFAIRES.DETAIL.INVOICES.DUE'),
-       t('AFFAIRES.DETAIL.INVOICES.AMOUNT'), t('AFFAIRES.DETAIL.INFO.CURRENCY'),
-       t('AFFAIRES.DETAIL.INVOICES.STATUS')],
-      this.filteredInvoices().map(i => [
-        i.invoiceNumber, i.invoiceType, this.formatDate(i.dateEmission), this.formatDate(i.dateEcheance),
-        i.montantTtc, i.devise || this.affaireDevise(), i.statut,
-      ]),
-    );
+    const ref = this.affaire()?.reference ?? this.numId;
+    this.exportSvc.download(this.exportSvc.affaireInvoices(this.numId, this.filteredInvoices().map(i => i.id)),
+      `Factures_${ref}.xlsx`, this.exporting);
   }
 
   exportPayments(): void {
-    const t = (k: string) => this.translate.instant(k);
-    this.downloadCsv(
-      `Paiements_${this.affaire()?.reference ?? this.numId}`,
-      [t('AFFAIRES.DETAIL.PAYMENTS.DATE'), t('AFFAIRES.DETAIL.PAYMENTS.INVOICE'),
-       t('AFFAIRES.DETAIL.PAYMENTS.METHOD'), t('AFFAIRES.DETAIL.PAYMENTS.REFERENCE'),
-       t('AFFAIRES.DETAIL.PAYMENTS.AMOUNT'), t('AFFAIRES.DETAIL.INFO.CURRENCY')],
-      this.filteredPayments().map(p => [
-        this.formatDate(p.paymentDate), p.invoiceNumber, p.paymentMethod, p.bankReference,
-        p.amountLocal, p.currency || this.affaireDevise(),
-      ]),
-    );
-  }
-
-  /**
-   * CSV séparé par `;` avec BOM UTF-8 : c'est ce qu'Excel en locale FR ouvre sans
-   * assistant d'import ni accents cassés.
-   */
-  private downloadCsv(baseName: string, headers: string[], rows: (string | number | null)[][]): void {
-    const cell = (v: string | number | null) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv  = [headers, ...rows].map(r => r.map(cell).join(';')).join('\r\n');
-
-    const url  = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
-    const link = document.createElement('a');
-    link.href     = url;
-    link.download = `${baseName}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const ref = this.affaire()?.reference ?? this.numId;
+    this.exportSvc.download(this.exportSvc.affairePayments(this.numId, this.filteredPayments().map(p => p.id)),
+      `Paiements_${ref}.xlsx`, this.exporting);
   }
 
   // ═══ Formatage ════════════════════════════════════════════════════════════

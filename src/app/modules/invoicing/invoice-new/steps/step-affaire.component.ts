@@ -12,6 +12,7 @@ import { AffaireService } from '../../../affaires/affaire.service';
 import { FormFieldComponent, SelectComponent } from '@khalilrebhiitec/daf360';
 import { FactListService } from '../../../../core/fact-list.service';
 import { ListValueDto } from '../../../cost/cost.model';
+import { invoiceTypeLabel } from '../../../../core/invoice-type-labels.service';
 
 // `LIVRABLE` était absent : le mode existait mais était enregistré sous `JAL`, donc
 // il passait par inadvertance. Maintenant qu'il est persisté sous son propre code, son
@@ -200,7 +201,12 @@ export class StepAffaireComponent implements OnInit {
   rafDetails      = signal<RafDetailsDto | null>(null);
   rafLoading      = signal(false);
   tsList          = signal<TsDto[]>([]);
-  invoiceTypeOptions = signal<{ value: string; label: string }[]>([]);
+  /** Valeurs de la liste INVOICE_TYPE (/finance/admin) pour le pays de l'affaire. */
+  invoiceTypeValues  = signal<ListValueDto[]>([]);
+  readonly invoiceTypeOptions = computed(() => this.invoiceTypeValues().map(v => ({
+    value: v.code,
+    label: invoiceTypeLabel([v], v.code, this.translate),
+  })));
 
   private readonly search$ = new Subject<string>();
 
@@ -327,9 +333,8 @@ export class StepAffaireComponent implements OnInit {
 
     this.affSvc.getTS(a.id).subscribe({ next: r => this.tsList.set(r), error: () => {} });
 
-    this.factListSvc.getListValues('INVOICE_TYPE', a.paysId).subscribe(values => {
-      this.invoiceTypeOptions.set(values.map((v: ListValueDto) => ({ value: v.code, label: v.labelFr })));
-    });
+    this.factListSvc.getListValues('INVOICE_TYPE', a.paysId)
+      .subscribe(values => this.invoiceTypeValues.set(values));
   }
 
   clearAffaire(): void {
@@ -338,7 +343,7 @@ export class StepAffaireComponent implements OnInit {
     this.searchQuery.set('');
     this.searchResults.set([]);
     this.tsList.set([]);
-    this.invoiceTypeOptions.set([]);
+    this.invoiceTypeValues.set([]);
     const bmCtrl = this.form.controls['billingMode'];
     bmCtrl.setValue('');
     bmCtrl.clearValidators();

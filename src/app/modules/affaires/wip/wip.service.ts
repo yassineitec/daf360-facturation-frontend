@@ -109,4 +109,31 @@ export class WipService {
       `${this.base}/wip/tm/${affaireId}/lines/${billingLineId}/cancel`,
       {}, this.opts);
   }
+
+  // ── Exports Excel — générés par le backend (WipExportController) ─────────────────
+
+  private exportBase(affaireId: number): string {
+    return `${environment.factApiUrl}/api/fact/affaires/${affaireId}/wip/export`;
+  }
+
+  /** Résumé / Détails / Heures par semaine de la période — recalculés côté serveur. */
+  exportTm(affaireId: number, dateFrom: string, dateTo: string, lang: string): Observable<Blob> {
+    return this.http.get(`${this.exportBase(affaireId)}/tm.xlsx`, {
+      params: { dateFrom, dateTo, lang }, responseType: 'blob', withCredentials: true,
+    });
+  }
+
+  /** `ids` = les lignes affichées (après recherche/filtres) ; `null` = tout l'historique. */
+  exportTmHistory(affaireId: number, ids: number[] | null, lang: string): Observable<Blob> {
+    return this.http.post(`${this.exportBase(affaireId)}/history.xlsx`, { ids }, {
+      params: { lang }, responseType: 'blob', withCredentials: true,
+    });
+  }
+
+  /** Même contrat que exportTmHistory(), sur les livrables facturés. */
+  exportLivrableHistory(affaireId: number, ids: number[] | null, lang: string): Observable<Blob> {
+    return this.http.post(`${this.exportBase(affaireId)}/livrables.xlsx`, { ids }, {
+      params: { lang }, responseType: 'blob', withCredentials: true,
+    });
+  }
 }

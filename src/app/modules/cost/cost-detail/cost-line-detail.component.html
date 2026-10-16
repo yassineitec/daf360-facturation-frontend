@@ -456,7 +456,7 @@
             <daf-button
               [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
                            title: 'COST.DETAIL.LEDGER.EXPORT_EXCEL' | translate,
-                           disabled: !filteredLedgerRows().length }"
+                           disabled: !filteredLedgerRows().length, loading: exportingLedger() }"
               (onClick)="exportLedgerExcel()" />
             <daf-button
               [options]="{ variant: 'ghost', size: 'sm',

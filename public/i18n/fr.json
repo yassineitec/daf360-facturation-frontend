@@ -1,5 +1,6 @@
 {
   "COMMON": {
+    "EXPORT_ERROR": "Échec de l'export Excel.",
     "CURRENCY": {
       "TITLE": "Devise d'affichage",
       "NAMES": {
@@ -534,6 +535,7 @@
       "TYPE_LABEL": "Type de facture *",
       "TYPE_SELECT": "Sélectionner le type…",
       "TYPE_REQUIRED": "Type requis.",
+      "NO_INVOICE_TYPE": "Aucun type de facture actif pour le pays de cette affaire. Ajoutez-en dans Administration › Types de facture.",
       "INVOICE_TYPES": {
         "ACOMPTE": "Facture d'acompte",
         "INTERMEDIAIRE": "Facture de situation (Avancement)",
@@ -2286,8 +2288,7 @@
       "CARRIED_FORWARD_TOTAL": "Total à valider",
       "PENDING_CLIENT_TITLE": "En attente de réponse client",
       "PENDING_CLIENT_EXPLAIN": "Un email récapitulatif a été envoyé au client. Une fois sa réponse reçue, saisissez ici le montant qu'il a réellement confirmé — s'il est inférieur au montant calculé, la différence sera reportée automatiquement sur la période suivante.",
-      "CLIENT_AMOUNT_LABEL": "Montant validé par le client",
-      "CLIENT_AMOUNT_HINT": "Ne peut pas dépasser le montant calculé.",
+      "CLIENT_AMOUNT_LABEL": "Montant validé par le client",      "CLIENT_AMOUNT_HINT": "Ne peut pas dépasser le montant calculé.",
       "CLIENT_AMOUNT_CONFIRM": "Confirmer",
       "CLIENT_AMOUNT_ERROR": "Erreur lors de l'enregistrement du montant validé par le client.",
       "VALIDATE_CLIENT_AMOUNT": "Valider le montant client",
@@ -2319,6 +2320,7 @@
       "VALIDATE": "Valider",
       "DETAILS": "Détails",
       "EXPORT_EXCEL": "Exporter Excel",
+      "EXPORT_ERROR": "Échec de l'export Excel.",
       "EXPORT_SHEET_SUMMARY": "Résumé",
       "EXPORT_SHEET_DETAILS": "Détails",
       "EXPORT_SHEET_WEEKLY": "Heures par semaine",

@@ -8,9 +8,11 @@ import { ClientDetailDto } from '../../../clients/client.model';
 import { ClientContactService } from '../../../clients/contacts/client-contact.service';
 import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
 import { StepAffaireValue } from './step-affaire.component';
+import { invoiceTypeLabel } from '../../../../core/invoice-type-labels.service';
+import { FactListService } from '../../../../core/fact-list.service';
+import { ListValueDto } from '../../../cost/cost.model';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';
-import { enumLabel } from '../../../../shared/enum-labels';
 
 @Component({
   selector: 'app-step-recap',
@@ -242,6 +244,7 @@ export class StepRecapComponent {
   private readonly router       = inject(Router);
   private readonly route        = inject(ActivatedRoute);
   private readonly translate    = inject(TranslateService);
+  private readonly factListSvc  = inject(FactListService);
 
   showActions    = input<boolean>(true);
   affaireData    = input.required<StepAffaireValue>();
@@ -290,6 +293,13 @@ export class StepRecapComponent {
       this.contactSvc.getAffaireContacts(affaireId)
         .subscribe(list => this.affaireContacts.set(list));
     });
+
+    effect(() => {
+      const paysId = this.affaireData().paysId;
+      if (!paysId) { this.invoiceTypeValues.set([]); return; }
+      this.factListSvc.getListValues('INVOICE_TYPE', paysId)
+        .subscribe(values => this.invoiceTypeValues.set(values));
+    });
   }
 
   private readonly affaireContacts = signal<AffaireContactDto[]>([]);
@@ -303,8 +313,12 @@ export class StepRecapComponent {
     return list.find(c => c.isBilling) ?? list[0] ?? null;
   });
 
+  /** Liste INVOICE_TYPE de /finance/admin — même source que le choix fait à l'étape 1
+   * (déjà en cache dans FactListService, pas de second appel). */
+  private readonly invoiceTypeValues = signal<ListValueDto[]>([]);
+
   readonly invoiceTypeLabel = computed(() =>
-    enumLabel(this.translate, 'INVOICE_TYPE', this.affaireData().invoiceType));
+    invoiceTypeLabel(this.invoiceTypeValues(), this.affaireData().invoiceType, this.translate));
 
   /** AV (Forfaitaire) et T&M (WIP validé) affichent budget/%avancement au lieu de
    * Qté/PU HT — mêmes colonnes qu'à la saisie (step-lines) et qu'à la fiche facture

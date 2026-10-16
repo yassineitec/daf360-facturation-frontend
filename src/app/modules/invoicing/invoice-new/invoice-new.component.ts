@@ -11,10 +11,10 @@ import type {
   BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
 } from '@khalilrebhiitec/daf360';
 import { StepAffaireComponent, StepAffaireValue } from './steps/step-affaire.component';
+import { invoiceTypeLabel } from '../../../core/invoice-type-labels.service';
 import { StepLinesComponent,  StepLinesValue  } from './steps/step-lines.component';
 import { StepConditionsComponent, StepConditionsValue } from './steps/step-conditions.component';
 import { StepRecapComponent } from './steps/step-recap.component';
-import { enumLabel } from '../../../shared/enum-labels';
 import { InvoiceService } from '../invoice.service';
 import { BillingService } from '../../affaires/billing/billing.service';
 
@@ -347,7 +347,8 @@ export class InvoiceNewComponent implements OnInit {
     const aff = this.stepAffaireRef()?.selectedAffaire();
     this.summaryAffaire.set(aff?.intitule ?? '—');
     this.summaryClient.set(aff?.clientName ?? '—');
-    this.summaryType.set(enumLabel(this.translate, 'INVOICE_TYPE', v.invoiceType));
+    this.summaryType.set(invoiceTypeLabel(
+      this.stepAffaireRef()?.invoiceTypeValues() ?? [], v.invoiceType, this.translate));
     this.affaireValue.set(v);
     this.step.set(2);
   }

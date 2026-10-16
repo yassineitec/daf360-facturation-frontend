@@ -28,3 +28,12 @@ export interface DepensePreview {
   collaboratorCount: number;
   lignes: DepenseLigne[];
 }
+
+/** Filtres de lignes de l'onglet Dépenses (période + pays) transmis au tableau pour l'export
+ * Excel généré côté serveur — dates ISO incluses, `null` = pas de borne ; `pays` = clés du
+ * filtre Pays (id du pays ou `__NONE__`), vide = tous. */
+export interface DepenseExportCriteria {
+  dateFrom: string | null;
+  dateTo: string | null;
+  pays: string[];
+}

@@ -26,7 +26,7 @@
       </nav>
     </div>
     <daf-button
-      [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !flatRows().length }"
+      [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !flatRows().length, loading: exporting() }"
       (onClick)="exportHistoryExcel()" />
   </div>
 

@@ -1,5 +1,6 @@
 {
   "COMMON": {
+    "EXPORT_ERROR": "Excel export failed.",
     "CURRENCY": {
       "TITLE": "Display currency",
       "NAMES": {
@@ -534,6 +535,7 @@
       "TYPE_LABEL": "Invoice type *",
       "TYPE_SELECT": "Select a type…",
       "TYPE_REQUIRED": "Type required.",
+      "NO_INVOICE_TYPE": "No active invoice type for this affaire's country. Add some under Administration › Invoice types.",
       "INVOICE_TYPES": {
         "ACOMPTE": "Advance invoice",
         "INTERMEDIAIRE": "Progress invoice",
@@ -2231,7 +2233,7 @@
       "TS_COL_MONTANT": "Amount",
       "TS_COL_STATUT": "Status",
       "TS_COL_DATE": "Date",
-      "TS_SELECTOR_TITLE": "Travaux supplémentaires",
+      "TS_SELECTOR_TITLE": "Extra work",
       "TS_SELECTOR_EMPTY": "No TS is ready for progress declarations yet.",
       "TS_SELECTOR_ACTION": "Declare progress",
       "TS_BACK_TO_SELECTOR": "Back to the TS list",
@@ -2286,8 +2288,7 @@
       "CARRIED_FORWARD_TOTAL": "Total to approve",
       "PENDING_CLIENT_TITLE": "Awaiting client response",
       "PENDING_CLIENT_EXPLAIN": "A summary email has been sent to the client. Once you receive their reply, enter the amount they actually confirmed here — if it's less than the calculated amount, the difference will automatically carry forward to the next period.",
-      "CLIENT_AMOUNT_LABEL": "Amount confirmed by the client",
-      "CLIENT_AMOUNT_HINT": "Cannot exceed the calculated amount.",
+      "CLIENT_AMOUNT_LABEL": "Amount confirmed by the client",      "CLIENT_AMOUNT_HINT": "Cannot exceed the calculated amount.",
       "CLIENT_AMOUNT_CONFIRM": "Confirm",
       "CLIENT_AMOUNT_ERROR": "Error saving the client-confirmed amount.",
       "VALIDATE_CLIENT_AMOUNT": "Validate client amount",
@@ -2319,6 +2320,7 @@
       "VALIDATE": "Validate",
       "DETAILS": "Details",
       "EXPORT_EXCEL": "Export Excel",
+      "EXPORT_ERROR": "Excel export failed.",
       "EXPORT_SHEET_SUMMARY": "Summary",
       "EXPORT_SHEET_DETAILS": "Details",
       "EXPORT_SHEET_WEEKLY": "Weekly hours",
@@ -2337,7 +2339,7 @@
       "COL_TAUX": "Rate",
       "COL_CUMUL": "Cumulative",
       "COL_INCREMENT": "Incremental amount",
-      "COL_MT_CLIENT": "MT Client",
+      "COL_MT_CLIENT": "Client amt.",
       "COL_FACTURE_PROGRESS": "Invoiced",
       "FACTURE_COMPLETE": "Complete",
       "FACTURE_PARTIAL": "Partial — {{amount}} remaining",

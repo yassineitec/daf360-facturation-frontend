@@ -5,7 +5,6 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import * as XLSX from 'xlsx';
 import {
   ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent,
   StepperComponent, StepperStep, StepperConfig,
@@ -14,15 +13,17 @@ import {
   AccordionCardComponent, PaginationComponent, TabsComponent, TabItem,
 } from '@khalilrebhiitec/daf360';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { WipService, WipTauxSubmitBody } from './wip.service';
-import { WipTauxDto, WipTauxStatut, WipTmHourDto, WipTmPreviewDto } from './wip.model';
+import { WipTauxDto, WipTauxStatut, WipTmPreviewDto } from './wip.model';
 import { EmailPreviewModalComponent } from './email-preview-modal.component';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
 import { LivrableService } from '../livrable.service';
 import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../livrable.model';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { isoWeek, isoWeekYear } from '../../../shared/iso-week';
+import { readBlobError, saveBlob } from '../../../shared/blob-download';
+import { ToastService } from '../../../core/toast.service';
 import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 import { BILLING_LINE_STATUT_BADGE, WIP_TAUX_STATUT_BADGE, LIVRABLE_STATUT_BADGE, LIVRABLE_BATCH_STATUT_BADGE, enumLabel } from '../../../shared/enum-labels';
 import { WipTmDetailTableComponent } from './wip-tm-detail-table.component';
@@ -93,6 +94,17 @@ type WipFilterValues = Record<string, string | Date[] | null>;
        invisible de la colonne des boutons) au lieu de passer à la ligne. */
     ::ng-deep .taux-field-compact label {
       white-space: nowrap;
+    }
+
+    /* Champ « MT Client » dans une cellule de l'historique AV : daf-form-field (h-11 par
+       défaut) ramené à la hauteur d'une ligne de tableau — même réglage que .mt-client-field
+       de affaire-ts-wip-tab. */
+    ::ng-deep .mt-client-field input {
+      height: 30px;
+      padding-top: 2px;
+      padding-bottom: 2px;
+      padding-left: 8px;
+      font-size: 13px;
     }
 
     /* TEST : daf-pagination place le résumé "1–20 sur 137" à gauche (justify-between,
@@ -222,6 +234,11 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
+  private readonly toast = inject(ToastService);
+
+  /** Export Excel en cours (généré par le backend) — met le bouton concerné en chargement
+   * et empêche un double clic de lancer deux téléchargements. */
+  readonly exporting = signal<'tm' | 'history' | 'livrables' | null>(null);
 
   /** Popup partagée Forfaitaire/Régie/Livrable montrant l'email de confirmation client avant
    * le vrai envoi — même intégration que PaymentModalComponent (viewChild + .open(...)),
@@ -1000,21 +1017,36 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       .slice(page * size, page * size + size);
   });
 
-  /** Même bibliothèque (xlsx) et même schéma d'export que exportHistoryExcel() — appelé
-   * depuis la carte (livrableHistory, tout) et depuis la popup (filteredLivrableHistory). */
+  /** Fichier généré par le backend (WipExportController) — appelé depuis la carte
+   * (livrableHistory, tout) et depuis la popup (filteredLivrableHistory) : on envoie les ids
+   * des lignes affichées, le serveur les relit en base. */
   exportLivrableHistoryExcel(lines: AffaireLivrableDto[]): void {
-    if (!lines.length) return;
-    const t = (k: string) => this.translate.instant(k);
-    const rows = lines.map(l => ({
-      [t('AFFAIRES.WIP.COL_DISCIPLINE')]:    l.disciplineLabel,
-      [t('AFFAIRES.WIP.COL_DOCUMENT')]:      l.documentNom,
-      [t('AFFAIRES.WIP.COL_BUDGET_ALLOUE')]: this.currency.transform(l.budgetAlloue, this.affaire.devise),
-      [t('AFFAIRES.WIP.COL_STATUS')]:        t('AFFAIRES.WIP.BATCH_STATUS_' + l.statut),
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('AFFAIRES.WIP.HISTORY_TITLE'));
+    if (!lines.length || this.exporting()) return;
     const affaireRef = this.affaire.reference ?? String(this.affaire.id);
-    XLSX.writeFile(wb, `Historique_Livrables_${affaireRef}.xlsx`);
+    this.runExport('livrables',
+      this.svc.exportLivrableHistory(this.affaire.id, lines.map(l => l.id), this.exportLang()),
+      `Historique_Livrables_${affaireRef}.xlsx`);
+  }
+
+  /** Téléchargement commun aux exports de l'onglet ; erreur remontée en toast, lisible
+   * aussi depuis les popups plein écran (une erreur sous la carte y serait invisible). */
+  private runExport(kind: 'tm' | 'history' | 'livrables', request: Observable<Blob>, filename: string): void {
+    this.exporting.set(kind);
+    request.subscribe({
+      next: blob => {
+        this.exporting.set(null);
+        saveBlob(blob, filename);
+      },
+      error: err => {
+        this.exporting.set(null);
+        readBlobError(err, this.translate.instant('AFFAIRES.WIP.EXPORT_ERROR'))
+          .then(msg => this.toast.error(msg));
+      },
+    });
+  }
+
+  private exportLang(): string {
+    return this.translate.currentLang() || 'fr';
   }
 
   /** TEST : popover (i) de la carte Régie — bouton maison en `position:absolute`
@@ -1420,6 +1452,14 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.avClientAmountInputs.set(map);
   }
 
+  /** Erreur du champ « MT Client » : champ vide valide (= montant calculé, voir
+   * confirmAvClientAmount), sinon entre 0 et le montant calculé — même borne que le
+   * `disabled` de l'action validateClient. */
+  isAvClientAmountValid(line: LineDetailDto): boolean {
+    const input = this.getAvClientAmountInput(line.id);
+    return input === null || (input >= 0 && input <= line.montantHt);
+  }
+
   confirmAvClientAmount(line: LineDetailDto): void {
     // Empty input falls back to the calculated amount — clicking "validate" with nothing
     // typed means the client accepted the WIP-calculated figure as-is (see
@@ -1786,91 +1826,17 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.selectedCollaboratorUserId.set(null);
   }
 
-  /** Two-sheet workbook from the data already on screen (no extra request) — "Résumé" one
-   * row per collaborator (same aggregate as WipTmDetailTableComponent), "Détails" every
-   * hour entry across every collaborator with a Collaborateur column added, so a manager
-   * can filter/pivot the whole affaire's WIP in Excel instead of clicking through each
-   * person one by one. */
+  /** Classeur généré par le backend (WipExportController) : « Résumé » une ligne par
+   * collaborateur, « Détails » chaque saisie d'heures, « Heures par semaine » une colonne par
+   * semaine ISO — recalculés côté serveur sur la même période que le preview affiché (le
+   * changement de dates recharge le preview, donc tmDateFrom/To sont bien les siennes). */
   exportWipExcel(): void {
-    const hours = this.tmPreview()?.hours ?? [];
-    if (!hours.length) return;
-
-    const byUser = new Map<number, { userFullName: string; totalHours: number; totalCost: number; days: Set<string> }>();
-    for (const h of hours) {
-      const entry = byUser.get(h.userId) ?? { userFullName: h.userFullName, totalHours: 0, totalCost: 0, days: new Set<string>() };
-      entry.totalHours += h.hoursValidated;
-      entry.totalCost  += h.costAmount;
-      entry.days.add(h.workDate);
-      byUser.set(h.userId, entry);
-    }
-
-    const t = (k: string) => this.translate.instant(k);
-    const resumeRows = [...byUser.values()]
-      .sort((a, b) => b.totalCost - a.totalCost)
-      .map(e => ({
-        [t('AFFAIRES.WIP.COL_COLLABORATOR')]: e.userFullName,
-        [t('AFFAIRES.WIP.COL_DAYS')]:         e.days.size,
-        [t('AFFAIRES.WIP.COL_HOURS')]:        Number(e.totalHours.toFixed(2)),
-        [t('AFFAIRES.WIP.COL_COST')]:         Number(e.totalCost.toFixed(3)),
-      }));
-
-    const detailRows = hours
-      .slice()
-      .sort((a, b) => a.userFullName.localeCompare(b.userFullName) || a.workDate.localeCompare(b.workDate))
-      .map((h: WipTmHourDto) => ({
-        [t('AFFAIRES.WIP.COL_COLLABORATOR')]: h.userFullName,
-        [t('AFFAIRES.WIP.COL_DATE')]:         this.fmtDateForExport(h.workDate),
-        [t('AFFAIRES.WIP.COL_WEEK')]:         'S' + isoWeek(h.workDate),
-        [t('AFFAIRES.WIP.COL_DISCIPLINE')]:   h.disciplineLabel ?? '',
-        [t('AFFAIRES.WIP.COL_WBS')]:          h.wbsName ?? h.wbsId ?? '',
-        [t('AFFAIRES.WIP.COL_DOCUMENT')]:     h.document ?? '',
-        [t('AFFAIRES.WIP.COL_HOURS')]:        Number(h.hoursValidated.toFixed(2)),
-        [t('AFFAIRES.WIP.COL_COST')]:         Number(h.costAmount.toFixed(3)),
-      }));
-
-    // One row per collaborator, one column per ISO week present in the data — lets a
-    // manager see the shape of each person's effort across the period at a glance.
-    const weekKeys = new Map<number, string>(); // sortable "yyyyww" key -> display label
-    for (const h of hours) {
-      const key = isoWeekYear(h.workDate) * 100 + isoWeek(h.workDate);
-      if (!weekKeys.has(key)) weekKeys.set(key, 'S' + isoWeek(h.workDate));
-    }
-    const sortedWeekKeys = [...weekKeys.keys()].sort((a, b) => a - b);
-
-    const hoursByUserWeek = new Map<number, Map<number, number>>();
-    for (const h of hours) {
-      const weekKey = isoWeekYear(h.workDate) * 100 + isoWeek(h.workDate);
-      const perWeek = hoursByUserWeek.get(h.userId) ?? new Map<number, number>();
-      perWeek.set(weekKey, (perWeek.get(weekKey) ?? 0) + h.hoursValidated);
-      hoursByUserWeek.set(h.userId, perWeek);
-    }
-
-    const weeklyRows = [...byUser.entries()]
-      .sort((a, b) => a[1].userFullName.localeCompare(b[1].userFullName))
-      .map(([userId, e]) => {
-        const perWeek = hoursByUserWeek.get(userId);
-        const row: Record<string, string | number> = {
-          [t('AFFAIRES.WIP.COL_COLLABORATOR')]: e.userFullName,
-        };
-        for (const weekKey of sortedWeekKeys) {
-          row[weekKeys.get(weekKey)!] = Number((perWeek?.get(weekKey) ?? 0).toFixed(2));
-        }
-        row[t('AFFAIRES.WIP.COL_TOTAL')] = Number(e.totalHours.toFixed(2));
-        return row;
-      });
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumeRows), t('AFFAIRES.WIP.EXPORT_SHEET_SUMMARY'));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), t('AFFAIRES.WIP.EXPORT_SHEET_DETAILS'));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(weeklyRows), t('AFFAIRES.WIP.EXPORT_SHEET_WEEKLY'));
-
+    if (!this.tmPreview()?.hours.length || this.exporting()) return;
     const affaireRef = this.affaire.reference ?? String(this.affaire.id);
-    XLSX.writeFile(wb, `WIP_${affaireRef}_${this.tmDateFrom()}_${this.tmDateTo()}.xlsx`);
-  }
-
-  private fmtDateForExport(iso: string): string {
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+    const dateFrom = this.tmDateFrom(), dateTo = this.tmDateTo();
+    this.runExport('tm',
+      this.svc.exportTm(this.affaire.id, dateFrom, dateTo, this.exportLang()),
+      `WIP_${affaireRef}_${dateFrom}_${dateTo}.xlsx`);
   }
 
   loadTmPreview(): void {
@@ -2203,21 +2169,15 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       .slice(page * size, page * size + size);
   });
 
-  /** Même bibliothèque (xlsx) et même schéma d'export que exportWipExcel() ci-dessus —
-   * appelé depuis la carte (tmHistory, tout) et depuis la popup (filteredHistoryLines). */
+  /** Fichier généré par le backend (WipExportController) — appelé depuis la carte
+   * (tmHistory, tout) et depuis la popup (filteredHistoryLines) : on envoie les ids des
+   * lignes affichées, le serveur les relit en base. */
   exportHistoryExcel(lines: LineDetailDto[]): void {
-    if (!lines.length) return;
-    const t = (k: string) => this.translate.instant(k);
-    const rows = lines.map(l => ({
-      [t('AFFAIRES.WIP.COL_PERIOD')]: (l.periodDateFrom && l.periodDateTo)
-        ? this.formatWipPeriod(l.periodDateFrom, l.periodDateTo) : `${l.periodMonth}/${l.periodYear}`,
-      [t('AFFAIRES.WIP.COL_AMOUNT')]: this.currency.transform(l.montantHt, l.devise || this.affaire.devise),
-      [t('AFFAIRES.WIP.COL_STATUS')]: enumLabel(this.translate, 'BILLING_LINE_STATUT', l.statut),
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('AFFAIRES.WIP.HISTORY_TITLE'));
+    if (!lines.length || this.exporting()) return;
     const affaireRef = this.affaire.reference ?? String(this.affaire.id);
-    XLSX.writeFile(wb, `Historique_WIP_${affaireRef}.xlsx`);
+    this.runExport('history',
+      this.svc.exportTmHistory(this.affaire.id, lines.map(l => l.id), this.exportLang()),
+      `Historique_WIP_${affaireRef}.xlsx`);
   }
 
   /** `daf-filter` renders a select as `string[]` internally and emits a scalar — normalise both. */

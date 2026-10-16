@@ -39,6 +39,58 @@
   flex-direction: row-reverse;
 }
 
+/* Champ % / montant un peu moins haut que le h-11 par défaut de daf-form-field, label sur
+   une seule ligne — repris de .taux-field-compact de affaire-wip-tab (saisie AV). */
+::ng-deep .taux-field-compact input {
+  height: 38px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+::ng-deep .taux-field-compact label {
+  white-space: nowrap;
+}
+
+/* Champ « MT Client » dans une cellule de l'historique : daf-form-field (h-11 par défaut)
+   ramené à la hauteur d'une ligne de tableau — plus bas, moins de marge intérieure, texte
+   plus petit. Même technique de spécificité que .taux-field-compact ci-dessus. */
+::ng-deep .mt-client-field input {
+  height: 30px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 8px;
+  font-size: 13px;
+}
+
+/* Panneau du calendrier de la période — repris de .wip-date-picker-panel de
+   affaire-wip-tab : grille élargie à 280px, "Effacer" de la lib à gauche pour laisser la
+   droite au bouton "Confirmer" ajouté par ce composant. */
+::ng-deep .wip-date-picker-panel .bg-surface-container-lowest {
+  min-width: 280px;
+}
+::ng-deep .wip-date-picker-panel .justify-end {
+  justify-content: flex-start;
+}
+/* Positionné en absolu sur la même ligne que "Effacer" ; le panneau est déjà en
+   position:fixed (posé par positionPortal()), qui sert de repère. */
+::ng-deep .wip-date-picker-confirm-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-tertiary, #1a6b7c);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+::ng-deep .wip-date-picker-confirm-btn:hover {
+  color: var(--color-teal, #006b58);
+}
+
 /* Titre posé dans la carte de la barre Recherche/Filtres : mêmes marges latérales que la
    barre (p-4, puis sm:p-5 dès 640px), sans marge basse — le padding haut de la barre
    sépare déjà le titre du champ de recherche. */

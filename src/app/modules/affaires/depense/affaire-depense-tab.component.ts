@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, Input, OnInit, computed, inject, si
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { MetricCardComponent, FilterOption, FilterResult } from '@khalilrebhiitec/daf360';
 import { DepenseService } from './depense.service';
-import { DepensePreview, DepenseLigne } from './depense.model';
+import { DepensePreview, DepenseLigne, DepenseExportCriteria } from './depense.model';
 import { DepenseSummaryTableComponent } from './depense-summary-table.component';
 import { DepenseCollaboratorDetailComponent } from './depense-collaborator-detail.component';
 import { AffaireDetail } from '../affaire.model';
@@ -161,6 +161,32 @@ export class AffaireDepenseTabComponent implements OnInit {
       const total = totals.get(l.userEmail)!;
       return (min == null || total >= min) && (max == null || total <= max);
     });
+  });
+
+  /** Les filtres de lignes de dateAndPaysLignes() ci-dessous, sous la forme attendue par
+   * l'export Excel généré côté serveur (AffaireExportController#exportDepense) : bornes de
+   * dates ISO incluses (un mois / une année deviennent leur plage) et clés du filtre Pays. */
+  protected readonly exportCriteria = computed<DepenseExportCriteria>(() => {
+    const pays = this.filterPays();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    switch (this.filterMode()) {
+      case 'PERIOD': {
+        const r = this.filterRange();
+        return { dateFrom: r?.start ?? null, dateTo: r?.end ?? null, pays };
+      }
+      case 'MONTH': {
+        const m = this.filterMonth();
+        if (!m) return { dateFrom: null, dateTo: null, pays };
+        const lastDay = new Date(m.year, m.month, 0).getDate();
+        return { dateFrom: `${m.year}-${pad(m.month)}-01`, dateTo: `${m.year}-${pad(m.month)}-${pad(lastDay)}`, pays };
+      }
+      case 'YEAR': {
+        const y = this.filterYear();
+        return y == null ? { dateFrom: null, dateTo: null, pays } : { dateFrom: `${y}-01-01`, dateTo: `${y}-12-31`, pays };
+      }
+      default:
+        return { dateFrom: null, dateTo: null, pays };
+    }
   });
 
   private readonly dateAndPaysLignes = computed<DepenseLigne[]>(() => {
