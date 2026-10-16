@@ -306,7 +306,7 @@ export class ReglementModalComponent {
       },
       error: err => {
         this.saving.set(false);
-        this.serverError.set(err.error?.message ?? err.error?.error
+        this.serverError.set(err.error?.detail ?? err.error?.message ?? err.error?.error
           ?? this.translate.instant('COST.REGLEMENT.GENERIC_ERROR'));
       },
     });
