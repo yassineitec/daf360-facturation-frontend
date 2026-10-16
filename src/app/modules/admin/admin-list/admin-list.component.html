@@ -383,6 +383,13 @@
       </div>
     }
 
+    <!-- ── RELANCES FOURNISSEURS TAB (échéancier de paiement fournisseur configurable) ── -->
+    @if (activeTab() === 'cost-reminders') {
+      <div class="tab-content">
+        <app-cost-reminder-rules-admin />
+      </div>
+    }
+
     <!-- ── WIP EMAIL TEMPLATES TAB ── -->
     @if (activeTab() === 'wip-email-templates') {
       <div class="tab-content">

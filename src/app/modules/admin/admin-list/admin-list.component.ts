@@ -5,6 +5,7 @@ import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
 import { FactRolesAdminComponent } from '../roles/fact-roles-admin.component';
 import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-admin.component';
+import { CostReminderRulesAdminComponent } from '../cost-reminder-rules/cost-reminder-rules-admin.component';
 import { WipEmailTemplatesAdminComponent } from '../wip-email-templates/wip-email-templates-admin.component';
 import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
 import { CostConfigComponent } from '../../cost/tabs/cost-config.component';
@@ -29,7 +30,7 @@ import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { UserStore } from '../../../core/user.store';
 import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
-type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders' | 'wip-email-templates';
+type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders' | 'cost-reminders' | 'wip-email-templates';
 
 const PAGE_SIZE = 10;
 
@@ -86,7 +87,8 @@ interface ForexRow {
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
     FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
     SelectComponent, PaysFlagSelectComponent, PageComponent, PageHeaderComponent,
-    FactRolesAdminComponent, ReminderRulesAdminComponent, DocumentTemplatesAdminComponent,
+    FactRolesAdminComponent, ReminderRulesAdminComponent, CostReminderRulesAdminComponent,
+    DocumentTemplatesAdminComponent,
     WipEmailTemplatesAdminComponent,
     CostConfigComponent,
   ],
@@ -471,6 +473,9 @@ export class AdminListComponent implements OnInit {
     // pouvait configurer seuils/catégories perdrait l'accès en migrant vers /admin.
     if (this.userStore.hasPermission('FACT_SUPER_ADMIN') || this.userStore.hasPermission('FACT_ADMIN_COST')) {
       items.push({ id: 'cost-config', label: t('ADMIN.TABS.COST_CONFIG'), icon: 'tune' });
+    }
+    if (this.userStore.hasPermission('FACT_VIEW_COST')) {
+      items.push({ id: 'cost-reminders', label: t('ADMIN.TABS.COST_REMINDERS'), icon: 'local_shipping' });
     }
     return items;
   });
