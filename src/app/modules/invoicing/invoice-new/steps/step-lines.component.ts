@@ -1219,10 +1219,11 @@ export class StepLinesComponent {
       // the SAME selection (see pendingCarryForwardList) — the resulting lines need their own
       // description to tell them apart on the invoice, where billingModeLabel's "Mode" column
       // from the picker itself no longer applies.
-      const label = dto && this.isTsCarryForwardRow(dto) ? 'Solde TS non facturé #' : 'Solde WIP non facturé #';
+      const labelKey = dto && this.isTsCarryForwardRow(dto)
+        ? 'INVOICING.STEP_LINES.CARRY_FORWARD_TS' : 'INVOICING.STEP_LINES.CARRY_FORWARD_WIP';
       const g = this.newLine();
       g.patchValue({
-        description:                label + id,
+        description:                this.translate.instant(labelKey, { id }),
         quantite:                   1,
         prixUnitaireHt:             amount,
         tauxTva:                    0,

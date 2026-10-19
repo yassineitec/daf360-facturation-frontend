@@ -1,6 +1,25 @@
 {
   "COMMON": {
     "EXPORT_ERROR": "Échec de l'export Excel.",
+    "FILTERS": "Filtres",
+    "MONTHS_SHORT": {
+      "M1": "JAN",
+      "M2": "FÉV",
+      "M3": "MAR",
+      "M4": "AVR",
+      "M5": "MAI",
+      "M6": "JUN",
+      "M7": "JUL",
+      "M8": "AOÛ",
+      "M9": "SEP",
+      "M10": "OCT",
+      "M11": "NOV",
+      "M12": "DÉC"
+    },
+    "PAYS_SELECT": {
+      "PLACEHOLDER": "Sélectionner...",
+      "NO_RESULT": "Aucun résultat"
+    },
     "CURRENCY": {
       "TITLE": "Devise d'affichage",
       "NAMES": {
@@ -550,6 +569,8 @@
     },
     "STEP_LINES": {
       "TITLE": "Lignes de facturation",
+      "CARRY_FORWARD_TS": "Solde TS non facturé #{{id}}",
+      "CARRY_FORWARD_WIP": "Solde WIP non facturé #{{id}}",
       "ADD_LINE": "+ Ajouter une ligne",
       "DESC": "Description *",
       "QTY": "Qté *",
@@ -686,6 +707,8 @@
     },
     "CREDIT_NOTE_MODAL": {
       "TITLE": "Émettre un avoir",
+      "PARTIAL_NOT_SUPPORTED": "Les avoirs partiels ne sont pas encore pris en charge : laissez ce champ vide, ou saisissez le montant total de la facture.",
+      "SAVE_ERROR": "Erreur lors de l'émission de l'avoir.",
       "REASON_LABEL": "Motif *",
       "REASON_SELECT": "Sélectionner un motif…",
       "REASON_REQUIRED": "Motif requis.",
@@ -1599,6 +1622,8 @@
       },
       "cp": {
         "cat_title": "Types de coûts éligibles",
+        "margin_title": "Taux de marge",
+        "margin_sub": "Marge appliquée aux coûts réels pour calculer le montant facturé.",
         "cat_sub": "Seuls les coûts des catégories cochées seront intégrés dans le calcul mensuel de facturation.",
         "auto": "Auto",
         "loading": "Chargement des catégories..."
@@ -2234,6 +2259,9 @@
       "TS_COL_STATUT": "Statut",
       "TS_COL_DATE": "Date",
       "TS_SELECTOR_TITLE": "Travaux supplémentaires",
+      "PCT_INCREASE": "Augmenter",
+      "PCT_DECREASE": "Diminuer",
+      "PENDING_WIP_TITLE": "WIP en attente",
       "TS_SELECTOR_EMPTY": "Aucun TS n'est encore prêt pour une déclaration d'avancement.",
       "TS_SELECTOR_ACTION": "Déclarer un avancement",
       "TS_BACK_TO_SELECTOR": "Retour à la liste des TS",
@@ -2435,6 +2463,7 @@
       "UNRESOLVED_HINT": "Cet email n'a pas de compte DAF360 correspondant — impossible de l'ajouter comme ressource tant qu'il n'est pas créé côté référentiel utilisateurs.",
       "TAUX_LOADING": "Calcul du taux en cours…",
       "TAUX_COST_HINT": "Coût réel",
+      "LOCKED_HINT": "Taux verrouillé",
       "TAUX_EXTERNAL": "Vente externe",
       "TAUX_INTERNAL": "Intercompany",
       "TAUX_UNAVAILABLE": "Aucun coût employé trouvé pour ce collaborateur — saisissez le taux manuellement.",
@@ -4198,6 +4227,7 @@
     "COMMON": {
       "LOADING": "Chargement…",
       "CANCEL": "Annuler",
+      "DELETE": "Supprimer",
       "CREATE": "Créer",
       "SAVE": "Enregistrer",
       "ADD": "Ajouter",
@@ -4224,6 +4254,31 @@
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Maquettes de documents",
+      "FIELD_HTML": "HTML / Handlebars",
+      "DOC_TYPES": {
+        "INVOICE_AV": "Facture — Mode AV (forfaitaire)"
+      },
+      "VAR_GROUPS": {
+        "INVOICE": "Facture",
+        "CLIENT": "Client",
+        "LINES": "Lignes",
+        "TOTALS": "Totaux"
+      },
+      "VARS": {
+        "invoiceNumberDisplay": "N° de facture (ou \"BROUILLON\")",
+        "editionDate": "Date d'édition ou d'émission",
+        "isDraft": "Bloc affiché seulement si brouillon (pas encore émise)",
+        "clientName": "Nom du client",
+        "clientAddress": "Adresse du client",
+        "clientTaxId": "Matricule fiscal / RCS-ICE",
+        "clientReferent": "Référent client (contact principal)",
+        "lines": "Lignes de facturation (tableau)",
+        "vatBreakdown": "Répartition TVA par taux (tableau)",
+        "totalHtFmt": "Total net HT",
+        "totalTvaFmt": "Montant TVA",
+        "droitTimbreFmt": "Droit de timbre",
+        "netAPayerFmt": "Net à payer"
+      },
       "SUBTITLE": "Personnalisez la mise en page PDF exportée pour les documents facturation (par type de document).",
       "NEW": "Nouvelle maquette",
       "ALL_TYPES": "Tous les types",

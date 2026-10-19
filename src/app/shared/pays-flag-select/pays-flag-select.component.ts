@@ -2,6 +2,7 @@ import {
   Component, ElementRef, HostListener, computed, inject, input, output, signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 import { flagDataUri } from '../country-flags';
 
 export interface PaysFlagOption {
@@ -26,7 +27,7 @@ export interface PaysFlagOption {
 @Component({
   selector: 'app-pays-flag-select',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, TranslatePipe],
   templateUrl: './pays-flag-select.component.html',
   styleUrl: './pays-flag-select.component.scss',
 })
@@ -36,7 +37,8 @@ export class PaysFlagSelectComponent {
   options     = input<PaysFlagOption[]>([]);
   selected    = input<string[]>([]);
   label       = input<string>();
-  placeholder = input<string>('Sélectionner...');
+  /** Vide = texte par défaut traduit (COMMON.PAYS_SELECT.PLACEHOLDER). */
+  placeholder = input<string>('');
   searchable  = input<boolean>(true);
 
   selectedChange = output<string[]>();

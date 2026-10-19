@@ -100,7 +100,6 @@ interface ActivityRow {
 }
 
 
-const MONTH_LABELS = ['JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUN', 'JUL', 'AOÛ', 'SEP', 'OCT', 'NOV', 'DÉC'];
 
 /** Statuts de facture qui ne génèrent plus d'échéance à suivre. */
 const SETTLED_INVOICE_STATUTS = new Set(['PAID', 'CANCELLED', 'CREDIT_NOTED']);
@@ -1613,6 +1612,7 @@ export class AffaireDetailComponent implements OnInit {
    */
 
   readonly chartBars = computed<BarChartBar[]>(() => {
+    this.translate.currentLang();
     const values = this.chartValues();
 
     if (this.chartGranularityEffective() === 'months') {
@@ -1621,7 +1621,7 @@ export class AffaireDetailComponent implements OnInit {
       const isCurrentYear = this.chartYear() === this.currentYear;
       const dates         = this.monthlyInvoiceDates();
       return values.map((value, index) => ({
-        label:      MONTH_LABELS[index],
+        label:      this.translate.instant('COMMON.MONTHS_SHORT.M' + (index + 1)),
         value,
         valueLabel: this.monthTooltip(value, dates[index] ?? []),
         highlight:  isCurrentYear && index === this.currentMonth,

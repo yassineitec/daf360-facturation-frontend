@@ -24,10 +24,11 @@ export interface SaveFactDocumentTemplateRequest {
  * relation que côté RH entre le "name" d'un document_templates et le générateur
  * PdfDocumentService qui sait le produire.
  */
-export interface DocumentTypeOption { value: string; label: string; }
+/** `labelKey` : clé i18n (ADMIN.DOCUMENT_TEMPLATES.DOC_TYPES.*). */
+export interface DocumentTypeOption { value: string; labelKey: string; }
 
 export const DOCUMENT_TYPES: DocumentTypeOption[] = [
-  { value: 'INVOICE_AV', label: 'Facture — Mode AV (forfaitaire)' },
+  { value: 'INVOICE_AV', labelKey: 'ADMIN.DOCUMENT_TEMPLATES.DOC_TYPES.INVOICE_AV' },
 ];
 
 /**
@@ -48,15 +49,15 @@ export interface TemplateVariableDef {
 }
 
 export const INVOICE_TEMPLATE_VARIABLES: TemplateVariableDef[] = [
-  { key: 'invoiceNumberDisplay', labelFr: 'N° de facture (ou "BROUILLON")', group: 'Facture', snippet: '{{invoiceNumberDisplay}}' },
-  { key: 'editionDate',          labelFr: "Date d'édition ou d'émission",   group: 'Facture', snippet: '{{editionDate}}' },
-  { key: 'isDraft',              labelFr: 'Bloc affiché seulement si brouillon (pas encore émise)', group: 'Facture', snippet: '{{#if isDraft}}\n  BROUILLON\n{{/if}}' },
-  { key: 'clientName',           labelFr: 'Nom du client',            group: 'Client', snippet: '{{clientName}}' },
-  { key: 'clientAddress',        labelFr: 'Adresse du client',        group: 'Client', snippet: '{{clientAddress}}' },
-  { key: 'clientTaxId',          labelFr: 'Matricule fiscal / RCS-ICE', group: 'Client', snippet: '{{clientTaxId}}' },
-  { key: 'clientReferent',       labelFr: 'Référent client (contact principal)', group: 'Client', snippet: '{{clientReferent}}' },
+  { key: 'invoiceNumberDisplay', labelFr: 'N° de facture (ou "BROUILLON")', group: 'INVOICE', snippet: '{{invoiceNumberDisplay}}' },
+  { key: 'editionDate',          labelFr: "Date d'édition ou d'émission",   group: 'INVOICE', snippet: '{{editionDate}}' },
+  { key: 'isDraft',              labelFr: 'Bloc affiché seulement si brouillon (pas encore émise)', group: 'INVOICE', snippet: '{{#if isDraft}}\n  BROUILLON\n{{/if}}' },
+  { key: 'clientName',           labelFr: 'Nom du client',            group: 'CLIENT', snippet: '{{clientName}}' },
+  { key: 'clientAddress',        labelFr: 'Adresse du client',        group: 'CLIENT', snippet: '{{clientAddress}}' },
+  { key: 'clientTaxId',          labelFr: 'Matricule fiscal / RCS-ICE', group: 'CLIENT', snippet: '{{clientTaxId}}' },
+  { key: 'clientReferent',       labelFr: 'Référent client (contact principal)', group: 'CLIENT', snippet: '{{clientReferent}}' },
   {
-    key: 'lines', labelFr: 'Lignes de facturation (tableau)', group: 'Lignes',
+    key: 'lines', labelFr: 'Lignes de facturation (tableau)', group: 'LINES',
     snippet:
 `{{#each lines}}
   {{inc @index}}. {{this.projet}} — {{this.description}}
@@ -70,14 +71,14 @@ export const INVOICE_TEMPLATE_VARIABLES: TemplateVariableDef[] = [
 {{/each}}`,
   },
   {
-    key: 'vatBreakdown', labelFr: 'Répartition TVA par taux (tableau)', group: 'Totaux',
+    key: 'vatBreakdown', labelFr: 'Répartition TVA par taux (tableau)', group: 'TOTALS',
     snippet:
 `{{#each vatBreakdown}}
   Base {{this.baseFmt}} — Taux {{this.rate}}% — Montant TVA {{this.montantFmt}}
 {{/each}}`,
   },
-  { key: 'totalHtFmt',      labelFr: 'Total net HT',   group: 'Totaux', snippet: '{{totalHtFmt}}' },
-  { key: 'totalTvaFmt',     labelFr: 'Montant TVA',    group: 'Totaux', snippet: '{{totalTvaFmt}}' },
-  { key: 'droitTimbreFmt',  labelFr: 'Droit de timbre', group: 'Totaux', snippet: '{{droitTimbreFmt}}' },
-  { key: 'netAPayerFmt',    labelFr: 'Net à payer',    group: 'Totaux', snippet: '{{netAPayerFmt}}' },
+  { key: 'totalHtFmt',      labelFr: 'Total net HT',   group: 'TOTALS', snippet: '{{totalHtFmt}}' },
+  { key: 'totalTvaFmt',     labelFr: 'Montant TVA',    group: 'TOTALS', snippet: '{{totalTvaFmt}}' },
+  { key: 'droitTimbreFmt',  labelFr: 'Droit de timbre', group: 'TOTALS', snippet: '{{droitTimbreFmt}}' },
+  { key: 'netAPayerFmt',    labelFr: 'Net à payer',    group: 'TOTALS', snippet: '{{netAPayerFmt}}' },
 ];

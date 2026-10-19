@@ -705,11 +705,11 @@
                      et redessinées juste à côté, empilées ; stepUp/stepDown ne déclenchent
                      pas d'événement natif, donc on répercute la valeur nous-mêmes. -->
                 <div class="flex flex-col leading-none">
-                  <button type="button" class="pct-stepper-btn" aria-label="Augmenter" [disabled]="isLivrableRowLocked(row['id'])"
+                  <button type="button" class="pct-stepper-btn" [attr.aria-label]="'AFFAIRES.WIP.PCT_INCREASE' | translate" [disabled]="isLivrableRowLocked(row['id'])"
                     (click)="pctInput.stepUp(); setEnteredPct(row['id'], pctInput.valueAsNumber)">
                     <span class="material-symbols-outlined">expand_less</span>
                   </button>
-                  <button type="button" class="pct-stepper-btn" aria-label="Diminuer" [disabled]="isLivrableRowLocked(row['id'])"
+                  <button type="button" class="pct-stepper-btn" [attr.aria-label]="'AFFAIRES.WIP.PCT_DECREASE' | translate" [disabled]="isLivrableRowLocked(row['id'])"
                     (click)="pctInput.stepDown(); setEnteredPct(row['id'], pctInput.valueAsNumber)">
                     <span class="material-symbols-outlined">expand_more</span>
                   </button>
@@ -778,7 +778,7 @@
         <div class="flex flex-col gap-4">
           <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
             <span class="material-symbols-outlined text-[18px]">pending_actions</span>
-            WIP en attente
+            {{ 'AFFAIRES.WIP.PENDING_WIP_TITLE' | translate }}
           </h3>
 
           @for (b of activeBatches(); track b.batchId) {

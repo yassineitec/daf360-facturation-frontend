@@ -1,9 +1,10 @@
 import { Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
 import { ButtonComponent } from '@khalilrebhiitec/daf360';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-filter-panel',
-  imports: [ButtonComponent],
+  imports: [ButtonComponent, TranslatePipe],
   templateUrl: './filter-panel.component.html',
   styleUrl: './filter-panel.component.scss',
 })

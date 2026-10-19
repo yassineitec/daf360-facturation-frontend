@@ -1,6 +1,25 @@
 {
   "COMMON": {
     "EXPORT_ERROR": "Excel export failed.",
+    "FILTERS": "Filters",
+    "MONTHS_SHORT": {
+      "M1": "JAN",
+      "M2": "FEB",
+      "M3": "MAR",
+      "M4": "APR",
+      "M5": "MAY",
+      "M6": "JUN",
+      "M7": "JUL",
+      "M8": "AUG",
+      "M9": "SEP",
+      "M10": "OCT",
+      "M11": "NOV",
+      "M12": "DEC"
+    },
+    "PAYS_SELECT": {
+      "PLACEHOLDER": "Select...",
+      "NO_RESULT": "No results"
+    },
     "CURRENCY": {
       "TITLE": "Display currency",
       "NAMES": {
@@ -550,6 +569,8 @@
     },
     "STEP_LINES": {
       "TITLE": "Billing lines",
+      "CARRY_FORWARD_TS": "Unbilled TS balance #{{id}}",
+      "CARRY_FORWARD_WIP": "Unbilled WIP balance #{{id}}",
       "ADD_LINE": "+ Add a line",
       "DESC": "Description *",
       "QTY": "Qty *",
@@ -686,6 +707,8 @@
     },
     "CREDIT_NOTE_MODAL": {
       "TITLE": "Issue a credit note",
+      "PARTIAL_NOT_SUPPORTED": "Partial credit notes are not supported yet: leave this field empty, or enter the full invoice amount.",
+      "SAVE_ERROR": "Error while issuing the credit note.",
       "REASON_LABEL": "Reason *",
       "REASON_SELECT": "Select a reason…",
       "REASON_REQUIRED": "Reason required.",
@@ -1599,6 +1622,8 @@
       },
       "cp": {
         "cat_title": "Eligible cost types",
+        "margin_title": "Margin rate",
+        "margin_sub": "Margin applied to actual costs to compute the billed amount.",
         "cat_sub": "Only costs from the checked categories will be included in the monthly billing calculation.",
         "auto": "Auto",
         "loading": "Loading categories..."
@@ -2234,6 +2259,9 @@
       "TS_COL_STATUT": "Status",
       "TS_COL_DATE": "Date",
       "TS_SELECTOR_TITLE": "Extra work",
+      "PCT_INCREASE": "Increase",
+      "PCT_DECREASE": "Decrease",
+      "PENDING_WIP_TITLE": "Pending WIP",
       "TS_SELECTOR_EMPTY": "No TS is ready for progress declarations yet.",
       "TS_SELECTOR_ACTION": "Declare progress",
       "TS_BACK_TO_SELECTOR": "Back to the TS list",
@@ -2435,6 +2463,7 @@
       "UNRESOLVED_HINT": "This email has no matching DAF360 account — it can't be added as a resource until one is created in the user reference data.",
       "TAUX_LOADING": "Calculating rate…",
       "TAUX_COST_HINT": "Actual cost",
+      "LOCKED_HINT": "Rate locked",
       "TAUX_EXTERNAL": "External sell",
       "TAUX_INTERNAL": "Intercompany",
       "TAUX_UNAVAILABLE": "No employee cost found for this collaborator — enter the rate manually.",
@@ -3300,11 +3329,11 @@
         "TYPE_CREDIT": "Credit (still owed)",
         "TYPE_DEBIT": "Debit (overpaid)",
         "TYPE_SETTLED": "Settled",
-        "NEW_REGLEMENT": "New règlement",
-        "EDIT_REGLEMENT": "Edit règlement",
-        "DELETE_REGLEMENT": "Delete règlement",
+        "NEW_REGLEMENT": "New payment",
+        "EDIT_REGLEMENT": "Edit payment",
+        "DELETE_REGLEMENT": "Delete payment",
         "CONFIRM_DELETE": "Delete this payment? The invoice will go back to Approved.",
-        "DELETE_ERROR": "Unable to delete this règlement.",
+        "DELETE_ERROR": "Unable to delete this payment.",
         "NO_SUPPLIER": "No supplier is attached to this invoice — no account statement to show.",
         "EMPTY": "No validated entries for this supplier.",
         "FILTER_PERIOD": "Period",
@@ -4198,6 +4227,7 @@
     "COMMON": {
       "LOADING": "Loading…",
       "CANCEL": "Cancel",
+      "DELETE": "Delete",
       "CREATE": "Create",
       "SAVE": "Save",
       "ADD": "Add",
@@ -4224,6 +4254,31 @@
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Document templates",
+      "FIELD_HTML": "HTML / Handlebars",
+      "DOC_TYPES": {
+        "INVOICE_AV": "Invoice — AV mode (lump sum)"
+      },
+      "VAR_GROUPS": {
+        "INVOICE": "Invoice",
+        "CLIENT": "Client",
+        "LINES": "Lines",
+        "TOTALS": "Totals"
+      },
+      "VARS": {
+        "invoiceNumberDisplay": "Invoice number (or \"DRAFT\")",
+        "editionDate": "Edition or issue date",
+        "isDraft": "Block shown only on drafts (not yet issued)",
+        "clientName": "Client name",
+        "clientAddress": "Client address",
+        "clientTaxId": "Tax ID / RCS-ICE",
+        "clientReferent": "Client contact (main contact)",
+        "lines": "Invoice lines (table)",
+        "vatBreakdown": "VAT breakdown by rate (table)",
+        "totalHtFmt": "Total excl. tax",
+        "totalTvaFmt": "VAT amount",
+        "droitTimbreFmt": "Stamp duty",
+        "netAPayerFmt": "Net amount due"
+      },
       "SUBTITLE": "Customize the PDF layout exported for facturation documents (per document type).",
       "NEW": "New template",
       "ALL_TYPES": "All types",

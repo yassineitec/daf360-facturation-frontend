@@ -700,6 +700,19 @@ export class AdminListComponent implements OnInit {
     CLIENT_SECTOR:            'general',
   };
 
+  /** Même langage ton → couleur d'icône que les cartes de /rh/admin, un ton par
+   * catégorie : les cartes d'un même onglet de filtre partagent leur couleur. */
+  private static readonly CATEGORY_TONE: Record<string, { iconColor: string; iconBg: string }> = {
+    costs:     { iconColor: 'text-warning',   iconBg: 'bg-warning/10' },
+    billing:   { iconColor: 'text-primary',   iconBg: 'bg-primary/10' },
+    suppliers: { iconColor: 'text-teal',      iconBg: 'bg-teal/10' },
+    general:   { iconColor: 'text-secondary', iconBg: 'bg-secondary/10' },
+  };
+
+  listTypeTone(code: string): { iconColor: string; iconBg: string } {
+    return AdminListComponent.CATEGORY_TONE[AdminListComponent.TYPE_CATEGORY[code] ?? 'general'];
+  }
+
   listCategoryFilter = signal<string>('all');
   listSearch = signal('');
 
