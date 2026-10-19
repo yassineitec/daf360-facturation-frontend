@@ -79,6 +79,10 @@ export interface InvoiceDetail extends InvoiceListItem {
   conditionsPaiement:      string | null;
   clientValidationDocPath: string | null;
   remindersActive:         boolean;
+  /** Non-null only on the response of amendEmittedInvoice(), when the affaire/TS's WIP
+   * declaration couldn't be corrected because a later period already exists for it. The amend
+   * itself still succeeded -- this is advisory only. */
+  wipSyncWarning:          string | null;
 }
 
 /**
