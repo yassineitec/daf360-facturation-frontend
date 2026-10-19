@@ -188,6 +188,10 @@ import { StepConditionsValue } from './step-conditions.component';
     <div class="server-error">{{ serverError() }}</div>
   }
 
+  @if (wipSyncWarning()) {
+    <div class="wip-sync-warning">{{ wipSyncWarning() }}</div>
+  }
+
   @if (savedInvoiceId(); as invId) {
     <!-- Post-enregistrement : on ne navigue plus automatiquement — l'export PDF (mode
          AV) doit rester possible depuis CETTE étape, donc on affiche les actions ici
@@ -258,8 +262,9 @@ export class StepRecapComponent {
   amendMode      = input<boolean>(false);
   prevStep       = output<void>();
 
-  saving      = signal(false);
-  serverError = signal<string | null>(null);
+  saving         = signal(false);
+  serverError    = signal<string | null>(null);
+  wipSyncWarning = signal<string | null>(null);
 
   /** Fiche client complète (nom, adresse, matricule fiscal, contact) — le reste du
    * wizard ne porte que `clientId`, jamais l'objet complet. */
@@ -392,6 +397,7 @@ export class StepRecapComponent {
       emittedAt:     c.dateEmission || null,
       dueDate:       c.dateEcheance,
       notes:         c.notes,
+      conditionsPaiement: c.conditionsPaiement,
       bonDeCommande: c.bonDeCommande,
       deductionLabel1: cols[0] ?? null,
       deductionLabel2: cols[1] ?? null,
@@ -399,6 +405,7 @@ export class StepRecapComponent {
       lines:         l.lines,
       periodFrom:    l.periodFrom,
       periodTo:      l.periodTo,
+      invoiceNumber: c.invoiceNumber || null,
     };
   }
 
@@ -415,8 +422,13 @@ export class StepRecapComponent {
   saveDraft(): void {
     this.saving.set(true);
     this.serverError.set(null);
+    this.wipSyncWarning.set(null);
     this.saveOrUpdateDraft().subscribe({
-      next:  inv => { this.saving.set(false); this.savedInvoiceId.set(inv.id); },
+      next:  inv => {
+        this.saving.set(false);
+        this.savedInvoiceId.set(inv.id);
+        if (this.amendMode()) this.wipSyncWarning.set(inv.wipSyncWarning ?? null);
+      },
       error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur.'); },
     });
   }

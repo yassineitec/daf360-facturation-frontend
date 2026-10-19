@@ -1,0 +1,176 @@
+<!-- Onglet "Relances fournisseurs" — échéancier de paiement fournisseur configurable. -->
+
+<div class="flex flex-col gap-6">
+
+  <div class="flex items-start gap-3 rounded-xl bg-surface-container px-5 py-4 text-body-sm text-on-surface-variant">
+    <span class="material-symbols-outlined text-headline-lg">info</span>
+    <p>{{ 'ADMIN.COST_REMINDERS.INTRO' | translate }}</p>
+  </div>
+
+  @if (error(); as err) {
+    <daf-field-message [error]="err" />
+  }
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+      {{ 'ADMIN.COST_REMINDERS.SECTION_TITLE' | translate }}
+    </span>
+    <div class="flex items-center gap-2" *appHasPermission="'FACT_ADMIN_COST'">
+      <daf-button
+        [options]="{ variant: 'ghost', size: 'sm', iconStart: 'send',
+                     loading: dispatching(), disabled: dispatching(),
+                     label: 'ADMIN.COST_REMINDERS.DISPATCH_NOW' | translate }"
+        (onClick)="triggerDispatch()" />
+      <daf-button
+        [options]="{ variant: 'teal', size: 'sm', iconStart: 'add',
+                     label: 'ADMIN.COST_REMINDERS.ADD' | translate }"
+        (onClick)="openCreate()" />
+    </div>
+  </div>
+
+  <daf-search-toolbar
+    [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+    [value]="search()" [debounce]="200"
+    (valueChange)="search.set($event)"
+    [table]="rulesTable" />
+
+  <daf-data-table #rulesTable [columns]="columns()" [rows]="filteredRows()" [config]="config()">
+
+    <ng-template dafCell="rule" let-row>
+      <div class="flex flex-col leading-snug">
+        <span class="text-body-md font-bold text-on-surface">{{ row['_labelFr'] }}</span>
+        <span class="text-[11px] text-on-surface-variant">
+          {{ row['_labelEn'] }} · <span class="font-mono">{{ row['_code'] }}</span>
+        </span>
+      </div>
+    </ng-template>
+
+    <ng-template dafCell="audience" let-row>
+      <div class="flex flex-wrap items-center gap-1">
+        @for (r of row['_roles']; track r) {
+          <span class="inline-flex items-center rounded-full bg-surface-container px-2 py-0.5
+                       text-[11px] font-bold text-on-surface-variant">{{ r }}</span>
+        } @empty {
+          <span class="text-[11px] text-outline">—</span>
+        }
+        @if (row['_orphans'].length) {
+          <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5
+                       text-[11px] font-bold text-danger"
+                [title]="'ADMIN.COST_REMINDERS.ORPHAN_HINT' | translate">
+            <span class="material-symbols-outlined text-[14px]">person_off</span>
+            {{ row['_orphans'].join(', ') }}
+          </span>
+        }
+      </div>
+    </ng-template>
+
+  </daf-data-table>
+
+</div>
+
+<ng-template #formTpl>
+
+  <div class="flex flex-col gap-5 p-1">
+
+    @if (formError(); as err) {
+      <daf-field-message [error]="err" />
+    }
+
+    <daf-form-field
+      [value]="code()"
+      (valueChange)="code.set(($any($event) ?? '').toUpperCase())"
+      [options]="{
+        label: ('ADMIN.COST_REMINDERS.FIELD_CODE' | translate),
+        placeholder: 'RAPPEL_ECHEANCE',
+        required: true,
+        disabled: codeLocked(),
+        maxLength: 30,
+        fullWidth: true,
+        hint: codeLocked()
+          ? ('ADMIN.COST_REMINDERS.CODE_LOCKED' | translate)
+          : ('ADMIN.COST_REMINDERS.CODE_HINT' | translate)
+      }" />
+
+    <daf-form-field
+      [value]="labelFr()"
+      (valueChange)="labelFr.set($any($event) ?? '')"
+      [options]="{ label: ('ADMIN.COST_REMINDERS.FIELD_LABEL_FR' | translate), required: true, maxLength: 150, fullWidth: true }" />
+
+    <daf-form-field
+      [value]="labelEn()"
+      (valueChange)="labelEn.set($any($event) ?? '')"
+      [options]="{ label: ('ADMIN.COST_REMINDERS.FIELD_LABEL_EN' | translate), required: true, maxLength: 150, fullWidth: true }" />
+
+    <div style="display:flex; align-items:flex-end; gap:1rem">
+      <div style="flex:1 1 auto; min-width:0">
+        <daf-form-field
+          [value]="offsetDays()"
+          (valueChange)="offsetDays.set($any($event) ?? '0')"
+          [options]="{
+            label: ('ADMIN.COST_REMINDERS.FIELD_OFFSET' | translate),
+            type: 'number',
+            required: true,
+            fullWidth: true,
+            hint: ('ADMIN.COST_REMINDERS.OFFSET_HINT' | translate)
+          }" />
+      </div>
+      <span class="mb-6 inline-flex shrink-0 items-center rounded-full bg-primary/10 px-3 py-1
+                   text-body-md font-extrabold text-primary">
+        {{ offsetPreview() }}
+      </span>
+    </div>
+
+    <daf-select
+      [options]="roleOptions()"
+      [selected]="roles()"
+      (selectedChange)="roles.set($event)"
+      [config]="{
+        label: ('ADMIN.COST_REMINDERS.FIELD_ROLES' | translate),
+        placeholder: ('ADMIN.COST_REMINDERS.ROLES_PLACEHOLDER' | translate),
+        multiple: true,
+        searchable: true,
+        fullWidth: true,
+        hint: ('ADMIN.COST_REMINDERS.ROLES_HINT' | translate)
+      }" />
+
+    <daf-form-field
+      [value]="emailSubject()"
+      (valueChange)="emailSubject.set($any($event) ?? '')"
+      [options]="{
+        label: ('ADMIN.COST_REMINDERS.FIELD_SUBJECT' | translate),
+        placeholder: ('ADMIN.COST_REMINDERS.SUBJECT_PLACEHOLDER' | translate),
+        maxLength: 255,
+        fullWidth: true,
+        hint: ('ADMIN.COST_REMINDERS.TEMPLATE_HINT' | translate)
+      }" />
+
+    <daf-form-field
+      [value]="emailBody()"
+      (valueChange)="emailBody.set($any($event) ?? '')"
+      [options]="{
+        label: ('ADMIN.COST_REMINDERS.FIELD_BODY' | translate),
+        type: 'textarea',
+        rows: 8,
+        fullWidth: true,
+        hint: ('ADMIN.COST_REMINDERS.BODY_HINT' | translate)
+      }" />
+
+    <div class="flex flex-wrap items-center gap-1">
+      @for (t of tokens; track t) {
+        <button type="button"
+                class="inline-flex items-center rounded-full bg-surface-container px-2 py-0.5
+                       font-mono text-[11px] font-bold text-on-surface-variant
+                       hover:bg-primary/10 hover:text-primary"
+                (click)="insertToken(t)">{{ t }}</button>
+      }
+    </div>
+
+    <daf-toggle
+      [(checked)]="isActive"
+      [options]="{
+        label: ('ADMIN.COST_REMINDERS.FIELD_ACTIVE' | translate),
+        hint: ('ADMIN.COST_REMINDERS.ACTIVE_HINT' | translate)
+      }" />
+
+  </div>
+</ng-template>

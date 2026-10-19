@@ -21,17 +21,19 @@ export interface StepLinesValue {
     vatRatePct:     number;
     // Avancement — présents en mode AV (Forfaitaire, calculé depuis le taux saisi),
     // Livrable (calculé par ligne/document côté serveur à la génération — cf.
-    // isLivrable() plus bas) et T&M (WIP validé, avancement toujours fixé à 100 % —
-    // cf. isTm() plus bas)
+    // isLivrable() plus bas), TS (calculé à la validation DF d'une déclaration
+    // TsTauxAvancement — cf. isTsCarryForward()/tsHasAvancement() plus bas) et T&M
+    // (WIP validé, avancement toujours fixé à 100 % — cf. isTm() plus bas)
     budgetAffaire?: number;
     pctFacture?:    number;
     pctAvancement?: number;
     pctAFacturer?:  number;
     // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
     sourceExpenseId?: number;
-    // Carry-forward — présent uniquement quand la ligne provient d'un solde WIP non
-    // facturé pické (cf. PendingCarryForwardDto)
-    sourceCarriedForwardLineId?: number;
+    // Carry-forward — sources attribuées à cette ligne (cf. PendingCarryForwardDto). Vide =
+    // rien reporté ; une entrée = cas classique ; plusieurs = fusion de picks du même
+    // contrat (cf. addSelectedCarryForward plus bas).
+    sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
     // T&M — collaborateur associé, présent uniquement en mode T&M
     profileUserId?: number;
     // Colonnes de déduction personnalisées — pourcentage 1-100 pour la colonne à la
@@ -224,6 +226,23 @@ export interface StepLinesValue {
                   }"
                   [value]="lg.get('description')!.value"
                   (valueChange)="setText(lg, 'description', $event)" />
+                @if (carryForwardCount(i) > 1) {
+                  <button type="button" class="carry-forward-toggle" (click)="toggleCarryForwardBreakdown(i)">
+                    {{ 'INVOICING.STEP_LINES.CARRY_FORWARD_INCLUDED_COUNT' | translate: { count: carryForwardCount(i) } }}
+                    {{ carryForwardBreakdownOpen().has(i) ? '▴' : '▾' }}
+                  </button>
+                  @if (carryForwardBreakdownOpen().has(i)) {
+                    <ul class="carry-forward-breakdown">
+                      @for (s of carryForwardSources(i); track s.sourceBillingLineId) {
+                        <li>
+                          <span>#{{ s.sourceBillingLineId }} — {{ formatAmount(s.amount) }}</span>
+                          <button type="button" [title]="'INVOICING.STEP_LINES.CARRY_FORWARD_REMOVE_SOURCE' | translate"
+                            (click)="removeCarryForwardSource(i, s.sourceBillingLineId)">✕</button>
+                        </li>
+                      }
+                    </ul>
+                  }
+                }
               </td>
 
               @if (isAv()) {
@@ -264,16 +283,28 @@ export interface StepLinesValue {
                     (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                 </td>
               } @else if (isTsCarryForward()) {
-                <!-- TS WIP : facturé en une seule fois à 100 % — même affichage que T&M. -->
-                <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
-                <td class="td-computed">{{ formatPct(100) }}</td>
-                <td class="td-computed">{{ formatPct(100) }}</td>
-                <td class="td-computed">{{ formatPct(100) }}</td>
-                <td>
-                  <daf-form-field [options]="numOptions"
-                    [value]="lg.get('prixUnitaireHt')!.value"
-                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
-                </td>
+                <!-- TS WIP : les quatre colonnes d'avancement portent de VRAIES valeurs,
+                     calculées une seule fois côté serveur à la validation DF d'une
+                     déclaration TsTauxAvancement (DFValidationService.buildInvoiceLine,
+                     branche TS) -- exactement le même principe qu'en Forfaitaire (cf.
+                     isAv() ci-dessus). Un solde TS repris via le picker de carry-forward
+                     calcule ces mêmes colonnes côté serveur (InvoiceService.
+                     toPendingCarryForwardDto, branche TS). '—' uniquement pour une
+                     InvoiceLine historique persistée avant que cette branche ne calcule
+                     de vraies valeurs. -->
+                <td class="td-computed">{{ tsBudgetAffaireLabel(i) }}</td>
+                <td class="td-computed">{{ tsPctFactureLabel(i) }}</td>
+                <td class="td-computed">{{ tsPctAvancementLabel(i) }}</td>
+                <td class="td-computed">{{ tsPctAFacturerLabel(i) }}</td>
+                @if (tsHasAvancement(i) && !amendMode()) {
+                  <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
               } @else if (isLivrable()) {
                 <!-- Livrable : les quatre colonnes d'avancement portent de VRAIES valeurs,
                      propres au document facturé (budget alloué du livrable, % déjà facturé
@@ -802,7 +833,7 @@ export class StepLinesComponent {
           prixUnitaireHt:  l.unitRate,
           tauxTva:         l.vatRatePct,
           sourceExpenseId: l.sourceExpenseId,
-          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId,
+          sourceCarryForwards: l.sourceCarryForwards ?? [],
           deductionPct1:   l.deductionPct1 ?? null,
           deductionPct2:   l.deductionPct2 ?? null,
           deductionPct3:   l.deductionPct3 ?? null,
@@ -816,14 +847,15 @@ export class StepLinesComponent {
           prixUnitaireHt:  l.unitRate,
           tauxTva:         l.vatRatePct,
           pctAvancement:   l.pctAvancement ?? null,
-          // Chargées pour les modes Forfaitaire et Livrable, qui les affichent et les
-          // réémettent telles quelles (cf. isAv() / isLivrable()). Inertes dans les autres
-          // modes : le T&M les fixe à 100 % et le mode standard n'a pas ces colonnes du tout.
+          // Chargées pour les modes Forfaitaire, Livrable et TS, qui les affichent et les
+          // réémettent telles quelles (cf. isAv() / isLivrable() / isTsCarryForward()).
+          // Inertes dans les autres modes : le T&M les fixe à 100 % et le mode standard
+          // n'a pas ces colonnes du tout.
           budgetAffaire:   l.budgetAffaire ?? null,
           pctFacture:      l.pctFacture    ?? null,
           pctAFacturer:    l.pctAFacturer  ?? null,
           sourceExpenseId: l.sourceExpenseId ?? null,
-          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? null,
+          sourceCarryForwards: l.sourceCarryForwards ?? [],
           profileUserId:   l.profileUserId ?? null,
           deductionPct1:   l.deductionPct1 ?? null,
           deductionPct2:   l.deductionPct2 ?? null,
@@ -921,7 +953,7 @@ export class StepLinesComponent {
       quantite:         [1,  [Validators.required, Validators.min(0.01)]],
       prixUnitaireHt:   [0,  [Validators.required, Validators.min(0)]],
       pctAvancement:    [null],
-      // Modes Forfaitaire et Livrable : les trois autres colonnes d'avancement de la
+      // Modes Forfaitaire, Livrable et TS : les trois autres colonnes d'avancement de la
       // ligne, telles que le serveur les a calculées à la génération de la facture. Sans
       // ces contrôles, `seedFromInitialLines` n'avait nulle part où les charger et
       // `next()` n'avait rien à réémettre. Ni validateur ni valeur par défaut : le mode
@@ -931,7 +963,7 @@ export class StepLinesComponent {
       pctAFacturer:     [null as number | null],
       tauxTva:          [19],
       sourceExpenseId:  [null as number | null],
-      sourceCarriedForwardLineId: [null as number | null],
+      sourceCarryForwards: [[] as { sourceBillingLineId: number; amount: number }[]],
       profileUserId:    [null as number | null],
       // Toujours créés, que des colonnes de déduction soient actives ou non sur la
       // facture au moment où cette ligne est créée — un contrôle inutilisé ne coûte rien
@@ -1049,7 +1081,7 @@ export class StepLinesComponent {
       prixUnitaireHt:   [0,  [Validators.required, Validators.min(0)]],
       tauxTva:          [0],
       sourceExpenseId:  [null as number | null],
-      sourceCarriedForwardLineId: [null as number | null],
+      sourceCarryForwards: [[] as { sourceBillingLineId: number; amount: number }[]],
       deductionPct1:    [null as number | null],
       deductionPct2:    [null as number | null],
       deductionPct3:    [null as number | null],
@@ -1189,19 +1221,34 @@ export class StepLinesComponent {
     this.carryForwardAmounts.set(m);
   }
 
-  /** Ajoute une ligne PAR montant saisi, toujours dans `lines` — jamais dans `expenseLines`,
-   * même en mode AV : un solde WIP non facturé n'est pas un frais remboursable, c'est de
-   * l'avancement déjà réel juste facturé en retard (cf. ProgressBillingService.
-   * enterClientApprovedAmount / wipCarriedForward), donc il appartient à la même table que
-   * les lignes d'avancement. Porte désormais les VRAIES colonnes budgetAffaire/pctFacture/
-   * pctAvancement (lues sur le PendingCarryForwardDto pické) + un pctAFacturer dérivé du
-   * montant saisi — `null` en RÉGIE (le backend ne les renseigne jamais pour ce mode), donc
-   * aucun changement de comportement pour ce mode. Renseignées, elles font passer
-   * avHasAvancement/livrableHasAvancement à `true` pour cette ligne : c'est voulu, c'est le
-   * même traitement lecture-seule qu'une ligne d'avancement normale, et c'est ce qui
-   * garantit que le montant affiché (lineHtAv/lineHtLivrable) et les pourcentages affichés
-   * ne peuvent jamais diverger l'un de l'autre. Même geste de courtoisie "retirer la ligne
-   * vierge par défaut d'abord" que addSelectedExpenses(). */
+  /** True if lineGroup is safe to merge a pick of this contract (isTsRow) into: either it's
+   * the untouched root declaration (no sourceCarryForwards yet -- always native by
+   * construction, since a TS-sourced line is never created without one below) or every
+   * carry-forward already merged into it shares the SAME contract as the new pick. Needed
+   * because the SAME picker list mixes the affaire's own-mode balances with its separate TS
+   * sub-contract's (see pendingCarryForwardList) -- a pick must never merge into a line built
+   * from the OTHER contract. */
+  private lineMatchesContract(lineGroup: FormGroup, isTsRow: boolean): boolean {
+    // A TS-dedicated invoice never seeds a native root declaration (it's created empty,
+    // populated only via this same picker -- see isTsCarryForward's own doc comment), so
+    // EVERY line here is already guaranteed TS by construction. No further discrimination
+    // needed -- and the check below can't provide any anyway, since the TS-extra pending
+    // list it reads is deliberately kept empty for a TS-dedicated host (the affaire's own-
+    // mode fetch already covers it there), which would otherwise wrongly read as "no line
+    // here is TS."
+    if (this.isTsCarryForward()) return true;
+    const sources = (lineGroup.get('sourceCarryForwards')!.value ?? []) as { sourceBillingLineId: number }[];
+    if (sources.length === 0) return !isTsRow;
+    const tsIds = new Set(this.pendingTsCarryForwardExtra().map(p => p.id));
+    return tsIds.has(sources[0].sourceBillingLineId) === isTsRow;
+  }
+
+  /** A same-contract pick (see lineMatchesContract) merges into the existing line instead of
+   * becoming a new one — its amount and % à facturer fold into that line's own, and its
+   * source is appended to the line's sourceCarryForwards so each original balance stays
+   * individually visible/removable (see the breakdown template below). A different-contract
+   * pick (e.g. the affaire's TS sub-contract balance on a non-TS invoice) always becomes its
+   * own separate line, exactly as before. */
   addSelectedCarryForward(): void {
     const amounts = this.carryForwardAmounts();
     if (amounts.size === 0) return;
@@ -1209,8 +1256,30 @@ export class StepLinesComponent {
     if (this.linesArray.length === 1 && this.isDefaultBlankLine(this.linesArray.at(0) as FormGroup)) {
       this.linesArray.removeAt(0);
     }
+
     amounts.forEach((amount, id) => {
       const dto = this.pendingCarryForwardList().find(p => p.id === id);
+      const isTsRow = dto ? this.isTsCarryForwardRow(dto) : false;
+      const canMerge = isTsRow === this.isTsCarryForward();
+      const targetLine = canMerge
+        ? (this.linesArray.controls.find(c => this.lineMatchesContract(c as FormGroup, isTsRow)) as FormGroup | undefined) ?? null
+        : null;
+
+      if (targetLine) {
+        const sources = [
+          ...(targetLine.get('sourceCarryForwards')!.value ?? []),
+          { sourceBillingLineId: id, amount },
+        ];
+        targetLine.get('sourceCarryForwards')!.setValue(sources);
+        const combinedAmount = (targetLine.get('prixUnitaireHt')!.value ?? 0) + amount;
+        targetLine.get('prixUnitaireHt')!.setValue(combinedAmount);
+        const budgetAffaire = targetLine.get('budgetAffaire')!.value;
+        if (budgetAffaire != null && budgetAffaire > 0) {
+          targetLine.get('pctAFacturer')!.setValue(combinedAmount * 100 / budgetAffaire);
+        }
+        return;
+      }
+
       const budgetAffaire = dto?.budgetAffaire ?? null;
       const pctAFacturer = (budgetAffaire != null && budgetAffaire > 0)
         ? amount * 100 / budgetAffaire
@@ -1219,25 +1288,61 @@ export class StepLinesComponent {
       // the SAME selection (see pendingCarryForwardList) — the resulting lines need their own
       // description to tell them apart on the invoice, where billingModeLabel's "Mode" column
       // from the picker itself no longer applies.
-      const labelKey = dto && this.isTsCarryForwardRow(dto)
+      const labelKey = isTsRow
         ? 'INVOICING.STEP_LINES.CARRY_FORWARD_TS' : 'INVOICING.STEP_LINES.CARRY_FORWARD_WIP';
       const g = this.newLine();
       g.patchValue({
-        description:                this.translate.instant(labelKey, { id }),
-        quantite:                   1,
-        prixUnitaireHt:             amount,
-        tauxTva:                    0,
-        sourceCarriedForwardLineId: id,
-        budgetAffaire:              budgetAffaire,
-        pctFacture:                 dto?.pctFacture ?? null,
-        pctAvancement:              dto?.pctAvancement ?? null,
-        pctAFacturer:               pctAFacturer,
+        description:          this.translate.instant(labelKey, { id }),
+        quantite:             1,
+        prixUnitaireHt:       amount,
+        tauxTva:              0,
+        sourceCarryForwards:  [{ sourceBillingLineId: id, amount }],
+        budgetAffaire:        budgetAffaire,
+        pctFacture:           dto?.pctFacture ?? null,
+        pctAvancement:        dto?.pctAvancement ?? null,
+        pctAFacturer:         pctAFacturer,
       });
       this.linesArray.push(g);
     });
     this.linesVersion.update(v => v + 1);
     this.closeCarryForwardPicker();
     this.carryForwardAmounts.set(new Map());
+  }
+
+  // ── Détail dépliable des soldes WIP fusionnés dans une ligne ──────────────────
+
+  readonly carryForwardBreakdownOpen = signal<Set<number>>(new Set());
+
+  toggleCarryForwardBreakdown(i: number): void {
+    const s = new Set(this.carryForwardBreakdownOpen());
+    if (s.has(i)) s.delete(i); else s.add(i);
+    this.carryForwardBreakdownOpen.set(s);
+  }
+
+  carryForwardSources(i: number): { sourceBillingLineId: number; amount: number }[] {
+    return (this.linesArray.at(i) as FormGroup).get('sourceCarryForwards')!.value ?? [];
+  }
+
+  carryForwardCount(i: number): number {
+    return this.carryForwardSources(i).length;
+  }
+
+  /** Retire UNE SEULE source d'une ligne fusionnée (pas la ligne entière) — recalcule le
+   * montant et le % à facturer de la ligne restante après coup. */
+  removeCarryForwardSource(i: number, sourceBillingLineId: number): void {
+    const g = this.linesArray.at(i) as FormGroup;
+    const current = this.carryForwardSources(i);
+    const removed = current.find(s => s.sourceBillingLineId === sourceBillingLineId);
+    if (!removed) return;
+    const remaining = current.filter(s => s.sourceBillingLineId !== sourceBillingLineId);
+    g.get('sourceCarryForwards')!.setValue(remaining);
+    const newAmount = (g.get('prixUnitaireHt')!.value ?? 0) - removed.amount;
+    g.get('prixUnitaireHt')!.setValue(newAmount);
+    const budgetAffaire = g.get('budgetAffaire')!.value;
+    if (budgetAffaire != null && budgetAffaire > 0) {
+      g.get('pctAFacturer')!.setValue(newAmount * 100 / budgetAffaire);
+    }
+    this.linesVersion.update(v => v + 1);
   }
 
   formatDate(d: string | null): string {
@@ -1290,6 +1395,57 @@ export class StepLinesComponent {
   avHasAvancement(i: number): boolean {
     return this.avAvancement(i, 'budgetAffaire') != null
         && this.avAvancement(i, 'pctAFacturer')  != null;
+  }
+
+  // ── Calculs mode TS — colonnes d'avancement de la ligne ─────────────────────────
+  //
+  // Lues sur le FormGroup de la ligne, jamais recalculées : fixées une seule fois côté
+  // serveur à la validation DF d'une déclaration TsTauxAvancement (DFValidationService.
+  // buildInvoiceLine, branche TS), exactement le même principe qu'en Forfaitaire (cf.
+  // avAvancement ci-dessus). `null` quand la ligne n'a pas d'avancement réel -- soit un
+  // solde TS repris via le picker de carry-forward dont le calcul a échoué pour une
+  // raison quelconque, soit (cas historique) une InvoiceLine persistée avant que la
+  // branche TS de buildInvoiceLine ne calcule de vraies valeurs -- affichée '—' dans ce
+  // cas plutôt que le 100 % systématique erroné d'avant.
+
+  private tsAvancement(
+    i: number,
+    key: 'budgetAffaire' | 'pctFacture' | 'pctAvancement' | 'pctAFacturer',
+  ): number | null {
+    const v = (this.linesArray.at(i) as FormGroup).get(key)?.value;
+    return v == null || v === '' ? null : Number(v);
+  }
+
+  tsBudgetAffaireLabel(i: number): string {
+    const v = this.tsAvancement(i, 'budgetAffaire');
+    return v == null ? '—' : this.formatAmount(v);
+  }
+
+  tsPctFactureLabel(i: number): string {
+    const v = this.tsAvancement(i, 'pctFacture');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  tsPctAvancementLabel(i: number): string {
+    const v = this.tsAvancement(i, 'pctAvancement');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  tsPctAFacturerLabel(i: number): string {
+    const v = this.tsAvancement(i, 'pctAFacturer');
+    return v == null ? '—' : this.formatPct(v);
+  }
+
+  /** Vrai quand la ligne porte les deux colonnes dont le total dérive — c'est-à-dire une
+   * ligne générée depuis une déclaration TS validée par un DF (DFValidationService.
+   * buildInvoiceLine, branche TS) ou reprise via le picker de solde WIP non facturé
+   * (InvoiceService.toPendingCarryForwardDto, branche TS) — les deux chemins calculent
+   * désormais de vraies valeurs. Faux uniquement pour une InvoiceLine historique
+   * persistée avant ce calcul, qui garde alors l'ancien repli (montant éditable, '—'
+   * partout) plutôt que d'afficher un faux 100 %. */
+  tsHasAvancement(i: number): boolean {
+    return this.tsAvancement(i, 'budgetAffaire') != null
+        && this.tsAvancement(i, 'pctAFacturer')  != null;
   }
 
   /** Montant HT — toujours le contrôle `prixUnitaireHt` de CETTE ligne, jamais recalculé
@@ -1353,7 +1509,7 @@ export class StepLinesComponent {
       // contrairement à l'ancien comportement (cf. Livrable, qui n'en a pas non plus).
       const avancementLines = (this.linesArray.value as {
         description: string; tauxTva: number; sourceExpenseId: number | null;
-        sourceCarriedForwardLineId: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
@@ -1368,7 +1524,7 @@ export class StepLinesComponent {
           pctAvancement:   l.pctAvancement ?? undefined,
           pctAFacturer:    l.pctAFacturer  ?? undefined,
           sourceExpenseId: l.sourceExpenseId ?? undefined,
-          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+          sourceCarryForwards: l.sourceCarryForwards ?? undefined,
           ...dedFields(l),
         }));
 
@@ -1378,7 +1534,7 @@ export class StepLinesComponent {
       // cf. InvoiceService.saveLines côté service).
       const expenseLines = (this.expenseLinesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number; sourceExpenseId: number | null;
-        sourceCarriedForwardLineId: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
       }[]).map(l => ({
         description:     l.description,
@@ -1386,7 +1542,7 @@ export class StepLinesComponent {
         unitRate:        l.prixUnitaireHt,
         vatRatePct:      l.tauxTva,
         sourceExpenseId: l.sourceExpenseId ?? undefined,
-        sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+        sourceCarryForwards: l.sourceCarryForwards ?? undefined,
         ...dedFields(l),
       }));
 
@@ -1397,7 +1553,7 @@ export class StepLinesComponent {
       // cf. template.
       const tmLines = (this.linesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number;
-        sourceCarriedForwardLineId: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
       }[]).map(l => {
         const montant = l.prixUnitaireHt ?? 0;
@@ -1410,7 +1566,7 @@ export class StepLinesComponent {
           pctFacture:    100,
           pctAvancement: 100,
           pctAFacturer:  100,
-          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+          sourceCarryForwards: l.sourceCarryForwards ?? undefined,
           ...dedFields(l),
         };
       });
@@ -1442,7 +1598,7 @@ export class StepLinesComponent {
         description: string; prixUnitaireHt: number; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
-        sourceCarriedForwardLineId: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
       }[]).map((l, i) => ({
         description:   l.description,
@@ -1453,7 +1609,7 @@ export class StepLinesComponent {
         pctFacture:    l.pctFacture    ?? undefined,
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
-        sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+        sourceCarryForwards: l.sourceCarryForwards ?? undefined,
         ...dedFields(l),
       }));
       this.nextStep.emit({
@@ -1465,28 +1621,31 @@ export class StepLinesComponent {
         deductionColumns,
       });
     } else if (this.isTsCarryForward()) {
-      // TS WIP billing lines: billed in full in one shot — same flat 100%-everywhere
-      // convention as T&M.  Carry the period from the server-generated draft so it is
-      // preserved on re-save, same as isTm() / isLivrable().
+      // TS WIP billing lines: the four avancement columns carry REAL values computed
+      // once server-side at DF validation of a TsTauxAvancement declaration
+      // (DFValidationService.buildInvoiceLine, branche TS) or at carry-forward pickup
+      // (InvoiceService.toPendingCarryForwardDto, branche TS) -- reread and reemitted
+      // here exactly as-is, never recalculated, same principle as isAv() above. Carry
+      // the period from the server-generated draft so it is preserved on re-save, same
+      // as isTm() / isLivrable().
       const tsLines = (this.linesArray.value as {
         description: string; prixUnitaireHt: number; tauxTva: number;
-        sourceCarriedForwardLineId: number | null;
+        budgetAffaire: number | null; pctFacture: number | null;
+        pctAvancement: number | null; pctAFacturer: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map(l => {
-        const montant = l.prixUnitaireHt ?? 0;
-        return {
-          description:   l.description,
-          quantity:      1,
-          unitRate:      montant,
-          vatRatePct:    l.tauxTva,
-          budgetAffaire: montant,
-          pctFacture:    100,
-          pctAvancement: 100,
-          pctAFacturer:  100,
-          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
-          ...dedFields(l),
-        };
-      });
+      }[]).map((l, i) => ({
+        description:   l.description,
+        quantity:      1,
+        unitRate:      this.lineHtTm(i),
+        vatRatePct:    l.tauxTva,
+        budgetAffaire: l.budgetAffaire ?? undefined,
+        pctFacture:    l.pctFacture    ?? undefined,
+        pctAvancement: l.pctAvancement ?? undefined,
+        pctAFacturer:  l.pctAFacturer  ?? undefined,
+        sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...dedFields(l),
+      }));
       this.nextStep.emit({
         lines: tsLines,
         periodFrom: this.initialPeriodFrom(),
@@ -1498,7 +1657,7 @@ export class StepLinesComponent {
         lines: (this.linesArray.value as {
           description: string; quantite: number; prixUnitaireHt: number; tauxTva: number;
           sourceExpenseId: number | null; profileUserId: number | null;
-          sourceCarriedForwardLineId: number | null;
+          sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
           deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
         }[]).map(l => ({
           description:     l.description,
@@ -1506,7 +1665,7 @@ export class StepLinesComponent {
           unitRate:        l.prixUnitaireHt,
           vatRatePct:      l.tauxTva,
           sourceExpenseId: l.sourceExpenseId ?? undefined,
-          sourceCarriedForwardLineId: l.sourceCarriedForwardLineId ?? undefined,
+          sourceCarryForwards: l.sourceCarryForwards ?? undefined,
           profileUserId:   l.profileUserId ?? undefined,
           ...dedFields(l),
         })),

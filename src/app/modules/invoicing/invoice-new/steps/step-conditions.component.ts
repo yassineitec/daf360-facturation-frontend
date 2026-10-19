@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, input, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, ValidatorFn, Validators } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { startWith } from 'rxjs';
 import {
@@ -18,7 +18,16 @@ export interface StepConditionsValue {
   /** Only ever set/shown in amend mode — correcting the emission date of an already-
    *  emitted invoice. Empty string outside amend mode (createDraft/updateDraft ignore it). */
   dateEmission:       string;
+  /** Only ever set/shown in amend mode — overriding an already-emitted invoice's number.
+   *  Empty string outside amend mode (createDraft/updateDraft ignore it). */
+  invoiceNumber:      string;
 }
+
+/** Validators.required alone only checks length === 0 — a whitespace-only value would pass
+ *  it, then the backend's own trim-then-no-op-if-blank logic would silently discard it,
+ *  leaving the user thinking they'd entered/changed a number when nothing was saved. */
+const requiredTrimmed: ValidatorFn = control =>
+  ((control.value ?? '') as string).trim() ? null : { required: true };
 
 @Component({
   selector: 'app-step-conditions',
@@ -37,6 +46,18 @@ export interface StepConditionsValue {
           }"
           [value]="dateEmission()"
           (valueChange)="setDateEmission($event)" />
+      </div>
+      <div class="field">
+        <daf-form-field
+          [options]="{
+            label: ('INVOICING.STEP_CONDITIONS.INVOICE_NUMBER_LABEL' | translate),
+            placeholder: ('INVOICING.STEP_CONDITIONS.INVOICE_NUMBER_PLACEHOLDER' | translate),
+            maxLength: 100,
+            error: form.controls['invoiceNumber'].invalid && form.controls['invoiceNumber'].touched
+              ? ('INVOICING.STEP_CONDITIONS.INVOICE_NUMBER_REQUIRED' | translate) : undefined
+          }"
+          [value]="form.controls['invoiceNumber'].value"
+          (valueChange)="setText('invoiceNumber', $event)" />
       </div>
     }
 
@@ -194,6 +215,11 @@ export class StepConditionsComponent {
     notes:              [''],
     // Amend mode only — never required, a correction is optional, not a mandatory re-entry.
     dateEmission:       [''],
+    // Amend mode only — unlike dateEmission, a blank invoice number isn't valid once shown:
+    // you can't save a legal document with no number. Validators.required is toggled on/off
+    // by the effect() in the constructor below, since amendMode() isn't known until the
+    // parent sets it (same signal-input timing issue documented on that effect already).
+    invoiceNumber:      [''],
   });
 
   /**
@@ -240,8 +266,17 @@ export class StepConditionsComponent {
           bonDeCommande:      iv.bonDeCommande ?? '',
           notes:              iv.notes ?? '',
           dateEmission:       iv.dateEmission ?? '',
+          invoiceNumber:      iv.invoiceNumber ?? '',
         });
       }
+    });
+
+    // Required only in amend mode — a DRAFT has no number to correct, so the field isn't
+    // even shown outside amend mode (see the template's @if (amendMode()) block above).
+    effect(() => {
+      const control = this.form.controls.invoiceNumber;
+      control.setValidators(this.amendMode() ? [requiredTrimmed] : []);
+      control.updateValueAndValidity({ emitEvent: false });
     });
   }
 
@@ -255,6 +290,7 @@ export class StepConditionsComponent {
       bonDeCommande:      v.bonDeCommande?.trim() || null,
       notes:              v.notes?.trim()         || null,
       dateEmission:       v.dateEmission ?? '',
+      invoiceNumber:      v.invoiceNumber?.trim() ?? '',
     });
   }
 }

@@ -264,7 +264,22 @@ export interface CostInvoiceReglementDto {
   costInvoiceId: number;
   montantPaye: number;
   datePaiement: string;
+  paymentMethodId: number | null;
   comment: string | null;
+}
+
+export interface CostReminderDto {
+  id:               number;
+  costInvoiceId:    number;
+  reminderType:     string;
+  labelFr:          string | null;
+  labelEn:          string | null;
+  offsetDays:       number | null;
+  scheduledDate:    string;
+  sentAt:           string | null;
+  isSent:           boolean;
+  isSuspended:      boolean;
+  suspensionReason: string | null;
 }
 
 export interface CostInvoiceDto {
@@ -640,12 +655,14 @@ export interface SupplierLedgerDto {
 export interface CreateReglementRequest {
   montantPaye: number;
   datePaiement: string; // YYYY-MM-DD
+  paymentMethodId: number;
   comment?: string | null;
 }
 
 export interface UpdateReglementRequest {
   montantPaye: number;
   datePaiement: string; // YYYY-MM-DD
+  paymentMethodId: number;
   comment?: string | null;
 }
 

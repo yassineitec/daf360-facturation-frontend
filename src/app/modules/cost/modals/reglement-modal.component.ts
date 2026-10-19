@@ -8,6 +8,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { CostInvoiceDto, CostInvoiceReglementDto, formatAmount } from '../cost.model';
 import { CostService } from '../cost.service';
+import { FactListService } from '../../../core/fact-list.service';
 
 /**
  * What `open()` takes. Since V93 a règlement pays a COST INVOICE (one règlement per
@@ -35,6 +36,11 @@ export interface ReglementModalData {
   supplierInvoiceNumber?: string | null;
   /** Display only: currency of `expectedAmount`. */
   currency?: string | null;
+  /** Which country's PAYMENT_METHOD list to fetch — callers pass `invoice.paysId`. Same
+   *  "caller already knows it, pass it directly" reasoning as `currency`/`invoiceReference`
+   *  above: `findPayable()` below can't always resolve the invoice (e.g. edit mode when the
+   *  invoice isn't in the caller's already-loaded list). */
+  paysId?: number | null;
   /** Create mode without `costInvoiceId`: the payable (APPROVED, unpaid) invoices to pick from. */
   payableInvoices?: CostInvoiceDto[];
 }
@@ -96,6 +102,17 @@ export interface ReglementModalData {
           [value]="montantPaye()"
           (valueChange)="montantPaye.set($any($event))" />
 
+        <daf-select
+          [options]="paymentMethodOptions()"
+          [selected]="paymentMethodId() != null ? [paymentMethodId()!.toString()] : []"
+          [config]="{
+            label: ('COST.REGLEMENT.PAYMENT_METHOD' | translate),
+            placeholder: ('COST.REGLEMENT.PAYMENT_METHOD_PLACEHOLDER' | translate),
+            required: true,
+            error: (touched() && paymentMethodId() == null) ? ('COST.REGLEMENT.ERR_PAYMENT_METHOD_REQUIRED' | translate) : undefined
+          }"
+          (selectedChange)="paymentMethodId.set($event[0] ? +$event[0] : null)" />
+
         <daf-multi-date-picker
           [config]="{ label: ('COST.REGLEMENT.DATE' | translate), required: true }"
           [value]="dateValue"
@@ -136,6 +153,7 @@ export class ReglementModalComponent {
   @ViewChild('tpl', { static: true }) private tpl!: TemplateRef<unknown>;
 
   private readonly svc      = inject(CostService);
+  private readonly listSvc  = inject(FactListService);
   private readonly modal    = inject(ModalService);
   private readonly translate = inject(TranslateService);
 
@@ -151,7 +169,9 @@ export class ReglementModalComponent {
   supplierInvoiceNumber = signal<string | null>(null);
   expectedAmount        = signal<number | null>(null);
   currency              = signal<string | null>(null);
-  montantPaye  = signal<number | null>(null);
+  montantPaye     = signal<number | null>(null);
+  paymentMethodId = signal<number | null>(null);
+  paymentMethodOptions = signal<SelectOption[]>([]);
   comment      = signal<string>('');
   saving       = signal(false);
   serverError  = signal<string | null>(null);
@@ -206,6 +226,16 @@ export class ReglementModalComponent {
     this.expectedAmount.set(data.expectedAmount ?? null);
     this.currency.set(data.currency ?? null);
 
+    this.paymentMethodOptions.set([]);
+    if (data.paysId != null) {
+      this.listSvc.getListValues('PAYMENT_METHOD', data.paysId).subscribe(values => {
+        this.paymentMethodOptions.set(values.map(v => ({
+          value: String(v.id),
+          label: this.translate.currentLang() === 'en' ? (v.labelEn || v.labelFr) : v.labelFr,
+        })));
+      });
+    }
+
     if (data.editing) {
       this.fixedInvoice.set(true);
       this.costInvoiceId.set(data.editing.costInvoiceId);
@@ -213,11 +243,13 @@ export class ReglementModalComponent {
       const inv = this.findPayable(data.editing.costInvoiceId);
       if (inv) this.applyInvoice(inv, false);
       this.montantPaye.set(data.editing.montantPaye);
+      this.paymentMethodId.set(data.editing.paymentMethodId);
       this.dateValue = new Date(data.editing.datePaiement);
       this.comment.set(data.editing.comment ?? '');
     } else {
       this.dateValue = new Date();
       this.comment.set('');
+      this.paymentMethodId.set(null);
       if (data.costInvoiceId != null) {
         this.fixedInvoice.set(true);
         this.costInvoiceId.set(data.costInvoiceId);
@@ -245,7 +277,8 @@ export class ReglementModalComponent {
   }
 
   get canSave(): boolean {
-    return this.costInvoiceId() != null && (this.montantPaye() ?? 0) > 0 && !!this.dateIso;
+    return this.costInvoiceId() != null && (this.montantPaye() ?? 0) > 0 && !!this.dateIso
+        && this.paymentMethodId() != null;
   }
 
   confirm(): void {
@@ -255,9 +288,10 @@ export class ReglementModalComponent {
     this.serverError.set(null);
 
     const body = {
-      montantPaye:  this.montantPaye()!,
-      datePaiement: this.dateIso,
-      comment:      this.comment().trim() || null,
+      montantPaye:     this.montantPaye()!,
+      datePaiement:    this.dateIso,
+      paymentMethodId: this.paymentMethodId()!,
+      comment:         this.comment().trim() || null,
     };
 
     const call$ = this.isEditMode()
@@ -272,7 +306,7 @@ export class ReglementModalComponent {
       },
       error: err => {
         this.saving.set(false);
-        this.serverError.set(err.error?.message ?? err.error?.error
+        this.serverError.set(err.error?.detail ?? err.error?.message ?? err.error?.error
           ?? this.translate.instant('COST.REGLEMENT.GENERIC_ERROR'));
       },
     });

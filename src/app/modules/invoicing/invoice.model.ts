@@ -22,8 +22,10 @@ export interface InvoiceLine {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
-  // WIP carry-forward — présent uniquement quand la ligne provient d'un solde WIP pické
-  sourceCarriedForwardLineId?: number;
+  // WIP carry-forward sources attributed to this line — zero for a plain line, one for the
+  // common case, several when same-contract picks were merged (see
+  // step-lines.component.ts's addSelectedCarryForward).
+  sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
   // Colonnes de déduction personnalisées — position fixe (1/2/3), voir
   // StepLinesValue.deductionColumns côté step-lines.component.ts pour le détail.
   deductionPct1?:    number;
@@ -77,6 +79,10 @@ export interface InvoiceDetail extends InvoiceListItem {
   conditionsPaiement:      string | null;
   clientValidationDocPath: string | null;
   remindersActive:         boolean;
+  /** Non-null only on the response of amendEmittedInvoice(), when the affaire/TS's WIP
+   * declaration couldn't be corrected because a later period already exists for it. The amend
+   * itself still succeeded -- this is advisory only. */
+  wipSyncWarning:          string | null;
 }
 
 /**
@@ -160,8 +166,8 @@ export interface InvoiceLineRequest {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
-  // WIP carry-forward — présent uniquement quand la ligne provient d'un solde WIP pické
-  sourceCarriedForwardLineId?: number;
+  // WIP carry-forward sources attributed to this line — see InvoiceLine above.
+  sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
   // T&M — collaborateur associé à cette ligne, présent uniquement en mode T&M
   profileUserId?: number;
 }
@@ -176,6 +182,10 @@ export interface CreateDraftRequest {
   tsId?:               number | null;
   lines:               InvoiceLineRequest[];
   notes?:              string | null;
+  // VIREMENT / CHEQUE / COMPTANT / 30_JOURS / 60_JOURS / 90_JOURS (see CONDITIONS_PAIEMENT
+  // below) — already computed by step-conditions.component.ts's next(), this was simply
+  // never forwarded into the outbound payload until now.
+  conditionsPaiement?: string | null;
   bonDeCommande?:      string | null;
   // Amend mode only (UpdateDraftRequest sent to PATCH /invoices/{id}/amend) — corrects the
   // calendar day of an already-EMITTED invoice's issue date. createDraft/updateDraft ignore it.
@@ -184,6 +194,9 @@ export interface CreateDraftRequest {
   // T&M — période facturée, source des heures récupérées ; présents uniquement en mode T&M
   periodFrom?:         string | null;
   periodTo?:           string | null;
+  // Amend mode only — overrides an already-emitted invoice's number. createDraft/updateDraft
+  // ignore it (a DRAFT has no number to correct).
+  invoiceNumber?:      string | null;
 }
 
 export type UpdateDraftRequest = CreateDraftRequest;

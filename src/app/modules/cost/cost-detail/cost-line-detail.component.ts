@@ -35,6 +35,7 @@ import { TableActionComponent } from '../../../shared/table-action.component';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
 import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
+import { CostRemindersPanelComponent } from './cost-reminders-panel.component';
 import { canEditInvoice, canReglementInvoice, invoicePayableAmount } from '../tabs/cost-invoice-display';
 import { UserStore } from '../../../core/user.store';
 import { ExportService } from '../../../core/export.service';
@@ -91,7 +92,7 @@ const SUPPLIER_MODE_PAGE_SIZE = 200;
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent, StatusBadgeComponent, FilterComponent,
     DataTableComponent, DafCellDirective, TableActionComponent, SearchToolbarComponent,
-    CostLinesTableSectionComponent, ReglementModalComponent,
+    CostLinesTableSectionComponent, ReglementModalComponent, CostRemindersPanelComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -388,6 +389,7 @@ export class CostLineDetailComponent implements OnInit {
       { id: 'approvals',   label: t('COST.DETAIL.TABS.APPROVALS'),   count: inv?.approvals.length || null },
       { id: 'attachments', label: t('COST.DETAIL.TABS.ATTACHMENTS'), count: this.attachments().length || null },
       { id: 'changes',     label: t('COST.DETAIL.TABS.CHANGES'),     count: this.changes().length || null },
+      { id: 'reminders',   label: t('COST.DETAIL.TABS.REMINDERS') },
       ledgerTab,
     ];
   });
@@ -1015,9 +1017,9 @@ export class CostLineDetailComponent implements OnInit {
     if (!paysId || !supplierId) return;
     this.svc.getCostInvoices({ paysId, status: 'APPROVED', supplierId, size: SUPPLIER_MODE_PAGE_SIZE }).subscribe({
       next: page => this.reglementModal.open(
-        { editing: null, payableInvoices: page.content.filter(i => !i.reglement) }, () => this.reloadCurrentMode()),
+        { editing: null, payableInvoices: page.content.filter(i => !i.reglement), paysId }, () => this.reloadCurrentMode()),
       error: () => this.reglementModal.open(
-        { editing: null, payableInvoices: [] }, () => this.reloadCurrentMode()),
+        { editing: null, payableInvoices: [], paysId }, () => this.reloadCurrentMode()),
     });
   }
 
@@ -1030,6 +1032,7 @@ export class CostLineDetailComponent implements OnInit {
       invoiceReference:      inv.reference,
       supplierInvoiceNumber: inv.supplierInvoiceNumber,
       currency:              inv.currency,
+      paysId:                inv.paysId,
     }, () => this.reloadCurrentMode());
   }
 
@@ -1046,6 +1049,7 @@ export class CostLineDetailComponent implements OnInit {
           invoiceReference:      inv?.reference ?? null,
           supplierInvoiceNumber: inv?.supplierInvoiceNumber ?? null,
           currency:              inv?.currency ?? null,
+          paysId:                inv?.paysId ?? null,
         }, () => this.reloadCurrentMode());
       },
       error: () => this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR')),

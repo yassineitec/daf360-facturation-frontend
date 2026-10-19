@@ -398,6 +398,7 @@ export class CostLinesComponent implements OnInit {
       invoiceReference:      inv.reference,
       supplierInvoiceNumber: inv.supplierInvoiceNumber,
       currency:              inv.currency,
+      paysId:                inv.paysId,
     }, () => this.load());
   }
 }

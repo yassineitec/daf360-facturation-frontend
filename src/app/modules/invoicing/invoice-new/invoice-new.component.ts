@@ -163,7 +163,7 @@ export class InvoiceNewComponent implements OnInit {
             pctAvancement:   l.pctAvancement,
             pctAFacturer:    l.pctAFacturer,
             sourceExpenseId: l.sourceExpenseId,
-            sourceCarriedForwardLineId: l.sourceCarriedForwardLineId,
+            sourceCarryForwards: l.sourceCarryForwards,
             deductionPct1:   l.deductionPct1,
             deductionPct2:   l.deductionPct2,
             deductionPct3:   l.deductionPct3,
@@ -178,6 +178,7 @@ export class InvoiceNewComponent implements OnInit {
           bonDeCommande:      inv.bonDeCommande,
           notes:              inv.notes,
           dateEmission:       inv.dateEmission ?? '',
+          invoiceNumber:      inv.invoiceNumber ?? '',
         });
         this.loadingExisting.set(false);
       },
