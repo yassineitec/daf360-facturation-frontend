@@ -73,7 +73,7 @@ export interface StepLinesValue {
   <div class="lines-header">
     <span class="section-title">{{ 'INVOICING.STEP_LINES.TITLE' | translate }}</span>
     <div class="lines-header-actions">
-      @if (!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) {
+      @if ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte()) {
         <button type="button" class="btn-add-line" (click)="addLine()">
           {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
         </button>
@@ -623,6 +623,13 @@ export class StepLinesComponent {
    * tel quel (PendingCarryForwardDto porte déjà son propre billingMode="TS"). Les lignes
    * utilisent la branche standard (Qté/PU HT) du tableau, qui convient telle quelle. */
   readonly isTsCarryForward = computed(() => this.affaireData().billingMode === 'TS');
+
+  /** ACOMPTE (avance/deposit) invoices are allowed a plain manual line regardless of
+   * billing mode -- see docs/superpowers/specs/2026-10-19-advance-invoice-design.md. Unlike
+   * isAv/isTm/isLivrable/isTsCarryForward above, this reads invoiceType, not billingMode,
+   * since an ACOMPTE invoice still carries the affaire's own normal billing mode -- only its
+   * line is different. */
+  readonly isAcompte = computed(() => this.affaireData().invoiceType === 'ACOMPTE');
 
   private readonly initialPeriodFrom = signal<string | null>(null);
   private readonly initialPeriodTo   = signal<string | null>(null);
