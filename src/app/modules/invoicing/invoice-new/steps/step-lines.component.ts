@@ -624,11 +624,12 @@ export class StepLinesComponent {
    * utilisent la branche standard (Qté/PU HT) du tableau, qui convient telle quelle. */
   readonly isTsCarryForward = computed(() => this.affaireData().billingMode === 'TS');
 
-  /** ACOMPTE (avance/deposit) invoices are allowed a plain manual line regardless of
-   * billing mode -- see docs/superpowers/specs/2026-10-19-advance-invoice-design.md. Unlike
-   * isAv/isTm/isLivrable/isTsCarryForward above, this reads invoiceType, not billingMode,
-   * since an ACOMPTE invoice still carries the affaire's own normal billing mode -- only its
-   * line is different. */
+  /** Vrai pour une facture d'ACOMPTE (avance client) — autorisée à porter une ligne saisie
+   * à la main quel que soit le mode de facturation de l'affaire (voir, dans le dépôt
+   * daf360-facturation-service, docs/superpowers/specs/2026-10-19-advance-invoice-design.md).
+   * Contrairement à isAv/isTm/isLivrable/isTsCarryForward ci-dessus, ce signal lit
+   * invoiceType et non billingMode : une facture ACOMPTE garde le mode de facturation normal
+   * de l'affaire, seule sa ligne diffère. */
   readonly isAcompte = computed(() => this.affaireData().invoiceType === 'ACOMPTE');
 
   private readonly initialPeriodFrom = signal<string | null>(null);
