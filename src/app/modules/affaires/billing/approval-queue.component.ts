@@ -216,9 +216,12 @@ export class ApprovalQueueComponent implements OnInit {
   readonly livrableSelection = new RowSelection();  // unchanged -- own separate batch mechanism, out of scope
   readonly tsSelection       = new RowSelection(false);
 
-  /** Set only when the current selection spans more than one client -- lets the template
-   * show a small picker instead of calling validateDFBatch() with an ambiguous selection.
-   * null the rest of the time. */
+  /** Set whenever the current selection spans 2+ affaires -- lets the template show a
+   * client-confirmation picker (pre-offering any client(s) those affaires already share,
+   * plus a full search over every client) before calling validateDFBatch(). Shown even
+   * when every affaire already agrees on one client, since the real invoicing client can
+   * still differ from it. null the rest of the time, including the single-affaire fast
+   * path, which never shows a picker at all. */
   readonly clientPickerOptions = signal<{ clientId: number; clientName: string }[] | null>(null);
   private pendingValidateIds: number[] | null = null;
   private pendingValidateSelection: RowSelection | null = null;
@@ -231,8 +234,8 @@ export class ApprovalQueueComponent implements OnInit {
   /** Full client database, fetched once per picker opening (not per keystroke) so the
    * picker can offer ANY client -- not just the ones the selected affaires happen to
    * already be tagged with (e.g. ARX Tunisia affaires actually billed to ARX France). */
-  private allClientsForPicker = signal<ClientDropdownItemDto[]>([]);
-  clientSearchValue = signal('');
+  private readonly allClientsForPicker = signal<ClientDropdownItemDto[]>([]);
+  readonly clientSearchValue = signal('');
   readonly clientSearchResults = computed(() => {
     const q = this.clientSearchValue().trim().toLowerCase();
     if (!q) return [];
@@ -1259,10 +1262,12 @@ export class ApprovalQueueComponent implements OnInit {
         this.pendingValidateSelection = selection;
         this.clientPickerOptions.set(
           [...distinctClients.entries()].map(([clientId, clientName]) => ({ clientId, clientName })));
-        this.clientSvc.getDropdown(0).subscribe({
-          next: clients => this.allClientsForPicker.set(clients),
-          error: () => this.allClientsForPicker.set([]),
-        });
+        // Not tracked by clientLookupSub like the affaire forkJoin above: "all active
+        // clients" doesn't depend on which affaires triggered this lookup, so even a late
+        // response from an abandoned selection can never resolve to wrong data -- at worst
+        // a harmless duplicate call. ClientService.getDropdown() already swallows its own
+        // errors into next([]), so no error: handler is needed here either.
+        this.clientSvc.getDropdown(0).subscribe(clients => this.allClientsForPicker.set(clients));
       },
       // No global error-toast interceptor in this app (see auth.interceptor.ts) -- without
       // this, a deleted affaire or a transient network error leaves the user stuck clicking
