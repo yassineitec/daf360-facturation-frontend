@@ -84,7 +84,8 @@ export class WizardStepAvComponent implements OnInit {
           next: t => {
             this.loadError.set(null);
             this.repartitionTypes.set(t);
-            this.dropTypesOutsideScope(t);
+            // Locked (active affaire): show what was agreed, never rewrite it.
+            if (!this.locked) this.dropTypesOutsideScope(t);
           },
           // Un échec de chargement rendait une liste vide, indiscernable d'un pays sans
           // paramétrage : la liste déroulante s'ouvrait sur rien, sans un mot d'explication.
@@ -100,7 +101,7 @@ export class WizardStepAvComponent implements OnInit {
         });
     }
     if (!this.draft.repartitions.length) {
-      this.addRow();
+      if (!this.locked) this.addRow();
     } else {
       this.updateTotal();
     }

@@ -81,7 +81,43 @@ export class WizardStepTmComponent implements OnInit {
     }
     if (this.draft.id) {
       this.affaireSvc.getRessourcesWorkedHours(this.draft.id).subscribe(h => this.workedHours.set(h));
+      this.hydrateLoadedRates(this.draft.id);
     }
+  }
+
+  /**
+   * Edit / resumed draft: rows reloaded from the server (AffaireDraftDto.RessourceDto) carry
+   * only the agreed rate and the cost — not the calculated selling / intercompany rates
+   * behind the two pills. Those read 0, and clicking one reset `rateAmount` to 0. Fetch them
+   * once for every loaded row, with the same calculateTaux() as a fresh selection.
+   * `rateAmount` (what was agreed and saved) is never overwritten here.
+   */
+  private hydrateLoadedRates(affaireId: number): void {
+    const rows = this.draft.ressources.filter(r =>
+      r.userId > 0 && r.tauxVente == null && r.tauxIntercompany == null);
+    if (!rows.length) return;
+    // No calculated rate available: the saved rate is the only one known — show it as the
+    // selling rate rather than a 0 that a click would copy into rateAmount.
+    const keepSaved = (r: AffaireDraftState['ressources'][0]) => {
+      r.tauxVente  = r.rateAmount;
+      r.rateSource = 'EXTERNAL';
+    };
+    this.livrableSvc.calculateTaux(affaireId, this.draft.paysId, [...new Set(rows.map(r => r.userId))]).subscribe({
+      next: results => {
+        const byUser = new Map(results.map(t => [t.userId, t]));
+        for (const r of rows) {
+          const t = byUser.get(r.userId);
+          if (!t || t.sourceCalcul === 'AUCUNE_DONNEE') { keepSaved(r); continue; }
+          r.tauxVente        = t.tauxVente;
+          r.tauxIntercompany = t.tauxIntercompany;
+          r.costAmount     ??= t.coutReel;
+          r.rateSource = r.rateAmount === t.tauxIntercompany && r.rateAmount !== t.tauxVente
+            ? 'INTERNAL' : 'EXTERNAL';
+        }
+        this.emit();
+      },
+      error: () => { rows.forEach(keepSaved); this.emit(); },
+    });
   }
 
   addRessource(): void {
@@ -225,7 +261,8 @@ export class WizardStepTmComponent implements OnInit {
       }));
     // Update existing entries + add new ones
     const updated = this.draft.ressources.map(r => {
-      const match = taux.find(t => t.userId === r.userId);
+      // A rate frozen by the first invoice stays as is — the server would refuse the save.
+      const match = r.rateLocked ? undefined : taux.find(t => t.userId === r.userId);
       return match
         ? { ...r, rateAmount: rateAmountFor(match), costAmount: match.coutReel, tauxVente: match.tauxVente, tauxIntercompany: match.tauxIntercompany, rateSource }
         : r;

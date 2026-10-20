@@ -151,6 +151,8 @@ export interface AffaireDraftState {
     tauxVente?: number;
     rateSource?: 'EXTERNAL' | 'INTERNAL';
     costDataMissing?: boolean;
+    /** Frozen by the first invoice — the server refuses any change to its rate. */
+    rateLocked?: boolean;
   }[];
   eligibleCostCategoryIds: number[];
   marginRatePct?: number;
@@ -187,6 +189,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     rateAmount: Number(r.rateAmount),
     rateCurrency: r.rateCurrency,
     costAmount: r.costAmount != null ? Number(r.costAmount) : undefined,
+    rateLocked: r.rateLocked === true,
   }));
   const responsables: AffaireDraftState['responsables'] = (dto.responsables ?? []).map((r: any) => ({
     userId: r.userId,
