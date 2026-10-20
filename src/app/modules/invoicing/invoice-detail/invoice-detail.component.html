@@ -194,6 +194,10 @@
               [rows]="filteredLineTableRows()"
               [config]="lineTableConfig()">
 
+              <ng-template dafCell="affaire" let-row>
+                <span class="text-body-md font-semibold text-on-surface">{{ row['affaire'] }}</span>
+              </ng-template>
+
               <ng-template dafCell="description" let-row>
                 <span class="text-body-md font-semibold text-on-surface">{{ row['description'] }}</span>
               </ng-template>
