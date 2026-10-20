@@ -33,6 +33,13 @@ export interface StepAffaireValue {
    * added before that fetch resolves falls back to treating it as unknown rather than
    * blocking on it. */
   contractAmount?: number | null;
+  /** Number of DISTINCT affaires among this invoice's own lines -- only meaningful when
+   * affaireId is null (a combined invoice). Lets the combined-invoice summary distinguish
+   * "one affaire, several billing modes merged" from "genuinely several affaires" instead of
+   * always saying "multi-affaires" even when it's really just one affaire combined across
+   * modes (e.g. a FORFAIT line + a TS line from the same affaire). Undefined for an ordinary
+   * single-affaire invoice, where it's meaningless. */
+  combinedAffaireCount?: number;
 }
 
 @Component({
@@ -44,8 +51,13 @@ export interface StepAffaireValue {
 
   @if (isCombinedInvoice()) {
     <div class="selected-affaire combined-invoice-summary">
-      <p class="section-title">{{ 'INVOICING.STEP_AFFAIRE.COMBINED_TITLE' | translate }}</p>
-      <p class="search-hint">{{ 'INVOICING.STEP_AFFAIRE.COMBINED_HINT' | translate }}</p>
+      @if (isSameAffaireCombined()) {
+        <p class="section-title">{{ 'INVOICING.STEP_AFFAIRE.COMBINED_SAME_AFFAIRE_TITLE' | translate }}</p>
+        <p class="search-hint">{{ 'INVOICING.STEP_AFFAIRE.COMBINED_SAME_AFFAIRE_HINT' | translate }}</p>
+      } @else {
+        <p class="section-title">{{ 'INVOICING.STEP_AFFAIRE.COMBINED_TITLE' | translate }}</p>
+        <p class="search-hint">{{ 'INVOICING.STEP_AFFAIRE.COMBINED_HINT' | translate }}</p>
+      }
     </div>
   }
 
@@ -243,6 +255,14 @@ export class StepAffaireComponent implements OnInit {
   readonly isCombinedInvoice = computed(() => {
     const iv = this.initialValue();
     return iv != null && iv.affaireId == null;
+  });
+
+  /** True only for a combined invoice that's ACTUALLY one affaire (multiple billing modes
+   * merged), not several distinct ones -- defaults to treating it as genuinely multi-affaire
+   * (the safer, more common case) if the count is ever missing. */
+  readonly isSameAffaireCombined = computed(() => {
+    const iv = this.initialValue();
+    return iv != null && iv.affaireId == null && (iv.combinedAffaireCount ?? 2) <= 1;
   });
 
   readonly rafPct = computed(() => {

@@ -546,7 +546,9 @@
       "CANCEL": "Cancel",
       "NEXT": "Next",
       "COMBINED_TITLE": "Combined multi-affaire invoice",
-      "COMBINED_HINT": "This invoice groups lines from several affaires, validated together from the approval queue. The lines are shown in the next step."
+      "COMBINED_HINT": "This invoice groups lines from several affaires, validated together from the approval queue. The lines are shown in the next step.",
+      "COMBINED_SAME_AFFAIRE_TITLE": "Combined multi-mode invoice",
+      "COMBINED_SAME_AFFAIRE_HINT": "This invoice groups several billing-mode lines for the same affaire, validated together from the approval queue. The lines are shown in the next step."
     },
     "STEP_LINES": {
       "TITLE": "Billing lines",

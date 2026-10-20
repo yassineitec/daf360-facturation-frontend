@@ -141,6 +141,12 @@ export class InvoiceNewComponent implements OnInit {
       next: inv => {
         this.editInvoiceId.set(id);
         this.amendMode.set(inv.statut === 'EMITTED' || inv.statut === 'SENT');
+        // Only meaningful for a combined invoice (affaireId == null): the backend sets that
+        // null unconditionally for any DF-combined invoice, whether it really spans several
+        // distinct affaires or is just several billing-mode lines from the SAME affaire (see
+        // StepAffaireValue.combinedAffaireCount) -- so the real count comes from the lines.
+        const combinedAffaireIds = new Set(
+          inv.lines.map(l => l.affaireId).filter((id): id is number => id != null));
         this.initialAffaire.set({
           affaireId:   inv.affaireId,
           tsId:        inv.tsId,
@@ -149,6 +155,7 @@ export class InvoiceNewComponent implements OnInit {
           paysId:      inv.paysId,
           currency:    inv.devise,
           billingMode: inv.billingMode,
+          combinedAffaireCount: inv.affaireId == null ? combinedAffaireIds.size : undefined,
         });
         this.initialLines.set({
           lines: inv.lines.map(l => ({

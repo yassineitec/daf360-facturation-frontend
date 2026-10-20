@@ -546,7 +546,9 @@
       "CANCEL": "Annuler",
       "NEXT": "Suivant",
       "COMBINED_TITLE": "Facture combinée multi-affaires",
-      "COMBINED_HINT": "Cette facture regroupe des lignes de plusieurs affaires, validées ensemble depuis la file d'approbation. Les lignes sont visibles à l'étape suivante."
+      "COMBINED_HINT": "Cette facture regroupe des lignes de plusieurs affaires, validées ensemble depuis la file d'approbation. Les lignes sont visibles à l'étape suivante.",
+      "COMBINED_SAME_AFFAIRE_TITLE": "Facture combinée multi-mode",
+      "COMBINED_SAME_AFFAIRE_HINT": "Cette facture regroupe plusieurs lignes de modes de facturation différents pour une même affaire, validées ensemble depuis la file d'approbation. Les lignes sont visibles à l'étape suivante."
     },
     "STEP_LINES": {
       "TITLE": "Lignes de facturation",
