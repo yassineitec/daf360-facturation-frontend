@@ -22,35 +22,20 @@
       [options]="kpiHistoryOptions" />
   </section>
 
-  <!-- ── Batch validate results (cross-affaire DF approval) ───────────────────── -->
-  @if (batchResult(); as result) {
+  <!-- ── Client picker (combined-invoice DF approval, multi-client selection) ─── -->
+  @if (clientPickerOptions(); as options) {
     <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-      <div class="flex items-center justify-between">
-        <span class="font-medium">{{ 'AFFAIRES.billing.approval.batch_result_title' | translate }}</span>
-        <button type="button" class="text-sm text-gray-500" (click)="dismissBatchResult()">
-          {{ 'AFFAIRES.billing.approval.batch_result_dismiss' | translate }}
-        </button>
+      <span class="font-medium">{{ 'AFFAIRES.billing.approval.client_picker_title' | translate }}</span>
+      <div class="flex flex-wrap gap-2">
+        @for (opt of options; track opt.clientId) {
+          <daf-button
+            [options]="{ label: opt.clientName, variant: 'secondary', size: 'sm' }"
+            (onClick)="chooseClientForValidation(opt.clientId)" />
+        }
       </div>
-      @if (result.invoices.length > 0) {
-        <ul class="flex flex-col gap-1">
-          @for (inv of result.invoices; track inv.invoiceId) {
-            <li>
-              <a class="text-blue-600 underline"
-                 [routerLink]="['/finance/invoicing', inv.invoiceId, 'edit']"
-                 [queryParams]="{ fromApproval: 1 }">
-                {{ 'AFFAIRES.billing.approval.batch_result_invoice' | translate: { affaireId: inv.affaireId } }}
-              </a>
-            </li>
-          }
-        </ul>
-      }
-      @if (result.failures.length > 0) {
-        <ul class="flex flex-col gap-1 text-amber-700">
-          @for (f of result.failures; track f.affaireId) {
-            <li>{{ f.affaireReference ?? f.affaireId }} — {{ f.reason }}</li>
-          }
-        </ul>
-      }
+      <daf-button
+        [options]="{ label: ('AFFAIRES.billing.approval.client_picker_cancel' | translate), variant: 'ghost', size: 'sm' }"
+        (onClick)="cancelClientPicker()" />
     </section>
   }
 

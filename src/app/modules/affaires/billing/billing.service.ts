@@ -34,18 +34,20 @@ export interface BillingLineDto {
   invoiceId?:  number | null;
 }
 
-/** One affaire group DFValidationService.validateDFBatchMultiAffaire() skipped. */
-export interface DFBatchFailureDto {
-  affaireId:        number;
-  affaireReference: string | null;
-  reason:           string;
+/** One billing line DFValidationService.validateDFCombined() left out of the combined
+ * invoice -- either it failed its own validation or its affaire's currency/pays didn't
+ * match the rest of the selection. */
+export interface SkippedLineDto {
+  lineId:    number;
+  affaireId: number;
+  reason:    string;
 }
 
-/** Response of the now-cross-affaire-aware validate-batch endpoint. `succeeded` lines from
- * the same affaire share one invoiceId; lines from different affaires don't. */
-export interface DFBatchValidationResultDto {
-  succeeded: BillingLineDto[];
-  failures:  DFBatchFailureDto[];
+/** Response of the now-combined-invoice-aware validate-batch endpoint -- unlike the
+ * per-affaire batching it replaces, there is only ever one invoice now. */
+export interface DFCombinedValidationResultDto {
+  invoiceId: number;
+  skipped:   SkippedLineDto[];
 }
 
 export interface JalonDto {
@@ -208,11 +210,12 @@ export class BillingService {
       `${this.base}/billing/df/lines/${lineId}/validate`, {}, this.opts);
   }
 
-  /** Bulk variant of validateDF() — now spans multiple affaires (FORFAIT/RÉGIE/TS), one
-   * invoice per affaire, one affaire's failure never blocking the others. */
-  validateDFBatch(lineIds: number[]): Observable<DFBatchValidationResultDto> {
-    return this.http.post<DFBatchValidationResultDto>(
-      `${this.base}/billing/df/lines/validate-batch`, { lineIds }, this.opts);
+  /** Bulk variant of validateDF() -- builds ONE invoice from lines that may span several
+   * affaires, billing modes, and clients. `clientId` is only required when the selected
+   * lines' affaires don't already share one client. */
+  validateDFBatch(lineIds: number[], clientId?: number | null): Observable<DFCombinedValidationResultDto> {
+    return this.http.post<DFCombinedValidationResultDto>(
+      `${this.base}/billing/df/lines/validate-batch`, { lineIds, clientId: clientId ?? null }, this.opts);
   }
 
   returnDF(lineId: number, motif: string): Observable<BillingLineDto> {

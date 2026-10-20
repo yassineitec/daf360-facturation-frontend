@@ -11,11 +11,12 @@ import {
   SearchToolbarComponent, SearchToolbarFilterConfig, FilterField, FilterResult,
   ModalService, ModalRef,
   BulkActionBarComponent, BulkAction,
+  ButtonComponent,
 } from '@khalilrebhiitec/daf360';
 import {
   BillingService,
   PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto,
-  PendingCreditNoteDto, AuditLogEntryDto, DFBatchFailureDto,
+  PendingCreditNoteDto, AuditLogEntryDto, SkippedLineDto,
 } from './billing.service';
 // Not a BillingLine like the three sources above — a credit note already IS an Invoice
 // (submitted directly at creation), so validating/returning one goes through the
@@ -25,6 +26,8 @@ import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 import { TableSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 import { RowSelection } from './row-selection';
 import { ApprovalQueueStateService } from './approval-queue-state.service';
+import { AffaireService } from '../affaire.service';
+import { ToastService } from '../../../core/toast.service';
 type ActiveTab = 'df' | 'history';
 // Four tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE/TS) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
@@ -137,6 +140,7 @@ function affaireOptions(rows: { affaireId: number | null; affaireRef: string | n
     PageComponent, PageHeaderComponent, MetricCardComponent,
     TabsComponent, StatusBadgeComponent, FormFieldComponent, PaginationComponent,
     SearchToolbarComponent, CheckboxComponent, BulkActionBarComponent,
+    ButtonComponent,
   ],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
@@ -148,6 +152,8 @@ export class ApprovalQueueComponent implements OnInit {
   private readonly router     = inject(Router);
   private readonly route      = inject(ActivatedRoute);
   private readonly modal      = inject(ModalService);
+  private readonly affSvc     = inject(AffaireService);
+  private readonly toast      = inject(ToastService);
 
   @ViewChild('dfRetourTpl') private dfRetourTpl!: TemplateRef<unknown>;
 
@@ -207,13 +213,12 @@ export class ApprovalQueueComponent implements OnInit {
   readonly livrableSelection = new RowSelection();  // unchanged -- own separate batch mechanism, out of scope
   readonly tsSelection       = new RowSelection(false);
 
-  /** Set after a FORFAIT/RÉGIE/TS batch validate — one entry per distinct invoice created,
-   * plus any affaires that were skipped. null when there's nothing to show. See
-   * doValidateSelection() below. */
-  readonly batchResult = signal<{
-    invoices: { invoiceId: number; affaireId: number }[];
-    failures: DFBatchFailureDto[];
-  } | null>(null);
+  /** Set only when the current selection spans more than one client -- lets the template
+   * show a small picker instead of calling validateDFBatch() with an ambiguous selection.
+   * null the rest of the time. */
+  readonly clientPickerOptions = signal<{ clientId: number; clientName: string }[] | null>(null);
+  private pendingValidateIds: number[] | null = null;
+  private pendingValidateSelection: RowSelection | null = null;
 
   /** The one action every bulk bar offers — shared since Forfaitaire/Régie/Livrable all
    * mean the same thing by it ("validate everything currently checked"). */
@@ -1087,14 +1092,14 @@ export class ApprovalQueueComponent implements OnInit {
     const tab = id as ActiveTab;
     this.activeTab.set(tab);
     this.setTab(tab);
-    // The batch-validate results panel sits above the tabs and would otherwise keep
-    // showing a now out-of-context result after navigating away from where it was created.
-    this.batchResult.set(null);
+    // The client picker sits above the tabs and would otherwise keep showing a now
+    // out-of-context prompt after navigating away from where it was opened.
+    this.cancelClientPicker();
   }
 
   onDfSubTabChange(id: string): void {
     this.activeDfSubTab.set(id as DfSubTab);
-    this.batchResult.set(null);
+    this.cancelClientPicker();
   }
 
   /**
@@ -1192,31 +1197,71 @@ export class ApprovalQueueComponent implements OnInit {
     });
   }
 
-  /** Bulk variant of doValidateDF() — shared by the Forfaitaire, Régie and TS tabs, each with
-   * their own RowSelection instance. Can now span multiple affaires, so instead of
-   * redirecting into one invoice's edit wizard, shows batchResult() with one entry per
-   * invoice actually created plus any affaires that were skipped. */
+  /** Bulk variant of doValidateDF() -- shared by the Forfaitaire, Régie and TS tabs. Builds
+   * ONE invoice from everything selected, which may now span several affaires/modes/clients.
+   * Resolves client ambiguity client-side BEFORE calling the backend (rather than reacting
+   * to a server error), so the common single-client case never pays for an extra round trip
+   * it doesn't need. */
   doValidateSelection(selection: RowSelection): void {
     const ids = [...selection.ids()];
     if (ids.length === 0) return;
-    this.svc.validateDFBatch(ids).subscribe({
-      next: result => {
-        selection.clear();
-        const invoicesByAffaire = new Map<number, number>();
-        for (const line of result.succeeded) {
-          if (line.invoiceId != null) invoicesByAffaire.set(line.affaireId, line.invoiceId);
+
+    const affaireIds = [...new Set(
+      this.pendingLines().filter(l => ids.includes(l.id)).map(l => l.affaireId),
+    )];
+
+    if (affaireIds.length <= 1) {
+      this.runValidateSelection(ids, selection, null);
+      return;
+    }
+
+    forkJoin(affaireIds.map(id => this.affSvc.getAffaire(id))).subscribe({
+      next: affaires => {
+        const distinctClients = new Map<number, string>();
+        for (const a of affaires) {
+          if (a.clientId != null) distinctClients.set(a.clientId, a.clientName ?? `#${a.clientId}`);
         }
-        this.batchResult.set({
-          invoices: [...invoicesByAffaire.entries()].map(([affaireId, invoiceId]) => ({ affaireId, invoiceId })),
-          failures: result.failures,
-        });
-        this.loadDF();
+        if (distinctClients.size <= 1) {
+          this.runValidateSelection(ids, selection, null);
+          return;
+        }
+        this.pendingValidateIds = ids;
+        this.pendingValidateSelection = selection;
+        this.clientPickerOptions.set(
+          [...distinctClients.entries()].map(([clientId, clientName]) => ({ clientId, clientName })));
       },
     });
   }
 
-  dismissBatchResult(): void {
-    this.batchResult.set(null);
+  /** Called when the user picks a client from clientPickerOptions(). */
+  chooseClientForValidation(clientId: number): void {
+    const ids = this.pendingValidateIds;
+    const selection = this.pendingValidateSelection;
+    this.clientPickerOptions.set(null);
+    this.pendingValidateIds = null;
+    this.pendingValidateSelection = null;
+    if (ids && selection) this.runValidateSelection(ids, selection, clientId);
+  }
+
+  cancelClientPicker(): void {
+    this.clientPickerOptions.set(null);
+    this.pendingValidateIds = null;
+    this.pendingValidateSelection = null;
+  }
+
+  private runValidateSelection(ids: number[], selection: RowSelection, clientId: number | null): void {
+    this.svc.validateDFBatch(ids, clientId).subscribe({
+      next: result => {
+        selection.clear();
+        if (result.skipped.length > 0) {
+          const reasons = [...new Set(result.skipped.map(s => s.reason))].join(' ; ');
+          this.toast.warning(this.translate.instant(
+            'AFFAIRES.billing.approval.batch_result_some_skipped', { count: result.skipped.length, reasons }));
+        }
+        this.router.navigate(['/finance/invoicing', result.invoiceId, 'edit'],
+          { queryParams: { fromApproval: 1 } });
+      },
+    });
   }
 
   /** Bulk variant of doValidateLivrableBatch() — combines several selected batches into one
