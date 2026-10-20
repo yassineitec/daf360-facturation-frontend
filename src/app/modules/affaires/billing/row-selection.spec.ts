@@ -46,4 +46,15 @@ describe('RowSelection', () => {
     expect(sel.ids().size).toBe(0);
     expect(sel.lockedAffaireId()).toBeNull();
   });
+
+  it('with enforceAffaireLock=false, never locks and is never disabled', () => {
+    const sel = new RowSelection(false);
+    sel.toggle(1, 100);
+    sel.toggle(2, 200);
+    expect(sel.ids().size).toBe(2);
+    expect(sel.lockedAffaireId()).toBeNull();
+    expect(sel.isDisabledFor(100)).toBe(false);
+    expect(sel.isDisabledFor(200)).toBe(false);
+    expect(sel.isDisabledFor(999)).toBe(false);
+  });
 });

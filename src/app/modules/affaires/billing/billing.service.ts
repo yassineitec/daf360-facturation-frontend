@@ -34,6 +34,20 @@ export interface BillingLineDto {
   invoiceId?:  number | null;
 }
 
+/** One affaire group DFValidationService.validateDFBatchMultiAffaire() skipped. */
+export interface DFBatchFailure {
+  affaireId:        number;
+  affaireReference: string | null;
+  reason:           string;
+}
+
+/** Response of the now-cross-affaire-aware validate-batch endpoint. `succeeded` lines from
+ * the same affaire share one invoiceId; lines from different affaires don't. */
+export interface DFBatchValidationResult {
+  succeeded: BillingLineDto[];
+  failures:  DFBatchFailure[];
+}
+
 export interface JalonDto {
   id:        number;
   affaireId: number;
@@ -194,11 +208,10 @@ export class BillingService {
       `${this.base}/billing/df/lines/${lineId}/validate`, {}, this.opts);
   }
 
-  /** Bulk variant of validateDF() — several pending lines of the SAME affaire, one shared
-   * draft invoice. Same redirect-on-invoiceId pattern; every returned line carries the
-   * same invoiceId. */
-  validateDFBatch(lineIds: number[]): Observable<BillingLineDto[]> {
-    return this.http.post<BillingLineDto[]>(
+  /** Bulk variant of validateDF() — now spans multiple affaires (FORFAIT/RÉGIE/TS), one
+   * invoice per affaire, one affaire's failure never blocking the others. */
+  validateDFBatch(lineIds: number[]): Observable<DFBatchValidationResult> {
+    return this.http.post<DFBatchValidationResult>(
       `${this.base}/billing/df/lines/validate-batch`, { lineIds }, this.opts);
   }
 

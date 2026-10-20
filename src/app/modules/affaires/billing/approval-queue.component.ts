@@ -15,7 +15,7 @@ import {
 import {
   BillingService,
   PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto,
-  PendingCreditNoteDto, AuditLogEntryDto,
+  PendingCreditNoteDto, AuditLogEntryDto, DFBatchFailure,
 } from './billing.service';
 // Not a BillingLine like the three sources above — a credit note already IS an Invoice
 // (submitted directly at creation), so validating/returning one goes through the
@@ -202,10 +202,18 @@ export class ApprovalQueueComponent implements OnInit {
   // selecting rows in one doesn't disturb another's in-progress selection. Credit-note
   // tables get none: a credit note is already a submitted Invoice (see the import comment
   // above) and keeps its own single-action approve+emit flow untouched. ──
-  readonly forfaitSelection  = new RowSelection();
-  readonly regieSelection    = new RowSelection();
-  readonly livrableSelection = new RowSelection();
-  readonly tsSelection       = new RowSelection();
+  readonly forfaitSelection  = new RowSelection(false);
+  readonly regieSelection    = new RowSelection(false);
+  readonly livrableSelection = new RowSelection();  // unchanged -- own separate batch mechanism, out of scope
+  readonly tsSelection       = new RowSelection(false);
+
+  /** Set after a FORFAIT/RÉGIE/TS batch validate — one entry per distinct invoice created,
+   * plus any affaires that were skipped. null when there's nothing to show. See
+   * doValidateSelection() below. */
+  readonly batchResult = signal<{
+    invoices: { invoiceId: number; affaireId: number }[];
+    failures: DFBatchFailure[];
+  } | null>(null);
 
   /** The one action every bulk bar offers — shared since Forfaitaire/Régie/Livrable all
    * mean the same thing by it ("validate everything currently checked"). */
@@ -1180,23 +1188,31 @@ export class ApprovalQueueComponent implements OnInit {
     });
   }
 
-  /** Bulk variant of doValidateDF() — shared by the Forfaitaire and Régie tabs, each with
-   * their own RowSelection instance. Every returned line carries the same invoiceId. */
+  /** Bulk variant of doValidateDF() — shared by the Forfaitaire, Régie and TS tabs, each with
+   * their own RowSelection instance. Can now span multiple affaires, so instead of
+   * redirecting into one invoice's edit wizard, shows batchResult() with one entry per
+   * invoice actually created plus any affaires that were skipped. */
   doValidateSelection(selection: RowSelection): void {
     const ids = [...selection.ids()];
     if (ids.length === 0) return;
     this.svc.validateDFBatch(ids).subscribe({
-      next: lines => {
+      next: result => {
         selection.clear();
-        const invoiceId = lines[0]?.invoiceId;
-        if (invoiceId) {
-          this.router.navigate(['/finance/invoicing', invoiceId, 'edit'],
-            { queryParams: { fromApproval: 1 } });
-        } else {
-          this.loadDF();
+        const invoicesByAffaire = new Map<number, number>();
+        for (const line of result.succeeded) {
+          if (line.invoiceId != null) invoicesByAffaire.set(line.affaireId, line.invoiceId);
         }
+        this.batchResult.set({
+          invoices: [...invoicesByAffaire.entries()].map(([affaireId, invoiceId]) => ({ affaireId, invoiceId })),
+          failures: result.failures,
+        });
+        this.loadDF();
       },
     });
+  }
+
+  dismissBatchResult(): void {
+    this.batchResult.set(null);
   }
 
   /** Bulk variant of doValidateLivrableBatch() — combines several selected batches into one
