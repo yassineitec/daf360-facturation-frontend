@@ -543,7 +543,9 @@
       "TS_NONE": "None",
       "TS_CARRY_FORWARD_TOGGLE": "Invoice the uninvoiced TS balance —",
       "CANCEL": "Cancel",
-      "NEXT": "Next"
+      "NEXT": "Next",
+      "COMBINED_TITLE": "Combined multi-affaire invoice",
+      "COMBINED_HINT": "This invoice groups lines from several affaires, validated together from the approval queue. The lines are shown in the next step."
     },
     "STEP_LINES": {
       "TITLE": "Billing lines",

@@ -543,7 +543,9 @@
       "TS_NONE": "Aucun",
       "TS_CARRY_FORWARD_TOGGLE": "Facturer le solde TS non facturé —",
       "CANCEL": "Annuler",
-      "NEXT": "Suivant"
+      "NEXT": "Suivant",
+      "COMBINED_TITLE": "Facture combinée multi-affaires",
+      "COMBINED_HINT": "Cette facture regroupe des lignes de plusieurs affaires, validées ensemble depuis la file d'approbation. Les lignes sont visibles à l'étape suivante."
     },
     "STEP_LINES": {
       "TITLE": "Lignes de facturation",

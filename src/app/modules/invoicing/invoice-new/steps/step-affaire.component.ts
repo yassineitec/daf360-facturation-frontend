@@ -27,6 +27,12 @@ export interface StepAffaireValue {
   paysId:      number;
   currency:    string;
   billingMode: string;
+  /** The affaire's real contract amount -- used as the budget denominator for an ACOMPTE
+   * line's percentage columns (see step-lines.component.ts's isAcompte()-gated logic).
+   * Optional: only selectAffaire()'s own enrichment fetch populates it, and an ACOMPTE line
+   * added before that fetch resolves falls back to treating it as unknown rather than
+   * blocking on it. */
+  contractAmount?: number | null;
 }
 
 @Component({
@@ -36,6 +42,14 @@ export interface StepAffaireValue {
   template: `
 <div class="step-affaire">
 
+  @if (isCombinedInvoice()) {
+    <div class="selected-affaire combined-invoice-summary">
+      <p class="section-title">{{ 'INVOICING.STEP_AFFAIRE.COMBINED_TITLE' | translate }}</p>
+      <p class="search-hint">{{ 'INVOICING.STEP_AFFAIRE.COMBINED_HINT' | translate }}</p>
+    </div>
+  }
+
+  @if (!isCombinedInvoice()) {
   <!-- Affaire search -->
   <div class="field">
     <daf-form-field
@@ -105,6 +119,7 @@ export interface StepAffaireValue {
       </div>
     }
   </div>
+  }
 
   <!-- Mode de facturation (affiché si l'affaire n'a pas de mode valide) -->
   @if (selectedAffaire() && !validBillingModeFromAffaire()) {
@@ -196,7 +211,7 @@ export class StepAffaireComponent implements OnInit {
   searchQuery     = signal('');
   searchResults   = signal<AffaireListItem[]>([]);
   searching       = signal(false);
-  selectedAffaire = signal<AffaireListItem | null>(null);
+  selectedAffaire = signal<(AffaireListItem & { contractAmount?: number | null }) | null>(null);
   rafDetails      = signal<RafDetailsDto | null>(null);
   rafLoading      = signal(false);
   tsList          = signal<TsDto[]>([]);
@@ -213,6 +228,14 @@ export class StepAffaireComponent implements OnInit {
   readonly validBillingModeFromAffaire = computed(() => {
     const bm = this.selectedAffaire()?.billingMode;
     return bm && VALID_BILLING_MODES.has(bm) ? bm : null;
+  });
+
+  /** True only when editing an existing invoice that has no single affaire (a combined,
+   * multi-affaire invoice from a prior phase) -- never true when creating a new invoice,
+   * since initialValue() is null in that case. */
+  readonly isCombinedInvoice = computed(() => {
+    const iv = this.initialValue();
+    return iv != null && iv.affaireId == null;
   });
 
   readonly rafPct = computed(() => {
@@ -253,8 +276,16 @@ export class StepAffaireComponent implements OnInit {
     });
 
     const iv = this.initialValue();
-    if (iv?.affaireId) this.preselectForEdit(iv);
-    else this.preselectFromQuery();
+    if (iv?.affaireId) {
+      this.preselectForEdit(iv);
+    } else if (iv) {
+      // Combined invoice: nothing to search for or preselect -- iv already carries the
+      // real clientId/paysId/currency/billingMode from the invoice itself (see next()
+      // below, which just re-emits them unchanged).
+      this.form.patchValue({ invoiceType: iv.invoiceType, billingMode: iv.billingMode });
+    } else {
+      this.preselectFromQuery();
+    }
   }
 
   /** Loads the affaire (same path as a normal selection — RAF, TS list, invoice type
@@ -303,7 +334,7 @@ export class StepAffaireComponent implements OnInit {
     else this.searchResults.set([]);
   }
 
-  selectAffaire(a: AffaireListItem): void {
+  selectAffaire(a: AffaireListItem & { contractAmount?: number | null }): void {
     this.selectedAffaire.set(a);
     this.rafDetails.set(null);
     this.searchResults.set([]);
@@ -327,6 +358,18 @@ export class StepAffaireComponent implements OnInit {
 
     this.affSvc.getTS(a.id).subscribe({ next: r => this.tsList.set(r), error: () => {} });
 
+    // ACOMPTE's percentage columns need the affaire's real contract amount as their budget
+    // denominator (see StepAffaireValue.contractAmount). The search-result item this method
+    // can be called with doesn't carry it (a lighter list endpoint) -- preselectForEdit/
+    // preselectFromQuery already pass a full AffaireDetail that does, but fetching it here
+    // unconditionally, same enrichment pattern as RAF/TS above, keeps this correct regardless
+    // of which entry point was used rather than relying on the caller having already done it.
+    this.affSvc.getAffaire(a.id).subscribe({
+      next: detail => this.selectedAffaire.update(
+        cur => cur ? { ...cur, contractAmount: detail.contractAmount } : cur),
+      error: () => {},
+    });
+
     this.factListSvc.getListValues('INVOICE_TYPE', a.paysId).subscribe(values => {
       this.invoiceTypeOptions.set(values.map((v: ListValueDto) => ({ value: v.code, label: v.labelFr })));
     });
@@ -347,6 +390,13 @@ export class StepAffaireComponent implements OnInit {
   }
 
   next(): void {
+    if (this.isCombinedInvoice()) {
+      // No affaire was ever selected (there isn't one) and no RAF applies -- just re-emit
+      // the invoice's own already-correct values unchanged.
+      const iv = this.initialValue()!;
+      this.nextStep.emit(iv);
+      return;
+    }
     this.form.markAllAsTouched();
     if (this.form.invalid || this.rafBlocked() || this.rafLoading()) return;
     const v = this.form.getRawValue();
@@ -359,6 +409,7 @@ export class StepAffaireComponent implements OnInit {
       paysId:      aff?.paysId ?? 0,
       currency:    aff?.devise ?? 'TND',
       billingMode: v.billingMode || this.validBillingModeFromAffaire() || '',
+      contractAmount: aff?.contractAmount ?? null,
     });
   }
 
