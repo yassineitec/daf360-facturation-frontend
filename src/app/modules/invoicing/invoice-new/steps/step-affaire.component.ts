@@ -232,12 +232,17 @@ export class StepAffaireComponent implements OnInit {
 
   /** True only when editing an existing invoice that has no single affaire (a combined,
    * multi-affaire invoice from a prior phase) -- never true when creating a new invoice,
-   * since initialValue() is null in that case. Checks billingMode === 'MIXED' explicitly
-   * (not just the null affaireId) to match the other two combined-detection sites in this
-   * codebase (step-lines.component.ts, invoice-detail.component.ts). */
+   * since initialValue() is null in that case. Detects via the null affaireId alone --
+   * the real, universal signal for "combined" (see DFValidationService) -- NOT
+   * billingMode === 'MIXED': a combined invoice whose lines all share the same mode
+   * keeps that single mode as its billingMode and only gets literal "MIXED" when the
+   * combined lines actually span different modes. (A prior "hardening" commit added a
+   * `&& iv.billingMode === 'MIXED'` conjunct here on the mistaken assumption that a null
+   * affaireId always coincides with MIXED -- a live same-mode combined invoice disproved
+   * that, so it's been reverted.) */
   readonly isCombinedInvoice = computed(() => {
     const iv = this.initialValue();
-    return iv != null && iv.affaireId == null && iv.billingMode === 'MIXED';
+    return iv != null && iv.affaireId == null;
   });
 
   readonly rafPct = computed(() => {

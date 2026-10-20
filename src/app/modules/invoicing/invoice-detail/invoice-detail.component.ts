@@ -352,9 +352,13 @@ export class InvoiceDetailComponent implements OnInit {
     return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE' || mode === 'TS' || mode === 'MIXED';
   });
 
-  /** Libellés d'affaire résolus pour une facture MIXED, dont chaque ligne vient d'une
-   * affaire différente (voir `goToAffaire`/`affaireLink` : pour les autres modes la
-   * facture entière porte UNE SEULE affaire, déjà affichée en tête de page). */
+  /** Libellés d'affaire résolus pour une facture combinée (affaireId null au niveau
+   * facture), dont chaque ligne vient d'une affaire différente (voir
+   * `goToAffaire`/`affaireLink` : pour les autres modes la facture entière porte UNE
+   * SEULE affaire, déjà affichée en tête de page). Détecté via affaireId == null, pas
+   * billingMode === 'MIXED' : une facture combinée dont les lignes partagent toutes le
+   * même mode garde ce mode unique comme billingMode et ne devient "MIXED" que si les
+   * lignes combinées portent réellement des modes différents (cf. DFValidationService). */
   readonly affaireLabels = signal<Map<number, string>>(new Map());
 
   private resolveAffaireLabels(affaireIds: (number | null | undefined)[]): void {
@@ -382,7 +386,7 @@ export class InvoiceDetailComponent implements OnInit {
     const t = (k: string) => this.translate.instant(k);
     if (this.usesAvancementColumns()) {
       return [
-        ...(this.invoice()?.billingMode === 'MIXED'
+        ...(this.invoice()?.affaireId == null
           ? [{ key: 'affaire', label: t('INVOICING.DETAIL.LINES.AFFAIRE'), type: 'custom', sortable: true } as TableColumn]
           : []),
         { key: 'description',    label: t('INVOICING.DETAIL.LINES.DESC'),                type: 'custom', sortable: true },
@@ -608,7 +612,7 @@ export class InvoiceDetailComponent implements OnInit {
       next:  inv => {
         this.invoice.set(inv);
         this.loading.set(false);
-        if (inv.billingMode === 'MIXED') {
+        if (inv.affaireId == null) {
           this.resolveAffaireLabels(inv.lines.map(l => l.affaireId));
         }
       },

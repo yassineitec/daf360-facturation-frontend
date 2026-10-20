@@ -338,8 +338,11 @@ export class StepRecapComponent {
   /** Combined (multi-affaire) invoice -- each line carries its own affaireId/billingMode
    * (see StepLinesValue), so the recap table must show which affaire each line belongs to
    * (the Affaire column below) -- the one screen a DF validator needs it most, right before
-   * committing. */
-  readonly isCombined = computed(() => this.affaireData().billingMode === 'MIXED');
+   * committing. Detected via a null affaireId (the real, universal signal), NOT
+   * billingMode === 'MIXED': a combined invoice whose lines all share the same mode keeps
+   * that single mode as its billingMode and only gets literal "MIXED" when the combined
+   * lines actually span different modes (see DFValidationService). */
+  readonly isCombined = computed(() => this.affaireData().affaireId == null);
 
   /** affaireId -> "REF — Intitulé", resolved once per distinct affaireId among the combined
    * invoice's lines. Empty until resolveAffaireLabels() resolves (see the effect in the

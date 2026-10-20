@@ -401,13 +401,17 @@ export interface StepLinesValue {
               }
 
               <!-- TVA (toujours présente) -->
-              <td class="td-vat">
-                <daf-select
-                  [options]="vatRateOptions()"
-                  [selected]="vatSelected(lg)"
-                  [ariaLabel]="'INVOICING.STEP_LINES.VAT' | translate"
-                  (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
-              </td>
+              @if (isCombined()) {
+                <td class="td-computed">{{ formatPct(lg.get('tauxTva')!.value ?? 0) }}</td>
+              } @else {
+                <td class="td-vat">
+                  <daf-select
+                    [options]="vatRateOptions()"
+                    [selected]="vatSelected(lg)"
+                    [ariaLabel]="'INVOICING.STEP_LINES.VAT' | translate"
+                    (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
+                </td>
+              }
 
               @if (isCombined()) {
                 <!-- Reuses the same HT × (1+VAT) helper ACOMPTE's own branch below reuses --
@@ -716,8 +720,12 @@ export class StepLinesComponent {
 
   /** True for a combined (multi-affaire) invoice -- see step-affaire.component.ts's
    * isCombinedInvoice(). Read-only in this phase: no add/edit controls, next() just
-   * passes the already-correct seeded lines through unchanged. */
-  readonly isCombined = computed(() => this.affaireData().billingMode === 'MIXED');
+   * passes the already-correct seeded lines through unchanged. Detected via a null
+   * affaireId (the real, universal signal -- see DFValidationService), NOT
+   * billingMode === 'MIXED': a combined invoice whose lines all share the same mode
+   * (e.g. two FORFAIT affaires) keeps that single mode as its billingMode and only
+   * gets literal "MIXED" when the combined lines actually span different modes. */
+  readonly isCombined = computed(() => this.affaireData().affaireId == null);
 
   /** affaireId -> "REF — Intitulé" for the Affaire column, resolved once per distinct
    * affaireId found among the seeded lines (see seedFromInitialLines()). Empty until
