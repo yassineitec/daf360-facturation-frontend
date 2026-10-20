@@ -319,6 +319,7 @@
       },
       "LINES": {
         "TITLE": "Billing lines",
+        "AFFAIRE": "Affaire",
         "TAB_DETAIL": "Detail",
         "TAB_RECAP": "Summary",
         "DESC": "Description",

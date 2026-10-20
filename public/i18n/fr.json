@@ -319,6 +319,7 @@
       },
       "LINES": {
         "TITLE": "Lignes de facturation",
+        "AFFAIRE": "Affaire",
         "TAB_DETAIL": "Détail",
         "TAB_RECAP": "Récapitulatif",
         "DESC": "Description",

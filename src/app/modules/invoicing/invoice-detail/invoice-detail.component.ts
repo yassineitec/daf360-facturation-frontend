@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { forkJoin } from 'rxjs';
 import {
   ButtonComponent, ButtonOptions, DafCellDirective, DataTableComponent,
   FormFieldComponent, MetricCardComponent, ModalService, MultiDatePickerComponent, PageComponent,
@@ -26,6 +27,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { UserStore } from '../../../core/user.store';
 import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
+import { AffaireService } from '../../affaires/affaire.service';
 /** `yyyy-MM-dd` en heure locale — `toISOString()` décalerait d'un jour avant minuit UTC. */
 function toIsoDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -81,6 +83,7 @@ export class InvoiceDetailComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly userStore = inject(UserStore);
+  private readonly affSvc    = inject(AffaireService);
 
   private readonly commentTpl = viewChild.required<TemplateRef<unknown>>('commentTpl');
   private readonly emitDateTpl = viewChild.required<TemplateRef<unknown>>('emitDateTpl');
@@ -346,8 +349,30 @@ export class InvoiceDetailComponent implements OnInit {
    */
   readonly usesAvancementColumns = computed(() => {
     const mode = this.invoice()?.billingMode;
-    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE' || mode === 'TS';
+    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE' || mode === 'TS' || mode === 'MIXED';
   });
+
+  /** Libellés d'affaire résolus pour une facture MIXED, dont chaque ligne vient d'une
+   * affaire différente (voir `goToAffaire`/`affaireLink` : pour les autres modes la
+   * facture entière porte UNE SEULE affaire, déjà affichée en tête de page). */
+  readonly affaireLabels = signal<Map<number, string>>(new Map());
+
+  private resolveAffaireLabels(affaireIds: (number | null | undefined)[]): void {
+    const distinct = [...new Set(affaireIds.filter((id): id is number => id != null))];
+    if (distinct.length === 0) return;
+    forkJoin(distinct.map(id => this.affSvc.getAffaire(id))).subscribe({
+      next: affaires => {
+        const map = new Map<number, string>();
+        for (const a of affaires) map.set(a.id, `${a.reference} — ${a.intitule}`);
+        this.affaireLabels.set(map);
+      },
+    });
+  }
+
+  affaireLabel(affaireId: number | null | undefined): string {
+    if (affaireId == null) return '—';
+    return this.affaireLabels().get(affaireId) ?? `#${affaireId}`;
+  }
 
   readonly lineTableColumns = computed((): TableColumn[] => {
     // Toutes triables, en local : les lignes de la facture arrivent entières, sans
@@ -357,6 +382,7 @@ export class InvoiceDetailComponent implements OnInit {
     const t = (k: string) => this.translate.instant(k);
     if (this.usesAvancementColumns()) {
       return [
+        { key: 'affaire',        label: t('INVOICING.DETAIL.LINES.AFFAIRE'),       type: 'custom', sortable: true },
         { key: 'description',    label: t('INVOICING.DETAIL.LINES.DESC'),                type: 'custom', sortable: true },
         { key: 'budgetAffaire',  label: t('INVOICING.STEP_LINES.BUDGET_AFFAIRE'),  type: 'custom', align: 'right', sortable: true },
         { key: 'pctFacture',     label: t('INVOICING.STEP_LINES.PCT_FACTURE'),     type: 'custom', align: 'right', sortable: true },
@@ -392,6 +418,7 @@ export class InvoiceDetailComponent implements OnInit {
     if (!inv) return [];
     return inv.lines.map((line, idx) => ({
       id:            line.id ?? idx,
+      affaire:       this.affaireLabel(line.affaireId),
       description:   line.description,
       quantity:      line.quantity,
       unitRate:      line.unitRate,
@@ -576,7 +603,13 @@ export class InvoiceDetailComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     this.svc.getInvoice(id).subscribe({
-      next:  inv => { this.invoice.set(inv); this.loading.set(false); },
+      next:  inv => {
+        this.invoice.set(inv);
+        this.loading.set(false);
+        if (inv.billingMode === 'MIXED') {
+          this.resolveAffaireLabels(inv.lines.map(l => l.affaireId));
+        }
+      },
       error: () => {
         this.error.set(this.translate.instant('INVOICING.DETAIL.LOAD_ERROR'));
         this.loading.set(false);
