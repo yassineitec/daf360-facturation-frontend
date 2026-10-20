@@ -382,7 +382,9 @@ export class InvoiceDetailComponent implements OnInit {
     const t = (k: string) => this.translate.instant(k);
     if (this.usesAvancementColumns()) {
       return [
-        { key: 'affaire',        label: t('INVOICING.DETAIL.LINES.AFFAIRE'),       type: 'custom', sortable: true },
+        ...(this.invoice()?.billingMode === 'MIXED'
+          ? [{ key: 'affaire', label: t('INVOICING.DETAIL.LINES.AFFAIRE'), type: 'custom', sortable: true } as TableColumn]
+          : []),
         { key: 'description',    label: t('INVOICING.DETAIL.LINES.DESC'),                type: 'custom', sortable: true },
         { key: 'budgetAffaire',  label: t('INVOICING.STEP_LINES.BUDGET_AFFAIRE'),  type: 'custom', align: 'right', sortable: true },
         { key: 'pctFacture',     label: t('INVOICING.STEP_LINES.PCT_FACTURE'),     type: 'custom', align: 'right', sortable: true },
