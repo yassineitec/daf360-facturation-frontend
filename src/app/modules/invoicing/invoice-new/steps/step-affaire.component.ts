@@ -259,10 +259,14 @@ export class StepAffaireComponent implements OnInit {
 
   /** True only for a combined invoice that's ACTUALLY one affaire (multiple billing modes
    * merged), not several distinct ones -- defaults to treating it as genuinely multi-affaire
-   * (the safer, more common case) if the count is ever missing. */
+   * (the safer, more common case) if the count is ever missing OR zero (an invoice with no
+   * lines isn't reachable through the wizard today, but a `0` is an "unknown" signal just
+   * like `null`/`undefined`, not a real "1 affaire" one -- `??` alone wouldn't catch it since
+   * `0` isn't nullish). */
   readonly isSameAffaireCombined = computed(() => {
     const iv = this.initialValue();
-    return iv != null && iv.affaireId == null && (iv.combinedAffaireCount ?? 2) <= 1;
+    const count = iv?.combinedAffaireCount;
+    return iv != null && iv.affaireId == null && count != null && count > 0 && count <= 1;
   });
 
   readonly rafPct = computed(() => {
