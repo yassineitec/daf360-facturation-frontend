@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed, effect, untracked, viewChild, ViewChild, TemplateRef, WritableSignal } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
-import { forkJoin, Observable, switchMap }    from 'rxjs';
+import { forkJoin, Observable, Subscription, switchMap } from 'rxjs';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableAction, TableRow,
   PageComponent, PageHeaderComponent, MetricCardComponent, MetricCardOptions,
@@ -219,6 +219,11 @@ export class ApprovalQueueComponent implements OnInit {
   readonly clientPickerOptions = signal<{ clientId: number; clientName: string }[] | null>(null);
   private pendingValidateIds: number[] | null = null;
   private pendingValidateSelection: RowSelection | null = null;
+  /** The in-flight affaire-lookup forkJoin started by doValidateSelection(), if any --
+   * cancelled whenever a newer one starts (or the picker is dismissed) so a slow, stale
+   * lookup can never resolve after the fact and resurrect a picker for an abandoned
+   * selection. */
+  private clientLookupSub: Subscription | null = null;
 
   /** The one action every bulk bar offers — shared since Forfaitaire/Régie/Livrable all
    * mean the same thing by it ("validate everything currently checked"). */
@@ -1215,7 +1220,11 @@ export class ApprovalQueueComponent implements OnInit {
       return;
     }
 
-    forkJoin(affaireIds.map(id => this.affSvc.getAffaire(id))).subscribe({
+    // Cancel any still-pending lookup from a previous doValidateSelection() call so a slow
+    // one can never resolve after this newer one and overwrite its (possibly already-acted-on)
+    // picker state -- see clientLookupSub's own doc comment above.
+    this.clientLookupSub?.unsubscribe();
+    this.clientLookupSub = forkJoin(affaireIds.map(id => this.affSvc.getAffaire(id))).subscribe({
       next: affaires => {
         const distinctClients = new Map<number, string>();
         for (const a of affaires) {
@@ -1230,6 +1239,10 @@ export class ApprovalQueueComponent implements OnInit {
         this.clientPickerOptions.set(
           [...distinctClients.entries()].map(([clientId, clientName]) => ({ clientId, clientName })));
       },
+      // No global error-toast interceptor in this app (see auth.interceptor.ts) -- without
+      // this, a deleted affaire or a transient network error leaves the user stuck clicking
+      // "Valider" with no feedback at all.
+      error: () => this.toast.error(this.translate.instant('AFFAIRES.billing.approval.client_lookup_failed')),
     });
   }
 
@@ -1237,13 +1250,12 @@ export class ApprovalQueueComponent implements OnInit {
   chooseClientForValidation(clientId: number): void {
     const ids = this.pendingValidateIds;
     const selection = this.pendingValidateSelection;
-    this.clientPickerOptions.set(null);
-    this.pendingValidateIds = null;
-    this.pendingValidateSelection = null;
+    this.cancelClientPicker();
     if (ids && selection) this.runValidateSelection(ids, selection, clientId);
   }
 
   cancelClientPicker(): void {
+    this.clientLookupSub?.unsubscribe();
     this.clientPickerOptions.set(null);
     this.pendingValidateIds = null;
     this.pendingValidateSelection = null;
@@ -1258,8 +1270,12 @@ export class ApprovalQueueComponent implements OnInit {
           this.toast.warning(this.translate.instant(
             'AFFAIRES.billing.approval.batch_result_some_skipped', { count: result.skipped.length, reasons }));
         }
-        this.router.navigate(['/finance/invoicing', result.invoiceId, 'edit'],
-          { queryParams: { fromApproval: 1 } });
+        if (result.invoiceId) {
+          this.router.navigate(['/finance/invoicing', result.invoiceId, 'edit'],
+            { queryParams: { fromApproval: 1 } });
+        } else {
+          this.loadDF();
+        }
       },
     });
   }

@@ -1945,6 +1945,7 @@
         "kpi_history_sub": "Décisions enregistrées au total",
         "client_picker_title": "Plusieurs clients sont concernés — choisissez celui de cette facture :",
         "client_picker_cancel": "Annuler",
+        "client_lookup_failed": "Impossible de vérifier les clients des affaires sélectionnées. Veuillez réessayer.",
         "batch_result_some_skipped": "{{count}} ligne(s) ignorée(s) : {{reasons}}",
         "tab_rf": "En attente RF",
         "tab_df": "En attente de validation",
