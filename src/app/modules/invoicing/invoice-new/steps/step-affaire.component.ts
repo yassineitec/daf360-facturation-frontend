@@ -173,7 +173,7 @@ export interface StepAffaireValue {
         <span class="material-symbols-outlined">close</span>
         {{ 'INVOICING.STEP_AFFAIRE.CANCEL' | translate }}
       </button>
-      <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading()">
+      <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading() || (!selectedAffaire() && !isCombinedInvoice())">
         {{ 'INVOICING.STEP_AFFAIRE.NEXT' | translate }}
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
@@ -393,7 +393,15 @@ export class StepAffaireComponent implements OnInit {
     bmCtrl.setValue('');
     bmCtrl.clearValidators();
     bmCtrl.updateValueAndValidity();
-    this.form.patchValue({ tsId: null });
+    // invoiceType is only ever meaningful relative to a selected affaire (its options come
+    // from that affaire's pays -- see selectAffaire()'s INVOICE_TYPE lookup), so clearing the
+    // affaire without also clearing it would leave a stale value behind. Since invoiceType is
+    // the form's only Validators.required control, leaving it set made the form stay valid
+    // with no affaire selected at all, which let next() emit a malformed
+    // { affaireId: null, billingMode: '' } draft -- not a real combined invoice, but
+    // downstream isCombined()/isCombinedInvoice() checks (affaireId == null) would wrongly
+    // treat it as one. Resetting it here, alongside tsId, closes that hole at the source.
+    this.form.patchValue({ invoiceType: '', tsId: null });
   }
 
   next(): void {
@@ -404,6 +412,12 @@ export class StepAffaireComponent implements OnInit {
       this.nextStep.emit(iv);
       return;
     }
+    // Belt-and-suspenders alongside clearAffaire() resetting invoiceType: for a brand-new
+    // (non-combined) invoice there must be a real selected affaire to proceed. Relying solely
+    // on form validity is fragile -- it's exactly how this hole opened in the first place (the
+    // form stayed valid after clearing the affaire because invoiceType was untouched) -- so this
+    // guards explicitly rather than only incidentally via Validators.required.
+    if (!this.selectedAffaire()) return;
     this.form.markAllAsTouched();
     if (this.form.invalid || this.rafBlocked() || this.rafLoading()) return;
     const v = this.form.getRawValue();
