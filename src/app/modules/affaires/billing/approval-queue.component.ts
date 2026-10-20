@@ -15,7 +15,7 @@ import {
 import {
   BillingService,
   PendingJalonDto, PendingBillingLineDto, PendingLivrableBatchDto,
-  PendingCreditNoteDto, AuditLogEntryDto, DFBatchFailure,
+  PendingCreditNoteDto, AuditLogEntryDto, DFBatchFailureDto,
 } from './billing.service';
 // Not a BillingLine like the three sources above — a credit note already IS an Invoice
 // (submitted directly at creation), so validating/returning one goes through the
@@ -212,7 +212,7 @@ export class ApprovalQueueComponent implements OnInit {
    * doValidateSelection() below. */
   readonly batchResult = signal<{
     invoices: { invoiceId: number; affaireId: number }[];
-    failures: DFBatchFailure[];
+    failures: DFBatchFailureDto[];
   } | null>(null);
 
   /** The one action every bulk bar offers — shared since Forfaitaire/Régie/Livrable all
@@ -1087,10 +1087,14 @@ export class ApprovalQueueComponent implements OnInit {
     const tab = id as ActiveTab;
     this.activeTab.set(tab);
     this.setTab(tab);
+    // The batch-validate results panel sits above the tabs and would otherwise keep
+    // showing a now out-of-context result after navigating away from where it was created.
+    this.batchResult.set(null);
   }
 
   onDfSubTabChange(id: string): void {
     this.activeDfSubTab.set(id as DfSubTab);
+    this.batchResult.set(null);
   }
 
   /**
