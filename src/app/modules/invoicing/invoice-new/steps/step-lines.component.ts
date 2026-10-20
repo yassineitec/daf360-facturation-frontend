@@ -3,6 +3,7 @@ import {
   ReactiveFormsModule, FormBuilder, FormArray, FormGroup, Validators, AbstractControl,
 } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { forkJoin } from 'rxjs';
 import {
   FormFieldComponent, FormFieldOptions, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
@@ -10,6 +11,7 @@ import { PendingCarryForwardDto } from '../../invoice.model';
 import { StepAffaireValue } from './step-affaire.component';
 import { InvoiceService } from '../../invoice.service';
 import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.service';
+import { AffaireService } from '../../../affaires/affaire.service';
 import { FactListService } from '../../../../core/fact-list.service';
 import { ListValueDto } from '../../../cost/cost.model';
 import { enumLabel, humanise } from '../../../../shared/enum-labels';
@@ -77,18 +79,18 @@ export interface StepLinesValue {
   <div class="lines-header">
     <span class="section-title">{{ 'INVOICING.STEP_LINES.TITLE' | translate }}</span>
     <div class="lines-header-actions">
-      @if ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte()) {
+      @if (!isCombined() && ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte())) {
         <button type="button" class="btn-add-line" (click)="addLine()">
           {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
         </button>
       }
-      @if (isAv() || isTm() || isLivrable()) {
+      @if (!isCombined() && (isAv() || isTm() || isLivrable())) {
         <button type="button" class="btn-add-line btn-add-rmb" [disabled]="!categoriesLoaded()"
           (click)="toggleRmbPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_REMBOURSABLE' | translate }}
         </button>
       }
-      @if (isAv() || isTm() || isLivrable() || isTsCarryForward()) {
+      @if (!isCombined() && (isAv() || isTm() || isLivrable() || isTsCarryForward())) {
         <button type="button" class="btn-add-line btn-add-rmb" (click)="toggleCarryForwardPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_CARRY_FORWARD' | translate }}
         </button>
@@ -108,7 +110,7 @@ export interface StepLinesValue {
         </span>
       }
     }
-    @if (deductionColumns().includes(null)) {
+    @if (!isCombined() && deductionColumns().includes(null)) {
       <button type="button" class="btn-add-line btn-add-deduction" (click)="addDeductionColumn()">
         {{ 'INVOICING.STEP_LINES.ADD_DEDUCTION_COLUMN' | translate }}
       </button>
@@ -190,7 +192,10 @@ export interface StepLinesValue {
       <thead>
         <tr>
           <th class="col-desc">{{ 'INVOICING.STEP_LINES.DESC' | translate }}</th>
-          @if (isAv() || isTm() || isLivrable() || isTsCarryForward() || isAcompte()) {
+          @if (isAv() || isTm() || isLivrable() || isTsCarryForward() || isAcompte() || isCombined()) {
+            @if (isCombined()) {
+              <th class="col-num">{{ 'INVOICING.STEP_LINES.AFFAIRE' | translate }}</th>
+            }
             <th class="col-num">{{ 'INVOICING.STEP_LINES.BUDGET_AFFAIRE' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.PCT_FACTURE' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.PCT_AVANCEMENT' | translate }}</th>
@@ -201,7 +206,7 @@ export interface StepLinesValue {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.UNIT_PRICE' | translate }}</th>
           }
           <th class="col-num">{{ 'INVOICING.STEP_LINES.VAT' | translate }}</th>
-          @if (isAv() || isTm() || isLivrable() || isTsCarryForward() || isAcompte()) {
+          @if (isAv() || isTm() || isLivrable() || isTsCarryForward() || isAcompte() || isCombined()) {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_TTC' | translate }}</th>
           } @else {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_HT' | translate }}</th>
@@ -249,7 +254,17 @@ export interface StepLinesValue {
                 }
               </td>
 
-              @if (isAcompte()) {
+              @if (isCombined()) {
+                <!-- Combined (multi-affaire) invoice: read-only in this phase -- every value
+                     was already computed server-side per source affaire/line (see
+                     combinedLineMeta() and seedFromInitialLines() above). -->
+                <td class="td-computed">{{ affaireLabel(combinedLineMeta()[i]?.affaireId) }}</td>
+                <td class="td-computed">{{ formatAmount(lg.get('budgetAffaire')!.value) }}</td>
+                <td class="td-computed">{{ formatPct(lg.get('pctFacture')!.value ?? 0) }}</td>
+                <td class="td-computed">{{ formatPct(lg.get('pctAvancement')!.value ?? 0) }}</td>
+                <td class="td-computed">{{ formatPct(lg.get('pctAFacturer')!.value ?? 0) }}</td>
+                <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
+              } @else if (isAcompte()) {
                 <!-- ACOMPTE : contrairement à AV/T&M/Livrable/TS, il n'y a aucun WIP validé
                      derrière cette ligne -- les trois colonnes sont de vraies saisies
                      utilisateur, synchronisées entre elles par setNum() (montant <-> %, dans
@@ -394,7 +409,12 @@ export interface StepLinesValue {
                   (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
               </td>
 
-              @if (isAcompte()) {
+              @if (isCombined()) {
+                <!-- Reuses the same HT × (1+VAT) helper ACOMPTE's own branch below reuses --
+                     a combined invoice's lines don't have billing-mode-specific VAT/TTC logic
+                     of their own. -->
+                <td class="td-computed">{{ formatAmount(lineTtcAv(i)) }}</td>
+              } @else if (isAcompte()) {
                 <!-- Même calcul que AV (HT = prixUnitaireHt tel quel, TTC = HT × (1+TVA)) --
                      réutilisé tel quel, ACOMPTE n'a pas de logique de montant qui lui soit
                      propre. -->
@@ -430,7 +450,7 @@ export interface StepLinesValue {
 
               <td>
                 <button type="button" class="remove-line-btn" title="✕" (click)="removeLine(i)"
-                  [disabled]="linesArray.length === 1">✕</button>
+                  [disabled]="isCombined() || linesArray.length === 1">✕</button>
               </td>
             </tr>
           }
@@ -438,8 +458,8 @@ export interface StepLinesValue {
       </tbody>
       <tfoot>
         <tr>
-          @if (isAv() || isAcompte()) {
-            <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
+          @if (isAv() || isAcompte() || isCombined()) {
+            <td [attr.colspan]="isCombined() ? 7 : 6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcAv) }}</td>
           } @else if (isTm() || isTsCarryForward()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
@@ -560,6 +580,7 @@ export class StepLinesComponent {
   private readonly fb        = inject(FormBuilder);
   private readonly svc       = inject(InvoiceService);
   private readonly billingSvc = inject(BillingService);
+  private readonly affSvc    = inject(AffaireService);
   private readonly listSvc   = inject(FactListService);
   private readonly translate = inject(TranslateService);
 
@@ -692,6 +713,38 @@ export class StepLinesComponent {
    * invoiceType et non billingMode : une facture ACOMPTE garde le mode de facturation normal
    * de l'affaire, seule sa ligne diffère. */
   readonly isAcompte = computed(() => this.affaireData().invoiceType === 'ACOMPTE');
+
+  /** True for a combined (multi-affaire) invoice -- see step-affaire.component.ts's
+   * isCombinedInvoice(). Read-only in this phase: no add/edit controls, next() just
+   * passes the already-correct seeded lines through unchanged. */
+  readonly isCombined = computed(() => this.affaireData().billingMode === 'MIXED');
+
+  /** affaireId -> "REF — Intitulé" for the Affaire column, resolved once per distinct
+   * affaireId found among the seeded lines (see seedFromInitialLines()). Empty until
+   * resolved; the column shows the raw id as a fallback in the meantime. */
+  readonly affaireLabels = signal<Map<number, string>>(new Map());
+
+  private resolveAffaireLabels(affaireIds: number[]): void {
+    const distinct = [...new Set(affaireIds)];
+    if (distinct.length === 0) return;
+    forkJoin(distinct.map(id => this.affSvc.getAffaire(id))).subscribe({
+      next: affaires => {
+        const map = new Map<number, string>();
+        for (const a of affaires) map.set(a.id, `${a.reference} — ${a.intitule}`);
+        this.affaireLabels.set(map);
+      },
+    });
+  }
+
+  affaireLabel(affaireId: number | undefined | null): string {
+    if (affaireId == null) return '—';
+    return this.affaireLabels().get(affaireId) ?? `#${affaireId}`;
+  }
+
+  /** Read-only combined-invoice line data, captured once from seedFromInitialLines() --
+   * index-aligned with linesArray.controls for a combined invoice specifically (never
+   * populated for any other mode). */
+  readonly combinedLineMeta = signal<{ affaireId?: number; billingMode?: string }[]>([]);
 
   private readonly initialPeriodFrom = signal<string | null>(null);
   private readonly initialPeriodTo   = signal<string | null>(null);
@@ -950,6 +1003,11 @@ export class StepLinesComponent {
       }
     }
     if (this.linesArray.length === 0) this.linesArray.push(this.newLine());
+
+    if (this.isCombined()) {
+      this.combinedLineMeta.set(initial.lines.map(l => ({ affaireId: l.affaireId, billingMode: l.billingMode })));
+      this.resolveAffaireLabels(initial.lines.map(l => l.affaireId).filter((id): id is number => id != null));
+    }
 
     // T&M ET Livrable : le serveur renseigne periodFrom/periodTo à la génération dans les
     // deux cas (cf. DFValidationService.generateFromBillingLine[s]), et cette étape ne fait
@@ -1606,7 +1664,32 @@ export class StepLinesComponent {
       deductionPct3: l.deductionPct3 ?? undefined,
     });
 
-    if (this.isAcompte()) {
+    if (this.isCombined()) {
+      // Read-only: re-emit exactly what was seeded, including each line's own
+      // affaireId/billingMode so the backend's existing matching logic sees real,
+      // stable per-line values -- see combinedLineMeta() above.
+      const meta = this.combinedLineMeta();
+      const combinedLines = (this.linesArray.value as {
+        description: string; tauxTva: number;
+        budgetAffaire: number | null; pctFacture: number | null;
+        pctAvancement: number | null; pctAFacturer: number | null;
+        prixUnitaireHt: number;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
+      }[]).map((l, i) => ({
+        description:   l.description,
+        quantity:      1,
+        unitRate:      l.prixUnitaireHt,
+        vatRatePct:    l.tauxTva,
+        budgetAffaire: l.budgetAffaire ?? undefined,
+        pctFacture:    l.pctFacture    ?? undefined,
+        pctAvancement: l.pctAvancement ?? undefined,
+        pctAFacturer:  l.pctAFacturer  ?? undefined,
+        affaireId:     meta[i]?.affaireId,
+        billingMode:   meta[i]?.billingMode,
+        ...dedFields(l),
+      }));
+      this.nextStep.emit({ lines: combinedLines, deductionColumns });
+    } else if (this.isAcompte()) {
       // ACOMPTE n'a pas de billingMode qui lui soit propre -- l'affaire porte FORFAIT/
       // RÉGIE/LIVRABLE/TS comme n'importe quelle autre, donc sans cette branche en premier
       // une avance sur affaire RÉGIE tomberait dans isTm() ci-dessous, qui fige les trois

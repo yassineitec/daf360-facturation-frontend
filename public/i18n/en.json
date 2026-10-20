@@ -549,6 +549,7 @@
     },
     "STEP_LINES": {
       "TITLE": "Billing lines",
+      "AFFAIRE": "Affaire",
       "ADD_LINE": "+ Add a line",
       "DESC": "Description *",
       "QTY": "Qty *",
