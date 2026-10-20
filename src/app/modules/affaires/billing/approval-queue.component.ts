@@ -28,6 +28,8 @@ import { RowSelection } from './row-selection';
 import { ApprovalQueueStateService } from './approval-queue-state.service';
 import { AffaireService } from '../affaire.service';
 import { ToastService } from '../../../core/toast.service';
+import { ClientService } from '../../clients/client.service';
+import { ClientDropdownItemDto } from '../../clients/client.model';
 type ActiveTab = 'df' | 'history';
 // Four tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE/TS) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
@@ -154,6 +156,7 @@ export class ApprovalQueueComponent implements OnInit {
   private readonly modal      = inject(ModalService);
   private readonly affSvc     = inject(AffaireService);
   private readonly toast      = inject(ToastService);
+  private readonly clientSvc  = inject(ClientService);
 
   @ViewChild('dfRetourTpl') private dfRetourTpl!: TemplateRef<unknown>;
 
@@ -224,6 +227,19 @@ export class ApprovalQueueComponent implements OnInit {
    * lookup can never resolve after the fact and resurrect a picker for an abandoned
    * selection. */
   private clientLookupSub: Subscription | null = null;
+
+  /** Full client database, fetched once per picker opening (not per keystroke) so the
+   * picker can offer ANY client -- not just the ones the selected affaires happen to
+   * already be tagged with (e.g. ARX Tunisia affaires actually billed to ARX France). */
+  private allClientsForPicker = signal<ClientDropdownItemDto[]>([]);
+  clientSearchValue = signal('');
+  readonly clientSearchResults = computed(() => {
+    const q = this.clientSearchValue().trim().toLowerCase();
+    if (!q) return [];
+    return this.allClientsForPicker()
+      .filter(c => c.clientName.toLowerCase().includes(q))
+      .slice(0, 8);
+  });
 
   /** The one action every bulk bar offers — shared since Forfaitaire/Régie/Livrable all
    * mean the same thing by it ("validate everything currently checked"). */
@@ -1234,14 +1250,19 @@ export class ApprovalQueueComponent implements OnInit {
         for (const a of affaires) {
           if (a.clientId != null) distinctClients.set(a.clientId, a.clientName ?? `#${a.clientId}`);
         }
-        if (distinctClients.size <= 1) {
-          this.runValidateSelection(ids, selection, null);
-          return;
-        }
+        // Always show the picker once 2+ affaires are selected, even when they already
+        // share one client -- that shared client is pre-offered as a one-click quick-pick,
+        // but a real invoicing client (e.g. ARX France) can differ entirely from every
+        // selected affaire's own "nominal" client, so the user must always be able to
+        // search the full client database instead (see clientSearchResults below).
         this.pendingValidateIds = ids;
         this.pendingValidateSelection = selection;
         this.clientPickerOptions.set(
           [...distinctClients.entries()].map(([clientId, clientName]) => ({ clientId, clientName })));
+        this.clientSvc.getDropdown(0).subscribe({
+          next: clients => this.allClientsForPicker.set(clients),
+          error: () => this.allClientsForPicker.set([]),
+        });
       },
       // No global error-toast interceptor in this app (see auth.interceptor.ts) -- without
       // this, a deleted affaire or a transient network error leaves the user stuck clicking
@@ -1263,6 +1284,8 @@ export class ApprovalQueueComponent implements OnInit {
     this.clientPickerOptions.set(null);
     this.pendingValidateIds = null;
     this.pendingValidateSelection = null;
+    this.allClientsForPicker.set([]);
+    this.clientSearchValue.set('');
   }
 
   private runValidateSelection(ids: number[], selection: RowSelection, clientId: number | null): void {

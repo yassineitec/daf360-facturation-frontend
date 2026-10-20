@@ -22,15 +22,38 @@
       [options]="kpiHistoryOptions" />
   </section>
 
-  <!-- ── Client picker (combined-invoice DF approval, multi-client selection) ─── -->
+  <!-- ── Client picker (combined-invoice DF approval, 2+ affaires selected) ───────
+       Always shown once 2+ affaires are selected, even when they already share one
+       client: the quick-pick buttons below cover the selected affaires' own client(s)
+       for convenience, but the real invoicing client (e.g. a different legal entity
+       than the affaires' nominal client) can be anything in the client database, so a
+       full search is always offered too. ── -->
   @if (clientPickerOptions(); as options) {
     <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
       <span class="font-medium">{{ 'AFFAIRES.billing.approval.client_picker_title' | translate }}</span>
-      <div class="flex flex-wrap gap-2">
-        @for (opt of options; track opt.clientId) {
-          <daf-button
-            [options]="{ label: opt.clientName, variant: 'secondary', size: 'sm' }"
-            (onClick)="chooseClientForValidation(opt.clientId)" />
+      @if (options.length > 0) {
+        <div class="flex flex-wrap gap-2">
+          @for (opt of options; track opt.clientId) {
+            <daf-button
+              [options]="{ label: opt.clientName, variant: 'secondary', size: 'sm' }"
+              (onClick)="chooseClientForValidation(opt.clientId)" />
+          }
+        </div>
+      }
+      <div class="client-search relative max-w-sm">
+        <daf-form-field
+          [value]="clientSearchValue()"
+          (valueChange)="clientSearchValue.set($any($event) || '')"
+          [options]="{ placeholder: ('AFFAIRES.billing.approval.client_picker_search_placeholder' | translate) }" />
+        @if (clientSearchResults().length > 0) {
+          <ul class="client-search-results absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+            @for (c of clientSearchResults(); track c.id) {
+              <li (click)="chooseClientForValidation(c.id)"
+                  class="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100">
+                {{ c.clientName }}
+              </li>
+            }
+          </ul>
         }
       </div>
       <daf-button
