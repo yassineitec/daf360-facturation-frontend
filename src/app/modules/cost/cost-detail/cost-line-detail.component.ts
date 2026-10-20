@@ -6,7 +6,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import {
   ButtonComponent, DafCellDirective, DataTableComponent, FilterComponent,
-  MetricCardComponent, ModalService, PageComponent, PageHeaderComponent, SectionCardComponent,
+  MetricCardComponent, ModalService, PageComponent, PageHeaderComponent, PaginationComponent, SectionCardComponent,
   SearchToolbarComponent, StatusBadgeComponent, TabsComponent, tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
@@ -34,7 +34,7 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { ReglementModalComponent } from '../modals/reglement-modal.component';
-import { CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
+import { CostInvoiceSort, CostLinesTableSectionComponent } from '../tabs/cost-lines-table-section.component';
 import { CostRemindersPanelComponent } from './cost-reminders-panel.component';
 import { canEditInvoice, canReglementInvoice, invoicePayableAmount } from '../tabs/cost-invoice-display';
 import { UserStore } from '../../../core/user.store';
@@ -60,11 +60,13 @@ interface TotalRow { label: string; value: string; strong?: boolean; }
 type DetailMode = 'line' | 'supplier' | 'unassigned';
 
 /**
- * Supplier/unassigned modes load the supplier's invoices in one generous page instead of
- * a second pagination control — the volume per supplier stays small for now (same scaling
- * caveat as the by-supplier aggregation endpoint, which has no pagination either).
+ * Upper bound for the règlement modal's "payable invoices" picker, which still loads the
+ * supplier's APPROVED invoices in one call. Tab 1's invoice list is paginated server-side.
  */
 const SUPPLIER_MODE_PAGE_SIZE = 200;
+
+/** Tab 1 (supplier/unassigned modes): first page size, matching the list page's options. */
+const SUPPLIER_INVOICES_DEFAULT_SIZE = 10;
 
 /**
  * Fiche en lecture seule d'une FACTURE DE COÛT (V93 — une facture fournisseur portant une
@@ -91,7 +93,7 @@ const SUPPLIER_MODE_PAGE_SIZE = 200;
     TranslatePipe, PermissionDirective, NgTemplateOutlet, DecimalPipe,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent, StatusBadgeComponent, FilterComponent,
-    DataTableComponent, DafCellDirective, TableActionComponent, SearchToolbarComponent,
+    DataTableComponent, DafCellDirective, TableActionComponent, SearchToolbarComponent, PaginationComponent,
     CostLinesTableSectionComponent, ReglementModalComponent, CostRemindersPanelComponent,
   ],
   providers: [DisplayCurrencyPipe],
@@ -155,6 +157,15 @@ export class CostLineDetailComponent implements OnInit {
    *  of the by-supplier aggregation (authoritative count/total). */
   supplierInvoices = signal<CostInvoiceDto[]>([]);
   supplierSummary  = signal<SupplierCostSummaryDto | null>(null);
+
+  /** Tab 1 server pagination (0-based page) and sort — same contract as the list page. */
+  readonly invoicesPage    = signal(0);
+  readonly invoicesSize    = signal(SUPPLIER_INVOICES_DEFAULT_SIZE);
+  readonly invoicesTotal   = signal(0);
+  readonly invoicesSort    = signal<CostInvoiceSort | null>(null);
+  private readonly invoicesSortParam = signal<string | null>(null);
+  readonly invoicesLoading = signal(false);
+  readonly invoicesTotalPages = computed(() => Math.ceil(this.invoicesTotal() / this.invoicesSize()) || 1);
 
   /** 'supplier' mode only: the full supplier record (type, matricule fiscale, pays). */
   supplierDetail = signal<SupplierDto | null>(null);
@@ -909,12 +920,7 @@ export class CostLineDetailComponent implements OnInit {
     const isUnassigned = this.mode === 'unassigned';
 
     forkJoin({
-      invoices: this.svc.getCostInvoices({
-        paysId,
-        supplierId: isUnassigned ? null : this.supplierIdParam,
-        noSupplier: isUnassigned,
-        size: SUPPLIER_MODE_PAGE_SIZE,
-      }),
+      invoices: this.supplierInvoicesPage$(),
       // 'unassigned' mode never calls the ledger endpoint -- Tab 2 shows its "no
       // supplier" empty state.
       ledger: isUnassigned
@@ -928,6 +934,7 @@ export class CostLineDetailComponent implements OnInit {
     }).subscribe({
       next: ({ invoices, ledger, users, summaries, supplierDetail }) => {
         this.supplierInvoices.set(invoices.content);
+        this.invoicesTotal.set(invoices.totalElements);
         this.ledger.set(ledger);
         this.allUsers.set(users);
         this.supplierDetail.set(supplierDetail);
@@ -942,6 +949,60 @@ export class CostLineDetailComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  /** Tab 1's current page of invoices, for this supplier (or the "no supplier" bucket). */
+  private supplierInvoicesPage$() {
+    const isUnassigned = this.mode === 'unassigned';
+    return this.svc.getCostInvoices({
+      paysId:     this.paysId(),
+      supplierId: isUnassigned ? null : this.supplierIdParam,
+      noSupplier: isUnassigned,
+      page:       this.invoicesPage(),
+      size:       this.invoicesSize(),
+      sort:       this.invoicesSortParam(),
+    });
+  }
+
+  /** Page / size / sort change: reload Tab 1 only, not the ledger and summaries. */
+  private loadSupplierInvoices(): void {
+    this.invoicesLoading.set(true);
+    this.supplierInvoicesPage$().subscribe({
+      next: p => {
+        // Out-of-range page (invoices deleted meanwhile): fall back to the first one.
+        if (p.content.length === 0 && this.invoicesPage() > 0) {
+          this.invoicesPage.set(0);
+          this.loadSupplierInvoices();
+          return;
+        }
+        this.supplierInvoices.set(p.content);
+        this.invoicesTotal.set(p.totalElements);
+        this.invoicesLoading.set(false);
+      },
+      error: () => {
+        this.invoicesLoading.set(false);
+        this.error.set(this.translate.instant('COST.DETAIL.LOAD_ERROR'));
+      },
+    });
+  }
+
+  onInvoicesSortChange(change: { sort: CostInvoiceSort | null; param: string | null }): void {
+    this.invoicesSort.set(change.sort);
+    this.invoicesSortParam.set(change.param);
+    this.invoicesPage.set(0);
+    this.loadSupplierInvoices();
+  }
+
+  goToInvoicesPage(p: number): void {
+    if (p < 0 || p >= this.invoicesTotalPages()) return;
+    this.invoicesPage.set(p);
+    this.loadSupplierInvoices();
+  }
+
+  onInvoicesPageSize(size: number): void {
+    this.invoicesSize.set(size);
+    this.invoicesPage.set(0);
+    this.loadSupplierInvoices();
   }
 
   // ═══ Actions ══════════════════════════════════════════════════════════════
