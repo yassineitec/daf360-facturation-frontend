@@ -30,6 +30,10 @@ export interface StepLinesValue {
     pctAFacturer?:  number;
     // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
     sourceExpenseId?: number;
+    // Combined (multi-affaire) invoices only -- see isCombined() further down (added in a
+    // later task). Absent for every other mode.
+    affaireId?:   number;
+    billingMode?: string;
     // Carry-forward — sources attribuées à cette ligne (cf. PendingCarryForwardDto). Vide =
     // rien reporté ; une entrée = cas classique ; plusieurs = fusion de picks du même
     // contrat (cf. addSelectedCarryForward plus bas).
@@ -186,7 +190,7 @@ export interface StepLinesValue {
       <thead>
         <tr>
           <th class="col-desc">{{ 'INVOICING.STEP_LINES.DESC' | translate }}</th>
-          @if (isAv() || isTm() || isLivrable() || isTsCarryForward()) {
+          @if (isAv() || isTm() || isLivrable() || isTsCarryForward() || isAcompte()) {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.BUDGET_AFFAIRE' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.PCT_FACTURE' | translate }}</th>
             <th class="col-num">{{ 'INVOICING.STEP_LINES.PCT_AVANCEMENT' | translate }}</th>
@@ -197,7 +201,7 @@ export interface StepLinesValue {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.UNIT_PRICE' | translate }}</th>
           }
           <th class="col-num">{{ 'INVOICING.STEP_LINES.VAT' | translate }}</th>
-          @if (isAv() || isTm() || isLivrable() || isTsCarryForward()) {
+          @if (isAv() || isTm() || isLivrable() || isTsCarryForward() || isAcompte()) {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_TTC' | translate }}</th>
           } @else {
             <th class="col-num">{{ 'INVOICING.STEP_LINES.TOTAL_HT' | translate }}</th>
@@ -245,7 +249,31 @@ export interface StepLinesValue {
                 }
               </td>
 
-              @if (isAv()) {
+              @if (isAcompte()) {
+                <!-- ACOMPTE : contrairement à AV/T&M/Livrable/TS, il n'y a aucun WIP validé
+                     derrière cette ligne -- les trois colonnes sont de vraies saisies
+                     utilisateur, synchronisées entre elles par setNum() (montant <-> %, dans
+                     les deux sens). Seul Budget affaire (le contractAmount réel, fixé une
+                     fois par newLine()) et % déjà facturé (toujours 0, pas de facturation
+                     antérieure par construction) restent en lecture seule. -->
+                <td class="td-computed">{{ formatAmount(lg.get('budgetAffaire')!.value) }}</td>
+                <td class="td-computed">{{ formatPct(lg.get('pctFacture')!.value ?? 0) }}</td>
+                <td>
+                  <daf-form-field [options]="pctOptions"
+                    [value]="lg.get('pctAvancement')!.value"
+                    (valueChange)="setNum(lg, 'pctAvancement', $event)" />
+                </td>
+                <td>
+                  <daf-form-field [options]="pctOptions"
+                    [value]="lg.get('pctAFacturer')!.value"
+                    (valueChange)="setNum(lg, 'pctAFacturer', $event)" />
+                </td>
+                <td>
+                  <daf-form-field [options]="numOptions"
+                    [value]="lg.get('prixUnitaireHt')!.value"
+                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                </td>
+              } @else if (isAv()) {
                 <!-- Colonnes d'avancement : figées côté serveur à la génération de la facture depuis
                      un WIP validé (DFValidationService.buildInvoiceLine, branche FORFAIT) — cette étape
                      les affiche et les réémet telles quelles, sans jamais les recalculer, exactement
@@ -366,7 +394,12 @@ export interface StepLinesValue {
                   (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
               </td>
 
-              @if (isAv()) {
+              @if (isAcompte()) {
+                <!-- Même calcul que AV (HT = prixUnitaireHt tel quel, TTC = HT × (1+TVA)) --
+                     réutilisé tel quel, ACOMPTE n'a pas de logique de montant qui lui soit
+                     propre. -->
+                <td class="td-computed">{{ formatAmount(lineTtcAv(i)) }}</td>
+              } @else if (isAv()) {
                 <td class="td-computed">{{ formatAmount(lineTtcAv(i)) }}</td>
               } @else if (isTm() || isTsCarryForward()) {
                 <td class="td-computed">{{ formatAmount(lineTtcTm(i)) }}</td>
@@ -405,7 +438,7 @@ export interface StepLinesValue {
       </tbody>
       <tfoot>
         <tr>
-          @if (isAv()) {
+          @if (isAv() || isAcompte()) {
             <td colspan="6" class="totals-label">{{ 'INVOICING.STEP_LINES.TOTALS' | translate }}</td>
             <td class="total-ttc">{{ formatAmount(totalTtcAv) }}</td>
           } @else if (isTm() || isTsCarryForward()) {
@@ -584,6 +617,34 @@ export class StepLinesComponent {
     const c = g.get(key)!;
     c.setValue(v === '' || v == null ? null : Number(v));
     c.markAsTouched();
+    // ACOMPTE : budgetAffaire reste fixe (le contractAmount réel de l'affaire, posé une fois
+    // par newLine() ci-dessus) et pctFacture reste à 0 (aucun avancement réel antérieur, cas
+    // par construction) -- Montant HT, % Avancement à date et % À facturer sont les trois
+    // champs saisissables, synchronisés entre eux dans les DEUX sens : éditer l'un recalcule
+    // les deux autres, pour qu'ils restent toujours cohérents avec le budget réel de l'affaire
+    // (ex. budget 1 210 000 € : saisir 121 000 en Montant HT -> les deux % passent à 10 %, et
+    // inversement saisir 10 % dans l'un des deux % -> l'autre % et le montant se recalculent).
+    if (this.isAcompte() && (key === 'prixUnitaireHt' || key === 'pctAFacturer' || key === 'pctAvancement')) {
+      const group = g as FormGroup;
+      const budget = group.get('budgetAffaire')?.value;
+      const pctFacture = group.get('pctFacture')?.value ?? 0;
+      if (budget != null && budget > 0) {
+        if (key === 'prixUnitaireHt') {
+          const amount = c.value ?? 0;
+          const pctAFacturer = amount * 100 / budget;
+          group.get('pctAFacturer')?.setValue(pctAFacturer);
+          group.get('pctAvancement')?.setValue(pctFacture + pctAFacturer);
+        } else {
+          // key === 'pctAFacturer' || key === 'pctAvancement' -- les deux représentent le
+          // même delta à facturer ici (pctFacture est toujours 0), donc l'un recalcule
+          // directement l'autre, puis le montant correspondant.
+          const pctAFacturer = key === 'pctAFacturer' ? (c.value ?? 0) : (c.value ?? 0) - pctFacture;
+          group.get('pctAFacturer')?.setValue(pctAFacturer);
+          group.get('pctAvancement')?.setValue(pctFacture + pctAFacturer);
+          group.get('prixUnitaireHt')?.setValue(budget * pctAFacturer / 100);
+        }
+      }
+    }
   }
 
   /** Plafonné à 255 (colonne description) — l'ancien maxlength natif, sans le compteur
@@ -813,6 +874,22 @@ export class StepLinesComponent {
         this.seedFromInitialLines(initial);
       }
     });
+
+    // ACOMPTE, nouvelle facture (pas édition -- seedFromInitialLines() prend déjà le relais
+    // avec les vraies lignes sauvegardées dans ce cas) : la toute première ligne a forcément
+    // démarré avec budgetAffaire=null, créée par l'initialiseur de `form` plus bas avant que
+    // affaireData() ne soit disponible (voir affaireDataOrNull()). Dès que l'input est
+    // effectivement reçu, complète cette ligne une seule fois (le garde `== null` empêche
+    // d'écraser une valeur que l'utilisateur aurait déjà pu modifier entretemps).
+    effect(() => {
+      const data = this.affaireData();
+      if (this.isEditMode() || data.invoiceType !== 'ACOMPTE') return;
+      const only = this.linesArray.length === 1 ? (this.linesArray.at(0) as FormGroup) : null;
+      if (only && only.get('budgetAffaire')?.value == null) {
+        const budget = data.contractAmount ?? 0;
+        only.patchValue({ budgetAffaire: budget, pctFacture: 0, pctAFacturer: 0, pctAvancement: 0 });
+      }
+    });
   }
 
   /**
@@ -942,6 +1019,7 @@ export class StepLinesComponent {
    * déduction une fois par branche @if (isAv()/isTm()/isLivrable()/standard) comme le
    * fait la colonne Total TTC juste au-dessus dans le gabarit. */
   currentLineHt(i: number): number {
+    if (this.isAcompte()) return this.lineHtAv(i);
     if (this.isAv()) return this.lineHtAv(i);
     if (this.isTm() || this.isTsCarryForward()) return this.lineHtTm(i);
     if (this.isLivrable()) return this.lineHtLivrable(i);
@@ -955,20 +1033,46 @@ export class StepLinesComponent {
     return pct ? lineHt * (pct / 100) : 0;
   }
 
+  /** Safe read of the required `affaireData` input -- returns `null` instead of throwing
+   * when called before Angular has bound it (see newLine()'s own first, field-initializer-
+   * time call below). Every other call site (post-construction) gets the real value. */
+  private affaireDataOrNull(): StepAffaireValue | null {
+    try { return this.affaireData(); } catch { return null; }
+  }
+
   newLine(): FormGroup {
+    // ACOMPTE (avance client) : une ligne ajoutée ici n'a par définition aucun WIP derrière
+    // elle, mais doit quand même porter de vraies valeurs d'avancement une fois soumise --
+    // pas de "—" dans le tableau ni de null en base. Contrairement à T&M (budget affaire =
+    // le montant de la ligne elle-même, toujours 100 %), une avance est un pourcentage RÉEL
+    // du budget total de l'affaire -- budgetAffaire est donc le contractAmount réel de
+    // l'affaire (fixe, jamais recalculé), pctFacture part de 0 (aucun avancement réel
+    // antérieur, cas par construction : avant tout WIP), et pctAFacturer/pctAvancement sont
+    // tenus synchronisés au montant saisi par setNum() plus bas, pas fixés à 100 %.
+    //
+    // affaireDataOrNull() (pas isAcompte()/affaireData() direct) : `form` plus bas appelle
+    // newLine() dès son propre initialiseur de champ, donc AVANT qu'Angular n'ait injecté
+    // affaireData() (un input signal required -- cf. le commentaire sur seedFromInitialLines
+    // plus haut pour le même mécanisme). Lire un required input non encore défini lève une
+    // exception synchrone qui casse toute la construction du composant (page "Lignes de
+    // facturation" entièrement vide) -- confirmé en répro le 2026-10-20. L'effect juste
+    // après le constructeur complète cette toute première ligne une fois affaireData() reçu.
+    const data = this.affaireDataOrNull();
+    const acompte = data?.invoiceType === 'ACOMPTE';
+    const acompteBudget = acompte ? (data?.contractAmount ?? 0) : null;
     return this.fb.group({
       description:      ['', Validators.required],
       quantite:         [1,  [Validators.required, Validators.min(0.01)]],
       prixUnitaireHt:   [0,  [Validators.required, Validators.min(0)]],
-      pctAvancement:    [null],
+      pctAvancement:    [acompte ? 0 : null],
       // Modes Forfaitaire, Livrable et TS : les trois autres colonnes d'avancement de la
       // ligne, telles que le serveur les a calculées à la génération de la facture. Sans
       // ces contrôles, `seedFromInitialLines` n'avait nulle part où les charger et
       // `next()` n'avait rien à réémettre. Ni validateur ni valeur par défaut : le mode
       // T&M et le mode standard les ignorent — les ajouter ne change donc rien pour eux.
-      budgetAffaire:    [null as number | null],
-      pctFacture:       [null as number | null],
-      pctAFacturer:     [null as number | null],
+      budgetAffaire:    [acompteBudget as number | null],
+      pctFacture:       [acompte ? 0 : null as number | null],
+      pctAFacturer:     [acompte ? 0 : null as number | null],
       tauxTva:          [19],
       sourceExpenseId:  [null as number | null],
       sourceCarryForwards: [[] as { sourceBillingLineId: number; amount: number }[]],
@@ -1502,7 +1606,32 @@ export class StepLinesComponent {
       deductionPct3: l.deductionPct3 ?? undefined,
     });
 
-    if (this.isAv()) {
+    if (this.isAcompte()) {
+      // ACOMPTE n'a pas de billingMode qui lui soit propre -- l'affaire porte FORFAIT/
+      // RÉGIE/LIVRABLE/TS comme n'importe quelle autre, donc sans cette branche en premier
+      // une avance sur affaire RÉGIE tomberait dans isTm() ci-dessous, qui fige les trois
+      // pourcentages à 100 % quoi que l'utilisateur ait saisi -- faux pour une avance,
+      // qui est un VRAI pourcentage du budget (cf. setNum()/newLine() plus haut). Réémet
+      // donc budgetAffaire/pctFacture/pctAvancement/pctAFacturer tels quels, comme AV.
+      const acompteLines = (this.linesArray.value as {
+        description: string; tauxTva: number;
+        budgetAffaire: number | null; pctFacture: number | null;
+        pctAvancement: number | null; pctAFacturer: number | null;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
+      }[])
+        .map((l, i) => ({
+          description:   l.description,
+          quantity:      1,          // rétrocompat : quantity=1, unitRate=montantHt
+          unitRate:      this.lineHtAv(i),
+          vatRatePct:    l.tauxTva,
+          budgetAffaire: l.budgetAffaire ?? undefined,
+          pctFacture:    l.pctFacture    ?? undefined,
+          pctAvancement: l.pctAvancement ?? undefined,
+          pctAFacturer:  l.pctAFacturer  ?? undefined,
+          ...dedFields(l),
+        }));
+      this.nextStep.emit({ lines: acompteLines, deductionColumns });
+    } else if (this.isAv()) {
       // Colonnes d'avancement réémises TELLES QUELLES depuis les valeurs déjà seedées sur
       // chaque ligne (cf. avAvancement plus haut) — jamais recalculées depuis progress(),
       // qui ignore qu'une ligne précise a pu être réduite par une approbation client

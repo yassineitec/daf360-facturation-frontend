@@ -22,6 +22,11 @@ export interface InvoiceLine {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
+  // Combined (multi-affaire) invoices only -- which affaire/mode this specific line
+  // belongs to. null/absent for every standard single-affaire invoice, where the whole
+  // invoice's own affaireId/billingMode already apply to every line.
+  affaireId?:   number | null;
+  billingMode?: string | null;
   // WIP carry-forward sources attributed to this line — zero for a plain line, one for the
   // common case, several when same-contract picks were merged (see
   // step-lines.component.ts's addSelectedCarryForward).
@@ -166,6 +171,11 @@ export interface InvoiceLineRequest {
   pctAFacturer?:  number;
   // RMB — présent uniquement quand la ligne provient d'un frais remboursable pické
   sourceExpenseId?: number;
+  // Combined (multi-affaire) invoices only -- which affaire/mode this specific line
+  // belongs to. null/absent for every standard single-affaire invoice, where the whole
+  // invoice's own affaireId/billingMode already apply to every line.
+  affaireId?:   number | null;
+  billingMode?: string | null;
   // WIP carry-forward sources attributed to this line — see InvoiceLine above.
   sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
   // T&M — collaborateur associé à cette ligne, présent uniquement en mode T&M
