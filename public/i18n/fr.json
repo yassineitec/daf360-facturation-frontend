@@ -1137,7 +1137,30 @@
         "VALID_TECH_AT": "Validation technique",
         "VALID_TECH_NOTES": "Note technique",
         "VALID_COMM_AT": "Validation commerciale",
-        "VALID_COMM_NOTES": "Note commerciale"
+        "VALID_COMM_NOTES": "Note commerciale",
+        "EDIT": "Modifier",
+        "DELETE": "Supprimer",
+        "DELETE_TITLE": "Supprimer le travail supplémentaire",
+        "DELETE_HINT": "Le TS passe au statut Annulé : il reste consultable avec son historique, mais ne compte plus dans le budget.",
+        "DELETE_MOTIF": "Motif (facultatif)",
+        "DELETE_CONFIRM": "Supprimer",
+        "DELETE_ERROR": "Erreur lors de la suppression du TS.",
+        "DETAILS": "Détails",
+        "ACTIONS_MENU": "Actions du TS",
+        "HISTORY": "Historique",
+        "HISTORY_EMPTY": "Aucun historique pour ce TS.",
+        "HISTORY_ERROR": "Impossible de charger l'historique.",
+        "HISTORY_BY": "par {{user}}",
+        "HISTORY_FIELD_MOTIF": "Motif",
+        "HISTORY_FIELD_DETAIL": "Détail",
+        "HISTORY_ACTIONS": {
+          "CREATE_TS": "Création",
+          "MODIFIER_TS": "Modification",
+          "VALIDER_TS_TECHNIQUE": "Validation technique",
+          "VALIDER_TS_COMMERCIALE": "Validation commerciale",
+          "ANNULER_TS": "Suppression (annulation)",
+          "TS_INTEGRATED": "Intégration au budget"
+        }
       },
       "BUDGET_NOT_VALIDATED": "Budget non validé",
       "LAST_UPDATE": "Mise à jour le",
@@ -1443,6 +1466,7 @@
           "load": "Impossible de charger l'affaire. Réessayez.",
           "update": "Erreur lors de la mise à jour.",
           "create": "Erreur lors de la création.",
+        "update": "Erreur lors de la modification.",
           "config": "Erreur de configuration.",
           "activate": "Erreur d'activation."
         },
@@ -1827,7 +1851,9 @@
         "impact_placeholder": "Impact sur le budget de l'affaire",
         "description": "Description",
         "description_placeholder": "Détails complémentaires…",
-        "create": "Créer le TS"
+        "create": "Créer le TS",
+        "edit_title": "Modifier le travail supplémentaire",
+        "save": "Enregistrer"
       },
       "actions": {
         "cancel": "Annuler",
@@ -1837,6 +1863,7 @@
         "required": "Champ requis.",
         "min": "Doit être supérieur à 0.",
         "create": "Erreur lors de la création.",
+        "update": "Erreur lors de la modification.",
         "validation": "Erreur lors de la validation."
       },
       "list": {

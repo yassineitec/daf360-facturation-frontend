@@ -649,15 +649,26 @@
             <!-- Actions sur config.actions : `TableAction.hidden` (4.17.0) rend les
                  validations conditionnelles sans colonne projetée (§6b rule 4). -->
             <daf-data-table #tsTable [columns]="tsColumns()" [rows]="tsRows()" [config]="tsConfig()">
+              <!-- Case Facture : le lien vers la facture à gauche (s'il y en a une), le menu
+                   « ⋮ » des actions du TS toujours calé à droite. Styles inline : voir l'en-tête
+                   du fichier sur les classes absentes du CSS d'un remote. -->
               <ng-template dafCell="invoice" let-row>
-                <!-- invoiceId is only ever set once FACTURE (see TsBillingService), so its
-                     presence alone is enough — no need to also check row['statut']. -->
-                @if (row['invoiceId']) {
-                  <a [routerLink]="['/finance/invoicing', row['invoiceId']]"
-                    class="text-body-sm font-semibold text-tertiary hover:underline">
-                    {{ 'AFFAIRES.DETAIL.MODAL.OPEN_INVOICE' | translate }}
-                  </a>
-                }
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:.5rem">
+                  <!-- invoiceId is only ever set once FACTURE (see TsBillingService), so its
+                       presence alone is enough — no need to also check row['statut']. -->
+                  @if (row['invoiceId']) {
+                    <a [routerLink]="['/finance/invoicing', row['invoiceId']]"
+                      class="text-body-sm font-semibold text-tertiary hover:underline">
+                      {{ 'AFFAIRES.DETAIL.MODAL.OPEN_INVOICE' | translate }}
+                    </a>
+                  } @else {
+                    <span></span>
+                  }
+                  <app-ts-row-menu
+                    [items]="row['menuItems']"
+                    [label]="'AFFAIRES.DETAIL.TS.ACTIONS_MENU' | translate"
+                    (select)="onTsMenu(row['_source'], $event)" />
+                </div>
               </ng-template>
             </daf-data-table>
           }
@@ -911,5 +922,61 @@
     [affaireId]="numId"
     [defaultDevise]="affaireDevise()"
     [paysId]="affaire()?.paysId ?? null"
+    [ts]="tsEditTarget()"
     (closed)="onTsFormClosed($event)" />
+</ng-template>
+
+<!-- Suppression d'un TS : logique côté serveur (statut ANNULE), l'historique est gardé. -->
+<ng-template #tsDeleteTpl>
+  <div class="flex flex-col gap-5">
+    <p class="text-body-md font-bold text-on-surface">{{ tsDeleteSummary() }}</p>
+    <p class="text-body-sm text-on-surface-variant">{{ 'AFFAIRES.DETAIL.TS.DELETE_HINT' | translate }}</p>
+
+    <daf-form-field
+      [options]="tsDeleteMotifOptions()"
+      [value]="tsDeleteMotif()"
+      (valueChange)="tsDeleteMotif.set($any($event) ?? '')" />
+
+    @if (modalError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+        <span class="material-symbols-outlined text-headline-md">error</span>{{ modalError() }}
+      </div>
+    }
+  </div>
+</ng-template>
+
+<!-- Historique d'un TS (fact_audit_log), du plus récent au plus ancien — dans sa propre
+     fenêtre (openTsHistory), séparée de « Consulter ». -->
+<ng-template #tsHistoryTpl>
+  <div class="flex flex-col">
+    @if (tsHistoryLoading()) {
+      <p class="py-4 text-body-md text-on-surface-variant">…</p>
+    } @else if (modalError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+        <span class="material-symbols-outlined text-headline-md">error</span>{{ modalError() }}
+      </div>
+    } @else {
+      @for (h of tsHistory(); track h.id) {
+        <div class="flex flex-col gap-1 border-b border-outline-variant/30 py-3 last:border-0">
+          <div class="flex items-baseline justify-between gap-4">
+            <span class="text-body-md font-bold text-on-surface">{{ tsHistoryActionText(h.action) }}</span>
+            <span class="text-body-sm text-on-surface-variant">
+              {{ formatDate(h.timestamp) }}
+              @if (h.userName) { · {{ 'AFFAIRES.DETAIL.TS.HISTORY_BY' | translate: { user: h.userName } }} }
+            </span>
+          </div>
+          @for (c of h.changes; track c.field) {
+            <div class="text-body-sm text-on-surface-variant">
+              <span class="font-semibold">{{ tsHistoryFieldText(c.field) }} :</span>
+              <span class="line-through opacity-70">{{ tsHistoryValueText(c.field, c.before) }}</span>
+              →
+              <span class="font-semibold text-on-surface">{{ tsHistoryValueText(c.field, c.after) }}</span>
+            </div>
+          }
+        </div>
+      } @empty {
+        <p class="py-4 text-body-md text-on-surface-variant">{{ 'AFFAIRES.DETAIL.TS.HISTORY_EMPTY' | translate }}</p>
+      }
+    }
+  </div>
 </ng-template>

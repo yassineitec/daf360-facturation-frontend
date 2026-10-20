@@ -1137,7 +1137,30 @@
         "VALID_TECH_AT": "Technical approval",
         "VALID_TECH_NOTES": "Technical note",
         "VALID_COMM_AT": "Commercial approval",
-        "VALID_COMM_NOTES": "Commercial note"
+        "VALID_COMM_NOTES": "Commercial note",
+        "EDIT": "Edit",
+        "DELETE": "Delete",
+        "DELETE_TITLE": "Delete additional work",
+        "DELETE_HINT": "The item is set to Cancelled: it stays visible with its history but no longer counts in the budget.",
+        "DELETE_MOTIF": "Reason (optional)",
+        "DELETE_CONFIRM": "Delete",
+        "DELETE_ERROR": "Error while deleting the additional work.",
+        "DETAILS": "Details",
+        "ACTIONS_MENU": "Additional work actions",
+        "HISTORY": "History",
+        "HISTORY_EMPTY": "No history for this item.",
+        "HISTORY_ERROR": "Could not load the history.",
+        "HISTORY_BY": "by {{user}}",
+        "HISTORY_FIELD_MOTIF": "Reason",
+        "HISTORY_FIELD_DETAIL": "Detail",
+        "HISTORY_ACTIONS": {
+          "CREATE_TS": "Created",
+          "MODIFIER_TS": "Edited",
+          "VALIDER_TS_TECHNIQUE": "Technical validation",
+          "VALIDER_TS_COMMERCIALE": "Commercial validation",
+          "ANNULER_TS": "Deleted (cancelled)",
+          "TS_INTEGRATED": "Added to budget"
+        }
       },
       "BUDGET_NOT_VALIDATED": "Budget not validated",
       "LAST_UPDATE": "Updated on",
@@ -1443,6 +1466,7 @@
           "load": "Unable to load the project. Try again.",
           "update": "Error while updating.",
           "create": "Error while creating.",
+        "update": "Error while updating.",
           "config": "Configuration error.",
           "activate": "Activation error."
         },
@@ -1827,7 +1851,9 @@
         "impact_placeholder": "Impact on the project budget",
         "description": "Description",
         "description_placeholder": "Additional details…",
-        "create": "Create additional work"
+        "create": "Create additional work",
+        "edit_title": "Edit additional work",
+        "save": "Save"
       },
       "actions": {
         "cancel": "Cancel",
@@ -1837,6 +1863,7 @@
         "required": "Required field.",
         "min": "Must be greater than 0.",
         "create": "Error while creating.",
+        "update": "Error while updating.",
         "validation": "Error during validation."
       },
       "list": {

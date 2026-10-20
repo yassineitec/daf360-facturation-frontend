@@ -7,7 +7,7 @@ import type { SelectOption } from '@khalilrebhiitec/daf360';
 
 import { AffaireService } from '../affaire.service';
 import { FactListService } from '../../../core/fact-list.service';
-import { CreateTsRequest } from '../affaire.model';
+import { CreateTsRequest, TsDto } from '../affaire.model';
 import { ListValueDto } from '../../cost/cost.model';
 
 /**
@@ -81,8 +81,10 @@ export class TsFormComponent implements OnInit {
   defaultDevise = input<string>('TND');
   /** Pays de l'affaire : la liste `CURRENCY` de Finance → Admin est paramétrée par pays. */
   paysId = input<number | null>(null);
+  /** TS à modifier : le formulaire est prérempli et `submit()` fait un PUT au lieu d'un POST. */
+  ts = input<TsDto | null>(null);
 
-  /** `true` après création réussie, `false` sur annulation — inchangé pour l'appelant. */
+  /** `true` après création/modification réussie, `false` sur annulation. */
   closed = output<boolean>();
 
   private readonly svc       = inject(AffaireService);
@@ -103,6 +105,15 @@ export class TsFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.devise.set(this.defaultDevise() || 'TND');
+    const ts = this.ts();
+    if (ts) {
+      this.intitule.set(ts.intitule ?? '');
+      this.montantEstime.set(ts.montantEstime ?? null);
+      this.devise.set(ts.devise || this.defaultDevise() || 'TND');
+      this.perimetre.set(ts.perimetre ?? '');
+      this.impactBudgetaire.set(ts.impactBudgetaire ?? '');
+      this.description.set(ts.description ?? '');
+    }
     // Le pays de l'affaire, pas `0` : avec `0` seules les valeurs globales semées revenaient,
     // et ce qui était ajouté, renommé ou désactivé dans Finance → Admin n'arrivait jamais ici.
     const paysId = this.paysId();
@@ -212,12 +223,16 @@ export class TsFormComponent implements OnInit {
       description:      this.description().trim()      || null,
     };
 
-    this.svc.createTS(this.affaireId(), dto).subscribe({
+    const editing = this.ts();
+    const call = editing
+      ? this.svc.updateTS(editing.id, dto)
+      : this.svc.createTS(this.affaireId(), dto);
+    call.subscribe({
       next: () => { this.saving.set(false); this.closed.emit(true); },
       error: err => {
         this.saving.set(false);
         this.serverError.set(err?.error?.detail ?? err?.error?.message
-          ?? this.t('AFFAIRES.ts.errors.create'));
+          ?? this.t(editing ? 'AFFAIRES.ts.errors.update' : 'AFFAIRES.ts.errors.create'));
       },
     });
     return true;

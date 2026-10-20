@@ -11,7 +11,7 @@ import { environment } from '../../../environments/environment';
 import {
   AffaireListItem, AffaireDetail, RafDetailsDto, AffaireKpisDto,
   TsDto, UpdateAffaireRequest, ChangerStatutRequest,
-  CreateTsRequest, ValiderTsRequest, AffaireFilter,
+  CreateTsRequest, UpdateTsRequest, TsHistoryEntry, ValiderTsRequest, AffaireFilter,
   ClientDto, UserRefDto, PaysRefDto, PageResponse, AffairesSummary,
   AffaireInvoiceItem, AffairePaymentItem,
   TmWorkedHoursLine, AffaireRessourceRef,
@@ -97,6 +97,19 @@ export class AffaireService {
 
   createTS(affaireId: number, dto: CreateTsRequest): Observable<TsDto> {
     return this.http.post<TsDto>(`${this.base}/affaires/${affaireId}/ts`, dto);
+  }
+
+  updateTS(tsId: number, dto: UpdateTsRequest): Observable<TsDto> {
+    return this.http.put<TsDto>(`${this.base}/ts/${tsId}`, dto);
+  }
+
+  /** « Supprimer » : suppression logique côté serveur (statut ANNULE), l'historique reste. */
+  annulerTS(tsId: number, motif: string | null): Observable<TsDto> {
+    return this.http.post<TsDto>(`${this.base}/ts/${tsId}/annuler`, { motif });
+  }
+
+  getTsHistory(tsId: number): Observable<TsHistoryEntry[]> {
+    return this.http.get<TsHistoryEntry[]>(`${this.base}/ts/${tsId}/historique`);
   }
 
   validerTechnique(tsId: number, req: ValiderTsRequest): Observable<TsDto> {
