@@ -207,14 +207,21 @@ export class ApprovalQueueComponent implements OnInit {
   pendingCreditNotes     = signal<PendingCreditNoteDto[]>([]);
   auditLog      = signal<AuditLogEntryDto[]>([]);
 
-  // ── Bulk-validate multi-select — one independent RowSelection per sub-tab table, so
-  // selecting rows in one doesn't disturb another's in-progress selection. Credit-note
-  // tables get none: a credit note is already a submitted Invoice (see the import comment
-  // above) and keeps its own single-action approve+emit flow untouched. ──
-  readonly forfaitSelection  = new RowSelection(false);
-  readonly regieSelection    = new RowSelection(false);
+  // ── Bulk-validate multi-select — Forfaitaire/Régie/TS now share ONE RowSelection, so a
+  // user can check rows across those 3 sub-tabs (e.g. two FORFAIT lines + one TS line) and
+  // validate them together as a single combined invoice via doValidateSelection(), unchanged
+  // below -- it already resolves affaires from the full pendingLines() signal and sends a
+  // flat id list with no mode restriction. Livrable keeps its own separate RowSelection and
+  // batch mechanism (doValidateLivrableSelection()), out of scope here. Credit-note tables
+  // get none: a credit note is already a submitted Invoice (see the import comment above)
+  // and keeps its own single-action approve+emit flow untouched. ──
+  /** Shared across the Forfaitaire/Régie/TS sub-tabs (NOT Livrable, which keeps its own
+   * separate batch mechanism below). Selection deliberately survives switching between
+   * these 3 sub-tabs (see onDfSubTabChange(), unchanged) so a user can pick some rows,
+   * switch tabs, pick more, and validate the combined total from wherever they currently
+   * are. */
+  readonly dfLineSelection   = new RowSelection(false);
   readonly livrableSelection = new RowSelection();  // unchanged -- own separate batch mechanism, out of scope
-  readonly tsSelection       = new RowSelection(false);
 
   /** Set whenever the current selection spans 2+ affaires -- lets the template show a
    * client-confirmation picker (pre-offering any client(s) those affaires already share,

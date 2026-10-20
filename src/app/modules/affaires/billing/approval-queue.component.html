@@ -183,9 +183,9 @@
 
                       <ng-template dafCell="select" let-row>
                         <daf-checkbox
-                          [checked]="forfaitSelection.ids().has(row['id'])"
-                          [options]="{ disabled: forfaitSelection.isDisabledFor(row['affaireId']) }"
-                          (checkedChange)="forfaitSelection.toggle(row['id'], row['affaireId'])"
+                          [checked]="dfLineSelection.ids().has(row['id'])"
+                          [options]="{ disabled: dfLineSelection.isDisabledFor(row['affaireId']) }"
+                          (checkedChange)="dfLineSelection.toggle(row['id'], row['affaireId'])"
                           (click)="$event.stopPropagation()" />
                       </ng-template>
 
@@ -219,14 +219,14 @@
 
                     </daf-data-table>
 
-                    @if (forfaitSelection.ids().size > 0) {
+                    @if (dfLineSelection.ids().size > 0) {
                       <daf-bulk-action-bar
-                        [count]="forfaitSelection.ids().size"
+                        [count]="dfLineSelection.ids().size"
                         [actions]="bulkValidateActions()"
                         [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
                         [cancelLabel]="'AFFAIRES.billing.approval.bulk_cancel' | translate"
-                        (actionClick)="doValidateSelection(forfaitSelection)"
-                        (cancel)="forfaitSelection.clear()" />
+                        (actionClick)="doValidateSelection(dfLineSelection)"
+                        (cancel)="dfLineSelection.clear()" />
                     }
 
                     <daf-pagination
@@ -345,9 +345,9 @@
 
                   <ng-template dafCell="select" let-row>
                     <daf-checkbox
-                      [checked]="regieSelection.ids().has(row['id'])"
-                      [options]="{ disabled: regieSelection.isDisabledFor(row['affaireId']) }"
-                      (checkedChange)="regieSelection.toggle(row['id'], row['affaireId'])"
+                      [checked]="dfLineSelection.ids().has(row['id'])"
+                      [options]="{ disabled: dfLineSelection.isDisabledFor(row['affaireId']) }"
+                      (checkedChange)="dfLineSelection.toggle(row['id'], row['affaireId'])"
                       (click)="$event.stopPropagation()" />
                   </ng-template>
 
@@ -381,14 +381,14 @@
 
                 </daf-data-table>
 
-                @if (regieSelection.ids().size > 0) {
+                @if (dfLineSelection.ids().size > 0) {
                   <daf-bulk-action-bar
-                    [count]="regieSelection.ids().size"
+                    [count]="dfLineSelection.ids().size"
                     [actions]="bulkValidateActions()"
                     [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
                     [cancelLabel]="'AFFAIRES.billing.approval.bulk_cancel' | translate"
-                    (actionClick)="doValidateSelection(regieSelection)"
-                    (cancel)="regieSelection.clear()" />
+                    (actionClick)="doValidateSelection(dfLineSelection)"
+                    (cancel)="dfLineSelection.clear()" />
                 }
 
                 <daf-pagination
@@ -661,9 +661,9 @@
 
                   <ng-template dafCell="select" let-row>
                     <daf-checkbox
-                      [checked]="tsSelection.ids().has(row['id'])"
-                      [options]="{ disabled: tsSelection.isDisabledFor(row['affaireId']) }"
-                      (checkedChange)="tsSelection.toggle(row['id'], row['affaireId'])"
+                      [checked]="dfLineSelection.ids().has(row['id'])"
+                      [options]="{ disabled: dfLineSelection.isDisabledFor(row['affaireId']) }"
+                      (checkedChange)="dfLineSelection.toggle(row['id'], row['affaireId'])"
                       (click)="$event.stopPropagation()" />
                   </ng-template>
 
@@ -697,14 +697,14 @@
 
                 </daf-data-table>
 
-                @if (tsSelection.ids().size > 0) {
+                @if (dfLineSelection.ids().size > 0) {
                   <daf-bulk-action-bar
-                    [count]="tsSelection.ids().size"
+                    [count]="dfLineSelection.ids().size"
                     [actions]="bulkValidateActions()"
                     [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
                     [cancelLabel]="'AFFAIRES.billing.approval.bulk_cancel' | translate"
-                    (actionClick)="doValidateSelection(tsSelection)"
-                    (cancel)="tsSelection.clear()" />
+                    (actionClick)="doValidateSelection(dfLineSelection)"
+                    (cancel)="dfLineSelection.clear()" />
                 }
 
                 <daf-pagination
