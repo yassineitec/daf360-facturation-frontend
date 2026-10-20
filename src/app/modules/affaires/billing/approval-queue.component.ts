@@ -1211,6 +1211,14 @@ export class ApprovalQueueComponent implements OnInit {
     const ids = [...selection.ids()];
     if (ids.length === 0) return;
 
+    // Cancel any still-pending lookup from a previous doValidateSelection() call FIRST,
+    // before either branch below -- otherwise a prior multi-affaire call's forkJoin can
+    // outlive a fast-path call that follows it (e.g. selection shrunk to one row and
+    // re-submitted before the first lookup resolved) and resurrect the picker afterwards
+    // with that earlier, already-superseded selection's ids. See clientLookupSub's own
+    // doc comment above.
+    this.clientLookupSub?.unsubscribe();
+
     const affaireIds = [...new Set(
       this.pendingLines().filter(l => ids.includes(l.id)).map(l => l.affaireId),
     )];
@@ -1220,10 +1228,6 @@ export class ApprovalQueueComponent implements OnInit {
       return;
     }
 
-    // Cancel any still-pending lookup from a previous doValidateSelection() call so a slow
-    // one can never resolve after this newer one and overwrite its (possibly already-acted-on)
-    // picker state -- see clientLookupSub's own doc comment above.
-    this.clientLookupSub?.unsubscribe();
     this.clientLookupSub = forkJoin(affaireIds.map(id => this.affSvc.getAffaire(id))).subscribe({
       next: affaires => {
         const distinctClients = new Map<number, string>();
