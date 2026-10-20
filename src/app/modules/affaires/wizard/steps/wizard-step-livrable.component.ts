@@ -111,7 +111,15 @@ export class WizardStepLivrableComponent implements OnInit {
     }
 
     this.loadDisciplines(id);
-    this.svc.getLivrables(id).subscribe({ next: l => this.savedLivrables.set(l) });
+    this.svc.getLivrables(id).subscribe({
+      next: l => {
+        this.savedLivrables.set(l);
+        // Resumed draft / edit: livrables already on file satisfy the step. Without this
+        // `livrablesSaved` stayed undefined (mapDraftToState can't know) and « Suivant »
+        // stayed disabled until the user re-assigned a document.
+        if (l.length && !this.draft.livrablesSaved) this.emitSaved();
+      },
+    });
   }
 
   // ── Disciplines ───────────────────────────────────────────────────────────

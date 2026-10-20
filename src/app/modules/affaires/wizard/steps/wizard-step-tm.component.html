@@ -9,22 +9,29 @@
 
   <!-- Point d'ajout stable, sans titre de section : la carte de l'étape annonce déjà le
        mode configuré. -->
-  <div class="section-bar">
-    <daf-button
-      [options]="{ variant: 'secondary', size: 'sm', iconStart: 'person_add',
-                   label: 'AFFAIRES.wizard.tm.add' | translate }"
-      (onClick)="addRessource()" />
-  </div>
+  <!-- `locked` : lecture seule complète (l'étape ne le passe plus — le mode verrouillé
+       n'empêche pas de configurer). `r.rateLocked` : taux figé par la première facture,
+       seule cette ligne est en lecture seule. -->
+  @if (!locked) {
+    <div class="section-bar">
+      <daf-button
+        [options]="{ variant: 'secondary', size: 'sm', iconStart: 'person_add',
+                     label: 'AFFAIRES.wizard.tm.add' | translate }"
+        (onClick)="addRessource()" />
+    </div>
+  }
 
   @for (r of draft.ressources; track $index; let i = $index) {
     <div class="item-card">
       <div class="item-card-header">
         <div class="item-badge item-badge--tm">{{ 'AFFAIRES.wizard.tm.badge' | translate:{ n: i + 1 } }}</div>
         <!-- `delete`, comme dans les tableaux de l'application — pas une croix. -->
-        <daf-button
-          [options]="{ variant: 'danger', size: 'sm', iconStart: 'delete',
-                       title: ('AFFAIRES.wizard.tm.remove' | translate) }"
-          (onClick)="removeRessource(i)" />
+        @if (!locked) {
+          <daf-button
+            [options]="{ variant: 'danger', size: 'sm', iconStart: 'delete',
+                         title: ('AFFAIRES.wizard.tm.remove' | translate) }"
+            (onClick)="removeRessource(i)" />
+        }
       </div>
 
       <div class="resource-grid">
@@ -33,7 +40,7 @@
         <div class="resource-col-2">
           <daf-select
             [options]="userOptions()"
-            [config]="{ label: ('AFFAIRES.wizard.tm.collaborateur' | translate), placeholder: ('AFFAIRES.wizard.tm.select' | translate), required: true, searchable: true, fullWidth: true }"
+            [config]="{ label: ('AFFAIRES.wizard.tm.collaborateur' | translate), placeholder: ('AFFAIRES.wizard.tm.select' | translate), required: true, searchable: true, fullWidth: true, disabled: locked || !!r.rateLocked }"
             [selected]="r.userId ? [r.userId.toString()] : []"
             (selectedChange)="onUserSelect(r, $event)" />
         </div>
@@ -42,7 +49,7 @@
         <div>
           <daf-select
             [options]="rateTypeOptions()"
-            [config]="{ label: ('AFFAIRES.wizard.tm.rate_type' | translate), fullWidth: true }"
+            [config]="{ label: ('AFFAIRES.wizard.tm.rate_type' | translate), fullWidth: true, disabled: locked || !!r.rateLocked }"
             [selected]="[r.rateType]"
             (selectedChange)="r.rateType = $event[0]; emitChange()" />
         </div>
@@ -51,7 +58,7 @@
         <div>
           <daf-select
             [options]="currencyOptions()"
-            [config]="{ label: ('AFFAIRES.wizard.tm.currency' | translate), fullWidth: true }"
+            [config]="{ label: ('AFFAIRES.wizard.tm.currency' | translate), fullWidth: true, disabled: locked || !!r.rateLocked }"
             [selected]="r.rateCurrency ? [r.rateCurrency] : []"
             (selectedChange)="r.rateCurrency = $event[0]; emitChange()" />
         </div>
@@ -67,7 +74,7 @@
               <span class="material-symbols-outlined" style="font-size:18px;color:#75777d;margin-top:18px;flex-shrink:0">euro</span>
               <div class="cost-box-content">
                 <daf-form-field
-                  [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.internal_cost' | translate), placeholder: ('AFFAIRES.wizard.tm.internal_cost_ph' | translate), fullWidth: true }"
+                  [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.internal_cost' | translate), placeholder: ('AFFAIRES.wizard.tm.internal_cost_ph' | translate), fullWidth: true, disabled: locked || !!r.rateLocked }"
                   [value]="r.costAmount ?? null"
                   (valueChange)="onDerivedCostFieldChange(r, 'basic', $event)">
                 </daf-form-field>
@@ -77,33 +84,34 @@
           } @else {
             <div class="taux-choice">
               <daf-form-field
-                [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.cost_hint_value' | translate), fullWidth: true }"
+                [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.cost_hint_value' | translate), fullWidth: true, disabled: locked || !!r.rateLocked }"
                 [value]="r.costAmount ?? null"
                 (valueChange)="onCostChange(r, $event)">
               </daf-form-field>
               <div class="taux-toggle">
                 <div class="taux-pill" [class.taux-pill--active]="(r.rateSource ?? 'EXTERNAL') === 'EXTERNAL'">
-                  <button type="button" class="taux-pill__select"
+                  <button type="button" class="taux-pill__select" [disabled]="locked || !!r.rateLocked"
                     (click)="setRowRateSource(r, 'EXTERNAL')">
                     <span class="taux-pill__label">{{ 'AFFAIRES.wizard.tm.selling' | translate }}</span>
                   </button>
-                  <input type="number" class="taux-pill__input"
+                  <input type="number" class="taux-pill__input" [disabled]="locked || !!r.rateLocked"
                     [value]="r.tauxVente ?? 0"
                     (input)="onSellingRateChange(r, 'EXTERNAL', $any($event.target).value)" />
                 </div>
                 <div class="taux-pill" [class.taux-pill--active]="r.rateSource === 'INTERNAL'">
-                  <button type="button" class="taux-pill__select"
+                  <button type="button" class="taux-pill__select" [disabled]="locked || !!r.rateLocked"
                     (click)="setRowRateSource(r, 'INTERNAL')">
                     <span class="taux-pill__label">{{ 'AFFAIRES.wizard.tm.interco' | translate }}</span>
                   </button>
-                  <input type="number" class="taux-pill__input"
+                  <input type="number" class="taux-pill__input" [disabled]="locked || !!r.rateLocked"
                     [value]="r.tauxIntercompany ?? 0"
                     (input)="onSellingRateChange(r, 'INTERNAL', $any($event.target).value)" />
                 </div>
               </div>
               <daf-form-field
                 [options]="{ type: 'number', label: ('AFFAIRES.wizard.tm.selling_rate' | translate), required: true, fullWidth: true,
-                             hint: ('AFFAIRES.wizard.tm.rate_editable_hint' | translate) }"
+                             disabled: locked || !!r.rateLocked,
+                             hint: (locked || r.rateLocked) ? '' : ('AFFAIRES.wizard.tm.rate_editable_hint' | translate) }"
                 [value]="r.rateAmount"
                 (valueChange)="onRateAmountChange(r, $event)">
               </daf-form-field>

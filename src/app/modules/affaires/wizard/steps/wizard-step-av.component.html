@@ -25,10 +25,14 @@
         }
       </span>
     </p>
-    <daf-button
-      [options]="{ variant: 'secondary', size: 'sm', iconStart: 'add',
-                   label: 'AFFAIRES.wizard.av.add' | translate }"
-      (onClick)="addRow()" />
+    <!-- Verrouillé (affaire active) : lecture seule — l'étape n'enregistre rien dans ce
+         cas, des champs modifiables laisseraient croire le contraire. -->
+    @if (!locked) {
+      <daf-button
+        [options]="{ variant: 'secondary', size: 'sm', iconStart: 'add',
+                     label: 'AFFAIRES.wizard.av.add' | translate }"
+        (onClick)="addRow()" />
+    }
   </div>
 
   <!-- Repartition rows.
@@ -41,24 +45,26 @@
       <div class="rep-row">
         <daf-select
           [options]="repartitionTypeOptions()"
-          [config]="{ placeholder: ('AFFAIRES.wizard.av.type_ph' | translate), fullWidth: true }"
+          [config]="{ placeholder: ('AFFAIRES.wizard.av.type_ph' | translate), fullWidth: true, disabled: locked }"
           [selected]="r.repartitionTypeId ? [r.repartitionTypeId.toString()] : []"
           (selectedChange)="onTypeChange(r, $event)" />
         <!-- `align` + `suffixText` (lib 4.19) : le « % » vit DANS le champ, plus dans un
              span à côté qu'il fallait re-styler à la main sur chaque page. -->
         <div class="pct-field">
           <daf-form-field
-            [options]="{ type: 'number', align: 'center', suffixText: '%' }"
+            [options]="{ type: 'number', align: 'center', suffixText: '%', disabled: locked }"
             [value]="r.percentage"
             (valueChange)="onPercentageChange(r, $event)" />
         </div>
         <!-- `delete` en variante `danger` : la même suppression que dans les tableaux de
              l'application (admin/listes, sous-traitants), pas une croix de fermeture. -->
         <div class="rep-row__remove">
-          <daf-button
-            [options]="{ variant: 'danger', size: 'sm', iconStart: 'delete',
-                         title: ('AFFAIRES.wizard.av.remove' | translate) }"
-            (onClick)="removeRow(i)" />
+          @if (!locked) {
+            <daf-button
+              [options]="{ variant: 'danger', size: 'sm', iconStart: 'delete',
+                           title: ('AFFAIRES.wizard.av.remove' | translate) }"
+              (onClick)="removeRow(i)" />
+          }
         </div>
       </div>
     }
