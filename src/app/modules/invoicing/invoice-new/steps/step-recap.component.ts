@@ -1,12 +1,14 @@
 import { Component, inject, input, output, signal, computed, effect } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
+import { forkJoin } from 'rxjs';
 import { InvoiceService } from '../../invoice.service';
 import { CONDITIONS_PAIEMENT } from '../../invoice.model';
 import { ClientService } from '../../../clients/client.service';
 import { ClientDetailDto } from '../../../clients/client.model';
 import { ClientContactService } from '../../../clients/contacts/client-contact.service';
 import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
+import { AffaireService } from '../../../affaires/affaire.service';
 import { StepAffaireValue } from './step-affaire.component';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';
@@ -95,6 +97,9 @@ import { enumLabel } from '../../../../shared/enum-labels';
     <table class="recap-lines">
       <thead>
         <tr>
+          @if (isCombined()) {
+            <th>{{ 'INVOICING.STEP_RECAP.AFFAIRE' | translate }}</th>
+          }
           <th>{{ 'INVOICING.STEP_RECAP.DESC' | translate }}</th>
           @if (usesAvancementColumns()) {
             <th>{{ 'INVOICING.STEP_LINES.BUDGET_AFFAIRE' | translate }}</th>
@@ -118,6 +123,9 @@ import { enumLabel } from '../../../../shared/enum-labels';
       <tbody>
         @for (l of linesData().lines; track $index) {
           <tr>
+            @if (isCombined()) {
+              <td>{{ affaireLabel(l.affaireId) }}</td>
+            }
             <td>{{ l.description }}</td>
             @if (usesAvancementColumns()) {
               <td class="num">{{ formatAmount(l.budgetAffaire ?? 0) }}</td>
@@ -142,7 +150,7 @@ import { enumLabel } from '../../../../shared/enum-labels';
       <tfoot>
         <tr>
           @if (usesAvancementColumns()) {
-            <td colspan="7" class="total-label">{{ 'INVOICING.STEP_RECAP.TOTAL' | translate }}</td>
+            <td [attr.colspan]="isCombined() ? 8 : 7" class="total-label">{{ 'INVOICING.STEP_RECAP.TOTAL' | translate }}</td>
             <td class="num total-ttc">{{ formatAmount(totalTtc()) }}</td>
           } @else {
             <td colspan="4" class="total-label">{{ 'INVOICING.STEP_RECAP.TOTAL' | translate }}</td>
@@ -243,6 +251,7 @@ export class StepRecapComponent {
   private readonly svc          = inject(InvoiceService);
   private readonly clientSvc    = inject(ClientService);
   private readonly contactSvc   = inject(ClientContactService);
+  private readonly affSvc       = inject(AffaireService);
   private readonly router       = inject(Router);
   private readonly route        = inject(ActivatedRoute);
   private readonly translate    = inject(TranslateService);
@@ -295,6 +304,12 @@ export class StepRecapComponent {
       this.contactSvc.getAffaireContacts(affaireId)
         .subscribe(list => this.affaireContacts.set(list));
     });
+
+    effect(() => {
+      if (this.isCombined()) {
+        this.resolveAffaireLabels(this.linesData().lines.map(l => l.affaireId));
+      }
+    });
   }
 
   private readonly affaireContacts = signal<AffaireContactDto[]>([]);
@@ -317,8 +332,36 @@ export class StepRecapComponent {
    * de ce que l'utilisateur vient de saisir/valider. */
   readonly usesAvancementColumns = computed(() => {
     const mode = this.affaireData().billingMode;
-    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE' || mode === 'TS';
+    return mode === 'FORFAIT' || mode === 'REGIE' || mode === 'LIVRABLE' || mode === 'TS' || mode === 'MIXED';
   });
+
+  /** Combined (multi-affaire) invoice -- each line carries its own affaireId/billingMode
+   * (see StepLinesValue), so the recap table must show which affaire each line belongs to
+   * (the Affaire column below) -- the one screen a DF validator needs it most, right before
+   * committing. */
+  readonly isCombined = computed(() => this.affaireData().billingMode === 'MIXED');
+
+  /** affaireId -> "REF — Intitulé", resolved once per distinct affaireId among the combined
+   * invoice's lines. Empty until resolveAffaireLabels() resolves (see the effect in the
+   * constructor) -- same pattern as step-lines.component.ts / invoice-detail.component.ts. */
+  readonly affaireLabels = signal<Map<number, string>>(new Map());
+
+  private resolveAffaireLabels(affaireIds: (number | null | undefined)[]): void {
+    const distinct = [...new Set(affaireIds.filter((id): id is number => id != null))];
+    if (distinct.length === 0) return;
+    forkJoin(distinct.map(id => this.affSvc.getAffaire(id))).subscribe({
+      next: affaires => {
+        const map = new Map<number, string>();
+        for (const a of affaires) map.set(a.id, `${a.reference} — ${a.intitule}`);
+        this.affaireLabels.set(map);
+      },
+    });
+  }
+
+  affaireLabel(affaireId: number | null | undefined): string {
+    if (affaireId == null) return '—';
+    return this.affaireLabels().get(affaireId) ?? `#${affaireId}`;
+  }
 
   readonly totalHt = computed(() =>
     this.linesData().lines.reduce((s, l) => s + l.quantity * l.unitRate, 0)
