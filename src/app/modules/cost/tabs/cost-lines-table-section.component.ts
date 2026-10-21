@@ -77,6 +77,15 @@ const SERVER_SORT_FIELD: Record<string, string> = {
         <span class="font-medium text-on-surface">{{ row['_supplier'] }}</span>
       </ng-template>
 
+      <ng-template dafCell="description" let-row>
+        <span class="block max-w-70 truncate text-on-surface" [attr.title]="row['_descriptionFull']">
+          {{ row['_description'] }}
+        </span>
+        @if (row['_descriptionMore']) {
+          <span class="text-[11px] text-on-surface-variant">+{{ row['_descriptionMore'] }}</span>
+        }
+      </ng-template>
+
       <ng-template dafCell="_actions" let-row>
         <div class="flex items-center justify-end gap-2">
           @if (row['_canSubmit']) {
@@ -112,6 +121,10 @@ export class CostLinesTableSectionComponent {
   serverSort   = input(false);
   /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
   sort         = input<CostInvoiceSort | null>(null);
+  /** Colonne Fournisseur — à masquer sur la fiche d'un fournisseur, où elle est la même partout. */
+  showSupplier    = input(true);
+  /** Colonne Description : les libellés des lignes de la facture (premier + « +N »). */
+  showDescription = input(false);
 
   /** Row click — the read-only invoice detail page. Editing stays on the pencil action. */
   readonly view            = output<CostInvoiceDto>();
@@ -136,12 +149,20 @@ export class CostLinesTableSectionComponent {
     // En tri serveur, seules les colonnes portées par l'entité ; en tri local, toutes.
     const sortable = (key: string) => !this.serverSort() || key in SERVER_SORT_FIELD;
     const raw = (row: TableRow) => row['_raw'] as CostInvoiceDto;
+    const supplier: TableColumn[] = this.showSupplier()
+      ? [{ key: 'supplier', label: t('COST.LINES.COL_SUPPLIER'), type: 'custom', sortable: sortable('supplier'),
+           sortAccessor: row => (raw(row).supplierName ?? '').toLowerCase() }]
+      : [];
+    const description: TableColumn[] = this.showDescription()
+      ? [{ key: 'description', label: t('COST.DETAIL.LINES.COL_DESCRIPTION'), type: 'custom', sortable: sortable('description'),
+           sortAccessor: row => (row['_descriptionFull'] as string).toLowerCase() }]
+      : [];
     return [
       { key: 'reference',     label: t('COST.LINES.COL_REFERENCE'),      type: 'custom', sortable: sortable('reference'),
         sortAccessor: row => raw(row).reference },
-      { key: 'supplier',      label: t('COST.LINES.COL_SUPPLIER'),       type: 'custom', sortable: sortable('supplier'),
-        sortAccessor: row => (raw(row).supplierName ?? '').toLowerCase() },
+      ...supplier,
       { key: 'invoiceNumber', label: t('COST.LINES.COL_INVOICE_NUMBER'), type: 'text',   sortable: sortable('invoiceNumber') },
+      ...description,
       { key: 'date',          label: t('COST.LINES.COL_INVOICE_DATE'),   type: 'text',   sortable: sortable('date'),
         sortAccessor: row => raw(row).invoiceDate },
       { key: 'lines',         label: t('COST.LINES.COL_LINES'),          type: 'text',   sortable: sortable('lines'),
@@ -164,7 +185,12 @@ export class CostLinesTableSectionComponent {
 
     return this.invoices().map(inv => {
       const levelKey = approvalLevelKey(inv.approvalLevelRequired);
+      // Distinct line labels, in line order — an invoice often repeats one description.
+      const labels = [...new Set((inv.lines ?? []).map(l => l.label?.trim()).filter((s): s is string => !!s))];
       return {
+        _description:     labels[0] ?? '—',
+        _descriptionMore: labels.length > 1 ? labels.length - 1 : 0,
+        _descriptionFull: labels.join(' · '),
         id:            inv.id,
         invoiceNumber: inv.supplierInvoiceNumber ?? '—',
         date:          formatDate(inv.invoiceDate),

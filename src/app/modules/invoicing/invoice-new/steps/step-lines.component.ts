@@ -1462,18 +1462,23 @@ export class StepLinesComponent {
       const pctAFacturer = (budgetAffaire != null && budgetAffaire > 0)
         ? amount * 100 / budgetAffaire
         : null;
-      const label = isTsRow ? 'Solde TS non facturé #' : 'Solde WIP non facturé #';
+      // Differentiated now that a TS row can be picked alongside the affaire's own mode in
+      // the SAME selection (see pendingCarryForwardList) — the resulting lines need their own
+      // description to tell them apart on the invoice, where billingModeLabel's "Mode" column
+      // from the picker itself no longer applies.
+      const labelKey = isTsRow
+        ? 'INVOICING.STEP_LINES.CARRY_FORWARD_TS' : 'INVOICING.STEP_LINES.CARRY_FORWARD_WIP';
       const g = this.newLine();
       g.patchValue({
-        description:          label + id,
-        quantite:              1,
-        prixUnitaireHt:        amount,
-        tauxTva:               0,
-        sourceCarryForwards:   [{ sourceBillingLineId: id, amount }],
-        budgetAffaire:         budgetAffaire,
-        pctFacture:            dto?.pctFacture ?? null,
-        pctAvancement:         dto?.pctAvancement ?? null,
-        pctAFacturer:          pctAFacturer,
+        description:          this.translate.instant(labelKey, { id }),
+        quantite:             1,
+        prixUnitaireHt:       amount,
+        tauxTva:              0,
+        sourceCarryForwards:  [{ sourceBillingLineId: id, amount }],
+        budgetAffaire:        budgetAffaire,
+        pctFacture:           dto?.pctFacture ?? null,
+        pctAvancement:        dto?.pctAvancement ?? null,
+        pctAFacturer:         pctAFacturer,
       });
       this.linesArray.push(g);
     });

@@ -47,6 +47,7 @@ function invoiceHasCategory(inv: CostInvoiceDto | undefined, category: string): 
 }
 import { STATUS_BADGE_VARIANT, statusKey } from '../../cost/cost-display';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { ExportService } from '../../../core/export.service';
 import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 /**
  * Une ligne clé/valeur du panneau de détails. `label` est toujours une clé i18n.
@@ -307,6 +308,9 @@ export class SupplierDetailComponent implements OnInit {
   private readonly svc       = inject(SupplierService);
   private readonly costSvc   = inject(CostService);
   private readonly translate = inject(TranslateService);
+  private readonly exportSvc = inject(ExportService);
+  /** Export Excel en cours (factures ou relevé) — grise les boutons d'export. */
+  readonly exporting = signal(false);
   private readonly modals    = inject(ModalService);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
@@ -625,7 +629,7 @@ export class SupplierDetailComponent implements OnInit {
       icon:     'download',
       label:    this.translate.instant('SUPPLIERS.DETAIL.TOOLBAR.EXPORT'),
       position: 'right',
-      disabled,
+      disabled: disabled || this.exporting(),
     }];
   }
 
@@ -989,66 +993,24 @@ export class SupplierDetailComponent implements OnInit {
   // ═══ Export ═══════════════════════════════════════════════════════════════
   //
   // L'ensemble FILTRÉ, pas la page affichée : on exporte ce qu'on a demandé, pas ce
-  // qui tient à l'écran. Même comportement que `exportTs()` sur la fiche affaire.
+  // qui tient à l'écran. Fichiers générés par le backend (CostExportController) à
+  // partir des ids de ces lignes — remplacent les anciens CSV faits ici. Le relevé est
+  // le même export que sur la fiche d'une facture de coût (toutes les colonnes).
 
   exportCostInvoices(): void {
-    const t = (k: string) => this.translate.instant(k);
-    this.downloadCsv(
-      `FOURNISSEUR_${supplierCode(this.supplier()!)}_FACTURES`,
-      [t('SUPPLIERS.DETAIL.COSTS.COL_REF'), t('SUPPLIERS.DETAIL.COSTS.COL_SUPPLIER_INVOICE_NO'),
-       t('SUPPLIERS.DETAIL.COSTS.COL_DATE'), t('SUPPLIERS.DETAIL.COSTS.COL_LINES'),
-       t('SUPPLIERS.DETAIL.COSTS.COL_NET'), t('SUPPLIERS.DETAIL.COSTS.COL_GROSS'),
-       t('SUPPLIERS.DETAIL.COSTS.COL_STATUS'), t('SUPPLIERS.DETAIL.EXPORT.CURRENCY')],
-      this.filteredCostInvoices().map(inv => [
-        inv.reference ?? '',
-        inv.supplierInvoiceNumber ?? '',
-        this.formatDate(inv.invoiceDate),
-        (inv.lines ?? []).length,
-        // Le nombre NU dans le CSV, sans symbole ni séparateur de milliers : la
-        // cellule doit rester un nombre pour le tableur qui l'ouvre. La devise part
-        // dans sa propre colonne.
-        inv.netAmountLocal ?? '',
-        inv.grossAmountLocal ?? '',
-        t(statusKey(inv.status)),
-        inv.currency ?? '',
-      ]));
+    const s = this.supplier();
+    if (!s?.paysId) return;
+    this.exportSvc.download(
+      this.exportSvc.supplierInvoices(s.id, s.paysId, this.filteredCostInvoices().map(inv => inv.id)),
+      `FOURNISSEUR_${supplierCode(s)}_FACTURES.xlsx`, this.exporting);
   }
 
   exportLedger(): void {
-    const t = (k: string) => this.translate.instant(k);
-    this.downloadCsv(
-      `FOURNISSEUR_${supplierCode(this.supplier()!)}_RELEVE`,
-      [t('SUPPLIERS.DETAIL.LEDGER.COL_DATE'), t('SUPPLIERS.DETAIL.LEDGER.COL_INVOICE'),
-       t('SUPPLIERS.DETAIL.LEDGER.COL_LABEL'),
-       t('SUPPLIERS.DETAIL.LEDGER.COL_DEBIT'), t('SUPPLIERS.DETAIL.LEDGER.COL_CREDIT'),
-       t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_DEBITEUR'),
-       t('SUPPLIERS.DETAIL.LEDGER.COL_SOLDE_CREDITEUR')],
-      this.filteredLedgerRows().map(r => [
-        this.formatDate(r.date),
-        this.invoiceName(r.costInvoiceId),
-        r.label ?? '',
-        r.debit ?? '',
-        r.credit ?? '',
-        r.soldeDebiteur ?? '',
-        r.soldeCrediteur ?? '',
-      ]));
-  }
-
-  /**
-   * Même implémentation que `downloadCsv()` sur la fiche affaire, aux deux détails qui
-   * la rendent utilisable sous Excel FR : le point-virgule comme séparateur, et le BOM
-   * UTF-8 en tête — sans lui, « Règlement » et « coût » arrivent en mojibake.
-   */
-  private downloadCsv(baseName: string, headers: string[], rows: (string | number | null)[][]): void {
-    const cell = (v: string | number | null) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv  = [headers, ...rows].map(r => r.map(cell).join(';')).join('\r\n');
-
-    const url  = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
-    const link = document.createElement('a');
-    link.href     = url;
-    link.download = `${baseName}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const s = this.supplier();
+    if (!s) return;
+    this.exportSvc.download(
+      this.exportSvc.supplierLedger(s.id, this.filteredLedgerRows().map(r => r.reglementId)),
+      `Releve_${supplierCode(s).replace(/[^A-Za-z0-9-]+/g, '_')}.xlsx`, this.exporting);
   }
 
   // ═══ Chargement ═══════════════════════════════════════════════════════════

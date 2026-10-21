@@ -16,25 +16,24 @@
         {{ 'AFFAIRES.wizard.billing.config' | translate:{ mode: (modeConfigKey() | translate) } }}
       </div>
 
+      <!-- `locked` (affaire activée) verrouille le MODE, pas sa configuration : les
+           sous-étapes restent modifiables et l'étape 3 est enregistrée en édition. -->
       @switch (draft.billingMode) {
         @case ('FORFAIT') {
           <app-wizard-step-av
             [draft]="draft"
-            [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-av>
         }
         @case ('REGIE') {
           <app-wizard-step-tm
             [draft]="draft"
-            [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-tm>
         }
         @case ('LIVRABLE') {
           <app-wizard-step-livrable
             [draft]="draft"
-            [locked]="locked"
             (draftChange)="onSubDraftChange($event)">
           </app-wizard-step-livrable>
         }

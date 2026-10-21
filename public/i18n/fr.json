@@ -1,5 +1,25 @@
 {
   "COMMON": {
+    "EXPORT_ERROR": "Échec de l'export Excel.",
+    "FILTERS": "Filtres",
+    "MONTHS_SHORT": {
+      "M1": "JAN",
+      "M2": "FÉV",
+      "M3": "MAR",
+      "M4": "AVR",
+      "M5": "MAI",
+      "M6": "JUN",
+      "M7": "JUL",
+      "M8": "AOÛ",
+      "M9": "SEP",
+      "M10": "OCT",
+      "M11": "NOV",
+      "M12": "DÉC"
+    },
+    "PAYS_SELECT": {
+      "PLACEHOLDER": "Sélectionner...",
+      "NO_RESULT": "Aucun résultat"
+    },
     "CURRENCY": {
       "TITLE": "Devise d'affichage",
       "NAMES": {
@@ -401,6 +421,7 @@
     },
     "NEW": {
       "TITLE": "Nouvelle facture",
+      "EDIT_TITLE": "Modifier la facture",
       "SUBTITLE": "Composez la facture, étape par étape.",
       "STEP_OF": "Étape {{step}} sur {{total}}",
       "BACK": "Retour",
@@ -534,6 +555,7 @@
       "TYPE_LABEL": "Type de facture *",
       "TYPE_SELECT": "Sélectionner le type…",
       "TYPE_REQUIRED": "Type requis.",
+      "NO_INVOICE_TYPE": "Aucun type de facture actif pour le pays de cette affaire. Ajoutez-en dans Administration › Types de facture.",
       "INVOICE_TYPES": {
         "ACOMPTE": "Facture d'acompte",
         "INTERMEDIAIRE": "Facture de situation (Avancement)",
@@ -553,6 +575,8 @@
     "STEP_LINES": {
       "TITLE": "Lignes de facturation",
       "AFFAIRE": "Affaire",
+      "CARRY_FORWARD_TS": "Solde TS non facturé #{{id}}",
+      "CARRY_FORWARD_WIP": "Solde WIP non facturé #{{id}}",
       "ADD_LINE": "+ Ajouter une ligne",
       "DESC": "Description *",
       "QTY": "Qté *",
@@ -694,6 +718,8 @@
     },
     "CREDIT_NOTE_MODAL": {
       "TITLE": "Émettre un avoir",
+      "PARTIAL_NOT_SUPPORTED": "Les avoirs partiels ne sont pas encore pris en charge : laissez ce champ vide, ou saisissez le montant total de la facture.",
+      "SAVE_ERROR": "Erreur lors de l'émission de l'avoir.",
       "REASON_LABEL": "Motif *",
       "REASON_SELECT": "Sélectionner un motif…",
       "REASON_REQUIRED": "Motif requis.",
@@ -1117,7 +1143,30 @@
         "VALID_TECH_AT": "Validation technique",
         "VALID_TECH_NOTES": "Note technique",
         "VALID_COMM_AT": "Validation commerciale",
-        "VALID_COMM_NOTES": "Note commerciale"
+        "VALID_COMM_NOTES": "Note commerciale",
+        "EDIT": "Modifier",
+        "DELETE": "Supprimer",
+        "DELETE_TITLE": "Supprimer le travail supplémentaire",
+        "DELETE_HINT": "Le TS passe au statut Annulé : il reste consultable avec son historique, mais ne compte plus dans le budget.",
+        "DELETE_MOTIF": "Motif (facultatif)",
+        "DELETE_CONFIRM": "Supprimer",
+        "DELETE_ERROR": "Erreur lors de la suppression du TS.",
+        "DETAILS": "Détails",
+        "ACTIONS_MENU": "Actions du TS",
+        "HISTORY": "Historique",
+        "HISTORY_EMPTY": "Aucun historique pour ce TS.",
+        "HISTORY_ERROR": "Impossible de charger l'historique.",
+        "HISTORY_BY": "par {{user}}",
+        "HISTORY_FIELD_MOTIF": "Motif",
+        "HISTORY_FIELD_DETAIL": "Détail",
+        "HISTORY_ACTIONS": {
+          "CREATE_TS": "Création",
+          "MODIFIER_TS": "Modification",
+          "VALIDER_TS_TECHNIQUE": "Validation technique",
+          "VALIDER_TS_COMMERCIALE": "Validation commerciale",
+          "ANNULER_TS": "Suppression (annulation)",
+          "TS_INTEGRATED": "Intégration au budget"
+        }
       },
       "BUDGET_NOT_VALIDATED": "Budget non validé",
       "LAST_UPDATE": "Mise à jour le",
@@ -1423,6 +1472,7 @@
           "load": "Impossible de charger l'affaire. Réessayez.",
           "update": "Erreur lors de la mise à jour.",
           "create": "Erreur lors de la création.",
+        "update": "Erreur lors de la modification.",
           "config": "Erreur de configuration.",
           "activate": "Erreur d'activation."
         },
@@ -1607,6 +1657,8 @@
       },
       "cp": {
         "cat_title": "Types de coûts éligibles",
+        "margin_title": "Taux de marge",
+        "margin_sub": "Marge appliquée aux coûts réels pour calculer le montant facturé.",
         "cat_sub": "Seuls les coûts des catégories cochées seront intégrés dans le calcul mensuel de facturation.",
         "auto": "Auto",
         "loading": "Chargement des catégories..."
@@ -1805,7 +1857,9 @@
         "impact_placeholder": "Impact sur le budget de l'affaire",
         "description": "Description",
         "description_placeholder": "Détails complémentaires…",
-        "create": "Créer le TS"
+        "create": "Créer le TS",
+        "edit_title": "Modifier le travail supplémentaire",
+        "save": "Enregistrer"
       },
       "actions": {
         "cancel": "Annuler",
@@ -1815,6 +1869,7 @@
         "required": "Champ requis.",
         "min": "Doit être supérieur à 0.",
         "create": "Erreur lors de la création.",
+        "update": "Erreur lors de la modification.",
         "validation": "Erreur lors de la validation."
       },
       "list": {
@@ -2247,6 +2302,9 @@
       "TS_COL_STATUT": "Statut",
       "TS_COL_DATE": "Date",
       "TS_SELECTOR_TITLE": "Travaux supplémentaires",
+      "PCT_INCREASE": "Augmenter",
+      "PCT_DECREASE": "Diminuer",
+      "PENDING_WIP_TITLE": "WIP en attente",
       "TS_SELECTOR_EMPTY": "Aucun TS n'est encore prêt pour une déclaration d'avancement.",
       "TS_SELECTOR_ACTION": "Déclarer un avancement",
       "TS_BACK_TO_SELECTOR": "Retour à la liste des TS",
@@ -2301,8 +2359,7 @@
       "CARRIED_FORWARD_TOTAL": "Total à valider",
       "PENDING_CLIENT_TITLE": "En attente de réponse client",
       "PENDING_CLIENT_EXPLAIN": "Un email récapitulatif a été envoyé au client. Une fois sa réponse reçue, saisissez ici le montant qu'il a réellement confirmé — s'il est inférieur au montant calculé, la différence sera reportée automatiquement sur la période suivante.",
-      "CLIENT_AMOUNT_LABEL": "Montant validé par le client",
-      "CLIENT_AMOUNT_HINT": "Ne peut pas dépasser le montant calculé.",
+      "CLIENT_AMOUNT_LABEL": "Montant validé par le client",      "CLIENT_AMOUNT_HINT": "Ne peut pas dépasser le montant calculé.",
       "CLIENT_AMOUNT_CONFIRM": "Confirmer",
       "CLIENT_AMOUNT_ERROR": "Erreur lors de l'enregistrement du montant validé par le client.",
       "VALIDATE_CLIENT_AMOUNT": "Valider le montant client",
@@ -2334,6 +2391,7 @@
       "VALIDATE": "Valider",
       "DETAILS": "Détails",
       "EXPORT_EXCEL": "Exporter Excel",
+      "EXPORT_ERROR": "Échec de l'export Excel.",
       "EXPORT_SHEET_SUMMARY": "Résumé",
       "EXPORT_SHEET_DETAILS": "Détails",
       "EXPORT_SHEET_WEEKLY": "Heures par semaine",
@@ -2448,6 +2506,7 @@
       "UNRESOLVED_HINT": "Cet email n'a pas de compte DAF360 correspondant — impossible de l'ajouter comme ressource tant qu'il n'est pas créé côté référentiel utilisateurs.",
       "TAUX_LOADING": "Calcul du taux en cours…",
       "TAUX_COST_HINT": "Coût réel",
+      "LOCKED_HINT": "Taux verrouillé",
       "TAUX_EXTERNAL": "Vente externe",
       "TAUX_INTERNAL": "Intercompany",
       "TAUX_UNAVAILABLE": "Aucun coût employé trouvé pour ce collaborateur — saisissez le taux manuellement.",
@@ -4226,6 +4285,7 @@
     "COMMON": {
       "LOADING": "Chargement…",
       "CANCEL": "Annuler",
+      "DELETE": "Supprimer",
       "CREATE": "Créer",
       "SAVE": "Enregistrer",
       "ADD": "Ajouter",
@@ -4253,6 +4313,31 @@
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Maquettes de documents",
+      "FIELD_HTML": "HTML / Handlebars",
+      "DOC_TYPES": {
+        "INVOICE_AV": "Facture — Mode AV (forfaitaire)"
+      },
+      "VAR_GROUPS": {
+        "INVOICE": "Facture",
+        "CLIENT": "Client",
+        "LINES": "Lignes",
+        "TOTALS": "Totaux"
+      },
+      "VARS": {
+        "invoiceNumberDisplay": "N° de facture (ou \"BROUILLON\")",
+        "editionDate": "Date d'édition ou d'émission",
+        "isDraft": "Bloc affiché seulement si brouillon (pas encore émise)",
+        "clientName": "Nom du client",
+        "clientAddress": "Adresse du client",
+        "clientTaxId": "Matricule fiscal / RCS-ICE",
+        "clientReferent": "Référent client (contact principal)",
+        "lines": "Lignes de facturation (tableau)",
+        "vatBreakdown": "Répartition TVA par taux (tableau)",
+        "totalHtFmt": "Total net HT",
+        "totalTvaFmt": "Montant TVA",
+        "droitTimbreFmt": "Droit de timbre",
+        "netAPayerFmt": "Net à payer"
+      },
       "SUBTITLE": "Personnalisez la mise en page PDF exportée pour les documents facturation (par type de document).",
       "NEW": "Nouvelle maquette",
       "ALL_TYPES": "Tous les types",

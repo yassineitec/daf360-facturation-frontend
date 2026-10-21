@@ -1,7 +1,6 @@
 import { Component, OnInit, computed, inject, signal, untracked, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import * as XLSX from 'xlsx';
 import {
   AvatarComponent, ButtonComponent, CardComponent, DataTableComponent, FilterField,
   FilterResult, PageComponent, PaginationComponent, SearchToolbarComponent,
@@ -15,6 +14,7 @@ import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 import { AffaireService } from '../../affaires/affaire.service';
 import { UserRefDto } from '../../affaires/affaire.model';
 import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
+import { ExportService } from '../../../core/export.service';
 
 interface TimelineDiff {
   label:  string;
@@ -109,6 +109,9 @@ export class EmployeeCostHistoryComponent implements OnInit {
 
   private readonly svc        = inject(EmployeeCostService);
   private readonly translate  = inject(TranslateService);
+  private readonly exportSvc  = inject(ExportService);
+  /** Export Excel en cours — état de chargement du bouton. */
+  readonly exporting = signal(false);
   private readonly route      = inject(ActivatedRoute);
   private readonly router     = inject(Router);
   private readonly affaireSvc = inject(AffaireService);
@@ -567,26 +570,16 @@ export class EmployeeCostHistoryComponent implements OnInit {
     }
   }
 
-  /** Same `xlsx` pattern as EmployeeCostComponent's own `exportExcel()` — spreadsheets are
-   * inherently flat, so this exports `flatRows()`, the exact same one-row-per-changed-
-   * field data the table view shows on screen. */
+  /** Export généré par le backend (CostExportController) : une ligne par champ modifié des
+   * événements affichés (filtres + recherche appliqués), comme flatRows() — on envoie les ids
+   * de ces événements, le serveur relit le journal d'audit et refait le détail des champs. */
   exportHistoryExcel(): void {
-    const rows = this.flatRows();
-    if (!rows.length) return;
-
-    const t = (k: string) => this.translate.instant(k);
-    const sheetRows = rows.map(r => ({
-      [t('COST.EMPLOYEE_COST.HISTORY_COL_DATE')]:    r.dateDisplay,
-      [t('COST.EMPLOYEE_COST.HISTORY_COL_USER')]:    r.actor,
-      [t('COST.EMPLOYEE_COST.HISTORY_COL_FIELD')]:   r.fieldLabel,
-      [t('COST.EMPLOYEE_COST.HISTORY_COL_BEFORE')]:  r.before,
-      [t('COST.EMPLOYEE_COST.HISTORY_COL_AFTER')]:   r.after,
-      [t('COST.EMPLOYEE_COST.HISTORY_COL_ACTION')]:  r.action,
-    }));
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheetRows), t('COST.EMPLOYEE_COST.HISTORY_TITLE'));
+    const events = this.filteredEvents();
+    if (!events.length) return;
     const who = this.employeeName ?? this.employeeEmail ?? String(this.recordId);
-    XLSX.writeFile(wb, `Historique_Cout_${who}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    this.exportSvc.download(
+      this.exportSvc.employeeCostHistory(this.recordId, events.map(ev => ev.id), who),
+      `Historique_Cout_${who.replace(/[^A-Za-z0-9-]+/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      this.exporting);
   }
 }

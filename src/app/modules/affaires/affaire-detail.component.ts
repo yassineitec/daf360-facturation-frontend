@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, computed, inject, input, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -22,14 +22,17 @@ import type {
 import { AffaireService } from './affaire.service';
 import { AffaireWizardService } from './affaire-wizard.service';
 import {
-  AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto,
+  AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto, TsHistoryEntry,
   AffaireInvoiceItem, AffairePaymentItem, PaysRefDto,
   AFFAIRE_STATUTS, STATUT_LABELS,
 } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
+import { InvoiceTypeLabels } from '../../core/invoice-type-labels.service';
+import { ExportService } from '../../core/export.service';
 import { PermissionDirective } from '../../shared/permission.directive';
 import { TsFormComponent } from './ts/ts-form.component';
+import { TsRowMenuComponent, TsRowMenuItem } from './ts/ts-row-menu.component';
 import { AffaireTsWipTabComponent } from './ts/affaire-ts-wip-tab.component';
 import { AffaireWipTabComponent } from './wip/affaire-wip-tab.component';
 import { AffaireRessourcesTabComponent } from './ressources/affaire-ressources-tab.component';
@@ -98,7 +101,6 @@ interface ActivityRow {
 }
 
 
-const MONTH_LABELS = ['JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUN', 'JUL', 'AOÛ', 'SEP', 'OCT', 'NOV', 'DÉC'];
 
 /** Statuts de facture qui ne génèrent plus d'échéance à suivre. */
 const SETTLED_INVOICE_STATUTS = new Set(['PAID', 'CANCELLED', 'CREDIT_NOTED']);
@@ -156,7 +158,7 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent,
     GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
-    TsFormComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
+    TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,
@@ -580,16 +582,22 @@ export class AffaireDetailComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly exportSvc = inject(ExportService);
+  /** Export Excel en cours (TS, factures ou paiements) — grise les boutons d'export. */
+  readonly exporting = signal(false);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly modals    = inject(ModalService);
   private readonly avatarSvc = inject(EmployeeAvatarService);
   private readonly contactSvc = inject(ClientContactService);
+  private readonly typeLabels = inject(InvoiceTypeLabels);
 
   private readonly rowDetailTpl   = viewChild.required<TemplateRef<unknown>>('rowDetailTpl');
   private readonly statutTpl      = viewChild.required<TemplateRef<unknown>>('statutTpl');
   private readonly tsValidationTpl = viewChild.required<TemplateRef<unknown>>('tsValidationTpl');
   private readonly expensesTpl    = viewChild.required<TemplateRef<unknown>>('expensesTpl');
   private readonly tsFormTpl      = viewChild.required<TemplateRef<unknown>>('tsFormTpl');
+  private readonly tsDeleteTpl    = viewChild.required<TemplateRef<unknown>>('tsDeleteTpl');
+  private readonly tsHistoryTpl   = viewChild.required<TemplateRef<unknown>>('tsHistoryTpl');
   /** Le corps du formulaire TS : la modale délègue Confirmer / Annuler à ses méthodes. */
   private readonly tsForm         = viewChild<TsFormComponent>('tsForm');
   /** Idem pour le formulaire de frais remboursable. */
@@ -597,6 +605,8 @@ export class AffaireDetailComponent implements OnInit {
   private tsFormModalRef: { close: () => void } | null = null;
 
   affaire  = signal<AffaireDetail | null>(null);
+  /** Libellés INVOICE_TYPE (/finance/admin) du pays de l'affaire — onglet Factures. */
+  private readonly loadInvoiceTypes = effect(() => this.typeLabels.ensure([this.affaire()?.paysId]));
   raf      = signal<RafDetailsDto | null>(null);
   kpis     = signal<AffaireKpisDto | null>(null);
   tsList   = signal<TsDto[]>([]);
@@ -628,6 +638,17 @@ export class AffaireDetailComponent implements OnInit {
   // TS validation modal
   private tsValidationTarget = signal<{ ts: TsDto; step: 'technique' | 'commerciale' } | null>(null);
   tsNotes = signal('');
+
+  /** TS ouvert dans le formulaire en modification — `null` pour une création. */
+  readonly tsEditTarget = signal<TsDto | null>(null);
+
+  // Suppression (logique) d'un TS
+  private tsDeleteTarget = signal<TsDto | null>(null);
+  tsDeleteMotif = signal('');
+
+  // Fenêtre « Consulter » d'un TS : onglets Détails / Historique
+  readonly tsHistory        = signal<TsHistoryEntry[]>([]);
+  readonly tsHistoryLoading = signal(false);
 
   // Row detail modal
   private modalRowState = signal<RowDetail | null>(null);
@@ -675,6 +696,11 @@ export class AffaireDetailComponent implements OnInit {
    */
   private enumText(domain: string, code: string | null | undefined): string {
     return enumLabel(this.translate, domain, code);
+  }
+
+  /** Type de facture : libellé de la liste paramétrée dans /finance/admin. */
+  private invoiceTypeText(code: string | null | undefined): string {
+    return this.typeLabels.label(code, this.affaire()?.paysId);
   }
 
   /**
@@ -1600,6 +1626,7 @@ export class AffaireDetailComponent implements OnInit {
    */
 
   readonly chartBars = computed<BarChartBar[]>(() => {
+    this.translate.currentLang();
     const values = this.chartValues();
 
     if (this.chartGranularityEffective() === 'months') {
@@ -1608,7 +1635,7 @@ export class AffaireDetailComponent implements OnInit {
       const isCurrentYear = this.chartYear() === this.currentYear;
       const dates         = this.monthlyInvoiceDates();
       return values.map((value, index) => ({
-        label:      MONTH_LABELS[index],
+        label:      this.translate.instant('COMMON.MONTHS_SHORT.M' + (index + 1)),
         value,
         valueLabel: this.monthTooltip(value, dates[index] ?? []),
         highlight:  isCurrentYear && index === this.currentMonth,
@@ -1786,7 +1813,7 @@ export class AffaireDetailComponent implements OnInit {
       icon:     'download',
       label:    this.translate.instant('AFFAIRES.DETAIL.TOOLBAR.EXPORT'),
       position: 'right',
-      disabled,
+      disabled: disabled || this.exporting(),
     }];
   }
 
@@ -1834,7 +1861,7 @@ export class AffaireDetailComponent implements OnInit {
       label:   t('AFFAIRES.DETAIL.INVOICES.TYPE'),
       type:    'select',
       options: [...new Set(this.invoices().map(i => i.invoiceType).filter((s): s is string => !!s))]
-        .sort().map(value => ({ value, label: this.enumText('INVOICE_TYPE', value) })),
+        .sort().map(value => ({ value, label: this.invoiceTypeText(value) })),
     }, {
       name:  'emittedRange',
       label: t('AFFAIRES.DETAIL.TOOLBAR.EMITTED_PERIOD'),
@@ -1995,7 +2022,7 @@ export class AffaireDetailComponent implements OnInit {
       // Même règle que les échéances de la vue d'ensemble : échéance passée, pas soldée.
       (!overdueOnly || (!!i.dateEcheance && i.dateEcheance.slice(0, 10) < today
         && !(i.statut && SETTLED_INVOICE_STATUTS.has(i.statut)))) &&
-      (!q || `${i.invoiceNumber ?? ''} ${i.invoiceType ?? ''}`.toLowerCase().includes(q)));
+      (!q || `${i.invoiceNumber ?? ''} ${i.invoiceType ?? ''} ${this.invoiceTypeText(i.invoiceType)}`.toLowerCase().includes(q)));
   });
 
   readonly filteredPayments = computed(() => {
@@ -2028,11 +2055,42 @@ export class AffaireDetailComponent implements OnInit {
       { key: 'statut',    label: t('AFFAIRES.DETAIL.INVOICES.STATUS'), type: 'badge', sortable: true },
       { key: 'integre',   label: t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT'), sortable: true,
         sortAccessor: row => src(row).integreAuBudgetAt },
-      // Custom, not a plain text/link column type: empty for every statut but FACTURE, where
-      // it links to the invoice TsBillingService created (see affaire-ts-wip-tab.component.ts).
+      // Custom, not a plain text/link column type: the « Ouvrir la facture » link (only once
+      // FACTURE, see affaire-ts-wip-tab.component.ts) plus, on the right, the « ⋮ » row menu
+      // (app-ts-row-menu: validations, Modifier, Consulter, Historique, Supprimer).
       { key: 'invoice',   label: t('AFFAIRES.DETAIL.MODAL.TS_INVOICE'), type: 'custom' },
     ];
   });
+
+  /** Items du menu d'une ligne, selon les mêmes règles que le serveur. */
+  private tsMenuItems(ts: TsDto): TsRowMenuItem[] {
+    const t = (k: string) => this.translate.instant(k);
+    const items: TsRowMenuItem[] = [];
+    // L'étape de validation suivante en tête : c'est l'action la plus fréquente sur un TS.
+    if (this.canValidateTechnique(ts)) {
+      items.push({ id: 'validate-tech', icon: 'fact_check', label: t('AFFAIRES.DETAIL.TS.VALIDATE_TECH') });
+    }
+    if (this.canValidateCommerciale(ts)) {
+      items.push({ id: 'validate-comm', icon: 'handshake', label: t('AFFAIRES.DETAIL.TS.VALIDATE_COMM') });
+    }
+    if (this.canEditTs(ts)) items.push({ id: 'edit', icon: 'edit', label: t('AFFAIRES.DETAIL.TS.EDIT') });
+    items.push({ id: 'view',    icon: 'visibility', label: t('AFFAIRES.DETAIL.TOOLBAR.VIEW') });
+    items.push({ id: 'history', icon: 'history',    label: t('AFFAIRES.DETAIL.TS.HISTORY') });
+    if (this.canDeleteTs(ts)) {
+      items.push({ id: 'delete', icon: 'delete', label: t('AFFAIRES.DETAIL.TS.DELETE'), danger: true });
+    }
+    return items;
+  }
+
+  onTsMenu(ts: TsDto, id: string): void {
+    if (id === 'validate-tech') this.openTsValidation(ts, 'technique');
+    if (id === 'validate-comm') this.openTsValidation(ts, 'commerciale');
+    if (id === 'edit')    this.openTsForm(ts);
+    if (id === 'delete')  this.openTsDelete(ts);
+    // Deux fenêtres distinctes : « Consulter » (détails) et « Historique ».
+    if (id === 'view')    this.openTsView(ts);
+    if (id === 'history') this.openTsHistory(ts);
+  }
 
   readonly tsRows = computed<TableRow[]>(() => this.filteredTs().map(ts => ({
     id:        ts.id,
@@ -2043,6 +2101,9 @@ export class AffaireDetailComponent implements OnInit {
                  options: { variant: TS_STATUT_BADGE[ts.statut] ?? 'neutral', dot: true } } satisfies BadgeCell,
     integre:   this.formatDate(ts.integreAuBudgetAt),
     invoiceId: ts.invoiceId,
+    // Calculés ici, une fois par ligne : un appel dans le template recréerait le tableau
+    // à chaque détection de changement.
+    menuItems: this.tsMenuItems(ts),
     _source:   ts,
   })));
 
@@ -2051,7 +2112,8 @@ export class AffaireDetailComponent implements OnInit {
     hoverable:  true,
     emptyMessage: this.translate.instant(
       this.tsList().length === 0 ? 'AFFAIRES.DETAIL.OVERVIEW.NO_TS' : 'AFFAIRES.DETAIL.TOOLBAR.NO_MATCH'),
-    actions: this.tsActions(),
+    // Pas de `actions` : validations, Modifier, Historique et Supprimer sont toutes dans le
+    // menu « ⋮ » de la colonne `menu` (app-ts-row-menu).
     ...tableTools(this.translate),
   }));
 
@@ -2075,7 +2137,7 @@ export class AffaireDetailComponent implements OnInit {
   readonly invoiceRows = computed<TableRow[]>(() => this.filteredInvoices().map(inv => ({
     id:       inv.id,
     numero:   inv.invoiceNumber ?? '—',
-    type:     this.enumText('INVOICE_TYPE', inv.invoiceType),
+    type:     this.invoiceTypeText(inv.invoiceType),
     emission: this.formatDate(inv.dateEmission),
     echeance: this.formatDate(inv.dateEcheance),
     montant:  this.currency.transform(inv.montantTtc, inv.devise || this.affaireDevise()),
@@ -2140,27 +2202,6 @@ export class AffaireDetailComponent implements OnInit {
   // `id` résout l'icône quand elle est standard (`view` → visibility, `edit` → stylus) ;
   // les validations TS passent une icône explicite. La cellule d'actions de la lib
   // s'occupe déjà du stopPropagation.
-
-  readonly tsActions = computed<TableAction[]>(() => {
-    this.translate.currentLang();
-    const t = (k: string) => this.translate.instant(k);
-    return [
-      {
-        id: 'view', tooltip: t('AFFAIRES.DETAIL.TOOLBAR.VIEW'),
-        onClick: row => this.openTsView(row['_source'] as TsDto),
-      },
-      {
-        id: 'validate-tech', icon: 'fact_check', tooltip: t('AFFAIRES.DETAIL.TS.VALIDATE_TECH'),
-        hidden:  row => !this.canValidateTechnique(row['_source'] as TsDto),
-        onClick: row => this.openTsValidation(row['_source'] as TsDto, 'technique'),
-      },
-      {
-        id: 'validate-comm', icon: 'handshake', tooltip: t('AFFAIRES.DETAIL.TS.VALIDATE_COMM'),
-        hidden:  row => !this.canValidateCommerciale(row['_source'] as TsDto),
-        onClick: row => this.openTsValidation(row['_source'] as TsDto, 'commerciale'),
-      },
-    ];
-  });
 
   readonly invoiceActions = computed<TableAction[]>(() => {
     this.translate.currentLang();
@@ -2647,6 +2688,123 @@ export class AffaireDetailComponent implements OnInit {
     });
   }
 
+  // ── Modification / suppression d'un TS ───────────────────────────────────
+  //
+  // Mêmes règles que le serveur (TsService) : modifier seulement avant toute validation,
+  // supprimer tant que le TS n'est ni intégré au budget ni facturé. La suppression est
+  // logique (statut ANNULE) : la ligne et son historique restent consultables.
+
+  canEditTs(ts: TsDto): boolean {
+    return ts.statut === 'CREATED' && this.store.hasPermission('FACT_CREATE_TS');
+  }
+
+  canDeleteTs(ts: TsDto): boolean {
+    return (ts.statut === 'CREATED' || ts.statut === 'VALID_TECHNIQUE')
+      && this.store.hasPermission('FACT_CREATE_TS');
+  }
+
+  readonly tsDeleteSummary = computed(() => {
+    const ts = this.tsDeleteTarget();
+    return ts ? `${ts.referenceTs} · ${ts.intitule} — `
+      + this.money(ts.montantEstime, ts.devise || this.affaireDevise()) : '';
+  });
+
+  readonly tsDeleteMotifOptions = computed<FormFieldOptions>(() => ({
+    label:     this.translate.instant('AFFAIRES.DETAIL.TS.DELETE_MOTIF'),
+    type:      'textarea',
+    rows:      3,
+    maxLength: 500,
+    fullWidth: true,
+  }));
+
+  openTsDelete(ts: TsDto): void {
+    this.tsDeleteTarget.set(ts);
+    this.tsDeleteMotif.set('');
+    this.modalError.set(null);
+
+    const ref = this.modals.open({
+      title: this.translate.instant('AFFAIRES.DETAIL.TS.DELETE_TITLE'),
+      icon:  'delete',
+      size:  'md',
+      body:  this.tsDeleteTpl(),
+      buttons: [
+        { label: this.translate.instant('AFFAIRES.DETAIL.MODAL.CANCEL'), variant: 'secondary', action: r => r.close() },
+        {
+          label: this.translate.instant('AFFAIRES.DETAIL.TS.DELETE_CONFIRM'),
+          variant: 'primary',
+          icon:    'delete',
+          action: () => this.submitTsDelete(ref),
+        },
+      ],
+    });
+  }
+
+  private submitTsDelete(ref: { close: () => void }): void {
+    const ts = this.tsDeleteTarget();
+    if (!ts) return;
+    this.modalError.set(null);
+    this.svc.annulerTS(ts.id, this.tsDeleteMotif().trim() || null).subscribe({
+      next: () => {
+        ref.close();
+        this.tsDeleteTarget.set(null);
+        this.loadTs();
+        this.refreshIndicators();
+      },
+      error: err => this.modalError.set(
+        err?.error?.message ?? this.translate.instant('AFFAIRES.DETAIL.TS.DELETE_ERROR')),
+    });
+  }
+
+  /** Historique d'un TS, dans sa propre fenêtre (séparée de « Consulter »). */
+  openTsHistory(ts: TsDto): void {
+    this.tsHistory.set([]);
+    this.tsHistoryLoading.set(true);
+    this.modalError.set(null);
+    this.svc.getTsHistory(ts.id).subscribe({
+      next: list => { this.tsHistory.set(list); this.tsHistoryLoading.set(false); },
+      error: () => {
+        this.tsHistoryLoading.set(false);
+        this.modalError.set(this.translate.instant('AFFAIRES.DETAIL.TS.HISTORY_ERROR'));
+      },
+    });
+
+    this.modals.open({
+      title: `${this.translate.instant('AFFAIRES.DETAIL.TS.HISTORY')} — ${ts.referenceTs}`,
+      icon:  'history',
+      size:  'lg',
+      body:  this.tsHistoryTpl(),
+    });
+  }
+
+  private static readonly TS_HISTORY_FIELDS: Record<string, string> = {
+    statut:           'AFFAIRES.DETAIL.INVOICES.STATUS',
+    intitule:         'AFFAIRES.DETAIL.MODAL.TS_INTITULE',
+    montantEstime:    'AFFAIRES.DETAIL.MODAL.TS_AMOUNT',
+    devise:           'AFFAIRES.ts.form.devise',
+    perimetre:        'AFFAIRES.DETAIL.MODAL.TS_PERIMETRE',
+    impactBudgetaire: 'AFFAIRES.DETAIL.MODAL.TS_IMPACT',
+    description:      'AFFAIRES.ts.form.description',
+    motif:            'AFFAIRES.DETAIL.TS.HISTORY_FIELD_MOTIF',
+    detail:           'AFFAIRES.DETAIL.TS.HISTORY_FIELD_DETAIL',
+  };
+
+  tsHistoryActionText(action: string): string {
+    const key = `AFFAIRES.DETAIL.TS.HISTORY_ACTIONS.${action}`;
+    const label = this.translate.instant(key);
+    return label === key ? action : label;
+  }
+
+  tsHistoryFieldText(field: string): string {
+    const key = AffaireDetailComponent.TS_HISTORY_FIELDS[field];
+    return key ? this.translate.instant(key) : field;
+  }
+
+  /** Valeur lisible : libellé du statut, `—` pour une valeur absente. */
+  tsHistoryValueText(field: string, value: string | null): string {
+    if (value === null || value === '') return '—';
+    return field === 'statut' ? this.enumText('TS_STATUT', value) : value;
+  }
+
   // ── Consultation d'une ligne ─────────────────────────────────────────────
 
   private openRowModal(row: RowDetail): void {
@@ -2679,7 +2837,7 @@ export class AffaireDetailComponent implements OnInit {
   openInvoiceView(inv: AffaireInvoiceItem): void {
     const devise = inv.devise || this.affaireDevise();
     const fields: DetailField[] = [
-      { label: 'AFFAIRES.DETAIL.INVOICES.TYPE',    value: this.enumText('INVOICE_TYPE', inv.invoiceType) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.TYPE',    value: this.invoiceTypeText(inv.invoiceType) },
       { label: 'AFFAIRES.DETAIL.INVOICES.STATUS',  value: this.enumText('INVOICE_STATUT', inv.statut) },
       { label: 'AFFAIRES.DETAIL.INFO.CLIENT',      value: inv.clientNom ?? this.affaire()?.clientName ?? '—' },
     ];
@@ -2766,7 +2924,36 @@ export class AffaireDetailComponent implements OnInit {
       { label: 'AFFAIRES.DETAIL.INFO.NOTES',             value: ts.description ?? '—' },
     );
 
-    this.openRowModal({ titleKey: 'AFFAIRES.DETAIL.MODAL.TS_TITLE', ref: ts.referenceTs, fields });
+    // Fenêtre propre au TS (et non `openRowModal`) : Modifier / Supprimer au pied,
+    // affichés selon les mêmes règles que le serveur. L'historique a sa propre fenêtre.
+    this.modalRowState.set({ titleKey: 'AFFAIRES.DETAIL.MODAL.TS_TITLE', ref: ts.referenceTs, fields });
+    this.modalError.set(null);
+
+    type Btn = { label: string; variant: 'primary' | 'secondary'; icon?: string;
+                 action: (r: { close: () => void }) => void };
+    // Pas de bouton « Fermer » : la croix de l'en-tête suffit. Sans action possible
+    // (TS validé, intégré, annulé…), la modale n'a donc pas de pied du tout.
+    const buttons: Btn[] = [];
+    if (this.canDeleteTs(ts)) {
+      buttons.push({
+        label: this.translate.instant('AFFAIRES.DETAIL.TS.DELETE'), variant: 'secondary',
+        action: r => { r.close(); this.openTsDelete(ts); },
+      });
+    }
+    if (this.canEditTs(ts)) {
+      buttons.push({
+        label: this.translate.instant('AFFAIRES.DETAIL.TS.EDIT'), variant: 'primary', icon: 'edit',
+        action: r => { r.close(); this.openTsForm(ts); },
+      });
+    }
+
+    this.modals.open({
+      title: `${this.translate.instant('AFFAIRES.DETAIL.MODAL.TS_TITLE')} — ${ts.referenceTs}`,
+      icon:  'visibility',
+      size:  'lg',
+      body:  this.rowDetailTpl(),
+      buttons: buttons.length ? buttons : undefined,
+    });
   }
 
   // ── Édition d'une ligne ──────────────────────────────────────────────────
@@ -2796,10 +2983,12 @@ export class AffaireDetailComponent implements OnInit {
    * `submit()` renvoie `false` quand la saisie est incomplète : la fenêtre reste alors
    * ouverte sur ses messages d'erreur, au lieu de se refermer en silence.
    */
-  openTsForm(): void {
+  openTsForm(ts: TsDto | null = null): void {
+    // Lu par le template au moment où la modale crée le formulaire : le poser avant `open`.
+    this.tsEditTarget.set(ts);
     this.tsFormModalRef = this.modals.open({
-      title: this.translate.instant('AFFAIRES.ts.form.title'),
-      icon:  'post_add',
+      title: this.translate.instant(ts ? 'AFFAIRES.ts.form.edit_title' : 'AFFAIRES.ts.form.title'),
+      icon:  ts ? 'edit' : 'post_add',
       size:  'md',
       body:  this.tsFormTpl(),
       buttons: [
@@ -2809,7 +2998,7 @@ export class AffaireDetailComponent implements OnInit {
           action: r => { this.tsForm()?.cancel(); r.close(); },
         },
         {
-          label: this.translate.instant('AFFAIRES.ts.form.create'),
+          label: this.translate.instant(ts ? 'AFFAIRES.ts.form.save' : 'AFFAIRES.ts.form.create'),
           variant: 'primary',
           action: () => { this.tsForm()?.submit(); },
         },
@@ -2841,68 +3030,32 @@ export class AffaireDetailComponent implements OnInit {
   onTsFormClosed(saved: boolean): void {
     this.tsFormModalRef?.close();
     this.tsFormModalRef = null;
+    this.tsEditTarget.set(null);
     if (saved) { this.loadTs(); this.refreshIndicators(); }
   }
 
-  // ═══ Export CSV ═══════════════════════════════════════════════════════════
+  // ═══ Export Excel ═════════════════════════════════════════════════════════
+  //
+  // Générés par le backend (AffaireExportController) : on envoie les ids des lignes
+  // filtrées (pas seulement la page affichée), le serveur relit TS / factures / paiements
+  // de l'affaire et les écrit dans cet ordre. Remplace les anciens CSV faits ici.
 
   exportTs(): void {
-    const t = (k: string) => this.translate.instant(k);
-    this.downloadCsv(
-      `TS_${this.affaire()?.reference ?? this.numId}`,
-      [t('AFFAIRES.DETAIL.MODAL.TS_TITLE'), t('AFFAIRES.DETAIL.MODAL.TS_INTITULE'),
-       t('AFFAIRES.DETAIL.MODAL.TS_AMOUNT'), t('AFFAIRES.DETAIL.INFO.CURRENCY'),
-       t('AFFAIRES.DETAIL.INVOICES.STATUS'), t('AFFAIRES.DETAIL.MODAL.TS_INTEGRATED_AT')],
-      this.filteredTs().map(ts => [
-        ts.referenceTs, ts.intitule, ts.montantEstime, ts.devise,
-        this.enumText('TS_STATUT', ts.statut), this.formatDate(ts.integreAuBudgetAt),
-      ]),
-    );
+    const ref = this.affaire()?.reference ?? this.numId;
+    this.exportSvc.download(this.exportSvc.affaireTs(this.numId, this.filteredTs().map(ts => ts.id)),
+      `TS_${ref}.xlsx`, this.exporting);
   }
 
   exportInvoices(): void {
-    const t = (k: string) => this.translate.instant(k);
-    this.downloadCsv(
-      `Factures_${this.affaire()?.reference ?? this.numId}`,
-      [t('AFFAIRES.DETAIL.INVOICES.NUMBER'), t('AFFAIRES.DETAIL.INVOICES.TYPE'),
-       t('AFFAIRES.DETAIL.INVOICES.EMITTED'), t('AFFAIRES.DETAIL.INVOICES.DUE'),
-       t('AFFAIRES.DETAIL.INVOICES.AMOUNT'), t('AFFAIRES.DETAIL.INFO.CURRENCY'),
-       t('AFFAIRES.DETAIL.INVOICES.STATUS')],
-      this.filteredInvoices().map(i => [
-        i.invoiceNumber, i.invoiceType, this.formatDate(i.dateEmission), this.formatDate(i.dateEcheance),
-        i.montantTtc, i.devise || this.affaireDevise(), i.statut,
-      ]),
-    );
+    const ref = this.affaire()?.reference ?? this.numId;
+    this.exportSvc.download(this.exportSvc.affaireInvoices(this.numId, this.filteredInvoices().map(i => i.id)),
+      `Factures_${ref}.xlsx`, this.exporting);
   }
 
   exportPayments(): void {
-    const t = (k: string) => this.translate.instant(k);
-    this.downloadCsv(
-      `Paiements_${this.affaire()?.reference ?? this.numId}`,
-      [t('AFFAIRES.DETAIL.PAYMENTS.DATE'), t('AFFAIRES.DETAIL.PAYMENTS.INVOICE'),
-       t('AFFAIRES.DETAIL.PAYMENTS.METHOD'), t('AFFAIRES.DETAIL.PAYMENTS.REFERENCE'),
-       t('AFFAIRES.DETAIL.PAYMENTS.AMOUNT'), t('AFFAIRES.DETAIL.INFO.CURRENCY')],
-      this.filteredPayments().map(p => [
-        this.formatDate(p.paymentDate), p.invoiceNumber, p.paymentMethod, p.bankReference,
-        p.amountLocal, p.currency || this.affaireDevise(),
-      ]),
-    );
-  }
-
-  /**
-   * CSV séparé par `;` avec BOM UTF-8 : c'est ce qu'Excel en locale FR ouvre sans
-   * assistant d'import ni accents cassés.
-   */
-  private downloadCsv(baseName: string, headers: string[], rows: (string | number | null)[][]): void {
-    const cell = (v: string | number | null) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv  = [headers, ...rows].map(r => r.map(cell).join(';')).join('\r\n');
-
-    const url  = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
-    const link = document.createElement('a');
-    link.href     = url;
-    link.download = `${baseName}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const ref = this.affaire()?.reference ?? this.numId;
+    this.exportSvc.download(this.exportSvc.affairePayments(this.numId, this.filteredPayments().map(p => p.id)),
+      `Paiements_${ref}.xlsx`, this.exporting);
   }
 
   // ═══ Formatage ════════════════════════════════════════════════════════════

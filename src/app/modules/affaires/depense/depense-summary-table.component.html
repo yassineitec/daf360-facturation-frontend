@@ -65,7 +65,7 @@
           <daf-button
             [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
                          label: ('AFFAIRES.DEPENSE.EXPORT_EXCEL' | translate),
-                         disabled: !rows().length }"
+                         disabled: !rows().length, loading: exporting() }"
             (onClick)="exportExcel()" />
         </div>
         <daf-data-table #zoomTable [columns]="columns()" [rows]="paginatedRows()" [config]="config()"

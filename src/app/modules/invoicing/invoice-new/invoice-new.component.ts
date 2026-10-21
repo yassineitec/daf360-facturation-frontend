@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, computed, viewChild, inject, effect, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FinancePaths } from '../../../core/finance-paths';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
 import {
@@ -10,10 +11,10 @@ import type {
   BreadcrumbItem, PageHeaderBadge, StepperConfig, StepperStep,
 } from '@khalilrebhiitec/daf360';
 import { StepAffaireComponent, StepAffaireValue } from './steps/step-affaire.component';
+import { invoiceTypeLabel } from '../../../core/invoice-type-labels.service';
 import { StepLinesComponent,  StepLinesValue  } from './steps/step-lines.component';
 import { StepConditionsComponent, StepConditionsValue } from './steps/step-conditions.component';
 import { StepRecapComponent } from './steps/step-recap.component';
-import { enumLabel } from '../../../shared/enum-labels';
 import { InvoiceService } from '../invoice.service';
 import { BillingService } from '../../affaires/billing/billing.service';
 
@@ -34,6 +35,7 @@ const STEP_ICONS = ['folder_open', 'receipt', 'calendar_month', 'summarize'] as 
 })
 export class InvoiceNewComponent implements OnInit {
   private readonly router    = inject(Router);
+  private readonly paths     = inject(FinancePaths);
   private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
   private readonly invSvc    = inject(InvoiceService);
@@ -195,7 +197,7 @@ export class InvoiceNewComponent implements OnInit {
         // so the draft is gone — back to the queue, where the request is pending again.
         if (this.fromApproval) {
           this.settled = true;
-          this.router.navigate(['/finance/billing/approval']);
+          this.router.navigate(this.paths.approvalQueue());
         }
       },
     });
@@ -232,12 +234,18 @@ export class InvoiceNewComponent implements OnInit {
 
   // ── En-tête ─────────────────────────────────────────────────────────────
 
+  /** Same component for `invoicing/new` and `invoicing/:id/edit`. */
+  readonly pageTitleKey = this.routeInvoiceId !== null ? 'INVOICING.NEW.EDIT_TITLE' : 'INVOICING.NEW.TITLE';
+
+  /** The first crumb mirrors where cancel() goes. In edit mode the URL is one segment
+   * deeper (`:id/edit`), so `..` alone would land on the detail page, not the list. */
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
-    return [
-      { label: this.translate.instant('INVOICING.NEW.BREADCRUMB_LIST'), link: ['..'] },
-      { label: this.translate.instant('INVOICING.NEW.TITLE') },
-    ];
+    const root: BreadcrumbItem = this.fromApproval
+      ? { label: this.translate.instant('AFFAIRES.billing.approval.title'), link: this.paths.approvalQueue() }
+      : { label: this.translate.instant('INVOICING.NEW.BREADCRUMB_LIST'),
+          link: this.routeInvoiceId !== null ? ['../..'] : ['..'] };
+    return [root, { label: this.translate.instant(this.pageTitleKey) }];
   });
 
   /** Le sous-titre porte l'affaire dès qu'elle est choisie — c'est le fil du dossier. */
@@ -349,7 +357,8 @@ export class InvoiceNewComponent implements OnInit {
     const aff = this.stepAffaireRef()?.selectedAffaire();
     this.summaryAffaire.set(aff?.intitule ?? '—');
     this.summaryClient.set(aff?.clientName ?? '—');
-    this.summaryType.set(enumLabel(this.translate, 'INVOICE_TYPE', v.invoiceType));
+    this.summaryType.set(invoiceTypeLabel(
+      this.stepAffaireRef()?.invoiceTypeValues() ?? [], v.invoiceType, this.translate));
     this.affaireValue.set(v);
     this.step.set(2);
   }
@@ -380,17 +389,17 @@ export class InvoiceNewComponent implements OnInit {
    */
   cancel(): void {
     if (!this.revertPending) {
-      this.router.navigate([this.fromApproval ? '/finance/billing/approval' : '/finance/invoicing']);
+      this.router.navigate(this.fromApproval ? this.paths.approvalQueue() : this.paths.invoices());
       return;
     }
     if (this.cancelling()) return;
     this.cancelling.set(true);
     const id = this.routeInvoiceId!;
     this.revert$().subscribe({
-      next:  () => this.router.navigate(['/finance/billing/approval']),
+      next:  () => this.router.navigate(this.paths.approvalQueue()),
       // Revert refused (e.g. the invoice already left DRAFT) — show the invoice as it
       // really is rather than pretending the cancel happened.
-      error: () => { this.cancelling.set(false); this.router.navigate(['/finance/invoicing', id]); },
+      error: () => { this.cancelling.set(false); this.router.navigate(this.paths.invoice(id)); },
     });
   }
 }

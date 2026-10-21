@@ -81,7 +81,7 @@
             <div class="missing-box">
               <div class="missing-head">
                 <p class="missing-title">{{ 'COST.IMPORT.MISSING_SUPPLIERS_TITLE' | translate:{ count: r.missingSuppliers.length } }}</p>
-                <button class="btn-template" (click)="exportMissingSuppliers()">⬇ {{ 'COST.IMPORT.MISSING_SUPPLIERS_EXPORT' | translate }}</button>
+                <button class="btn-template" [disabled]="exportingMissing()" (click)="exportMissingSuppliers()">⬇ {{ 'COST.IMPORT.MISSING_SUPPLIERS_EXPORT' | translate }}</button>
               </div>
               <p class="missing-help">{{ 'COST.IMPORT.MISSING_SUPPLIERS_HELP' | translate }}</p>
               <div class="missing-table-wrap">

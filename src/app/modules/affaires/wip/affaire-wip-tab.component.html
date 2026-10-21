@@ -215,21 +215,18 @@
       <daf-data-table #tauxHistoryTable [columns]="tauxHistoryColumns()" [rows]="filteredTauxHistoryRows()" [config]="tauxHistoryConfig()">
         <ng-template dafCell="mtClient" let-row>
           @if ($any(row['_line'])?.statut === 'EN_ATTENTE_CLIENT') {
-            <div class="inline-flex items-center w-28 border border-outline-variant rounded px-1 py-0.5">
-              <!-- (change), not (input): this is a plain DOM-controlled [value]/(event) pair, and
-                   writing back through `valueAsNumber` on every keystroke breaks natural decimal
-                   typing — an in-progress value like "1250." has no valid valueAsNumber (NaN per
-                   the HTML spec), and re-assigning a NaN to a number input's `.value` sanitizes
-                   it to "", so the field would blank itself the instant a decimal point is typed.
-                   (change) only reads/commits the final value on blur — which a click on the
-                   validate icon below already triggers first (a mousedown/click on another
-                   element blurs the current input before that element's own click handler
-                   runs), so nothing is lost by not tracking every keystroke live. -->
-              <input type="number" class="w-full min-w-0 text-right border-0 p-0 bg-transparent focus:outline-none"
-                min="0" [max]="$any(row['_line']).montantHt" step="0.001"
-                [title]="'AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate"
+            <!-- daf-form-field de la lib, même champ que le « MT Client » de l'onglet TS WIP
+                 (affaire-ts-wip-tab) : compact (classe mt-client-field, voir les styles du
+                 .ts), aligné à droite comme un montant de colonne, sans devise ; le montant
+                 calculé en placeholder (champ vide = on l'accepte, voir confirmAvClientAmount) ;
+                 message d'erreur de la lib si le montant saisi dépasse les bornes. -->
+            <div class="mt-client-field w-32">
+              <daf-form-field
                 [value]="getAvClientAmountInput($any(row['_line']).id)"
-                (change)="setAvClientAmountInput($any(row['_line']).id, $any($event.target).value === '' ? null : $any($event.target).valueAsNumber)" />
+                (valueChange)="setAvClientAmountInput($any(row['_line']).id, parseNumberInput($event))"
+                [options]="{ type: 'number', align: 'end', fullWidth: true,
+                             placeholder: $any(row['_line']).montantHt + '',
+                             error: isAvClientAmountValid($any(row['_line'])) ? '' : ('AFFAIRES.WIP.CLIENT_AMOUNT_HINT' | translate) }" />
             </div>
           } @else if ($any(row['_line'])?.clientApprovedAmount != null) {
             {{ $any(row['_line']).clientApprovedAmount | displayCurrency : affaire.devise }}
@@ -412,7 +409,7 @@
                      le texte n'apparaît qu'au survol (comme le bouton (i) juste au-dessus).
                      `title` documente déjà le nom de l'action à l'écran lecteur (voir
                      ButtonOptions), donc aucun `ariaLabel` distinct requis. -->
-                <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate), loading: exporting() === 'tm',
                                           disabled: !tmPreview()!.hours.length }"
                   (onClick)="exportWipExcel()" />
                 <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'visibility', title: ('AFFAIRES.WIP.DETAILS' | translate) }"
@@ -461,7 +458,7 @@
             [class.opacity-100]="historyCardHovered()"
             [class.pointer-events-none]="!historyCardHovered()">
             <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
-                                      title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                      title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate), loading: exporting() === 'history',
                                       disabled: !tmHistory().length }"
               (onClick)="exportHistoryExcel(tmHistory())" />
             <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full',
@@ -626,7 +623,7 @@
               <!-- Même bibliothèque (daf-button + xlsx) que la carte — exporte ici la
                    sélection filtrée plutôt que tout l'historique. -->
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
-                                        label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                        label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate), loading: exporting() === 'history',
                                         disabled: !filteredHistoryLines().length }"
                 (onClick)="exportHistoryExcel(filteredHistoryLines())" />
             </div>
@@ -708,11 +705,11 @@
                      et redessinées juste à côté, empilées ; stepUp/stepDown ne déclenchent
                      pas d'événement natif, donc on répercute la valeur nous-mêmes. -->
                 <div class="flex flex-col leading-none">
-                  <button type="button" class="pct-stepper-btn" aria-label="Augmenter" [disabled]="isLivrableRowLocked(row['id'])"
+                  <button type="button" class="pct-stepper-btn" [attr.aria-label]="'AFFAIRES.WIP.PCT_INCREASE' | translate" [disabled]="isLivrableRowLocked(row['id'])"
                     (click)="pctInput.stepUp(); setEnteredPct(row['id'], pctInput.valueAsNumber)">
                     <span class="material-symbols-outlined">expand_less</span>
                   </button>
-                  <button type="button" class="pct-stepper-btn" aria-label="Diminuer" [disabled]="isLivrableRowLocked(row['id'])"
+                  <button type="button" class="pct-stepper-btn" [attr.aria-label]="'AFFAIRES.WIP.PCT_DECREASE' | translate" [disabled]="isLivrableRowLocked(row['id'])"
                     (click)="pctInput.stepDown(); setEnteredPct(row['id'], pctInput.valueAsNumber)">
                     <span class="material-symbols-outlined">expand_more</span>
                   </button>
@@ -781,7 +778,7 @@
         <div class="flex flex-col gap-4">
           <h3 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-on-surface-variant">
             <span class="material-symbols-outlined text-[18px]">pending_actions</span>
-            WIP en attente
+            {{ 'AFFAIRES.WIP.PENDING_WIP_TITLE' | translate }}
           </h3>
 
           @for (b of activeBatches(); track b.batchId) {
@@ -882,7 +879,7 @@
             [class.opacity-0]="!livrableHistoryCardHovered()"
             [class.opacity-100]="livrableHistoryCardHovered()"
             [class.pointer-events-none]="!livrableHistoryCardHovered()">
-            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate), loading: exporting() === 'livrables',
                                       disabled: !livrableHistory().length }"
               (onClick)="exportLivrableHistoryExcel(livrableHistory())" />
             <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full', title: ('AFFAIRES.WIP.HISTORY_SHOW_ALL' | translate) }"
@@ -940,7 +937,7 @@
                 (filterReset)="onHistoryStatutReset()"
                 [table]="livrableHistoryPopupTable" />
               <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
-                                        label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
+                                        label: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate), loading: exporting() === 'livrables',
                                         disabled: !filteredLivrableHistory().length }"
                 (onClick)="exportLivrableHistoryExcel(filteredLivrableHistory())" />
             </div>

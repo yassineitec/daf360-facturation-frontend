@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import {
   EntityCardAction, EntityCardComponent, EntityCardOptions, SkeletonComponent,
 } from '@khalilrebhiitec/daf360';
 import { INVOICE_STATUT_CONFIG, InvoiceListItem } from '../invoice.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
-import { enumLabel } from '../../../shared/enum-labels';
+import { InvoiceTypeLabels } from '../../../core/invoice-type-labels.service';
 import {
   STATUT_ENTITY_STATUS, canApprove, canEmit, canMarkSent, canRecordPayment,
   formatDate, isOverdue, overdueDays,
@@ -62,6 +62,12 @@ import {
 export class InvoicesCardsSectionComponent {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly typeLabels = inject(InvoiceTypeLabels);
+
+  constructor() {
+    // Une page peut mêler des factures de plusieurs pays : une liste INVOICE_TYPE par pays.
+    effect(() => this.typeLabels.ensure(this.invoices().map(i => i.paysId)));
+  }
 
   invoices     = input.required<InvoiceListItem[]>();
   loading      = input(false);
@@ -110,7 +116,7 @@ export class InvoicesCardsSectionComponent {
               // Swaps the type metric out for the delay, so an overdue card says so
               // twice — red tile and a labelled figure.
               ? { label: t('INVOICING.LIST.CARD.OVERDUE'), value: this.translate.instant('INVOICING.LIST.TABLE.OVERDUE_DAYS', { days: overdueDays(inv) }) }
-              : { label: t('INVOICING.LIST.CARD.TYPE'),    value: enumLabel(this.translate, 'INVOICE_TYPE', inv.invoiceType) },
+              : { label: t('INVOICING.LIST.CARD.TYPE'),    value: this.typeLabels.label(inv.invoiceType, inv.paysId) },
           ],
           actions: this.actionsFor(inv, t),
           viewLabel: t('INVOICING.LIST.ACTIONS.VIEW'),

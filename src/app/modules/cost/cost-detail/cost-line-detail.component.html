@@ -111,15 +111,38 @@
                 <!-- Modes 'supplier'/'unassigned' : les factures, tout statut confondu --
                      la section partagée de la page liste. Clic sur une ligne : la fiche
                      de la facture. -->
+                <!-- Paginée côté serveur, triée côté serveur : même contrat que la page
+                     liste. Pas de colonne Fournisseur (identique sur toute la fiche) ;
+                     colonne Description = libellés des lignes. -->
                 <app-cost-lines-table-section
                   [invoices]="supplierInvoices()"
-                  [loading]="false"
-                  [pageSize]="200"
+                  [loading]="invoicesLoading()"
+                  [pageSize]="invoicesSize()"
                   [emptyMessage]="supplierInvoicesEmptyMessage()"
+                  [serverSort]="true"
+                  [sort]="invoicesSort()"
+                  [showSupplier]="false"
+                  [showDescription]="true"
+                  (sortChange)="onInvoicesSortChange($event)"
                   (view)="openInvoiceDto($event)"
                   (edit)="goToInvoiceEdit($event)"
                   (submitInvoice)="submitInvoiceFromList($event)"
                   (createReglement)="openReglementForInvoice($event)" />
+
+                @if (invoicesTotal() > 0) {
+                  <daf-pagination
+                    [currentPage]="invoicesPage()"
+                    [totalPages]="invoicesTotalPages()"
+                    [totalElements]="invoicesTotal()"
+                    [pageSize]="invoicesSize()"
+                    [pageSizeOptions]="[10, 25, 50, 100]"
+                    [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+                    [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+                    [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+                    [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+                    (pageChange)="goToInvoicesPage($event)"
+                    (pageSizeChange)="onInvoicesPageSize($event)" />
+                }
               }
             }
 
@@ -463,7 +486,7 @@
             <daf-button
               [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
                            title: 'COST.DETAIL.LEDGER.EXPORT_EXCEL' | translate,
-                           disabled: !filteredLedgerRows().length }"
+                           disabled: !filteredLedgerRows().length, loading: exportingLedger() }"
               (onClick)="exportLedgerExcel()" />
             <daf-button
               [options]="{ variant: 'ghost', size: 'sm',

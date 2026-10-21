@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed, ViewChild, TemplateRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FinancePaths } from '../../../core/finance-paths';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
@@ -42,6 +43,7 @@ interface HistoryRow {
 export class ApprovalDetailComponent implements OnInit {
   private readonly route      = inject(ActivatedRoute);
   private readonly router     = inject(Router);
+  private readonly paths      = inject(FinancePaths);
   private readonly svc        = inject(BillingService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly translate  = inject(TranslateService);
@@ -100,8 +102,8 @@ export class ApprovalDetailComponent implements OnInit {
     const a = this.affaire();
     if (!a) return [];
     return [
-      { label: this.translate.instant('AFFAIRES.billing.approval.title'), link: '/finance/billing/approval' },
-      { label: a.reference, link: ['/fact/affaires', a.id] },
+      { label: this.translate.instant('AFFAIRES.billing.approval.title'), link: this.paths.approvalQueue() },
+      { label: a.reference, link: this.paths.affaire(a.id) },
       { label: this.detailTypeLabel() },
     ];
   });
@@ -255,10 +257,6 @@ export class ApprovalDetailComponent implements OnInit {
     if (this.type() === 'line')  this.svc.getBillingLinesDetailed(affaireId).subscribe({ next: h => this.siblingLines.set(h) });
   }
 
-  back(): void {
-    this.router.navigate(['..'], { relativeTo: this.route });
-  }
-
   fmtDate(d: string | null | undefined): string {
     if (!d) return '—';
     // Date-only strings (e.g. "2026-08-01", as sent for periodDateFrom/periodDateTo) are
@@ -333,7 +331,7 @@ export class ApprovalDetailComponent implements OnInit {
         if (line.invoiceId) {
           // fromApproval: the stepper's "Annuler" then reverts this validation instead of
           // leaving the draft invoice behind (InvoiceNewComponent.cancel()).
-          this.router.navigate(['/finance/invoicing', line.invoiceId, 'edit'],
+          this.router.navigate(this.paths.invoiceEdit(line.invoiceId),
             { queryParams: { fromApproval: 1 } });
         } else {
           this.actioning.set(false);
@@ -356,7 +354,7 @@ export class ApprovalDetailComponent implements OnInit {
     this.svc.validateLivrableBatch(this.id()).subscribe({
       next: batch => {
         if (batch.invoiceId) {
-          this.router.navigate(['/finance/invoicing', batch.invoiceId, 'edit'],
+          this.router.navigate(this.paths.invoiceEdit(batch.invoiceId),
             { queryParams: { fromApproval: 1 } });
         } else {
           this.actioning.set(false);

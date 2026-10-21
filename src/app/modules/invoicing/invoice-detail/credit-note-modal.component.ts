@@ -1,6 +1,6 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { InvoiceService } from '../invoice.service';
 import { InvoiceDetail, CREDIT_NOTE_REASONS } from '../invoice.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
@@ -75,6 +75,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 export class CreditNoteModalComponent {
   private readonly fb  = inject(FormBuilder);
   private readonly svc = inject(InvoiceService);
+  private readonly translate = inject(TranslateService);
 
   invoice = input.required<InvoiceDetail>();
   closed  = output<boolean>();
@@ -105,9 +106,7 @@ export class CreditNoteModalComponent {
     // here would issue a full-amount avoir without telling anyone — so until that's
     // implemented, a partial amount is refused client-side instead of ignored server-side.
     if (v.montantTtc != null && Math.abs(v.montantTtc - this.invoice().montantTtc) > 0.01) {
-      this.serverError.set(
-        'Les avoirs partiels ne sont pas encore pris en charge : laissez ce champ vide, ' +
-        'ou saisissez le montant total de la facture.');
+      this.serverError.set(this.translate.instant('INVOICING.CREDIT_NOTE_MODAL.PARTIAL_NOT_SUPPORTED'));
       return;
     }
 
@@ -118,7 +117,7 @@ export class CreditNoteModalComponent {
       montantTtc: v.montantTtc ?? null,
     }).subscribe({
       next:  () => { this.saving.set(false); this.closed.emit(true); },
-      error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur lors de l\'émission de l\'avoir.'); },
+      error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? this.translate.instant('INVOICING.CREDIT_NOTE_MODAL.SAVE_ERROR')); },
     });
   }
 

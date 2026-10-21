@@ -107,7 +107,7 @@ import { searchTableRows, tableTools } from '../../../shared/table-tools';
     <div class="editor-split">
       <div class="editor-html">
         <div class="editor-html-toolbar">
-          <span class="field-label">HTML / Handlebars</span>
+          <span class="field-label">{{ 'ADMIN.DOCUMENT_TEMPLATES.FIELD_HTML' | translate }}</span>
           <daf-button [options]="{ variant: 'ghost', size: 'sm', label: ('ADMIN.DOCUMENT_TEMPLATES.INSERT_DEFAULT' | translate) }"
             (onClick)="insertDefaultTemplate()" />
         </div>
@@ -119,9 +119,9 @@ import { searchTableRows, tableTools } from '../../../shared/table-tools';
         <span class="field-label">{{ 'ADMIN.DOCUMENT_TEMPLATES.VARIABLES' | translate }}</span>
         @for (group of variableGroups(); track group.name) {
           <div class="var-group">
-            <div class="var-group-name">{{ group.name }}</div>
+            <div class="var-group-name">{{ ('ADMIN.DOCUMENT_TEMPLATES.VAR_GROUPS.' + group.name) | translate }}</div>
             @for (v of group.vars; track v.key) {
-              <button type="button" class="var-chip" [title]="v.labelFr" (click)="insertSnippet(v)">
+              <button type="button" class="var-chip" [title]="('ADMIN.DOCUMENT_TEMPLATES.VARS.' + v.key) | translate" (click)="insertSnippet(v)">
                 {{ '{{' }}{{ v.key }}{{ '}}' }}
               </button>
             }
@@ -240,13 +240,14 @@ export class DocumentTemplatesAdminComponent implements OnInit {
   }
 
   typeLabel(value: string): string {
-    return this.documentTypes.find(t => t.value === value)?.label ?? value;
+    const t = this.documentTypes.find(d => d.value === value);
+    return t ? this.translate.instant(t.labelKey) : value;
   }
 
   /** Options `daf-select` pour le type de document — avec l'entrée "Tous les types"
    * pour le filtre de liste, sans pour le select requis de la modale. */
   documentTypeSelectOptions(includeAll = true): SelectOption[] {
-    const base = this.documentTypes.map(t => ({ value: t.value, label: t.label }));
+    const base = this.documentTypes.map(t => ({ value: t.value, label: this.translate.instant(t.labelKey) }));
     return includeAll
       ? [{ value: '', label: this.translate.instant('ADMIN.DOCUMENT_TEMPLATES.ALL_TYPES') }, ...base]
       : base;

@@ -1,7 +1,6 @@
 import { Component, OnInit, TemplateRef, inject, signal, computed, effect, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import * as XLSX from 'xlsx';
 import {
   ButtonComponent, CardComponent, DafCellDirective, DataTableComponent, FieldMessageComponent, FilterField,
   FilterResult, FormFieldComponent, MetricCardOptions, ModalRef, ModalService,
@@ -16,7 +15,7 @@ import { EmployeeCostService } from './employee-cost.service';
 import {
   EmployeeCostDto, EmployeeCostDriverField, deriveEmployeeCostFields, latestCostFor, nextPeriodAfter,
 } from './employee-cost.model';
-import { displayName, formatAmount, formatDate, statusKey } from './employee-cost-display';
+import { displayName, formatAmount, formatDate } from './employee-cost-display';
 import { EmployeeCostTableSectionComponent } from './employee-cost-table-section.component';
 import { EmployeeCostCardsSectionComponent } from './employee-cost-cards-section.component';
 import { FactListService } from '../../../core/fact-list.service';
@@ -25,6 +24,7 @@ import { ClientService } from '../../clients/client.service';
 import { CurrencyRateService } from '../../../core/currency-rate.service';
 import { CurrencyDisplayService } from '../../../core/currency-display.service';
 import { EmployeeCostListStateService } from './employee-cost-list-state.service';
+import { ExportService } from '../../../core/export.service';
 
 type ViewMode = 'list' | 'grid';
 
@@ -45,6 +45,9 @@ export class EmployeeCostComponent implements OnInit {
 
   private readonly svc        = inject(EmployeeCostService);
   private readonly translate  = inject(TranslateService);
+  private readonly exportSvc  = inject(ExportService);
+  /** Export Excel en cours — état de chargement du bouton. */
+  readonly exporting = signal(false);
   private readonly modals     = inject(ModalService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly listSvc    = inject(FactListService);
@@ -781,31 +784,15 @@ export class EmployeeCostComponent implements OnInit {
     });
   }
 
-  /** One row per cost record currently visible (search + include-expired filter applied,
-   * pagination ignored — an export is a full extract, not just the current page), same
-   * `xlsx` pattern as affaire-wip-tab.component.ts's exportWipExcel(): plain row objects
-   * keyed by translated column headers, one sheet, no shared wrapper exists in this app
-   * to route through instead. */
+  /** Export généré par le backend (CostExportController) : les coûts visibles (recherche +
+   * filtres appliqués, pagination ignorée — un export est un extrait complet), dans l'ordre
+   * de l'écran. */
   exportExcel(): void {
     const rows = this.filteredRows();
     if (!rows.length) return;
-
-    const t = (k: string) => this.translate.instant(k);
-    const sheetRows = rows.map(r => ({
-      [t('COST.EMPLOYEE_COST.COL_EMPLOYEE')]:          displayName(r),
-      [t('COST.EMPLOYEE_COST.EMPLOYEE_EMAIL')]:        r.employeeEmail,
-      [t('COST.EMPLOYEE_COST.COL_BASIC')]:             r.basicCost,
-      [t('COST.EMPLOYEE_COST.COL_INTERNAL')]:          r.internalSellingCost,
-      [t('COST.EMPLOYEE_COST.COL_EXTERNAL')]:          r.externalSellingCost,
-      [t('COST.EMPLOYEE_COST.CURRENCY')]:              r.currency,
-      [t('COST.EMPLOYEE_COST.DATE_DEBUT')]:             formatDate(r.dateDebut),
-      [t('COST.EMPLOYEE_COST.DATE_FIN')]:               formatDate(r.dateFin),
-      [t('COST.EMPLOYEE_COST.COL_STATUS')]:            r.sourceStatus ? t(statusKey(r.sourceStatus)) : '—',
-    }));
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheetRows), t('COST.EMPLOYEE_COST.EXPORT_SHEET'));
-    XLSX.writeFile(wb, `Couts_Collaborateurs_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    this.exportSvc.download(
+      this.exportSvc.employeeCosts(rows.map(r => r.id)),
+      `Couts_Collaborateurs_${new Date().toISOString().slice(0, 10)}.xlsx`, this.exporting);
   }
 
   private resetNewRecord(): void {

@@ -287,7 +287,6 @@ export class AffaireWizardComponent implements OnInit {
         return missing.length ? this.translate.instant('AFFAIRES.wizard.shell.val.required_fields', { fields: missing.join(' · ') }) : null;
       }
       case 3: {
-        if (this.editMode() && d.billingModeLocked) return null;
         if (!d.billingMode) return this.translate.instant('AFFAIRES.wizard.shell.val.select_mode_prev');
         switch (d.billingMode) {
           case 'FORFAIT':  return this.translate.instant('AFFAIRES.wizard.shell.val.forfait');
@@ -331,7 +330,8 @@ export class AffaireWizardComponent implements OnInit {
         );
 
       case 3: {
-        if (this.editMode() && d.billingModeLocked) return true;
+        // Validated in edit too, now that step 3 is saved there: the old bypass let an
+        // incomplete repartition through, and nothing was persisted anyway.
         if (!d.billingMode) return false;
         switch (d.billingMode) {
           case 'FORFAIT':
@@ -342,7 +342,9 @@ export class AffaireWizardComponent implements OnInit {
           case 'LIVRABLE':
             return d.livrablesSaved === true;
           default:
-            return false;
+            // Legacy mode (old JAL/RMB affaire): nothing to configure, saveStep3 skips it —
+            // don't strand its edit on step 3.
+            return !CONFIGURABLE_MODES.has(d.billingMode);
         }
       }
 
@@ -552,13 +554,10 @@ export class AffaireWizardComponent implements OnInit {
   // ── Step 3 — configure billing ────────────────────────────────────────
 
   private saveStep3(): void {
-    if (this.editMode() && !this.resumeDraft()) {
-      // Pure edit of an active affaire — billing mode is locked, no API call, just advance.
-      this.currentStep.set(4);
-      return;
-    }
-    // New affaire OR resuming a DRAFT → persist the mode-specific billing config
-    // (required by validateAndActivate before activation).
+    // Every case persists, an active affaire included. Activation locks the MODE, not its
+    // configuration: this used to skip the call on an active affaire, so the repartition or
+    // the ressources chosen on the edit page were silently dropped (the backend accepted
+    // DRAFT only — it now accepts any affaire that is not closed or archived).
     const id   = this.draftId()!;
     const d    = this.draft();
     const mode = d.billingMode!;

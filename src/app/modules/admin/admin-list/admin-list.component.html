@@ -31,16 +31,17 @@
 
   @if (!isLoading() && !pageError()) {
 
-    <!-- Main tab nav -->
-    <daf-card [options]="{variant:'glass', padding:'sm', radius:'xl'}">
-      <daf-tabs
-        [tabs]="mainTabs()"
-        [active]="activeTab()"
-        (activeChange)="onTabChange($event)"
-        variant="pill"
-        idPrefix="admin-main"
-        [tabsLabel]="'ADMIN.TABS.NAV_LABEL' | translate" />
-    </daf-card>
+    <!-- Main tab nav — daf-tabs tel que la démo de la bibliothèque le présente :
+         variante `underline` (la valeur par défaut), posée à nu sur le fond de la page,
+         sans daf-card autour. `--daf-tabs-fade` : le dégradé des chevrons (liste qui
+         déborde) doit se fondre dans --color-background, pas dans --color-surface. -->
+    <daf-tabs
+      style="--daf-tabs-fade: var(--color-background)"
+      [tabs]="mainTabs()"
+      [active]="activeTab()"
+      (activeChange)="onTabChange($event)"
+      idPrefix="admin-main"
+      [tabsLabel]="'ADMIN.TABS.NAV_LABEL' | translate" />
 
     <!-- ── LISTES TAB ────────────────────────────────────────────────────── -->
     @if (activeTab() === 'lists') {
@@ -73,18 +74,19 @@
 
           <!-- Type picker — one card per configurable list (devise, fréquence de
                récurrence, type de coût…). Picking one opens its values as its own
-               page below, rather than switching an inline table under a pill row. -->
+               page below, rather than switching an inline table under a pill row.
+               Même carte que l'accueil de /rh/admin : icône pleine teintée par
+               catégorie, titre seul. -->
           <div class="list-type-grid">
             @for (t of filteredListTypes(); track t.code) {
               <daf-card
+                class="list-type-card"
                 [options]="{
                   variant: 'glass', padding: 'lg', radius: 'xl',
                   hoverable: true, clickable: true, fullHeight: true,
-                  icon: listTypeIcon(t.code), iconColor: 'text-tertiary', iconBg: 'bg-tertiary/10',
-                  iconHoverBg: 'bg-tertiary', iconHoverColor: 'text-white',
-                  title: listTypeLabel(t),
-                  description: listTypeDescription(t.code),
-                  action: { label: ('ADMIN.LISTS.MANAGE' | translate), labelColor: 'text-tertiary' }
+                  icon: listTypeIcon(t.code), iconFilled: true,
+                  iconBg: listTypeTone(t.code).iconBg, iconColor: listTypeTone(t.code).iconColor,
+                  title: listTypeLabel(t)
                 }"
                 (cardClick)="selectListType(t.code)" />
             }

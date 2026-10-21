@@ -19,7 +19,7 @@ export class AuthCallbackComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.store.loadCurrentUser();
     if (this.store.isAuthenticated()) {
-      await this.router.navigateByUrl('/fact/affaires');
+      await this.router.navigateByUrl('/finance/affaires');
     } else {
       window.location.href = `${environment.portalUrl}/oauth2/authorization/azure`;
     }

@@ -3,7 +3,7 @@
   <daf-page-header
     [title]="'COST.EMPLOYEE_COST.TITLE' | translate">
     <daf-button pageActions
-      [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !filteredRows().length }"
+      [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !filteredRows().length, loading: exporting() }"
       (onClick)="exportExcel()" />
     <daf-button pageActions
       [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.ADD' | translate), iconStart: 'add' }"

@@ -242,6 +242,19 @@ export interface CreateTsRequest {
   impactBudgetaire?: string | null;
 }
 
+/** Mêmes champs que la création : la référence, le statut et les validations ne bougent pas. */
+export type UpdateTsRequest = CreateTsRequest;
+
+/** Une ligne de `GET /ts/{id}/historique` (fact_audit_log), du plus récent au plus ancien. */
+export interface TsHistoryEntry {
+  id:        number;
+  action:    'CREATE_TS' | 'MODIFIER_TS' | 'VALIDER_TS_TECHNIQUE' | 'VALIDER_TS_COMMERCIALE' | 'ANNULER_TS' | string;
+  timestamp: string;
+  userId:    number | null;
+  userName:  string | null;
+  changes:   { field: string; before: string | null; after: string | null }[];
+}
+
 export interface ValiderTsRequest {
   notes?: string | null;
 }

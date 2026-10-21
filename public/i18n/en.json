@@ -1,5 +1,25 @@
 {
   "COMMON": {
+    "EXPORT_ERROR": "Excel export failed.",
+    "FILTERS": "Filters",
+    "MONTHS_SHORT": {
+      "M1": "JAN",
+      "M2": "FEB",
+      "M3": "MAR",
+      "M4": "APR",
+      "M5": "MAY",
+      "M6": "JUN",
+      "M7": "JUL",
+      "M8": "AUG",
+      "M9": "SEP",
+      "M10": "OCT",
+      "M11": "NOV",
+      "M12": "DEC"
+    },
+    "PAYS_SELECT": {
+      "PLACEHOLDER": "Select...",
+      "NO_RESULT": "No results"
+    },
     "CURRENCY": {
       "TITLE": "Display currency",
       "NAMES": {
@@ -401,6 +421,7 @@
     },
     "NEW": {
       "TITLE": "New invoice",
+      "EDIT_TITLE": "Edit invoice",
       "SUBTITLE": "Build the invoice, step by step.",
       "STEP_OF": "Step {{step}} of {{total}}",
       "BACK": "Back",
@@ -534,6 +555,7 @@
       "TYPE_LABEL": "Invoice type *",
       "TYPE_SELECT": "Select a type…",
       "TYPE_REQUIRED": "Type required.",
+      "NO_INVOICE_TYPE": "No active invoice type for this affaire's country. Add some under Administration › Invoice types.",
       "INVOICE_TYPES": {
         "ACOMPTE": "Advance invoice",
         "INTERMEDIAIRE": "Progress invoice",
@@ -553,6 +575,8 @@
     "STEP_LINES": {
       "TITLE": "Billing lines",
       "AFFAIRE": "Affaire",
+      "CARRY_FORWARD_TS": "Unbilled TS balance #{{id}}",
+      "CARRY_FORWARD_WIP": "Unbilled WIP balance #{{id}}",
       "ADD_LINE": "+ Add a line",
       "DESC": "Description *",
       "QTY": "Qty *",
@@ -694,6 +718,8 @@
     },
     "CREDIT_NOTE_MODAL": {
       "TITLE": "Issue a credit note",
+      "PARTIAL_NOT_SUPPORTED": "Partial credit notes are not supported yet: leave this field empty, or enter the full invoice amount.",
+      "SAVE_ERROR": "Error while issuing the credit note.",
       "REASON_LABEL": "Reason *",
       "REASON_SELECT": "Select a reason…",
       "REASON_REQUIRED": "Reason required.",
@@ -1117,7 +1143,30 @@
         "VALID_TECH_AT": "Technical approval",
         "VALID_TECH_NOTES": "Technical note",
         "VALID_COMM_AT": "Commercial approval",
-        "VALID_COMM_NOTES": "Commercial note"
+        "VALID_COMM_NOTES": "Commercial note",
+        "EDIT": "Edit",
+        "DELETE": "Delete",
+        "DELETE_TITLE": "Delete additional work",
+        "DELETE_HINT": "The item is set to Cancelled: it stays visible with its history but no longer counts in the budget.",
+        "DELETE_MOTIF": "Reason (optional)",
+        "DELETE_CONFIRM": "Delete",
+        "DELETE_ERROR": "Error while deleting the additional work.",
+        "DETAILS": "Details",
+        "ACTIONS_MENU": "Additional work actions",
+        "HISTORY": "History",
+        "HISTORY_EMPTY": "No history for this item.",
+        "HISTORY_ERROR": "Could not load the history.",
+        "HISTORY_BY": "by {{user}}",
+        "HISTORY_FIELD_MOTIF": "Reason",
+        "HISTORY_FIELD_DETAIL": "Detail",
+        "HISTORY_ACTIONS": {
+          "CREATE_TS": "Created",
+          "MODIFIER_TS": "Edited",
+          "VALIDER_TS_TECHNIQUE": "Technical validation",
+          "VALIDER_TS_COMMERCIALE": "Commercial validation",
+          "ANNULER_TS": "Deleted (cancelled)",
+          "TS_INTEGRATED": "Added to budget"
+        }
       },
       "BUDGET_NOT_VALIDATED": "Budget not validated",
       "LAST_UPDATE": "Updated on",
@@ -1423,6 +1472,7 @@
           "load": "Unable to load the project. Try again.",
           "update": "Error while updating.",
           "create": "Error while creating.",
+        "update": "Error while updating.",
           "config": "Configuration error.",
           "activate": "Activation error."
         },
@@ -1607,6 +1657,8 @@
       },
       "cp": {
         "cat_title": "Eligible cost types",
+        "margin_title": "Margin rate",
+        "margin_sub": "Margin applied to actual costs to compute the billed amount.",
         "cat_sub": "Only costs from the checked categories will be included in the monthly billing calculation.",
         "auto": "Auto",
         "loading": "Loading categories..."
@@ -1805,7 +1857,9 @@
         "impact_placeholder": "Impact on the project budget",
         "description": "Description",
         "description_placeholder": "Additional details…",
-        "create": "Create additional work"
+        "create": "Create additional work",
+        "edit_title": "Edit additional work",
+        "save": "Save"
       },
       "actions": {
         "cancel": "Cancel",
@@ -1815,6 +1869,7 @@
         "required": "Required field.",
         "min": "Must be greater than 0.",
         "create": "Error while creating.",
+        "update": "Error while updating.",
         "validation": "Error during validation."
       },
       "list": {
@@ -2246,7 +2301,10 @@
       "TS_COL_MONTANT": "Amount",
       "TS_COL_STATUT": "Status",
       "TS_COL_DATE": "Date",
-      "TS_SELECTOR_TITLE": "Travaux supplémentaires",
+      "TS_SELECTOR_TITLE": "Extra work",
+      "PCT_INCREASE": "Increase",
+      "PCT_DECREASE": "Decrease",
+      "PENDING_WIP_TITLE": "Pending WIP",
       "TS_SELECTOR_EMPTY": "No TS is ready for progress declarations yet.",
       "TS_SELECTOR_ACTION": "Declare progress",
       "TS_BACK_TO_SELECTOR": "Back to the TS list",
@@ -2301,8 +2359,7 @@
       "CARRIED_FORWARD_TOTAL": "Total to approve",
       "PENDING_CLIENT_TITLE": "Awaiting client response",
       "PENDING_CLIENT_EXPLAIN": "A summary email has been sent to the client. Once you receive their reply, enter the amount they actually confirmed here — if it's less than the calculated amount, the difference will automatically carry forward to the next period.",
-      "CLIENT_AMOUNT_LABEL": "Amount confirmed by the client",
-      "CLIENT_AMOUNT_HINT": "Cannot exceed the calculated amount.",
+      "CLIENT_AMOUNT_LABEL": "Amount confirmed by the client",      "CLIENT_AMOUNT_HINT": "Cannot exceed the calculated amount.",
       "CLIENT_AMOUNT_CONFIRM": "Confirm",
       "CLIENT_AMOUNT_ERROR": "Error saving the client-confirmed amount.",
       "VALIDATE_CLIENT_AMOUNT": "Validate client amount",
@@ -2334,6 +2391,7 @@
       "VALIDATE": "Validate",
       "DETAILS": "Details",
       "EXPORT_EXCEL": "Export Excel",
+      "EXPORT_ERROR": "Excel export failed.",
       "EXPORT_SHEET_SUMMARY": "Summary",
       "EXPORT_SHEET_DETAILS": "Details",
       "EXPORT_SHEET_WEEKLY": "Weekly hours",
@@ -2352,7 +2410,7 @@
       "COL_TAUX": "Rate",
       "COL_CUMUL": "Cumulative",
       "COL_INCREMENT": "Incremental amount",
-      "COL_MT_CLIENT": "MT Client",
+      "COL_MT_CLIENT": "Client amt.",
       "COL_FACTURE_PROGRESS": "Invoiced",
       "FACTURE_COMPLETE": "Complete",
       "FACTURE_PARTIAL": "Partial — {{amount}} remaining",
@@ -2448,6 +2506,7 @@
       "UNRESOLVED_HINT": "This email has no matching DAF360 account — it can't be added as a resource until one is created in the user reference data.",
       "TAUX_LOADING": "Calculating rate…",
       "TAUX_COST_HINT": "Actual cost",
+      "LOCKED_HINT": "Rate locked",
       "TAUX_EXTERNAL": "External sell",
       "TAUX_INTERNAL": "Intercompany",
       "TAUX_UNAVAILABLE": "No employee cost found for this collaborator — enter the rate manually.",
@@ -3317,11 +3376,11 @@
         "TYPE_CREDIT": "Credit (still owed)",
         "TYPE_DEBIT": "Debit (overpaid)",
         "TYPE_SETTLED": "Settled",
-        "NEW_REGLEMENT": "New règlement",
-        "EDIT_REGLEMENT": "Edit règlement",
-        "DELETE_REGLEMENT": "Delete règlement",
+        "NEW_REGLEMENT": "New payment",
+        "EDIT_REGLEMENT": "Edit payment",
+        "DELETE_REGLEMENT": "Delete payment",
         "CONFIRM_DELETE": "Delete this payment? The invoice will go back to Approved.",
-        "DELETE_ERROR": "Unable to delete this règlement.",
+        "DELETE_ERROR": "Unable to delete this payment.",
         "NO_SUPPLIER": "No supplier is attached to this invoice — no account statement to show.",
         "EMPTY": "No validated entries for this supplier.",
         "FILTER_PERIOD": "Period",
@@ -4226,6 +4285,7 @@
     "COMMON": {
       "LOADING": "Loading…",
       "CANCEL": "Cancel",
+      "DELETE": "Delete",
       "CREATE": "Create",
       "SAVE": "Save",
       "ADD": "Add",
@@ -4253,6 +4313,31 @@
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Document templates",
+      "FIELD_HTML": "HTML / Handlebars",
+      "DOC_TYPES": {
+        "INVOICE_AV": "Invoice — AV mode (lump sum)"
+      },
+      "VAR_GROUPS": {
+        "INVOICE": "Invoice",
+        "CLIENT": "Client",
+        "LINES": "Lines",
+        "TOTALS": "Totals"
+      },
+      "VARS": {
+        "invoiceNumberDisplay": "Invoice number (or \"DRAFT\")",
+        "editionDate": "Edition or issue date",
+        "isDraft": "Block shown only on drafts (not yet issued)",
+        "clientName": "Client name",
+        "clientAddress": "Client address",
+        "clientTaxId": "Tax ID / RCS-ICE",
+        "clientReferent": "Client contact (main contact)",
+        "lines": "Invoice lines (table)",
+        "vatBreakdown": "VAT breakdown by rate (table)",
+        "totalHtFmt": "Total excl. tax",
+        "totalTvaFmt": "VAT amount",
+        "droitTimbreFmt": "Stamp duty",
+        "netAPayerFmt": "Net amount due"
+      },
       "SUBTITLE": "Customize the PDF layout exported for facturation documents (per document type).",
       "NEW": "New template",
       "ALL_TYPES": "All types",

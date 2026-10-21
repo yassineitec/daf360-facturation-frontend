@@ -3,12 +3,12 @@ import {
   output, signal, untracked, viewChild,
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import * as XLSX from 'xlsx';
 import {
   DataTableComponent, TableColumn, TableConfig, TableRow,
   SearchToolbarComponent, ButtonComponent, PaginationComponent, FilterField, FilterOption, FilterResult,
 } from '@khalilrebhiitec/daf360';
-import { DepenseLigne } from './depense.model';
+import { DepenseExportCriteria, DepenseLigne } from './depense.model';
+import { ExportService } from '../../../core/export.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 
@@ -39,6 +39,9 @@ import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from
 export class DepenseSummaryTableComponent implements OnDestroy {
   private readonly translate = inject(TranslateService);
   private readonly currency = inject(DisplayCurrencyPipe);
+  private readonly exportSvc = inject(ExportService);
+  /** Export Excel en cours — état de chargement du bouton. */
+  protected readonly exporting = signal(false);
 
   lignes = input.required<DepenseLigne[]>();
   devise = input.required<string>();
@@ -46,6 +49,10 @@ export class DepenseSummaryTableComponent implements OnDestroy {
    * "Chargement…" line instead of the EMPTY message, which must only appear once we know
    * the affaire really has no hours. */
   loading = input(false);
+  /** Pour l'export Excel généré côté serveur — voir exportExcel(). */
+  affaireId = input<number | null>(null);
+  affaireRef = input<string | null>(null);
+  exportCriteria = input<DepenseExportCriteria>({ dateFrom: null, dateTo: null, pays: [] });
   /** Full-range Mois/Année options, computed by the parent tab from the UNFILTERED preview
    * (this component only ever sees `lignes` already narrowed by whatever Période/Mois/Année
    * is active) — so switching, say, Année never offers only the year currently applied. */
@@ -268,24 +275,23 @@ export class DepenseSummaryTableComponent implements OnDestroy {
     ...delegatedSort(untracked(this.sort)),
   }));
 
-  /** Same xlsx/schema convention as `exportWipExcel()`/`exportHistoryExcel()` (WIP tab) —
-   * one workbook, one sheet, translated headers, raw numbers (not `fmtAmt()`) since an
-   * export feeds a spreadsheet recalculation, not the screen. Respects the active
-   * search/discipline filter (`aggregates()`), not every raw line. */
+  /** Export généré par le backend (AffaireExportController) : les collaborateurs affichés
+   * (recherche, bornes de coût et tri appliqués), dans l'ordre de l'écran, plus les filtres
+   * de lignes dont dépendent leurs totaux — période/pays du parent, disciplines d'ici. */
   protected exportExcel(): void {
-    const aggregates = this.aggregates();
-    if (!aggregates.length) return;
-    const t = (k: string) => this.translate.instant(k);
-    const rows = aggregates.map(a => ({
-      [t('AFFAIRES.WIP.COL_COLLABORATOR')]: a.userFullName,
-      [t('AFFAIRES.DEPENSE.EMAIL')]:         a.email,
-      [t('AFFAIRES.DEPENSE.COL_PERIOD')]:    a.periodLabel,
-      [t('AFFAIRES.WIP.COL_HOURS')]:         Number(a.totalHours.toFixed(2)),
-      [t('AFFAIRES.WIP.COL_COST')]:          Number(a.totalCost.toFixed(3)),
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('AFFAIRES.DEPENSE.ZOOM_TITLE'));
-    XLSX.writeFile(wb, 'Depenses.xlsx');
+    const rows = this.rows();
+    const affaireId = this.affaireId();
+    if (!rows.length || affaireId == null) return;
+    const criteria = this.exportCriteria();
+    this.exportSvc.download(
+      this.exportSvc.affaireDepense(affaireId, {
+        emails: rows.map(r => r['email'] as string),
+        dateFrom: criteria.dateFrom,
+        dateTo: criteria.dateTo,
+        pays: criteria.pays,
+        disciplines: this.disciplineFilter(),
+      }),
+      `Depenses_${this.affaireRef() ?? affaireId}.xlsx`, this.exporting);
   }
 
   /** Lenient amount parsing for the Coût min/max text fields: accepts `1000`, `1 000`,
