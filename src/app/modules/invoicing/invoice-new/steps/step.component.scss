@@ -423,7 +423,14 @@ $outline-var: #bdc9c4;        // outline-variant
   td { border-bottom: 1px solid rgba($outline-var, 0.1); color: #0b1c30; }
   tbody tr:last-child td { border-bottom: none; }
   .col-desc  { min-width: 200px; white-space: normal; }
-  .col-num   { text-align: right; width: 90px; }
+  // min-width, not width: a fixed 90px only looked fine for columns whose own header text
+  // ("% AVANCEMENT À DATE *") happened to be long enough to force the column wider -- shorter
+  // headers ("% À FACTURER", "MONTANT HT") stayed pinned at 90px, too tight once padding and
+  // the daf-form-field's own internal padding/suffix badge ('%') are subtracted, clipping
+  // real values (e.g. "10" rendering as "1"). 120px comfortably fits a 7-figure amount or a
+  // percentage with its suffix; the table wrapper's own overflow-x:auto (see above) handles
+  // any rarer, even wider value by scrolling instead of clipping.
+  .col-num   { text-align: right; min-width: 120px; }
   .col-action { width: 36px; }
 }
 
