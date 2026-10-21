@@ -3,7 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  PlReportDetailDto, PlReportDto, ReopenReportRequest, RequestAmendmentRequest,
+  MissingCashRowDto, PlReportDetailDto, PlReportDto, ReceivableLineDto,
+  ReopenReportRequest, RequestAmendmentRequest,
 } from './pl-reporting.model';
 
 /**
@@ -69,5 +70,19 @@ export class PlReportService {
 
   exportPdf(id: number): Observable<Blob> {
     return this.http.get(`${this.base}/pl-reports/${id}/export.pdf`, { responseType: 'blob' });
+  }
+
+  // ── Cash position (Receivables / Missing Cash) -- `FACT_VIEW_PL_REPORT`. ──────────────────
+
+  getReceivables(paysId: number): Observable<ReceivableLineDto[]> {
+    const params = new HttpParams().set('paysId', String(paysId));
+    return this.http.get<ReceivableLineDto[]>(`${this.base}/pl-reports/receivables`,
+      { params, withCredentials: true });
+  }
+
+  getMissingCash(paysId: number): Observable<MissingCashRowDto[]> {
+    const params = new HttpParams().set('paysId', String(paysId));
+    return this.http.get<MissingCashRowDto[]>(`${this.base}/pl-reports/missing-cash`,
+      { params, withCredentials: true });
   }
 }

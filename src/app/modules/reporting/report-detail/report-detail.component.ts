@@ -6,7 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  BadgeCell, BadgeOptions, ButtonComponent, DataTableComponent,
+  BadgeCell, BadgeOptions, ButtonComponent, DafCellDirective, DataTableComponent,
   FormFieldComponent, FormFieldOptions, ModalService, PageComponent, PageHeaderComponent,
   RadioGroupComponent, RadioOption, SectionCardComponent, StatusBadgeComponent, TableColumn,
   TableConfig, TableRow,
@@ -19,8 +19,9 @@ import { PlReportService } from '../pl-report.service';
 import { PlPeriodService } from '../pl-period.service';
 import { VarianceCommentaryService } from '../variance-commentary.service';
 import {
-  PlPeriodDto, PlReportDto, PlReportLineDto, PlReportStatus, ReopenMethod,
-  VarianceCommentaryDto, VarianceCommentaryStatus, VarianceSectionType,
+  MissingCashRowDto, PlPeriodDto, PlReportDto, PlReportLineDto, PlReportStatus,
+  ReceivableLineDto, ReopenMethod, VarianceCommentaryDto, VarianceCommentaryStatus,
+  VarianceSectionType,
 } from '../pl-reporting.model';
 
 /** `daf-badge` variant per `PlReport.status` — same mapping as `reporting-list.component.ts`
@@ -43,6 +44,22 @@ const COMMENTARY_STATUS_VARIANT: Record<VarianceCommentaryStatus, NonNullable<Ba
 
 /** Fixed display order for the 4 cross-cutting narrative sections. */
 const SECTION_ORDER: VarianceSectionType[] = ['REVENUE', 'COST', 'EBITDA', 'OTHER_NOTABLE'];
+
+/**
+ * `daf-badge` variant per `ReceivableLineDto.ageingCategory` -- green-to-red severity, same
+ * variant vocabulary this file already uses (`success`/`info`/`warning`) plus `danger` for the
+ * two most-overdue buckets (a valid `BadgeVariant` not yet used elsewhere in *this* file, but the
+ * house-standard choice for ageing severity -- see `payments-display.ts`'s `retardVariant`, which
+ * already escalates days-late to `warning`/`danger` the same way). The i18n key suffix lets the
+ * raw backend string (not translatable as-is, e.g. `"<30 Days"`) resolve to a proper FR/EN label. */
+const AGEING_BADGE: Record<string, { key: string; variant: NonNullable<BadgeOptions['variant']> }> = {
+  'Not Overdue':  { key: 'NOT_OVERDUE', variant: 'success' },
+  '<30 Days':     { key: 'LT_30',       variant: 'info' },
+  '31-60 Days':   { key: 'B31_60',      variant: 'warning' },
+  '61-180 Days':  { key: 'B61_180',     variant: 'warning' },
+  '181-365 Days': { key: 'B181_365',    variant: 'danger' },
+  '> 365 Days':   { key: 'GT_365',      variant: 'danger' },
+};
 
 interface LineCommentaryVm {
   line: PlReportLineDto;
@@ -72,7 +89,7 @@ interface LineCommentaryVm {
   imports: [
     TranslatePipe,
     PageComponent, PageHeaderComponent, SectionCardComponent, ButtonComponent, FormFieldComponent,
-    DataTableComponent, StatusBadgeComponent, RadioGroupComponent,
+    DataTableComponent, DafCellDirective, StatusBadgeComponent, RadioGroupComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './report-detail.component.html',
@@ -106,6 +123,16 @@ export class ReportDetailComponent implements OnInit {
   actionSaving = signal(false);
   exportingXlsx = signal(false);
   exportingPdf  = signal(false);
+  isExportingWorkbook = signal(false);
+
+  // ── Cash position (Receivables / Missing Cash) -- lazy-loaded on first toggle ─────────────
+  showReceivables      = signal(false);
+  isLoadingReceivables = signal(false);
+  receivables          = signal<ReceivableLineDto[]>([]);
+
+  showMissingCash      = signal(false);
+  isLoadingMissingCash = signal(false);
+  missingCash          = signal<MissingCashRowDto[]>([]);
 
   readonly canManageCommentary = computed(() => this.userStore.hasPermission('FACT_MANAGE_PL_REPORT'));
 
@@ -251,6 +278,18 @@ export class ReportDetailComponent implements OnInit {
   readonly ebitdaPctDisplay     = computed(() => {
     const pct = this.period()?.ebitdaPct;
     return pct == null ? '—' : `${pct.toFixed(1)}%`;
+  });
+
+  /** 4 KPI cards -- built only from fields confirmed real on `PlPeriodDto` today, reusing the
+   *  4 display computeds just above verbatim (same currency/format logic, zero duplication). */
+  readonly kpiCards = computed(() => {
+    this.translate.currentLang();
+    return [
+      { label: this.translate.instant('REPORTING.WATERFALL.GROSS_REVENUE_2'), value: this.grossRevenue2Display() },
+      { label: this.translate.instant('REPORTING.WATERFALL.NET_REVENUE'),     value: this.netRevenueDisplay() },
+      { label: this.translate.instant('REPORTING.TABLE.EBITDA'),              value: this.ebitdaDisplay() },
+      { label: this.translate.instant('REPORTING.WATERFALL.EBITDA_PCT'),      value: this.ebitdaPctDisplay() },
+    ];
   });
 
   // ── Variance commentary (per-line) ──────────────────────────────────────
@@ -543,4 +582,162 @@ export class ReportDetailComponent implements OnInit {
       },
     });
   }
+
+  /** Full 7-tab workbook export -- keyed by `PlPeriod.id` (via the joined `period()`), NOT
+   *  `report.id` like `exportXlsx()`/`exportPdf()` above: distinct id space, distinct backend
+   *  endpoint (`PlPeriodService.exportWorkbook`), distinct button -- see class doc. Reuses the
+   *  same `downloadBlob()`/`readBlobError()` helpers as the two methods above. */
+  downloadWorkbook(): void {
+    const period = this.period();
+    if (!period) return;
+    this.isExportingWorkbook.set(true);
+    this.actionError.set(null);
+    this.periodSvc.exportWorkbook(period.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: blob => {
+        this.isExportingWorkbook.set(false);
+        this.downloadBlob(blob, `P_L_Workbook_${period.periodYear}_${period.periodMonth}.xlsx`);
+      },
+      error: (err: unknown) => {
+        this.isExportingWorkbook.set(false);
+        this.readBlobError(err).then(msg => this.actionError.set(msg));
+      },
+    });
+  }
+
+  // ── Cash position (Receivables / Missing Cash) -- lazy-loaded tables, `FACT_VIEW_PL_REPORT` ──
+
+  private formatDate(iso: string | null): string {
+    if (!iso) return '—';
+    const locale = this.translate.currentLang() === 'en' ? 'en-GB' : 'fr-FR';
+    return new Date(iso).toLocaleDateString(locale);
+  }
+
+  /** `ageingCategory` is a fixed backend vocabulary (see `AGEING_BADGE`), not itself
+   *  translatable text -- map it to an i18n key the same way `statusBadge()` above maps a status
+   *  enum, falling back to the raw string (shown as-is) for any value not in the map. */
+  private ageingBadge(category: string): BadgeCell {
+    const meta = AGEING_BADGE[category];
+    return {
+      label:   meta ? this.translate.instant(`REPORTING.DETAIL.CASH.AGEING.${meta.key}`) : category,
+      options: { variant: meta?.variant ?? 'neutral', dot: true, size: 'sm' },
+    };
+  }
+
+  toggleReceivables(): void {
+    if (this.showReceivables()) { this.showReceivables.set(false); return; }
+    if (this.receivables().length > 0) { this.showReceivables.set(true); return; }
+    const paysId = this.period()?.paysId;
+    if (!paysId) return;
+    this.isLoadingReceivables.set(true);
+    this.actionError.set(null);
+    this.reportSvc.getReceivables(paysId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: data => {
+        this.receivables.set(data);
+        this.isLoadingReceivables.set(false);
+        this.showReceivables.set(true);
+      },
+      error: () => {
+        this.isLoadingReceivables.set(false);
+        this.actionError.set(this.translate.instant('REPORTING.DETAIL.ACTION_ERROR'));
+      },
+    });
+  }
+
+  readonly receivablesColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { key: 'invoiceNumber',  label: t('REPORTING.DETAIL.CASH.RECEIVABLES.INVOICE'),      type: 'text', sortable: true },
+      { key: 'clientName',     label: t('REPORTING.DETAIL.CASH.RECEIVABLES.CLIENT'),       type: 'text', sortable: true },
+      { key: 'clientType',     label: t('REPORTING.DETAIL.CASH.RECEIVABLES.CLIENT_TYPE'),  type: 'text' },
+      { key: 'amountIncTax',   label: t('REPORTING.DETAIL.CASH.RECEIVABLES.AMOUNT'),       type: 'text', align: 'right', sortable: true },
+      { key: 'dueDate',        label: t('REPORTING.DETAIL.CASH.RECEIVABLES.DUE_DATE'),     type: 'text', sortable: true },
+      { key: 'daysAgeing',     label: t('REPORTING.DETAIL.CASH.RECEIVABLES.DAYS_AGEING'),  type: 'text', align: 'right', sortable: true },
+      { key: 'ageingCategory', label: t('REPORTING.DETAIL.CASH.RECEIVABLES.AGEING'),       type: 'badge',
+        sortAccessor: (row: TableRow) => (row['ageingCategory'] as BadgeCell).label },
+    ];
+  });
+
+  /** Rendered exactly as returned by the backend -- not re-sorted client-side. */
+  readonly receivablesRows = computed<TableRow[]>(() => this.receivables().map((r, i) => ({
+    id:             i,
+    invoiceNumber:  r.invoiceNumber,
+    clientName:     r.clientName,
+    clientType:     r.clientType,
+    amountIncTax:   this.currency.transform(r.amountIncTax, r.currency),
+    dueDate:        this.formatDate(r.dueDate),
+    daysAgeing:     String(r.daysAgeing),
+    ageingCategory: this.ageingBadge(r.ageingCategory),
+  })));
+
+  readonly receivablesConfig = computed<TableConfig>(() => ({
+    showHeader:   true,
+    hoverable:    false,
+    loading:      this.isLoadingReceivables(),
+    skeletonRows: 5,
+    emptyMessage: this.translate.instant('REPORTING.DETAIL.CASH.RECEIVABLES.EMPTY'),
+  }));
+
+  toggleMissingCash(): void {
+    if (this.showMissingCash()) { this.showMissingCash.set(false); return; }
+    if (this.missingCash().length > 0) { this.showMissingCash.set(true); return; }
+    const paysId = this.period()?.paysId;
+    if (!paysId) return;
+    this.isLoadingMissingCash.set(true);
+    this.actionError.set(null);
+    this.reportSvc.getMissingCash(paysId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: data => {
+        this.missingCash.set(data);
+        this.isLoadingMissingCash.set(false);
+        this.showMissingCash.set(true);
+      },
+      error: () => {
+        this.isLoadingMissingCash.set(false);
+        this.actionError.set(this.translate.instant('REPORTING.DETAIL.ACTION_ERROR'));
+      },
+    });
+  }
+
+  readonly missingCashColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    return [
+      { key: 'projectRef',       label: t('REPORTING.DETAIL.CASH.MISSING_CASH.PROJECT'),           type: 'text' },
+      { key: 'arTotal',          label: t('REPORTING.DETAIL.CASH.MISSING_CASH.AR_TOTAL'),           type: 'text', align: 'right' },
+      { key: 'arNotOverdue',     label: t('REPORTING.DETAIL.CASH.MISSING_CASH.AR_NOT_OVERDUE'),     type: 'text', align: 'right' },
+      { key: 'arLt1Month',       label: t('REPORTING.DETAIL.CASH.MISSING_CASH.AR_LT_1M'),           type: 'text', align: 'right' },
+      { key: 'ar1To2Months',     label: t('REPORTING.DETAIL.CASH.MISSING_CASH.AR_1_2M'),            type: 'text', align: 'right' },
+      { key: 'ar2To3Months',     label: t('REPORTING.DETAIL.CASH.MISSING_CASH.AR_2_3M'),            type: 'text', align: 'right' },
+      { key: 'ar3To6Months',     label: t('REPORTING.DETAIL.CASH.MISSING_CASH.AR_3_6M'),            type: 'text', align: 'right' },
+      { key: 'ar6To12Months',    label: t('REPORTING.DETAIL.CASH.MISSING_CASH.AR_6_12M'),           type: 'text', align: 'right' },
+      { key: 'arGt1Year',        label: t('REPORTING.DETAIL.CASH.MISSING_CASH.AR_GT_1Y'),           type: 'text', align: 'right' },
+      { key: 'wipTotal',         label: t('REPORTING.DETAIL.CASH.MISSING_CASH.WIP_TOTAL'),          type: 'text', align: 'right' },
+      { key: 'missingCashTotal', label: t('REPORTING.DETAIL.CASH.MISSING_CASH.MISSING_CASH_TOTAL'), type: 'custom', align: 'right' },
+    ];
+  });
+
+  /** Rendered exactly as returned by the backend -- already sorted descending by
+   *  `missingCashTotal` server-side (`CashPositionService`); never re-sorted client-side. */
+  readonly missingCashRows = computed<TableRow[]>(() => this.missingCash().map((m, i) => ({
+    id:                i,
+    projectRef:        m.projectRef,
+    arTotal:           this.currency.transform(m.arTotal, 'TND'),
+    arNotOverdue:      this.currency.transform(m.arNotOverdue, 'TND'),
+    arLt1Month:        this.currency.transform(m.arLt1Month, 'TND'),
+    ar1To2Months:      this.currency.transform(m.ar1To2Months, 'TND'),
+    ar2To3Months:      this.currency.transform(m.ar2To3Months, 'TND'),
+    ar3To6Months:      this.currency.transform(m.ar3To6Months, 'TND'),
+    ar6To12Months:     this.currency.transform(m.ar6To12Months, 'TND'),
+    arGt1Year:         this.currency.transform(m.arGt1Year, 'TND'),
+    wipTotal:          this.currency.transform(m.wipTotal, 'TND'),
+    missingCashTotal:  this.currency.transform(m.missingCashTotal, 'TND'),
+  })));
+
+  readonly missingCashConfig = computed<TableConfig>(() => ({
+    showHeader:   true,
+    hoverable:    false,
+    loading:      this.isLoadingMissingCash(),
+    skeletonRows: 5,
+    emptyMessage: this.translate.instant('REPORTING.DETAIL.CASH.MISSING_CASH.EMPTY'),
+  }));
 }

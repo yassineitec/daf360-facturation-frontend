@@ -134,6 +134,14 @@
         [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_WIP_PRIOR' | translate) }"
         [value]="closeWipPreviousYears()"
         (valueChange)="closeWipPreviousYears.set($event === null || $event === '' ? null : +$event)" />
+      <daf-form-field
+        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_SALARY_RECHARGES' | translate) }"
+        [value]="closeSalaryRecharges()"
+        (valueChange)="closeSalaryRecharges.set($event === null || $event === '' ? null : +$event)" />
+      <daf-form-field
+        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_OTHER_COST_RECHARGES' | translate) }"
+        [value]="closeOtherCostRecharges()"
+        (valueChange)="closeOtherCostRecharges.set($event === null || $event === '' ? null : +$event)" />
     </div>
   </ng-template>
 

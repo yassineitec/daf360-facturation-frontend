@@ -372,6 +372,8 @@ export class ReportingListComponent implements OnInit {
   closeIntersedeInbound     = signal<number | null>(null);
   closeIntersedeOutbound    = signal<number | null>(null);
   closeWipPreviousYears     = signal<number | null>(null);
+  closeSalaryRecharges      = signal<number | null>(null);
+  closeOtherCostRecharges   = signal<number | null>(null);
 
   /** Projected button in the 'periodStatus' cell — stops the click from also firing `rowClick`. */
   openClosePeriod(period: PlPeriodDto, event: MouseEvent): void {
@@ -382,6 +384,8 @@ export class ReportingListComponent implements OnInit {
     this.closeIntersedeInbound.set(null);
     this.closeIntersedeOutbound.set(null);
     this.closeWipPreviousYears.set(null);
+    this.closeSalaryRecharges.set(null);
+    this.closeOtherCostRecharges.set(null);
     const t = (k: string) => this.translate.instant(k);
     this.closePeriodRef = this.modal.open({
       title: t('REPORTING.CLOSE_PERIOD_TITLE'),
@@ -412,6 +416,8 @@ export class ReportingListComponent implements OnInit {
       intersedeInbound:     this.closeIntersedeInbound(),
       intersedeOutbound:    this.closeIntersedeOutbound(),
       wipPreviousYears:     this.closeWipPreviousYears(),
+      salaryRecharges:      this.closeSalaryRecharges(),
+      otherCostRecharges:   this.closeOtherCostRecharges(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: closed => {
         this.periods.update(list => list.map(p => (p.id === closed.id ? closed : p)));

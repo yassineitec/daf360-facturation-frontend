@@ -3517,6 +3517,8 @@
     "CLOSE_PERIOD_INTERSEDE_IN": "Intersede (+)",
     "CLOSE_PERIOD_INTERSEDE_OUT": "Intersede (−)",
     "CLOSE_PERIOD_WIP_PRIOR": "En cours, années antérieures",
+    "CLOSE_PERIOD_SALARY_RECHARGES": "Refacturations de salaires (+/-)",
+    "CLOSE_PERIOD_OTHER_COST_RECHARGES": "Refacturations autres coûts (+/-)",
     "WATERFALL": {
       "GROSS_REVENUE_1": "Chiffre d'affaires brut 1",
       "GROSS_REVENUE_2": "Chiffre d'affaires brut 2",
@@ -3568,6 +3570,7 @@
       "TITLE_PREFIX": "Rapport P&L —",
       "CANCEL": "Annuler",
       "CONFIRM": "Confirmer",
+      "KPI_TITLE": "Indicateurs clés",
       "RECAP": {
         "TITLE": "Récapitulatif",
         "LINE": "Ligne du catalogue",
@@ -3602,13 +3605,55 @@
         "EXPORT_XLSX": "Exporter en Excel",
         "EXPORT_PDF": "Exporter en PDF",
         "EXPORTING_XLSX": "Export Excel en cours…",
-        "EXPORTING_PDF": "Export PDF en cours…"
+        "EXPORTING_PDF": "Export PDF en cours…",
+        "EXPORT_WORKBOOK": "Exporter le classeur complet (7 onglets)",
+        "EXPORTING_WORKBOOK": "Génération du classeur complet…"
       },
       "REOPEN": {
         "METHOD_LABEL": "Méthode de réouverture",
         "OPTION_1_VERSIONED": "Nouvelle version (le rapport actuel est archivé ; une nouvelle version en brouillon est créée)",
         "OPTION_2_CONSUMED": "Correction au mois suivant (aucune nouvelle version ; la correction sera absorbée par la période suivante)",
         "RATIONALE_LABEL": "Justification"
+      },
+      "CASH": {
+        "RECEIVABLES": {
+          "TITLE": "Créances clients",
+          "SHOW": "Afficher les créances",
+          "HIDE": "Masquer les créances",
+          "EMPTY": "Aucune créance ouverte pour ce pays.",
+          "INVOICE": "Facture",
+          "CLIENT": "Client",
+          "CLIENT_TYPE": "Type de client",
+          "AMOUNT": "Montant TTC",
+          "DUE_DATE": "Échéance",
+          "DAYS_AGEING": "Jours d'ancienneté",
+          "AGEING": "Ancienneté"
+        },
+        "AGEING": {
+          "NOT_OVERDUE": "Non échue",
+          "LT_30": "< 30 jours",
+          "B31_60": "31-60 jours",
+          "B61_180": "61-180 jours",
+          "B181_365": "181-365 jours",
+          "GT_365": "> 365 jours"
+        },
+        "MISSING_CASH": {
+          "TITLE": "Cash manquant",
+          "SHOW": "Afficher le cash manquant",
+          "HIDE": "Masquer le cash manquant",
+          "EMPTY": "Aucun cash manquant pour ce pays.",
+          "PROJECT": "Affaire",
+          "AR_TOTAL": "Créances totales",
+          "AR_NOT_OVERDUE": "Non échues",
+          "AR_LT_1M": "< 1 mois",
+          "AR_1_2M": "1-2 mois",
+          "AR_2_3M": "2-3 mois",
+          "AR_3_6M": "3-6 mois",
+          "AR_6_12M": "6-12 mois",
+          "AR_GT_1Y": "> 1 an",
+          "WIP_TOTAL": "En cours (WIP)",
+          "MISSING_CASH_TOTAL": "Cash manquant"
+        }
       }
     }
   },

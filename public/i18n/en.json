@@ -3517,6 +3517,8 @@
     "CLOSE_PERIOD_INTERSEDE_IN": "Intersede (+)",
     "CLOSE_PERIOD_INTERSEDE_OUT": "Intersede (−)",
     "CLOSE_PERIOD_WIP_PRIOR": "WIP, prior years",
+    "CLOSE_PERIOD_SALARY_RECHARGES": "Salaries recharges (+/-)",
+    "CLOSE_PERIOD_OTHER_COST_RECHARGES": "Other costs recharges (+/-)",
     "WATERFALL": {
       "GROSS_REVENUE_1": "Gross Revenue 1",
       "GROSS_REVENUE_2": "Gross Revenue 2",
@@ -3568,6 +3570,7 @@
       "TITLE_PREFIX": "P&L Report —",
       "CANCEL": "Cancel",
       "CONFIRM": "Confirm",
+      "KPI_TITLE": "Key figures",
       "RECAP": {
         "TITLE": "Recap",
         "LINE": "Catalogue line",
@@ -3602,13 +3605,55 @@
         "EXPORT_XLSX": "Export to Excel",
         "EXPORT_PDF": "Export to PDF",
         "EXPORTING_XLSX": "Exporting Excel…",
-        "EXPORTING_PDF": "Exporting PDF…"
+        "EXPORTING_PDF": "Exporting PDF…",
+        "EXPORT_WORKBOOK": "Export full workbook (7 tabs)",
+        "EXPORTING_WORKBOOK": "Generating workbook…"
       },
       "REOPEN": {
         "METHOD_LABEL": "Reopen method",
         "OPTION_1_VERSIONED": "New version (the current report is archived; a new draft version is created)",
         "OPTION_2_CONSUMED": "Correction in the next period (no new version; the correction is absorbed by the next period)",
         "RATIONALE_LABEL": "Rationale"
+      },
+      "CASH": {
+        "RECEIVABLES": {
+          "TITLE": "Receivables",
+          "SHOW": "Show receivables",
+          "HIDE": "Hide receivables",
+          "EMPTY": "No open receivable for this country.",
+          "INVOICE": "Invoice",
+          "CLIENT": "Client",
+          "CLIENT_TYPE": "Client type",
+          "AMOUNT": "Amount incl. tax",
+          "DUE_DATE": "Due date",
+          "DAYS_AGEING": "Days ageing",
+          "AGEING": "Ageing"
+        },
+        "AGEING": {
+          "NOT_OVERDUE": "Not overdue",
+          "LT_30": "< 30 days",
+          "B31_60": "31-60 days",
+          "B61_180": "61-180 days",
+          "B181_365": "181-365 days",
+          "GT_365": "> 365 days"
+        },
+        "MISSING_CASH": {
+          "TITLE": "Missing cash",
+          "SHOW": "Show missing cash",
+          "HIDE": "Hide missing cash",
+          "EMPTY": "No missing cash for this country.",
+          "PROJECT": "Project",
+          "AR_TOTAL": "Total receivables",
+          "AR_NOT_OVERDUE": "Not overdue",
+          "AR_LT_1M": "< 1 month",
+          "AR_1_2M": "1-2 months",
+          "AR_2_3M": "2-3 months",
+          "AR_3_6M": "3-6 months",
+          "AR_6_12M": "6-12 months",
+          "AR_GT_1Y": "> 1 year",
+          "WIP_TOTAL": "WIP",
+          "MISSING_CASH_TOTAL": "Missing cash"
+        }
       }
     }
   },

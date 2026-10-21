@@ -43,6 +43,8 @@ export interface PlPeriodDto {
   intersedeInbound: number;
   intersedeOutbound: number;
   wipPreviousYears: number;
+  salaryRecharges: number;
+  otherCostRecharges: number;
   wipBalanceAtClose: number;
   grossRevenue1Local: number;
   grossRevenue2Local: number;
@@ -62,6 +64,8 @@ export interface ClosePeriodRequest {
   intersedeInbound?: number | null;
   intersedeOutbound?: number | null;
   wipPreviousYears?: number | null;
+  salaryRecharges?: number | null;
+  otherCostRecharges?: number | null;
 }
 
 export interface CreatePlPeriodRequest {
@@ -207,4 +211,41 @@ export interface UpsertSubmissionCalendarRequest {
   year: number;
   month: number;
   deadline: string;
+}
+
+// ── Cash position (Receivables / Missing Cash) ──────────────────────────────
+
+/** `GET /api/fact/pl-reports/receivables?paysId=` -- one currently-unpaid invoice, with ageing
+ *  against its due date. `clientType` is always `"External"` today (a real, current backend
+ *  fact -- see `CashPositionService`'s `CLIENT_TYPE_EXTERNAL` constant -- not a placeholder). */
+export interface ReceivableLineDto {
+  invoiceNumber: string;
+  clientName: string;
+  clientType: string;
+  emittedAt: string;
+  dueDate: string;
+  amountIncTax: number;
+  amountExTax: number;
+  currency: string;
+  daysAgeing: number;
+  ageingCategory: 'Not Overdue' | '<30 Days' | '31-60 Days'
+                | '61-180 Days' | '181-365 Days' | '> 365 Days';
+}
+
+/** `GET /api/fact/pl-reports/missing-cash?paysId=` -- one row per affaire with open receivables
+ *  and/or unbilled WIP. `wipTotal` is a single figure, not broken down by age: no per-affaire
+ *  WIP-ageing data source exists in the backend today (v1 scope, documented on the Java DTO).
+ *  Rows arrive pre-sorted descending by `missingCashTotal` -- do not re-sort client-side. */
+export interface MissingCashRowDto {
+  projectRef: string;
+  arTotal: number;
+  arNotOverdue: number;
+  arLt1Month: number;
+  ar1To2Months: number;
+  ar2To3Months: number;
+  ar3To6Months: number;
+  ar6To12Months: number;
+  arGt1Year: number;
+  wipTotal: number;
+  missingCashTotal: number;
 }

@@ -37,4 +37,15 @@ export class PlPeriodService {
   approvePeriod(id: number): Observable<PlPeriodDto> {
     return this.http.post<PlPeriodDto>(`${this.base}/pl-periods/${id}/approve`, {});
   }
+
+  /**
+   * Full 7-tab Excel workbook export (Template, Receivables, Missing Cash, Order Intake,
+   * Pipeline, Bud {year} EUR, Bud {year} CHF), keyed by `PlPeriod.id` -- distinct from
+   * `PlReportService.exportXlsx()`, the already-existing 1-sheet technical export keyed by
+   * `PlReport.id`. `FACT_VIEW_PL_REPORT`.
+   */
+  exportWorkbook(periodId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/pl-periods/${periodId}/export-workbook`,
+      { responseType: 'blob', withCredentials: true });
+  }
 }
