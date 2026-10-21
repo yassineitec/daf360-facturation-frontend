@@ -451,6 +451,7 @@ export class AffaireWizardComponent implements OnInit {
         contractCurrency:   d.contractCurrency,
         billingPeriod:      d.billingPeriod,
         budgetPrevisionnel: d.budgetPrevisionnel ?? null,
+        billingMode:        d.billingMode ?? null,
       }).pipe(
         // Les contacts suivent l'info générale : le client peut avoir changé dans le
         // même « Suivant », et le serveur refuse un contact qui n'appartient pas au
