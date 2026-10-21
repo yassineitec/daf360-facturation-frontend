@@ -42,13 +42,21 @@ import { enumLabel } from '../../../shared/enum-labels';
                fondu au survol que le pied de carte de la librairie, pour que les deux
                apparaissent et disparaissent ensemble. -->
           <div class="relative group">
+            <!-- Un brouillon supprimable porte l'icône Supprimer dans ce même coin : le nom
+                 du client se décale alors d'un bouton (28 px + l'écart) pour ne pas la couvrir,
+                 et prend la hauteur du bouton (leading-7 = 28 px) — le pied de carte centre
+                 ses éléments sur cette hauteur, sans quoi le nom tombait sous la ligne. -->
             <daf-entity-card
               [options]="card.options"
               (cardClick)="open.emit(card.id)"
-              (viewClick)="open.emit(card.id)" />
-            <span class="absolute left-5 bottom-5 text-[12px] font-semibold text-outline
+              (viewClick)="open.emit(card.id)"
+              (actionClick)="onAction($event.id, card.id)" />
+            <span class="absolute bottom-5 text-[12px] font-semibold text-outline
                          truncate max-w-[45%] opacity-0 group-hover:opacity-100
-                         transition-opacity duration-100 pointer-events-none">
+                         transition-opacity duration-100 pointer-events-none"
+                  [class.left-5]="!card.deletable"
+                  [class.left-14]="card.deletable"
+                  [class.leading-7]="card.deletable">
               {{ card.clientName }}
             </span>
           </div>
@@ -76,8 +84,18 @@ export class AffairesCardsSectionComponent {
   emptyMessage = input('');
   /** Placeholder count while the first page of a re-fetch is in flight. */
   skeletonCount = input(6);
+  /** L'utilisateur peut-il supprimer un brouillon (`FACT_MANAGE_AFFAIRE`) ? Décidé par la page. */
+  canDelete     = input(false);
 
   readonly open = output<number>();
+  /** Suppression d'un brouillon demandée — la page confirme puis appelle l'API. */
+  readonly remove = output<AffaireListItem>();
+
+  protected onAction(actionId: string, affaireId: number): void {
+    if (actionId !== 'delete') return;
+    const affaire = this.affaires().find(a => a.id === affaireId);
+    if (affaire) this.remove.emit(affaire);
+  }
 
   protected readonly skeletonSlots = computed(() =>
     Array.from({ length: Math.max(1, this.skeletonCount()) }, (_, i) => i),
@@ -89,17 +107,23 @@ export class AffairesCardsSectionComponent {
    * translation lives in one place (UI-PLAYBOOK §6). `currentLang()` is read so the
    * cards re-translate on a language switch — `translate.instant` is not reactive.
    */
-  protected readonly cards = computed<{ id: number; clientName: string; options: EntityCardOptions }[]>(() => {
+  protected readonly cards = computed<{ id: number; clientName: string; deletable: boolean; options: EntityCardOptions }[]>(() => {
     this.translate.currentLang();
     const t = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
+    const canDelete = this.canDelete();
 
     return this.affaires().map(a => ({
       id: a.id,
       // Affiché séparément, superposé au pied de carte — voir le template.
       clientName: a.clientName ?? '—',
+      // Brouillons seulement : le serveur refuse tout autre statut (suppression logique).
+      deletable: canDelete && a.statut === 'DRAFT',
       options: {
         variant: 'glass',
         clickable: true,
+        actions: canDelete && a.statut === 'DRAFT'
+          ? [{ id: 'delete', icon: 'delete', variant: 'danger', tooltip: t('AFFAIRES.LIST.DELETE.ACTION') }]
+          : [],
         // No `image`: since lib 4.16 an omitted image renders no avatar badge at all and
         // the title takes the full card width — which is what these cards want.
         metadata: {

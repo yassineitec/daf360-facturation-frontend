@@ -398,6 +398,20 @@
                 }
               </div>
 
+              <!-- Suppression (logique) d'un brouillon — même traitement discret que la rangée
+                   de gestion, en teinte danger. Absente dès que l'affaire est activée. -->
+              @if (aff.statut === 'DRAFT') {
+                <button *appHasPermission="'FACT_MANAGE_AFFAIRE'"
+                        type="button"
+                        class="flex items-center gap-1.5 self-start rounded-lg px-2 py-2 text-body-sm
+                               font-semibold text-danger transition-colors hover:bg-danger/10
+                               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
+                        (click)="confirmDelete()">
+                  <span class="material-symbols-outlined text-base">delete</span>
+                  {{ 'AFFAIRES.LIST.DELETE.ACTION' | translate }}
+                </button>
+              }
+
               @if (!aff.budgetValide) {
                 <!-- Validation du budget : action exceptionnelle et bloquante, donc hors
                      hiérarchie — elle disparaît dès qu'elle est faite. -->
