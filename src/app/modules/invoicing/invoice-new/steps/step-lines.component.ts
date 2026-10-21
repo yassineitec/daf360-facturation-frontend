@@ -400,18 +400,19 @@ export interface StepLinesValue {
                 </td>
               }
 
-              <!-- TVA (toujours présente) -->
-              @if (isCombined()) {
-                <td class="td-computed">{{ formatPct(lg.get('tauxTva')!.value ?? 0) }}</td>
-              } @else {
-                <td class="td-vat">
-                  <daf-select
-                    [options]="vatRateOptions()"
-                    [selected]="vatSelected(lg)"
-                    [ariaLabel]="'INVOICING.STEP_LINES.VAT' | translate"
-                    (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
-                </td>
-              }
+              <!-- TVA (toujours présente, y compris en facture combinée -- la TVA est
+                   universelle et doit rester modifiable quel que soit le mode, contrairement
+                   aux colonnes d'avancement ci-dessus qui, elles, sont figées côté serveur :
+                   une ligne WIP n'a souvent aucun taux de TVA réel au moment de sa validation
+                   DF, donc la laisser en lecture seule ici bloquait l'utilisateur sur 0,00 %
+                   sans aucun moyen de le corriger avant d'enregistrer la facture.) -->
+              <td class="td-vat">
+                <daf-select
+                  [options]="vatRateOptions()"
+                  [selected]="vatSelected(lg)"
+                  [ariaLabel]="'INVOICING.STEP_LINES.VAT' | translate"
+                  (selectedChange)="setNum(lg, 'tauxTva', $event[0])" />
+              </td>
 
               @if (isCombined()) {
                 <!-- Reuses the same HT × (1+VAT) helper ACOMPTE's own branch below reuses --
