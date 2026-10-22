@@ -10,6 +10,7 @@ import { ClientService } from '../../clients/client.service';
 import {
   RateComputationDto, CreateRateComputationRequest,
   RATE_COMPUTATION_STATUS_CONFIG,
+  RateFormulaItemDto,
 } from '../cost.model';
 import { PaysRefDto } from '../../affaires/affaire.model';
 
@@ -71,6 +72,23 @@ export class RateComputationComponent implements OnInit {
   isCreating  = signal(false);
   createError = signal<string | null>(null);
 
+  // ── Formule de coût (par pays) ────────────────────────────────────────────
+  formulaItems       = signal<RateFormulaItemDto[]>([]);
+  availableCategories = signal<RateFormulaItemDto[]>([]);
+  showFormulaEditor  = signal(false);
+  isSavingFormula    = signal(false);
+  formulaError       = signal<string | null>(null);
+
+  /** Catégorie pas encore sélectionnée dans le `<select>` d'ajout -- même style que
+   *  `newRecord` ci-dessus : un simple champ muté par `[(ngModel)]`, pas un signal. */
+  newFormulaCategoryCode = '';
+
+  /** `availableCategories()` moins celles déjà présentes dans `formulaItems()`. */
+  readonly availableCategoriesToAdd = computed(() => {
+    const used = new Set(this.formulaItems().map(i => i.categoryCode));
+    return this.availableCategories().filter(c => !used.has(c.categoryCode));
+  });
+
   readonly currentYear = new Date().getFullYear();
 
   newRecord = {
@@ -80,6 +98,8 @@ export class RateComputationComponent implements OnInit {
     periodMonth:     null as number | null,
     hqCostPct:       5.0,
     targetMarginPct: 10.0,
+    intercoMarginPct:  5.0,
+    externalMarginPct: 10.0,
     currency:        'EUR',
   };
 
@@ -129,6 +149,7 @@ export class RateComputationComponent implements OnInit {
     if (id === this.paysId()) return;
     this.paysId.set(id);
     this.showAddForm.set(false);
+    this.showFormulaEditor.set(false);
     this.load();
   }
 
@@ -176,6 +197,8 @@ export class RateComputationComponent implements OnInit {
       periodMonth:     this.newRecord.periodType === 'MONTHLY'   ? this.newRecord.periodMonth   : null,
       hqCostPct:       this.newRecord.hqCostPct       / 100,
       targetMarginPct: this.newRecord.targetMarginPct / 100,
+      intercoMarginPct:  this.newRecord.intercoMarginPct  / 100,
+      externalMarginPct: this.newRecord.externalMarginPct / 100,
       currency:        this.newRecord.currency || 'EUR',
     };
     this.svc.createRateComputation(req).subscribe({
@@ -186,12 +209,61 @@ export class RateComputationComponent implements OnInit {
         this.newRecord = {
           periodType: 'ANNUAL', periodYear: this.currentYear,
           periodQuarter: null, periodMonth: null,
-          hqCostPct: 5.0, targetMarginPct: 10.0, currency: 'EUR',
+          hqCostPct: 5.0, targetMarginPct: 10.0,
+          intercoMarginPct: 5.0, externalMarginPct: 10.0,
+          currency: 'EUR',
         };
       },
       error: err => {
         this.createError.set(err.error?.message ?? this.translate.instant('COST.RATE.CREATE_ERROR'));
         this.isCreating.set(false);
+      },
+    });
+  }
+
+  toggleFormulaEditor(): void {
+    this.showFormulaEditor.update(v => !v);
+    if (this.showFormulaEditor()) this.loadFormula();
+  }
+
+  private loadFormula(): void {
+    this.formulaError.set(null);
+    forkJoin({
+      items:      this.svc.getFormulaItems(this.paysId()),
+      categories: this.svc.getAvailableCostCategories(this.paysId()),
+    }).subscribe({
+      next: ({ items, categories }) => {
+        this.formulaItems.set(items);
+        this.availableCategories.set(categories);
+      },
+      error: err => {
+        this.formulaError.set(err.error?.message ?? this.translate.instant('COST.RATE.FORMULA.LOAD_ERROR'));
+      },
+    });
+  }
+
+  addFormulaCategory(categoryCode: string): void {
+    const cat = this.availableCategories().find(c => c.categoryCode === categoryCode);
+    if (!cat || this.formulaItems().some(i => i.categoryCode === categoryCode)) return;
+    this.formulaItems.update(items => [...items, { ...cat, displayOrder: items.length }]);
+    this.newFormulaCategoryCode = '';
+  }
+
+  removeFormulaItem(categoryCode: string): void {
+    this.formulaItems.update(items => items.filter(i => i.categoryCode !== categoryCode));
+  }
+
+  saveFormula(): void {
+    this.isSavingFormula.set(true);
+    this.formulaError.set(null);
+    this.svc.saveFormulaItems(this.paysId(), this.formulaItems()).subscribe({
+      next: saved => {
+        this.formulaItems.set(saved);
+        this.isSavingFormula.set(false);
+      },
+      error: err => {
+        this.formulaError.set(err.error?.message ?? this.translate.instant('COST.RATE.FORMULA.SAVE_ERROR'));
+        this.isSavingFormula.set(false);
       },
     });
   }

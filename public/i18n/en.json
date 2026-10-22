@@ -3019,6 +3019,8 @@
       "TH_TYPE": "Type",
       "TH_HQ": "% HQ",
       "TH_MARGIN": "% Margin",
+      "INTERCO_MARGIN_PCT": "% Interco Margin",
+      "EXTERNAL_MARGIN_PCT": "% External Margin",
       "TH_CURRENCY": "Currency",
       "TH_STATUS": "Status",
       "TH_VALIDATED_AT": "Validated on",
@@ -3030,7 +3032,24 @@
       "COMPUTE_TITLE": "Compute (DRAFT → COMPUTED)",
       "VALIDATE_TITLE": "Validate (COMPUTED → VALIDATED)",
       "EMPTY": "No scale configured. Click « + New scale » to create one.",
-      "LOADING": "Loading..."
+      "LOADING": "Loading...",
+      "FORMULA": {
+        "BTN_OPEN": "⚙ Cost formula",
+        "BTN_CLOSE": "✕ Close formula",
+        "TH_CATEGORY": "Category",
+        "TH_METHOD": "Allocation method",
+        "TH_FIXED_AMOUNT": "Fixed amount / employee",
+        "METHOD": {
+          "PER_HEADCOUNT": "Per headcount",
+          "FIXED_AMOUNT": "Fixed amount",
+          "DIRECT": "Direct (per employee)"
+        },
+        "ADD_PLACEHOLDER": "Add a category…",
+        "SAVE": "Save formula",
+        "EMPTY": "No category in the formula yet. Add one below.",
+        "LOAD_ERROR": "Error loading the formula.",
+        "SAVE_ERROR": "Error saving the formula."
+      }
     },
     "EMPLOYEE_COST": {
       "TITLE": "Employee costs",

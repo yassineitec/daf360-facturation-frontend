@@ -3019,6 +3019,8 @@
       "TH_TYPE": "Type",
       "TH_HQ": "% HQ",
       "TH_MARGIN": "% Marge",
+      "INTERCO_MARGIN_PCT": "% Marge Interco",
+      "EXTERNAL_MARGIN_PCT": "% Marge Externe",
       "TH_CURRENCY": "Devise",
       "TH_STATUS": "Statut",
       "TH_VALIDATED_AT": "Validé le",
@@ -3030,7 +3032,24 @@
       "COMPUTE_TITLE": "Calculer (DRAFT → COMPUTED)",
       "VALIDATE_TITLE": "Valider (COMPUTED → VALIDATED)",
       "EMPTY": "Aucun barème configuré. Cliquez sur « + Nouveau barème » pour en créer un.",
-      "LOADING": "Chargement..."
+      "LOADING": "Chargement...",
+      "FORMULA": {
+        "BTN_OPEN": "⚙ Formule de coût",
+        "BTN_CLOSE": "✕ Fermer la formule",
+        "TH_CATEGORY": "Catégorie",
+        "TH_METHOD": "Méthode d'allocation",
+        "TH_FIXED_AMOUNT": "Montant fixe / employé",
+        "METHOD": {
+          "PER_HEADCOUNT": "Par effectif",
+          "FIXED_AMOUNT": "Montant fixe",
+          "DIRECT": "Direct (par employé)"
+        },
+        "ADD_PLACEHOLDER": "Ajouter une catégorie…",
+        "SAVE": "Enregistrer la formule",
+        "EMPTY": "Aucune catégorie dans la formule. Ajoutez-en une ci-dessous.",
+        "LOAD_ERROR": "Erreur de chargement de la formule.",
+        "SAVE_ERROR": "Erreur lors de la sauvegarde de la formule."
+      }
     },
     "EMPLOYEE_COST": {
       "TITLE": "Coûts collaborateurs",

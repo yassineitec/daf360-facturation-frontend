@@ -5,9 +5,14 @@
       <h2 class="page-title">{{ 'COST.RATE.TITLE' | translate }}</h2>
       <p class="page-subtitle" [innerHTML]="'COST.RATE.SUBTITLE' | translate"></p>
     </div>
-    <button class="btn-add" (click)="toggleAddForm()">
-      {{ (showAddForm() ? 'COST.RATE.BTN_CANCEL' : 'COST.RATE.BTN_NEW') | translate }}
-    </button>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn-add" (click)="toggleFormulaEditor()">
+        {{ (showFormulaEditor() ? 'COST.RATE.FORMULA.BTN_CLOSE' : 'COST.RATE.FORMULA.BTN_OPEN') | translate }}
+      </button>
+      <button class="btn-add" (click)="toggleAddForm()">
+        {{ (showAddForm() ? 'COST.RATE.BTN_CANCEL' : 'COST.RATE.BTN_NEW') | translate }}
+      </button>
+    </div>
   </div>
 
   <!-- Une liste déroulante cherchable, et non plus une bande d'onglets : `pays_ref` porte
@@ -27,6 +32,76 @@
   }
   @if (actionError()) {
     <div class="banner-error">{{ actionError() }}</div>
+  }
+
+  <!-- Formule de coût (par pays) : quelles catégories COST_CATEGORY entrent dans
+       l'auto-remplissage des lignes, et comment elles sont allouées par employé. -->
+  @if (showFormulaEditor()) {
+    <section class="config-section" style="margin-bottom:16px">
+      @if (formulaError()) {
+        <div class="banner-error">{{ formulaError() }}</div>
+      }
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{{ 'COST.RATE.FORMULA.TH_CATEGORY' | translate }}</th>
+              <th>{{ 'COST.RATE.FORMULA.TH_METHOD' | translate }}</th>
+              <th class="text-right">{{ 'COST.RATE.FORMULA.TH_FIXED_AMOUNT' | translate }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of formulaItems(); track item.categoryCode) {
+              <tr>
+                <td class="cell-secondary">{{ item.labelOverride || item.categoryLabel }}</td>
+                <td>
+                  <select class="inline-input" [(ngModel)]="item.allocationMethod">
+                    <option value="PER_HEADCOUNT">{{ 'COST.RATE.FORMULA.METHOD.PER_HEADCOUNT' | translate }}</option>
+                    <option value="FIXED_AMOUNT">{{ 'COST.RATE.FORMULA.METHOD.FIXED_AMOUNT' | translate }}</option>
+                    <option value="DIRECT">{{ 'COST.RATE.FORMULA.METHOD.DIRECT' | translate }}</option>
+                  </select>
+                </td>
+                <td class="text-right">
+                  @if (item.allocationMethod === 'FIXED_AMOUNT') {
+                    <input class="inline-input text-right" type="number" min="0" step="0.01"
+                      [(ngModel)]="item.fixedAmountPerEmployee" placeholder="0.00">
+                  } @else {
+                    <span class="cell-secondary">—</span>
+                  }
+                </td>
+                <td class="cell-actions">
+                  <button class="btn-icon" (click)="removeFormulaItem(item.categoryCode)">✕</button>
+                </td>
+              </tr>
+            }
+            @empty {
+              <tr>
+                <td colspan="4" class="empty-state">{{ 'COST.RATE.FORMULA.EMPTY' | translate }}</td>
+              </tr>
+            }
+            <tr class="row-new">
+              <td colspan="2">
+                <select class="inline-input" [(ngModel)]="newFormulaCategoryCode">
+                  <option value="">{{ 'COST.RATE.FORMULA.ADD_PLACEHOLDER' | translate }}</option>
+                  @for (cat of availableCategoriesToAdd(); track cat.categoryCode) {
+                    <option [value]="cat.categoryCode">{{ cat.categoryLabel }}</option>
+                  }
+                </select>
+              </td>
+              <td colspan="2" class="cell-actions">
+                <button class="btn-save" type="button"
+                  [disabled]="!newFormulaCategoryCode"
+                  (click)="addFormulaCategory(newFormulaCategoryCode)">+</button>
+                <button class="btn-action btn-validate" [disabled]="isSavingFormula()" (click)="saveFormula()">
+                  @if (isSavingFormula()) { … } @else { {{ 'COST.RATE.FORMULA.SAVE' | translate }} }
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   }
 
   @if (isLoading()) {
@@ -56,6 +131,8 @@
               <th>{{ 'COST.RATE.TH_TYPE' | translate }}</th>
               <th class="text-right">{{ 'COST.RATE.TH_HQ' | translate }}</th>
               <th class="text-right">{{ 'COST.RATE.TH_MARGIN' | translate }}</th>
+              <th class="text-right">{{ 'COST.RATE.INTERCO_MARGIN_PCT' | translate }}</th>
+              <th class="text-right">{{ 'COST.RATE.EXTERNAL_MARGIN_PCT' | translate }}</th>
               <th>{{ 'COST.RATE.TH_CURRENCY' | translate }}</th>
               <th>{{ 'COST.RATE.TH_STATUS' | translate }}</th>
               <th>{{ 'COST.RATE.TH_VALIDATED_AT' | translate }}</th>
@@ -111,6 +188,20 @@
                     placeholder="10.0">
                   <span class="pct-suffix">%</span>
                 </td>
+                <td class="text-right">
+                  <input class="inline-input text-right" type="number"
+                    min="0" max="100" step="0.1"
+                    [(ngModel)]="newRecord.intercoMarginPct"
+                    placeholder="5.0">
+                  <span class="pct-suffix">%</span>
+                </td>
+                <td class="text-right">
+                  <input class="inline-input text-right" type="number"
+                    min="0" max="100" step="0.1"
+                    [(ngModel)]="newRecord.externalMarginPct"
+                    placeholder="10.0">
+                  <span class="pct-suffix">%</span>
+                </td>
                 <td>
                   <input class="inline-input" type="text"
                     [(ngModel)]="newRecord.currency"
@@ -137,6 +228,8 @@
                 <td class="cell-secondary">{{ periodTypeLabel(rc.periodType) }}</td>
                 <td class="text-right cell-rate">{{ pct(rc.hqCostPct) }}</td>
                 <td class="text-right cell-rate">{{ pct(rc.targetMarginPct) }}</td>
+                <td class="text-right cell-rate">{{ pct(rc.intercoMarginPct) }}</td>
+                <td class="text-right cell-rate">{{ pct(rc.externalMarginPct) }}</td>
                 <td class="cell-secondary">{{ rc.currency ?? '—' }}</td>
                 <td>
                   <span class="status-badge"
@@ -170,7 +263,7 @@
             @empty {
               @if (!showAddForm()) {
                 <tr>
-                  <td colspan="8" class="empty-state">
+                  <td colspan="10" class="empty-state">
                     {{ 'COST.RATE.EMPTY' | translate }}
                   </td>
                 </tr>
