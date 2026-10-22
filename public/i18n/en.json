@@ -72,7 +72,8 @@
         "SUPPLIERS": "Suppliers",
         "REPORTING": "P&L",
         "ADMIN": "Administration",
-        "COST_MISSIONS": "Missions"
+        "COST_MISSIONS": "Missions",
+        "RATE_COMPUTATIONS": "Rate computations"
       },
       "SECTION": "FINANCE",
       "MENU": "Menu"

@@ -177,6 +177,13 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
         tone: 'warning',
         labelKey: 'FACTURATION.layout.NAV.EMPLOYEE_COST',
       },
+      {
+        id: 'rate-computation',
+        route: 'cost/rate-computations',
+        icon: 'calculate',
+        tone: 'warning',
+        labelKey: 'FACTURATION.layout.NAV.RATE_COMPUTATIONS',
+      },
     ],
   },
   {
