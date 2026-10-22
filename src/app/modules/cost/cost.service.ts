@@ -11,6 +11,7 @@ import {
   ForexPreviewDto, CircuitPreviewDto,
   ListValueDto, SupplierSearchItem, SupplierLedgerDto, SupplierCostSummaryDto,
   RateComputationDto, CreateRateComputationRequest,
+  RateFormulaItemDto, RateComputationLineDto,
   CreateReglementRequest, UpdateReglementRequest,
 } from './cost.model';
 
@@ -313,6 +314,35 @@ export class CostService {
 
   validateRateComputation(id: number): Observable<RateComputationDto> {
     return this.http.post<RateComputationDto>(`${this.base}/rate-computations/${id}/validate`, {});
+  }
+
+  // ── Rate computation — cost formula + auto-populated lines ──────────────────
+
+  getFormulaItems(paysId: number): Observable<RateFormulaItemDto[]> {
+    const params = new HttpParams().set('paysId', String(paysId));
+    return this.http.get<RateFormulaItemDto[]>(`${this.base}/rate-computations/formula-items`, { params });
+  }
+
+  saveFormulaItems(paysId: number, items: RateFormulaItemDto[]): Observable<RateFormulaItemDto[]> {
+    const params = new HttpParams().set('paysId', String(paysId));
+    return this.http.put<RateFormulaItemDto[]>(`${this.base}/rate-computations/formula-items`, items, { params });
+  }
+
+  getAvailableCostCategories(paysId: number): Observable<RateFormulaItemDto[]> {
+    const params = new HttpParams().set('paysId', String(paysId));
+    return this.http.get<RateFormulaItemDto[]>(
+      `${this.base}/rate-computations/formula-items/available-categories`, { params },
+    );
+  }
+
+  getRateComputationLines(rateComputationId: number): Observable<RateComputationLineDto[]> {
+    return this.http.get<RateComputationLineDto[]>(`${this.base}/rate-computations/${rateComputationId}/lines`);
+  }
+
+  autoPopulateLines(rateComputationId: number): Observable<RateComputationLineDto[]> {
+    return this.http.post<RateComputationLineDto[]>(
+      `${this.base}/rate-computations/${rateComputationId}/auto-populate-lines`, {},
+    );
   }
 
   /**

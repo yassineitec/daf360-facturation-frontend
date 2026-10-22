@@ -576,6 +576,8 @@ export interface RateComputationDto {
   productivityRate: number | null;
   workingDaysPerMonth: number | null;
   sellingMonthsPerYear: number | null;
+  intercoMarginPct: number | null;
+  externalMarginPct: number | null;
   currency: string | null;
   validatedAt: string | null;
   pushedToPmAt: string | null;
@@ -592,6 +594,8 @@ export interface CreateRateComputationRequest {
   productivityRate?: number | null;
   workingDaysPerMonth?: number | null;
   sellingMonthsPerYear?: number | null;
+  intercoMarginPct?: number | null;
+  externalMarginPct?: number | null;
   currency?: string | null;
 }
 
@@ -600,6 +604,51 @@ export const RATE_COMPUTATION_STATUS_CONFIG: Record<RateComputationStatus, { lab
   COMPUTED:  { label: 'Calculé',   bg: '#dbeafe', text: '#1d4ed8' },
   VALIDATED: { label: 'Validé ✓',  bg: '#d1fae5', text: '#065f46' },
 };
+
+// ── Rate computation — cost formula + auto-populated lines ────────────────────
+
+export interface FormulaCostItemDto {
+  categoryCode: string;
+  label: string;
+  allocationMethod: string;
+  amount: number;
+}
+
+export interface RateFormulaItemDto {
+  id: number | null;
+  paysId: number;
+  categoryCode: string;
+  categoryLabel: string;
+  allocationMethod: 'PER_HEADCOUNT' | 'FIXED_AMOUNT' | 'DIRECT';
+  fixedAmountPerEmployee: number | null;
+  labelOverride: string | null;
+  displayOrder: number;
+}
+
+export interface RateComputationLineDto {
+  id: number;
+  rateComputationId: number;
+  granularity: string;
+  profileUserId: number | null;
+  grade: string | null;
+  discipline: string | null;
+  directCost: number | null;
+  allocatedOverhead: number | null;
+  allocatedHqCost: number | null;
+  targetMargin: number | null;
+  formulaItems: FormulaCostItemDto[];
+  dryRate: number | null;
+  intercompanyRate: number | null;
+  externalRate: number | null;
+  source: 'MANUAL' | 'AUTO';
+  ratePerYear: number | null;
+  ratePerMonth: number | null;
+  ratePerDay: number | null;
+  ratePerHour: number | null;
+  rateEur: number | null;
+  rateUsd: number | null;
+  rateLocal: number | null;
+}
 
 // ── Supplier search result (lightweight DTO for form autocomplete) ────────────
 
