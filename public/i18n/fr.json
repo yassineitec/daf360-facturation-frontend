@@ -1065,6 +1065,15 @@
       "SUBTITLE": "Suivi du portefeuille : budget, RAF et statut de chaque affaire.",
       "LOADING": "Chargement des affaires…",
       "LOAD_ERROR": "Impossible de charger les affaires. Vérifiez votre connexion.",
+      "DELETE": {
+        "ACTION": "Supprimer le brouillon",
+        "TITLE": "Supprimer le brouillon",
+        "BODY": "Le brouillon {{reference}} — {{intitule}} sera retiré de la liste des affaires. Sa référence ne sera pas réattribuée.",
+        "CONFIRM": "Supprimer",
+        "CANCEL": "Annuler",
+        "SUCCESS": "Brouillon {{reference}} supprimé.",
+        "ERROR": "Impossible de supprimer ce brouillon."
+      },
       "FILTER_ALL": "Toutes",
       "FILTER_RESET": "Réinitialiser",
       "KPI": {

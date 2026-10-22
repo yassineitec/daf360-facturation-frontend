@@ -2,10 +2,12 @@ import { Component, OnInit, inject, signal, computed, viewChild, effect } from '
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  ButtonComponent, FilterField, FilterResult, MetricCardOptions, MetricDelta, PageComponent,
+  ButtonComponent, FilterField, FilterResult, MetricCardOptions, MetricDelta, ModalService, PageComponent,
   PageHeaderComponent, PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig,
   MetricCardComponent, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
+import { UserStore } from '../../core/user.store';
+import { ToastService } from '../../core/toast.service';
 import { AffaireService } from './affaire.service';
 import { AffaireFilter, AffaireListItem, AffairesSummary, PaysRefDto, STATUT_LABELS, paysLabel } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
@@ -44,6 +46,12 @@ export class AffairesListComponent implements OnInit {
   private readonly avatarSvc      = inject(EmployeeAvatarService);
   private readonly clientSvc      = inject(ClientService);
   private readonly listState      = inject(AffairesListStateService);
+  private readonly store          = inject(UserStore);
+  private readonly modals         = inject(ModalService);
+  private readonly toast          = inject(ToastService);
+
+  /** Même code que `DELETE /affaires/{id}` côté serveur. */
+  readonly canDelete = computed(() => this.store.hasPermission('FACT_MANAGE_AFFAIRE'));
 
   /**
    * Chaque changement de filtre, de tri, de page ou de vue est mémorisé, pour que le
@@ -500,6 +508,39 @@ export class AffairesListComponent implements OnInit {
 
   navigateToDetail(id: number): void {
     this.router.navigate([id], { relativeTo: this.activatedRoute });
+  }
+
+  /**
+   * Suppression d'un brouillon, après confirmation. Logique côté serveur : l'affaire
+   * disparaît de la liste et des tuiles, sa référence reste prise.
+   */
+  confirmDelete(a: AffaireListItem): void {
+    const t = (key: string) => this.translate.instant(key, { reference: a.reference, intitule: a.intitule });
+    this.modals.open({
+      title: t('AFFAIRES.LIST.DELETE.TITLE'),
+      icon:  'delete',
+      size:  'sm',
+      body:  t('AFFAIRES.LIST.DELETE.BODY'),
+      buttons: [
+        { label: t('AFFAIRES.LIST.DELETE.CANCEL'), variant: 'secondary', action: r => r.close() },
+        {
+          label:   t('AFFAIRES.LIST.DELETE.CONFIRM'),
+          variant: 'primary',
+          icon:    'delete',
+          action:  r => {
+            r.close();
+            this.svc.deleteAffaire(a.id).subscribe({
+              next: () => {
+                this.toast.success(t('AFFAIRES.LIST.DELETE.SUCCESS'));
+                this.load();
+                this.loadSummary();
+              },
+              error: err => this.toast.error(err?.error?.message ?? t('AFFAIRES.LIST.DELETE.ERROR')),
+            });
+          },
+        },
+      ],
+    });
   }
 
   openNewForm(): void {

@@ -80,9 +80,13 @@ export class AffairesTableSectionComponent {
   paysLabels   = input<Map<number, string>>(new Map());
   /** Le tri courant de la page — ressème la flèche quand le tableau est (re)créé. */
   sort         = input<AffaireSort | null>(null);
+  /** L'utilisateur peut-il supprimer un brouillon (`FACT_MANAGE_AFFAIRE`) ? Décidé par la page. */
+  canDelete    = input(false);
 
   /** A row click opens the affaire; the trailing `view` action means the same thing. */
   readonly open = output<number>();
+  /** Suppression d'un brouillon demandée — la page confirme puis appelle l'API. */
+  readonly remove = output<AffaireListItem>();
   /** Valeur `sort` à envoyer à l'API (`reference,asc`…), ou `null` quand le tri est retiré. */
   readonly sortChange = output<{ sort: AffaireSort | null; param: string | null }>();
 
@@ -120,6 +124,7 @@ export class AffairesTableSectionComponent {
       const lead   = people[0];
       return {
         id:          a.id,
+        _statut:     a.statut,
         reference:   a.reference,
         intitule:    a.intitule,
         client:      a.clientName ?? '—',
@@ -193,6 +198,17 @@ export class AffairesTableSectionComponent {
         id:      'view',
         tooltip: this.translate.instant('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
         onClick: (row: TableRow) => this.open.emit(row['id'] as number),
+      }, {
+        // Brouillons seulement : le serveur refuse tout autre statut (suppression logique).
+        id:      'delete',
+        icon:    'delete',
+        variant: 'danger',
+        tooltip: t('AFFAIRES.LIST.DELETE.ACTION'),
+        hidden:  (row: TableRow) => !this.canDelete() || row['_statut'] !== 'DRAFT',
+        onClick: (row: TableRow) => {
+          const affaire = this.affaires().find(a => a.id === row['id']);
+          if (affaire) this.remove.emit(affaire);
+        },
       }],
     };
   });

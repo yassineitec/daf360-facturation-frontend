@@ -60,7 +60,7 @@
           @if (currentStep() === 3) {
             <app-wizard-step-billing
               [draft]="draft()"
-              [locked]="editMode() && (draft().billingModeLocked ?? false)"
+              [locked]="false"
               (draftChange)="onDraftChange($event)" />
           }
 

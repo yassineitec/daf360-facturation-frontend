@@ -86,6 +86,7 @@ export class AffaireWizardService {
     contractCurrency: string;
     billingPeriod: string;
     budgetPrevisionnel: number | null;
+    billingMode: string | null;
   }): Observable<unknown> {
     return this.http.patch<unknown>(
       `${this.base}/${id}`,

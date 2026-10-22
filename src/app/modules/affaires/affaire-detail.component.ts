@@ -28,6 +28,7 @@ import {
 } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
 import { UserStore } from '../../core/user.store';
+import { ToastService } from '../../core/toast.service';
 import { InvoiceTypeLabels } from '../../core/invoice-type-labels.service';
 import { ExportService } from '../../core/export.service';
 import { PermissionDirective } from '../../shared/permission.directive';
@@ -587,6 +588,7 @@ export class AffaireDetailComponent implements OnInit {
   readonly exporting = signal(false);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly modals    = inject(ModalService);
+  private readonly toast     = inject(ToastService);
   private readonly avatarSvc = inject(EmployeeAvatarService);
   private readonly contactSvc = inject(ClientContactService);
   private readonly typeLabels = inject(InvoiceTypeLabels);
@@ -2975,6 +2977,37 @@ export class AffaireDetailComponent implements OnInit {
   // Plus de `goBack()` : le retour à la liste est le lien du fil d'Ariane. La méthode
   // pointait `['../..']` (soit `/finance`) et écrasait ce lien.
   openEdit():     void { this.router.navigate(['edit'],   { relativeTo: this.route }); }
+
+  /** Suppression logique d'un brouillon, après confirmation, puis retour à la liste. */
+  confirmDelete(): void {
+    const a = this.affaire();
+    if (!a) return;
+    const t = (key: string) => this.translate.instant(key, { reference: a.reference, intitule: a.intitule });
+    this.modals.open({
+      title: t('AFFAIRES.LIST.DELETE.TITLE'),
+      icon:  'delete',
+      size:  'sm',
+      body:  t('AFFAIRES.LIST.DELETE.BODY'),
+      buttons: [
+        { label: t('AFFAIRES.LIST.DELETE.CANCEL'), variant: 'secondary', action: r => r.close() },
+        {
+          label:   t('AFFAIRES.LIST.DELETE.CONFIRM'),
+          variant: 'primary',
+          icon:    'delete',
+          action:  r => {
+            r.close();
+            this.svc.deleteAffaire(a.id).subscribe({
+              next: () => {
+                this.toast.success(t('AFFAIRES.LIST.DELETE.SUCCESS'));
+                this.router.navigate(['..'], { relativeTo: this.route });
+              },
+              error: err => this.toast.error(err?.error?.message ?? t('AFFAIRES.LIST.DELETE.ERROR')),
+            });
+          },
+        },
+      ],
+    });
+  }
 
   /**
    * Nouveau TS — le corps du formulaire dans une `daf-modal`, avec le bouton de

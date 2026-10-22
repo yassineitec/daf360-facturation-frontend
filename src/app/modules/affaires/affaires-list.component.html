@@ -77,7 +77,9 @@
       [loading]="loading()"
       [skeletonCount]="pageSize()"
       [emptyMessage]="'AFFAIRES.LIST.TABLE.EMPTY' | translate"
-      (open)="navigateToDetail($event)" />
+      [canDelete]="canDelete()"
+      (open)="navigateToDetail($event)"
+      (remove)="confirmDelete($event)" />
   } @else {
     <app-affaires-table-section
       [affaires]="affaires()"
@@ -87,8 +89,10 @@
       [pageSize]="pageSize()"
       [emptyMessage]="'AFFAIRES.LIST.TABLE.EMPTY' | translate"
       [sort]="sort()"
+      [canDelete]="canDelete()"
       (sortChange)="onSortChange($event)"
-      (open)="navigateToDetail($event)" />
+      (open)="navigateToDetail($event)"
+      (remove)="confirmDelete($event)" />
   }
 
   <daf-pagination

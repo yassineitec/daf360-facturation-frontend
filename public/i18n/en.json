@@ -1065,6 +1065,15 @@
       "SUBTITLE": "Portfolio tracking: budget, remaining and status of every project.",
       "LOADING": "Loading projects…",
       "LOAD_ERROR": "Could not load the projects. Check your connection.",
+      "DELETE": {
+        "ACTION": "Delete draft",
+        "TITLE": "Delete draft",
+        "BODY": "Draft {{reference}} — {{intitule}} will be removed from the project list. Its reference will not be reused.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel",
+        "SUCCESS": "Draft {{reference}} deleted.",
+        "ERROR": "Could not delete this draft."
+      },
       "FILTER_ALL": "All",
       "FILTER_RESET": "Reset",
       "KPI": {
