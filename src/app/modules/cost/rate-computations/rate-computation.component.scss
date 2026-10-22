@@ -118,6 +118,14 @@
   tr.row-validated:hover td { background: #dcfce7; }
 
   tr.row-new td { background: #f8fafc; }
+
+  tr.row-expanded td { background: #f8fafc; padding: 16px; }
+}
+
+.lines-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
 }
 
 .text-right { text-align: right; }

@@ -10,9 +10,11 @@ import { ClientService } from '../../clients/client.service';
 import {
   RateComputationDto, CreateRateComputationRequest,
   RATE_COMPUTATION_STATUS_CONFIG,
-  RateFormulaItemDto,
+  RateFormulaItemDto, RateComputationLineDto,
+  formatAmount,
 } from '../cost.model';
-import { PaysRefDto } from '../../affaires/affaire.model';
+import { PaysRefDto, UserRefDto } from '../../affaires/affaire.model';
+import { AffaireService } from '../../affaires/affaire.service';
 
 @Component({
   selector: 'app-rate-computation',
@@ -22,9 +24,10 @@ import { PaysRefDto } from '../../affaires/affaire.model';
   styleUrl: './rate-computation.component.scss',
 })
 export class RateComputationComponent implements OnInit {
-  private readonly svc       = inject(CostService);
-  private readonly clientSvc = inject(ClientService);
-  private readonly translate = inject(TranslateService);
+  private readonly svc        = inject(CostService);
+  private readonly clientSvc  = inject(ClientService);
+  private readonly affaireSvc = inject(AffaireService);
+  private readonly translate  = inject(TranslateService);
 
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);
@@ -89,6 +92,32 @@ export class RateComputationComponent implements OnInit {
     return this.availableCategories().filter(c => !used.has(c.categoryCode));
   });
 
+  // ── Détail des lignes (par RateComputation) ───────────────────────────────
+  expandedId       = signal<number | null>(null);
+  lines            = signal<RateComputationLineDto[]>([]);
+  isLoadingLines   = signal(false);
+  isAutoPopulating = signal(false);
+  lineActionError  = signal<string | null>(null);
+
+  /**
+   * Résolution du nom affiché pour `profileUserId` : réutilise `AffaireService.getUsers()`
+   * (`GET /ref/users`), déjà chargé pour exactement le même usage dans
+   * `employee-cost.component.ts` (même module `cost`) -- pas besoin d'un nouvel endpoint.
+   * Le design doc ne prévoit aucune résolution auto pour grade/discipline (restent du texte
+   * libre manuel), mais ne dit rien du nom lui-même, et `/ref/users` existe déjà pour ça.
+   */
+  users = signal<UserRefDto[]>([]);
+
+  readonly LINE_SOURCE_CONFIG: Record<string, { bg: string; text: string }> = {
+    AUTO:   { bg: '#dbeafe', text: '#1d4ed8' },
+    MANUAL: { bg: '#f1f5f9', text: '#475569' },
+  };
+
+  /** Devise du `RateComputation` actuellement déplié -- les lignes n'ont pas leur propre
+   *  devise, elles héritent de celle de l'en-tête. */
+  readonly expandedCurrency = computed(() =>
+    this.computations().find(rc => rc.id === this.expandedId())?.currency ?? 'EUR');
+
   readonly currentYear = new Date().getFullYear();
 
   newRecord = {
@@ -143,6 +172,12 @@ export class RateComputationComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
+    // Indépendant du chargement des pays/barèmes -- sert uniquement à résoudre un nom
+    // d'employé dans le détail des lignes (voir `users` ci-dessus).
+    this.affaireSvc.getUsers().subscribe({
+      next:  u => this.users.set(u),
+      error: () => this.users.set([]),
+    });
   }
 
   selectPays(id: number): void {
@@ -150,6 +185,8 @@ export class RateComputationComponent implements OnInit {
     this.paysId.set(id);
     this.showAddForm.set(false);
     this.showFormulaEditor.set(false);
+    this.expandedId.set(null);
+    this.lines.set([]);
     this.load();
   }
 
@@ -266,6 +303,64 @@ export class RateComputationComponent implements OnInit {
         this.isSavingFormula.set(false);
       },
     });
+  }
+
+  toggleExpand(rc: RateComputationDto): void {
+    if (this.expandedId() === rc.id) { this.expandedId.set(null); return; }
+    this.expandedId.set(rc.id);
+    this.lineActionError.set(null);
+    this.loadLines(rc.id);
+  }
+
+  private loadLines(rateComputationId: number): void {
+    this.isLoadingLines.set(true);
+    this.svc.getRateComputationLines(rateComputationId).subscribe({
+      next: lines => {
+        this.lines.set(lines);
+        this.isLoadingLines.set(false);
+      },
+      error: err => {
+        this.lineActionError.set(err.error?.message ?? this.translate.instant('COST.RATE.LINES.LOAD_ERROR'));
+        this.isLoadingLines.set(false);
+      },
+    });
+  }
+
+  autoPopulate(rc: RateComputationDto): void {
+    this.isAutoPopulating.set(true);
+    this.lineActionError.set(null);
+    this.svc.autoPopulateLines(rc.id).subscribe({
+      next: () => {
+        this.loadLines(rc.id);
+        this.isAutoPopulating.set(false);
+      },
+      error: err => {
+        this.lineActionError.set(err.error?.message ?? this.translate.instant('COST.RATE.AUTO_POPULATE_ERROR'));
+        this.isAutoPopulating.set(false);
+      },
+    });
+  }
+
+  /** `#id` de repli quand l'employé n'est plus (ou pas encore) dans `/ref/users` -- par
+   *  ex. un compte désactivé, cohérent avec le même repli déjà fait dans
+   *  `employee-cost.component.ts` pour un email absent de la liste courante. */
+  userName(profileUserId: number | null): string {
+    if (profileUserId == null) return '—';
+    const u = this.users().find(x => x.id === profileUserId);
+    return u ? u.fullName : `#${profileUserId}`;
+  }
+
+  gradeDiscipline(line: RateComputationLineDto): string {
+    const parts = [line.grade, line.discipline].filter((v): v is string => !!v);
+    return parts.length ? parts.join(' / ') : '—';
+  }
+
+  lineSourceLabel(source: string): string {
+    return this.translate.instant('COST.RATE.LINES.SOURCE.' + source);
+  }
+
+  fmtMoney(v: number | null): string {
+    return formatAmount(v, this.expandedCurrency());
   }
 
   compute(rc: RateComputationDto): void {

@@ -3049,6 +3049,26 @@
         "EMPTY": "Aucune catégorie dans la formule. Ajoutez-en une ci-dessous.",
         "LOAD_ERROR": "Erreur de chargement de la formule.",
         "SAVE_ERROR": "Erreur lors de la sauvegarde de la formule."
+      },
+      "AUTO_POPULATE": "Auto-remplir depuis la formule",
+      "AUTO_POPULATE_TITLE": "Remplace les lignes auto-générées à partir de la formule de coût du pays (les lignes ajoutées manuellement ne sont pas touchées)",
+      "AUTO_POPULATE_ERROR": "Erreur lors de l'auto-remplissage.",
+      "LINES": {
+        "TOGGLE_TITLE": "Afficher / masquer le détail des lignes",
+        "LOADING": "Chargement des lignes...",
+        "LOAD_ERROR": "Erreur de chargement des lignes.",
+        "EMPTY": "Aucune ligne. Utilisez « Auto-remplir depuis la formule » ou ajoutez-en une manuellement.",
+        "TH_EMPLOYEE": "Employé",
+        "TH_GRADE_DISCIPLINE": "Grade / Discipline",
+        "TH_DIRECT_COST": "Coût direct",
+        "TH_DRY_RATE": "Taux sec",
+        "TH_INTERCO_RATE": "Taux interco",
+        "TH_EXTERNAL_RATE": "Taux externe",
+        "TH_SOURCE": "Source",
+        "SOURCE": {
+          "AUTO": "Auto",
+          "MANUAL": "Manuel"
+        }
       }
     },
     "EMPLOYEE_COST": {

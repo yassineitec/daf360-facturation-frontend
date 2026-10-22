@@ -127,6 +127,7 @@
         <table class="data-table">
           <thead>
             <tr>
+              <th></th>
               <th>{{ 'COST.RATE.TH_PERIOD' | translate }}</th>
               <th>{{ 'COST.RATE.TH_TYPE' | translate }}</th>
               <th class="text-right">{{ 'COST.RATE.TH_HQ' | translate }}</th>
@@ -144,6 +145,7 @@
             <!-- Add form row -->
             @if (showAddForm()) {
               <tr class="row-new">
+                <td></td>
                 <td>
                   <input class="inline-input" type="number" min="2020" max="2099"
                     [(ngModel)]="newRecord.periodYear" [placeholder]="'COST.RATE.YEAR_PLACEHOLDER' | translate">
@@ -224,6 +226,12 @@
             <!-- Data rows -->
             @for (rc of computations(); track rc.id) {
               <tr [class.row-validated]="rc.status === 'VALIDATED'">
+                <td class="cell-actions">
+                  <button class="btn-icon" (click)="toggleExpand(rc)"
+                    [title]="'COST.RATE.LINES.TOGGLE_TITLE' | translate">
+                    {{ expandedId() === rc.id ? '▾' : '▸' }}
+                  </button>
+                </td>
                 <td class="cell-period"><strong>{{ periodLabel(rc) }}</strong></td>
                 <td class="cell-secondary">{{ periodTypeLabel(rc.periodType) }}</td>
                 <td class="text-right cell-rate">{{ pct(rc.hqCostPct) }}</td>
@@ -258,12 +266,77 @@
                   }
                 </td>
               </tr>
+
+              <!-- Détail des lignes (nouvelle vue -- Task 7) : bouton auto-remplissage +
+                   tableau des RateComputationLine, affiché sous la ligne quand dépliée. -->
+              @if (expandedId() === rc.id) {
+                <tr class="row-expanded">
+                  <td colspan="11">
+                    <div class="lines-toolbar">
+                      <button class="btn-action btn-compute"
+                        [disabled]="isAutoPopulating() || rc.status === 'VALIDATED'"
+                        (click)="autoPopulate(rc)"
+                        [title]="'COST.RATE.AUTO_POPULATE_TITLE' | translate">
+                        @if (isAutoPopulating()) { … } @else { {{ 'COST.RATE.AUTO_POPULATE' | translate }} }
+                      </button>
+                    </div>
+
+                    @if (lineActionError()) {
+                      <div class="banner-error">{{ lineActionError() }}</div>
+                    }
+
+                    @if (isLoadingLines()) {
+                      <div class="loading-state">{{ 'COST.RATE.LINES.LOADING' | translate }}</div>
+                    } @else {
+                      <div class="table-wrap">
+                        <table class="data-table">
+                          <thead>
+                            <tr>
+                              <th>{{ 'COST.RATE.LINES.TH_EMPLOYEE' | translate }}</th>
+                              <th>{{ 'COST.RATE.LINES.TH_GRADE_DISCIPLINE' | translate }}</th>
+                              <th class="text-right">{{ 'COST.RATE.LINES.TH_DIRECT_COST' | translate }}</th>
+                              <th class="text-right">{{ 'COST.RATE.LINES.TH_DRY_RATE' | translate }}</th>
+                              <th class="text-right">{{ 'COST.RATE.LINES.TH_INTERCO_RATE' | translate }}</th>
+                              <th class="text-right">{{ 'COST.RATE.LINES.TH_EXTERNAL_RATE' | translate }}</th>
+                              <th>{{ 'COST.RATE.LINES.TH_SOURCE' | translate }}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (line of lines(); track line.id) {
+                              <tr>
+                                <td class="cell-secondary">{{ userName(line.profileUserId) }}</td>
+                                <td class="cell-secondary">{{ gradeDiscipline(line) }}</td>
+                                <td class="text-right">{{ fmtMoney(line.directCost) }}</td>
+                                <td class="text-right">{{ fmtMoney(line.dryRate) }}</td>
+                                <td class="text-right">{{ fmtMoney(line.intercompanyRate) }}</td>
+                                <td class="text-right">{{ fmtMoney(line.externalRate) }}</td>
+                                <td>
+                                  <span class="status-badge"
+                                    [style.background]="LINE_SOURCE_CONFIG[line.source]?.bg"
+                                    [style.color]="LINE_SOURCE_CONFIG[line.source]?.text">
+                                    {{ lineSourceLabel(line.source) }}
+                                  </span>
+                                </td>
+                              </tr>
+                            }
+                            @empty {
+                              <tr>
+                                <td colspan="7" class="empty-state">{{ 'COST.RATE.LINES.EMPTY' | translate }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    }
+                  </td>
+                </tr>
+              }
             }
 
             @empty {
               @if (!showAddForm()) {
                 <tr>
-                  <td colspan="10" class="empty-state">
+                  <td colspan="11" class="empty-state">
                     {{ 'COST.RATE.EMPTY' | translate }}
                   </td>
                 </tr>

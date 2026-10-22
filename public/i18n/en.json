@@ -3049,6 +3049,26 @@
         "EMPTY": "No category in the formula yet. Add one below.",
         "LOAD_ERROR": "Error loading the formula.",
         "SAVE_ERROR": "Error saving the formula."
+      },
+      "AUTO_POPULATE": "Auto-fill from formula",
+      "AUTO_POPULATE_TITLE": "Replaces the auto-generated lines from the country's cost formula (manually added lines are left untouched)",
+      "AUTO_POPULATE_ERROR": "Error during auto-fill.",
+      "LINES": {
+        "TOGGLE_TITLE": "Show / hide line detail",
+        "LOADING": "Loading lines...",
+        "LOAD_ERROR": "Error loading lines.",
+        "EMPTY": "No lines yet. Use « Auto-fill from formula » or add one manually.",
+        "TH_EMPLOYEE": "Employee",
+        "TH_GRADE_DISCIPLINE": "Grade / Discipline",
+        "TH_DIRECT_COST": "Direct cost",
+        "TH_DRY_RATE": "Dry rate",
+        "TH_INTERCO_RATE": "Intercompany rate",
+        "TH_EXTERNAL_RATE": "External rate",
+        "TH_SOURCE": "Source",
+        "SOURCE": {
+          "AUTO": "Auto",
+          "MANUAL": "Manual"
+        }
       }
     },
     "EMPLOYEE_COST": {
