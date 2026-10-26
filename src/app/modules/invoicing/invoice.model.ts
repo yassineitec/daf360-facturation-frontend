@@ -155,6 +155,10 @@ export interface PendingCarryForwardDto {
   budgetAffaire:      number | null;
   pctFacture:         number | null;
   pctAvancement:      number | null;
+  // Le TS auquel ce reliquat appartient -- null sauf en mode TS. Une affaire peut avoir
+  // plusieurs TS indépendants, ce champ permet de distinguer le solde de l'un de celui
+  // d'un autre (voir lineMatchesContract dans step-lines.component.ts).
+  tsId:               number | null;
 }
 
 // ── Request types ─────────────────────────────────────────────────────────────

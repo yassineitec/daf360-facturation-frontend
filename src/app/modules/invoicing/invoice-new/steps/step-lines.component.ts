@@ -1143,6 +1143,11 @@ export class StepLinesComponent {
       tauxTva:          [19],
       sourceExpenseId:  [null as number | null],
       sourceCarryForwards: [[] as { sourceBillingLineId: number; amount: number }[]],
+      // Interne, jamais réémis par next() (voir next()'s branches, qui construisent des
+      // littéraux explicites) -- sert uniquement à lineMatchesContract() ci-dessous pour
+      // savoir à quel TS une ligne TS appartient déjà, et éviter de fusionner les reliquats
+      // de deux TS différents.
+      tsId:             [null as number | null],
       profileUserId:    [null as number | null],
       // Toujours créés, que des colonnes de déduction soient actives ou non sur la
       // facture au moment où cette ligne est créée — un contrôle inutilisé ne coûte rien
@@ -1400,26 +1405,26 @@ export class StepLinesComponent {
     this.carryForwardAmounts.set(m);
   }
 
-  /** True if lineGroup is safe to merge a pick of this contract (isTsRow) into: either it's
-   * the untouched root declaration (no sourceCarryForwards yet -- always native by
-   * construction, since a TS-sourced line is never created without one below) or every
-   * carry-forward already merged into it shares the SAME contract as the new pick. Needed
-   * because the SAME picker list mixes the affaire's own-mode balances with its separate TS
-   * sub-contract's (see pendingCarryForwardList) -- a pick must never merge into a line built
-   * from the OTHER contract. */
-  private lineMatchesContract(lineGroup: FormGroup, isTsRow: boolean): boolean {
-    // A TS-dedicated invoice never seeds a native root declaration (it's created empty,
-    // populated only via this same picker -- see isTsCarryForward's own doc comment), so
-    // EVERY line here is already guaranteed TS by construction. No further discrimination
-    // needed -- and the check below can't provide any anyway, since the TS-extra pending
-    // list it reads is deliberately kept empty for a TS-dedicated host (the affaire's own-
-    // mode fetch already covers it there), which would otherwise wrongly read as "no line
-    // here is TS."
-    if (this.isTsCarryForward()) return true;
+  /** True if lineGroup is safe to merge a pick into: either it's the untouched root
+   * declaration (no sourceCarryForwards yet -- always native by construction, since a
+   * TS-sourced line is never created without one below) or every carry-forward already
+   * merged into it shares the SAME contract as the new pick. Needed because the SAME picker
+   * list mixes the affaire's own-mode balances with its separate TS sub-contract's (see
+   * pendingCarryForwardList) -- a pick must never merge into a line built from a DIFFERENT
+   * contract, and for TS specifically, "contract" means a specific ts_id, not just "is TS"
+   * (an affaire can have several independent TS records -- see
+   * docs/superpowers/specs/2026-10-26-ts-wip-invoice-line-merge-by-tsid-design.md). */
+  private lineMatchesContract(lineGroup: FormGroup, dto: PendingCarryForwardDto, isTsRow: boolean): boolean {
+    if (isTsRow) {
+      // A fresh line (no pick merged into it yet) has tsId === null and matches any TS
+      // pick; once a TS pick has been merged, only the SAME ts_id may merge further.
+      const existingTsId = lineGroup.get('tsId')!.value as number | null;
+      return existingTsId == null || existingTsId === dto.tsId;
+    }
     const sources = (lineGroup.get('sourceCarryForwards')!.value ?? []) as { sourceBillingLineId: number }[];
-    if (sources.length === 0) return !isTsRow;
+    if (sources.length === 0) return lineGroup.get('tsId')!.value == null;
     const tsIds = new Set(this.pendingTsCarryForwardExtra().map(p => p.id));
-    return tsIds.has(sources[0].sourceBillingLineId) === isTsRow;
+    return !tsIds.has(sources[0].sourceBillingLineId);
   }
 
   /** A same-contract pick (see lineMatchesContract) merges into the existing line instead of
@@ -1441,7 +1446,7 @@ export class StepLinesComponent {
       const isTsRow = dto ? this.isTsCarryForwardRow(dto) : false;
       const canMerge = isTsRow === this.isTsCarryForward();
       const targetLine = canMerge
-        ? (this.linesArray.controls.find(c => this.lineMatchesContract(c as FormGroup, isTsRow)) as FormGroup | undefined) ?? null
+        ? (this.linesArray.controls.find(c => this.lineMatchesContract(c as FormGroup, dto!, isTsRow)) as FormGroup | undefined) ?? null
         : null;
 
       if (targetLine) {
@@ -1476,6 +1481,7 @@ export class StepLinesComponent {
         prixUnitaireHt:       amount,
         tauxTva:              0,
         sourceCarryForwards:  [{ sourceBillingLineId: id, amount }],
+        tsId:                 isTsRow ? (dto?.tsId ?? null) : null,
         budgetAffaire:        budgetAffaire,
         pctFacture:           dto?.pctFacture ?? null,
         pctAvancement:        dto?.pctAvancement ?? null,
