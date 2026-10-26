@@ -36,6 +36,7 @@ export interface StepLinesValue {
     // later task). Absent for every other mode.
     affaireId?:   number;
     billingMode?: string;
+    // TS-dedicated invoices only -- see isTsCarryForward() below. Absent for every other mode.
     tsId?:        number;
     // Carry-forward — sources attribuées à cette ligne (cf. PendingCarryForwardDto). Vide =
     // rien reporté ; une entrée = cas classique ; plusieurs = fusion de picks du même

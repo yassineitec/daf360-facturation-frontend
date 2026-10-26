@@ -184,6 +184,7 @@ export interface InvoiceLineRequest {
   // invoice's own affaireId/billingMode already apply to every line.
   affaireId?:   number | null;
   billingMode?: string | null;
+  // TS-dedicated invoices only -- see InvoiceLine.tsId above.
   tsId?:        number | null;
   // WIP carry-forward sources attributed to this line — see InvoiceLine above.
   sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
