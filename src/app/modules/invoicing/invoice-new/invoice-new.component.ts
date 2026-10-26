@@ -173,6 +173,7 @@ export class InvoiceNewComponent implements OnInit {
             sourceCarryForwards: l.sourceCarryForwards,
             affaireId:       l.affaireId   ?? undefined,
             billingMode:     l.billingMode ?? undefined,
+            tsId:            l.tsId        ?? undefined,
             deductionPct1:   l.deductionPct1,
             deductionPct2:   l.deductionPct2,
             deductionPct3:   l.deductionPct3,

@@ -27,6 +27,10 @@ export interface InvoiceLine {
   // invoice's own affaireId/billingMode already apply to every line.
   affaireId?:   number | null;
   billingMode?: string | null;
+  // Which TS this line belongs to -- null except for a TS-dedicated invoice line. Round-
+  // trips through the edit/reopen wizard (see step-lines.component.ts's
+  // seedFromInitialLines/lineMatchesContract).
+  tsId?:        number | null;
   // WIP carry-forward sources attributed to this line — zero for a plain line, one for the
   // common case, several when same-contract picks were merged (see
   // step-lines.component.ts's addSelectedCarryForward).
@@ -180,6 +184,7 @@ export interface InvoiceLineRequest {
   // invoice's own affaireId/billingMode already apply to every line.
   affaireId?:   number | null;
   billingMode?: string | null;
+  tsId?:        number | null;
   // WIP carry-forward sources attributed to this line — see InvoiceLine above.
   sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
   // T&M — collaborateur associé à cette ligne, présent uniquement en mode T&M

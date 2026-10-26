@@ -36,6 +36,7 @@ export interface StepLinesValue {
     // later task). Absent for every other mode.
     affaireId?:   number;
     billingMode?: string;
+    tsId?:        number;
     // Carry-forward — sources attribuées à cette ligne (cf. PendingCarryForwardDto). Vide =
     // rien reporté ; une entrée = cas classique ; plusieurs = fusion de picks du même
     // contrat (cf. addSelectedCarryForward plus bas).
@@ -1003,6 +1004,7 @@ export class StepLinesComponent {
           pctAFacturer:    l.pctAFacturer  ?? null,
           sourceExpenseId: l.sourceExpenseId ?? null,
           sourceCarryForwards: l.sourceCarryForwards ?? [],
+          tsId:            l.tsId ?? null,
           profileUserId:   l.profileUserId ?? null,
           deductionPct1:   l.deductionPct1 ?? null,
           deductionPct2:   l.deductionPct2 ?? null,
@@ -1868,6 +1870,7 @@ export class StepLinesComponent {
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
+        tsId: number | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
       }[]).map((l, i) => ({
         description:   l.description,
@@ -1879,6 +1882,7 @@ export class StepLinesComponent {
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
         sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        tsId:          l.tsId ?? undefined,
         ...dedFields(l),
       }));
       this.nextStep.emit({
