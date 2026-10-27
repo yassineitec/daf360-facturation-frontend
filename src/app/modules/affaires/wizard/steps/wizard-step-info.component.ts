@@ -49,8 +49,13 @@ export class WizardStepInfoComponent implements OnInit {
   readonly BILLING_MODES = BILLING_MODES;
 
   allClients       = signal<ClientDropdownItemDto[]>([]);
+  /** Référentiel COMPLET `/ref/pays` (194 pays) — sert à résoudre le libellé de la ligne
+   *  verrouillée pour N'IMPORTE QUEL `paysId` historique, y compris hors du groupe ARX. */
   paysList         = signal<PaysRefDto[]>([]);
-  sellerEntitiesList = signal<PaysRefDto[]>([]);
+  /** Entités ARX réelles `/ref/pays/arx-entities` — sert UNIQUEMENT aux listes de choix
+   *  (pays de création, entités vendeuses). Ne pas s'en servir pour résoudre un libellé
+   *  sur une affaire existante : un `paysId` historique peut être hors de ce sous-ensemble. */
+  arxEntities      = signal<PaysRefDto[]>([]);
   clientResults    = signal<ClientDropdownItemDto[]>([]);
   clientInputValue = signal('');
   clientFocused    = false;
@@ -102,16 +107,20 @@ export class WizardStepInfoComponent implements OnInit {
   get notes(): string | number | null      { return this.draft.notes ?? null; }
   set notes(v: string | number | null)     { this.draft.notes = (v as string) || undefined; }
 
-  /** Pays d'origine de l'affaire — référentiel `/ref/pays`. */
+  /** Pays d'origine de l'affaire, au moment de la création — limité aux entités ARX
+   *  réelles : seule une entité du groupe peut porter une nouvelle affaire. */
   readonly paysOptions = computed<SelectOption[]>(() =>
-    this.paysList().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
+    this.arxEntities().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
 
   /** Same entity list as the owner dropdown -- the owner entity is deliberately NOT
    *  excluded from this list (it may also be a seller). */
   readonly sellerEntityOptions = computed<SelectOption[]>(() =>
-    this.sellerEntitiesList().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
+    this.arxEntities().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
 
-  /** Ce que montre la ligne en lecture seule quand le pays est figé. */
+  /** Ce que montre la ligne en lecture seule quand le pays est figé. Lit la liste
+   *  COMPLÈTE (`paysList`, non filtrée ARX) : une affaire créée avant le filtrage ARX
+   *  peut porter un `paysId` hors du groupe, et doit quand même afficher son vrai
+   *  libellé plutôt qu'un tiret. */
   paysDisplay(): string {
     return this.draft.paysLabel
       ?? this.paysList().find(p => p.id === this.draft.paysId)?.frenchLabel
@@ -119,7 +128,7 @@ export class WizardStepInfoComponent implements OnInit {
   }
 
   /**
-   * ⚠️ `takeUntilDestroyed` sur les trois appels, et c'est indispensable pour DEUX
+   * ⚠️ `takeUntilDestroyed` sur les quatre appels, et c'est indispensable pour DEUX
    * d'entre eux : leurs réponses ne se contentent pas de remplir une liste, elles
    * **réémettent le brouillon** (`draftChange`).
    *
@@ -135,13 +144,20 @@ export class WizardStepInfoComponent implements OnInit {
 
     this.loadCurrencies(this.draft.paysId);
 
+    // Liste COMPLÈTE : seule source fiable pour résoudre le libellé d'une affaire déjà
+    // créée (ligne verrouillée), dont le `paysId` peut dater d'avant le filtrage ARX.
+    this.affaireSvc.getPays()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => this.paysList.set(list));
+
     this.affaireSvc.getArxEntities()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(list => {
-        this.paysList.set(list);
-        this.sellerEntitiesList.set(list);
+        this.arxEntities.set(list);
         // Le libellé sert au récapitulatif et à la ligne verrouillée : il est résolu ici
         // une fois la liste connue, que le pays vienne de la saisie ou du brouillon relu.
+        // L'entité de création de l'utilisateur fait partie des entités ARX par
+        // définition, donc cette liste filtrée suffit pour cette résolution-là.
         const current = list.find(p => p.id === this.draft.paysId);
         if (current && this.draft.paysLabel !== current.frenchLabel) {
           this.draft = { ...this.draft, paysLabel: current.frenchLabel };
@@ -196,7 +212,9 @@ export class WizardStepInfoComponent implements OnInit {
 
   onPaysChange(values: string[]): void {
     const id = Number(values[0]);
-    const pays = this.paysList().find(p => p.id === id);
+    // L'id vient du dropdown de création (`paysOptions`), lui-même issu d'`arxEntities` :
+    // chercher ici dans la même liste garde les deux en phase.
+    const pays = this.arxEntities().find(p => p.id === id);
     this.draft = { ...this.draft, paysId: id || 0, paysLabel: pays?.frenchLabel };
     this.emit();
     this.loadCurrencies(id);
