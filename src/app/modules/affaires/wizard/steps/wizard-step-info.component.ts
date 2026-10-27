@@ -50,6 +50,7 @@ export class WizardStepInfoComponent implements OnInit {
 
   allClients       = signal<ClientDropdownItemDto[]>([]);
   paysList         = signal<PaysRefDto[]>([]);
+  sellerEntitiesList = signal<PaysRefDto[]>([]);
   clientResults    = signal<ClientDropdownItemDto[]>([]);
   clientInputValue = signal('');
   clientFocused    = false;
@@ -105,6 +106,11 @@ export class WizardStepInfoComponent implements OnInit {
   readonly paysOptions = computed<SelectOption[]>(() =>
     this.paysList().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
 
+  /** Same entity list as the owner dropdown -- the owner entity is deliberately NOT
+   *  excluded from this list (it may also be a seller). */
+  readonly sellerEntityOptions = computed<SelectOption[]>(() =>
+    this.sellerEntitiesList().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
+
   /** Ce que montre la ligne en lecture seule quand le pays est figé. */
   paysDisplay(): string {
     return this.draft.paysLabel
@@ -129,10 +135,11 @@ export class WizardStepInfoComponent implements OnInit {
 
     this.loadCurrencies(this.draft.paysId);
 
-    this.affaireSvc.getPays()
+    this.affaireSvc.getArxEntities()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(list => {
         this.paysList.set(list);
+        this.sellerEntitiesList.set(list);
         // Le libellé sert au récapitulatif et à la ligne verrouillée : il est résolu ici
         // une fois la liste connue, que le pays vienne de la saisie ou du brouillon relu.
         const current = list.find(p => p.id === this.draft.paysId);
@@ -193,6 +200,12 @@ export class WizardStepInfoComponent implements OnInit {
     this.draft = { ...this.draft, paysId: id || 0, paysLabel: pays?.frenchLabel };
     this.emit();
     this.loadCurrencies(id);
+  }
+
+  onSellerEntitiesChange(values: string[]): void {
+    const ids = values.map(v => Number(v)).filter(n => !Number.isNaN(n));
+    this.draft = { ...this.draft, sellerEntityIds: ids };
+    this.emit();
   }
 
   /**

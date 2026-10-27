@@ -1534,6 +1534,9 @@
         "pays_ph": "Select the parent entity",
         "pays_hint": "Drives the project reference sequence. Cannot be changed afterwards.",
         "pays_locked": "set at creation",
+        "seller_entities_label": "Seller entities (ARX)",
+        "seller_entities_ph": "Select one or more entities",
+        "seller_entities_hint": "Other ARX entities that contributed to this affaire (informational, no effect on billing).",
         "modes": {
           "FORFAIT": {
             "label": "Lump Sum",

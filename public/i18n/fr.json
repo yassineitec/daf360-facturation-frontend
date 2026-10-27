@@ -1534,6 +1534,9 @@
         "pays_ph": "Sélectionnez l'entité mère",
         "pays_hint": "Détermine la séquence de référence de l'affaire. Non modifiable ensuite.",
         "pays_locked": "défini à la création",
+        "seller_entities_label": "Entités vendeuses (ARX)",
+        "seller_entities_ph": "Sélectionner une ou plusieurs entités",
+        "seller_entities_hint": "Autres entités ARX ayant contribué à cette affaire (information, sans effet sur la facturation).",
         "modes": {
           "FORFAIT": {
             "label": "Forfaitaire",

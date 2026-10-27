@@ -83,6 +83,8 @@ export interface AffaireDraftState {
   // Step 2 — Pays d'origine de l'affaire.
   paysId: number;
   paysLabel?: string;
+  /** Other ARX entities that contributed to this affaire -- optional, reporting-only. */
+  sellerEntityIds: number[];
 
   // Step 1 — DOC360 project (optional)
   doc360ProjectName?: string;
@@ -205,6 +207,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
   return {
     id:                          dto.id,
     paysId:                      dto.paysId ?? 0,
+    sellerEntityIds:             dto.sellerEntityIds ?? [],
     clientId:                    dto.clientId,
     clientName,
     clientKycDone,

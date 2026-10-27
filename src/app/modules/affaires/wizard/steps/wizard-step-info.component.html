@@ -58,6 +58,20 @@
         }
       </div>
 
+      <!-- Entités vendeuses — reporting only -->
+      <div class="field field-full">
+        <daf-select
+          [options]="sellerEntityOptions()"
+          [config]="{
+            label: ('AFFAIRES.wizard.info.seller_entities_label' | translate),
+            placeholder: ('AFFAIRES.wizard.info.seller_entities_ph' | translate),
+            multiple: true, searchable: true, fullWidth: true
+          }"
+          [selected]="draft.sellerEntityIds.map(id => id.toString())"
+          (selectedChange)="onSellerEntitiesChange($event)" />
+        <p class="field-hint">{{ 'AFFAIRES.wizard.info.seller_entities_hint' | translate }}</p>
+      </div>
+
       <!-- Client typeahead -->
       <div class="field">
         <label class="field-label">

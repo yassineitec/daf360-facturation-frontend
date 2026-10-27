@@ -228,4 +228,15 @@ export class AffaireService {
     );
     return this.paysCache$;
   }
+
+  private arxEntitiesCache$?: Observable<PaysRefDto[]>;
+
+  /** Only the real ARX legal entities -- feeds the wizard's owner/seller entity pickers. */
+  getArxEntities(): Observable<PaysRefDto[]> {
+    this.arxEntitiesCache$ ??= this.http.get<PaysRefDto[]>(`${this.base}/ref/pays/arx-entities`).pipe(
+      catchError(() => { this.arxEntitiesCache$ = undefined; return of([] as PaysRefDto[]); }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    return this.arxEntitiesCache$;
+  }
 }

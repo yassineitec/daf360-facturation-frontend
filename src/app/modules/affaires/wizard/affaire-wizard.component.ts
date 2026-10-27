@@ -253,6 +253,7 @@ export class AffaireWizardComponent implements OnInit {
 
   draft = signal<AffaireDraftState>({
     paysId: 0,
+    sellerEntityIds: [],
     intitule: '',
     contractCurrency: 'EUR',
     billingPeriod: 'MONTHLY',
@@ -484,6 +485,7 @@ export class AffaireWizardComponent implements OnInit {
     this.wizardService.createDraft({
       refId:                 this.userStore.user()?.userId,
       paysId:                d.paysId || null,
+      sellerEntityIds:       d.sellerEntityIds,
       clientId:              d.clientId,
       intitule:              d.intitule.trim(),
       reference:             d.reference?.trim()    || null,
