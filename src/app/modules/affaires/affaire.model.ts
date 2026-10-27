@@ -54,6 +54,61 @@ export interface AffaireInvoiceItem {
   notes?:              string | null;
 }
 
+// ── Graphiques de la vue d'ensemble (backend AffaireChartsDto) ─────────────
+//
+// Sur toute l'étendue avec les TS, la somme des trois statuts WIP = la tuile WIP de /kpis,
+// et la somme des paiements = kpis.ca. Les `opening*` portent ce qui précède `from`, pour
+// la vue « cumulé » qui compte depuis l'origine de l'affaire.
+
+export type ChartGranularity = 'MONTH' | 'QUARTER' | 'YEAR';
+export type ChartWipStatus   = 'PENDING' | 'INVOICED' | 'REJECTED';
+
+export interface ChartWipAmounts {
+  pending:  number;
+  invoiced: number;
+  rejected: number;
+}
+
+export interface AffaireChartBucket {
+  /** « 2026-03 », « 2026-Q1 » ou « 2026 ». */
+  key:          string;
+  start:        string;
+  end:          string;
+  /** Factures émises dans la période, TTC — le graphique « Facturation » d'origine. */
+  invoiced:     number;
+  invoiceCount: number;
+  wip:          ChartWipAmounts;
+  payments:     number;
+  paymentCount: number;
+}
+
+export interface AffaireChartsDto {
+  affaireId:         number;
+  granularity:       ChartGranularity;
+  from:              string;
+  to:                string;
+  includeTs:         boolean;
+  dataFrom:          string;
+  dataTo:            string;
+  openingInvoiced:   number;
+  openingWip:        ChartWipAmounts;
+  openingPayments:   number;
+  buckets:           AffaireChartBucket[];
+  totalInvoiced:     number;
+  totalInvoiceCount: number;
+  totalWip:          ChartWipAmounts;
+  totalPayments:     number;
+  totalPaymentCount: number;
+}
+
+/** Les filtres des graphiques — `from` / `to` au format `yyyy-MM`, null = toute l'étendue. */
+export interface AffaireChartsQuery {
+  from:        string | null;
+  to:          string | null;
+  granularity: ChartGranularity;
+  includeTs:   boolean;
+}
+
 // Affaire-scoped payment row (backend PaymentResponseDto).
 export interface AffairePaymentItem {
   id:            number;
