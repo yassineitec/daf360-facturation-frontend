@@ -120,6 +120,9 @@ function toIsoDay(d: Date): string {
 
 // ── Graphiques facturation / WIP / paiements ───────────────────────────────
 
+/** Période des graphiques sans filtre : l'année civile en cours (demande du 2026-10-27). */
+const DEFAULT_CHART_PERIOD = 'YTD';
+
 /** Les diapositives du carrousel, dans l'ordre de lecture : facturé, déclaré, encaissé. */
 const CHART_SLIDES = ['INVOICED', 'WIP', 'PAYMENTS'] as const;
 type ChartSlideId = typeof CHART_SLIDES[number];
@@ -1530,7 +1533,7 @@ export class AffaireDetailComponent implements OnInit {
   // l'URL (`cp`, `cf`, `ct`, `cg`, `cv`, `cs`, `cts`, et `cc` pour la diapositive) : une vue
   // filtrée se partage et survit au rechargement.
   //
-  //   Période     : toute l'affaire (défaut), année en cours, 12 derniers mois, une année,
+  //   Période     : année en cours (défaut), toute l'affaire, 12 derniers mois, une année,
   //                 ou une plage de dates (qui l'emporte). Le serveur coupe la plage à
   //                 l'étendue de l'affaire — un préréglage ne connaît pas ses dates.
   //   Granularité : mois (défaut), trimestre, année.
@@ -1545,7 +1548,7 @@ export class AffaireDetailComponent implements OnInit {
 
   private readonly chartQueryParams = this.route.snapshot.queryParamMap;
 
-  readonly chartPeriod      = signal<string>(this.chartQueryParams.get('cp') ?? 'ALL');
+  readonly chartPeriod      = signal<string>(this.chartQueryParams.get('cp') ?? DEFAULT_CHART_PERIOD);
   readonly chartCustomFrom  = signal<string | null>(this.chartQueryParams.get('cf'));
   readonly chartCustomTo    = signal<string | null>(this.chartQueryParams.get('ct'));
   readonly chartGranularity = signal<ChartGranularity>(asGranularity(this.chartQueryParams.get('cg')));
@@ -1560,6 +1563,11 @@ export class AffaireDetailComponent implements OnInit {
   readonly chartsError     = signal(false);
   /** Numéro de la dernière requête : une réponse plus ancienne arrivée après est ignorée. */
   private chartsRequestId = 0;
+  /**
+   * Le repli du défaut ne joue qu'au premier chargement, et seulement si l'URL n'imposait
+   * pas de période : ensuite, une plage vide est un choix de l'utilisateur, à respecter.
+   */
+  private chartsDefaultFallbackPending = !this.chartQueryParams.has('cp');
 
   /** Plage `yyyy-MM` du préréglage choisi ; null = borne de l'étendue (le serveur coupe). */
   readonly chartRange = computed<{ from: string | null; to: string | null }>(() => {
@@ -1600,7 +1608,7 @@ export class AffaireDetailComponent implements OnInit {
   private readonly chartsUrlSync = effect(() => {
     const period = this.chartPeriod(), statuses = this.chartStatuses();
     const params: Record<string, string | null> = {
-      cp:  period === 'ALL' ? null : period,
+      cp:  period === DEFAULT_CHART_PERIOD ? null : period,
       cf:  period === 'CUSTOM' ? this.chartCustomFrom() : null,
       ct:  period === 'CUSTOM' ? this.chartCustomTo()   : null,
       cg:  this.chartGranularity() === 'MONTH' ? null : this.chartGranularity(),
@@ -1625,6 +1633,16 @@ export class AffaireDetailComponent implements OnInit {
     this.svc.getAffaireCharts(this.numId, q).subscribe({
       next: c => {
         if (id !== this.chartsRequestId) return;
+        // Défaut « année en cours » sur une affaire close avant cette année : rien à
+        // montrer. On ouvre plutôt sa dernière année — la puce « Année N » dit pourquoi.
+        if (this.chartsDefaultFallbackPending) {
+          this.chartsDefaultFallbackPending = false;
+          const lastYear = Number(c.dataTo.slice(0, 4));
+          if (!c.buckets.length && lastYear < new Date().getFullYear()) {
+            this.chartPeriod.set(`Y${lastYear}`);
+            return;
+          }
+        }
         this.charts.set(c);
         this.chartsLoading.set(false);
       },
@@ -1644,13 +1662,15 @@ export class AffaireDetailComponent implements OnInit {
     const c = this.charts();
     const years: FilterOption[] = [];
     if (c) {
+      const current = new Date().getFullYear();
       for (let y = Number(c.dataTo.slice(0, 4)); y >= Number(c.dataFrom.slice(0, 4)); y--) {
-        years.push({ value: `Y${y}`, label: t('PERIOD_YEAR', { year: y }) });
+        // L'année en cours est déjà le défaut (« Année en cours ») : pas de doublon.
+        if (y !== current) years.push({ value: `Y${y}`, label: t('PERIOD_YEAR', { year: y }) });
       }
     }
     return [
-      { name: 'period', label: t('PERIOD'), type: 'select', placeholder: t('PERIOD_ALL'),
-        options: [{ value: 'YTD', label: t('PERIOD_YTD') }, { value: 'L12', label: t('PERIOD_L12') }, ...years] },
+      { name: 'period', label: t('PERIOD'), type: 'select', placeholder: t('PERIOD_YTD'),
+        options: [{ value: 'ALL', label: t('PERIOD_ALL') }, { value: 'L12', label: t('PERIOD_L12') }, ...years] },
       { name: 'range', label: t('RANGE'), type: 'daterange', hint: t('RANGE_HINT') },
       { name: 'granularity', label: t('GRANULARITY'), type: 'select', placeholder: t('GRAN_MONTH'),
         options: [{ value: 'QUARTER', label: t('GRAN_QUARTER') }, { value: 'YEAR', label: t('GRAN_YEAR') }] },
@@ -1671,7 +1691,7 @@ export class AffaireDetailComponent implements OnInit {
     const period = this.chartPeriod(), from = this.chartCustomFrom(), to = this.chartCustomTo();
     const statuses = this.chartStatuses();
     return {
-      period:      period === 'ALL' || period === 'CUSTOM' ? null : period,
+      period:      period === DEFAULT_CHART_PERIOD || period === 'CUSTOM' ? null : period,
       range:       period === 'CUSTOM' && from ? [monthStart(from), monthEnd(to ?? from)] : null,
       granularity: this.chartGranularity() === 'MONTH' ? null : this.chartGranularity(),
       view:        this.chartView() === 'PERIOD' ? null : this.chartView(),
@@ -1696,7 +1716,7 @@ export class AffaireDetailComponent implements OnInit {
       this.chartCustomFrom.set(toYearMonth(range[0]));
       this.chartCustomTo.set(toYearMonth(range[range.length - 1]));
     } else {
-      this.chartPeriod.set(this.asFilterValue(r, 'period') || 'ALL');
+      this.chartPeriod.set(this.asFilterValue(r, 'period') || DEFAULT_CHART_PERIOD);
       this.chartCustomFrom.set(null);
       this.chartCustomTo.set(null);
     }
@@ -1712,7 +1732,7 @@ export class AffaireDetailComponent implements OnInit {
     switch (name) {
       case 'period':
       case 'range':
-        this.chartPeriod.set('ALL');
+        this.chartPeriod.set(DEFAULT_CHART_PERIOD);
         this.chartCustomFrom.set(null);
         this.chartCustomTo.set(null);
         break;
@@ -1724,7 +1744,7 @@ export class AffaireDetailComponent implements OnInit {
   }
 
   resetChartFilters(): void {
-    this.chartPeriod.set('ALL');
+    this.chartPeriod.set(DEFAULT_CHART_PERIOD);
     this.chartCustomFrom.set(null);
     this.chartCustomTo.set(null);
     this.chartGranularity.set('MONTH');
