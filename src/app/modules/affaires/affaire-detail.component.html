@@ -233,7 +233,11 @@
               <div class="dp-rule dp-rule--major"></div>
 
               <!-- 2bis. Entités vendeuses — éditable par QUICONQUE peut modifier l'affaire
-                   (FACT_UPDATE_AFFAIRE, même garde que « Modifier l'affaire » plus bas),
+                   (FACT_MANAGE_AFFAIRE : c'est la permission que le backend vérifie
+                   réellement sur `PATCH /affaires/{id}`, celle qu'utilise aussi cette
+                   requête côté `updateAffaire`. Le bouton « Modifier l'affaire » plus bas
+                   est encore gardé par FACT_UPDATE_AFFAIRE, un décalage préexistant et
+                   hors périmètre ici — voir affaire.service.ts),
                    sans verrou : contrairement à la bascule de l'entité propriétaire
                    ci-dessus (réservée à FACT_SUPER_ADMIN), c'est une donnée de reporting
                    pure. Toujours affiché, même vide : il faut pouvoir en ajouter la
@@ -243,7 +247,7 @@
                   <h3 class="dp-label" id="dp-h-sellers">
                     {{ 'AFFAIRES.DETAIL.SELLER_ENTITIES.TITLE' | translate }}
                   </h3>
-                  <button *appHasPermission="'FACT_UPDATE_AFFAIRE'" type="button" class="dp-link-btn"
+                  <button *appHasPermission="'FACT_MANAGE_AFFAIRE'" type="button" class="dp-link-btn"
                           (click)="openSellerEntitiesModal()">
                     {{ 'AFFAIRES.DETAIL.ACTIONS.EDIT' | translate }}
                   </button>

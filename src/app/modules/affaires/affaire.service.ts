@@ -74,7 +74,7 @@ export class AffaireService {
   }
 
   updateAffaire(id: number, dto: UpdateAffaireRequest): Observable<AffaireDetail> {
-    return this.http.put<AffaireDetail>(`${this.base}/affaires/${id}`, dto);
+    return this.http.patch<AffaireDetail>(`${this.base}/affaires/${id}`, dto);
   }
 
   /**

@@ -776,8 +776,10 @@ export class AffaireDetailComponent implements OnInit {
    * aucun appel supplémentaire quand on vient de la liste.
    */
   private readonly paysList = signal<PaysRefDto[]>([]);
-  readonly paysLabel = computed(() =>
-    this.paysList().find(p => p.id === this.affaire()?.paysId)?.frenchLabel ?? '—');
+  readonly paysLabel = computed(() => {
+    const p = this.paysList().find(p => p.id === this.affaire()?.paysId);
+    return p ? paysLabel(p, this.translate.currentLang()) : '—';
+  });
 
   readonly headerSubtitle = computed(() => {
     const a = this.affaire();
