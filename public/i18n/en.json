@@ -1405,7 +1405,19 @@
         "TS_INVOICE": "Invoice",
         "OPEN_INVOICE": "Open the invoice",
         "OPEN_PAYMENTS": "Open the Payments module",
-        "EXPENSES_TITLE": "Project reimbursable expenses"
+        "EXPENSES_TITLE": "Project reimbursable expenses",
+        "OWNER_ENTITY_TITLE": "Edit owner entity",
+        "SELLER_ENTITIES_TITLE": "Seller entities"
+      },
+      "OWNER_ENTITY": {
+        "EDIT_ACTION": "Edit owner entity",
+        "LABEL": "Owner entity (ARX)",
+        "SAVE_ERROR": "Could not change the owner entity."
+      },
+      "SELLER_ENTITIES": {
+        "TITLE": "Seller entities",
+        "NONE": "None",
+        "SAVE_ERROR": "Could not update the seller entities."
       }
     },
     "wizard": {

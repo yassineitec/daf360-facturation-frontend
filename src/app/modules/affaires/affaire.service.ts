@@ -77,6 +77,15 @@ export class AffaireService {
     return this.http.put<AffaireDetail>(`${this.base}/affaires/${id}`, dto);
   }
 
+  /**
+   * Bascule l'entité PROPRIÉTAIRE de l'affaire — distincte de `updateAffaire` : réservée
+   * à `FACT_SUPER_ADMIN` côté serveur, et protégée par une garde anti-collision de
+   * référence (le serveur refuse si `(reference, nouveau pays)` existe déjà).
+   */
+  changeOwnerEntity(id: number, paysId: number): Observable<AffaireDetail> {
+    return this.http.patch<AffaireDetail>(`${this.base}/affaires/${id}/owner-entity`, { paysId });
+  }
+
   validerBudget(id: number): Observable<void> {
     return this.http.post<void>(`${this.base}/affaires/${id}/valider-budget`, {});
   }

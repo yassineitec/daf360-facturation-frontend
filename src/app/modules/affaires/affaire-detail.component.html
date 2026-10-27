@@ -175,7 +175,17 @@
                   <span class="dp-client__name" [title]="aff.clientName ?? ''">
                     {{ aff.clientName ?? '—' }}
                   </span>
-                  <span class="dp-client__meta">{{ clientMeta() }}</span>
+                  <span class="dp-client__actions">
+                    <span class="dp-client__meta">{{ clientMeta() }}</span>
+                    <!-- Bascule de l'entité propriétaire : réservée à FACT_SUPER_ADMIN, le
+                         serveur applique la même garde et refuse en cas de collision de
+                         référence — voir openOwnerEntityModal / submitOwnerEntity. -->
+                    <button *appHasPermission="'FACT_SUPER_ADMIN'" type="button" class="dp-icon-btn"
+                            [title]="'AFFAIRES.DETAIL.OWNER_ENTITY.EDIT_ACTION' | translate"
+                            (click)="openOwnerEntityModal()">
+                      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                    </button>
+                  </span>
                 </div>
                 <h3 class="dp-label" id="dp-h-client">
                   {{ 'AFFAIRES.DETAIL.INFO.CLIENT' | translate }}
@@ -218,6 +228,35 @@
                     </div>
                   }
                 </dl>
+              </section>
+
+              <div class="dp-rule dp-rule--major"></div>
+
+              <!-- 2bis. Entités vendeuses — éditable par QUICONQUE peut modifier l'affaire
+                   (FACT_UPDATE_AFFAIRE, même garde que « Modifier l'affaire » plus bas),
+                   sans verrou : contrairement à la bascule de l'entité propriétaire
+                   ci-dessus (réservée à FACT_SUPER_ADMIN), c'est une donnée de reporting
+                   pure. Toujours affiché, même vide : il faut pouvoir en ajouter la
+                   première. -->
+              <section class="dp-block" aria-labelledby="dp-h-sellers">
+                <div class="dp-block__head">
+                  <h3 class="dp-label" id="dp-h-sellers">
+                    {{ 'AFFAIRES.DETAIL.SELLER_ENTITIES.TITLE' | translate }}
+                  </h3>
+                  <button *appHasPermission="'FACT_UPDATE_AFFAIRE'" type="button" class="dp-link-btn"
+                          (click)="openSellerEntitiesModal()">
+                    {{ 'AFFAIRES.DETAIL.ACTIONS.EDIT' | translate }}
+                  </button>
+                </div>
+                @if (sellerEntityLabels().length) {
+                  <div class="dp-chips">
+                    @for (label of sellerEntityLabels(); track label) {
+                      <span class="dp-chip">{{ label }}</span>
+                    }
+                  </div>
+                } @else {
+                  <p class="dp-chip-empty">{{ 'AFFAIRES.DETAIL.SELLER_ENTITIES.NONE' | translate }}</p>
+                }
               </section>
 
               <!-- 2 px : séparateur de SECTION MAJEURE. Le 1 px ci-dessus rattache la
@@ -902,6 +941,44 @@
       [options]="motifFieldOptions()"
       [value]="motif()"
       (valueChange)="motif.set($any($event) ?? '')" />
+
+    @if (modalError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+        <span class="material-symbols-outlined text-headline-md">error</span>{{ modalError() }}
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #ownerEntityTpl>
+  <div class="flex flex-col gap-5">
+    <daf-select
+      [options]="arxEntityOptions()"
+      [config]="{
+        label: ('AFFAIRES.DETAIL.OWNER_ENTITY.LABEL' | translate),
+        searchable: true, fullWidth: true
+      }"
+      [selected]="ownerEntityDraft() ? [ownerEntityDraft()!.toString()] : []"
+      (selectedChange)="onOwnerEntityDraftChange($event)" />
+
+    @if (modalError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+        <span class="material-symbols-outlined text-headline-md">error</span>{{ modalError() }}
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #sellerEntitiesTpl>
+  <div class="flex flex-col gap-5">
+    <daf-select
+      [options]="arxEntityOptions()"
+      [config]="{
+        label: ('AFFAIRES.DETAIL.SELLER_ENTITIES.TITLE' | translate),
+        multiple: true, searchable: true, fullWidth: true
+      }"
+      [selected]="sellerEntitiesDraft().map(id => id.toString())"
+      (selectedChange)="onSellerEntitiesDraftChange($event)" />
 
     @if (modalError()) {
       <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">

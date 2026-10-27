@@ -132,6 +132,9 @@ export interface AffaireDetail extends AffaireListItem {
   billingModeLocked?:boolean;
   contractAmount?:   number | null;
   cpMarginRatePct?:  number | null;
+  /** Other ARX entities that contributed to this affaire -- always present (empty array,
+   *  never undefined). */
+  sellerEntityIds:   number[];
 }
 
 export interface RafDetailsDto {
@@ -209,10 +212,9 @@ export interface TsDto {
 
 // Correspond exactement à UpdateAffaireRequest.java côté backend (PATCH
 // /affaires/{id}) — pas de reference/paysId/typeAffaire, cette route ne les
-// accepte pas. Aucun appelant frontend actif aujourd'hui (le seul qui existait,
-// affaire-form.component.ts, était l'écran de création legacy — supprimé), gardé
-// pour que affaire.service.ts#updateAffaire reste type-correct si/quand un appelant
-// réapparaît.
+// accepte pas. Seul appelant frontend aujourd'hui : affaire-detail.component.ts,
+// pour l'éditeur « Entités vendeuses » (seul `sellerEntityIds` est envoyé, les
+// autres champs restent absents et donc inchangés côté serveur).
 export interface UpdateAffaireRequest {
   intitule?:           string | null;
   clientId?:           number | null;
@@ -226,6 +228,8 @@ export interface UpdateAffaireRequest {
   erpReference?:       string | null;
   contractCurrency?:   string | null;
   billingPeriod?:      string | null;
+  /** Other ARX entities that contributed to this affaire -- omit to leave unchanged. */
+  sellerEntityIds?:    number[] | null;
 }
 
 export interface ChangerStatutRequest {

@@ -7,7 +7,7 @@ import {
   ChipGroupComponent, DafCellDirective, DataTableComponent, MetricCardComponent,
   DrawerComponent, FormFieldComponent, FormFieldOptions, GaugeComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
-  RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, StatusBadgeComponent,
+  RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, SelectComponent, StatusBadgeComponent,
   TabsComponent,
   tabParam,
 } from '@khalilrebhiitec/daf360';
@@ -15,7 +15,7 @@ import type {
   AvatarData, BadgeCell, BadgeOptions, BarChartBar, BarChartOptions, BreadcrumbItem,
   ChipGroupConfig, ChipOption, DrawerConfig,
   MetricCardOptions, MetricDelta,
-  FilterField, FilterResult, GaugeOptions, PageHeaderBadge, RadioOption,
+  FilterField, FilterResult, GaugeOptions, PageHeaderBadge, RadioOption, SelectOption,
   SearchToolbarFilterConfig, TabItem, TableAction, TableColumn, TableConfig, TableRow,
   ToolbarAction,
 } from '@khalilrebhiitec/daf360';
@@ -23,7 +23,7 @@ import { AffaireService } from './affaire.service';
 import { AffaireWizardService } from './affaire-wizard.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto, TsHistoryEntry,
-  AffaireInvoiceItem, AffairePaymentItem, PaysRefDto,
+  AffaireInvoiceItem, AffairePaymentItem, PaysRefDto, paysLabel,
   AFFAIRE_STATUTS, STATUT_LABELS,
 } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
@@ -157,7 +157,7 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
     TranslatePipe, DisplayCurrencyPipe, DecimalPipe, PermissionDirective, RouterLink, DafCellDirective,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, ButtonComponent,
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
-    DrawerComponent, RadioGroupComponent, FormFieldComponent,
+    DrawerComponent, RadioGroupComponent, FormFieldComponent, SelectComponent,
     GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
     TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
@@ -398,6 +398,69 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
       font-size:   11px;
       color:       var(--color-on-surface-variant, #44474c);
     }
+
+    /* Regroupe la méta (entité · devise) et, pour FACT_SUPER_ADMIN seulement, l'icône de
+       bascule de l'entité propriétaire — les deux restent sur la même ligne de base que
+       le nom du client. */
+    .dp-client__actions {
+      flex-shrink: 0;
+      display:     inline-flex;
+      align-items: center;
+      gap:         4px;
+    }
+
+    /* Icône d'action discrète, réservée aux bascules admin posées à même une ligne de
+       méta (ex. l'entité propriétaire) — jamais visible hors de FACT_SUPER_ADMIN. */
+    .dp-icon-btn {
+      display:         inline-flex;
+      align-items:     center;
+      justify-content: center;
+      width:           18px;
+      height:          18px;
+      padding:         0;
+      border:          none;
+      border-radius:   4px;
+      background:      transparent;
+      color:            var(--color-on-surface-variant, #44474c);
+      cursor:          pointer;
+    }
+    .dp-icon-btn:hover { background: var(--color-surface-container-high, #e7e9e4); }
+    .dp-icon-btn .material-symbols-outlined { font-size: 14px; }
+
+    /* ── Entités vendeuses : puces, pas une liste de personnes ──────────────── */
+    .dp-chips {
+      display:   flex;
+      flex-wrap: wrap;
+      gap:       6px;
+    }
+    .dp-chip {
+      display:       inline-flex;
+      align-items:   center;
+      padding:       3px 10px;
+      border-radius: 999px;
+      font-size:     11px;
+      font-weight:   600;
+      color:         var(--color-on-secondary-container, #34369e);
+      background:    var(--color-secondary-container, #e3e3fb);
+    }
+    .dp-chip-empty {
+      margin:    0;
+      font-size: 11px;
+      color:     var(--color-on-surface-variant, #44474c);
+    }
+
+    /* Lien texte discret pour une action secondaire DANS un bloc (« Modifier » les
+       entités vendeuses) — un « daf-button » serait trop lourd à côté d'un simple libellé. */
+    .dp-link-btn {
+      border:      none;
+      background:  transparent;
+      padding:     0;
+      font-size:   10.5px;
+      font-weight: 700;
+      color:       var(--color-tertiary, #00c1ad);
+      cursor:      pointer;
+    }
+    .dp-link-btn:hover { text-decoration: underline; }
     /* «nowrap« : la période est une unité de lecture, la couper autour de la flèche
        donnerait « 01 sept. 2026 → » sur une ligne et la fin sur la suivante. */
     .dp-period {
@@ -600,6 +663,8 @@ export class AffaireDetailComponent implements OnInit {
   private readonly tsFormTpl      = viewChild.required<TemplateRef<unknown>>('tsFormTpl');
   private readonly tsDeleteTpl    = viewChild.required<TemplateRef<unknown>>('tsDeleteTpl');
   private readonly tsHistoryTpl   = viewChild.required<TemplateRef<unknown>>('tsHistoryTpl');
+  private readonly ownerEntityTpl    = viewChild.required<TemplateRef<unknown>>('ownerEntityTpl');
+  private readonly sellerEntitiesTpl = viewChild.required<TemplateRef<unknown>>('sellerEntitiesTpl');
   /** Le corps du formulaire TS : la modale délègue Confirmer / Annuler à ses méthodes. */
   private readonly tsForm         = viewChild<TsFormComponent>('tsForm');
   /** Idem pour le formulaire de frais remboursable. */
@@ -953,15 +1018,136 @@ export class AffaireDetailComponent implements OnInit {
   });
 
   /**
-   * « Pays d'origine » nommait le pays de rattachement de l'affaire ; le champ désigne en
-   * réalité l'entité mère du groupe, toujours ARX, qualifiée par ce pays — d'où le préfixe
-   * en dur. Sans pays connu, ARX seul : « ARX — » se lirait comme une donnée manquante
-   * alors que l'entité, elle, est certaine.
+   * L'entité PROPRIÉTAIRE réelle de l'affaire, résolue depuis `arxEntities` — remplace
+   * l'ancien `ARX ${pays}` qui n'était qu'une concaténation de texte, sans aucune donnée
+   * réelle derrière : n'importe quel pays d'affaire produisait un libellé plausible.
+   *
+   * Repli sur `paysList` (liste COMPLÈTE, non filtrée ARX) via `this.paysLabel()` quand
+   * l'entité n'est pas dans `arxEntities` : même leçon que le correctif du sélecteur du
+   * wizard (tâche précédente) — une affaire créée avant le filtrage ARX, ou dont le pays a
+   * depuis été retiré du groupe, porte un `paysId` historique hors de ce sous-ensemble, et
+   * doit quand même afficher son vrai libellé plutôt qu'un tiret.
    */
   readonly entiteMere = computed(() => {
-    const pays = this.paysLabel();
-    return pays === '—' ? 'ARX' : `ARX ${pays}`;
+    const a = this.affaire();
+    if (!a) return '—';
+    const lang = this.translate.currentLang();
+    const entity = this.arxEntities().find(p => p.id === a.paysId);
+    return entity ? paysLabel(entity, lang) : this.paysLabel();
   });
+
+  // ═══ Entités vendeuses & entité propriétaire ═══════════════════════════════
+
+  /** Entités ARX réelles (`/ref/pays/arx-entities`) — sert aux deux listes de choix
+   *  ci-dessous (entités vendeuses, bascule de l'entité propriétaire). Ne pas s'en servir
+   *  pour résoudre le libellé d'une affaire existante : voir `entiteMere`. */
+  readonly arxEntities = signal<PaysRefDto[]>([]);
+
+  readonly arxEntityOptions = computed<SelectOption[]>(() =>
+    this.arxEntities().map(p => ({ value: String(p.id), label: `${p.isoCode} — ${p.frenchLabel}` })));
+
+  /** Libellés affichés des entités vendeuses — `#id` de repli si une entité a disparu du
+   *  référentiel ARX entre temps (ne devrait pas arriver, mais ne doit jamais effacer la
+   *  ligne silencieusement). */
+  readonly sellerEntityLabels = computed(() => {
+    const a = this.affaire();
+    if (!a) return [];
+    const lang = this.translate.currentLang();
+    const entities = this.arxEntities();
+    return (a.sellerEntityIds ?? []).map(id => {
+      const p = entities.find(e => e.id === id);
+      return p ? paysLabel(p, lang) : `#${id}`;
+    });
+  });
+
+  /**
+   * Éditeur des entités vendeuses — ouvert à QUICONQUE peut modifier l'affaire
+   * (`FACT_UPDATE_AFFAIRE`), sans verrou : contrairement à l'entité propriétaire, ce
+   * champ n'a aucun impact sur la référence ni sur la numérotation, c'est une donnée de
+   * reporting pure.
+   */
+  readonly sellerEntitiesDraft = signal<number[]>([]);
+
+  openSellerEntitiesModal(): void {
+    this.sellerEntitiesDraft.set([...(this.affaire()?.sellerEntityIds ?? [])]);
+    this.modalError.set(null);
+
+    const ref = this.modals.open({
+      title: this.translate.instant('AFFAIRES.DETAIL.MODAL.SELLER_ENTITIES_TITLE'),
+      icon:  'corporate_fare',
+      size:  'md',
+      body:  this.sellerEntitiesTpl(),
+      buttons: [
+        { label: this.translate.instant('AFFAIRES.DETAIL.MODAL.CANCEL'), variant: 'secondary', action: r => r.close() },
+        {
+          label: this.translate.instant('AFFAIRES.DETAIL.MODAL.CONFIRM'),
+          variant: 'primary',
+          action: () => this.submitSellerEntities(ref),
+        },
+      ],
+    });
+  }
+
+  onSellerEntitiesDraftChange(values: string[]): void {
+    this.sellerEntitiesDraft.set(values.map(v => Number(v)).filter(n => !Number.isNaN(n)));
+  }
+
+  private submitSellerEntities(ref: { close: () => void }): void {
+    const a = this.affaire();
+    if (!a) return;
+    this.modalError.set(null);
+    this.svc.updateAffaire(a.id, { sellerEntityIds: this.sellerEntitiesDraft() }).subscribe({
+      next:  updated => { this.affaire.set(updated); ref.close(); },
+      error: err => this.modalError.set(
+        err?.error?.detail ?? err?.error?.message
+        ?? this.translate.instant('AFFAIRES.DETAIL.SELLER_ENTITIES.SAVE_ERROR')),
+    });
+  }
+
+  /**
+   * Bascule de l'entité PROPRIÉTAIRE — réservée à `FACT_SUPER_ADMIN` (garde côté
+   * template ET côté serveur) : contrairement aux entités vendeuses, ce champ porte la
+   * séquence de référence de l'affaire et son unicité `(référence, pays)`, d'où la garde
+   * anti-collision que le serveur peut opposer et qu'il faut savoir afficher.
+   */
+  readonly ownerEntityDraft = signal<number | null>(null);
+
+  openOwnerEntityModal(): void {
+    this.ownerEntityDraft.set(this.affaire()?.paysId ?? null);
+    this.modalError.set(null);
+
+    const ref = this.modals.open({
+      title: this.translate.instant('AFFAIRES.DETAIL.MODAL.OWNER_ENTITY_TITLE'),
+      icon:  'account_balance',
+      size:  'md',
+      body:  this.ownerEntityTpl(),
+      buttons: [
+        { label: this.translate.instant('AFFAIRES.DETAIL.MODAL.CANCEL'), variant: 'secondary', action: r => r.close() },
+        {
+          label: this.translate.instant('AFFAIRES.DETAIL.MODAL.CONFIRM'),
+          variant: 'primary',
+          action: () => this.submitOwnerEntity(ref),
+        },
+      ],
+    });
+  }
+
+  onOwnerEntityDraftChange(values: string[]): void {
+    this.ownerEntityDraft.set(values.length ? Number(values[0]) : null);
+  }
+
+  private submitOwnerEntity(ref: { close: () => void }): void {
+    const a = this.affaire();
+    const paysId = this.ownerEntityDraft();
+    if (!a || !paysId) return;
+    this.modalError.set(null);
+    this.svc.changeOwnerEntity(a.id, paysId).subscribe({
+      next:  updated => { this.affaire.set(updated); ref.close(); },
+      error: err => this.modalError.set(
+        err?.error?.detail ?? err?.error?.message
+        ?? this.translate.instant('AFFAIRES.DETAIL.OWNER_ENTITY.SAVE_ERROR')),
+    });
+  }
 
   /**
    * Somme des `budget_allocation` de tous les responsables, ou `null` si aucun n'en porte.
@@ -2413,6 +2599,7 @@ export class AffaireDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.svc.getPays().subscribe(list => this.paysList.set(list));
+    this.svc.getArxEntities().subscribe(list => this.arxEntities.set(list));
     this.loadAll();
   }
 

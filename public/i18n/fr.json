@@ -1405,7 +1405,19 @@
         "TS_INVOICE": "Facture",
         "OPEN_INVOICE": "Ouvrir la facture",
         "OPEN_PAYMENTS": "Ouvrir le module Paiements",
-        "EXPENSES_TITLE": "Frais remboursables de l'affaire"
+        "EXPENSES_TITLE": "Frais remboursables de l'affaire",
+        "OWNER_ENTITY_TITLE": "Modifier l'entité propriétaire",
+        "SELLER_ENTITIES_TITLE": "Entités vendeuses"
+      },
+      "OWNER_ENTITY": {
+        "EDIT_ACTION": "Modifier l'entité propriétaire",
+        "LABEL": "Entité propriétaire (ARX)",
+        "SAVE_ERROR": "Impossible de modifier l'entité propriétaire."
+      },
+      "SELLER_ENTITIES": {
+        "TITLE": "Entités vendeuses",
+        "NONE": "Aucune",
+        "SAVE_ERROR": "Impossible de modifier les entités vendeuses."
       }
     },
     "wizard": {
