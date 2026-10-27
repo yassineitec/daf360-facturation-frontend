@@ -1,21 +1,23 @@
-import { Component, OnInit, TemplateRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   AvatarGroupComponent, BarChartComponent, ButtonComponent, ButtonOptions,
   ChipGroupComponent, DafCellDirective, DataTableComponent, MetricCardComponent,
-  DrawerComponent, FormFieldComponent, FormFieldOptions, GaugeComponent, ModalService,
+  DrawerComponent, FilterChipsComponent, FilterComponent, FormFieldComponent, FormFieldOptions,
+  GaugeComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
-  RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, SelectComponent, StatusBadgeComponent,
-  TabsComponent,
-  tabParam,
+  RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, SelectComponent, SkeletonComponent,
+  StatusBadgeComponent, TabsComponent,
+  countActiveFilters, tabParam,
 } from '@khalilrebhiitec/daf360';
 import type {
-  AvatarData, BadgeCell, BadgeOptions, BarChartBar, BarChartOptions, BreadcrumbItem,
+  AvatarData, BadgeCell, BadgeOptions, BarChartBar, BarChartLegendItem, BarChartOptions,
+  BarChartSegmentVariant, BreadcrumbItem,
   ChipGroupConfig, ChipOption, DrawerConfig,
   MetricCardOptions, MetricDelta,
-  FilterField, FilterResult, GaugeOptions, PageHeaderBadge, RadioOption, SelectOption,
+  FilterField, FilterOption, FilterResult, GaugeOptions, PageHeaderBadge, ProgressVariant, RadioOption, SelectOption,
   SearchToolbarFilterConfig, TabItem, TableAction, TableColumn, TableConfig, TableRow,
   ToolbarAction,
 } from '@khalilrebhiitec/daf360';
@@ -24,6 +26,7 @@ import { AffaireWizardService } from './affaire-wizard.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto, TsHistoryEntry,
   AffaireInvoiceItem, AffairePaymentItem, PaysRefDto, paysLabel,
+  AffaireChartBucket, AffaireChartsDto, AffaireChartsQuery, ChartGranularity, ChartWipAmounts, ChartWipStatus,
   AFFAIRE_STATUTS, STATUT_LABELS,
 } from './affaire.model';
 import { distinctResponsables } from './affaire-display';
@@ -115,6 +118,83 @@ function toIsoDay(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+// ── Graphiques facturation / WIP / paiements ───────────────────────────────
+
+/** Période des graphiques sans filtre : l'année civile en cours (demande du 2026-10-27). */
+const DEFAULT_CHART_PERIOD = 'YTD';
+
+/** Les diapositives du carrousel, dans l'ordre de lecture : facturé, déclaré, encaissé. */
+const CHART_SLIDES = ['INVOICED', 'WIP', 'PAYMENTS'] as const;
+type ChartSlideId = typeof CHART_SLIDES[number];
+
+function isSlide(v: string | null | undefined): v is ChartSlideId {
+  return (CHART_SLIDES as readonly string[]).includes(v ?? '');
+}
+
+function asSlide(v: string | null): ChartSlideId {
+  return isSlide(v) ? v : CHART_SLIDES[0];
+}
+
+/** Une diapositive prête à rendre — voir `chartSlides`. */
+interface ChartSlideView {
+  id:         ChartSlideId;
+  title:      string;
+  totalLabel: string;
+  total:      number;
+  /** « 3 facture(s) », « 2 paiement(s) » sous le total ; null quand ça n'a pas de sens. */
+  count:      string | null;
+  note:       string | null;
+  bars:       ChartBar[];
+  options:    BarChartOptions;
+}
+
+/** 'yyyy-MM' → premier / dernier jour du mois, en dates locales (le daterange du panneau). */
+function monthStart(ym: string): Date {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(y, m - 1, 1);
+}
+
+function monthEnd(ym: string): Date {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(y, m, 0);
+}
+
+/** Ordre d'empilement, du bas vers le haut : le facturé porte la barre, le refusé la coiffe. */
+const WIP_STATUS_ORDER: readonly ChartWipStatus[] = ['INVOICED', 'PENDING', 'REJECTED'];
+
+const WIP_STATUS_VARIANT: Record<ChartWipStatus, BarChartSegmentVariant> = {
+  INVOICED: 'tertiary',
+  PENDING:  'warning',
+  REJECTED: 'neutral',
+};
+
+/** Une barre qui garde la clé de sa période, pour retrouver la période au clic. */
+type ChartBar = BarChartBar & { key: string };
+
+function wipAmount(w: ChartWipAmounts, s: ChartWipStatus): number {
+  return s === 'INVOICED' ? w.invoiced : s === 'PENDING' ? w.pending : w.rejected;
+}
+
+function toYearMonth(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** 'yyyy-MM-dd' → minuit LOCAL ce jour-là (`new Date(iso)` serait minuit UTC). */
+function localDay(iso: string): Date {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function asGranularity(v: string | null): ChartGranularity {
+  return v === 'QUARTER' || v === 'YEAR' ? v : 'MONTH';
+}
+
+/** `cs=INVOICED,PENDING` → statuts connus, dans l'ordre d'empilement ; rien de valide = tous. */
+function asStatuses(v: string | null): ChartWipStatus[] {
+  const picked = WIP_STATUS_ORDER.filter(s => (v ?? '').split(',').includes(s));
+  return picked.length ? picked : [...WIP_STATUS_ORDER];
+}
+
 /** Un jour ('yyyy-MM-dd…' ou date-heure ISO) dans la plage du filtre `daterange` (1 date =
  *  un seul jour). Sans plage : tout passe ; plage mais pas de date : exclu. */
 function inDayRange(value: string | null | undefined, range: Date[] | null): boolean {
@@ -158,7 +238,7 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, ButtonComponent,
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent, SelectComponent,
-    GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent,
+    GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent, FilterComponent, FilterChipsComponent, SkeletonComponent,
     TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
@@ -235,45 +315,72 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
     .kpi-cell    { min-height: 118px; }
     .tile-cell   { min-height: 210px; height: auto; }
 
-    /* ── En-tête du panneau graphique ──────────────────────────────────────── */
-    /* Deux rangées : titre + puces, puis légendes + cumul. En une seule rangée, le bloc
-       « Total cumulé » se repliait en emportant sa bordure gauche, qui pendait alors dans
-       le vide à côté du chiffre. Ici la séparation est le border-top de la seconde
-       rangée : elle court sur toute la largeur et ne peut pas devenir orpheline. */
-    .chart-head {
+    /* ── Carrousel des graphiques ──────────────────────────────────────────── */
+    /* En-tête : navigation (flèches + puces des trois graphiques) à gauche, Filtres +
+       Exporter à droite. Repliée, la rangée d'actions reste alignée à droite. */
+    .carousel-head {
       display:         flex;
       flex-wrap:       wrap;
-      gap:             1rem;
+      gap:             0.75rem 1rem;
       align-items:     center;
       justify-content: space-between;
     }
+    .carousel-nav, .carousel-actions {
+      display:     flex;
+      flex-wrap:   wrap;
+      gap:         0.5rem;
+      align-items: center;
+    }
+    .carousel-actions { margin-left: auto; }
 
-    .chart-legend {
+    /* Une seule diapositive rendue ; elle entre en glissant depuis le côté d'où l'on vient.
+       overflow-x:clip et non hidden : seul l'axe horizontal est coupé (le glissement), la
+       pastille de la plus haute barre peut toujours déborder vers le haut. */
+    .carousel-viewport {
+      overflow-x:   clip;
+      touch-action: pan-y;
+    }
+    .carousel-slide {
+      display:        flex;
+      flex-direction: column;
+      gap:            1rem;
+      animation:      chart-slide-in 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .carousel-slide--back { animation-name: chart-slide-in-back; }
+    @keyframes chart-slide-in {
+      from { opacity: 0; transform: translateX(32px); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes chart-slide-in-back {
+      from { opacity: 0; transform: translateX(-32px); }
+      to   { opacity: 1; transform: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .carousel-slide { animation: none; }
+    }
+
+    /* Titre + plage à gauche, total à droite ; le total passe dessous quand la carte est
+       étroite, aligné à gauche pour ne pas flotter seul côté droit. */
+    .chart-head {
       display:         flex;
       flex-wrap:       wrap;
       gap:             0.75rem 1.5rem;
-      align-items:     flex-end;
+      align-items:     flex-start;
       justify-content: space-between;
-      padding-top:     1rem;
-      border-top:      1px solid var(--color-outline-variant, #bdc9c4);
+    }
+    .chart-total { text-align: right; }
+
+    /* Rechargement après un changement de filtre : on garde les barres précédentes,
+       atténuées, plutôt que de les remplacer par un squelette qui ferait sauter la carte. */
+    .chart-plot--loading {
+      opacity:    0.5;
+      transition: opacity 150ms ease;
     }
 
     /* ── Le tracé du graphique ─────────────────────────────────────────────── */
-    /*
-       Une barre unique en "flex-1" occupe TOUTE la largeur de la carte : un pavé de
-       1000 px sur 200 px, qui ne se lit plus comme une colonne. On borne donc le tracé
-       et on le centre quand il y a peu de barres — la ligne d'objectif et la légende
-       d'axe suivent, puisqu'elles sont dans le même conteneur.
-
-       En composante "max-width" et non en classe Tailwind : "styles.css" d'un remote ne
-       contient que les classes vues à la compilation (cf. l'encadré en tête de fichier),
-       et ces largeurs-ci n'existent nulle part ailleurs dans l'app.
-    */
+    /* Toute la largeur de la carte, quel que soit le nombre de barres (demande du
+       2026-10-27 : l'ancien plafond par nombre de barres laissait la carte à moitié vide). */
     .chart-plot { width: 100%; }
-
-    .chart-plot--single { max-width: 180px; margin-inline: auto; }
-    .chart-plot--pair   { max-width: 340px; margin-inline: auto; }
-    .chart-plot--few    { max-width: 520px; margin-inline: auto; }
 
     /* ── Portable et en dessous ────────────────────────────────────────────── */
     /* 1400 px : la fenêtre d'un portable moins la barre latérale de 256 px et les marges
@@ -298,14 +405,13 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
 
     @media (max-width: 640px) {
       .kpi-row, .tile-row, .bottom-row { gap: 1rem; }
-      .chart-legend { align-items: flex-start; }
-      .chart-legend > .text-right { text-align: left; }
+      .carousel-actions { margin-left: 0; }
+      .chart-total { text-align: left; }
     }
 
     /* ══ PANNEAU DE DÉTAILS (colonne gauche) ════════════════════════════════
        Toutes les couleurs viennent des jetons de la lib, avec un repli en dur
-       pour le cas où la feuille de la lib n'est pas encore chargée — même
-       convention que .chart-legend ci-dessus.
+       pour le cas où la feuille de la lib n'est pas encore chargée.
 
        Pourquoi des styles de COMPOSANT et pas des classes utilitaires : cette
        maquette demande des tailles que l'échelle de la lib ne porte pas (9 px
@@ -1589,355 +1695,638 @@ export class AffaireDetailComponent implements OnInit {
     };
   });
 
-  // ── Facturation : un graphique, deux granularités ────────────────────────
+  // ── Graphiques : facturation, WIP, paiements ─────────────────────────────
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // UN SEUL graphique, dont les puces Année / Mois changent la GRANULARITÉ
+  // TROIS graphiques à barres dans UN carrousel, sous UN jeu de filtres
   //
-  // Ce n'est pas une navigation : il n'y a ni niveau où descendre, ni bouton retour, ni
-  // titre qui change de nature. Les puces sont un filtre, comme ceux des tableaux — le
-  // panneau reste le même, seules les barres changent de forme.
+  //   Facturation : le graphique d'origine, inchangé dans ses données — TTC de toutes les
+  //                 factures émises de l'affaire, à leur date d'émission. Sa ligne
+  //                 pointillée reste l'objectif « budget réparti sur la durée ».
+  //   WIP         : le WIP déclaré, empilé par statut (facturé / en attente / refusé).
+  //   Paiements   : les règlements reçus, par date de paiement.
   //
-  //   granularité « années » : une barre par année couverte par l'affaire.
-  //                            Objectif = budget / nombre d'années de l'axe.
-  //   granularité « mois »   : les 12 mois de `chartYear()`.
-  //                            Objectif = budget / durée de l'affaire en mois.
+  // Les trois sont servis par `GET /affaires/{id}/charts` (AffaireChartService), agrégés
+  // côté serveur. WIP et paiements reprennent EXACTEMENT les définitions des tuiles : sur
+  // toute l'étendue avec les TS, la somme des barres WIP = la tuile WIP, et la somme des
+  // paiements = `kpis.ca`.
   //
-  // `chartGranularityEffective` et non `chartGranularity` partout : une affaire tenant
-  // dans un seul exercice n'a pas de vue « années » qui vaille la peine — une barre unique
-  // n'est pas un graphique. Elle s'affiche donc en mois et les puces disparaissent, faute
-  // d'un choix à offrir. C'est le cas le plus courant.
+  // Un carrousel et non trois cartes : les trois graphiques partagent la même fenêtre de
+  // temps, on passe de l'un à l'autre sans perdre ses repères (même axe, mêmes filtres,
+  // même place à l'écran). Le (i) de la carte suit la diapositive affichée — chaque
+  // graphique a sa propre règle de calcul.
   //
-  // **Une seule série est calculée à la fois** : `chartValues()` branche sur la
-  // granularité active, il n'y a pas deux agrégats vivant en parallèle. Et pas d'appel
-  // serveur pour changer de forme — `getAffaireInvoices` ramène les factures de l'affaire
-  // sans pagination, donc la série brute est déjà en mémoire et l'agrégat coûte une passe
-  // sur un tableau. Un endpoint par granularité serait un aller-retour réseau pour
-  // recalculer ce qu'on a déjà. Si une affaire devait porter des milliers de factures,
-  // c'est ici que passerait un agrégat serveur.
+  // Les filtres passent par `daf-filter` (le bouton « Filtres » et son panneau, comme les
+  // tableaux de la fiche) et s'affichent en puces sous l'en-tête. Ils vivent aussi dans
+  // l'URL (`cp`, `cf`, `ct`, `cg`, `cv`, `cs`, `cts`, et `cc` pour la diapositive) : une vue
+  // filtrée se partage et survit au rechargement.
+  //
+  //   Période     : année en cours (défaut), toute l'affaire, 12 derniers mois, une année,
+  //                 ou une plage de dates (qui l'emporte). Le serveur coupe la plage à
+  //                 l'étendue de l'affaire — un préréglage ne connaît pas ses dates.
+  //   Granularité : mois (défaut), trimestre, année.
+  //   Vue         : par période (défaut), ou cumulé — le cumul part de l'origine de
+  //                 l'affaire (`opening*`), pas du début de la plage, et se lit contre le budget.
+  //   Statuts WIP : lesquels empiler (vide = les trois). Retirés, ils sortent aussi du total.
+  //   Exclure TS  : retire le WIP des TS.
+  //
+  // Chaque défaut vaut « vide » dans le panneau : un graphique non filtré n'affiche aucune
+  // puce, et chaque puce dit exactement ce qui s'écarte de la vue de base.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /** La granularité demandée. Voir `chartGranularityEffective` pour celle qui s'affiche. */
+  private readonly chartQueryParams = this.route.snapshot.queryParamMap;
+
+  readonly chartPeriod      = signal<string>(this.chartQueryParams.get('cp') ?? DEFAULT_CHART_PERIOD);
+  readonly chartCustomFrom  = signal<string | null>(this.chartQueryParams.get('cf'));
+  readonly chartCustomTo    = signal<string | null>(this.chartQueryParams.get('ct'));
+  readonly chartGranularity = signal<ChartGranularity>(asGranularity(this.chartQueryParams.get('cg')));
+  readonly chartView        = signal<'PERIOD' | 'CUMUL'>(
+    this.chartQueryParams.get('cv') === 'CUMUL' ? 'CUMUL' : 'PERIOD');
+  readonly chartStatuses    = signal<ChartWipStatus[]>(asStatuses(this.chartQueryParams.get('cs')));
+  readonly chartIncludeTs   = signal(this.chartQueryParams.get('cts') !== '0');
+  readonly chartSlide       = signal<ChartSlideId>(asSlide(this.chartQueryParams.get('cc')));
+
+  readonly charts          = signal<AffaireChartsDto | null>(null);
+  readonly chartsLoading   = signal(false);
+  readonly chartsError     = signal(false);
+  /** Numéro de la dernière requête : une réponse plus ancienne arrivée après est ignorée. */
+  private chartsRequestId = 0;
   /**
-   * `null` = l'utilisateur n'a pas encore choisi, on prend le défaut calculé par
-   * `chartGranularityEffective`. Un défaut en dur (`'years'`) affichait une barre unique
-   * sur une affaire dont une seule année est commencée.
+   * Le repli du défaut ne joue qu'au premier chargement, et seulement si l'URL n'imposait
+   * pas de période : ensuite, une plage vide est un choix de l'utilisateur, à respecter.
    */
-  private readonly chartGranularity = signal<'years' | 'months' | null>(null);
+  private chartsDefaultFallbackPending = !this.chartQueryParams.has('cp');
 
-  // ── L'axe s'arrête à AUJOURD'HUI ─────────────────────────────────────────
-  //
-  // Le graphique montre ce qui a été facturé, donc du passé. Une affaire qui court
-  // jusqu'en 2028 étalait l'axe jusqu'en 2028 : deux ou trois barres à zéro pour des
-  // années qui ne sont pas arrivées, qui écrasaient l'échelle des barres réelles et
-  // faisaient lire « on a arrêté de facturer » là où il n'y avait rien à facturer encore.
-  // Même chose sur les mois : un graphique 2026 affichait décembre en août.
-  //
-  // La borne est la période EN COURS et non la précédente : le mois courant est
-  // partiellement facturé, c'est une information (et il porte `highlight`). Ce sont les
-  // périodes entièrement à venir qui disparaissent.
-  //
-  // Rien n'est filtré côté données : une facture post-datée reste comptée dans son année
-  // (cf. `invoiceYears`), donc si quelqu'un émet une facture en 2027, 2027 réapparaît sur
-  // l'axe par l'union — sinon le cumul en tête de panneau ne retomberait plus sur la somme
-  // des barres. On coupe le FUTUR VIDE, pas les données.
-
-  /** L'année en cours — la borne haute de l'axe. */
-  private readonly currentYear = new Date().getFullYear();
-
-  /** Le mois en cours (0-11), borne haute de l'axe quand on affiche l'année en cours. */
-  private readonly currentMonth = new Date().getMonth();
-
-  /** Les années porteuses d'au moins une facture émise. */
-  private readonly invoiceYears = computed(() =>
-    this.invoices()
-      .map(i => (i.dateEmission ? new Date(i.dateEmission).getFullYear() : null))
-      .filter((y): y is number => y !== null));
-
-  /**
-   * L'axe de la granularité « années » : la période de l'affaire, **union** les années
-   * porteuses d'une facture, **coupée à l'année en cours**.
-   *
-   * L'union et non la seule période : une facture émise après `dateFin` — un solde, un
-   * avoir tardif — sortirait sinon du graphique sans que rien ne le signale, et le cumul
-   * ne retomberait pas sur la somme des barres. Bornée à 20 ans, par sécurité contre une
-   * `dateFin` saisie de travers.
-   *
-   * Le repli `[currentYear]` couvre l'affaire qui n'a pas encore commencé : sa période est
-   * entièrement future, donc entièrement coupée, et un axe vide n'afficherait rien du tout.
-   */
-  readonly chartYears = computed<number[]>(() => {
-    const years = new Set<number>(this.invoiceYears());
-    const a = this.affaire();
-    if (a?.dateDebut) {
-      const from = new Date(a.dateDebut).getFullYear();
-      const to   = a.dateFin ? new Date(a.dateFin).getFullYear() : from;
-      for (let y = from; y <= Math.min(to, from + 19); y++) years.add(y);
+  /** Plage `yyyy-MM` du préréglage choisi ; null = borne de l'étendue (le serveur coupe). */
+  readonly chartRange = computed<{ from: string | null; to: string | null }>(() => {
+    const p   = this.chartPeriod();
+    const now = new Date();
+    switch (p) {
+      case 'ALL': return { from: null, to: null };
+      case 'YTD': return { from: `${now.getFullYear()}-01`, to: `${now.getFullYear()}-12` };
+      case 'L12': return { from: toYearMonth(new Date(now.getFullYear(), now.getMonth() - 11, 1)),
+                           to:   toYearMonth(now) };
+      case 'CUSTOM': {
+        const f = this.chartCustomFrom(), t = this.chartCustomTo();
+        return f && t && f > t ? { from: t, to: f } : { from: f, to: t };
+      }
+      default:
+        return /^Y\d{4}$/.test(p) ? { from: `${p.slice(1)}-01`, to: `${p.slice(1)}-12` } : { from: null, to: null };
     }
-    const past = [...years].filter(y => y <= this.currentYear).sort((x, y) => x - y);
-    return past.length ? past : [this.currentYear];
+  });
+
+  private readonly chartsQuery = computed<AffaireChartsQuery>(() => ({
+    ...this.chartRange(),
+    granularity: this.chartGranularity(),
+    includeTs:   this.chartIncludeTs(),
+  }));
+
+  /** Recharge à chaque changement de filtre, et quand l'affaire (ses dates) change. */
+  private readonly chartsLoader = effect(() => {
+    const q = this.chartsQuery();
+    if (!this.affaire()) return;
+    untracked(() => this.loadCharts(q));
   });
 
   /**
-   * L'affaire couvre-t-elle plus d'une année ? Sur sa PÉRIODE, pas sur l'axe.
-   *
-   * L'axe s'arrête à l'année en cours ; une affaire 2026→2028 n'a donc qu'une année
-   * d'axe en 2026, et c'est ce qui faisait disparaître les puces Année / Mois — la bascule
-   * s'était retirée elle-même sur une affaire qui est bel et bien pluriannuelle. Le choix
-   * offert dépend de ce que l'affaire EST, pas de ce qui s'est déjà écoulé.
+   * Filtres → URL. Seules les valeurs qui s'écartent du défaut sont écrites, et rien ne
+   * part si l'URL porte déjà ces valeurs : au premier passage (filtres lus depuis l'URL)
+   * aucune navigation n'est lancée, donc rien ne vient croiser celle de `tabParam`.
    */
-  private readonly spansMultipleYears = computed(() => {
-    const a = this.affaire();
-    const years = new Set<number>(this.invoiceYears());
-    if (a?.dateDebut) {
-      years.add(new Date(a.dateDebut).getFullYear());
-      if (a.dateFin) years.add(new Date(a.dateFin).getFullYear());
-    }
-    return years.size > 1;
+  private readonly chartsUrlSync = effect(() => {
+    const period = this.chartPeriod(), statuses = this.chartStatuses();
+    const params: Record<string, string | null> = {
+      cp:  period === DEFAULT_CHART_PERIOD ? null : period,
+      cf:  period === 'CUSTOM' ? this.chartCustomFrom() : null,
+      ct:  period === 'CUSTOM' ? this.chartCustomTo()   : null,
+      cg:  this.chartGranularity() === 'MONTH' ? null : this.chartGranularity(),
+      cv:  this.chartView() === 'PERIOD' ? null : this.chartView(),
+      cs:  statuses.length === WIP_STATUS_ORDER.length ? null : statuses.join(','),
+      cts: this.chartIncludeTs() ? null : '0',
+      cc:  this.chartSlide() === CHART_SLIDES[0] ? null : this.chartSlide(),
+    };
+    untracked(() => {
+      const current = this.route.snapshot.queryParamMap;
+      if (Object.entries(params).every(([k, v]) => current.get(k) === v)) return;
+      this.router.navigate([], {
+        relativeTo: this.route, queryParams: params, queryParamsHandling: 'merge', replaceUrl: true,
+      });
+    });
   });
 
-  /** Les puces n'ont de sens que sur une affaire pluriannuelle. */
-  readonly chartGranularitySwitchable = computed(() => this.spansMultipleYears());
-
-  /**
-   * La granularité réellement affichée.
-   *
-   * Le DÉFAUT dépend de l'axe (une seule année écoulée → les mois, un graphique à une
-   * barre n'apprend rien), mais le CHOIX de l'utilisateur l'emporte : s'il demande la vue
-   * par année sur une affaire pluriannuelle dont une seule année est commencée, il obtient
-   * cette unique barre. C'est son choix, pas un défaut à lui imposer.
-   */
-  readonly chartGranularityEffective = computed<'years' | 'months'>(() => {
-    if (!this.chartGranularitySwitchable()) return 'months';
-    return this.chartGranularity() ?? (this.chartYears().length > 1 ? 'years' : 'months');
-  });
-
-  /**
-   * L'année de la granularité « mois » : la dernière année de l'axe.
-   *
-   * Elle vient de `chartYears()` et non plus de `max(invoiceYears)` : l'axe est déjà coupé
-   * à l'année en cours, donc une facture post-datée en 2027 n'emmène plus la vue des mois
-   * sur une année entièrement à venir. Elle est nommée dans le titre.
-   */
-  readonly chartYear = computed(() => {
-    const years = this.chartYears();
-    return years[years.length - 1];
-  });
-
-  /**
-   * Combien de mois l'axe montre pour `chartYear()` : les 12, sauf sur l'année en cours où
-   * il s'arrête au mois courant inclus. Les mois entièrement à venir ne sont pas des
-   * barres à zéro, ils ne sont pas encore arrivés.
-   */
-  private readonly chartMonthCount = computed(() =>
-    this.chartYear() === this.currentYear ? this.currentMonth + 1 : 12);
-
-  /**
-   * La série affichée — **une seule**, celle de la granularité active.
-   *
-   * Une passe unique sur les factures dans les deux cas : on remplit un tableau indexé par
-   * mois, ou une entrée par année de l'axe (0 sur une année vide, une année sans facture
-   * étant une information et pas un trou).
-   */
-  readonly chartValues = computed<number[]>(() => {
-    if (this.chartGranularityEffective() === 'months') {
-      const year   = this.chartYear();
-      const totals = Array(this.chartMonthCount()).fill(0) as number[];
-      for (const inv of this.invoices()) {
-        if (!inv.dateEmission) continue;
-        const d = new Date(inv.dateEmission);
-        // `d.getMonth() < totals.length` : une facture post-datée dans l'année en cours
-        // (émise en septembre alors qu'on est en août) tomberait hors du tableau.
-        if (d.getFullYear() === year && d.getMonth() < totals.length) {
-          totals[d.getMonth()] += inv.montantTtc ?? 0;
+  loadCharts(q: AffaireChartsQuery = this.chartsQuery()): void {
+    const id = ++this.chartsRequestId;
+    this.chartsLoading.set(true);
+    this.chartsError.set(false);
+    this.svc.getAffaireCharts(this.numId, q).subscribe({
+      next: c => {
+        if (id !== this.chartsRequestId) return;
+        // Défaut « année en cours » sur une affaire close avant cette année : rien à
+        // montrer. On ouvre plutôt sa dernière année — la puce « Année N » dit pourquoi.
+        if (this.chartsDefaultFallbackPending) {
+          this.chartsDefaultFallbackPending = false;
+          const lastYear = Number(c.dataTo.slice(0, 4));
+          if (!c.buckets.length && lastYear < new Date().getFullYear()) {
+            this.chartPeriod.set(`Y${lastYear}`);
+            return;
+          }
         }
-      }
-      return totals;
-    }
-
-    const sums = new Map<number, number>(this.chartYears().map(y => [y, 0]));
-    for (const inv of this.invoices()) {
-      if (!inv.dateEmission) continue;
-      const y = new Date(inv.dateEmission).getFullYear();
-      if (sums.has(y)) sums.set(y, sums.get(y)! + (inv.montantTtc ?? 0));
-    }
-    return this.chartYears().map(y => sums.get(y)!);
-  });
-
-  /** Le cumul en tête du panneau : celui de la série visible, pas un total figé. */
-  readonly chartTotal = computed(() => this.chartValues().reduce((s, v) => s + v, 0));
-
-  /**
-   * Les dates d'émission des factures de chaque mois de `chartYear()`, dans l'ordre.
-   *
-   * Même bornage que `chartValues()` (`getMonth() < length`) : les deux séries doivent
-   * indexer les mêmes mois, sinon la pastille d'un mois porterait la date d'un autre.
-   */
-  private readonly monthlyInvoiceDates = computed<string[][]>(() => {
-    const year   = this.chartYear();
-    const byMonth: string[][] = Array.from({ length: this.chartMonthCount() }, () => []);
-    for (const inv of this.invoices()) {
-      if (!inv.dateEmission) continue;
-      const d = new Date(inv.dateEmission);
-      if (d.getFullYear() === year && d.getMonth() < byMonth.length) {
-        byMonth[d.getMonth()].push(this.formatDayMonth(inv.dateEmission));
-      }
-    }
-    return byMonth;
-  });
-
-  /**
-   * La pastille de survol d'un mois : le montant, puis la DATE d'émission de la facture.
-   *
-   * UNE SEULE LIGNE : la pastille de la lib est en `whitespace-nowrap`, un retour à la
-   * ligne y serait ignoré et le texte sortirait de la carte. D'où le jour + mois court
-   * (« 12 août ») et non la date complète — l'année est déjà dans le titre du panneau.
-   *
-   * Au-delà d'une facture, le NOMBRE remplace les dates : trois dates à la suite
-   * dépassent la largeur d'une colonne, et le détail est dans l'onglet Factures.
-   */
-  private monthTooltip(value: number, dates: string[]): string {
-    const amount = this.money(value);
-    if (dates.length === 0) return amount;
-    if (dates.length === 1) return `${amount} · ${dates[0]}`;
-    return `${amount} · ` + this.translate.instant(
-      'AFFAIRES.DETAIL.OVERVIEW.CHART_INVOICE_COUNT', { count: dates.length });
+        this.charts.set(c);
+        this.chartsLoading.set(false);
+      },
+      error: () => {
+        if (id !== this.chartsRequestId) return;
+        this.chartsError.set(true);
+        this.chartsLoading.set(false);
+      },
+    });
   }
 
-  /**
-   * Les barres du graphique.
-   *
-   * `label` ne porte QUE la légende d'axe (le mois, ou l'année) : le montant et, en
-   * granularité « mois », la date de facture vont dans `valueLabel`, que le composant met
-   * dans sa pastille au survol.
-   *
-   * `highlight` sur la période courante — le mois en cours seulement si le graphique montre
-   * l'année en cours, sinon on surlignerait août 2025 sur un graphique 2026.
-   */
+  // ── Filtres (daf-filter) ──────────────────────────────────────────────────
 
-  readonly chartBars = computed<BarChartBar[]>(() => {
+  readonly chartFilterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
-    const values = this.chartValues();
-
-    if (this.chartGranularityEffective() === 'months') {
-      // `values` s'arrête déjà au mois courant sur l'année en cours, donc la dernière
-      // barre EST le mois courant — pas besoin de comparer les index.
-      const isCurrentYear = this.chartYear() === this.currentYear;
-      const dates         = this.monthlyInvoiceDates();
-      return values.map((value, index) => ({
-        label:      this.translate.instant('COMMON.MONTHS_SHORT.M' + (index + 1)),
-        value,
-        valueLabel: this.monthTooltip(value, dates[index] ?? []),
-        highlight:  isCurrentYear && index === this.currentMonth,
-      }));
+    const t = (k: string, p?: object) => this.translate.instant('AFFAIRES.DETAIL.CHARTS.' + k, p);
+    const c = this.charts();
+    const years: FilterOption[] = [];
+    if (c) {
+      const current = new Date().getFullYear();
+      for (let y = Number(c.dataTo.slice(0, 4)); y >= Number(c.dataFrom.slice(0, 4)); y--) {
+        // L'année en cours est déjà le défaut (« Année en cours ») : pas de doublon.
+        if (y !== current) years.push({ value: `Y${y}`, label: t('PERIOD_YEAR', { year: y }) });
+      }
     }
-
-    return this.chartYears().map((year, index) => ({
-      label:      String(year),
-      value:      values[index],
-      valueLabel: this.money(values[index]),
-      highlight:  year === this.currentYear,
-    }));
-  });
-
-  readonly chartOptions = computed<BarChartOptions>(() => {
-    this.translate.currentLang();
-    const years  = this.chartGranularityEffective() === 'years';
-    const target = years ? this.yearlyTarget() : this.monthlyTarget();
-    return {
-      orientation: 'vertical',
-      height:      '200px',
-      variant:     'tertiary',
-      // Pas de `clickable` : les barres ne mènent nulle part, ce sont les puces qui
-      // changent la forme. Une barre focusable qui ne fait rien est un piège au clavier.
-      // `max` est laissé au composant : son défaut est déjà max(valeurs, target).
-      target:      target > 0 ? target : undefined,
-      targetLabel: target > 0 ? `${this.chartTargetLabel()} : ${this.money(target)}` : undefined,
-      emptyMessage: this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.NO_CHART_DATA'),
-      ariaLabel: `${this.chartTitle()} — `
-               + `${this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.CUMUL')} ${this.money(this.chartTotal())}`,
-    };
-  });
-
-  /** Le titre du panneau, qui porte l'année en granularité « mois ». */
-  readonly chartTitle = computed(() => {
-    this.translate.currentLang();
-    return this.chartGranularityEffective() === 'years'
-      ? this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.CHART_TITLE_YEARS')
-      : this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.CHART_TITLE', { year: this.chartYear() });
-  });
-
-  /** « Objectif annuel » / « Objectif mensuel » — la légende ET l'aria de la ligne. */
-  readonly chartTargetLabel = computed(() => {
-    this.translate.currentLang();
-    return this.translate.instant(this.chartGranularityEffective() === 'years'
-      ? 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_TARGET_YEAR'
-      : 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_TARGET');
-  });
-
-  /** L'objectif de la granularité active — une seule valeur à afficher en légende. */
-  readonly chartTarget = computed(() =>
-    this.chartGranularityEffective() === 'years' ? this.yearlyTarget() : this.monthlyTarget());
-
-  /** Les puces Année / Mois. `selected` est un tableau : `daf-chip-group` est multi-capable. */
-  readonly chartGranularityChips = computed<ChipOption[]>(() => {
-    this.translate.currentLang();
     return [
-      { value: 'years',  label: this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.LEVEL_YEARS') },
-      { value: 'months', label: this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.LEVEL_MONTHS') },
+      { name: 'period', label: t('PERIOD'), type: 'select', placeholder: t('PERIOD_YTD'),
+        options: [{ value: 'ALL', label: t('PERIOD_ALL') }, { value: 'L12', label: t('PERIOD_L12') }, ...years] },
+      { name: 'range', label: t('RANGE'), type: 'daterange', hint: t('RANGE_HINT') },
+      { name: 'granularity', label: t('GRANULARITY'), type: 'select', placeholder: t('GRAN_MONTH'),
+        options: [{ value: 'QUARTER', label: t('GRAN_QUARTER') }, { value: 'YEAR', label: t('GRAN_YEAR') }] },
+      { name: 'view', label: t('VIEW'), type: 'select', placeholder: t('VIEW_PERIOD'),
+        options: [{ value: 'CUMUL', label: t('VIEW_CUMUL') }] },
+      { name: 'statuses', label: t('WIP_STATUSES'), type: 'multiselect', placeholder: t('STATUS_ALL'),
+        options: WIP_STATUS_ORDER.map(s => ({ value: s, label: this.wipStatusLabel(s) })) },
+      { name: 'excludeTs', label: t('EXCLUDE_TS'), type: 'checkbox' },
     ];
   });
 
-  readonly chartGranularitySelection = computed<string[]>(() => [this.chartGranularityEffective()]);
-
-  readonly chartGranularityChipConfig: ChipGroupConfig = { multiple: false };
-
   /**
-   * Les puces sont un `model()` : le composant renvoie la sélection complète. Vide (on a
-   * décoché la puce active) = on garde la granularité courante, il faut bien afficher
-   * quelque chose.
+   * L'état appliqué, dans la forme du panneau. Chaque défaut y est « vide » — période
+   * toute l'affaire, mois, par période, tous les statuts, TS inclus — pour que ni le
+   * bouton ni les puces ne comptent un filtre que personne n'a posé.
    */
-  setChartGranularity(selection: string[]): void {
-    const next = selection[0];
-    if (next === 'years' || next === 'months') this.chartGranularity.set(next);
+  readonly chartFilterValue = computed<FilterResult>(() => {
+    const period = this.chartPeriod(), from = this.chartCustomFrom(), to = this.chartCustomTo();
+    const statuses = this.chartStatuses();
+    return {
+      period:      period === DEFAULT_CHART_PERIOD || period === 'CUSTOM' ? null : period,
+      range:       period === 'CUSTOM' && from ? [monthStart(from), monthEnd(to ?? from)] : null,
+      granularity: this.chartGranularity() === 'MONTH' ? null : this.chartGranularity(),
+      view:        this.chartView() === 'PERIOD' ? null : this.chartView(),
+      statuses:    statuses.length === WIP_STATUS_ORDER.length ? [] : [...statuses],
+      excludeTs:   !this.chartIncludeTs(),
+    };
+  });
+
+  readonly chartFiltersActive = computed(() =>
+    countActiveFilters(this.chartFilterFields(), this.chartFilterValue()) > 0);
+
+  readonly chartFilterConfig = computed(() => ({
+    ...this.filterConfig(),
+    title: this.translate.instant('AFFAIRES.DETAIL.CHARTS.FILTERS_TITLE'),
+  }));
+
+  /** Une plage de dates l'emporte sur le préréglage : elle est la demande la plus précise. */
+  onChartFilterApply(r: FilterResult): void {
+    const range = this.asDateRange(r, 'range');
+    if (range) {
+      this.chartPeriod.set('CUSTOM');
+      this.chartCustomFrom.set(toYearMonth(range[0]));
+      this.chartCustomTo.set(toYearMonth(range[range.length - 1]));
+    } else {
+      this.chartPeriod.set(this.asFilterValue(r, 'period') || DEFAULT_CHART_PERIOD);
+      this.chartCustomFrom.set(null);
+      this.chartCustomTo.set(null);
+    }
+    this.chartGranularity.set(asGranularity(this.asFilterValue(r, 'granularity') || null));
+    this.chartView.set(this.asFilterValue(r, 'view') === 'CUMUL' ? 'CUMUL' : 'PERIOD');
+    const statuses = r['statuses'];
+    this.chartStatuses.set(asStatuses(Array.isArray(statuses) ? (statuses as string[]).join(',') : null));
+    this.chartIncludeTs.set(r['excludeTs'] !== true);
   }
 
-  /** Objectif mensuel = budget réparti sur la durée de l'affaire (légende du panneau). */
-  private readonly monthlyTarget = computed(() => {
+  /** Le × d'une puce : ce seul filtre revient à son défaut. */
+  onChartFilterRemove(name: string): void {
+    switch (name) {
+      case 'period':
+      case 'range':
+        this.chartPeriod.set(DEFAULT_CHART_PERIOD);
+        this.chartCustomFrom.set(null);
+        this.chartCustomTo.set(null);
+        break;
+      case 'granularity': this.chartGranularity.set('MONTH'); break;
+      case 'view':        this.chartView.set('PERIOD'); break;
+      case 'statuses':    this.chartStatuses.set([...WIP_STATUS_ORDER]); break;
+      case 'excludeTs':   this.chartIncludeTs.set(true); break;
+    }
+  }
+
+  resetChartFilters(): void {
+    this.chartPeriod.set(DEFAULT_CHART_PERIOD);
+    this.chartCustomFrom.set(null);
+    this.chartCustomTo.set(null);
+    this.chartGranularity.set('MONTH');
+    this.chartView.set('PERIOD');
+    this.chartStatuses.set([...WIP_STATUS_ORDER]);
+    this.chartIncludeTs.set(true);
+  }
+
+  // ── Carrousel ─────────────────────────────────────────────────────────────
+
+  readonly chartSlideIndex = computed(() => CHART_SLIDES.indexOf(this.chartSlide()));
+
+  readonly chartSlideChips = computed<ChipOption[]>(() => {
+    this.translate.currentLang();
+    return CHART_SLIDES.map(id => ({ value: id, label: this.translate.instant('AFFAIRES.DETAIL.CHARTS.SLIDE_' + id) }));
+  });
+
+  readonly chartSlideChipConfig: ChipGroupConfig = { multiple: false };
+
+  /** Sens du dernier déplacement (1 = vers la droite, -1 = vers la gauche) : celui de l'animation. */
+  readonly chartSlideDirection = signal<1 | -1>(1);
+
+  /**
+   * La seule diapositive rendue, dans un tableau d'un élément : le @for du gabarit la suit
+   * par son id, donc l'élément est recréé à chaque changement et son animation d'entrée
+   * rejoue — sans piste à faire glisser ni diapositives cachées à neutraliser.
+   */
+  readonly activeChartSlides = computed(() => [this.chartSlides()[this.chartSlideIndex()]]);
+
+  /** Puces à choix unique : décocher la puce active renvoie [] — on reste alors où l'on est. */
+  selectChartSlide(selection: string[]): void {
+    const next = selection[0];
+    if (!isSlide(next) || next === this.chartSlide()) return;
+    this.chartSlideDirection.set(CHART_SLIDES.indexOf(next) > this.chartSlideIndex() ? 1 : -1);
+    this.chartSlide.set(next);
+  }
+
+  /** Bouclé : après Paiements vient Facturation — trois diapositives, pas de fin de course. */
+  stepChartSlide(delta: number): void {
+    const n = CHART_SLIDES.length;
+    this.chartSlideDirection.set(delta < 0 ? -1 : 1);
+    this.chartSlide.set(CHART_SLIDES[(this.chartSlideIndex() + delta + n) % n]);
+  }
+
+  /** Flèches gauche / droite quand le focus est dans le carrousel (hors champ de saisie). */
+  onChartCarouselKey(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('input, textarea, [role="listbox"], [role="dialog"]')) return;
+    if (event.key === 'ArrowLeft')  { this.stepChartSlide(-1); event.preventDefault(); }
+    if (event.key === 'ArrowRight') { this.stepChartSlide(1);  event.preventDefault(); }
+  }
+
+  /** Balayage au doigt : 50 px horizontaux, et plus horizontal que vertical (pas un défilement). */
+  private chartSwipeStart: { x: number; y: number } | null = null;
+
+  onChartPointerDown(event: PointerEvent): void {
+    this.chartSwipeStart = event.pointerType === 'touch' ? { x: event.clientX, y: event.clientY } : null;
+  }
+
+  onChartPointerUp(event: PointerEvent): void {
+    const start = this.chartSwipeStart;
+    this.chartSwipeStart = null;
+    if (!start) return;
+    const dx = event.clientX - start.x, dy = event.clientY - start.y;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) this.stepChartSlide(dx < 0 ? 1 : -1);
+  }
+
+  readonly chartPrevOptions = computed<ButtonOptions>(() => ({
+    variant: 'ghost', size: 'sm', iconStart: 'chevron_left',
+    title: this.translate.instant('AFFAIRES.DETAIL.CHARTS.PREV'),
+  }));
+
+  readonly chartNextOptions = computed<ButtonOptions>(() => ({
+    variant: 'ghost', size: 'sm', iconStart: 'chevron_right',
+    title: this.translate.instant('AFFAIRES.DETAIL.CHARTS.NEXT'),
+  }));
+
+  /** Le (i) de la carte suit la diapositive : chaque graphique a sa règle de calcul. */
+  readonly chartSlideHelp = computed(() => {
+    this.translate.currentLang();
+    return this.translate.instant('AFFAIRES.DETAIL.CHARTS.HELP_' + this.chartSlide());
+  });
+
+  // ── Séries ────────────────────────────────────────────────────────────────
+
+  /** Le WIP d'une période sur les seuls statuts cochés. */
+  private wipOf(w: ChartWipAmounts): number {
+    const s = this.chartStatuses();
+    return (s.includes('PENDING')  ? w.pending  : 0)
+         + (s.includes('INVOICED') ? w.invoiced : 0)
+         + (s.includes('REJECTED') ? w.rejected : 0);
+  }
+
+  /**
+   * Les montants affichés par période : tels quels, ou cumulés depuis l'origine de
+   * l'affaire (ouverture + périodes précédentes) en vue « cumulé ». Une seule passe, qui
+   * sert les trois graphiques, leurs pastilles et leurs totaux.
+   */
+  private readonly chartSeries = computed(() => {
+    const c = this.charts();
+    if (!c) return [];
+    const cumul = this.chartView() === 'CUMUL';
+    const run = { ...c.openingWip, invoicedTtc: c.openingInvoiced, payments: c.openingPayments };
+    return c.buckets.map(b => {
+      if (!cumul) return { bucket: b, invoiced: b.invoiced, wip: b.wip, payments: b.payments };
+      run.invoicedTtc += b.invoiced;
+      run.pending     += b.wip.pending;
+      run.invoiced    += b.wip.invoiced;
+      run.rejected    += b.wip.rejected;
+      run.payments    += b.payments;
+      return {
+        bucket:   b,
+        invoiced: run.invoicedTtc,
+        wip:      { pending: run.pending, invoiced: run.invoiced, rejected: run.rejected },
+        payments: run.payments,
+      };
+    });
+  });
+
+  /** Total d'une série : la somme de la plage, ou la valeur cumulée en fin de plage. */
+  private seriesTotal(rangeTotal: number, opening: number): number {
+    return this.chartView() === 'CUMUL' ? opening + rangeTotal : rangeTotal;
+  }
+
+  /** La période qui contient aujourd'hui — surlignée sur les graphiques. */
+  private readonly currentBucketKey = computed(() => {
+    const now = new Date();
+    const g = this.chartGranularity();
+    if (g === 'YEAR') return String(now.getFullYear());
+    if (g === 'QUARTER') return `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
+    return toYearMonth(now);
+  });
+
+  /**
+   * Facturation — la série d'origine. Une seule facture dans la période : son numéro et sa
+   * date en pastille, comme avant ; plusieurs : leur nombre (le détail est dans l'onglet
+   * Factures, où mène le clic).
+   */
+  private readonly invoicedBars = computed<ChartBar[]>(() => {
+    this.translate.currentLang();
+    const current = this.currentBucketKey();
+    const cumul   = this.chartView() === 'CUMUL';
+    return this.chartSeries().map(({ bucket, invoiced }) => {
+      const lines = [
+        this.bucketLongLabel(bucket),
+        `${this.translate.instant(cumul ? 'AFFAIRES.DETAIL.CHARTS.INVOICED_CUMUL' : 'AFFAIRES.DETAIL.CHARTS.INVOICED')} : ${this.money(invoiced)}`,
+      ];
+      if (bucket.invoiceCount === 1) {
+        const inv = this.invoices().find(i => inDayRange(i.dateEmission, [localDay(bucket.start), localDay(bucket.end)]));
+        if (inv) lines.push(`${inv.invoiceNumber ?? '—'} · ${this.formatDateShort(inv.dateEmission)}`);
+      } else if (bucket.invoiceCount > 1) {
+        lines.push(this.translate.instant('AFFAIRES.DETAIL.CHARTS.INVOICE_COUNT', { count: bucket.invoiceCount }));
+      }
+      return {
+        label: this.bucketShortLabel(bucket), value: invoiced, tooltipLines: lines,
+        highlight: bucket.key === current, key: bucket.key,
+      };
+    });
+  });
+
+  private readonly wipBars = computed<ChartBar[]>(() => {
+    this.translate.currentLang();
+    const statuses = this.chartStatuses();
+    const current  = this.currentBucketKey();
+    return this.chartSeries().map(({ bucket, wip }) => {
+      const value = this.wipOf(wip);
+      const lines = [this.bucketLongLabel(bucket)];
+      for (const s of WIP_STATUS_ORDER) {
+        if (statuses.includes(s)) lines.push(`${this.wipStatusLabel(s)} : ${this.money(wipAmount(wip, s))}`);
+      }
+      if (statuses.length > 1) {
+        lines.push(`${this.translate.instant('AFFAIRES.DETAIL.CHARTS.TOTAL')} : ${this.money(value)}`);
+      }
+      return {
+        label:        this.bucketShortLabel(bucket),
+        value,
+        tooltipLines: lines,
+        highlight:    bucket.key === current,
+        segments:     WIP_STATUS_ORDER.filter(s => statuses.includes(s))
+          .map(s => ({ value: wipAmount(wip, s), variant: WIP_STATUS_VARIANT[s] })),
+        key:          bucket.key,
+      };
+    });
+  });
+
+  private readonly paymentBars = computed<ChartBar[]>(() => {
+    this.translate.currentLang();
+    const cumul = this.chartView() === 'CUMUL';
+    return this.chartSeries().map(({ bucket, payments }) => {
+      const lines = [
+        this.bucketLongLabel(bucket),
+        `${this.translate.instant(cumul ? 'AFFAIRES.DETAIL.CHARTS.COLLECTED_CUMUL' : 'AFFAIRES.DETAIL.CHARTS.COLLECTED')} : ${this.money(payments)}`,
+      ];
+      if (bucket.paymentCount > 0) {
+        lines.push(this.translate.instant('AFFAIRES.DETAIL.CHARTS.PAYMENT_COUNT', { count: bucket.paymentCount }));
+      }
+      return { label: this.bucketShortLabel(bucket), value: payments, tooltipLines: lines, key: bucket.key };
+    });
+  });
+
+  // ── Lignes de référence ───────────────────────────────────────────────────
+
+  /** Vue cumulée : le budget, plus les TS intégrés s'ils sont comptés. */
+  private readonly chartBudgetTarget = computed(() => {
+    const ts = this.chartIncludeTs() ? (this.raf()?.montantTsIntegres ?? 0) : 0;
+    return this.budgetTotal() + ts;
+  });
+
+  private readonly chartBudgetLabel = computed(() => {
+    this.translate.currentLang();
+    const key = this.chartIncludeTs() && (this.raf()?.montantTsIntegres ?? 0) > 0
+      ? 'AFFAIRES.DETAIL.CHARTS.TARGET_BUDGET_TS' : 'AFFAIRES.DETAIL.CHARTS.TARGET_BUDGET';
+    return this.translate.instant(key);
+  });
+
+  /**
+   * L'objectif du graphique Facturation d'origine, en vue par période : le budget
+   * prévisionnel réparti linéairement sur la durée de l'affaire, rapporté à la période
+   * (mois, trimestre, année). Ce n'est pas un objectif saisi — l'aide le dit.
+   */
+  private readonly invoicedPeriodTarget = computed(() => {
     const a = this.affaire();
     const b = this.budgetTotal();
     if (!a || b <= 0) return 0;
     const months = this.affaireMonths(a.dateDebut, a.dateFin);
-    return months > 0 ? b / months : 0;
+    const perBucket = this.chartGranularity() === 'YEAR' ? 12 : this.chartGranularity() === 'QUARTER' ? 3 : 1;
+    return months > 0 ? (b / months) * perBucket : 0;
   });
 
-  /**
-   * Objectif annuel = budget réparti sur la DURÉE DE L'AFFAIRE en années.
-   *
-   * Sur la durée de l'affaire et non plus sur `chartYears().length` : depuis que l'axe
-   * s'arrête à l'année en cours, sa longueur n'est plus la durée de l'affaire. Une affaire
-   * de quatre ans dont deux sont écoulées aurait vu son objectif annuel doubler
-   * (budget / 2 au lieu de / 4), et la ligne aurait sauté d'un cran chaque 1er janvier
-   * — un objectif qui bouge parce qu'on a changé d'année n'est pas un objectif.
-   *
-   * Comme le mensuel, c'est une répartition linéaire, pas un objectif saisi ; les deux
-   * dérivent donc de la même `affaireMonths` pour ne pas se contredire (12 barres
-   * mensuelles doivent valoir une barre annuelle).
-   */
-  private readonly yearlyTarget = computed(() => {
-    const a = this.affaire();
-    const b = this.budgetTotal();
-    if (!a || b <= 0) return 0;
-    const years = this.affaireMonths(a.dateDebut, a.dateFin) / 12;
-    return years > 0 ? b / years : 0;
-  });
-
-  /** Nombre de mois couverts par l'affaire, borné à [1, 60]. */
+  /** Nombre de mois couverts par l'affaire, borné à [1, 60] — comme l'objectif d'origine. */
   private affaireMonths(debut: string | null, fin: string | null): number {
     if (!debut || !fin) return 12;
     const d = new Date(debut), f = new Date(fin);
     const months = (f.getFullYear() - d.getFullYear()) * 12 + (f.getMonth() - d.getMonth()) + 1;
     return Math.min(Math.max(months, 1), 60);
+  }
+
+  private chartOptions(ariaTitle: string, total: number, variant: ProgressVariant,
+                       legend: BarChartLegendItem[], target: number, targetLabel: string): BarChartOptions {
+    const withLine = target > 0;
+    return {
+      orientation:  'vertical',
+      height:       '240px',
+      variant,
+      clickable:    true,
+      yAxis:        { ticks: 4, format: v => this.compactAmount(v) },
+      target:       withLine ? target : undefined,
+      targetLabel:  withLine ? `${targetLabel} : ${this.money(target)}` : undefined,
+      legend:       withLine ? [...legend, { label: targetLabel, variant: 'neutral', line: true }] : legend,
+      emptyMessage: this.translate.instant('AFFAIRES.DETAIL.CHARTS.EMPTY_RANGE'),
+      ariaLabel:    `${ariaTitle} — ${this.chartRangeLabel()} — ${this.money(total)}`,
+    };
+  }
+
+  // ── Les trois diapositives ────────────────────────────────────────────────
+
+  /**
+   * Tout ce qu'une diapositive affiche, prêt à rendre : le gabarit n'a qu'une boucle, et
+   * les trois graphiques ne peuvent pas diverger de forme (en-tête, total, axe, légende).
+   */
+  readonly chartSlides = computed<ChartSlideView[]>(() => {
+    this.translate.currentLang();
+    const c = this.charts();
+    const t = (k: string, p?: object) => this.translate.instant('AFFAIRES.DETAIL.CHARTS.' + k, p);
+    const cumul = this.chartView() === 'CUMUL';
+    const suffix = '_' + this.chartGranularity() + (cumul ? '_CUMUL' : '');
+    const totalLabel = t(cumul ? 'TOTAL_END' : 'TOTAL_RANGE');
+
+    const invoicedTotal = this.seriesTotal(c?.totalInvoiced ?? 0, c?.openingInvoiced ?? 0);
+    const wipTotal = c ? (cumul
+      ? (this.chartSeries().length ? this.wipOf(this.chartSeries().at(-1)!.wip) : this.wipOf(c.openingWip))
+      : this.wipOf(c.totalWip)) : 0;
+    const paymentsTotal = this.seriesTotal(c?.totalPayments ?? 0, c?.openingPayments ?? 0);
+
+    const invoicedTarget = cumul ? this.chartBudgetTarget() : this.invoicedPeriodTarget();
+    const invoicedTargetLabel = cumul ? this.chartBudgetLabel()
+      : t('TARGET_' + this.chartGranularity());
+    const budget = cumul ? this.chartBudgetTarget() : 0;
+
+    const invoicedTitle = t('INV_TITLE' + suffix);
+    const wipTitle      = t('WIP_TITLE' + suffix);
+    const payTitle      = t('PAY_TITLE' + suffix);
+
+    return [
+      {
+        id: 'INVOICED', title: invoicedTitle, totalLabel, total: invoicedTotal,
+        count: c ? t('INVOICE_COUNT', { count: c.totalInvoiceCount }) : null,
+        note: null,
+        bars: this.invoicedBars(),
+        options: this.chartOptions(invoicedTitle, invoicedTotal, 'tertiary',
+          [{ label: t(cumul ? 'INVOICED_CUMUL' : 'INVOICED'), variant: 'tertiary' }],
+          invoicedTarget, invoicedTargetLabel),
+      },
+      {
+        id: 'WIP', title: wipTitle, totalLabel, total: wipTotal, count: null,
+        note: this.chartWipModeOnlyTs() ? t('WIP_TS_ONLY') : null,
+        bars: this.wipBars(),
+        options: this.chartOptions(wipTitle, wipTotal, 'tertiary',
+          WIP_STATUS_ORDER.filter(s => this.chartStatuses().includes(s))
+            .map(s => ({ label: this.wipStatusLabel(s), variant: WIP_STATUS_VARIANT[s] })),
+          budget, this.chartBudgetLabel()),
+      },
+      {
+        id: 'PAYMENTS', title: payTitle, totalLabel, total: paymentsTotal,
+        count: c ? t('PAYMENT_COUNT', { count: c.totalPaymentCount }) : null,
+        note: null,
+        bars: this.paymentBars(),
+        options: this.chartOptions(payTitle, paymentsTotal, 'teal',
+          [{ label: t(cumul ? 'COLLECTED_CUMUL' : 'COLLECTED'), variant: 'teal' }],
+          budget, this.chartBudgetLabel()),
+      },
+    ];
+  });
+
+  /** « janv. 2025 – oct. 2026 » : la plage réellement servie, après coupe par le serveur. */
+  readonly chartRangeLabel = computed(() => {
+    this.translate.currentLang();
+    const c = this.charts();
+    if (!c || !c.buckets.length) return '';
+    return `${this.monthYearLabel(c.from.slice(0, 7))} – ${this.monthYearLabel(c.to.slice(0, 7))}`;
+  });
+
+  /** Seuls FORFAIT, REGIE et LIVRABLE déclarent du WIP ; ailleurs seul celui des TS compte. */
+  readonly chartWipModeOnlyTs = computed(() => {
+    const mode = this.affaire()?.billingMode;
+    return mode !== 'FORFAIT' && mode !== 'REGIE' && mode !== 'LIVRABLE';
+  });
+
+  // ── Clic sur une barre ────────────────────────────────────────────────────
+
+  /**
+   * Chaque barre mène là où vivent ses lignes : Facturation → Factures filtrées sur la
+   * période ; WIP → l'onglet où ce WIP se déclare ; Paiements → Paiements filtrés.
+   */
+  onChartBarClick(slide: ChartSlideId, bar: BarChartBar): void {
+    if (slide === 'WIP') {
+      this.activeTab.set(this.chartWipModeOnlyTs() ? 'ts-wip' : 'wip');
+      return;
+    }
+    const bucket = this.charts()?.buckets.find(b => b.key === (bar as ChartBar).key);
+    if (!bucket) return;
+    const range = [localDay(bucket.start), localDay(bucket.end)];
+    if (slide === 'INVOICED') {
+      this.invoiceEmittedRange.set(range);
+      this.activeTab.set('factures');
+    } else {
+      this.paymentDateRange.set(range);
+      this.activeTab.set('paiements');
+    }
+  }
+
+  // ── Libellés ──────────────────────────────────────────────────────────────
+
+  private wipStatusLabel(s: ChartWipStatus): string {
+    return this.translate.instant('AFFAIRES.DETAIL.CHARTS.STATUS_' + s);
+  }
+
+  /** Légende d'axe : « MARS », « MARS 26 » si la plage couvre plusieurs années, « T1 26 », « 2026 ». */
+  private bucketShortLabel(b: AffaireChartBucket): string {
+    const [y, rest] = b.key.split('-');
+    const yy = y.slice(2);
+    if (!rest) return y;
+    if (rest.startsWith('Q')) {
+      return this.translate.instant('AFFAIRES.DETAIL.CHARTS.QUARTER_SHORT', { q: rest.slice(1), yy });
+    }
+    const month = this.translate.instant('COMMON.MONTHS_SHORT.M' + Number(rest));
+    const c = this.charts();
+    const multiYear = !!c && c.from.slice(0, 4) !== c.to.slice(0, 4);
+    return multiYear ? `${month} ${yy}` : month;
+  }
+
+  /** En tête de pastille : « mars 2026 », « T1 2026 », « 2026 ». */
+  private bucketLongLabel(b: AffaireChartBucket): string {
+    const [y, rest] = b.key.split('-');
+    if (!rest) return y;
+    if (rest.startsWith('Q')) {
+      return this.translate.instant('AFFAIRES.DETAIL.CHARTS.QUARTER_LONG', { q: rest.slice(1), year: y });
+    }
+    return this.monthYearLabel(b.key);
+  }
+
+  private monthYearLabel(ym: string): string {
+    const [y, m] = ym.split('-').map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString(this.chartLocale(), { month: 'short', year: 'numeric' });
+  }
+
+  /** Graduation de l'axe : « 12 k », « 1,2 M » — le montant exact est dans la pastille. */
+  private compactAmount(v: number): string {
+    return new Intl.NumberFormat(this.chartLocale(), { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+  }
+
+  private chartLocale(): string {
+    const lang = this.translate.currentLang() || 'fr';
+    return lang.startsWith('en') ? 'en-GB' : lang.startsWith('ar') ? 'ar' : 'fr-FR';
   }
 
   // ═══ Onglets ══════════════════════════════════════════════════════════════
@@ -2659,6 +3048,8 @@ export class AffaireDetailComponent implements OnInit {
   refreshIndicators(): void {
     this.loadKpis();
     this.loadRaf();
+    // Les graphiques découpent les mêmes totaux que les tuiles : ils bougent avec elles.
+    this.loadCharts();
   }
 
   loadRaf():      void { this.svc.getAffaireRaf(this.numId).subscribe({ next: r => this.raf.set(r) }); }
@@ -3301,13 +3692,6 @@ export class AffaireDetailComponent implements OnInit {
   }
 
   /**
-   * Jour + mois court, sans l'année — la date d'une facture dans la pastille du graphique.
-   *
-   * `formatDate` y serait trop long : la pastille est en `whitespace-nowrap` et une date
-   * complète la fait déborder d'une colonne étroite. L'année n'y manque pas, elle est dans
-   * le titre du panneau (« Facturation 2026 »).
-   */
-  /**
    * Jour + mois ABRÉGÉ + année : « 01 sept. 2026 ». La période du panneau de gauche en a
    * besoin sur une seule ligne dans 300 px, ce que le mois en entier ne permet pas.
    * L'année reste, elle : une affaire court sur plusieurs exercices.
@@ -3316,10 +3700,6 @@ export class AffaireDetailComponent implements OnInit {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('fr-FR',
       { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-
-  private formatDayMonth(d: string): string {
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
   }
 
   private priorityOf(date: string, now: number): 'high' | 'medium' | 'standard' {

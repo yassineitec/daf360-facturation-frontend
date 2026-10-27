@@ -607,80 +607,111 @@
               </daf-section-card>
             </section>
 
-            <!-- Facturation — UN graphique, dont les puces Année / Mois changent la
-                 granularité. Pas de navigation : ni bouton retour, ni changement de vue.
-                 Les puces n'apparaissent que sur une affaire pluriannuelle, faute de choix
-                 à offrir ailleurs.
-
-                 L'en-tête tient sur DEUX RANGÉES et non une seule : titre + puces en haut,
-                 légendes + cumul en bas. En une seule rangée, la barre du portable faisait
-                 se replier le bloc « Total cumulé » avec sa bordure gauche qui pendait dans
-                 le vide, d'où le trait mal espacé. La bordure est maintenant le `border-t`
-                 de la rangée, qui court sur toute la largeur et ne peut pas se retrouver
-                 orpheline.
-
-                 `help` porte ce que le graphique ne dit pas de lui-même : d'où viennent les
-                 valeurs, ce qu'est la ligne d'objectif, et pourquoi l'axe s'arrête au mois
-                 courant. Le `(i)` a la place qu'il faut ici, la carte est pleine largeur. -->
+            <!-- Graphiques — UN carrousel de trois diapositives (Facturation, WIP, Paiements)
+                 sous UN jeu de filtres. Les filtres passent par daf-filter, comme les tableaux
+                 de la fiche, et s'affichent en puces sous l'en-tête. Le (i) de la carte suit la
+                 diapositive : il explique le calcul du graphique affiché, pas les filtres.
+                 Règles de calcul : section « Graphiques » du composant. -->
             <daf-section-card
-              [help]="'AFFAIRES.DETAIL.OVERVIEW.CHART_HELP' | translate"
+              [help]="chartSlideHelp()"
               [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
               [helpLabel]="'AFFAIRES.DETAIL.OVERVIEW.HELP_ARIA' | translate">
-              <div class="flex flex-col gap-5 p-6">
+              <div class="flex flex-col gap-4 p-6"
+                   role="region" aria-roledescription="carousel"
+                   [attr.aria-label]="'AFFAIRES.DETAIL.CHARTS.CAROUSEL' | translate"
+                   (keydown)="onChartCarouselKey($event)">
 
-                <div class="chart-head">
-                  <div class="min-w-0">
-                    <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">
-                      {{ chartTitle() }}
-                    </p>
-                    <p class="mt-1 text-body-sm text-on-surface-variant">
-                      {{ 'AFFAIRES.DETAIL.OVERVIEW.CHART_SUB' | translate }}
-                    </p>
-                  </div>
-                  @if (chartGranularitySwitchable()) {
+                <!-- En-tête : navigation entre graphiques à gauche, filtres à droite. -->
+                <div class="carousel-head">
+                  <div class="carousel-nav">
+                    <daf-button [options]="chartPrevOptions()" (onClick)="stepChartSlide(-1)" />
                     <daf-chip-group
-                      [options]="chartGranularityChips()"
-                      [config]="chartGranularityChipConfig"
-                      [selected]="chartGranularitySelection()"
-                      (selectedChange)="setChartGranularity($event)" />
-                  }
-                </div>
-
-                <div class="chart-legend">
-                  <div class="flex flex-wrap items-center gap-4">
-                    <span class="flex items-center gap-2 text-label-caps font-bold text-on-surface-variant">
-                      <span class="h-2.5 w-2.5 rounded-full bg-tertiary"></span>
-                      {{ 'AFFAIRES.DETAIL.OVERVIEW.LEGEND_REAL' | translate }}
-                    </span>
-                    @if (chartTarget() > 0) {
-                      <span class="text-label-caps font-bold text-on-surface-variant">
-                        {{ chartTargetLabel() }} : {{ chartTarget() | displayCurrency : affaireDevise() }}
-                      </span>
-                    }
+                      [options]="chartSlideChips()"
+                      [config]="chartSlideChipConfig"
+                      [selected]="[chartSlide()]"
+                      (selectedChange)="selectChartSlide($event)" />
+                    <daf-button [options]="chartNextOptions()" (onClick)="stepChartSlide(1)" />
                   </div>
-                  <div class="text-right">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ 'AFFAIRES.DETAIL.OVERVIEW.CUMUL' | translate }}
-                    </p>
-                    <p class="text-headline-md font-extrabold text-on-surface">
-                      {{ chartTotal() | displayCurrency : affaireDevise() }}
-                    </p>
+                  <div class="carousel-actions">
+                    <daf-filter
+                      [fields]="chartFilterFields()"
+                      [value]="chartFilterValue()"
+                      [title]="chartFilterConfig().title ?? ''"
+                      [applyLabel]="chartFilterConfig().applyLabel ?? ''"
+                      [cancelLabel]="chartFilterConfig().cancelLabel ?? ''"
+                      [resetLabel]="chartFilterConfig().resetLabel ?? ''"
+                      [triggerLabel]="chartFilterConfig().triggerLabel ?? ''"
+                      align="right"
+                      (apply)="onChartFilterApply($event)"
+                      (reset)="resetChartFilters()" />
                   </div>
                 </div>
 
-                <!-- Colonnes verticales + ligne d'objectif pointillée + axe : daf-bar-chart
-                     dessine aussi l'état vide, d'où l'absence de @else. Pas de `(barClick)` :
-                     les barres ne mènent nulle part, ce sont les puces qui pilotent.
+                @if (chartFiltersActive()) {
+                  <daf-filter-chips
+                    [fields]="chartFilterFields()"
+                    [value]="chartFilterValue()"
+                    [clearAllLabel]="'AFFAIRES.DETAIL.CHARTS.CLEAR_ALL' | translate"
+                    [removeLabel]="'AFFAIRES.DETAIL.CHARTS.REMOVE_FILTER' | translate"
+                    [ariaLabel]="'AFFAIRES.DETAIL.CHARTS.ACTIVE_FILTERS' | translate"
+                    (remove)="onChartFilterRemove($event)"
+                    (clear)="resetChartFilters()" />
+                }
 
-                     Le conteneur `.chart-plot` BORNE la largeur du tracé quand il y a peu de
-                     barres : la lib les met en `flex-1`, donc une année unique s'étalait sur
-                     toute la carte en un pavé qui ne se lit plus comme une colonne. -->
-                <div class="chart-plot"
-                     [class.chart-plot--single]="chartBars().length === 1"
-                     [class.chart-plot--pair]="chartBars().length === 2"
-                     [class.chart-plot--few]="chartBars().length === 3 || chartBars().length === 4">
-                  <daf-bar-chart [bars]="chartBars()" [options]="chartOptions()" />
-                </div>
+                @if (chartsError()) {
+                  <p class="text-body-sm text-danger">{{ 'AFFAIRES.DETAIL.CHARTS.LOAD_ERROR' | translate }}</p>
+                } @else if (!charts()) {
+                  <daf-skeleton variant="block" width="100%" height="320px" />
+                } @else {
+                  <!-- Seule la diapositive active est rendue. Le @for sur un tableau d'UN élément,
+                       suivi par son id, recrée l'élément à chaque changement : l'animation
+                       d'entrée rejoue, dans le sens du déplacement. Rien de caché à neutraliser
+                       pour le clavier ou le lecteur d'écran. -->
+                  <div class="carousel-viewport"
+                       (pointerdown)="onChartPointerDown($event)"
+                       (pointerup)="onChartPointerUp($event)">
+                      @for (slide of activeChartSlides(); track slide.id) {
+                        <div class="carousel-slide"
+                             [class.carousel-slide--back]="chartSlideDirection() < 0"
+                             role="group" aria-roledescription="slide"
+                             [attr.aria-label]="slide.title">
+
+                          <div class="chart-head">
+                            <div class="min-w-0">
+                              <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">{{ slide.title }}</p>
+                              <p class="mt-1 text-body-sm text-on-surface-variant">{{ chartRangeLabel() }}</p>
+                            </div>
+                            <div class="chart-total">
+                              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                                {{ slide.totalLabel }}
+                              </p>
+                              <p class="text-headline-md font-extrabold text-on-surface">
+                                {{ slide.total | displayCurrency : affaireDevise() }}
+                              </p>
+                              @if (slide.count) {
+                                <p class="text-body-sm text-on-surface-variant">{{ slide.count }}</p>
+                              }
+                            </div>
+                          </div>
+
+                          <!-- Pleine largeur de la carte, quel que soit le nombre de barres. -->
+                          <div class="chart-plot" [class.chart-plot--loading]="chartsLoading()">
+                            <daf-bar-chart [bars]="slide.bars" [options]="slide.options"
+                                           (barClick)="onChartBarClick(slide.id, $event)" />
+                          </div>
+
+                          @if (slide.note) {
+                            <p class="text-body-sm text-on-surface-variant">{{ slide.note }}</p>
+                          }
+                        </div>
+                      }
+                  </div>
+
+                  <!-- Position annoncée aux lecteurs d'écran à chaque changement de diapositive. -->
+                  <p class="sr-only" aria-live="polite">
+                    {{ 'AFFAIRES.DETAIL.CHARTS.SLIDE_POSITION' | translate: { index: chartSlideIndex() + 1, count: chartSlides().length, title: chartSlides()[chartSlideIndex()].title } }}
+                  </p>
+                }
               </div>
             </daf-section-card>
 

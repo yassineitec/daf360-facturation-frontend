@@ -16,7 +16,7 @@ import {
   AffaireInvoiceItem, AffairePaymentItem,
   TmWorkedHoursLine, AffaireRessourceRef,
   AffaireRessourceManageDto, AddAffaireRessourceRequest, UpdateResourceRateRequest,
-  AffaireWorkedHoursSummaryDto,
+  AffaireWorkedHoursSummaryDto, AffaireChartsDto, AffaireChartsQuery,
 } from './affaire.model';
 
 @Injectable({ providedIn: 'root' })
@@ -71,6 +71,16 @@ export class AffaireService {
 
   getAffaireKpis(id: number): Observable<AffaireKpisDto> {
     return this.http.get<AffaireKpisDto>(`${this.base}/affaires/${id}/kpis`);
+  }
+
+  /** Les deux graphiques de la vue d'ensemble (WIP / paiements), agrégés côté serveur. */
+  getAffaireCharts(id: number, q: AffaireChartsQuery): Observable<AffaireChartsDto> {
+    let params = new HttpParams()
+      .set('granularity', q.granularity)
+      .set('includeTs', String(q.includeTs));
+    if (q.from) params = params.set('from', q.from);
+    if (q.to)   params = params.set('to',   q.to);
+    return this.http.get<AffaireChartsDto>(`${this.base}/affaires/${id}/charts`, { params });
   }
 
   updateAffaire(id: number, dto: UpdateAffaireRequest): Observable<AffaireDetail> {
