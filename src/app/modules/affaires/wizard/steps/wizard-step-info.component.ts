@@ -90,7 +90,9 @@ export class WizardStepInfoComponent implements OnInit {
       { value: 'EUR', label: `EUR — ${this.translate.instant('AFFAIRES.wizard.info.cur_euro')}` },
       { value: 'USD', label: `USD — ${this.translate.instant('AFFAIRES.wizard.info.cur_dollar')}` },
       { value: 'TND', label: `TND — ${this.translate.instant('AFFAIRES.wizard.info.cur_tnd')}` },
-      { value: 'MAD', label: `MAD — ${this.translate.instant('AFFAIRES.wizard.info.cur_mad')}` },
+      { value: 'EGP', label: `EGP — ${this.translate.instant('AFFAIRES.wizard.info.cur_egp')}` },
+      { value: 'SAR', label: `SAR — ${this.translate.instant('AFFAIRES.wizard.info.cur_sar')}` },
+      { value: 'AED', label: `AED — ${this.translate.instant('AFFAIRES.wizard.info.cur_aed')}` },
     ];
   });
 

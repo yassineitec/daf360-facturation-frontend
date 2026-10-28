@@ -14,7 +14,7 @@ export class CurrencyRateService {
   private http = inject(HttpClient);
 
   // Approximate fallback rates (1 EUR = X currency). Updated live from API.
-  rates = signal<Record<string, number>>({ EUR: 1, USD: 1.08, TND: 3.35, EGP: 52.4 });
+  rates = signal<Record<string, number>>({ EUR: 1, USD: 1.08, TND: 3.35, EGP: 52.4, SAR: 4.05, AED: 3.97 });
 
   constructor() {
     this.load();
@@ -53,8 +53,12 @@ export class CurrencyRateService {
   convert(amount: number, from: string, to: string): number {
     if (from === to) return amount;
     const r = this.rates();
-    const fromRate = r[from.toUpperCase()] ?? 1;
-    const toRate   = r[to.toUpperCase()]   ?? 1;
+    const fromKey = from.toUpperCase();
+    const toKey = to.toUpperCase();
+    if (!(fromKey in r)) console.warn(`[CurrencyRateService] No rate for '${fromKey}' — falling back to 1 (result is wrong).`);
+    if (!(toKey in r)) console.warn(`[CurrencyRateService] No rate for '${toKey}' — falling back to 1 (result is wrong).`);
+    const fromRate = r[fromKey] ?? 1;
+    const toRate   = r[toKey]   ?? 1;
     return (amount / fromRate) * toRate;
   }
 }

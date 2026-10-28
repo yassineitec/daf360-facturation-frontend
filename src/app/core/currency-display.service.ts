@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 
 const STORAGE_KEY = 'fact_display_currency';
 
-export const SUPPORTED_CURRENCIES = ['EUR', 'USD', 'TND', 'EGP'] as const;
+export const SUPPORTED_CURRENCIES = ['EUR', 'USD', 'TND', 'EGP', 'SAR', 'AED'] as const;
 export type SupportedCurrency = typeof SUPPORTED_CURRENCIES[number];
 
 @Injectable({ providedIn: 'root' })
