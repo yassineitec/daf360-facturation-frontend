@@ -457,7 +457,7 @@ export interface StepLinesValue {
 
               <td>
                 <button type="button" class="remove-line-btn" title="✕" (click)="removeLine(i)"
-                  [disabled]="isCombined() || linesArray.length === 1">✕</button>
+                  [disabled]="isCombined()">✕</button>
               </td>
             </tr>
           }
@@ -1255,10 +1255,10 @@ export class StepLinesComponent {
 
   addLine():    void { this.linesArray.push(this.newLine()); this.linesVersion.update(v => v + 1); }
   removeLine(i: number): void {
-    if (this.linesArray.length > 1) {
-      this.linesArray.removeAt(i);
-      this.linesVersion.update(v => v + 1);
-    }
+    // Aucun plancher : la table peut redevenir vide ("Suivant" est alors grisé tant
+    // qu'aucune ligne ni aucun frais n'est présent, et "+ Ajouter" reste disponible).
+    this.linesArray.removeAt(i);
+    this.linesVersion.update(v => v + 1);
   }
 
   /** Ligne de la mini-table "frais remboursables" (mode AV) — montant plat, pas d'avancement. */
