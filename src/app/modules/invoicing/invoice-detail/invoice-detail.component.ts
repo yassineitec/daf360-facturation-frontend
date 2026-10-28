@@ -704,13 +704,17 @@ export class InvoiceDetailComponent implements OnInit {
     if (!inv) return;
     this.exportingPdf.set(true);
     this.actionError.set(null);
-    this.svc.exportPdfPreview(inv.id, this.translate.currentLang() ?? undefined).subscribe({
+    const lang = this.translate.currentLang() ?? undefined;
+    this.svc.exportPdfPreview(inv.id, lang).subscribe({
       next: blob => {
         this.exportingPdf.set(false);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `facture-${inv.invoiceNumber ?? 'apercu-' + inv.id}.pdf`;
+        // File name follows the export language: "facture-FAC-…" (FR) / "Invoice FAC-…" (EN).
+        a.download = lang?.toLowerCase() === 'en'
+          ? `Invoice ${inv.invoiceNumber ?? 'preview-' + inv.id}.pdf`
+          : `facture-${inv.invoiceNumber ?? 'apercu-' + inv.id}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
       },
