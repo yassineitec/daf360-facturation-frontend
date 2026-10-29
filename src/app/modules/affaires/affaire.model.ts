@@ -433,6 +433,12 @@ export interface PaysRefDto {
   frenchLabel:  string;
   /** `pays_ref.english_label` — display-only; blank falls back to `frenchLabel`. */
   englishLabel?: string | null;
+  /**
+   * The entity's default currency code (e.g. "EUR", "TND") — populated only by
+   * `GET /ref/pays/arx-entities` (admin/entity-currency use). The plain `/ref/pays`
+   * (194-country) list never sets it, hence optional/nullable here.
+   */
+  devise?: string | null;
 }
 
 /** The country name in the UI language (`lang` = `translate.currentLang()`). */

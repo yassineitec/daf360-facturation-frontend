@@ -535,3 +535,24 @@
   font-size: var(--text-body-sm);
 }
 
+// ── Entity currency tab (one row per ARX entity) ────────────────────────────────
+
+.entity-currency-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-outline-variant);
+
+  &:last-child { border-bottom: none; }
+}
+
+.entity-currency-edit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  justify-content: flex-end;
+}
+

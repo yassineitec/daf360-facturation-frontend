@@ -4478,10 +4478,19 @@
       "PERMISSIONS": "Permissions",
       "DOCUMENT_TEMPLATES": "Document templates",
       "COST_CONFIG": "Cost configuration",
+      "ENTITY_CURRENCY": "Entity currency",
       "REMINDERS": "Reminders",
       "COST_REMINDERS": "Supplier reminders",
       "WIP_EMAIL_TEMPLATES": "WIP Emails",
       "NAV_LABEL": "Admin navigation"
+    },
+    "ENTITY_CURRENCY": {
+      "TITLE": "Default currency of ARX entities",
+      "COL_DEVISE": "Current currency",
+      "SELECT_PLACEHOLDER": "Choose a currency",
+      "EMPTY": "No ARX entity found.",
+      "ERR_LOAD": "Could not load the ARX entities.",
+      "ERR_SAVE": "Could not save this entity's currency."
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Document templates",

@@ -425,6 +425,58 @@
       </div>
     }
 
+    <!-- ── ENTITY CURRENCY TAB (devise par défaut des 13 entités ARX réelles) ── -->
+    @if (activeTab() === 'entity-currency') {
+      <div class="tab-content">
+        <daf-section-card>
+          <div class="config-card-body">
+            <daf-section-title [title]="'ADMIN.ENTITY_CURRENCY.TITLE' | translate" />
+
+            @if (entitiesLoading()) {
+              <daf-skeleton variant="block" radius="xl" width="100%" height="220px" />
+            } @else {
+              @if (entitiesError()) {
+                <div class="banner-error">{{ entitiesError() }}</div>
+              }
+              @if (entityError()) {
+                <div class="banner-error">{{ entityError() }}</div>
+              }
+              <div class="config-stack">
+                @for (entity of entities(); track entity.id) {
+                  <div class="entity-currency-row">
+                    <span class="status-label">{{ entity.frenchLabel }} ({{ entity.isoCode }})</span>
+
+                    @if (editingEntityId() === entity.id) {
+                      <div class="entity-currency-edit">
+                        <daf-select
+                          [options]="editingCurrencyOptions()"
+                          [selected]="editingEntitySelected()"
+                          [config]="{ placeholder: ('ADMIN.ENTITY_CURRENCY.SELECT_PLACEHOLDER' | translate), searchable: true }"
+                          (selectedChange)="saveEntityDevise(entity, $event[0])" />
+                        <daf-button [label]="'ADMIN.COMMON.CANCEL' | translate" variant="ghost"
+                          [options]="{ size: 'sm', disabled: entitySaving() }"
+                          (onClick)="cancelEditEntity()" />
+                      </div>
+                    } @else {
+                      <div class="entity-currency-edit">
+                        <span class="status-value">{{ entity.devise ?? '—' }}</span>
+                        <daf-button [label]="'ADMIN.COMMON.EDIT' | translate" variant="ghost"
+                          [options]="{ size: 'sm', iconStart: 'edit' }"
+                          (onClick)="startEditEntity(entity)" />
+                      </div>
+                    }
+                  </div>
+                }
+                @if (entities().length === 0 && !entitiesError()) {
+                  <span class="loading-inline">{{ 'ADMIN.ENTITY_CURRENCY.EMPTY' | translate }}</span>
+                }
+              </div>
+            }
+          </div>
+        </daf-section-card>
+      </div>
+    }
+
   }
 
   <!-- Add/edit modal body — Listes configurables -->

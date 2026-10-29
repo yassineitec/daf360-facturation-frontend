@@ -16,12 +16,13 @@ import {
   SectionCardComponent, SectionTitleComponent, CardComponent,
   RadioGroupComponent, RadioGroupConfig, RadioOption,
   ToggleComponent, ToggleOptions,
-  FormFieldComponent, StatusBadgeComponent,
+  FormFieldComponent, StatusBadgeComponent, SkeletonComponent,
   TabsComponent, TabItem, SearchToolbarComponent, SelectComponent, SelectOption,
   PageComponent, PageHeaderComponent,
 } from '@khalilrebhiitec/daf360';
 import { FactListService }    from '../../../core/fact-list.service';
 import { ClientService }      from '../../clients/client.service';
+import { AffaireService }     from '../../affaires/affaire.service';
 import { ParameterSetService, ParameterSetDto } from '../../../core/parameter-set.service';
 import { ForexApiConfigService, ForexApiStatusDto } from '../../../core/forex-api-config.service';
 import { ListValueDto, ListTypeDto, TaxonomyFields, WithholdingBase, WITHHOLDING_BASES } from '../../cost/cost.model';
@@ -30,7 +31,9 @@ import { CommonModule } from '@angular/common';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { UserStore } from '../../../core/user.store';
 import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
-type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates' | 'cost-config' | 'reminders' | 'cost-reminders' | 'wip-email-templates';
+type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates'
+              | 'cost-config' | 'reminders' | 'cost-reminders' | 'wip-email-templates'
+              | 'entity-currency';
 
 const PAGE_SIZE = 10;
 
@@ -85,7 +88,7 @@ interface ForexRow {
     CommonModule, FormsModule,
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
-    FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
+    FormFieldComponent, StatusBadgeComponent, SkeletonComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
     SelectComponent, PaysFlagSelectComponent, PageComponent, PageHeaderComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, CostReminderRulesAdminComponent,
     DocumentTemplatesAdminComponent,
@@ -98,6 +101,7 @@ interface ForexRow {
 export class AdminListComponent implements OnInit {
   private readonly factListSvc  = inject(FactListService);
   private readonly clientSvc    = inject(ClientService);
+  private readonly affaireSvc   = inject(AffaireService);
   private readonly paramSvc     = inject(ParameterSetService);
   private readonly forexApiSvc  = inject(ForexApiConfigService);
   private readonly modal        = inject(ModalService);
@@ -473,6 +477,7 @@ export class AdminListComponent implements OnInit {
     // pouvait configurer seuils/catégories perdrait l'accès en migrant vers /admin.
     if (this.userStore.hasPermission('FACT_SUPER_ADMIN') || this.userStore.hasPermission('FACT_ADMIN_COST')) {
       items.push({ id: 'cost-config', label: t('ADMIN.TABS.COST_CONFIG'), icon: 'tune' });
+      items.push({ id: 'entity-currency', label: t('ADMIN.TABS.ENTITY_CURRENCY'), icon: 'attach_money' });
     }
     if (this.userStore.hasPermission('FACT_VIEW_COST')) {
       items.push({ id: 'cost-reminders', label: t('ADMIN.TABS.COST_REMINDERS'), icon: 'local_shipping' });
@@ -484,6 +489,7 @@ export class AdminListComponent implements OnInit {
    * have, so this can't be a bare `[(active)]` two-way binding — see openForexApiTab(). */
   onTabChange(id: string): void {
     if (id === 'forex-api') { this.openForexApiTab(); return; }
+    if (id === 'entity-currency' && this.entities().length === 0) { this.loadEntities(); }
     this.activeTab.set(id as AdminTab);
   }
 
@@ -571,6 +577,83 @@ export class AdminListComponent implements OnInit {
       chfParam: chfMap.get(code) ?? null,
     }));
   });
+
+  // ── Entity currency tab ──────────────────────────────────────────────────
+  entities         = signal<PaysRefDto[]>([]);
+  entitiesLoading  = signal(false);
+  entitiesError    = signal<string | null>(null);
+  /** CURRENCY list values for whichever entity row is currently being edited — loaded
+   *  lazily per row, same per-pays-scoped pattern as loadParentCategories() above, since
+   *  CURRENCY values are configured per pays like every other admin list. */
+  editingEntityId        = signal<number | null>(null);
+  editingCurrencyOptions = signal<SelectOption[]>([]);
+  entitySaving      = signal(false);
+  entityError       = signal<string | null>(null);
+
+  loadEntities(): void {
+    this.entitiesLoading.set(true);
+    this.entitiesError.set(null);
+    this.affaireSvc.getArxEntities().subscribe({
+      next: entities => {
+        this.entities.set(entities);
+        // `getArxEntities()` swallows network errors into an empty array (it feeds a
+        // shared cache the wizard's entity pickers also rely on) — an empty result is
+        // therefore treated as a load failure here, since the 13 ARX entities are a
+        // fixed reference set that's never legitimately empty.
+        if (entities.length === 0) {
+          this.entitiesError.set(this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_LOAD'));
+        }
+        this.entitiesLoading.set(false);
+      },
+      error: err => {
+        this.entitiesError.set(err.error?.message ?? this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_LOAD'));
+        this.entitiesLoading.set(false);
+      },
+    });
+  }
+
+  /** Preselects the currently-configured currency in the edit dropdown, matched by
+   *  code against the freshly-loaded CURRENCY options — a blank dropdown on open
+   *  would read as "no currency set" even when one already is. */
+  readonly editingEntitySelected = computed<string[]>(() => {
+    const id = this.editingEntityId();
+    if (id === null) return [];
+    const entity = this.entities().find(e => e.id === id);
+    if (!entity?.devise) return [];
+    const match = this.editingCurrencyOptions().find(o => o.label === entity.devise);
+    return match ? [match.value] : [];
+  });
+
+  startEditEntity(entity: PaysRefDto): void {
+    this.editingEntityId.set(entity.id);
+    this.entityError.set(null);
+    this.factListSvc.getAdminListValues('CURRENCY', entity.id).subscribe(values => {
+      this.editingCurrencyOptions.set(values.map(v => ({ value: String(v.id), label: v.code })));
+    });
+  }
+
+  cancelEditEntity(): void {
+    this.editingEntityId.set(null);
+    this.editingCurrencyOptions.set([]);
+  }
+
+  saveEntityDevise(entity: PaysRefDto, currencyValueId: string): void {
+    const id = Number(currencyValueId);
+    if (!Number.isFinite(id) || id <= 0) return;
+    this.entitySaving.set(true);
+    this.entityError.set(null);
+    this.affaireSvc.updateEntityDevise(entity.id, id).subscribe({
+      next: updated => {
+        this.entities.update(list => list.map(e => e.id === updated.id ? updated : e));
+        this.entitySaving.set(false);
+        this.cancelEditEntity();
+      },
+      error: err => {
+        this.entityError.set(err.error?.message ?? this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_SAVE'));
+        this.entitySaving.set(false);
+      },
+    });
+  }
 
   ngOnInit(): void {
     this.isLoading.set(true);
