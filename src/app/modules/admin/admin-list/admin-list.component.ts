@@ -626,9 +626,23 @@ export class AdminListComponent implements OnInit {
 
   startEditEntity(entity: PaysRefDto): void {
     this.editingEntityId.set(entity.id);
+    this.editingCurrencyOptions.set([]);
     this.entityError.set(null);
     this.factListSvc.getAdminListValues('CURRENCY', entity.id).subscribe(values => {
+      // A newer edit may have taken over while this request was in flight (admin
+      // clicked Edit on another row before this one resolved). `getAdminListValues`
+      // is pays-scoped, so applying a stale response here could silently populate the
+      // dropdown with currency values that belong to a DIFFERENT entity's pays — bail
+      // out silently rather than risk a save against the wrong pays-scoped id.
+      if (this.editingEntityId() !== entity.id) return;
       this.editingCurrencyOptions.set(values.map(v => ({ value: String(v.id), label: v.code })));
+      // `getAdminListValues` swallows network errors to `[]` (same convention as
+      // every other admin list read) — same treatment as loadEntities() above: an
+      // empty result is surfaced as a failure rather than left as a silently empty,
+      // unexplained dropdown.
+      if (values.length === 0) {
+        this.entityError.set(this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_NO_CURRENCIES'));
+      }
     });
   }
 
@@ -646,7 +660,14 @@ export class AdminListComponent implements OnInit {
       next: updated => {
         this.entities.update(list => list.map(e => e.id === updated.id ? updated : e));
         this.entitySaving.set(false);
-        this.cancelEditEntity();
+        // `editingEntityId`/`editingCurrencyOptions` are single shared signals, not
+        // per-row: if the admin has since switched to editing a different row while
+        // THIS save was in flight, closing the edit UI here would silently discard
+        // that other, still-in-progress edit. Only close it when it's still the
+        // edit this save belongs to — updating `entities` above is safe regardless.
+        if (this.editingEntityId() === entity.id) {
+          this.cancelEditEntity();
+        }
       },
       error: err => {
         this.entityError.set(err.error?.message ?? this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_SAVE'));

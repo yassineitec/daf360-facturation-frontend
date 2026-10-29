@@ -4486,11 +4486,11 @@
     },
     "ENTITY_CURRENCY": {
       "TITLE": "Devise par défaut des entités ARX",
-      "COL_DEVISE": "Devise actuelle",
       "SELECT_PLACEHOLDER": "Choisir une devise",
       "EMPTY": "Aucune entité ARX trouvée.",
       "ERR_LOAD": "Impossible de charger les entités ARX.",
-      "ERR_SAVE": "Impossible d'enregistrer la devise de cette entité."
+      "ERR_SAVE": "Impossible d'enregistrer la devise de cette entité.",
+      "ERR_NO_CURRENCIES": "Aucune devise configurée pour le pays de cette entité."
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Maquettes de documents",

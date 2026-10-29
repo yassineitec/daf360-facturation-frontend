@@ -4486,11 +4486,11 @@
     },
     "ENTITY_CURRENCY": {
       "TITLE": "Default currency of ARX entities",
-      "COL_DEVISE": "Current currency",
       "SELECT_PLACEHOLDER": "Choose a currency",
       "EMPTY": "No ARX entity found.",
       "ERR_LOAD": "Could not load the ARX entities.",
-      "ERR_SAVE": "Could not save this entity's currency."
+      "ERR_SAVE": "Could not save this entity's currency.",
+      "ERR_NO_CURRENCIES": "No currency configured for this entity's country."
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Document templates",

@@ -267,8 +267,12 @@ export class AffaireService {
   updateEntityDevise(id: number, currencyValueId: number): Observable<PaysRefDto> {
     return this.http.patch<PaysRefDto>(`${this.base}/ref/pays/${id}/devise`, { currencyValueId }).pipe(
       tap(() => {
-        // The cached list feeding the wizard pickers would otherwise keep serving the
-        // stale `devise` for the rest of the session.
+        // Only affects FUTURE getArxEntities() callers, who'll trigger a fresh HTTP
+        // request instead of reusing the shared cache: this covers the realistic case
+        // (reopening the wizard after an admin edit), not a component that stayed
+        // mounted and already holds the old, one-shot-emitted array — shareReplay
+        // doesn't push a new value to past subscribers just because the cache was
+        // cleared.
         this.arxEntitiesCache$ = undefined;
       }),
     );
