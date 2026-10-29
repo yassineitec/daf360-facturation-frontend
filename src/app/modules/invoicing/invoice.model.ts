@@ -77,6 +77,10 @@ export interface InvoiceListItem {
   deductionLabel3:  string | null;
   deductionTotal3:  number;
   montantNetAPayer: number;
+  // Currency-safe EUR conversions for cross-currency KPI sums — nullable when the backend
+  // couldn't resolve an exchange rate for this invoice's currency; treat as 0 in a sum.
+  montantTtcEur:        number | null;
+  montantNetAPayerEur:  number | null;
 }
 
 export interface InvoiceDetail extends InvoiceListItem {

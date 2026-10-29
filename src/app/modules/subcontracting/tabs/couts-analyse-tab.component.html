@@ -78,16 +78,16 @@
     <section class="grid grid-cols-4 gap-2 sm:gap-6">
       <daf-metric-card
         [label]="'SUBCONTRACTING.ANALYSIS.KPI.CA' | translate"
-        [value]="m.ca | displayCurrency : 'TND'"
+        [value]="m.ca | displayCurrency : m.currency"
         [delta]="caDelta()"
         [options]="kpiCa" />
       <daf-metric-card
         [label]="'SUBCONTRACTING.ANALYSIS.KPI.ST_COSTS' | translate"
-        [value]="m.coutsST | displayCurrency : 'TND'"
+        [value]="m.coutsST | displayCurrency : m.currency"
         [options]="kpiSt" />
       <daf-metric-card
         [label]="'SUBCONTRACTING.ANALYSIS.KPI.GROSS_MARGIN' | translate"
-        [value]="m.margeBrute | displayCurrency : 'TND'"
+        [value]="m.margeBrute | displayCurrency : m.currency"
         [options]="marginOptions()" />
       <daf-metric-card
         [label]="'SUBCONTRACTING.ANALYSIS.KPI.MARGIN_RATE' | translate"

@@ -134,7 +134,7 @@ export class ClientListComponent implements OnInit {
   readonly statsTotal   = computed(() => this.totalElements());
   readonly statsActive  = computed(() => this.clients().filter(c => c.isActive).length);
   readonly statsKycDone = computed(() => this.clients().filter(c => c.isKycDone).length);
-  readonly statsTotalCA = computed(() => this.clients().reduce((sum, c) => sum + (c.totalCA ?? 0), 0));
+  readonly statsTotalCA = computed(() => this.clients().reduce((sum, c) => sum + (c.totalCaEur ?? 0), 0));
   readonly statsKycPct  = computed(() => {
     const total = this.clients().length;
     return total === 0 ? 0 : Math.round((this.statsKycDone() / total) * 100);
