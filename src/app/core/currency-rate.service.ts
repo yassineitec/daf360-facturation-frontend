@@ -33,8 +33,10 @@ function isValidRateSet(rates: unknown): rates is Record<string, number> {
 export class CurrencyRateService {
   private http = inject(HttpClient);
 
-  // Approximate fallback rates (1 EUR = X currency). Updated live from API.
-  rates = signal<Record<string, number>>(FALLBACK_RATES);
+  // Approximate fallback rates (1 EUR = X currency). Updated live from API. Spread into a new
+  // object rather than handing out FALLBACK_RATES itself — an in-place write on the signal's
+  // current value would otherwise silently poison the shared fallback table forever.
+  rates = signal<Record<string, number>>({ ...FALLBACK_RATES });
 
   // Tracks currency codes already warned about so convert() — called from the
   // pure: false DisplayCurrencyPipe on every change-detection cycle — logs
