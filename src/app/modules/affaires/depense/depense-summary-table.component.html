@@ -26,30 +26,12 @@
     (rowClick)="collaboratorSelected.emit($any($event)['email'])" />
 </div>
 
-<!-- Popup "zoom" EN PLEIN ÉCRAN — même habillage (fond assombri, panneau, en-tête, croix)
-     et même taille que le popup Historique de l'onglet WIP (affaire-wip-tab.component.html),
-     pas daf-modal qui plafonne à 900px. Le tableau dedans est le même que ci-dessus, en
+<!-- Popup "zoom" — même daf modal (app-daf-modal) et même taille que la popup Historique
+     de l'onglet WIP (affaire-wip-tab.component.html). Le tableau dedans est le même que ci-dessus, en
      plus grand — même état de recherche/filtre, pas une copie. -->
 @if (zoomOpen()) {
-  <div #zoomOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-       style="z-index:9999"
-       (click)="zoomOpen.set(false)">
-    <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-         style="width:calc(100vw - 120px); height:90vh;"
-         (click)="$event.stopPropagation()">
-      <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
-        <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
-          <span class="material-symbols-outlined text-primary">table_view</span>
-          {{ 'AFFAIRES.DEPENSE.ZOOM_TITLE' | translate }}
-        </h2>
-        <button type="button" (click)="zoomOpen.set(false)"
-          class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
-                 hover:text-on-surface hover:bg-surface-container transition-colors"
-          [attr.aria-label]="'AFFAIRES.DEPENSE.ZOOM_CLOSE' | translate">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+  <app-daf-modal [title]="'AFFAIRES.DEPENSE.ZOOM_TITLE' | translate" icon="table_view" [visible]="true" (closed)="zoomOpen.set(false)">
+    <div class="daf-modal-fill">
         <!-- Fond blanc partagé par la recherche et le bouton export — même mécanisme que
              la popup Historique WIP (affaire-wip-tab.component.html). -->
         <div class="flex items-center gap-2 bg-white rounded-xl p-2">
@@ -86,6 +68,5 @@
           (pageChange)="zoomPage.set($event)"
           (pageSizeChange)="onZoomPageSizeChange($event)" />
       </div>
-    </div>
-  </div>
+  </app-daf-modal>
 }

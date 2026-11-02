@@ -600,6 +600,10 @@ export class EmployeeCostComponent implements OnInit {
    * and this form needs `isSaving()` to keep driving the Save button's spinner. */
   private openModal(title: string): void {
     this.modalRef = this.modals.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title,
       icon: 'badge',
       body: this.formTpl(),

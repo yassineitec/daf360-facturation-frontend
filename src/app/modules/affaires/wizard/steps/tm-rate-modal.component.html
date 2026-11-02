@@ -1,19 +1,14 @@
-<div class="modal-overlay" (click)="closed.emit()">
-  <div class="modal-box" (click)="$event.stopPropagation()">
-
-    <!-- Header -->
-    <div class="modal-header">
-      <div>
-        <h3 class="modal-title">{{ 'AFFAIRES.wizard.tm.modal.title' | translate }}</h3>
-        <p class="modal-sub">
-          @if (step() === 1) { {{ 'AFFAIRES.wizard.tm.modal.sub1' | translate }} }
-          @if (step() === 2) { {{ 'AFFAIRES.wizard.tm.modal.sub2' | translate }} }
-        </p>
-      </div>
-      <button class="close-btn" (click)="closed.emit()">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
+<!-- daf modal (app-daf-modal) : en-tête, ✕, plein écran et redimensionnement de la
+     bibliothèque. Largeur d'origine (680px), hauteur selon le contenu. Le pied reste ici,
+     dans le corps : ses boutons changent selon l'étape. -->
+<app-daf-modal
+  [title]="'AFFAIRES.wizard.tm.modal.title' | translate"
+  [subtitle]="(step() === 1 ? 'AFFAIRES.wizard.tm.modal.sub1' : 'AFFAIRES.wizard.tm.modal.sub2') | translate"
+  icon="price_change"
+  width="680px"
+  height=""
+  [visible]="true"
+  (closed)="closed.emit()">
 
     <!-- Body -->
     <div class="modal-body">
@@ -188,8 +183,6 @@
         </p>
       }
 
-    </div><!-- /modal-body -->
-
     <!-- Footer -->
     <div class="modal-footer">
       <daf-button
@@ -225,5 +218,6 @@
       }
     </div>
 
-  </div>
-</div>
+    </div><!-- /modal-body -->
+
+</app-daf-modal>

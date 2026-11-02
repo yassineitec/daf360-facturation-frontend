@@ -1,34 +1,74 @@
 <!-- `daf-page` carries the background, vertical rhythm and first-load skeleton;
      `daf-page-header` carries the h1. Same skeleton as the other finance list screens. -->
-<daf-page [kpis]="0" [loading]="firstLoad()" [loadingLabel]="'REPORTING.TITLE' | translate">
+<daf-page [kpis]="4" [loading]="firstLoad()" [loadingLabel]="'REPORTING.TITLE' | translate">
 
   <daf-page-header
     [title]="'REPORTING.TITLE' | translate"
     [subtitle]="'REPORTING.SUBTITLE' | translate">
     <ng-container pageActions>
       <div class="flex items-center gap-3">
+        <!-- No visible label: the flag + country name say it, and a label on top made the
+             select taller than the button next to it. -->
         @if (paysList().length > 1) {
           <app-pays-flag-select
             [options]="paysOptions()"
             [selected]="paysId() ? [paysId().toString()] : []"
-            [label]="paysSelectLabel()"
             [placeholder]="paysSelectPlaceholder()"
             (selectedChange)="onPaysSelected($event)" />
         }
-        <daf-button
-          [options]="{ variant: 'secondary', label: ('REPORTING.BUDGET.TITLE' | translate), iconStart: 'request_quote' }"
-          (onClick)="goToBudget()" />
-        <daf-button
-          [options]="{ variant: 'secondary', label: ('REPORTING.CALENDAR.TITLE' | translate), iconStart: 'calendar_month' }"
-          (onClick)="goToCalendar()" />
-        @if (canManagePeriod()) {
-          <daf-button
-            [options]="{ variant: 'primary', label: ('REPORTING.NEW_PERIOD' | translate), iconStart: 'add_chart' }"
-            (onClick)="openCreatePeriod()" />
-        }
+        <!-- One "Actions" menu: the main action (new period, only with FACT_MANAGE_COST)
+             first, then the two rarely-used settings screens. -->
+        <app-pl-actions-menu
+          [label]="'REPORTING.ACTIONS' | translate"
+          [items]="actionItems()"
+          (itemClick)="onActionItem($event.id)" />
       </div>
     </ng-container>
   </daf-page-header>
+
+  <!-- KPIs — one row, never wraps (same layout as the recouvrement dashboard). Summed
+       client-side over the selected pays' CLOSED periods of `kpiYear()`: amounts only
+       exist once a period is closed (snapshot), so OPEN months are left out. -->
+  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+    <daf-metric-card
+      [label]="kpiNetRevenueLabel()"
+      [value]="kpiNetRevenueDisplay()"
+      [delta]="kpiNetRevenueDelta()"
+      [options]="kpiNetRevenueOptions()" />
+
+    <daf-metric-card
+      [label]="kpiEbitdaLabel()"
+      [value]="kpiEbitdaDisplay()"
+      [options]="kpiEbitdaOptions()" />
+
+    <daf-metric-card
+      [label]="kpiMarginLabel()"
+      [value]="kpiMarginDisplay()"
+      [delta]="kpiMarginDelta()"
+      [options]="kpiMarginOptions()" />
+
+    <daf-metric-card
+      [label]="kpiPendingLabel()"
+      [value]="pendingReportsCount().toString()"
+      [delta]="kpiPendingDelta()"
+      [options]="kpiPendingOptions()" />
+  </section>
+
+  <!-- Search on the period label + year / period status / report status in the panel.
+       All client-side: the pays' whole period list is already loaded. -->
+  <daf-search-toolbar
+    [placeholder]="'REPORTING.FILTER.SEARCH_PH' | translate"
+    [value]="searchText()"
+    [debounce]="200"
+    (valueChange)="searchText.set($event)"
+    [filterFields]="filterFields()"
+    [filterConfig]="filterConfig()"
+    (filterApply)="applyFilters($event)"
+    (filterReset)="resetFilters()"
+    [views]="viewOptions()"
+    [view]="viewMode()"
+    (viewChange)="viewMode.set($any($event))"
+    [table]="plTable() ?? null" />
 
   @if (error()) {
     <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -37,56 +77,34 @@
     </div>
   }
 
-  <!-- Content sits free in the page — no outer container card (same as the cost approval queue). -->
+  <!-- Content sits free in the page — no outer container card (same as the cost approval queue).
+       Both views render the same `rows()`: the cards are just another layout of the table. -->
+  @if (viewMode() === 'grid') {
+    <app-pl-period-cards-section
+      [periodRows]="rows()"
+      [loading]="loading()"
+      [emptyMessage]="'REPORTING.EMPTY' | translate"
+      (open)="onRowClick($event)"
+      (close)="openClosePeriod($event)"
+      (generate)="onGenerate($event)" />
+  } @else {
   <daf-data-table
     [columns]="columns()"
     [rows]="rows()"
     [config]="config()"
     (rowClick)="onRowClick($event)">
 
-    <!-- The period's own status badge, plus a "Close" action on an OPEN period for someone
-         with FACT_MANAGE_COST (see `_canClose`) — closing snapshots EBITDA and is a
-         prerequisite for generating a report. -->
-    <ng-template dafCell="periodStatus" let-row>
-      <div class="flex items-center gap-2">
-        <daf-badge [label]="row['periodStatus'].label" [options]="row['periodStatus'].options" />
-        @if (row['_canClose']) {
-          <daf-button
-            [options]="{
-              variant: 'secondary', size: 'sm', iconStart: 'lock',
-              label: ('REPORTING.CLOSE_PERIOD' | translate),
-              loading: closingId() === row['id']
-            }"
-            (onClick)="openClosePeriod(row['_period'], $event)" />
-        }
-      </div>
-    </ng-template>
-
-    <!-- Either the current report's status badge, or "Aucun rapport" + a "Générer le
-         rapport" action (only enabled on a CLOSED period for someone with
-         FACT_MANAGE_PL_REPORT — see `_canGenerate`). -->
-    <ng-template dafCell="report" let-row>
-      @if (row['_reportBadge']) {
-        <daf-badge [label]="row['_reportBadge'].label" [options]="row['_reportBadge'].options" />
-      } @else {
-        <div class="flex items-center gap-2">
-          <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.NO_REPORT' | translate }}</span>
-          @if (row['_canGenerate']) {
-            <daf-button
-              [options]="{
-                variant: 'teal', size: 'sm', iconStart: 'auto_awesome',
-                label: ('REPORTING.GENERATE' | translate),
-                loading: generatingId() === row['id']
-              }"
-              (onClick)="onGenerate(row['_period'], $event)" />
-          }
-        </div>
-      }
+    <!-- EBITDA % — red when the month lost money. -->
+    <ng-template dafCell="ebitdaPct" let-row>
+      <span [class.text-danger]="row['_ebitdaNegative']" [class.font-semibold]="row['_ebitdaNegative']">
+        {{ row['ebitdaPct'] }}
+      </span>
     </ng-template>
 
   </daf-data-table>
+  }
 
-  <!-- Modal body for `openCreatePeriod()` — year + month for the already-selected country. -->
+  <!-- Modal body for `openCreatePeriod()` — country (pre-filled with the page's) + year + month. -->
   <ng-template #newPeriodTpl>
     <div class="flex flex-col gap-4">
       @if (createPeriodError()) {
@@ -95,6 +113,13 @@
           {{ createPeriodError() }}
         </div>
       }
+      <daf-select
+        [options]="newPeriodPaysOptions()"
+        [selected]="newPeriodPaysId() ? [newPeriodPaysId().toString()] : []"
+        [config]="{ label: ('REPORTING.PAYS.LABEL' | translate),
+                    placeholder: ('REPORTING.PAYS.SEARCH' | translate), searchable: true }"
+        [ariaLabel]="'REPORTING.PAYS.LABEL' | translate"
+        (selectedChange)="onNewPeriodPaysSelected($event)" />
       <daf-select
         [options]="newPeriodYearOptions()"
         [selected]="[newPeriodYear().toString()]"

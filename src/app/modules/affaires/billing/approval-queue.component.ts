@@ -1367,6 +1367,10 @@ export class ApprovalQueueComponent implements OnInit {
       body: this.dfRetourTpl,
       size: 'sm',
       closeOnBackdrop: false,
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       buttons: [
         { label: this.translate.instant('AFFAIRES.billing.approval.modal_cancel'),  variant: 'secondary', action: r => r.close() },
         { label: this.translate.instant('AFFAIRES.billing.approval.modal_confirm'), variant: 'primary',   action: () => this.submitDfRetour() },

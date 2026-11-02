@@ -1,239 +1,221 @@
-<daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" [loadingLabel]="'AFFAIRES.billing.approval.loading' | translate">
+<!-- Fiche d'approbation — même squelette que la fiche facture.
 
-  <daf-page-header
-    [title]="pageTitle()"
-    [subtitle]="affaire()?.clientName ?? undefined"
-    [breadcrumbs]="breadcrumbItems()">
-  </daf-page-header>
+     Structure, deux colonnes :
+       GAUCHE (30 %, sticky)  le h1 (daf-page-header, size="md"), la carte d'identité,
+                              le motif du dernier retour, et les actions en pied de carte.
+       DROITE (70 %)          les indicateurs, puis daf-tabs et ses panneaux.
 
-  @if (errorMsg()) {
-    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-      <span class="material-symbols-outlined text-[18px]">error</span>
-      {{ errorMsg() }}
+     ⚠️ FLEX en style inline, jamais de grid ni de classe de point de rupture : le
+     styles.css d'un remote ne contient que les classes que Tailwind a déjà vues. -->
+
+<daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
+          [loadingLabel]="'AFFAIRES.billing.approval.loading' | translate">
+
+  @if (errorMsg() || actionError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-body-md text-danger">
+      <span class="material-symbols-outlined text-headline-md">error</span>
+      {{ errorMsg() ?? actionError() }}
     </div>
-  } @else {
+  }
 
-    <!-- ── Affaire summary ─────────────────────────────────────────────── -->
-    <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }">
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="flex flex-col gap-1">
-          <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.billing_mode' | translate }}</span>
-          <span class="text-body-md font-semibold text-on-surface">{{ affaire()?.billingMode }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.affaire_statut' | translate }}</span>
-          <span class="text-body-md font-semibold text-on-surface">{{ affaire()?.statut }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.budget' | translate }}</span>
-          <span class="text-body-md font-semibold text-on-surface">
-            {{ affaire()?.contractAmount ?? affaire()?.budgetPrevisionnel | displayCurrency : (affaire()?.devise ?? 'EUR') }}
-          </span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.responsable' | translate }}</span>
-          <span class="text-body-md font-semibold text-on-surface">{{ affaire()?.responsableFullName ?? '—' }}</span>
+  @if (!errorMsg() && loaded()) {
+    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE GAUCHE (30 %, sticky) — identité et actions
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:0 1 30%; min-width:320px">
+        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
+
+          <daf-page-header
+            size="md"
+            [title]="pageTitle()"
+            [subtitle]="headerSubtitle()"
+            [subtitleLink]="affaireLink()"
+            [badges]="headerBadges()"
+            [breadcrumbs]="breadcrumbItems()" />
+
+          <daf-section-card>
+
+            <div class="flex flex-col gap-5 p-6">
+              @for (f of identityLeadFields(); track f.label) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ f.label | translate }}
+                  </p>
+                  <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                </div>
+              }
+
+              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+                @for (f of identityGridFields(); track f.label) {
+                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                  </div>
+                }
+              </div>
+
+              @if (jalon()?.description; as description) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ 'AFFAIRES.billing.approval.detail.description' | translate }}
+                  </p>
+                  <p class="whitespace-pre-wrap text-body-sm leading-relaxed text-on-surface-variant">{{ description }}</p>
+                </div>
+              }
+
+              <!-- Le motif du dernier retour DF : c'est ce qu'on vient lire sur une ligne revenue. -->
+              @if (returnMotifShown(); as motif) {
+                <div class="flex gap-3 rounded-xl bg-warning/10 px-4 py-3">
+                  <span class="material-symbols-outlined text-[20px] text-warning">undo</span>
+                  <div class="flex flex-col gap-1">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-warning">
+                      {{ 'AFFAIRES.billing.approval.detail.motif_retour' | translate }}
+                    </p>
+                    <p class="whitespace-pre-wrap text-body-sm text-on-surface">{{ motif }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Actions : la validation en premier, nommée, sur toute la largeur. -->
+            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
+                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+
+              @if (canAct()) {
+                <div style="flex:1 1 100%">
+                  <daf-button
+                    [options]="{ variant: 'teal', fullWidth: true, iconStart: 'check_circle',
+                                 label: 'AFFAIRES.billing.approval.validate' | translate, disabled: actioning() }"
+                    (onClick)="validate()" />
+                </div>
+
+                @if (type() === 'jalon') {
+                  <daf-button
+                    style="flex:1 1 45%"
+                    [options]="{ variant: 'danger', size: 'sm', fullWidth: true, iconStart: 'block',
+                                 label: 'AFFAIRES.billing.approval.refuse' | translate, disabled: actioning() }"
+                    (onClick)="openRefuseModal()" />
+                } @else {
+                  <daf-button
+                    style="flex:1 1 45%"
+                    [options]="{ variant: 'secondary', size: 'sm', fullWidth: true, iconStart: 'undo',
+                                 label: 'AFFAIRES.billing.approval.return' | translate, disabled: actioning() }"
+                    (onClick)="openReturnModal()" />
+                }
+              }
+
+              <daf-button
+                style="flex:1 1 45%"
+                [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'business_center',
+                             label: 'AFFAIRES.billing.approval.detail.see_affaire' | translate,
+                             disabled: !affaire() }"
+                (onClick)="goToAffaire()" />
+            </div>
+
+          </daf-section-card>
         </div>
       </div>
-    </daf-card>
 
-    <!-- ── This item ────────────────────────────────────────────────────── -->
-    @if (type() === 'jalon' && jalon(); as j) {
-      <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }">
-        <div class="flex items-center justify-between gap-3 mb-4">
-          <h3 class="text-title-md font-bold text-on-surface">{{ 'AFFAIRES.billing.approval.detail.title_jalon' | translate }}</h3>
-          <daf-badge [label]="j.statut" [options]="{ variant: statusBadgeVariant(j.statut) }" />
-        </div>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="flex flex-col gap-1 col-span-2">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.col_jalon' | translate }}</span>
-            <span class="text-body-md font-bold text-on-surface">{{ j.label }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.ordre' | translate }}</span>
-            <span class="text-body-md font-semibold text-on-surface">{{ j.ordre }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.col_montant' | translate }}</span>
-            <span class="text-body-md font-bold text-on-surface">
-              {{ j.montant | displayCurrency : (affaire()?.devise ?? 'EUR') }}
-            </span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.col_echeance' | translate }}</span>
-            <span class="text-body-md font-semibold text-on-surface">{{ fmtDate(j.datePrevisionnelle) }}</span>
-          </div>
-          @if (j.description) {
-            <div class="flex flex-col gap-1 col-span-2">
-              <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.description' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">{{ j.description }}</span>
-            </div>
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE DROITE (70 %) — indicateurs puis onglets
+           ══════════════════════════════════════════════════════════════ -->
+      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+          @for (k of kpiTiles(); track k.label) {
+            <daf-metric-card
+              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+              [label]="k.label | translate"
+              [value]="k.value"
+              [delta]="k.delta"
+              [options]="k.options" />
           }
         </div>
 
-        @if (canAct()) {
-          <div class="flex items-center gap-2 mt-5">
-            <daf-button [options]="{ variant: 'teal', iconStart: 'check_circle', label: ('AFFAIRES.billing.approval.validate' | translate), disabled: actioning() }" (onClick)="validateJalon()" />
-            <daf-button [options]="{ variant: 'danger', iconStart: 'block', label: ('AFFAIRES.billing.approval.refuse' | translate), disabled: actioning() }" (onClick)="openRefuseModal()" />
-          </div>
-        }
-      </daf-card>
-    }
+        <daf-tabs #tabsRef
+          variant="underline"
+          [tabs]="tabs()"
+          [(active)]="activeTab"
+          [tabsLabel]="detailTypeLabel()"
+          idPrefix="approval-detail" />
 
-    @if (type() === 'line' && line(); as l) {
-      <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }">
-        <div class="flex items-center justify-between gap-3 mb-4">
-          <h3 class="text-title-md font-bold text-on-surface">{{ 'AFFAIRES.billing.approval.detail.title_line' | translate }}</h3>
-          <daf-badge [label]="l.statut" [options]="{ variant: statusBadgeVariant(l.statut) }" />
-        </div>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.col_mode' | translate }}</span>
-            <span class="text-body-md font-bold text-on-surface">{{ l.billingMode }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.col_periode' | translate }}</span>
-            <span class="text-body-md font-semibold text-on-surface">{{ l.periodMonth }}/{{ l.periodYear }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.col_montant_ht' | translate }}</span>
-            <span class="text-body-md font-bold text-on-surface">{{ l.montantHt | displayCurrency : l.devise }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.montant_ttc' | translate }}</span>
-            <span class="text-body-md font-semibold text-on-surface">{{ l.montantTtc | displayCurrency : l.devise }}</span>
-          </div>
-          @if (l.wipAmount !== null) {
-            <div class="flex flex-col gap-1">
-              <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.wip_amount' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">{{ l.wipAmount | displayCurrency : l.devise }}</span>
-            </div>
-          }
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.billing_date' | translate }}</span>
-            <span class="text-body-md font-semibold text-on-surface">{{ fmtDate(l.billingDate) }}</span>
-          </div>
-          @if (l.dfMotif) {
-            <div class="flex flex-col gap-1 col-span-2">
-              <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.motif_refus' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">{{ l.dfMotif }}</span>
-            </div>
-          }
-        </div>
+        <div role="tabpanel"
+             [id]="tabsRef.panelId(activeTab())"
+             [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+             class="flex flex-col gap-6">
 
-        @if (canAct()) {
-          <div class="flex items-center gap-2 mt-5">
-            <daf-button [options]="{ variant: 'teal', iconStart: 'check_circle', label: ('AFFAIRES.billing.approval.validate' | translate), disabled: actioning() }" (onClick)="validateLine()" />
-            <daf-button [options]="{ variant: 'secondary', iconStart: 'undo', label: ('AFFAIRES.billing.approval.return' | translate), disabled: actioning() }" (onClick)="openReturnModal()" />
-          </div>
-        }
-      </daf-card>
-    }
-
-    @if (type() === 'livrable' && livrableBatch(); as b) {
-      <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }">
-        <div class="flex items-center justify-between gap-3 mb-4">
-          <h3 class="text-title-md font-bold text-on-surface">{{ 'AFFAIRES.billing.approval.detail.title_livrable' | translate }}</h3>
-          <daf-badge [label]="b.statut" [options]="{ variant: statusBadgeVariant(b.statut) }" />
-        </div>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.col_montant_ht' | translate }}</span>
-            <span class="text-body-md font-bold text-on-surface">
-              {{ b.combinedMontant | displayCurrency : (affaire()?.devise ?? 'EUR') }}
-            </span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.billing_date' | translate }}</span>
-            <span class="text-body-md font-semibold text-on-surface">{{ fmtDate(b.billingDate) }}</span>
-          </div>
-          @if (b.clientApprovedAmount !== null) {
-            <div class="flex flex-col gap-1">
-              <span class="text-label-caps text-outline">{{ 'AFFAIRES.WIP.CLIENT_AMOUNT_LABEL' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">
-                {{ b.clientApprovedAmount | displayCurrency : (affaire()?.devise ?? 'EUR') }}
-              </span>
-            </div>
-          }
-          @if (b.wipCarriedForward !== null) {
-            <div class="flex flex-col gap-1">
-              <span class="text-label-caps text-outline">{{ 'AFFAIRES.billing.approval.detail.carried_forward' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">
-                {{ b.wipCarriedForward | displayCurrency : (affaire()?.devise ?? 'EUR') }}
-              </span>
-            </div>
-          }
-        </div>
-
-        <!-- Recherche locale ; `[table]` porte réinitialiser + choix des colonnes à droite. -->
-        <daf-search-toolbar class="mb-3 block" [card]="false"
-          [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
-          [value]="livrableEntrySearch()" [debounce]="200"
-          (valueChange)="livrableEntrySearch.set($event)"
-          [table]="livrableEntryTable" />
-        <daf-data-table #livrableEntryTable [columns]="livrableEntryColumns()" [rows]="filteredLivrableEntryRows()" [config]="tableConfig()">
-          <ng-template dafCell="pctPrecedent" let-row>{{ row['pctPrecedent'] }}%</ng-template>
-          <ng-template dafCell="pctSaisi" let-row>{{ row['pctSaisi'] }}%</ng-template>
-          <ng-template dafCell="montant" let-row>{{ row['montant'] | displayCurrency : (affaire()?.devise ?? 'EUR') }}</ng-template>
-        </daf-data-table>
-
-        @if (canAct()) {
-          <div class="flex items-center gap-2 mt-5">
-            <daf-button [options]="{ variant: 'teal', iconStart: 'check_circle', label: ('AFFAIRES.billing.approval.validate' | translate), disabled: actioning() }" (onClick)="validateLivrableBatch()" />
-            <daf-button [options]="{ variant: 'secondary', iconStart: 'undo', label: ('AFFAIRES.billing.approval.return' | translate), disabled: actioning() }" (onClick)="openReturnModal()" />
-          </div>
-        }
-      </daf-card>
-    }
-
-    @if (actionError()) {
-      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-        <span class="material-symbols-outlined text-[18px]">error</span>
-        {{ actionError() }}
-      </div>
-    }
-
-    <!-- ── Affaire history for this item type (no batch-shaped equivalent for 'livrable') ── -->
-    @if (type() !== 'livrable') {
-      <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }">
-        <h3 class="text-title-md font-bold text-on-surface mb-4">{{ 'AFFAIRES.billing.approval.detail.history' | translate }}</h3>
-        <daf-search-toolbar class="mb-3 block" [card]="false"
-          [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
-          [value]="historySearch()" [debounce]="200"
-          (valueChange)="historySearch.set($event)"
-          [table]="historyTable" />
-        <daf-data-table #historyTable [columns]="historyColumns()" [rows]="filteredHistoryRows()" [config]="tableConfig()">
-          <ng-template dafCell="label" let-row>
-            <span [class.font-bold]="row['isCurrent']">{{ row['label'] }}</span>
-            @if (row['isCurrent']) {
-              <daf-badge [label]="'AFFAIRES.billing.approval.detail.current' | translate" [options]="{ variant: 'info', size: 'sm' }" />
+          <!-- ── Entrées du batch (livrable) / historique de l'affaire (jalon, ligne) ── -->
+          @if (activeTab() === 'items') {
+            @if (type() === 'livrable') {
+              <daf-search-toolbar
+                [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+                [value]="livrableEntrySearch()" [debounce]="200"
+                (valueChange)="livrableEntrySearch.set($event)"
+                [table]="livrableEntryTable" />
+              <daf-data-table #livrableEntryTable [columns]="livrableEntryColumns()" [rows]="filteredLivrableEntryRows()" [config]="tableConfig()">
+                <ng-template dafCell="pctPrecedent" let-row>{{ row['pctPrecedent'] }} %</ng-template>
+                <ng-template dafCell="pctSaisi" let-row>{{ row['pctSaisi'] }} %</ng-template>
+                <ng-template dafCell="montant" let-row>
+                  <span class="text-body-md font-bold text-on-surface">{{ row['montant'] | displayCurrency : devise() }}</span>
+                </ng-template>
+              </daf-data-table>
+            } @else {
+              <daf-search-toolbar
+                [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+                [value]="historySearch()" [debounce]="200"
+                (valueChange)="historySearch.set($event)"
+                [table]="historyTable" />
+              <daf-data-table #historyTable [columns]="historyColumns()" [rows]="filteredHistoryRows()" [config]="tableConfig()">
+                <ng-template dafCell="label" let-row>
+                  <span [class.font-bold]="row['isCurrent']">{{ row['label'] }}</span>
+                  @if (row['isCurrent']) {
+                    <daf-badge [label]="'AFFAIRES.billing.approval.detail.current' | translate" [options]="{ variant: 'info', size: 'sm' }" />
+                  }
+                </ng-template>
+                <ng-template dafCell="value" let-row>
+                  <span class="text-body-md text-on-surface" [class.font-bold]="row['isCurrent']">
+                    {{ row['value'] | displayCurrency : devise() }}
+                  </span>
+                </ng-template>
+                <ng-template dafCell="statut" let-row>
+                  <daf-badge [label]="statusLabel(row['statut'])" [options]="{ variant: statusBadgeVariant(row['statut']), size: 'sm' }" />
+                </ng-template>
+              </daf-data-table>
             }
-          </ng-template>
-          <ng-template dafCell="value" let-row>
-            {{ row['value'] | displayCurrency : (affaire()?.devise ?? 'EUR') }}
-          </ng-template>
-        </daf-data-table>
-      </daf-card>
-    }
+          }
 
-    <!-- ── Audit trail ──────────────────────────────────────────────────── -->
-    <daf-card [options]="{ variant: 'outlined', padding: 'lg', radius: 'xl' }">
-      <h3 class="text-title-md font-bold text-on-surface mb-4">{{ 'AFFAIRES.billing.approval.detail.audit_trail' | translate }}</h3>
-      <daf-search-toolbar class="mb-3 block" [card]="false"
-        [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
-        [value]="auditSearch()" [debounce]="200"
-        (valueChange)="auditSearch.set($event)"
-        [table]="auditTable" />
-      <daf-data-table #auditTable [columns]="auditColumns()" [rows]="filteredAuditTrail()" [config]="tableConfig()">
-        <ng-template dafCell="timestampUtc" let-row>
-          {{ fmtDateTime(row['timestampUtc']) }}
-        </ng-template>
-        <ng-template dafCell="transition" let-row>
-          {{ row['statutAvant'] ?? '—' }} → {{ row['statutApres'] ?? '—' }}
-        </ng-template>
-      </daf-data-table>
-    </daf-card>
+          <!-- ── Journal d'activité ───────────────────────────────────── -->
+          @if (activeTab() === 'audit') {
+            <daf-search-toolbar
+              [placeholder]="'AFFAIRES.billing.approval.search_placeholder' | translate"
+              [value]="auditSearch()" [debounce]="200"
+              (valueChange)="auditSearch.set($event)"
+              [table]="auditTable" />
+            <daf-data-table #auditTable [columns]="auditColumns()" [rows]="filteredAuditTrail()" [config]="tableConfig()">
+              <ng-template dafCell="timestampUtc" let-row>
+                <span class="whitespace-nowrap">{{ fmtDateTime(row['timestampUtc']) }}</span>
+              </ng-template>
+              <ng-template dafCell="transition" let-row>
+                @if (row['statutAvant'] || row['statutApres']) {
+                  <div class="flex flex-wrap items-center gap-1">
+                    <daf-badge [label]="statusLabel(row['statutAvant'])" [options]="{ variant: statusBadgeVariant(row['statutAvant']), size: 'sm' }" />
+                    <span class="material-symbols-outlined text-[14px] text-on-surface-variant">arrow_forward</span>
+                    <daf-badge [label]="statusLabel(row['statutApres'])" [options]="{ variant: statusBadgeVariant(row['statutApres']), size: 'sm' }" />
+                  </div>
+                } @else {
+                  —
+                }
+              </ng-template>
+            </daf-data-table>
+          }
 
+        </div>
+      </div>
+    </div>
   }
 
 </daf-page>

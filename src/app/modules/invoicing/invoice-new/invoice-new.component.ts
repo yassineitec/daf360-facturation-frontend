@@ -67,6 +67,25 @@ export class InvoiceNewComponent implements OnInit {
   /** Read from the route rather than editInvoiceId(), which is only set once the invoice
    * has loaded — leaving during that load must still revert. */
   private readonly routeInvoiceId = Number(this.route.snapshot.paramMap.get('id')) || null;
+
+  /** Fiche d'où l'assistant a été ouvert — fil d'Ariane seulement. Posé par la fiche
+   * affaire (`?affaire=&fromAffaireRef=&fromTab=`) ou la fiche client
+   * (`?fromClient=&fromClientRef=&fromTab=`). Sans la référence, on garde le fil habituel. */
+  private readonly origin = ((): { listKey: string; section: string; id: number; ref: string; tab: string | null } | null => {
+    const q   = this.route.snapshot.queryParamMap;
+    const tab = q.get('fromTab');
+    const affaireId  = Number(q.get('affaire')) || null;
+    const affaireRef = q.get('fromAffaireRef');
+    if (affaireId && affaireRef) {
+      return { listKey: 'AFFAIRES.DETAIL.BACK_TO_LIST', section: 'affaires', id: affaireId, ref: affaireRef, tab };
+    }
+    const clientId  = Number(q.get('fromClient')) || null;
+    const clientRef = q.get('fromClientRef');
+    if (clientId && clientRef) {
+      return { listKey: 'CLIENTS.DETAIL.BACK_TO_LIST', section: 'clients', id: clientId, ref: clientRef, tab };
+    }
+    return null;
+  })();
   cancelling = signal(false);
   /** Sticky: step-recap (and its savedInvoiceId) is destroyed when the user steps back, so
    * a save done at the recap must be remembered here for cancel() to respect it. */
@@ -242,6 +261,22 @@ export class InvoiceNewComponent implements OnInit {
    * deeper (`:id/edit`), so `..` alone would land on the detail page, not the list. */
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
+
+    // Ouverte depuis une fiche affaire ou client (`goToInvoicing`) : le fil part de cette
+    // fiche, et y ramène sur l'onglet qu'on avait quitté.
+    const origin = this.origin;
+    if (origin) {
+      return [
+        { label: this.translate.instant(origin.listKey), link: ['../..', origin.section] },
+        {
+          label: origin.ref,
+          link: ['../..', origin.section, origin.id],
+          queryParams: origin.tab ? { tab: origin.tab } : undefined,
+        },
+        { label: this.translate.instant(this.pageTitleKey) },
+      ];
+    }
+
     const root: BreadcrumbItem = this.fromApproval
       ? { label: this.translate.instant('AFFAIRES.billing.approval.title'), link: this.paths.approvalQueue() }
       : { label: this.translate.instant('INVOICING.NEW.BREADCRUMB_LIST'),

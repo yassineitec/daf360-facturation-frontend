@@ -488,47 +488,20 @@
     </daf-card>
     </div>
 
-    <!-- TEST : "Détails" en POPUP plein écran plutôt qu'affiché en bas de page — même
-         coquille que la popup "Historique WIP" plus haut (daf-modal plafonne à 900px,
-         voir son propre commentaire), mais encore plus petite (marge 600px au lieu de
-         400px, 65vh au lieu de 75vh) : ce tableau a moins de colonnes que l'historique. -->
+    <!-- Popup "Détails" — daf modal (app-daf-modal) : ouverte en grand, redimensionnable et
+         agrandissable, montée sous <body> par ModalService. -->
     @if (showTmDetails() && tmPreview()) {
-      <!-- Portalé sous <body> (voir detailsOverlayRef/l'effect du constructeur) — même
-           raison que showHistoryPage : sans ça, un ancêtre à backdrop-filter/transform (une
-           daf-card 'glass' de cet onglet) fait résoudre position:fixed contre lui plutôt
-           que contre la fenêtre, et le popup ne se centre plus sur toute la page. -->
-      <div #detailsOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-           style="z-index:1000"
-           (click)="toggleTmDetails()">
-        <!-- Même taille que le popup "Historique WIP" (voir showHistoryPage plus bas) —
-             marge 60px de chaque côté, 90vh, pour que les deux popups de cet onglet
-             partagent le même gabarit au lieu d'un plus petit ici. -->
-        <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-             style="width:calc(100vw - 120px); height:90vh;"
-             (click)="$event.stopPropagation()">
-          <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
-            <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
-              <span class="material-symbols-outlined text-primary">visibility</span>
-              {{ 'AFFAIRES.WIP.DETAILS' | translate }}
-            </h2>
-            <button type="button" (click)="toggleTmDetails()"
-              class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
-                     hover:text-on-surface hover:bg-surface-container transition-colors"
-              [attr.aria-label]="'ADMIN.COMMON.BACK' | translate">
-              <span class="material-symbols-outlined">close</span>
-            </button>
-          </div>
-          <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+      <app-daf-modal [title]="'AFFAIRES.WIP.DETAILS' | translate" icon="visibility" [visible]="true" (closed)="toggleTmDetails()">
+        <div class="daf-modal-fill">
             @if (selectedCollaboratorUserId() === null) {
-              <app-wip-tm-detail-table [hours]="tmPreview()!.hours"
+              <app-wip-tm-detail-table class="daf-modal-grow" [hours]="tmPreview()!.hours"
                 (collaboratorSelected)="selectedCollaboratorUserId.set($event)" />
             } @else {
-              <app-wip-tm-collaborator-detail [hours]="tmPreview()!.hours" [userId]="selectedCollaboratorUserId()!"
+              <app-wip-tm-collaborator-detail class="daf-modal-grow" [hours]="tmPreview()!.hours" [userId]="selectedCollaboratorUserId()!"
                 (back)="selectedCollaboratorUserId.set(null)" />
             }
           </div>
-        </div>
-      </div>
+      </app-daf-modal>
     }
 
     <!-- ── Lignes en attente de réponse client — la réponse arrive par email hors système,
@@ -575,37 +548,11 @@
       </daf-card>
     }
 
-    <!-- Popup "Historique WIP" EN PLEIN ÉCRAN — recouvre toute la fenêtre (fixed inset-0),
-         pas une nouvelle page : le contenu de l'onglet reste monté en dessous. daf-modal
-         plafonne à 900px sans option pour aller plus loin (voir ModalHostComponent),
-         donc l'habillage (fond assombri, panneau, en-tête, croix) est reproduit ici à la
-         même taille que le reste des popups de l'app, en pleine largeur/hauteur. -->
+    <!-- Popup "Historique WIP" — daf modal (app-daf-modal) : ouverte en grand (marge 60px,
+         90vh), redimensionnable et agrandissable ; le contenu de l'onglet reste monté dessous. -->
     @if (showHistoryPage()) {
-      <!-- Recentré : couvre tout l'écran (inset-0) et centre le panneau au milieu,
-           comme une vraie popup — plus de bande réservée à gauche. Portalée sous <body>
-           (voir historyOverlayRef/l'effect du constructeur) : sans ça, un ancêtre du shell
-           (la sidebar) recevait `position: fixed` en local et la popup s'arrêtait avant elle. -->
-      <div #historyOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-           style="z-index:9999"
-           (click)="showHistoryPage.set(false)">
-        <!-- Même taille que le popup "zoom" de l'onglet Dépense
-             (depense-summary-table.component.html) : marge 60px de chaque côté, 90vh. -->
-        <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-             style="width:calc(100vw - 120px); height:90vh;"
-             (click)="$event.stopPropagation()">
-          <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
-            <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
-              <span class="material-symbols-outlined text-primary">history</span>
-              {{ 'AFFAIRES.WIP.HISTORY_TITLE' | translate }}
-            </h2>
-            <button type="button" (click)="showHistoryPage.set(false)"
-              class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
-                     hover:text-on-surface hover:bg-surface-container transition-colors"
-              [attr.aria-label]="'ADMIN.COMMON.BACK' | translate">
-              <span class="material-symbols-outlined">close</span>
-            </button>
-          </div>
-          <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+      <app-daf-modal [title]="'AFFAIRES.WIP.HISTORY_TITLE' | translate" icon="history" [visible]="true" (closed)="showHistoryPage.set(false)">
+        <div class="daf-modal-fill">
             <!-- Fond blanc commun à la recherche et au bouton export — même mécanisme
                  que /finance/admin : card="false" retire le fond glass propre à
                  daf-search-toolbar pour ne garder qu'un seul fond partagé. -->
@@ -648,8 +595,7 @@
               <p class="text-[12px] text-danger">{{ cancelLineError() }}</p>
             }
           </div>
-        </div>
-      </div>
+      </app-daf-modal>
     }
 
   } @else if (affaire.billingMode === 'LIVRABLE') {
@@ -901,30 +847,10 @@
     </daf-card>
     }
 
-    <!-- Popup "Historique" EN PLEIN ÉCRAN — même coquille que la popup Historique WIP de
-         la carte Régie. ── -->
+    <!-- Popup "Historique" — même daf modal que la popup Historique WIP de la carte Régie. ── -->
     @if (showHistoryPage()) {
-      <!-- Portalée sous <body> (voir historyOverlayRef partagé avec la popup Régie ci-dessus,
-           un seul billingMode actif à la fois). -->
-      <div #historyOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-           style="z-index:9999"
-           (click)="showHistoryPage.set(false)">
-        <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-             style="width:calc(100vw - 120px); height:90vh;"
-             (click)="$event.stopPropagation()">
-          <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
-            <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
-              <span class="material-symbols-outlined text-primary">history</span>
-              {{ 'AFFAIRES.WIP.HISTORY_TITLE' | translate }}
-            </h2>
-            <button type="button" (click)="showHistoryPage.set(false)"
-              class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
-                     hover:text-on-surface hover:bg-surface-container transition-colors"
-              [attr.aria-label]="'ADMIN.COMMON.BACK' | translate">
-              <span class="material-symbols-outlined">close</span>
-            </button>
-          </div>
-          <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+      <app-daf-modal [title]="'AFFAIRES.WIP.HISTORY_TITLE' | translate" icon="history" [visible]="true" (closed)="showHistoryPage.set(false)">
+        <div class="daf-modal-fill">
             <div class="flex items-center gap-2 bg-white rounded-xl p-2">
               <daf-search-toolbar class="flex-1" [card]="false"
                 [placeholder]="'AFFAIRES.WIP.HISTORY_SEARCH_PLACEHOLDER' | translate"
@@ -958,8 +884,7 @@
               (pageChange)="historyPage.set($event)"
               (pageSizeChange)="onHistoryPageSizeChange($event)" />
           </div>
-        </div>
-      </div>
+      </app-daf-modal>
     }
 
   } @else {

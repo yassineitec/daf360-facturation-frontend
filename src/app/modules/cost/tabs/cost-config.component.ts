@@ -43,6 +43,10 @@ export class CostConfigComponent {
 
   openImportModal(): void {
     this.importModalRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       body: this.importTpl,
       size: 'lg',
       buttons: [

@@ -256,6 +256,10 @@ export class ReminderRulesAdminComponent implements OnInit {
   private openFormModal(): void {
     const t = (k: string) => this.translate.instant(k);
     this.formRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t(this.isEdit() ? 'ADMIN.REMINDERS.EDIT_TITLE' : 'ADMIN.REMINDERS.NEW_TITLE'),
       icon:  'notifications_active',
       body:  this.formTpl(),

@@ -352,6 +352,10 @@ export class DocumentTemplatesAdminComponent implements OnInit {
 
   private openModal(title: string): void {
     this.modalRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title,
       body: this.editorTpl,
       size: 'xl',

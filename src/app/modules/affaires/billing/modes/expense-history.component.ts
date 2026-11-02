@@ -304,6 +304,10 @@ export class ExpenseHistoryComponent implements OnInit {
       icon:  'cancel',
       size:  'md',
       body:  this.refuseTpl(),
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       buttons: [
         { label: this.translate.instant('AFFAIRES.EXPENSES.HISTORY.CANCEL'), variant: 'secondary', action: r => r.close() },
         {

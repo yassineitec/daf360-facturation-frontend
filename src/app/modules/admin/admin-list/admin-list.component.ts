@@ -826,6 +826,10 @@ export class AdminListComponent implements OnInit {
 
   private openValueModal(title: string): void {
     this.valueModalRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title,
       body: this.valueFormTpl,
       size: 'md',
@@ -996,6 +1000,10 @@ export class AdminListComponent implements OnInit {
 
   private openForexModal(title: string): void {
     this.forexModalRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title,
       body: this.forexFormTpl,
       size: 'md',

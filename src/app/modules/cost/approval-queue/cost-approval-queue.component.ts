@@ -641,6 +641,10 @@ export class CostApprovalQueueComponent implements OnInit {
     this.modalError.set(null);
     const t = (key: string) => this.translate.instant(key);
     this.approvalRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t('COST.APPROVAL_QUEUE.MODAL_TITLE'),
       body:  this.approvalTpl,
       size:  'md',
@@ -687,6 +691,10 @@ export class CostApprovalQueueComponent implements OnInit {
     this.hiringModalError.set(null);
     const t = (key: string) => this.translate.instant(key);
     this.hiringApprovalRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t('COST.APPROVAL_QUEUE.HIRING_MODAL_TITLE'),
       body:  this.hiringApprovalTpl,
       size:  'md',
@@ -734,6 +742,10 @@ export class CostApprovalQueueComponent implements OnInit {
     this.advanceModalError.set(null);
     const t = (key: string) => this.translate.instant(key);
     this.advanceRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t('FACTURATION.ADVANCES.DECISION_TITLE'),
       body:  this.advanceDecisionTpl,
       size:  'md',

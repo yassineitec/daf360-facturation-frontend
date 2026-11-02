@@ -269,6 +269,10 @@ export class ReglementModalComponent {
 
     const t = (key: string) => this.translate.instant(key);
     this.modalRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t(this.isEditMode() ? 'COST.REGLEMENT.EDIT_TITLE' : 'COST.REGLEMENT.NEW_TITLE'),
       body:  this.tpl,
       size:  'md',

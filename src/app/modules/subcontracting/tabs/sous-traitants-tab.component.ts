@@ -237,6 +237,10 @@ export class SousTraitantsTabComponent {
   private openFormModal(): void {
     const t = (key: string) => this.translate.instant(key);
     this.formRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t(this.editTarget() ? 'SUBCONTRACTING.ST.MODAL.EDIT_TITLE' : 'SUBCONTRACTING.ST.MODAL.NEW_TITLE'),
       body:  this.formTpl,
       size:  'md',

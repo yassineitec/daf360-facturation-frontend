@@ -241,6 +241,10 @@ export class OrdresStTabComponent {
   private openOstModal(): void {
     const t = (key: string) => this.translate.instant(key);
     this.ostRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t(this.editOstTarget() ? 'SUBCONTRACTING.OST.MODAL.EDIT_TITLE' : 'SUBCONTRACTING.OST.MODAL.NEW_TITLE'),
       body:  this.ostTpl,
       size:  'md',
@@ -288,6 +292,10 @@ export class OrdresStTabComponent {
     this.statutError.set(null);
     const t = (key: string) => this.translate.instant(key);
     this.statutRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t('SUBCONTRACTING.OST.STATUT_MODAL.TITLE'),
       body:  this.statutTpl,
       size:  'sm',

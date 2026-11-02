@@ -454,6 +454,10 @@ export class ClientDetailComponent implements OnInit {
       icon: 'contacts',
       size: 'md',
       body: this.contactFormTpl(),
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       buttons: [
         {
           label: this.translate.instant('CLIENTS.DETAIL.MODAL.CANCEL'),
@@ -717,8 +721,14 @@ export class ClientDetailComponent implements OnInit {
     });
   }
 
+  /** `fromClient*` / `fromTab` ne servent qu'au fil d'Ariane de l'assistant
+   * (« Clients › CLI-xxx › Nouvelle facture »), qui ramène sur l'onglet quitté. */
   goToInvoicing(): void {
-    this.router.navigate(['../../invoicing', 'new'], { relativeTo: this.route });
+    const c = this.client();
+    this.router.navigate(['../../invoicing', 'new'], {
+      relativeTo: this.route,
+      queryParams: c ? { fromClient: c.id, fromClientRef: c.clientCode, fromTab: this.activeTab() } : undefined,
+    });
   }
 
   /**

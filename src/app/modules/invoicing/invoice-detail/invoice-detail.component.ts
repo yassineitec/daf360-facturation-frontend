@@ -167,6 +167,21 @@ export class InvoiceDetailComponent implements OnInit {
     return ['../../affaires', affaireId];
   }
 
+  /**
+   * Origine transmise à la fiche affaire, pour que son fil d'Ariane commence par cette
+   * facture (« Factures › F-xxx › AFF-yyy ») et y ramène sur le même onglet. Dans l'URL
+   * et non dans le `state` de navigation : le fil survit au F5 et au lien copié.
+   */
+  readonly affaireLinkParams = computed<Record<string, unknown> | undefined>(() => {
+    const inv = this.invoice();
+    if (!inv?.affaireId) return undefined;
+    return {
+      fromInvoice:   inv.id,
+      fromInvoiceNo: inv.invoiceNumber ?? undefined,
+      fromTab:       this.activeTab(),
+    };
+  });
+
   readonly headerBadges = computed<PageHeaderBadge[]>(() => {
     const inv = this.invoice();
     if (!inv) return [];
@@ -554,6 +569,10 @@ export class InvoiceDetailComponent implements OnInit {
       title: this.translate.instant('INVOICING.LIFECYCLE.EMIT_TITLE'),
       size:  'md',
       body:  this.emitDateTpl(),
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       buttons: [
         { label: this.translate.instant('INVOICING.DETAIL.CANCEL'), variant: 'secondary', action: r => r.close() },
         {
@@ -583,6 +602,10 @@ export class InvoiceDetailComponent implements OnInit {
       title: this.translate.instant(titleKey),
       size:  'md',
       body:  this.commentTpl(),
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       buttons: [
         { label: this.translate.instant('INVOICING.DETAIL.CANCEL'), variant: 'secondary', action: r => r.close() },
         {
@@ -686,7 +709,10 @@ export class InvoiceDetailComponent implements OnInit {
   goToAffaire(): void {
     const affaireId = this.invoice()?.affaireId;
     if (!affaireId) return;
-    this.router.navigate(this.affaireRoute(affaireId), { relativeTo: this.route });
+    this.router.navigate(this.affaireRoute(affaireId), {
+      relativeTo: this.route,
+      queryParams: this.affaireLinkParams(),
+    });
   }
 
   /** `invoicing/:id/edit` is a sibling of this `:id` route, not a child of it — one `..`

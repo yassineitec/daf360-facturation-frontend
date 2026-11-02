@@ -16,6 +16,7 @@ import { BillingService, LineDetailDto } from '../billing/billing.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { WIP_TAUX_STATUT_BADGE } from '../../../shared/enum-labels';
 import { EmailPreviewModalComponent } from '../wip/email-preview-modal.component';
+import { DafModalComponent } from '../../../shared/daf-modal.component';
 import { ExportService } from '../../../core/export.service';
 import {
   TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort,
@@ -44,7 +45,7 @@ type TsFilterValues = Record<string, string | Date[] | null>;
     ButtonComponent, CardComponent, CheckboxComponent, FormFieldComponent, StatusBadgeComponent,
     DataTableComponent, DafCellDirective, TabsComponent, LoadingComponent, AccordionCardComponent,
     MultiDatePickerComponent, SearchToolbarComponent, PaginationComponent, NgTemplateOutlet,
-    MetricCardComponent, EmailPreviewModalComponent,
+    MetricCardComponent, EmailPreviewModalComponent, DafModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
   styleUrl: './affaire-ts-wip-tab.component.scss',
@@ -293,34 +294,13 @@ type TsFilterValues = Record<string, string | Date[] | null>;
         }
       </ng-template>
 
-      <!-- Popup "Afficher tout" de l'historique, EN PLEIN ÉCRAN — même coquille que la popup
-           Historique de affaire-wip-tab (portail sous <body>, voir historyOverlayRef dans le
-           .ts), mêmes recherche/filtres que le tableau de l'onglet, plus tri sur tout le jeu
+      <!-- Popup "Afficher tout" de l'historique — même daf modal que la popup Historique de
+           affaire-wip-tab (app-daf-modal), mêmes recherche/filtres que le tableau de l'onglet, plus tri sur tout le jeu
            filtré, pagination et export. Lecture seule : sans la colonne Actions, la
            modification se fait depuis le formulaire de l'onglet. -->
       @if (showHistoryPopup()) {
-        <div #historyOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-             style="z-index:9999"
-             (click)="showHistoryPopup.set(false)">
-          <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-               style="width:calc(100vw - 120px); height:90vh;"
-               (click)="$event.stopPropagation()">
-            <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
-              <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
-                <span class="material-symbols-outlined text-primary">history</span>
-                {{ 'AFFAIRES.WIP.TS_HISTORY_TITLE' | translate }}
-                @if (selectedTs(); as ts) {
-                  <span class="font-mono text-[14px] font-bold text-tertiary">{{ ts.referenceTs }}</span>
-                }
-              </h2>
-              <button type="button" (click)="showHistoryPopup.set(false)"
-                class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
-                       hover:text-on-surface hover:bg-surface-container transition-colors"
-                [attr.aria-label]="'ADMIN.COMMON.CLOSE' | translate">
-                <span class="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+        <app-daf-modal [title]="('AFFAIRES.WIP.TS_HISTORY_TITLE' | translate) + (selectedTs() ? ' ' + selectedTs()!.referenceTs : '')" icon="history" [visible]="true" (closed)="showHistoryPopup.set(false)">
+          <div class="daf-modal-fill">
               <div class="flex items-center gap-2 bg-white rounded-xl p-2">
                 <daf-search-toolbar class="flex-1" [card]="false"
                   [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
@@ -357,8 +337,7 @@ type TsFilterValues = Record<string, string | Date[] | null>;
                 (pageChange)="historyPage.set($event)"
                 (pageSizeChange)="onHistoryPageSizeChange($event)" />
             </div>
-          </div>
-        </div>
+        </app-daf-modal>
       }
 
       <!-- Panneau du calendrier de la période — même principe que avDatePickerPanel de
@@ -953,9 +932,6 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
   historyCardHovered = signal(false);
   showHistoryPopup   = signal(false);
 
-  private readonly historyOverlayRef = viewChild<ElementRef<HTMLElement>>('historyOverlay');
-  private historyOverlayPortaled: HTMLElement | null = null;
-
   /** Pagination de la popup — `currentPage` de daf-pagination est 0-indexé. */
   historyPage     = signal(0);
   historyPageSize = signal(20);
@@ -1175,33 +1151,6 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
     // tout seul puisqu'il n'est plus là où le template l'a créé.
     this.document.removeEventListener('click', this.onChipRemoveCapture, true);
     this.datePickerPanelRef()?.nativeElement.remove();
-    // Même raison pour la popup "Afficher tout" si l'onglet est quitté popup ouverte.
-    this.historyOverlayPortaled?.remove();
-    this.historyOverlayPortaled = null;
-  }
-
-  constructor() {
-    // Popup "Afficher tout" déplacée sous <body> — même portail que historyOverlayRef de
-    // affaire-wip-tab : `position: fixed` se cale sur le premier ancêtre portant un
-    // transform/filter (sidebar du shell, daf-card 'glass'), pas sur le viewport ; sans ça
-    // la popup ne couvrirait pas toute la page.
-    effect(onCleanup => {
-      const ref = this.historyOverlayRef();
-      if (!ref || !this.showHistoryPopup()) return;
-
-      const node = ref.nativeElement;
-      if (node.parentElement !== this.document.body) {
-        this.renderer.appendChild(this.document.body, node);
-        this.historyOverlayPortaled = node;
-      }
-
-      onCleanup(() => {
-        // Angular retire la vue du `@if` de son parent D'ORIGINE : le nœud ayant été déplacé
-        // sous <body>, on le retire nous-mêmes avant.
-        node.remove();
-        if (this.historyOverlayPortaled === node) this.historyOverlayPortaled = null;
-      });
-    });
   }
 
   private loadSummaries(): void {
