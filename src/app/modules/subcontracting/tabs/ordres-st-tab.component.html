@@ -69,11 +69,11 @@
         [options]="kpiOrders" />
       <daf-metric-card
         [label]="'SUBCONTRACTING.OST.KPI.BUDGET' | translate"
-        [value]="totalBudget() | displayCurrency : 'TND'"
+        [value]="totalBudget() | displayCurrency : (selectedAffaire()?.devise ?? 'EUR')"
         [options]="kpiBudget" />
       <daf-metric-card
         [label]="'SUBCONTRACTING.OST.KPI.REALIZED' | translate"
-        [value]="totalRealise() | displayCurrency : 'TND'"
+        [value]="totalRealise() | displayCurrency : (selectedAffaire()?.devise ?? 'EUR')"
         [options]="kpiRealized" />
       <daf-metric-card
         [label]="'SUBCONTRACTING.OST.KPI.OVERRUNS' | translate"

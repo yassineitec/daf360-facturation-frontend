@@ -21,6 +21,8 @@ export interface ClientListItemDto {
   isActive:          boolean;
   activeAffaireCount:number;
   totalCA:           number;
+  /** `totalCA` converted to EUR at the current configured rate — currency-safe for cross-client summing. */
+  totalCaEur:        number;
 }
 
 export interface ClientDetailDto {

@@ -12,25 +12,25 @@
   <section class="grid grid-cols-4 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'INVOICING.LIST.KPI.TOTAL' | translate"
-      [value]="amountTotal() | displayCurrency : 'TND'"
+      [value]="amountTotal() | displayCurrency : 'EUR'"
       [delta]="deltaCurrentPage()"
       [options]="kpiTotal" />
 
     <daf-metric-card
       [label]="'INVOICING.LIST.KPI.PENDING' | translate"
-      [value]="amountEnAttente() | displayCurrency : 'TND'"
+      [value]="amountEnAttente() | displayCurrency : 'EUR'"
       [delta]="deltaPending()"
       [options]="kpiPending" />
 
     <daf-metric-card
       [label]="'INVOICING.LIST.KPI.OVERDUE' | translate"
-      [value]="amountEnRetard() | displayCurrency : 'TND'"
+      [value]="amountEnRetard() | displayCurrency : 'EUR'"
       [delta]="deltaOverdue()"
       [options]="kpiOverdue" />
 
     <daf-metric-card
       [label]="'INVOICING.LIST.KPI.DISPUTED' | translate"
-      [value]="amountEnLitige() | displayCurrency : 'TND'"
+      [value]="amountEnLitige() | displayCurrency : 'EUR'"
       [delta]="deltaDisputed()"
       [options]="kpiDisputed" />
   </section>

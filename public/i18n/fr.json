@@ -1609,6 +1609,9 @@
         "cur_dollar": "Dollar",
         "cur_tnd": "Dinar tunisien",
         "cur_mad": "Dirham marocain",
+        "cur_egp": "Livre égyptienne",
+        "cur_sar": "Riyal saoudien",
+        "cur_aed": "Dirham des Émirats",
         "pays_label": "Entité mère",
         "pays_ph": "Sélectionnez l'entité mère",
         "pays_hint": "Détermine la séquence de référence de l'affaire. Non modifiable ensuite.",
@@ -4616,10 +4619,19 @@
       "PERMISSIONS": "Permissions",
       "DOCUMENT_TEMPLATES": "Maquettes de documents",
       "COST_CONFIG": "Configuration des coûts",
+      "ENTITY_CURRENCY": "Devise des entités",
       "REMINDERS": "Relances",
       "COST_REMINDERS": "Relances fournisseurs",
       "WIP_EMAIL_TEMPLATES": "Emails WIP",
       "NAV_LABEL": "Navigation de l'administration"
+    },
+    "ENTITY_CURRENCY": {
+      "TITLE": "Devise par défaut des entités ARX",
+      "SELECT_PLACEHOLDER": "Choisir une devise",
+      "EMPTY": "Aucune entité ARX trouvée.",
+      "ERR_LOAD": "Impossible de charger les entités ARX.",
+      "ERR_SAVE": "Impossible d'enregistrer la devise de cette entité.",
+      "ERR_NO_CURRENCIES": "Aucune devise configurée pour le pays de cette entité."
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Maquettes de documents",

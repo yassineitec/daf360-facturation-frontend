@@ -78,8 +78,8 @@ export class OrdresStTabComponent {
     );
   });
 
-  readonly totalBudget  = computed(() => this.ordres().reduce((s, o) => s + (o.montantBudget  ?? 0), 0));
-  readonly totalRealise = computed(() => this.ordres().reduce((s, o) => s + (o.montantRealise ?? 0), 0));
+  readonly totalBudget  = computed(() => this.ordres().reduce((s, o) => s + (o.montantBudgetAffaireCcy  ?? 0), 0));
+  readonly totalRealise = computed(() => this.ordres().reduce((s, o) => s + (o.montantRealiseAffaireCcy ?? 0), 0));
   readonly overrunCount = computed(() => this.ordres().filter(o => isOver(o)).length);
 
   /** Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4). */

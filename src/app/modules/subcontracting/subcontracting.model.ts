@@ -21,6 +21,10 @@ export interface OSTDto {
   perimetre: string;
   montantBudget: number;
   montantRealise: number;
+  // Currency-safe conversions to the parent affaire's own currency — for cross-OST KPI
+  // sums, since each OST can carry its own `devise`.
+  montantBudgetAffaireCcy: number;
+  montantRealiseAffaireCcy: number;
   devise: string;
   statut: 'EN_COURS' | 'SUSPENDU' | 'CLOTURE';
   alerteDepassementPct: number;
@@ -48,6 +52,7 @@ export interface MarginDto {
   coutsST: number;
   margeBrute: number;
   margeBrutePct: number;
+  currency: string;
 }
 
 export interface CreateSousTraitantRequest {

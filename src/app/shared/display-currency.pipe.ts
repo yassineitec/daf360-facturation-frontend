@@ -10,18 +10,17 @@ export class DisplayCurrencyPipe implements PipeTransform {
 
   transform(amount: number | null | undefined, sourceCurrency = 'TND'): string {
     if (amount == null) return '—';
-    const target    = this.displaySvc.selectedCurrency();
-    const converted = this.ratesSvc.convert(amount, sourceCurrency, target);
+    const target      = this.displaySvc.selectedCurrency();
+    const converted   = this.ratesSvc.convert(amount, sourceCurrency, target);
+    const approximate = this.ratesSvc.needsFallbackRate(sourceCurrency) || this.ratesSvc.needsFallbackRate(target);
+    const prefix       = approximate ? '≈ ' : '';
     try {
-      // No minimumFractionDigits/maximumFractionDigits override — Intl.NumberFormat
-      // already applies each ISO currency's own native decimal precision (2 for
-      // EUR/USD, 3 for TND).
-      return new Intl.NumberFormat('fr-FR', {
+      return prefix + new Intl.NumberFormat('fr-FR', {
         style: 'currency', currency: target,
       }).format(converted);
     } catch {
       const digits = currencyFractionDigits(target);
-      return `${converted.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${target}`;
+      return `${prefix}${converted.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${target}`;
     }
   }
 }

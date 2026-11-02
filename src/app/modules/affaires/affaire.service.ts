@@ -1,6 +1,6 @@
 import { Injectable, inject }          from '@angular/core';
 import { HttpClient, HttpParams }       from '@angular/common/http';
-import { Observable, catchError, map, of, shareReplay } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay, tap } from 'rxjs';
 
 export interface EmployeeCostRates {
   cost: number | null;
@@ -257,5 +257,24 @@ export class AffaireService {
       shareReplay({ bufferSize: 1, refCount: false }),
     );
     return this.arxEntitiesCache$;
+  }
+
+  /**
+   * Admin/entity-currency tab only — errors are NOT swallowed here (unlike
+   * `getArxEntities()` above) so the admin screen can show a real failure message
+   * instead of a silently-empty list, which would be confusing on a config screen.
+   */
+  updateEntityDevise(id: number, currencyValueId: number): Observable<PaysRefDto> {
+    return this.http.patch<PaysRefDto>(`${this.base}/ref/pays/${id}/devise`, { currencyValueId }).pipe(
+      tap(() => {
+        // Only affects FUTURE getArxEntities() callers, who'll trigger a fresh HTTP
+        // request instead of reusing the shared cache: this covers the realistic case
+        // (reopening the wizard after an admin edit), not a component that stayed
+        // mounted and already holds the old, one-shot-emitted array — shareReplay
+        // doesn't push a new value to past subscribers just because the cache was
+        // cleared.
+        this.arxEntitiesCache$ = undefined;
+      }),
+    );
   }
 }

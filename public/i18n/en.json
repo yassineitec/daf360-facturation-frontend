@@ -1609,6 +1609,9 @@
         "cur_dollar": "Dollar",
         "cur_tnd": "Tunisian Dinar",
         "cur_mad": "Moroccan Dirham",
+        "cur_egp": "Egyptian Pound",
+        "cur_sar": "Saudi Riyal",
+        "cur_aed": "UAE Dirham",
         "pays_label": "Parent entity",
         "pays_ph": "Select the parent entity",
         "pays_hint": "Drives the project reference sequence. Cannot be changed afterwards.",
@@ -4616,10 +4619,19 @@
       "PERMISSIONS": "Permissions",
       "DOCUMENT_TEMPLATES": "Document templates",
       "COST_CONFIG": "Cost configuration",
+      "ENTITY_CURRENCY": "Entity currency",
       "REMINDERS": "Reminders",
       "COST_REMINDERS": "Supplier reminders",
       "WIP_EMAIL_TEMPLATES": "WIP Emails",
       "NAV_LABEL": "Admin navigation"
+    },
+    "ENTITY_CURRENCY": {
+      "TITLE": "Default currency of ARX entities",
+      "SELECT_PLACEHOLDER": "Choose a currency",
+      "EMPTY": "No ARX entity found.",
+      "ERR_LOAD": "Could not load the ARX entities.",
+      "ERR_SAVE": "Could not save this entity's currency.",
+      "ERR_NO_CURRENCIES": "No currency configured for this entity's country."
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Document templates",
