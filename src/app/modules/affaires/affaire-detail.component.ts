@@ -1,12 +1,13 @@
 import { Component, OnInit, TemplateRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  AvatarGroupComponent, BarChartComponent, ButtonComponent, ButtonOptions,
+  BarChartComponent, ButtonComponent, ButtonOptions,
   ChipGroupComponent, DafCellDirective, DataTableComponent, MetricCardComponent,
   DrawerComponent, FilterChipsComponent, FilterComponent, FormFieldComponent, FormFieldOptions,
-  GaugeComponent, ModalService,
+  AvatarComponent, HelpPopoverComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
   RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, SelectComponent, SkeletonComponent,
   StatusBadgeComponent, TabsComponent,
@@ -17,7 +18,7 @@ import type {
   BarChartSegmentVariant, BreadcrumbItem,
   ChipGroupConfig, ChipOption, DrawerConfig,
   MetricCardOptions, MetricDelta,
-  FilterField, FilterOption, FilterResult, GaugeOptions, PageHeaderBadge, ProgressVariant, RadioOption, SelectOption,
+  FilterField, FilterOption, FilterResult, PageHeaderBadge, ProgressVariant, RadioOption, SelectOption,
   SearchToolbarFilterConfig, TabItem, TableAction, TableColumn, TableConfig, TableRow,
   ToolbarAction,
 } from '@khalilrebhiitec/daf360';
@@ -85,6 +86,8 @@ interface KpiTile {
   value:   string;
   delta:   MetricDelta | null;
   options: MetricCardOptions;
+  /** Pastille sous le libellé plutôt que sous le montant (Backlog : « 40 % » sous « BACKLOG »). */
+  deltaUnderLabel?: boolean;
 }
 
 interface RowDetail {
@@ -139,10 +142,8 @@ function asSlide(v: string | null): ChartSlideId {
 interface ChartSlideView {
   id:         ChartSlideId;
   title:      string;
-  totalLabel: string;
-  total:      number;
-  /** « 3 facture(s) », « 2 paiement(s) » sous le total ; null quand ça n'a pas de sens. */
-  count:      string | null;
+  /** La ligne sous le titre : moyenne et objectif, quand ils ont du sens pour la série. */
+  stats:      { label: string; value: string }[];
   note:       string | null;
   bars:       ChartBar[];
   options:    BarChartOptions;
@@ -231,6 +232,17 @@ const PRIORITY_BADGE: Record<string, 'danger' | 'warning' | 'neutral'> = {
 /** Tri de la colonne priorité des échéances : de la moins à la plus urgente. */
 const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 };
 
+/**
+ * Pop-ups de la fiche redimensionnables et agrandissables, comme dans le module RH
+ * (options de la modale de la bibliothèque, à partir de la 5.10.0).
+ */
+const MODAL_RESIZE = {
+  minWidth:    '360px',
+  minHeight:   '260px',
+  resizable:   true,
+  maximizable: true,
+};
+
 @Component({
   selector: 'app-affaire-detail',
   imports: [
@@ -238,7 +250,8 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, ButtonComponent,
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent, SelectComponent,
-    GaugeComponent, BarChartComponent, AvatarGroupComponent, ChipGroupComponent, FilterComponent, FilterChipsComponent, SkeletonComponent,
+    BarChartComponent, AvatarComponent, ChipGroupComponent, FilterComponent, FilterChipsComponent, SkeletonComponent,
+    HelpPopoverComponent,
     TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
@@ -292,7 +305,7 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
     }
 
     /* ── Rangées de cartes : des grilles, pas du flex-wrap ─────────────────── */
-    .kpi-row, .tile-row {
+    .kpi-row {
       display: grid;
       gap:     1.5rem;
       align-items: stretch;
@@ -302,36 +315,69 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
        sur un portable de 1366 px. En dessous, la grille passe à trois puis deux colonnes
        ÉGALES — jamais une orpheline pleine largeur. */
     .kpi-row    { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-    .tile-row   { grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }
 
     /* Les hôtes de carte : display:flex pour que la carte remplisse sa cellule, et
        min-width:0 pour qu'un contenu large (un montant, un libellé) ne pousse pas la
        colonne au-delà de son 1fr — c'est ce qui fait déborder une grille. */
-    .kpi-cell, .tile-cell {
+    .kpi-cell {
       display:        flex;
       flex-direction: column;
       min-width:      0;
     }
     .kpi-cell    { min-height: 118px; }
-    .tile-cell   { min-height: 210px; height: auto; }
+
+    /* daf-metric-card rend toujours la pastille SOUS le montant, sans option. Pour la placer
+       sous le libellé, on la sort du flux et on la pose juste sous la ligne du libellé
+       (padding 1rem de la tuile + une ligne de libellé), dans l'espace laissé libre à côté
+       de l'icône. ::ng-deep car ce bloc vit dans le gabarit du composant de la lib. */
+    :host ::ng-deep .kpi-cell--delta-label > div { position: relative; }
+    :host ::ng-deep .kpi-cell--delta-label > div > div:nth-child(2) > p + p {
+      position: absolute;
+      top:      calc(1rem + 1.1rem);
+      left:     1rem;
+      margin:   0;
+      /* La lib pose text-[10px] sur la pastille : deux crans au-dessus. */
+      font-size: 12px;
+    }
 
     /* ── Carrousel des graphiques ──────────────────────────────────────────── */
-    /* En-tête : navigation (flèches + puces des trois graphiques) à gauche, Filtres +
-       Exporter à droite. Repliée, la rangée d'actions reste alignée à droite. */
+    /* En-tête en trois colonnes : titre + plage à gauche, puces au centre, Filtres + (i)
+       à droite. 1fr | auto | 1fr garde les puces au centre EXACT de la carte, quelle que
+       soit la longueur du titre. Sur mobile, les trois s'empilent. */
     .carousel-head {
-      display:         flex;
-      flex-wrap:       wrap;
-      gap:             0.75rem 1rem;
-      align-items:     center;
-      justify-content: space-between;
+      display:               grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap:                   0.75rem 1rem;
+      align-items:           center;
     }
+    .carousel-title { min-width: 0; }
     .carousel-nav, .carousel-actions {
       display:     flex;
       flex-wrap:   wrap;
       gap:         0.5rem;
       align-items: center;
     }
-    .carousel-actions { margin-left: auto; }
+    .carousel-actions { justify-content: flex-end; }
+
+    /* Le (i) du graphique : même rendu que celui de daf-section-card, mais à côté de
+       Filtres, pour que les puces restent la première ligne de la carte. */
+    .chart-help-btn {
+      display:         inline-flex;
+      align-items:     center;
+      justify-content: center;
+      width:           20px;
+      height:          20px;
+      border:          0;
+      border-radius:   9999px;
+      background:      transparent;
+      color:           var(--color-outline, #74777d);
+      cursor:          help;
+    }
+    .chart-help-btn:hover, .chart-help-btn:focus-visible {
+      color:   var(--color-tertiary, #00a389);
+      outline: none;
+    }
+    .chart-help-btn .material-symbols-outlined { font-size: 20px; line-height: 1; }
 
     /* Une seule diapositive rendue ; elle entre en glissant depuis le côté d'où l'on vient.
        overflow-x:clip et non hidden : seul l'axe horizontal est coupé (le glissement), la
@@ -359,16 +405,6 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
       .carousel-slide { animation: none; }
     }
 
-    /* Titre + plage à gauche, total à droite ; le total passe dessous quand la carte est
-       étroite, aligné à gauche pour ne pas flotter seul côté droit. */
-    .chart-head {
-      display:         flex;
-      flex-wrap:       wrap;
-      gap:             0.75rem 1.5rem;
-      align-items:     flex-start;
-      justify-content: space-between;
-    }
-    .chart-total { text-align: right; }
 
     /* Rechargement après un changement de filtre : on garde les barres précédentes,
        atténuées, plutôt que de les remplacer par un squelette qui ferait sauter la carte. */
@@ -380,7 +416,9 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
     /* ── Le tracé du graphique ─────────────────────────────────────────────── */
     /* Toute la largeur de la carte, quel que soit le nombre de barres (demande du
        2026-10-27 : l'ancien plafond par nombre de barres laissait la carte à moitié vide). */
-    .chart-plot { width: 100%; }
+    /* padding-top : la pastille de la plus haute barre s'affiche au-dessus d'elle ; sans
+       cette marge elle était coupée par le bord de la carte. */
+    .chart-plot { width: 100%; padding-top: 2.5rem; }
 
     /* ── Portable et en dessous ────────────────────────────────────────────── */
     /* 1400 px : la fenêtre d'un portable moins la barre latérale de 256 px et les marges
@@ -404,9 +442,9 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
     }
 
     @media (max-width: 640px) {
-      .kpi-row, .tile-row, .bottom-row { gap: 1rem; }
-      .carousel-actions { margin-left: 0; }
-      .chart-total { text-align: left; }
+      .kpi-row, .bottom-row { gap: 1rem; }
+      .carousel-head    { grid-template-columns: 1fr; }
+      .carousel-actions { justify-content: flex-start; }
     }
 
     /* ══ PANNEAU DE DÉTAILS (colonne gauche) ════════════════════════════════
@@ -495,9 +533,9 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
       font-size:     16px;
       font-weight:   600;
       color:         var(--color-on-surface, #191c1e);
-      white-space:   nowrap;
-      overflow:      hidden;
-      text-overflow: ellipsis;
+      /* Un nom long passe à la ligne au lieu d'être coupé par « … ». */
+      white-space:   normal;
+      overflow-wrap: anywhere;
     }
     .dp-client__meta {
       flex-shrink: 0;
@@ -641,20 +679,6 @@ const PRIORITY_RANK: Record<string, number> = { standard: 0, medium: 1, high: 2 
       min-width:   0;
     }
 
-    .dp-avatar {
-      flex-shrink:     0;
-      width:           26px;
-      height:          26px;
-      border-radius:   50%;
-      display:         inline-flex;
-      align-items:     center;
-      justify-content: center;
-      background:      var(--color-secondary-container, #e3e3fb);
-      color:           var(--color-on-secondary-container, #34369e);
-      font-size:       10px;
-      font-weight:     700;
-      letter-spacing:  .02em;
-    }
 
     .dp-person__body { min-width: 0; flex: 1 1 auto; }
 
@@ -936,10 +960,33 @@ export class AffaireDetailComponent implements OnInit {
    */
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
+    const current = { label: this.affaire()?.reference ?? '' };
+
+    // Arrivée depuis une facture (`goToAffaire` / sous-titre de la fiche facture) : le fil
+    // part de cette facture, et y ramène sur l'onglet qu'on avait quitté.
+    const from = this.fromParams();
+    const fromInvoice = from.get('fromInvoice');
+    if (fromInvoice) {
+      const tab = from.get('fromTab');
+      return [
+        { label: this.translate.instant('INVOICING.DETAIL.BACK'), link: ['../../invoicing'] },
+        {
+          label: from.get('fromInvoiceNo') ?? this.translate.instant('INVOICING.DETAIL.DRAFT_TITLE'),
+          link: ['../../invoicing', fromInvoice],
+          queryParams: tab ? { tab } : undefined,
+        },
+        current,
+      ];
+    }
+
     return [
       { label: this.translate.instant('AFFAIRES.DETAIL.BACK_TO_LIST'), link: ['..'] },
-      { label: this.affaire()?.reference ?? '' },
+      current,
     ];
+  });
+
+  private readonly fromParams = toSignal(this.route.queryParamMap, {
+    initialValue: this.route.snapshot.queryParamMap,
   });
 
   // ═══ Centre d'actions ═════════════════════════════════════════════════════
@@ -1181,6 +1228,7 @@ export class AffaireDetailComponent implements OnInit {
     this.modalError.set(null);
 
     const ref = this.modals.open({
+      ...MODAL_RESIZE,
       title: this.translate.instant('AFFAIRES.DETAIL.MODAL.SELLER_ENTITIES_TITLE'),
       icon:  'corporate_fare',
       size:  'md',
@@ -1225,6 +1273,7 @@ export class AffaireDetailComponent implements OnInit {
     this.modalError.set(null);
 
     const ref = this.modals.open({
+      ...MODAL_RESIZE,
       title: this.translate.instant('AFFAIRES.DETAIL.MODAL.OWNER_ENTITY_TITLE'),
       icon:  'account_balance',
       size:  'md',
@@ -1286,6 +1335,9 @@ export class AffaireDetailComponent implements OnInit {
     if (!a) return [];
 
     const rows: ContratRow[] = [
+      // La date de début n'était visible que dans la période accolée au contact référent :
+      // sans référent, la carte n'en montrait aucune. Elle ouvre le bloc Contrat, toujours.
+      { label: 'AFFAIRES.DETAIL.INFO.START_DATE', value: this.formatDateShort(a.dateDebut) },
       // Le budget prévisionnel n'était nulle part sur la fiche : la ligne « Budget validé »
       // disait s'il était approuvé sans jamais dire de combien, et les quatre tuiles du haut
       // montrent CA, RAF, marge et WIP — pas le budget dont elles se déduisent.
@@ -1324,20 +1376,6 @@ export class AffaireDetailComponent implements OnInit {
   });
 
   /**
-   * Les initiales d'une personne, pour la pastille d'avatar du bloc Managers : première
-   * lettre du prénom et du nom, deux au plus. Un nom à rallonge (« Jean-Pierre de la
-   * Fontaine ») ne doit pas produire cinq lettres dans un cercle de 26 px.
-   */
-  initials(name: string): string {
-    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
-    if (!parts.length) return '?';
-    const first = parts[0][0];
-    const last  = parts.length > 1 ? parts[parts.length - 1][0] : '';
-    return (first + last).toUpperCase();
-  }
-
-
-  /**
    * Les 5 indicateurs financiers du haut de la colonne droite, sur `daf-metric-card` :
    * **Backlog, WIP, Total facturé, Total encaissé, TS**, dans cet ordre — de l'engagement
    * restant jusqu'à l'argent réellement reçu, la rangée se lit de gauche à droite comme
@@ -1374,6 +1412,7 @@ export class AffaireDetailComponent implements OnInit {
     return [
       {
         label: 'AFFAIRES.DETAIL.KPI.BACKLOG',
+        deltaUnderLabel: true,
         value: this.money(k?.backlog),
         // Même pastille que le RAF portait : la part encore disponible du budget. Le
         // dénominateur reste `budgetTotal()` (prévisionnel seul), donc la pastille et la
@@ -1386,16 +1425,14 @@ export class AffaireDetailComponent implements OnInit {
                    help: t('AFFAIRES.DETAIL.KPI.BACKLOG_HELP') },
       },
       {
-        label: 'AFFAIRES.DETAIL.KPI.WIP',
-        value: this.money(k?.wip),
-        delta: null,
-        options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10',
-                   help: t('AFFAIRES.DETAIL.KPI.WIP_HELP') },
-      },
-      {
         label: 'AFFAIRES.DETAIL.KPI.INVOICED',
+        deltaUnderLabel: true,
         value: this.money(k?.totalFacture),
-        delta: null,
+        // Le taux de facturation (ex-barre « Facturé » de la carte Avancement) : factures
+        // émises / budget prévisionnel — le même `billingPct` que la pastille de risque.
+        delta: this.budgetTotal() > 0
+          ? { value: `${Math.round(this.billingPct())}%`, direction: 'neutral' as const }
+          : null,
         options: { icon: 'receipt_long', iconColor: 'text-primary', iconBg: 'bg-primary/10',
                    help: t('AFFAIRES.DETAIL.KPI.INVOICED_HELP') },
       },
@@ -1407,10 +1444,22 @@ export class AffaireDetailComponent implements OnInit {
         // jauge « Santé du projet » plus bas — les deux divergent sur une facture
         // partiellement réglée, d'où deux champs distincts plutôt qu'une redéfinition.
         value: this.money(k?.totalEncaisse),
-        delta: null,
+        // Même base que Backlog et Facturé : la part du budget prévisionnel, ici sur le
+        // montant de la tuile (factures au statut Encaissé), pas sur les règlements reçus.
+        deltaUnderLabel: true,
+        delta: this.budgetTotal() > 0 && k
+          ? { value: `${Math.round((k.totalEncaisse / this.budgetTotal()) * 100)}%`, direction: 'neutral' as const }
+          : null,
         options: { icon: 'account_balance_wallet', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
                    valueColor: 'text-secondary',
                    help: t('AFFAIRES.DETAIL.KPI.CA_HELP') },
+      },
+      {
+        label: 'AFFAIRES.DETAIL.KPI.WIP',
+        value: this.money(k?.wip),
+        delta: null,
+        options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10',
+                   help: t('AFFAIRES.DETAIL.KPI.WIP_HELP') },
       },
       {
         label: 'AFFAIRES.WIP.KPI_TS',
@@ -1457,9 +1506,6 @@ export class AffaireDetailComponent implements OnInit {
     })),
   );
 
-  /** Tous les noms de l'équipe — la tuile n'en montrait qu'un, la pile en compte N. */
-  readonly teamNames = computed(() => this.team().map(m => m.name).join(', '));
-
   /** Les user ids dont on veut la photo : toute l'équipe, résolue en un seul appel groupé. */
   private teamUserIds(a: AffaireDetail): number[] {
     const ids = distinctResponsables(a).map(r => r.userId).filter(id => id > 0);
@@ -1491,7 +1537,6 @@ export class AffaireDetailComponent implements OnInit {
   //                        donc facturé + RAF ≠ budgetTotal dès qu'il y a des TS, et
   //                        rafAvailablePct peut dépasser 100 %.
   //   billingPct         = totalFacturesEmises / budgetTotal × 100   « taux de facturation »
-  //   collectedPct       = kpis.ca / budgetTotal × 100               « santé du projet »
   //   tsIntegratedPct    = montantTsIntegres / budgetTotal × 100
   //   rafAvailablePct    = rafDisponible / budgetTotal × 100         (pastille RAF)
   //   healthState        = seuils sur billingPct, comparés au **seuil propre à
@@ -1500,21 +1545,18 @@ export class AffaireDetailComponent implements OnInit {
   //   rafAlertActive     = billingPct ≥ rafAlerteSeuilPct (même règle, pour l'encart)
   //   budgetOverrun      = rafDisponible < 0, c'est-à-dire facturé > enveloppe
   //
-  //   ⚠️ Les deux taux vont dans des SENS OPPOSÉS et n'ont donc pas la même échelle
-  //   de couleur — c'est tout le sujet du bug « couleurs inversées » :
-  //     · facturation : consommer le budget est neutre jusqu'à 100 %, la DÉPASSER
-  //       est l'accident → échelle de risque (`healthState`), rouge au-delà de 100 % ;
-  //     · encaissement : plus haut = mieux → rampe rouge → vert du composant `daf-gauge`.
-  //   Faire porter `healthState` aux deux, ce que la page faisait, peignait la bonne
-  //   nouvelle en rouge.
+  //   ⚠️ `healthState` est une échelle de RISQUE sur la facturation : consommer le budget
+  //   est neutre jusqu'à 100 %, le DÉPASSER est l'accident, d'où le rouge au-delà. Elle ne
+  //   s'applique pas à un taux d'encaissement, où plus haut = mieux (le bug « couleurs
+  //   inversées » venait de là).
   //
   //   Il n'y a plus de « taux de consommation » : l'ancien valait
   //   (budget − RAF) / budget = (facturé − TS) / budget, donc un TS intégré le FAISAIT
   //   BAISSER sans que rien ne soit défacturé. Consommer le budget, ici, c'est la
   //   facturer — un TS l'agrandit, il n'en consomme rien.
   //
-  //   Les cinq tuiles du haut sont, dans l'ordre : Backlog, WIP, Total facturé, Total
-  //   encaissé, TS. Les quatre premières sont prises **telles quelles** dans les KPIs du
+  //   Les cinq tuiles du haut sont, dans l'ordre : Backlog, Total facturé, Total encaissé,
+  //   WIP, TS. Les quatre premières sont prises **telles quelles** dans les KPIs du
   //   backend, la page ne les recalcule pas (seule la pastille % du Backlog est dérivée
   //   ici) ; la cinquième vient du RAF. À savoir :
   //   Les trois premières se calculent toutes sur le MÊME « facturé », `totalFacture` :
@@ -1580,15 +1622,6 @@ export class AffaireDetailComponent implements OnInit {
     return b > 0 ? ((this.raf()?.totalFacturesEmises ?? 0) / b) * 100 : 0;
   });
 
-  /** Encaissé réel — `kpis.ca`, la somme des paiements reçus. */
-  readonly collectedAmount = computed(() => this.kpis()?.ca ?? 0);
-
-  /** Santé du projet : encaissé / budget total. Plus c'est haut, mieux c'est. */
-  readonly collectedPct = computed(() => {
-    const b = this.budgetTotal();
-    return b > 0 ? (this.collectedAmount() / b) * 100 : 0;
-  });
-
   readonly tsIntegratedPct = computed(() => {
     const b = this.budgetTotal();
     return b > 0 ? ((this.raf()?.montantTsIntegres ?? 0) / b) * 100 : 0;
@@ -1635,65 +1668,9 @@ export class AffaireDetailComponent implements OnInit {
     return { variant: 'success', labelKey: 'AFFAIRES.DETAIL.HEALTH.OPTIMAL' };
   });
 
-  /** Pastille de la tuile « Santé du projet ». */
-  readonly healthBadge = computed<PageHeaderBadge>(() => {
-    const h = this.healthState();
-    return { label: this.translate.instant(h.labelKey), variant: h.variant, size: 'sm' };
-  });
-
-  /**
-   * L'anneau de la tuile « Santé du projet » — il affiche `collectedPct`, l'encaissé.
-   *
-   * **`ramp: true`** : la rampe du composant va du rouge (0) à l'ambre (50) au vert (100),
-   * ce qui est exactement le sens de l'encaissement — n'avoir rien encaissé est mauvais,
-   * avoir tout encaissé est l'objectif. C'est le correctif du bug de couleurs : l'anneau
-   * prenait sa teinte de `healthState`, une échelle de risque « plus haut = pire », donc
-   * une affaire intégralement encaissée s'affichait en rouge. `healthState` reste la
-   * **pastille** à côté du titre, où « plus haut = pire » est le bon sens.
-   *
-   * Enveloppe absente (budget à 0) : pas de rampe, sinon un anneau à 0 % s'afficherait en
-   * rouge alors que le taux n'est pas calculable — la pastille dit déjà « Indéterminée ».
-   *
-   * **Valeur seule au centre** : pas de `sublabel`, l'en-tête de la tuile dit de quoi il
-   * s'agit. `ariaLabel` porte le sens pour les lecteurs d'écran.
-   */
-  readonly healthGaugeOptions = computed<GaugeOptions>(() => {
-    const known = this.budgetTotal() > 0;
-    return {
-      size:      '116px',
-      thickness: 10,
-      ramp:      known,
-      variant:   known ? undefined : 'primary',
-      ariaLabel: `${this.translate.instant('AFFAIRES.DETAIL.OVERVIEW.HEALTH_TITLE')} : `
-               + `${Math.round(this.collectedPct())}% — `
-               + `${this.money(this.collectedAmount())} / ${this.money(this.budgetTotal())}`,
-    };
-  });
-
   // ── Barres de progression ────────────────────────────────────────────────
   readonly alertBarOptions: ProgressBarOptions = { variant: 'warning',   size: 'xs', showLabel: false, showPercent: false };
 
-  /** Barre de la carte d'identité : le % est déjà affiché en gros au-dessus. */
-  readonly identityBarOptions = computed<ProgressBarOptions>(() => ({
-    ...this.billingBarOptions(), showLabel: false, showPercent: false,
-  }));
-
-  /**
-   * La barre du taux de facturation — échelle de risque, `> 100` seul en rouge (facturer
-   * pile son budget est l'objectif atteint). Le seuil de vigilance de l'affaire passe
-   * par `healthState`, qui tient compte de `rafAlerteSeuilPct`.
-   *
-   * C'est cette barre que porte la tuile « Taux de facturation », à la place de l'ancienne
-   * `consumptionBarOptions` qui prenait sa couleur telle quelle de `healthState` : une
-   * affaire à 0 % facturé y sortait en vert vif et une affaire bien avancée en rouge.
-   */
-  readonly billingBarOptions = computed<ProgressBarOptions>(() => {
-    const v = this.healthState().variant;
-    return {
-      variant: v === 'danger' ? 'danger' : v === 'warning' ? 'warning' : 'tertiary',
-      size:    'sm',
-    };
-  });
 
   // ── Graphiques : facturation, WIP, paiements ─────────────────────────────
 
@@ -1745,6 +1722,8 @@ export class AffaireDetailComponent implements OnInit {
   readonly chartStatuses    = signal<ChartWipStatus[]>(asStatuses(this.chartQueryParams.get('cs')));
   readonly chartIncludeTs   = signal(this.chartQueryParams.get('cts') !== '0');
   readonly chartSlide       = signal<ChartSlideId>(asSlide(this.chartQueryParams.get('cc')));
+  /** Le (i) du graphique, posé à la main à côté de Filtres — voir le gabarit. */
+  readonly chartHelpOpen    = signal(false);
 
   readonly charts          = signal<AffaireChartsDto | null>(null);
   readonly chartsLoading   = signal(false);
@@ -2000,16 +1979,6 @@ export class AffaireDetailComponent implements OnInit {
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) this.stepChartSlide(dx < 0 ? 1 : -1);
   }
 
-  readonly chartPrevOptions = computed<ButtonOptions>(() => ({
-    variant: 'ghost', size: 'sm', iconStart: 'chevron_left',
-    title: this.translate.instant('AFFAIRES.DETAIL.CHARTS.PREV'),
-  }));
-
-  readonly chartNextOptions = computed<ButtonOptions>(() => ({
-    variant: 'ghost', size: 'sm', iconStart: 'chevron_right',
-    title: this.translate.instant('AFFAIRES.DETAIL.CHARTS.NEXT'),
-  }));
-
   /** Le (i) de la carte suit la diapositive : chaque graphique a sa règle de calcul. */
   readonly chartSlideHelp = computed(() => {
     this.translate.currentLang();
@@ -2073,7 +2042,6 @@ export class AffaireDetailComponent implements OnInit {
    */
   private readonly invoicedBars = computed<ChartBar[]>(() => {
     this.translate.currentLang();
-    const current = this.currentBucketKey();
     const cumul   = this.chartView() === 'CUMUL';
     return this.chartSeries().map(({ bucket, invoiced }) => {
       const lines = [
@@ -2087,8 +2055,10 @@ export class AffaireDetailComponent implements OnInit {
         lines.push(this.translate.instant('AFFAIRES.DETAIL.CHARTS.INVOICE_COUNT', { count: bucket.invoiceCount }));
       }
       return {
+        // Pas de `highlight` sur le mois en cours : dès qu'une barre en porte un, la lib
+        // peint toutes les AUTRES en gris — un mois à 119 k passait pour une barre vide.
         label: this.bucketShortLabel(bucket), value: invoiced, tooltipLines: lines,
-        highlight: bucket.key === current, key: bucket.key,
+        key: bucket.key,
       };
     });
   });
@@ -2199,7 +2169,6 @@ export class AffaireDetailComponent implements OnInit {
     const t = (k: string, p?: object) => this.translate.instant('AFFAIRES.DETAIL.CHARTS.' + k, p);
     const cumul = this.chartView() === 'CUMUL';
     const suffix = '_' + this.chartGranularity() + (cumul ? '_CUMUL' : '');
-    const totalLabel = t(cumul ? 'TOTAL_END' : 'TOTAL_RANGE');
 
     const invoicedTotal = this.seriesTotal(c?.totalInvoiced ?? 0, c?.openingInvoiced ?? 0);
     const wipTotal = c ? (cumul
@@ -2216,10 +2185,24 @@ export class AffaireDetailComponent implements OnInit {
     const wipTitle      = t('WIP_TITLE' + suffix);
     const payTitle      = t('PAY_TITLE' + suffix);
 
+    // Ligne sous le titre : seulement ce que les indicateurs du haut ne disent pas. Le total
+    // et le nombre de factures y sont déjà ; restent la moyenne par période (vue par
+    // période seulement : en cumul, la dernière barre EST le total) et l'objectif, comparé
+    // au cumul des objectifs de la plage en vue par période, au budget en vue cumulée.
+    const buckets = c?.buckets.length ?? 0;
+    const stats = (total: number, objective: number, objectiveLabel: string) => {
+      const s: ChartSlideView['stats'] = [];
+      if (!cumul && buckets) s.push({ label: t('AVG_' + this.chartGranularity()), value: this.money(total / buckets) });
+      if (objective > 0) s.push({ label: objectiveLabel, value: `${Math.round(total / objective * 100)} %` });
+      return s;
+    };
+    const invoicedObjective = cumul ? this.chartBudgetTarget() : this.invoicedPeriodTarget() * buckets;
+    const objectiveLabel = t(cumul ? 'STAT_BUDGET' : 'STAT_TARGET');
+
     return [
       {
-        id: 'INVOICED', title: invoicedTitle, totalLabel, total: invoicedTotal,
-        count: c ? t('INVOICE_COUNT', { count: c.totalInvoiceCount }) : null,
+        id: 'INVOICED', title: invoicedTitle,
+        stats: stats(invoicedTotal, invoicedObjective, objectiveLabel),
         note: null,
         bars: this.invoicedBars(),
         options: this.chartOptions(invoicedTitle, invoicedTotal, 'tertiary',
@@ -2227,7 +2210,8 @@ export class AffaireDetailComponent implements OnInit {
           invoicedTarget, invoicedTargetLabel),
       },
       {
-        id: 'WIP', title: wipTitle, totalLabel, total: wipTotal, count: null,
+        id: 'WIP', title: wipTitle,
+        stats: stats(wipTotal, 0, ''),
         note: this.chartWipModeOnlyTs() ? t('WIP_TS_ONLY') : null,
         bars: this.wipBars(),
         options: this.chartOptions(wipTitle, wipTotal, 'tertiary',
@@ -2236,8 +2220,8 @@ export class AffaireDetailComponent implements OnInit {
           budget, this.chartBudgetLabel()),
       },
       {
-        id: 'PAYMENTS', title: payTitle, totalLabel, total: paymentsTotal,
-        count: c ? t('PAYMENT_COUNT', { count: c.totalPaymentCount }) : null,
+        id: 'PAYMENTS', title: payTitle,
+        stats: stats(paymentsTotal, cumul ? budget : 0, objectiveLabel),
         note: null,
         bars: this.paymentBars(),
         options: this.chartOptions(payTitle, paymentsTotal, 'teal',
@@ -3110,6 +3094,7 @@ export class AffaireDetailComponent implements OnInit {
 
   openExpenses(): void {
     this.expensesModalRef = this.modals.open({
+      ...MODAL_RESIZE,
       title: this.translate.instant('AFFAIRES.DETAIL.MODAL.EXPENSES_TITLE'),
       icon:  'receipt_long',
       size:  'md',
@@ -3156,6 +3141,7 @@ export class AffaireDetailComponent implements OnInit {
     this.modalError.set(null);
 
     const ref = this.modals.open({
+      ...MODAL_RESIZE,
       title: this.translate.instant('AFFAIRES.DETAIL.MODAL.STATUS_TITLE'),
       icon:  'swap_horiz',
       size:  'md',
@@ -3230,6 +3216,10 @@ export class AffaireDetailComponent implements OnInit {
     this.modalError.set(null);
 
     const ref = this.modals.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: this.translate.instant(step === 'technique'
         ? 'AFFAIRES.DETAIL.TS.VALIDATE_TECH'
         : 'AFFAIRES.DETAIL.TS.VALIDATE_COMM'),
@@ -3305,6 +3295,10 @@ export class AffaireDetailComponent implements OnInit {
     this.modalError.set(null);
 
     const ref = this.modals.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: this.translate.instant('AFFAIRES.DETAIL.TS.DELETE_TITLE'),
       icon:  'delete',
       size:  'md',
@@ -3351,6 +3345,10 @@ export class AffaireDetailComponent implements OnInit {
     });
 
     this.modals.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: `${this.translate.instant('AFFAIRES.DETAIL.TS.HISTORY')} — ${ts.referenceTs}`,
       icon:  'history',
       size:  'lg',
@@ -3403,6 +3401,10 @@ export class AffaireDetailComponent implements OnInit {
       });
     }
     this.modals.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: `${this.translate.instant(row.titleKey)} — ${row.ref}`,
       icon:  'visibility',
       size:  'md',
@@ -3530,6 +3532,10 @@ export class AffaireDetailComponent implements OnInit {
     }
 
     this.modals.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: `${this.translate.instant('AFFAIRES.DETAIL.MODAL.TS_TITLE')} — ${ts.referenceTs}`,
       icon:  'visibility',
       size:  'lg',
@@ -3600,6 +3606,7 @@ export class AffaireDetailComponent implements OnInit {
     // Lu par le template au moment où la modale crée le formulaire : le poser avant `open`.
     this.tsEditTarget.set(ts);
     this.tsFormModalRef = this.modals.open({
+      ...MODAL_RESIZE,
       title: this.translate.instant(ts ? 'AFFAIRES.ts.form.edit_title' : 'AFFAIRES.ts.form.title'),
       icon:  ts ? 'edit' : 'post_add',
       size:  'md',
@@ -3624,11 +3631,17 @@ export class AffaireDetailComponent implements OnInit {
    * non plus la liste des factures filtrée, qui obligeait à recliquer sur « Nouvelle
    * facture » puis à rechercher l'affaire qu'on venait de quitter.
    * `step-affaire` lit `?affaire=` et joue sa propre sélection (RAF, mode, TS compris).
+   * `fromAffaireRef` / `fromTab` ne servent qu'au fil d'Ariane de l'assistant
+   * (« Affaires › AFF-xxx › Nouvelle facture »), qui ramène sur l'onglet quitté.
    */
   goToInvoicing(): void {
     this.router.navigate(['../../invoicing', 'new'], {
       relativeTo: this.route,
-      queryParams: { affaire: this.numId },
+      queryParams: {
+        affaire:        this.numId,
+        fromAffaireRef: this.affaire()?.reference ?? undefined,
+        fromTab:        this.activeTab(),
+      },
     });
   }
 

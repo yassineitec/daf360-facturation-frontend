@@ -1,6 +1,13 @@
-<!-- Fiche rapport P&L — même squelette (daf-page / daf-page-header / daf-section-card) que
-     invoice-detail.component.html. Une seule colonne : pas de grille deux-tiers/un-tiers ici,
-     le contenu (récap + commentaires + 4 sections transversales) est déjà long et vertical. -->
+<!-- Fiche rapport P&L — même gabarit que les fiches affaire et fournisseur :
+
+     GAUCHE (30 %, sticky)  le h1 (daf-page-header, size="md"), puis deux cartes : « Détails »
+                            (rapport + dates du workflow) et « Actions rapides » (l'étape
+                            suivante en grand, amendement/réouverture, exports en pied).
+     DROITE (70 %)          les 4 indicateurs (daf-metric-card), daf-tabs (`?tab=`) et le
+                            contenu de l'onglet actif.
+
+     Les classes de mise en page et le panneau `.dp-*` vivent dans les `styles` du composant
+     (voir là pourquoi ce ne sont pas des classes Tailwind). -->
 
 <daf-page [loading]="loading()" [kpis]="0" [breadcrumbs]="true" headerSize="md"
           [loadingLabel]="'REPORTING.DETAIL.LOADING' | translate">
@@ -13,236 +20,495 @@
   }
 
   @if (report(); as r) {
-    <div class="flex flex-col gap-6">
+    <div class="detail-split">
 
-      <daf-page-header
-        size="md"
-        [title]="headerTitle()"
-        [badges]="headerBadges()"
-        [breadcrumbs]="breadcrumbs()"
-        [breadcrumbLabel]="'REPORTING.DETAIL.BREADCRUMB_ARIA' | translate" />
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE GAUCHE — le titre de page, puis le panneau de détails dont
+           les actions ferment la section.
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="detail-aside">
+        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
 
-      <!-- ── Indicateurs clés : 4 cartes, uniquement des champs réels de PlPeriodDto ───────── -->
-      <daf-section-card>
-        <div class="flex flex-col gap-4 p-6">
-          <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.KPI_TITLE' | translate }}</h2>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            @for (kpi of kpiCards(); track kpi.label) {
-              <div class="flex flex-col gap-2 rounded-xl bg-surface-container px-6 py-4">
-                <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                  {{ kpi.label }}
-                </span>
-                <span class="text-headline-md font-extrabold text-primary">{{ kpi.value }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </daf-section-card>
+          <daf-page-header
+            size="md"
+            [title]="pageTitle()"
+            [titleWrap]="true"
+            [subtitle]="headerSubtitle()"
+            [badges]="headerBadges()"
+            [breadcrumbs]="breadcrumbs()"
+            [breadcrumbLabel]="'REPORTING.DETAIL.BREADCRUMB_ARIA' | translate" />
 
-      <!-- ── Barre d'actions : cycle de vie + export ───────────────────────── -->
-      <daf-section-card>
-        <div class="flex flex-wrap items-center gap-2 p-6">
-          @if (canSubmit()) {
-            <daf-button
-              [options]="{ variant: 'teal', size: 'sm', iconStart: 'send', loading: actionSaving(), disabled: actionSaving(),
-                           label: ('REPORTING.DETAIL.ACTIONS.SUBMIT' | translate) }"
-              (onClick)="submit()" />
-          }
-          @if (canEndorse()) {
-            <daf-button
-              [options]="{ variant: 'teal', size: 'sm', iconStart: 'verified', loading: actionSaving(), disabled: actionSaving(),
-                           label: ('REPORTING.DETAIL.ACTIONS.ENDORSE' | translate) }"
-              (onClick)="endorse()" />
-          }
-          @if (canAccept()) {
-            <daf-button
-              [options]="{ variant: 'teal', size: 'sm', iconStart: 'check_circle', loading: actionSaving(), disabled: actionSaving(),
-                           label: ('REPORTING.DETAIL.ACTIONS.ACCEPT' | translate) }"
-              (onClick)="accept()" />
-          }
-          @if (canRequestAmendment()) {
-            <daf-button
-              [options]="{ variant: 'secondary', size: 'sm', iconStart: 'undo', disabled: actionSaving(),
-                           label: ('REPORTING.DETAIL.ACTIONS.REQUEST_AMENDMENT' | translate) }"
-              (onClick)="openRequestAmendmentModal()" />
-          }
-          @if (canReopen()) {
-            <daf-button
-              [options]="{ variant: 'secondary', size: 'sm', iconStart: 'lock_open', disabled: actionSaving(),
-                           label: ('REPORTING.DETAIL.ACTIONS.REOPEN' | translate) }"
-              (onClick)="openReopenModal()" />
-          }
+          <aside class="dp" [attr.aria-label]="'REPORTING.DETAIL.PANEL.ARIA' | translate">
 
-          <span class="grow"></span>
+            <!-- ── Carte 1 : Détails ──────────────────────────────────────── -->
+            <daf-section-card>
+            <div class="dp-card">
 
-          <daf-button
-            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'description', disabled: exportingXlsx(),
-                         label: (exportingXlsx() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_XLSX' : 'REPORTING.DETAIL.ACTIONS.EXPORT_XLSX') | translate }"
-            (onClick)="exportXlsx()" />
-          <daf-button
-            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'picture_as_pdf', disabled: exportingPdf(),
-                         label: (exportingPdf() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_PDF' : 'REPORTING.DETAIL.ACTIONS.EXPORT_PDF') | translate }"
-            (onClick)="exportPdf()" />
-          <!-- Nouveau : classeur complet 7 onglets, keyed par PlPeriod.id -- distinct de l'export
-               technique 1-onglet ci-dessus (keyed par PlReport.id), libellé volontairement différent. -->
-          <daf-button
-            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'table_chart', disabled: isExportingWorkbook(),
-                         label: (isExportingWorkbook() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_WORKBOOK' : 'REPORTING.DETAIL.ACTIONS.EXPORT_WORKBOOK') | translate }"
-            (onClick)="downloadWorkbook()" />
-        </div>
-      </daf-section-card>
+              <section class="dp-block" aria-labelledby="dp-h-report">
+                <h3 class="dp-label" id="dp-h-report">{{ 'REPORTING.DETAIL.PANEL.REPORT' | translate }}</h3>
+                <dl class="dp-rows">
+                  @for (row of reportRows(); track row.label; let last = $last) {
+                    <div class="dp-row" [class.dp-row--last]="last">
+                      <dt class="dp-row__key">{{ row.label }}</dt>
+                      <dd class="dp-row__val">
+                        @if (row.ok !== undefined) {
+                          <span class="dp-flag" [class.dp-flag--ok]="row.ok">
+                            <span class="dp-flag__dot" aria-hidden="true"></span>{{ row.value }}
+                          </span>
+                        } @else {
+                          {{ row.value }}
+                        }
+                      </dd>
+                    </div>
+                  }
+                </dl>
+              </section>
 
-      <!-- ── Récapitulatif : 13 lignes + total EBITDA ──────────────────────── -->
-      <daf-section-card>
-        <div class="flex flex-col gap-4 p-6">
-          <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.RECAP.TITLE' | translate }}</h2>
+              <div class="dp-rule dp-rule--major"></div>
 
-          <daf-data-table
-            [columns]="recapColumns()"
-            [rows]="recapRows()"
-            [config]="recapConfig()">
-          </daf-data-table>
-
-          <div class="flex flex-col gap-2 rounded-xl bg-surface-container px-6 py-4">
-            <div class="flex flex-wrap items-baseline justify-between gap-4">
-              <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.WATERFALL.GROSS_REVENUE_1' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">{{ grossRevenue1Display() }}</span>
-            </div>
-            <div class="flex flex-wrap items-baseline justify-between gap-4">
-              <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.WATERFALL.GROSS_REVENUE_2' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">{{ grossRevenue2Display() }}</span>
-            </div>
-            <div class="flex flex-wrap items-baseline justify-between gap-4">
-              <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.WATERFALL.NET_REVENUE' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">{{ netRevenueDisplay() }}</span>
-            </div>
-            <div class="flex flex-wrap items-baseline justify-between gap-4 border-t border-outline-variant/30 pt-2">
-              <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                {{ 'REPORTING.TABLE.EBITDA' | translate }}
-              </span>
-              <span class="text-headline-md font-extrabold text-primary">{{ ebitdaDisplay() }}</span>
-            </div>
-            <div class="flex flex-wrap items-baseline justify-between gap-4">
-              <span class="text-body-sm text-on-surface-variant">{{ 'REPORTING.WATERFALL.EBITDA_PCT' | translate }}</span>
-              <span class="text-body-md font-semibold text-on-surface">{{ ebitdaPctDisplay() }}</span>
-            </div>
-          </div>
-        </div>
-      </daf-section-card>
-
-      <!-- ── Commentaires de variance (par ligne) ──────────────────────────── -->
-      <daf-section-card>
-        <div class="flex flex-col gap-5 p-6">
-          <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.COMMENTARY.TITLE' | translate }}</h2>
-
-          @for (vm of lineCommentaryVms(); track vm.line.id) {
-            <div class="flex flex-col gap-2 border-t border-outline-variant/30 pt-4 first:border-t-0 first:pt-0">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-body-md font-semibold text-on-surface">{{ vm.line.catalogueLineLabelFr }}</span>
-                @if (vm.commentary) {
-                  <daf-badge [label]="statusBadge(vm.commentary.status).label" [options]="statusBadge(vm.commentary.status).options" />
+              <section class="dp-block" aria-labelledby="dp-h-workflow">
+                <h3 class="dp-label" id="dp-h-workflow">{{ 'REPORTING.DETAIL.PANEL.WORKFLOW' | translate }}</h3>
+                <dl class="dp-rows">
+                  @for (row of workflowRows(); track row.label; let last = $last) {
+                    <div class="dp-row" [class.dp-row--last]="last">
+                      <dt class="dp-row__key">{{ row.label }}</dt>
+                      <dd class="dp-row__val">
+                        <span class="dp-flag" [class.dp-flag--ok]="row.ok">
+                          <span class="dp-flag__dot" aria-hidden="true"></span>{{ row.value }}
+                        </span>
+                      </dd>
+                    </div>
+                  }
+                </dl>
+                @if (reopenNote(); as note) {
+                  <p class="text-body-sm text-on-surface-variant">
+                    <span class="font-semibold">{{ 'REPORTING.DETAIL.PANEL.REOPEN_NOTE' | translate }}</span> {{ note }}
+                  </p>
                 }
-              </div>
+              </section>
 
-              @if (vm.commentary; as c) {
-                <daf-form-field
-                  [options]="commentaryFieldOptions(c)"
-                  [value]="draftFor(c)"
-                  (valueChange)="onDraftChange(c, $event)" />
-                <div>
-                  @if (canManageCommentary()) {
-                    <daf-button
-                      [options]="{ variant: 'secondary', size: 'sm', iconStart: 'save',
-                                   loading: isSavingCommentary(c), disabled: isSavingCommentary(c) || !isDirty(c),
-                                   label: ('REPORTING.DETAIL.COMMENTARY.SAVE' | translate) }"
-                      (onClick)="saveCommentary(c)" />
+            </div>
+            </daf-section-card>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 CENTRE D'ACTIONS — trois niveaux, comme la fiche affaire :
+                 1. l'étape suivante du workflow, en grand (une seule s'applique) ;
+                 2. amendement / réouverture, petits boutons ;
+                 3. les exports, en rangée de pied discrète sous un filet.
+                 ══════════════════════════════════════════════════════════════ -->
+            <daf-section-card>
+            <div class="flex flex-col gap-3 bg-surface-container p-6">
+
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                {{ 'REPORTING.DETAIL.ACTIONS.QUICK_TITLE' | translate }}
+              </p>
+
+              @if (primaryAction(); as action) {
+                <daf-button [options]="action.options" (onClick)="action.run()" />
+              } @else {
+                <p class="text-body-sm text-on-surface-variant">
+                  {{ 'REPORTING.DETAIL.ACTIONS.NOTHING_TO_DO' | translate }}
+                </p>
+              }
+
+              @if (canRequestAmendment() || canReopen()) {
+                <div class="grid grid-cols-2 gap-2">
+                  @if (canRequestAmendment()) {
+                    <daf-button [options]="amendmentButtonOptions()" (onClick)="openRequestAmendmentModal()" />
+                  }
+                  @if (canReopen()) {
+                    <daf-button [options]="reopenButtonOptions()" (onClick)="openReopenModal()" />
                   }
                 </div>
-              } @else {
-                <p class="text-body-sm italic text-on-surface-variant">
-                  {{ 'REPORTING.DETAIL.COMMENTARY.NONE_YET' | translate }}
+              }
+
+              <!-- Exports : ce qu'on cherche quand on le cherche. Libellés courts, le
+                   libellé complet en infobulle (`title`). `py-2` : cible tactile ≥ 40 px. -->
+              <div class="mt-1 flex flex-wrap items-center gap-1
+                          border-t border-outline-variant/30 pt-3">
+                <button type="button"
+                        class="flex items-center gap-1.5 rounded-lg px-2 py-2 text-body-sm font-semibold
+                               text-on-surface-variant transition-colors hover:bg-surface-container-high
+                               hover:text-on-surface disabled:opacity-40 disabled:cursor-not-allowed
+                               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        [disabled]="exportingXlsx()"
+                        [title]="'REPORTING.DETAIL.ACTIONS.EXPORT_XLSX' | translate"
+                        (click)="exportXlsx()">
+                  <span class="material-symbols-outlined text-base">description</span>
+                  {{ (exportingXlsx() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_XLSX' : 'REPORTING.DETAIL.ACTIONS.EXPORT_XLSX_SHORT') | translate }}
+                </button>
+                <button type="button"
+                        class="flex items-center gap-1.5 rounded-lg px-2 py-2 text-body-sm font-semibold
+                               text-on-surface-variant transition-colors hover:bg-surface-container-high
+                               hover:text-on-surface disabled:opacity-40 disabled:cursor-not-allowed
+                               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        [disabled]="exportingPdf()"
+                        [title]="'REPORTING.DETAIL.ACTIONS.EXPORT_PDF' | translate"
+                        (click)="exportPdf()">
+                  <span class="material-symbols-outlined text-base">picture_as_pdf</span>
+                  {{ (exportingPdf() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_PDF' : 'REPORTING.DETAIL.ACTIONS.EXPORT_PDF_SHORT') | translate }}
+                </button>
+                <!-- Classeur complet 7 onglets, keyed par PlPeriod.id -- distinct de l'export
+                     technique 1-onglet ci-dessus (keyed par PlReport.id). -->
+                <button type="button"
+                        class="flex items-center gap-1.5 rounded-lg px-2 py-2 text-body-sm font-semibold
+                               text-on-surface-variant transition-colors hover:bg-surface-container-high
+                               hover:text-on-surface disabled:opacity-40 disabled:cursor-not-allowed
+                               focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        [disabled]="isExportingWorkbook() || !period()"
+                        [title]="'REPORTING.DETAIL.ACTIONS.EXPORT_WORKBOOK' | translate"
+                        (click)="downloadWorkbook()">
+                  <span class="material-symbols-outlined text-base">table_chart</span>
+                  {{ (isExportingWorkbook() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_WORKBOOK' : 'REPORTING.DETAIL.ACTIONS.EXPORT_WORKBOOK_SHORT') | translate }}
+                </button>
+              </div>
+            </div>
+            </daf-section-card>
+          </aside>
+
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           COLONNE DROITE — les 4 indicateurs, puis les onglets.
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="detail-main">
+
+        <!-- Amendement demandé : le dire en haut de la colonne de contenu, c'est ce qui
+             explique que le rapport soit revenu en préparation. -->
+        @if (amendmentRequested()) {
+          <div class="flex items-start gap-3 rounded-xl bg-warning/10 px-5 py-4">
+            <span class="material-symbols-outlined text-headline-lg text-warning">undo</span>
+            <div class="flex flex-col gap-1">
+              <p class="text-label-caps font-extrabold uppercase tracking-widest text-warning">
+                {{ 'REPORTING.REPORT_STATUS.AMENDMENT_REQUESTED' | translate }}
+              </p>
+              <p class="text-body-sm text-on-surface-variant">
+                {{ 'REPORTING.DETAIL.AMENDMENT_MSG' | translate }}
+              </p>
+            </div>
+          </div>
+        }
+
+        <div class="kpi-row">
+          @for (k of kpiTiles(); track k.label) {
+            <daf-metric-card class="kpi-cell"
+              [label]="k.label"
+              [value]="k.value"
+              [delta]="k.delta"
+              [options]="k.options" />
+          }
+        </div>
+
+        <daf-tabs #tabsRef
+          variant="underline"
+          [tabs]="tabs()"
+          [(active)]="activeTab"
+          [tabsLabel]="'REPORTING.DETAIL.TABS.ARIA' | translate"
+          idPrefix="report-detail" />
+
+        <div role="tabpanel"
+             [id]="tabsRef.panelId(activeTab())"
+             [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
+             class="flex flex-col gap-6">
+
+          <!-- ══ Vue générale ══════════════════════════════════════════════ -->
+          @if (activeTab() === 'overview') {
+            <section class="tile-row">
+
+              <!-- Du CA à l'EBITDA : chaque palier, tel que le backend l'a figé à la clôture. -->
+              <daf-section-card class="tile-cell" [options]="{ fullHeight: true }">
+                <div class="flex flex-col gap-4 p-5" style="height:100%; width:100%">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'REPORTING.DETAIL.OVERVIEW.WATERFALL_TITLE' | translate }}
+                    </p>
+                    <span class="material-symbols-outlined text-headline-lg text-tertiary">waterfall_chart</span>
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    <div class="wf-row">
+                      <span>{{ 'REPORTING.WATERFALL.GROSS_REVENUE_1' | translate }}</span>
+                      <span class="wf-row__val">{{ grossRevenue1Display() }}</span>
+                    </div>
+                    <div class="wf-row">
+                      <span>{{ 'REPORTING.WATERFALL.GROSS_REVENUE_2' | translate }}</span>
+                      <span class="wf-row__val">{{ grossRevenue2Display() }}</span>
+                    </div>
+                    <div class="wf-row">
+                      <span>{{ 'REPORTING.WATERFALL.NET_REVENUE' | translate }}</span>
+                      <span class="wf-row__val">{{ netRevenueDisplay() }}</span>
+                    </div>
+                    <div class="wf-row">
+                      <span>{{ 'REPORTING.DETAIL.OVERVIEW.OPERATING_COST' | translate }}</span>
+                      <span class="wf-row__val">{{ costTotalDisplay() }}</span>
+                    </div>
+                    <div class="wf-row wf-row--total" [class.wf-row--neg]="ebitdaNegative()">
+                      <span>{{ 'REPORTING.TABLE.EBITDA' | translate }} · {{ ebitdaPctDisplay() }}</span>
+                      <span class="wf-row__val">{{ ebitdaDisplay() }}</span>
+                    </div>
+                  </div>
+                </div>
+              </daf-section-card>
+
+              <!-- Avancement du workflow F.08. -->
+              <daf-section-card class="tile-cell" [options]="{ fullHeight: true }">
+                <div class="flex flex-col gap-4 p-5" style="height:100%; width:100%">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'REPORTING.DETAIL.OVERVIEW.WORKFLOW_TITLE' | translate }}
+                    </p>
+                    <span class="material-symbols-outlined text-headline-lg text-tertiary">route</span>
+                  </div>
+                  <ol class="flex flex-col">
+                    @for (step of workflowSteps(); track step.label) {
+                      <li class="step"
+                          [class.step--done]="step.state === 'done'"
+                          [class.step--current]="step.state === 'current'"
+                          [class.step--todo]="step.state === 'todo'">
+                        <span class="step__dot" aria-hidden="true"></span>
+                        <div class="flex flex-col">
+                          <span class="step__label">{{ step.label }}</span>
+                          @if (step.date) {
+                            <span class="step__date">{{ step.date }}</span>
+                          }
+                        </div>
+                      </li>
+                    }
+                  </ol>
+                </div>
+              </daf-section-card>
+
+              <!-- Commentaires rédigés / générés. Un clic mène à l'onglet. -->
+              <daf-section-card class="tile-cell" [options]="{ fullHeight: true }">
+                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'REPORTING.DETAIL.OVERVIEW.COMMENTARY_TITLE' | translate }}
+                    </p>
+                    <span class="material-symbols-outlined text-headline-lg text-tertiary">edit_note</span>
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    <div class="flex items-end justify-between gap-2">
+                      <span class="text-headline-xl font-extrabold leading-none text-on-surface">
+                        {{ commentaryPct() }}%
+                      </span>
+                      <span class="text-label-caps font-bold text-on-surface-variant">
+                        {{ 'REPORTING.DETAIL.OVERVIEW.COMMENTARY_COUNT' | translate:
+                           { written: commentaryWritten(), total: commentaries().length } }}
+                      </span>
+                    </div>
+                    <daf-progress-bar [value]="commentaryPct()" [options]="commentaryBarOptions()" />
+                  </div>
+                  <daf-button
+                    [options]="{ variant: 'ghost', size: 'sm', iconEnd: 'arrow_forward',
+                                 label: ('REPORTING.DETAIL.OVERVIEW.COMMENTARY_GO' | translate) }"
+                    (onClick)="activeTab.set('commentaires')" />
+                </div>
+              </daf-section-card>
+            </section>
+
+            <!-- Répartition des coûts opérationnels, pleine largeur. -->
+            <daf-section-card>
+              <div class="flex flex-col gap-5 p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">
+                      {{ 'REPORTING.DETAIL.OVERVIEW.COST_TITLE' | translate }}
+                    </p>
+                    <p class="mt-1 text-body-sm text-on-surface-variant">
+                      {{ 'REPORTING.DETAIL.OVERVIEW.COST_SUB' | translate }}
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ 'REPORTING.DETAIL.OVERVIEW.OPERATING_COST' | translate }}
+                    </p>
+                    <p class="text-headline-md font-extrabold text-on-surface">{{ costTotalDisplay() }}</p>
+                  </div>
+                </div>
+                <daf-bar-chart [bars]="hasCosts() ? costBars() : []" [options]="costChartOptions()" />
+              </div>
+            </daf-section-card>
+          }
+
+          <!-- ══ Récap P&L : 13 lignes du catalogue, réel / budget / écart ══ -->
+          @if (activeTab() === 'recap') {
+            <!-- Même barre que l'onglet TS de la fiche affaire : recherche + panneau de
+                 filtres, le tout côté client (les lignes sont déjà chargées). -->
+            <daf-search-toolbar
+              [placeholder]="'REPORTING.DETAIL.TOOLBAR.SEARCH_RECAP' | translate"
+              [value]="recapSearch()"
+              [debounce]="300"
+              (valueChange)="recapSearch.set($event)"
+              [filterFields]="recapFilterFields()"
+              [filterConfig]="recapFilterConfig()"
+              (filterApply)="onRecapFilterApply($event)"
+              (filterReset)="onRecapFilterReset()"
+              [table]="recapTable" />
+
+            <daf-data-table #recapTable
+              [columns]="recapColumns()"
+              [rows]="recapRows()"
+              [config]="recapConfig()">
+            </daf-data-table>
+          }
+
+          <!-- ══ Commentaires : deux parties en sous-onglets (`?comment=`) — par ligne,
+               puis les 4 sections transversales ══ -->
+          @if (activeTab() === 'commentaires') {
+            <div class="self-start w-fit">
+              <daf-tabs #commentaryTabsRef
+                variant="pill"
+                [tabs]="commentaryTabs()"
+                [(active)]="commentaryTab"
+                [tabsLabel]="'REPORTING.DETAIL.COMMENTARY.TABS_ARIA' | translate"
+                idPrefix="report-commentary" />
+            </div>
+
+            <div role="tabpanel"
+                 [id]="commentaryTabsRef.panelId(commentaryTab())"
+                 [attr.aria-labelledby]="commentaryTabsRef.tabId(commentaryTab())">
+            @if (commentaryTab() === 'lines') {
+            <!-- Une carte accordéon par ligne du catalogue, même rendu neutre que la
+                 synthèse transversale. Une ligne sans commentaire généré (visible seulement
+                 avec « Afficher toutes les lignes ») a une carte désactivée. -->
+            <div class="flex flex-col gap-3">
+              @if (hiddenLineCount() > 0) {
+                <div class="flex justify-end">
+                  <daf-button
+                    [options]="{ variant: 'ghost', size: 'sm',
+                                 iconStart: showAllLines() ? 'filter_list_off' : 'filter_list',
+                                 label: (showAllLines()
+                                   ? ('REPORTING.DETAIL.COMMENTARY.ONLY_COMMENTED' | translate)
+                                   : ('REPORTING.DETAIL.COMMENTARY.SHOW_ALL' | translate: { n: hiddenLineCount() })) }"
+                    (onClick)="showAllLines.set(!showAllLines())" />
+                </div>
+              }
+
+              @for (vm of visibleLineCommentaryVms(); track vm.line.id) {
+                <daf-accordion-card
+                  [options]="lineAccordionOptions(vm)"
+                  [open]="isLineOpen(vm)"
+                  (openChange)="onLineOpenChange(vm, $event)">
+                  @if (vm.commentary; as c) {
+                    <div class="flex flex-col gap-3 p-5">
+                      <daf-form-field
+                        [options]="commentaryFieldOptions(c)"
+                        [value]="draftFor(c)"
+                        (valueChange)="onDraftChange(c, $event)" />
+                      @if (canManageCommentary()) {
+                        <div class="flex justify-end">
+                          <daf-button
+                            [options]="{ variant: 'secondary', size: 'sm', iconStart: 'save',
+                                         loading: isSavingCommentary(c), disabled: isSavingCommentary(c) || !isDirty(c),
+                                         label: ('REPORTING.DETAIL.COMMENTARY.SAVE' | translate) }"
+                            (onClick)="saveCommentary(c)" />
+                        </div>
+                      }
+                    </div>
+                  }
+                </daf-accordion-card>
+              } @empty {
+                <p class="text-body-sm text-on-surface-variant">
+                  {{ 'REPORTING.DETAIL.COMMENTARY.NO_LINE_COMMENTARY' | translate }}
                 </p>
               }
             </div>
-          }
-        </div>
-      </daf-section-card>
-
-      <!-- ── 4 sections transversales (Revenue/Cost/EBITDA/Other) ──────────── -->
-      <daf-section-card>
-        <div class="flex flex-col gap-5 p-6">
-          <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.SECTION.TITLE' | translate }}</h2>
-
-          @for (c of sectionCommentaries(); track c.id) {
-            <div class="flex flex-col gap-2 border-t border-outline-variant/30 pt-4 first:border-t-0 first:pt-0">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-body-md font-semibold text-on-surface">{{ sectionLabel(c.sectionType) }}</span>
-                <daf-badge [label]="statusBadge(c.status).label" [options]="statusBadge(c.status).options" />
-              </div>
-
-              <daf-form-field
-                [options]="commentaryFieldOptions(c)"
-                [value]="draftFor(c)"
-                (valueChange)="onDraftChange(c, $event)" />
-              <div>
-                @if (canManageCommentary()) {
-                  <daf-button
-                    [options]="{ variant: 'secondary', size: 'sm', iconStart: 'save',
-                                 loading: isSavingCommentary(c), disabled: isSavingCommentary(c) || !isDirty(c),
-                                 label: ('REPORTING.DETAIL.COMMENTARY.SAVE' | translate) }"
-                    (onClick)="saveCommentary(c)" />
-                }
-              </div>
+            } @else {
+            <!-- Une carte accordéon par section (daf-accordion-card, comme l'admin des
+                 rôles) : fermée, elle montre déjà le début du texte et son statut ; seule
+                 la première section à rédiger s'ouvre au chargement. -->
+            <div class="flex flex-col gap-3">
+              @for (c of sectionCommentaries(); track c.id) {
+                <daf-accordion-card
+                  [options]="sectionAccordionOptions(c)"
+                  [open]="isSectionOpen(c)"
+                  (openChange)="onSectionOpenChange(c, $event)">
+                  <div class="flex flex-col gap-3 p-5">
+                    <daf-form-field
+                      [options]="commentaryFieldOptions(c)"
+                      [value]="draftFor(c)"
+                      (valueChange)="onDraftChange(c, $event)" />
+                    @if (canManageCommentary()) {
+                      <div class="flex justify-end">
+                        <daf-button
+                          [options]="{ variant: 'secondary', size: 'sm', iconStart: 'save',
+                                       loading: isSavingCommentary(c), disabled: isSavingCommentary(c) || !isDirty(c),
+                                       label: ('REPORTING.DETAIL.COMMENTARY.SAVE' | translate) }"
+                          (onClick)="saveCommentary(c)" />
+                      </div>
+                    }
+                  </div>
+                </daf-accordion-card>
+              } @empty {
+                <p class="text-body-sm text-on-surface-variant">
+                  {{ 'REPORTING.DETAIL.SECTION.EMPTY' | translate }}
+                </p>
+              }
+            </div>
+            }
             </div>
           }
-        </div>
-      </daf-section-card>
 
-      <!-- ── Créances clients (Receivables) -- chargement paresseux au premier clic ───────── -->
-      <daf-section-card>
-        <div class="flex flex-col gap-4 p-6">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.CASH.RECEIVABLES.TITLE' | translate }}</h2>
-            <daf-button
-              [options]="{ variant: 'secondary', size: 'sm', iconStart: showReceivables() ? 'expand_less' : 'expand_more',
-                           loading: isLoadingReceivables(), disabled: isLoadingReceivables(),
-                           label: (showReceivables() ? 'REPORTING.DETAIL.CASH.RECEIVABLES.HIDE' : 'REPORTING.DETAIL.CASH.RECEIVABLES.SHOW') | translate }"
-              (onClick)="toggleReceivables()" />
-          </div>
-          @if (showReceivables()) {
-            <daf-data-table
-              [columns]="receivablesColumns()"
-              [rows]="receivablesRows()"
-              [config]="receivablesConfig()">
-            </daf-data-table>
+          <!-- ══ Trésorerie : deux parties en sous-onglets (`?cash=`), chacune chargée à
+               sa première ouverture ══ -->
+          @if (activeTab() === 'tresorerie') {
+            <div class="self-start w-fit">
+              <daf-tabs #cashTabsRef
+                variant="pill"
+                [tabs]="cashTabs()"
+                [(active)]="cashTab"
+                [tabsLabel]="'REPORTING.DETAIL.CASH.TABS_ARIA' | translate"
+                idPrefix="report-cash" />
+            </div>
+
+            <div role="tabpanel"
+                 [id]="cashTabsRef.panelId(cashTab())"
+                 [attr.aria-labelledby]="cashTabsRef.tabId(cashTab())"
+                 class="flex flex-col gap-6">
+              @if (cashTab() === 'receivables') {
+                <daf-search-toolbar
+                  [placeholder]="'REPORTING.DETAIL.TOOLBAR.SEARCH_RECEIVABLES' | translate"
+                  [value]="receivablesSearch()"
+                  [debounce]="300"
+                  (valueChange)="receivablesSearch.set($event)"
+                  [filterFields]="receivablesFilterFields()"
+                  [filterConfig]="receivablesFilterConfig()"
+                  (filterApply)="onReceivablesFilterApply($event)"
+                  (filterReset)="onReceivablesFilterReset()"
+                  [table]="receivablesTable" />
+
+                <daf-data-table #receivablesTable
+                  [columns]="receivablesColumns()"
+                  [rows]="receivablesRows()"
+                  [config]="receivablesConfig()">
+                </daf-data-table>
+              } @else {
+                <daf-search-toolbar
+                  [placeholder]="'REPORTING.DETAIL.TOOLBAR.SEARCH_MISSING_CASH' | translate"
+                  [value]="missingCashSearch()"
+                  [debounce]="300"
+                  (valueChange)="missingCashSearch.set($event)"
+                  [filterFields]="missingCashFilterFields()"
+                  [filterConfig]="missingCashFilterConfig()"
+                  (filterApply)="onMissingCashFilterApply($event)"
+                  (filterReset)="onMissingCashFilterReset()"
+                  [table]="missingCashTable" />
+
+                <daf-data-table #missingCashTable
+                  [columns]="missingCashColumns()"
+                  [rows]="missingCashRows()"
+                  [config]="missingCashConfig()">
+                  <ng-template dafCell="missingCashTotal" let-row>
+                    <span class="font-extrabold text-primary">{{ row['missingCashTotal'] }}</span>
+                  </ng-template>
+                </daf-data-table>
+              }
+            </div>
           }
-        </div>
-      </daf-section-card>
 
-      <!-- ── Cash manquant (Missing Cash) -- même pattern de chargement paresseux ─────────── -->
-      <daf-section-card>
-        <div class="flex flex-col gap-4 p-6">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-title-md font-bold text-on-surface">{{ 'REPORTING.DETAIL.CASH.MISSING_CASH.TITLE' | translate }}</h2>
-            <daf-button
-              [options]="{ variant: 'secondary', size: 'sm', iconStart: showMissingCash() ? 'expand_less' : 'expand_more',
-                           loading: isLoadingMissingCash(), disabled: isLoadingMissingCash(),
-                           label: (showMissingCash() ? 'REPORTING.DETAIL.CASH.MISSING_CASH.HIDE' : 'REPORTING.DETAIL.CASH.MISSING_CASH.SHOW') | translate }"
-              (onClick)="toggleMissingCash()" />
-          </div>
-          @if (showMissingCash()) {
-            <daf-data-table
-              [columns]="missingCashColumns()"
-              [rows]="missingCashRows()"
-              [config]="missingCashConfig()">
-              <ng-template dafCell="missingCashTotal" let-row>
-                <span class="font-extrabold text-primary">{{ row['missingCashTotal'] }}</span>
-              </ng-template>
-            </daf-data-table>
-          }
-        </div>
-      </daf-section-card>
-
+        </div><!-- /tabpanel -->
+      </div>
     </div>
   }
 

@@ -190,6 +190,10 @@ export class PaymentModalComponent {
       body:  this.tpl,
       size:  'md',
       closeOnBackdrop: false,
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
     });
   }
 

@@ -1331,6 +1331,13 @@
         "TARGET_YEAR": "Objectif annuel",
         "TARGET_BUDGET": "Budget",
         "TARGET_BUDGET_TS": "Budget + TS intégrés",
+        "STAT_INVOICES": "Factures",
+        "STAT_PAYMENTS": "Paiements",
+        "AVG_MONTH": "Moyenne / mois",
+        "AVG_QUARTER": "Moyenne / trimestre",
+        "AVG_YEAR": "Moyenne / an",
+        "STAT_TARGET": "Objectif atteint",
+        "STAT_BUDGET": "Part du budget",
         "QUARTER_SHORT": "T{{q}} {{yy}}",
         "QUARTER_LONG": "T{{q}} {{year}}",
         "EMPTY_RANGE": "Aucune période de l'affaire dans cette plage.",
@@ -1366,6 +1373,7 @@
         "BILLING_MODE": "Mode de facturation",
         "CURRENCY": "Devise",
         "PERIOD": "Période",
+        "START_DATE": "Date de début",
         "ENGAGEMENT": "Type d'engagement",
         "BUDGET": "Budget",
         "CONTRACT_AMOUNT": "Montant du contrat",
@@ -2189,7 +2197,16 @@
           "item": "Élément",
           "current": "Actuel",
           "load_error": "Erreur lors du chargement.",
-          "action_error": "Erreur lors de l'action."
+          "action_error": "Erreur lors de l'action.",
+          "affaire": "Affaire",
+          "client": "Client",
+          "motif_retour": "Motif du retour",
+          "see_affaire": "Voir l'affaire",
+          "tab_entries": "Entrées",
+          "kpi_tva": "TVA {{rate}} % · {{amount}}",
+          "kpi_entries": "{{count}} entrée(s)",
+          "kpi_cumul": "Cumul de l'affaire",
+          "kpi_budget_pct": "{{pct}} % du budget"
         },
         "filter_amount_ht_min": "Montant HT min",
         "filter_amount_ht_max": "Montant HT max",
@@ -3607,9 +3624,38 @@
     "TABLE": {
       "PERIOD": "Période",
       "STATUS": "Statut",
+      "PROGRESS": "Avancement",
+      "NET_REVENUE": "CA net",
       "EBITDA": "EBITDA",
       "EBITDA_PCT": "EBITDA %",
       "REPORT": "Rapport"
+    },
+    "KPI": {
+      "NET_REVENUE": "CA net {{year}}",
+      "NET_REVENUE_HELP": "Somme du chiffre d'affaires net des périodes clôturées de l'année. Les mois encore ouverts ne sont pas comptés : leurs montants ne sont figés qu'à la clôture.",
+      "EBITDA": "EBITDA {{year}}",
+      "EBITDA_HELP": "Somme de l'EBITDA des périodes clôturées de l'année (CA brut 2 moins coûts opérationnels).",
+      "MARGIN": "Marge EBITDA {{year}}",
+      "MARGIN_HELP": "EBITDA cumulé divisé par le CA brut 2 cumulé — même base que le % EBITDA de chaque période. La variation compare les deux derniers mois clôturés.",
+      "MARGIN_DELTA": "{{delta}} pt vs mois préc.",
+      "PENDING": "Rapports à traiter",
+      "PENDING_HELP": "Rapports en cours de workflow pour ce pays : soumis (à endosser par le DP), endossés (à accepter par le Groupe) ou renvoyés pour amendement.",
+      "CLOSED_COUNT": "{{n}} période(s) clôturée(s)",
+      "TO_ENDORSE": "{{n}} à endosser",
+      "TO_ACCEPT": "{{n}} à accepter",
+      "TO_AMEND": "{{n}} à amender",
+      "NOTHING_PENDING": "Rien en attente"
+    },
+    "FILTER": {
+      "SEARCH_PH": "Rechercher une période…",
+      "FILTERS": "Filtres",
+      "PANEL_TITLE": "Filtrer les périodes",
+      "YEAR": "Année",
+      "PERIOD_STATUS": "Statut de la période",
+      "REPORT_STATUS": "Statut du rapport",
+      "ALL": "Tous",
+      "APPLY": "Appliquer",
+      "RESET": "Réinitialiser"
     },
     "PERIOD_STATUS": {
       "OPEN": "Ouverte",
@@ -3626,6 +3672,19 @@
       "SUPERSEDED": "Remplacé"
     },
     "NO_REPORT": "Aucun rapport",
+    "STEPS": {
+      "ARIA": "Avancement de la période",
+      "OPEN": "Ouverte",
+      "CLOSED": "Clôturée",
+      "REPORT": "Rapport",
+      "ACCEPTED": "Accepté"
+    },
+    "CLOSE_PERIOD_FULL": "Clôturer la période",
+    "NEW_PERIOD_HELP": "Une seule période par pays et par mois.",
+    "ACTIONS": "Actions",
+    "VIEW_REPORT": "Voir le rapport",
+    "VIEW_GRID": "Vue cartes",
+    "VIEW_LIST": "Vue tableau",
     "GENERATE": "Générer le rapport",
     "GENERATE_ERROR": "Erreur lors de la génération du rapport.",
     "NEW_PERIOD": "Nouvelle période",
@@ -3698,6 +3757,74 @@
       "CANCEL": "Annuler",
       "CONFIRM": "Confirmer",
       "KPI_TITLE": "Indicateurs clés",
+      "VERSION": "Version {{n}}",
+      "AMENDMENT_MSG": "Le rapport a été renvoyé en préparation : corrigez-le puis soumettez-le à nouveau.",
+      "TOOLBAR": {
+        "SEARCH_RECAP": "Rechercher une ligne…",
+        "SEARCH_RECEIVABLES": "Rechercher une facture ou un client…",
+        "SEARCH_MISSING_CASH": "Rechercher un projet…",
+        "NO_MATCH": "Aucune ligne ne correspond au filtre.",
+        "VARIANCE": "Écart",
+        "VARIANCE_OVER": "Écart positif",
+        "VARIANCE_UNDER": "Écart négatif",
+        "NO_BUDGET": "Sans budget",
+        "AMOUNT_MIN": "Montant min",
+        "AMOUNT_MAX": "Montant max",
+        "AMOUNT_PH": "Ex. 1000",
+        "AGEING": "Ancienneté",
+        "DUE_PERIOD": "Date d’échéance",
+        "MISSING_MIN": "Cash manquant min",
+        "MISSING_MAX": "Cash manquant max",
+        "WIP_ONLY": "Avec WIP non facturé",
+        "GT_1Y_ONLY": "Avec créances de plus d’un an"
+      },
+      "PANEL": {
+        "ARIA": "Informations du rapport P&L",
+        "REPORT": "Rapport",
+        "WORKFLOW": "Workflow",
+        "PAYS": "Pays",
+        "PERIOD": "Période",
+        "PERIOD_STATUS": "Statut de la période",
+        "VERSION": "Version",
+        "CREATED": "Créé le",
+        "PENDING": "En attente",
+        "SUBMITTED": "Soumis le",
+        "ENDORSED": "Endossé (DP) le",
+        "ACCEPTED": "Accepté (Groupe) le",
+        "REOPEN_NOTE": "Réouverture :"
+      },
+      "TABS": {
+        "ARIA": "Sections du rapport P&L",
+        "OVERVIEW": "Vue générale",
+        "RECAP": "Récap P&L",
+        "COMMENTARIES": "Commentaires",
+        "TREASURY": "Trésorerie"
+      },
+      "OVERVIEW": {
+        "WATERFALL_TITLE": "Du CA à l'EBITDA",
+        "OPERATING_COST": "Coûts opérationnels",
+        "WORKFLOW_TITLE": "Avancement",
+        "STEP": {
+          "DRAFT": "Brouillon",
+          "SUBMITTED": "Soumis",
+          "ENDORSED": "Endossé (DP)",
+          "ACCEPTED": "Accepté (Groupe)"
+        },
+        "COMMENTARY_TITLE": "Commentaires rédigés",
+        "COMMENTARY_COUNT": "{{written}} / {{total}}",
+        "COMMENTARY_GO": "Voir les commentaires",
+        "COST_TITLE": "Répartition des coûts",
+        "COST_SUB": "Coûts opérationnels de la période, figés à la clôture.",
+        "COST_EMPTY": "Aucun coût sur cette période.",
+        "COST": {
+          "SALARIES": "Salaires facturables",
+          "SUBCONSULTANTS": "Sous-traitants",
+          "OPEX": "Opex",
+          "SOFTWARE": "Logiciels et abonnements",
+          "INTERCOMPANY": "Intercompagnie",
+          "MARKETING": "Communication et marketing"
+        }
+      },
       "RECAP": {
         "TITLE": "Récapitulatif",
         "LINE": "Ligne du catalogue",
@@ -3710,6 +3837,11 @@
         "NONE_YET": "Aucun commentaire généré pour cette ligne pour l’instant.",
         "NARRATIVE_LABEL": "Commentaire",
         "SAVE": "Enregistrer",
+        "TABS_ARIA": "Parties des commentaires",
+        "NO_COMMENTARY": "Aucun commentaire",
+        "ONLY_COMMENTED": "Lignes commentées seulement",
+        "SHOW_ALL": "Afficher toutes les lignes (+{{n}})",
+        "NO_LINE_COMMENTARY": "Aucune ligne ne porte de commentaire pour l’instant.",
         "STATUS": {
           "DRAFT": "Brouillon",
           "UNDER_REVIEW": "En relecture"
@@ -3717,6 +3849,9 @@
       },
       "SECTION": {
         "TITLE": "Synthèse transversale",
+        "EMPTY": "Aucune synthèse transversale générée pour ce rapport.",
+        "TO_WRITE": "À rédiger",
+        "MODIFIED": "Modifié",
         "REVENUE": "Chiffre d’affaires",
         "COST": "Coûts",
         "EBITDA": "EBITDA",
@@ -3734,7 +3869,13 @@
         "EXPORTING_XLSX": "Export Excel en cours…",
         "EXPORTING_PDF": "Export PDF en cours…",
         "EXPORT_WORKBOOK": "Exporter le classeur complet (7 onglets)",
-        "EXPORTING_WORKBOOK": "Génération du classeur complet…"
+        "EXPORTING_WORKBOOK": "Génération du classeur complet…",
+        "QUICK_TITLE": "Actions rapides",
+        "NOTHING_TO_DO": "Aucune action du workflow ne vous revient à ce stade.",
+        "REQUEST_AMENDMENT_SHORT": "Amendement",
+        "EXPORT_XLSX_SHORT": "Excel",
+        "EXPORT_PDF_SHORT": "PDF",
+        "EXPORT_WORKBOOK_SHORT": "Classeur complet"
       },
       "REOPEN": {
         "METHOD_LABEL": "Méthode de réouverture",
@@ -3743,6 +3884,7 @@
         "RATIONALE_LABEL": "Justification"
       },
       "CASH": {
+        "TABS_ARIA": "Parties de la trésorerie",
         "RECEIVABLES": {
           "TITLE": "Créances clients",
           "SHOW": "Afficher les créances",
@@ -4515,11 +4657,25 @@
     },
     "ENTITY_CURRENCY": {
       "TITLE": "Devise par défaut des entités ARX",
+      "COL_ENTITY": "Entité",
+      "COL_ISO": "Code ISO",
+      "COL_CURRENCY": "Devise",
+      "MODAL_EDIT": "Modifier la devise — {{entity}}",
+      "MODAL_ADD": "Ajouter une entité",
+      "SECTION_ENTITY": "Entité",
+      "SECTION_CURRENCY": "Devise par défaut",
+      "CURRENT": "Devise actuelle :",
+      "NOT_FOUND": "Vous ne trouvez pas la devise ?",
+      "ADD_CURRENCY": "Ajouter une devise",
+      "FIELD_PAYS": "Pays",
+      "PAYS_PLACEHOLDER": "Choisir un pays",
+      "ERR_PAYS_REQUIRED": "Choisissez un pays.",
+      "ERR_REQUIRED": "Choisissez une devise.",
       "SELECT_PLACEHOLDER": "Choisir une devise",
       "EMPTY": "Aucune entité ARX trouvée.",
       "ERR_LOAD": "Impossible de charger les entités ARX.",
       "ERR_SAVE": "Impossible d'enregistrer la devise de cette entité.",
-      "ERR_NO_CURRENCIES": "Aucune devise configurée pour le pays de cette entité."
+      "ERR_NO_CURRENCIES": "Aucune devise active dans la liste Devise."
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Maquettes de documents",
@@ -4843,6 +4999,7 @@
       "ERROR_LOAD": "Impossible de charger les modèles d'email WIP.",
       "ERROR_SAVE": "Impossible d'enregistrer ce modèle.",
       "ERROR_DELETE": "Impossible de supprimer ce modèle.",
+      "ERROR_REQUIRED": "L'objet et le corps du message sont obligatoires.",
       "FIELD_MODE": "Mode de facturation",
       "FIELD_PAYS_ID": "Pays (ID)",
       "PAYS_ID_PLACEHOLDER": "Laisser vide pour un modèle global",

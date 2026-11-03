@@ -343,6 +343,10 @@ export class MissionApprovalQueueComponent implements OnInit {
     this.selected.set(item);
     const t = (k: string) => this.translate.instant(k);
     this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: item.title,
       subtitle: `${item.employee} · ${item.destination}`,
       icon: 'flight_takeoff',
@@ -359,6 +363,10 @@ export class MissionApprovalQueueComponent implements OnInit {
     this.modalError.set(null);
     const t = (k: string) => this.translate.instant(k);
     this.decisionRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       title: t('FACTURATION.MISSIONS.MODAL_TITLE'),
       icon: 'price_check',
       body: this.decisionTpl(),

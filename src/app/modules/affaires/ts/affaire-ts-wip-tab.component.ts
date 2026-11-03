@@ -1,6 +1,6 @@
 import {
   Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, Renderer2,
-  computed, effect, inject, signal, untracked, viewChild,
+  computed, inject, signal, untracked, viewChild,
 } from '@angular/core';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -16,6 +16,7 @@ import { BillingService, LineDetailDto } from '../billing/billing.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { WIP_TAUX_STATUT_BADGE } from '../../../shared/enum-labels';
 import { EmailPreviewModalComponent } from '../wip/email-preview-modal.component';
+import { DafModalComponent } from '../../../shared/daf-modal.component';
 import { ExportService } from '../../../core/export.service';
 import {
   TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort,
@@ -44,38 +45,14 @@ type TsFilterValues = Record<string, string | Date[] | null>;
     ButtonComponent, CardComponent, CheckboxComponent, FormFieldComponent, StatusBadgeComponent,
     DataTableComponent, DafCellDirective, TabsComponent, LoadingComponent, AccordionCardComponent,
     MultiDatePickerComponent, SearchToolbarComponent, PaginationComponent, NgTemplateOutlet,
-    MetricCardComponent, EmailPreviewModalComponent,
+    MetricCardComponent, EmailPreviewModalComponent, DafModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
   styleUrl: './affaire-ts-wip-tab.component.scss',
   template: `
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-3">
       @if (errorMsg()) {
         <div class="rounded-lg bg-danger/10 px-3 py-2 text-body-sm text-danger">{{ errorMsg() }}</div>
-      }
-
-      <!-- ── Sélecteur de TS ─────────────────────────────────────────────── -->
-      <!-- Un seul écran, comme l'onglet WIP : l'accordéon « Travaux supplémentaires » (même
-           daf-accordion-card / classe wip-accordion que les cartes de affaire-wip-tab)
-           liste les TS ; un clic sur une ligne choisit le TS et REFERME l'accordéon, dont
-           le titre rappelle alors le TS en cours. Le panneau du TS s'affiche juste dessous.
-           Le premier TS est sélectionné d'office (voir loadSummaries). -->
-      @if (summaries().length > 0) {
-        <daf-accordion-card class="wip-accordion"
-          [options]="{ title: selectorTitle(), icon: 'receipt_long', variant: 'outlined', radius: 'lg' }"
-          [(open)]="selectorOpen">
-          <daf-data-table [columns]="selectorColumns()" [rows]="selectorRows()" [config]="selectorConfig()"
-            (rowClick)="onTsRowClick($event)">
-            <ng-template dafCell="selected" let-row>
-              @if (row['id'] === selectedTsId()) {
-                <span class="material-symbols-outlined text-[18px] text-tertiary" aria-hidden="true">check_circle</span>
-              }
-            </ng-template>
-            <ng-template dafCell="reference" let-row>
-              <span class="font-mono text-[12px] font-bold text-tertiary">{{ row['reference'] }}</span>
-            </ng-template>
-          </daf-data-table>
-        </daf-accordion-card>
       }
 
       @if (loadingSummaries() && summaries().length === 0) {
@@ -89,13 +66,28 @@ type TsFilterValues = Record<string, string | Date[] | null>;
              qui dessinait un cadre noir autour du panneau du TS. -->
         <daf-card [options]="{ variant: 'default', radius: 'lg' }">
           <div class="flex flex-col gap-4 p-4">
-            <div class="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 class="text-headline-sm text-on-surface m-0">
-                {{ ts.referenceTs }} — {{ ts.intitule }}
-              </h3>
+            <!-- ── Sélecteur de TS ─────────────────────────────────────────── -->
+            <!-- En tête de la carte, le titre du TS en cours : un clic dessus ouvre, AU-DESSUS
+                 du titre, la liste des TS (références seules) avec une recherche par
+                 référence ; choisir une ligne bascule toute la carte sur ce TS. La liste est
+                 le panneau #tsSelectorPanel plus bas (voir positionSelector). Le premier TS
+                 est sélectionné d'office (voir loadSummaries). Le statut reste à droite. -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <button type="button" #tsTitleTrigger
+                class="flex items-center gap-1 rounded-lg text-left
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-tertiary"
+                [attr.aria-expanded]="selectorOpen()"
+                [attr.aria-label]="'AFFAIRES.WIP.TS_SELECTOR_TITLE' | translate"
+                (click)="toggleSelector()">
+                <!-- Mêmes classes que le titre de daf-card dans la lib. -->
+                <h3 class="text-title-md text-on-surface daf-text-wrap m-0">{{ ts.referenceTs }} — {{ ts.intitule }}</h3>
+                <span class="material-symbols-outlined text-label-md text-on-surface-variant transition-transform duration-200"
+                  [class.rotate-180]="selectorOpen()" aria-hidden="true">expand_more</span>
+              </button>
               <daf-badge [label]="'ENUMS.TS_STATUT.' + ts.statut | translate"
                 [options]="{ variant: ts.statut === 'FACTURE' ? 'success' : 'warning', size: 'sm' }" />
             </div>
+
             <!-- Les 3 chiffres du TS sur daf-metric-card, la tuile KPI de la lib — même
                  composant et même palette icône/couleur que la rangée KPI de la fiche affaire
                  (kpiTiles de affaire-detail). Classes de couleur en littéraux complets, pour
@@ -117,11 +109,19 @@ type TsFilterValues = Record<string, string | Date[] | null>;
                 [options]="{ icon: 'account_balance_wallet', iconColor: 'text-warning', iconBg: 'bg-warning/10',
                              valueColor: 'text-primary' }" />
             </div>
+          </div>
+        </daf-card>
 
-            @if (ts.statut !== 'FACTURE') {
-              <div class="h-px bg-outline-variant/40"></div>
-
-              <!-- Formulaire de déclaration -->
+        @if (ts.statut !== 'FACTURE') {
+          <!-- Formulaire de déclaration, dans sa propre carte repliable — même
+               daf-accordion-card / classe wip-accordion que la saisie AV de affaire-wip-tab.
+               Fermé à l'arrivée, il s'ouvre quand on choisit un TS dans la liste (voir
+               onTsPick). -->
+          <daf-accordion-card class="wip-accordion"
+            [options]="{ title: ('AFFAIRES.WIP.FORFAIT_ENTRY_TITLE' | translate), subtitle: ts.referenceTs,
+                         icon: 'edit_calendar', variant: 'outlined', radius: 'lg' }"
+            [(open)]="declarationOpen">
+            <div class="flex flex-col gap-4">
               <div class="self-start w-fit">
                 <daf-tabs variant="pill" [tabs]="modeTabs()" [active]="inputMode()" (activeChange)="onModeTabChange($event)"
                   [tabsLabel]="'AFFAIRES.WIP.TAUX_MODE_ARIA' | translate" idPrefix="ts-wip-mode" />
@@ -184,9 +184,9 @@ type TsFilterValues = Record<string, string | Date[] | null>;
               @if (tauxError()) {
                 <p class="text-body-sm text-danger">{{ tauxError() }}</p>
               }
-            }
-          </div>
-        </daf-card>
+            </div>
+          </daf-accordion-card>
+        }
 
         @if (loadingTaux()) {
           <daf-loading class="ts-loading" [message]="'AFFAIRES.WIP.LOADING' | translate" />
@@ -231,18 +231,21 @@ type TsFilterValues = Record<string, string | Date[] | null>;
               [filterConfig]="historyFilterConfig()"
               (filterApply)="onHistoryFilterApply($event)"
               [table]="historyTable" />
+            <!-- Le tableau dans la même carte que le titre et la Recherche/Filtres. -->
+            <div class="ts-history-body flex flex-col gap-2">
+              <daf-data-table #historyTable [columns]="historyColumns()" [rows]="filteredHistoryRows()" [config]="historyConfig()">
+                <ng-template dafCell="mtClient" let-row>
+                  <ng-container [ngTemplateOutlet]="mtClientCell" [ngTemplateOutletContext]="{ $implicit: row, editable: true }" />
+                </ng-template>
+                <ng-template dafCell="factureProgress" let-row>
+                  <ng-container [ngTemplateOutlet]="factureProgressCell" [ngTemplateOutletContext]="{ $implicit: row }" />
+                </ng-template>
+              </daf-data-table>
+              @if (clientAmountError()) {
+                <p class="text-[12px] text-danger">{{ clientAmountError() }}</p>
+              }
+            </div>
           </daf-card>
-          <daf-data-table #historyTable [columns]="historyColumns()" [rows]="filteredHistoryRows()" [config]="historyConfig()">
-            <ng-template dafCell="mtClient" let-row>
-              <ng-container [ngTemplateOutlet]="mtClientCell" [ngTemplateOutletContext]="{ $implicit: row, editable: true }" />
-            </ng-template>
-            <ng-template dafCell="factureProgress" let-row>
-              <ng-container [ngTemplateOutlet]="factureProgressCell" [ngTemplateOutletContext]="{ $implicit: row }" />
-            </ng-template>
-          </daf-data-table>
-          @if (clientAmountError()) {
-            <p class="text-[12px] text-danger">{{ clientAmountError() }}</p>
-          }
         } @else {
           <p class="text-body-sm text-on-surface-variant">{{ 'AFFAIRES.WIP.TS_HISTORY_EMPTY' | translate }}</p>
         }
@@ -293,34 +296,13 @@ type TsFilterValues = Record<string, string | Date[] | null>;
         }
       </ng-template>
 
-      <!-- Popup "Afficher tout" de l'historique, EN PLEIN ÉCRAN — même coquille que la popup
-           Historique de affaire-wip-tab (portail sous <body>, voir historyOverlayRef dans le
-           .ts), mêmes recherche/filtres que le tableau de l'onglet, plus tri sur tout le jeu
+      <!-- Popup "Afficher tout" de l'historique — même daf modal que la popup Historique de
+           affaire-wip-tab (app-daf-modal), mêmes recherche/filtres que le tableau de l'onglet, plus tri sur tout le jeu
            filtré, pagination et export. Lecture seule : sans la colonne Actions, la
            modification se fait depuis le formulaire de l'onglet. -->
       @if (showHistoryPopup()) {
-        <div #historyOverlay class="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-             style="z-index:9999"
-             (click)="showHistoryPopup.set(false)">
-          <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-               style="width:calc(100vw - 120px); height:90vh;"
-               (click)="$event.stopPropagation()">
-            <div class="flex items-center justify-between px-8 py-6 border-b border-outline-variant/20 shrink-0">
-              <h2 class="flex items-center gap-3 text-headline-lg text-on-surface m-0 p-0">
-                <span class="material-symbols-outlined text-primary">history</span>
-                {{ 'AFFAIRES.WIP.TS_HISTORY_TITLE' | translate }}
-                @if (selectedTs(); as ts) {
-                  <span class="font-mono text-[14px] font-bold text-tertiary">{{ ts.referenceTs }}</span>
-                }
-              </h2>
-              <button type="button" (click)="showHistoryPopup.set(false)"
-                class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant
-                       hover:text-on-surface hover:bg-surface-container transition-colors"
-                [attr.aria-label]="'ADMIN.COMMON.CLOSE' | translate">
-                <span class="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div class="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-3">
+        <app-daf-modal [title]="('AFFAIRES.WIP.TS_HISTORY_TITLE' | translate) + (selectedTs() ? ' ' + selectedTs()!.referenceTs : '')" icon="history" [visible]="true" (closed)="showHistoryPopup.set(false)">
+          <div class="daf-modal-fill">
               <div class="flex items-center gap-2 bg-white rounded-xl p-2">
                 <daf-search-toolbar class="flex-1" [card]="false"
                   [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
@@ -357,8 +339,7 @@ type TsFilterValues = Record<string, string | Date[] | null>;
                 (pageChange)="historyPage.set($event)"
                 (pageSizeChange)="onHistoryPageSizeChange($event)" />
             </div>
-          </div>
-        </div>
+        </app-daf-modal>
       }
 
       <!-- Panneau du calendrier de la période — même principe que avDatePickerPanel de
@@ -376,6 +357,46 @@ type TsFilterValues = Record<string, string | Date[] | null>;
         <button type="button" class="wip-date-picker-confirm-btn" (click)="closeDatePicker()">
           {{ 'AFFAIRES.WIP.APPLY' | translate }}
         </button>
+      </div>
+
+      <!-- Liste des TS ouverte depuis le titre de la carte — même principe que
+           #tsDatePickerPanel : toujours présente dans le DOM, déplacée vers <body> et
+           positionnée en fixed AU-DESSUS du titre à l'ouverture (voir positionSelector) ;
+           daf-card est en overflow-hidden et couperait un panneau resté dans la carte.
+           Habillage repris à l'identique du panneau de daf-select (lib) : cadre, champ de
+           recherche, options en text-on-surface, option choisie en teal avec coche. -->
+      <div #tsSelectorPanel
+        [style.display]="selectorOpen() ? 'block' : 'none'"
+        [style.visibility]="selectorVisible() ? 'visible' : 'hidden'"
+        class="w-72 max-w-[90vw] overflow-hidden rounded-lg border border-outline-variant
+               bg-surface-container-lowest shadow-xl">
+        <div class="p-1.5 border-b border-outline-variant">
+          <input type="text"
+            [value]="selectorSearch()" (input)="onSelectorSearch($any($event.target).value)"
+            [placeholder]="'AFFAIRES.WIP.TS_COL_REFERENCE' | translate"
+            class="w-full px-2.5 py-1.5 text-body-md leading-5 rounded-md
+                   bg-surface-container-low border border-outline-variant
+                   focus:outline-none focus:border-tertiary
+                   placeholder:text-on-surface-variant/50" />
+        </div>
+        <ul class="m-0 max-h-52 list-none overflow-y-auto p-0 py-1">
+          @for (s of filteredSummaries(); track s.tsId) {
+            <li class="flex items-center gap-1.5 px-2.5 py-1.5 text-body-md leading-5
+                       cursor-pointer transition-colors duration-150"
+              [class]="s.tsId === selectedTsId() ? 'bg-tertiary/10 text-teal font-medium' : 'text-on-surface hover:bg-tertiary/10'"
+              role="option" [attr.aria-selected]="s.tsId === selectedTsId()"
+              (click)="onTsPick(s)">
+              <span class="flex-1 min-w-0 truncate">{{ s.referenceTs }}</span>
+              @if (s.tsId === selectedTsId()) {
+                <span class="material-symbols-outlined text-teal text-label-sm shrink-0" aria-hidden="true">check</span>
+              }
+            </li>
+          } @empty {
+            <li class="px-2.5 py-1.5 text-body-sm leading-5 text-on-surface-variant text-center">
+              {{ 'AFFAIRES.WIP.TS_SELECTOR_EMPTY' | translate }}
+            </li>
+          }
+        </ul>
       </div>
 
       <app-email-preview-modal #emailPreviewModal />
@@ -407,61 +428,101 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
   readonly selectedTs = computed<TsProgressSummaryDto | null>(() =>
     this.summaries().find(s => s.tsId === this.selectedTsId()) ?? null);
 
-  /** Accordéon « Travaux supplémentaires » — ouvert à l'arrivée pour montrer la liste,
-   * refermé dès qu'un TS est choisi (voir onTsRowClick). */
-  selectorOpen = signal(true);
+  /** Liste des TS ouverte au-dessus du titre de la carte — fermée à l'arrivée (le titre
+   * montre déjà le TS sélectionné d'office), refermée dès qu'un TS est choisi. */
+  selectorOpen   = signal(false);
+  /** Recherche de la liste, sur la référence du TS. */
+  selectorSearch = signal('');
+  private selectorPositioned = signal(false);
+  readonly selectorVisible = computed(() => this.selectorOpen() && this.selectorPositioned());
 
-  /** Titre de l'accordéon : rappelle le TS en cours quand la liste est repliée. */
-  readonly selectorTitle = computed(() => {
-    this.translate.currentLang();
-    const title = this.translate.instant('AFFAIRES.WIP.TS_SELECTOR_TITLE');
-    const ts = this.selectedTs();
-    return ts ? `${title} — ${ts.referenceTs} · ${ts.intitule}` : title;
+  private readonly selectorPanelRef   = viewChild<ElementRef<HTMLElement>>('tsSelectorPanel');
+  private readonly selectorTriggerRef = viewChild<ElementRef<HTMLElement>>('tsTitleTrigger');
+
+  readonly filteredSummaries = computed(() => {
+    const q = this.selectorSearch().trim().toLowerCase();
+    return q ? this.summaries().filter(s => s.referenceTs.toLowerCase().includes(q)) : this.summaries();
   });
 
-  readonly selectorColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    const t = (k: string) => this.translate.instant(k);
-    const raw = (row: TableRow) => row['_raw'] as TsProgressSummaryDto;
-    return [
-      { key: 'selected',  label: '', type: 'custom', width: '40px' },
-      { key: 'reference', label: t('AFFAIRES.WIP.TS_COL_REFERENCE'), type: 'custom', sortable: true },
-      { key: 'intitule',  label: t('AFFAIRES.WIP.TS_COL_INTITULE'), sortable: true },
-      { key: 'montant',   label: t('AFFAIRES.WIP.TS_COL_MONTANT'), sortable: true,
-        sortAccessor: row => raw(row).montantEstime },
-      { key: 'cumulPct',  label: t('AFFAIRES.WIP.TS_COL_CUMUL_PCT'), sortable: true,
-        sortAccessor: row => raw(row).cumulTauxValide },
-      { key: 'remaining', label: t('AFFAIRES.WIP.TS_COL_REMAINING'), sortable: true,
-        sortAccessor: row => raw(row).remainingMontant },
-      { key: 'statut',    label: t('AFFAIRES.WIP.TS_COL_STATUT'), type: 'badge', sortable: true },
-    ];
-  });
+  toggleSelector(): void {
+    if (this.selectorOpen()) {
+      this.closeSelector();
+      return;
+    }
+    this.selectorSearch.set('');
+    this.selectorOpen.set(true);
+    // Après un rendu : le panneau doit être affiché pour que sa hauteur soit mesurable. Les
+    // écouteurs sont posés là aussi, pour que le clic qui ouvre ne referme pas aussitôt.
+    requestAnimationFrame(() => {
+      if (!this.selectorOpen()) return;
+      this.positionSelector();
+      this.document.addEventListener('scroll', this.repositionSelector, true);
+      window.addEventListener('resize', this.repositionSelector);
+      this.document.addEventListener('click', this.onSelectorOutsideClick, true);
+    });
+  }
 
-  readonly selectorRows = computed<TableRow[]>(() => this.summaries().map(s => ({
-    id:         s.tsId,
-    reference:  s.referenceTs,
-    intitule:   s.intitule,
-    montant:    this.currency.transform(s.montantEstime, s.devise),
-    cumulPct:   s.cumulTauxValide + '%',
-    remaining:  this.currency.transform(s.remainingMontant, s.devise),
-    // ENUMS.TS_STATUT (« Intégré au budget » / « Facturé ») : la clé BATCH_STATUS_INTEGRE
-    // utilisée avant n'existe pas et s'affichait brute.
-    statut:     { label: this.translate.instant('ENUMS.TS_STATUT.' + s.statut),
-                  options: { variant: s.statut === 'FACTURE' ? 'success' : 'warning', dot: true } } satisfies BadgeCell,
-    _raw:       s,
-  } satisfies TableRow)));
-
-  readonly selectorConfig = computed<TableConfig>(() => ({
-    showHeader: false,
-    hoverable:  true,
-    emptyMessage: this.translate.instant('AFFAIRES.WIP.TS_SELECTOR_EMPTY'),
-  }));
-
-  /** Clic sur une ligne : choisit ce TS et referme l'accordéon. */
-  onTsRowClick(row: TableRow): void {
-    const ts = row['_raw'] as TsProgressSummaryDto;
-    if (ts.tsId !== this.selectedTsId()) this.selectTs(ts);
+  closeSelector(): void {
     this.selectorOpen.set(false);
+    this.selectorPositioned.set(false);
+    this.selectorSearch.set('');
+    this.document.removeEventListener('scroll', this.repositionSelector, true);
+    window.removeEventListener('resize', this.repositionSelector);
+    this.document.removeEventListener('click', this.onSelectorOutsideClick, true);
+  }
+
+  /** La recherche raccourcit la liste : on repositionne pour que le bas du panneau reste
+   * collé au-dessus du titre. */
+  onSelectorSearch(value: string): void {
+    this.selectorSearch.set(value);
+    requestAnimationFrame(() => this.positionSelector());
+  }
+
+  private readonly repositionSelector = (): void => this.positionSelector();
+
+  /** Un clic hors du panneau et du titre referme la liste. */
+  private readonly onSelectorOutsideClick = (event: MouseEvent): void => {
+    const target = event.target as Node | null;
+    const panel = this.selectorPanelRef()?.nativeElement;
+    const trigger = this.selectorTriggerRef()?.nativeElement;
+    if (!target || panel?.contains(target) || trigger?.contains(target)) return;
+    this.closeSelector();
+  };
+
+  /** Même mécanique que positionPortal() du calendrier : panneau déplacé sous <body>, en
+   * fixed, toujours AU-DESSUS du titre et calé sur son bord gauche, borné à 8px des bords. */
+  private positionSelector(): void {
+    const panel = this.selectorPanelRef()?.nativeElement;
+    const trigger = this.selectorTriggerRef()?.nativeElement;
+    if (!panel || !trigger || !this.selectorOpen()) return;
+    if (panel.parentElement !== this.document.body) {
+      this.renderer.appendChild(this.document.body, panel);
+    }
+    // `fixed` + hors écran AVANT de mesurer, pour ne jamais lire une position en flux normal.
+    this.renderer.setStyle(panel, 'position', 'fixed');
+    this.renderer.setStyle(panel, 'top', '-9999px');
+    this.renderer.setStyle(panel, 'left', '-9999px');
+    this.renderer.setStyle(panel, 'z-index', '9999');
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const gap = 8;
+    const left = Math.max(8, Math.min(triggerRect.left, window.innerWidth - panelRect.width - 8));
+    const top = Math.max(8, triggerRect.top - gap - panelRect.height);
+    this.renderer.setStyle(panel, 'top', `${top}px`);
+    this.renderer.setStyle(panel, 'left', `${left}px`);
+    this.selectorPositioned.set(true);
+  }
+
+  /** Accordéon de la saisie % / montant — fermé à l'arrivée, ouvert au choix d'un TS. */
+  declarationOpen = signal(false);
+
+  /** Choix dans la liste : bascule sur ce TS (rien à faire si c'est déjà le TS en cours),
+   * referme la liste et ouvre la saisie. */
+  onTsPick(ts: TsProgressSummaryDto): void {
+    if (ts.tsId !== this.selectedTsId()) this.selectTs(ts);
+    this.closeSelector();
+    this.declarationOpen.set(true);
   }
 
   /** Passe à un autre TS : on referme ce qui appartenait au précédent (calendrier, popup)
@@ -608,6 +669,7 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape')
   onEscapeForDatePicker(): void {
     if (this.showDatePicker()) this.closeDatePicker();
+    if (this.selectorOpen()) this.closeSelector();
   }
 
   /** Même affichage que formatWipPeriod() de affaire-wip-tab : « Octobre 2026 » pour un mois
@@ -734,6 +796,7 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
     this.newTauxValue.set(taux.tauxSaisi);
     this.tauxComment.set(taux.commentaire ?? '');
     this.manualVerified.set(false);
+    this.declarationOpen.set(true);
   }
 
   cancelEdit(): void {
@@ -952,9 +1015,6 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
   /** Révèle la pastille Export / Afficher tout au survol de la carte. */
   historyCardHovered = signal(false);
   showHistoryPopup   = signal(false);
-
-  private readonly historyOverlayRef = viewChild<ElementRef<HTMLElement>>('historyOverlay');
-  private historyOverlayPortaled: HTMLElement | null = null;
 
   /** Pagination de la popup — `currentPage` de daf-pagination est 0-indexé. */
   historyPage     = signal(0);
@@ -1175,33 +1235,9 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
     // tout seul puisqu'il n'est plus là où le template l'a créé.
     this.document.removeEventListener('click', this.onChipRemoveCapture, true);
     this.datePickerPanelRef()?.nativeElement.remove();
-    // Même raison pour la popup "Afficher tout" si l'onglet est quitté popup ouverte.
-    this.historyOverlayPortaled?.remove();
-    this.historyOverlayPortaled = null;
-  }
-
-  constructor() {
-    // Popup "Afficher tout" déplacée sous <body> — même portail que historyOverlayRef de
-    // affaire-wip-tab : `position: fixed` se cale sur le premier ancêtre portant un
-    // transform/filter (sidebar du shell, daf-card 'glass'), pas sur le viewport ; sans ça
-    // la popup ne couvrirait pas toute la page.
-    effect(onCleanup => {
-      const ref = this.historyOverlayRef();
-      if (!ref || !this.showHistoryPopup()) return;
-
-      const node = ref.nativeElement;
-      if (node.parentElement !== this.document.body) {
-        this.renderer.appendChild(this.document.body, node);
-        this.historyOverlayPortaled = node;
-      }
-
-      onCleanup(() => {
-        // Angular retire la vue du `@if` de son parent D'ORIGINE : le nœud ayant été déplacé
-        // sous <body>, on le retire nous-mêmes avant.
-        node.remove();
-        if (this.historyOverlayPortaled === node) this.historyOverlayPortaled = null;
-      });
-    });
+    // Idem pour la liste des TS, et ses écouteurs s'il était ouvert.
+    this.closeSelector();
+    this.selectorPanelRef()?.nativeElement.remove();
   }
 
   private loadSummaries(): void {

@@ -17,10 +17,13 @@ import { EmailPreviewDto } from './wip.model';
   imports: [TranslatePipe, FormsModule, ButtonComponent],
   template: `
     <ng-template #tpl>
-      <div class="flex flex-col gap-4">
+      <!-- min-h-full + flex-auto : quand la fenêtre est agrandie ou redimensionnée, la zone du
+           message prend la hauteur gagnée et les boutons restent en bas (mt-auto). En taille
+           normale, chaque bloc garde sa hauteur de contenu (textarea de 10 lignes). -->
+      <div class="flex min-h-full flex-col gap-4">
         <p class="text-body-sm text-on-surface-variant">{{ 'AFFAIRES.WIP.EMAIL_PREVIEW_INTRO' | translate }}</p>
 
-        <div class="flex flex-col gap-3 rounded-xl bg-surface-container p-4">
+        <div class="flex flex-auto flex-col gap-3 rounded-xl bg-surface-container p-4">
           <div class="flex items-start gap-3">
             <span class="material-symbols-outlined flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tertiary-container text-on-tertiary-container">
               forward_to_inbox
@@ -39,12 +42,12 @@ import { EmailPreviewDto } from './wip.model';
 
           <div class="h-px bg-outline-variant/60"></div>
 
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-auto flex-col gap-1">
             <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
               {{ 'AFFAIRES.WIP.EMAIL_PREVIEW_BODY' | translate }}
             </span>
             <textarea
-              class="w-full rounded-lg border border-outline bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
+              class="w-full flex-auto rounded-lg border border-outline bg-surface px-3 py-2 text-body-sm text-on-surface outline-none focus:border-primary"
               rows="10"
               style="resize: vertical; font-family: inherit;"
               [value]="body()"
@@ -57,7 +60,7 @@ import { EmailPreviewDto } from './wip.model';
           <div class="rounded-lg bg-danger/10 px-3 py-2 text-body-sm text-danger">{{ error() }}</div>
         }
 
-        <div class="flex justify-end gap-2.5 pt-1">
+        <div class="mt-auto flex justify-end gap-2.5 pt-1">
           <daf-button
             [label]="'AFFAIRES.WIP.EMAIL_PREVIEW_CANCEL' | translate"
             variant="secondary"
@@ -104,8 +107,15 @@ export class EmailPreviewModalComponent {
       title: this.translate.instant('AFFAIRES.WIP.EMAIL_PREVIEW_TITLE'),
       icon:  'mail',
       body:  this.tpl,
-      size:  'md',
+      // Même taille d'ouverture que les autres pop-ups de l'onglet (app-daf-modal) : plus
+      // petite que le plein écran, pour que le bouton agrandir / réduire ait un effet.
+      width:  'min(1200px, 80vw)',
+      height: '75vh',
       closeOnBackdrop: false,
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
     });
   }
 

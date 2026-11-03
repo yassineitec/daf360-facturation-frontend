@@ -190,12 +190,8 @@
                 <h3 class="dp-label" id="dp-h-client">
                   {{ 'AFFAIRES.DETAIL.INFO.CLIENT' | translate }}
                 </h3>
-                <!-- Le chiffre (pourcentage) est maintenant porté par la barre elle-même
-                     (showPercent natif, rangée au-dessus du trait), plus de texte de
-                     montant sous la barre. -->
-                <div class="w-1/2 ml-auto">
-                  <daf-progress-bar [value]="billingPct()" [options]="{ ...billingBarOptions(), showLabel: false, showPercent: true }" />
-                </div>
+                <!-- Plus de barre de facturation ici : elle doublait la carte « Avancement du
+                     budget » de la Vue générale. -->
               </section>
 
               <div class="dp-rule"></div>
@@ -211,7 +207,8 @@
                          Budget validé — ces 3 lignes se lisent comme un seul bloc, le
                          séparateur ne reste qu'après Budget validé. -->
                     <div class="dp-row" [class.dp-row--last]="last"
-                      [class.dp-row--no-divider]="row.label === 'AFFAIRES.DETAIL.INFO.BUDGET'
+                      [class.dp-row--no-divider]="row.label === 'AFFAIRES.DETAIL.INFO.START_DATE'
+                        || row.label === 'AFFAIRES.DETAIL.INFO.BUDGET'
                         || row.label === 'AFFAIRES.DETAIL.INFO.BILLING_MODE'">
                       <dt class="dp-row__key">{{ row.label | translate }}</dt>
                       <dd class="dp-row__val">
@@ -286,9 +283,11 @@
                     <span class="dp-count">{{ responsables().length }}</span>
                   </div>
                   <ul class="dp-people">
-                    @for (r of responsables(); track r.userId) {
+                    <!-- La photo RH quand elle existe (ex-tuile « Équipe projet ») ; daf-avatar
+                         retombe sur les initiales sinon. `team()` suit l'ordre de `responsables()`. -->
+                    @for (r of responsables(); track r.userId; let i = $index) {
                       <li class="dp-person">
-                        <span class="dp-avatar" aria-hidden="true">{{ initials(r.fullName) }}</span>
+                        <daf-avatar [data]="team()[i]" size="xs" aria-hidden="true" />
                         <div class="dp-person__body">
                           <div class="dp-person__top">
                             <span class="dp-person__name" [title]="r.fullName">{{ r.fullName }}</span>
@@ -483,6 +482,7 @@
           @for (k of kpiTiles(); track k.label) {
             <daf-metric-card
               class="kpi-cell"
+              [class.kpi-cell--delta-label]="k.deltaUnderLabel"
               [label]="k.label | translate"
               [value]="k.value"
               [delta]="k.delta"
@@ -504,133 +504,34 @@
 
           <!-- ── Vue générale ─────────────────────────────────────────── -->
           @if (activeTab() === 'overview') {
-
-            <!-- Rangée KPI — 3 tuiles, comme la maquette, en GRILLE : `1fr` par colonne donne
-                 des largeurs strictement égales (un `flex-basis` peut être débordé par le
-                 contenu ou le min-width), `auto-fit` + `minmax` donnent le repli sans media
-                 query, et les items de grille s'étirent — donc même hauteur. `display:flex`
-                 sur l'hôte pour que la carte interne remplisse la cellule. -->
-            <section class="tile-row">
-
-              <!-- Santé du projet -->
-              <!-- `helpTrigger="hover"` (lib 4.22.0) : ces trois tuiles sont en LECTURE
-                   SEULE, aucun champ à survoler sur le trajet du curseur, donc le panneau
-                   se révèle sur la carte entière et le glyphe (i) disparaît. Le graphique
-                   plus bas garde son (i) : sa carte est pleine largeur et contient une
-                   bascule de granularité, qu'un survol de carte recouvrirait. -->
-              <daf-section-card class="tile-cell"
-                                helpTrigger="hover"
-                                [help]="'AFFAIRES.DETAIL.OVERVIEW.HEALTH_HELP' | translate"
-                                [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
-                                [options]="{ fullHeight: true }">
-                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
-                  <div class="flex items-start justify-between gap-2">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ 'AFFAIRES.DETAIL.OVERVIEW.HEALTH_TITLE' | translate }}
-                    </p>
-                    <daf-badge [label]="healthBadge().label" [options]="healthBadge()" />
-                  </div>
-                  <!-- L'anneau porte l'ENCAISSÉ sur le budget total, pas le facturé, et sa
-                       couleur vient de la rampe du composant (rouge 0 → vert 100) : ici un
-                       pourcentage haut est une bonne nouvelle. La pastille au-dessus garde
-                       l'échelle inverse — le risque d'épuisement du budget. -->
-                  <div class="flex flex-col items-center justify-center gap-2">
-                    <daf-gauge [value]="collectedPct()" [options]="healthGaugeOptions()" />
-                    <span class="text-label-caps font-bold text-on-surface-variant">
-                      {{ collectedAmount() | displayCurrency : affaireDevise() }}
-                      / {{ budgetTotal() | displayCurrency : affaireDevise() }}
-                    </span>
-                  </div>
-                </div>
-              </daf-section-card>
-
-              <!-- Taux de facturation -->
-              <daf-section-card class="tile-cell"
-                                helpTrigger="hover"
-                                [help]="'AFFAIRES.DETAIL.INDICATORS.BILLING_RATE_HELP' | translate"
-                                [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
-                                [options]="{ fullHeight: true }">
-                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
-                  <div class="flex items-start justify-between gap-2">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ 'AFFAIRES.DETAIL.INDICATORS.BILLING_RATE' | translate }}
-                    </p>
-                    <span class="material-symbols-outlined text-headline-lg text-tertiary">receipt_long</span>
-                  </div>
-                  <div class="flex flex-col gap-2">
-                    <div class="flex items-end justify-between gap-2">
-                      <span class="text-headline-xl font-extrabold leading-none text-on-surface">
-                        {{ billingPct() | number:'1.0-0' }}%
-                      </span>
-                      <span class="text-label-caps font-bold text-on-surface-variant">
-                        {{ raf()?.totalFacturesEmises | displayCurrency : affaireDevise() }}
-                        / {{ budgetTotal() | displayCurrency : affaireDevise() }}
-                      </span>
-                    </div>
-                    <daf-progress-bar [value]="billingPct()" [options]="billingBarOptions()" />
-                  </div>
-                </div>
-              </daf-section-card>
-
-              <!-- Équipe projet -->
-              <daf-section-card class="tile-cell"
-                                helpTrigger="hover"
-                                [help]="'AFFAIRES.DETAIL.OVERVIEW.TEAM_HELP' | translate"
-                                [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
-                                [options]="{ fullHeight: true }">
-                <div class="flex flex-col justify-between gap-4 p-5" style="height:100%; width:100%">
-                  <div class="flex items-start justify-between gap-2">
-                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                      {{ 'AFFAIRES.DETAIL.OVERVIEW.TEAM_TITLE' | translate }}
-                    </p>
-                    <span class="material-symbols-outlined text-headline-lg text-outline">groups</span>
-                  </div>
-                  @if (team().length === 0) {
-                    <p class="text-body-md text-on-surface-variant">
-                      {{ 'AFFAIRES.DETAIL.OVERVIEW.NO_TEAM' | translate }}
-                    </p>
-                  } @else {
-                    <!-- daf-avatar-group (4.17.0) : pile chevauchée + « +N », initiales
-                         dérivées par la lib et repli automatique si la photo échoue —
-                         ce qui remplace le markup à la main ET le handler onAvatarError. -->
-                    <div class="flex items-center gap-4">
-                      <daf-avatar-group [members]="team()" size="md" [max]="4" />
-                      <div class="min-w-0">
-                        <p class="text-body-md font-bold text-on-surface">
-                          {{ 'AFFAIRES.DETAIL.OVERVIEW.TEAM_COUNT' | translate: { count: team().length } }}
-                        </p>
-                        <p class="truncate text-body-sm text-on-surface-variant" [title]="teamNames()">{{ teamNames() }}</p>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </daf-section-card>
-            </section>
-
             <!-- Graphiques — UN carrousel de trois diapositives (Facturation, WIP, Paiements)
                  sous UN jeu de filtres. Les filtres passent par daf-filter, comme les tableaux
                  de la fiche, et s'affichent en puces sous l'en-tête. Le (i) de la carte suit la
                  diapositive : il explique le calcul du graphique affiché, pas les filtres.
-                 Règles de calcul : section « Graphiques » du composant. -->
-            <daf-section-card
-              [help]="chartSlideHelp()"
-              [helpTitle]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
-              [helpLabel]="'AFFAIRES.DETAIL.OVERVIEW.HELP_ARIA' | translate">
+                 Règles de calcul : section « Graphiques » du composant.
+                 Une seule carte : en tête la barre d'outils (puces, Filtres, (i)), puis le titre
+                 et la plage, les indicateurs et le graphique. Le (i) est posé à la main avec
+                 daf-help-popover : l'en-tête de daf-section-card se placerait au-dessus des
+                 puces, ou laisserait une ligne vide sans titre. -->
+            <daf-section-card>
               <div class="flex flex-col gap-4 p-6"
                    role="region" aria-roledescription="carousel"
                    [attr.aria-label]="'AFFAIRES.DETAIL.CHARTS.CAROUSEL' | translate"
                    (keydown)="onChartCarouselKey($event)">
 
-                <!-- En-tête : navigation entre graphiques à gauche, filtres à droite. -->
+                <!-- Navigation entre graphiques à gauche, filtres à droite. -->
+                <!-- Titre à gauche, puces au centre, Filtres + (i) à droite. -->
                 <div class="carousel-head">
+                  <div class="carousel-title">
+                    <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">{{ chartSlides()[chartSlideIndex()].title }}</p>
+                    <p class="mt-1 text-body-sm text-on-surface-variant">{{ chartRangeLabel() }}</p>
+                  </div>
                   <div class="carousel-nav">
-                    <daf-button [options]="chartPrevOptions()" (onClick)="stepChartSlide(-1)" />
                     <daf-chip-group
                       [options]="chartSlideChips()"
                       [config]="chartSlideChipConfig"
                       [selected]="[chartSlide()]"
                       (selectedChange)="selectChartSlide($event)" />
-                    <daf-button [options]="chartNextOptions()" (onClick)="stepChartSlide(1)" />
                   </div>
                   <div class="carousel-actions">
                     <daf-filter
@@ -644,6 +545,15 @@
                       align="right"
                       (apply)="onChartFilterApply($event)"
                       (reset)="resetChartFilters()" />
+                    <button type="button" #chartHelpBtn class="chart-help-btn"
+                            [attr.aria-label]="'AFFAIRES.DETAIL.OVERVIEW.HELP_ARIA' | translate"
+                            (mouseenter)="chartHelpOpen.set(true)" (mouseleave)="chartHelpOpen.set(false)"
+                            (focus)="chartHelpOpen.set(true)" (blur)="chartHelpOpen.set(false)">
+                      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+                    </button>
+                    <daf-help-popover [anchor]="chartHelpBtn" [text]="chartSlideHelp()"
+                                      [heading]="'AFFAIRES.DETAIL.OVERVIEW.HELP_TITLE_CALC' | translate"
+                                      placement="bottom" align="end" [open]="chartHelpOpen()" />
                   </div>
                 </div>
 
@@ -676,23 +586,13 @@
                              role="group" aria-roledescription="slide"
                              [attr.aria-label]="slide.title">
 
-                          <div class="chart-head">
-                            <div class="min-w-0">
-                              <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">{{ slide.title }}</p>
-                              <p class="mt-1 text-body-sm text-on-surface-variant">{{ chartRangeLabel() }}</p>
-                            </div>
-                            <div class="chart-total">
-                              <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
-                                {{ slide.totalLabel }}
-                              </p>
-                              <p class="text-headline-md font-extrabold text-on-surface">
-                                {{ slide.total | displayCurrency : affaireDevise() }}
-                              </p>
-                              @if (slide.count) {
-                                <p class="text-body-sm text-on-surface-variant">{{ slide.count }}</p>
+                          @if (slide.stats.length) {
+                            <p class="text-body-sm text-on-surface-variant">
+                              @for (stat of slide.stats; track stat.label; let last = $last) {
+                                {{ stat.label }} <span class="font-bold text-on-surface">{{ stat.value }}</span>@if (!last) { · }
                               }
-                            </div>
-                          </div>
+                            </p>
+                          }
 
                           <!-- Pleine largeur de la carte, quel que soit le nombre de barres. -->
                           <div class="chart-plot" [class.chart-plot--loading]="chartsLoading()">

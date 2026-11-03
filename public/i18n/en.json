@@ -1331,6 +1331,13 @@
         "TARGET_YEAR": "Yearly target",
         "TARGET_BUDGET": "Budget",
         "TARGET_BUDGET_TS": "Budget + integrated additional work",
+        "STAT_INVOICES": "Invoices",
+        "STAT_PAYMENTS": "Payments",
+        "AVG_MONTH": "Average / month",
+        "AVG_QUARTER": "Average / quarter",
+        "AVG_YEAR": "Average / year",
+        "STAT_TARGET": "Target reached",
+        "STAT_BUDGET": "Share of budget",
         "QUARTER_SHORT": "Q{{q}} {{yy}}",
         "QUARTER_LONG": "Q{{q}} {{year}}",
         "EMPTY_RANGE": "No period of the project falls in this range.",
@@ -1366,6 +1373,7 @@
         "BILLING_MODE": "Billing mode",
         "CURRENCY": "Currency",
         "PERIOD": "Period",
+        "START_DATE": "Start date",
         "ENGAGEMENT": "Engagement type",
         "BUDGET": "Budget",
         "CONTRACT_AMOUNT": "Contract amount",
@@ -2189,7 +2197,16 @@
           "item": "Item",
           "current": "Current",
           "load_error": "Error while loading.",
-          "action_error": "Error while performing the action."
+          "action_error": "Error while performing the action.",
+          "affaire": "Project",
+          "client": "Client",
+          "motif_retour": "Return reason",
+          "see_affaire": "View project",
+          "tab_entries": "Entries",
+          "kpi_tva": "VAT {{rate}} % · {{amount}}",
+          "kpi_entries": "{{count}} entry(ies)",
+          "kpi_cumul": "Project total",
+          "kpi_budget_pct": "{{pct}} % of budget"
         },
         "filter_amount_ht_min": "Min net amount",
         "filter_amount_ht_max": "Max net amount",
@@ -3607,9 +3624,38 @@
     "TABLE": {
       "PERIOD": "Period",
       "STATUS": "Status",
+      "PROGRESS": "Progress",
+      "NET_REVENUE": "Net revenue",
       "EBITDA": "EBITDA",
       "EBITDA_PCT": "EBITDA %",
       "REPORT": "Report"
+    },
+    "KPI": {
+      "NET_REVENUE": "Net revenue {{year}}",
+      "NET_REVENUE_HELP": "Sum of net revenue over the year's closed periods. Months still open are left out: their amounts are only frozen on close.",
+      "EBITDA": "EBITDA {{year}}",
+      "EBITDA_HELP": "Sum of EBITDA over the year's closed periods (Gross Revenue 2 minus operating costs).",
+      "MARGIN": "EBITDA margin {{year}}",
+      "MARGIN_HELP": "Cumulative EBITDA divided by cumulative Gross Revenue 2 — same base as each period's EBITDA %. The change compares the last two closed months.",
+      "MARGIN_DELTA": "{{delta}} pt vs prev. month",
+      "PENDING": "Reports to process",
+      "PENDING_HELP": "Reports still in the workflow for this country: submitted (to be endorsed by the CD), endorsed (to be accepted by Group) or sent back for amendment.",
+      "CLOSED_COUNT": "{{n}} closed period(s)",
+      "TO_ENDORSE": "{{n}} to endorse",
+      "TO_ACCEPT": "{{n}} to accept",
+      "TO_AMEND": "{{n}} to amend",
+      "NOTHING_PENDING": "Nothing pending"
+    },
+    "FILTER": {
+      "SEARCH_PH": "Search a period…",
+      "FILTERS": "Filters",
+      "PANEL_TITLE": "Filter periods",
+      "YEAR": "Year",
+      "PERIOD_STATUS": "Period status",
+      "REPORT_STATUS": "Report status",
+      "ALL": "All",
+      "APPLY": "Apply",
+      "RESET": "Reset"
     },
     "PERIOD_STATUS": {
       "OPEN": "Open",
@@ -3626,6 +3672,19 @@
       "SUPERSEDED": "Superseded"
     },
     "NO_REPORT": "No report",
+    "STEPS": {
+      "ARIA": "Period progress",
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "REPORT": "Report",
+      "ACCEPTED": "Accepted"
+    },
+    "CLOSE_PERIOD_FULL": "Close the period",
+    "NEW_PERIOD_HELP": "Only one period per country and month.",
+    "ACTIONS": "Actions",
+    "VIEW_REPORT": "View report",
+    "VIEW_GRID": "Card view",
+    "VIEW_LIST": "Table view",
     "GENERATE": "Generate report",
     "GENERATE_ERROR": "Error generating the report.",
     "NEW_PERIOD": "New period",
@@ -3698,6 +3757,74 @@
       "CANCEL": "Cancel",
       "CONFIRM": "Confirm",
       "KPI_TITLE": "Key figures",
+      "VERSION": "Version {{n}}",
+      "AMENDMENT_MSG": "The report was sent back for rework: correct it, then submit it again.",
+      "TOOLBAR": {
+        "SEARCH_RECAP": "Search a line…",
+        "SEARCH_RECEIVABLES": "Search an invoice or a client…",
+        "SEARCH_MISSING_CASH": "Search a project…",
+        "NO_MATCH": "No line matches the filter.",
+        "VARIANCE": "Variance",
+        "VARIANCE_OVER": "Positive variance",
+        "VARIANCE_UNDER": "Negative variance",
+        "NO_BUDGET": "No budget",
+        "AMOUNT_MIN": "Min amount",
+        "AMOUNT_MAX": "Max amount",
+        "AMOUNT_PH": "E.g. 1000",
+        "AGEING": "Ageing",
+        "DUE_PERIOD": "Due date",
+        "MISSING_MIN": "Min missing cash",
+        "MISSING_MAX": "Max missing cash",
+        "WIP_ONLY": "With unbilled WIP",
+        "GT_1Y_ONLY": "With receivables over one year"
+      },
+      "PANEL": {
+        "ARIA": "P&L report information",
+        "REPORT": "Report",
+        "WORKFLOW": "Workflow",
+        "PAYS": "Country",
+        "PERIOD": "Period",
+        "PERIOD_STATUS": "Period status",
+        "VERSION": "Version",
+        "CREATED": "Created on",
+        "PENDING": "Pending",
+        "SUBMITTED": "Submitted on",
+        "ENDORSED": "Endorsed (CD) on",
+        "ACCEPTED": "Accepted (Group) on",
+        "REOPEN_NOTE": "Reopened:"
+      },
+      "TABS": {
+        "ARIA": "P&L report sections",
+        "OVERVIEW": "Overview",
+        "RECAP": "P&L recap",
+        "COMMENTARIES": "Commentary",
+        "TREASURY": "Treasury"
+      },
+      "OVERVIEW": {
+        "WATERFALL_TITLE": "From revenue to EBITDA",
+        "OPERATING_COST": "Operating costs",
+        "WORKFLOW_TITLE": "Progress",
+        "STEP": {
+          "DRAFT": "Draft",
+          "SUBMITTED": "Submitted",
+          "ENDORSED": "Endorsed (CD)",
+          "ACCEPTED": "Accepted (Group)"
+        },
+        "COMMENTARY_TITLE": "Commentary written",
+        "COMMENTARY_COUNT": "{{written}} / {{total}}",
+        "COMMENTARY_GO": "See commentary",
+        "COST_TITLE": "Cost breakdown",
+        "COST_SUB": "Operating costs of the period, frozen on close.",
+        "COST_EMPTY": "No cost on this period.",
+        "COST": {
+          "SALARIES": "Billable salaries",
+          "SUBCONSULTANTS": "Subconsultants",
+          "OPEX": "Opex",
+          "SOFTWARE": "Software & subscriptions",
+          "INTERCOMPANY": "Intercompany",
+          "MARKETING": "Communication & marketing"
+        }
+      },
       "RECAP": {
         "TITLE": "Recap",
         "LINE": "Catalogue line",
@@ -3710,6 +3837,11 @@
         "NONE_YET": "No commentary generated for this line yet.",
         "NARRATIVE_LABEL": "Commentary",
         "SAVE": "Save",
+        "TABS_ARIA": "Commentary parts",
+        "NO_COMMENTARY": "No commentary",
+        "ONLY_COMMENTED": "Commented lines only",
+        "SHOW_ALL": "Show all lines (+{{n}})",
+        "NO_LINE_COMMENTARY": "No line carries a commentary yet.",
         "STATUS": {
           "DRAFT": "Draft",
           "UNDER_REVIEW": "Under review"
@@ -3717,6 +3849,9 @@
       },
       "SECTION": {
         "TITLE": "Cross-cutting summary",
+        "EMPTY": "No cross-cutting summary generated for this report.",
+        "TO_WRITE": "To write",
+        "MODIFIED": "Modified",
         "REVENUE": "Revenue",
         "COST": "Cost",
         "EBITDA": "EBITDA",
@@ -3734,7 +3869,13 @@
         "EXPORTING_XLSX": "Exporting Excel…",
         "EXPORTING_PDF": "Exporting PDF…",
         "EXPORT_WORKBOOK": "Export full workbook (7 tabs)",
-        "EXPORTING_WORKBOOK": "Generating workbook…"
+        "EXPORTING_WORKBOOK": "Generating workbook…",
+        "QUICK_TITLE": "Quick actions",
+        "NOTHING_TO_DO": "No workflow action is yours at this stage.",
+        "REQUEST_AMENDMENT_SHORT": "Amendment",
+        "EXPORT_XLSX_SHORT": "Excel",
+        "EXPORT_PDF_SHORT": "PDF",
+        "EXPORT_WORKBOOK_SHORT": "Full workbook"
       },
       "REOPEN": {
         "METHOD_LABEL": "Reopen method",
@@ -3743,6 +3884,7 @@
         "RATIONALE_LABEL": "Rationale"
       },
       "CASH": {
+        "TABS_ARIA": "Treasury parts",
         "RECEIVABLES": {
           "TITLE": "Receivables",
           "SHOW": "Show receivables",
@@ -4515,11 +4657,25 @@
     },
     "ENTITY_CURRENCY": {
       "TITLE": "Default currency of ARX entities",
+      "COL_ENTITY": "Entity",
+      "COL_ISO": "ISO code",
+      "COL_CURRENCY": "Currency",
+      "MODAL_EDIT": "Edit currency — {{entity}}",
+      "MODAL_ADD": "Add an entity",
+      "SECTION_ENTITY": "Entity",
+      "SECTION_CURRENCY": "Default currency",
+      "CURRENT": "Current currency:",
+      "NOT_FOUND": "Can't find the currency?",
+      "ADD_CURRENCY": "Add a currency",
+      "FIELD_PAYS": "Country",
+      "PAYS_PLACEHOLDER": "Choose a country",
+      "ERR_PAYS_REQUIRED": "Choose a country.",
+      "ERR_REQUIRED": "Choose a currency.",
       "SELECT_PLACEHOLDER": "Choose a currency",
       "EMPTY": "No ARX entity found.",
       "ERR_LOAD": "Could not load the ARX entities.",
       "ERR_SAVE": "Could not save this entity's currency.",
-      "ERR_NO_CURRENCIES": "No currency configured for this entity's country."
+      "ERR_NO_CURRENCIES": "No active currency in the Currency list."
     },
     "DOCUMENT_TEMPLATES": {
       "TITLE": "Document templates",
@@ -4860,6 +5016,7 @@
       "ERROR_LOAD": "Unable to load WIP email templates.",
       "ERROR_SAVE": "Unable to save this template.",
       "ERROR_DELETE": "Unable to delete this template.",
+      "ERROR_REQUIRED": "Subject and body are required.",
       "FIELD_MODE": "Billing mode",
       "FIELD_PAYS_ID": "Country (ID)",
       "PAYS_ID_PLACEHOLDER": "Leave empty for a global template",

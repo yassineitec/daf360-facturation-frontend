@@ -1,6 +1,6 @@
 import {
-  ChangeDetectionStrategy, Component, ElementRef, OnDestroy, computed, effect, inject, input,
-  output, signal, untracked, viewChild,
+  ChangeDetectionStrategy, Component, computed, inject, input,
+  output, signal, untracked,
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -10,6 +10,7 @@ import {
 import { DepenseExportCriteria, DepenseLigne } from './depense.model';
 import { ExportService } from '../../../core/export.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { DafModalComponent } from '../../../shared/daf-modal.component';
 import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 
 /**
@@ -23,7 +24,7 @@ import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from
 @Component({
   selector: 'app-depense-summary-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableComponent, SearchToolbarComponent, ButtonComponent, PaginationComponent, TranslatePipe],
+  imports: [DataTableComponent, SearchToolbarComponent, ButtonComponent, PaginationComponent, TranslatePipe, DafModalComponent],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
   templateUrl: './depense-summary-table.component.html',
@@ -36,7 +37,7 @@ import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from
     }
   `],
 })
-export class DepenseSummaryTableComponent implements OnDestroy {
+export class DepenseSummaryTableComponent {
   private readonly translate = inject(TranslateService);
   private readonly currency = inject(DisplayCurrencyPipe);
   private readonly exportSvc = inject(ExportService);
@@ -105,41 +106,6 @@ export class DepenseSummaryTableComponent implements OnDestroy {
   protected onZoomPageSizeChange(size: number): void {
     this.zoomPageSize.set(size);
     this.zoomPage.set(0);
-  }
-
-  /**
-   * Portaled to `<body>` while open — same reason `daf-select`/`daf-filter` portal their own
-   * dropdowns (see their own comments): `position: fixed` is relative to the nearest
-   * transformed/filtered ancestor, not the viewport, and the shell's sidebar container is
-   * exactly that kind of ancestor here — without this the overlay stopped short of the
-   * sidebar instead of covering the whole page over it.
-   */
-  private readonly zoomOverlayRef = viewChild<ElementRef<HTMLDivElement>>('zoomOverlay');
-  private zoomPortaledNode: HTMLElement | null = null;
-
-  constructor() {
-    effect(onCleanup => {
-      const ref = this.zoomOverlayRef();
-      if (!ref || !this.zoomOpen()) return;
-
-      const node = ref.nativeElement;
-      if (node.parentElement !== document.body) {
-        document.body.appendChild(node);
-        this.zoomPortaledNode = node;
-      }
-
-      onCleanup(() => {
-        // Angular's view removal targets the original anchor's parent and would leave the
-        // overlay orphaned under <body> — we moved it there, so we take it back out too.
-        node.remove();
-        if (this.zoomPortaledNode === node) this.zoomPortaledNode = null;
-      });
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.zoomPortaledNode?.remove();
-    this.zoomPortaledNode = null;
   }
 
   protected readonly searchPlaceholder = computed(() => {

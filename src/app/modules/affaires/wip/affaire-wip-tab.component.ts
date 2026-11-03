@@ -17,6 +17,7 @@ import { Observable } from 'rxjs';
 import { WipService, WipTauxSubmitBody } from './wip.service';
 import { WipTauxDto, WipTauxStatut, WipTmPreviewDto } from './wip.model';
 import { EmailPreviewModalComponent } from './email-preview-modal.component';
+import { DafModalComponent } from '../../../shared/daf-modal.component';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
 import { LivrableService } from '../livrable.service';
 import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../livrable.model';
@@ -40,7 +41,7 @@ type WipFilterValues = Record<string, string | Date[] | null>;
     TranslatePipe, ButtonComponent, CardComponent, HelpPopoverComponent, FormFieldComponent, MultiDatePickerComponent, StepperComponent,
     DataTableComponent, DafCellDirective, DisplayCurrencyPipe, WipTmDetailTableComponent, WipTmCollaboratorDetailComponent,
     SearchToolbarComponent, StatusBadgeComponent, AccordionCardComponent, PaginationComponent, TabsComponent,
-    EmailPreviewModalComponent,
+    EmailPreviewModalComponent, DafModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-wip-tab.component.html',
@@ -264,59 +265,6 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   /** Livrable — budget alloué minimum, saisi en texte ('' = pas de borne). */
   livrableHistoryBudgetMin = signal('');
   livrableHistoryBudgetMax = signal('');
-
-  /** Portalé sous <body> pendant qu'elle est ouverte — même raison que positionPortal()
-   * plus bas pour les calendriers : `position: fixed` se cale sur le premier ancêtre avec
-   * un `transform`/`filter`, pas sur le viewport, et le conteneur de la sidebar du shell en
-   * est un — sans ça la popup s'arrêtait avant la sidebar au lieu de couvrir toute la page.
-   * Une seule ref partagée entre les popups Régie et Livrable : un seul `billingMode` actif
-   * à la fois, jamais les deux popups montées en même temps (voir positionPortal). */
-  private readonly historyOverlayRef = viewChild<ElementRef<HTMLElement>>('historyOverlay');
-  private historyOverlayPortaled: HTMLElement | null = null;
-
-  /** Même portail que historyOverlayRef ci-dessus, pour le popup "Détails" (showTmDetails) —
-   * sans lui, il restait au fil de la vue plutôt que sous <body>, et se retrouvait cadré par
-   * un ancêtre à backdrop-filter (une daf-card 'glass' de cet onglet) au lieu de se centrer
-   * sur toute la page comme "Historique WIP". */
-  private readonly detailsOverlayRef = viewChild<ElementRef<HTMLElement>>('detailsOverlay');
-  private detailsOverlayPortaled: HTMLElement | null = null;
-
-  constructor() {
-    effect(onCleanup => {
-      const ref = this.historyOverlayRef();
-      if (!ref || !this.showHistoryPage()) return;
-
-      const node = ref.nativeElement;
-      if (node.parentElement !== this.document.body) {
-        this.renderer.appendChild(this.document.body, node);
-        this.historyOverlayPortaled = node;
-      }
-
-      onCleanup(() => {
-        // Angular détruit la vue du `@if` en ciblant le parent D'ORIGINE du nœud — comme
-        // on l'a déplacé sous <body>, il faut le retirer nous-mêmes avant, sans quoi Angular
-        // tenterait de le retirer d'un parent qui n'est plus le sien.
-        node.remove();
-        if (this.historyOverlayPortaled === node) this.historyOverlayPortaled = null;
-      });
-    });
-
-    effect(onCleanup => {
-      const ref = this.detailsOverlayRef();
-      if (!ref || !this.showTmDetails()) return;
-
-      const node = ref.nativeElement;
-      if (node.parentElement !== this.document.body) {
-        this.renderer.appendChild(this.document.body, node);
-        this.detailsOverlayPortaled = node;
-      }
-
-      onCleanup(() => {
-        node.remove();
-        if (this.detailsOverlayPortaled === node) this.detailsOverlayPortaled = null;
-      });
-    });
-  }
 
   /** TEST : pagination daf-pagination de la lib sur les popups "Historique" (Régie et
    * Livrable) — partagée entre les deux comme historySearch/historyStatut ci-dessus
@@ -1207,10 +1155,6 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     this.document.removeEventListener('click', this.onChipRemoveCapture, true);
     this.calDatePickerPanelRef?.nativeElement.remove();
     this.avDatePickerPanelRef?.nativeElement.remove();
-    this.historyOverlayPortaled?.remove();
-    this.historyOverlayPortaled = null;
-    this.detailsOverlayPortaled?.remove();
-    this.detailsOverlayPortaled = null;
   }
 
   tmPreview     = signal<WipTmPreviewDto | null>(null);

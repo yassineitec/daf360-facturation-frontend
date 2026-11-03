@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ButtonComponent } from '@khalilrebhiitec/daf360';
+import { DafModalComponent } from '../../../../shared/daf-modal.component';
 
 import { LivrableService }       from '../../livrable.service';
 import { CollaborateurTauxDto }  from '../../livrable.model';
@@ -27,7 +28,7 @@ interface SelectableUser extends UserRefDto {
 @Component({
   selector: 'app-tm-rate-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, TranslatePipe],
+  imports: [FormsModule, ButtonComponent, TranslatePipe, DafModalComponent],
   templateUrl: './tm-rate-modal.component.html',
   styleUrl: './tm-rate-modal.component.scss',
 })

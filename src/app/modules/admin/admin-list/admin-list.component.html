@@ -431,55 +431,46 @@
       </div>
     }
 
-    <!-- ── ENTITY CURRENCY TAB (devise par défaut des 13 entités ARX réelles) ── -->
+    <!-- ── ENTITY CURRENCY TAB (devise par défaut des 13 entités ARX réelles) ──
+         Même gabarit que l'onglet Forex : en-tête de section, recherche + outils,
+         daf-data-table avec action native « Modifier » ouvrant une modale. -->
     @if (activeTab() === 'entity-currency') {
       <div class="tab-content">
-        <daf-section-card>
-          <div class="config-card-body">
-            <daf-section-title [title]="'ADMIN.ENTITY_CURRENCY.TITLE' | translate" />
 
-            @if (entitiesLoading()) {
-              <daf-skeleton variant="block" radius="xl" width="100%" height="220px" />
+        @if (entitiesError()) {
+          <div class="banner-error">{{ entitiesError() }}</div>
+        }
+
+        <div class="section-header">
+          <h3 class="section-header-title">{{ 'ADMIN.ENTITY_CURRENCY.TITLE' | translate }}</h3>
+          <daf-button [label]="'ADMIN.COMMON.ADD' | translate" variant="teal"
+            [options]="{ size: 'sm', iconStart: 'add' }"
+            (onClick)="openCreateEntityModal()" />
+        </div>
+
+        <!-- Recherche + outils du tableau (réinitialiser, colonnes) à droite. -->
+        <daf-search-toolbar
+          [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
+          [value]="entitySearch()" [debounce]="200"
+          (valueChange)="entitySearch.set($event)"
+          [table]="entityTable" />
+
+        <daf-data-table #entityTable [columns]="entityColumns()" [rows]="entityRows()" [config]="entityTableConfig()"
+          (sortChange)="onEntitySort($event)" (resetClick)="onEntitySort(null)">
+
+          <ng-template dafCell="isoCode" let-row>
+            <span class="code-pill">{{ row['isoCode'] }}</span>
+          </ng-template>
+
+          <ng-template dafCell="devise" let-row>
+            @if (row['devise']) {
+              <span class="mono-val">{{ row['devise'] }}</span>
             } @else {
-              @if (entitiesError()) {
-                <div class="banner-error">{{ entitiesError() }}</div>
-              }
-              @if (entityError()) {
-                <div class="banner-error">{{ entityError() }}</div>
-              }
-              <div class="config-stack">
-                @for (entity of entities(); track entity.id) {
-                  <div class="entity-currency-row">
-                    <span class="status-label">{{ entity.frenchLabel }} ({{ entity.isoCode }})</span>
-
-                    @if (editingEntityId() === entity.id) {
-                      <div class="entity-currency-edit">
-                        <daf-select
-                          [options]="editingCurrencyOptions()"
-                          [selected]="editingEntitySelected()"
-                          [config]="{ placeholder: ('ADMIN.ENTITY_CURRENCY.SELECT_PLACEHOLDER' | translate), searchable: true }"
-                          (selectedChange)="saveEntityDevise(entity, $event[0])" />
-                        <daf-button [label]="'ADMIN.COMMON.CANCEL' | translate" variant="ghost"
-                          [options]="{ size: 'sm', disabled: entitySaving() }"
-                          (onClick)="cancelEditEntity()" />
-                      </div>
-                    } @else {
-                      <div class="entity-currency-edit">
-                        <span class="status-value">{{ entity.devise ?? '—' }}</span>
-                        <daf-button [label]="'ADMIN.COMMON.EDIT' | translate" variant="ghost"
-                          [options]="{ size: 'sm', iconStart: 'edit' }"
-                          (onClick)="startEditEntity(entity)" />
-                      </div>
-                    }
-                  </div>
-                }
-                @if (entities().length === 0 && !entitiesError()) {
-                  <span class="loading-inline">{{ 'ADMIN.ENTITY_CURRENCY.EMPTY' | translate }}</span>
-                }
-              </div>
+              <span class="cell-secondary">—</span>
             }
-          </div>
-        </daf-section-card>
+          </ng-template>
+
+        </daf-data-table>
       </div>
     }
 
@@ -621,6 +612,67 @@
         [options]="{ label: ('ADMIN.FOREX.FIELD_CHF' | translate), type: 'number', placeholder: ('ADMIN.FOREX.PLACEHOLDER_CHF' | translate) }"
         [value]="forexForm.chf"
         (valueChange)="forexForm.chf = $any($event) ?? ''" />
+    </div>
+  </ng-template>
+
+  <!-- Edit modal body — Devise d'une entité ARX -->
+  <ng-template #entityFormTpl>
+    <div class="entity-modal">
+      @if (entityError()) {
+        <div class="banner-error">{{ entityError() }}</div>
+      }
+
+      <!-- 1. Entité : choix du pays (ajout) ou rappel de l'entité modifiée (édition). -->
+      <section class="entity-modal-section">
+        <h4 class="entity-modal-heading">
+          <span class="material-symbols-outlined">apartment</span>
+          {{ 'ADMIN.ENTITY_CURRENCY.SECTION_ENTITY' | translate }}
+        </h4>
+        @if (entityModalMode() === 'create') {
+          <!-- Pays parmi les 194 de pays_ref (hors entités ARX existantes), avec drapeau. -->
+          <app-pays-flag-select
+            [options]="newEntityPaysOptions()"
+            [selected]="editingEntityId() ? [editingEntityId()!.toString()] : []"
+            [label]="'ADMIN.ENTITY_CURRENCY.FIELD_PAYS' | translate"
+            [placeholder]="'ADMIN.ENTITY_CURRENCY.PAYS_PLACEHOLDER' | translate"
+            [inline]="true"
+            (selectedChange)="onNewEntityPaysChange($event)" />
+        } @else if (editingEntity(); as entity) {
+          <div class="entity-summary">
+            <img class="entity-summary-flag" [src]="flagDataUri(entity.isoCode)" [alt]="entity.isoCode" />
+            <div class="entity-summary-text">
+              <span class="entity-summary-name">{{ entity.frenchLabel }}</span>
+              <span class="entity-summary-sub">
+                <span class="code-pill">{{ entity.isoCode }}</span>
+                {{ 'ADMIN.ENTITY_CURRENCY.CURRENT' | translate }}
+                <strong>{{ entity.devise || '—' }}</strong>
+              </span>
+            </div>
+          </div>
+        }
+      </section>
+
+      <!-- 2. Devise : liste CURRENCY active, tous pays confondus. -->
+      <section class="entity-modal-section">
+        <h4 class="entity-modal-heading">
+          <span class="material-symbols-outlined">payments</span>
+          {{ 'ADMIN.ENTITY_CURRENCY.SECTION_CURRENCY' | translate }}
+        </h4>
+        <daf-select
+          [options]="editingCurrencyOptions()"
+          [selected]="entityFormSelected()"
+          [config]="{ label: ('ADMIN.ENTITY_CURRENCY.COL_CURRENCY' | translate), placeholder: ('ADMIN.ENTITY_CURRENCY.SELECT_PLACEHOLDER' | translate), searchable: true, fullWidth: true }"
+          (selectedChange)="entityFormSelected.set($event)" />
+
+        <!-- Devise absente de la liste → raccourci vers Listes › Devise (modale d'ajout ouverte). -->
+        <div class="entity-modal-help" [class.is-empty]="editingCurrencyOptions().length === 0">
+          <span class="material-symbols-outlined">info</span>
+          <span class="entity-modal-help-text">{{ 'ADMIN.ENTITY_CURRENCY.NOT_FOUND' | translate }}</span>
+          <daf-button [label]="'ADMIN.ENTITY_CURRENCY.ADD_CURRENCY' | translate" variant="ghost"
+            [options]="{ size: 'sm', iconStart: 'add' }"
+            (onClick)="goToAddCurrency()" />
+        </div>
+      </section>
     </div>
   </ng-template>
 </daf-page>

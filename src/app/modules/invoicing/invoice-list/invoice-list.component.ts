@@ -420,6 +420,10 @@ export class InvoiceListComponent implements OnInit {
       body:  this.approvalTpl,
       size:  'md',
       closeOnBackdrop: false,
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
       buttons: [
         { label: this.translate.instant('INVOICING.LIST.APPROVAL.CANCEL'),  variant: 'secondary', action: r => r.close() },
         { label: this.translate.instant('INVOICING.LIST.APPROVAL.CONFIRM'), variant: 'primary',   action: () => this.submitApproval() },
