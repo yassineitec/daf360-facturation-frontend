@@ -40,6 +40,12 @@ export class PaysFlagSelectComponent {
   /** Vide = texte par défaut traduit (COMMON.PAYS_SELECT.PLACEHOLDER). */
   placeholder = input<string>('');
   searchable  = input<boolean>(true);
+  /**
+   * `inline` : le panneau prend sa place dans le flux (pleine largeur) et pousse ce qui
+   * suit, au lieu de flotter par-dessus. Pour un formulaire en modale, où le panneau
+   * absolu recouvrait le champ suivant et se faisait rogner par le corps défilant.
+   */
+  inline      = input<boolean>(false);
 
   selectedChange = output<string[]>();
 
@@ -65,7 +71,8 @@ export class PaysFlagSelectComponent {
     const state = this.open()
       ? 'bg-surface border-tertiary ring-2 ring-tertiary/20 shadow-sm'
       : 'bg-surface-container-low border-outline-variant hover:border-outline';
-    return [...base, state].join(' ');
+    // En mode `inline` (formulaire), le déclencheur s'aligne sur la largeur des champs voisins.
+    return [...base, state, this.inline() ? 'w-full' : ''].join(' ');
   });
 
   protected optionClasses(opt: PaysFlagOption): string {

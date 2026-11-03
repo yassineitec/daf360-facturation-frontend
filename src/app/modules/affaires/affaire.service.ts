@@ -264,6 +264,20 @@ export class AffaireService {
    * `getArxEntities()` above) so the admin screen can show a real failure message
    * instead of a silently-empty list, which would be confusing on a config screen.
    */
+  /** Toutes les devises actives (liste CURRENCY, tous pays confondus, un code une fois)
+   *  — choix de la devise d'une entité ARX. */
+  getEntityCurrencies(): Observable<{ id: number; code: string; labelFr: string; labelEn: string }[]> {
+    return this.http.get<{ id: number; code: string; labelFr: string; labelEn: string }[]>(
+      `${this.base}/ref/pays/currencies`).pipe(catchError(() => of([])));
+  }
+
+  /** Fait d'un pays de `pays_ref` une entité ARX, avec sa devise par défaut. */
+  addArxEntity(paysId: number, currencyValueId: number): Observable<PaysRefDto> {
+    return this.http.post<PaysRefDto>(`${this.base}/ref/pays/arx-entities`, { paysId, currencyValueId }).pipe(
+      tap(() => { this.arxEntitiesCache$ = undefined; }),
+    );
+  }
+
   updateEntityDevise(id: number, currencyValueId: number): Observable<PaysRefDto> {
     return this.http.patch<PaysRefDto>(`${this.base}/ref/pays/${id}/devise`, { currencyValueId }).pipe(
       tap(() => {

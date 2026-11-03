@@ -1,8 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  BadgeCell, ButtonComponent, DafCellDirective, DataTableComponent, DrawerComponent,
-  FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
+  BadgeCell, ButtonComponent, DafCellDirective, DataTableComponent,
+  FieldMessageComponent, FormFieldComponent, ModalRef, ModalService, SelectComponent, SelectOption,
   TableColumn, TableConfig, TableRow, ToggleComponent,
 } from '@khalilrebhiitec/daf360';
 import { WipEmailTemplateService } from './wip-email-template.service';
@@ -18,7 +18,7 @@ import { tableTools } from '../../../shared/table-tools';
   standalone: true,
   imports: [
     TranslatePipe, PermissionDirective,
-    DataTableComponent, DafCellDirective, ButtonComponent, DrawerComponent,
+    DataTableComponent, DafCellDirective, ButtonComponent,
     FormFieldComponent, SelectComponent, ToggleComponent, FieldMessageComponent,
   ],
   host: { class: 'block' },
@@ -27,14 +27,19 @@ import { tableTools } from '../../../shared/table-tools';
 export class WipEmailTemplatesAdminComponent implements OnInit {
   private readonly svc       = inject(WipEmailTemplateService);
   private readonly translate = inject(TranslateService);
+  private readonly modal     = inject(ModalService);
 
   templates  = signal<WipEmailTemplate[]>([]);
   loading    = signal(true);
   error      = signal<string | null>(null);
 
-  // ── Drawer ───────────────────────────────────────────────────────────────────
+  // ── Modale d'édition ─────────────────────────────────────────────────────────
+  // ModalService (et non daf-drawer), même config que les autres modales de
+  // /finance/admin : redimensionnable + agrandir.
 
-  drawerOpen  = signal(false);
+  @ViewChild('formTpl') formTpl!: TemplateRef<unknown>;
+  private modalRef: ModalRef | null = null;
+
   editing     = signal<WipEmailTemplate | null>(null);
   saving      = signal(false);
   formError   = signal<string | null>(null);
@@ -141,7 +146,7 @@ export class WipEmailTemplatesAdminComponent implements OnInit {
   openCreate(): void {
     this.editing.set(null);
     this.resetForm();
-    this.drawerOpen.set(true);
+    this.openModal();
   }
 
   openEdit(tpl: WipEmailTemplate): void {
@@ -152,7 +157,26 @@ export class WipEmailTemplatesAdminComponent implements OnInit {
     this.subjectTemplate.set(tpl.subjectTemplate);
     this.bodyTemplate.set(tpl.bodyTemplate);
     this.active.set(tpl.active);
-    this.drawerOpen.set(true);
+    this.openModal();
+  }
+
+  private openModal(): void {
+    const t = (k: string) => this.translate.instant(k);
+    this.modalRef = this.modal.open({
+      minWidth:    '420px',
+      minHeight:   '360px',
+      resizable:   true,
+      maximizable: true,
+      title:       t(this.isEdit() ? 'ADMIN.WIP_EMAIL_TPLS.EDIT_TITLE' : 'ADMIN.WIP_EMAIL_TPLS.NEW_TITLE'),
+      icon:        'mail_outline',
+      body:        this.formTpl,
+      size:        'lg',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: t('ADMIN.COMMON.CANCEL'), variant: 'secondary', action: r => r.close() },
+        { label: t('ADMIN.COMMON.SAVE'),   variant: 'primary', icon: 'save', action: () => this.save() },
+      ],
+    });
   }
 
   private resetForm(): void {
@@ -165,7 +189,13 @@ export class WipEmailTemplatesAdminComponent implements OnInit {
   }
 
   save(): void {
-    if (!this.canSave()) return;
+    if (this.saving()) return;
+    // Les boutons de modale ne suivent pas un signal : le contrôle se fait ici, avec
+    // un message, au lieu d'un bouton grisé.
+    if (!this.canSave()) {
+      this.formError.set(this.translate.instant('ADMIN.WIP_EMAIL_TPLS.ERROR_REQUIRED'));
+      return;
+    }
     this.saving.set(true);
     this.formError.set(null);
     const dto: SaveWipEmailTemplateRequest = {
@@ -178,7 +208,12 @@ export class WipEmailTemplatesAdminComponent implements OnInit {
     const editing = this.editing();
     const req = editing ? this.svc.update(editing.id, dto) : this.svc.create(dto);
     req.subscribe({
-      next: () => { this.saving.set(false); this.drawerOpen.set(false); this.load(); },
+      next: () => {
+        this.saving.set(false);
+        this.modalRef?.close();
+        this.modalRef = null;
+        this.load();
+      },
       error: err => {
         this.saving.set(false);
         this.formError.set(err?.error?.message ?? this.translate.instant('ADMIN.WIP_EMAIL_TPLS.ERROR_SAVE'));
