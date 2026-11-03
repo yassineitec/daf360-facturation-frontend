@@ -12,14 +12,28 @@
   <daf-data-table #auditDataTable
     [columns]="columns()"
     [rows]="rows()"
-    [config]="tableConfig()">
+    [config]="tableConfig()"
+    (rowClick)="onRowClick($event)">
 
-    <ng-template dafCell="action" let-row>
-      {{ 'ADMIN.AUDIT_TRAIL.ACTION_' + row['action'] | translate }}
+    <ng-template dafCell="changedAt" let-row>
+      <span class="ledger-rail" [class.ledger-rail-group]="row['_group']" [style.--rail-color]="railColor(row)">
+        {{ row['changedAt'].slice(0,16).replace('T',' ') }}
+      </span>
     </ng-template>
 
-    <ng-template dafCell="changedBy" let-row>
-      <span class="cell-muted">{{ row['changedBy'] || '—' }}</span>
+    <ng-template dafCell="domain" let-row>
+      <daf-badge [label]="row['domain']" [options]="{ variant: domainVariant(row['domain']), size: 'sm' }" />
+    </ng-template>
+
+    <ng-template dafCell="action" let-row>
+      <daf-badge [label]="'ADMIN.AUDIT_TRAIL.ACTION_' + row['action'] | translate" [options]="{ variant: actionVariant(row['action']), size: 'sm' }" />
+    </ng-template>
+
+    <ng-template dafCell="record" let-row>
+      <span class="record-cell" [class.group-cell]="row['_group']" [title]="row['_group'] ? ('ADMIN.AUDIT_TRAIL.GROUP_HINT' | translate) : ''">
+        @if (row['_group']) { <span class="material-symbols-outlined group-icon">schedule</span> }
+        {{ row['record'] }}
+      </span>
     </ng-template>
   </daf-data-table>
 
@@ -33,3 +47,59 @@
     (pageChange)="onPageChange($event)"
     (pageSizeChange)="onPageSizeChange($event)" />
 </div>
+
+<!-- ── Detail modal: one entry's metadata + field-by-field before/after ─────── -->
+<ng-template #detailTpl>
+  @if (activeEntry(); as entry) {
+    <div class="detail-meta">
+      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_DATE' | translate }}</span>{{ entry.changedAt.slice(0,19).replace('T',' ') }}</div>
+      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_DOMAIN' | translate }}</span>{{ tableDomain(entry.tableName) }}</div>
+      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_TABLE' | translate }}</span>{{ tableLabel(entry.tableName) }}</div>
+      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_ACTION' | translate }}</span>{{ 'ADMIN.AUDIT_TRAIL.ACTION_' + entry.action | translate }}</div>
+      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_PK' | translate }}</span>{{ recordIdentity(entry) }}</div>
+      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_AFFAIRE' | translate }}</span>{{ affaireLabelFor(entry) }}</div>
+      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_ACTOR' | translate }}</span>{{ entry.changedBy ?? ('ADMIN.AUDIT_TRAIL.ACTOR_SYSTEM' | translate) }}</div>
+    </div>
+
+    @if (activeDiff().length === 0) {
+      <p class="text-muted">{{ 'ADMIN.AUDIT_TRAIL.DETAIL_NO_FIELDS' | translate }}</p>
+    } @else {
+      <div class="diff-list">
+        @for (d of activeDiff(); track d.field) {
+          <div class="diff-row">
+            <div class="diff-field-name">{{ d.field }}</div>
+            @if (d.changed) {
+              <div class="diff-line diff-line-removed"><span class="diff-marker">−</span>{{ d.before }}</div>
+              <div class="diff-line diff-line-added"><span class="diff-marker">+</span>{{ d.after }}</div>
+            } @else {
+              <div class="diff-line diff-line-unchanged">{{ d.after }}</div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</ng-template>
+
+<!-- ── Group modal: the member entries behind one "N modifications groupées" row ─ -->
+<ng-template #groupTpl>
+  @if (activeGroup(); as members) {
+    <p class="text-muted">{{ 'ADMIN.AUDIT_TRAIL.GROUP_MODAL_HINT' | translate }}</p>
+    <table class="diff-table group-members-table">
+      <thead>
+        <tr>
+          <th>{{ 'ADMIN.AUDIT_TRAIL.COL_DATE' | translate }}</th>
+          <th>{{ 'ADMIN.AUDIT_TRAIL.COL_PK' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of members; track m.id) {
+          <tr class="group-member-row" (click)="openDetailFromGroup(m)">
+            <td>{{ m.changedAt.slice(0,19).replace('T',' ') }}</td>
+            <td>{{ recordIdentity(m) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</ng-template>
