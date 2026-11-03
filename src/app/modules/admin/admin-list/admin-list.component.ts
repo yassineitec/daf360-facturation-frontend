@@ -8,6 +8,7 @@ import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-ad
 import { CostReminderRulesAdminComponent } from '../cost-reminder-rules/cost-reminder-rules-admin.component';
 import { WipEmailTemplatesAdminComponent } from '../wip-email-templates/wip-email-templates-admin.component';
 import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
+import { AuditTrailAdminComponent } from '../audit-trail/audit-trail-admin.component';
 import { CostConfigComponent } from '../../cost/tabs/cost-config.component';
 import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
 import {
@@ -33,7 +34,7 @@ import { UserStore } from '../../../core/user.store';
 import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates'
               | 'cost-config' | 'reminders' | 'cost-reminders' | 'wip-email-templates'
-              | 'entity-currency';
+              | 'entity-currency' | 'audit';
 
 const PAGE_SIZE = 10;
 
@@ -92,6 +93,7 @@ interface ForexRow {
     SelectComponent, PaysFlagSelectComponent, PageComponent, PageHeaderComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, CostReminderRulesAdminComponent,
     DocumentTemplatesAdminComponent,
+    AuditTrailAdminComponent,
     WipEmailTemplatesAdminComponent,
     CostConfigComponent,
   ],
@@ -470,6 +472,7 @@ export class AdminListComponent implements OnInit {
       items.push({ id: 'permissions',         label: t('ADMIN.TABS.PERMISSIONS'),         icon: 'admin_panel_settings' });
       items.push({ id: 'document-templates',  label: t('ADMIN.TABS.DOCUMENT_TEMPLATES'),  icon: 'description' });
       items.push({ id: 'wip-email-templates', label: t('ADMIN.TABS.WIP_EMAIL_TEMPLATES'), icon: 'mark_email_unread' });
+      items.push({ id: 'audit', label: t('ADMIN.TABS.AUDIT'), icon: 'history' });
     }
     // Anciennement l'onglet « Config » de /finance/cost : déplacé ici, à côté des
     // Maquettes de documents. Ouvert aux mêmes profils que la route `cost` elle-même

@@ -4482,7 +4482,23 @@
       "REMINDERS": "Relances",
       "COST_REMINDERS": "Relances fournisseurs",
       "WIP_EMAIL_TEMPLATES": "Emails WIP",
+      "AUDIT": "Audit",
       "NAV_LABEL": "Navigation de l'administration"
+    },
+    "AUDIT_TRAIL": {
+      "COL_DATE": "Date",
+      "COL_TABLE": "Table",
+      "COL_ACTION": "Action",
+      "COL_PK": "Clé",
+      "COL_ACTOR": "Acteur",
+      "FILTER_TITLE": "Filtres",
+      "FILTER_APPLY": "Appliquer",
+      "FILTER_RESET": "Réinitialiser",
+      "EMPTY": "Aucune entrée.",
+      "ERR_LOAD": "Erreur de chargement",
+      "ACTION_I": "Création",
+      "ACTION_U": "Modification",
+      "ACTION_D": "Suppression"
     },
     "ENTITY_CURRENCY": {
       "TITLE": "Devise par défaut des entités ARX",

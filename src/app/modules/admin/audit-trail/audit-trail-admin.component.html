@@ -1,0 +1,35 @@
+<div class="audit-trail-admin">
+  <daf-search-toolbar [card]="false"
+    [filterFields]="filterFields()"
+    [filterConfig]="filterConfig()"
+    (filterApply)="onFilterApply($event)"
+    [table]="auditTableRef() ?? null" />
+
+  @if (loadError()) {
+    <p class="text-danger">{{ loadError() }}</p>
+  }
+
+  <daf-data-table #auditDataTable
+    [columns]="columns()"
+    [rows]="rows()"
+    [config]="tableConfig()">
+
+    <ng-template dafCell="action" let-row>
+      {{ 'ADMIN.AUDIT_TRAIL.ACTION_' + row['action'] | translate }}
+    </ng-template>
+
+    <ng-template dafCell="changedBy" let-row>
+      <span class="cell-muted">{{ row['changedBy'] || '—' }}</span>
+    </ng-template>
+  </daf-data-table>
+
+  <daf-pagination
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [totalElements]="totalElements()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="pageSizeOptions"
+    [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)" />
+</div>

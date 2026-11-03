@@ -4482,7 +4482,23 @@
       "REMINDERS": "Reminders",
       "COST_REMINDERS": "Supplier reminders",
       "WIP_EMAIL_TEMPLATES": "WIP Emails",
+      "AUDIT": "Audit",
       "NAV_LABEL": "Admin navigation"
+    },
+    "AUDIT_TRAIL": {
+      "COL_DATE": "Date",
+      "COL_TABLE": "Table",
+      "COL_ACTION": "Action",
+      "COL_PK": "Key",
+      "COL_ACTOR": "Actor",
+      "FILTER_TITLE": "Filters",
+      "FILTER_APPLY": "Apply",
+      "FILTER_RESET": "Reset",
+      "EMPTY": "No entries.",
+      "ERR_LOAD": "Loading error",
+      "ACTION_I": "Created",
+      "ACTION_U": "Updated",
+      "ACTION_D": "Deleted"
     },
     "ENTITY_CURRENCY": {
       "TITLE": "Default currency of ARX entities",

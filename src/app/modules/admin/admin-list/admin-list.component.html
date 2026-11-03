@@ -413,6 +413,12 @@
       </div>
     }
 
+    @if (activeTab() === 'audit') {
+      <div class="tab-content">
+        <app-audit-trail-admin />
+      </div>
+    }
+
     <!-- ── COST CONFIG TAB (seuils d'approbation, catégories et listes de coûts —
          anciennement l'onglet « Config » de /finance/cost, embedded).
          Pleine largeur : le panneau d'import CSV n'est plus une colonne latérale
