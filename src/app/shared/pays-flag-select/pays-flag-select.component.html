@@ -35,9 +35,9 @@
            (`truncate` sur le `span`), et la recherche reste là pour ce que la troncature
            masque. -->
       <div
-        class="absolute right-0 z-9999 mt-1 min-w-full w-max max-w-[min(20rem,90vw)]
-               bg-surface-container-lowest rounded-lg border border-outline-variant
-               shadow-xl overflow-hidden"
+        [class]="inline()
+          ? 'relative mt-1 w-full bg-surface-container-lowest rounded-lg border border-outline-variant shadow-md overflow-hidden'
+          : 'absolute right-0 z-9999 mt-1 min-w-full w-max max-w-[min(20rem,90vw)] bg-surface-container-lowest rounded-lg border border-outline-variant shadow-xl overflow-hidden'"
         (click)="$event.stopPropagation()">
 
         @if (searchable()) {

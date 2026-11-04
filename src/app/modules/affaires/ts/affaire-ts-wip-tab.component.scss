@@ -102,3 +102,14 @@
     padding: 1.25rem 1.25rem 0;
   }
 }
+
+/* Tableau de l'historique dans la carte du titre : mêmes marges latérales que le titre,
+   et une marge basse pour qu'il ne touche pas le bord de la carte. */
+.ts-history-body {
+  padding: 0 1rem 1rem;
+}
+@media (min-width: 640px) {
+  .ts-history-body {
+    padding: 0 1.25rem 1.25rem;
+  }
+}

@@ -336,6 +336,8 @@ const MODAL_RESIZE = {
       top:      calc(1rem + 1.1rem);
       left:     1rem;
       margin:   0;
+      /* La lib pose text-[10px] sur la pastille : deux crans au-dessus. */
+      font-size: 12px;
     }
 
     /* ── Carrousel des graphiques ──────────────────────────────────────────── */
@@ -1333,6 +1335,9 @@ export class AffaireDetailComponent implements OnInit {
     if (!a) return [];
 
     const rows: ContratRow[] = [
+      // La date de début n'était visible que dans la période accolée au contact référent :
+      // sans référent, la carte n'en montrait aucune. Elle ouvre le bloc Contrat, toujours.
+      { label: 'AFFAIRES.DETAIL.INFO.START_DATE', value: this.formatDateShort(a.dateDebut) },
       // Le budget prévisionnel n'était nulle part sur la fiche : la ligne « Budget validé »
       // disait s'il était approuvé sans jamais dire de combien, et les quatre tuiles du haut
       // montrent CA, RAF, marge et WIP — pas le budget dont elles se déduisent.

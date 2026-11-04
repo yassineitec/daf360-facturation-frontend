@@ -33,15 +33,8 @@
 
 </div>
 
-<!-- ══ Panneau d'édition ══ -->
-<daf-drawer
-  [(open)]="drawerOpen"
-  [config]="{
-    title: (isEdit() ? 'ADMIN.WIP_EMAIL_TPLS.EDIT_TITLE' : 'ADMIN.WIP_EMAIL_TPLS.NEW_TITLE') | translate,
-    icon: 'mail_outline',
-    width: '520px',
-    showToggle: false
-  }">
+<!-- ══ Corps de la modale d'édition (ModalService — boutons dans le pied de la modale) ══ -->
+<ng-template #formTpl>
 
   <div class="flex flex-col gap-5 p-1">
 
@@ -116,18 +109,5 @@
         hint: ('ADMIN.WIP_EMAIL_TPLS.ACTIVE_HINT' | translate)
       }" />
 
-    <div style="display:flex; gap:0.5rem">
-      <daf-button
-        style="flex:1 1 50%"
-        [options]="{ variant: 'ghost', fullWidth: true, label: 'ADMIN.COMMON.CANCEL' | translate }"
-        (onClick)="drawerOpen.set(false)" />
-      <daf-button
-        style="flex:1 1 50%"
-        [options]="{ variant: 'teal', fullWidth: true, iconStart: 'save',
-                     loading: saving(), disabled: !canSave() || saving(),
-                     label: 'ADMIN.COMMON.SAVE' | translate }"
-        (onClick)="save()" />
-    </div>
-
   </div>
-</daf-drawer>
+</ng-template>

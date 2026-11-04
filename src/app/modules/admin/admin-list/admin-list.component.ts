@@ -8,15 +8,17 @@ import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-ad
 import { CostReminderRulesAdminComponent } from '../cost-reminder-rules/cost-reminder-rules-admin.component';
 import { WipEmailTemplatesAdminComponent } from '../wip-email-templates/wip-email-templates-admin.component';
 import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
+import { AuditTrailAdminComponent } from '../audit-trail/audit-trail-admin.component';
 import { CostConfigComponent } from '../../cost/tabs/cost-config.component';
 import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
+import { flagDataUri } from '../../../shared/country-flags';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
   PaginationComponent, PaginationConfig, ButtonComponent, ModalService, ModalRef,
   SectionCardComponent, SectionTitleComponent, CardComponent,
   RadioGroupComponent, RadioGroupConfig, RadioOption,
   ToggleComponent, ToggleOptions,
-  FormFieldComponent, StatusBadgeComponent, SkeletonComponent,
+  FormFieldComponent, StatusBadgeComponent,
   TabsComponent, TabItem, SearchToolbarComponent, SelectComponent, SelectOption,
   PageComponent, PageHeaderComponent,
 } from '@khalilrebhiitec/daf360';
@@ -33,7 +35,7 @@ import { UserStore } from '../../../core/user.store';
 import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates'
               | 'cost-config' | 'reminders' | 'cost-reminders' | 'wip-email-templates'
-              | 'entity-currency';
+              | 'entity-currency' | 'audit';
 
 const PAGE_SIZE = 10;
 
@@ -88,10 +90,11 @@ interface ForexRow {
     CommonModule, FormsModule,
     DataTableComponent, DafCellDirective, PaginationComponent, ButtonComponent, CardComponent,
     SectionCardComponent, SectionTitleComponent, RadioGroupComponent, ToggleComponent,
-    FormFieldComponent, StatusBadgeComponent, SkeletonComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
+    FormFieldComponent, StatusBadgeComponent, TranslatePipe, TabsComponent, SearchToolbarComponent,
     SelectComponent, PaysFlagSelectComponent, PageComponent, PageHeaderComponent,
     FactRolesAdminComponent, ReminderRulesAdminComponent, CostReminderRulesAdminComponent,
     DocumentTemplatesAdminComponent,
+    AuditTrailAdminComponent,
     WipEmailTemplatesAdminComponent,
     CostConfigComponent,
   ],
@@ -110,6 +113,7 @@ export class AdminListComponent implements OnInit {
 
   @ViewChild('valueFormTpl') valueFormTpl!: TemplateRef<unknown>;
   @ViewChild('forexFormTpl') forexFormTpl!: TemplateRef<unknown>;
+  @ViewChild('entityFormTpl') entityFormTpl!: TemplateRef<unknown>;
 
   // ── Table / pagination (daf360 lib) ─────────────────────────────────────────
   readonly paginationConfig: PaginationConfig = {
@@ -470,6 +474,7 @@ export class AdminListComponent implements OnInit {
       items.push({ id: 'permissions',         label: t('ADMIN.TABS.PERMISSIONS'),         icon: 'admin_panel_settings' });
       items.push({ id: 'document-templates',  label: t('ADMIN.TABS.DOCUMENT_TEMPLATES'),  icon: 'description' });
       items.push({ id: 'wip-email-templates', label: t('ADMIN.TABS.WIP_EMAIL_TEMPLATES'), icon: 'mark_email_unread' });
+      items.push({ id: 'audit', label: t('ADMIN.TABS.AUDIT'), icon: 'history' });
     }
     // Anciennement l'onglet « Config » de /finance/cost : déplacé ici, à côté des
     // Maquettes de documents. Ouvert aux mêmes profils que la route `cost` elle-même
@@ -612,62 +617,183 @@ export class AdminListComponent implements OnInit {
     });
   }
 
-  /** Preselects the currently-configured currency in the edit dropdown, matched by
-   *  code against the freshly-loaded CURRENCY options — a blank dropdown on open
-   *  would read as "no currency set" even when one already is. */
-  readonly editingEntitySelected = computed<string[]>(() => {
-    const id = this.editingEntityId();
-    if (id === null) return [];
-    const entity = this.entities().find(e => e.id === id);
-    if (!entity?.devise) return [];
-    const match = this.editingCurrencyOptions().find(o => o.label === entity.devise);
-    return match ? [match.value] : [];
+  /** Tri / recherche du tableau des entités — même mécanique que le tableau Forex,
+   *  sans pagination (13 entités ARX, jeu de référence fixe). */
+  readonly entitySort   = signal<TableSort | null>(null);
+  readonly entitySearch = signal('');
+
+  onEntitySort(event: Parameters<typeof toTableSort>[0]): void {
+    this.entitySort.set(toTableSort(event));
+  }
+
+  readonly entityColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    return [
+      { key: 'label',   label: this.translate.instant('ADMIN.ENTITY_CURRENCY.COL_ENTITY'),   sortable: true },
+      { key: 'isoCode', label: this.translate.instant('ADMIN.ENTITY_CURRENCY.COL_ISO'),      width: '120px', sortable: true },
+      { key: 'devise',  label: this.translate.instant('ADMIN.ENTITY_CURRENCY.COL_CURRENCY'), width: '160px', sortable: true },
+    ];
   });
 
-  startEditEntity(entity: PaysRefDto): void {
+  readonly entityRows = computed<TableRow[]>(() =>
+    sortTableRows(searchTableRows(this.entities().map(e => ({
+      id:      e.id,
+      label:   e.frenchLabel,
+      isoCode: e.isoCode,
+      devise:  e.devise ?? '',
+      _source: e,
+    })), this.entityColumns(), this.entitySearch()), this.entityColumns(), this.entitySort()));
+
+  /** Native `TableConfig.actions` — même convention que les tableaux Listes / Forex. */
+  readonly entityTableConfig = computed<TableConfig>(() => {
+    const t = (key: string) => this.translate.instant(key);
+    return {
+      hoverable:    true,
+      showHeader:   false,
+      loading:      this.entitiesLoading(),
+      emptyMessage: t('ADMIN.ENTITY_CURRENCY.EMPTY'),
+      ...tableTools(this.translate),
+      ...delegatedSort(untracked(this.entitySort)),
+      actions: [
+        {
+          id: 'edit', icon: 'edit', tooltip: t('ADMIN.COMMON.EDIT'),
+          onClick: row => this.openEditEntityModal(row['_source'] as PaysRefDto),
+        },
+      ],
+    };
+  });
+
+  /** Devise choisie dans la modale, pas encore enregistrée (id de la valeur CURRENCY). */
+  readonly entityFormSelected = signal<string[]>([]);
+  /** `create` : ajout d'une entité (choix du pays + devise) ; `edit` : devise seule. */
+  readonly entityModalMode = signal<'create' | 'edit'>('edit');
+  /** Les 194 pays de `pays_ref` — candidats à l'ajout, chargés à la première ouverture. */
+  readonly allPaysRef = signal<PaysRefDto[]>([]);
+  readonly editingEntity = computed(() => {
+    const id = this.editingEntityId();
+    return this.entities().find(e => e.id === id) ?? this.allPaysRef().find(p => p.id === id) ?? null;
+  });
+  /** Pays proposés à l'ajout : tous ceux qui ne sont pas déjà une entité ARX. */
+  readonly newEntityPaysOptions = computed<PaysFlagOption[]>(() => {
+    const taken = new Set(this.entities().map(e => e.id));
+    return this.allPaysRef()
+      .filter(p => !taken.has(p.id))
+      .sort((a, b) => a.frenchLabel.localeCompare(b.frenchLabel))
+      .map(p => ({ value: String(p.id), label: `${p.frenchLabel} (${p.isoCode})`, isoCode: p.isoCode }));
+  });
+  private entityModalRef: ModalRef | null = null;
+  protected readonly flagDataUri = flagDataUri;
+
+  openCreateEntityModal(): void {
+    this.entityModalMode.set('create');
+    this.editingEntityId.set(null);
+    this.editingCurrencyOptions.set([]);
+    this.entityFormSelected.set([]);
+    this.entityError.set(null);
+    if (this.allPaysRef().length === 0) {
+      this.affaireSvc.getPays().subscribe(pays => this.allPaysRef.set(pays));
+    }
+    this.openEntityModal(this.translate.instant('ADMIN.ENTITY_CURRENCY.MODAL_ADD'),
+      this.translate.instant('ADMIN.COMMON.CREATE'));
+    this.loadEntityCurrencies(null);
+  }
+
+  /** Choix du pays dans la modale d'ajout — les devises ne dépendent pas du pays, la
+   *  liste et la devise déjà choisie restent en place. */
+  onNewEntityPaysChange(selected: string[]): void {
+    const id = Number(selected[0]);
+    this.editingEntityId.set(Number.isFinite(id) && id > 0 ? id : null);
+    this.entityError.set(null);
+  }
+
+  /** Lien « Ajouter une devise » de la modale : ferme la modale et ouvre Listes › Devise
+   *  avec sa modale d'ajout. La devise créée y est proposée à la prochaine ouverture. */
+  goToAddCurrency(): void {
+    this.entityModalRef?.close();
+    this.entityModalRef = null;
+    this.activeTab.set('lists');
+    this.selectListType('CURRENCY');
+    this.openCreateValueModal();
+  }
+
+  openEditEntityModal(entity: PaysRefDto): void {
+    this.entityModalMode.set('edit');
     this.editingEntityId.set(entity.id);
     this.editingCurrencyOptions.set([]);
+    this.entityFormSelected.set([]);
     this.entityError.set(null);
-    this.factListSvc.getAdminListValues('CURRENCY', entity.id).subscribe(values => {
-      // A newer edit may have taken over while this request was in flight (admin
-      // clicked Edit on another row before this one resolved). `getAdminListValues`
-      // is pays-scoped, so applying a stale response here could silently populate the
-      // dropdown with currency values that belong to a DIFFERENT entity's pays — bail
-      // out silently rather than risk a save against the wrong pays-scoped id.
-      if (this.editingEntityId() !== entity.id) return;
-      this.editingCurrencyOptions.set(values.map(v => ({ value: String(v.id), label: v.code })));
-      // `getAdminListValues` swallows network errors to `[]` (same convention as
-      // every other admin list read) — same treatment as loadEntities() above: an
-      // empty result is surfaced as a failure rather than left as a silently empty,
-      // unexplained dropdown.
+    this.openEntityModal(this.translate.instant('ADMIN.ENTITY_CURRENCY.MODAL_EDIT', { entity: entity.frenchLabel }),
+      this.translate.instant('ADMIN.COMMON.SAVE'));
+    this.loadEntityCurrencies(entity.devise ?? null);
+  }
+
+  private openEntityModal(title: string, submitLabel: string): void {
+    // Même config que la modale « Ajouter une valeur » des Listes : redimensionnable + agrandir.
+    this.entityModalRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
+      title,
+      body:      this.entityFormTpl,
+      size:      'md',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: this.translate.instant('ADMIN.COMMON.CANCEL'), variant: 'secondary', action: r => r.close() },
+        { label: submitLabel, variant: 'primary', action: () => this.submitEntityModal() },
+      ],
+    });
+  }
+
+  /** Incrémenté à chaque ouverture : une réponse arrivée après la fermeture / réouverture
+   *  de la modale ne doit pas écraser la liste ni la présélection de la nouvelle. */
+  private entityModalSeq = 0;
+
+  private loadEntityCurrencies(currentDevise: string | null): void {
+    const seq = ++this.entityModalSeq;
+    // Toutes les devises actives, quel que soit le pays de rattachement de la valeur :
+    // l'écran Listes rattache chaque ajout au pays sélectionné, et une devise ajoutée
+    // depuis un pays doit rester proposée pour toutes les entités.
+    this.affaireSvc.getEntityCurrencies().subscribe(values => {
+      if (seq !== this.entityModalSeq) return;
+      this.editingCurrencyOptions.set(values.map(v => ({ value: String(v.id), label: `${v.code} — ${v.labelFr}` })));
+      // Présélectionne la devise actuelle — une liste vide à l'ouverture laisserait
+      // croire qu'aucune devise n'est configurée alors qu'il y en a une.
+      const current = values.find(v => v.code === currentDevise);
+      if (current) this.entityFormSelected.set([String(current.id)]);
+      // Liste vide (aucune devise active, ou erreur réseau avalée en `[]`) : signalée
+      // en clair, le lien « Ajouter une devise » juste en dessous permet d'en créer une.
       if (values.length === 0) {
         this.entityError.set(this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_NO_CURRENCIES'));
       }
     });
   }
 
-  cancelEditEntity(): void {
-    this.editingEntityId.set(null);
-    this.editingCurrencyOptions.set([]);
-  }
-
-  saveEntityDevise(entity: PaysRefDto, currencyValueId: string): void {
-    const id = Number(currencyValueId);
-    if (!Number.isFinite(id) || id <= 0) return;
+  submitEntityModal(): void {
+    if (this.entitySaving()) return;
+    const entity = this.editingEntity();
+    if (!entity) {
+      this.entityError.set(this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_PAYS_REQUIRED'));
+      return;
+    }
+    const id = Number(this.entityFormSelected()[0]);
+    if (!Number.isFinite(id) || id <= 0) {
+      this.entityError.set(this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_REQUIRED'));
+      return;
+    }
     this.entitySaving.set(true);
     this.entityError.set(null);
-    this.affaireSvc.updateEntityDevise(entity.id, id).subscribe({
+    const save$ = this.entityModalMode() === 'create'
+      ? this.affaireSvc.addArxEntity(entity.id, id)
+      : this.affaireSvc.updateEntityDevise(entity.id, id);
+    save$.subscribe({
       next: updated => {
-        this.entities.update(list => list.map(e => e.id === updated.id ? updated : e));
+        this.entities.update(list => list.some(e => e.id === updated.id)
+          ? list.map(e => e.id === updated.id ? updated : e)
+          : [...list, updated]);
         this.entitySaving.set(false);
-        // `editingEntityId`/`editingCurrencyOptions` are single shared signals, not
-        // per-row: if the admin has since switched to editing a different row while
-        // THIS save was in flight, closing the edit UI here would silently discard
-        // that other, still-in-progress edit. Only close it when it's still the
-        // edit this save belongs to — updating `entities` above is safe regardless.
-        if (this.editingEntityId() === entity.id) {
-          this.cancelEditEntity();
-        }
+        this.entityModalRef?.close();
+        this.entityModalRef = null;
       },
       error: err => {
         this.entityError.set(err.error?.message ?? this.translate.instant('ADMIN.ENTITY_CURRENCY.ERR_SAVE'));
