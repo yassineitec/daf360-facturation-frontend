@@ -49,7 +49,7 @@ export class ExportService {
 
   // ── Coûts / Fournisseurs ────────────────────────────────────────────────────────
 
-  /** ids = `reglementId` des lignes du relevé affichées. */
+  /** ids = `rowId` des lignes du relevé affichées (−id facture / id règlement). */
   supplierLedger(supplierId: number, ids: number[]): Observable<Blob> {
     return this.post(`/suppliers/${supplierId}/cost-ledger/export.xlsx`, { ids });
   }

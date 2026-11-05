@@ -5,6 +5,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { CostInvoiceDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { UserStore } from '../../../core/user.store';
 import {
   STATUS_ENTITY_STATUS, approvalLevelKey, formatDate, initials, statusKey,
 } from '../cost-display';
@@ -56,6 +57,7 @@ import {
 export class CostLinesCardsSectionComponent {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly userStore = inject(UserStore);
 
   invoices      = input.required<CostInvoiceDto[]>();
   loading       = input(false);
@@ -76,6 +78,7 @@ export class CostLinesCardsSectionComponent {
     const lang = this.translate.currentLang();
     const t  = (key: string) => this.translate.instant(key);
     const tp = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
+    const manage = this.userStore.hasPermission('FACT_MANAGE_COST');
 
     return this.invoices().map(inv => {
       const levelKey = approvalLevelKey(inv.approvalLevelRequired);
@@ -103,14 +106,15 @@ export class CostLinesCardsSectionComponent {
             { label: t('COST.LINES.COL_NET_AMOUNT'),   value: this.currency.transform(inv.netAmountLocal, inv.currency ?? 'TND') },
             { label: t('COST.LINES.COL_APPROVAL'),     value: levelKey ? t(levelKey) : '—' },
           ],
-          actions: this.actionsFor(inv, t),
+          actions: manage ? this.actionsFor(inv, t) : [],
           viewLabel: t('COST.LINES.VIEW'),
         } satisfies EntityCardOptions,
       };
     });
   });
 
-  /** Same gates as the table's row actions — both read `cost-invoice-display.ts`. */
+  /** Same gates as the table's row actions — both read `cost-invoice-display.ts`, and both
+   *  drop every action without FACT_MANAGE_COST (all three endpoints require it). */
   private actionsFor(inv: CostInvoiceDto, t: (key: string) => string): EntityCardAction[] {
     const actions: EntityCardAction[] = [];
     if (canSubmitInvoice(inv))    actions.push({ id: 'submit',    icon: 'send',     tooltip: t('COST.LINES.SUBMIT') });

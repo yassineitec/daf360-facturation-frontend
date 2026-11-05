@@ -2676,6 +2676,7 @@
       "RETURNED": "Retourné",
       "APPROVED": "Approuvé",
       "VALIDATED": "Validé",
+      "PARTIALLY_PAID": "Partiellement payée",
       "POSTED": "Comptabilisé",
       "CANCELLED": "Annulé",
       "REJECTED": "Rejeté"
@@ -3428,7 +3429,9 @@
       "INVOICE_PICKER": "Facture à régler",
       "INVOICE_PICKER_PLACEHOLDER": "Sélectionner une facture…",
       "ERR_INVOICE_REQUIRED": "Choisissez une facture.",
-      "NET_TO_PAY_HINT": "Net à payer (TTC − retenue à la source) : {{amount}}"
+      "NET_TO_PAY_HINT": "Net à payer (TTC − retenue à la source) : {{amount}}",
+      "REMAINING_HINT": "Reste à payer : {{amount}}",
+      "ERR_AMOUNT_EXCEEDS": "Le montant ne peut pas dépasser le reste à payer ({{amount}})."
     },
     "DETAIL": {
       "LOADING": "Chargement de la facture de coût…",
@@ -3517,13 +3520,15 @@
         "FILTER_CANCEL": "Annuler",
         "FILTER_RESET": "Réinitialiser",
         "FILTER_TYPE": "Type de mouvement",
-        "TYPE_CREDIT": "Crédit (reste dû)",
-        "TYPE_DEBIT": "Débit (trop-payé)",
+        "TYPE_CREDIT": "Factures (crédit)",
+        "TYPE_DEBIT": "Règlements (débit)",
         "TYPE_SETTLED": "Soldé",
+        "KIND_INVOICE": "Facture",
+        "KIND_REGLEMENT": "Règlement",
         "NEW_REGLEMENT": "Nouveau règlement",
         "EDIT_REGLEMENT": "Modifier le règlement",
         "DELETE_REGLEMENT": "Supprimer le règlement",
-        "CONFIRM_DELETE": "Supprimer ce règlement ? La facture redeviendra Approuvée.",
+        "CONFIRM_DELETE": "Supprimer ce règlement ? Le statut de la facture sera recalculé (approuvée ou partiellement payée).",
         "DELETE_ERROR": "Impossible de supprimer ce règlement.",
         "NO_SUPPLIER": "Aucun fournisseur n'est associé à cette facture — aucun relevé de compte à afficher.",
         "EMPTY": "Aucune écriture validée pour ce fournisseur.",
@@ -3533,6 +3538,15 @@
         "COL_RS": "Retenue à la source",
         "COL_NET_TO_PAY": "Net à payer",
         "COL_PAID": "Montant payé"
+      },
+      "PAYMENTS": {
+        "TITLE": "Règlements",
+        "PAID": "Déjà payé",
+        "REMAINING": "Reste à payer",
+        "EMPTY": "Aucun règlement enregistré.",
+        "COL_DATE": "Date",
+        "COL_AMOUNT": "Montant",
+        "COL_COMMENT": "Commentaire"
       },
       "TOTALS_TITLE": "Totaux de la facture",
       "LINES": {
@@ -4512,11 +4526,13 @@
         "COL_CREDIT": "Crédit",
         "COL_SOLDE_DEBITEUR": "Solde débiteur",
         "COL_SOLDE_CREDITEUR": "Solde créditeur",
-        "EMPTY": "Aucun règlement enregistré pour ce fournisseur.",
-        "HINT": "Lecture seule : un règlement se saisit depuis sa facture de coût (cliquez sur une écriture pour l’ouvrir). Les soldes sont cumulatifs sur tout le relevé.",
+        "EMPTY": "Aucune facture validée pour ce fournisseur.",
+        "HINT": "Lecture seule : chaque facture validée est au crédit (net à payer), chaque règlement au débit. Un règlement se saisit depuis sa facture de coût (cliquez sur une écriture pour l’ouvrir). Le solde créditeur est ce qui reste dû au fournisseur.",
         "FILTER_TYPE": "Type de mouvement",
-        "TYPE_CREDIT": "Crédit (reste dû)",
-        "TYPE_DEBIT": "Débit (trop-payé)",
+        "TYPE_CREDIT": "Factures (crédit)",
+        "TYPE_DEBIT": "Règlements (débit)",
+        "KIND_INVOICE": "Facture",
+        "KIND_REGLEMENT": "Règlement",
         "TYPE_SETTLED": "Soldé",
         "COL_INVOICE": "Facture",
         "FILTER_INVOICE": "Facture"

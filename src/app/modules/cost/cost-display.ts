@@ -18,6 +18,7 @@ export const STATUS_BADGE_VARIANT: Record<string, BadgeVariant> = {
   RETURNED:  'warning',
   APPROVED:  'success',
   VALIDATED: 'success',
+  PARTIALLY_PAID: 'warning',
   POSTED:    'secondary',
   CANCELLED: 'danger',
   REJECTED:  'danger',
@@ -36,6 +37,7 @@ export const STATUS_ENTITY_STATUS: Record<string, 'active' | 'inactive' | 'pendi
   RETURNED:  'pending',
   APPROVED:  'active',
   VALIDATED: 'active',
+  PARTIALLY_PAID: 'pending',
   POSTED:    'active',
 };
 

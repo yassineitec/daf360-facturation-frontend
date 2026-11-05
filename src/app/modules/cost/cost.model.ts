@@ -165,7 +165,7 @@ export interface CostApprovalRecordDto {
 
 export type CostLineStatus =
   'DRAFT' | 'SUBMITTED' | 'RETURNED' |
-  'APPROVED' | 'VALIDATED' | 'POSTED' |
+  'APPROVED' | 'VALIDATED' | 'PARTIALLY_PAID' | 'POSTED' |
   'CANCELLED' | 'REJECTED';
 
 export interface CostLineDto {
@@ -326,7 +326,12 @@ export interface CostInvoiceDto {
   otherTaxes: CostInvoiceOtherTaxDto[];
   approvals: CostInvoiceApprovalDto[];
   dualApprovalDone: boolean | null;
-  reglement: CostInvoiceReglementDto | null;
+  /** Payments recorded (several since V116), oldest first; empty until the first one. */
+  reglements: CostInvoiceReglementDto[];
+  /** Σ of the règlements. */
+  amountPaid: number;
+  /** netToPay − amountPaid: the most a new règlement may pay (0 once fully paid). */
+  amountRemaining: number;
   /** V102 — Σ of the lines' part outside the VAT scope; 0 when none. */
   nonTaxableAmountLocal?: number | null;
 }
@@ -392,7 +397,7 @@ export interface CostInvoiceOtherTaxDto {
 export const FACT_EDIT_VALIDATED_COST = 'FACT_EDIT_VALIDATED_COST';
 
 /** Statuses a cost invoice can be edited in by the DAF (a draft is edited normally). */
-export const VALIDATED_EDITABLE_STATUSES: readonly string[] = ['APPROVED', 'VALIDATED', 'POSTED'];
+export const VALIDATED_EDITABLE_STATUSES: readonly string[] = ['APPROVED', 'VALIDATED', 'PARTIALLY_PAID', 'POSTED'];
 
 export interface CostInvoiceChangeEntry {
   /** HEADER, LINE or TOTAL */
@@ -495,6 +500,7 @@ export const COST_STATUS_CONFIG: Record<CostLineStatus, CostStatusConfig> = {
   RETURNED:  { label: 'Retourné',    bg: '#fef3c7', text: '#92400e' },
   APPROVED:  { label: 'Approuvé',    bg: '#d1fae5', text: '#065f46' },
   VALIDATED: { label: 'Validé',      bg: '#e6f7f5', text: '#00695c' },
+  PARTIALLY_PAID: { label: 'Partiellement payée', bg: '#fef3c7', text: '#92400e' },
   POSTED:    { label: 'Comptabilisé',bg: '#e0e7ff', text: '#3730a3' },
   CANCELLED: { label: 'Annulé',      bg: '#fee2e2', text: '#991b1b' },
   REJECTED:  { label: 'Rejeté',      bg: '#fee2e2', text: '#991b1b' },
@@ -669,18 +675,26 @@ export interface SupplierSummaryDto {
   code: string | null;
 }
 
+/**
+ * One row of the supplier statement, classic layout (V116): an INVOICE row puts its net à
+ * payer in `credit` (owed), a REGLEMENT row its amount in `debit`; the solde is what is still
+ * owed (créditeur) or overpaid (débiteur).
+ */
 export interface SupplierLedgerRowDto {
+  /** Row identity (export selection): −costInvoiceId for an invoice row, reglementId for a payment. */
+  rowId: number;
+  kind: 'INVOICE' | 'REGLEMENT';
   date: string;                 // ISO LocalDate, e.g. "2026-01-10"
   label: string | null;
   debit: number | null;
   credit: number | null;
   soldeDebiteur: number | null;
   soldeCrediteur: number | null;
-  /** The paid cost invoice this row comes from (V93 — was a cost line). */
+  /** The cost invoice this row comes from. */
   costInvoiceId: number;
-  /** Addresses the règlement this row came from, for Edit/Delete. */
-  reglementId: number;
-  /** The invoice's own totals — unrelated to the debit/credit/solde reconciliation above. */
+  /** REGLEMENT rows: the payment, for Edit/Delete; null on INVOICE rows. */
+  reglementId: number | null;
+  /** INVOICE rows only: the invoice's own totals. */
   netAmountLocal: number | null;    // Montant HT
   fodecAmount: number | null;
   vatAmountLocal: number | null;    // TVA

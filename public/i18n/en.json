@@ -2676,6 +2676,7 @@
       "RETURNED": "Returned",
       "APPROVED": "Approved",
       "VALIDATED": "Validated",
+      "PARTIALLY_PAID": "Partially paid",
       "POSTED": "Posted",
       "CANCELLED": "Cancelled",
       "REJECTED": "Rejected"
@@ -3428,7 +3429,9 @@
       "INVOICE_PICKER": "Invoice to settle",
       "INVOICE_PICKER_PLACEHOLDER": "Select an invoice…",
       "ERR_INVOICE_REQUIRED": "Choose an invoice.",
-      "NET_TO_PAY_HINT": "Net to pay (incl. tax − withholding tax): {{amount}}"
+      "NET_TO_PAY_HINT": "Net to pay (incl. tax − withholding tax): {{amount}}",
+      "REMAINING_HINT": "Remaining to pay: {{amount}}",
+      "ERR_AMOUNT_EXCEEDS": "The amount cannot exceed the remaining balance ({{amount}})."
     },
     "DETAIL": {
       "LOADING": "Loading cost invoice…",
@@ -3517,13 +3520,15 @@
         "FILTER_CANCEL": "Cancel",
         "FILTER_RESET": "Reset",
         "FILTER_TYPE": "Movement type",
-        "TYPE_CREDIT": "Credit (still owed)",
-        "TYPE_DEBIT": "Debit (overpaid)",
+        "TYPE_CREDIT": "Invoices (credit)",
+        "TYPE_DEBIT": "Payments (debit)",
         "TYPE_SETTLED": "Settled",
+        "KIND_INVOICE": "Invoice",
+        "KIND_REGLEMENT": "Payment",
         "NEW_REGLEMENT": "New payment",
         "EDIT_REGLEMENT": "Edit payment",
         "DELETE_REGLEMENT": "Delete payment",
-        "CONFIRM_DELETE": "Delete this payment? The invoice will go back to Approved.",
+        "CONFIRM_DELETE": "Delete this payment? The invoice status will be recomputed (approved or partially paid).",
         "DELETE_ERROR": "Unable to delete this payment.",
         "NO_SUPPLIER": "No supplier is attached to this invoice — no account statement to show.",
         "EMPTY": "No validated entries for this supplier.",
@@ -3533,6 +3538,15 @@
         "COL_RS": "Withholding tax",
         "COL_NET_TO_PAY": "Net to pay",
         "COL_PAID": "Amount paid"
+      },
+      "PAYMENTS": {
+        "TITLE": "Payments",
+        "PAID": "Already paid",
+        "REMAINING": "Remaining to pay",
+        "EMPTY": "No payment recorded.",
+        "COL_DATE": "Date",
+        "COL_AMOUNT": "Amount",
+        "COL_COMMENT": "Comment"
       },
       "TOTALS_TITLE": "Invoice totals",
       "LINES": {
@@ -4512,11 +4526,13 @@
         "COL_CREDIT": "Credit",
         "COL_SOLDE_DEBITEUR": "Debit balance",
         "COL_SOLDE_CREDITEUR": "Credit balance",
-        "EMPTY": "No settlement recorded for this supplier.",
-        "HINT": "Read-only: a settlement is recorded from its cost invoice (click an entry to open it). Balances are cumulative across the whole statement.",
+        "EMPTY": "No validated invoice for this supplier.",
+        "HINT": "Read-only: each validated invoice is a credit (net to pay), each settlement a debit. A settlement is recorded from its cost invoice (click an entry to open it). The credit balance is what is still owed to the supplier.",
         "FILTER_TYPE": "Movement type",
-        "TYPE_CREDIT": "Credit (still owed)",
-        "TYPE_DEBIT": "Debit (overpaid)",
+        "TYPE_CREDIT": "Invoices (credit)",
+        "TYPE_DEBIT": "Settlements (debit)",
+        "KIND_INVOICE": "Invoice",
+        "KIND_REGLEMENT": "Settlement",
         "TYPE_SETTLED": "Settled",
         "COL_INVOICE": "Invoice",
         "FILTER_INVOICE": "Invoice"
