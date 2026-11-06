@@ -523,15 +523,16 @@
                 <!-- Titre à gauche, puces au centre, Filtres + (i) à droite. -->
                 <div class="carousel-head">
                   <div class="carousel-title">
-                    <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">{{ chartSlides()[chartSlideIndex()].title }}</p>
+                    <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">{{ activeChartSlide().title }}</p>
                     <p class="mt-1 text-body-sm text-on-surface-variant">{{ chartRangeLabel() }}</p>
                   </div>
-                  <div class="carousel-nav">
-                    <daf-chip-group
-                      [options]="chartSlideChips()"
-                      [config]="chartSlideChipConfig"
-                      [selected]="[chartSlide()]"
-                      (selectedChange)="selectChartSlide($event)" />
+                  <!-- Clic : ce graphique seul. Ctrl + clic : l'ajoute au graphique affiché (ou l'en retire). -->
+                  <div class="carousel-nav" role="group">
+                    @for (btn of chartSlideButtons(); track btn.id) {
+                      <button type="button" [class]="btn.classes" [attr.aria-pressed]="btn.active"
+                              [attr.title]="'AFFAIRES.DETAIL.CHARTS.SLIDE_MULTI_HINT' | translate"
+                              (click)="onChartSlideClick(btn.id, $event)">{{ btn.label }}</button>
+                    }
                   </div>
                   <div class="carousel-actions">
                     <daf-filter
@@ -609,7 +610,7 @@
 
                   <!-- Position annoncée aux lecteurs d'écran à chaque changement de diapositive. -->
                   <p class="sr-only" aria-live="polite">
-                    {{ 'AFFAIRES.DETAIL.CHARTS.SLIDE_POSITION' | translate: { index: chartSlideIndex() + 1, count: chartSlides().length, title: chartSlides()[chartSlideIndex()].title } }}
+                    {{ chartSlideAnnouncement() }}
                   </p>
                 }
               </div>
