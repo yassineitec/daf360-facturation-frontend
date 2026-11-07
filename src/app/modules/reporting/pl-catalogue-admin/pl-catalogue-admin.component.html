@@ -1,0 +1,166 @@
+<daf-page [kpis]="0" [loading]="firstLoad()" [loadingLabel]="'REPORTING.PL_CATALOGUE.TITLE' | translate">
+
+  <daf-page-header
+    [title]="'REPORTING.PL_CATALOGUE.TITLE' | translate"
+    [subtitle]="'REPORTING.PL_CATALOGUE.SUBTITLE' | translate">
+    <ng-container pageActions>
+      <daf-select
+        [options]="paysOptions()"
+        [selected]="[paysId().toString()]"
+        [ariaLabel]="'REPORTING.PL_CATALOGUE.PAYS' | translate"
+        (selectedChange)="onPaysSelected($event)" />
+    </ng-container>
+  </daf-page-header>
+
+  <daf-tabs
+    [tabs]="tabs()"
+    [active]="activeTab()"
+    (activeChange)="onTabChange($event)"
+    idPrefix="pl-catalogue"
+    [tabsLabel]="'REPORTING.PL_CATALOGUE.TAB_NAV_LABEL' | translate" />
+
+  @if (activeTab() === 'status') {
+
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <daf-select
+        [options]="sourceTypeOptions()"
+        [selected]="[sourceType()]"
+        [ariaLabel]="'REPORTING.PL_CATALOGUE.SOURCE_TYPE_LABEL' | translate"
+        (selectedChange)="onSourceTypeSelected($event)" />
+      @if (statusConfig(); as cfg) {
+        <daf-badge
+          [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + cfg.configStatus) | translate"
+          [options]="{ variant: badgeVariant(cfg.configStatus) }" />
+      }
+    </div>
+
+    @if (statusError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ statusError() }}
+      </div>
+    }
+    @if (statusSuccess()) {
+      <div class="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
+        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+        {{ statusSuccess() }}
+      </div>
+    }
+    @if (wipWarningStatuses().length > 0) {
+      <div class="flex items-center gap-2 rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
+        <span class="material-symbols-outlined text-[18px]">warning</span>
+        {{ 'REPORTING.PL_CATALOGUE.WIP_PENDING_WARNING' | translate }}
+      </div>
+    }
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      @for (entry of statusEntries(); track entry.status) {
+        <daf-checkbox
+          [options]="{
+            label: entry.status + (isDefaultStatus(entry.status) ? ' · ' + ('REPORTING.PL_CATALOGUE.DEFAULT_BADGE' | translate) : ''),
+            disabled: entry.neverSelectable,
+            hint: entry.neverSelectable ? ('REPORTING.PL_CATALOGUE.NEVER_SELECTABLE_HINT' | translate) : undefined
+          }"
+          [checked]="isStatusChecked(entry.status)"
+          (checkedChange)="toggleStatus(entry.status, $event)" />
+      }
+    </div>
+
+    <div class="flex items-center gap-3">
+      <daf-button
+        [options]="{
+          variant: 'primary', iconStart: 'save',
+          label: ('REPORTING.PL_CATALOGUE.SAVE_DRAFT' | translate),
+          loading: statusSaving(), disabled: statusLoading()
+        }"
+        (onClick)="saveStatusDraft()" />
+      @if (canActivateStatus()) {
+        <daf-button
+          [options]="{
+            variant: 'secondary', iconStart: 'check_circle',
+            label: ('REPORTING.PL_CATALOGUE.ACTIVATE' | translate),
+            loading: statusActivating()
+          }"
+          (onClick)="activateStatus()" />
+      }
+    </div>
+
+  } @else {
+
+    @if (mappingError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ mappingError() }}
+      </div>
+    }
+    @if (mappingSuccess()) {
+      <div class="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
+        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+        {{ mappingSuccess() }}
+      </div>
+    }
+    @if (!mappingCoverage().ok) {
+      <div class="flex items-center gap-2 rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
+        <span class="material-symbols-outlined text-[18px]">warning</span>
+        {{ 'REPORTING.PL_CATALOGUE.MAPPING.COVERAGE_BLOCKED' | translate: { codes: mappingCoverage().unmappedCategoryCodes.join(', ') } }}
+      </div>
+    }
+    @if (mapping(); as m) {
+      <daf-badge
+        [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + m.configStatus) | translate"
+        [options]="{ variant: badgeVariant(m.configStatus) }" />
+    }
+
+    <daf-data-table
+      [columns]="mappingColumns()"
+      [rows]="mappingRows()"
+      [config]="mappingTableConfig()">
+
+      <ng-template dafCell="targetLine" let-row>
+        <daf-select
+          [options]="lineOptions()"
+          [selected]="row['targetLineId'] ? [row['targetLineId']] : []"
+          [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_LINE' | translate"
+          (selectedChange)="onLineTargetChange(row['categoryCode'], $event)" />
+      </ng-template>
+
+      <ng-template dafCell="role" let-row>
+        <daf-select
+          [options]="roleOptions()"
+          [selected]="row['mappingRole'] ? [row['mappingRole']] : []"
+          [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_ROLE' | translate"
+          (selectedChange)="onLineRoleChange(row['categoryCode'], $event)" />
+      </ng-template>
+
+      <ng-template dafCell="status" let-row>
+        @if (row['mapped']) {
+          <span class="material-symbols-outlined text-success text-[18px]">check_circle</span>
+        } @else {
+          <span class="material-symbols-outlined text-warning text-[18px]">warning</span>
+        }
+      </ng-template>
+
+    </daf-data-table>
+
+    <div class="flex items-center gap-3">
+      <daf-button
+        [options]="{
+          variant: 'primary', iconStart: 'save',
+          label: ('REPORTING.PL_CATALOGUE.SAVE_DRAFT' | translate),
+          loading: mappingSaving(), disabled: mappingLoading() || !mappingCoverage().ok
+        }"
+        (onClick)="saveMappingDraft()" />
+      @if (canActivateMapping()) {
+        <daf-button
+          [options]="{
+            variant: 'secondary', iconStart: 'check_circle',
+            label: ('REPORTING.PL_CATALOGUE.ACTIVATE' | translate),
+            loading: mappingActivating()
+          }"
+          (onClick)="activateMapping()" />
+      }
+    </div>
+
+  }
+
+</daf-page>

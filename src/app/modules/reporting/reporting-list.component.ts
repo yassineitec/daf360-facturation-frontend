@@ -13,6 +13,7 @@ import {
 import { PlPeriodCardsSectionComponent } from './pl-period-cards-section.component';
 import { PlActionsMenuComponent, PlActionsMenuItem } from './pl-actions-menu.component';
 import { ClientService } from '../clients/client.service';
+import { AffaireService } from '../affaires/affaire.service';
 import { PaysRefDto, paysLabel } from '../affaires/affaire.model';
 import { PaysFlagSelectComponent, PaysFlagOption } from '../../shared/pays-flag-select/pays-flag-select.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
@@ -74,7 +75,8 @@ const PERIOD_STATUS_ORDER: PlPeriodStatus[] = ['OPEN', 'CLOSED', 'SUBMITTED', 'A
 export class ReportingListComponent implements OnInit {
   private readonly periodSvc = inject(PlPeriodService);
   private readonly reportSvc = inject(PlReportService);
-  private readonly clientSvc = inject(ClientService);
+  private readonly clientSvc  = inject(ClientService);
+  private readonly affaireSvc = inject(AffaireService);
   private readonly userStore = inject(UserStore);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly translate = inject(TranslateService);
@@ -86,6 +88,22 @@ export class ReportingListComponent implements OnInit {
   // ── Pays selector — same pattern as admin-list.component.ts ────────────────
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);
+
+  /**
+   * The 13 ARX entities with their real reporting currency (`pays_ref.devise` — "EUR" for
+   * Tunisia, "USD" for Egypt, confirmed by the owner, NOT each country's own national
+   * currency). `ClientService.getPays()`/`getPaysInUse()` (the 194-country reference list
+   * `paysList` above is built from) never populates `devise` — only `GET /ref/pays/arx-
+   * entities` does (see `PaysRefDto.devise`'s own doc comment) — so this is a second,
+   * separate fetch, same one `admin-list.component.ts`'s Entity Currency tab already uses.
+   */
+  private readonly entities = signal<PaysRefDto[]>([]);
+
+  /** Real per-pays reporting currency for whichever pays is selected — falls back to "EUR"
+   *  (the group template's own default) only if the selected pays isn't an ARX entity yet,
+   *  never to the previous hardcoded "TND". */
+  readonly reportingCurrency = computed(() =>
+    this.entities().find(e => e.id === this.paysId())?.devise ?? 'EUR');
 
   readonly paysOptions = computed<PaysFlagOption[]>(() =>
     this.paysList().map(p => ({
@@ -131,8 +149,10 @@ export class ReportingListComponent implements OnInit {
       myPays:    this.clientSvc.getMyPays(),
       allPays:   this.clientSvc.getPays(),
       paysInUse: this.clientSvc.getPaysInUse(),
+      entities:  this.affaireSvc.getArxEntities(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: ({ myPays, allPays, paysInUse }) => {
+      next: ({ myPays, allPays, paysInUse, entities }) => {
+        this.entities.set(entities);
         const inUseIds = new Set(paysInUse.map(p => p.id));
         const pays = [
           ...allPays.filter(p => inUseIds.has(p.id)),
@@ -244,9 +264,9 @@ export class ReportingListComponent implements OnInit {
   readonly pendingReportsCount = computed(() => this.pendingReports().length);
 
   readonly kpiNetRevenueDisplay = computed(() =>
-    this.closedPeriodsOfYear().length ? this.currency.transform(this.kpiNetRevenue(), 'TND') : '—');
+    this.closedPeriodsOfYear().length ? this.currency.transform(this.kpiNetRevenue(), this.reportingCurrency()) : '—');
   readonly kpiEbitdaDisplay = computed(() =>
-    this.closedPeriodsOfYear().length ? this.currency.transform(this.kpiEbitda(), 'TND') : '—');
+    this.closedPeriodsOfYear().length ? this.currency.transform(this.kpiEbitda(), this.reportingCurrency()) : '—');
   readonly kpiMarginDisplay = computed(() => {
     const m = this.kpiMargin();
     return m == null ? '—' : `${m.toFixed(1)}%`;
@@ -472,8 +492,8 @@ export class ReportingListComponent implements OnInit {
             label:   t('REPORTING.NO_REPORT'),
             options: { variant: 'neutral', size: 'sm' },
           } satisfies BadgeCell),
-          netRevenue: open ? '—' : this.currency.transform(period.netRevenueLocal, 'TND'),
-          ebitda:     open ? '—' : this.currency.transform(period.ebitda, 'TND'),
+          netRevenue: open ? '—' : this.currency.transform(period.netRevenueLocal, this.reportingCurrency()),
+          ebitda:     open ? '—' : this.currency.transform(period.ebitda, this.reportingCurrency()),
           ebitdaPct:  open || period.ebitdaPct == null ? '—' : `${period.ebitdaPct.toFixed(1)}%`,
 
           // Sort keys (the displayed values are formatted strings) and the EBITDA % cell's colour.
@@ -537,6 +557,12 @@ export class ReportingListComponent implements OnInit {
   }
 
   // ── Header "Actions" menu ─────────────────────────────────────────────────
+  /** Unlike 'calendar'/'budget' (readable at the broad `FACT_VIEW_PL_REPORT` route guard,
+   *  edit gated inside each component), every single `pl-catalogue` endpoint requires
+   *  `FACT_ADMIN_PL_CATALOGUE` — showing this item to someone without it would only lead to
+   *  a screen where every call 403s, so it's gated here instead. */
+  readonly canAdminCatalogue = computed(() => this.userStore.hasPermission('FACT_ADMIN_PL_CATALOGUE'));
+
   readonly actionItems = computed<PlActionsMenuItem[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
@@ -545,6 +571,9 @@ export class ReportingListComponent implements OnInit {
       ...(canCreate ? [{ id: 'new-period', icon: 'add_chart', label: t('REPORTING.NEW_PERIOD') }] : []),
       { id: 'calendar', icon: 'calendar_month', label: t('REPORTING.CALENDAR.TITLE'), separatorBefore: canCreate },
       { id: 'budget',   icon: 'request_quote',  label: t('REPORTING.BUDGET.TITLE') },
+      ...(this.canAdminCatalogue()
+        ? [{ id: 'pl-catalogue', icon: 'rule', label: t('REPORTING.PL_CATALOGUE.TITLE') }]
+        : []),
     ];
   });
 
@@ -552,6 +581,7 @@ export class ReportingListComponent implements OnInit {
     if (id === 'new-period') this.openCreatePeriod();
     else if (id === 'calendar') this.goToCalendar();
     else if (id === 'budget') this.goToBudget();
+    else if (id === 'pl-catalogue') this.goToPlCatalogue();
   }
 
   goToBudget(): void {
@@ -560,6 +590,10 @@ export class ReportingListComponent implements OnInit {
 
   goToCalendar(): void {
     this.router.navigate(['calendar'], { relativeTo: this.route });
+  }
+
+  goToPlCatalogue(): void {
+    this.router.navigate(['pl-catalogue'], { relativeTo: this.route });
   }
 
   /** Projected button in the 'report' cell — stops the click from also firing `rowClick`.

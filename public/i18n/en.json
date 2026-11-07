@@ -1179,6 +1179,10 @@
         }
       },
       "BUDGET_NOT_VALIDATED": "Budget not validated",
+      "ORIGIN": {
+        "DOC360": "DOC360",
+        "INTERCO": "Interco"
+      },
       "LAST_UPDATE": "Updated on",
       "BACK_TO_LIST": "Projects",
       "TABS": {
@@ -3746,6 +3750,53 @@
         "SET_AT": "Set on"
       }
     },
+    "PL_CATALOGUE": {
+      "TITLE": "P&L source catalogue",
+      "SUBTITLE": "Statuses and category mapping used in the P&L calculation.",
+      "PAYS": "Country / Entity",
+      "GLOBAL_DEFAULT": "Global default (all countries)",
+      "TAB_STATUS": "Statuses",
+      "TAB_MAPPING": "Categories",
+      "TAB_NAV_LABEL": "P&L catalogue",
+      "SOURCE_TYPE_LABEL": "Source type",
+      "SOURCE_TYPE": {
+        "COST_BOOKED": "Booked costs (P&L + rate computation)",
+        "CUSTOMER_BILLED": "Customer billing",
+        "CUSTOMER_OPEN": "Open customer receivables",
+        "COST_PAYABLE": "Supplier payables",
+        "WIP_DECLARATION": "WIP declarations"
+      },
+      "CONFIG_STATUS": {
+        "DEFAULT": "Default (no configuration)",
+        "DRAFT": "Draft",
+        "ACTIVE": "Active",
+        "ARCHIVED": "Archived"
+      },
+      "DEFAULT_BADGE": "today's behaviour",
+      "NEVER_SELECTABLE_HINT": "This status can never be counted (draft, rejected, or cancelled).",
+      "WIP_PENDING_WARNING": "Not-yet-validated WIP is included — make sure that's intended.",
+      "SAVE_DRAFT": "Save draft",
+      "ACTIVATE": "Activate",
+      "SAVE_SUCCESS": "Saved.",
+      "SAVE_ERROR": "Error while saving.",
+      "ACTIVATE_SUCCESS": "Version activated.",
+      "ACTIVATE_ERROR": "Error while activating.",
+      "LOAD_ERROR": "Error while loading.",
+      "MAPPING": {
+        "COL_CATEGORY": "Category",
+        "COL_LINE": "P&L line",
+        "COL_ROLE": "Role",
+        "COL_STATUS": "Status",
+        "EMPTY": "No categories.",
+        "COVERAGE_BLOCKED": "Unmapped categories: {{codes}}"
+      },
+      "ROLE": {
+        "COST": "Cost",
+        "EXTERNAL_COGS": "External cost (COGS)",
+        "MANUAL": "Manual",
+        "EXCLUDED": "Excluded"
+      }
+    },
     "DETAIL": {
       "LOADING": "Loading report…",
       "LOAD_ERROR": "Could not load the P&L report.",
@@ -4645,6 +4696,7 @@
       "ACTION_U": "Updated",
       "ACTION_D": "Deleted",
       "ACTOR_SYSTEM": "Scheduled job",
+      "ACTOR_PLACEHOLDER": "User #{{id}}",
       "GROUP_LABEL": "{{count}} grouped changes",
       "GROUP_HINT": "Automated changes (sync job), with no user behind them. Click to see the detail.",
       "GROUP_MODAL_TITLE": "Grouped changes",

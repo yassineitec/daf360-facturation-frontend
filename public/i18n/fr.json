@@ -1179,6 +1179,10 @@
         }
       },
       "BUDGET_NOT_VALIDATED": "Budget non validé",
+      "ORIGIN": {
+        "DOC360": "DOC360",
+        "INTERCO": "Interco"
+      },
       "LAST_UPDATE": "Mise à jour le",
       "BACK_TO_LIST": "Affaires",
       "TABS": {
@@ -3746,6 +3750,53 @@
         "SET_AT": "Défini le"
       }
     },
+    "PL_CATALOGUE": {
+      "TITLE": "Catalogue des sources P&L",
+      "SUBTITLE": "Statuts et mapping des catégories pris en compte dans le calcul du P&L.",
+      "PAYS": "Pays / Entité",
+      "GLOBAL_DEFAULT": "Défaut global (tous pays)",
+      "TAB_STATUS": "Statuts",
+      "TAB_MAPPING": "Catégories",
+      "TAB_NAV_LABEL": "Catalogue P&L",
+      "SOURCE_TYPE_LABEL": "Type de source",
+      "SOURCE_TYPE": {
+        "COST_BOOKED": "Coûts comptabilisés (P&L + calcul de taux)",
+        "CUSTOMER_BILLED": "Facturation client",
+        "CUSTOMER_OPEN": "Créances client ouvertes",
+        "COST_PAYABLE": "Dettes fournisseur",
+        "WIP_DECLARATION": "Déclarations d'en-cours (WIP)"
+      },
+      "CONFIG_STATUS": {
+        "DEFAULT": "Par défaut (aucune configuration)",
+        "DRAFT": "Brouillon",
+        "ACTIVE": "Actif",
+        "ARCHIVED": "Archivé"
+      },
+      "DEFAULT_BADGE": "comportement actuel",
+      "NEVER_SELECTABLE_HINT": "Ce statut ne peut jamais être pris en compte (brouillon, rejeté ou annulé).",
+      "WIP_PENDING_WARNING": "Les en-cours non encore validés sont inclus — vérifiez que c'est volontaire.",
+      "SAVE_DRAFT": "Enregistrer le brouillon",
+      "ACTIVATE": "Activer",
+      "SAVE_SUCCESS": "Enregistré.",
+      "SAVE_ERROR": "Erreur lors de l'enregistrement.",
+      "ACTIVATE_SUCCESS": "Version activée.",
+      "ACTIVATE_ERROR": "Erreur lors de l'activation.",
+      "LOAD_ERROR": "Erreur lors du chargement.",
+      "MAPPING": {
+        "COL_CATEGORY": "Catégorie",
+        "COL_LINE": "Ligne P&L",
+        "COL_ROLE": "Rôle",
+        "COL_STATUS": "État",
+        "EMPTY": "Aucune catégorie.",
+        "COVERAGE_BLOCKED": "Catégories non mappées : {{codes}}"
+      },
+      "ROLE": {
+        "COST": "Coût",
+        "EXTERNAL_COGS": "Coût externe (COGS)",
+        "MANUAL": "Manuel",
+        "EXCLUDED": "Exclu"
+      }
+    },
     "DETAIL": {
       "LOADING": "Chargement du rapport…",
       "LOAD_ERROR": "Impossible de charger le rapport P&L.",
@@ -4645,6 +4696,7 @@
       "ACTION_U": "Modification",
       "ACTION_D": "Suppression",
       "ACTOR_SYSTEM": "Tâche planifiée",
+      "ACTOR_PLACEHOLDER": "Utilisateur #{{id}}",
       "GROUP_LABEL": "{{count}} modifications groupées",
       "GROUP_HINT": "Changements automatiques (synchronisation), sans utilisateur à l'origine. Cliquez pour voir le détail.",
       "GROUP_MODAL_TITLE": "Modifications groupées",

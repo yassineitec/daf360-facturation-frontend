@@ -20,6 +20,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { tableTools } from '../../../shared/table-tools';
 import { UserStore } from '../../../core/user.store';
 import { ClientService } from '../../clients/client.service';
+import { AffaireService } from '../../affaires/affaire.service';
 import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
 import { PlReportService } from '../pl-report.service';
 import { PlPeriodService } from '../pl-period.service';
@@ -398,6 +399,7 @@ export class ReportDetailComponent implements OnInit {
   private readonly modals        = inject(ModalService);
   private readonly userStore     = inject(UserStore);
   private readonly clientSvc     = inject(ClientService);
+  private readonly affaireSvc    = inject(AffaireService);
   private readonly router        = inject(Router);
   private readonly route         = inject(ActivatedRoute);
   private readonly destroyRef    = inject(DestroyRef);
@@ -433,6 +435,23 @@ export class ReportDetailComponent implements OnInit {
   /** Country reference list — only to name the report's `paysId` in the header and panel. */
   private readonly paysList = signal<PaysRefDto[]>([]);
 
+  /**
+   * The 13 ARX entities with their real reporting currency (`pays_ref.devise` — "EUR" for
+   * Tunisia, "USD" for Egypt). `paysList` above (from `ClientService.getPays()`, the
+   * 194-country reference list) never populates `devise` — only `GET /ref/pays/arx-entities`
+   * does (see `PaysRefDto.devise`'s own doc comment) — so this is a second, separate fetch,
+   * mirroring `reporting-list.component.ts`'s identical need.
+   */
+  private readonly entities = signal<PaysRefDto[]>([]);
+
+  /** Real reporting currency for the loaded report's `paysId` — falls back to "EUR" (the group
+   *  template's own default) only if it isn't an ARX entity yet, never to the previous
+   *  hardcoded "TND". */
+  readonly reportingCurrency = computed(() => {
+    const paysId = this.period()?.paysId ?? this.report()?.paysId;
+    return this.entities().find(e => e.id === paysId)?.devise ?? 'EUR';
+  });
+
   readonly canManageCommentary = computed(() => this.userStore.hasPermission('FACT_MANAGE_PL_REPORT'));
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
@@ -462,6 +481,10 @@ export class ReportDetailComponent implements OnInit {
     this.clientSvc.getPays().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next:  pays => this.paysList.set(pays),
       error: () => this.paysList.set([]),
+    });
+    this.affaireSvc.getArxEntities().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next:  entities => this.entities.set(entities),
+      error: () => this.entities.set([]),
     });
   }
 
@@ -728,8 +751,8 @@ export class ReportDetailComponent implements OnInit {
   readonly recapRows = computed<TableRow[]>(() => this.filteredLines().map(line => ({
     id:       line.id,
     label:    line.catalogueLineLabelFr,
-    amount:   this.currency.transform(line.amountLocal, 'TND'),
-    budget:   line.budgetAmountLocal != null ? this.currency.transform(line.budgetAmountLocal, 'TND') : '—',
+    amount:   this.currency.transform(line.amountLocal, this.reportingCurrency()),
+    budget:   line.budgetAmountLocal != null ? this.currency.transform(line.budgetAmountLocal, this.reportingCurrency()) : '—',
     variance: this.formatVariancePct(line.variancePct),
     _source:  line,
   })));
@@ -746,13 +769,13 @@ export class ReportDetailComponent implements OnInit {
   }));
 
   /** EBITDA total row — the joined `PlPeriodDto`'s own field, never recomputed client-side. */
-  readonly ebitdaDisplay = computed(() => this.currency.transform(this.period()?.ebitda ?? null, 'TND'));
+  readonly ebitdaDisplay = computed(() => this.currency.transform(this.period()?.ebitda ?? null, this.reportingCurrency()));
 
   /** Revenue waterfall rows — all sourced straight from the joined `PlPeriodDto`, never
    *  recomputed client-side (same approach as `ebitdaDisplay` above). */
-  readonly grossRevenue1Display = computed(() => this.currency.transform(this.period()?.grossRevenue1Local ?? null, 'TND'));
-  readonly grossRevenue2Display = computed(() => this.currency.transform(this.period()?.grossRevenue2Local ?? null, 'TND'));
-  readonly netRevenueDisplay    = computed(() => this.currency.transform(this.period()?.netRevenueLocal ?? null, 'TND'));
+  readonly grossRevenue1Display = computed(() => this.currency.transform(this.period()?.grossRevenue1Local ?? null, this.reportingCurrency()));
+  readonly grossRevenue2Display = computed(() => this.currency.transform(this.period()?.grossRevenue2Local ?? null, this.reportingCurrency()));
+  readonly netRevenueDisplay    = computed(() => this.currency.transform(this.period()?.netRevenueLocal ?? null, this.reportingCurrency()));
   readonly ebitdaPctDisplay     = computed(() => {
     const pct = this.period()?.ebitdaPct;
     return pct == null ? '—' : `${pct.toFixed(1)}%`;
@@ -882,7 +905,7 @@ export class ReportDetailComponent implements OnInit {
       return {
         label:      this.translate.instant(b.label),
         value,
-        valueLabel: this.currency.transform(value, 'TND'),
+        valueLabel: this.currency.transform(value, this.reportingCurrency()),
       };
     });
   });
@@ -899,7 +922,7 @@ export class ReportDetailComponent implements OnInit {
   });
 
   readonly costTotalDisplay = computed(() =>
-    this.currency.transform(this.period()?.totalOperatingCost ?? null, 'TND'));
+    this.currency.transform(this.period()?.totalOperatingCost ?? null, this.reportingCurrency()));
 
   readonly hasCosts = computed(() => this.costBars().some(b => b.value !== 0));
 
@@ -1610,16 +1633,16 @@ export class ReportDetailComponent implements OnInit {
     id:                m.projectRef,
     _source:           m,
     projectRef:        m.projectRef,
-    arTotal:           this.currency.transform(m.arTotal, 'TND'),
-    arNotOverdue:      this.currency.transform(m.arNotOverdue, 'TND'),
-    arLt1Month:        this.currency.transform(m.arLt1Month, 'TND'),
-    ar1To2Months:      this.currency.transform(m.ar1To2Months, 'TND'),
-    ar2To3Months:      this.currency.transform(m.ar2To3Months, 'TND'),
-    ar3To6Months:      this.currency.transform(m.ar3To6Months, 'TND'),
-    ar6To12Months:     this.currency.transform(m.ar6To12Months, 'TND'),
-    arGt1Year:         this.currency.transform(m.arGt1Year, 'TND'),
-    wipTotal:          this.currency.transform(m.wipTotal, 'TND'),
-    missingCashTotal:  this.currency.transform(m.missingCashTotal, 'TND'),
+    arTotal:           this.currency.transform(m.arTotal, this.reportingCurrency()),
+    arNotOverdue:      this.currency.transform(m.arNotOverdue, this.reportingCurrency()),
+    arLt1Month:        this.currency.transform(m.arLt1Month, this.reportingCurrency()),
+    ar1To2Months:      this.currency.transform(m.ar1To2Months, this.reportingCurrency()),
+    ar2To3Months:      this.currency.transform(m.ar2To3Months, this.reportingCurrency()),
+    ar3To6Months:      this.currency.transform(m.ar3To6Months, this.reportingCurrency()),
+    ar6To12Months:     this.currency.transform(m.ar6To12Months, this.reportingCurrency()),
+    arGt1Year:         this.currency.transform(m.arGt1Year, this.reportingCurrency()),
+    wipTotal:          this.currency.transform(m.wipTotal, this.reportingCurrency()),
+    missingCashTotal:  this.currency.transform(m.missingCashTotal, this.reportingCurrency()),
   })));
 
   readonly missingCashConfig = computed<TableConfig>(() => ({

@@ -8,6 +8,7 @@ import {
   SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import { ClientService } from '../../clients/client.service';
+import { AffaireService } from '../../affaires/affaire.service';
 import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
 import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
 import { UserStore } from '../../../core/user.store';
@@ -16,14 +17,15 @@ import { GroupCatalogueLineService } from '../group-catalogue-line.service';
 import { BudgetLineUpsert, BudgetReferenceDto, GroupCatalogueLineDto } from '../pl-reporting.model';
 
 /**
- * Mirrors `reporting-list.component.ts`'s own `DisplayCurrencyPipe` usage
- * (`this.currency.transform(period.ebitda, 'TND')`) — that screen hardcodes `'TND'` as the
- * source currency too, because `PaysRefDto` (`modules/affaires/affaire.model.ts`) carries no
- * reporting-currency field reachable from `ClientService.getPays()`/`getPaysInUse()`. There
- * is therefore no real per-pays currency to resolve here either; this constant is the same
- * known simplification Task 3.1 already shipped, not a new one introduced by this task.
+ * Fallback only for a pays that isn't an ARX entity yet (`reportingCurrency()` below resolves
+ * the real per-pays value from `GET /ref/pays/arx-entities` otherwise). Previously this was the
+ * unconditional currency saved on every `BudgetLineUpsert` regardless of pays — confirmed a real
+ * data bug, not just a display one (see reportingCurrency() below): every Tunisia budget line
+ * saved through this screen was stamped `currency='TND'` when the confirmed reporting currency
+ * is "EUR". Existing rows are NOT backfilled here (a data decision, not this fix's job) — only
+ * newly-saved lines go through the corrected value from this point on.
  */
-const DEFAULT_CURRENCY = 'TND';
+const DEFAULT_CURRENCY = 'EUR';
 
 const MONTH_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 
@@ -51,7 +53,8 @@ const MONTH_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 export class BudgetEntryComponent implements OnInit {
   private readonly budgetSvc = inject(BudgetReferenceService);
   private readonly catalogueSvc = inject(GroupCatalogueLineService);
-  private readonly clientSvc = inject(ClientService);
+  private readonly clientSvc  = inject(ClientService);
+  private readonly affaireSvc = inject(AffaireService);
   private readonly userStore = inject(UserStore);
   private readonly translate = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
@@ -65,6 +68,12 @@ export class BudgetEntryComponent implements OnInit {
   // ── Pays selector — same pattern as reporting-list.component.ts ────────────
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);
+
+  /** Real per-pays reporting currency (`pays_ref.devise`, via `GET /ref/pays/arx-entities` —
+   *  `paysList` above never carries it, see `PaysRefDto.devise`'s doc comment). */
+  private readonly entities = signal<PaysRefDto[]>([]);
+  readonly reportingCurrency = computed(() =>
+    this.entities().find(e => e.id === this.paysId())?.devise ?? DEFAULT_CURRENCY);
 
   readonly paysOptions = computed<PaysFlagOption[]>(() =>
     this.paysList().map(p => ({
@@ -186,8 +195,10 @@ export class BudgetEntryComponent implements OnInit {
       allPays:   this.clientSvc.getPays(),
       paysInUse: this.clientSvc.getPaysInUse(),
       catalogueLines: this.catalogueSvc.list(),
+      entities:  this.affaireSvc.getArxEntities(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: ({ myPays, allPays, paysInUse, catalogueLines }) => {
+      next: ({ myPays, allPays, paysInUse, catalogueLines, entities }) => {
+        this.entities.set(entities);
         const inUseIds = new Set(paysInUse.map(p => p.id));
         const pays = [
           ...allPays.filter(p => inUseIds.has(p.id)),
@@ -309,7 +320,7 @@ export class BudgetEntryComponent implements OnInit {
           catalogueLineId,
           month: m + 1,
           amountLocal: raw == null ? 0 : Number(raw),
-          currency: DEFAULT_CURRENCY,
+          currency: this.reportingCurrency(),
         });
       }
     });
