@@ -25,6 +25,11 @@ history). Builds the admin UI for backend capability that previously had no fron
   `err.error?.message`, but the backend's `GlobalExceptionHandler` returns Spring `ProblemDetail`
   (field `detail`) — backend error text has never reached these screens since Phase 1 shipped.
   Fixed at all 6 existing call sites plus the new ones this PR adds.
+- **Post-WP10 follow-up (`b0d5d7e`, `bed2f65`)**: Average FTE close-modal input + a report-detail
+  inline editor for correcting it on an already-closed period, gated by `FACT_MANAGE_COST`. This
+  closed the #1 item on the final report's owner-review list (Billable Hrs showing `-2240` because
+  Average FTE was never set anywhere) — see `daf360-facturation-service`'s decisions log,
+  "Post-WP10 follow-up" section, for the full before/after.
 
 ## Test plan
 
