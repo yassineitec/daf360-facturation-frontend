@@ -3,8 +3,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  CoverageCheckResultDto, PlCatalogueSourceType, PlCatalogueStatusConfigDto,
-  PlCategoryLineMappingDto, SaveCategoryMappingRequest, SaveStatusConfigRequest,
+  CoverageCheckResultDto, PlCataloguePreviewResultDto, PlCatalogueSourceType,
+  PlCatalogueStatusConfigDto, PlCatalogueStatusConfigVersionDto, PlCategoryLineMappingDto,
+  PlCategoryLineMappingVersionDto, SaveCategoryMappingRequest, SaveStatusConfigRequest,
 } from './pl-catalogue.model';
 
 /** Thin wrapper over `/api/fact/admin/pl-catalogue` — every call needs `FACT_ADMIN_PL_CATALOGUE`
@@ -31,6 +32,26 @@ export class PlCatalogueAdminService {
     let params = new HttpParams().set('sourceType', sourceType).set('version', String(version));
     if (paysId != null) params = params.set('paysId', String(paysId));
     return this.http.post<PlCatalogueStatusConfigDto>(`${this.base}/status-config/activate`, null, { params });
+  }
+
+  // ── WP1(c): version history + preview ─────────────────────────────────────
+
+  getStatusConfigHistory(paysId: number | null, sourceType: PlCatalogueSourceType): Observable<PlCatalogueStatusConfigVersionDto[]> {
+    let params = new HttpParams().set('sourceType', sourceType);
+    if (paysId != null) params = params.set('paysId', String(paysId));
+    return this.http.get<PlCatalogueStatusConfigVersionDto[]>(`${this.base}/status-config/history`, { params });
+  }
+
+  previewStatusConfig(periodId: number, sourceType: PlCatalogueSourceType, draftVersion: number): Observable<PlCataloguePreviewResultDto> {
+    const params = new HttpParams()
+      .set('periodId', String(periodId)).set('sourceType', sourceType).set('draftVersion', String(draftVersion));
+    return this.http.get<PlCataloguePreviewResultDto>(`${this.base}/status-config/preview`, { params });
+  }
+
+  getCategoryMappingHistory(paysId: number | null): Observable<PlCategoryLineMappingVersionDto[]> {
+    let params = new HttpParams();
+    if (paysId != null) params = params.set('paysId', String(paysId));
+    return this.http.get<PlCategoryLineMappingVersionDto[]>(`${this.base}/category-mapping/history`, { params });
   }
 
   // ── category → line mapping ───────────────────────────────────────────────

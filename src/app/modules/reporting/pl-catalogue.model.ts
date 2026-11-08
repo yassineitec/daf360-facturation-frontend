@@ -65,3 +65,41 @@ export interface CoverageCheckResultDto {
   unmappedCategoryCodes: string[];
   duplicatedCategoryCodes: string[];
 }
+
+// ── WP1(c): preview + version history ─────────────────────────────────────────
+
+/** One past version of a status-config, as returned by `GET .../status-config/history`. */
+export interface PlCatalogueStatusConfigVersionDto {
+  version: number;
+  configStatus: PlCatalogueConfigStatus;
+  selectedStatuses: string[];
+  createdBy: number | null;
+  createdAt: string | null;
+  approvedBy: number | null;
+  approvedAt: string | null;
+}
+
+/** One past version of a category-mapping, as returned by `GET .../category-mapping/history`. */
+export interface PlCategoryLineMappingVersionDto {
+  version: number;
+  configStatus: PlCatalogueConfigStatus;
+  entries: PlCategoryLineMappingEntryDto[];
+  createdBy: number | null;
+  createdAt: string | null;
+  approvedBy: number | null;
+  approvedAt: string | null;
+}
+
+/** What a DRAFT status-config version would compute for one closed period, vs. what the
+ *  currently-ACTIVE configuration actually computes — `GET .../status-config/preview`. Nothing
+ *  is persisted or activated by calling this. */
+export interface PlCataloguePreviewResultDto {
+  periodId: number;
+  sourceType: PlCatalogueSourceType;
+  draftVersion: number;
+  activeStatuses: string[];
+  draftStatuses: string[];
+  activeValue: number;
+  draftValue: number;
+  delta: number;
+}

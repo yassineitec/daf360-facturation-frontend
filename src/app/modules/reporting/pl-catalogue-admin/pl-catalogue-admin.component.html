@@ -32,6 +32,9 @@
           [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + cfg.configStatus) | translate"
           [options]="{ variant: badgeVariant(cfg.configStatus) }" />
       }
+      <daf-button
+        [options]="{ variant: 'secondary', iconStart: 'history', label: ('REPORTING.PL_CATALOGUE.HISTORY.BUTTON' | translate) }"
+        (onClick)="openStatusHistory()" />
     </div>
 
     @if (statusError()) {
@@ -77,15 +80,26 @@
       @if (canActivateStatus()) {
         <daf-button
           [options]="{
-            variant: 'secondary', iconStart: 'check_circle',
-            label: ('REPORTING.PL_CATALOGUE.ACTIVATE' | translate),
-            loading: statusActivating()
+            variant: 'secondary', iconStart: 'visibility',
+            label: ('REPORTING.PL_CATALOGUE.PREVIEW.BUTTON' | translate),
+            disabled: previewPeriodOptions().length === 0
           }"
-          (onClick)="activateStatus()" />
+          (onClick)="openPreview()" />
+        @if (canApprove()) {
+          <daf-button
+            [options]="{
+              variant: 'secondary', iconStart: 'check_circle',
+              label: ('REPORTING.PL_CATALOGUE.ACTIVATE' | translate),
+              loading: statusActivating()
+            }"
+            (onClick)="activateStatus()" />
+        } @else {
+          <span class="text-sm text-neutral-500">{{ 'REPORTING.PL_CATALOGUE.APPROVE_PERMISSION_MISSING' | translate }}</span>
+        }
       }
     </div>
 
-  } @else {
+  } @else if (activeTab() === 'mapping') {
 
     @if (mappingError()) {
       <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -105,11 +119,16 @@
         {{ 'REPORTING.PL_CATALOGUE.MAPPING.COVERAGE_BLOCKED' | translate: { codes: mappingCoverage().unmappedCategoryCodes.join(', ') } }}
       </div>
     }
-    @if (mapping(); as m) {
-      <daf-badge
-        [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + m.configStatus) | translate"
-        [options]="{ variant: badgeVariant(m.configStatus) }" />
-    }
+    <div class="flex items-center gap-3">
+      @if (mapping(); as m) {
+        <daf-badge
+          [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + m.configStatus) | translate"
+          [options]="{ variant: badgeVariant(m.configStatus) }" />
+      }
+      <daf-button
+        [options]="{ variant: 'secondary', iconStart: 'history', label: ('REPORTING.PL_CATALOGUE.HISTORY.BUTTON' | translate) }"
+        (onClick)="openMappingHistory()" />
+    </div>
 
     <daf-data-table
       [columns]="mappingColumns()"
@@ -151,16 +170,174 @@
         }"
         (onClick)="saveMappingDraft()" />
       @if (canActivateMapping()) {
+        @if (canApprove()) {
+          <daf-button
+            [options]="{
+              variant: 'secondary', iconStart: 'check_circle',
+              label: ('REPORTING.PL_CATALOGUE.ACTIVATE' | translate),
+              loading: mappingActivating()
+            }"
+            (onClick)="activateMapping()" />
+        } @else {
+          <span class="text-sm text-neutral-500">{{ 'REPORTING.PL_CATALOGUE.APPROVE_PERMISSION_MISSING' | translate }}</span>
+        }
+      }
+    </div>
+
+  } @else if (activeTab() === 'fx') {
+
+    <!-- WP6(f,h,i)/DEC19 — only ever reachable when canManageFxRates() (tab itself is hidden
+         otherwise, see `tabs()`), but every call is also re-gated server-side regardless. -->
+    <div class="flex items-end gap-3 flex-wrap">
+      <daf-form-field
+        [options]="fxPairFieldOptions()"
+        [value]="fxPair()"
+        (valueChange)="onFxPairChange($event)" />
+      <daf-button
+        [options]="{ variant: 'secondary', iconStart: 'refresh', label: ('REPORTING.PL_CATALOGUE.FX.RELOAD' | translate), loading: fxLoading() }"
+        (onClick)="loadFxRates()" />
+    </div>
+
+    @if (fxError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ fxError() }}
+      </div>
+    }
+    @if (fxSuccess()) {
+      <div class="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
+        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+        {{ fxSuccess() }}
+      </div>
+    }
+
+    <daf-data-table
+      [columns]="fxColumns()"
+      [rows]="fxRows()"
+      [config]="fxTableConfig()">
+      <ng-template dafCell="status" let-row>
+        <daf-badge [label]="row['status']" [options]="{ variant: fxStatusVariant(row['status']) }" />
+      </ng-template>
+    </daf-data-table>
+
+    <div class="flex items-center gap-3">
+      <daf-button
+        [options]="{
+          variant: 'secondary', iconStart: 'check_circle',
+          label: ('REPORTING.PL_CATALOGUE.FX.CONFIRM_ALL' | translate: { n: fxConfirmableIds().length }),
+          loading: fxConfirming(), disabled: fxConfirmableIds().length === 0
+        }"
+        (onClick)="confirmAllFxRates()" />
+    </div>
+
+    <!-- WP6(i) derive action -->
+    <div class="rounded-xl border border-neutral-200 p-4 flex flex-col gap-3">
+      <h3 class="text-sm font-semibold">{{ 'REPORTING.PL_CATALOGUE.FX.DERIVE_TITLE' | translate }}</h3>
+      <div class="flex items-end gap-3 flex-wrap">
+        <daf-form-field
+          [options]="fxFromMonthFieldOptions()"
+          [value]="fxFromMonth()"
+          (valueChange)="onFxFromMonthChange($event)" />
+        <daf-form-field
+          [options]="fxToMonthFieldOptions()"
+          [value]="fxToMonth()"
+          (valueChange)="onFxToMonthChange($event)" />
         <daf-button
           [options]="{
-            variant: 'secondary', iconStart: 'check_circle',
-            label: ('REPORTING.PL_CATALOGUE.ACTIVATE' | translate),
-            loading: mappingActivating()
+            variant: 'primary', iconStart: 'auto_fix_high',
+            label: ('REPORTING.PL_CATALOGUE.FX.DERIVE_BUTTON' | translate),
+            loading: fxDeriving(), disabled: !fxCanDerive()
           }"
-          (onClick)="activateMapping()" />
-      }
+          (onClick)="deriveFxRates()" />
+      </div>
     </div>
 
   }
 
 </daf-page>
+
+<!-- ══ Modales — à la racine de la page (WP1(c)/WP6) ══ -->
+
+<ng-template #statusHistoryTpl>
+  @if (statusHistoryError()) {
+    <div class="text-sm text-danger">{{ statusHistoryError() }}</div>
+  } @else if (statusHistoryLoading()) {
+    <div class="text-sm text-neutral-500">{{ 'REPORTING.PL_CATALOGUE.HISTORY.LOADING' | translate }}</div>
+  } @else {
+    <div class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+      @for (v of statusHistory(); track v.version) {
+        <div class="rounded-lg border border-neutral-200 p-3 text-sm">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-semibold">v{{ v.version }}</span>
+            <daf-badge [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + v.configStatus) | translate"
+              [options]="{ variant: badgeVariant(v.configStatus) }" />
+          </div>
+          <div class="text-neutral-600 mt-1">{{ v.selectedStatuses.join(', ') || '—' }}</div>
+          <div class="text-xs text-neutral-400 mt-1">
+            {{ 'REPORTING.PL_CATALOGUE.HISTORY.CREATED_BY' | translate }} {{ v.createdBy ?? '—' }} · {{ v.createdAt ?? '—' }}
+            @if (v.approvedBy) {
+              <br>{{ 'REPORTING.PL_CATALOGUE.HISTORY.APPROVED_BY' | translate }} {{ v.approvedBy }} · {{ v.approvedAt }}
+            }
+          </div>
+        </div>
+      } @empty {
+        <div class="text-sm text-neutral-500">{{ 'REPORTING.PL_CATALOGUE.HISTORY.EMPTY' | translate }}</div>
+      }
+    </div>
+  }
+</ng-template>
+
+<ng-template #mappingHistoryTpl>
+  @if (mappingHistoryError()) {
+    <div class="text-sm text-danger">{{ mappingHistoryError() }}</div>
+  } @else {
+    <div class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+      @for (v of mappingHistory(); track v.version) {
+        <div class="rounded-lg border border-neutral-200 p-3 text-sm">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-semibold">v{{ v.version }}</span>
+            <daf-badge [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + v.configStatus) | translate"
+              [options]="{ variant: badgeVariant(v.configStatus) }" />
+          </div>
+          <div class="text-neutral-600 mt-1">{{ v.entries.length }} {{ 'REPORTING.PL_CATALOGUE.HISTORY.ENTRIES' | translate }}</div>
+          <div class="text-xs text-neutral-400 mt-1">
+            {{ 'REPORTING.PL_CATALOGUE.HISTORY.CREATED_BY' | translate }} {{ v.createdBy ?? '—' }} · {{ v.createdAt ?? '—' }}
+            @if (v.approvedBy) {
+              <br>{{ 'REPORTING.PL_CATALOGUE.HISTORY.APPROVED_BY' | translate }} {{ v.approvedBy }} · {{ v.approvedAt }}
+            }
+          </div>
+        </div>
+      } @empty {
+        <div class="text-sm text-neutral-500">{{ 'REPORTING.PL_CATALOGUE.HISTORY.EMPTY' | translate }}</div>
+      }
+    </div>
+  }
+</ng-template>
+
+<!-- WP1(c) preview: DRAFT vs. ACTIVE for one chosen closed period — nothing persisted. -->
+<ng-template #previewTpl>
+  <div class="flex flex-col gap-4">
+    <daf-select
+      [options]="previewPeriodOptions()"
+      [selected]="previewPeriodId() ? [previewPeriodId()!.toString()] : []"
+      [ariaLabel]="'REPORTING.PL_CATALOGUE.PREVIEW.PERIOD' | translate"
+      (selectedChange)="onPreviewPeriodSelected($event)" />
+    <daf-button
+      [options]="{ variant: 'primary', label: ('REPORTING.PL_CATALOGUE.PREVIEW.RUN' | translate), loading: previewLoading(), disabled: previewPeriodId() == null }"
+      (onClick)="runPreview()" />
+    @if (previewError()) {
+      <div class="text-sm text-danger">{{ previewError() }}</div>
+    }
+    @if (previewResult(); as r) {
+      <div class="rounded-lg border border-neutral-200 p-3 text-sm flex flex-col gap-2">
+        <div><strong>{{ 'REPORTING.PL_CATALOGUE.PREVIEW.ACTIVE_STATUSES' | translate }}:</strong> {{ r.activeStatuses.join(', ') || '—' }}</div>
+        <div><strong>{{ 'REPORTING.PL_CATALOGUE.PREVIEW.DRAFT_STATUSES' | translate }}:</strong> {{ r.draftStatuses.join(', ') || '—' }}</div>
+        <div><strong>{{ 'REPORTING.PL_CATALOGUE.PREVIEW.ACTIVE_VALUE' | translate }}:</strong> {{ r.activeValue }}</div>
+        <div><strong>{{ 'REPORTING.PL_CATALOGUE.PREVIEW.DRAFT_VALUE' | translate }}:</strong> {{ r.draftValue }}</div>
+        <div [class.text-danger]="r.delta !== 0" [class.text-success]="r.delta === 0">
+          <strong>{{ 'REPORTING.PL_CATALOGUE.PREVIEW.DELTA' | translate }}:</strong> {{ r.delta }}
+        </div>
+      </div>
+    }
+  </div>
+</ng-template>

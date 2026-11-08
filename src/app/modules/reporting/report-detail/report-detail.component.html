@@ -161,6 +161,22 @@
                   <span class="material-symbols-outlined text-base">table_chart</span>
                   {{ (isExportingWorkbook() ? 'REPORTING.DETAIL.ACTIONS.EXPORTING_WORKBOOK' : 'REPORTING.DETAIL.ACTIONS.EXPORT_WORKBOOK_SHORT') | translate }}
                 </button>
+                @if (canManageFxRates() && period()) {
+                  <!-- WP6(h) -- Finance-Manager-only, read-only: what rate(s) the export above
+                       actually used, so a stale/missing rate is visible BEFORE exporting, not
+                       discovered later in the workbook (which deliberately carries none of this). -->
+                  <button type="button"
+                          class="flex items-center gap-1.5 rounded-lg px-2 py-2 text-body-sm font-semibold
+                                 text-on-surface-variant transition-colors hover:bg-surface-container-high
+                                 hover:text-on-surface disabled:opacity-40 disabled:cursor-not-allowed
+                                 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          [disabled]="isLoadingRatesUsed()"
+                          [title]="'REPORTING.DETAIL.ACTIONS.RATES_USED' | translate"
+                          (click)="openRatesUsedPanel()">
+                    <span class="material-symbols-outlined text-base">currency_exchange</span>
+                    {{ 'REPORTING.DETAIL.ACTIONS.RATES_USED_SHORT' | translate }}
+                  </button>
+                }
               </div>
             </div>
             </daf-section-card>
@@ -522,6 +538,33 @@
     [options]="reasonFieldOptions()"
     [value]="reasonText()"
     (valueChange)="onReasonChange($event)" />
+</ng-template>
+
+<!-- WP6(h) -- "rates used" panel body: per month, min/max rate actually applied, whether any
+     month fell back to an earlier rate, and how many lines used a frozen line-level rate.
+     Read-only, app/API only -- never shown in the exported workbook itself (DEC12). -->
+<ng-template #ratesUsedTpl>
+  @if (ratesUsedError()) {
+    <div class="text-sm text-danger">{{ ratesUsedError() }}</div>
+  } @else {
+    <div class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+      @for (row of ratesUsed(); track row.rateYear + '-' + row.rateMonth) {
+        <div class="rounded-lg border border-neutral-200 p-3 text-sm flex flex-col gap-1">
+          <div class="font-semibold">{{ row.currencyPair }} — {{ row.rateYear }}-{{ row.rateMonth.toString().padStart(2, '0') }}</div>
+          <div>{{ 'REPORTING.DETAIL.RATES_USED.MIN_MAX' | translate }}: {{ row.minRateApplied ?? '—' }} – {{ row.maxRateApplied ?? '—' }}</div>
+          <div>{{ 'REPORTING.DETAIL.RATES_USED.FROZEN_LINES' | translate }}: {{ row.frozenLineRateCount }}</div>
+          @if (row.anyFallbackUsed) {
+            <div class="text-warning flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px]">warning</span>
+              {{ 'REPORTING.DETAIL.RATES_USED.FALLBACK_USED' | translate }}
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="text-sm text-neutral-500">{{ 'REPORTING.DETAIL.RATES_USED.EMPTY' | translate }}</div>
+      }
+    </div>
+  }
 </ng-template>
 
 <!-- Corps de modale « Rouvrir » : choix de méthode (radio) + justification (texte), requis. -->

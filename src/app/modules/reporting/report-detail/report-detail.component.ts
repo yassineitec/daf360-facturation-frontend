@@ -24,6 +24,8 @@ import { AffaireService } from '../../affaires/affaire.service';
 import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
 import { PlReportService } from '../pl-report.service';
 import { PlPeriodService } from '../pl-period.service';
+import { PlFxRateAdminService } from '../pl-fx-rate-admin.service';
+import { RatesUsedPanelRowDto } from '../pl-fx-rate.model';
 import { VarianceCommentaryService } from '../variance-commentary.service';
 import {
   MissingCashRowDto, PlPeriodDto, PlReportDto, PlReportLineDto, PlReportStatus,
@@ -398,6 +400,12 @@ export class ReportDetailComponent implements OnInit {
   private readonly currency      = inject(DisplayCurrencyPipe);
   private readonly modals        = inject(ModalService);
   private readonly userStore     = inject(UserStore);
+  private readonly fxRateSvc     = inject(PlFxRateAdminService);
+
+  /** WP6(h) -- gates the "rates used" button's very existence, same reasoning as the FX-rates
+   *  admin tab (`pl-catalogue-admin.component.ts`): Finance-internal, not a general
+   *  P&L-reporting-consumer concern. Server re-gates every call regardless. */
+  readonly canManageFxRates = computed(() => this.userStore.hasPermission('FACT_MANAGE_FX_RATES'));
   private readonly clientSvc     = inject(ClientService);
   private readonly affaireSvc    = inject(AffaireService);
   private readonly router        = inject(Router);
@@ -1362,6 +1370,36 @@ export class ReportDetailComponent implements OnInit {
         this.isExportingWorkbook.set(false);
         this.readBlobError(err).then(msg => this.actionError.set(msg));
       },
+    });
+  }
+
+  // ── WP6(h): "rates used" panel -- read-only, shown before export, never in the workbook ──
+
+  private readonly ratesUsedTpl = viewChild.required<TemplateRef<unknown>>('ratesUsedTpl');
+  ratesUsed = signal<RatesUsedPanelRowDto[]>([]);
+  isLoadingRatesUsed = signal(false);
+  ratesUsedError = signal<string | null>(null);
+
+  openRatesUsedPanel(): void {
+    const period = this.period();
+    if (!period) return;
+    this.isLoadingRatesUsed.set(true);
+    this.ratesUsedError.set(null);
+    this.fxRateSvc.ratesUsed(period.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => {
+        this.ratesUsed.set(rows);
+        this.isLoadingRatesUsed.set(false);
+      },
+      error: (err: { error?: { detail?: string } }) => {
+        this.ratesUsedError.set(err.error?.detail ?? this.translate.instant('REPORTING.DETAIL.RATES_USED.ERROR'));
+        this.isLoadingRatesUsed.set(false);
+      },
+    });
+    this.modals.open({
+      title: this.translate.instant('REPORTING.DETAIL.ACTIONS.RATES_USED'),
+      size: 'md',
+      body: this.ratesUsedTpl(),
+      buttons: [{ label: this.translate.instant('REPORTING.DETAIL.CLOSE'), variant: 'secondary', action: r => r.close() }],
     });
   }
 
