@@ -462,6 +462,13 @@ export class ReportDetailComponent implements OnInit {
 
   readonly canManageCommentary = computed(() => this.userStore.hasPermission('FACT_MANAGE_PL_REPORT'));
 
+  /** P&L Complete follow-up (WP10 review item #1) -- same permission `PlPeriodController` itself
+   *  enforces on `PUT .../average-fte` (`FACT_MANAGE_COST`, shared with close/submit/approve).
+   *  Shown here (not just in the close modal) because the endpoint has no close-status gate --
+   *  a value can be corrected on an already-CLOSED/SUBMITTED/APPROVED period too, and the export
+   *  reads it live, not from a frozen snapshot. */
+  readonly canManageCost = computed(() => this.userStore.hasPermission('FACT_MANAGE_COST'));
+
   // ── Lifecycle ────────────────────────────────────────────────────────────
   /** See class doc: an `effect()`, not just `ngOnInit`, so navigating to a new report id
    *  (OPTION_1_VERSIONED reopen) on the same route reloads without a fresh component instance. */
@@ -1369,6 +1376,45 @@ export class ReportDetailComponent implements OnInit {
       error: (err: unknown) => {
         this.isExportingWorkbook.set(false);
         this.readBlobError(err).then(msg => this.actionError.set(msg));
+      },
+    });
+  }
+
+  // ── P&L Complete follow-up: Average FTE, editable here too (not just at close time) ────────
+
+  /** `undefined` = not being edited (showing the period's real value); otherwise the in-progress
+   *  draft, same "draft until saved" pattern as `commentaryDrafts`. */
+  averageFteDraft = signal<number | null | undefined>(undefined);
+  isSavingAverageFte = signal(false);
+
+  startEditAverageFte(): void {
+    this.averageFteDraft.set(this.period()?.averageFte ?? null);
+  }
+
+  cancelEditAverageFte(): void {
+    this.averageFteDraft.set(undefined);
+  }
+
+  onAverageFteDraftChange(value: string | number | null): void {
+    this.averageFteDraft.set(value === null || value === '' ? null : +value);
+  }
+
+  saveAverageFte(): void {
+    const period = this.period();
+    const draft = this.averageFteDraft();
+    if (!period || draft === undefined) return;
+    this.isSavingAverageFte.set(true);
+    this.actionError.set(null);
+    this.periodSvc.setAverageFte(period.id, draft).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: updated => {
+        this.period.set(updated);
+        this.averageFteDraft.set(undefined);
+        this.isSavingAverageFte.set(false);
+      },
+      error: (err: { error?: { detail?: string; message?: string } }) => {
+        this.isSavingAverageFte.set(false);
+        this.actionError.set(err.error?.detail ?? err.error?.message
+          ?? this.translate.instant('REPORTING.DETAIL.AVERAGE_FTE.ERROR'));
       },
     });
   }

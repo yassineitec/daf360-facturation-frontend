@@ -4038,6 +4038,13 @@
         "FALLBACK_USED": "At least one line fell back to an earlier month's rate.",
         "EMPTY": "No FX conversion was applied for this period.",
         "ERROR": "Error while loading the rates-used panel."
+      },
+      "AVERAGE_FTE": {
+        "LABEL": "Average FTE",
+        "EDIT": "Edit",
+        "SAVE": "Save",
+        "CANCEL": "Cancel",
+        "ERROR": "Error while saving Average FTE."
       }
     }
   },

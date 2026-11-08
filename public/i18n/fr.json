@@ -4038,6 +4038,13 @@
         "FALLBACK_USED": "Au moins une ligne a utilisé le taux d'un mois antérieur, faute de taux pour le mois.",
         "EMPTY": "Aucune conversion de devise n'a été appliquée pour cette période.",
         "ERROR": "Erreur lors du chargement du panneau des taux utilisés."
+      },
+      "AVERAGE_FTE": {
+        "LABEL": "ETP moyen",
+        "EDIT": "Modifier",
+        "SAVE": "Enregistrer",
+        "CANCEL": "Annuler",
+        "ERROR": "Erreur lors de l'enregistrement de l'ETP moyen."
       }
     }
   },
