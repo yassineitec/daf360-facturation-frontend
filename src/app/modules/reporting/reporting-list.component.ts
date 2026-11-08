@@ -734,6 +734,11 @@ export class ReportingListComponent implements OnInit {
   closeWipPreviousYears     = signal<number | null>(null);
   closeSalaryRecharges      = signal<number | null>(null);
   closeOtherCostRecharges   = signal<number | null>(null);
+  /** P&L Complete follow-up (WP10 review item #1) -- Template row 4's "Average FTE", a
+   *  separate backend endpoint from the close waterfall (`PUT .../average-fte`, not part of
+   *  `ClosePeriodRequest`), set in the same modal for convenience since it's the same
+   *  once-per-close workflow moment. */
+  closeAverageFte           = signal<number | null>(null);
 
   /** Projected button in the 'periodStatus' cell — stops the click from also firing `rowClick`.
    *  No event from the card view (see `onGenerate`). */
@@ -747,6 +752,7 @@ export class ReportingListComponent implements OnInit {
     this.closeWipPreviousYears.set(null);
     this.closeSalaryRecharges.set(null);
     this.closeOtherCostRecharges.set(null);
+    this.closeAverageFte.set(period.averageFte ?? null);
     const t = (k: string) => this.translate.instant(k);
     this.closePeriodRef = this.modal.open({
       minWidth:    '360px',
@@ -784,13 +790,40 @@ export class ReportingListComponent implements OnInit {
       salaryRecharges:      this.closeSalaryRecharges(),
       otherCostRecharges:   this.closeOtherCostRecharges(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: closed => {
-        this.periods.update(list => list.map(p => (p.id === closed.id ? closed : p)));
+      next: closed => this.applyAverageFteThenFinish(closed),
+      error: (err: unknown) => {
+        this.closingId.set(null);
+        const e = err as { error?: { detail?: string; message?: string } };
+        this.error.set(e?.error?.detail ?? e?.error?.message
+          ?? this.translate.instant('REPORTING.CLOSE_PERIOD_ERROR'));
+      },
+    });
+  }
+
+  /** Average FTE is a separate backend endpoint from the close waterfall (see `closeAverageFte`'s
+   *  own doc) -- fired as a second call once close succeeds, only when the field was actually
+   *  touched, so leaving it blank changes nothing (matches every other optional waterfall field's
+   *  "missing = unchanged/zero" behaviour). A failure here still leaves the period closed; it's
+   *  surfaced the same way as any other action error and can be corrected afterward from the
+   *  report-detail screen (`PlPeriodService.setAverageFte` has no close-status gate). */
+  private applyAverageFteThenFinish(closed: PlPeriodDto): void {
+    const fte = this.closeAverageFte();
+    if (fte === null) {
+      this.periods.update(list => list.map(p => (p.id === closed.id ? closed : p)));
+      this.closingId.set(null);
+      this.closeClosePeriodModal();
+      return;
+    }
+    this.periodSvc.setAverageFte(closed.id, fte).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: updated => {
+        this.periods.update(list => list.map(p => (p.id === updated.id ? updated : p)));
         this.closingId.set(null);
         this.closeClosePeriodModal();
       },
       error: (err: unknown) => {
+        this.periods.update(list => list.map(p => (p.id === closed.id ? closed : p)));
         this.closingId.set(null);
+        this.closeClosePeriodModal();
         const e = err as { error?: { detail?: string; message?: string } };
         this.error.set(e?.error?.detail ?? e?.error?.message
           ?? this.translate.instant('REPORTING.CLOSE_PERIOD_ERROR'));

@@ -3719,6 +3719,8 @@
     "CLOSE_PERIOD_WIP_PRIOR": "WIP, prior years",
     "CLOSE_PERIOD_SALARY_RECHARGES": "Salaries recharges (+/-)",
     "CLOSE_PERIOD_OTHER_COST_RECHARGES": "Other costs recharges (+/-)",
+    "CLOSE_PERIOD_AVERAGE_FTE": "Average FTE",
+    "CLOSE_PERIOD_AVERAGE_FTE_HINT": "Drives Billable/Non-Billable Hrs (rows 6-9). Leave blank to keep today's value.",
     "WATERFALL": {
       "GROSS_REVENUE_1": "Gross Revenue 1",
       "GROSS_REVENUE_2": "Gross Revenue 2",

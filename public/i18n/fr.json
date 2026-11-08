@@ -3719,6 +3719,8 @@
     "CLOSE_PERIOD_WIP_PRIOR": "En cours, années antérieures",
     "CLOSE_PERIOD_SALARY_RECHARGES": "Refacturations de salaires (+/-)",
     "CLOSE_PERIOD_OTHER_COST_RECHARGES": "Refacturations autres coûts (+/-)",
+    "CLOSE_PERIOD_AVERAGE_FTE": "ETP moyen",
+    "CLOSE_PERIOD_AVERAGE_FTE_HINT": "Alimente les heures facturables/non facturables (lignes 6-9). Laisser vide pour conserver la valeur actuelle.",
     "WATERFALL": {
       "GROSS_REVENUE_1": "Chiffre d'affaires brut 1",
       "GROSS_REVENUE_2": "Chiffre d'affaires brut 2",
