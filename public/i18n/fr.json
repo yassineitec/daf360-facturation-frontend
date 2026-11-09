@@ -2891,6 +2891,7 @@
       "FOREX_RATE_CHF": "Taux CHF",
       "FOREX_CALC": "Calcul en cours…",
       "FOREX_HINT": "Saisissez un montant et sélectionnez une devise pour voir la conversion en EUR et CHF.",
+      "FOREX_ERROR": "Conversion impossible : aucun taux de change n'est configuré pour cette devise.",
       "CIRCUIT_TITLE": "Circuit d'approbation",
       "CIRCUIT_AUTO": "Approbation automatique",
       "CIRCUIT_DUAL": "Double validation requise",

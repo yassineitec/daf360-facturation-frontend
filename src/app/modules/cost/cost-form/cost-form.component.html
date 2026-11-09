@@ -520,6 +520,12 @@
                              animation:spin 1s linear infinite">progress_activity</span>
                 <span style="font-size:.75rem;color:rgba(189,201,196,.6)">{{ 'COST.FORM.FOREX_CALC' | translate }}</span>
               </div>
+            } @else if (forexPreviewError(); as fxErr) {
+              <div style="display:flex;align-items:flex-start;gap:8px;padding:12px;
+                          border-radius:10px;background:rgba(248,113,113,.12)">
+                <span class="material-symbols-outlined" style="font-size:1rem;color:#f87171">error</span>
+                <span style="font-size:.75rem;color:#fca5a5;line-height:1.4">{{ fxErr }}</span>
+              </div>
             } @else {
               <p style="font-size:.75rem;padding:1rem 0;color:rgba(189,201,196,.5);margin:0">
                 {{ 'COST.FORM.FOREX_HINT' | translate }}

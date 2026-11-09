@@ -2891,6 +2891,7 @@
       "FOREX_RATE_CHF": "CHF rate",
       "FOREX_CALC": "Calculating…",
       "FOREX_HINT": "Enter an amount and select a currency to see the conversion in EUR and CHF.",
+      "FOREX_ERROR": "Unable to convert: no exchange rate is configured for this currency.",
       "CIRCUIT_TITLE": "Approval circuit",
       "CIRCUIT_AUTO": "Automatic approval",
       "CIRCUIT_DUAL": "Dual validation required",

@@ -163,6 +163,9 @@ export class CostFormComponent implements OnInit {
   lines = signal<LineForm[]>([this.emptyLine()]);
 
   forexPreview    = signal<ForexPreviewDto | null>(null);
+  /** Set when getForexPreview fails (e.g. no rate configured for this currency/month) so the
+   *  panel can show the real reason instead of silently looking unconfigured. */
+  forexPreviewError = signal<string | null>(null);
   circuitPreview  = signal<CircuitPreviewDto | null>(null);
   previewLoading  = signal<boolean>(false);
   isPageLoading   = signal<boolean>(false);
@@ -871,13 +874,18 @@ export class CostFormComponent implements OnInit {
     const curr = this.currencies().find(c => c.id === this.currencyId());
     if (!t.ht || !curr || !pid) {
       this.forexPreview.set(null);
+      this.forexPreviewError.set(null);
       this.circuitPreview.set(null);
       return;
     }
     this.previewLoading.set(true);
     this.costSvc.getForexPreview(t.ht, curr.code).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: fx => this.forexPreview.set(fx),
-      error: () => this.forexPreview.set(null),
+      next: fx => { this.forexPreview.set(fx); this.forexPreviewError.set(null); },
+      error: err => {
+        this.forexPreview.set(null);
+        this.forexPreviewError.set(
+          err.error?.rule ?? err.error?.detail ?? this.translate.instant('COST.FORM.FOREX_ERROR'));
+      },
     });
     const categoryIds = this.lines().map(l => l.costCategoryId);
     this.costSvc.getForexPreview(t.ttc, curr.code).pipe(
