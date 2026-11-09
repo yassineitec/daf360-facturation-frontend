@@ -22,7 +22,7 @@ import { FactListService } from '../../../core/fact-list.service';
 import { ListValueDto, localizedLabel } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import { CurrencyRateService } from '../../../core/currency-rate.service';
-import { CurrencyDisplayService } from '../../../core/currency-display.service';
+import { CurrencyDisplayService, SUPPORTED_CURRENCIES } from '../../../core/currency-display.service';
 import { EmployeeCostListStateService } from './employee-cost-list-state.service';
 import { ExportService } from '../../../core/export.service';
 
@@ -153,19 +153,16 @@ export class EmployeeCostComponent implements OnInit {
    * configurable-list call fails or returns empty) — but the fallback labels here are bare
    * currency codes rather than the wizard's translated descriptions ("EUR — Euro"), since
    * a code alone is enough context in this drawer's compact currency field. The backend
-   * labels follow the UI language (`currentLang()` read). */
+   * labels follow the UI language (`currentLang()` read). The fallback set itself comes from
+   * SUPPORTED_CURRENCIES (currency-display.service.ts) rather than its own copy, so it can't
+   * drift out of date the way the old local TND/EUR/USD/MAD list had (missing EGP/SAR/AED). */
   readonly currencyOptions = computed<SelectOption[]>(() => {
     const lang = this.translate.currentLang();
     const list = this.currencies();
     if (list.length > 0) {
       return list.map(c => ({ value: c.code, label: `${c.code} — ${localizedLabel(c.labelFr, c.labelEn, lang) ?? c.code}` }));
     }
-    return [
-      { value: 'EUR', label: 'EUR' },
-      { value: 'USD', label: 'USD' },
-      { value: 'TND', label: 'TND' },
-      { value: 'MAD', label: 'MAD' },
-    ];
+    return SUPPORTED_CURRENCIES.map(c => ({ value: c, label: c }));
   });
 
   /** `daf-multi-date-picker` travaille en `Date` ; le formulaire stocke l'ISO (yyyy-MM-dd)

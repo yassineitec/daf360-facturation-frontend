@@ -14,6 +14,7 @@ import { BillingService } from '../billing.service';
 import { FactListService } from '../../../../core/fact-list.service';
 import { AffaireDetail } from '../../affaire.model';
 import { ListValueDto } from '../../../cost/cost.model';
+import { SUPPORTED_CURRENCIES } from '../../../../core/currency-display.service';
 
 /**
  * Saisie d'un frais remboursable — **une seule section, le formulaire**.
@@ -169,7 +170,7 @@ export class ExpenseFormComponent implements OnInit {
   readonly currencyOptions = computed<SelectOption[]>(() => {
     const list = this.currencies();
     if (list.length) return list.map(c => ({ value: c.code, label: c.code }));
-    return ['EUR', 'USD', 'TND', 'MAD', 'EGP'].map(c => ({ value: c, label: c }));
+    return SUPPORTED_CURRENCIES.map(c => ({ value: c, label: c }));
   });
 
   readonly currencyConfig = computed(() => {

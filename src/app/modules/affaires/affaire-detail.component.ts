@@ -881,7 +881,17 @@ export class AffaireDetailComponent implements OnInit {
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
-  readonly affaireDevise = computed(() => this.affaire()?.devise || 'TND');
+  /**
+   * La devise de l'affaire, ou à défaut celle par défaut du pays (`pays_ref.devise` —
+   * EUR pour la Tunisie, USD pour l'Égypte, etc.), jamais une constante codée en dur :
+   * un pays sans devise explicite sur l'affaire ne doit pas retomber sur celle d'un autre.
+   */
+  readonly affaireDevise = computed(() => {
+    const explicit = this.affaire()?.devise;
+    if (explicit) return explicit;
+    const p = this.paysList().find(p => p.id === this.affaire()?.paysId);
+    return p?.devise || 'EUR';
+  });
 
   /**
    * Le libellé lisible d'un code technique (`ENUMS.<domaine>.<code>`).
@@ -936,6 +946,12 @@ export class AffaireDetailComponent implements OnInit {
         label:   this.translate.instant('AFFAIRES.DETAIL.BUDGET_NOT_VALIDATED'),
         variant: 'warning',
       });
+    }
+
+    if (a.origin === 'DOC360') {
+      badges.push({ label: this.translate.instant('AFFAIRES.DETAIL.ORIGIN.DOC360'), variant: 'teal' });
+    } else if (a.origin === 'INTERCO') {
+      badges.push({ label: this.translate.instant('AFFAIRES.DETAIL.ORIGIN.INTERCO'), variant: 'secondary' });
     }
 
     // Pas de pastille d'alerte RAF ici : depuis la 4.18.0 le rappel est porté par
