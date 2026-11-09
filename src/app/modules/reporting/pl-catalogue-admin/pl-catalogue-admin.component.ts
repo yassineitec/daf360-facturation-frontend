@@ -18,7 +18,7 @@ import { PlFxRateAdminService } from '../pl-fx-rate-admin.service';
 import {
   PL_CATALOGUE_SOURCE_TYPES, PlCataloguePreviewResultDto, PlCatalogueSourceType,
   PlCatalogueStatusConfigDto, PlCatalogueStatusConfigVersionDto, PlCategoryLineMappingDto,
-  PlCategoryLineMappingVersionDto, PlCategoryMappingRole,
+  PlCategoryLineMappingVersionDto, PlCategoryMappingRole, PlCostCategoryDto,
 } from '../pl-catalogue.model';
 import { DeriveRatesRequest, PlMonthlyExchangeRateDto } from '../pl-fx-rate.model';
 
@@ -41,8 +41,11 @@ interface MappingEdit {
  * P&L source catalogue admin (docs/PL_CATALOGUE_PLAN.md §6 in daf360-facturation-service,
  * F.08 follow-on). Two sub-screens sharing one pays selector:
  *  - Status config: which statuses count as "active" per source type (COST_BOOKED etc.).
- *  - Category → line mapping: which of the 13 group_catalogue_lines a line re-attributes to,
- *    and under what role (COST/EXTERNAL_COGS/MANUAL/EXCLUDED) — see coverage check below.
+ *  - Category → line mapping (DEC-CATMAP-1): which `group_catalogue_lines` row each REAL,
+ *    per-pays cost category (`fact_configurable_list_values` type `COST_CATEGORY` — the same
+ *    category a user picks on a cost line) re-attributes to, and under what role (COST/
+ *    EXTERNAL_COGS/MANUAL/EXCLUDED) — see coverage check below. `group_catalogue_lines` itself
+ *    is now the TARGET only; `lines`/`lineOptions` below still read it for that dropdown.
  *
  * Two plan items from §6 are NOT built here, by deliberate scope decision, not oversight:
  *  - Preview (run a DRAFT config against a closed period without persisting) — no backend
@@ -109,6 +112,7 @@ export class PlCatalogueAdminComponent implements OnInit {
     if (!Number.isFinite(id) || id === this.paysId()) return;
     this.paysId.set(id);
     this.loadStatusConfig();
+    this.loadRealCostCategories();
     this.loadMapping();
     this.loadClosedPeriods();
   }
@@ -150,6 +154,7 @@ export class PlCatalogueAdminComponent implements OnInit {
         this.paysList.set(allPays);
         this.lines.set(lines);
         this.loadStatusConfig();
+        this.loadRealCostCategories();
         this.loadMapping();
         this.loadClosedPeriods();
         this.firstLoad.set(false);
@@ -423,10 +428,32 @@ export class PlCatalogueAdminComponent implements OnInit {
   // Category → line mapping
   // ════════════════════════════════════════════════════════════════════════════
 
+  /** TARGET side only (DEC-CATMAP-1) — the fixed `group_catalogue_lines` registry, unchanged. */
   lines = signal<GroupCatalogueLineDto[]>([]);
 
   readonly lineOptions = computed<SelectOption[]>(() =>
     this.lines().map(l => ({ value: String(l.id), label: `${l.labelFr} (${l.code})` })));
+
+  /** SOURCE side (DEC-CATMAP-1) — the real, per-pays `COST_CATEGORY` list; reloaded on every
+   *  pays change, unlike `lines` above which is global and fetched once. */
+  realCategories = signal<PlCostCategoryDto[]>([]);
+  realCategoriesLoading = signal(false);
+
+  private loadRealCostCategories(): void {
+    this.realCategoriesLoading.set(true);
+    this.svc.listRealCostCategories(this.effectivePaysId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: categories => {
+          this.realCategories.set(categories);
+          this.realCategoriesLoading.set(false);
+        },
+        error: () => {
+          this.realCategories.set([]);
+          this.realCategoriesLoading.set(false);
+        },
+      });
+  }
 
   readonly roleOptions = computed<SelectOption[]>(() => {
     this.translate.currentLang();
@@ -482,14 +509,16 @@ export class PlCatalogueAdminComponent implements OnInit {
 
   readonly mappingRows = computed<TableRow[]>(() => {
     this.mappingTick();
-    return this.lines().map(line => {
-      const edit = this.editedMapping.get(line.code);
+    return this.realCategories().map(category => {
+      const edit = this.editedMapping.get(category.code);
       return {
-        id: line.code,
-        categoryCode: line.code,
-        categoryLabel: `${line.labelFr} (${line.code})`,
+        id: category.code,
+        categoryCode: category.code,
+        categoryLabel: `${category.labelFr} (${category.code})`,
         targetLineId: edit?.catalogueLineId != null ? String(edit.catalogueLineId) : '',
         mappingRole: edit?.mappingRole ?? '',
+        // DEC-CATMAP-1: a real category with no DRAFT/ACTIVE mapping row shows up here
+        // genuinely unmapped (blank target/role) — never silently defaulted or hidden.
         mapped: edit != null && edit.catalogueLineId != null && edit.mappingRole != null,
       };
     });
@@ -497,7 +526,7 @@ export class PlCatalogueAdminComponent implements OnInit {
 
   readonly mappingTableConfig = computed<TableConfig>(() => ({
     showHeader: true,
-    loading: this.mappingLoading(),
+    loading: this.mappingLoading() || this.realCategoriesLoading(),
     emptyMessage: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.EMPTY'),
   }));
 
@@ -521,12 +550,12 @@ export class PlCatalogueAdminComponent implements OnInit {
    *  (AC4/AC5) — this is UX, not the authority. */
   readonly mappingCoverage = computed(() => {
     this.mappingTick();
-    const unmapped = this.lines()
-      .filter(l => {
-        const e = this.editedMapping.get(l.code);
+    const unmapped = this.realCategories()
+      .filter(c => {
+        const e = this.editedMapping.get(c.code);
         return !e || e.catalogueLineId == null || e.mappingRole == null;
       })
-      .map(l => l.code);
+      .map(c => c.code);
     return { ok: unmapped.length === 0, unmappedCategoryCodes: unmapped };
   });
 

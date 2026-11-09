@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   CoverageCheckResultDto, PlCataloguePreviewResultDto, PlCatalogueSourceType,
   PlCatalogueStatusConfigDto, PlCatalogueStatusConfigVersionDto, PlCategoryLineMappingDto,
-  PlCategoryLineMappingVersionDto, SaveCategoryMappingRequest, SaveStatusConfigRequest,
+  PlCategoryLineMappingVersionDto, PlCostCategoryDto, SaveCategoryMappingRequest, SaveStatusConfigRequest,
 } from './pl-catalogue.model';
 
 /** Thin wrapper over `/api/fact/admin/pl-catalogue` — every call needs `FACT_ADMIN_PL_CATALOGUE`
@@ -55,6 +55,15 @@ export class PlCatalogueAdminService {
   }
 
   // ── category → line mapping ───────────────────────────────────────────────
+
+  /** DEC-CATMAP-1/3 — the real per-pays cost-category SOURCE list (not `group_catalogue_lines`),
+   *  same pays scope and repository call as `getCategoryMapping`/`saveCategoryMapping` below, so
+   *  the rows this screen renders can never drift from what SAVE actually validates against. */
+  listRealCostCategories(paysId: number | null): Observable<PlCostCategoryDto[]> {
+    let params = new HttpParams();
+    if (paysId != null) params = params.set('paysId', String(paysId));
+    return this.http.get<PlCostCategoryDto[]>(`${this.base}/category-mapping/categories`, { params });
+  }
 
   getCategoryMapping(paysId: number | null): Observable<PlCategoryLineMappingDto> {
     let params = new HttpParams();

@@ -35,6 +35,15 @@ export interface SaveStatusConfigRequest {
 
 export type PlCategoryMappingRole = 'COST' | 'EXTERNAL_COGS' | 'MANUAL' | 'EXCLUDED';
 
+/** DEC-CATMAP-1 — one real, per-pays cost category (`fact_configurable_list_values` where
+ *  `type_code='COST_CATEGORY'`), the SOURCE side of the mapping screen below. Distinct from
+ *  `GroupCatalogueLineDto` (the unchanged TARGET side). */
+export interface PlCostCategoryDto {
+  code: string;
+  labelFr: string;
+  labelEn: string | null;
+}
+
 export interface PlCategoryLineMappingEntryDto {
   categoryCode: string;
   catalogueLineId: number;
