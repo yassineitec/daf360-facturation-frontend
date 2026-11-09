@@ -3806,6 +3806,8 @@
         "SHEET_BUDGET": "Budget",
         "BUDGET_COVERAGE_BLOCKED": "Lignes budget non mappées : {{codes}}",
         "COL_BUDGET_SOURCES": "Lignes Template sources",
+        "ADD_CATEGORIES": "Ajouter des catégories",
+        "ADD_SOURCES": "Ajouter des lignes",
         "COL_TRANSFORM": "Transformation",
         "TRANSFORM": {
           "DIRECT": "Direct",

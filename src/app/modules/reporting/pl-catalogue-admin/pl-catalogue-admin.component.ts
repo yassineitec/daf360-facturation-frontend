@@ -559,6 +559,7 @@ export class PlCatalogueAdminComponent implements OnInit {
 
   readonly mappingTableConfig = computed<TableConfig>(() => ({
     showHeader: true,
+    hoverable: true,
     loading: this.mappingLoading() || this.realCategoriesLoading(),
     emptyMessage: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.EMPTY'),
   }));
@@ -909,6 +910,7 @@ export class PlCatalogueAdminComponent implements OnInit {
 
   readonly budgetMappingTableConfig = computed<TableConfig>(() => ({
     showHeader: true,
+    hoverable: true,
     loading: this.budgetRowMappingLoading() || this.budgetRowsLoading(),
     emptyMessage: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.EMPTY'),
   }));
@@ -978,6 +980,7 @@ export class PlCatalogueAdminComponent implements OnInit {
 
   readonly fxTableConfig = computed<TableConfig>(() => ({
     showHeader: true,
+    hoverable: true,
     loading: this.fxLoading(),
     emptyMessage: this.translate.instant('REPORTING.PL_CATALOGUE.FX.EMPTY'),
   }));

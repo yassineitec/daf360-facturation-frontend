@@ -149,7 +149,10 @@
         <daf-select
           [options]="categoryOptions()"
           [selected]="row['categoryCodes']"
-          [config]="{ multiple: true, searchable: true }"
+          [config]="{
+            multiple: true, searchable: true, staticLabel: true, triggerIcon: 'add',
+            placeholder: ('REPORTING.PL_CATALOGUE.MAPPING.ADD_CATEGORIES' | translate)
+          }"
           [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_CATEGORY' | translate"
           (selectedChange)="onCategoriesForLineChange(row['lineId'], $event)" />
       </ng-template>
@@ -161,7 +164,7 @@
           <div class="flex flex-col gap-1.5">
             @for (code of row['categoryCodes']; track code) {
               <div class="flex items-center gap-2">
-                <span class="text-xs text-neutral-600 min-w-[140px] truncate" [title]="categoryLabel(code)">
+                <span class="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-700 min-w-[140px] max-w-[220px] truncate" [title]="categoryLabel(code)">
                   {{ categoryLabel(code) }}
                 </span>
                 <daf-select
@@ -237,7 +240,10 @@
           <daf-select
             [options]="budgetSourceOptions()"
             [selected]="row['catalogueLineIds'] | plAsStrings"
-            [config]="{ multiple: true, searchable: true }"
+            [config]="{
+              multiple: true, searchable: true, staticLabel: true, triggerIcon: 'add',
+              placeholder: ('REPORTING.PL_CATALOGUE.MAPPING.ADD_SOURCES' | translate)
+            }"
             [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_BUDGET_SOURCES' | translate"
             (selectedChange)="onCatalogueLinesForBudgetRowChange(row['budgetRowId'], $event)" />
         </ng-template>
@@ -249,7 +255,7 @@
             <div class="flex flex-col gap-1.5">
               @for (lineId of row['catalogueLineIds']; track lineId) {
                 <div class="flex items-center gap-2">
-                  <span class="text-xs text-neutral-600 min-w-[140px] truncate" [title]="budgetSourceLabel(lineId)">
+                  <span class="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-700 min-w-[140px] max-w-[220px] truncate" [title]="budgetSourceLabel(lineId)">
                     {{ budgetSourceLabel(lineId) }}
                   </span>
                   <daf-select

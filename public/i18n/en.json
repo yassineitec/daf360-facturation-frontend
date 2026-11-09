@@ -3806,6 +3806,8 @@
         "SHEET_BUDGET": "Budget",
         "BUDGET_COVERAGE_BLOCKED": "Unmapped budget rows: {{codes}}",
         "COL_BUDGET_SOURCES": "Source Template lines",
+        "ADD_CATEGORIES": "Add categories",
+        "ADD_SOURCES": "Add lines",
         "COL_TRANSFORM": "Transform",
         "TRANSFORM": {
           "DIRECT": "Direct",
