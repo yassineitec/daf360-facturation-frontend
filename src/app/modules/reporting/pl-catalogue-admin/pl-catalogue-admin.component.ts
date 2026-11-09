@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, Pipe, PipeTransform, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
@@ -15,6 +15,10 @@ import { GroupCatalogueLineDto, PlPeriodDto } from '../pl-reporting.model';
 import { PlPeriodService } from '../pl-period.service';
 import { PlCatalogueAdminService } from '../pl-catalogue-admin.service';
 import { PlFxRateAdminService } from '../pl-fx-rate-admin.service';
+import { PlBudgetRowAdminService } from '../pl-budget-row-admin.service';
+import {
+  PlBudgetRowDto, PlBudgetRowMappingDto, PlBudgetRowMappingEntryDto, PlBudgetRowTransform,
+} from '../pl-budget-row.model';
 import {
   PL_CATALOGUE_SOURCE_TYPES, PlCataloguePreviewResultDto, PlCatalogueSourceType,
   PlCatalogueStatusConfigDto, PlCatalogueStatusConfigVersionDto, PlCategoryLineMappingDto,
@@ -31,10 +35,22 @@ const GLOBAL_DEFAULT = 0;
 const DEFAULT_FX_PAIR = 'TND/EUR';
 
 type CatalogueTab = 'status' | 'mapping' | 'fx';
+type MappingSheet = 'template' | 'budget';
 
 interface MappingEdit {
   catalogueLineId: number | null;
   mappingRole: PlCategoryMappingRole | null;
+}
+
+/** `row['catalogueLineIds']` on the Budget mapping table is a `number[]`, but `daf-select`'s
+ *  `[selected]` input expects `string[]` — this tiny standalone pipe keeps that conversion purely
+ *  declarative in the template, matching this codebase's existing pipe usage style. Only ever
+ *  used from `pl-catalogue-admin.component.html`, so it lives in this file rather than its own. */
+@Pipe({ name: 'plAsStrings', standalone: true })
+export class PlAsStringsPipe implements PipeTransform {
+  transform(value: number[]): string[] {
+    return value.map(String);
+  }
 }
 
 /**
@@ -66,7 +82,7 @@ interface MappingEdit {
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, SelectComponent,
     TabsComponent, CheckboxComponent, StatusBadgeComponent, DataTableComponent, DafCellDirective,
-    FormFieldComponent,
+    FormFieldComponent, PlAsStringsPipe,
   ],
   host: { class: 'block' },
   templateUrl: './pl-catalogue-admin.component.html',
@@ -81,6 +97,7 @@ export class PlCatalogueAdminComponent implements OnInit {
   private readonly modals     = inject(ModalService);
   private readonly translate  = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly budgetRowSvc = inject(PlBudgetRowAdminService);
 
   /** WP1(c) DEC10 — distinct from `FACT_ADMIN_PL_CATALOGUE` (create/save a DRAFT); only a
    *  DIFFERENT user holding this permission can activate it (server enforces `createdBy !=
@@ -523,7 +540,7 @@ export class PlCatalogueAdminComponent implements OnInit {
     return this.lines().map(line => ({
       id: String(line.id),
       lineId: line.id,
-      lineLabel: `${line.labelFr} (${line.code})`,
+      lineLabel: line.excelRow ? `${line.labelFr} (${line.code}) · row ${line.excelRow}` : `${line.labelFr} (${line.code})`,
       categoryCodes: byLine.get(line.id) ?? [],
     }));
   });
@@ -675,6 +692,226 @@ export class PlCatalogueAdminComponent implements OnInit {
       buttons: [{ label: this.translate.instant('REPORTING.DETAIL.CLOSE'), variant: 'secondary', action: r => r.close() }],
     });
   }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // Budget-row mapping (Sheet selector, sibling to the Template category mapping above)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  mappingSheet = signal<MappingSheet>('template');
+
+  readonly mappingSheetOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: 'template', label: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.SHEET_TEMPLATE') },
+      { value: 'budget', label: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.SHEET_BUDGET') },
+    ];
+  });
+
+  private budgetRowsLoaded = false;
+
+  onMappingSheetSelected(values: string[]): void {
+    const sheet = values[0] as MappingSheet;
+    if (!sheet || sheet === this.mappingSheet()) return;
+    this.mappingSheet.set(sheet);
+    if (sheet === 'budget' && !this.budgetRowsLoaded) {
+      this.budgetRowsLoaded = true;
+      this.loadBudgetRows();
+      this.loadBudgetRowMapping();
+    }
+  }
+
+  budgetRows = signal<PlBudgetRowDto[]>([]);
+  budgetRowsLoading = signal(false);
+
+  budgetRowMapping = signal<PlBudgetRowMappingDto | null>(null);
+  budgetRowMappingLoading = signal(false);
+  budgetRowMappingError = signal<string | null>(null);
+  budgetRowMappingSaving = signal(false);
+  budgetRowMappingActivating = signal(false);
+  budgetRowMappingSuccess = signal<string | null>(null);
+
+  /** Keyed by `catalogueLineId` (the SOURCE, a `group_catalogue_lines` id) -- mirrors
+   *  `editedMapping`'s shape one level up: which Budget row it feeds and with which transform. */
+  private editedBudgetRowByLineId = new Map<number, { budgetRowId: number; transform: PlBudgetRowTransform | null }>();
+  private budgetMappingTick = signal(0);
+
+  readonly transformOptions = computed<SelectOption[]>(() => {
+    this.translate.currentLang();
+    const transforms: PlBudgetRowTransform[] = ['DIRECT', 'NEGATE', 'POSITIVE_PART', 'NEGATIVE_PART'];
+    return transforms.map(t => ({ value: t, label: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.TRANSFORM.' + t) }));
+  });
+
+  private loadBudgetRows(): void {
+    this.budgetRowsLoading.set(true);
+    this.budgetRowSvc.listBudgetRows().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => {
+        this.budgetRows.set(rows);
+        this.budgetRowsLoading.set(false);
+      },
+      error: () => {
+        this.budgetRows.set([]);
+        this.budgetRowsLoading.set(false);
+      },
+    });
+  }
+
+  loadBudgetRowMapping(): void {
+    this.budgetRowMappingLoading.set(true);
+    this.budgetRowMappingError.set(null);
+    this.budgetRowMappingSuccess.set(null);
+    this.budgetRowSvc.getBudgetRowMapping().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: dto => {
+        this.budgetRowMapping.set(dto);
+        this.editedBudgetRowByLineId = new Map(
+          dto.entries.map(e => [e.catalogueLineId, { budgetRowId: e.budgetRowId, transform: e.transform }]));
+        this.budgetMappingTick.update(v => v + 1);
+        this.budgetRowMappingLoading.set(false);
+      },
+      error: err => {
+        this.budgetRowMappingError.set(this.backendErrorMessage(err, 'REPORTING.PL_CATALOGUE.LOAD_ERROR'));
+        this.budgetRowMappingLoading.set(false);
+      },
+    });
+  }
+
+  /** One row per `pl_budget_row` TARGET, each with the `group_catalogue_lines` SOURCE ids
+   *  currently assigned to it -- the exact same grouping shape as `mappingRows()` above, just
+   *  keyed by `catalogueLineId` (number) instead of `categoryCode` (string). */
+  readonly budgetMappingRows = computed<TableRow[]>(() => {
+    this.budgetMappingTick();
+    const byRow = new Map<number, number[]>();
+    for (const [lineId, edit] of this.editedBudgetRowByLineId) {
+      const ids = byRow.get(edit.budgetRowId) ?? [];
+      ids.push(lineId);
+      byRow.set(edit.budgetRowId, ids);
+    }
+    return this.budgetRows().map(row => ({
+      id: String(row.id),
+      budgetRowId: row.id,
+      rowLabel: `${row.labelFr} (${row.code}) · row ${row.excelRow}`,
+      catalogueLineIds: byRow.get(row.id) ?? [],
+    }));
+  });
+
+  readonly budgetSourceOptions = computed<SelectOption[]>(() =>
+    this.lines().map(l => ({
+      value: String(l.id),
+      label: l.excelRow ? `${l.labelFr} (${l.code}) · Template row ${l.excelRow}` : `${l.labelFr} (${l.code})`,
+    })));
+
+  budgetSourceLabel(lineId: number): string {
+    const line = this.lines().find(l => l.id === lineId);
+    return line ? `${line.labelFr} (${line.code})` : String(lineId);
+  }
+
+  budgetTransformFor(lineId: number): PlBudgetRowTransform | null {
+    return this.editedBudgetRowByLineId.get(lineId)?.transform ?? null;
+  }
+
+  onCatalogueLinesForBudgetRowChange(budgetRowId: number, lineIdStrings: string[]): void {
+    const selected = new Set(lineIdStrings.map(Number));
+    for (const [lineId, edit] of this.editedBudgetRowByLineId) {
+      if (edit.budgetRowId === budgetRowId && !selected.has(lineId)) {
+        this.editedBudgetRowByLineId.delete(lineId);
+      }
+    }
+    for (const lineId of selected) {
+      const current = this.editedBudgetRowByLineId.get(lineId);
+      if (current?.budgetRowId !== budgetRowId) {
+        this.editedBudgetRowByLineId.set(lineId, { budgetRowId, transform: current?.transform ?? null });
+      }
+    }
+    this.budgetMappingTick.update(v => v + 1);
+  }
+
+  onBudgetRowTransformChange(lineId: number, values: string[]): void {
+    const transform = (values[0] || null) as PlBudgetRowTransform | null;
+    const current = this.editedBudgetRowByLineId.get(lineId);
+    if (!current) return;
+    this.editedBudgetRowByLineId.set(lineId, { ...current, transform });
+    this.budgetMappingTick.update(v => v + 1);
+  }
+
+  /** Mirrors `mappingCoverage()` one level up: every ACTIVE `pl_budget_row` must have at least
+   *  one source assigned, computed client-side for immediate UX feedback. */
+  readonly budgetMappingCoverage = computed(() => {
+    this.budgetMappingTick();
+    const coveredRowIds = new Set<number>();
+    const incompleteRowIds = new Set<number>();
+    for (const edit of this.editedBudgetRowByLineId.values()) {
+      coveredRowIds.add(edit.budgetRowId);
+      if (edit.transform == null) incompleteRowIds.add(edit.budgetRowId);
+    }
+    const unmapped = this.budgetRows()
+        .filter(r => !coveredRowIds.has(r.id) || incompleteRowIds.has(r.id))
+        .map(r => r.code);
+    return { ok: unmapped.length === 0, unmappedBudgetRowCodes: unmapped };
+  });
+
+  saveBudgetRowMappingDraft(): void {
+    if (!this.budgetMappingCoverage().ok) {
+      this.budgetRowMappingError.set(this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.BUDGET_COVERAGE_BLOCKED', {
+        codes: this.budgetMappingCoverage().unmappedBudgetRowCodes.join(', '),
+      }));
+      return;
+    }
+    this.budgetRowMappingSaving.set(true);
+    this.budgetRowMappingError.set(null);
+    this.budgetRowMappingSuccess.set(null);
+    const entries = [...this.editedBudgetRowByLineId.entries()]
+        .filter(([, e]) => e.transform != null)
+        .map(([catalogueLineId, e]) => ({ budgetRowId: e.budgetRowId, catalogueLineId, transform: e.transform! }));
+    this.budgetRowSvc.saveBudgetRowMapping({ entries }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.budgetRowMappingSaving.set(false);
+        this.budgetRowMappingSuccess.set(this.translate.instant('REPORTING.PL_CATALOGUE.SAVE_SUCCESS'));
+        this.loadBudgetRowMapping();
+      },
+      error: err => {
+        this.budgetRowMappingError.set(this.backendErrorMessage(err, 'REPORTING.PL_CATALOGUE.SAVE_ERROR'));
+        this.budgetRowMappingSaving.set(false);
+      },
+    });
+  }
+
+  readonly canActivateBudgetRowMapping = computed(() => this.budgetRowMapping()?.configStatus === 'DRAFT');
+
+  activateBudgetRowMapping(): void {
+    const m = this.budgetRowMapping();
+    if (!m?.version) return;
+    this.budgetRowMappingActivating.set(true);
+    this.budgetRowMappingError.set(null);
+    this.budgetRowSvc.activateBudgetRowMapping(m.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: updated => {
+        this.budgetRowMapping.set(updated);
+        this.editedBudgetRowByLineId = new Map(
+          updated.entries.map(e => [e.catalogueLineId, { budgetRowId: e.budgetRowId, transform: e.transform }]));
+        this.budgetMappingTick.update(v => v + 1);
+        this.budgetRowMappingActivating.set(false);
+        this.budgetRowMappingSuccess.set(this.translate.instant('REPORTING.PL_CATALOGUE.ACTIVATE_SUCCESS'));
+      },
+      error: err => {
+        this.budgetRowMappingError.set(this.backendErrorMessage(err, 'REPORTING.PL_CATALOGUE.ACTIVATE_ERROR'));
+        this.budgetRowMappingActivating.set(false);
+      },
+    });
+  }
+
+  readonly budgetMappingColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    return [
+      { key: 'rowLabel',   label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_LINE') },
+      { key: 'sources',    label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_BUDGET_SOURCES'), type: 'custom' },
+      { key: 'transforms', label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_TRANSFORM'), type: 'custom' },
+    ];
+  });
+
+  readonly budgetMappingTableConfig = computed<TableConfig>(() => ({
+    showHeader: true,
+    loading: this.budgetRowMappingLoading() || this.budgetRowsLoading(),
+    emptyMessage: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.EMPTY'),
+  }));
 
   // ════════════════════════════════════════════════════════════════════════════
   // WP6(f,h,i)/DEC19: monthly FX rates (Finance Manager only, FACT_MANAGE_FX_RATES)

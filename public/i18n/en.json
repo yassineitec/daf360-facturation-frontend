@@ -3800,7 +3800,19 @@
         "COL_ROLE": "Role per category",
         "COL_STATUS": "Status",
         "EMPTY": "No lines.",
-        "COVERAGE_BLOCKED": "Unmapped categories: {{codes}}"
+        "COVERAGE_BLOCKED": "Unmapped categories: {{codes}}",
+        "SHEET_SELECTOR": "Sheet",
+        "SHEET_TEMPLATE": "Template",
+        "SHEET_BUDGET": "Budget",
+        "BUDGET_COVERAGE_BLOCKED": "Unmapped budget rows: {{codes}}",
+        "COL_BUDGET_SOURCES": "Source Template lines",
+        "COL_TRANSFORM": "Transform",
+        "TRANSFORM": {
+          "DIRECT": "Direct",
+          "NEGATE": "Negate",
+          "POSITIVE_PART": "Positive part",
+          "NEGATIVE_PART": "Negative part"
+        }
       },
       "ROLE": {
         "COST": "Cost",
