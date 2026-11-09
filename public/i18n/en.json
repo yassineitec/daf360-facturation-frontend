@@ -1179,6 +1179,10 @@
         }
       },
       "BUDGET_NOT_VALIDATED": "Budget not validated",
+      "ORIGIN": {
+        "DOC360": "DOC360",
+        "INTERCO": "Interco"
+      },
       "LAST_UPDATE": "Updated on",
       "BACK_TO_LIST": "Projects",
       "TABS": {
@@ -2481,7 +2485,8 @@
       "CARRIED_FORWARD_TOTAL": "Total to approve",
       "PENDING_CLIENT_TITLE": "Awaiting client response",
       "PENDING_CLIENT_EXPLAIN": "A summary email has been sent to the client. Once you receive their reply, enter the amount they actually confirmed here — if it's less than the calculated amount, the difference will automatically carry forward to the next period.",
-      "CLIENT_AMOUNT_LABEL": "Amount confirmed by the client",      "CLIENT_AMOUNT_HINT": "Cannot exceed the calculated amount.",
+      "CLIENT_AMOUNT_LABEL": "Amount confirmed by the client",
+      "CLIENT_AMOUNT_HINT": "Cannot exceed the calculated amount.",
       "CLIENT_AMOUNT_CONFIRM": "Confirm",
       "CLIENT_AMOUNT_ERROR": "Error saving the client-confirmed amount.",
       "VALIDATE_CLIENT_AMOUNT": "Validate client amount",
@@ -3606,9 +3611,18 @@
       "SUSPEND": "Suspend",
       "REACTIVATE": "Reactivate",
       "LOADING": "Loading reminders…",
-      "STATUS": { "SENT": "Sent", "SUSPENDED": "Suspended", "PENDING": "Pending" },
+      "STATUS": {
+        "SENT": "Sent",
+        "SUSPENDED": "Suspended",
+        "PENDING": "Pending"
+      },
       "EMPTY": "No scheduled reminders.",
-      "SUSPEND_FORM": { "LABEL": "Suspension reason", "PLACEHOLDER": "Optional", "CANCEL": "Cancel", "CONFIRM": "Confirm" }
+      "SUSPEND_FORM": {
+        "LABEL": "Suspension reason",
+        "PLACEHOLDER": "Optional",
+        "CANCEL": "Cancel",
+        "CONFIRM": "Confirm"
+      }
     },
     "CHANGES": {
       "LINE_PREFIX": "Line {{ref}}",
@@ -3736,6 +3750,8 @@
     "CLOSE_PERIOD_WIP_PRIOR": "WIP, prior years",
     "CLOSE_PERIOD_SALARY_RECHARGES": "Salaries recharges (+/-)",
     "CLOSE_PERIOD_OTHER_COST_RECHARGES": "Other costs recharges (+/-)",
+    "CLOSE_PERIOD_AVERAGE_FTE": "Average FTE",
+    "CLOSE_PERIOD_AVERAGE_FTE_HINT": "Drives Billable/Non-Billable Hrs (rows 6-9). Leave blank to keep today's value.",
     "WATERFALL": {
       "GROSS_REVENUE_1": "Gross Revenue 1",
       "GROSS_REVENUE_2": "Gross Revenue 2",
@@ -3775,6 +3791,95 @@
         "DEADLINE": "Deadline",
         "SET_BY": "Set by",
         "SET_AT": "Set on"
+      }
+    },
+    "PL_CATALOGUE": {
+      "TITLE": "P&L source catalogue",
+      "SUBTITLE": "Statuses and category mapping used in the P&L calculation.",
+      "PAYS": "Country / Entity",
+      "GLOBAL_DEFAULT": "Global default (all countries)",
+      "TAB_STATUS": "Statuses",
+      "TAB_MAPPING": "Categories",
+      "TAB_NAV_LABEL": "P&L catalogue",
+      "SOURCE_TYPE_LABEL": "Source type",
+      "SOURCE_TYPE": {
+        "COST_BOOKED": "Booked costs (P&L + rate computation)",
+        "CUSTOMER_BILLED": "Customer billing",
+        "CUSTOMER_OPEN": "Open customer receivables",
+        "COST_PAYABLE": "Supplier payables",
+        "WIP_DECLARATION": "WIP declarations"
+      },
+      "CONFIG_STATUS": {
+        "DEFAULT": "Default (no configuration)",
+        "DRAFT": "Draft",
+        "ACTIVE": "Active",
+        "ARCHIVED": "Archived"
+      },
+      "DEFAULT_BADGE": "today's behaviour",
+      "NEVER_SELECTABLE_HINT": "This status can never be counted (draft, rejected, or cancelled).",
+      "WIP_PENDING_WARNING": "Not-yet-validated WIP is included — make sure that's intended.",
+      "SAVE_DRAFT": "Save draft",
+      "ACTIVATE": "Activate",
+      "SAVE_SUCCESS": "Saved.",
+      "SAVE_ERROR": "Error while saving.",
+      "ACTIVATE_SUCCESS": "Version activated.",
+      "ACTIVATE_ERROR": "Error while activating.",
+      "LOAD_ERROR": "Error while loading.",
+      "MAPPING": {
+        "COL_CATEGORY": "Category",
+        "COL_LINE": "P&L line",
+        "COL_ROLE": "Role",
+        "COL_STATUS": "Status",
+        "EMPTY": "No categories.",
+        "COVERAGE_BLOCKED": "Unmapped categories: {{codes}}"
+      },
+      "ROLE": {
+        "COST": "Cost",
+        "EXTERNAL_COGS": "External cost (COGS)",
+        "MANUAL": "Manual",
+        "EXCLUDED": "Excluded"
+      },
+      "TAB_FX": "FX rates",
+      "APPROVE_PERMISSION_MISSING": "You need the approval permission to activate (and it must be a different person than whoever saved this draft).",
+      "SELF_APPROVAL_ERROR": "You can't approve your own draft — ask a colleague with approval rights to activate it.",
+      "HISTORY": {
+        "BUTTON": "History",
+        "TITLE": "Version history",
+        "LOADING": "Loading…",
+        "EMPTY": "No versions yet.",
+        "CREATED_BY": "Created by",
+        "APPROVED_BY": "Approved by",
+        "ENTRIES": "entries"
+      },
+      "PREVIEW": {
+        "BUTTON": "Preview",
+        "TITLE": "Preview this draft",
+        "PERIOD": "Closed period",
+        "RUN": "Run preview",
+        "ACTIVE_STATUSES": "Active statuses (today)",
+        "DRAFT_STATUSES": "Draft statuses (proposed)",
+        "ACTIVE_VALUE": "Value with active config",
+        "DRAFT_VALUE": "Value with draft config",
+        "DELTA": "Difference"
+      },
+      "FX": {
+        "FROM_MONTH": "From month",
+        "TO_MONTH": "To month",
+        "PAIR": "Currency pair",
+        "COL_MONTH": "Month",
+        "COL_MONTH_END": "Month-end rate",
+        "COL_MONTH_AVG": "Month-average rate",
+        "COL_MIN_MAX": "Min – max",
+        "COL_N_LINES": "Lines",
+        "COL_STATUS": "Status",
+        "COL_SOURCE": "Source",
+        "EMPTY": "No rates for this pair yet.",
+        "RELOAD": "Reload",
+        "DERIVE_TITLE": "Derive from stored data",
+        "DERIVE_BUTTON": "Derive",
+        "DERIVE_SUCCESS": "{{n}} month(s) derived/updated, {{skipped}} already confirmed, {{noData}} with no data.",
+        "CONFIRM_ALL": "Confirm all ({{n}})",
+        "CONFIRM_SUCCESS": "{{n}} rate(s) confirmed."
       }
     },
     "DETAIL": {
@@ -3906,7 +4011,9 @@
         "REQUEST_AMENDMENT_SHORT": "Amendment",
         "EXPORT_XLSX_SHORT": "Excel",
         "EXPORT_PDF_SHORT": "PDF",
-        "EXPORT_WORKBOOK_SHORT": "Full workbook"
+        "EXPORT_WORKBOOK_SHORT": "Full workbook",
+        "RATES_USED": "Rates used for this export",
+        "RATES_USED_SHORT": "Rates used"
       },
       "REOPEN": {
         "METHOD_LABEL": "Reopen method",
@@ -3954,6 +4061,21 @@
           "WIP_TOTAL": "WIP",
           "MISSING_CASH_TOTAL": "Missing cash"
         }
+      },
+      "CLOSE": "Close",
+      "RATES_USED": {
+        "MIN_MAX": "Min – max rate applied",
+        "FROZEN_LINES": "Lines using a frozen rate",
+        "FALLBACK_USED": "At least one line fell back to an earlier month's rate.",
+        "EMPTY": "No FX conversion was applied for this period.",
+        "ERROR": "Error while loading the rates-used panel."
+      },
+      "AVERAGE_FTE": {
+        "LABEL": "Average FTE",
+        "EDIT": "Edit",
+        "SAVE": "Save",
+        "CANCEL": "Cancel",
+        "ERROR": "Error while saving Average FTE."
       }
     }
   },
@@ -4678,6 +4800,7 @@
       "ACTION_U": "Updated",
       "ACTION_D": "Deleted",
       "ACTOR_SYSTEM": "Scheduled job",
+      "ACTOR_PLACEHOLDER": "User #{{id}}",
       "GROUP_LABEL": "{{count}} grouped changes",
       "GROUP_HINT": "Automated changes (sync job), with no user behind them. Click to see the detail.",
       "GROUP_MODAL_TITLE": "Grouped changes",

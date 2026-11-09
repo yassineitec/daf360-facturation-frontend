@@ -1,0 +1,114 @@
+/**
+ * P&L source catalogue admin (docs/PL_CATALOGUE_PLAN.md §6 in daf360-facturation-service).
+ * Mirrors, field for field, the real backend DTOs in `modules/reporting/dto/*` — do not rename a
+ * field without checking the Java record first.
+ */
+
+/** The 5 code-defined source types (`PlCatalogueConfigService.VALID_SOURCE_TYPES`) — never
+ *  accepted as free text, always one of these five. */
+export const PL_CATALOGUE_SOURCE_TYPES = [
+  'COST_BOOKED', 'CUSTOMER_BILLED', 'CUSTOMER_OPEN', 'COST_PAYABLE', 'WIP_DECLARATION',
+] as const;
+export type PlCatalogueSourceType = typeof PL_CATALOGUE_SOURCE_TYPES[number];
+
+export type PlCatalogueConfigStatus = 'DEFAULT' | 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+
+export interface PlCatalogueStatusEntryDto {
+  status: string;
+  selected: boolean;
+  neverSelectable: boolean;
+}
+
+export interface PlCatalogueStatusConfigDto {
+  paysId: number | null;
+  sourceType: PlCatalogueSourceType;
+  version: number | null;
+  configStatus: PlCatalogueConfigStatus;
+  entries: PlCatalogueStatusEntryDto[];
+}
+
+export interface SaveStatusConfigRequest {
+  paysId: number | null;
+  sourceType: PlCatalogueSourceType;
+  selectedStatuses: string[];
+}
+
+export type PlCategoryMappingRole = 'COST' | 'EXTERNAL_COGS' | 'MANUAL' | 'EXCLUDED';
+
+/** DEC-CATMAP-1 — one real, per-pays cost category (`fact_configurable_list_values` where
+ *  `type_code='COST_CATEGORY'`), the SOURCE side of the mapping screen below. Distinct from
+ *  `GroupCatalogueLineDto` (the unchanged TARGET side). */
+export interface PlCostCategoryDto {
+  code: string;
+  labelFr: string;
+  labelEn: string | null;
+}
+
+export interface PlCategoryLineMappingEntryDto {
+  categoryCode: string;
+  catalogueLineId: number;
+  catalogueLineCode: string | null;
+  mappingRole: PlCategoryMappingRole;
+}
+
+export interface PlCategoryLineMappingDto {
+  paysId: number | null;
+  version: number | null;
+  configStatus: PlCatalogueConfigStatus;
+  entries: PlCategoryLineMappingEntryDto[];
+}
+
+export interface SaveCategoryMappingRequestEntry {
+  categoryCode: string;
+  catalogueLineId: number;
+  mappingRole: PlCategoryMappingRole;
+}
+
+export interface SaveCategoryMappingRequest {
+  paysId: number | null;
+  entries: SaveCategoryMappingRequestEntry[];
+}
+
+export interface CoverageCheckResultDto {
+  ok: boolean;
+  unmappedCategoryCodes: string[];
+  duplicatedCategoryCodes: string[];
+}
+
+// ── WP1(c): preview + version history ─────────────────────────────────────────
+
+/** One past version of a status-config, as returned by `GET .../status-config/history`. */
+export interface PlCatalogueStatusConfigVersionDto {
+  version: number;
+  configStatus: PlCatalogueConfigStatus;
+  selectedStatuses: string[];
+  createdBy: number | null;
+  createdAt: string | null;
+  approvedBy: number | null;
+  approvedAt: string | null;
+}
+
+/** One past version of a category-mapping, as returned by `GET .../category-mapping/history`. */
+export interface PlCategoryLineMappingVersionDto {
+  version: number;
+  configStatus: PlCatalogueConfigStatus;
+  entries: PlCategoryLineMappingEntryDto[];
+  createdBy: number | null;
+  createdAt: string | null;
+  approvedBy: number | null;
+  approvedAt: string | null;
+}
+
+/** What a DRAFT status-config version would compute for one closed period, vs. what the
+ *  currently-ACTIVE configuration actually computes — `GET .../status-config/preview`. Nothing
+ *  is persisted or activated by calling this. */
+export interface PlCataloguePreviewResultDto {
+  periodId: number;
+  sourceType: PlCatalogueSourceType;
+  draftVersion: number;
+  activeStatuses: string[];
+  draftStatuses: string[];
+  activeValue: number;
+  draftValue: number;
+  delta: number;
+}

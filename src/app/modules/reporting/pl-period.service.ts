@@ -38,6 +38,16 @@ export class PlPeriodService {
     return this.http.post<PlPeriodDto>(`${this.base}/pl-periods/${id}/approve`, {});
   }
 
+  /** P&L Complete follow-up (WP10 review item #1) -- sets Template row 4's "Average FTE"
+   *  manual input. Unlike close/submit/approve, the backend endpoint has no status gate: it
+   *  works on an OPEN period (set during close) or an already-CLOSED/SUBMITTED/APPROVED one
+   *  (corrected later) equally, and the export reads `PlPeriod.averageFte` live, not from any
+   *  frozen snapshot -- so a correction made after close takes effect on the very next export.
+   *  `FACT_MANAGE_COST`, same permission as close/submit/approve. */
+  setAverageFte(id: number, averageFte: number | null): Observable<PlPeriodDto> {
+    return this.http.put<PlPeriodDto>(`${this.base}/pl-periods/${id}/average-fte`, averageFte);
+  }
+
   /**
    * Full 7-tab Excel workbook export (Template, Receivables, Missing Cash, Order Intake,
    * Pipeline, Bud {year} EUR, Bud {year} CHF), keyed by `PlPeriod.id` -- distinct from

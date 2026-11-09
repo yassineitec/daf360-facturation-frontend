@@ -1179,6 +1179,10 @@
         }
       },
       "BUDGET_NOT_VALIDATED": "Budget non validé",
+      "ORIGIN": {
+        "DOC360": "DOC360",
+        "INTERCO": "Interco"
+      },
       "LAST_UPDATE": "Mise à jour le",
       "BACK_TO_LIST": "Affaires",
       "TABS": {
@@ -2481,7 +2485,8 @@
       "CARRIED_FORWARD_TOTAL": "Total à valider",
       "PENDING_CLIENT_TITLE": "En attente de réponse client",
       "PENDING_CLIENT_EXPLAIN": "Un email récapitulatif a été envoyé au client. Une fois sa réponse reçue, saisissez ici le montant qu'il a réellement confirmé — s'il est inférieur au montant calculé, la différence sera reportée automatiquement sur la période suivante.",
-      "CLIENT_AMOUNT_LABEL": "Montant validé par le client",      "CLIENT_AMOUNT_HINT": "Ne peut pas dépasser le montant calculé.",
+      "CLIENT_AMOUNT_LABEL": "Montant validé par le client",
+      "CLIENT_AMOUNT_HINT": "Ne peut pas dépasser le montant calculé.",
       "CLIENT_AMOUNT_CONFIRM": "Confirmer",
       "CLIENT_AMOUNT_ERROR": "Erreur lors de l'enregistrement du montant validé par le client.",
       "VALIDATE_CLIENT_AMOUNT": "Valider le montant client",
@@ -3606,9 +3611,18 @@
       "SUSPEND": "Suspendre",
       "REACTIVATE": "Réactiver",
       "LOADING": "Chargement des relances…",
-      "STATUS": { "SENT": "Envoyée", "SUSPENDED": "Suspendue", "PENDING": "En attente" },
+      "STATUS": {
+        "SENT": "Envoyée",
+        "SUSPENDED": "Suspendue",
+        "PENDING": "En attente"
+      },
       "EMPTY": "Aucune relance planifiée.",
-      "SUSPEND_FORM": { "LABEL": "Motif de suspension", "PLACEHOLDER": "Optionnel", "CANCEL": "Annuler", "CONFIRM": "Confirmer" }
+      "SUSPEND_FORM": {
+        "LABEL": "Motif de suspension",
+        "PLACEHOLDER": "Optionnel",
+        "CANCEL": "Annuler",
+        "CONFIRM": "Confirmer"
+      }
     },
     "CHANGES": {
       "LINE_PREFIX": "Ligne {{ref}}",
@@ -3736,6 +3750,8 @@
     "CLOSE_PERIOD_WIP_PRIOR": "En cours, années antérieures",
     "CLOSE_PERIOD_SALARY_RECHARGES": "Refacturations de salaires (+/-)",
     "CLOSE_PERIOD_OTHER_COST_RECHARGES": "Refacturations autres coûts (+/-)",
+    "CLOSE_PERIOD_AVERAGE_FTE": "ETP moyen",
+    "CLOSE_PERIOD_AVERAGE_FTE_HINT": "Alimente les heures facturables/non facturables (lignes 6-9). Laisser vide pour conserver la valeur actuelle.",
     "WATERFALL": {
       "GROSS_REVENUE_1": "Chiffre d'affaires brut 1",
       "GROSS_REVENUE_2": "Chiffre d'affaires brut 2",
@@ -3775,6 +3791,95 @@
         "DEADLINE": "Échéance",
         "SET_BY": "Défini par",
         "SET_AT": "Défini le"
+      }
+    },
+    "PL_CATALOGUE": {
+      "TITLE": "Catalogue des sources P&L",
+      "SUBTITLE": "Statuts et mapping des catégories pris en compte dans le calcul du P&L.",
+      "PAYS": "Pays / Entité",
+      "GLOBAL_DEFAULT": "Défaut global (tous pays)",
+      "TAB_STATUS": "Statuts",
+      "TAB_MAPPING": "Catégories",
+      "TAB_NAV_LABEL": "Catalogue P&L",
+      "SOURCE_TYPE_LABEL": "Type de source",
+      "SOURCE_TYPE": {
+        "COST_BOOKED": "Coûts comptabilisés (P&L + calcul de taux)",
+        "CUSTOMER_BILLED": "Facturation client",
+        "CUSTOMER_OPEN": "Créances client ouvertes",
+        "COST_PAYABLE": "Dettes fournisseur",
+        "WIP_DECLARATION": "Déclarations d'en-cours (WIP)"
+      },
+      "CONFIG_STATUS": {
+        "DEFAULT": "Par défaut (aucune configuration)",
+        "DRAFT": "Brouillon",
+        "ACTIVE": "Actif",
+        "ARCHIVED": "Archivé"
+      },
+      "DEFAULT_BADGE": "comportement actuel",
+      "NEVER_SELECTABLE_HINT": "Ce statut ne peut jamais être pris en compte (brouillon, rejeté ou annulé).",
+      "WIP_PENDING_WARNING": "Les en-cours non encore validés sont inclus — vérifiez que c'est volontaire.",
+      "SAVE_DRAFT": "Enregistrer le brouillon",
+      "ACTIVATE": "Activer",
+      "SAVE_SUCCESS": "Enregistré.",
+      "SAVE_ERROR": "Erreur lors de l'enregistrement.",
+      "ACTIVATE_SUCCESS": "Version activée.",
+      "ACTIVATE_ERROR": "Erreur lors de l'activation.",
+      "LOAD_ERROR": "Erreur lors du chargement.",
+      "MAPPING": {
+        "COL_CATEGORY": "Catégorie",
+        "COL_LINE": "Ligne P&L",
+        "COL_ROLE": "Rôle",
+        "COL_STATUS": "État",
+        "EMPTY": "Aucune catégorie.",
+        "COVERAGE_BLOCKED": "Catégories non mappées : {{codes}}"
+      },
+      "ROLE": {
+        "COST": "Coût",
+        "EXTERNAL_COGS": "Coût externe (COGS)",
+        "MANUAL": "Manuel",
+        "EXCLUDED": "Exclu"
+      },
+      "TAB_FX": "Taux de change",
+      "APPROVE_PERMISSION_MISSING": "Il faut la permission d'approbation pour activer (et ce doit être une autre personne que celle qui a enregistré ce brouillon).",
+      "SELF_APPROVAL_ERROR": "Vous ne pouvez pas approuver votre propre brouillon — demandez à un collègue disposant des droits d'approbation de l'activer.",
+      "HISTORY": {
+        "BUTTON": "Historique",
+        "TITLE": "Historique des versions",
+        "LOADING": "Chargement…",
+        "EMPTY": "Aucune version pour l'instant.",
+        "CREATED_BY": "Créé par",
+        "APPROVED_BY": "Approuvé par",
+        "ENTRIES": "entrées"
+      },
+      "PREVIEW": {
+        "BUTTON": "Aperçu",
+        "TITLE": "Aperçu de ce brouillon",
+        "PERIOD": "Période clôturée",
+        "RUN": "Lancer l'aperçu",
+        "ACTIVE_STATUSES": "Statuts actifs (aujourd'hui)",
+        "DRAFT_STATUSES": "Statuts du brouillon (proposés)",
+        "ACTIVE_VALUE": "Valeur avec la config active",
+        "DRAFT_VALUE": "Valeur avec le brouillon",
+        "DELTA": "Écart"
+      },
+      "FX": {
+        "FROM_MONTH": "Mois de début",
+        "TO_MONTH": "Mois de fin",
+        "PAIR": "Paire de devises",
+        "COL_MONTH": "Mois",
+        "COL_MONTH_END": "Taux de fin de mois",
+        "COL_MONTH_AVG": "Taux moyen du mois",
+        "COL_MIN_MAX": "Min – max",
+        "COL_N_LINES": "Lignes",
+        "COL_STATUS": "Statut",
+        "COL_SOURCE": "Source",
+        "EMPTY": "Aucun taux pour cette paire pour l'instant.",
+        "RELOAD": "Recharger",
+        "DERIVE_TITLE": "Dériver depuis les données existantes",
+        "DERIVE_BUTTON": "Dériver",
+        "DERIVE_SUCCESS": "{{n}} mois dérivé(s)/mis à jour, {{skipped}} déjà confirmé(s), {{noData}} sans données.",
+        "CONFIRM_ALL": "Tout confirmer ({{n}})",
+        "CONFIRM_SUCCESS": "{{n}} taux confirmé(s)."
       }
     },
     "DETAIL": {
@@ -3906,7 +4011,9 @@
         "REQUEST_AMENDMENT_SHORT": "Amendement",
         "EXPORT_XLSX_SHORT": "Excel",
         "EXPORT_PDF_SHORT": "PDF",
-        "EXPORT_WORKBOOK_SHORT": "Classeur complet"
+        "EXPORT_WORKBOOK_SHORT": "Classeur complet",
+        "RATES_USED": "Taux utilisés pour cet export",
+        "RATES_USED_SHORT": "Taux utilisés"
       },
       "REOPEN": {
         "METHOD_LABEL": "Méthode de réouverture",
@@ -3954,6 +4061,21 @@
           "WIP_TOTAL": "En cours (WIP)",
           "MISSING_CASH_TOTAL": "Cash manquant"
         }
+      },
+      "CLOSE": "Fermer",
+      "RATES_USED": {
+        "MIN_MAX": "Taux min – max appliqué",
+        "FROZEN_LINES": "Lignes utilisant un taux figé",
+        "FALLBACK_USED": "Au moins une ligne a utilisé le taux d'un mois antérieur, faute de taux pour le mois.",
+        "EMPTY": "Aucune conversion de devise n'a été appliquée pour cette période.",
+        "ERROR": "Erreur lors du chargement du panneau des taux utilisés."
+      },
+      "AVERAGE_FTE": {
+        "LABEL": "ETP moyen",
+        "EDIT": "Modifier",
+        "SAVE": "Enregistrer",
+        "CANCEL": "Annuler",
+        "ERROR": "Erreur lors de l'enregistrement de l'ETP moyen."
       }
     }
   },
@@ -4678,6 +4800,7 @@
       "ACTION_U": "Modification",
       "ACTION_D": "Suppression",
       "ACTOR_SYSTEM": "Tâche planifiée",
+      "ACTOR_PLACEHOLDER": "Utilisateur #{{id}}",
       "GROUP_LABEL": "{{count}} modifications groupées",
       "GROUP_HINT": "Changements automatiques (synchronisation), sans utilisateur à l'origine. Cliquez pour voir le détail.",
       "GROUP_MODAL_TITLE": "Modifications groupées",

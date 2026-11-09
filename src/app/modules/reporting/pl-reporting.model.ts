@@ -54,6 +54,11 @@ export interface PlPeriodDto {
   submittedAt: string | null;
   approvedBy: number | null;
   approvedAt: string | null;
+  /** P&L Complete WP5/DEC2 -- Template row 4 "Average FTE", a per-period manual input. `null`
+   *  (no period has ever had one set before this fix) is treated as zero by the export, which
+   *  makes rows 6-9's real formulas ("=20*8*(FTE-14)" etc.) evaluate to a nonsensical negative
+   *  number -- see `PUT .../average-fte` / `PlPeriodService.setAverageFte`. */
+  averageFte: number | null;
 }
 
 /** Body of POST /pl-periods/{id}/close -- the manual waterfall inputs. Every field optional;

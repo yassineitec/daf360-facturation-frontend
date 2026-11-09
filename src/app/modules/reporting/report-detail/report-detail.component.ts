@@ -20,9 +20,12 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { tableTools } from '../../../shared/table-tools';
 import { UserStore } from '../../../core/user.store';
 import { ClientService } from '../../clients/client.service';
+import { AffaireService } from '../../affaires/affaire.service';
 import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
 import { PlReportService } from '../pl-report.service';
 import { PlPeriodService } from '../pl-period.service';
+import { PlFxRateAdminService } from '../pl-fx-rate-admin.service';
+import { RatesUsedPanelRowDto } from '../pl-fx-rate.model';
 import { VarianceCommentaryService } from '../variance-commentary.service';
 import {
   MissingCashRowDto, PlPeriodDto, PlReportDto, PlReportLineDto, PlReportStatus,
@@ -397,7 +400,14 @@ export class ReportDetailComponent implements OnInit {
   private readonly currency      = inject(DisplayCurrencyPipe);
   private readonly modals        = inject(ModalService);
   private readonly userStore     = inject(UserStore);
+  private readonly fxRateSvc     = inject(PlFxRateAdminService);
+
+  /** WP6(h) -- gates the "rates used" button's very existence, same reasoning as the FX-rates
+   *  admin tab (`pl-catalogue-admin.component.ts`): Finance-internal, not a general
+   *  P&L-reporting-consumer concern. Server re-gates every call regardless. */
+  readonly canManageFxRates = computed(() => this.userStore.hasPermission('FACT_MANAGE_FX_RATES'));
   private readonly clientSvc     = inject(ClientService);
+  private readonly affaireSvc    = inject(AffaireService);
   private readonly router        = inject(Router);
   private readonly route         = inject(ActivatedRoute);
   private readonly destroyRef    = inject(DestroyRef);
@@ -433,7 +443,31 @@ export class ReportDetailComponent implements OnInit {
   /** Country reference list — only to name the report's `paysId` in the header and panel. */
   private readonly paysList = signal<PaysRefDto[]>([]);
 
+  /**
+   * The 13 ARX entities with their real reporting currency (`pays_ref.devise` — "EUR" for
+   * Tunisia, "USD" for Egypt). `paysList` above (from `ClientService.getPays()`, the
+   * 194-country reference list) never populates `devise` — only `GET /ref/pays/arx-entities`
+   * does (see `PaysRefDto.devise`'s own doc comment) — so this is a second, separate fetch,
+   * mirroring `reporting-list.component.ts`'s identical need.
+   */
+  private readonly entities = signal<PaysRefDto[]>([]);
+
+  /** Real reporting currency for the loaded report's `paysId` — falls back to "EUR" (the group
+   *  template's own default) only if it isn't an ARX entity yet, never to the previous
+   *  hardcoded "TND". */
+  readonly reportingCurrency = computed(() => {
+    const paysId = this.period()?.paysId ?? this.report()?.paysId;
+    return this.entities().find(e => e.id === paysId)?.devise ?? 'EUR';
+  });
+
   readonly canManageCommentary = computed(() => this.userStore.hasPermission('FACT_MANAGE_PL_REPORT'));
+
+  /** P&L Complete follow-up (WP10 review item #1) -- same permission `PlPeriodController` itself
+   *  enforces on `PUT .../average-fte` (`FACT_MANAGE_COST`, shared with close/submit/approve).
+   *  Shown here (not just in the close modal) because the endpoint has no close-status gate --
+   *  a value can be corrected on an already-CLOSED/SUBMITTED/APPROVED period too, and the export
+   *  reads it live, not from a frozen snapshot. */
+  readonly canManageCost = computed(() => this.userStore.hasPermission('FACT_MANAGE_COST'));
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
   /** See class doc: an `effect()`, not just `ngOnInit`, so navigating to a new report id
@@ -462,6 +496,10 @@ export class ReportDetailComponent implements OnInit {
     this.clientSvc.getPays().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next:  pays => this.paysList.set(pays),
       error: () => this.paysList.set([]),
+    });
+    this.affaireSvc.getArxEntities().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next:  entities => this.entities.set(entities),
+      error: () => this.entities.set([]),
     });
   }
 
@@ -728,8 +766,8 @@ export class ReportDetailComponent implements OnInit {
   readonly recapRows = computed<TableRow[]>(() => this.filteredLines().map(line => ({
     id:       line.id,
     label:    line.catalogueLineLabelFr,
-    amount:   this.currency.transform(line.amountLocal, 'TND'),
-    budget:   line.budgetAmountLocal != null ? this.currency.transform(line.budgetAmountLocal, 'TND') : '—',
+    amount:   this.currency.transform(line.amountLocal, this.reportingCurrency()),
+    budget:   line.budgetAmountLocal != null ? this.currency.transform(line.budgetAmountLocal, this.reportingCurrency()) : '—',
     variance: this.formatVariancePct(line.variancePct),
     _source:  line,
   })));
@@ -746,13 +784,13 @@ export class ReportDetailComponent implements OnInit {
   }));
 
   /** EBITDA total row — the joined `PlPeriodDto`'s own field, never recomputed client-side. */
-  readonly ebitdaDisplay = computed(() => this.currency.transform(this.period()?.ebitda ?? null, 'TND'));
+  readonly ebitdaDisplay = computed(() => this.currency.transform(this.period()?.ebitda ?? null, this.reportingCurrency()));
 
   /** Revenue waterfall rows — all sourced straight from the joined `PlPeriodDto`, never
    *  recomputed client-side (same approach as `ebitdaDisplay` above). */
-  readonly grossRevenue1Display = computed(() => this.currency.transform(this.period()?.grossRevenue1Local ?? null, 'TND'));
-  readonly grossRevenue2Display = computed(() => this.currency.transform(this.period()?.grossRevenue2Local ?? null, 'TND'));
-  readonly netRevenueDisplay    = computed(() => this.currency.transform(this.period()?.netRevenueLocal ?? null, 'TND'));
+  readonly grossRevenue1Display = computed(() => this.currency.transform(this.period()?.grossRevenue1Local ?? null, this.reportingCurrency()));
+  readonly grossRevenue2Display = computed(() => this.currency.transform(this.period()?.grossRevenue2Local ?? null, this.reportingCurrency()));
+  readonly netRevenueDisplay    = computed(() => this.currency.transform(this.period()?.netRevenueLocal ?? null, this.reportingCurrency()));
   readonly ebitdaPctDisplay     = computed(() => {
     const pct = this.period()?.ebitdaPct;
     return pct == null ? '—' : `${pct.toFixed(1)}%`;
@@ -882,7 +920,7 @@ export class ReportDetailComponent implements OnInit {
       return {
         label:      this.translate.instant(b.label),
         value,
-        valueLabel: this.currency.transform(value, 'TND'),
+        valueLabel: this.currency.transform(value, this.reportingCurrency()),
       };
     });
   });
@@ -899,7 +937,7 @@ export class ReportDetailComponent implements OnInit {
   });
 
   readonly costTotalDisplay = computed(() =>
-    this.currency.transform(this.period()?.totalOperatingCost ?? null, 'TND'));
+    this.currency.transform(this.period()?.totalOperatingCost ?? null, this.reportingCurrency()));
 
   readonly hasCosts = computed(() => this.costBars().some(b => b.value !== 0));
 
@@ -1342,6 +1380,75 @@ export class ReportDetailComponent implements OnInit {
     });
   }
 
+  // ── P&L Complete follow-up: Average FTE, editable here too (not just at close time) ────────
+
+  /** `undefined` = not being edited (showing the period's real value); otherwise the in-progress
+   *  draft, same "draft until saved" pattern as `commentaryDrafts`. */
+  averageFteDraft = signal<number | null | undefined>(undefined);
+  isSavingAverageFte = signal(false);
+
+  startEditAverageFte(): void {
+    this.averageFteDraft.set(this.period()?.averageFte ?? null);
+  }
+
+  cancelEditAverageFte(): void {
+    this.averageFteDraft.set(undefined);
+  }
+
+  onAverageFteDraftChange(value: string | number | null): void {
+    this.averageFteDraft.set(value === null || value === '' ? null : +value);
+  }
+
+  saveAverageFte(): void {
+    const period = this.period();
+    const draft = this.averageFteDraft();
+    if (!period || draft === undefined) return;
+    this.isSavingAverageFte.set(true);
+    this.actionError.set(null);
+    this.periodSvc.setAverageFte(period.id, draft).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: updated => {
+        this.period.set(updated);
+        this.averageFteDraft.set(undefined);
+        this.isSavingAverageFte.set(false);
+      },
+      error: (err: { error?: { detail?: string; message?: string } }) => {
+        this.isSavingAverageFte.set(false);
+        this.actionError.set(err.error?.detail ?? err.error?.message
+          ?? this.translate.instant('REPORTING.DETAIL.AVERAGE_FTE.ERROR'));
+      },
+    });
+  }
+
+  // ── WP6(h): "rates used" panel -- read-only, shown before export, never in the workbook ──
+
+  private readonly ratesUsedTpl = viewChild.required<TemplateRef<unknown>>('ratesUsedTpl');
+  ratesUsed = signal<RatesUsedPanelRowDto[]>([]);
+  isLoadingRatesUsed = signal(false);
+  ratesUsedError = signal<string | null>(null);
+
+  openRatesUsedPanel(): void {
+    const period = this.period();
+    if (!period) return;
+    this.isLoadingRatesUsed.set(true);
+    this.ratesUsedError.set(null);
+    this.fxRateSvc.ratesUsed(period.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => {
+        this.ratesUsed.set(rows);
+        this.isLoadingRatesUsed.set(false);
+      },
+      error: (err: { error?: { detail?: string } }) => {
+        this.ratesUsedError.set(err.error?.detail ?? this.translate.instant('REPORTING.DETAIL.RATES_USED.ERROR'));
+        this.isLoadingRatesUsed.set(false);
+      },
+    });
+    this.modals.open({
+      title: this.translate.instant('REPORTING.DETAIL.ACTIONS.RATES_USED'),
+      size: 'md',
+      body: this.ratesUsedTpl(),
+      buttons: [{ label: this.translate.instant('REPORTING.DETAIL.CLOSE'), variant: 'secondary', action: r => r.close() }],
+    });
+  }
+
   // ── Cash position (Receivables / Missing Cash) -- lazy-loaded tables, `FACT_VIEW_PL_REPORT` ──
 
   private formatDate(iso: string | null): string {
@@ -1610,16 +1717,16 @@ export class ReportDetailComponent implements OnInit {
     id:                m.projectRef,
     _source:           m,
     projectRef:        m.projectRef,
-    arTotal:           this.currency.transform(m.arTotal, 'TND'),
-    arNotOverdue:      this.currency.transform(m.arNotOverdue, 'TND'),
-    arLt1Month:        this.currency.transform(m.arLt1Month, 'TND'),
-    ar1To2Months:      this.currency.transform(m.ar1To2Months, 'TND'),
-    ar2To3Months:      this.currency.transform(m.ar2To3Months, 'TND'),
-    ar3To6Months:      this.currency.transform(m.ar3To6Months, 'TND'),
-    ar6To12Months:     this.currency.transform(m.ar6To12Months, 'TND'),
-    arGt1Year:         this.currency.transform(m.arGt1Year, 'TND'),
-    wipTotal:          this.currency.transform(m.wipTotal, 'TND'),
-    missingCashTotal:  this.currency.transform(m.missingCashTotal, 'TND'),
+    arTotal:           this.currency.transform(m.arTotal, this.reportingCurrency()),
+    arNotOverdue:      this.currency.transform(m.arNotOverdue, this.reportingCurrency()),
+    arLt1Month:        this.currency.transform(m.arLt1Month, this.reportingCurrency()),
+    ar1To2Months:      this.currency.transform(m.ar1To2Months, this.reportingCurrency()),
+    ar2To3Months:      this.currency.transform(m.ar2To3Months, this.reportingCurrency()),
+    ar3To6Months:      this.currency.transform(m.ar3To6Months, this.reportingCurrency()),
+    ar6To12Months:     this.currency.transform(m.ar6To12Months, this.reportingCurrency()),
+    arGt1Year:         this.currency.transform(m.arGt1Year, this.reportingCurrency()),
+    wipTotal:          this.currency.transform(m.wipTotal, this.reportingCurrency()),
+    missingCashTotal:  this.currency.transform(m.missingCashTotal, this.reportingCurrency()),
   })));
 
   readonly missingCashConfig = computed<TableConfig>(() => ({

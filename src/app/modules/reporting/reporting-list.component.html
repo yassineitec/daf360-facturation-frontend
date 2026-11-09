@@ -167,6 +167,10 @@
         [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_OTHER_COST_RECHARGES' | translate) }"
         [value]="closeOtherCostRecharges()"
         (valueChange)="closeOtherCostRecharges.set($event === null || $event === '' ? null : +$event)" />
+      <daf-form-field
+        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_AVERAGE_FTE' | translate), hint: ('REPORTING.CLOSE_PERIOD_AVERAGE_FTE_HINT' | translate) }"
+        [value]="closeAverageFte()"
+        (valueChange)="closeAverageFte.set($event === null || $event === '' ? null : +$event)" />
     </div>
   </ng-template>
 

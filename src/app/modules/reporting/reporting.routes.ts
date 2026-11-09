@@ -45,6 +45,20 @@ export const REPORTING_ROUTES: Routes = [
       import('./calendar-admin/calendar-admin.component').then(m => m.CalendarAdminComponent),
   },
   /**
+   * P&L source catalogue admin (status config + category→line mapping). Unlike 'budget'/
+   * 'calendar' above, every single endpoint this screen calls requires
+   * `FACT_ADMIN_PL_CATALOGUE` — there is no broader "view" permission to fall back to, so the
+   * route itself is gated on it (the menu item that links here is also hidden without it, see
+   * reporting-list.component.ts).
+   */
+  {
+    path: 'pl-catalogue',
+    canActivate: [permissionGuard],
+    data: { permissions: ['FACT_ADMIN_PL_CATALOGUE'] },
+    loadComponent: () =>
+      import('./pl-catalogue-admin/pl-catalogue-admin.component').then(m => m.PlCatalogueAdminComponent),
+  },
+  /**
    * Report detail (recap + variance commentary + actions + export). Same permission as the
    * list — the action bar's submit/endorse/accept/request-amendment/reopen buttons are each
    * gated individually inside the component by both report status and the narrower
