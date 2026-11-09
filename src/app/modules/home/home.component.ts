@@ -137,7 +137,7 @@ export class HomeComponent implements OnInit {
     // rendu quand l'utilisateur bascule.
     this.translate.currentLang();
     const s      = this.stats();
-    const devise = s?.devise ?? 'TND';
+    const devise = s?.devise ?? 'EUR';
     const money  = (v: number | null | undefined) => this.currency.transform(v ?? null, devise);
 
     return [
@@ -261,7 +261,7 @@ export class HomeComponent implements OnInit {
                 client: inv.clientNom ?? '—',
               }),
               sub:       `${statut}${inv.dateEmission ? ' · ' + this.formatDate(inv.dateEmission) : ''}`,
-              amount:    inv.montantTtc ? this.currency.transform(inv.montantTtc, inv.devise ?? 'TND') : null,
+              amount:    inv.montantTtc ? this.currency.transform(inv.montantTtc, inv.devise ?? 'EUR') : null,
               invoice:   inv,
             } satisfies ActivityItem;
           }));

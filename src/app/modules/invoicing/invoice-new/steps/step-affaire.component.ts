@@ -457,13 +457,13 @@ export class StepAffaireComponent implements OnInit {
       invoiceType: v.invoiceType!,
       clientId:    aff?.clientId ?? null,
       paysId:      aff?.paysId ?? 0,
-      currency:    aff?.devise ?? 'TND',
+      currency:    aff?.devise ?? 'EUR',
       billingMode: v.billingMode || this.validBillingModeFromAffaire() || '',
       contractAmount: aff?.contractAmount ?? null,
     });
   }
 
-  formatAmount(v: number, devise = 'TND'): string {
+  formatAmount(v: number, devise = 'EUR'): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: devise,
     }).format(v);

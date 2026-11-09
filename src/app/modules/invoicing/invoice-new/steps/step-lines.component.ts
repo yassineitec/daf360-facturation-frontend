@@ -1920,7 +1920,7 @@ export class StepLinesComponent {
 
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: this.affaireData().currency ?? 'TND',
+      style: 'currency', currency: this.affaireData().currency ?? 'EUR',
     }).format(v);
   }
 

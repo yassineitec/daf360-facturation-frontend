@@ -255,7 +255,7 @@ export class TransactionTableComponent {
     return MATCH_STATUT_CONFIG[statut] ?? MATCH_STATUT_CONFIG['UNMATCHED'];
   }
 
-  formatAmount(v: number, devise = 'TND'): string {
+  formatAmount(v: number, devise = 'EUR'): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: devise,
     }).format(v);

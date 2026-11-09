@@ -117,7 +117,7 @@ export class AffairesTableSectionComponent {
   protected readonly rows = computed<TableRow[]>(() => {
     this.translate.currentLang();
     return this.affaires().map(a => {
-      const devise = a.devise ?? 'TND';
+      const devise = a.devise ?? 'EUR';
       // Les responsables de l'affaire, dédoublonnés par personne, principal en tête —
       // `affaire_responsables` porte une ligne par activité, pas par personne.
       const people = distinctResponsables(a);

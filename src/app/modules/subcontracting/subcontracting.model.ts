@@ -102,7 +102,7 @@ export function ostIsOver(ost: OSTDto): boolean {
   return ost.montantRealise > ost.montantBudget * (1 + ost.alerteDepassementPct / 100);
 }
 
-export function fmtAmt(v: number | null, devise = 'TND'): string {
+export function fmtAmt(v: number | null, devise = 'EUR'): string {
   if (v == null) return '—';
   try {
     return new Intl.NumberFormat('fr-FR', {

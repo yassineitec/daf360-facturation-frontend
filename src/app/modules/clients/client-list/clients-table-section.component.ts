@@ -93,7 +93,7 @@ export class ClientsTableSectionComponent {
         adresse: clientLocation(c),
         secteur: c.sector ?? '—',
         projets: String(c.activeAffaireCount),
-        ca:      this.currency.transform(c.totalCA, c.defaultCurrency ?? 'TND'),
+        ca:      this.currency.transform(c.totalCA, c.defaultCurrency ?? 'EUR'),
         delai:   c.paymentTermsDays != null ? `${c.paymentTermsDays} j` : '—',
         etat: {
           label:   this.translate.instant(CLIENT_STATE_LABEL[state]),

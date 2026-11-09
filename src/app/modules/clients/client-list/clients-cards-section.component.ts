@@ -92,7 +92,7 @@ export class ClientsCardsSectionComponent {
         },
         metricsColumns: 2,
         metrics: [
-          { label: t('CLIENTS.LIST.CARD.TOTAL_CA'),        value: this.currency.transform(c.totalCA, c.defaultCurrency ?? 'TND') },
+          { label: t('CLIENTS.LIST.CARD.TOTAL_CA'),        value: this.currency.transform(c.totalCA, c.defaultCurrency ?? 'EUR') },
           { label: t('CLIENTS.LIST.CARD.ACTIVE_PROJECTS'), value: String(c.activeAffaireCount) },
           { label: t('CLIENTS.LIST.CARD.PAYMENT_TERMS'),   value: c.paymentTermsDays != null ? `${c.paymentTermsDays} j` : '—' },
           { label: t('CLIENTS.LIST.CARD.COUNTRY'),         value: c.countryLabel ?? '—' },

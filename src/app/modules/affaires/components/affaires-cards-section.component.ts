@@ -151,12 +151,12 @@ export class AffairesCardsSectionComponent {
         },
         metricsColumns: 2,
         metrics: [
-          { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, a.devise ?? 'TND') },
-          { label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),  value: this.currency.transform(a.rafDisponible, a.devise ?? 'TND') },
-          { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.montantFacture, a.devise ?? 'TND') },
+          { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, a.devise ?? 'EUR') },
+          { label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),  value: this.currency.transform(a.rafDisponible, a.devise ?? 'EUR') },
+          { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.montantFacture, a.devise ?? 'EUR') },
           // Calculé côté serveur selon le mode de facturation de l'affaire — voir
           // AffaireService#computeWip côté backend.
-          { label: t('AFFAIRES.LIST.TABLE.CARD.WIP'),     value: this.currency.transform(a.wip, a.devise ?? 'TND') },
+          { label: t('AFFAIRES.LIST.TABLE.CARD.WIP'),     value: this.currency.transform(a.wip, a.devise ?? 'EUR') },
         ],
         viewLabel: t('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
       } satisfies EntityCardOptions,

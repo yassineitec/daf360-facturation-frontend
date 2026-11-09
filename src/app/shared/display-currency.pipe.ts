@@ -8,7 +8,7 @@ export class DisplayCurrencyPipe implements PipeTransform {
   private ratesSvc   = inject(CurrencyRateService);
   private displaySvc = inject(CurrencyDisplayService);
 
-  transform(amount: number | null | undefined, sourceCurrency = 'TND'): string {
+  transform(amount: number | null | undefined, sourceCurrency = 'EUR'): string {
     if (amount == null) return '—';
     const target      = this.displaySvc.selectedCurrency();
     const converted   = this.ratesSvc.convert(amount, sourceCurrency, target);

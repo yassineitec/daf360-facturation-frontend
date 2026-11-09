@@ -291,7 +291,7 @@ export class InvoiceDetailComponent implements OnInit {
   readonly kpiTiles = computed<KpiTile[]>(() => {
     const inv = this.invoice();
     this.translate.currentLang();
-    const devise = inv?.devise ?? 'TND';
+    const devise = inv?.devise ?? 'EUR';
     return [
       {
         label: 'INVOICING.DETAIL.KPI.BILLING_PROGRESS',

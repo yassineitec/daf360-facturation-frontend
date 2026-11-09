@@ -78,7 +78,7 @@ export class TsValidationModalComponent {
     if ((e.target as HTMLElement).classList.contains('modal-overlay')) this.cancelled.emit();
   }
 
-  formatAmount(v: number, devise = 'TND'): string {
+  formatAmount(v: number, devise = 'EUR'): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: devise,
     }).format(v);

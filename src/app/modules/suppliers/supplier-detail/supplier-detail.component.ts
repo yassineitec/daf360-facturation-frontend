@@ -850,8 +850,8 @@ export class SupplierDetailComponent implements OnInit {
       supplierNo: inv.supplierInvoiceNumber || '—',
       date:       this.formatDate(inv.invoiceDate),
       lineCount:  String((inv.lines ?? []).length),
-      net:        this.currency.transform(inv.netAmountLocal, inv.currency || 'TND'),
-      gross:      this.currency.transform(inv.grossAmountLocal, inv.currency || 'TND'),
+      net:        this.currency.transform(inv.netAmountLocal, inv.currency || 'EUR'),
+      gross:      this.currency.transform(inv.grossAmountLocal, inv.currency || 'EUR'),
       // Une colonne `badge` attend un objet `{ label, options }` — pas un libellé
       // plus un champ de variante à côté (cf. cost-lines-table-section).
       status: {

@@ -21,7 +21,7 @@ import {
 export class AffaireOstComponent implements OnInit {
   affaireId     = input.required<number>();
   paysId        = input.required<number>();
-  devise        = input<string>('TND');
+  devise        = input<string>('EUR');
   affaireStatut = input<string>('');
 
   private readonly svc = inject(SubcontractingService);
@@ -44,7 +44,7 @@ export class AffaireOstComponent implements OnInit {
   editOstTarget = signal<OSTDto | null>(null);
   stList        = signal<SousTraitantDto[]>([]);
   stLoading     = signal(false);
-  ostForm       = { sousTraitantId: 0, perimetre: '', montantBudget: 0, devise: 'TND', alerteDepassementPct: 10 };
+  ostForm       = { sousTraitantId: 0, perimetre: '', montantBudget: 0, devise: 'EUR', alerteDepassementPct: 10 };
   ostSaving     = signal(false);
   ostError      = signal<string | null>(null);
 
@@ -61,7 +61,7 @@ export class AffaireOstComponent implements OnInit {
   coutsList    = signal<CoutSTDto[]>([]);
   coutsLoading = signal(false);
   showAddCout  = signal(false);
-  coutForm     = { montant: 0, dateCout: '', devise: 'TND', description: '' };
+  coutForm     = { montant: 0, dateCout: '', devise: 'EUR', description: '' };
   coutSaving   = signal(false);
   coutError    = signal<string | null>(null);
 

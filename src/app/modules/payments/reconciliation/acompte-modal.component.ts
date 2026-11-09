@@ -157,7 +157,7 @@ export class AcompteModalComponent {
     });
   }
 
-  formatAmount(v: number, devise = 'TND'): string {
+  formatAmount(v: number, devise = 'EUR'): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: devise,
     }).format(v);

@@ -96,11 +96,11 @@ export class CostLinesCardsSectionComponent {
           },
           metricsColumns: 2,
           metrics: [
-            { label: t('COST.LINES.COL_TTC'),          value: this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'TND') },
+            { label: t('COST.LINES.COL_TTC'),          value: this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'EUR') },
             { label: t('COST.LINES.COL_EUR'),          value: this.currency.transform(inv.grossAmountEur, 'EUR') },
             { label: t('COST.LINES.COL_INVOICE_DATE'), value: formatDate(inv.invoiceDate) },
             { label: t('COST.LINES.COL_LINES'),        value: String(inv.lines?.length ?? 0) },
-            { label: t('COST.LINES.COL_NET_AMOUNT'),   value: this.currency.transform(inv.netAmountLocal, inv.currency ?? 'TND') },
+            { label: t('COST.LINES.COL_NET_AMOUNT'),   value: this.currency.transform(inv.netAmountLocal, inv.currency ?? 'EUR') },
             { label: t('COST.LINES.COL_APPROVAL'),     value: levelKey ? t(levelKey) : '—' },
           ],
           actions: this.actionsFor(inv, t),

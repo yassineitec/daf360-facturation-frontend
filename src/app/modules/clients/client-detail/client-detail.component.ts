@@ -130,7 +130,7 @@ export class ClientDetailComponent implements OnInit {
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
-  private readonly devise = computed(() => this.client()?.defaultCurrency || 'TND');
+  private readonly devise = computed(() => this.client()?.defaultCurrency || 'EUR');
 
   readonly headerSubtitle = computed(() => {
     const c = this.client();

@@ -102,7 +102,7 @@ export class OrdresStTabComponent {
   editOstTarget = signal<OSTDto | null>(null);
   stList        = signal<SousTraitantDto[]>([]);
   stLoading     = signal(false);
-  ostForm       = { sousTraitantId: 0, perimetre: '', montantBudget: 0, devise: 'TND', alerteDepassementPct: 10 };
+  ostForm       = { sousTraitantId: 0, perimetre: '', montantBudget: 0, devise: 'EUR', alerteDepassementPct: 10 };
   ostSaving     = signal(false);
   ostError      = signal<string | null>(null);
 
@@ -147,7 +147,7 @@ export class OrdresStTabComponent {
   coutsList    = signal<CoutSTDto[]>([]);
   coutsLoading = signal(false);
   showAddCout  = signal(false);
-  coutForm     = { montant: 0, dateCout: '', devise: 'TND', description: '' };
+  coutForm     = { montant: 0, dateCout: '', devise: 'EUR', description: '' };
   coutSaving   = signal(false);
   coutError    = signal<string | null>(null);
 

@@ -406,7 +406,7 @@ export class InvoiceNewComponent implements OnInit {
     );
     this.summaryTotal.set(
       new Intl.NumberFormat('fr-FR', {
-        style: 'currency', currency: this.affaireValue()?.currency ?? 'TND',
+        style: 'currency', currency: this.affaireValue()?.currency ?? 'EUR',
       }).format(ttc)
     );
     this.linesValue.set(v);

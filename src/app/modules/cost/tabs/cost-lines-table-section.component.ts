@@ -196,8 +196,8 @@ export class CostLinesTableSectionComponent {
         date:          formatDate(inv.invoiceDate),
         lines:         String(inv.lines?.length ?? 0),
         category:      invoiceCategorySummary(inv, lang, tp),
-        net:           this.currency.transform(inv.netAmountLocal, inv.currency ?? 'TND'),
-        ttc:           this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'TND'),
+        net:           this.currency.transform(inv.netAmountLocal, inv.currency ?? 'EUR'),
+        ttc:           this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'EUR'),
         status: {
           label:   t(statusKey(inv.status)),
           options: { variant: STATUS_BADGE_VARIANT[inv.status] ?? 'neutral', dot: true, size: 'sm' },
