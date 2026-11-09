@@ -17,6 +17,7 @@ export interface GroupCatalogueLineDto {
   labelFr: string;
   labelEn: string;
   sortOrder: number;
+  excelRow: string | null;
 }
 
 // ── PlPeriod ──────────────────────────────────────────────────────────────────
