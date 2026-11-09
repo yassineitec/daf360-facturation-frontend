@@ -6,7 +6,7 @@
     [subtitle]="'AFFAIRES.billing.approval.subtitle' | translate" />
 
   <!-- ── KPI Stats ─────────────────────────────────────────────────────────── -->
-  <section class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-6">
+  <section data-guide="approval-kpis" class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'AFFAIRES.billing.approval.kpi_rf' | translate"
       [value]="pendingJalons().length"
@@ -63,7 +63,7 @@
   }
 
   <!-- ── Tabs ──────────────────────────────────────────────────────────────── -->
-  <daf-tabs #tabsRef
+  <daf-tabs #tabsRef data-guide="approval-tabs"
     [tabs]="tabItems()"
     [active]="activeTab()"
     (activeChange)="onTabChange($event)"
@@ -71,7 +71,7 @@
     idPrefix="billing-approval"
     [tabsLabel]="'AFFAIRES.billing.approval.title' | translate" />
 
-  <div role="tabpanel"
+  <div role="tabpanel" data-guide="approval-panel"
        [id]="tabsRef.panelId(activeTab())"
        [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
        class="flex flex-col gap-6">
@@ -99,7 +99,7 @@
              daf-filter ne seed son état interne depuis initialValues qu'une seule fois par
              instance, donc les clés du tableau précédent resteraient collées après un
              changement d'onglet ou de section. -->
-        <div class="flex flex-wrap items-center gap-3 rounded-xl bg-white p-3">
+        <div data-guide="approval-subtabs" class="flex flex-wrap items-center gap-3 rounded-xl bg-white p-3">
           <daf-tabs #dfSubTabsRef
             style="--daf-tabs-fade: #fff"
             [tabs]="dfSubTabItems()"
@@ -220,7 +220,7 @@
                     </daf-data-table>
 
                     @if (dfLineSelection.ids().size > 0) {
-                      <daf-bulk-action-bar
+                      <daf-bulk-action-bar appBodyPortal
                         [count]="dfLineSelection.ids().size"
                         [actions]="bulkValidateActions()"
                         [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
@@ -382,7 +382,7 @@
                 </daf-data-table>
 
                 @if (dfLineSelection.ids().size > 0) {
-                  <daf-bulk-action-bar
+                  <daf-bulk-action-bar appBodyPortal
                     [count]="dfLineSelection.ids().size"
                     [actions]="bulkValidateActions()"
                     [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
@@ -534,7 +534,7 @@
                 </daf-data-table>
 
                 @if (livrableSelection.ids().size > 0) {
-                  <daf-bulk-action-bar
+                  <daf-bulk-action-bar appBodyPortal
                     [count]="livrableSelection.ids().size"
                     [actions]="bulkValidateActions()"
                     [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
@@ -698,7 +698,7 @@
                 </daf-data-table>
 
                 @if (dfLineSelection.ids().size > 0) {
-                  <daf-bulk-action-bar
+                  <daf-bulk-action-bar appBodyPortal
                     [count]="dfLineSelection.ids().size"
                     [actions]="bulkValidateActions()"
                     [countLabel]="'AFFAIRES.billing.approval.bulk_selected_label' | translate"
@@ -826,3 +826,9 @@
     }
   </div>
 </ng-template>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Ses étapes
+     ouvrent l'onglet (et le sous-onglet de mode) qu'elles expliquent, puis rendent ceux de
+     l'utilisateur à la fermeture. -->
+<app-page-guide storageKey="approval-queue" [steps]="guideSteps"
+                (tabChange)="onGuideTab($event)" (closed)="onGuideClosed()" />

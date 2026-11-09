@@ -19,6 +19,19 @@ import { FactListService } from '../../../core/fact-list.service';
 import { ListValueDto, localizedLabel } from '../../cost/cost.model';
 import { switchMap } from 'rxjs';
 import { ClientListStateService } from './client-list-state.service';
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — chaque `target` est un `data-guide` du gabarit. */
+const GUIDE_STEPS: GuideStep[] = [
+  { icon: 'groups',     titleKey: 'GUIDE.CLIENTS.INTRO_TITLE',   textKey: 'GUIDE.CLIENTS.INTRO_TEXT' },
+  { icon: 'add',        titleKey: 'GUIDE.CLIENTS.NEW_TITLE',     textKey: 'GUIDE.CLIENTS.NEW_TEXT',     target: 'clients-new' },
+  { icon: 'monitoring', titleKey: 'GUIDE.CLIENTS.KPIS_TITLE',    textKey: 'GUIDE.CLIENTS.KPIS_TEXT',    target: 'clients-kpis' },
+  { icon: 'search',     titleKey: 'GUIDE.CLIENTS.TOOLBAR_TITLE', textKey: 'GUIDE.CLIENTS.TOOLBAR_TEXT', target: 'clients-toolbar' },
+  { icon: 'grid_view',  titleKey: 'GUIDE.CLIENTS.LIST_TITLE',    textKey: 'GUIDE.CLIENTS.LIST_TEXT',    target: 'clients-list' },
+  { icon: 'verified',   titleKey: 'GUIDE.CLIENTS.STATE_TITLE',   textKey: 'GUIDE.CLIENTS.STATE_TEXT',   target: 'clients-list' },
+  { icon: 'help',       titleKey: 'GUIDE.CLIENTS.END_TITLE',     textKey: 'GUIDE.CLIENTS.END_TEXT' },
+];
 
 /** Activity states the status filter can express, mapped to the backend `isActive` flag. */
 type StatusFilter = '' | 'active' | 'inactive';
@@ -41,6 +54,7 @@ type ViewMode = 'grid' | 'list';
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe, FieldMessageComponent,
     ClientsCardsSectionComponent, ClientsTableSectionComponent, PermissionDirective,
+    PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './client-list.component.html',
@@ -54,6 +68,8 @@ export class ClientListComponent implements OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly translate      = inject(TranslateService);
   private readonly listSvc        = inject(FactListService);
+
+  readonly guideSteps = GUIDE_STEPS;
 
   clients      = signal<ClientListItemDto[]>([]);
   error         = signal<string | null>(null);

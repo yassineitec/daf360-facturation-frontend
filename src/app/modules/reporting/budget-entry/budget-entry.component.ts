@@ -39,16 +39,36 @@ const MONTH_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
  * must be able to render and save against catalogue lines before any budget line exists for
  * this pays/year — which this endpoint makes possible).
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.PL_BUDGET.${key}_TITLE`, textKey: `GUIDE.PL_BUDGET.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'request_quote'),
+  step('FILTERS', 'filter_alt', 'budget-filters'),
+  step('CREATE', 'add', 'budget-empty'),
+  step('GRID', 'table_chart', 'budget-grid'),
+  step('SAVE', 'save', 'budget-save'),
+  step('APPROVALS', 'verified', 'budget-approvals'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-budget-entry',
   imports: [
     ReactiveFormsModule, TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent,
     FormFieldComponent, SelectComponent, PaysFlagSelectComponent,
+    PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './budget-entry.component.html',
 })
 export class BudgetEntryComponent implements OnInit {
+
+  readonly guideSteps = GUIDE_STEPS;
   private readonly budgetSvc = inject(BudgetReferenceService);
   private readonly catalogueSvc = inject(GroupCatalogueLineService);
   private readonly clientSvc = inject(ClientService);

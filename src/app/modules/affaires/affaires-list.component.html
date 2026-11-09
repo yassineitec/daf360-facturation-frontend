@@ -3,13 +3,13 @@
   <daf-page-header
     [title]="'AFFAIRES.LIST.TITLE' | translate"
     [subtitle]="'AFFAIRES.LIST.SUBTITLE' | translate">
-    <daf-button pageActions
+    <daf-button pageActions data-guide="affaires-new"
       [options]="{ variant: 'teal', label: 'AFFAIRES.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="openNewForm()" />
   </daf-page-header>
 
   <!-- KPIs — one row, never wraps -->
-  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+  <section data-guide="affaires-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'AFFAIRES.LIST.KPI.ACTIVE' | translate"
       [value]="statsActives()"
@@ -36,7 +36,7 @@
   </section>
 
   <!-- Search + filters + view toggle -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="affaires-toolbar"
     [placeholder]="'AFFAIRES.LIST.TABLE.SEARCH' | translate"
     [value]="searchText()"
     [debounce]="300"
@@ -71,7 +71,7 @@
 
   <!-- Content sits free in the page — no outer container card -->
   @if (viewMode() === 'grid') {
-    <app-affaires-cards-section
+    <app-affaires-cards-section data-guide="affaires-list"
       [affaires]="affaires()"
       [paysLabels]="paysLabels()"
       [loading]="loading()"
@@ -81,7 +81,7 @@
       (open)="navigateToDetail($event)"
       (remove)="confirmDelete($event)" />
   } @else {
-    <app-affaires-table-section
+    <app-affaires-table-section data-guide="affaires-list"
       [affaires]="affaires()"
       [avatarUrls]="avatarUrls()"
       [paysLabels]="paysLabels()"
@@ -109,3 +109,7 @@
     (pageSizeChange)="onPageSize($event)" />
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Les étapes
+     visent les data-guide ci-dessus ; « affaires-list » est sur les deux vues, seule la visible compte. -->
+<app-page-guide storageKey="affaires" [steps]="guideSteps" />

@@ -19,15 +19,26 @@ import { ClientService } from '../clients/client.service';
 import { BILLING_MODES } from './affaire-wizard.model';
 import { enumLabel } from '../../shared/enum-labels';
 import { AffairesListStateService } from './affaires-list-state.service';
+import { PageGuideComponent } from '../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../shared/guide/page-guide.types';
 
 type ViewMode = 'grid' | 'list';
+
+/** Guide de la page — chaque `target` est un `data-guide` du gabarit. */
+const GUIDE_STEPS: GuideStep[] = [
+  { icon: 'work',      titleKey: 'GUIDE.AFFAIRES.INTRO_TITLE',   textKey: 'GUIDE.AFFAIRES.INTRO_TEXT' },
+  { icon: 'add',       titleKey: 'GUIDE.AFFAIRES.NEW_TITLE',     textKey: 'GUIDE.AFFAIRES.NEW_TEXT',     target: 'affaires-new' },
+  { icon: 'monitoring', titleKey: 'GUIDE.AFFAIRES.KPIS_TITLE',   textKey: 'GUIDE.AFFAIRES.KPIS_TEXT',    target: 'affaires-kpis' },
+  { icon: 'search',    titleKey: 'GUIDE.AFFAIRES.TOOLBAR_TITLE', textKey: 'GUIDE.AFFAIRES.TOOLBAR_TEXT', target: 'affaires-toolbar' },
+  { icon: 'grid_view', titleKey: 'GUIDE.AFFAIRES.LIST_TITLE',    textKey: 'GUIDE.AFFAIRES.LIST_TEXT',    target: 'affaires-list' },
+];
 
 @Component({
   selector: 'app-affaires-list',
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe,
-    AffairesCardsSectionComponent, AffairesTableSectionComponent,
+    AffairesCardsSectionComponent, AffairesTableSectionComponent, PageGuideComponent,
   ],
   // The deleted SCSS carried `:host { display: contents }` so `.affaires-page` could
   // own the flex chain; `daf-page` owns the rhythm now, so the host just needs to be
@@ -49,6 +60,8 @@ export class AffairesListComponent implements OnInit {
   private readonly store          = inject(UserStore);
   private readonly modals         = inject(ModalService);
   private readonly toast          = inject(ToastService);
+
+  readonly guideSteps = GUIDE_STEPS;
 
   /** Même code que `DELETE /affaires/{id}` côté serveur. */
   readonly canDelete = computed(() => this.store.hasPermission('FACT_MANAGE_AFFAIRE'));

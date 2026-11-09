@@ -22,11 +22,14 @@
     },
     "CURRENCY": {
       "TITLE": "Display currency",
+      "SHORT": "Currency",
       "NAMES": {
         "EUR": "Euro",
         "USD": "US Dollar",
         "TND": "Tunisian Dinar",
-        "EGP": "Egyptian Pound"
+        "EGP": "Egyptian Pound",
+        "SAR": "Saudi Riyal",
+        "AED": "UAE Dirham"
       }
     },
     "PAGINATION": {
@@ -167,6 +170,1996 @@
       "NOTES_PLACEHOLDER": "Optional comment on the decision",
       "FILTER_COUNTRY": "Destination country"
     }
+  },
+  "GUIDE": {
+    "HELP_CENTER": "Help & guides",
+    "CLOSE": "Close the guide",
+    "STEP_OF": "{{current}} / {{total}}",
+    "PREV": "Previous",
+    "NEXT": "Next",
+    "DONE": "Finish",
+    "MENU": {
+      "TITLE": "Help on: {{page}}",
+      "NO_PAGE": "Choose the kind of help",
+      "NONE": "This page has no guide yet.",
+      "GUIDE": "Step-by-step guide",
+      "GUIDE_HINT": "A guided tour of this page, element by element",
+      "VIDEOS": "Videos",
+      "VIDEOS_HINT": "{{count}} demo video(s)",
+      "BACK": "Back",
+      "ALL": "The whole help center",
+      "CHAT": "Assistant",
+      "CHAT_HINT": "Ask your question in your own words"
+    },
+    "HINT": {
+      "TITLE": "First visit?",
+      "TEXT": "Follow this page's guide (1 min).",
+      "START": "Start",
+      "LATER": "Later"
+    },
+    "VOICE": {
+      "LISTEN": "Listen",
+      "STOP": "Stop",
+      "ON": "Turn on read-aloud",
+      "OFF": "Turn off read-aloud"
+    },
+    "HOME": {
+      "WELCOME_TITLE": "Welcome to the Finance home page",
+      "WELCOME_TEXT": "This page sums up where collections stand and gives access to every Finance module. Follow the guide for a quick tour.",
+      "KPIS_TITLE": "The collection indicators",
+      "KPIS_TEXT": "Four figures: what was collected this month, what is still awaiting payment, overdue invoices and receivables more than 90 days past due. A figure in red calls for a reminder.",
+      "MODULES_TITLE": "The Finance modules",
+      "MODULES_TEXT": "Each card opens a module: projects, invoices, collections, costs, P&L… They are the same as in the sidebar. On the Invoicing card, a counter shows the submitted invoices awaiting approval.",
+      "ACTIVITY_TITLE": "Recent activity",
+      "ACTIVITY_TEXT": "This tab opens the latest invoices with their status. Click a line to open the invoice; « View all » leads to the full list.",
+      "CURRENCY_TITLE": "Display currency",
+      "CURRENCY_TEXT": "Choose here the currency amounts are shown in: « Currency » at the bottom of the sidebar (on mobile, the bubble bottom right). Amounts are converted; the ≈ sign marks an approximate rate.",
+      "HELP_TITLE": "Find this guide again",
+      "HELP_TEXT": "« Help & guides », at the bottom of the sidebar, starts this guide again at any time. You can also turn on read-aloud with the speaker at the top of each step."
+    },
+    "START": "Start",
+    "SEARCH": {
+      "SECTION": "Section",
+      "FAQ": "Search a question…",
+      "DOCS": "Search the documentation…",
+      "NO_MATCH": "No result for « {{query}} ». Try other words or ask the assistant."
+    },
+    "CENTER": {
+      "SUBTITLE": "Guides, frequently asked questions, documentation and support contact.",
+      "PAGE_HELP": "Page help",
+      "FAQ_TITLE": "Frequently asked questions",
+      "DOCS_TITLE": "Documentation",
+      "GUIDES": "Interactive guides",
+      "OPEN_PAGE": "Open",
+      "NEEDS_RECORD": "This guide starts from a record: open the record you want, then « Help & guides » at the bottom of the menu.",
+      "PICK_RECORD": "Pick a record",
+      "VIDEOS_TITLE": "Video tutorials",
+      "MINUTES": "{{count}} min",
+      "SOON": "Coming soon",
+      "SUPPORT_TITLE": "Support",
+      "SUPPORT_TEXT": "Didn't find your answer? Contact technical support.",
+      "FAQ": {
+        "HOME": {
+          "DASH": {
+            "Q": "Why do the indicators show « — »?",
+            "A": "The four figures come from collections: you need the right to view collections to see them. Without it, or if the server does not answer, the tile shows « — ». Reload the page; if the dash stays, ask your administrator for that right."
+          },
+          "SCOPE": {
+            "Q": "Which invoices do the indicators count?",
+            "A": "Those of your entity (your country). Amounts are what remains due: a partial payment is already deducted from the invoice."
+          },
+          "PENDING": {
+            "Q": "What is the difference between « Awaiting payment », « Overdue » and « +90 days »?",
+            "A": "« Awaiting payment »: everything still to collect, due or not, including invoices with no due date. « Overdue invoices »: the part past its due date, with the number of invoices. « Past due +90 days »: the part overdue by more than 90 days, the most urgent to chase."
+          },
+          "COLLECTED": {
+            "Q": "What does « Collected this month » count?",
+            "A": "Every payment recorded since the 1st of the month for your entity, even on an invoice not yet fully paid. The figure starts again from zero each month."
+          },
+          "CURRENCY": {
+            "Q": "How do I change the currency of amounts? What does « ≈ » mean?",
+            "A": "Click « Currency » at the bottom of the sidebar (on mobile: the bubble bottom right), then pick a currency. The choice is kept in this browser and applies to every Finance screen. The ≈ sign marks a conversion made with an approximate rate."
+          },
+          "TO_VALIDATE": {
+            "Q": "What does « … to validate » on the Invoicing card mean?",
+            "A": "It is the number of submitted invoices awaiting approval. Click the card to open the invoices."
+          },
+          "FORBIDDEN": {
+            "Q": "A card takes me to « access denied », why?",
+            "A": "The home page shows every card, but each module needs its own rights. Without that right the page is refused: ask your administrator. The sidebar only shows the modules you can access."
+          },
+          "SAME": {
+            "Q": "Are the figures the same as on Collections and Treasury?",
+            "A": "Yes: the home page reads the same receivables and payments as those two screens. A gap usually comes from a different display currency or filter on the other screen."
+          }
+        },
+        "AFFAIRES": {
+          "CREATE": {
+            "Q": "« New project » gives me an error, why?",
+            "A": "Creating a project needs the right to manage projects. With view-only rights the button shows but saving is refused: ask your administrator for that right."
+          },
+          "PENDING": {
+            "Q": "What does the « Suspended » tile count?",
+            "A": "Projects with the Suspended status. Draft or configured projects are not in it: filter by status to find them."
+          },
+          "RAF": {
+            "Q": "How is the RAF (remaining to invoice) computed?",
+            "A": "Project budget + integrated extra works − issued invoices (amounts excl. tax, without draft, cancelled or returned invoices). A negative RAF means more was invoiced than budgeted."
+          },
+          "WIP": {
+            "Q": "What does « Wip » on a card mean?",
+            "A": "Work declared in the project's WIP tab that has not been invoiced yet. A negative figure means more was invoiced than declared, e.g. invoices issued outside the WIP flow."
+          },
+          "TILES": {
+            "Q": "Do the tiles change when I change page?",
+            "A": "No: they cover every project matching the search and filters, not the lines shown. They only move with a filter or a search."
+          },
+          "TOTAL": {
+            "Q": "Why does the total budget not match the sum of the projects?",
+            "A": "Each project has its own currency: totals are converted to euros, then to the display currency. A project whose currency has no exchange rate is left out of the amounts (it still counts in the numbers of projects)."
+          },
+          "DELETE": {
+            "Q": "Why can't I delete a project?",
+            "A": "Only draft projects can be deleted, and you need the right to manage projects. A deleted project leaves the list but its reference is not reused. For a finished project, change its status instead (Closed, Archived) from its file."
+          },
+          "CLIENT": {
+            "Q": "Why does the list only show one client's projects?",
+            "A": "You came from a client file, or filtered on a client: a banner above the list says so. « Show all projects » removes that filter."
+          },
+          "MEMORY": {
+            "Q": "Are my filters kept?",
+            "A": "Yes, while you go back and forth between the list and a project file. They are cleared if you reload the page (F5) or go through another screen."
+          }
+        },
+        "AFFAIRE_NEW": {
+          "SAVED": {
+            "Q": "I left the wizard: is my input lost?",
+            "A": "No, if you had passed step 2: every « Next » saves, and the project exists as a draft. Resume it with « Resume a draft project » at the bottom of the wizard, or from the list filtered on Draft. Before step 2, nothing is saved yet."
+          },
+          "KYC": {
+            "Q": "Why does the client stop at « client KYC validation required »?",
+            "A": "A project can only be created for a client whose KYC is validated. Get the KYC validated from the client file, then come back to the wizard."
+          },
+          "NEXT_OFF": {
+            "Q": "« Next » stays greyed out, what is missing?",
+            "A": "The message under the form lists the missing fields of the step. On step 2, don't forget the client contact; on step 3 the split must make 100 %; on step 4 the allocations must equal the budget; on step 5 you need the start date and the duration."
+          },
+          "ALLOC": {
+            "Q": "The total of allocations never matches the budget, why?",
+            "A": "The budgets allocated to the managers must add up to exactly the forecast budget entered on step 2, to the thousandth. Adjust an allocation, or fix the budget on step 2 (click it in the rail)."
+          },
+          "DOC360": {
+            "Q": "Do I have to link a DOC360 project?",
+            "A": "No, the Origin step is optional. Linking a project reuses its data and attaches its contract documents; otherwise click « Next » and fill in the information on step 2."
+          },
+          "MODE": {
+            "Q": "Can I change the billing mode later?",
+            "A": "Yes while the project is a draft: go back to step 2. After activation the mode is locked; the budget can still change."
+          },
+          "ENTITY": {
+            "Q": "Why is the entity already filled in?",
+            "A": "The wizard suggests your country's entity, by far the most common case. You can change it until the project is created; after that, only an administrator can correct a project's entity."
+          },
+          "ACTIVATE": {
+            "Q": "What happens when I activate the project?",
+            "A": "The server checks everything (mode, budget, at least one contact, complete billing setup), sets the project « In progress », locks its billing mode and opens its file. A message says what is missing if activation is refused."
+          }
+        },
+        "AFFAIRE_DETAIL": {
+          "PAYMENT": {
+            "Q": "How do I record a payment on a project?",
+            "A": "Not from the project file: the Payments tab is read only. Open the invoice (Invoices tab › « View » › « Open the invoice », or the « Invoices » menu) and click « Record a payment ». The invoice must be issued, sent or partially paid; the payment is in the invoice’s currency."
+          },
+          "PARTIAL": {
+            "Q": "Why doesn’t a partial payment show in « Total collected »?",
+            "A": "« Total collected » only counts fully paid invoices. A partial payment shows in the Payments tab and the Payments chart; the invoice joins « Total collected » once fully paid."
+          },
+          "CHART_URL": {
+            "Q": "What is « cc=PAYMENTS » in the address for?",
+            "A": "It keeps the chart shown in the Overview: INVOICED (Invoicing), WIP or PAYMENTS, several separated by a comma for a combined chart. The charts’ period and view are in the address too: a copied link reopens the same view."
+          },
+          "COMBINE": {
+            "Q": "How do I show several charts together?",
+            "A": "Ctrl + click Invoicing, WIP or Payments: the chosen series show side by side. A plain click goes back to a single chart."
+          },
+          "TS_CREATE": {
+            "Q": "Why can’t I create a TS?",
+            "A": "A TS can only be created on an « In progress » project, and needs the TS creation right. On a draft, a suspended or a closed project, creation is refused."
+          },
+          "TS_BUDGET": {
+            "Q": "When does a TS join the budget?",
+            "A": "After its two validations, technical then commercial: it then becomes « Integrated into the budget » automatically, raises the remaining-to-invoice and counts in the TS tile. An integrated or invoiced TS can no longer be deleted."
+          },
+          "INVOICE_BLOCKED": {
+            "Q": "Why is invoicing refused on this project?",
+            "A": "Several rules: the budget must be validated; the project must not be suspended or closed; the amount excluding tax must not exceed the remaining-to-invoice. In Lump Sum, Time & Materials or Deliverables, the invoice comes from validated WIP: a manual invoice is only accepted for expenses, a WIP balance or a down payment."
+          },
+          "OVERRUN": {
+            "Q": "What does the « Budget overrun » banner mean?",
+            "A": "The issued invoices exceed the budget plus the integrated TS: the remaining-to-invoice is negative. The banner, shown whatever the tab, gives the overrun amount; « View invoices » opens the Invoices tab."
+          },
+          "TABS_MISSING": {
+            "Q": "Why don’t I see the WIP, Resources or Expense tab?",
+            "A": "They depend on the billing mode: WIP for Lump Sum, Time & Materials and Deliverables; Resources for Time & Materials; Expense for Lump Sum and Deliverables. The other tabs are always there."
+          },
+          "STATUS": {
+            "Q": "How do I change the project’s status?",
+            "A": "In « Quick actions », click the status badge and pick the new one. Moving to Suspended or Closed is refused while the project has draft or submitted invoices: handle them first."
+          },
+          "BUDGET": {
+            "Q": "What does « Budget not validated » mean?",
+            "A": "The project’s budget is not validated yet: it cannot be invoiced. The « Validate budget » button shows in « Quick actions » for those with the right, and disappears once the budget is validated."
+          },
+          "DELETE": {
+            "Q": "Can a project be deleted?",
+            "A": "Only a draft, with « Delete draft » at the bottom of « Quick actions ». An activated project can no longer be deleted: change its status instead (Suspended, Closed, Archived)."
+          }
+        },
+        "AFFAIRE_EDIT": {
+          "SAVED": {
+            "Q": "Are my changes saved if I leave the page?",
+            "A": "Yes for every step confirmed with « Next »: it is saved straight away. The input of the step shown is lost if you leave the page or click « Cancel » without going through « Next »."
+          },
+          "JUMP": {
+            "Q": "Do I have to go through every step to change one detail?",
+            "A": "No, on an active project: click the step in the rail, make the change and click « Next » to save it. You can then leave. On a draft, the steps unlock one by one."
+          },
+          "MODE": {
+            "Q": "Can I change the billing mode of an active project?",
+            "A": "Yes, in General info. « Next » saves the new mode (the change shows in the project’s activity); then configure it in the Billing step. The file’s tabs (WIP, Resources, Expense) follow the new mode."
+          },
+          "CLIENT": {
+            "Q": "Why is changing the client refused?",
+            "A": "The client cannot change while contacts of the current client are attached to the project, and the step requires at least one contact. For a project of another client, create a new project, or ask an administrator."
+          },
+          "ENTITY": {
+            "Q": "Why can’t the entity be changed?",
+            "A": "The entity is « set at creation »: it drives the numbering of the project’s reference. Only an administrator can correct it."
+          },
+          "ALLOC": {
+            "Q": "I changed the budget and the Managers step blocks, why?",
+            "A": "The budgets allocated to the managers must add up to exactly the planned budget. After a budget change in General info, adjust the allocations in the Managers step, then click « Next »."
+          },
+          "CLOSED": {
+            "Q": "Why is saving refused on a closed project?",
+            "A": "A closed or archived project can no longer be edited: the Billing, Managers and Schedule steps are refused, with a message saying so."
+          },
+          "FINISH": {
+            "Q": "« Save » or « Activate project »: what is the difference?",
+            "A": "On an active project, the last button is « Save »: it takes you back to the file, every step having already been saved by « Next ». On a draft (« Complete draft »), it is « Activate project »: the server checks everything and moves the project to « In progress »."
+          },
+          "NO_BUTTON": {
+            "Q": "Why don’t I see « Edit project » on the file?",
+            "A": "The button, at the bottom of the file’s « Quick actions », only shows with the right to edit projects. Ask your administrator for it."
+          }
+        },
+        "CLIENTS": {
+          "KYC": {
+            "Q": "How do I validate a client’s KYC?",
+            "A": "Open its file and validate the KYC (right to manage invoicing). While it is pending, no project can be created for this client. The KYC can no longer be revoked while the client has projects in progress."
+          },
+          "DELETE": {
+            "Q": "How do I delete a client?",
+            "A": "A client is not deleted: it is deactivated from its file, and can be reactivated later. Deactivation is refused while it has projects in progress."
+          },
+          "CA": {
+            "Q": "What does a client’s « Total Revenue » count?",
+            "A": "The amount of its invoices, converted to its default currency. The « Total Revenue » tile at the top adds up the clients of the page shown, converted to euros."
+          },
+          "PAGE_TILES": {
+            "Q": "Why do the tiles change when I change page?",
+            "A": "KYC Validated, Total Revenue and Active Clients only cover the clients of the page shown (« Current page »). Only Total Clients counts every client found with your filters. For a wider figure, show 100 clients per page or filter."
+          },
+          "SEARCH": {
+            "Q": "Why doesn’t the search find a sector?",
+            "A": "The search covers the name, the code and the tax / VAT number. For a sector, use « Filters » › Sector."
+          },
+          "ACTIVE": {
+            "Q": "What does « Active projects » mean?",
+            "A": "The number of the client’s « In progress » projects: drafts, suspended or closed projects don’t count. The « Active projects » filter finds clients with or without a project in progress."
+          },
+          "DUPLICATE": {
+            "Q": "« A client with this code already exists »: what do I do?",
+            "A": "A client’s code and name are unique within an entity. Search for the existing client before creating a new one."
+          },
+          "NO_BUTTON": {
+            "Q": "Why don’t I see « New client »?",
+            "A": "It needs the right to manage invoicing. With the view right only, the list and the files stay visible, without creating or editing."
+          }
+        },
+        "CLIENT_NEW": {
+          "SAVED": {
+            "Q": "I left the wizard: is the client saved?",
+            "A": "No. Nothing is saved before « Create client » on the last step: leaving or cancelling before loses the input."
+          },
+          "CODE": {
+            "Q": "Do I have to type a client code?",
+            "A": "No: left empty, it is generated at creation. If typed, it must be unique within the entity, like the name."
+          },
+          "REQUIRED": {
+            "Q": "What is required?",
+            "A": "The client name and the industry in step 1, and at least one contact with a name in step 2. The rest is optional; the payment term, if typed, ranges from 0 to 365 days."
+          },
+          "EMAIL": {
+            "Q": "Must a contact have an e-mail address?",
+            "A": "It doesn’t block, but a contact without an address receives no invoice: the wizard warns if no contact has one. Two contacts of the same client cannot share an address."
+          },
+          "PRIMARY": {
+            "Q": "What is the primary contact?",
+            "A": "The client’s reference contact, one per client. The first contact is by default; tick « Client’s primary contact » on another to change it."
+          },
+          "ENTITY": {
+            "Q": "Which entity is the client attached to?",
+            "A": "Your country’s entity. The « Country of origin » typed in step 2 is the client’s own country, a different piece of information."
+          },
+          "AFTER": {
+            "Q": "What next after creation?",
+            "A": "The client opens with a « pending » KYC: approve it from its file (« Approve KYC ») before creating a project for it."
+          }
+        },
+        "CLIENT_EDIT": {
+          "SAVED": {
+            "Q": "When are my changes saved?",
+            "A": "Only with « Save » on the last step. « Next » and a click in the rail only change step; « Cancel » or leaving the page loses everything."
+          },
+          "CONTACTS": {
+            "Q": "Why can’t a contact be removed?",
+            "A": "Removing a contact deactivates it, which is refused while it is attached to a project in progress, or if it is the primary contact. The client itself is already saved when this error shows: fix the contact and save again."
+          },
+          "PRIMARY": {
+            "Q": "How do I change the primary contact?",
+            "A": "Tick « Client’s primary contact » on the new contact: the old one loses the role automatically. The role cannot be removed without naming another."
+          },
+          "KYC": {
+            "Q": "Can I approve the KYC here?",
+            "A": "No, the KYC is approved or revoked from the client’s file, in « Quick actions »."
+          }
+        },
+        "CLIENT_DETAIL": {
+          "KYC": {
+            "Q": "How do I approve the KYC?",
+            "A": "« Approve KYC » in « Quick actions » (right to manage invoicing). The KYC approval card then shows the date and the author. Without an approved KYC, no project can be created for this client."
+          },
+          "REVOKE": {
+            "Q": "Why is revoking the KYC refused?",
+            "A": "The KYC cannot be revoked while the client has projects in progress. Close or suspend them first."
+          },
+          "BLOCK": {
+            "Q": "What does « Block client » do?",
+            "A": "It deactivates the client, after confirmation, and goes back to the list. It is refused while the client has projects in progress. It can be undone: « Reactivate client » on its file."
+          },
+          "FIND": {
+            "Q": "How do I find a blocked client?",
+            "A": "In the client list, « Filters » › Status › Inactive. Its file then offers « Reactivate client »."
+          },
+          "PENDING": {
+            "Q": "How is « Outstanding » computed?",
+            "A": "The total invoiced (excluding drafts and cancelled invoices) minus the payments received. The Collection bars show both shares of the same total."
+          },
+          "CONTACT_OFF": {
+            "Q": "Why can’t a contact be deactivated?",
+            "A": "A contact attached to a project in progress, or the primary contact, cannot be deactivated. First name another primary contact, or remove it from the projects concerned."
+          },
+          "NO_EMAIL": {
+            "Q": "What does « No e-mail address » on a contact mean?",
+            "A": "This contact will receive no invoice. Edit it (pencil icon) to add an address."
+          },
+          "INVOICE": {
+            "Q": "How do I invoice this client?",
+            "A": "« New invoice » in « Quick actions » opens invoice creation for this client; its breadcrumb then leads back to this file."
+          }
+        },
+        "INVOICES": {
+          "LIFECYCLE": {
+            "Q": "What are the steps of an invoice?",
+            "A": "Draft, Under review (submitted), Approved, Issued, Sent, Partly paid, Paid. An invoice under review can also be Returned (to fix) or Cancelled (rejected); a sent invoice can become Disputed; a credit note moves it to « Credit issued »."
+          },
+          "NUMBER": {
+            "Q": "Why has my invoice no number?",
+            "A": "The number is only given at issue (« Issue invoice »): FAC-year-no. for an invoice, AV-year-no. for a credit note, with no gaps, per country and year. Before that, it shows as « Draft »."
+          },
+          "APPROVE": {
+            "Q": "Who approves an invoice?",
+            "A": "Anyone with the right to manage invoicing, with « Approve invoice » (list) or « Confirm decision » (file): Approve, Return (with a comment) or Reject, which cancels it."
+          },
+          "SENT": {
+            "Q": "Does « Mark as sent » send the invoice?",
+            "A": "No: the e-mail goes out at issue, to the project’s billing contacts (otherwise its other contacts, otherwise the client’s primary contact). « Mark as sent » only records that the client received it."
+          },
+          "PAYMENT": {
+            "Q": "How do I record a payment?",
+            "A": "« Record a payment », from the list or the file, on an issued, sent or partly paid invoice: amount, date, method and reference. The payment is in the invoice’s currency; the invoice becomes Paid once the net payable is reached."
+          },
+          "KPIS": {
+            "Q": "Why do the tiles change with the page?",
+            "A": "They add up the invoices of the page shown only (« current page »), converted to euros. Filter or show 100 invoices per page for a wider figure."
+          },
+          "OVERDUE": {
+            "Q": "What is an overdue invoice?",
+            "A": "An issued, sent or partly paid invoice whose due date has passed (credit notes excluded). The « Overdue only » filter isolates them; the list shows the days overdue."
+          },
+          "DRAFT_DATE": {
+            "Q": "My drafts disappear when I filter by period, why?",
+            "A": "The issue period filters on the issue date, which drafts don’t have yet. Filter by the Draft status instead."
+          },
+          "DELETE": {
+            "Q": "Can an invoice be deleted or cancelled?",
+            "A": "There is no deletion. An invoice under review can be rejected (Cancelled); an issued invoice is fixed with « Edit » while no payment is recorded, otherwise with a credit note."
+          }
+        },
+        "INVOICE_NEW": {
+          "AFFAIRE_MISSING": {
+            "Q": "Why can’t I find my project?",
+            "A": "The project must be activated (In progress) in the Projects module. A draft, suspended or closed project cannot be invoiced (RG10)."
+          },
+          "RAF": {
+            "Q": "What does « remaining-to-invoice exhausted — invoicing blocked » mean?",
+            "A": "The project’s remaining-to-invoice is zero: the contract amount (plus integrated TS) is already invoiced. An invoice’s amount excl. tax can never exceed the available remaining-to-invoice (RG12)."
+          },
+          "BUDGET": {
+            "Q": "« The project’s budget is not validated yet »: what do I do?",
+            "A": "Have the budget validated from the project file (« Validate budget »): no invoice can be created before (RG11)."
+          },
+          "MANUAL": {
+            "Q": "Why can’t I type my lines freely?",
+            "A": "In lump sum, time & materials or deliverables, the progress invoice comes from WIP validation (project file › WIP, then the approval queue). Here, except for a down payment, only reimbursable expenses and unbilled WIP balances are accepted."
+          },
+          "ACOMPTE": {
+            "Q": "How do I make a down-payment invoice?",
+            "A": "Pick the « Down payment invoice » type in step 1: lines can then be typed freely. The amount excl. tax stays capped by the project’s remaining-to-invoice."
+          },
+          "DUE_DATE": {
+            "Q": "What is the due date for?",
+            "A": "It is suggested from the payment conditions and stays editable. It sets lateness and schedules payment reminders; without a due date, no reminders."
+          },
+          "DRAFT_OR_SUBMIT": {
+            "Q": "« Draft » or « Submit »?",
+            "A": "« Draft » saves the invoice to complete it later (« Edit draft » from its file). « Submit » saves it and moves it to Under review, awaiting approval."
+          },
+          "APPROVAL": {
+            "Q": "I came from the approval queue: what happens if I cancel?",
+            "A": "The approval had created the draft: « Cancel » (or leaving the page without saving) deletes it and puts the request back in the approval queue. Save first if you want to keep the invoice."
+          }
+        },
+        "INVOICE_EDIT": {
+          "WHICH": {
+            "Q": "Which invoices can be edited?",
+            "A": "A draft, with « Edit draft ». An issued or sent invoice with no payment, with « Edit » (specific right). Beyond that, use a credit note."
+          },
+          "AMEND": {
+            "Q": "What does « Edit » change on an issued invoice?",
+            "A": "The invoice keeps its number (its issue date and number stay editable, with no duplicate in the country). The before / after detail is kept in « Modification history »."
+          },
+          "RETURNED": {
+            "Q": "My invoice was returned: how do I fix it?",
+            "A": "The approver’s comment explains why. The file offers « Resubmit »; editing a returned invoice is not offered by the screen."
+          },
+          "PAID": {
+            "Q": "Why has « Edit » disappeared?",
+            "A": "As soon as a payment is recorded, the invoice can no longer be edited: issue a credit note to correct it."
+          }
+        },
+        "INVOICE_DETAIL": {
+          "NEXT": {
+            "Q": "What is my invoice’s next step?",
+            "A": "The large lifecycle button always says: it depends on the status (submit, decide, issue, mark as sent, record a payment, resolve the dispute)."
+          },
+          "EMIT": {
+            "Q": "What does « Issue invoice » do?",
+            "A": "On an approved invoice: you pick the issue date (today by default), the invoice gets its number and the e-mail goes to the contacts. It can then no longer be freely edited."
+          },
+          "EMAIL": {
+            "Q": "Who is the invoice sent to?",
+            "A": "To the project’s billing contacts with an address, otherwise the project’s other contacts, otherwise the client’s primary contact. With no address at all, issuing succeeds but nothing is sent."
+          },
+          "PARTIAL": {
+            "Q": "How does a partial payment work?",
+            "A": "Each payment adds up: the invoice becomes « Partly paid », then « Paid » once the net payable is reached. « Remaining to pay » updates."
+          },
+          "FIX": {
+            "Q": "How do I correct an issued invoice?",
+            "A": "With no payment: « Edit » (specific right), the invoice keeps its number. With a payment: « Issue credit note »."
+          },
+          "CREDIT": {
+            "Q": "How does a credit note work?",
+            "A": "« Issue credit note » on an issued, sent or partly paid invoice, with a reason. The credit note goes for approval then is issued like an invoice (number AV-…). The original invoice immediately becomes « Credit issued » and its reminders stop."
+          },
+          "DISPUTE": {
+            "Q": "What happens during a dispute?",
+            "A": "« Open a dispute » (with a reason) suspends the reminders; no payment can be recorded. « Resolve dispute » puts the invoice back to « Issued », or « Partly paid » if it already had a payment."
+          },
+          "REMINDERS": {
+            "Q": "How do I stop an invoice’s reminders?",
+            "A": "Reminders tab › « Suspend », then « Reactivate » later. They stop by themselves on full payment or when a credit note is issued."
+          },
+          "PDF": {
+            "Q": "Why doesn’t « Export as PDF » show?",
+            "A": "Export only exists for lump sum, time & materials, deliverables, TS or combined invoices. Before issue, the PDF is marked DRAFT."
+          }
+        },
+        "COLLECTIONS": {
+          "WHAT": {
+            "Q": "What does the Collections page list?",
+            "A": "The invoices still to collect (issued, sent or partly paid), not the payments. An invoice’s payments show in its file, Payments received tab."
+          },
+          "MISSING": {
+            "Q": "Why doesn’t an invoice appear?",
+            "A": "A draft, under review, paid, cancelled, disputed or credited invoice is not to be collected. A partly paid invoice stays listed with its outstanding amount."
+          },
+          "KPIS": {
+            "Q": "How are the indicators computed?",
+            "A": "On all your entity’s invoices to collect: Outstanding = sum of amounts still owed; Past due = the share past its due date; Collected this month = payments received since the 1st; 90+ days = the share past due for more than 90 days. An invoice with no due date is never counted as late."
+          },
+          "CURRENCY": {
+            "Q": "In which currency are the indicators?",
+            "A": "In your entity’s currency. Amounts are not converted: invoices in other currencies are added as they are."
+          },
+          "FILTER_ID": {
+            "Q": "How do I filter on a project or a client?",
+            "A": "The filter expects their ID (the number in their file’s address, e.g. /affaires/12). For a client, searching by name is simpler."
+          },
+          "PERIOD": {
+            "Q": "Which date does the « Period » filter use?",
+            "A": "The invoices’ due date, not their issue date."
+          },
+          "RECON": {
+            "Q": "Why is the « Bank reconciliation » button greyed out?",
+            "A": "It is not enabled yet. The reconciliation page works at /finance/recouvrement/reconciliation, for those with the bank reconciliation right."
+          }
+        },
+        "RECONCILIATION": {
+          "FORMATS": {
+            "Q": "Which files can I import?",
+            "A": "OFX (.ofx) or CAMT053 (.xml) statements, 10 MB max. CSV and Excel files are not accepted; for a single operation, use « + Manual entry »."
+          },
+          "MATCHING": {
+            "Q": "How are invoices proposed?",
+            "A": "First by reference (the invoice number contains the transfer reference), otherwise by amount: the amount incl. tax of an invoice to collect, within 0.5 %. It is only a proposal: check it before confirming."
+          },
+          "CONFIRM": {
+            "Q": "What does « Confirmer » do?",
+            "A": "It records a payment of the transfer amount on the proposed invoice (transfer method, bank reference). The invoice becomes Partly paid or Paid."
+          },
+          "PARTIAL": {
+            "Q": "A transfer covers part of the invoice: what do I do?",
+            "A": "« Partiel »: enter the amount to assign (at most the transfer’s). The rest cannot be assigned later from this operation."
+          },
+          "UNDO": {
+            "Q": "Can I undo a match?",
+            "A": "No: a confirmed, partial, rejected or advance operation offers no more actions, and a recorded payment cannot be deleted. Check the invoice before confirming."
+          },
+          "ACOMPTE": {
+            "Q": "What does « Acompte » do?",
+            "A": "It classifies the operation as an advance. No payment is recorded and no invoice is linked."
+          },
+          "TWICE": {
+            "Q": "I imported the same statement twice, what happens?",
+            "A": "The duplicate is not detected: the operations show twice. Reject the duplicates rather than confirming them, otherwise the payment would be recorded twice."
+          }
+        },
+        "COLLECTION_DETAIL": {
+          "RECORD": {
+            "Q": "How do I record a payment?",
+            "A": "« Record a payment »: date, amount, method and reference. The payment is in the invoice’s currency; it becomes Partly paid, then Paid once the net payable is reached."
+          },
+          "FIX": {
+            "Q": "I recorded the wrong payment: how do I fix it?",
+            "A": "A payment can be neither edited nor deleted. To correct an invoice already paid, use a credit note from its invoice file."
+          },
+          "SUSPEND": {
+            "Q": "How do I stop the reminders?",
+            "A": "« Suspend reminders », with a reason if needed: every unsent reminder becomes Suspended. « Resume reminders » restarts them. A dispute suspends them too."
+          },
+          "SENT": {
+            "Q": "Why are reminders « Sent » after payment?",
+            "A": "When the invoice is paid, the remaining reminders are stopped and marked as sent on that date, without any e-mail going out."
+          },
+          "DISPUTED": {
+            "Q": "Why can’t I collect a disputed invoice?",
+            "A": "No payment is accepted during a dispute. Resolve it first from the invoice file (« Resolve dispute »)."
+          },
+          "ERROR": {
+            "Q": "The file shows « Unable to load », why?",
+            "A": "The file reads the invoice: it also needs the right to view invoicing. Ask your administrator for it."
+          }
+        },
+        "APPROVAL_QUEUE": {
+          "WHAT": {
+            "Q": "What is the approval queue?",
+            "A": "The mandatory step between work declared on a project (WIP, progress, deliverables, TS) and the invoice: each request waits here for an approval, which creates the draft invoice."
+          },
+          "ORIGIN": {
+            "Q": "Where do the requests come from?",
+            "A": "From the WIP, TS WIP and Deliverables tabs of the project file: a declaration submitted, then confirmed with the amount accepted by the client, arrives here « Pending DF »."
+          },
+          "VALIDATE": {
+            "Q": "What happens when I approve?",
+            "A": "A draft invoice is created for the project’s client and opens to be completed (conditions, due date). The request becomes « Invoiced ». The invoice then follows the normal journey: submission, approval, issue."
+          },
+          "COMBINED": {
+            "Q": "Can I make a single invoice for several requests?",
+            "A": "Yes: tick them then « Validate selection ». They can be of different modes and projects (same country). Requests already handled are skipped, with a message."
+          },
+          "CLIENT": {
+            "Q": "Why am I asked to choose a client?",
+            "A": "The selection covers several projects: pick the client the combined invoice will be addressed to, among the projects’ clients or by search."
+          },
+          "LIVRABLE": {
+            "Q": "Why can’t some deliverable batches be selected?",
+            "A": "A batch selection can only cover one project: once a batch is ticked, the other projects’ batches are greyed out."
+          },
+          "RETURN": {
+            "Q": "What does « Return » do?",
+            "A": "The request goes back to its author with your reason (required), visible in its detail. A returned progress declaration can be corrected and resubmitted from the project file."
+          },
+          "UNDO": {
+            "Q": "I approved by mistake, how do I go back?",
+            "A": "As long as the draft invoice is not saved: « Cancel » in the invoice wizard (or leaving the page) deletes it and puts the request back in the queue. Once the invoice is saved, handle it in Invoices."
+          },
+          "CREDIT": {
+            "Q": "How do I approve a credit note?",
+            "A": "In its mode’s sub-tab, Credit notes section: « Validate » approves and issues it, « Return » sends it back. The right to manage invoicing is also needed."
+          },
+          "NOTHING": {
+            "Q": "My approval does nothing, why?",
+            "A": "The page does not show the server’s refusals yet. Open the request (click the line) and approve from its detail: the refusal reason shows there."
+          }
+        },
+        "APPROVAL_DETAIL": {
+          "NO_BUTTONS": {
+            "Q": "Why don’t « Validate » and « Return » show?",
+            "A": "They are only offered while the request is « Pending DF ». A request already invoiced or returned can only be viewed."
+          },
+          "AFTER": {
+            "Q": "What happens after « Validate »?",
+            "A": "The draft invoice opens in the invoice wizard. Save it (Draft or Submit); « Cancel » or leaving without saving cancels the approval."
+          },
+          "RETURNED": {
+            "Q": "Where do I see why a request was returned?",
+            "A": "In the identity card, « Return reason » box, and in the Activity log."
+          },
+          "CUMUL": {
+            "Q": "What does « Project total » mean?",
+            "A": "The total already invoiced and requested on the project, with its share of the budget: a way to see whether the request risks exceeding the contract."
+          }
+        },
+        "SUBCONTRACTING": {
+          "ST_NEW": {
+            "Q": "How do I add a subcontractor?",
+            "A": "Subcontractors tab, pick the entity then « New subcontractor ». Only the name is required; it must be unique among the entity’s active subcontractors."
+          },
+          "ST_OFF": {
+            "Q": "Why is deactivation refused?",
+            "A": "A subcontractor with In progress orders cannot be deactivated: suspend or close its orders first."
+          },
+          "ORDER_NEW": {
+            "Q": "How do I create a subcontracting order?",
+            "A": "ST Orders tab: search for and pick the project (it must be In progress), then « New ST order »: subcontractor of the same entity, scope, budget, currency and alert threshold. The reference is OST-<project>-<no.>."
+          },
+          "STATUS": {
+            "Q": "What are an order’s statuses?",
+            "A": "In progress, Suspended (can be resumed) and Closed, which is final. Costs can only be added to an In progress order."
+          },
+          "COST": {
+            "Q": "How do I enter a subcontracting cost?",
+            "A": "« Costs » on the order, then « Add a cost »: amount, date (not in the future) and description. Costs feed the order’s spent amount and the Subcontractors line of the P&L."
+          },
+          "OVERRUN": {
+            "Q": "When is an order over budget?",
+            "A": "When the spent amount exceeds the budget plus the alert threshold (10 % by default). It is flagged in the list and counted in the Over budget tile."
+          },
+          "MARGIN": {
+            "Q": "How is the margin computed?",
+            "A": "Payments received on the project’s invoices, minus subcontracting costs. Internal costs are not computed yet: the margin is therefore overstated."
+          },
+          "NO_BUTTONS": {
+            "Q": "Why don’t I see the create or edit buttons?",
+            "A": "They need a subcontracting management right. Ask your administrator for it; viewing remains possible."
+          }
+        },
+        "COSTS": {
+          "WHAT": {
+            "Q": "What is a cost invoice?",
+            "A": "A supplier invoice, or an expense with no supplier, entered with one or more lines (category, project, amount). Its reference is EXP-year-no., and each line EXP-…-01, -02…"
+          },
+          "LIFECYCLE": {
+            "Q": "What are the statuses?",
+            "A": "Draft, Submitted (awaiting approval), Approved, then Posted once the payment is entered. Returned, Validated, Cancelled and Rejected appear in the filter but are never produced: a refusal or a request for more information sends the invoice back to Draft."
+          },
+          "AUTO": {
+            "Q": "Why is my invoice approved as soon as I submit it?",
+            "A": "Its total in euros falls in level L1, approved automatically. The same happens when no approval threshold is configured for its amount."
+          },
+          "LEVELS": {
+            "Q": "How is the approval level set?",
+            "A": "From the total converted to euros and the configured thresholds (per category, otherwise for the entity). A strict-scrutiny category goes up one level; an invoice with several categories takes the highest level. L4 needs two approvers."
+          },
+          "REJECTED": {
+            "Q": "My invoice went back to draft, why?",
+            "A": "An approver asked for more information or refused it: their comment is in the file’s Approvals tab. Fix it, then submit it again."
+          },
+          "POSTED": {
+            "Q": "What does « Posted » mean?",
+            "A": "The invoice is paid: a payment was entered. Deleting the payment brings it back to Approved."
+          },
+          "KPIS": {
+            "Q": "Why do the tiles change with the page?",
+            "A": "They count the invoices of the page shown only. The search and the filters other than status also work on the page shown."
+          },
+          "SUPPLIER": {
+            "Q": "How do I see all of a supplier’s costs?",
+            "A": "Switch to the « suppliers » view (icon right of the search) and open the supplier’s card: its invoices and payment statement."
+          }
+        },
+        "COST_NEW": {
+          "REQUIRED": {
+            "Q": "What is required?",
+            "A": "The entity, the invoice date, the currency, at least one line (category, description, amount excl. tax of at least 0.01) and, with a supplier, its invoice number."
+          },
+          "DUPLICATE": {
+            "Q": "« Invoice … of this supplier is already entered »: what do I do?",
+            "A": "An invoice number can only be entered once per supplier. Look for the existing invoice in the list before creating another one."
+          },
+          "TAXES": {
+            "Q": "How are taxes computed?",
+            "A": "FODEC = excl. tax × rate; VAT = (VAT base + FODEC) × rate; stamp duty once per invoice; withholding tax deducted from the net payable when ticked; other taxes added to the total. The part outside the VAT scope stays in the cost without being taxed."
+          },
+          "NO_SUPPLIER": {
+            "Q": "Can I enter an expense with no supplier?",
+            "A": "Yes: leave the supplier empty. No FODEC, stamp duty or withholding tax; enter the VAT as an amount on each line."
+          },
+          "CATEGORY": {
+            "Q": "Why isn’t a category offered?",
+            "A": "Some categories are fed automatically (by payroll for instance): manual entry is not allowed for them."
+          },
+          "RATE": {
+            "Q": "Saving fails on a foreign currency, why?",
+            "A": "Amounts are converted to euros on save: an exchange rate must be configured for that currency. The circuit preview may still show. Ask an administrator to add the rate."
+          },
+          "ATTACH": {
+            "Q": "Which attachments can I add?",
+            "A": "PDF, JPEG or PNG, 10 MB max per file. Add them in the form: the file only lets you download them."
+          }
+        },
+        "COST_EDIT": {
+          "WHICH": {
+            "Q": "Which invoices can I edit?",
+            "A": "A draft. A submitted invoice must first be sent back to draft by an approver (« More information »). An approved or paid invoice can only be edited with the CFO right."
+          },
+          "DAF": {
+            "Q": "How does the CFO edit work?",
+            "A": "« Edit (CFO) » on the file, then a justification of at least 5 characters. Status and payment stay; every change shows in « Change history ». An edit with no change at all is refused."
+          }
+        },
+        "COST_DETAIL": {
+          "PAY": {
+            "Q": "How do I pay a cost invoice?",
+            "A": "« New payment » on an approved invoice: amount (suggested at the net payable), date and method. The invoice becomes Posted, whatever the amount entered."
+          },
+          "PAY_TWICE": {
+            "Q": "« This invoice already has a payment »: what do I do?",
+            "A": "An invoice has only one payment. Edit or delete it in the Payment tab before entering another."
+          },
+          "ATTACH": {
+            "Q": "How do I add an attachment?",
+            "A": "From the invoice form (« Edit » on a draft). The file lets you download them, and delete them on a draft."
+          },
+          "REMINDERS": {
+            "Q": "What are the reminders for?",
+            "A": "To warn internally before the due date of an approved, unpaid invoice. They go out every morning by e-mail; suspend them from the Reminders tab."
+          },
+          "FIX": {
+            "Q": "How do I correct an approved invoice?",
+            "A": "With the CFO right: « Edit (CFO) », with a justification. Otherwise, ask an approver or the CFO."
+          }
+        },
+        "COST_SUPPLIER": {
+          "LEDGER": {
+            "Q": "How do I read the supplier statement?",
+            "A": "Each paid invoice compares the amount paid to the net payable: overpaid = debit, underpaid = credit. The running balance tells whether you still owe the supplier money (credit) or it owes you (debit)."
+          },
+          "UNPAID": {
+            "Q": "Why isn’t an approved invoice in the statement?",
+            "A": "The statement only lists paid invoices. Enter its payment (« New payment ») for it to show."
+          }
+        },
+        "COST_UNASSIGNED": {
+          "WHY": {
+            "Q": "What does « No supplier » hold?",
+            "A": "Expenses entered with no supplier. They have no payment statement; attach a supplier by editing the invoice while it is a draft."
+          }
+        },
+        "COST_APPROVAL": {
+          "WHAT": {
+            "Q": "What does this queue hold?",
+            "A": "Submitted cost invoices, hiring requests costed by HR and salary advances validated by HR, depending on your rights."
+          },
+          "LEVELS": {
+            "Q": "What do levels L1 to L4 mean?",
+            "A": "L1: automatic approval (never arrives here). L2 and L3: one approval. L4: two approvals by two different people. The level depends on the total in euros and the thresholds."
+          },
+          "L4": {
+            "Q": "I approved, but the invoice stays in the queue, why?",
+            "A": "It is level L4: a second approval, by another person, is needed."
+          },
+          "DECISIONS": {
+            "Q": "More information or Refuse?",
+            "A": "Both send the invoice back to its author as a draft. « More information » asks for details; « Refuse » requires a comment explaining the refusal."
+          },
+          "HIRING": {
+            "Q": "How do I decide on a hiring request?",
+            "A": "Approve the salary cost, or refuse it, optionally proposing another salary, with a comment. « View candidate » opens their file."
+          },
+          "ADVANCES": {
+            "Q": "Who pays the salary advance?",
+            "A": "After your approval, payroll pays it out. A refused advance is final; a reason is required."
+          },
+          "EMPTY": {
+            "Q": "The queue is empty while invoices are submitted, why?",
+            "A": "Viewing and deciding need the rights to view and manage costs. Ask your administrator for them."
+          }
+        },
+        "COST_MISSIONS": {
+          "FLOW": {
+            "Q": "Where do mission orders come from?",
+            "A": "A manager creates the mission; HR fills in the expenses and validates it; it arrives here for the finance decision (approved or refused)."
+          },
+          "TOTAL": {
+            "Q": "How is the cost computed?",
+            "A": "Allowances + lodging + ticket + visa + insurance + other fees. The cash advance is not added to the total."
+          },
+          "REJECT": {
+            "Q": "Can I refuse a mission?",
+            "A": "Yes, « Refuse » with a required reason. The mission becomes « Refused by finance »."
+          },
+          "COST": {
+            "Q": "Does an approved mission create a cost invoice?",
+            "A": "No: approval creates no cost line. Actual expenses are entered as cost invoices."
+          }
+        },
+        "RATES": {
+          "WHAT": {
+            "Q": "What is a rate scale for?",
+            "A": "To compute each time & materials employee’s interco rate and selling rate from their costs. The latest validated scale applies."
+          },
+          "STEPS": {
+            "Q": "In which order?",
+            "A": "« + New scale » (Draft) → « Auto-fill from formula » → « Compute » (Computed) → « Validate » (Validated, locked)."
+          },
+          "AUTO": {
+            "Q": "Where do the auto-fill amounts come from?",
+            "A": "From the period’s paid cost invoices, split according to the entity’s cost formula, plus employees’ direct costs. Lines added by hand are left untouched."
+          },
+          "METHODS": {
+            "Q": "Per headcount, fixed amount or direct?",
+            "A": "Per headcount: the category total divided by the number of employees. Fixed amount: an amount per month. Direct: the costs tied to the employee themselves."
+          },
+          "LOCKED": {
+            "Q": "Can I change a validated scale?",
+            "A": "No, a validated scale is locked. Create a new scale for another period."
+          }
+        },
+        "EMPLOYEE_COSTS": {
+          "WHAT": {
+            "Q": "What is an employee cost?",
+            "A": "An employee’s cost over a period: base cost to the company, internal and external selling cost. It feeds time & materials and rate scales."
+          },
+          "CALC": {
+            "Q": "How are the three amounts linked?",
+            "A": "Enter one of the three: internal = base × 1.1 and external = base × 1.2. The external cost can be adjusted by hand."
+          },
+          "EXPIRED": {
+            "Q": "Why is a cost « Expired »?",
+            "A": "Only an employee’s latest period is « Active »; earlier ones become « Expired », whatever today’s date."
+          },
+          "OVERLAP": {
+            "Q": "Why is the new period refused?",
+            "A": "Two periods of the same employee cannot overlap, and the start date must come before the end date."
+          },
+          "SOURCE": {
+            "Q": "Where do employee costs come from?",
+            "A": "From entry on this page, and from the time & materials project wizard, which saves each resource’s rate until year end."
+          }
+        },
+        "EMPLOYEE_COST_HISTORY": {
+          "NORMALIZED": {
+            "Q": "What is an automatic status change?",
+            "A": "When a new period is added, the previous one automatically becomes « Expired »: the history records it as a separate event."
+          }
+        },
+        "SUPPLIERS": {
+          "MISSING": {
+            "Q": "I can't find a supplier, why?",
+            "A": "It may be deactivated: choose « Deactivated » or « All » in the Status filter. The list also shows only your entity's suppliers; one created for another country does not appear."
+          },
+          "KPIS": {
+            "Q": "The indicators don't change when I filter, is that normal?",
+            "A": "Yes: they describe the entity's whole active register, whatever the search, filters and page shown."
+          },
+          "COUNTRIES": {
+            "Q": "Why is « Countries covered » 1?",
+            "A": "The list is limited to your entity's suppliers, so a single country: the indicator is at most 1."
+          },
+          "IBAN": {
+            "Q": "What is the IBAN for?",
+            "A": "For bank-transfer payments. The indicators and the « IBAN » filter spot the suppliers to complete."
+          },
+          "NO_BUTTON": {
+            "Q": "I don't see « New supplier »",
+            "A": "Creating, editing or deactivating a supplier requires the right to manage costs. Viewing requires the right to view costs."
+          }
+        },
+        "SUPPLIER_NEW": {
+          "REQUIRED": {
+            "Q": "Which fields are mandatory?",
+            "A": "Company name, country and type, on the first step. Tax details and the IBAN can be completed later."
+          },
+          "CODE": {
+            "Q": "How is the supplier code assigned?",
+            "A": "Automatically on creation, with a prefix that depends on the country. It is not entered."
+          },
+          "TVA": {
+            "Q": "Creation fails on the VAT number",
+            "A": "The VAT number must be unique across the whole register, all countries. Check it isn't already held by another supplier, possibly deactivated."
+          },
+          "PROFILE": {
+            "Q": "Which calculation profile should I choose?",
+            "A": "« Standard » for most suppliers: each line is entered net with a rate. « Travel agency »: each line is entered as printed (gross, VAT base, rate), the rest (ticket) being outside VAT and withholding."
+          },
+          "COUNTRY": {
+            "Q": "I can't find the supplier I created in the list",
+            "A": "The list shows only your entity's suppliers: if it was created for another country, it does not appear."
+          }
+        },
+        "SUPPLIER_EDIT": {
+          "COUNTRY": {
+            "Q": "Why is the country greyed out?",
+            "A": "The supplier's code depends on its country: it can no longer change after creation."
+          },
+          "SAVED": {
+            "Q": "Are my changes saved step by step?",
+            "A": "No, only by « Save » on the last step. « Cancel » or leaving the page discards the changes."
+          },
+          "INACTIVE": {
+            "Q": "I can't edit this supplier",
+            "A": "A deactivated supplier can no longer be edited from its record, and editing requires the right to manage costs."
+          }
+        },
+        "SUPPLIER_DETAIL": {
+          "REACTIVATE": {
+            "Q": "How do I reactivate a supplier?",
+            "A": "Not possible for now: deactivation is final. Its invoices and history remain viewable."
+          },
+          "DELETE": {
+            "Q": "Can a supplier be deleted?",
+            "A": "No, only deactivated: its cost invoices and statement are kept."
+          },
+          "TOTAL": {
+            "Q": "What does the gross total count?",
+            "A": "All its cost invoices, whatever their status (drafts included), converted to euros."
+          },
+          "LEDGER": {
+            "Q": "An invoice is missing from the statement",
+            "A": "The statement shows only paid invoices. A draft, submitted or approved invoice not yet paid isn't there; it is in the Invoices tab."
+          },
+          "BALANCE": {
+            "Q": "How do I read the balance?",
+            "A": "It is the balance of the last statement entry: « Balance due » what remains to pay, « Overpaid » what was paid in excess. Amounts are in the invoice currency, without conversion."
+          },
+          "PAY": {
+            "Q": "Where do I pay one of the supplier's invoices?",
+            "A": "From the invoice's record (a click in the Invoices tab): submission, approval and payment happen there."
+          }
+        },
+        "REPORTING": {
+          "OPEN_MONTH": {
+            "Q": "Why doesn't the current month count in the indicators?",
+            "A": "A period's amounts are only frozen when it is closed: the indicators sum closed periods only."
+          },
+          "REVENUE": {
+            "Q": "Where does revenue come from?",
+            "A": "From issued, sent, partially paid or paid invoices whose issue date falls in the month, net of VAT. Costs come from paid cost invoices, subcontracting and the manual inputs entered at closing."
+          },
+          "CLOSE": {
+            "Q": "What do I enter at closing?",
+            "A": "The month's amounts that come from no module: intercompany, intersede, prior-year WIP, salary and other cost recharges. All are optional and default to zero."
+          },
+          "GENERATE": {
+            "Q": "I don't see « Generate report »",
+            "A": "The button only appears on a closed period without a report, and requires the right to manage the P&L."
+          },
+          "NEW_PERIOD": {
+            "Q": "I can't create a period",
+            "A": "« New period » requires the right to manage costs, and there is only one period per country and month."
+          },
+          "FX": {
+            "Q": "Do amounts change with the exchange rate?",
+            "A": "A period's figures are frozen when it is closed. Before closing, they are computed with the exchange rate configured at computation time."
+          }
+        },
+        "PL_BUDGET": {
+          "USE": {
+            "Q": "What is the reference budget for?",
+            "A": "To compute each line's budget vs actual variance in the P&L reports' Recap."
+          },
+          "WHEN": {
+            "Q": "Does changing the budget change existing reports?",
+            "A": "No: a report takes the budget when it is generated. Only a report generated later (or a new version) sees the changed budget."
+          },
+          "APPROVAL": {
+            "Q": "Must the budget be approved to be used?",
+            "A": "No: reports use the latest saved budget, approved or not. The Country Director and Group approvals record its validation."
+          },
+          "READONLY": {
+            "Q": "I can't type in the grid",
+            "A": "Entry requires the right to manage the P&L; approvals, the right to administer it."
+          }
+        },
+        "PL_CALENDAR": {
+          "BLOCK": {
+            "Q": "What happens if the deadline is missed?",
+            "A": "Nothing automatic: the deadline is indicative. It does not block submission and sends no reminder."
+          },
+          "EDIT": {
+            "Q": "I can't change the dates",
+            "A": "Changing them requires the right to administer the P&L; otherwise dates are read-only."
+          },
+          "CLEAR": {
+            "Q": "How do I clear a deadline?",
+            "A": "Not possible from the screen: you can only replace it with another date."
+          }
+        },
+        "REPORT_DETAIL": {
+          "WORKFLOW": {
+            "Q": "What is a report's circuit?",
+            "A": "Draft → Submitted (preparer) → Endorsed by the Country Director → Accepted by the Group. At Submitted or Endorsed, an amendment sends it back to preparation."
+          },
+          "NO_ACTION": {
+            "Q": "Why do I have no action button?",
+            "A": "Each step requires its own right: submit (manage the P&L), endorse (Country Director), accept and reopen (Group). The card says when no action is yours."
+          },
+          "AMENDED": {
+            "Q": "My report came back to preparation, why?",
+            "A": "An amendment was requested at endorsement or acceptance. The reason is kept in the history; correct it then submit again."
+          },
+          "REOPEN": {
+            "Q": "Which reopening method should I choose?",
+            "A": "« New version » archives the report and creates a recomputed draft. « Correction next month » creates no version: the difference will be absorbed by the next period."
+          },
+          "VARIANCE": {
+            "Q": "How is the variance computed?",
+            "A": "(Actual − budget) / |budget|, on the reference budget as it was when the report was generated. A positive variance is not necessarily favourable: on a cost line, it means an overrun."
+          },
+          "COMMENTS": {
+            "Q": "Are commentaries required to submit?",
+            "A": "No, submission does not require them. A text is proposed for each line; reuse it to explain significant variances."
+          },
+          "EXPORT": {
+            "Q": "What does the full workbook contain?",
+            "A": "The month's 7 P&L reporting sheets, in a single Excel file."
+          }
+        },
+        "TREASURY": {
+          "BALANCE": {
+            "Q": "Is the cumulative my bank balance?",
+            "A": "No: the module knows no opening balance. The cumulative is the expected change from today; add it to your current bank balance."
+          },
+          "IN": {
+            "Q": "Which invoices are in the receipts?",
+            "A": "Issued, sent or partially paid invoices, for their remaining amount, that have a due date. Credit notes, disputed invoices and those without a due date are not."
+          },
+          "OUT": {
+            "Q": "Which expenses are in the payments?",
+            "A": "Submitted, approved or paid cost invoices, for their net payable less recorded payments. Drafts and rejected ones are not, nor salaries or taxes."
+          },
+          "OLD": {
+            "Q": "An old receivable disappeared from the page",
+            "A": "Due dates passed by more than 90 days are no longer included: it is then a collection matter, to follow in the Collections module."
+          },
+          "RATE": {
+            "Q": "A banner mentions a missing exchange rate",
+            "A": "Flows in a currency without a configured rate are excluded from all totals. Add the rate in Administration › Currencies to bring them back."
+          },
+          "PAID_COST": {
+            "Q": "An expense already paid still appears",
+            "A": "A cost invoice stays due until its payment is recorded on its record. Record the payment to remove it from the projection."
+          },
+          "ENTITY": {
+            "Q": "Can I see another entity's treasury?",
+            "A": "No: the page shows the entity linked to your account, without a selector."
+          }
+        },
+        "ADMIN": {
+          "TABS_MISSING": {
+            "Q": "I don't see all the tabs",
+            "A": "They depend on your rights: Permissions, Templates, WIP e-mails and Audit require super-admin; Cost configuration and Entity currency, cost administration; Customer reminders, viewing payments; Supplier reminders, viewing costs."
+          },
+          "RATE": {
+            "Q": "A currency is missing from totals",
+            "A": "Add its rate in the Exchange rates tab. Until then, amounts in that currency are left out of totals (treasury, P&L) and the approval preview uses 1."
+          },
+          "REFRESH": {
+            "Q": "Do rates update by themselves?",
+            "A": "Only if auto-refresh is on in the Rates API tab: working days at 8 am. Otherwise use the manual refresh or enter the rates."
+          },
+          "REMINDERS": {
+            "Q": "When do customer reminders go out?",
+            "A": "Every day at 8 am, for steps that are due. A step change applies to new invoices and those whose due date changes; reminders already sent stay as they are."
+          },
+          "SEND_NOW": {
+            "Q": "Does « Trigger now » send real e-mails?",
+            "A": "Yes: it triggers the due reminders immediately, with real sending to recipients."
+          },
+          "PERMISSIONS": {
+            "Q": "A permission I added doesn't work yet",
+            "A": "Rights are read at sign-in: the user must sign in again to get it."
+          },
+          "AUDIT": {
+            "Q": "Are all changes in the Audit?",
+            "A": "No: the Audit tab shows the history of Finance data. Settings changes (lists, rates, reminder rules, templates, WIP e-mails) are not there."
+          },
+          "GLOBAL": {
+            "Q": "What does a « Global » value mean?",
+            "A": "It applies to all entities. Editing or deactivating it here only affects the chosen entity; a value added here only exists for that entity."
+          },
+          "HELP_FAQ": {
+            "Q": "How do I add a question to the assistant?",
+            "A": "« Assistant & FAQ » tab (super-admin): « New question », choose the page, type the question and answer in French (English is optional), then publish it. It shows at the top of the page's FAQ, in « Help & guides » and in the assistant."
+          }
+        },
+        "ADMIN_ROLES": {
+          "DELAY": {
+            "Q": "My changes aren't visible to the user",
+            "A": "Rights are read at sign-in: they must sign in again."
+          },
+          "LOCKOUT": {
+            "Q": "Can I remove my own rights?",
+            "A": "Yes, nothing stops you: do not remove super-admin from your own role, or you would lose access to this screen."
+          },
+          "NEW_ROLE": {
+            "Q": "How do I create or assign a role?",
+            "A": "In the HR module: this screen only manages existing roles' Finance permissions."
+          }
+        },
+        "ADMIN_DOC_TEMPLATES": {
+          "USED": {
+            "Q": "Where is the template used?",
+            "A": "Today, only for the PDF preview of a progress (AV) invoice draft."
+          },
+          "ACTIVE": {
+            "Q": "Which one is used if several are active?",
+            "A": "The last one modified. Explicitly activate the one you want: activation deactivates the other templates of the same type."
+          },
+          "VARS": {
+            "Q": "A variable shows as-is in the PDF",
+            "A": "Check its spelling: only the variables in the right-hand list are replaced. Insert them with a click rather than by hand."
+          },
+          "PREVIEW": {
+            "Q": "The preview shows mock data",
+            "A": "The « Invoice ID » field is empty: enter a real invoice id to see its data."
+          }
+        }
+      },
+      "CHAT": {
+        "NAME": "Assistant",
+        "TAGLINE": "Answers from the FAQ and documentation",
+        "OPEN": "Open the assistant",
+        "ASK": "Ask a question",
+        "OPEN_PAGE": "Open the page",
+        "TITLE": "Ask your question",
+        "HELLO": "Hello! What would you like to do? Type your question, or pick one below.",
+        "PLACEHOLDER": "E.g. how is the RAF computed?",
+        "SEND": "Send",
+        "CLEAR": "Clear the conversation",
+        "NO_ANSWER": "I couldn't find an answer to this question. Try other words, or browse the frequently asked questions below.",
+        "SOURCE": "Source: {{page}} › {{kind}}",
+        "START_GUIDE": "Start the guide",
+        "SEE_ALSO": "See also",
+        "HELPFUL": "Did this answer help?",
+        "YES": "Yes, this answer helps",
+        "NO": "No, this answer doesn't help",
+        "THANKS": "Thanks for your feedback.",
+        "GREETING": "Hello! I'm the Finance assistant. Ask me a question about the app, for example « how do I create an invoice? », or pick one below.",
+        "NOTHING_FOR": "I found nothing for « {{text}} ».",
+        "DID_YOU_MEAN_ONE": "Did you mean « {{word}} »?",
+        "YES_SHORT": "Yes",
+        "NO_SHORT": "No",
+        "DID_YOU_MEAN_MANY": "Did you mean:",
+        "NONE_OF_THEM": "None of these"
+      },
+      "KIND_FAQ": "Frequently asked question",
+      "KIND_DOC": "Documentation"
+    },
+    "AFFAIRES": {
+      "INTRO_TITLE": "The projects list",
+      "INTRO_TEXT": "Every project of the portfolio: budget, remaining to invoice (RAF) and status of each one. Follow the guide for a quick tour.",
+      "NEW_TITLE": "Create a project",
+      "NEW_TEXT": "« New project » opens the creation wizard, step by step. The project stays a draft until the wizard is validated, then becomes « In progress ». Reserved to people who manage projects.",
+      "KPIS_TITLE": "Portfolio indicators",
+      "KPIS_TEXT": "Active projects (« In progress »), total remaining (RAF), total budget and « Suspended » projects. They cover every project of the filter, not only the page shown; the note under the figure reads « all projects » or « filters applied ».",
+      "TOOLBAR_TITLE": "Search and filter",
+      "TOOLBAR_TEXT": "Search by reference or title. « Filters » narrows by status, client, country, manager, billing mode or start date. The buttons on the right switch between cards and table.",
+      "LIST_TITLE": "The projects",
+      "LIST_TEXT": "Click a project to open its file. A card shows budget, RAF, invoiced and WIP. The bin only shows on drafts. Coming back from the file, you find your filters, sort and page again.",
+      "STATUS_TITLE": "Project statuses",
+      "STATUS_TEXT": "Draft: creation started, not validated yet — the only status that can be deleted. Configured: set up, not in progress yet. In progress: the active project, the only one accepting new extra works. Suspended: no more invoicing. Closed: no invoicing nor changes. Archived: kept for history, no changes."
+    },
+    "AFFAIRE_NEW": {
+      "INTRO_TITLE": "Create a project",
+      "INTRO_TEXT": "The wizard creates the project in 6 steps. The guide shows them one by one without saving anything: when it closes, the wizard is back where you left it.",
+      "RAIL_TITLE": "Progress",
+      "RAIL_TEXT": "The rail shows where you are. A step already passed reopens with a click; the next ones stay locked until the previous one is complete.",
+      "NEXT_TITLE": "Next and Activate",
+      "NEXT_TEXT": "« Next » saves the step and moves on; it stays greyed out while the step is incomplete. Once step 2 is passed, the project exists as a draft. On the last step, « Activate project » sets it « In progress » and locks its billing mode.",
+      "HEADER_TITLE": "The summary",
+      "HEADER_TEXT": "Under the title, chips sum up what was entered: entity, client, billing mode and budget. The reference shows as soon as it exists.",
+      "DRAFTS_TITLE": "Resume later",
+      "DRAFTS_TEXT": "You can leave the wizard at any time after step 2: the project stays a draft. This link opens the list of drafts; open yours to pick up where you left off.",
+      "DOC": {
+        "S1_TITLE": "1. Origin",
+        "S1_TEXT": "Optional. Search a DOC360 or Interco project to link the project to its contract documents and reuse its base data. With no project to link, go straight to the next step.",
+        "S2_TITLE": "2. General information",
+        "S2_TEXT": "Entity (suggested from your country, editable until creation), client with validated KYC, title, billing mode, forecast budget (> 0), contract currency and at least one client contact — the one who will receive the invoices. « Next » creates the project as a draft.",
+        "S3_TITLE": "3. Billing",
+        "S3_TEXT": "Depending on the mode: fixed price — CTR / BPE / TQC split adding up to exactly 100 %; time & materials — at least one resource with a rate above 0; deliverables — at least one saved deliverable. The mode can no longer change after activation.",
+        "S4_TITLE": "4. Managers",
+        "S4_TEXT": "Add each manager with an activity and an allocated budget (> 0). A manager cannot have the same activity twice, and the allocations must add up to exactly the forecast budget.",
+        "S5_TITLE": "5. Schedule",
+        "S5_TEXT": "Billing start date and contract duration in months. The date can be in the future: it triggers the first issue.",
+        "S6_TITLE": "6. Summary",
+        "S6_TEXT": "Check each section; a passed step reopens from the rail. « Activate project » checks everything, sets the project « In progress » and opens its file."
+      }
+    },
+    "AFFAIRE_DETAIL": {
+      "PAGE": "Project file",
+      "INTRO_TITLE": "A project file",
+      "INTRO_TEXT": "Everything about a project in one place: its details on the left, its indicators and tabs on the right. This guide walks you through it; the tabs open on their own, and you get your tab back at the end.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The title, the reference and the client. The badges show the status (Draft, In progress, Suspended, Closed…), the budget health (Optimal, Watch, Critical) and « Budget not validated » until the budget is validated. The « Projects » breadcrumb takes you back to the list.",
+      "DETAILS_TITLE": "Details",
+      "DETAILS_TEXT": "The client, with the contract's entity and currency, then the contract (start date, budget, billing mode, budget validated, references), the selling entities, the managers, the client contacts and the notes.",
+      "ACTIONS_TITLE": "Quick actions",
+      "ACTIONS_TEXT": "« New invoice » opens invoicing for this project, « New additional work » declares additional work, « Add expenses » records reimbursable expenses. At the bottom: « Edit project » (« Complete draft » for a draft) and the status badge, which you click to change it. « Validate budget » shows until it is validated, « Delete draft » only on a draft. The buttons shown depend on your rights.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Backlog (what is left of the contract to invoice), Total invoiced (invoices not yet collected), Total collected (fully paid invoices), WIP (declared work) and TS (additional work added to the budget). Each tile’s (i) gives its exact calculation.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "One part of the project per tab; the number is the count of TS, invoices or payments. WIP, Resources and Expense only show for some billing modes. The open tab is kept in the address (?tab=…): F5 or a shared link reopens the same one.",
+      "OVERVIEW_TITLE": "Overview: the charts",
+      "OVERVIEW_TEXT": "Three charts: Invoicing, WIP and Payments. Click a name to show it, Ctrl + click to combine several. « Filters » sets the period (current year by default), the granularity and the per-period or cumulative view; the (i) explains the chart shown. Clicking a bar opens that period’s invoices, payments or WIP. The chosen chart is kept in the address (cc=PAYMENTS for Payments).",
+      "TS_TITLE": "Additional work",
+      "TS_TEXT": "The project’s TS: work sold on top of the contract. A TS goes through technical then commercial validation, then joins the budget automatically (it raises the remaining-to-invoice). A row’s ⋮ menu offers the allowed actions: validate, edit or delete before the validations, view, history. A TS can only be created on an In progress project.",
+      "TS_WIP_TITLE": "TS WIP",
+      "TS_WIP_TEXT": "The progress of integrated or invoiced TS: pick a TS, declare the period’s progress (as a % or an amount), submit it, then enter the amount confirmed by the client. The history keeps every declaration.",
+      "WIP_TITLE": "WIP",
+      "WIP_TEXT": "The work in progress to validate before invoicing, by mode: Lump Sum, the cumulative progress rate (as a % or an amount); Time & Materials, the period’s Timesheet hours; Deliverables, each deliverable’s progress. Each declaration is submitted, then confirmed by the client.",
+      "RESSOURCES_TITLE": "Resources",
+      "RESSOURCES_TEXT": "Time & Materials project: the billed employees and their rate. « Add a resource », change a rate or deactivate a resource; a locked rate (🔒) can no longer be changed.",
+      "DEPENSE_TITLE": "Expense",
+      "DEPENSE_TEXT": "Read only: the hours logged in Timesheet on the project and their estimated internal cost, per employee, with filters and Excel export.",
+      "INVOICES_TITLE": "Invoices",
+      "INVOICES_TEXT": "The project’s invoices, with search, filters and export. « View » shows the details; « Edit » is only possible on a draft or returned invoice, and opens the invoice in « Invoices ».",
+      "PAYMENTS_TITLE": "Payments",
+      "PAYMENTS_TEXT": "The payments received on the project’s invoices (date, invoice, method, reference, amount), read only. A payment is recorded from the invoice, with « Record a payment »; « Edit » opens « Collections ».",
+      "EXPENSES_TITLE": "Expenses",
+      "EXPENSES_TEXT": "The project’s reimbursable expenses, whatever its billing mode. They are entered with « Add expenses »; those with the right validate or reject them here.",
+      "DRAWER_TITLE": "Deadlines & activity",
+      "DRAWER_TEXT": "This button opens the panel of upcoming deadlines, alerts (remaining-to-invoice threshold) and recent activity of the project. A dot on the button signals an alert.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide any time from « Help & guides », at the bottom of the menu, or ask the assistant."
+    },
+    "AFFAIRE_EDIT": {
+      "PAGE": "Editing a project",
+      "INTRO_TITLE": "Edit a project",
+      "INTRO_TEXT": "Editing reuses the creation wizard, without the Origin step: General info, Billing, Managers, Schedule and Summary. The guide previews each step without saving anything; when it closes, you are back on the step you were on.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The « Edit project » title, with the reference and the name. The badges sum up the project (entity, client, billing mode, budget) and follow your changes.",
+      "RAIL_TITLE": "The steps",
+      "RAIL_TEXT": "The rail has five steps: the DOC360 origin can no longer change. On an active project, every step is open: click straight on the one to fix. On a draft you are completing, the steps unlock one by one, as at creation.",
+      "S2_TITLE": "General info",
+      "S2_TEXT": "Name, client, client contacts, billing mode, planned budget, currency, billing period, references and notes. The entity is « set at creation »: only an administrator can correct it. The billing mode can still change; the new mode is configured in the Billing step.",
+      "S3_TITLE": "Billing",
+      "S3_TEXT": "The mode’s configuration: lump sum — CTR / BPE / TQC split adding up to exactly 100%; time & materials — the resources and their rate; deliverables — the list of deliverables. On an active project, existing resources are updated, not recreated.",
+      "S4_TITLE": "Managers",
+      "S4_TEXT": "The managers, their activity and their allocated budget (> 0). The allocations must add up to exactly the planned budget: if you changed the budget in General info, adjust them here.",
+      "S5_TITLE": "Schedule",
+      "S5_TEXT": "Billing start date, contract length in months and first due date. The contractual end date is recomputed from the start date and the length.",
+      "S6_TITLE": "Summary",
+      "S6_TEXT": "Review the project. On an active project, « Save » takes you back to its file: the steps were already saved one by one. On a draft, « Activate project » checks everything and moves it to « In progress ».",
+      "NEXT_TITLE": "Next saves",
+      "NEXT_TEXT": "« Next » saves the step shown straight away, then moves to the next one. It stays greyed out while the step is incomplete; the message under the form says what is missing. There is no overall save at the end.",
+      "BACK_TITLE": "Previous and Cancel",
+      "BACK_TEXT": "« Previous » goes back one step. On the first step, « Cancel » takes you back to the project list. Only the input of the step shown is lost: the steps confirmed with « Next » stay saved.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "CLIENTS": {
+      "PAGE": "Clients",
+      "INTRO_TITLE": "Client management",
+      "INTRO_TEXT": "The portfolio of invoiced clients: their revenue, their KYC and their projects in progress. This guide tours the page.",
+      "NEW_TITLE": "New client",
+      "NEW_TEXT": "Opens the client creation wizard. The code and the name must be unique within the entity. The button only shows with the right to manage invoicing.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Total Clients counts every client found (under the figure: the filtered country, else « All countries »). KYC Validated, Total Revenue and Active Clients only cover the page shown (« Current page »); Total Revenue is converted to euros to add up different currencies.",
+      "TOOLBAR_TITLE": "Search and filter",
+      "TOOLBAR_TEXT": "The search covers the client’s name, code and tax / VAT number. « Filters » combines sector, status (active / inactive), KYC status, client country, default currency and active projects. The icons on the right switch between cards and table; in the table, click a header to sort.",
+      "LIST_TITLE": "The list",
+      "LIST_TEXT": "Each client shows its code, its sector or country, its total revenue (in its currency), its active projects (In progress), its payment terms in days and its country. A click opens its file. Back from the file, your filters, sort, page and view are kept.",
+      "STATE_TITLE": "A client’s status",
+      "STATE_TEXT": "A single badge: « Inactive » if the client is deactivated, else « KYC Validated » or « KYC pending ». A project can only be created for a client with a validated KYC. The KYC is validated, and the client deactivated, from its file.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "CLIENT_NEW": {
+      "PAGE": "New client",
+      "INTRO_TITLE": "Create a client",
+      "INTRO_TEXT": "The wizard creates the client in 3 steps: Identification, Company details, Commercial terms. The guide shows them one by one without saving anything; when it closes, the wizard is where you left it.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The client’s name shows under the title as soon as it is typed; the badges sum up the input (industry, city, currency). The « Clients » breadcrumb goes back to the list.",
+      "RAIL_TITLE": "Progress",
+      "RAIL_TEXT": "The rail shows where you are. A step already seen reopens with a click; the next ones stay locked until you reach them with « Next ».",
+      "S1_TITLE": "Identification",
+      "S1_TEXT": "Client name and industry (required), client code and Tax ID / VAT. At creation, leave the code empty to have it generated. The code and the name must be unique within the entity.",
+      "S2_TITLE": "Company details",
+      "S2_TEXT": "The company’s address (address, city, postal code, country of origin, website), then its contacts: at least one, with a name. They are the ones attached to projects and receiving invoices; without an e-mail address, a contact receives no invoice. Only one contact is « primary ».",
+      "S3_TITLE": "Commercial terms",
+      "S3_TEXT": "Payment term in days (0 to 365, 30 by default), default currency (TND, EGP, EUR or USD) and internal notes.",
+      "NEXT_TITLE": "Next and Create client",
+      "NEXT_TEXT": "« Next » moves to the next step; nothing is saved yet. The client is created, with its contacts, in one go with « Create client » on the last step, which then opens its file. Its KYC is then « pending ».",
+      "BACK_TITLE": "Previous and Cancel",
+      "BACK_TEXT": "« Previous » goes back one step without losing anything. On the first step, « Cancel » goes back to the list: the input was not saved, so it is lost.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "CLIENT_EDIT": {
+      "PAGE": "Editing a client",
+      "INTRO_TITLE": "Edit a client",
+      "INTRO_TEXT": "Editing reuses the creation wizard, prefilled: Identification, Company details, Commercial terms. The guide previews each step without saving anything.",
+      "RAIL_TITLE": "The steps",
+      "RAIL_TEXT": "Every step is open: click straight on the one to fix in the rail.",
+      "S2_TITLE": "Company details and contacts",
+      "S2_TEXT": "The company’s address, then its contacts: add, edit or remove a contact. A removed contact is deactivated (it stays in the invoice history). Removal is refused for the primary contact or for a contact attached to a project in progress.",
+      "NEXT_TITLE": "Save",
+      "NEXT_TEXT": "« Next » moves from one step to the next without saving. Everything is saved at the end with « Save »: the client first, then its contacts one by one; you then go back to its file.",
+      "BACK_TITLE": "Previous and Cancel",
+      "BACK_TEXT": "« Previous » goes back one step. On the first step, « Cancel » goes back to the client’s file without saving anything."
+    },
+    "CLIENT_DETAIL": {
+      "PAGE": "Client file",
+      "INTRO_TITLE": "A client’s file",
+      "INTRO_TEXT": "Everything about a client in one place: its identity and actions on the left, its figures and tabs on the right. This guide tours it; the tabs open by themselves, and you get yours back at the end.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The client’s name, with its code, country and industry. The badges give its status (Inactive, KYC Validated or KYC pending) and its payment term. The « Clients » breadcrumb goes back to the list, with your filters.",
+      "IDENTITY_TITLE": "Identity",
+      "IDENTITY_TEXT": "Code, country, address, industry, currency, payment term, Tax ID / VAT, website (clickable) and internal notes.",
+      "ACTIONS_TITLE": "Quick actions",
+      "ACTIONS_TEXT": "« New invoice » opens invoicing for this client. « Approve KYC » (or « Revoke KYC »), « Edit client » and « Block client » (or « Reactivate client ») need the right to manage invoicing.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Projects (all its projects, including those in progress), Total invoiced (excluding drafts and cancelled invoices), Collected (payments received) and Outstanding (invoiced minus collected), in the client’s currency.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "Overview, Contacts and Audit trail. The open tab is kept in the address (?tab=…): F5 or a shared link reopens the same one.",
+      "OVERVIEW_TITLE": "Overview",
+      "OVERVIEW_TEXT": "The KYC approval card (date and author, or a reminder if missing), the related projects (Total, In progress, Completed) with « View projects », which opens the project list filtered on this client, and collection: the collected and outstanding shares of the total invoiced, with the observed average payment delay.",
+      "CONTACTS_TITLE": "Contacts",
+      "CONTACTS_TEXT": "The client’s contacts: the « Primary » one, the e-mail address (without it, the contact receives no invoice) and the number of projects it is attached to. « Add a contact », edit or deactivate a contact; deactivated contacts are listed below, with « Reactivate ».",
+      "TRACE_TITLE": "Audit trail",
+      "TRACE_TEXT": "The client’s dates: creation, last change, KYC approval (date and author) and last activity.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "INVOICES": {
+      "PAGE": "Invoices",
+      "INTRO_TITLE": "Invoices",
+      "INTRO_TEXT": "Every client invoice, from draft to payment. This guide tours the page and an invoice’s journey.",
+      "NEW_TITLE": "New invoice",
+      "NEW_TEXT": "Opens the creation wizard: project, lines, conditions, summary. The invoice starts as a draft; it has no number yet.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Total Invoiced, Pending (issued, sent or partly paid), Overdue (the same, past due) and Disputes. They only cover the page shown (« current page ») and are converted to euros; the small figure gives the number of invoices.",
+      "TOOLBAR_TITLE": "Search and filter",
+      "TOOLBAR_TEXT": "The search covers the invoice number, the client and the project (reference or name). « Filters » combines status, issue period, client, project, « Overdue only », due period and min / max amount incl. tax. The icons on the right switch between grid and list; in the list, click a header to sort.",
+      "LIST_TITLE": "The list",
+      "LIST_TEXT": "Each invoice shows its reference and project, its client, its amount incl. tax, its status and its dates (issue, due, days overdue). A click opens its file. Back from it, your filters, sort, page and view are kept.",
+      "QUICK_TITLE": "Quick actions",
+      "QUICK_TEXT": "Without opening the file, each invoice offers the action of its step: « Approve invoice » (under review), « Issue invoice » (approved), « Mark as sent » (issued) and « Record a payment » (issued, sent or partly paid).",
+      "LIFECYCLE_TITLE": "An invoice’s journey",
+      "LIFECYCLE_TEXT": "Draft → « Submit for approval » → Under review → decision: Approved, Returned (to fix and resubmit) or Cancelled (rejected) → « Issue invoice »: it gets its number (FAC-year-no.) and is e-mailed to the contacts → Sent → Partly paid → Paid. Alongside: Disputed and Credit issued.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "INVOICE_NEW": {
+      "PAGE": "New invoice",
+      "INTRO_TITLE": "Create an invoice",
+      "INTRO_TEXT": "The wizard builds the invoice in 4 steps: Project & Client, Lines, Conditions, Summary. Each step needs the previous one: the guide describes them here.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The badges sum up the input step by step: client, invoice type, number of lines and total incl. tax. The breadcrumb leads back to the list, or to the project / client file you came from.",
+      "RAIL_TITLE": "Progress",
+      "RAIL_TEXT": "The rail shows the current step. Clicking a previous step goes back to it; you cannot jump ahead, each step passing its data to the next.",
+      "S1_TITLE": "1. Project & Client",
+      "S1_TEXT": "Search for the project (name or number), then pick the invoice type (down payment, progress, final…) and, if needed, the related TS. The budget and available remaining-to-invoice show: an exhausted one blocks invoicing. The project must be In progress with a validated budget.",
+      "S2_TITLE": "2. Lines",
+      "S2_TEXT": "The lines to invoice: description, quantity, unit price excl. tax, VAT. Except for a down payment, an invoice created here can only carry reimbursable expenses (« + Add a reimbursable ») or unbilled WIP balances (« + Add an unbilled WIP balance »); progress, hours and deliverables go through WIP validation. Up to 3 deduction columns can be added.",
+      "S3_TITLE": "3. Conditions",
+      "S3_TEXT": "Payment conditions, due date (suggested from the conditions, editable), purchase order (required for lump sum) and internal notes. The due date drives the payment reminders.",
+      "S4_TITLE": "4. Summary",
+      "S4_TEXT": "Review the client, the lines, the totals (excl. tax, incl. tax, net payable) and the preview of scheduled reminders. The amount excl. tax must not exceed the project’s remaining-to-invoice (RG12). Once saved, « Export as PDF » gives a preview marked DRAFT.",
+      "ACTIONS_TITLE": "Draft or Submit",
+      "ACTIONS_TEXT": "« Next » moves to the next step. On the summary, « Draft » saves the invoice to come back later; « Submit » saves it and sends it for approval. « Back » goes back one step, « Cancel » leaves without saving anything.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "INVOICE_EDIT": {
+      "PAGE": "Editing an invoice",
+      "INTRO_TITLE": "Edit an invoice",
+      "INTRO_TEXT": "The same wizard, prefilled. Two cases: a draft (freely editable), or an invoice already issued or sent with no payment, corrected while keeping its number (specific right required).",
+      "ACTIONS_TITLE": "Save",
+      "ACTIONS_TEXT": "For a draft: « Draft » saves, « Submit » saves and sends for approval. For an issued invoice: « Save changes » is the only button; the before / after is kept in the file’s « Modification history » tab."
+    },
+    "INVOICE_DETAIL": {
+      "PAGE": "Invoice file",
+      "INTRO_TITLE": "An invoice’s file",
+      "INTRO_TEXT": "Everything about an invoice: its identity and lifecycle on the left, its figures and tabs on the right. This guide tours it; the tabs open by themselves, and you get yours back at the end.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The invoice number (« Draft » until it is issued), the client and the project — the subtitle leads to the project — and the status badge.",
+      "IDENTITY_TITLE": "Identity",
+      "IDENTITY_TEXT": "Client, project, any TS, type, currency, issue and due dates, payment conditions, purchase order and notes.",
+      "ACTIONS_TITLE": "The lifecycle",
+      "ACTIONS_TEXT": "The large button is the next step: « Submit for approval », « Confirm decision », « Issue invoice », « Mark as sent », « Record payment » or « Resolve dispute ». Depending on the status, « Edit draft », « Edit » (issued, no payment), « Return to sender », « Open a dispute », « Issue credit note », « View project » and « Export as PDF » are added.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "The invoice’s progress through its journey (in %, from its status), its amount incl. tax (with excl. tax) and the remaining to pay, with the due date — in red when past.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "Billing lines, Reminders, Modification history and Timeline. The open tab is kept in the address (?tab=…).",
+      "LINES_TITLE": "Billing lines",
+      "LINES_TEXT": "The lines, with search, then the total excl. tax, any deductions and the net payable.",
+      "REMINDERS_TITLE": "Reminders",
+      "REMINDERS_TEXT": "The payment reminders scheduled from the due date (before, on the day, then after). They go out automatically every morning; « Suspend » pauses them, « Reactivate » resumes them. A dispute suspends them; full payment or a credit note stops them.",
+      "AUDIT_TITLE": "Modification history",
+      "AUDIT_TEXT": "Every event of the invoice, with its author, its comment and the changed fields (before / after), notably on a change after issue.",
+      "TRACE_TITLE": "Timeline",
+      "TRACE_TEXT": "The key dates: creation, last change, issue, due date and full payment.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "COLLECTIONS": {
+      "PAGE": "Collections",
+      "INTRO_TITLE": "Collections",
+      "INTRO_TEXT": "The list of your entity’s invoices to collect: issued, sent or partly paid, with their outstanding amount and lateness. Disputed, paid or draft invoices are not listed.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Outstanding receivables (every amount still owed), Past due (the share past its due date), Collected this month (payments received since the 1st) and Past due 90+ days. Computed on all the entity’s invoices, not just the page; each tile’s (i) details the computation.",
+      "TOOLBAR_TITLE": "Search and filter",
+      "TOOLBAR_TEXT": "The search covers the client and the invoice number. « Filters »: project and client (by their ID), period — on the due date — and « Overdue only ». The icons on the right switch between grid and list; in the list, click a header to sort.",
+      "LIST_TITLE": "The list",
+      "LIST_TEXT": "For each invoice: client, number, outstanding (of the amount incl. tax), due date and days late — orange beyond 30 days, red beyond 60. A click opens its collection file.",
+      "REMINDER_TITLE": "Reminder status",
+      "REMINDER_TEXT": "The last reminder sent for the invoice. Reminders go out automatically every morning based on the due date; they are suspended from the invoice’s collection file.",
+      "RECON_TITLE": "Bank reconciliation",
+      "RECON_TEXT": "The « Bank reconciliation » button in the header is still disabled. The page exists at /finance/recouvrement/reconciliation: it has its own guide.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "RECONCILIATION": {
+      "PAGE": "Bank reconciliation",
+      "INTRO_TITLE": "Bank reconciliation",
+      "INTRO_TEXT": "Import a bank statement, then match each transfer received with an invoice: confirming records the payment on the invoice.",
+      "IMPORT_TITLE": "Import a statement",
+      "IMPORT_TEXT": "Drop a file or click to pick it, then « Import ». Accepted formats: OFX (.ofx) and CAMT053 (.xml), 10 MB max. No CSV or Excel. On import, invoices are proposed automatically for each operation.",
+      "MANUAL_TITLE": "Manual entry",
+      "MANUAL_TEXT": "« + Manual entry » adds an operation without a file (date, amount, reference, description). It shows in the history as « Saisie manuelle » and also gets an automatic proposal.",
+      "HISTORY_TITLE": "Import history",
+      "HISTORY_TEXT": "Each import, with its format, date, and number of matched (✓) and unmatched (?) operations. Click an import to show its operations on the right.",
+      "TRANSACTIONS_TITLE": "The operations",
+      "TRANSACTIONS_TEXT": "The chosen import’s operations: date, reference, description, amount, status and proposed invoice. Statuses: Unmatched, Proposed, Confirmed, Partial, Rejected, Advance. ↻ refreshes the list.",
+      "ACTIONS_TITLE": "Matching",
+      "ACTIONS_TEXT": "On a proposal: « Confirmer » records a payment of the transfer amount on the proposed invoice, « Partiel » assigns only part of it, « Rejeter » discards the proposal. On an unmatched operation: « Rapprocher » (pick the invoice yourself), « Partiel » or « Acompte ». A processed operation cannot be undone.",
+      "UNMATCHED_TITLE": "Unmatched transfers",
+      "UNMATCHED_TEXT": "The total of operations still « Unmatched », by age (0 – 30 d, 31 – 60 d, 61 – 90 d, > 90 d) since their value date.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "COLLECTION_DETAIL": {
+      "PAGE": "Collection file",
+      "INTRO_TITLE": "The collection file",
+      "INTRO_TEXT": "Tracking of an invoice to collect: its reminders, its payments and what remains owed. This guide tours it; the tabs open by themselves, and you get yours back at the end.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The invoice number, its client and project, its status and, if late, the number of days.",
+      "IDENTITY_TITLE": "Identity",
+      "IDENTITY_TEXT": "Client, project, issue and due dates, currency, reminder state (active or suspended) and date of the last reminder sent.",
+      "ACTIONS_TITLE": "Actions",
+      "ACTIONS_TEXT": "« Record a payment », « Suspend reminders » (optional reason) or « Resume reminders » need the right to manage invoicing. « View invoice » and « View project » open their files.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Invoiced amount (incl. tax), Collected (with the % of the amount), Outstanding and Overdue by (days) — « Up to date » if the due date has not passed.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "Reminder schedule and Payments received. The open tab is kept in the address (?tab=…).",
+      "REMINDERS_TITLE": "Reminder schedule",
+      "REMINDERS_TEXT": "Each planned reminder (stage and offset from the due date, D-7, D+7…), its scheduled date, sent date and status: Pending, Suspended (with the reason) or Sent. They go out automatically every morning.",
+      "PAYMENTS_TITLE": "Payments received",
+      "PAYMENTS_TEXT": "The payments received: value date (and entry date), method and reference, note and amount; at the bottom, invoiced − collected = outstanding.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "APPROVAL_QUEUE": {
+      "PAGE": "Approval queue",
+      "INTRO_TITLE": "The approval queue",
+      "INTRO_TEXT": "This is where billing requests from projects (WIP, progress, deliverables, TS) and credit notes are approved. Approving a request creates the draft invoice. This guide opens the tabs by itself and gives yours back at the end.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "« Pending validation » counts every request to handle (lines, deliverable batches, credit notes). « Action history » counts the decisions loaded in the History tab (the latest 200). « Pending RF » does not concern these requests.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "« Pending validation »: what awaits a decision. « History »: the log of decisions taken.",
+      "SUBTABS_TITLE": "By billing mode",
+      "SUBTABS_TEXT": "Requests are grouped by mode: Lump sum, Time & materials, Deliverables and Extra Work. Each sub-tab’s figure gives the number of requests. Each table has its own search, filters (project, period, amount…), sort and paging.",
+      "FORFAIT_TITLE": "Lump sum",
+      "FORFAIT_TEXT": "Progress declared on lump-sum projects (progress rate), one line per period: project, reference, period, amount excl. tax, status. Below, the credit notes of lump-sum invoices.",
+      "REGIE_TITLE": "Time & materials",
+      "REGIE_TEXT": "The WIP of time & materials projects (Timesheet hours of the period, at the amount confirmed by the client), and their credit notes.",
+      "LIVRABLE_TITLE": "Deliverables",
+      "LIVRABLE_TEXT": "Deliverable batches: project, number of documents, amount excl. tax, billing date. A selection can only group batches of the same project: approval creates an invoice with one line per document.",
+      "TS_TITLE": "Extra Work",
+      "TS_TEXT": "Progress of extra work (TS) integrated into the budget. Once invoiced at 100 %, the TS becomes Invoiced.",
+      "ACTIONS_TITLE": "Approve or return",
+      "ACTIONS_TEXT": "Clicking a line opens its detail, with « Validate » and « Return » (reason required). Tick several lines, even of different modes or projects, then « Validate selection »: a single combined invoice is created. If the projects have different clients, you pick the invoice’s client. After approval, the draft invoice opens to be completed.",
+      "CREDIT_TITLE": "Credit notes",
+      "CREDIT_TEXT": "Credit notes created from an invoice file arrive here. « Validate » approves and issues it (number AV-…), « Return » sends it back to its author. A click opens its invoice file.",
+      "HISTORY_TITLE": "History",
+      "HISTORY_TEXT": "The latest 200 decisions: date, user, action (approval, return, cancelled approval), item and comment, with search and filters.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "APPROVAL_DETAIL": {
+      "PAGE": "Request detail",
+      "INTRO_TITLE": "A request’s detail",
+      "INTRO_TEXT": "A billing line or a deliverable batch awaiting approval: what you need to decide. This guide opens the tabs by itself and gives yours back at the end.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The billed period as title, the status and mode as badges; the breadcrumb leads back to the approval queue.",
+      "IDENTITY_TITLE": "Identity",
+      "IDENTITY_TEXT": "Project, client, period, billing date, mode, project status, budget and manager. If the request was returned, the « Return reason » shows.",
+      "ACTIONS_TITLE": "Decide",
+      "ACTIONS_TEXT": "While the request is pending: « Validate » creates the draft invoice and opens it to be completed; « Return » sends it back with a required reason, for correction. « View project » opens its file.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "For a line: amount excl. tax (with VAT), incl. tax, WIP amount and project total as % of budget. For a batch: amount excl. tax and number of entries, confirmed amount and carry-over from the previous period.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "« Project history » (or « Entries » for a batch) and « Activity log ». The open tab is kept in the address (?tab=…).",
+      "ITEMS_TITLE": "Project history / Entries",
+      "ITEMS_TEXT": "For a line: every billing line of the project, the current request marked « Current ». For a batch: each document, its previous rate, its new rate and the amount.",
+      "AUDIT_TITLE": "Activity log",
+      "AUDIT_TEXT": "Every action on the request: date, action, status before → after, author’s role and comment.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "SUBCONTRACTING": {
+      "PAGE": "Subcontracting",
+      "INTRO_TITLE": "Subcontracting",
+      "INTRO_TEXT": "Three levels: the subcontractor directory, the subcontracting orders (ST orders) placed on a project, and a project’s margin analysis. The guide opens each tab and gives yours back at the end.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "Subcontractors, ST Orders and Cost analysis. A sentence under the tabs recalls what each holds. The open tab is kept in the address (?tab=…).",
+      "ST_TITLE": "Subcontractors",
+      "ST_TEXT": "The entity’s directory of external providers: indicators, search (name, e-mail, phone, tax ID), filters and grid or list view. « New subcontractor » (name required, unique in the entity), « Edit », « Deactivate ». A subcontractor must exist here before receiving an order.",
+      "ENTITY_TITLE": "The entity",
+      "ENTITY_TEXT": "This selector picks the entity whose directory is shown. It only applies to the Subcontractors tab; the other two follow the chosen project.",
+      "ORDERS_TITLE": "ST Orders",
+      "ORDERS_TEXT": "Search for then pick a project: its orders show with budget, spent, % consumed and status. « New ST order »: subcontractor, scope, budget, currency and alert threshold (10 % by default). The project must be In progress. « Status »: In progress, Suspended or Closed (final). CSV export.",
+      "COSTS_TITLE": "Realized costs",
+      "COSTS_TEXT": "« Costs » opens an order’s cost panel: « Add a cost » (amount, date — not in the future —, description), only on an In progress order. Beyond budget + threshold, the order is flagged as over budget.",
+      "ANALYSIS_TITLE": "Cost analysis",
+      "ANALYSIS_TEXT": "Pick a project: collected revenue (payments received), subcontracting costs, gross margin and margin rate, with the breakdown. Internal costs are not computed yet (always 0).",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "COSTS": {
+      "PAGE": "Costs",
+      "INTRO_TITLE": "Cost management",
+      "INTRO_TEXT": "Your entity’s cost invoices: supplier invoices or expenses with no supplier, each with one or more lines. They go through an approval circuit, then get paid.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Drafts, Pending (submitted) and Approved (including those already paid), counted on the page shown.",
+      "NEW_TITLE": "New invoice",
+      "NEW_TEXT": "Opens a cost invoice form: supplier, lines, taxes, attachments.",
+      "TOOLBAR_TITLE": "Search, filter, switch view",
+      "TOOLBAR_TEXT": "The search covers the reference, the supplier and the invoice number. « Filters »: status, category, period and amount incl. tax (on the page shown). Three views: grid, list (sort by header) and suppliers, which groups the invoices by supplier.",
+      "LIST_TITLE": "The list",
+      "LIST_TEXT": "Each invoice: reference (EXP-year-no.), supplier, supplier invoice number, categories, date, amounts excl. and incl. tax (and in EUR), status and approval level. A click opens its file; in the suppliers view, the supplier’s page.",
+      "ACTIONS_TITLE": "Actions",
+      "ACTIONS_TEXT": "« Edit » and « Submit » on a draft; « Create a payment » on an approved invoice not yet paid; « View details » everywhere.",
+      "LIFECYCLE_TITLE": "A cost invoice’s journey",
+      "LIFECYCLE_TEXT": "Draft → « Submit »: the approval level is computed on the amount incl. tax in euros. Level L1: approved at once. L2 to L4: Submitted, waiting in the approval queue (L4: two approvers). Approved → payment recorded → Posted (paid). A request for more information or a refusal sends it back to Draft.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "COST_NEW": {
+      "PAGE": "New cost invoice",
+      "INTRO_TITLE": "Enter a cost invoice",
+      "INTRO_TEXT": "A supplier invoice, or an expense with no supplier, in one or more lines. It is saved as a draft or sent straight into the approval circuit.",
+      "INVOICE_TITLE": "Invoice",
+      "INVOICE_TEXT": "Entity, supplier (optional), supplier invoice number — required with a supplier, only once per supplier —, invoice date, due date and currency.",
+      "LINES_TITLE": "Lines",
+      "LINES_TEXT": "Each line has its cost category (and sub-category), description, optional project (same entity) and amount excl. tax. With a supplier: FODEC and VAT per line; without: VAT as an amount. A part outside the VAT scope can be isolated (a travel agency’s plane ticket…).",
+      "TAXES_TITLE": "Taxes and totals",
+      "TAXES_TEXT": "Stamp duty (once per invoice, with a supplier), withholding tax if ticked — deducted from the net payable —, and free other taxes added to the total. Totals excl. tax, VAT, incl. tax and net payable update as you type.",
+      "ATTACH_TITLE": "Attachments",
+      "ATTACH_TEXT": "PDF, JPEG or PNG, 10 MB max per file. They are uploaded when the invoice is saved; they can no longer be added from the file.",
+      "CIRCUIT_TITLE": "Approval circuit",
+      "CIRCUIT_TEXT": "The expected level based on the total converted to euros: automatic approval (L1), single approval or dual validation (L4), with the expected approvers.",
+      "ACTIONS_TITLE": "Save or submit",
+      "ACTIONS_TEXT": "« Save draft » keeps the invoice without sending it; « Submit for approval » saves it and starts the circuit. The message in the middle says what is missing. « Cancel » leaves without saving.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "COST_EDIT": {
+      "PAGE": "Editing a cost invoice",
+      "INTRO_TITLE": "Edit a cost invoice",
+      "INTRO_TEXT": "The same form, prefilled. A draft is freely editable (the entity can no longer change). An approved or paid invoice can only be edited with the CFO right, with a justification.",
+      "ACTIONS_TITLE": "Save",
+      "ACTIONS_TEXT": "Draft: « Save draft » or « Submit for approval ». Validated invoice: « Save the change », after a justification of at least 5 characters; status and payment are kept, every change is logged."
+    },
+    "COST_DETAIL": {
+      "PAGE": "Cost invoice file",
+      "INTRO_TITLE": "A cost invoice’s file",
+      "INTRO_TEXT": "Everything about a cost invoice: its identity and actions on the left, its amounts and tabs on the right. The guide opens each tab and gives yours back at the end.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The invoice reference, with its status and approval level; the breadcrumb leads back to the cost list.",
+      "IDENTITY_TITLE": "Identity and actions",
+      "IDENTITY_TEXT": "Supplier, invoice number, dates, currency, categories… Actions: « Edit » and « Submit for approval » on a draft, « New payment » on an approved invoice, « Edit (CFO) » on a validated invoice for those with the right.",
+      "KPIS_TITLE": "The amounts",
+      "KPIS_TEXT": "Excl. tax, VAT, incl. tax, their EUR equivalents and, with withholding tax, the net payable to the supplier.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "Lines and totals, Approvals, Attachments, Change history, Reminders and Payment. The open tab is kept in the address (?tab=…).",
+      "INFO_TITLE": "Lines and totals",
+      "INFO_TEXT": "Each line (category, project, description, excl. tax, taxes) then the invoice totals.",
+      "APPROVALS_TITLE": "Approvals",
+      "APPROVALS_TEXT": "Each decision of the circuit: level, author, date, decision (approved, more information, refused, auto-approved) and comment.",
+      "ATTACHMENTS_TITLE": "Attachments",
+      "ATTACHMENTS_TEXT": "The invoice’s files, to download. They can only be deleted on a draft; they are added from the form.",
+      "CHANGES_TITLE": "Change history",
+      "CHANGES_TEXT": "Changes made after validation: author, date, justification and changed fields (before / after).",
+      "REMINDERS_TITLE": "Reminders",
+      "REMINDERS_TEXT": "Internal reminders before the due date of an approved, unpaid invoice, e-mailed every morning. They can be suspended (with a reason) and resumed.",
+      "LEDGER_TITLE": "Payment",
+      "LEDGER_TEXT": "The invoice’s payment and the supplier statement: amount paid against net payable, debit (overpaid), credit (still owed) and balance. A payment is edited or deleted here; Excel export.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "COST_SUPPLIER": {
+      "PAGE": "Costs by supplier",
+      "INTRO_TITLE": "A supplier’s costs",
+      "INTRO_TEXT": "All of a supplier’s cost invoices and its payment statement. The guide opens the tabs and gives yours back at the end.",
+      "IDENTITY_TITLE": "The supplier",
+      "IDENTITY_TEXT": "Code, type, tax ID, country and number of invoices. « New invoice » opens the form with this supplier; « New payment » pays one of its approved invoices.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "The supplier and the totals of its cost invoices, all statuses.",
+      "INVOICES_TITLE": "Invoices",
+      "INVOICES_TEXT": "The supplier’s cost invoices, all statuses; a click opens the file.",
+      "LEDGER_TITLE": "Payment (statement)",
+      "LEDGER_TEXT": "One row per paid invoice, by payment date: amount paid against net payable, debit (overpaid), credit (still owed) and running debit or credit balance. Approved unpaid invoices are not listed. Excel export."
+    },
+    "COST_UNASSIGNED": {
+      "PAGE": "Costs with no supplier",
+      "INTRO_TITLE": "Costs with no supplier",
+      "INTRO_TEXT": "Expenses entered with no supplier (no FODEC, stamp duty or withholding tax). There is no payment statement for them."
+    },
+    "COST_APPROVAL": {
+      "PAGE": "Cost approval",
+      "INTRO_TITLE": "The cost approval queue",
+      "INTRO_TEXT": "Three queues in one: submitted cost invoices, hiring requests costed by HR and salary advances validated by HR. Everyone only sees what their rights let them decide.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Pending: the total of the three queues. Urgent: invoices of level L3 or L4.",
+      "TOOLBAR_TITLE": "Search and filter",
+      "TOOLBAR_TEXT": "Free search, and « Filters »: request type, priority, level, category, date, currency and amount. Grid or list view.",
+      "LIST_TITLE": "The requests",
+      "LIST_TEXT": "Each request shows its type, subject, amount and level. « View details » opens the file (cost invoice or candidate).",
+      "COSTS_TITLE": "Cost invoices",
+      "COSTS_TEXT": "Submitted invoices, highest first. Decisions: « Approve » (optional comment), « More information » (sent back to draft to be completed) or « Refuse » (comment required, sent back to draft). At level L4, two different approvers are needed.",
+      "HIRING_TITLE": "Hiring requests",
+      "HIRING_TEXT": "The salary cost of a hire costed by HR (monthly loaded cost × 12). Approve, or refuse with an optional counter-offer salary.",
+      "ADVANCES_TITLE": "Salary advances",
+      "ADVANCES_TEXT": "Advances validated by HR, awaiting the finance decision. Approve (payroll then pays it out) or refuse with a reason. You cannot decide your own advance.",
+      "NEW_TITLE": "New request",
+      "NEW_TEXT": "Opens the form of a new cost invoice.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "COST_MISSIONS": {
+      "PAGE": "Mission orders",
+      "INTRO_TITLE": "Mission orders",
+      "INTRO_TEXT": "The final decision on mission costs: created by a manager, costed and validated by HR, they arrive here awaiting the finance decision.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Awaiting decision, Imminent departures (within 3 days, or already started) and International missions.",
+      "TOOLBAR_TITLE": "Search and filter",
+      "TOOLBAR_TEXT": "Free search and filters; grid or list view.",
+      "LIST_TITLE": "The missions",
+      "LIST_TEXT": "Each mission: employee, destination, dates, urgency and estimated cost (allowances, lodging, ticket, visa, insurance, other fees; the cash advance is not counted).",
+      "DECIDE_TITLE": "Decide",
+      "DECIDE_TEXT": "Open a mission: mission and expense details, HR notes. « Approve the cost » or « Refuse » (reason required).",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "RATES": {
+      "PAGE": "Rate scales",
+      "INTRO_TITLE": "TM rate scales",
+      "INTRO_TEXT": "Scales compute, for each employee, an intercompany rate and a time & materials selling rate. The latest validated scale applies.",
+      "PAYS_TITLE": "The entity",
+      "PAYS_TEXT": "Pick the entity whose scales you manage.",
+      "FORMULA_TITLE": "The formulas",
+      "FORMULA_TEXT": "Interco rate = cost × (1 + % HQ); selling rate = cost × (1 + % HQ + % margin), recalled above the table.",
+      "TABLE_TITLE": "The scales",
+      "TABLE_TEXT": "Each scale: period (month, quarter or year), type, % HQ, % margin, interco and external margins, currency, status and validation date. Expand one to see its lines per employee.",
+      "NEW_TITLE": "New scale",
+      "NEW_TEXT": "« + New scale »: pick the period and percentages. The scale starts as Draft.",
+      "LIFECYCLE_TITLE": "From draft to validated scale",
+      "LIFECYCLE_TEXT": "« Auto-fill from formula » creates one line per active employee from the period’s paid costs. « Compute » moves the scale to Computed (daily, hourly, monthly, interco and external rates). « Validate » locks it.",
+      "ALLOCATION_TITLE": "Cost formula",
+      "ALLOCATION_TEXT": "This button opens the cost category allocation: per headcount (total ÷ number of employees), fixed amount, or direct (costs tied to the employee). It drives auto-fill.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "EMPLOYEE_COSTS": {
+      "PAGE": "Employee costs",
+      "INTRO_TITLE": "Employee costs",
+      "INTRO_TEXT": "Each employee’s cost over a period: base cost to the company, internal selling cost and external selling cost. They feed time & materials and rate scales.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Tracked employees (active / expired share), average selling costs (internal, interco, external) and average margins.",
+      "TOOLBAR_TITLE": "Search and filter",
+      "TOOLBAR_TEXT": "Search by employee, Active / Expired filter and other criteria; grid or list view.",
+      "LIST_TITLE": "The list",
+      "LIST_TEXT": "One row per employee and period: base, internal and external costs, currency, dates and status. Only an employee’s latest period is « Active »; the others are « Expired ».",
+      "ACTIONS_TITLE": "Actions",
+      "ACTIONS_TEXT": "« Edit », « Delete » (permanent) and « History », which opens this cost’s log.",
+      "ADD_TITLE": "Add a cost",
+      "ADD_TEXT": "« Add »: employee, period and one of the three amounts — the others are computed (internal = base × 1.1; external = base × 1.2). Two periods of the same employee cannot overlap.",
+      "EXPORT_TITLE": "Export",
+      "EXPORT_TEXT": "« Export Excel » downloads the filtered list.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "EMPLOYEE_COST_HISTORY": {
+      "PAGE": "Employee cost history",
+      "INTRO_TITLE": "An employee cost’s history",
+      "INTRO_TEXT": "Everything that happened to an employee’s cost: creations, changes, deletions and status changes. The breadcrumb leads back to the list.",
+      "TOOLBAR_TITLE": "Search and filter",
+      "TOOLBAR_TEXT": "Search and filters (action, period…); two layouts: timeline or table.",
+      "LIST_TITLE": "The events",
+      "LIST_TEXT": "Each event: date, action, author and changed fields with their before and after values.",
+      "EXPORT_TITLE": "Export",
+      "EXPORT_TEXT": "« Export Excel » downloads the history.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "SUPPLIERS": {
+      "PAGE": "Suppliers",
+      "INTRO_TITLE": "The supplier register",
+      "INTRO_TEXT": "Your entity's suppliers, to which cost invoices are attached. Each record holds the supplier's identity, tax details and IBAN.",
+      "NEW_TITLE": "New supplier",
+      "NEW_TEXT": "Opens the three-step creation wizard: identification, tax details, bank details.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Number of active suppliers, those with an IBAN (needed for a transfer), those with a VAT number, and the countries covered. They describe the entity's whole active register, not the page shown nor the search.",
+      "TOOLBAR_TITLE": "Search and switch view",
+      "TOOLBAR_TEXT": "« Filters »: supplier type, presence of an IBAN or a VAT number. The search covers name and code. The toggle switches between cards and a table you can sort by header.",
+      "STATUS_TITLE": "Deactivated suppliers",
+      "STATUS_TEXT": "Only active suppliers are listed by default. The « Status » filter (Deactivated or All) brings deactivated suppliers back; a banner says so.",
+      "LIST_TITLE": "The list",
+      "LIST_TEXT": "Each supplier: name, country, type, VAT number, IBAN and status. A click opens its record.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "SUPPLIER_NEW": {
+      "PAGE": "New supplier",
+      "INTRO_TITLE": "Create a supplier",
+      "INTRO_TEXT": "Three steps; only the first is mandatory. The guide previews each step without saving anything.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The title, the breadcrumb and, as chips, a summary of what you've entered so far.",
+      "RAIL_TITLE": "Progress",
+      "RAIL_TEXT": "The wizard's three steps. You can click a step you've already passed to go back, not jump ahead.",
+      "S1_TITLE": "1. Identification",
+      "S1_TEXT": "Company name, country and supplier type, all mandatory. The country sets the prefix of the supplier's code, assigned automatically on creation.",
+      "S2_TITLE": "2. Tax details",
+      "S2_TEXT": "VAT number — unique: a number already used, in any country, makes the save fail —, tax ID, and calculation profile: Standard (net + rate) or Travel agency, which changes how its cost invoices are entered.",
+      "S3_TITLE": "3. Bank details",
+      "S3_TEXT": "The IBAN, used for bank-transfer payments. Optional, but a supplier without an IBAN cannot be paid by transfer.",
+      "NEXT_TITLE": "Next / Create",
+      "NEXT_TEXT": "« Next » moves to the next step (step 1 must be complete); on the last step, « Create supplier » saves it and opens its record.",
+      "BACK_TITLE": "Back / Cancel",
+      "BACK_TEXT": "« Back » returns to the previous step without losing anything; « Cancel », on the first step, leaves without saving.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "SUPPLIER_EDIT": {
+      "PAGE": "Supplier edit",
+      "INTRO_TITLE": "Edit a supplier",
+      "INTRO_TEXT": "The same wizard, prefilled with the supplier's record. Nothing is saved before the last step.",
+      "S1_TITLE": "1. Identification",
+      "S1_TEXT": "Company name and type can change. The country stays visible but locked: the supplier's code depends on it.",
+      "NEXT_TITLE": "Next / Save",
+      "NEXT_TEXT": "« Next » moves to the next step; on the last one, « Save » applies the changes and returns to the record.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "SUPPLIER_DETAIL": {
+      "PAGE": "Supplier record",
+      "INTRO_TITLE": "A supplier's record",
+      "INTRO_TEXT": "Its identity and actions on the left, its figures and tabs on the right. The guide opens each tab and gives you yours back at the end.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The supplier's name, code and country, and its status (active or deactivated); the breadcrumb leads back to the list.",
+      "IDENTITY_TITLE": "Details",
+      "IDENTITY_TEXT": "Identification (code, country, type, creation date), tax details (VAT number, tax ID) and bank details (IBAN). Missing data is flagged.",
+      "ACTIONS_TITLE": "Quick actions",
+      "ACTIONS_TEXT": "« New supplier invoice » opens a cost invoice already linked to this supplier; « Edit » reopens the wizard; « View costs » opens the supplier view of the Costs module. Creating and editing require the right to manage costs.",
+      "DEACTIVATE_TITLE": "Deactivate",
+      "DEACTIVATE_TEXT": "Removes the supplier from the list and the search; its invoices and history are kept. Note: there is no reactivation.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Number of invoices and their gross total in euros (all statuses), then the number of statement entries and the balance due — or the overpayment — from the last statement entry.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "« Invoices » lists its cost invoices, « Payment » its account statement. The open tab is kept in the page's address.",
+      "COSTS_TITLE": "Invoices",
+      "COSTS_TEXT": "The supplier's cost invoices, read-only: search, filters and export. A click opens the invoice's record, where submission, approval and payment happen.",
+      "LEDGER_TITLE": "Payment",
+      "LEDGER_TEXT": "The account statement: each paid invoice as debit and credit, with the running balance. Only paid invoices appear.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "REPORTING": {
+      "PAGE": "P&L reporting",
+      "INTRO_TITLE": "P&L reporting",
+      "INTRO_TEXT": "Each country's monthly income statement: one period per month, closed to freeze its figures, then a report that goes Submitted → Endorsed (CD) → Accepted (Group).",
+      "ACTIONS_TITLE": "Country and actions",
+      "ACTIONS_TEXT": "The country selector (if you follow several) and the « Actions » menu: New period (with the right to manage costs), Submission calendar and Reference budget.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "The year's net revenue, EBITDA and EBITDA margin, summed over closed periods only — an open month is not counted. « Reports to process »: those to endorse, to accept or sent back for amendment.",
+      "TOOLBAR_TITLE": "Search, filter, switch view",
+      "TOOLBAR_TEXT": "Search on the period label; filters by year, period status and report status. Cards or table.",
+      "LIST_TITLE": "The periods",
+      "LIST_TEXT": "Each month: its progress, net revenue, EBITDA and % (red when negative), and the state of its report. A click opens the report.",
+      "LIFECYCLE_TITLE": "A period's journey",
+      "LIFECYCLE_TEXT": "New period (one per country and month) → « Close »: the month's figures are frozen, with manual inputs (intercompany, intersede, WIP, recharges) → « Generate report » → approval circuit from the report's page.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "PL_BUDGET": {
+      "PAGE": "Reference budget",
+      "INTRO_TITLE": "The reference budget",
+      "INTRO_TEXT": "A country's annual budget, month by month and line by line of the group catalogue. It is the basis of the budget variances in P&L reports.",
+      "FILTERS_TITLE": "Country and year",
+      "FILTERS_TEXT": "Choose the country (if you follow several) and the budget year to show.",
+      "CREATE_TITLE": "Create the budget",
+      "CREATE_TEXT": "If there is no budget yet for this country and year, « Create the budget » opens one (right to manage the P&L).",
+      "GRID_TITLE": "The grid",
+      "GRID_TEXT": "One row per catalogue line, one column per month. An empty cell counts as zero. Without the right to manage, the grid is read-only.",
+      "SAVE_TITLE": "Save",
+      "SAVE_TEXT": "Saves the whole grid. A P&L report takes the budget as it stands when the report is generated.",
+      "APPROVALS_TITLE": "Approvals",
+      "APPROVALS_TEXT": "Two approvals: Country Director then Group, reserved to P&L administrators. Each shows its date and author once given.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "PL_CALENDAR": {
+      "PAGE": "Submission calendar",
+      "INTRO_TITLE": "The submission calendar",
+      "INTRO_TEXT": "The P&L report submission deadlines, one per month.",
+      "YEAR_TITLE": "The year",
+      "YEAR_TEXT": "Choose the year whose deadlines you want to see.",
+      "TABLE_TITLE": "The deadlines",
+      "TABLE_TEXT": "For each month: the deadline, who set it and when.",
+      "EDIT_TITLE": "Change a deadline",
+      "EDIT_TEXT": "With the right to administer the P&L: pick the date then « Save » on the row. The deadline is indicative: it does not block submission and sends no reminder.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "REPORT_DETAIL": {
+      "PAGE": "P&L report",
+      "INTRO_TITLE": "A P&L report",
+      "INTRO_TEXT": "A country's report for one month: its details and actions on the left, its figures and tabs on the right. The guide opens each tab and gives you yours back at the end.",
+      "HEADER_TITLE": "The header",
+      "HEADER_TEXT": "The report's country and month, its version and status; the breadcrumb leads back to the P&L dashboard.",
+      "IDENTITY_TITLE": "Report and workflow",
+      "IDENTITY_TEXT": "Country, period, period status, version and creation date; then the submission, endorsement (CD) and acceptance (Group) dates.",
+      "ACTIONS_TITLE": "The action at hand",
+      "ACTIONS_TEXT": "The main button depends on the status and your rights: « Submit » (draft or amendment requested), « Endorse » (submitted, Country Director), « Accept » (endorsed, Group). If nothing is yours to do, the card says so.",
+      "AMEND_TITLE": "Amendment and reopening",
+      "AMEND_TEXT": "« Amendment » sends a submitted or endorsed report back to preparation, with a reason. « Reopen » an accepted report: new version (the current one is archived) or correction absorbed by the next month, with a justification.",
+      "EXPORTS_TITLE": "Exports",
+      "EXPORTS_TEXT": "The report as Excel or PDF, or the full 7-sheet workbook.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "The month's gross revenue 2, net revenue, EBITDA and EBITDA %, as frozen when the period was closed.",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "Overview, P&L recap, Commentaries and Treasury. The open tab is kept in the page's address.",
+      "OVERVIEW_TITLE": "Overview",
+      "OVERVIEW_TEXT": "The waterfall from revenue to EBITDA, the workflow's progress, the number of commentaries written and the month's cost breakdown.",
+      "RECAP_TITLE": "P&L recap",
+      "RECAP_TEXT": "Each catalogue line: actual, budget and variance. Search and filters (positive, negative variance, no budget, amount).",
+      "COMMENTS_TITLE": "Commentaries",
+      "COMMENTS_TEXT": "Variance commentaries, line by line, then the cross-cutting summary (revenue, costs, EBITDA, other points). A text is proposed; with the right to manage the P&L, you correct it then save it.",
+      "TREASURY_TITLE": "Treasury",
+      "TREASURY_TEXT": "The country's open customer receivables by age, and missing cash per project (receivables plus unbilled WIP).",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "TREASURY": {
+      "PAGE": "Treasury",
+      "INTRO_TITLE": "Treasury forecast",
+      "INTRO_TEXT": "What should come in (unpaid customer invoices) and go out (committed cost invoices), month by month, for your entity. It is a flow projection, not a bank balance.",
+      "HORIZON_TITLE": "The horizon",
+      "HORIZON_TEXT": "Projection over 3, 6 or 12 months from the current month.",
+      "KPIS_TITLE": "The indicators",
+      "KPIS_TEXT": "Overdue receivables (unpaid at due date, over the last 90 days), expected receipts up to the end of the horizon, committed payments (submitted or approved cost invoices, less recorded payments). Hover a tile for details.",
+      "LOW_POINT_TITLE": "The low point",
+      "LOW_POINT_TEXT": "The tightest moment: where cumulative inflows minus outflows are lowest. It is the main question this page answers.",
+      "CHARTS_TITLE": "Receipts and payments per month",
+      "CHARTS_TEXT": "Two charts on the same scale, so heights compare at a glance. They show upcoming months, without what is already overdue.",
+      "TABLE_TITLE": "Month-by-month projection",
+      "TABLE_TEXT": "An « Already overdue » row then one per month: receipts, payments, net and cumulative. The low-point month is flagged. The cumulative starts at zero: it is a change from today.",
+      "FLOWS_TITLE": "The main flows",
+      "FLOWS_TEXT": "Expected receipts on the left, committed payments on the right: counterparty, due date (and delay), converted amount with the original amount below. A click on a receipt opens its collection file.",
+      "LIMITS_TITLE": "The model's limits",
+      "LIMITS_TEXT": "No opening balance, no salaries or taxes, past due dates kept for 90 days only, conversion at the current rate. The « collected over 30 days » marker gives an actual order of magnitude.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "ADMIN": {
+      "PAGE": "Administration",
+      "INTRO_TITLE": "Finance administration",
+      "INTRO_TEXT": "The Finance module settings, in tabs. The guide only opens the tabs your rights show, and gives you yours back at the end.",
+      "PAYS_TITLE": "The entity",
+      "PAYS_TEXT": "If you manage several countries, choose here the entity whose settings you change (lists, currencies, cost configuration).",
+      "TABS_TITLE": "The tabs",
+      "TABS_TEXT": "Each tab groups one kind of setting. Which ones you see depends on your rights.",
+      "LISTS_TITLE": "Configurable lists",
+      "LISTS_TEXT": "The values offered in the screens (cost categories, supplier types…), by family. A « Global » value applies to all entities; adding, editing or deactivating here only affects the chosen entity.",
+      "FOREX_TITLE": "Exchange rates",
+      "FOREX_TEXT": "The rates to the euro (and Swiss franc) used to convert amounts: approval circuits, P&L, treasury. Without a CHF rate, it is EUR × 0.965. A currency without a rate is left out of totals.",
+      "FOREX_API_TITLE": "Rates API",
+      "FOREX_API_TEXT": "The provider that can refresh rates automatically (working days at 8 am, if auto-refresh is on), and a button to refresh them now.",
+      "ENTITY_CURRENCY_TITLE": "Entity currency",
+      "ENTITY_CURRENCY_TEXT": "The default currency of each ARX entity, chosen among the active currencies of the « Currency » list.",
+      "COST_CONFIG_TITLE": "Cost configuration",
+      "COST_CONFIG_TEXT": "Cost invoice approval thresholds (levels L1 to L4) and the Costs module's list values, for the chosen entity.",
+      "REMINDERS_TITLE": "Customer reminders",
+      "REMINDERS_TEXT": "Customer invoice reminder steps: X days before or after the due date, recipients (roles, customer) and message. A run goes out daily at 8 am. « Trigger now » sends the due reminders right away, with real e-mails.",
+      "COST_REMINDERS_TITLE": "Supplier reminders",
+      "COST_REMINDERS_TEXT": "Internal reminders to pay suppliers on time, based on each cost invoice's due date, sent to the given roles.",
+      "PERMISSIONS_TITLE": "Permissions",
+      "PERMISSIONS_TEXT": "Each role's Finance rights. A change takes effect at the user's next sign-in.",
+      "DOC_TEMPLATES_TITLE": "Document templates",
+      "DOC_TEMPLATES_TEXT": "The HTML layout of PDF documents. Today only the « Invoice — AV mode (fixed price) » template is used, for the draft preview.",
+      "WIP_EMAILS_TITLE": "WIP e-mails",
+      "WIP_EMAILS_TEXT": "Subject and body of the e-mail sent to the customer when a progress, timesheet or deliverable is validated. A country template takes precedence over the global one.",
+      "AUDIT_TITLE": "Audit",
+      "AUDIT_TEXT": "The history of changes to Finance data: who, when, what, with before / after details.",
+      "HELP_FAQ_TITLE": "Assistant & FAQ",
+      "HELP_FAQ_TEXT": "Your own questions / answers, page by page, on top of the shipped FAQ. Once published, they show at the top of the chosen page's FAQ, in « Help & guides » as in the help assistant. French is required, English optional.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "ADMIN_ROLES": {
+      "PAGE": "Roles and permissions",
+      "INTRO_TITLE": "Roles and permissions",
+      "INTRO_TEXT": "The Finance rights granted to each role. Roles themselves and their assignment to users are managed in the HR module.",
+      "LIST_TITLE": "The roles",
+      "LIST_TEXT": "Each role with its number of permissions. The search filters the list.",
+      "OPEN_TITLE": "Open a role",
+      "OPEN_TEXT": "A click on a role opens its permissions; the breadcrumb leads back to the list.",
+      "GROUPS_TITLE": "Permissions by group",
+      "GROUPS_TEXT": "Permissions sorted by group, with the count of checked ones. Check or uncheck each right; Finance rights (FACT_…) are tinted.",
+      "BULK_TITLE": "Check all / uncheck all",
+      "BULK_TEXT": "Shortcuts over the whole catalogue. Careful: unchecking all then saving removes every right of the role, administration included.",
+      "SAVE_TITLE": "Save",
+      "SAVE_TEXT": "Applies the changes. They take effect at the role's users' next sign-in.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "ADMIN_DOC_TEMPLATES": {
+      "PAGE": "Document templates",
+      "INTRO_TITLE": "Document templates",
+      "INTRO_TEXT": "The HTML layout of PDFs generated by invoicing, per document type. Today only the « Invoice — AV mode (fixed price) » template is used, for the draft preview.",
+      "ACTIONS_TITLE": "Filters and creation",
+      "ACTIONS_TEXT": "Also show inactive templates, filter by document type, and « New template ».",
+      "TABLE_TITLE": "The list",
+      "TABLE_TEXT": "Each template: name, description, type, state. Actions: edit, activate or deactivate.",
+      "EDITOR_TITLE": "The editor",
+      "EDITOR_TEXT": "Type, name, description and HTML code of the template. « Insert default template » starts from a complete layout.",
+      "VARIABLES_TITLE": "Variables",
+      "VARIABLES_TEXT": "Click a variable to insert it at the cursor: it will be replaced by the invoice's data (customer, amounts, lines…).",
+      "PREVIEW_TITLE": "Preview",
+      "PREVIEW_TEXT": "Enter an invoice's id to see the PDF with its data, or leave it empty for mock data.",
+      "ACTIVE_TITLE": "The active template",
+      "ACTIVE_TEXT": "There should be one active template per type: activating one deactivates the others. A newly created template is active straight away.",
+      "END_TITLE": "Need help?",
+      "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
+    },
+    "SEE_ALL": "See the whole guide"
   },
   "HOME": {
     "GREETING": "Hello, {{name}}.",
@@ -2481,7 +4474,8 @@
       "CARRIED_FORWARD_TOTAL": "Total to approve",
       "PENDING_CLIENT_TITLE": "Awaiting client response",
       "PENDING_CLIENT_EXPLAIN": "A summary email has been sent to the client. Once you receive their reply, enter the amount they actually confirmed here — if it's less than the calculated amount, the difference will automatically carry forward to the next period.",
-      "CLIENT_AMOUNT_LABEL": "Amount confirmed by the client",      "CLIENT_AMOUNT_HINT": "Cannot exceed the calculated amount.",
+      "CLIENT_AMOUNT_LABEL": "Amount confirmed by the client",
+      "CLIENT_AMOUNT_HINT": "Cannot exceed the calculated amount.",
       "CLIENT_AMOUNT_CONFIRM": "Confirm",
       "CLIENT_AMOUNT_ERROR": "Error saving the client-confirmed amount.",
       "VALIDATE_CLIENT_AMOUNT": "Validate client amount",
@@ -3592,9 +5586,18 @@
       "SUSPEND": "Suspend",
       "REACTIVATE": "Reactivate",
       "LOADING": "Loading reminders…",
-      "STATUS": { "SENT": "Sent", "SUSPENDED": "Suspended", "PENDING": "Pending" },
+      "STATUS": {
+        "SENT": "Sent",
+        "SUSPENDED": "Suspended",
+        "PENDING": "Pending"
+      },
       "EMPTY": "No scheduled reminders.",
-      "SUSPEND_FORM": { "LABEL": "Suspension reason", "PLACEHOLDER": "Optional", "CANCEL": "Cancel", "CONFIRM": "Confirm" }
+      "SUSPEND_FORM": {
+        "LABEL": "Suspension reason",
+        "PLACEHOLDER": "Optional",
+        "CANCEL": "Cancel",
+        "CONFIRM": "Confirm"
+      }
     },
     "CHANGES": {
       "LINE_PREFIX": "Line {{ref}}",
@@ -4642,7 +6645,8 @@
       "COST_REMINDERS": "Supplier reminders",
       "WIP_EMAIL_TEMPLATES": "WIP Emails",
       "AUDIT": "Audit",
-      "NAV_LABEL": "Admin navigation"
+      "NAV_LABEL": "Admin navigation",
+      "HELP_FAQ": "Assistant & FAQ"
     },
     "AUDIT_TRAIL": {
       "COL_DATE": "Date",
@@ -5044,6 +7048,58 @@
       "TOKENS_TITLE": "Available tokens",
       "FIELD_ACTIVE": "Template active",
       "ACTIVE_HINT": "An inactive template is no longer used; the default message takes over."
+    },
+    "HELP_FAQ": {
+      "title": "Assistant & FAQ",
+      "subtitle": "{{count}} question(s) added by the administration, on top of the FAQ shipped with the app. The help assistant (the bubble at the bottom right) and « Help & guides » show them for the chosen page.",
+      "search": "Search a question, an answer…",
+      "page": "Page",
+      "allPages": "All pages",
+      "new": "New question",
+      "newTitle": "New question",
+      "editTitle": "Edit the question",
+      "pageLabel": "Page *",
+      "languages": "Languages",
+      "question": "Question",
+      "answer": "Answer",
+      "questionPh": "E.g. How do I cancel an invoice already issued?",
+      "answerPh": "The answer, as the assistant will show it.",
+      "optionalLang": "Optional: without a translation, the question shows in French in this language.",
+      "order": "Order",
+      "publish": "Published (visible in the assistant and the help)",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "delete": "Delete",
+      "deleteTitle": "Delete the question",
+      "deleteBody": "The question « {{question}} » will be deleted for good. To only hide it, unpublish it.",
+      "empty": "No question yet. « New question » adds one for a page.",
+      "noMatch": "No question matches.",
+      "word": "question(s)",
+      "colPage": "Page",
+      "colQuestion": "Question (French)",
+      "colQuestionEn": "Question (English)",
+      "notTranslated": "Not translated — shown in French",
+      "colLangs": "Languages",
+      "colOrder": "Order",
+      "colStatus": "Status",
+      "published": "Published",
+      "unpublished": "Unpublished",
+      "edit": "Edit",
+      "unpublish": "Unpublish",
+      "publishAction": "Publish",
+      "pageRequired": "Choose the page.",
+      "frRequired": "The French question and answer are required.",
+      "pairRequired": "In a language, fill in the question AND the answer, or leave both empty.",
+      "loadError": "Could not load the questions.",
+      "saveError": "Could not save the question.",
+      "deleteError": "Could not delete the question.",
+      "filters": {
+        "title": "Filters",
+        "apply": "Apply",
+        "reset": "Reset",
+        "trigger": "Filters"
+      }
     }
   },
   "ENUMS": {

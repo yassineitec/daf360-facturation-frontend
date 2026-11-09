@@ -25,16 +25,34 @@ import { SubmissionCalendarDto } from '../pl-reporting.model';
  * All editing (the date field + its Save button) is gated on `FACT_ADMIN_PL_REPORT`; without
  * it the deadline renders as plain read-only text.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.PL_CALENDAR.${key}_TITLE`, textKey: `GUIDE.PL_CALENDAR.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'calendar_month'),
+  step('YEAR', 'event', 'calendar-year'),
+  step('TABLE', 'table_rows', 'calendar-table'),
+  step('EDIT', 'edit_calendar', 'calendar-table'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-calendar-admin',
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent,
     DataTableComponent, DafCellDirective, SelectComponent, FormFieldComponent,
+    PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './calendar-admin.component.html',
 })
 export class CalendarAdminComponent implements OnInit {
+
+  readonly guideSteps = GUIDE_STEPS;
   private readonly calendarSvc = inject(SubmissionCalendarService);
   private readonly userStore   = inject(UserStore);
   private readonly translate   = inject(TranslateService);

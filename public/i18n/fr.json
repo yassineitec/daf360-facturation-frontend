@@ -22,11 +22,14 @@
     },
     "CURRENCY": {
       "TITLE": "Devise d'affichage",
+      "SHORT": "Devise",
       "NAMES": {
         "EUR": "Euro",
         "USD": "Dollar US",
         "TND": "Dinar tunisien",
-        "EGP": "Livre égyptienne"
+        "EGP": "Livre égyptienne",
+        "SAR": "Riyal saoudien",
+        "AED": "Dirham émirati"
       }
     },
     "PAGINATION": {
@@ -167,6 +170,1996 @@
       "NOTES_PLACEHOLDER": "Commentaire optionnel sur la décision",
       "FILTER_COUNTRY": "Pays de destination"
     }
+  },
+  "GUIDE": {
+    "HELP_CENTER": "Aide & guides",
+    "CLOSE": "Fermer le guide",
+    "STEP_OF": "{{current}} / {{total}}",
+    "PREV": "Précédent",
+    "NEXT": "Suivant",
+    "DONE": "Terminer",
+    "MENU": {
+      "TITLE": "Aide sur : {{page}}",
+      "NO_PAGE": "Choisissez le type d'aide",
+      "NONE": "Cette page n'a pas encore de guide.",
+      "GUIDE": "Guide pas à pas",
+      "GUIDE_HINT": "Une visite guidée de cette page, élément par élément",
+      "VIDEOS": "Vidéos",
+      "VIDEOS_HINT": "{{count}} vidéo(s) de démonstration",
+      "BACK": "Retour",
+      "ALL": "Tout le centre d'aide",
+      "CHAT": "Assistant",
+      "CHAT_HINT": "Posez votre question avec vos propres mots"
+    },
+    "HINT": {
+      "TITLE": "Première visite ?",
+      "TEXT": "Suivez le guide de cette page (1 min).",
+      "START": "Lancer",
+      "LATER": "Plus tard"
+    },
+    "VOICE": {
+      "LISTEN": "Écouter",
+      "STOP": "Arrêter",
+      "ON": "Activer la lecture vocale",
+      "OFF": "Couper la lecture vocale"
+    },
+    "HOME": {
+      "WELCOME_TITLE": "Bienvenue sur l'accueil Finance",
+      "WELCOME_TEXT": "Cette page résume l'état des encaissements et donne accès à tous les modules Finance. Suivez le guide pour en faire le tour.",
+      "KPIS_TITLE": "Les indicateurs d'encaissement",
+      "KPIS_TEXT": "Quatre chiffres : ce qui a été encaissé ce mois, ce qui reste en attente de paiement, les factures en retard et les créances échues depuis plus de 90 jours. Un chiffre en rouge demande une relance.",
+      "MODULES_TITLE": "Les modules Finance",
+      "MODULES_TEXT": "Chaque carte ouvre un module : affaires, factures, recouvrement, coûts, P&L… Ce sont les mêmes que dans la barre latérale. Sur la carte Facturation, un compteur indique les factures soumises qui attendent une validation.",
+      "ACTIVITY_TITLE": "L'activité récente",
+      "ACTIVITY_TEXT": "Cet onglet ouvre la liste des dernières factures avec leur statut. Un clic sur une ligne ouvre la facture ; « Voir tout » mène à la liste complète.",
+      "CURRENCY_TITLE": "La devise d'affichage",
+      "CURRENCY_TEXT": "Choisissez ici la devise dans laquelle les montants sont affichés : « Devise » en bas de la barre latérale (sur mobile, la bulle en bas à droite). Les montants sont convertis ; le signe ≈ indique un taux approximatif.",
+      "HELP_TITLE": "Retrouver ce guide",
+      "HELP_TEXT": "« Aide & guides », en bas de la barre latérale, relance ce guide à tout moment. Vous pouvez aussi activer la lecture vocale avec le haut-parleur en haut de chaque étape."
+    },
+    "START": "Lancer",
+    "SEARCH": {
+      "SECTION": "Section",
+      "FAQ": "Rechercher une question…",
+      "DOCS": "Rechercher dans la documentation…",
+      "NO_MATCH": "Aucun résultat pour « {{query}} ». Essayez d'autres mots ou posez la question à l'assistant."
+    },
+    "CENTER": {
+      "SUBTITLE": "Guides, questions fréquentes, documentation et contact du support.",
+      "PAGE_HELP": "Aide de la page",
+      "FAQ_TITLE": "Questions fréquentes",
+      "DOCS_TITLE": "Documentation",
+      "GUIDES": "Guides interactifs",
+      "OPEN_PAGE": "Ouvrir",
+      "NEEDS_RECORD": "Ce guide se lance depuis une fiche : ouvrez la fiche voulue, puis « Aide & guides » en bas du menu.",
+      "PICK_RECORD": "Choisir une fiche",
+      "VIDEOS_TITLE": "Tutoriels vidéo",
+      "MINUTES": "{{count}} min",
+      "SOON": "Bientôt disponible",
+      "SUPPORT_TITLE": "Support",
+      "SUPPORT_TEXT": "Vous n'avez pas trouvé votre réponse ? Contactez le support technique.",
+      "FAQ": {
+        "HOME": {
+          "DASH": {
+            "Q": "Pourquoi les indicateurs affichent « — » ?",
+            "A": "Les quatre chiffres viennent du recouvrement : il faut le droit de consulter le recouvrement pour les voir. Sans ce droit, ou si le serveur ne répond pas, la case affiche « — ». Rechargez la page ; si le tiret reste, demandez ce droit à votre administrateur."
+          },
+          "SCOPE": {
+            "Q": "Quelles factures sont comptées dans les indicateurs ?",
+            "A": "Celles de votre entité (votre pays). Les montants sont des restes dus : un règlement partiel est déjà déduit de la facture."
+          },
+          "PENDING": {
+            "Q": "Quelle différence entre « En attente de paiement », « En retard » et « +90 jours » ?",
+            "A": "« En attente de paiement » : tout ce qui reste à encaisser, échu ou non, y compris les factures sans échéance. « Factures en retard » : la partie dont l'échéance est dépassée, avec le nombre de factures. « Échu depuis +90 jours » : la partie du retard dépassée de plus de 90 jours, la plus urgente à relancer."
+          },
+          "COLLECTED": {
+            "Q": "Que compte « Encaissé ce mois » ?",
+            "A": "Tous les règlements enregistrés depuis le 1er du mois pour votre entité, même sur une facture qui n'est pas encore soldée. Le chiffre repart de zéro au début de chaque mois."
+          },
+          "CURRENCY": {
+            "Q": "Comment changer la devise des montants ? Que signifie « ≈ » ?",
+            "A": "Cliquez sur « Devise », en bas de la barre latérale (sur mobile : la bulle en bas à droite), puis choisissez une devise. Le choix est mémorisé dans ce navigateur et s'applique à tous les écrans Finance. Le signe ≈ indique une conversion faite avec un taux approximatif."
+          },
+          "TO_VALIDATE": {
+            "Q": "Que signifie « … à valider » sur la carte Facturation ?",
+            "A": "C'est le nombre de factures soumises qui attendent une validation. Cliquez sur la carte pour ouvrir les factures."
+          },
+          "FORBIDDEN": {
+            "Q": "Une carte m'amène sur « accès refusé », pourquoi ?",
+            "A": "L'accueil affiche toutes les cartes, mais chaque module demande ses propres droits. Sans ce droit, la page est refusée : demandez-le à votre administrateur. La barre latérale, elle, ne montre que les modules auxquels vous avez accès."
+          },
+          "SAME": {
+            "Q": "Les chiffres sont-ils les mêmes que sur Recouvrement et Trésorerie ?",
+            "A": "Oui : l'accueil lit les mêmes créances et les mêmes règlements que ces deux écrans. Un écart vient en général d'une devise d'affichage ou d'un filtre différent sur l'autre écran."
+          }
+        },
+        "AFFAIRES": {
+          "CREATE": {
+            "Q": "« Nouvelle affaire » me renvoie une erreur, pourquoi ?",
+            "A": "Créer une affaire demande le droit de gérer les affaires. Avec un simple droit de consultation, le bouton est visible mais l'enregistrement est refusé : demandez ce droit à votre administrateur."
+          },
+          "PENDING": {
+            "Q": "Que compte la tuile « En attente » ?",
+            "A": "Les affaires suspendues. Les affaires en brouillon ou configurées n'y sont pas : filtrez par statut pour les retrouver."
+          },
+          "RAF": {
+            "Q": "Comment est calculé le RAF (reste à facturer) ?",
+            "A": "Budget de l'affaire + travaux supplémentaires intégrés − factures émises (montants HT, sans les factures en brouillon, annulées ou retournées). Un RAF négatif signifie qu'on a facturé plus que le budget."
+          },
+          "WIP": {
+            "Q": "Que signifie le « Wip » sur une carte ?",
+            "A": "Le travail déclaré dans l'onglet WIP de l'affaire qui n'est pas encore passé en facture. Un chiffre négatif veut dire qu'on a facturé plus que ce qui a été déclaré, par exemple des factures émises hors du circuit WIP."
+          },
+          "TILES": {
+            "Q": "Les tuiles changent-elles quand je change de page ?",
+            "A": "Non : elles portent sur toutes les affaires qui correspondent à la recherche et aux filtres, pas sur les lignes affichées. Elles ne bougent qu'avec un filtre ou une recherche."
+          },
+          "TOTAL": {
+            "Q": "Pourquoi le budget total ne correspond pas à la somme des affaires ?",
+            "A": "Les affaires ont chacune leur devise : les totaux sont convertis en euros, puis dans la devise d'affichage. Une affaire dont la devise n'a pas de taux de change est laissée hors des montants (elle reste comptée dans les nombres d'affaires)."
+          },
+          "DELETE": {
+            "Q": "Pourquoi je ne peux pas supprimer une affaire ?",
+            "A": "Seules les affaires en brouillon se suppriment, et il faut le droit de gérer les affaires. Une affaire supprimée disparaît de la liste mais sa référence n'est pas réattribuée. Pour une affaire terminée, changez plutôt son statut (Clôturée, Archivée) depuis sa fiche."
+          },
+          "CLIENT": {
+            "Q": "Pourquoi la liste n'affiche que les affaires d'un client ?",
+            "A": "Vous êtes arrivé depuis la fiche d'un client, ou vous avez filtré sur un client : un bandeau le rappelle au-dessus de la liste. « Voir toutes les affaires » retire ce filtre."
+          },
+          "MEMORY": {
+            "Q": "Mes filtres sont-ils gardés ?",
+            "A": "Oui, tant que vous allez et venez entre la liste et la fiche d'une affaire. Ils sont effacés si vous rechargez la page (F5) ou si vous passez par un autre écran."
+          }
+        },
+        "AFFAIRE_NEW": {
+          "SAVED": {
+            "Q": "J'ai quitté l'assistant : ma saisie est-elle perdue ?",
+            "A": "Non, si vous aviez passé l'étape 2 : chaque « Suivant » enregistre, et l'affaire existe en brouillon. Reprenez-la avec « Reprendre une affaire en brouillon » en bas de l'assistant, ou depuis la liste filtrée sur Brouillon. Avant l'étape 2, rien n'est encore enregistré."
+          },
+          "KYC": {
+            "Q": "Pourquoi le client bloque à « validation KYC requise » ?",
+            "A": "Une affaire ne peut être créée que pour un client dont le KYC est validé. Faites valider le KYC depuis la fiche du client, puis revenez à l'assistant."
+          },
+          "NEXT_OFF": {
+            "Q": "« Suivant » reste grisé, que manque-t-il ?",
+            "A": "Le message sous le formulaire liste les champs manquants de l'étape. À l'étape 2, n'oubliez pas le contact client ; à l'étape 3, la répartition doit faire 100 % ; à l'étape 4, les allocations doivent égaler le budget ; à l'étape 5, il faut la date de début et la durée."
+          },
+          "ALLOC": {
+            "Q": "Le total des allocations ne correspond jamais au budget, pourquoi ?",
+            "A": "La somme des budgets alloués aux responsables doit être exactement égale au budget prévisionnel saisi à l'étape 2, au millième près. Ajustez une allocation, ou corrigez le budget à l'étape 2 (cliquez dessus dans le rail)."
+          },
+          "DOC360": {
+            "Q": "Dois-je lier un projet DOC360 ?",
+            "A": "Non, l'étape Origine est facultative. Lier un projet reprend ses données et rattache ses pièces contractuelles ; sinon, cliquez sur « Suivant » et saisissez les informations à l'étape 2."
+          },
+          "MODE": {
+            "Q": "Puis-je changer le mode de facturation plus tard ?",
+            "A": "Oui tant que l'affaire est en brouillon : revenez à l'étape 2. Après l'activation, le mode est figé ; le budget, lui, peut encore évoluer."
+          },
+          "ENTITY": {
+            "Q": "Pourquoi l'entité est déjà remplie ?",
+            "A": "L'assistant propose l'entité de votre pays, le cas le plus fréquent. Vous pouvez la changer tant que l'affaire n'est pas créée ; ensuite, seul un administrateur peut corriger l'entité d'une affaire."
+          },
+          "ACTIVATE": {
+            "Q": "Que se passe-t-il quand j'active l'affaire ?",
+            "A": "Le serveur vérifie l'ensemble (mode, budget, au moins un contact, configuration de facturation complète), passe l'affaire « En cours », fige son mode de facturation et ouvre sa fiche. Un message indique ce qui manque si l'activation est refusée."
+          }
+        },
+        "AFFAIRE_DETAIL": {
+          "PAYMENT": {
+            "Q": "Comment enregistrer un paiement sur une affaire ?",
+            "A": "Pas depuis la fiche : l'onglet Paiements est en lecture seule. Ouvrez la facture concernée (onglet Factures › « Consulter » › « Ouvrir la facture », ou le menu « Factures ») et cliquez sur « Enregistrer un paiement ». La facture doit être émise, envoyée ou partiellement payée ; le paiement est dans la devise de la facture."
+          },
+          "PARTIAL": {
+            "Q": "Pourquoi un paiement partiel n'apparaît pas dans « Total encaissé » ?",
+            "A": "« Total encaissé » ne compte que les factures entièrement payées. Un paiement partiel apparaît dans l'onglet Paiements et dans le graphique Paiements ; la facture rejoint « Total encaissé » une fois payée en totalité."
+          },
+          "CHART_URL": {
+            "Q": "À quoi sert « cc=PAYMENTS » dans l'adresse ?",
+            "A": "Il garde le graphique affiché dans la Vue générale : INVOICED (Facturation), WIP ou PAYMENTS (Paiements), plusieurs séparés par une virgule pour un graphique combiné. La période et la vue des graphiques sont aussi dans l'adresse : un lien copié rouvre la même vue."
+          },
+          "COMBINE": {
+            "Q": "Comment afficher plusieurs graphiques ensemble ?",
+            "A": "Ctrl + clic sur Facturation, WIP ou Paiements : les séries choisies s'affichent côte à côte. Un clic simple revient à un seul graphique."
+          },
+          "TS_CREATE": {
+            "Q": "Pourquoi je ne peux pas créer de TS ?",
+            "A": "Un TS ne se crée que sur une affaire « En cours », et demande le droit de création des TS. Sur un brouillon, une affaire suspendue ou clôturée, la création est refusée."
+          },
+          "TS_BUDGET": {
+            "Q": "Quand un TS entre-t-il dans le budget ?",
+            "A": "Après ses deux validations, technique puis commerciale : il passe alors automatiquement « Intégré au budget », augmente le RAF et compte dans la tuile TS. Un TS intégré ou facturé ne peut plus être supprimé."
+          },
+          "INVOICE_BLOCKED": {
+            "Q": "Pourquoi la facturation est-elle refusée sur cette affaire ?",
+            "A": "Plusieurs règles : le budget doit être validé ; l'affaire ne doit pas être suspendue ni clôturée ; le montant HT ne doit pas dépasser le RAF. En Forfaitaire, Régie ou Livrables, la facture vient du WIP validé : une facture manuelle n'est acceptée que pour des frais, un solde de WIP ou un acompte."
+          },
+          "OVERRUN": {
+            "Q": "Que signifie le bandeau « Budget dépassé » ?",
+            "A": "Les factures émises dépassent le budget plus les TS intégrés : le RAF est négatif. Le bandeau, visible quel que soit l'onglet, donne le montant du dépassement ; « Voir les factures » ouvre l'onglet Factures."
+          },
+          "TABS_MISSING": {
+            "Q": "Pourquoi je ne vois pas l'onglet WIP, Ressources ou Dépense ?",
+            "A": "Ils dépendent du mode de facturation : WIP pour Forfaitaire, Régie et Livrables ; Ressources pour la Régie ; Dépense pour Forfaitaire et Livrables. Les autres onglets sont toujours là."
+          },
+          "STATUS": {
+            "Q": "Comment changer le statut de l'affaire ?",
+            "A": "Dans « Actions rapides », cliquez sur la pastille de statut et choisissez le nouveau. Le passage en Suspendue ou Clôturée est refusé tant que l'affaire a des factures en brouillon ou soumises : traitez-les d'abord."
+          },
+          "BUDGET": {
+            "Q": "Que veut dire « Budget non validé » ?",
+            "A": "Le budget de l'affaire n'est pas encore validé : on ne peut pas facturer. Le bouton « Valider le budget » apparaît dans « Actions rapides » pour ceux qui en ont le droit, et disparaît une fois le budget validé."
+          },
+          "DELETE": {
+            "Q": "Peut-on supprimer une affaire ?",
+            "A": "Seulement un brouillon, avec « Supprimer le brouillon » en bas des « Actions rapides ». Une affaire activée ne se supprime plus : changez plutôt son statut (Suspendue, Clôturée, Archivée)."
+          }
+        },
+        "AFFAIRE_EDIT": {
+          "SAVED": {
+            "Q": "Mes modifications sont-elles enregistrées si je quitte la page ?",
+            "A": "Oui pour chaque étape validée par « Suivant » : elle est enregistrée immédiatement. La saisie de l'étape affichée, elle, est perdue si vous quittez la page ou cliquez sur « Annuler » sans passer par « Suivant »."
+          },
+          "JUMP": {
+            "Q": "Faut-il repasser par toutes les étapes pour changer une seule information ?",
+            "A": "Non, sur une affaire active : cliquez sur l'étape dans le rail, faites la modification et cliquez sur « Suivant » pour l'enregistrer. Vous pouvez ensuite quitter. Sur un brouillon, les étapes se débloquent une à une."
+          },
+          "MODE": {
+            "Q": "Puis-je changer le mode de facturation d'une affaire active ?",
+            "A": "Oui, aux Infos générales. « Suivant » enregistre le nouveau mode (le changement apparaît dans l'activité de l'affaire) ; configurez-le ensuite à l'étape Facturation. Les onglets de la fiche (WIP, Ressources, Dépense) suivent le nouveau mode."
+          },
+          "CLIENT": {
+            "Q": "Pourquoi le changement de client est-il refusé ?",
+            "A": "Le client ne peut pas changer tant que des contacts du client actuel sont rattachés à l'affaire, et l'étape exige au moins un contact. Pour une affaire d'un autre client, créez une nouvelle affaire, ou demandez à un administrateur."
+          },
+          "ENTITY": {
+            "Q": "Pourquoi l'entité n'est-elle pas modifiable ?",
+            "A": "L'entité est « définie à la création » : elle fixe la numérotation de la référence de l'affaire. Seul un administrateur peut la corriger."
+          },
+          "ALLOC": {
+            "Q": "J'ai changé le budget et l'étape Responsables bloque, pourquoi ?",
+            "A": "La somme des budgets alloués aux responsables doit égaler exactement le budget prévisionnel. Après un changement de budget aux Infos générales, ajustez les allocations à l'étape Responsables, puis cliquez sur « Suivant »."
+          },
+          "CLOSED": {
+            "Q": "Pourquoi l'enregistrement est-il refusé sur une affaire clôturée ?",
+            "A": "Une affaire clôturée ou archivée ne se modifie plus : les étapes Facturation, Responsables et Planning sont refusées, avec un message qui le dit."
+          },
+          "FINISH": {
+            "Q": "« Enregistrer » ou « Activer l'affaire » : quelle différence ?",
+            "A": "Sur une affaire active, le dernier bouton est « Enregistrer » : il ramène à la fiche, chaque étape ayant déjà été enregistrée par « Suivant ». Sur un brouillon (« Compléter le brouillon »), c'est « Activer l'affaire » : le serveur vérifie l'ensemble et passe l'affaire « En cours »."
+          },
+          "NO_BUTTON": {
+            "Q": "Je ne vois pas « Modifier l'affaire » sur la fiche, pourquoi ?",
+            "A": "Le bouton, en bas des « Actions rapides » de la fiche, n'apparaît qu'avec le droit de modifier les affaires. Demandez-le à votre administrateur."
+          }
+        },
+        "CLIENTS": {
+          "KYC": {
+            "Q": "Comment valider le KYC d'un client ?",
+            "A": "Ouvrez sa fiche et validez le KYC (droit de gérer la facturation). Tant qu'il est en attente, aucune affaire ne peut être créée pour ce client. Le KYC ne peut plus être révoqué tant que le client a des affaires en cours."
+          },
+          "DELETE": {
+            "Q": "Comment supprimer un client ?",
+            "A": "Un client ne se supprime pas : il se désactive depuis sa fiche, et peut être réactivé ensuite. La désactivation est refusée tant qu'il a des affaires en cours."
+          },
+          "CA": {
+            "Q": "Que compte le « CA Total » d'un client ?",
+            "A": "Le montant de ses factures, converti dans sa devise par défaut. La tuile « Total CA » en haut de page additionne les clients de la page affichée, convertis en euros."
+          },
+          "PAGE_TILES": {
+            "Q": "Pourquoi les tuiles changent-elles quand je change de page ?",
+            "A": "KYC Validé, Total CA et Clients Actifs ne portent que sur les clients de la page affichée (« Page courante »). Seul Total Clients compte tous les clients trouvés avec vos filtres. Pour un chiffre plus large, affichez 100 clients par page ou filtrez."
+          },
+          "SEARCH": {
+            "Q": "La recherche ne trouve pas un secteur, pourquoi ?",
+            "A": "La recherche porte sur le nom, le code et le n° fiscal / TVA. Pour un secteur, utilisez « Filtres » › Secteur."
+          },
+          "ACTIVE": {
+            "Q": "Que veut dire « Affaires actives » ?",
+            "A": "Le nombre d'affaires « En cours » du client : les brouillons, affaires suspendues ou clôturées ne comptent pas. Le filtre « Affaires actives » trouve les clients avec ou sans affaire en cours."
+          },
+          "DUPLICATE": {
+            "Q": "« Un client avec ce code existe déjà » : que faire ?",
+            "A": "Le code et le nom d'un client sont uniques dans une entité. Recherchez le client existant avant d'en créer un nouveau."
+          },
+          "NO_BUTTON": {
+            "Q": "Je ne vois pas « Nouveau client », pourquoi ?",
+            "A": "Il faut le droit de gérer la facturation. Avec le seul droit de consultation, la liste et les fiches restent visibles, sans création ni modification."
+          }
+        },
+        "CLIENT_NEW": {
+          "SAVED": {
+            "Q": "J'ai quitté l'assistant : le client est-il enregistré ?",
+            "A": "Non. Rien n'est enregistré avant « Créer le client », à la dernière étape : quitter ou annuler avant perd la saisie."
+          },
+          "CODE": {
+            "Q": "Dois-je saisir un code client ?",
+            "A": "Non : laissé vide, il est généré à la création. S'il est saisi, il doit être unique dans l'entité, comme le nom."
+          },
+          "REQUIRED": {
+            "Q": "Qu'est-ce qui est obligatoire ?",
+            "A": "Le nom du client et le secteur d'activité à l'étape 1, et au moins un contact avec son nom à l'étape 2. Le reste est facultatif ; le délai de paiement, s'il est saisi, va de 0 à 365 jours."
+          },
+          "EMAIL": {
+            "Q": "Un contact doit-il avoir une adresse e-mail ?",
+            "A": "Ce n'est pas bloquant, mais un contact sans adresse ne recevra aucune facture : l'assistant prévient si aucun contact n'en a. Deux contacts du même client ne peuvent pas avoir la même adresse."
+          },
+          "PRIMARY": {
+            "Q": "Qu'est-ce que le contact principal ?",
+            "A": "L'interlocuteur de référence du client, un seul par client. Le premier contact l'est par défaut ; cochez « Contact principal du client » sur un autre pour le changer."
+          },
+          "ENTITY": {
+            "Q": "À quelle entité le client est-il rattaché ?",
+            "A": "À l'entité de votre pays. Le « Pays d'origine » saisi à l'étape 2 est le pays du client lui-même, une autre information."
+          },
+          "AFTER": {
+            "Q": "Que faire après la création ?",
+            "A": "Le client s'ouvre avec un KYC « en attente » : validez-le depuis sa fiche (« Valider le KYC ») avant de créer une affaire pour lui."
+          }
+        },
+        "CLIENT_EDIT": {
+          "SAVED": {
+            "Q": "Quand mes modifications sont-elles enregistrées ?",
+            "A": "Seulement avec « Enregistrer », à la dernière étape. « Suivant » et un clic dans le rail ne font que changer d'étape ; « Annuler » ou quitter la page perd tout."
+          },
+          "CONTACTS": {
+            "Q": "Pourquoi un contact ne peut-il pas être retiré ?",
+            "A": "Retirer un contact le désactive, ce qui est refusé tant qu'il est rattaché à une affaire en cours, ou s'il est le contact principal. Le client, lui, est déjà enregistré quand cette erreur s'affiche : corrigez le contact et enregistrez de nouveau."
+          },
+          "PRIMARY": {
+            "Q": "Comment changer le contact principal ?",
+            "A": "Cochez « Contact principal du client » sur le nouveau contact : l'ancien perd ce rôle automatiquement. On ne peut pas retirer le rôle sans en désigner un autre."
+          },
+          "KYC": {
+            "Q": "Puis-je valider le KYC ici ?",
+            "A": "Non, le KYC se valide ou se révoque depuis la fiche du client, dans « Actions rapides »."
+          }
+        },
+        "CLIENT_DETAIL": {
+          "KYC": {
+            "Q": "Comment valider le KYC ?",
+            "A": "« Valider le KYC » dans « Actions rapides » (droit de gérer la facturation). La carte Validation KYC affiche ensuite la date et l'auteur. Sans KYC validé, aucune affaire ne peut être créée pour ce client."
+          },
+          "REVOKE": {
+            "Q": "Pourquoi la révocation du KYC est-elle refusée ?",
+            "A": "Le KYC ne peut pas être révoqué tant que le client a des affaires en cours. Clôturez ou suspendez-les d'abord."
+          },
+          "BLOCK": {
+            "Q": "Que fait « Bloquer le client » ?",
+            "A": "Il désactive le client, après confirmation, et ramène à la liste. C'est refusé tant que le client a des affaires en cours. L'action est réversible : « Réactiver le client » sur sa fiche."
+          },
+          "FIND": {
+            "Q": "Comment retrouver un client bloqué ?",
+            "A": "Dans la liste des clients, « Filtres » › Statut › Inactifs. Sa fiche propose alors « Réactiver le client »."
+          },
+          "PENDING": {
+            "Q": "Comment est calculé « En attente » ?",
+            "A": "Le total facturé (hors brouillons et factures annulées) moins les paiements reçus. Les barres de Recouvrement montrent les deux parts sur le même total."
+          },
+          "CONTACT_OFF": {
+            "Q": "Pourquoi un contact ne peut-il pas être désactivé ?",
+            "A": "Un contact rattaché à une affaire en cours, ou le contact principal, ne se désactive pas. Désignez d'abord un autre contact principal, ou retirez-le des affaires concernées."
+          },
+          "NO_EMAIL": {
+            "Q": "Que veut dire « Aucune adresse e-mail » sur un contact ?",
+            "A": "Ce contact ne recevra aucune facture. Modifiez-le (icône crayon) pour lui ajouter une adresse."
+          },
+          "INVOICE": {
+            "Q": "Comment facturer ce client ?",
+            "A": "« Nouvelle facture » dans « Actions rapides » ouvre la création de facture pour ce client ; son fil d'Ariane ramène ensuite à cette fiche."
+          }
+        },
+        "INVOICES": {
+          "LIFECYCLE": {
+            "Q": "Quelles sont les étapes d'une facture ?",
+            "A": "Brouillon, En revue (soumise), Validée, Émise, Envoyée, Part. payée, Payée. Une facture en revue peut aussi être Retournée (à corriger) ou Annulée (rejetée) ; une facture envoyée peut passer En litige ; un avoir la passe en « Avoir émis »."
+          },
+          "NUMBER": {
+            "Q": "Pourquoi ma facture n'a-t-elle pas de numéro ?",
+            "A": "Le numéro n'est attribué qu'à l'émission (« Émettre la facture ») : FAC-année-n° pour une facture, AV-année-n° pour un avoir, sans trou, par pays et par année. Avant, elle s'affiche « Brouillon »."
+          },
+          "APPROVE": {
+            "Q": "Qui valide une facture ?",
+            "A": "Toute personne ayant le droit de gérer la facturation, avec « Valider la facture » (liste) ou « Confirmer la décision » (fiche) : Approuver, Retourner (avec commentaire) ou Rejeter, ce qui l'annule."
+          },
+          "SENT": {
+            "Q": "« Marquer comme envoyée » envoie-t-il la facture ?",
+            "A": "Non : l'e-mail part à l'émission, vers les contacts de facturation de l'affaire (sinon ses autres contacts, sinon le contact principal du client). « Marquer comme envoyée » note seulement que le client l'a reçue."
+          },
+          "PAYMENT": {
+            "Q": "Comment enregistrer un paiement ?",
+            "A": "« Enregistrer un paiement », depuis la liste ou la fiche, sur une facture émise, envoyée ou partiellement payée : montant, date, mode et référence. Le paiement est dans la devise de la facture ; la facture passe Payée quand le net à payer est atteint."
+          },
+          "KPIS": {
+            "Q": "Pourquoi les tuiles changent-elles avec la page ?",
+            "A": "Elles additionnent les factures de la page affichée seulement (« page courante »), converties en euros. Filtrez ou affichez 100 factures par page pour un chiffre plus large."
+          },
+          "OVERDUE": {
+            "Q": "Qu'est-ce qu'une facture en retard ?",
+            "A": "Une facture émise, envoyée ou partiellement payée dont l'échéance est passée (hors avoirs). Le filtre « En retard uniquement » les isole ; la liste affiche le nombre de jours de retard."
+          },
+          "DRAFT_DATE": {
+            "Q": "Mes brouillons disparaissent quand je filtre par période, pourquoi ?",
+            "A": "La période d'émission filtre sur la date d'émission, que les brouillons n'ont pas encore. Filtrez plutôt par statut Brouillon."
+          },
+          "DELETE": {
+            "Q": "Peut-on supprimer ou annuler une facture ?",
+            "A": "Il n'y a pas de suppression. Une facture en revue peut être rejetée (Annulée) ; une facture émise se corrige avec « Modifier » tant qu'aucun paiement n'est enregistré, sinon avec un avoir."
+          }
+        },
+        "INVOICE_NEW": {
+          "AFFAIRE_MISSING": {
+            "Q": "Je ne trouve pas mon affaire, pourquoi ?",
+            "A": "L'affaire doit être activée (En cours) dans le module Affaires. Une affaire en brouillon, suspendue ou clôturée ne se facture pas (RG10)."
+          },
+          "RAF": {
+            "Q": "Que veut dire « RAF épuisé — facturation bloquée » ?",
+            "A": "Le reste à facturer de l'affaire est à zéro : le montant du contrat (plus les TS intégrés) est déjà facturé. Le montant HT d'une facture ne peut jamais dépasser le RAF disponible (RG12)."
+          },
+          "BUDGET": {
+            "Q": "« Le budget de l'affaire n'est pas encore validé » : que faire ?",
+            "A": "Faites valider le budget depuis la fiche affaire (« Valider le budget ») : aucune facture ne peut être créée avant (RG11)."
+          },
+          "MANUAL": {
+            "Q": "Pourquoi ne puis-je pas saisir librement mes lignes ?",
+            "A": "En forfait, régie ou livrables, la facture d'avancement vient de la validation WIP (fiche affaire › WIP, puis file d'approbation). Ici, en dehors d'un acompte, seuls les frais remboursables et les soldes WIP non facturés sont acceptés."
+          },
+          "ACOMPTE": {
+            "Q": "Comment faire une facture d'acompte ?",
+            "A": "Choisissez le type « Facture d'acompte » à l'étape 1 : les lignes se saisissent alors librement. Le montant HT reste limité au RAF de l'affaire."
+          },
+          "DUE_DATE": {
+            "Q": "À quoi sert la date d'échéance ?",
+            "A": "Elle est proposée d'après les conditions de paiement et reste modifiable. Elle fixe le retard et planifie les relances de paiement ; sans échéance, aucune relance."
+          },
+          "DRAFT_OR_SUBMIT": {
+            "Q": "« Brouillon » ou « Soumettre » ?",
+            "A": "« Brouillon » enregistre la facture pour la compléter plus tard (« Modifier le brouillon » depuis sa fiche). « Soumettre » l'enregistre et la passe En revue, en attente de validation."
+          },
+          "APPROVAL": {
+            "Q": "J'arrive depuis la file d'approbation : que se passe-t-il si j'annule ?",
+            "A": "L'approbation avait créé le brouillon : « Annuler » (ou quitter la page sans enregistrer) le supprime et remet la demande dans la file d'approbation. Enregistrez d'abord si vous voulez garder la facture."
+          }
+        },
+        "INVOICE_EDIT": {
+          "WHICH": {
+            "Q": "Quelles factures peut-on modifier ?",
+            "A": "Un brouillon, avec « Modifier le brouillon ». Une facture émise ou envoyée sans aucun paiement, avec « Modifier » (droit spécifique). Au-delà, passez par un avoir."
+          },
+          "AMEND": {
+            "Q": "Que change « Modifier » sur une facture émise ?",
+            "A": "La facture garde son numéro (sa date d'émission et son numéro restent modifiables, sans doublon dans le pays). Le détail avant / après est conservé dans « Historique des modifications »."
+          },
+          "RETURNED": {
+            "Q": "Ma facture a été retournée : comment la corriger ?",
+            "A": "Le commentaire du valideur explique le motif. La fiche propose « Soumettre à nouveau » ; la modification d'une facture retournée n'est pas proposée par l'écran."
+          },
+          "PAID": {
+            "Q": "Pourquoi « Modifier » a-t-il disparu ?",
+            "A": "Dès qu'un paiement est enregistré, la facture ne se modifie plus : émettez un avoir pour la corriger."
+          }
+        },
+        "INVOICE_DETAIL": {
+          "NEXT": {
+            "Q": "Quelle est la prochaine étape de ma facture ?",
+            "A": "Le grand bouton du cycle de vie l'indique toujours : il dépend du statut (soumettre, décider, émettre, marquer envoyée, enregistrer un paiement, résoudre le litige)."
+          },
+          "EMIT": {
+            "Q": "Que fait « Émettre la facture » ?",
+            "A": "Sur une facture validée : vous choisissez la date d'émission (aujourd'hui par défaut), la facture reçoit son numéro et l'e-mail part vers les contacts. Elle n'est alors plus modifiable librement."
+          },
+          "EMAIL": {
+            "Q": "À qui la facture est-elle envoyée ?",
+            "A": "Aux contacts de facturation de l'affaire qui ont une adresse, sinon aux autres contacts de l'affaire, sinon au contact principal du client. Sans aucune adresse, l'émission réussit mais rien n'est envoyé."
+          },
+          "PARTIAL": {
+            "Q": "Comment fonctionne un paiement partiel ?",
+            "A": "Chaque paiement s'ajoute : la facture passe « Part. payée », puis « Payée » quand le net à payer est atteint. Le « Restant à payer » se met à jour."
+          },
+          "FIX": {
+            "Q": "Comment corriger une facture émise ?",
+            "A": "Sans paiement : « Modifier » (droit spécifique), la facture garde son numéro. Avec un paiement : « Émettre un avoir »."
+          },
+          "CREDIT": {
+            "Q": "Comment fonctionne un avoir ?",
+            "A": "« Émettre un avoir » sur une facture émise, envoyée ou partiellement payée, avec un motif. L'avoir part en validation puis s'émet comme une facture (numéro AV-…). La facture d'origine passe aussitôt « Avoir émis » et ses relances s'arrêtent."
+          },
+          "DISPUTE": {
+            "Q": "Que se passe-t-il pendant un litige ?",
+            "A": "« Ouvrir un litige » (avec motif) suspend les relances ; aucun paiement ne peut être enregistré. « Résoudre le litige » remet la facture en « Émise », ou « Part. payée » si elle avait déjà un paiement."
+          },
+          "REMINDERS": {
+            "Q": "Comment arrêter les relances d'une facture ?",
+            "A": "Onglet Relances › « Suspendre », puis « Réactiver » plus tard. Elles s'arrêtent seules au paiement complet ou à l'émission d'un avoir."
+          },
+          "PDF": {
+            "Q": "Pourquoi « Exporter en PDF » n'apparaît-il pas ?",
+            "A": "L'export n'existe que pour les factures en forfait, régie, livrables, TS ou combinées. Avant l'émission, le PDF porte la mention BROUILLON."
+          }
+        },
+        "COLLECTIONS": {
+          "WHAT": {
+            "Q": "Que liste la page Recouvrement ?",
+            "A": "Les factures restant à encaisser (émises, envoyées ou partiellement payées), pas les paiements. Les paiements reçus d'une facture se voient dans son dossier, onglet Encaissements."
+          },
+          "MISSING": {
+            "Q": "Pourquoi une facture n'apparaît-elle pas ?",
+            "A": "Une facture en brouillon, en revue, payée, annulée, en litige ou avec avoir n'est pas à recouvrer. Une facture partiellement payée reste listée avec son reste dû."
+          },
+          "KPIS": {
+            "Q": "Comment sont calculés les indicateurs ?",
+            "A": "Sur toutes les factures à encaisser de votre entité : Encours = somme des restes dus ; Échu = la part dont l'échéance est passée ; Encaissé ce mois = paiements reçus depuis le 1er ; +90 jours = la part échue depuis plus de 90 jours. Une facture sans échéance n'est jamais comptée en retard."
+          },
+          "CURRENCY": {
+            "Q": "Dans quelle devise sont les indicateurs ?",
+            "A": "Dans la devise de votre entité. Les montants ne sont pas convertis : des factures dans d'autres devises sont additionnées telles quelles."
+          },
+          "FILTER_ID": {
+            "Q": "Comment filtrer sur une affaire ou un client ?",
+            "A": "Le filtre attend leur identifiant (le numéro dans l'adresse de leur fiche, par exemple /affaires/12). Pour un client, la recherche par son nom est plus simple."
+          },
+          "PERIOD": {
+            "Q": "Sur quelle date porte le filtre « Période » ?",
+            "A": "Sur la date d'échéance des factures, pas sur leur date d'émission."
+          },
+          "RECON": {
+            "Q": "Le bouton « Rapprochement bancaire » est grisé, pourquoi ?",
+            "A": "Il n'est pas encore activé. La page de rapprochement fonctionne à l'adresse /finance/recouvrement/reconciliation, pour ceux qui ont le droit de rapprochement bancaire."
+          }
+        },
+        "RECONCILIATION": {
+          "FORMATS": {
+            "Q": "Quels fichiers puis-je importer ?",
+            "A": "Des relevés OFX (.ofx) ou CAMT053 (.xml), 10 Mo maximum. Les fichiers CSV et Excel ne sont pas acceptés ; pour une opération isolée, utilisez « + Saisie manuelle »."
+          },
+          "MATCHING": {
+            "Q": "Comment les factures sont-elles proposées ?",
+            "A": "D'abord par référence (le numéro de facture contient la référence du virement), sinon par montant : le montant TTC d'une facture à encaisser à 0,5 % près. Ce n'est qu'une proposition : vérifiez-la avant de confirmer."
+          },
+          "CONFIRM": {
+            "Q": "Que fait « Confirmer » ?",
+            "A": "Il enregistre un paiement du montant du virement sur la facture proposée (mode virement, référence bancaire). La facture passe Part. payée ou Payée."
+          },
+          "PARTIAL": {
+            "Q": "Un virement couvre une partie de la facture : que faire ?",
+            "A": "« Partiel » : saisissez le montant à affecter (au plus celui du virement). Le reste ne pourra plus être affecté ensuite depuis cette opération."
+          },
+          "UNDO": {
+            "Q": "Puis-je annuler un rapprochement ?",
+            "A": "Non : une opération confirmée, partielle, rejetée ou en acompte ne propose plus d'action, et un paiement enregistré ne se supprime pas. Vérifiez la facture avant de confirmer."
+          },
+          "ACOMPTE": {
+            "Q": "Que fait « Acompte » ?",
+            "A": "Il classe l'opération en acompte. Aucun paiement n'est enregistré et aucune facture n'est liée."
+          },
+          "TWICE": {
+            "Q": "J'ai importé deux fois le même relevé, que se passe-t-il ?",
+            "A": "Le doublon n'est pas détecté : les opérations apparaissent deux fois. Rejetez les doublons plutôt que de les confirmer, sinon le paiement serait enregistré deux fois."
+          }
+        },
+        "COLLECTION_DETAIL": {
+          "RECORD": {
+            "Q": "Comment enregistrer un encaissement ?",
+            "A": "« Enregistrer un encaissement » : date, montant, mode et référence. Le paiement est dans la devise de la facture ; elle passe Part. payée, puis Payée quand le net à payer est atteint."
+          },
+          "FIX": {
+            "Q": "Je me suis trompé d'encaissement : comment le corriger ?",
+            "A": "Un encaissement ne se modifie ni ne se supprime. Pour corriger une facture déjà payée, passez par un avoir depuis sa fiche facture."
+          },
+          "SUSPEND": {
+            "Q": "Comment arrêter les relances ?",
+            "A": "« Suspendre les relances », avec un motif si besoin : toutes les relances non envoyées passent Suspendue. « Réactiver les relances » les relance. Un litige les suspend aussi."
+          },
+          "SENT": {
+            "Q": "Pourquoi des relances sont-elles « Envoyées » après le paiement ?",
+            "A": "Quand la facture est payée, les relances restantes sont arrêtées et marquées comme envoyées à cette date, sans qu'un e-mail parte."
+          },
+          "DISPUTED": {
+            "Q": "Je ne peux pas encaisser une facture en litige, pourquoi ?",
+            "A": "Aucun paiement n'est accepté pendant un litige. Résolvez-le d'abord depuis la fiche facture (« Résoudre le litige »)."
+          },
+          "ERROR": {
+            "Q": "Le dossier affiche « Impossible de charger », pourquoi ?",
+            "A": "Le dossier lit la facture : il faut aussi le droit de consulter la facturation. Demandez-le à votre administrateur."
+          }
+        },
+        "APPROVAL_QUEUE": {
+          "WHAT": {
+            "Q": "Qu'est-ce que la file d'approbation ?",
+            "A": "Le passage obligé entre le travail déclaré sur une affaire (WIP, avancement, livrables, TS) et la facture : chaque demande y attend une validation, qui crée la facture brouillon."
+          },
+          "ORIGIN": {
+            "Q": "D'où viennent les demandes ?",
+            "A": "Des onglets WIP, TS WIP et Livrables de la fiche affaire : une déclaration soumise, puis confirmée avec le montant accepté par le client, arrive ici « En attente DF »."
+          },
+          "VALIDATE": {
+            "Q": "Que se passe-t-il quand je valide ?",
+            "A": "Une facture brouillon est créée pour le client de l'affaire et s'ouvre pour être complétée (conditions, échéance). La demande passe « Facturé ». La facture suit ensuite le parcours normal : soumission, validation, émission."
+          },
+          "COMBINED": {
+            "Q": "Puis-je faire une seule facture pour plusieurs demandes ?",
+            "A": "Oui : cochez-les puis « Valider la sélection ». Elles peuvent être de modes et d'affaires différents (même pays). Les demandes déjà traitées sont ignorées, avec un message."
+          },
+          "CLIENT": {
+            "Q": "Pourquoi me demande-t-on de choisir un client ?",
+            "A": "La sélection couvre plusieurs affaires : choisissez le client à qui la facture combinée sera adressée, parmi les clients des affaires ou par recherche."
+          },
+          "LIVRABLE": {
+            "Q": "Pourquoi certains lots de livrables ne sont-ils pas sélectionnables ?",
+            "A": "Une sélection de lots ne peut porter que sur une seule affaire : dès qu'un lot est coché, ceux des autres affaires sont grisés."
+          },
+          "RETURN": {
+            "Q": "Que fait « Retourner » ?",
+            "A": "La demande repart vers son auteur avec votre motif (obligatoire), visible dans son détail. Un avancement retourné peut être corrigé puis soumis à nouveau depuis la fiche affaire."
+          },
+          "UNDO": {
+            "Q": "J'ai validé par erreur, comment revenir en arrière ?",
+            "A": "Tant que la facture brouillon n'est pas enregistrée : « Annuler » dans l'assistant de facture (ou quitter la page) la supprime et remet la demande dans la file. Une fois la facture enregistrée, il faut la traiter dans Factures."
+          },
+          "CREDIT": {
+            "Q": "Comment valider une note de crédit ?",
+            "A": "Dans le sous-onglet de son mode, section Notes de crédit : « Valider » l'approuve et l'émet, « Retourner » la renvoie. Il faut aussi le droit de gérer la facturation."
+          },
+          "NOTHING": {
+            "Q": "Ma validation ne fait rien, pourquoi ?",
+            "A": "La page n'affiche pas encore les refus du serveur. Ouvrez la demande (clic sur la ligne) et validez depuis son détail : le motif du refus s'y affiche."
+          }
+        },
+        "APPROVAL_DETAIL": {
+          "NO_BUTTONS": {
+            "Q": "Pourquoi « Valider » et « Retourner » n'apparaissent-ils pas ?",
+            "A": "Ils ne sont proposés que tant que la demande est « En attente DF ». Une demande déjà facturée ou retournée se consulte seulement."
+          },
+          "AFTER": {
+            "Q": "Que se passe-t-il après « Valider » ?",
+            "A": "La facture brouillon s'ouvre dans l'assistant de facture. Enregistrez-la (Brouillon ou Soumettre) ; « Annuler » ou quitter sans enregistrer annule la validation."
+          },
+          "RETURNED": {
+            "Q": "Où voir pourquoi une demande a été retournée ?",
+            "A": "Dans la carte d'identité, encadré « Motif du retour », et dans le Journal d'activité."
+          },
+          "CUMUL": {
+            "Q": "Que veut dire « Cumul de l'affaire » ?",
+            "A": "Le total déjà facturé et demandé sur l'affaire, avec sa part du budget : de quoi voir si la demande risque de dépasser le contrat."
+          }
+        },
+        "SUBCONTRACTING": {
+          "ST_NEW": {
+            "Q": "Comment ajouter un sous-traitant ?",
+            "A": "Onglet Sous-traitants, choisissez l'entité puis « Nouveau sous-traitant ». Seul le nom est obligatoire ; il doit être unique parmi les sous-traitants actifs de l'entité."
+          },
+          "ST_OFF": {
+            "Q": "Pourquoi la désactivation est-elle refusée ?",
+            "A": "Un sous-traitant qui a des ordres En cours ne se désactive pas : suspendez ou clôturez d'abord ses ordres."
+          },
+          "ORDER_NEW": {
+            "Q": "Comment créer un ordre de sous-traitance ?",
+            "A": "Onglet Ordres ST : recherchez et choisissez l'affaire (elle doit être En cours), puis « Nouvel ordre ST » : sous-traitant de la même entité, périmètre, budget, devise et seuil d'alerte. La référence est OST-<affaire>-<n°>."
+          },
+          "STATUS": {
+            "Q": "Quels sont les statuts d'un ordre ?",
+            "A": "En cours, Suspendu (réactivable) et Clôturé, qui est définitif. Les coûts ne s'ajoutent que sur un ordre En cours."
+          },
+          "COST": {
+            "Q": "Comment saisir un coût de sous-traitance ?",
+            "A": "« Coûts » sur l'ordre, puis « Ajouter un coût » : montant, date (pas dans le futur) et description. Les coûts alimentent le réalisé de l'ordre et la ligne Sous-traitants du P&L."
+          },
+          "OVERRUN": {
+            "Q": "Quand un ordre est-il en dépassement ?",
+            "A": "Quand le réalisé dépasse le budget augmenté du seuil d'alerte (10 % par défaut). Il est signalé dans la liste et compté dans la tuile Dépassements."
+          },
+          "MARGIN": {
+            "Q": "Comment est calculée la marge ?",
+            "A": "Encaissements reçus sur les factures de l'affaire, moins les coûts de sous-traitance. Les coûts internes ne sont pas encore calculés : la marge est donc surestimée."
+          },
+          "NO_BUTTONS": {
+            "Q": "Je ne vois pas les boutons de création ou de modification, pourquoi ?",
+            "A": "Ils demandent un droit de gestion de la sous-traitance. Demandez-le à votre administrateur ; la consultation reste possible."
+          }
+        },
+        "COSTS": {
+          "WHAT": {
+            "Q": "Qu'est-ce qu'une facture de coût ?",
+            "A": "Une facture fournisseur, ou une dépense sans fournisseur, saisie avec une ou plusieurs lignes (catégorie, affaire, montant). Sa référence est EXP-année-n°, et chaque ligne EXP-…-01, -02…"
+          },
+          "LIFECYCLE": {
+            "Q": "Quels sont les statuts ?",
+            "A": "Brouillon, Soumis (en attente d'approbation), Approuvé, puis Comptabilisé une fois le règlement saisi. Retourné, Validé, Annulé et Rejeté figurent dans le filtre mais ne sont jamais produits : un refus ou un complément ramène la facture en Brouillon."
+          },
+          "AUTO": {
+            "Q": "Pourquoi ma facture est-elle approuvée dès la soumission ?",
+            "A": "Son montant TTC en euros relève du niveau L1, approuvé automatiquement. C'est aussi le cas quand aucun seuil d'approbation n'est configuré pour son montant."
+          },
+          "LEVELS": {
+            "Q": "Comment le niveau d'approbation est-il fixé ?",
+            "A": "D'après le TTC converti en euros et les seuils configurés (par catégorie, sinon pour l'entité). Une catégorie sous surveillance renforcée monte d'un niveau ; une facture à plusieurs catégories prend le niveau le plus haut. L4 demande deux approbateurs."
+          },
+          "REJECTED": {
+            "Q": "Ma facture est revenue en brouillon, pourquoi ?",
+            "A": "Un approbateur a demandé un complément ou l'a refusée : son commentaire est dans l'onglet Approbations de la fiche. Corrigez-la puis soumettez-la de nouveau."
+          },
+          "POSTED": {
+            "Q": "Que veut dire « Comptabilisé » ?",
+            "A": "La facture est réglée : un règlement a été saisi. Supprimer le règlement la ramène à Approuvé."
+          },
+          "KPIS": {
+            "Q": "Pourquoi les tuiles changent-elles avec la page ?",
+            "A": "Elles comptent les factures de la page affichée seulement. La recherche et les filtres autres que le statut portent aussi sur la page affichée."
+          },
+          "SUPPLIER": {
+            "Q": "Comment voir tous les coûts d'un fournisseur ?",
+            "A": "Passez en vue « fournisseurs » (icône à droite de la recherche) et ouvrez la carte du fournisseur : ses factures et son relevé de règlements."
+          }
+        },
+        "COST_NEW": {
+          "REQUIRED": {
+            "Q": "Qu'est-ce qui est obligatoire ?",
+            "A": "L'entité, la date de facture, la devise, au moins une ligne (catégorie, description, montant HT d'au moins 0,01) et, avec un fournisseur, son n° de facture."
+          },
+          "DUPLICATE": {
+            "Q": "« La facture … de ce fournisseur est déjà saisie » : que faire ?",
+            "A": "Un même n° de facture ne peut être saisi qu'une fois par fournisseur. Cherchez la facture existante dans la liste avant d'en créer une autre."
+          },
+          "TAXES": {
+            "Q": "Comment sont calculées les taxes ?",
+            "A": "FODEC = HT × taux ; TVA = (base TVA + FODEC) × taux ; timbre fiscal une fois par facture ; retenue à la source déduite du net à payer si elle est cochée ; autres taxes ajoutées au TTC. La partie hors champ TVA reste dans le coût sans être taxée."
+          },
+          "NO_SUPPLIER": {
+            "Q": "Puis-je saisir une dépense sans fournisseur ?",
+            "A": "Oui : laissez le fournisseur vide. Pas de FODEC, de timbre ni de retenue ; saisissez la TVA en montant sur chaque ligne."
+          },
+          "CATEGORY": {
+            "Q": "Pourquoi une catégorie n'est-elle pas proposée ?",
+            "A": "Certaines catégories sont alimentées automatiquement (par la paie par exemple) : la saisie manuelle y est interdite."
+          },
+          "RATE": {
+            "Q": "L'enregistrement échoue sur une devise étrangère, pourquoi ?",
+            "A": "Les montants sont convertis en euros à l'enregistrement : il faut un taux de change configuré pour cette devise. L'aperçu du circuit peut s'afficher quand même. Demandez à un administrateur d'ajouter le taux."
+          },
+          "ATTACH": {
+            "Q": "Quelles pièces jointes puis-je ajouter ?",
+            "A": "PDF, JPEG ou PNG, 10 Mo maximum par fichier. Ajoutez-les dans le formulaire : la fiche permet seulement de les télécharger."
+          }
+        },
+        "COST_EDIT": {
+          "WHICH": {
+            "Q": "Quelles factures puis-je modifier ?",
+            "A": "Un brouillon. Une facture soumise doit d'abord être renvoyée en brouillon par un approbateur (« Complément »). Une facture approuvée ou réglée ne se modifie qu'avec le droit DAF."
+          },
+          "DAF": {
+            "Q": "Comment fonctionne la modification DAF ?",
+            "A": "« Modifier (DAF) » sur la fiche, puis une justification d'au moins 5 caractères. Le statut et le règlement restent ; chaque changement est visible dans « Historique des modifications ». Une modification sans aucun changement est refusée."
+          }
+        },
+        "COST_DETAIL": {
+          "PAY": {
+            "Q": "Comment régler une facture de coût ?",
+            "A": "« Nouveau règlement » sur une facture approuvée : montant (proposé au net à payer), date et mode. La facture passe Comptabilisé, quel que soit le montant saisi."
+          },
+          "PAY_TWICE": {
+            "Q": "« Cette facture a déjà un règlement » : que faire ?",
+            "A": "Une facture n'a qu'un règlement. Modifiez-le ou supprimez-le dans l'onglet Règlement avant d'en saisir un autre."
+          },
+          "ATTACH": {
+            "Q": "Comment ajouter une pièce jointe ?",
+            "A": "Depuis le formulaire de la facture (« Modifier » sur un brouillon). La fiche permet de les télécharger, et de les supprimer sur un brouillon."
+          },
+          "REMINDERS": {
+            "Q": "À quoi servent les relances ?",
+            "A": "À prévenir en interne avant l'échéance d'une facture approuvée et non réglée. Elles partent chaque matin par e-mail ; suspendez-les depuis l'onglet Relances."
+          },
+          "FIX": {
+            "Q": "Comment corriger une facture approuvée ?",
+            "A": "Avec le droit DAF : « Modifier (DAF) », avec une justification. Sinon, demandez à un approbateur ou à la DAF."
+          }
+        },
+        "COST_SUPPLIER": {
+          "LEDGER": {
+            "Q": "Comment lire le relevé du fournisseur ?",
+            "A": "Chaque facture réglée compare le montant réglé au net à payer : payé en trop = débit, payé en moins = crédit. Le solde cumulé dit si vous devez encore de l'argent au fournisseur (créditeur) ou s'il vous en doit (débiteur)."
+          },
+          "UNPAID": {
+            "Q": "Pourquoi une facture approuvée n'est-elle pas dans le relevé ?",
+            "A": "Le relevé ne liste que les factures réglées. Saisissez son règlement (« Nouveau règlement ») pour qu'elle y apparaisse."
+          }
+        },
+        "COST_UNASSIGNED": {
+          "WHY": {
+            "Q": "Que contient « Sans fournisseur » ?",
+            "A": "Les dépenses saisies sans fournisseur. Elles n'ont pas de relevé de règlement ; rattachez un fournisseur en modifiant la facture tant qu'elle est en brouillon."
+          }
+        },
+        "COST_APPROVAL": {
+          "WHAT": {
+            "Q": "Que contient cette file ?",
+            "A": "Les factures de coût soumises, les demandes d'embauche chiffrées par RH et les avances sur salaire validées par RH, selon vos droits."
+          },
+          "LEVELS": {
+            "Q": "Les niveaux L1 à L4, que signifient-ils ?",
+            "A": "L1 : approbation automatique (n'arrive jamais ici). L2 et L3 : une approbation. L4 : deux approbations par deux personnes différentes. Le niveau dépend du TTC en euros et des seuils."
+          },
+          "L4": {
+            "Q": "J'ai approuvé, mais la facture reste dans la file, pourquoi ?",
+            "A": "Elle est de niveau L4 : une seconde approbation, par une autre personne, est nécessaire."
+          },
+          "DECISIONS": {
+            "Q": "Complément ou Refuser ?",
+            "A": "Les deux renvoient la facture en brouillon à son auteur. « Complément » demande des précisions ; « Refuser » exige un commentaire expliquant le refus."
+          },
+          "HIRING": {
+            "Q": "Comment décider d'une demande d'embauche ?",
+            "A": "Approuvez le coût salarial, ou refusez-le en proposant éventuellement un autre salaire, avec un commentaire. « Voir le candidat » ouvre son dossier."
+          },
+          "ADVANCES": {
+            "Q": "Qui verse l'avance sur salaire ?",
+            "A": "Après votre approbation, le versement est fait par la paie. Une avance refusée l'est définitivement ; un motif est demandé."
+          },
+          "EMPTY": {
+            "Q": "La file est vide alors que des factures sont soumises, pourquoi ?",
+            "A": "La lecture et la décision demandent les droits de consulter et de gérer les coûts. Demandez-les à votre administrateur."
+          }
+        },
+        "COST_MISSIONS": {
+          "FLOW": {
+            "Q": "D'où viennent les ordres de mission ?",
+            "A": "Un manager crée la mission ; RH renseigne les frais et la valide ; elle arrive ici pour la décision finance (approuvée ou refusée)."
+          },
+          "TOTAL": {
+            "Q": "Comment le coût est-il calculé ?",
+            "A": "Indemnités + hébergement + billet + visa + assurance + autres frais. L'avance de frais n'est pas ajoutée au total."
+          },
+          "REJECT": {
+            "Q": "Puis-je refuser une mission ?",
+            "A": "Oui, « Refuser » avec un motif obligatoire. La mission passe « Refusée par la finance »."
+          },
+          "COST": {
+            "Q": "Une mission approuvée crée-t-elle une facture de coût ?",
+            "A": "Non : l'approbation ne crée aucune ligne de coût. Les frais réels se saisissent comme des factures de coût."
+          }
+        },
+        "RATES": {
+          "WHAT": {
+            "Q": "À quoi sert un barème de taux ?",
+            "A": "À calculer le taux interco et le taux de vente de chaque collaborateur en régie, à partir de ses coûts. Le barème validé le plus récent est appliqué."
+          },
+          "STEPS": {
+            "Q": "Dans quel ordre procéder ?",
+            "A": "« + Nouveau barème » (Brouillon) → « Auto-remplir depuis la formule » → « Calculer » (Calculé) → « Valider » (Validé, figé)."
+          },
+          "AUTO": {
+            "Q": "D'où viennent les montants de l'auto-remplissage ?",
+            "A": "Des factures de coût réglées de la période, réparties selon la formule de coût de l'entité, plus les coûts directs des collaborateurs. Les lignes ajoutées à la main ne sont pas touchées."
+          },
+          "METHODS": {
+            "Q": "Par effectif, montant fixe ou direct ?",
+            "A": "Par effectif : le total de la catégorie divisé par le nombre de collaborateurs. Montant fixe : un montant par mois. Direct : les coûts rattachés au collaborateur lui-même."
+          },
+          "LOCKED": {
+            "Q": "Puis-je modifier un barème validé ?",
+            "A": "Non, un barème validé est figé. Créez un nouveau barème pour une autre période."
+          }
+        },
+        "EMPLOYEE_COSTS": {
+          "WHAT": {
+            "Q": "Qu'est-ce qu'un coût collaborateur ?",
+            "A": "Le coût d'un collaborateur sur une période : coût de base pour l'entreprise, coût de vente interne et externe. Il sert à la régie et aux barèmes de taux."
+          },
+          "CALC": {
+            "Q": "Comment les trois montants sont-ils liés ?",
+            "A": "Saisissez l'un des trois : interne = base × 1,1 et externe = base × 1,2. Le coût externe peut être ajusté à la main."
+          },
+          "EXPIRED": {
+            "Q": "Pourquoi un coût est-il « Expiré » ?",
+            "A": "Seule la période la plus récente d'un collaborateur est « Actif » ; les précédentes passent « Expiré », quelle que soit la date du jour."
+          },
+          "OVERLAP": {
+            "Q": "Pourquoi la nouvelle période est-elle refusée ?",
+            "A": "Deux périodes d'un même collaborateur ne peuvent pas se chevaucher, et la date de début doit précéder la date de fin."
+          },
+          "SOURCE": {
+            "Q": "D'où viennent les coûts collaborateurs ?",
+            "A": "De la saisie sur cette page, et de l'assistant d'affaire en régie, qui enregistre le taux de chaque ressource jusqu'à la fin de l'année."
+          }
+        },
+        "EMPLOYEE_COST_HISTORY": {
+          "NORMALIZED": {
+            "Q": "Que veut dire un changement de statut automatique ?",
+            "A": "Quand une nouvelle période est ajoutée, l'ancienne passe automatiquement « Expiré » : l'historique le note comme un événement à part."
+          }
+        },
+        "SUPPLIERS": {
+          "MISSING": {
+            "Q": "Je ne trouve pas un fournisseur, pourquoi ?",
+            "A": "Il est peut-être désactivé : choisissez « Désactivés » ou « Tous » dans le filtre Statut. La liste ne montre aussi que les fournisseurs de votre entité ; un fournisseur créé pour un autre pays n'y apparaît pas."
+          },
+          "KPIS": {
+            "Q": "Les indicateurs ne changent pas quand je filtre, est-ce normal ?",
+            "A": "Oui : ils décrivent tout le référentiel actif de l'entité, quels que soient la recherche, les filtres et la page affichée."
+          },
+          "COUNTRIES": {
+            "Q": "Pourquoi « Pays couverts » vaut 1 ?",
+            "A": "La liste est limitée aux fournisseurs de votre entité, donc d'un seul pays : l'indicateur vaut au plus 1."
+          },
+          "IBAN": {
+            "Q": "À quoi sert l'IBAN ?",
+            "A": "Aux règlements par virement. Les indicateurs et le filtre « IBAN » repèrent les fournisseurs à compléter."
+          },
+          "NO_BUTTON": {
+            "Q": "Je ne vois pas « Nouveau fournisseur »",
+            "A": "Créer, modifier ou désactiver un fournisseur demande le droit de gérer les coûts. Consulter demande le droit de voir les coûts."
+          }
+        },
+        "SUPPLIER_NEW": {
+          "REQUIRED": {
+            "Q": "Quels champs sont obligatoires ?",
+            "A": "Raison sociale, pays et type, à la première étape. Les informations fiscales et l'IBAN peuvent être complétés plus tard."
+          },
+          "CODE": {
+            "Q": "Comment le code fournisseur est-il attribué ?",
+            "A": "Automatiquement à la création, avec un préfixe qui dépend du pays. Il ne se saisit pas."
+          },
+          "TVA": {
+            "Q": "La création échoue sur le n° de TVA",
+            "A": "Le n° de TVA doit être unique dans tout le référentiel, tous pays confondus. Vérifiez qu'il n'est pas déjà porté par un autre fournisseur, éventuellement désactivé."
+          },
+          "PROFILE": {
+            "Q": "Quel profil de calcul choisir ?",
+            "A": "« Standard » pour la plupart des fournisseurs : chaque ligne se saisit en HT avec un taux. « Agence de voyage » : chaque ligne se saisit telle qu'imprimée (TTC, base TVA, taux), le reste (billet) étant hors champ TVA et hors retenue."
+          },
+          "COUNTRY": {
+            "Q": "Je ne retrouve pas le fournisseur créé dans la liste",
+            "A": "La liste ne montre que les fournisseurs de votre entité : s'il a été créé pour un autre pays, il n'y apparaît pas."
+          }
+        },
+        "SUPPLIER_EDIT": {
+          "COUNTRY": {
+            "Q": "Pourquoi le pays est-il grisé ?",
+            "A": "Le code du fournisseur dépend de son pays : il ne se modifie plus après la création."
+          },
+          "SAVED": {
+            "Q": "Mes changements sont-ils enregistrés au fil des étapes ?",
+            "A": "Non, seulement par « Enregistrer » à la dernière étape. « Annuler » ou quitter la page abandonne les changements."
+          },
+          "INACTIVE": {
+            "Q": "Je ne peux pas modifier ce fournisseur",
+            "A": "Un fournisseur désactivé ne se modifie plus depuis sa fiche, et la modification demande le droit de gérer les coûts."
+          }
+        },
+        "SUPPLIER_DETAIL": {
+          "REACTIVATE": {
+            "Q": "Comment réactiver un fournisseur ?",
+            "A": "Ce n'est pas possible pour l'instant : la désactivation est définitive. Ses factures et son historique restent consultables."
+          },
+          "DELETE": {
+            "Q": "Peut-on supprimer un fournisseur ?",
+            "A": "Non, seulement le désactiver : ses factures de coût et son relevé sont conservés."
+          },
+          "TOTAL": {
+            "Q": "Que compte le total TTC ?",
+            "A": "Toutes ses factures de coût, quel que soit leur statut (brouillons compris), converties en euros."
+          },
+          "LEDGER": {
+            "Q": "Une facture manque dans le relevé",
+            "A": "Le relevé ne montre que les factures réglées. Une facture brouillon, soumise ou approuvée mais pas encore réglée n'y figure pas ; elle est dans l'onglet Factures."
+          },
+          "BALANCE": {
+            "Q": "Comment lire le solde ?",
+            "A": "C'est le solde de la dernière écriture du relevé : « Solde dû » ce qui reste à payer, « Trop-payé » ce qui a été payé en plus. Les montants sont en devise de la facture, sans conversion."
+          },
+          "PAY": {
+            "Q": "Où régler une facture du fournisseur ?",
+            "A": "Depuis la fiche de la facture (un clic dans l'onglet Factures) : soumission, approbation et règlement s'y font."
+          }
+        },
+        "REPORTING": {
+          "OPEN_MONTH": {
+            "Q": "Pourquoi le mois en cours ne compte-t-il pas dans les indicateurs ?",
+            "A": "Les montants d'une période ne sont figés qu'à sa clôture : les indicateurs ne cumulent que les périodes clôturées."
+          },
+          "REVENUE": {
+            "Q": "D'où vient le chiffre d'affaires ?",
+            "A": "Des factures émises, envoyées, partiellement payées ou payées dont la date d'émission tombe dans le mois, en HT. Les coûts viennent des factures de coût réglées, de la sous-traitance et des saisies manuelles de la clôture."
+          },
+          "CLOSE": {
+            "Q": "Que saisir à la clôture ?",
+            "A": "Les montants du mois qui ne viennent d'aucun module : intercompagnie, intersede, en-cours des années antérieures, refacturations de salaires et d'autres coûts. Tous sont facultatifs et valent zéro par défaut."
+          },
+          "GENERATE": {
+            "Q": "Je ne vois pas « Générer le rapport »",
+            "A": "Le bouton n'apparaît que sur une période clôturée sans rapport, et demande le droit de gérer le P&L."
+          },
+          "NEW_PERIOD": {
+            "Q": "Je ne peux pas créer de période",
+            "A": "« Nouvelle période » demande le droit de gérer les coûts, et une seule période existe par pays et par mois."
+          },
+          "FX": {
+            "Q": "Les montants changent-ils avec le taux de change ?",
+            "A": "Les chiffres d'une période sont figés à sa clôture. Avant la clôture, ils sont calculés avec le taux de change configuré au moment du calcul."
+          }
+        },
+        "PL_BUDGET": {
+          "USE": {
+            "Q": "À quoi sert le budget de référence ?",
+            "A": "À calculer les écarts budget / réel de chaque ligne dans le Récap des rapports P&L."
+          },
+          "WHEN": {
+            "Q": "Une modification du budget change-t-elle les rapports existants ?",
+            "A": "Non : un rapport prend le budget au moment de sa génération. Seul un rapport généré ensuite (ou une nouvelle version) voit le budget modifié."
+          },
+          "APPROVAL": {
+            "Q": "Le budget doit-il être approuvé pour être utilisé ?",
+            "A": "Non : les rapports utilisent le dernier budget enregistré, approuvé ou non. Les approbations Directeur de pays et Groupe tracent sa validation."
+          },
+          "READONLY": {
+            "Q": "Je ne peux pas saisir dans la grille",
+            "A": "La saisie demande le droit de gérer le P&L ; les approbations, celui de l'administrer."
+          }
+        },
+        "PL_CALENDAR": {
+          "BLOCK": {
+            "Q": "Que se passe-t-il si l'échéance est dépassée ?",
+            "A": "Rien d'automatique : l'échéance est indicative. Elle ne bloque pas la soumission et n'envoie aucun rappel."
+          },
+          "EDIT": {
+            "Q": "Je ne peux pas modifier les dates",
+            "A": "La modification demande le droit d'administrer le P&L ; sinon les dates sont en lecture seule."
+          },
+          "CLEAR": {
+            "Q": "Comment effacer une échéance ?",
+            "A": "Ce n'est pas possible depuis l'écran : on peut seulement la remplacer par une autre date."
+          }
+        },
+        "REPORT_DETAIL": {
+          "WORKFLOW": {
+            "Q": "Quel est le circuit d'un rapport ?",
+            "A": "Brouillon → Soumis (préparateur) → Endossé par le Directeur de pays → Accepté par le Groupe. À l'étape Soumis ou Endossé, un amendement le renvoie en préparation."
+          },
+          "NO_ACTION": {
+            "Q": "Pourquoi n'ai-je aucun bouton d'action ?",
+            "A": "Chaque étape demande son droit : soumettre (gérer le P&L), endosser (Directeur de pays), accepter et rouvrir (Groupe). La carte dit quand aucune action ne vous revient."
+          },
+          "AMENDED": {
+            "Q": "Mon rapport est revenu en préparation, pourquoi ?",
+            "A": "Un amendement a été demandé à l'étape d'endossement ou d'acceptation. Le motif est conservé dans l'historique ; corrigez puis soumettez de nouveau."
+          },
+          "REOPEN": {
+            "Q": "Quelle méthode de réouverture choisir ?",
+            "A": "« Nouvelle version » archive le rapport et en crée un brouillon recalculé. « Correction au mois suivant » ne crée pas de version : l'écart sera absorbé par la période suivante."
+          },
+          "VARIANCE": {
+            "Q": "Comment l'écart est-il calculé ?",
+            "A": "(Réel − budget) / |budget|, sur le budget de référence tel qu'il était à la génération du rapport. Un écart positif n'est pas forcément favorable : sur une ligne de coût, il signifie un dépassement."
+          },
+          "COMMENTS": {
+            "Q": "Les commentaires sont-ils obligatoires pour soumettre ?",
+            "A": "Non, la soumission ne les exige pas. Un texte est proposé pour chaque ligne ; reprenez-le pour expliquer les écarts significatifs."
+          },
+          "EXPORT": {
+            "Q": "Que contient le classeur complet ?",
+            "A": "Les 7 onglets du reporting P&L du mois, dans un seul fichier Excel."
+          }
+        },
+        "TREASURY": {
+          "BALANCE": {
+            "Q": "Le cumulé est-il mon solde bancaire ?",
+            "A": "Non : le module ne connaît aucun solde d'ouverture. Le cumulé est la variation attendue à partir d'aujourd'hui ; ajoutez-le à votre solde bancaire actuel."
+          },
+          "IN": {
+            "Q": "Quelles factures sont dans les encaissements ?",
+            "A": "Les factures émises, envoyées ou partiellement payées, pour leur reste dû, et qui ont une échéance. Les avoirs, les factures en litige et celles sans échéance n'y sont pas."
+          },
+          "OUT": {
+            "Q": "Quelles dépenses sont dans les décaissements ?",
+            "A": "Les factures de coût soumises, approuvées ou réglées, pour leur net à payer moins les règlements déjà saisis. Les brouillons et les refusées n'y sont pas, ni les salaires, ni les impôts."
+          },
+          "OLD": {
+            "Q": "Une vieille créance a disparu de la page",
+            "A": "Les échéances dépassées de plus de 90 jours ne sont plus reprises : c'est alors un sujet de recouvrement, à suivre dans le module Recouvrement."
+          },
+          "RATE": {
+            "Q": "Un bandeau parle de taux de change manquant",
+            "A": "Les flux dans une devise sans taux configuré sont exclus de tous les totaux. Ajoutez le taux dans Administration › Devises pour les réintégrer."
+          },
+          "PAID_COST": {
+            "Q": "Une dépense déjà payée apparaît encore",
+            "A": "Une facture de coût reste due tant que son règlement n'est pas saisi sur sa fiche. Saisissez le règlement pour la retirer de la projection."
+          },
+          "ENTITY": {
+            "Q": "Puis-je voir la trésorerie d'une autre entité ?",
+            "A": "Non : la page montre l'entité rattachée à votre compte, sans sélecteur."
+          }
+        },
+        "ADMIN": {
+          "TABS_MISSING": {
+            "Q": "Je ne vois pas tous les onglets",
+            "A": "Ils dépendent de vos droits : Permissions, Maquettes, E-mails WIP et Audit demandent le super-administrateur ; Configuration des coûts et Devise des entités, l'administration des coûts ; Relances clients, la consultation des paiements ; Relances fournisseurs, la consultation des coûts."
+          },
+          "RATE": {
+            "Q": "Une devise manque dans les totaux",
+            "A": "Ajoutez son taux dans l'onglet Taux de change. Tant qu'il manque, les montants dans cette devise sont exclus des totaux (trésorerie, P&L) et l'aperçu d'approbation utilise 1."
+          },
+          "REFRESH": {
+            "Q": "Les taux se mettent-ils à jour seuls ?",
+            "A": "Seulement si l'actualisation automatique est activée dans l'onglet API de taux : les jours ouvrés à 8 h. Sinon, utilisez le rafraîchissement manuel ou saisissez les taux."
+          },
+          "REMINDERS": {
+            "Q": "Quand les relances clients partent-elles ?",
+            "A": "Chaque jour à 8 h, pour les paliers arrivés à échéance. Un changement de palier s'applique aux nouvelles factures et à celles dont l'échéance change ; les relances déjà envoyées ne bougent pas."
+          },
+          "SEND_NOW": {
+            "Q": "« Déclencher maintenant » envoie-t-il de vrais e-mails ?",
+            "A": "Oui : il déclenche immédiatement les relances dues, avec envoi réel aux destinataires."
+          },
+          "PERMISSIONS": {
+            "Q": "Une permission ajoutée ne fonctionne pas encore",
+            "A": "Les droits sont lus à la connexion : l'utilisateur doit se reconnecter pour en bénéficier."
+          },
+          "AUDIT": {
+            "Q": "Toutes les modifications sont-elles dans l'Audit ?",
+            "A": "Non : l'onglet Audit montre l'historique des données Finance. Les changements de paramétrage (listes, taux, règles de relance, maquettes, e-mails WIP) n'y figurent pas."
+          },
+          "GLOBAL": {
+            "Q": "Que veut dire une valeur « Globale » ?",
+            "A": "Elle vaut pour toutes les entités. La modifier ou la désactiver ici ne concerne que l'entité choisie ; une valeur ajoutée ici n'existe que pour cette entité."
+          },
+          "HELP_FAQ": {
+            "Q": "Comment ajouter une question à l'assistant ?",
+            "A": "Onglet « Assistant & FAQ » (super-administrateur) : « Nouvelle question », choisissez la page, saisissez la question et la réponse en français (l'anglais est facultatif), puis publiez-la. Elle apparaît en tête de la FAQ de la page, dans « Aide & guides » et dans l'assistant."
+          }
+        },
+        "ADMIN_ROLES": {
+          "DELAY": {
+            "Q": "Mes changements ne sont pas visibles par l'utilisateur",
+            "A": "Les droits sont lus à la connexion : il doit se reconnecter."
+          },
+          "LOCKOUT": {
+            "Q": "Puis-je retirer mes propres droits ?",
+            "A": "Oui, et rien ne vous en empêche : ne retirez pas le super-administrateur de votre propre rôle, vous perdriez l'accès à cet écran."
+          },
+          "NEW_ROLE": {
+            "Q": "Comment créer un rôle ou l'attribuer ?",
+            "A": "Dans le module RH : cet écran ne gère que les permissions Finance des rôles existants."
+          }
+        },
+        "ADMIN_DOC_TEMPLATES": {
+          "USED": {
+            "Q": "Où la maquette est-elle utilisée ?",
+            "A": "Aujourd'hui, seulement pour l'aperçu PDF du brouillon d'une facture d'avancement (AV)."
+          },
+          "ACTIVE": {
+            "Q": "Laquelle est utilisée si plusieurs sont actives ?",
+            "A": "La dernière modifiée. Activez explicitement celle que vous voulez : l'activation désactive les autres maquettes du même type."
+          },
+          "VARS": {
+            "Q": "Une variable reste affichée telle quelle dans le PDF",
+            "A": "Vérifiez son orthographe : seules les variables de la liste de droite sont remplacées. Insérez-les par un clic plutôt qu'à la main."
+          },
+          "PREVIEW": {
+            "Q": "L'aperçu montre des données fictives",
+            "A": "Le champ « ID facture pour l'aperçu » est vide : saisissez l'identifiant d'une facture réelle pour voir ses données."
+          }
+        }
+      },
+      "CHAT": {
+        "NAME": "Assistant",
+        "TAGLINE": "Réponses tirées de la FAQ et de la documentation",
+        "OPEN": "Ouvrir l'assistant",
+        "ASK": "Poser une question",
+        "OPEN_PAGE": "Ouvrir la page",
+        "TITLE": "Posez votre question",
+        "HELLO": "Bonjour ! Que voulez-vous faire ? Écrivez votre question, ou choisissez-en une ci-dessous.",
+        "PLACEHOLDER": "Ex. : comment est calculé le RAF ?",
+        "SEND": "Envoyer",
+        "CLEAR": "Effacer la conversation",
+        "NO_ANSWER": "Je n'ai pas trouvé de réponse à cette question. Essayez avec d'autres mots, ou parcourez les questions fréquentes ci-dessous.",
+        "SOURCE": "Source : {{page}} › {{kind}}",
+        "START_GUIDE": "Lancer le guide",
+        "SEE_ALSO": "Voir aussi",
+        "HELPFUL": "Cette réponse vous aide ?",
+        "YES": "Oui, cette réponse m’aide",
+        "NO": "Non, cette réponse ne m’aide pas",
+        "THANKS": "Merci pour votre retour.",
+        "GREETING": "Bonjour ! Je suis l'assistant Finance. Posez-moi une question sur l'application, par exemple « comment créer une facture ? », ou choisissez-en une ci-dessous.",
+        "NOTHING_FOR": "Je n’ai rien trouvé pour « {{text}} ».",
+        "DID_YOU_MEAN_ONE": "Vouliez-vous dire « {{word}} » ?",
+        "YES_SHORT": "Oui",
+        "NO_SHORT": "Non",
+        "DID_YOU_MEAN_MANY": "Vouliez-vous dire :",
+        "NONE_OF_THEM": "Aucune de ces propositions"
+      },
+      "KIND_FAQ": "Question fréquente",
+      "KIND_DOC": "Documentation"
+    },
+    "AFFAIRES": {
+      "INTRO_TITLE": "La liste des affaires",
+      "INTRO_TEXT": "Toutes les affaires du portefeuille : budget, reste à facturer (RAF) et statut de chaque affaire. Suivez le guide pour en faire le tour.",
+      "NEW_TITLE": "Créer une affaire",
+      "NEW_TEXT": "« Nouvelle affaire » ouvre l'assistant de création, étape par étape. L'affaire reste en brouillon tant que l'assistant n'est pas validé, puis passe « En cours ». Réservé aux personnes qui gèrent les affaires.",
+      "KPIS_TITLE": "Les indicateurs du portefeuille",
+      "KPIS_TEXT": "Affaires actives (statut « En cours »), RAF total, budget total et affaires « En attente » (suspendues). Ils portent sur toutes les affaires du filtre, pas seulement sur la page affichée ; la mention sous le chiffre indique « toutes les affaires » ou « filtres appliqués ».",
+      "TOOLBAR_TITLE": "Rechercher et filtrer",
+      "TOOLBAR_TEXT": "Cherchez par référence ou intitulé. « Filtres » restreint par statut, client, pays, manager, mode de facturation ou date de début. Les boutons à droite basculent entre la vue cartes et la vue tableau.",
+      "LIST_TITLE": "Les affaires",
+      "LIST_TEXT": "Cliquez sur une affaire pour ouvrir sa fiche. Une carte montre le budget, le RAF, le facturé et le WIP. La corbeille n'apparaît que sur les brouillons. En revenant de la fiche, vous retrouvez vos filtres, votre tri et votre page.",
+      "STATUS_TITLE": "Les statuts d'une affaire",
+      "STATUS_TEXT": "Brouillon : création commencée, pas encore validée — seul statut qui peut être supprimé. Configurée : paramétrée, pas encore en cours. En cours : l'affaire active, la seule qui accepte de nouveaux travaux supplémentaires. Suspendue : plus de facturation possible. Clôturée : ni facturation ni modification. Archivée : conservée pour l'historique, sans modification."
+    },
+    "AFFAIRE_NEW": {
+      "INTRO_TITLE": "Créer une affaire",
+      "INTRO_TEXT": "L'assistant crée l'affaire en 6 étapes. Le guide vous les montre une à une, sans rien enregistrer : à la fermeture, vous retrouvez l'assistant là où vous l'aviez laissé.",
+      "RAIL_TITLE": "La progression",
+      "RAIL_TEXT": "Le rail montre où vous en êtes. Une étape déjà franchie se rouvre d'un clic ; celles qui suivent restent verrouillées tant que la précédente n'est pas complète.",
+      "NEXT_TITLE": "Suivant et Activer",
+      "NEXT_TEXT": "« Suivant » enregistre l'étape et passe à la suivante ; il reste grisé tant que l'étape est incomplète. Dès l'étape 2 franchie, l'affaire existe en brouillon. À la dernière étape, « Activer l'affaire » la passe « En cours » et fige son mode de facturation.",
+      "HEADER_TITLE": "Le résumé",
+      "HEADER_TEXT": "Sous le titre, des pastilles résument la saisie au fil des étapes : entité, client, mode de facturation et budget. La référence s'affiche dès qu'elle existe.",
+      "DRAFTS_TITLE": "Reprendre plus tard",
+      "DRAFTS_TEXT": "Vous pouvez quitter l'assistant à tout moment après l'étape 2 : l'affaire reste en brouillon. Ce lien ouvre la liste des brouillons ; ouvrez le vôtre pour reprendre où vous en étiez.",
+      "DOC": {
+        "S1_TITLE": "1. Origine",
+        "S1_TEXT": "Facultatif. Recherchez un projet DOC360 ou Interco pour lier l'affaire à ses pièces contractuelles et reprendre ses données de base. Sans projet à lier, passez directement à l'étape suivante.",
+        "S2_TITLE": "2. Informations générales",
+        "S2_TEXT": "Entité (proposée d'après votre pays, modifiable jusqu'à la création), client avec KYC validé, intitulé, mode de facturation, budget prévisionnel (> 0), devise du contrat et au moins un contact client — c'est lui qui recevra les factures. « Suivant » crée l'affaire en brouillon.",
+        "S3_TITLE": "3. Facturation",
+        "S3_TEXT": "Selon le mode choisi : forfait — répartition CTR / BPE / TQC dont la somme fait exactement 100 % ; régie — au moins une ressource avec un tarif supérieur à 0 ; livrables — au moins un livrable enregistré. Le mode ne pourra plus changer après l'activation.",
+        "S4_TITLE": "4. Responsables",
+        "S4_TEXT": "Ajoutez chaque responsable avec son activité et son budget alloué (> 0). Un même responsable ne peut pas avoir deux fois la même activité, et la somme des allocations doit égaler exactement le budget prévisionnel.",
+        "S5_TITLE": "5. Schedule",
+        "S5_TEXT": "Date de début de facturation et durée du contrat en mois. La date peut être dans le futur : elle déclenche la première émission.",
+        "S6_TITLE": "6. Récapitulatif",
+        "S6_TEXT": "Relisez chaque section ; une étape franchie se rouvre depuis le rail. « Activer l'affaire » vérifie l'ensemble, passe l'affaire « En cours » et ouvre sa fiche."
+      }
+    },
+    "AFFAIRE_DETAIL": {
+      "PAGE": "Fiche affaire",
+      "INTRO_TITLE": "La fiche d'une affaire",
+      "INTRO_TEXT": "Tout sur une affaire au même endroit : ses informations à gauche, ses indicateurs et ses onglets à droite. Ce guide en fait le tour ; les onglets s'ouvrent tout seuls, et vous retrouvez votre onglet à la fin.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "L'intitulé, la référence et le client. Les pastilles donnent le statut (Brouillon, En cours, Suspendue, Clôturée…), la santé du budget (Optimale, Vigilance, Critique) et « Budget non validé » tant que le budget n'est pas validé. Le fil d'Ariane « Affaires » ramène à la liste.",
+      "DETAILS_TITLE": "Détails",
+      "DETAILS_TEXT": "Le client, avec l'entité et la devise du contrat, puis le contrat (date de début, budget, mode de facturation, budget validé, références), les entités vendeuses, les managers, les contacts client et les notes.",
+      "ACTIONS_TITLE": "Actions rapides",
+      "ACTIONS_TEXT": "« Nouvelle facture » ouvre la facturation de cette affaire, « Nouveau TS » déclare des travaux supplémentaires, « Ajouter des frais » saisit des frais remboursables. En bas : « Modifier l'affaire » (« Compléter le brouillon » pour un brouillon) et la pastille de statut, cliquable pour le changer. « Valider le budget » apparaît tant qu'il n'est pas validé, « Supprimer le brouillon » seulement sur un brouillon. Les boutons affichés dépendent de vos droits.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Backlog (ce qui reste du contrat à facturer), Total facturé (factures pas encore encaissées), Total encaissé (factures entièrement payées), WIP (travail déclaré) et TS (travaux supplémentaires intégrés au budget). Le (i) de chaque tuile donne son calcul exact.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "Une partie de l'affaire par onglet ; le chiffre donne le nombre de TS, de factures ou de paiements. WIP, Ressources et Dépense n'apparaissent que pour certains modes de facturation. L'onglet ouvert est gardé dans l'adresse (?tab=…) : F5 ou un lien partagé rouvre le même.",
+      "OVERVIEW_TITLE": "Vue générale : les graphiques",
+      "OVERVIEW_TEXT": "Trois graphiques : Facturation, WIP et Paiements. Cliquez sur un nom pour l'afficher, Ctrl + clic pour en combiner plusieurs. « Filtres » règle la période (année en cours par défaut), la granularité et la vue par période ou cumulée ; le (i) explique le graphique affiché. Un clic sur une barre ouvre les factures, paiements ou WIP de cette période. Le graphique choisi est gardé dans l'adresse (cc=PAYMENTS pour Paiements).",
+      "TS_TITLE": "Travaux supplémentaires",
+      "TS_TEXT": "Les TS de l'affaire : des travaux vendus en plus du contrat. Un TS passe par la validation technique puis commerciale, puis s'intègre automatiquement au budget (il augmente le RAF). Le menu ⋮ d'une ligne propose les actions permises : valider, modifier ou supprimer avant les validations, consulter, historique. Un TS ne se crée que sur une affaire En cours.",
+      "TS_WIP_TITLE": "TS WIP",
+      "TS_WIP_TEXT": "L'avancement des TS intégrés ou facturés : choisissez un TS, déclarez l'avancement de la période (en % ou en montant), soumettez-le, puis saisissez le montant confirmé par le client. L'historique garde chaque déclaration.",
+      "WIP_TITLE": "WIP",
+      "WIP_TEXT": "Le travail en cours à valider avant facturation, selon le mode : Forfaitaire, le taux d'avancement cumulé (en % ou en montant) ; Régie, les heures Timesheet de la période ; Livrables, l'avancement de chaque livrable. Chaque déclaration est soumise, puis confirmée par le client.",
+      "RESSOURCES_TITLE": "Ressources",
+      "RESSOURCES_TEXT": "Affaire en régie : les collaborateurs facturés et leur taux. « Ajouter une ressource », modifier un taux ou désactiver une ressource ; un taux verrouillé (🔒) ne se modifie plus.",
+      "DEPENSE_TITLE": "Dépense",
+      "DEPENSE_TEXT": "En lecture seule : les heures saisies dans Timesheet sur l'affaire et leur coût interne estimé, par collaborateur, avec filtres et export Excel.",
+      "INVOICES_TITLE": "Factures",
+      "INVOICES_TEXT": "Les factures de l'affaire, avec recherche, filtres et export. « Consulter » en montre le détail ; « Modifier » n'est possible que sur un brouillon ou une facture retournée, et ouvre la facture dans « Factures ».",
+      "PAYMENTS_TITLE": "Paiements",
+      "PAYMENTS_TEXT": "Les règlements reçus sur les factures de l'affaire (date, facture, méthode, référence, montant), en lecture seule. Un paiement s'enregistre depuis la facture, avec « Enregistrer un paiement » ; « Modifier » ouvre « Recouvrement ».",
+      "EXPENSES_TITLE": "Frais",
+      "EXPENSES_TEXT": "Les frais remboursables de l'affaire, quel que soit son mode de facturation. Ils se saisissent avec « Ajouter des frais » ; ceux qui en ont le droit les valident ou les refusent ici.",
+      "DRAWER_TITLE": "Échéances & activité",
+      "DRAWER_TEXT": "Ce bouton ouvre le panneau des prochaines échéances, des alertes (seuil de RAF) et des activités récentes de l'affaire. Un point sur le bouton signale une alerte.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "AFFAIRE_EDIT": {
+      "PAGE": "Modification d'une affaire",
+      "INTRO_TITLE": "Modifier une affaire",
+      "INTRO_TEXT": "La modification reprend l'assistant de création, sans l'étape Origine : Infos générales, Facturation, Responsables, Planning et Récapitulatif. Le guide montre chaque étape en aperçu, sans rien enregistrer ; à la fermeture, vous retrouvez l'étape où vous étiez.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Le titre « Modifier l'affaire », avec la référence et l'intitulé. Les pastilles résument l'affaire (entité, client, mode de facturation, budget) et suivent vos modifications.",
+      "RAIL_TITLE": "Les étapes",
+      "RAIL_TEXT": "Le rail compte cinq étapes : l'origine DOC360 ne se modifie plus. Sur une affaire active, toutes les étapes sont ouvertes : cliquez directement sur celle à corriger. Sur un brouillon que vous complétez, les étapes se débloquent une à une, comme à la création.",
+      "S2_TITLE": "Infos générales",
+      "S2_TEXT": "Intitulé, client, contacts client, mode de facturation, budget prévisionnel, devise, périodicité, références et notes. L'entité est « définie à la création » : seul un administrateur peut la corriger. Le mode de facturation reste modifiable ; le nouveau mode se configure à l'étape Facturation.",
+      "S3_TITLE": "Facturation",
+      "S3_TEXT": "La configuration du mode : forfait — répartition CTR / BPE / TQC dont la somme fait exactement 100 % ; régie — les ressources et leur tarif ; livrables — la liste des livrables. Sur une affaire active, les ressources déjà présentes sont mises à jour, pas recréées.",
+      "S4_TITLE": "Responsables",
+      "S4_TEXT": "Les responsables, leur activité et leur budget alloué (> 0). La somme des allocations doit égaler exactement le budget prévisionnel : si vous avez changé le budget aux Infos générales, ajustez-les ici.",
+      "S5_TITLE": "Planning",
+      "S5_TEXT": "Date de début de facturation, durée du contrat en mois et date de première échéance. La fin contractuelle est recalculée à partir de la date de début et de la durée.",
+      "S6_TITLE": "Récapitulatif",
+      "S6_TEXT": "Relisez l'affaire. Sur une affaire active, « Enregistrer » ramène à sa fiche : les étapes ont déjà été enregistrées une à une. Sur un brouillon, « Activer l'affaire » vérifie l'ensemble et la passe « En cours ».",
+      "NEXT_TITLE": "Suivant enregistre",
+      "NEXT_TEXT": "« Suivant » enregistre tout de suite l'étape affichée, puis passe à la suivante. Il reste grisé tant que l'étape est incomplète ; le message sous le formulaire dit ce qui manque. Il n'y a pas d'enregistrement global à la fin.",
+      "BACK_TITLE": "Précédent et Annuler",
+      "BACK_TEXT": "« Précédent » revient à l'étape d'avant. Sur la première étape, « Annuler » ramène à la liste des affaires. Seule la saisie de l'étape affichée est perdue : les étapes validées par « Suivant » restent enregistrées.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "CLIENTS": {
+      "PAGE": "Clients",
+      "INTRO_TITLE": "Gestion des clients",
+      "INTRO_TEXT": "Le portefeuille des clients facturés : leur chiffre d'affaires, leur KYC et leurs affaires en cours. Ce guide fait le tour de la page.",
+      "NEW_TITLE": "Nouveau client",
+      "NEW_TEXT": "Ouvre l'assistant de création d'un client. Le code et le nom doivent être uniques dans l'entité. Le bouton n'apparaît qu'avec le droit de gérer la facturation.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Total Clients compte tous les clients trouvés (sous le chiffre : le pays filtré, sinon « Tous pays »). KYC Validé, Total CA et Clients Actifs ne portent que sur la page affichée (« Page courante ») ; le Total CA est converti en euros pour additionner des devises différentes.",
+      "TOOLBAR_TITLE": "Rechercher et filtrer",
+      "TOOLBAR_TEXT": "La recherche porte sur le nom, le code et le n° fiscal / TVA du client. « Filtres » combine secteur, statut (actifs / inactifs), statut KYC, pays du client, devise par défaut et affaires actives. Les icônes à droite basculent entre cartes et tableau ; en tableau, un clic sur un en-tête trie la liste.",
+      "LIST_TITLE": "La liste",
+      "LIST_TEXT": "Chaque client montre son code, son secteur ou son pays, son CA total (dans sa devise), ses affaires actives (En cours), son délai de paiement en jours et son pays. Un clic ouvre sa fiche. Au retour de la fiche, vous retrouvez vos filtres, votre tri, votre page et votre vue.",
+      "STATE_TITLE": "L'état d'un client",
+      "STATE_TEXT": "Une seule pastille : « Inactif » si le client est désactivé, sinon « KYC Validé » ou « KYC en attente ». Une affaire ne peut être créée que pour un client au KYC validé. Le KYC se valide, et le client se désactive, depuis sa fiche.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "CLIENT_NEW": {
+      "PAGE": "Nouveau client",
+      "INTRO_TITLE": "Créer un client",
+      "INTRO_TEXT": "L'assistant crée le client en 3 étapes : Identification, Coordonnées, Conditions commerciales. Le guide vous les montre une à une, sans rien enregistrer ; à la fermeture, vous retrouvez l'assistant là où vous l'aviez laissé.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Le nom du client s'affiche sous le titre dès qu'il est saisi ; les pastilles résument la saisie (secteur, ville, devise). Le fil d'Ariane « Clients » ramène à la liste.",
+      "RAIL_TITLE": "La progression",
+      "RAIL_TEXT": "Le rail montre où vous en êtes. Une étape déjà vue se rouvre d'un clic ; les suivantes restent verrouillées tant que vous n'y êtes pas arrivé avec « Suivant ».",
+      "S1_TITLE": "Identification",
+      "S1_TEXT": "Nom du client et secteur d'activité (obligatoires), code client et n° fiscal / TVA. À la création, laissez le code vide pour qu'il soit généré. Le code et le nom doivent être uniques dans l'entité.",
+      "S2_TITLE": "Coordonnées",
+      "S2_TEXT": "L'adresse de la société (adresse, ville, code postal, pays d'origine, site web), puis ses interlocuteurs : au moins un, avec son nom. Ce sont eux qui se rattachent aux affaires et reçoivent les factures ; sans adresse e-mail, un contact ne recevra aucune facture. Un seul contact est « principal ».",
+      "S3_TITLE": "Conditions commerciales",
+      "S3_TEXT": "Délai de paiement en jours (de 0 à 365, 30 par défaut), devise par défaut (TND, EGP, EUR ou USD) et notes internes.",
+      "NEXT_TITLE": "Suivant et Créer le client",
+      "NEXT_TEXT": "« Suivant » passe à l'étape suivante ; rien n'est encore enregistré. Le client est créé, avec ses contacts, d'un seul coup avec « Créer le client » à la dernière étape, qui ouvre ensuite sa fiche. Son KYC est alors « en attente ».",
+      "BACK_TITLE": "Précédent et Annuler",
+      "BACK_TEXT": "« Précédent » revient à l'étape d'avant sans rien perdre. Sur la première étape, « Annuler » ramène à la liste : la saisie n'ayant pas été enregistrée, elle est perdue.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "CLIENT_EDIT": {
+      "PAGE": "Modification d'un client",
+      "INTRO_TITLE": "Modifier un client",
+      "INTRO_TEXT": "La modification reprend l'assistant de création, prérempli : Identification, Coordonnées, Conditions commerciales. Le guide montre chaque étape en aperçu, sans rien enregistrer.",
+      "RAIL_TITLE": "Les étapes",
+      "RAIL_TEXT": "Toutes les étapes sont ouvertes : cliquez directement sur celle à corriger dans le rail.",
+      "S2_TITLE": "Coordonnées et contacts",
+      "S2_TEXT": "L'adresse de la société, puis ses interlocuteurs : ajoutez, modifiez ou retirez un contact. Un contact retiré est désactivé (il reste dans l'historique des factures). Ce retrait est refusé pour le contact principal ou pour un contact rattaché à une affaire en cours.",
+      "NEXT_TITLE": "Enregistrer",
+      "NEXT_TEXT": "« Suivant » passe d'une étape à l'autre sans enregistrer. Tout est enregistré à la fin avec « Enregistrer » : le client d'abord, puis ses contacts un par un ; vous revenez ensuite à sa fiche.",
+      "BACK_TITLE": "Précédent et Annuler",
+      "BACK_TEXT": "« Précédent » revient à l'étape d'avant. Sur la première étape, « Annuler » ramène à la fiche du client sans rien enregistrer."
+    },
+    "CLIENT_DETAIL": {
+      "PAGE": "Fiche client",
+      "INTRO_TITLE": "La fiche d'un client",
+      "INTRO_TEXT": "Tout sur un client au même endroit : son identité et ses actions à gauche, ses chiffres et ses onglets à droite. Ce guide en fait le tour ; les onglets s'ouvrent tout seuls, et vous retrouvez le vôtre à la fin.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Le nom du client, avec son code, son pays et son secteur. Les pastilles donnent son état (Inactif, KYC Validé ou KYC en attente) et son délai de paiement. Le fil d'Ariane « Clients » ramène à la liste, avec vos filtres.",
+      "IDENTITY_TITLE": "Identité",
+      "IDENTITY_TEXT": "Code, pays, adresse, secteur, devise, délai de paiement, n° fiscal / TVA, site web (cliquable) et notes internes.",
+      "ACTIONS_TITLE": "Actions rapides",
+      "ACTIONS_TEXT": "« Nouvelle facture » ouvre la facturation pour ce client. « Valider le KYC » (ou « Révoquer le KYC »), « Modifier le client » et « Bloquer le client » (ou « Réactiver le client ») demandent le droit de gérer la facturation.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Projets (toutes ses affaires, dont celles en cours), Total facturé (hors brouillons et factures annulées), Encaissé (paiements reçus) et En attente (facturé moins encaissé), dans la devise du client.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "Vue générale, Contacts et Traçabilité. L'onglet ouvert est gardé dans l'adresse (?tab=…) : F5 ou un lien partagé rouvre le même.",
+      "OVERVIEW_TITLE": "Vue générale",
+      "OVERVIEW_TEXT": "La carte Validation KYC (date et auteur, ou rappel s'il manque), les projets liés (Total, En cours, Terminés) avec « Voir les affaires », qui ouvre la liste des affaires filtrée sur ce client, et le recouvrement : part encaissée et part en attente du total facturé, avec le délai moyen de paiement constaté.",
+      "CONTACTS_TITLE": "Contacts",
+      "CONTACTS_TEXT": "Les interlocuteurs du client : le « Principal », l'adresse e-mail (sans elle, le contact ne reçoit aucune facture) et le nombre d'affaires où il est rattaché. « Ajouter un contact », modifier ou désactiver un contact ; les contacts désactivés sont listés en dessous, avec « Réactiver ».",
+      "TRACE_TITLE": "Traçabilité",
+      "TRACE_TEXT": "Les dates du client : création, dernière modification, validation du KYC (date et auteur) et dernière activité.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "INVOICES": {
+      "PAGE": "Factures",
+      "INTRO_TITLE": "Les factures",
+      "INTRO_TEXT": "Toutes les factures clients, du brouillon au paiement. Ce guide fait le tour de la page et du parcours d'une facture.",
+      "NEW_TITLE": "Nouvelle facture",
+      "NEW_TEXT": "Ouvre l'assistant de création : affaire, lignes, conditions, récapitulatif. La facture naît en brouillon ; elle n'a pas encore de numéro.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Total Facturé, En attente (émises, envoyées ou partiellement payées), En retard (les mêmes, échéance dépassée) et Litiges. Ils portent sur la page affichée seulement (« page courante ») et sont convertis en euros ; le petit chiffre donne le nombre de factures.",
+      "TOOLBAR_TITLE": "Rechercher et filtrer",
+      "TOOLBAR_TEXT": "La recherche porte sur le numéro de facture, le client et l'affaire (référence ou intitulé). « Filtres » combine statut, période d'émission, client, affaire, « En retard uniquement », période d'échéance et montant TTC min / max. Les icônes à droite basculent entre grille et liste ; en liste, un clic sur un en-tête trie.",
+      "LIST_TITLE": "La liste",
+      "LIST_TEXT": "Chaque facture montre sa référence et son projet, son client, son montant TTC, son statut et ses dates (émission, échéance, retard en jours). Un clic ouvre sa fiche. Au retour, vous retrouvez vos filtres, votre tri, votre page et votre vue.",
+      "QUICK_TITLE": "Les actions rapides",
+      "QUICK_TEXT": "Sans ouvrir la fiche, chaque facture propose l'action de son étape : « Valider la facture » (en revue), « Émettre la facture » (validée), « Marquer comme envoyée » (émise) et « Enregistrer un paiement » (émise, envoyée ou partiellement payée).",
+      "LIFECYCLE_TITLE": "Le parcours d'une facture",
+      "LIFECYCLE_TEXT": "Brouillon → « Soumettre pour validation » → En revue → décision : Validée, Retournée (à corriger et soumettre à nouveau) ou Annulée (rejet) → « Émettre la facture » : elle reçoit son numéro (FAC-année-n°) et part par e-mail aux contacts → Envoyée → Part. payée → Payée. À côté : Litige et Avoir émis.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "INVOICE_NEW": {
+      "PAGE": "Nouvelle facture",
+      "INTRO_TITLE": "Créer une facture",
+      "INTRO_TEXT": "L'assistant compose la facture en 4 étapes : Affaire & Client, Lignes, Conditions, Récapitulatif. Chaque étape a besoin de la précédente : le guide vous les décrit ici.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Les pastilles résument la saisie au fil des étapes : client, type de facture, nombre de lignes et total TTC. Le fil d'Ariane ramène à la liste, ou à la fiche affaire / client d'où vous êtes venu.",
+      "RAIL_TITLE": "La progression",
+      "RAIL_TEXT": "Le rail montre l'étape en cours. Un clic sur une étape précédente y revient ; on ne peut pas sauter en avant, chaque étape transmettant ses données à la suivante.",
+      "S1_TITLE": "1. Affaire & Client",
+      "S1_TEXT": "Recherchez l'affaire (nom ou numéro), puis choisissez le type de facture (acompte, situation, solde…) et, si besoin, le TS associé. Le budget et le RAF disponible s'affichent : un RAF épuisé bloque la facturation. L'affaire doit être En cours avec un budget validé.",
+      "S2_TITLE": "2. Lignes",
+      "S2_TEXT": "Les lignes à facturer : description, quantité, PU HT, TVA. En dehors d'un acompte, une facture créée ici ne peut porter que des frais remboursables (« + Ajouter un remboursable ») ou des soldes WIP non facturés (« + Ajouter un solde WIP non facturé ») ; l'avancement, les heures et les livrables passent par la validation WIP. Jusqu'à 3 colonnes de déduction peuvent être ajoutées.",
+      "S3_TITLE": "3. Conditions",
+      "S3_TEXT": "Conditions de paiement, date d'échéance (proposée d'après les conditions, modifiable), bon de commande (requis en forfait) et notes internes. L'échéance déclenche les relances de paiement.",
+      "S4_TITLE": "4. Récapitulatif",
+      "S4_TEXT": "Relisez le client, les lignes, les totaux (HT, TTC, net à payer) et l'aperçu des rappels planifiés. Le montant HT ne doit pas dépasser le RAF de l'affaire (RG12). Après l'enregistrement, « Exporter en PDF » donne un aperçu marqué BROUILLON.",
+      "ACTIONS_TITLE": "Brouillon ou Soumettre",
+      "ACTIONS_TEXT": "« Suivant » passe à l'étape suivante. Au récapitulatif, « Brouillon » enregistre la facture pour y revenir plus tard ; « Soumettre » l'enregistre et l'envoie en validation. « Retour » revient d'une étape, « Annuler » abandonne sans rien enregistrer.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "INVOICE_EDIT": {
+      "PAGE": "Modification d'une facture",
+      "INTRO_TITLE": "Modifier une facture",
+      "INTRO_TEXT": "Le même assistant, prérempli. Deux cas : un brouillon (modifiable librement), ou une facture déjà émise ou envoyée sans aucun paiement, que l'on corrige en gardant son numéro (droit spécifique requis).",
+      "ACTIONS_TITLE": "Enregistrer",
+      "ACTIONS_TEXT": "Pour un brouillon : « Brouillon » enregistre, « Soumettre » enregistre et envoie en validation. Pour une facture émise : « Enregistrer les modifications » est le seul bouton ; l'avant / après est gardé dans l'onglet « Historique des modifications » de la fiche."
+    },
+    "INVOICE_DETAIL": {
+      "PAGE": "Fiche facture",
+      "INTRO_TITLE": "La fiche d'une facture",
+      "INTRO_TEXT": "Tout sur une facture : son identité et son cycle de vie à gauche, ses chiffres et ses onglets à droite. Ce guide en fait le tour ; les onglets s'ouvrent tout seuls, et vous retrouvez le vôtre à la fin.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Le numéro de la facture (« Brouillon » tant qu'elle n'est pas émise), le client et l'affaire — le sous-titre mène à l'affaire — et la pastille de statut.",
+      "IDENTITY_TITLE": "Identité",
+      "IDENTITY_TEXT": "Client, affaire, TS éventuel, type, devise, dates d'émission et d'échéance, conditions de paiement, bon de commande et notes.",
+      "ACTIONS_TITLE": "Le cycle de vie",
+      "ACTIONS_TEXT": "Le grand bouton est l'étape suivante : « Soumettre pour validation », « Confirmer la décision », « Émettre la facture », « Marquer comme envoyée », « Enregistrer un paiement » ou « Résoudre le litige ». Selon le statut s'ajoutent « Modifier le brouillon », « Modifier » (émise sans paiement), « Retourner à l'émetteur », « Ouvrir un litige », « Émettre un avoir », « Voir l'affaire » et « Exporter en PDF ».",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "L'avancement de la facture dans son parcours (en %, d'après son statut), son montant TTC (avec le HT) et le restant à payer, avec l'échéance — en rouge si elle est dépassée.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "Lignes de facturation, Relances, Historique des modifications et Suivi. L'onglet ouvert est gardé dans l'adresse (?tab=…).",
+      "LINES_TITLE": "Lignes de facturation",
+      "LINES_TEXT": "Les lignes, avec recherche, puis le total HT, les déductions éventuelles et le net à payer.",
+      "REMINDERS_TITLE": "Relances",
+      "REMINDERS_TEXT": "Les rappels de paiement planifiés d'après l'échéance (avant, le jour même, puis après). Ils partent automatiquement chaque matin ; « Suspendre » les met en pause, « Réactiver » les relance. Un litige les suspend, le paiement complet ou un avoir les arrête.",
+      "AUDIT_TITLE": "Historique des modifications",
+      "AUDIT_TEXT": "Chaque événement de la facture, avec son auteur, son commentaire et les champs modifiés (avant / après), notamment lors d'une modification après émission.",
+      "TRACE_TITLE": "Suivi",
+      "TRACE_TEXT": "Les dates clés : création, dernière modification, émission, échéance et paiement complet.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "COLLECTIONS": {
+      "PAGE": "Recouvrement",
+      "INTRO_TITLE": "Le recouvrement",
+      "INTRO_TEXT": "La liste des factures à encaisser de votre entité : émises, envoyées ou partiellement payées, avec leur reste dû et leur retard. Les factures en litige, payées ou en brouillon n'y figurent pas.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Encours à recouvrer (tous les restes dus), Échu (la part dont l'échéance est passée), Encaissé ce mois (paiements reçus depuis le 1er) et Échu depuis +90 jours. Calculés sur toutes les factures de l'entité, pas seulement la page ; le (i) de chaque tuile détaille le calcul.",
+      "TOOLBAR_TITLE": "Rechercher et filtrer",
+      "TOOLBAR_TEXT": "La recherche porte sur le client et le numéro de facture. « Filtres » : affaire et client (par leur identifiant), période — sur la date d'échéance — et « En retard uniquement ». Les icônes à droite basculent entre grille et liste ; en liste, un clic sur un en-tête trie.",
+      "LIST_TITLE": "La liste",
+      "LIST_TEXT": "Pour chaque facture : client, numéro, reste dû (sur le montant TTC), échéance et jours de retard — orange au-delà de 30 jours, rouge au-delà de 60. Un clic ouvre son dossier de recouvrement.",
+      "REMINDER_TITLE": "Statut de relance",
+      "REMINDER_TEXT": "La dernière relance envoyée à la facture. Les relances partent automatiquement chaque matin d'après l'échéance ; elles se suspendent depuis le dossier de la facture.",
+      "RECON_TITLE": "Rapprochement bancaire",
+      "RECON_TEXT": "Le bouton « Rapprochement bancaire » de l'en-tête est encore désactivé. La page existe à l'adresse /finance/recouvrement/reconciliation : elle a son propre guide.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "RECONCILIATION": {
+      "PAGE": "Rapprochement bancaire",
+      "INTRO_TITLE": "Le rapprochement bancaire",
+      "INTRO_TEXT": "Importez un relevé bancaire, puis rapprochez chaque virement reçu d'une facture : la confirmation enregistre le paiement sur la facture.",
+      "IMPORT_TITLE": "Importer un relevé",
+      "IMPORT_TEXT": "Glissez un fichier ou cliquez pour le choisir, puis « Importer ». Formats acceptés : OFX (.ofx) et CAMT053 (.xml), 10 Mo maximum. Pas de CSV ni d'Excel. À l'import, des factures sont proposées automatiquement pour chaque opération.",
+      "MANUAL_TITLE": "Saisie manuelle",
+      "MANUAL_TEXT": "« + Saisie manuelle » ajoute une opération sans fichier (date, montant, référence, description). Elle apparaît dans l'historique sous « Saisie manuelle » et reçoit elle aussi une proposition automatique.",
+      "HISTORY_TITLE": "Historique des imports",
+      "HISTORY_TEXT": "Chaque import, avec son format, sa date, le nombre d'opérations rapprochées (✓) et non rapprochées (?). Cliquez sur un import pour afficher ses opérations à droite.",
+      "TRANSACTIONS_TITLE": "Les opérations",
+      "TRANSACTIONS_TEXT": "Les opérations de l'import choisi : date, référence, description, montant, statut et facture proposée. Statuts : Non rapproché, Proposition, Confirmé, Partiel, Rejeté, Acompte. ↻ actualise la liste.",
+      "ACTIONS_TITLE": "Rapprocher",
+      "ACTIONS_TEXT": "Sur une proposition : « Confirmer » enregistre un paiement du montant du virement sur la facture proposée, « Partiel » n'en affecte qu'une partie, « Rejeter » écarte la proposition. Sur une opération non rapprochée : « Rapprocher » (choisir la facture vous-même), « Partiel » ou « Acompte ». Une opération traitée ne se défait pas.",
+      "UNMATCHED_TITLE": "Virements non rapprochés",
+      "UNMATCHED_TEXT": "Le total des opérations encore « Non rapproché », par ancienneté (0 – 30 j, 31 – 60 j, 61 – 90 j, > 90 j) depuis leur date de valeur.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "COLLECTION_DETAIL": {
+      "PAGE": "Dossier de recouvrement",
+      "INTRO_TITLE": "Le dossier de recouvrement",
+      "INTRO_TEXT": "Le suivi d'une facture à encaisser : ses relances, ses encaissements et ce qui reste dû. Ce guide en fait le tour ; les onglets s'ouvrent tout seuls, et vous retrouvez le vôtre à la fin.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Le numéro de la facture, son client et son affaire, son statut et, si elle est en retard, le nombre de jours.",
+      "IDENTITY_TITLE": "Identité",
+      "IDENTITY_TEXT": "Client, affaire, dates d'émission et d'échéance, devise, état des relances (actives ou suspendues) et date de la dernière relance envoyée.",
+      "ACTIONS_TITLE": "Actions",
+      "ACTIONS_TEXT": "« Enregistrer un encaissement », « Suspendre les relances » (motif facultatif) ou « Réactiver les relances » demandent le droit de gérer la facturation. « Voir la facture » et « Voir l'affaire » ouvrent leurs fiches.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Montant facturé (TTC), Encaissé (avec le % du montant), Reste dû et Retard en jours — « À jour » si l'échéance n'est pas passée.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "Échéancier de relances et Encaissements. L'onglet ouvert est gardé dans l'adresse (?tab=…).",
+      "REMINDERS_TITLE": "Échéancier de relances",
+      "REMINDERS_TEXT": "Chaque relance prévue (palier et décalage par rapport à l'échéance, J-7, J+7…), sa date planifiée, sa date d'envoi et son statut : En attente, Suspendue (avec le motif) ou Envoyée. Elles partent automatiquement chaque matin.",
+      "PAYMENTS_TITLE": "Encaissements",
+      "PAYMENTS_TEXT": "Les paiements reçus : date de valeur (et date de saisie), mode et référence, note et montant ; en bas, facturé − encaissé = reste dû.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "APPROVAL_QUEUE": {
+      "PAGE": "File d'approbation",
+      "INTRO_TITLE": "La file d'approbation",
+      "INTRO_TEXT": "Ici se valident les demandes de facturation venues des affaires (WIP, avancements, livrables, TS) et les notes de crédit. Valider une demande crée la facture en brouillon. Ce guide ouvre les onglets tout seul et vous rend le vôtre à la fin.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "« En attente de validation » compte toutes les demandes à traiter (lignes, lots de livrables, notes de crédit). « Historique des actions » compte les décisions chargées dans l'onglet Historique (les 200 dernières). « En attente RF » ne concerne pas ces demandes.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "« En attente de validation » : ce qui attend une décision. « Historique » : le journal des décisions prises.",
+      "SUBTABS_TITLE": "Par mode de facturation",
+      "SUBTABS_TEXT": "Les demandes sont rangées par mode : Forfaitaire, Régie, Livrable et TS. Le chiffre de chaque sous-onglet donne le nombre de demandes. Chaque tableau a sa recherche, ses filtres (affaire, période, montant…), son tri et sa pagination.",
+      "FORFAIT_TITLE": "Forfaitaire",
+      "FORFAIT_TEXT": "Les avancements déclarés sur les affaires au forfait (taux d'avancement), une ligne par période : affaire, référence, période, montant HT, statut. En dessous, les notes de crédit des factures au forfait.",
+      "REGIE_TITLE": "Régie",
+      "REGIE_TEXT": "Le WIP des affaires en régie (heures Timesheet de la période, au montant confirmé par le client), et les notes de crédit de la régie.",
+      "LIVRABLE_TITLE": "Livrable",
+      "LIVRABLE_TEXT": "Les lots de livrables : affaire, nombre de documents, montant HT, date de facturation. Une sélection ne peut regrouper que des lots de la même affaire : la validation crée une facture avec une ligne par document.",
+      "TS_TITLE": "TS",
+      "TS_TEXT": "L'avancement des travaux supplémentaires intégrés au budget. Une fois facturé à 100 %, le TS passe Facturé.",
+      "ACTIONS_TITLE": "Valider ou retourner",
+      "ACTIONS_TEXT": "Un clic sur une ligne ouvre son détail, avec « Valider » et « Retourner » (motif obligatoire). Cochez plusieurs lignes, même de modes ou d'affaires différents, puis « Valider la sélection » : une seule facture combinée est créée. Si les affaires ont des clients différents, vous choisissez le client de la facture. Après validation, la facture brouillon s'ouvre pour être complétée.",
+      "CREDIT_TITLE": "Notes de crédit",
+      "CREDIT_TEXT": "Les avoirs créés depuis une fiche facture arrivent ici. « Valider » l'approuve et l'émet (numéro AV-…), « Retourner » le renvoie à son auteur. Un clic ouvre sa fiche facture.",
+      "HISTORY_TITLE": "Historique",
+      "HISTORY_TEXT": "Les 200 dernières décisions : date, utilisateur, action (validation, retour, annulation d'une validation), élément et commentaire, avec recherche et filtres.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "APPROVAL_DETAIL": {
+      "PAGE": "Détail d'une demande",
+      "INTRO_TITLE": "Le détail d'une demande",
+      "INTRO_TEXT": "Une ligne de facturation ou un lot de livrables en attente de validation : de quoi décider en connaissance de cause. Ce guide ouvre les onglets tout seul et vous rend le vôtre à la fin.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "La période facturée en titre, le statut et le mode en pastilles ; le fil d'Ariane ramène à la file d'approbation.",
+      "IDENTITY_TITLE": "Identité",
+      "IDENTITY_TEXT": "Affaire, client, période, date de facturation, mode, statut de l'affaire, budget et responsable. Si la demande a été retournée, le « Motif du retour » s'affiche.",
+      "ACTIONS_TITLE": "Décider",
+      "ACTIONS_TEXT": "Tant que la demande est en attente : « Valider » crée la facture brouillon et l'ouvre pour la compléter ; « Retourner » la renvoie avec un motif obligatoire, pour correction. « Voir l'affaire » ouvre sa fiche.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Pour une ligne : montant HT (avec la TVA), TTC, montant WIP et cumul de l'affaire en % du budget. Pour un lot : montant HT et nombre d'entrées, montant confirmé et report de la période précédente.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "« Historique de l'affaire » (ou « Entrées » pour un lot) et « Journal d'activité ». L'onglet ouvert est gardé dans l'adresse (?tab=…).",
+      "ITEMS_TITLE": "Historique de l'affaire / Entrées",
+      "ITEMS_TEXT": "Pour une ligne : toutes les lignes de facturation de l'affaire, la demande en cours marquée « Actuel ». Pour un lot : chaque document, son taux précédent, son nouveau taux et le montant.",
+      "AUDIT_TITLE": "Journal d'activité",
+      "AUDIT_TEXT": "Chaque action sur la demande : date, action, statut avant → après, rôle de l'auteur et commentaire.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "SUBCONTRACTING": {
+      "PAGE": "Sous-traitance",
+      "INTRO_TITLE": "La sous-traitance",
+      "INTRO_TEXT": "Trois niveaux : l'annuaire des sous-traitants, les ordres de sous-traitance (ordres ST) passés sur une affaire, et l'analyse de marge d'une affaire. Le guide ouvre chaque onglet et vous rend le vôtre à la fin.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "Sous-traitants, Ordres ST et Analyse des coûts. Une phrase sous les onglets rappelle ce que contient chacun. L'onglet ouvert est gardé dans l'adresse (?tab=…).",
+      "ST_TITLE": "Sous-traitants",
+      "ST_TEXT": "L'annuaire des prestataires externes de l'entité : indicateurs, recherche (nom, e-mail, téléphone, n° fiscal), filtres et vue grille ou liste. « Nouveau sous-traitant » (nom obligatoire, unique dans l'entité), « Modifier », « Désactiver ». Un sous-traitant doit exister ici avant de recevoir un ordre.",
+      "ENTITY_TITLE": "L'entité",
+      "ENTITY_TEXT": "Ce sélecteur choisit l'entité dont on affiche l'annuaire. Il ne vaut que pour l'onglet Sous-traitants ; les deux autres suivent l'affaire choisie.",
+      "ORDERS_TITLE": "Ordres ST",
+      "ORDERS_TEXT": "Recherchez puis choisissez une affaire : ses ordres s'affichent avec budget, réalisé, % consommé et statut. « Nouvel ordre ST » : sous-traitant, périmètre, budget, devise et seuil d'alerte (10 % par défaut). L'affaire doit être En cours. « Statut » : En cours, Suspendu ou Clôturé (définitif). Export CSV.",
+      "COSTS_TITLE": "Coûts réalisés",
+      "COSTS_TEXT": "« Coûts » ouvre le volet des coûts d'un ordre : « Ajouter un coût » (montant, date — pas dans le futur —, description), seulement sur un ordre En cours. Au-delà de budget + seuil, l'ordre est signalé en dépassement.",
+      "ANALYSIS_TITLE": "Analyse des coûts",
+      "ANALYSIS_TEXT": "Choisissez une affaire : CA encaissé (paiements reçus), coûts de sous-traitance, marge brute et taux de marge, avec la répartition. Les coûts internes ne sont pas encore calculés (toujours 0).",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "COSTS": {
+      "PAGE": "Coûts",
+      "INTRO_TITLE": "Gestion des coûts",
+      "INTRO_TEXT": "Les factures de coût de votre entité : factures fournisseurs ou dépenses sans fournisseur, chacune avec une ou plusieurs lignes. Elles passent par un circuit d'approbation puis sont réglées.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Brouillons, En attente (soumises) et Approuvés (y compris celles déjà réglées), comptés sur la page affichée.",
+      "NEW_TITLE": "Nouvelle facture",
+      "NEW_TEXT": "Ouvre le formulaire d'une facture de coût : fournisseur, lignes, taxes, pièces jointes.",
+      "TOOLBAR_TITLE": "Rechercher, filtrer, changer de vue",
+      "TOOLBAR_TEXT": "La recherche porte sur la référence, le fournisseur et le n° de facture. « Filtres » : statut, catégorie, période et montant TTC (sur la page affichée). Trois vues : grille, liste (tri par en-tête) et fournisseurs, qui regroupe les factures par fournisseur.",
+      "LIST_TITLE": "La liste",
+      "LIST_TEXT": "Chaque facture : référence (EXP-année-n°), fournisseur, n° de facture fournisseur, catégories, date, montants HT et TTC (et en EUR), statut et niveau d'approbation. Un clic ouvre sa fiche ; en vue fournisseurs, la page du fournisseur.",
+      "ACTIONS_TITLE": "Les actions",
+      "ACTIONS_TEXT": "« Modifier » et « Soumettre » sur un brouillon ; « Créer un règlement » sur une facture approuvée pas encore réglée ; « Voir le détail » partout.",
+      "LIFECYCLE_TITLE": "Le parcours d'une facture de coût",
+      "LIFECYCLE_TEXT": "Brouillon → « Soumettre » : le niveau d'approbation est calculé sur le TTC en euros. Niveau L1 : approuvée tout de suite. L2 à L4 : Soumis, en attente dans la file d'approbation (L4 : deux approbateurs). Approuvé → règlement saisi → Comptabilisé (réglée). Un complément demandé ou un refus la renvoie en Brouillon.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "COST_NEW": {
+      "PAGE": "Nouvelle facture de coût",
+      "INTRO_TITLE": "Saisir une facture de coût",
+      "INTRO_TEXT": "Une facture fournisseur, ou une dépense sans fournisseur, en une ou plusieurs lignes. Elle part en brouillon ou directement dans le circuit d'approbation.",
+      "INVOICE_TITLE": "Facture",
+      "INVOICE_TEXT": "Entité, fournisseur (facultatif), n° de facture du fournisseur — obligatoire avec un fournisseur, une seule fois par fournisseur —, date de facture, échéance et devise.",
+      "LINES_TITLE": "Lignes",
+      "LINES_TEXT": "Chaque ligne a sa catégorie de coût (et sous-catégorie), sa description, son affaire éventuelle (même entité) et son montant HT. Avec un fournisseur : FODEC et TVA par ligne ; sans fournisseur : TVA en montant. Une partie hors champ TVA peut être isolée (billet d'avion d'une agence…).",
+      "TAXES_TITLE": "Taxes et totaux",
+      "TAXES_TEXT": "Timbre fiscal (une fois par facture, avec un fournisseur), retenue à la source si cochée — déduite du net à payer —, et autres taxes libres ajoutées au TTC. Les totaux HT, TVA, TTC et net à payer se calculent au fil de la saisie.",
+      "ATTACH_TITLE": "Pièces jointes",
+      "ATTACH_TEXT": "PDF, JPEG ou PNG, 10 Mo maximum par fichier. Elles sont envoyées à l'enregistrement de la facture ; on ne peut plus en ajouter depuis la fiche.",
+      "CIRCUIT_TITLE": "Circuit d'approbation",
+      "CIRCUIT_TEXT": "Le niveau prévu d'après le TTC converti en euros : approbation automatique (L1), approbation simple ou double validation (L4), avec les approbateurs attendus.",
+      "ACTIONS_TITLE": "Enregistrer ou soumettre",
+      "ACTIONS_TEXT": "« Enregistrer brouillon » garde la facture sans l'envoyer ; « Soumettre pour approbation » l'enregistre et lance le circuit. Le message au centre dit ce qui manque. « Annuler » quitte sans enregistrer.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "COST_EDIT": {
+      "PAGE": "Modification d'une facture de coût",
+      "INTRO_TITLE": "Modifier une facture de coût",
+      "INTRO_TEXT": "Le même formulaire, prérempli. Un brouillon se modifie librement (l'entité, elle, ne change plus). Une facture approuvée ou réglée ne se modifie qu'avec le droit DAF, avec une justification.",
+      "ACTIONS_TITLE": "Enregistrer",
+      "ACTIONS_TEXT": "Brouillon : « Enregistrer brouillon » ou « Soumettre pour approbation ». Facture validée : « Enregistrer la modification », après une justification d'au moins 5 caractères ; le statut et le règlement sont conservés, chaque changement est historisé."
+    },
+    "COST_DETAIL": {
+      "PAGE": "Fiche facture de coût",
+      "INTRO_TITLE": "La fiche d'une facture de coût",
+      "INTRO_TEXT": "Tout sur une facture de coût : son identité et ses actions à gauche, ses montants et ses onglets à droite. Le guide ouvre chaque onglet et vous rend le vôtre à la fin.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "La référence de la facture, avec son statut et son niveau d'approbation ; le fil d'Ariane ramène à la liste des coûts.",
+      "IDENTITY_TITLE": "Identité et actions",
+      "IDENTITY_TEXT": "Fournisseur, n° de facture, dates, devise, catégories… Actions : « Modifier » et « Soumettre pour approbation » sur un brouillon, « Nouveau règlement » sur une facture approuvée, « Modifier (DAF) » sur une facture validée pour ceux qui en ont le droit.",
+      "KPIS_TITLE": "Les montants",
+      "KPIS_TEXT": "HT, TVA, TTC, leurs équivalents en EUR et, s'il y a une retenue à la source, le net à payer au fournisseur.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "Lignes et totaux, Approbations, Pièces jointes, Historique des modifications, Relances et Règlement. L'onglet ouvert est gardé dans l'adresse (?tab=…).",
+      "INFO_TITLE": "Lignes et totaux",
+      "INFO_TEXT": "Chaque ligne (catégorie, affaire, description, HT, taxes) puis les totaux de la facture.",
+      "APPROVALS_TITLE": "Approbations",
+      "APPROVALS_TEXT": "Chaque décision du circuit : niveau, auteur, date, décision (approuvée, complément, refus, auto-approuvée) et commentaire.",
+      "ATTACHMENTS_TITLE": "Pièces jointes",
+      "ATTACHMENTS_TEXT": "Les fichiers de la facture, à télécharger. Ils ne se suppriment que sur un brouillon ; on en ajoute depuis le formulaire.",
+      "CHANGES_TITLE": "Historique des modifications",
+      "CHANGES_TEXT": "Les modifications faites après validation : auteur, date, justification et champs changés (avant / après).",
+      "REMINDERS_TITLE": "Relances",
+      "REMINDERS_TEXT": "Les rappels internes avant l'échéance d'une facture approuvée et pas encore réglée, envoyés chaque matin par e-mail. Ils se suspendent (avec un motif) et se réactivent.",
+      "LEDGER_TITLE": "Règlement",
+      "LEDGER_TEXT": "Le règlement de la facture et le relevé du fournisseur : montant réglé comparé au net à payer, débit (trop-payé), crédit (reste dû) et solde. Un règlement se modifie ou se supprime ici ; export Excel.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "COST_SUPPLIER": {
+      "PAGE": "Coûts par fournisseur",
+      "INTRO_TITLE": "Les coûts d'un fournisseur",
+      "INTRO_TEXT": "Toutes les factures de coût d'un fournisseur et son relevé de règlements. Le guide ouvre les onglets et vous rend le vôtre à la fin.",
+      "IDENTITY_TITLE": "Le fournisseur",
+      "IDENTITY_TEXT": "Code, type, n° fiscal, pays et nombre de factures. « Nouvelle facture » ouvre le formulaire avec ce fournisseur ; « Nouveau règlement » règle l'une de ses factures approuvées.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Le fournisseur et les totaux de ses factures de coût, tous statuts confondus.",
+      "INVOICES_TITLE": "Factures",
+      "INVOICES_TEXT": "Les factures de coût du fournisseur, tous statuts ; un clic ouvre la fiche.",
+      "LEDGER_TITLE": "Règlement (relevé)",
+      "LEDGER_TEXT": "Une ligne par facture réglée, par date de règlement : montant réglé face au net à payer, débit (trop-payé), crédit (reste dû) et solde débiteur ou créditeur cumulé. Les factures approuvées non réglées n'y figurent pas. Export Excel."
+    },
+    "COST_UNASSIGNED": {
+      "PAGE": "Coûts sans fournisseur",
+      "INTRO_TITLE": "Les coûts sans fournisseur",
+      "INTRO_TEXT": "Les dépenses saisies sans fournisseur (pas de FODEC, de timbre ni de retenue). Il n'y a pas de relevé de règlement pour elles."
+    },
+    "COST_APPROVAL": {
+      "PAGE": "Approbation des coûts",
+      "INTRO_TITLE": "La file d'approbation des coûts",
+      "INTRO_TEXT": "Trois files en une : les factures de coût soumises, les demandes d'embauche chiffrées par RH et les avances sur salaire validées par RH. Chacun ne voit que ce que ses droits lui permettent de décider.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "En attente : le total des trois files. Urgents : les factures de niveau L3 ou L4.",
+      "TOOLBAR_TITLE": "Rechercher et filtrer",
+      "TOOLBAR_TEXT": "Recherche libre, et « Filtres » : type de demande, priorité, niveau, catégorie, date, devise et montant. Vue grille ou liste.",
+      "LIST_TITLE": "Les demandes",
+      "LIST_TEXT": "Chaque demande montre son type, son objet, son montant et son niveau. « Voir le détail » ouvre la fiche (facture de coût ou candidat).",
+      "COSTS_TITLE": "Factures de coût",
+      "COSTS_TEXT": "Les factures soumises, les plus élevées en premier. Décisions : « Approuver » (commentaire facultatif), « Complément » (renvoyée en brouillon pour être complétée) ou « Refuser » (commentaire obligatoire, renvoyée en brouillon). Au niveau L4, deux approbateurs différents sont nécessaires.",
+      "HIRING_TITLE": "Demandes d'embauche",
+      "HIRING_TEXT": "Le coût salarial d'un recrutement chiffré par RH (coût chargé mensuel × 12). Approuver, ou refuser avec une contre-proposition de salaire éventuelle.",
+      "ADVANCES_TITLE": "Avances sur salaire",
+      "ADVANCES_TEXT": "Les avances validées par RH, en attente de la décision finance. Approuver (le versement est ensuite fait par la paie) ou refuser avec un motif. On ne décide pas de sa propre avance.",
+      "NEW_TITLE": "Nouvelle demande",
+      "NEW_TEXT": "Ouvre le formulaire d'une nouvelle facture de coût.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "COST_MISSIONS": {
+      "PAGE": "Ordres de mission",
+      "INTRO_TITLE": "Les ordres de mission",
+      "INTRO_TEXT": "La décision finale sur le coût des missions : créées par un manager, chiffrées et validées par RH, elles arrivent ici en attente de la décision finance.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "En attente de décision, Départs imminents (dans 3 jours au plus, ou déjà commencés) et Missions internationales.",
+      "TOOLBAR_TITLE": "Rechercher et filtrer",
+      "TOOLBAR_TEXT": "Recherche libre et filtres ; vue grille ou liste.",
+      "LIST_TITLE": "Les missions",
+      "LIST_TEXT": "Chaque mission : collaborateur, destination, dates, urgence et coût estimé (indemnités, hébergement, billet, visa, assurance, autres frais ; l'avance de frais n'est pas comptée).",
+      "DECIDE_TITLE": "Décider",
+      "DECIDE_TEXT": "Ouvrez une mission : détail de la mission et des frais, notes RH. « Approuver le coût » ou « Refuser » (motif obligatoire).",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "RATES": {
+      "PAGE": "Barèmes de taux",
+      "INTRO_TITLE": "Les barèmes de taux TM",
+      "INTRO_TEXT": "Les barèmes calculent, pour chaque collaborateur, un taux intercompany et un taux de vente en régie (Time & Material). Le barème validé le plus récent s'applique.",
+      "PAYS_TITLE": "L'entité",
+      "PAYS_TEXT": "Choisissez l'entité dont vous gérez les barèmes.",
+      "FORMULA_TITLE": "Les formules",
+      "FORMULA_TEXT": "Taux interco = coût × (1 + % HQ) ; taux de vente = coût × (1 + % HQ + % marge), rappelés au-dessus du tableau.",
+      "TABLE_TITLE": "Les barèmes",
+      "TABLE_TEXT": "Chaque barème : période (mois, trimestre ou année), type, % HQ, % marge, marges interco et externe, devise, statut et date de validation. Dépliez-en un pour voir ses lignes par collaborateur.",
+      "NEW_TITLE": "Nouveau barème",
+      "NEW_TEXT": "« + Nouveau barème » : choisissez la période et les pourcentages. Le barème naît en Brouillon.",
+      "LIFECYCLE_TITLE": "D'un brouillon à un barème validé",
+      "LIFECYCLE_TEXT": "« Auto-remplir depuis la formule » crée une ligne par collaborateur actif à partir des coûts réglés de la période. « Calculer » passe le barème en Calculé (taux journalier, horaire, mensuel, interco et externe). « Valider » le fige.",
+      "ALLOCATION_TITLE": "Formule de coût",
+      "ALLOCATION_TEXT": "Ce bouton ouvre la répartition des catégories de coût : par effectif (total ÷ nombre de collaborateurs), montant fixe, ou direct (coûts rattachés au collaborateur). Elle sert à l'auto-remplissage.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "EMPLOYEE_COSTS": {
+      "PAGE": "Coûts collaborateurs",
+      "INTRO_TITLE": "Les coûts collaborateurs",
+      "INTRO_TEXT": "Le coût de chaque collaborateur sur une période : coût de base pour l'entreprise, coût de vente interne et coût de vente externe. Ils servent à la régie et aux barèmes.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Collaborateurs suivis (part active / expirée), coûts de vente moyens (interne, interco, externe) et marges moyennes.",
+      "TOOLBAR_TITLE": "Rechercher et filtrer",
+      "TOOLBAR_TEXT": "Recherche par collaborateur, filtre Actifs / Expirés et autres critères ; vue grille ou liste.",
+      "LIST_TITLE": "La liste",
+      "LIST_TEXT": "Une ligne par collaborateur et par période : coûts de base, interne et externe, devise, dates et statut. Seule la période la plus récente d'un collaborateur est « Actif » ; les autres sont « Expiré ».",
+      "ACTIONS_TITLE": "Les actions",
+      "ACTIONS_TEXT": "« Modifier », « Supprimer » (définitif) et « Historique », qui ouvre le journal de ce coût.",
+      "ADD_TITLE": "Ajouter un coût",
+      "ADD_TEXT": "« Ajouter » : collaborateur, période et l'un des trois montants — les autres se calculent (interne = base × 1,1 ; externe = base × 1,2). Deux périodes d'un même collaborateur ne peuvent pas se chevaucher.",
+      "EXPORT_TITLE": "Exporter",
+      "EXPORT_TEXT": "« Exporter Excel » télécharge la liste filtrée.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "EMPLOYEE_COST_HISTORY": {
+      "PAGE": "Historique d'un coût collaborateur",
+      "INTRO_TITLE": "L'historique d'un coût collaborateur",
+      "INTRO_TEXT": "Tout ce qui est arrivé au coût d'un collaborateur : créations, modifications, suppressions et changements de statut. Le fil d'Ariane ramène à la liste.",
+      "TOOLBAR_TITLE": "Rechercher et filtrer",
+      "TOOLBAR_TEXT": "Recherche et filtres (action, période…) ; deux présentations : chronologie ou tableau.",
+      "LIST_TITLE": "Les événements",
+      "LIST_TEXT": "Chaque événement : date, action, auteur et champs modifiés avec leur valeur avant et après.",
+      "EXPORT_TITLE": "Exporter",
+      "EXPORT_TEXT": "« Exporter Excel » télécharge l'historique.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "SUPPLIERS": {
+      "PAGE": "Fournisseurs",
+      "INTRO_TITLE": "Le référentiel fournisseurs",
+      "INTRO_TEXT": "Les fournisseurs de votre entité, auxquels se rattachent les factures de coût. Chaque fiche porte l'identité, les informations fiscales et l'IBAN du fournisseur.",
+      "NEW_TITLE": "Nouveau fournisseur",
+      "NEW_TEXT": "Ouvre l'assistant de création en trois étapes : identification, informations fiscales, coordonnées bancaires.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Nombre de fournisseurs actifs, ceux qui ont un IBAN (nécessaire pour un virement), ceux qui ont un n° de TVA, et les pays couverts. Ils décrivent tout le référentiel actif de l'entité, pas la page affichée ni la recherche.",
+      "TOOLBAR_TITLE": "Rechercher et changer de vue",
+      "TOOLBAR_TEXT": "La recherche porte sur le nom et le code. « Filtres » : type de fournisseur, présence d'un IBAN ou d'un n° de TVA. La bascule passe des cartes au tableau, triable par en-tête.",
+      "STATUS_TITLE": "Fournisseurs désactivés",
+      "STATUS_TEXT": "Par défaut seuls les actifs sont listés. Le filtre « Statut » (Désactivés ou Tous) fait réapparaître les fournisseurs désactivés ; un bandeau le rappelle.",
+      "LIST_TITLE": "La liste",
+      "LIST_TEXT": "Chaque fournisseur : nom, pays, type, n° de TVA, IBAN et statut. Un clic ouvre sa fiche.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "SUPPLIER_NEW": {
+      "PAGE": "Nouveau fournisseur",
+      "INTRO_TITLE": "Créer un fournisseur",
+      "INTRO_TEXT": "Trois étapes ; seule la première est obligatoire. Le guide vous montre chaque étape en aperçu, sans rien enregistrer.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Le titre, le fil d'Ariane et, en pastilles, le résumé de ce que vous avez déjà saisi.",
+      "RAIL_TITLE": "La progression",
+      "RAIL_TEXT": "Les trois étapes de l'assistant. On peut cliquer sur une étape déjà franchie pour y revenir, pas sauter en avant.",
+      "S1_TITLE": "1. Identification",
+      "S1_TEXT": "Raison sociale, pays et type de fournisseur, tous obligatoires. Le pays fixe le préfixe du code du fournisseur, attribué automatiquement à la création.",
+      "S2_TITLE": "2. Informations fiscales",
+      "S2_TEXT": "N° de TVA — unique : un numéro déjà utilisé, quel que soit le pays, fait échouer l'enregistrement —, identifiant fiscal, et profil de calcul : Standard (HT + taux) ou Agence de voyage, qui change la saisie de ses factures de coût.",
+      "S3_TITLE": "3. Coordonnées bancaires",
+      "S3_TEXT": "L'IBAN, utilisé pour les règlements par virement. Facultatif, mais un fournisseur sans IBAN ne peut pas être payé par virement.",
+      "NEXT_TITLE": "Suivant / Créer",
+      "NEXT_TEXT": "« Suivant » passe à l'étape suivante (l'étape 1 doit être complète) ; à la dernière étape, « Créer le fournisseur » l'enregistre et ouvre sa fiche.",
+      "BACK_TITLE": "Retour / Annuler",
+      "BACK_TEXT": "« Retour » revient à l'étape précédente sans rien perdre ; « Annuler », à la première étape, quitte sans enregistrer.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "SUPPLIER_EDIT": {
+      "PAGE": "Modification d'un fournisseur",
+      "INTRO_TITLE": "Modifier un fournisseur",
+      "INTRO_TEXT": "Le même assistant, prérempli avec la fiche du fournisseur. Rien n'est enregistré avant la dernière étape.",
+      "S1_TITLE": "1. Identification",
+      "S1_TEXT": "Raison sociale et type se modifient. Le pays reste visible mais verrouillé : le code du fournisseur en dépend.",
+      "NEXT_TITLE": "Suivant / Enregistrer",
+      "NEXT_TEXT": "« Suivant » passe à l'étape suivante ; à la dernière, « Enregistrer » applique les changements et revient à la fiche.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "SUPPLIER_DETAIL": {
+      "PAGE": "Fiche fournisseur",
+      "INTRO_TITLE": "La fiche d'un fournisseur",
+      "INTRO_TEXT": "Son identité et ses actions à gauche, ses chiffres et ses onglets à droite. Le guide ouvre chaque onglet et vous rend le vôtre à la fin.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Le nom du fournisseur, son code et son pays, et son statut (actif ou désactivé) ; le fil d'Ariane ramène à la liste.",
+      "IDENTITY_TITLE": "Détails",
+      "IDENTITY_TEXT": "Identification (code, pays, type, date de création), informations fiscales (n° de TVA, identifiant fiscal) et coordonnées bancaires (IBAN). Une donnée manquante est signalée.",
+      "ACTIONS_TITLE": "Actions rapides",
+      "ACTIONS_TEXT": "« Nouvelle facture fournisseur » ouvre une facture de coût déjà rattachée à ce fournisseur ; « Modifier » rouvre l'assistant ; « Voir les coûts » ouvre la vue fournisseur du module Coûts. Création et modification demandent le droit de gérer les coûts.",
+      "DEACTIVATE_TITLE": "Désactiver",
+      "DEACTIVATE_TEXT": "Retire le fournisseur de la liste et de la recherche ; ses factures et son historique sont conservés. Attention : il n'existe pas de réactivation.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Nombre de factures et leur total TTC en euros (tous statuts confondus), puis le nombre d'écritures du relevé et le solde dû — ou le trop-payé — d'après la dernière écriture du relevé.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "« Factures » liste ses factures de coût, « Règlement » son relevé de compte. L'onglet ouvert est gardé dans l'adresse de la page.",
+      "COSTS_TITLE": "Factures",
+      "COSTS_TEXT": "Les factures de coût du fournisseur, en lecture : recherche, filtres et export. Un clic ouvre la fiche de la facture, où se font soumission, approbation et règlement.",
+      "LEDGER_TITLE": "Règlement",
+      "LEDGER_TEXT": "Le relevé de compte : chaque facture réglée en débit et crédit, avec le solde progressif. Seules les factures réglées y figurent.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "REPORTING": {
+      "PAGE": "Reporting P&L",
+      "INTRO_TITLE": "Le reporting P&L",
+      "INTRO_TEXT": "Le compte de résultat mensuel de chaque pays : une période par mois, clôturée pour figer ses chiffres, puis un rapport qui suit le circuit Soumis → Endossé (DP) → Accepté (Groupe).",
+      "ACTIONS_TITLE": "Pays et actions",
+      "ACTIONS_TEXT": "Le sélecteur de pays (si vous en suivez plusieurs) et le menu « Actions » : Nouvelle période (avec le droit de gérer les coûts), Calendrier de soumission et Budget de référence.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "CA net, EBITDA et marge EBITDA de l'année, cumulés sur les seules périodes clôturées — un mois ouvert n'est pas compté. « Rapports à traiter » : ceux à endosser, à accepter ou renvoyés pour amendement.",
+      "TOOLBAR_TITLE": "Rechercher, filtrer, changer de vue",
+      "TOOLBAR_TEXT": "Recherche sur le libellé de la période ; filtres par année, statut de période et statut de rapport. Cartes ou tableau.",
+      "LIST_TITLE": "Les périodes",
+      "LIST_TEXT": "Chaque mois : son avancement, son CA net, son EBITDA et son % (en rouge si négatif), et l'état de son rapport. Un clic ouvre le rapport.",
+      "LIFECYCLE_TITLE": "Le parcours d'une période",
+      "LIFECYCLE_TEXT": "Nouvelle période (une par pays et par mois) → « Clôturer » : les chiffres du mois sont figés, avec les saisies manuelles (intercompagnie, intersede, en-cours, refacturations) → « Générer le rapport » → circuit de validation depuis la fiche du rapport.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "PL_BUDGET": {
+      "PAGE": "Budget de référence",
+      "INTRO_TITLE": "Le budget de référence",
+      "INTRO_TEXT": "Le budget annuel d'un pays, mois par mois et ligne par ligne du catalogue groupe. Il sert de base aux écarts budgétaires des rapports P&L.",
+      "FILTERS_TITLE": "Pays et année",
+      "FILTERS_TEXT": "Choisissez le pays (si vous en suivez plusieurs) et l'année du budget à afficher.",
+      "CREATE_TITLE": "Créer le budget",
+      "CREATE_TEXT": "S'il n'existe pas encore de budget pour ce pays et cette année, le bouton « Créer le budget » l'ouvre (droit de gérer le P&L).",
+      "GRID_TITLE": "La grille",
+      "GRID_TEXT": "Une ligne par poste du catalogue, une colonne par mois. Une case vide vaut zéro. Sans le droit de gérer, la grille est en lecture seule.",
+      "SAVE_TITLE": "Enregistrer",
+      "SAVE_TEXT": "Enregistre toute la grille. Un rapport P&L prend le budget tel qu'il est au moment où il est généré.",
+      "APPROVALS_TITLE": "Approbations",
+      "APPROVALS_TEXT": "Deux approbations : Directeur de pays puis Groupe, réservées aux administrateurs du P&L. Chacune affiche sa date et son auteur une fois donnée.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "PL_CALENDAR": {
+      "PAGE": "Calendrier de soumission",
+      "INTRO_TITLE": "Le calendrier de soumission",
+      "INTRO_TEXT": "Les échéances de soumission du rapport P&L, une par mois.",
+      "YEAR_TITLE": "L'année",
+      "YEAR_TEXT": "Choisissez l'année dont vous voulez voir les échéances.",
+      "TABLE_TITLE": "Les échéances",
+      "TABLE_TEXT": "Pour chaque mois : la date limite, qui l'a définie et quand.",
+      "EDIT_TITLE": "Modifier une échéance",
+      "EDIT_TEXT": "Avec le droit d'administrer le P&L : choisissez la date puis « Enregistrer » sur la ligne. L'échéance est indicative : elle ne bloque pas la soumission et n'envoie pas de rappel.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "REPORT_DETAIL": {
+      "PAGE": "Rapport P&L",
+      "INTRO_TITLE": "Un rapport P&L",
+      "INTRO_TEXT": "Le rapport d'un pays pour un mois : ses informations et ses actions à gauche, ses chiffres et ses onglets à droite. Le guide ouvre chaque onglet et vous rend le vôtre à la fin.",
+      "HEADER_TITLE": "L'en-tête",
+      "HEADER_TEXT": "Le pays et le mois du rapport, sa version et son statut ; le fil d'Ariane ramène au tableau de bord P&L.",
+      "IDENTITY_TITLE": "Rapport et workflow",
+      "IDENTITY_TEXT": "Pays, période, statut de la période, version et date de création ; puis les dates de soumission, d'endossement (DP) et d'acceptation (Groupe).",
+      "ACTIONS_TITLE": "L'action du moment",
+      "ACTIONS_TEXT": "Le bouton principal dépend du statut et de vos droits : « Soumettre » (brouillon ou amendement demandé), « Endosser » (soumis, Directeur de pays), « Accepter » (endossé, Groupe). Si rien ne vous revient, la carte le dit.",
+      "AMEND_TITLE": "Amendement et réouverture",
+      "AMEND_TEXT": "« Amendement » renvoie un rapport soumis ou endossé en préparation, avec un motif. « Rouvrir » un rapport accepté : nouvelle version (l'actuelle est archivée) ou correction absorbée par le mois suivant, avec une justification.",
+      "EXPORTS_TITLE": "Exports",
+      "EXPORTS_TEXT": "Le rapport en Excel ou en PDF, ou le classeur complet en 7 onglets.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "CA brut 2, CA net, EBITDA et % EBITDA du mois, tels que figés à la clôture de la période.",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "Vue générale, Récap P&L, Commentaires et Trésorerie. L'onglet ouvert est gardé dans l'adresse de la page.",
+      "OVERVIEW_TITLE": "Vue générale",
+      "OVERVIEW_TEXT": "La cascade du CA à l'EBITDA, l'avancement du workflow, le nombre de commentaires rédigés et la répartition des coûts du mois.",
+      "RECAP_TITLE": "Récap P&L",
+      "RECAP_TEXT": "Chaque ligne du catalogue : réel, budget et écart. Recherche et filtres (écart positif, négatif, sans budget, montant).",
+      "COMMENTS_TITLE": "Commentaires",
+      "COMMENTS_TEXT": "Les commentaires d'écart, ligne par ligne, puis la synthèse transversale (CA, coûts, EBITDA, autres points). Un texte est proposé ; avec le droit de gérer le P&L, vous le corrigez puis l'enregistrez.",
+      "TREASURY_TITLE": "Trésorerie",
+      "TREASURY_TEXT": "Les créances clients ouvertes du pays par ancienneté, et le cash manquant par affaire (créances plus en-cours non facturé).",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "TREASURY": {
+      "PAGE": "Trésorerie",
+      "INTRO_TITLE": "La trésorerie prévisionnelle",
+      "INTRO_TEXT": "Ce qui doit rentrer (factures clients non soldées) et ce qui doit sortir (factures de coût engagées), mois par mois, pour votre entité. C'est une projection de flux, pas un solde bancaire.",
+      "HORIZON_TITLE": "L'horizon",
+      "HORIZON_TEXT": "Projection sur 3, 6 ou 12 mois à partir du mois en cours.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Créances échues (non payées à échéance, sur les 90 derniers jours), encaissements attendus d'ici la fin de l'horizon, décaissements engagés (factures de coût soumises ou approuvées, moins les règlements saisis). Survolez une tuile pour son détail.",
+      "LOW_POINT_TITLE": "Le point bas",
+      "LOW_POINT_TEXT": "Le moment le plus tendu : là où le cumul des entrées moins les sorties est au plus bas. C'est la question principale de cette page.",
+      "CHARTS_TITLE": "Encaissements et décaissements par mois",
+      "CHARTS_TEXT": "Deux graphiques à la même échelle, pour comparer les hauteurs à l'œil. Ils montrent les mois à venir, sans le déjà échu.",
+      "TABLE_TITLE": "La projection mois par mois",
+      "TABLE_TEXT": "Une ligne « Déjà échu » puis une par mois : encaissements, décaissements, net et cumulé. Le mois du point bas est signalé. Le cumulé part de zéro : c'est une variation à partir d'aujourd'hui.",
+      "FLOWS_TITLE": "Les principaux flux",
+      "FLOWS_TEXT": "À gauche les encaissements attendus, à droite les décaissements engagés : tiers, échéance (et retard), montant converti avec le montant d'origine dessous. Un clic sur un encaissement ouvre son dossier de recouvrement.",
+      "LIMITS_TITLE": "Les limites du modèle",
+      "LIMITS_TEXT": "Pas de solde d'ouverture, ni salaires ni impôts, échéances passées reprises sur 90 jours seulement, conversion au taux courant. Le repère « encaissé sur 30 jours » donne un ordre de grandeur réalisé.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "ADMIN": {
+      "PAGE": "Administration",
+      "INTRO_TITLE": "L'administration Finance",
+      "INTRO_TEXT": "Le paramétrage du module Finance, en onglets. Le guide n'ouvre que les onglets que vos droits affichent, et vous rend le vôtre à la fin.",
+      "PAYS_TITLE": "L'entité",
+      "PAYS_TEXT": "Si vous gérez plusieurs pays, choisissez ici l'entité dont vous modifiez le paramétrage (listes, devises, configuration des coûts).",
+      "TABS_TITLE": "Les onglets",
+      "TABS_TEXT": "Chaque onglet regroupe un paramétrage. Leur liste dépend de vos droits.",
+      "LISTS_TITLE": "Listes configurables",
+      "LISTS_TEXT": "Les valeurs proposées dans les écrans (catégories de coûts, types de fournisseurs…), par famille. Une valeur « Globale » vaut pour toutes les entités ; ajouter, modifier ou désactiver ici ne concerne que l'entité choisie.",
+      "FOREX_TITLE": "Taux de change",
+      "FOREX_TEXT": "Les taux vers l'euro (et le franc suisse) utilisés pour convertir les montants : circuits d'approbation, P&L, trésorerie. Sans taux CHF, il vaut EUR × 0,965. Une devise sans taux est exclue des totaux.",
+      "FOREX_API_TITLE": "API de taux",
+      "FOREX_API_TEXT": "Le fournisseur qui peut rafraîchir les taux automatiquement (les jours ouvrés à 8 h, si l'actualisation automatique est activée), et un bouton pour les rafraîchir tout de suite.",
+      "ENTITY_CURRENCY_TITLE": "Devise des entités",
+      "ENTITY_CURRENCY_TEXT": "La devise par défaut de chaque entité ARX, choisie parmi les devises actives de la liste « Devise ».",
+      "COST_CONFIG_TITLE": "Configuration des coûts",
+      "COST_CONFIG_TEXT": "Les seuils d'approbation des factures de coût (niveaux L1 à L4) et les valeurs de listes du module Coûts, pour l'entité choisie.",
+      "REMINDERS_TITLE": "Relances clients",
+      "REMINDERS_TEXT": "Les paliers de relance des factures clients : X jours avant ou après l'échéance, destinataires (rôles, client) et message. Un envoi part chaque jour à 8 h. « Déclencher maintenant » envoie tout de suite les relances dues, avec de vrais e-mails.",
+      "COST_REMINDERS_TITLE": "Relances fournisseurs",
+      "COST_REMINDERS_TEXT": "Les rappels internes pour payer les fournisseurs à temps, d'après l'échéance de chaque facture de coût, envoyés aux rôles indiqués.",
+      "PERMISSIONS_TITLE": "Permissions",
+      "PERMISSIONS_TEXT": "Les droits Finance de chaque rôle. Un changement prend effet à la prochaine connexion de l'utilisateur.",
+      "DOC_TEMPLATES_TITLE": "Maquettes de documents",
+      "DOC_TEMPLATES_TEXT": "La mise en page HTML des documents PDF. Aujourd'hui, seule la maquette « Facture — Mode AV (forfaitaire) » est utilisée, pour l'aperçu du brouillon.",
+      "WIP_EMAILS_TITLE": "E-mails WIP",
+      "WIP_EMAILS_TEXT": "L'objet et le corps de l'e-mail envoyé au client à la validation d'un avancement, d'une feuille de temps ou d'un livrable. Un modèle lié à un pays prime sur le modèle global.",
+      "AUDIT_TITLE": "Audit",
+      "AUDIT_TEXT": "L'historique des modifications des données Finance : qui, quand, quoi, avec le détail avant / après.",
+      "HELP_FAQ_TITLE": "Assistant & FAQ",
+      "HELP_FAQ_TEXT": "Vos propres questions / réponses, page par page, en plus de la FAQ livrée. Une fois publiées, elles s'affichent en tête de la FAQ de la page choisie, dans « Aide & guides » comme dans l'assistant d'aide. Le français est obligatoire, l'anglais facultatif.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "ADMIN_ROLES": {
+      "PAGE": "Rôles et permissions",
+      "INTRO_TITLE": "Rôles et permissions",
+      "INTRO_TEXT": "Les droits du module Finance accordés à chaque rôle. Les rôles eux-mêmes et leur attribution aux utilisateurs se gèrent dans le module RH.",
+      "LIST_TITLE": "Les rôles",
+      "LIST_TEXT": "Chaque rôle avec son nombre de permissions. La recherche filtre la liste.",
+      "OPEN_TITLE": "Ouvrir un rôle",
+      "OPEN_TEXT": "Un clic sur un rôle ouvre ses permissions ; le fil d'Ariane ramène à la liste.",
+      "GROUPS_TITLE": "Les permissions par groupe",
+      "GROUPS_TEXT": "Les permissions classées par groupe, avec le compte de celles cochées. Cochez ou décochez chaque droit ; les droits Finance (FACT_…) sont teintés.",
+      "BULK_TITLE": "Tout cocher / tout décocher",
+      "BULK_TEXT": "Raccourcis sur l'ensemble du catalogue. Attention : tout décocher puis enregistrer retire tous les droits du rôle, y compris l'administration.",
+      "SAVE_TITLE": "Enregistrer",
+      "SAVE_TEXT": "Applique les changements. Ils prennent effet à la prochaine connexion des utilisateurs du rôle.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "ADMIN_DOC_TEMPLATES": {
+      "PAGE": "Maquettes de documents",
+      "INTRO_TITLE": "Maquettes de documents",
+      "INTRO_TEXT": "La mise en page HTML des PDF générés par la facturation, par type de document. Aujourd'hui, seule la maquette « Facture — Mode AV (forfaitaire) » est utilisée, pour l'aperçu du brouillon.",
+      "ACTIONS_TITLE": "Filtres et création",
+      "ACTIONS_TEXT": "Afficher aussi les maquettes inactives, filtrer par type de document, et « Nouvelle maquette ».",
+      "TABLE_TITLE": "La liste",
+      "TABLE_TEXT": "Chaque maquette : nom, description, type, état. Actions : modifier, activer ou désactiver.",
+      "EDITOR_TITLE": "L'éditeur",
+      "EDITOR_TEXT": "Type, nom, description et code HTML de la maquette. « Insérer le gabarit par défaut » part d'une mise en page complète.",
+      "VARIABLES_TITLE": "Les variables",
+      "VARIABLES_TEXT": "Cliquez une variable pour l'insérer à l'emplacement du curseur : elle sera remplacée par la donnée de la facture (client, montants, lignes…).",
+      "PREVIEW_TITLE": "L'aperçu",
+      "PREVIEW_TEXT": "Saisissez l'identifiant d'une facture pour voir le PDF avec ses données, ou laissez vide pour des données fictives.",
+      "ACTIVE_TITLE": "La maquette active",
+      "ACTIVE_TEXT": "Une seule maquette active par type devrait exister : activer une maquette désactive les autres. Une maquette nouvellement créée est active d'office.",
+      "END_TITLE": "Besoin d'aide ?",
+      "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
+    },
+    "SEE_ALL": "Voir tout le guide"
   },
   "HOME": {
     "GREETING": "Bonjour, {{name}}.",
@@ -2481,7 +4474,8 @@
       "CARRIED_FORWARD_TOTAL": "Total à valider",
       "PENDING_CLIENT_TITLE": "En attente de réponse client",
       "PENDING_CLIENT_EXPLAIN": "Un email récapitulatif a été envoyé au client. Une fois sa réponse reçue, saisissez ici le montant qu'il a réellement confirmé — s'il est inférieur au montant calculé, la différence sera reportée automatiquement sur la période suivante.",
-      "CLIENT_AMOUNT_LABEL": "Montant validé par le client",      "CLIENT_AMOUNT_HINT": "Ne peut pas dépasser le montant calculé.",
+      "CLIENT_AMOUNT_LABEL": "Montant validé par le client",
+      "CLIENT_AMOUNT_HINT": "Ne peut pas dépasser le montant calculé.",
       "CLIENT_AMOUNT_CONFIRM": "Confirmer",
       "CLIENT_AMOUNT_ERROR": "Erreur lors de l'enregistrement du montant validé par le client.",
       "VALIDATE_CLIENT_AMOUNT": "Valider le montant client",
@@ -3592,9 +5586,18 @@
       "SUSPEND": "Suspendre",
       "REACTIVATE": "Réactiver",
       "LOADING": "Chargement des relances…",
-      "STATUS": { "SENT": "Envoyée", "SUSPENDED": "Suspendue", "PENDING": "En attente" },
+      "STATUS": {
+        "SENT": "Envoyée",
+        "SUSPENDED": "Suspendue",
+        "PENDING": "En attente"
+      },
       "EMPTY": "Aucune relance planifiée.",
-      "SUSPEND_FORM": { "LABEL": "Motif de suspension", "PLACEHOLDER": "Optionnel", "CANCEL": "Annuler", "CONFIRM": "Confirmer" }
+      "SUSPEND_FORM": {
+        "LABEL": "Motif de suspension",
+        "PLACEHOLDER": "Optionnel",
+        "CANCEL": "Annuler",
+        "CONFIRM": "Confirmer"
+      }
     },
     "CHANGES": {
       "LINE_PREFIX": "Ligne {{ref}}",
@@ -4642,7 +6645,8 @@
       "COST_REMINDERS": "Relances fournisseurs",
       "WIP_EMAIL_TEMPLATES": "Emails WIP",
       "AUDIT": "Audit",
-      "NAV_LABEL": "Navigation de l'administration"
+      "NAV_LABEL": "Navigation de l'administration",
+      "HELP_FAQ": "Assistant & FAQ"
     },
     "AUDIT_TRAIL": {
       "COL_DATE": "Date",
@@ -5027,6 +7031,58 @@
       "TOKENS_TITLE": "Jetons disponibles",
       "FIELD_ACTIVE": "Modèle actif",
       "ACTIVE_HINT": "Un modèle inactif n'est plus utilisé ; le message standard reprend la main."
+    },
+    "HELP_FAQ": {
+      "title": "Assistant & FAQ",
+      "subtitle": "{{count}} question(s) ajoutée(s) par l'administration, en plus de la FAQ livrée avec l'application. L'assistant d'aide (la bulle en bas à droite) et « Aide & guides » les affichent pour la page choisie.",
+      "search": "Rechercher une question, une réponse…",
+      "page": "Page",
+      "allPages": "Toutes les pages",
+      "new": "Nouvelle question",
+      "newTitle": "Nouvelle question",
+      "editTitle": "Modifier la question",
+      "pageLabel": "Page concernée *",
+      "languages": "Langues",
+      "question": "Question",
+      "answer": "Réponse",
+      "questionPh": "Ex. : Comment annuler une facture déjà émise ?",
+      "answerPh": "La réponse, telle que l’assistant l’affichera.",
+      "optionalLang": "Facultatif : sans traduction, la question s’affiche en français dans cette langue.",
+      "order": "Ordre",
+      "publish": "Publiée (visible dans l’assistant et l’aide)",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer la question",
+      "deleteBody": "La question « {{question}} » sera supprimée définitivement. Pour la masquer seulement, dépubliez-la.",
+      "empty": "Aucune question pour l'instant. « Nouvelle question » en ajoute une pour une page.",
+      "noMatch": "Aucune question ne correspond.",
+      "word": "question(s)",
+      "colPage": "Page",
+      "colQuestion": "Question (français)",
+      "colQuestionEn": "Question (anglais)",
+      "notTranslated": "Non traduite — affichée en français",
+      "colLangs": "Langues",
+      "colOrder": "Ordre",
+      "colStatus": "Statut",
+      "published": "Publiée",
+      "unpublished": "Non publiée",
+      "edit": "Modifier",
+      "unpublish": "Dépublier",
+      "publishAction": "Publier",
+      "pageRequired": "Choisissez la page concernée.",
+      "frRequired": "La question et la réponse en français sont obligatoires.",
+      "pairRequired": "Dans une langue, remplissez la question ET la réponse, ou laissez les deux vides.",
+      "loadError": "Impossible de charger les questions.",
+      "saveError": "Impossible d'enregistrer la question.",
+      "deleteError": "Impossible de supprimer la question.",
+      "filters": {
+        "title": "Filtres",
+        "apply": "Appliquer",
+        "reset": "Réinitialiser",
+        "trigger": "Filtres"
+      }
     }
   },
   "ENUMS": {

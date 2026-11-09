@@ -56,6 +56,23 @@ function toPresence(raw: unknown): PresenceFilter {
  * Ce qui reste ici : la requête, la recherche et la pagination. Les deux vues sont des
  * composants sans état (UI-PLAYBOOK §8b).
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.SUPPLIERS.${key}_TITLE`, textKey: `GUIDE.SUPPLIERS.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'storefront'),
+  step('NEW', 'add', 'suppliers-new'),
+  step('KPIS', 'monitoring', 'suppliers-kpis'),
+  step('TOOLBAR', 'search', 'suppliers-toolbar'),
+  step('STATUS', 'filter_list', 'suppliers-toolbar'),
+  step('LIST', 'grid_view', 'suppliers-list'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-supplier-list',
   imports: [
@@ -63,6 +80,7 @@ function toPresence(raw: unknown): PresenceFilter {
     PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, PaginationComponent, FieldMessageComponent,
     SuppliersCardsSectionComponent, SuppliersTableSectionComponent,
+    PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './supplier-list.component.html',
@@ -70,6 +88,8 @@ function toPresence(raw: unknown): PresenceFilter {
 export class SupplierListComponent implements OnInit {
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(SuppliersTableSectionComponent);
+
+  readonly guideSteps = GUIDE_STEPS;
 
   private readonly svc        = inject(SupplierService);
   private readonly clientSvc  = inject(ClientService);

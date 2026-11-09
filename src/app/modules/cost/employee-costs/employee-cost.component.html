@@ -2,10 +2,10 @@
 
   <daf-page-header
     [title]="'COST.EMPLOYEE_COST.TITLE' | translate">
-    <daf-button pageActions
+    <daf-button pageActions data-guide="ec-export"
       [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !filteredRows().length, loading: exporting() }"
       (onClick)="exportExcel()" />
-    <daf-button pageActions
+    <daf-button pageActions data-guide="ec-add"
       [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.ADD' | translate), iconStart: 'add' }"
       (onClick)="openAdd()" />
   </daf-page-header>
@@ -16,7 +16,7 @@
          Flex, not `grid-cols-5`: a 5-column grid utility isn't used anywhere else in
          this app, and this app's own Tailwind build only reliably emits utilities it
          can already see used elsewhere — `flex-1` is safe, it's everywhere. -->
-    <section class="flex flex-wrap gap-2 sm:gap-6">
+    <section data-guide="ec-kpis" class="flex flex-wrap gap-2 sm:gap-6">
       <!-- TEST : 1re carte — même disposition que la carte 3/4 : le total mis en avant
            à gauche, part des actifs / expirés (en %) empilée à droite, séparée par la
            même ligne verticale. -->
@@ -87,7 +87,7 @@
 
     <!-- Search + active/expired filter + view toggle, all client-side (list() has no
          server-side query params to push either into) -->
-    <daf-search-toolbar
+    <daf-search-toolbar data-guide="ec-toolbar"
       [placeholder]="'COST.EMPLOYEE_COST.SEARCH_PLACEHOLDER' | translate"
       [value]="searchText()"
       [debounce]="200"
@@ -109,7 +109,7 @@
 
     <!-- Content sits free in the page — no outer container card -->
     @if (viewMode() === 'grid') {
-      <app-employee-cost-cards-section
+      <app-employee-cost-cards-section data-guide="ec-list"
         [costs]="pagedRows()"
         [loading]="isLoading()"
         [skeletonCount]="size()"
@@ -118,7 +118,7 @@
         (remove)="remove($event)"
         (history)="viewHistory($event)" />
     } @else {
-      <app-employee-cost-table-section
+      <app-employee-cost-table-section data-guide="ec-list"
         [costs]="pagedRows()"
         [loading]="isLoading()"
         [pageSize]="size()"
@@ -222,3 +222,6 @@
   </div>
 
 </ng-template>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="employee-costs" [steps]="guideSteps" />

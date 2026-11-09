@@ -17,6 +17,20 @@ import { TableSort, sortParam } from '../../../shared/table-tools';
 import { AffaireService } from '../../affaires/affaire.service';
 import type { AffaireListItem, ClientDto } from '../../affaires/affaire.model';
 import { InvoiceListStateService } from './invoice-list-state.service';
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — chaque `target` est un `data-guide` du gabarit. */
+const GUIDE_STEPS: GuideStep[] = [
+  { icon: 'receipt_long', titleKey: 'GUIDE.INVOICES.INTRO_TITLE',   textKey: 'GUIDE.INVOICES.INTRO_TEXT' },
+  { icon: 'add',          titleKey: 'GUIDE.INVOICES.NEW_TITLE',     textKey: 'GUIDE.INVOICES.NEW_TEXT',     target: 'invoices-new' },
+  { icon: 'monitoring',   titleKey: 'GUIDE.INVOICES.KPIS_TITLE',    textKey: 'GUIDE.INVOICES.KPIS_TEXT',    target: 'invoices-kpis' },
+  { icon: 'search',       titleKey: 'GUIDE.INVOICES.TOOLBAR_TITLE', textKey: 'GUIDE.INVOICES.TOOLBAR_TEXT', target: 'invoices-toolbar' },
+  { icon: 'grid_view',    titleKey: 'GUIDE.INVOICES.LIST_TITLE',    textKey: 'GUIDE.INVOICES.LIST_TEXT',    target: 'invoices-list' },
+  { icon: 'bolt',         titleKey: 'GUIDE.INVOICES.QUICK_TITLE',   textKey: 'GUIDE.INVOICES.QUICK_TEXT',   target: 'invoices-list' },
+  { icon: 'route',        titleKey: 'GUIDE.INVOICES.LIFECYCLE_TITLE', textKey: 'GUIDE.INVOICES.LIFECYCLE_TEXT' },
+  { icon: 'help',         titleKey: 'GUIDE.INVOICES.END_TITLE',     textKey: 'GUIDE.INVOICES.END_TEXT' },
+];
 
 type ApprovalDecision = 'APPROVE' | 'RETURN' | 'REJECT';
 type ViewMode = 'grid' | 'list';
@@ -27,6 +41,7 @@ type ViewMode = 'grid' | 'list';
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe, FormFieldComponent,
     InvoicesCardsSectionComponent, InvoicesTableSectionComponent, PaymentModalComponent,
+    PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './invoice-list.component.html',
@@ -39,6 +54,8 @@ export class InvoiceListComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly modal     = inject(ModalService);
+
+  readonly guideSteps = GUIDE_STEPS;
   private readonly translate = inject(TranslateService);
   private readonly affaireSvc = inject(AffaireService);
 

@@ -87,6 +87,36 @@ const SUPPLIER_INVOICES_DEFAULT_SIZE = 10;
  * Squelette identique à `recouvrement-detail.component.ts` (UI-PLAYBOOK) : deux
  * colonnes en **flex inline**, jamais `grid` ni classes de point de rupture.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guides de la page, un par mode — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const g = (page: string, key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.${page}.${key}_TITLE`, textKey: `GUIDE.${page}.${key}_TEXT`, target, tab,
+});
+const LINE_GUIDE: GuideStep[] = [
+  g('COST_DETAIL', 'INTRO',       'request_quote'),
+  g('COST_DETAIL', 'HEADER',      'label',           'cd-header'),
+  g('COST_DETAIL', 'IDENTITY',    'badge',           'cd-identity'),
+  g('COST_DETAIL', 'KPIS',        'monitoring',      'cd-kpis'),
+  g('COST_DETAIL', 'TABS',        'tab',             'cd-tabs'),
+  g('COST_DETAIL', 'INFO',        'list',            'cd-panel', 'info'),
+  g('COST_DETAIL', 'APPROVALS',   'fact_check',      'cd-panel', 'approvals'),
+  g('COST_DETAIL', 'ATTACHMENTS', 'attach_file',     'cd-panel', 'attachments'),
+  g('COST_DETAIL', 'CHANGES',     'history',         'cd-panel', 'changes'),
+  g('COST_DETAIL', 'REMINDERS',   'notifications',   'cd-panel', 'reminders'),
+  g('COST_DETAIL', 'LEDGER',      'account_balance', 'cd-panel', 'reglement'),
+  g('COST_DETAIL', 'END',         'help'),
+];
+const supplierGuide = (intro: 'COST_SUPPLIER' | 'COST_UNASSIGNED'): GuideStep[] => [
+  g(intro,           'INTRO',    'store'),
+  g('COST_SUPPLIER', 'IDENTITY', 'badge',           'cd-identity'),
+  g('COST_SUPPLIER', 'KPIS',     'monitoring',      'cd-kpis'),
+  g('COST_SUPPLIER', 'INVOICES', 'list',            'cd-panel', 'info'),
+  g('COST_SUPPLIER', 'LEDGER',   'account_balance', 'cd-panel', 'reglement'),
+  g('COST_DETAIL',   'END',      'help'),
+];
+
 @Component({
   selector: 'app-cost-line-detail',
   imports: [
@@ -95,6 +125,7 @@ const SUPPLIER_INVOICES_DEFAULT_SIZE = 10;
     MetricCardComponent, ButtonComponent, StatusBadgeComponent, FilterComponent,
     DataTableComponent, DafCellDirective, TableActionComponent, SearchToolbarComponent, PaginationComponent,
     CostLinesTableSectionComponent, ReglementModalComponent, CostRemindersPanelComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -178,6 +209,24 @@ export class CostLineDetailComponent implements OnInit {
 
   /** Adossé au paramètre d'URL — survit au rechargement et au bouton précédent. */
   activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'info');
+
+  /** Un guide par mode : une facture, les factures d'un fournisseur, ou celles sans fournisseur. */
+  readonly guideKey = this.mode === 'line' ? 'cost-detail' : this.mode === 'supplier' ? 'cost-supplier' : 'cost-unassigned';
+  readonly guideSteps = this.mode === 'line' ? LINE_GUIDE
+    : supplierGuide(this.mode === 'supplier' ? 'COST_SUPPLIER' : 'COST_UNASSIGNED');
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
 
   // ═══ Résolution approbateur / permissions ═════════════════════════════════
 

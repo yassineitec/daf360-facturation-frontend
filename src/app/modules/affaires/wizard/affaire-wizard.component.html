@@ -16,7 +16,7 @@
   <!-- Le résumé de la saisie vit dans les pastilles du titre : pays, client, mode et
        montant. C'est ce qui a remplacé la carte « Résumé » de la colonne de droite —
        et donc la colonne, le formulaire occupant désormais toute la largeur. -->
-  <daf-page-header
+  <daf-page-header data-guide="wizard-header"
     [title]="pageTitle()"
     [subtitle]="pageSubtitle()"
     [badges]="headerBadges()"
@@ -28,7 +28,7 @@
        en fin de flux et ne recouvre donc jamais le dernier champ. -->
   <div style="display:flex; flex-direction:column; gap:1rem">
 
-      <div class="form-card">
+      <div class="form-card" data-guide="wizard-card">
 
         <!-- Titre de l'étape courante -->
         <div class="card-head">
@@ -44,39 +44,39 @@
         <!-- Corps de l'étape -->
         <div class="step-body">
 
-          @if (currentStep() === 1) {
+          @if (shownStep() === 1) {
             <app-wizard-step-doc360
               [draft]="draft()"
               (draftChange)="onDraftChange($event)" />
           }
 
-          @if (currentStep() === 2) {
+          @if (shownStep() === 2) {
             <app-wizard-step-info
               [draft]="draft()"
               [paysLocked]="editMode()"
               (draftChange)="onDraftChange($event)" />
           }
 
-          @if (currentStep() === 3) {
+          @if (shownStep() === 3) {
             <app-wizard-step-billing
               [draft]="draft()"
               [locked]="false"
               (draftChange)="onDraftChange($event)" />
           }
 
-          @if (currentStep() === 4) {
+          @if (shownStep() === 4) {
             <app-wizard-step-responsables
               [draft]="draft()"
               (draftChange)="onDraftChange($event)" />
           }
 
-          @if (currentStep() === 5) {
+          @if (shownStep() === 5) {
             <app-wizard-step-planning
               [draft]="draft()"
               (draftChange)="onDraftChange($event)" />
           }
 
-          @if (currentStep() === 6) {
+          @if (shownStep() === 6) {
             <app-wizard-step-recap
               [draft]="draft()"
               [draftId]="draftId()" />
@@ -85,7 +85,7 @@
         </div><!-- /step-body -->
 
         <!-- Ce qui manque pour continuer -->
-        @if (!canGoNext() && !isSaving() && currentStep() !== 1) {
+        @if (previewStep() === null && !canGoNext() && !isSaving() && currentStep() !== 1) {
           <div class="validation-hint">
             <span class="material-symbols-outlined">info</span>
             <span>{{ stepValidationError() }}</span>
@@ -110,7 +110,7 @@
 
       @if (!editMode()) {
         <div class="form-footer">
-          <a [routerLink]="cancelRoute()" [queryParams]="{ statut: 'DRAFT' }" class="draft-link">
+          <a [routerLink]="cancelRoute()" [queryParams]="{ statut: 'DRAFT' }" class="draft-link" data-guide="wizard-drafts">
             <span class="material-symbols-outlined">history</span>
             {{ 'AFFAIRES.wizard.shell.resume_draft' | translate }}
           </a>
@@ -148,7 +148,7 @@
          continuer. -->
     <div class="action-bar__inner">
 
-      <div class="action-bar__side">
+      <div class="action-bar__side" data-guide="wizard-back">
         @if (currentStep() > firstStep()) {
           <button type="button" class="footer-action" (click)="goPrev()">
             <span class="material-symbols-outlined">arrow_back</span>
@@ -163,7 +163,7 @@
       </div>
 
       <!-- Rail : cliquable sur tout ce qui a déjà été franchi (voir onStepClick) -->
-      <div class="action-bar__rail">
+      <div class="action-bar__rail" data-guide="wizard-rail">
         <daf-stepper
           orientation="horizontal"
           [steps]="stepperSteps()"
@@ -172,7 +172,7 @@
           (stepClick)="onStepClick($event)" />
       </div>
 
-      <div class="action-bar__side action-bar__side--end">
+      <div class="action-bar__side action-bar__side--end" data-guide="wizard-next">
         <!-- L'action affirmative est un `daf-button` teal, comme dans les assistants
              fournisseur et facture. `disabled` est réel et non seulement grisé : l'étape
              suivante ne doit pas pouvoir être déclenchée au clavier tant que l'étape
@@ -185,3 +185,11 @@
   </daf-card>
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? » :
+     `affaire-new` en création, `affaire-edit` en modification (`:id/edit`, sans l'étape
+     Origine). Les étapes visent les data-guide ci-dessus ; « wizard-drafts » n'existe qu'en
+     création. Il parcourt les étapes en aperçu (`previewStep`) et revient à l'étape réelle
+     en se fermant. -->
+<app-page-guide [storageKey]="guideKey()" [steps]="guideSteps()"
+                (tabChange)="onGuideStep($event)" (closed)="previewStep.set(null)" />

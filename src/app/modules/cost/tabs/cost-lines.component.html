@@ -1,7 +1,7 @@
 <div class="flex flex-col gap-8">
 
   <!-- KPIs — invoices (V93), counted over the page on screen, which is what the list endpoint returns -->
-  <section class="grid grid-cols-3 gap-2 sm:gap-6">
+  <section data-guide="cost-kpis" class="grid grid-cols-3 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'COST.LINES.KPI_DRAFTS' | translate"
       [value]="draftCount()"
@@ -21,7 +21,7 @@
        by-supplier aggregation endpoint takes no status param and nothing re-triggers its
        load on statusFilter changes, so the filter would sit there doing nothing -- hide
        it there rather than leave a dead control. -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="cost-toolbar"
     [placeholder]="'COST.LINES.SEARCH_PLACEHOLDER' | translate"
     [value]="searchText()"
     [debounce]="200"
@@ -34,7 +34,7 @@
     [view]="viewMode()"
     (viewChange)="setViewMode($any($event))"
     [table]="tableSection()?.table() ?? null">
-    <daf-button
+    <daf-button data-guide="cost-new"
       [options]="{ variant: 'teal', label: 'COST.LINES.NEW_LINE' | translate, iconStart: 'add' }"
       (onClick)="openCreate()" />
   </daf-search-toolbar>
@@ -48,7 +48,7 @@
 
   <!-- Content sits free in the page — no outer container card -->
   @if (viewMode() === 'grid') {
-    <app-cost-lines-cards-section
+    <app-cost-lines-cards-section data-guide="cost-list"
       [invoices]="visibleInvoices()"
       [loading]="isLoading()"
       [skeletonCount]="size()"
@@ -58,7 +58,7 @@
       (submitInvoice)="submitInvoice($event)"
       (createReglement)="openReglementForInvoice($event)" />
   } @else if (viewMode() === 'list') {
-    <app-cost-lines-table-section
+    <app-cost-lines-table-section data-guide="cost-list"
       [invoices]="visibleInvoices()"
       [loading]="isLoading()"
       [pageSize]="size()"
@@ -75,7 +75,7 @@
          for this pays, deliberately ALL statuses (see SupplierCostSummaryService). The
          status filter above has no effect here by design: the aggregation endpoint
          takes no status param. -->
-    <app-cost-supplier-cards-section
+    <app-cost-supplier-cards-section data-guide="cost-list"
       [summaries]="supplierSummaries()"
       [loading]="supplierSummariesLoading()"
       [emptyMessage]="'COST.LINES.SUPPLIER_VIEW_EMPTY' | translate"

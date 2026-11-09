@@ -29,6 +29,26 @@ import { UserStore } from '../../../core/user.store';
 import { InvoiceTypeLabels } from '../../../core/invoice-type-labels.service';
 import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 import { AffaireService } from '../../affaires/affaire.service';
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la fiche — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.INVOICE_DETAIL.${key}_TITLE`, textKey: `GUIDE.INVOICE_DETAIL.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO',     'receipt_long'),
+  step('HEADER',    'label',           'invoice-header'),
+  step('IDENTITY',  'badge',           'invoice-identity'),
+  step('ACTIONS',   'bolt',            'invoice-actions'),
+  step('KPIS',      'monitoring',      'invoice-kpis'),
+  step('TABS',      'tab',             'invoice-tabs'),
+  step('LINES',     'list',            'invoice-panel', 'lines'),
+  step('REMINDERS', 'notifications',   'invoice-panel', 'reminders'),
+  step('AUDIT',     'history',         'invoice-panel', 'audit'),
+  step('TRACE',     'event',           'invoice-panel', 'trace'),
+  step('END',       'help'),
+];
 /** `yyyy-MM-dd` en heure locale — `toISOString()` décalerait d'un jour avant minuit UTC. */
 function toIsoDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -71,7 +91,7 @@ interface PrimaryAction {
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent, FormFieldComponent, MultiDatePickerComponent,
     DataTableComponent, DafCellDirective, SearchToolbarComponent,
-    PaymentModalComponent, CreditNoteModalComponent, RemindersPanelComponent,
+    PaymentModalComponent, CreditNoteModalComponent, RemindersPanelComponent, PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './invoice-detail.component.html',
@@ -108,6 +128,21 @@ export class InvoiceDetailComponent implements OnInit {
 
   /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
   activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'lines');
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
 
   /** Texte partagé par les trois modales à commentaire (retour, litige, résolution). */
   readonly commentText = signal('');

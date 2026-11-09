@@ -47,7 +47,7 @@
         <!-- COLONNE DROITE (70 %) — indicateurs puis onglets -->
         <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
 
-          <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+          <div data-guide="cd-kpis" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
             @for (k of kpiTiles(); track k.label) {
               <daf-metric-card
                 style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
@@ -58,14 +58,14 @@
             }
           </div>
 
-          <daf-tabs #tabsRef
+          <daf-tabs #tabsRef data-guide="cd-tabs"
             variant="underline"
             [tabs]="tabs()"
             [(active)]="activeTab"
             [tabsLabel]="'COST.DETAIL.TABS_ARIA' | translate"
             idPrefix="cost-line-detail" />
 
-          <div role="tabpanel"
+          <div role="tabpanel" data-guide="cd-panel"
                [id]="tabsRef.panelId(activeTab())"
                [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
                class="flex flex-col gap-6">
@@ -266,7 +266,7 @@
            ══════════════════════════════════════════════════════════════ -->
       <div style="display:flex; flex-direction:column; gap:1.5rem">
 
-        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+        <div data-guide="cd-kpis" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
 
           <daf-metric-card
             style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
@@ -285,14 +285,14 @@
           }
         </div>
 
-        <daf-tabs #tabsRef
+        <daf-tabs #tabsRef data-guide="cd-tabs"
           variant="underline"
           [tabs]="tabs()"
           [(active)]="activeTab"
           [tabsLabel]="'COST.DETAIL.TABS_ARIA' | translate"
           idPrefix="cost-line-detail" />
 
-        <div role="tabpanel"
+        <div role="tabpanel" data-guide="cd-panel"
              [id]="tabsRef.panelId(activeTab())"
              [attr.aria-labelledby]="tabsRef.tabId(activeTab())">
           <ng-container [ngTemplateOutlet]="ledgerPanel" />
@@ -309,7 +309,7 @@
   <ng-template #identityCard>
     <!-- Modes 'supplier'/'unassigned' : le nom du fournisseur est déjà dans la carte,
          donc h1 vide (le titre reste requis pour l'a11y). -->
-    <daf-page-header
+    <daf-page-header data-guide="cd-header"
       size="md"
       [title]="mode === 'line' ? headerTitle() : ''"
       [subtitle]="mode === 'line' ? headerSubtitle() : undefined"
@@ -317,7 +317,7 @@
       [breadcrumbs]="breadcrumbs()"
       [breadcrumbLabel]="'COST.DETAIL.BREADCRUMB_ARIA' | translate" />
 
-    <daf-section-card>
+    <daf-section-card data-guide="cd-identity">
 
       @if (mode === 'line') {
         <div class="flex flex-col gap-5 p-6">
@@ -523,3 +523,9 @@
   <app-reglement-modal #reglementModal />
 
 </daf-page>
+
+<!-- Guide de la page : `cost-detail` (une facture de coût), `cost-supplier` (les factures d'un
+     fournisseur) ou `cost-unassigned` (sans fournisseur). Une étape par onglet ; le guide ouvre
+     l'onglet expliqué, puis rend celui de l'utilisateur en se fermant. -->
+<app-page-guide [storageKey]="guideKey" [steps]="guideSteps"
+                (tabChange)="onGuideTab($event)" (closed)="onGuideClosed()" />

@@ -8,7 +8,7 @@
 
 <daf-page [loading]="isLoading()" [kpis]="0" [breadcrumbs]="true">
 
-  <daf-page-header
+  <daf-page-header data-guide="client-wizard-header"
     [title]="pageTitle()"
     [subtitle]="pageSubtitle()"
     [badges]="headerBadges()"
@@ -17,17 +17,17 @@
 
   <div style="display:flex; flex-direction:column; gap:1rem">
 
-    <div class="form-card">
+    <div class="form-card" data-guide="client-wizard-card">
 
       <!-- Titre de l'étape courante -->
       <div class="card-head">
         <div class="card-head__icon">
-          <span class="material-symbols-outlined">{{ steps()[currentStep() - 1].icon }}</span>
+          <span class="material-symbols-outlined">{{ steps()[shownStep() - 1].icon }}</span>
         </div>
         <div>
-          <h2 class="card-head__title">{{ steps()[currentStep() - 1].title }}</h2>
+          <h2 class="card-head__title">{{ steps()[shownStep() - 1].title }}</h2>
           <p class="card-head__sub">
-            {{ 'CLIENTS.NEW.STEP_COUNTER' | translate:{ current: currentStep(), total: steps().length } }}
+            {{ 'CLIENTS.NEW.STEP_COUNTER' | translate:{ current: shownStep(), total: steps().length } }}
           </p>
         </div>
       </div>
@@ -41,7 +41,7 @@
             #formRef
             [client]="editClient() ?? undefined"
             [paysId]="paysId()"
-            [activeSection]="currentStep()"
+            [activeSection]="shownStep()"
             (saved)="onSaved($event)"
             (closed)="goBack()" />
         }
@@ -60,7 +60,7 @@
            déjà en tête de ses champs, et la répéter en pied de carte donnerait deux fois
            le même message à l'écran. -->
 
-      @if (!canGoNext() && currentStep() === 1) {
+      @if (previewStep() === null && !canGoNext() && currentStep() === 1) {
         <div class="step-message">
           <daf-field-message [hint]="stepValidationError()!" />
         </div>
@@ -81,7 +81,7 @@
       <!-- Retour et annulation restent des actions de texte, comme l'assistant d'affaire :
            seule l'action affirmative est dessinée. Gris au repos, libellé ET icône passent
            ensemble à la couleur interactive au survol (l'icône hérite de `currentColor`). -->
-      <div class="action-bar__side">
+      <div class="action-bar__side" data-guide="client-wizard-back">
         @if (currentStep() > 1) {
           <button type="button" class="footer-action" (click)="goPrev()">
             <span class="material-symbols-outlined">arrow_back</span>
@@ -95,16 +95,16 @@
         }
       </div>
 
-      <div class="action-bar__rail">
+      <div class="action-bar__rail" data-guide="client-wizard-rail">
         <daf-stepper
           orientation="horizontal"
           [steps]="stepperSteps()"
-          [currentStep]="currentStep() - 1"
+          [currentStep]="shownStep() - 1"
           [config]="stepperConfig()"
           (stepClick)="onStepClick($event)" />
       </div>
 
-      <div class="action-bar__side action-bar__side--end">
+      <div class="action-bar__side action-bar__side--end" data-guide="client-wizard-next">
         <!-- Action affirmative en `daf-button` teal, comme les trois autres assistants.
              `loading` porte le spinner et bloque le clic ; le retour et l'annulation
              restent des actions de texte. -->
@@ -115,3 +115,8 @@
   </daf-card>
 
 </daf-page>
+
+<!-- Guide de la page : `client-new` en création, `client-edit` en modification. Il montre les
+     trois étapes en aperçu (`previewStep`), sans rien enregistrer, et rend l'étape réelle en se fermant. -->
+<app-page-guide [storageKey]="guideKey()" [steps]="guideSteps()"
+                (tabChange)="onGuideStep($event)" (closed)="previewStep.set(null)" />

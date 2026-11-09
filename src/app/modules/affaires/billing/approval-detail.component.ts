@@ -53,6 +53,25 @@ const STATUT_ENUM: Record<DetailType, string> = {
  *   GAUCHE (30 %, sticky)  en-tête, carte d'identité, actions en pied de carte.
  *   DROITE (70 %)          indicateurs, puis onglets (historique / entrées, journal).
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide du détail — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.APPROVAL_DETAIL.${key}_TITLE`, textKey: `GUIDE.APPROVAL_DETAIL.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'fact_check'),
+  step('HEADER', 'label', 'approval-detail-header'),
+  step('IDENTITY', 'badge', 'approval-detail-identity'),
+  step('ACTIONS', 'bolt', 'approval-detail-actions'),
+  step('KPIS', 'monitoring', 'approval-detail-kpis'),
+  step('TABS', 'tab', 'approval-detail-tabs'),
+  step('ITEMS', 'list', 'approval-detail-panel', 'items'),
+  step('AUDIT', 'history', 'approval-detail-panel', 'audit'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-approval-detail',
   standalone: true,
@@ -60,6 +79,7 @@ const STATUT_ENUM: Record<DetailType, string> = {
     TranslatePipe, DataTableComponent, DafCellDirective, DisplayCurrencyPipe,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, MetricCardComponent,
     ButtonComponent, StatusBadgeComponent, FormFieldComponent, SearchToolbarComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './approval-detail.component.html',
@@ -320,6 +340,21 @@ export class ApprovalDetailComponent implements OnInit {
 
   /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
   activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'items');
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
 
   /** Journal du plus récent au plus ancien. */
   readonly auditEntries = computed(() =>

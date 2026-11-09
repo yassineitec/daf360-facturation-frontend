@@ -13,7 +13,33 @@ import { ClientService } from '../client.service';
 import { ClientDetailDto } from '../client.model';
 import { ClientFormComponent } from '../client-form.component';
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
 const STEP_ICONS = ['badge', 'contacts', 'receipt_long'];
+
+/**
+ * Guides de l'assistant : `client-new` en création, `client-edit` en modification. Une
+ * étape portant `tab: '1'`…`'3'` montre cette étape de l'assistant en APERÇU
+ * (`previewStep`) : rien n'est enregistré, et la fermeture rend l'étape réelle.
+ * La modification réécrit l'intro, le rail, les contacts et les boutons ; le reste est commun.
+ */
+const g = (page: string, key: string, icon: string, target?: string, tab = 'real'): GuideStep => ({
+  icon, titleKey: `GUIDE.${page}.${key}_TITLE`, textKey: `GUIDE.${page}.${key}_TEXT`, target, tab,
+});
+const guideFor = (p: 'CLIENT_NEW' | 'CLIENT_EDIT'): GuideStep[] => [
+  g(p,            'INTRO',  p === 'CLIENT_NEW' ? 'person_add' : 'edit_note'),
+  g('CLIENT_NEW', 'HEADER', 'label',        'client-wizard-header'),
+  g(p,            'RAIL',   'linear_scale', 'client-wizard-rail'),
+  g('CLIENT_NEW', 'S1',     'badge',        'client-wizard-card', '1'),
+  g(p,            'S2',     'contacts',     'client-wizard-card', '2'),
+  g('CLIENT_NEW', 'S3',     'receipt_long', 'client-wizard-card', '3'),
+  g(p,            'NEXT',   'arrow_forward', 'client-wizard-next'),
+  g(p,            'BACK',   'arrow_back',   'client-wizard-back'),
+  g('CLIENT_NEW', 'END',    'help'),
+];
+const NEW_GUIDE  = guideFor('CLIENT_NEW');
+const EDIT_GUIDE = guideFor('CLIENT_EDIT');
 
 /**
  * Assistant « Nouveau client » — aligné sur l'assistant d'affaire.
@@ -29,7 +55,7 @@ const STEP_ICONS = ['badge', 'contacts', 'receipt_long'];
   imports: [
     TranslatePipe, ClientFormComponent,
     PageComponent, PageHeaderComponent, StepperComponent,
-    CardComponent, FieldMessageComponent, ButtonComponent,
+    CardComponent, FieldMessageComponent, ButtonComponent, PageGuideComponent,
   ],
   templateUrl: './client-new.component.html',
   styleUrl: './client-new.component.scss',
@@ -57,6 +83,20 @@ export class ClientNewComponent implements OnInit {
   readonly loadError = signal<string | null>(null);
 
   readonly formRef = viewChild(ClientFormComponent);
+
+  readonly guideKey   = computed(() => this.editMode() ? 'client-edit' : 'client-new');
+  readonly guideSteps = computed(() => this.editMode() ? EDIT_GUIDE : NEW_GUIDE);
+
+  /** Étape montrée par le guide le temps de son passage (aperçu, rien n'est enregistré) ; null = aucune. */
+  readonly previewStep = signal<number | null>(null);
+  /** L'étape affichée : celle de l'aperçu pendant le guide, l'étape réelle sinon. */
+  readonly shownStep = computed(() => this.previewStep() ?? this.currentStep());
+
+  /** `'1'`…`'3'` montre cette étape de l'assistant, `'real'` revient à la vraie. */
+  onGuideStep(tab: string): void {
+    const n = Number(tab);
+    this.previewStep.set(Number.isInteger(n) && n >= 1 && n <= STEP_ICONS.length ? n : null);
+  }
 
   /**
    * Étape la plus avancée atteinte : c'est elle qui dit ce qui est cliquable dans le rail,

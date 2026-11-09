@@ -79,8 +79,10 @@ type TsFilterValues = Record<string, string | Date[] | null>;
                 [attr.aria-expanded]="selectorOpen()"
                 [attr.aria-label]="'AFFAIRES.WIP.TS_SELECTOR_TITLE' | translate"
                 (click)="toggleSelector()">
-                <!-- Mêmes classes que le titre de daf-card dans la lib. -->
-                <h3 class="text-title-md text-on-surface daf-text-wrap m-0">{{ ts.referenceTs }} — {{ ts.intitule }}</h3>
+                <!-- Mêmes classes que le titre de daf-accordion-card de la lib (« Saisir un
+                     taux d'avancement » juste dessous) : 14px, gras, text-on-surface. -->
+                <h3 class="flex items-center gap-2 text-[14px] font-bold text-on-surface daf-text-wrap m-0">
+                  <span class="material-symbols-outlined text-[18px]" aria-hidden="true">receipt_long</span>{{ ts.referenceTs }} — {{ ts.intitule }}</h3>
                 <span class="material-symbols-outlined text-label-md text-on-surface-variant transition-transform duration-200"
                   [class.rotate-180]="selectorOpen()" aria-hidden="true">expand_more</span>
               </button>

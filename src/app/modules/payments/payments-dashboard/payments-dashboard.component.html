@@ -28,7 +28,7 @@
        se calculait que sur les factures soldées, donc il s'améliorait à mesure que
        l'arriéré vieillissait. Sa place revient à la tranche à plus de 90 jours, qui est
        la question que cet écran pose vraiment. -->
-  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+  <section data-guide="collections-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'PAYMENTS.DASHBOARD.KPI.PENDING' | translate"
       [value]="stats() ? (stats()!.enAttenteMontant | displayCurrency : stats()!.devise) : '—'"
@@ -57,7 +57,7 @@
        donc sur tout l'encours de l'entité, numéro de facture ou nom de client. Elle ne
        filtrait auparavant que la page déjà chargée : un client absent de la page courante
        restait introuvable alors qu'il avait des factures en retard. -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="collections-toolbar"
     [placeholder]="'PAYMENTS.DASHBOARD.FILTER.SEARCH_PH' | translate"
     [value]="searchText()"
     [debounce]="300"
@@ -79,14 +79,14 @@
 
   <!-- Content sits free in the page — no outer container card -->
   @if (viewMode() === 'grid') {
-    <app-aging-cards-section
+    <app-aging-cards-section data-guide="collections-list"
       [agingRows]="rows()"
       [loading]="loadingRows()"
       [skeletonCount]="pageSize()"
       [emptyMessage]="'PAYMENTS.DASHBOARD.TABLE.EMPTY' | translate"
       (open)="navigateToInvoice($event)" />
   } @else {
-    <app-aging-table-section
+    <app-aging-table-section data-guide="collections-list"
       [agingRows]="rows()"
       [loading]="loadingRows()"
       [pageSize]="pageSize()"
@@ -110,3 +110,7 @@
     (pageSizeChange)="onPageSize($event)" />
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Ses étapes
+     visent les data-guide ci-dessus ; « collections-list » est sur les deux vues, seule la visible compte. -->
+<app-page-guide storageKey="collections" [steps]="guideSteps" />

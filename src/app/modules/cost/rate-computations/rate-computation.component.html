@@ -1,15 +1,15 @@
 <div class="tab-container">
 
-  <div class="page-header">
+  <div class="page-header" data-guide="rate-header">
     <div>
       <h2 class="page-title">{{ 'COST.RATE.TITLE' | translate }}</h2>
       <p class="page-subtitle" [innerHTML]="'COST.RATE.SUBTITLE' | translate"></p>
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0">
-      <button class="btn-add" (click)="toggleFormulaEditor()">
+      <button class="btn-add" data-guide="rate-formula-btn" (click)="toggleFormulaEditor()">
         {{ (showFormulaEditor() ? 'COST.RATE.FORMULA.BTN_CLOSE' : 'COST.RATE.FORMULA.BTN_OPEN') | translate }}
       </button>
-      <button class="btn-add" (click)="toggleAddForm()">
+      <button class="btn-add" data-guide="rate-new" (click)="toggleAddForm()">
         {{ (showAddForm() ? 'COST.RATE.BTN_CANCEL' : 'COST.RATE.BTN_NEW') | translate }}
       </button>
     </div>
@@ -18,7 +18,7 @@
   <!-- Une liste déroulante cherchable, et non plus une bande d'onglets : `pays_ref` porte
        les 194 pays depuis V75, et 194 boutons ne sont pas une navigation. -->
   @if (paysList().length > 1) {
-    <div class="pays-picker">
+    <div class="pays-picker" data-guide="rate-pays">
       <daf-select
         [options]="paysOptions()"
         [config]="paysSelectConfig()"
@@ -108,10 +108,10 @@
     <div class="loading-state">{{ 'COST.RATE.LOADING' | translate }}</div>
   } @else {
 
-    <section class="config-section">
+    <section class="config-section" data-guide="rate-table">
 
       <!-- formula reminder -->
-      <div class="formula-box">
+      <div class="formula-box" data-guide="rate-formula">
         <div class="formula-item">
           <span class="formula-label">{{ 'COST.RATE.FORMULA_INTERCO_LABEL' | translate }}</span>
           <span class="formula-expr">{{ 'COST.RATE.FORMULA_INTERCO_EXPR' | translate }}</span>
@@ -350,3 +350,6 @@
   }
 
 </div>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="rate-computations" [steps]="guideSteps" />

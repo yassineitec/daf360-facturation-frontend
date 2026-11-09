@@ -1,3 +1,5 @@
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,6 +22,28 @@ type Step = 1 | 2 | 3;
 
 const STEP_KEYS  = ['IDENTIFICATION', 'FISCAL', 'BANK'] as const;
 const STEP_ICONS = ['badge', 'receipt_long', 'account_balance'] as const;
+
+/**
+ * Guides de l'assistant : `supplier-new` en création, `supplier-edit` en modification. Une
+ * étape portant `tab: '1'`…`'3'` montre cette étape de l'assistant en APERÇU
+ * (`previewStep`) : rien n'est enregistré, et la fermeture rend l'étape réelle.
+ */
+const g = (page: string, key: string, icon: string, target?: string, tab = 'real'): GuideStep => ({
+  icon, titleKey: `GUIDE.${page}.${key}_TITLE`, textKey: `GUIDE.${page}.${key}_TEXT`, target, tab,
+});
+const guideFor = (p: 'SUPPLIER_NEW' | 'SUPPLIER_EDIT'): GuideStep[] => [
+  g(p,              'INTRO', p === 'SUPPLIER_NEW' ? 'add_business' : 'edit_note'),
+  g('SUPPLIER_NEW', 'HEADER', 'label',          'supplier-wizard-header'),
+  g('SUPPLIER_NEW', 'RAIL',   'linear_scale',   'supplier-wizard-rail'),
+  g(p,              'S1',     'badge',          'supplier-wizard-card', '1'),
+  g('SUPPLIER_NEW', 'S2',     'receipt_long',   'supplier-wizard-card', '2'),
+  g('SUPPLIER_NEW', 'S3',     'account_balance', 'supplier-wizard-card', '3'),
+  g(p,              'NEXT',   'arrow_forward',  'supplier-wizard-next'),
+  g('SUPPLIER_NEW', 'BACK',   'arrow_back',     'supplier-wizard-back'),
+  g(p,              'END',    'help'),
+];
+const NEW_GUIDE  = guideFor('SUPPLIER_NEW');
+const EDIT_GUIDE = guideFor('SUPPLIER_EDIT');
 
 /**
  * Assistant fournisseur — **création ET modification**, un seul formulaire, comme
@@ -62,7 +86,7 @@ const STEP_ICONS = ['badge', 'receipt_long', 'account_balance'] as const;
   imports: [
     TranslatePipe,
     PageComponent, PageHeaderComponent, StepperComponent, ButtonComponent, CardComponent,
-    FormFieldComponent, SelectComponent, FieldMessageComponent,
+    FormFieldComponent, SelectComponent, FieldMessageComponent, PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './supplier-new.component.html',
@@ -126,6 +150,20 @@ export class SupplierNewComponent implements OnInit {
   readonly editId = Number(this.route.snapshot.paramMap.get('id')) || null;
   readonly isEdit = this.editId !== null;
 
+  readonly guideKey   = this.isEdit ? 'supplier-edit' : 'supplier-new';
+  readonly guideSteps = this.isEdit ? EDIT_GUIDE : NEW_GUIDE;
+
+  /** Étape montrée par le guide le temps de son passage (aperçu, rien n'est enregistré) ; null = aucune. */
+  readonly previewStep = signal<number | null>(null);
+  /** L'étape affichée : celle de l'aperçu pendant le guide, l'étape réelle sinon. */
+  readonly shownStep = computed(() => this.previewStep() ?? this.step());
+
+  /** `'1'`…`'3'` montre cette étape de l'assistant, `'real'` revient à la vraie. */
+  onGuideStep(tab: string): void {
+    const n = Number(tab);
+    this.previewStep.set(Number.isInteger(n) && n >= 1 && n <= STEP_ICONS.length ? n : null);
+  }
+
   /** L'état serveur au chargement, seule référence pour savoir ce qui a changé. */
   private readonly original = signal<SupplierDto | null>(null);
 
@@ -141,13 +179,13 @@ export class SupplierNewComponent implements OnInit {
     }));
   });
 
-  readonly stepTitle = computed(() => this.steps()[this.step() - 1].title);
-  readonly stepIcon  = computed(() => this.steps()[this.step() - 1].icon);
+  readonly stepTitle = computed(() => this.steps()[this.shownStep() - 1].title);
+  readonly stepIcon  = computed(() => this.steps()[this.shownStep() - 1].icon);
 
   readonly stepSub = computed(() => {
     this.translate.currentLang();
     return this.translate.instant('SUPPLIERS.NEW.STEP_OF', {
-      current: this.step(), total: this.steps().length,
+      current: this.shownStep(), total: this.steps().length,
     });
   });
 

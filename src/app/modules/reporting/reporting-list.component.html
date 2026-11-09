@@ -6,7 +6,7 @@
     [title]="'REPORTING.TITLE' | translate"
     [subtitle]="'REPORTING.SUBTITLE' | translate">
     <ng-container pageActions>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3" data-guide="reporting-actions">
         <!-- No visible label: the flag + country name say it, and a label on top made the
              select taller than the button next to it. -->
         @if (paysList().length > 1) {
@@ -29,7 +29,7 @@
   <!-- KPIs — one row, never wraps (same layout as the recouvrement dashboard). Summed
        client-side over the selected pays' CLOSED periods of `kpiYear()`: amounts only
        exist once a period is closed (snapshot), so OPEN months are left out. -->
-  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+  <section data-guide="reporting-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="kpiNetRevenueLabel()"
       [value]="kpiNetRevenueDisplay()"
@@ -56,7 +56,7 @@
 
   <!-- Search on the period label + year / period status / report status in the panel.
        All client-side: the pays' whole period list is already loaded. -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="reporting-toolbar"
     [placeholder]="'REPORTING.FILTER.SEARCH_PH' | translate"
     [value]="searchText()"
     [debounce]="200"
@@ -80,7 +80,7 @@
   <!-- Content sits free in the page — no outer container card (same as the cost approval queue).
        Both views render the same `rows()`: the cards are just another layout of the table. -->
   @if (viewMode() === 'grid') {
-    <app-pl-period-cards-section
+    <app-pl-period-cards-section data-guide="reporting-list"
       [periodRows]="rows()"
       [loading]="loading()"
       [emptyMessage]="'REPORTING.EMPTY' | translate"
@@ -88,7 +88,7 @@
       (close)="openClosePeriod($event)"
       (generate)="onGenerate($event)" />
   } @else {
-  <daf-data-table
+  <daf-data-table data-guide="reporting-list"
     [columns]="columns()"
     [rows]="rows()"
     [config]="config()"
@@ -171,3 +171,6 @@
   </ng-template>
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="reporting" [steps]="guideSteps" />

@@ -5,7 +5,7 @@
     [title]="'REPORTING.BUDGET.TITLE' | translate"
     [subtitle]="'REPORTING.BUDGET.SUBTITLE' | translate">
     <ng-container pageActions>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3" data-guide="budget-filters">
         @if (paysList().length > 1) {
           <app-pays-flag-select
             [options]="paysOptions()"
@@ -39,7 +39,7 @@
   @if (showEmptyState()) {
     <!-- No BudgetReference draft yet for this pays/year (204 from the backend) — expected,
          not an error. Offer to create one. -->
-    <div class="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-outline/40 px-6 py-12 text-center">
+    <div data-guide="budget-empty" class="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-outline/40 px-6 py-12 text-center">
       <span class="material-symbols-outlined text-[32px] text-on-surface-variant">request_quote</span>
       <p class="text-body-md text-on-surface-variant">{{ emptyStateText() }}</p>
       @if (canManage()) {
@@ -51,7 +51,7 @@
   }
 
   @if (budgetRef()) {
-    <div class="overflow-x-auto rounded-xl border border-outline/10">
+    <div class="overflow-x-auto rounded-xl border border-outline/10" data-guide="budget-grid">
       <table class="w-full min-w-[960px] border-collapse text-body-sm">
         <thead>
           <tr class="border-b border-outline/10 bg-surface-variant/40">
@@ -86,7 +86,7 @@
     </div>
 
     @if (canManage()) {
-      <div class="flex justify-end">
+      <div class="flex justify-end" data-guide="budget-save">
         <daf-button
           [options]="{
             variant: 'primary', label: ('REPORTING.BUDGET.SAVE' | translate),
@@ -97,7 +97,7 @@
     }
 
     <!-- Approvals — status line + action, gated on FACT_ADMIN_PL_REPORT per Task 3.3's brief. -->
-    <div class="flex flex-col gap-3 rounded-xl bg-surface-variant/40 px-4 py-4">
+    <div class="flex flex-col gap-3 rounded-xl bg-surface-variant/40 px-4 py-4" data-guide="budget-approvals">
       <div class="flex items-center justify-between gap-3">
         <span class="text-body-sm text-on-surface-variant">{{ approvedCdText() }}</span>
         @if (canAdmin() && !budgetRef()!.approvedBy) {
@@ -118,3 +118,6 @@
   }
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="reporting-budget" [steps]="guideSteps" />
