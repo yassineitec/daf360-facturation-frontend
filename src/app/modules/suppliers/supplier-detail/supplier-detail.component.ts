@@ -101,6 +101,26 @@ function toIsoDay(d: Date): string {
  * Ce qui a disparu au passage : les bordures et fonds en `rgba()` en dur, le vert
  * `#006b58` répété six fois, et les `<button class="decision-btn">` maison.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.SUPPLIER_DETAIL.${key}_TITLE`, textKey: `GUIDE.SUPPLIER_DETAIL.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'store'),
+  step('HEADER', 'label', 'supplier-header'),
+  step('IDENTITY', 'badge', 'supplier-identity'),
+  step('ACTIONS', 'bolt', 'supplier-actions'),
+  step('DEACTIVATE', 'block', 'supplier-actions'),
+  step('KPIS', 'monitoring', 'supplier-kpis'),
+  step('TABS', 'tab', 'supplier-tabs'),
+  step('COSTS', 'receipt_long', 'supplier-panel', 'costs'),
+  step('LEDGER', 'account_balance_wallet', 'supplier-panel', 'ledger'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-supplier-detail',
   imports: [
@@ -108,6 +128,7 @@ function toIsoDay(d: Date): string {
     PageComponent, PageHeaderComponent, SectionCardComponent, MetricCardComponent,
     TabsComponent, DataTableComponent, ButtonComponent, FieldMessageComponent,
     StatusBadgeComponent, SearchToolbarComponent, PaginationComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -305,6 +326,21 @@ function toIsoDay(d: Date): string {
   `],
 })
 export class SupplierDetailComponent implements OnInit {
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab as never);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide as never);
+    this.tabBeforeGuide = null;
+  }
   private readonly svc       = inject(SupplierService);
   private readonly costSvc   = inject(CostService);
   private readonly translate = inject(TranslateService);

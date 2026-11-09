@@ -1,7 +1,7 @@
 <div class="reconciliation-page" *appHasPermission="'FACT_BANK_RECONCILIATION'">
 
   <!-- Page header -->
-  <div class="page-header">
+  <div class="page-header" data-guide="recon-header">
     <div>
       <h1>{{ 'PAYMENTS.RECON.TITLE' | translate }}</h1>
       <span class="page-subtitle">{{ 'PAYMENTS.RECON.SUBTITLE' | translate }}</span>
@@ -14,7 +14,7 @@
     <!-- Left: Import panel + history -->
     <div class="left-panel">
 
-      <div class="panel-card">
+      <div class="panel-card" data-guide="recon-import">
         <div class="panel-title-row">
           <h2 class="panel-title">{{ 'PAYMENTS.RECON.NEW_IMPORT' | translate }}</h2>
           <button class="btn-manual-entry" (click)="showManualModal.set(true)">{{ 'PAYMENTS.RECON.MANUAL_ENTRY_BTN' | translate }}</button>
@@ -24,7 +24,7 @@
 
       <!-- Unmatched summary card -->
       @if (unmatchedSummary()) {
-        <div class="panel-card summary-card">
+        <div class="panel-card summary-card" data-guide="recon-unmatched">
           <h2 class="panel-title">{{ 'PAYMENTS.RECON.UNMATCHED_TITLE' | translate }}</h2>
           <div class="summary-total">
             {{ unmatchedSummary()!.totalUnmatchedAmount | displayCurrency : unmatchedSummary()!.devise }}
@@ -55,7 +55,7 @@
       }
 
       <!-- Import history -->
-      <div class="panel-card">
+      <div class="panel-card" data-guide="recon-history">
         <h2 class="panel-title">{{ 'PAYMENTS.RECON.HISTORY_TITLE' | translate }}</h2>
 
         @if (loadingImports()) {
@@ -95,7 +95,7 @@
 
     <!-- Right: Transactions table -->
     <div class="right-panel">
-      <div class="panel-card transactions-panel">
+      <div class="panel-card transactions-panel" data-guide="recon-transactions">
         <div class="tx-panel-header">
           <h2 class="panel-title">
             @if (selectedImport()) {
@@ -131,3 +131,6 @@
     (dismissed)="showManualModal.set(false)"
     (confirmed)="onManualCreated($event)" />
 }
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="reconciliation" [steps]="guideSteps" />

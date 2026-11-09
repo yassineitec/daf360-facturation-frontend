@@ -34,7 +34,7 @@
           <!-- `subtitleLink` : le sous-titre (« Client · AFF-123 ») mène à l'affaire de la
                facture. Non renseigné quand la facture n'a pas d'affaire, et le composant
                laisse alors un `<p>` simple — pas de lien mort sur un brouillon. -->
-          <daf-page-header
+          <daf-page-header data-guide="invoice-header"
             size="md"
             [title]="inv.invoiceNumber ?? ('INVOICING.DETAIL.DRAFT_TITLE' | translate)"
             [subtitle]="headerSubtitle()"
@@ -44,7 +44,7 @@
             [breadcrumbs]="breadcrumbs()"
             [breadcrumbLabel]="'INVOICING.DETAIL.BREADCRUMB_ARIA' | translate" />
 
-          <daf-section-card>
+          <daf-section-card data-guide="invoice-identity">
 
             <div class="flex flex-col gap-5 p-6">
               @for (f of identityLeadFields(); track f.label) {
@@ -81,7 +81,7 @@
                  le « Suivant » d'un rail d'étapes. Le rail disait où l'on est, pas ce que
                  le clic allait faire — et l'étape du parcours est déjà portée par la
                  pastille de statut et l'indicateur de progression. -->
-            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
+            <div data-guide="invoice-actions" class="border-t border-outline-variant/30 bg-surface-container p-6"
                  style="display:flex; flex-wrap:wrap; gap:0.5rem">
 
               @if (primaryAction(); as action) {
@@ -156,7 +156,7 @@
            ══════════════════════════════════════════════════════════════ -->
       <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
 
-        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+        <div data-guide="invoice-kpis" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
           @for (k of kpiTiles(); track k.label) {
             <daf-metric-card
               style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
@@ -167,14 +167,14 @@
           }
         </div>
 
-        <daf-tabs #tabsRef
+        <daf-tabs #tabsRef data-guide="invoice-tabs"
           variant="underline"
           [tabs]="tabs()"
           [(active)]="activeTab"
           [tabsLabel]="'INVOICING.DETAIL.TABS_ARIA' | translate"
           idPrefix="invoice-detail" />
 
-        <div role="tabpanel"
+        <div role="tabpanel" data-guide="invoice-panel"
              [id]="tabsRef.panelId(activeTab())"
              [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
              class="flex flex-col gap-6">
@@ -344,6 +344,11 @@
   }
 
 </daf-page>
+
+<!-- Guide de la fiche, lancé par « Aide & guides » ou la bulle « Première visite ? ». Une étape
+     par onglet : le guide ouvre l'onglet expliqué, puis rend celui de l'utilisateur en se fermant. -->
+<app-page-guide storageKey="invoice-detail" [steps]="guideSteps"
+                (tabChange)="onGuideTab($event)" (closed)="onGuideClosed()" />
 
 <!-- ══ Modales — à la racine de la page (§10e) ══ -->
 <!-- Monté sans @if : le dialogue appartient à ModalService, on l'ouvre par .open(). -->

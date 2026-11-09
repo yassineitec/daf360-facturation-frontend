@@ -10,7 +10,7 @@
 <daf-page [kpis]="0" [breadcrumbs]="true" [loading]="loading()"
           [loadingLabel]="'SUPPLIERS.EDIT.LOADING' | translate">
 
-  <daf-page-header
+  <daf-page-header data-guide="supplier-wizard-header"
     [title]="pageTitle()"
     [subtitle]="pageSubtitle()"
     [badges]="headerBadges()"
@@ -24,7 +24,7 @@
     <daf-field-message [error]="err" />
   }
 
-  <div class="form-card">
+  <div class="form-card" data-guide="supplier-wizard-card">
 
     <!-- Titre de l'étape courante -->
     <div class="card-head">
@@ -40,7 +40,7 @@
     <div class="step-body">
 
       <!-- ── Étape 1 — Identification ─────────────────────────────────── -->
-      @if (step() === 1) {
+      @if (shownStep() === 1) {
         <div style="display:flex; flex-direction:column; gap:1.25rem">
 
           <daf-form-field
@@ -91,7 +91,7 @@
       }
 
       <!-- ── Étape 2 — Informations fiscales ──────────────────────────── -->
-      @if (step() === 2) {
+      @if (shownStep() === 2) {
         <div style="display:flex; flex-direction:column; gap:1.25rem">
 
           <daf-form-field
@@ -130,7 +130,7 @@
       }
 
       <!-- ── Étape 3 — Coordonnées bancaires ──────────────────────────── -->
-      @if (step() === 3) {
+      @if (shownStep() === 3) {
         <div style="display:flex; flex-direction:column; gap:1.25rem">
 
           <daf-form-field
@@ -172,7 +172,7 @@
   <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
     <div class="action-bar__inner">
 
-      <div class="action-bar__side">
+      <div class="action-bar__side" data-guide="supplier-wizard-back">
         @if (step() > 1) {
           <button type="button" class="footer-action" (click)="goPrev()">
             <span class="material-symbols-outlined">arrow_back</span>
@@ -187,16 +187,16 @@
       </div>
 
       <!-- Rail : cliquable uniquement sur ce qui a déjà été franchi (cf. onStepClick) -->
-      <div class="action-bar__rail">
+      <div class="action-bar__rail" data-guide="supplier-wizard-rail">
         <daf-stepper
           orientation="horizontal"
           [steps]="stepperSteps()"
-          [currentStep]="step() - 1"
+          [currentStep]="shownStep() - 1"
           [config]="stepperConfig()"
           (stepClick)="onStepClick($event)" />
       </div>
 
-      <div class="action-bar__side action-bar__side--end">
+      <div class="action-bar__side action-bar__side--end" data-guide="supplier-wizard-next">
         <daf-button [options]="nextButtonOptions()" (onClick)="goNext()" />
       </div>
 
@@ -204,3 +204,8 @@
   </daf-card>
 
 </daf-page>
+
+<!-- Guide de la page : `supplier-new` en création, `supplier-edit` en modification. Il montre les
+     trois étapes en aperçu (`previewStep`), sans rien enregistrer, et rend l'étape réelle en se fermant. -->
+<app-page-guide [storageKey]="guideKey" [steps]="guideSteps"
+                (tabChange)="onGuideStep($event)" (closed)="previewStep.set(null)" />

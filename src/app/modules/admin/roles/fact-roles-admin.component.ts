@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { environment } from '../../../../environments/environment';
@@ -21,12 +22,29 @@ interface RoleListItem {
   showAll: boolean;
 }
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit (liste, puis fiche d'un rôle). */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.ADMIN_ROLES.${key}_TITLE`, textKey: `GUIDE.ADMIN_ROLES.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'admin_panel_settings'),
+  step('LIST', 'groups', 'roles-table'),
+  step('OPEN', 'touch_app', 'roles-table'),
+  step('GROUPS', 'shield', 'roles-groups'),
+  step('BULK', 'done_all', 'roles-actions'),
+  step('SAVE', 'save', 'roles-actions'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-fact-roles-admin',
   standalone: true,
   imports: [
     FormsModule, TranslatePipe, ButtonComponent, CardComponent, CheckboxComponent, PageHeaderComponent, AccordionCardComponent,
-    DataTableComponent, DafCellDirective, SearchToolbarComponent,
+    DataTableComponent, DafCellDirective, SearchToolbarComponent, PageGuideComponent,
   ],
   template: `
 @if (!selectedRole()) {
@@ -34,7 +52,7 @@ interface RoleListItem {
        open its permissions as this component's own "page" below, not a side panel. -->
   <div class="roles-page">
 
-    <div class="page-header">
+    <div class="page-header" data-guide="roles-header">
       <h1 class="page-title">{{ 'ADMIN.ROLES.TITLE' | translate }}</h1>
       <p class="page-sub">{{ 'ADMIN.ROLES.SUBTITLE' | translate }}</p>
     </div>
@@ -45,7 +63,7 @@ interface RoleListItem {
 
     <!-- Fond partagé pour le tableau de rôles — même variante glass que la carte
          du bandeau d'onglets principal, au lieu d'un tableau nu sans arrière-plan. -->
-    <daf-card [options]="{ variant: 'glass', padding: 'sm', radius: 'xl' }">
+    <daf-card data-guide="roles-table" [options]="{ variant: 'glass', padding: 'sm', radius: 'xl' }">
       <!-- card="false" : déjà dans la daf-card ci-dessus. Recherche + outils du tableau à droite. -->
       <daf-search-toolbar [card]="false"
         [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
@@ -74,7 +92,7 @@ interface RoleListItem {
       ]"
       (breadcrumbNavigate)="onBreadcrumbNavigate($event)" />
 
-    <div class="perms-actions">
+    <div class="perms-actions" data-guide="roles-actions">
       <daf-button [options]="{ variant: 'ghost', size: 'sm', label: ('ADMIN.ROLES.CHECK_ALL' | translate), disabled: saving() }"
         (onClick)="selectAll()" />
       <daf-button [options]="{ variant: 'ghost', size: 'sm', label: ('ADMIN.ROLES.UNCHECK_ALL' | translate), disabled: saving() }"
@@ -98,7 +116,7 @@ interface RoleListItem {
            l'ouverture) fourni par la lib. L'option state reste au défaut 'pending' —
            un groupe de permissions n'est pas une étape de workflow, donc pas de
            couleur/état forcés ; statusLabel porte juste le compte X / Y. -->
-      <div class="groups-list">
+      <div class="groups-list" data-guide="roles-groups">
         @for (group of catalog(); track group.groupName) {
           <daf-accordion-card
             [options]="{ title: group.groupName, icon: 'shield',
@@ -123,6 +141,12 @@ interface RoleListItem {
       </div>
     }
   </div>
+}
+
+<!-- Guide de la page, seulement sur la page autonome (/admin/roles) : intégré comme onglet de
+     l'administration, c'est le guide de l'administration qui l'explique. -->
+@if (standalone) {
+  <app-page-guide storageKey="admin-roles" [steps]="guideSteps" />
 }
   `,
   styles: [`
@@ -164,6 +188,10 @@ interface RoleListItem {
 })
 export class FactRolesAdminComponent implements OnInit {
   private readonly http = inject(HttpClient);
+
+  /** Page autonome (`admin/roles`), et non l'onglet « Permissions » de l'administration. */
+  readonly standalone = inject(ActivatedRoute).snapshot.routeConfig?.path === 'roles';
+  readonly guideSteps = GUIDE_STEPS;
   private readonly translate = inject(TranslateService);
   private readonly base = `${environment.factApiUrl}/api/fact/admin`;
 

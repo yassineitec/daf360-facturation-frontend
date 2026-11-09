@@ -4,7 +4,7 @@
     [title]="'REPORTING.CALENDAR.TITLE' | translate"
     [subtitle]="'REPORTING.CALENDAR.SUBTITLE' | translate">
     <ng-container pageActions>
-      <daf-select
+      <daf-select data-guide="calendar-year"
         [options]="yearOptions()"
         [selected]="[year().toString()]"
         [ariaLabel]="'REPORTING.CALENDAR.YEAR' | translate"
@@ -25,7 +25,7 @@
     </div>
   }
 
-  <daf-data-table
+  <daf-data-table data-guide="calendar-table"
     [columns]="columns()"
     [rows]="rows()"
     [config]="config()">
@@ -56,3 +56,6 @@
   </daf-data-table>
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="reporting-calendar" [steps]="guideSteps" />

@@ -35,7 +35,7 @@ import { UserStore } from '../../../core/user.store';
 import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 type AdminTab = 'lists' | 'forex' | 'forex-api' | 'permissions' | 'document-templates'
               | 'cost-config' | 'reminders' | 'cost-reminders' | 'wip-email-templates'
-              | 'entity-currency' | 'audit';
+              | 'entity-currency' | 'audit' | 'help-faq';
 
 const PAGE_SIZE = 10;
 
@@ -83,6 +83,33 @@ interface ForexRow {
   chfParam: ParameterSetDto | null;
 }
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import { HelpFaqAdminComponent } from '../help-faq/help-faq-admin.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.ADMIN.${key}_TITLE`, textKey: `GUIDE.ADMIN.${key}_TEXT`, target, tab,
+});
+const ADMIN_GUIDE: GuideStep[] = [
+  step('INTRO', 'settings'),
+  step('PAYS', 'flag', 'admin-pays'),
+  step('TABS', 'tab', 'admin-tabs'),
+  step('LISTS', 'checklist', 'admin-panel', 'lists'),
+  step('FOREX', 'currency_exchange', 'admin-panel', 'forex'),
+  step('FOREX_API', 'api', 'admin-panel', 'forex-api'),
+  step('ENTITY_CURRENCY', 'attach_money', 'admin-panel', 'entity-currency'),
+  step('COST_CONFIG', 'tune', 'admin-panel', 'cost-config'),
+  step('REMINDERS', 'notifications_active', 'admin-panel', 'reminders'),
+  step('COST_REMINDERS', 'local_shipping', 'admin-panel', 'cost-reminders'),
+  step('PERMISSIONS', 'admin_panel_settings', 'admin-panel', 'permissions'),
+  step('DOC_TEMPLATES', 'description', 'admin-panel', 'document-templates'),
+  step('WIP_EMAILS', 'mark_email_unread', 'admin-panel', 'wip-email-templates'),
+  step('AUDIT', 'history', 'admin-panel', 'audit'),
+  step('HELP_FAQ', 'smart_toy', 'admin-panel', 'help-faq'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-admin-list',
   standalone: true,
@@ -97,6 +124,8 @@ interface ForexRow {
     AuditTrailAdminComponent,
     WipEmailTemplatesAdminComponent,
     CostConfigComponent,
+    HelpFaqAdminComponent,
+    PageGuideComponent,
   ],
   templateUrl: './admin-list.component.html',
   styleUrl: './admin-list.component.scss',
@@ -451,6 +480,26 @@ export class AdminListComponent implements OnInit {
 
   // ── Common ────────────────────────────────────────────────────────────────
   activeTab = signal<AdminTab>('lists');
+
+  /** Le guide, réduit aux onglets que vos droits affichent. */
+  readonly guideSteps = computed(() => {
+    const ids = new Set(this.mainTabs().map(t => t.id));
+    return ADMIN_GUIDE.filter(s => !s.tab || ids.has(s.tab));
+  });
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: AdminTab | null = null;
+
+  onGuideTab(tab: string): void {
+    if (!this.mainTabs().some(t => t.id === tab)) return;
+    this.tabBeforeGuide ??= this.activeTab();
+    if (tab !== this.activeTab()) this.onTabChange(tab);
+  }
+
+  onGuideClosed(): void {
+    const before = this.tabBeforeGuide;
+    this.tabBeforeGuide = null;
+    if (before && before !== this.activeTab()) this.onTabChange(before);
+  }
   paysList  = signal<PaysRefDto[]>([]);
   paysId    = signal<number>(0);
   isLoading = signal(false);
@@ -475,6 +524,8 @@ export class AdminListComponent implements OnInit {
       items.push({ id: 'document-templates',  label: t('ADMIN.TABS.DOCUMENT_TEMPLATES'),  icon: 'description' });
       items.push({ id: 'wip-email-templates', label: t('ADMIN.TABS.WIP_EMAIL_TEMPLATES'), icon: 'mark_email_unread' });
       items.push({ id: 'audit', label: t('ADMIN.TABS.AUDIT'), icon: 'history' });
+      // Questions / réponses ajoutées à l'assistant d'aide — même onglet que l'administration RH.
+      items.push({ id: 'help-faq', label: t('ADMIN.TABS.HELP_FAQ'), icon: 'smart_toy' });
     }
     // Anciennement l'onglet « Config » de /finance/cost : déplacé ici, à côté des
     // Maquettes de documents. Ouvert aux mêmes profils que la route `cost` elle-même

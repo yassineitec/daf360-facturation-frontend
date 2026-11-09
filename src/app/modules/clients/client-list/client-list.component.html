@@ -6,13 +6,13 @@
     <!-- La création exige `FACT_MANAGE_INVOICING` côté API : sans cette garde, un compte
          en lecture seule voyait le bouton et n'apprenait son refus qu'après avoir rempli
          les trois étapes de l'assistant. -->
-    <daf-button pageActions *appHasPermission="'FACT_MANAGE_INVOICING'"
+    <daf-button pageActions data-guide="clients-new" *appHasPermission="'FACT_MANAGE_INVOICING'"
       [options]="{ variant: 'teal', label: 'CLIENTS.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="goToNewClient()" />
   </daf-page-header>
 
   <!-- KPIs — one row, never wraps -->
-  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+  <section data-guide="clients-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'CLIENTS.LIST.KPI.TOTAL' | translate"
       [value]="statsTotal()"
@@ -39,7 +39,7 @@
   </section>
 
   <!-- Search + filters + view toggle -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="clients-toolbar"
     [placeholder]="'CLIENTS.LIST.SEARCH' | translate"
     [value]="searchText()"
     [debounce]="300"
@@ -59,7 +59,7 @@
 
   <!-- Content sits free in the page — no outer container card -->
   @if (viewMode() === 'grid') {
-    <app-clients-cards-section
+    <app-clients-cards-section data-guide="clients-list"
       [clients]="clients()"
       [loading]="loading()"
       [skeletonCount]="pageSize()"
@@ -67,7 +67,7 @@
       [emptyDescription]="'CLIENTS.LIST.EMPTY.DESC' | translate"
       (open)="navigateToDetail($event)" />
   } @else {
-    <app-clients-table-section
+    <app-clients-table-section data-guide="clients-list"
       [clients]="clients()"
       [loading]="loading()"
       [pageSize]="pageSize()"
@@ -91,3 +91,7 @@
     (pageSizeChange)="onPageSize($event)" />
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Ses étapes
+     visent les data-guide ci-dessus ; « clients-list » est sur les deux vues, seule la visible compte. -->
+<app-page-guide storageKey="clients" [steps]="guideSteps" />

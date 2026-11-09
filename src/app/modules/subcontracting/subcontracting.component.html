@@ -11,7 +11,7 @@
          a page-wide filter that silently governed a third of the page. -->
     <ng-container pageActions>
       @if (activeTab() === 'st' && pays().length > 0) {
-        <daf-select
+        <daf-select data-guide="sc-entity"
           [options]="paysOptions()"
           [config]="{ label: ('SUBCONTRACTING.ENTITY' | translate), searchable: true }"
           [selected]="paysSelected()"
@@ -22,12 +22,12 @@
 
   <!-- daf-tabs is strip-only — the consumer renders the panel, which is what keeps the
        per-tab work in this page. Active tab lives in ?tab= (§10f). -->
-  <daf-tabs #tabsRef
+  <daf-tabs #tabsRef data-guide="sc-tabs"
     [tabs]="tabs()"
     [(active)]="activeTab"
     idPrefix="sc" />
 
-  <div role="tabpanel"
+  <div role="tabpanel" data-guide="sc-panel"
        [id]="tabsRef.panelId(activeTab())"
        [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
        class="flex flex-col gap-8">
@@ -49,3 +49,8 @@
   </div>
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Une étape
+     par onglet : le guide ouvre l'onglet expliqué, puis rend celui de l'utilisateur en se fermant. -->
+<app-page-guide storageKey="subcontracting" [steps]="guideSteps"
+                (tabChange)="onGuideTab($event)" (closed)="onGuideClosed()" />

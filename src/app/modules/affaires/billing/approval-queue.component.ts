@@ -26,6 +26,7 @@ import { InvoiceService } from '../../invoicing/invoice.service';
 import { CREDIT_NOTE_REASONS } from '../../invoicing/invoice.model';
 import { TableSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 import { RowSelection } from './row-selection';
+import { BodyPortalDirective } from '../../../shared/body-portal.directive';
 import { ApprovalQueueStateService } from './approval-queue-state.service';
 import { AffaireService } from '../affaire.service';
 import { ToastService } from '../../../core/toast.service';
@@ -135,6 +136,28 @@ function affaireOptions(rows: { affaireId: number | null; affaireRef: string | n
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/**
+ * Guide de la file. `tab` = `'history'`, ou `'df:<mode>'` pour l'onglet « En attente de
+ * validation » ouvert sur ce sous-onglet de mode (voir `onGuideTab`).
+ */
+const GUIDE_STEPS: GuideStep[] = [
+  { icon: 'fact_check', titleKey: 'GUIDE.APPROVAL_QUEUE.INTRO_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.INTRO_TEXT' },
+  { icon: 'monitoring', titleKey: 'GUIDE.APPROVAL_QUEUE.KPIS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.KPIS_TEXT', target: 'approval-kpis' },
+  { icon: 'tab', titleKey: 'GUIDE.APPROVAL_QUEUE.TABS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.TABS_TEXT', target: 'approval-tabs', tab: 'df:forfaitaire' },
+  { icon: 'category', titleKey: 'GUIDE.APPROVAL_QUEUE.SUBTABS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.SUBTABS_TEXT', target: 'approval-subtabs', tab: 'df:forfaitaire' },
+  { icon: 'percent', titleKey: 'GUIDE.APPROVAL_QUEUE.FORFAIT_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.FORFAIT_TEXT', target: 'approval-panel', tab: 'df:forfaitaire' },
+  { icon: 'schedule', titleKey: 'GUIDE.APPROVAL_QUEUE.REGIE_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.REGIE_TEXT', target: 'approval-panel', tab: 'df:regie' },
+  { icon: 'inventory_2', titleKey: 'GUIDE.APPROVAL_QUEUE.LIVRABLE_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.LIVRABLE_TEXT', target: 'approval-panel', tab: 'df:livrable' },
+  { icon: 'add_task', titleKey: 'GUIDE.APPROVAL_QUEUE.TS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.TS_TEXT', target: 'approval-panel', tab: 'df:ts' },
+  { icon: 'done_all', titleKey: 'GUIDE.APPROVAL_QUEUE.ACTIONS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.ACTIONS_TEXT', target: 'approval-panel', tab: 'df:forfaitaire' },
+  { icon: 'undo', titleKey: 'GUIDE.APPROVAL_QUEUE.CREDIT_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.CREDIT_TEXT', target: 'approval-panel', tab: 'df:forfaitaire' },
+  { icon: 'history', titleKey: 'GUIDE.APPROVAL_QUEUE.HISTORY_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.HISTORY_TEXT', target: 'approval-panel', tab: 'history' },
+  { icon: 'help', titleKey: 'GUIDE.APPROVAL_QUEUE.END_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.END_TEXT' },
+];
+
 @Component({
   selector: 'app-approval-queue',
   standalone: true,
@@ -142,8 +165,8 @@ function affaireOptions(rows: { affaireId: number | null; affaireRef: string | n
     RouterLink, TranslatePipe, DataTableComponent, DafCellDirective,
     PageComponent, PageHeaderComponent, MetricCardComponent,
     TabsComponent, StatusBadgeComponent, FormFieldComponent, PaginationComponent,
-    SearchToolbarComponent, CheckboxComponent, BulkActionBarComponent,
-    ButtonComponent,
+    SearchToolbarComponent, CheckboxComponent, BulkActionBarComponent, BodyPortalDirective,
+    ButtonComponent, PageGuideComponent,
   ],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
@@ -1128,6 +1151,26 @@ export class ApprovalQueueComponent implements OnInit {
     // The client picker sits above the tabs and would otherwise keep showing a now
     // out-of-context prompt after navigating away from where it was opened.
     this.cancelClientPicker();
+  }
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** Onglet et sous-onglet de l'utilisateur, rendus à la fermeture du guide. */
+  private beforeGuide: { tab: ActiveTab; sub: DfSubTab } | null = null;
+
+  onGuideTab(tab: string): void {
+    this.beforeGuide ??= { tab: this.activeTab(), sub: this.activeDfSubTab() };
+    const [main, sub] = tab.split(':');
+    if (main !== this.activeTab()) this.onTabChange(main);
+    if (sub) this.onDfSubTabChange(sub);
+  }
+
+  onGuideClosed(): void {
+    const b = this.beforeGuide;
+    this.beforeGuide = null;
+    if (!b) return;
+    if (b.tab !== this.activeTab()) this.onTabChange(b.tab);
+    this.onDfSubTabChange(b.sub);
   }
 
   onDfSubTabChange(id: string): void {

@@ -82,13 +82,33 @@ interface OtherTaxForm {
  *
  * Every amount shown here is a preview; the server recomputes all of them on save.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guides du formulaire : `cost-new` en création, `cost-edit` en modification (intro et boutons propres). */
+const g = (page: string, key: string, icon: string, target?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.${page}.${key}_TITLE`, textKey: `GUIDE.${page}.${key}_TEXT`, target,
+});
+const costFormGuide = (p: 'COST_NEW' | 'COST_EDIT'): GuideStep[] => [
+  g(p,          'INTRO',   p === 'COST_NEW' ? 'add_card' : 'edit_note', 'costform-header'),
+  g('COST_NEW', 'INVOICE', 'receipt_long', 'costform-invoice'),
+  g('COST_NEW', 'LINES',   'list',         'costform-lines'),
+  g('COST_NEW', 'TAXES',   'percent',      'costform-taxes'),
+  g('COST_NEW', 'ATTACH',  'attach_file',  'costform-attach'),
+  g('COST_NEW', 'CIRCUIT', 'account_tree', 'costform-circuit'),
+  g(p,          'ACTIONS', 'smart_button', 'costform-actions'),
+  g('COST_NEW', 'END',     'help'),
+];
+const NEW_GUIDE  = costFormGuide('COST_NEW');
+const EDIT_GUIDE = costFormGuide('COST_EDIT');
+
 @Component({
   selector: 'app-cost-form',
   standalone: true,
   imports: [
     CommonModule, FormsModule, TranslatePipe,
     PageComponent, PageHeaderComponent, CardComponent, ButtonComponent, CheckboxComponent, FieldMessageComponent,
-    SelectComponent, FormFieldComponent, FileUploadComponent,
+    SelectComponent, FormFieldComponent, FileUploadComponent, PageGuideComponent,
   ],
   templateUrl: './cost-form.component.html',
   styleUrl:    './cost-form.component.scss',
@@ -105,6 +125,9 @@ export class CostFormComponent implements OnInit {
   editId        = signal<number | null>(null);
   editReference = signal<string | null>(null);
   isEditMode    = computed(() => this.editId() !== null);
+
+  readonly guideKey   = computed(() => this.isEditMode() ? 'cost-edit' : 'cost-new');
+  readonly guideSteps = computed(() => this.isEditMode() ? EDIT_GUIDE : NEW_GUIDE);
 
   // ── Edit after validation, DAF only (V94, workshop item #5) ──────────────────
   /** Status of the invoice being edited (null on a new invoice). */

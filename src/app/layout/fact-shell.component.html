@@ -10,13 +10,29 @@
   <router-outlet />
 </main>
 
-<!-- Display-currency switcher — daf-radial-menu in picker mode: the FAB shows the
-     currency in force and fans the alternatives out on hover/tap.
+<!-- Display currency, mobile only: daf-radial-menu in picker mode (the FAB shows the
+     currency in force and fans the alternatives out on tap). From sm up the currency is
+     the sidebar row app-currency-switch, below; the wrapper hides the bubble there
+     (display: none hides its fixed root too).
      At the shell root, not inside <main>: the menu is position: fixed, and an ancestor
      with a transform/filter/backdrop-filter would become its containing block and pin
      it to that box instead of the viewport. -->
-<daf-radial-menu
-  [items]="currencyItems()"
-  [config]="currencyMenuConfig()"
-  [active]="currentCurrency()"
-  (itemClick)="onCurrencyPick($event)" />
+<div class="sm:hidden">
+  <daf-radial-menu
+    [items]="currencyItems()"
+    [config]="currencyMenuConfig()"
+    [active]="currentCurrency()"
+    (itemClick)="onCurrencyPick($event)" />
+</div>
+
+<!-- Bottom of the sidebar rail (desktop): the display currency, then « Aide & guides ». -->
+<app-help-center>
+  <app-currency-switch />
+</app-help-center>
+
+<!-- « Première visite ? »: offers a page's guide the first time the page is opened. -->
+<app-guide-hint />
+
+<!-- Help assistant, Messenger-style bubble: alone in the corner on desktop, stacked above
+     the currency bubble on mobile. -->
+<app-help-chat />

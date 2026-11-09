@@ -8,7 +8,7 @@
          `FACT_MANAGE_SUPPLIERS` existe bien au catalogue mais aucun endpoint ne s'en
          sert — la garde d'origine cachait donc le bouton à des comptes autorisés, et le
          montrait à des comptes qui prenaient un 403 après trois étapes d'assistant. -->
-    <daf-button pageActions *appHasPermission="'FACT_MANAGE_COST'"
+    <daf-button pageActions data-guide="suppliers-new" *appHasPermission="'FACT_MANAGE_COST'"
       [options]="{ variant: 'teal', label: 'SUPPLIERS.LIST.NEW' | translate, iconStart: 'add' }"
       (onClick)="goToNewSupplier()" />
   </daf-page-header>
@@ -17,7 +17,7 @@
        ce que `GET /suppliers` renvoie), pas la page affichée : le premier delta le dit.
        Les deux du milieu mesurent une complétude — sans IBAN on ne peut pas payer, sans
        n° de TVA on ne peut pas déclarer. -->
-  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+  <section data-guide="suppliers-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'SUPPLIERS.LIST.KPI.TOTAL' | translate"
       [value]="stats().total"
@@ -49,7 +49,7 @@
        Le champ « statut »
        est ce qui rend un fournisseur désactivé de nouveau atteignable — il ne l'était
        par aucun écran auparavant. -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="suppliers-toolbar"
     [placeholder]="'SUPPLIERS.LIST.SEARCH_PLACEHOLDER' | translate"
     [value]="searchText()"
     [debounce]="300"
@@ -85,14 +85,14 @@
 
   <!-- Le contenu vit librement dans la page — pas de carte conteneur extérieure -->
   @if (viewMode() === 'grid') {
-    <app-suppliers-cards-section
+    <app-suppliers-cards-section data-guide="suppliers-list"
       [suppliers]="suppliers()"
       [loading]="loading()"
       [skeletonCount]="pageSize()"
       [emptyMessage]="'SUPPLIERS.LIST.TABLE.EMPTY' | translate"
       (open)="navigateToDetail($event)" />
   } @else {
-    <app-suppliers-table-section
+    <app-suppliers-table-section data-guide="suppliers-list"
       [suppliers]="suppliers()"
       [loading]="loading()"
       [pageSize]="pageSize()"
@@ -116,3 +116,6 @@
     (pageSizeChange)="onPageSize($event)" />
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="suppliers" [steps]="guideSteps" />

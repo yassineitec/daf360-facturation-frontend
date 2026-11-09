@@ -11,19 +11,17 @@ import {
 } from '../modules/finance-modules';
 import type { FinanceModuleDef } from '../modules/finance-modules';
 import { CurrencyDisplayService, SUPPORTED_CURRENCIES } from '../core/currency-display.service';
-
-/** 1–3 characters drawn in the circle — the radial menu shows `glyph` when there is no `icon`. */
-const CURRENCY_GLYPHS: Record<string, string> = {
-  EUR: '€',
-  USD: '$',
-  TND: 'DT',
-  EGP: 'E£',
-};
+import { HelpCenterComponent } from '../shared/guide/help-center.component';
+import { GuideHintComponent } from '../shared/guide/guide-hint.component';
+import { HelpChatComponent } from '../shared/guide/help-chat.component';
+// 1–3 characters drawn in the circle — the radial menu shows `glyph` when there is no
+// `icon`. Shared with the sidebar's currency row.
+import { CURRENCY_GLYPHS, CurrencySwitchComponent } from './currency-switch.component';
 
 @Component({
   selector: 'app-fact-shell',
   standalone: true,
-  imports: [RouterOutlet, SideNavComponent, RadialMenuComponent],
+  imports: [RouterOutlet, SideNavComponent, RadialMenuComponent, HelpCenterComponent, GuideHintComponent, HelpChatComponent, CurrencySwitchComponent],
   templateUrl: './fact-shell.component.html',
   styleUrl: './fact-shell.component.scss',
 })

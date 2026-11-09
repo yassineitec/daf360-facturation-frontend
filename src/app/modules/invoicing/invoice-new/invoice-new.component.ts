@@ -17,6 +17,31 @@ import { StepConditionsComponent, StepConditionsValue } from './steps/step-condi
 import { StepRecapComponent } from './steps/step-recap.component';
 import { InvoiceService } from '../invoice.service';
 import { BillingService } from '../../affaires/billing/billing.service';
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/**
+ * Guides de l'assistant : `invoice-new` en création, `invoice-edit` en modification. Les
+ * étapes S1…S4 sont expliquées sur la carte, sans être affichées : chacune n'existe qu'avec
+ * les données de la précédente (`@if` du gabarit). La modification réécrit l'intro et les
+ * boutons de fin ; le reste est commun.
+ */
+const g = (page: string, key: string, icon: string, target?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.${page}.${key}_TITLE`, textKey: `GUIDE.${page}.${key}_TEXT`, target,
+});
+const invoiceGuide = (p: 'INVOICE_NEW' | 'INVOICE_EDIT'): GuideStep[] => [
+  g(p,             'INTRO',   p === 'INVOICE_NEW' ? 'add_card' : 'edit_note'),
+  g('INVOICE_NEW', 'HEADER',  'label',          'invoice-wizard-header'),
+  g('INVOICE_NEW', 'RAIL',    'linear_scale',   'invoice-wizard-rail'),
+  g('INVOICE_NEW', 'S1',      'folder_open',    'invoice-wizard-card'),
+  g('INVOICE_NEW', 'S2',      'receipt',        'invoice-wizard-card'),
+  g('INVOICE_NEW', 'S3',      'calendar_month', 'invoice-wizard-card'),
+  g('INVOICE_NEW', 'S4',      'summarize',      'invoice-wizard-card'),
+  g(p,             'ACTIONS', 'smart_button',   'invoice-wizard-actions'),
+  g('INVOICE_NEW', 'END',     'help'),
+];
+const NEW_GUIDE  = invoiceGuide('INVOICE_NEW');
+const EDIT_GUIDE = invoiceGuide('INVOICE_EDIT');
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -29,6 +54,7 @@ const STEP_ICONS = ['folder_open', 'receipt', 'calendar_month', 'summarize'] as 
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, StepperComponent, ButtonComponent,
     StepAffaireComponent, StepLinesComponent, StepConditionsComponent, StepRecapComponent,
+    PageGuideComponent,
   ],
   templateUrl: './invoice-new.component.html',
   styleUrl:    './invoice-new.component.scss',
@@ -67,6 +93,10 @@ export class InvoiceNewComponent implements OnInit {
   /** Read from the route rather than editInvoiceId(), which is only set once the invoice
    * has loaded — leaving during that load must still revert. */
   private readonly routeInvoiceId = Number(this.route.snapshot.paramMap.get('id')) || null;
+
+  /** Création ou modification (`invoicing/:id/edit`) : chacune son guide. */
+  readonly guideKey   = this.routeInvoiceId ? 'invoice-edit' : 'invoice-new';
+  readonly guideSteps = signal(this.routeInvoiceId ? EDIT_GUIDE : NEW_GUIDE).asReadonly();
 
   /** Fiche d'où l'assistant a été ouvert — fil d'Ariane seulement. Posé par la fiche
    * affaire (`?affaire=&fromAffaireRef=&fromTab=`) ou la fiche client

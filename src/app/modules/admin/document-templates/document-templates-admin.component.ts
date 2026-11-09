@@ -2,6 +2,7 @@ import {
   Component, OnInit, inject, signal, computed, ViewChild, ElementRef, TemplateRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   ModalService, ModalRef, ButtonComponent, SelectComponent, SelectOption, CheckboxComponent, FormFieldComponent,
@@ -25,22 +26,40 @@ import { searchTableRows, tableTools } from '../../../shared/table-tools';
  * seules factures : `documentType` (pas "billingMode") est le discriminant, un seul
  * type existe aujourd'hui ("INVOICE_AV"), cf. document-template.model.ts.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.ADMIN_DOC_TEMPLATES.${key}_TITLE`, textKey: `GUIDE.ADMIN_DOC_TEMPLATES.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'description'),
+  step('ACTIONS', 'add', 'doc-actions'),
+  step('TABLE', 'table_rows', 'doc-table'),
+  step('EDITOR', 'code'),
+  step('VARIABLES', 'data_object'),
+  step('PREVIEW', 'visibility'),
+  step('ACTIVE', 'toggle_on', 'doc-table'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-document-templates-admin',
   standalone: true,
   imports: [
     FormsModule, TranslatePipe, ButtonComponent, SelectComponent, CheckboxComponent, FormFieldComponent,
-    DataTableComponent, DafCellDirective, FilterPanelComponent, SearchToolbarComponent,
+    DataTableComponent, DafCellDirective, FilterPanelComponent, SearchToolbarComponent, PageGuideComponent,
   ],
   template: `
 <div class="tmpl-page">
 
-  <div class="page-header">
+  <div class="page-header" data-guide="doc-header">
     <div>
       <h1 class="page-title">{{ 'ADMIN.DOCUMENT_TEMPLATES.TITLE' | translate }}</h1>
       <p class="page-sub">{{ 'ADMIN.DOCUMENT_TEMPLATES.SUBTITLE' | translate }}</p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" data-guide="doc-actions">
       <daf-checkbox
         [checked]="showInactive()"
         (checkedChange)="onShowInactiveChange($event)"
@@ -71,7 +90,7 @@ import { searchTableRows, tableTools } from '../../../shared/table-tools';
     (valueChange)="search.set($event)"
     [table]="tmplTable" />
 
-  <daf-data-table #tmplTable [columns]="columns()" [rows]="filteredRows()" [config]="tableConfig()">
+  <daf-data-table #tmplTable data-guide="doc-table" [columns]="columns()" [rows]="filteredRows()" [config]="tableConfig()">
     <ng-template dafCell="name" let-row>
       <div class="tmpl-name">{{ row['name'] }}</div>
       @if (row['_description']) { <div class="tmpl-desc">{{ row['_description'] }}</div> }
@@ -80,6 +99,12 @@ import { searchTableRows, tableTools } from '../../../shared/table-tools';
 </div>
 
 <!-- ── Modal body (create/edit) ──────────────────────────────────────────── -->
+<!-- Guide de la page, seulement sur la page autonome (/admin/document-templates) : intégrée comme
+     onglet de l'administration, c'est le guide de l'administration qui l'explique. -->
+@if (standalone) {
+  <app-page-guide storageKey="admin-document-templates" [steps]="guideSteps" />
+}
+
 <ng-template #editorTpl>
   <div class="editor-body">
     <div class="editor-meta">
@@ -195,6 +220,10 @@ import { searchTableRows, tableTools } from '../../../shared/table-tools';
 })
 export class DocumentTemplatesAdminComponent implements OnInit {
   private readonly svc      = inject(DocumentTemplateService);
+
+  /** Page autonome (`admin/document-templates`), et non l'onglet de l'administration. */
+  readonly standalone = inject(ActivatedRoute).snapshot.routeConfig?.path === 'document-templates';
+  readonly guideSteps = GUIDE_STEPS;
   private readonly modal    = inject(ModalService);
   private readonly translate = inject(TranslateService);
 

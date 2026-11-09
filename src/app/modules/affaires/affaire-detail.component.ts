@@ -53,6 +53,8 @@ import {
 import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avatar.service';
 import { ClientContactService } from '../clients/contacts/client-contact.service';
 import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
+import { PageGuideComponent } from '../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../shared/guide/page-guide.types';
 /** A read-only label/value pair. `label` is always a translation key. */
 interface DetailField { label: string; value: string; }
 
@@ -273,6 +275,28 @@ const MODAL_RESIZE = {
   maximizable: true,
 };
 
+// ── Guide de la page ─────────────────────────────────────────────────────────
+
+const guideStep = (key: string, icon: string, target?: string, tab?: string, selector?: string): GuideStep =>
+  ({ icon, target, tab, selector, titleKey: `GUIDE.AFFAIRE_DETAIL.${key}_TITLE`, textKey: `GUIDE.AFFAIRE_DETAIL.${key}_TEXT` });
+
+/**
+ * Une étape par onglet, construite à partir de `tabs()` : un onglet absent pour ce mode de
+ * facturation (WIP, Ressources, Dépense) n'a pas d'étape. Chaque étape ouvre son onglet
+ * (`tabChange` → `activeTab`) et surligne le panneau.
+ */
+const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: string }> = {
+  overview:   { key: 'OVERVIEW',   icon: 'bar_chart',      target: 'affaire-charts' },
+  ts:         { key: 'TS',         icon: 'add_task',       target: 'affaire-panel' },
+  'ts-wip':   { key: 'TS_WIP',     icon: 'trending_up',    target: 'affaire-panel' },
+  wip:        { key: 'WIP',        icon: 'pending_actions', target: 'affaire-panel' },
+  ressources: { key: 'RESSOURCES', icon: 'group',          target: 'affaire-panel' },
+  depense:    { key: 'DEPENSE',    icon: 'schedule',       target: 'affaire-panel' },
+  factures:   { key: 'INVOICES',   icon: 'receipt_long',   target: 'affaire-panel' },
+  paiements:  { key: 'PAYMENTS',   icon: 'payments',       target: 'affaire-panel' },
+  frais:      { key: 'EXPENSES',   icon: 'receipt',        target: 'affaire-panel' },
+};
+
 @Component({
   selector: 'app-affaire-detail',
   imports: [
@@ -281,7 +305,7 @@ const MODAL_RESIZE = {
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent, SelectComponent,
     BarChartComponent, AvatarComponent, FilterComponent, FilterChipsComponent, SkeletonComponent,
-    HelpPopoverComponent,
+    HelpPopoverComponent, PageGuideComponent,
     TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
@@ -2501,6 +2525,35 @@ export class AffaireDetailComponent implements OnInit {
     );
     return tabs;
   });
+
+  /** Guide de la fiche : en-tête, panneau, indicateurs, puis un passage par onglet visible. */
+  readonly guideSteps = computed<GuideStep[]>(() => [
+    guideStep('INTRO',   'work'),
+    guideStep('HEADER',  'badge',         'affaire-header'),
+    guideStep('DETAILS', 'info',          'affaire-details'),
+    guideStep('ACTIONS', 'bolt',          'affaire-actions'),
+    guideStep('KPIS',    'monitoring',    'affaire-kpis'),
+    guideStep('TABS',    'tab',           'affaire-tabs'),
+    ...this.tabs().flatMap(t => {
+      const s = GUIDE_TAB_STEPS[t.id];
+      return s ? [guideStep(s.key, s.icon, s.target, t.id)] : [];
+    }),
+    guideStep('DRAWER',  'event_note', undefined, undefined, 'daf-drawer button[aria-controls]'),
+    guideStep('END',     'help'),
+  ]);
+
+  /** Onglet ouvert avant le guide : on y revient à sa fermeture. */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
 
   // ═══ Barres d'outils (recherche + filtre + export) ════════════════════════
 

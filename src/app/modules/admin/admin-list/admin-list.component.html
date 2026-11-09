@@ -13,7 +13,7 @@
          Le `div pageActions` est la racine STATIQUE et le `@if` vit dedans : un élément
          imbriqué dans un `@if` vit dans une vue embarquée, et `<ng-content
          select="[pageActions]">` ne le trouverait jamais (UI-PLAYBOOK §10f). -->
-    <div pageActions class="pays-card">
+    <div pageActions class="pays-card" data-guide="admin-pays">
       @if (paysList().length > 1) {
         <app-pays-flag-select
           [options]="paysOptions()"
@@ -35,7 +35,7 @@
          variante `underline` (la valeur par défaut), posée à nu sur le fond de la page,
          sans daf-card autour. `--daf-tabs-fade` : le dégradé des chevrons (liste qui
          déborde) doit se fondre dans --color-background, pas dans --color-surface. -->
-    <daf-tabs
+    <daf-tabs data-guide="admin-tabs"
       style="--daf-tabs-fade: var(--color-background)"
       [tabs]="mainTabs()"
       [active]="activeTab()"
@@ -45,7 +45,7 @@
 
     <!-- ── LISTES TAB ────────────────────────────────────────────────────── -->
     @if (activeTab() === 'lists') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
 
         @if (!activeListType()) {
           <!-- daf-tabs de catégorie + barre de recherche sur la MÊME ligne : les tabs à
@@ -212,7 +212,7 @@
 
     <!-- ── FOREX TAB ─────────────────────────────────────────────────────── -->
     @if (activeTab() === 'forex') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
 
         <div class="forex-info">
           <span class="info-icon">ℹ</span>
@@ -275,7 +275,7 @@
 
     <!-- ── FOREX API CONFIG TAB ────────────────────────────────────────── -->
     @if (activeTab() === 'forex-api') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
 
         <div class="forex-info">
           <span class="info-icon">ℹ</span>
@@ -380,42 +380,49 @@
 
     <!-- ── RELANCES TAB (échéancier de recouvrement configurable, embarqué) ── -->
     @if (activeTab() === 'reminders') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
         <app-reminder-rules-admin />
       </div>
     }
 
     <!-- ── RELANCES FOURNISSEURS TAB (échéancier de paiement fournisseur configurable) ── -->
     @if (activeTab() === 'cost-reminders') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
         <app-cost-reminder-rules-admin />
       </div>
     }
 
     <!-- ── WIP EMAIL TEMPLATES TAB ── -->
     @if (activeTab() === 'wip-email-templates') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
         <app-wip-email-templates-admin />
       </div>
     }
 
     <!-- ── PERMISSIONS TAB (finance role/permission management, embedded) ─── -->
     @if (activeTab() === 'permissions') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
         <app-fact-roles-admin />
       </div>
     }
 
     <!-- ── DOCUMENT TEMPLATES TAB (maquettes de documents facturation, embedded) ── -->
     @if (activeTab() === 'document-templates') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
         <app-document-templates-admin />
       </div>
     }
 
     @if (activeTab() === 'audit') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
         <app-audit-trail-admin />
+      </div>
+    }
+
+    <!-- ── ASSISTANT & FAQ TAB (super-admin) — les questions ajoutées à l'assistant d'aide ── -->
+    @if (activeTab() === 'help-faq') {
+      <div class="tab-content" data-guide="admin-panel">
+        <app-help-faq-admin />
       </div>
     }
 
@@ -426,7 +433,7 @@
          (cf. cost-config.component.html) — donc plus besoin de lui réserver 1/3
          de la page en permanence. -->
     @if (activeTab() === 'cost-config') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
         <app-cost-config [paysId]="paysId()" />
       </div>
     }
@@ -435,7 +442,7 @@
          Même gabarit que l'onglet Forex : en-tête de section, recherche + outils,
          daf-data-table avec action native « Modifier » ouvrant une modale. -->
     @if (activeTab() === 'entity-currency') {
-      <div class="tab-content">
+      <div class="tab-content" data-guide="admin-panel">
 
         @if (entitiesError()) {
           <div class="banner-error">{{ entitiesError() }}</div>
@@ -676,3 +683,8 @@
     </div>
   </ng-template>
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Il ouvre
+     chaque onglet que vos droits affichent (les autres sont retirés du guide) et rend le vôtre à la fin. -->
+<app-page-guide storageKey="admin" [steps]="guideSteps()"
+                (tabChange)="onGuideTab($event)" (closed)="onGuideClosed()" />
