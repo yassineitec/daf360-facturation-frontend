@@ -45,7 +45,8 @@ interface MappingEdit {
  *    per-pays cost category (`fact_configurable_list_values` type `COST_CATEGORY` — the same
  *    category a user picks on a cost line) re-attributes to, and under what role (COST/
  *    EXTERNAL_COGS/MANUAL/EXCLUDED) — see coverage check below. `group_catalogue_lines` itself
- *    is now the TARGET only; `lines`/`lineOptions` below still read it for that dropdown.
+ *    is the TARGET only; rendered one row per line (not per category), each with a multi-select
+ *    of the categories currently assigned to it — `lines` below still reads it for that grouping.
  *
  * Two plan items from §6 are NOT built here, by deliberate scope decision, not oversight:
  *  - Preview (run a DRAFT config against a closed period without persisting) — no backend
@@ -431,9 +432,6 @@ export class PlCatalogueAdminComponent implements OnInit {
   /** TARGET side only (DEC-CATMAP-1) — the fixed `group_catalogue_lines` registry, unchanged. */
   lines = signal<GroupCatalogueLineDto[]>([]);
 
-  readonly lineOptions = computed<SelectOption[]>(() =>
-    this.lines().map(l => ({ value: String(l.id), label: `${l.labelFr} (${l.code})` })));
-
   /** SOURCE side (DEC-CATMAP-1) — the real, per-pays `COST_CATEGORY` list; reloaded on every
    *  pays change, unlike `lines` above which is global and fetched once. */
   realCategories = signal<PlCostCategoryDto[]>([]);
@@ -500,29 +498,47 @@ export class PlCatalogueAdminComponent implements OnInit {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { key: 'categoryLabel', label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_CATEGORY') },
-      { key: 'targetLine',    label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_LINE'), type: 'custom' },
-      { key: 'role',          label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_ROLE'), type: 'custom' },
-      { key: 'status',        label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_STATUS'), type: 'custom', align: 'center' },
+      { key: 'lineLabel',  label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_LINE') },
+      { key: 'categories', label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_CATEGORY'), type: 'custom' },
+      { key: 'roles',      label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_ROLE'), type: 'custom' },
     ];
   });
 
+  /** One row per TARGET line (not per source category) — lets a line like "Material & Energy"
+   *  show every real cost category currently feeding it as a single multi-select, instead of
+   *  forcing the user to find and re-target each category's own row one at a time. The
+   *  underlying `editedMapping` (keyed by category code) is unchanged; this is purely a
+   *  different grouping of the same data for rendering. */
   readonly mappingRows = computed<TableRow[]>(() => {
     this.mappingTick();
-    return this.realCategories().map(category => {
+    const byLine = new Map<number, string[]>();
+    for (const category of this.realCategories()) {
       const edit = this.editedMapping.get(category.code);
-      return {
-        id: category.code,
-        categoryCode: category.code,
-        categoryLabel: `${category.labelFr} (${category.code})`,
-        targetLineId: edit?.catalogueLineId != null ? String(edit.catalogueLineId) : '',
-        mappingRole: edit?.mappingRole ?? '',
-        // DEC-CATMAP-1: a real category with no DRAFT/ACTIVE mapping row shows up here
-        // genuinely unmapped (blank target/role) — never silently defaulted or hidden.
-        mapped: edit != null && edit.catalogueLineId != null && edit.mappingRole != null,
-      };
-    });
+      if (edit?.catalogueLineId != null) {
+        const codes = byLine.get(edit.catalogueLineId) ?? [];
+        codes.push(category.code);
+        byLine.set(edit.catalogueLineId, codes);
+      }
+    }
+    return this.lines().map(line => ({
+      id: String(line.id),
+      lineId: line.id,
+      lineLabel: `${line.labelFr} (${line.code})`,
+      categoryCodes: byLine.get(line.id) ?? [],
+    }));
   });
+
+  readonly categoryOptions = computed<SelectOption[]>(() =>
+    this.realCategories().map(c => ({ value: c.code, label: `${c.labelFr} (${c.code})` })));
+
+  categoryLabel(code: string): string {
+    const c = this.realCategories().find(c => c.code === code);
+    return c ? `${c.labelFr} (${c.code})` : code;
+  }
+
+  roleFor(categoryCode: string): PlCategoryMappingRole | null {
+    return this.editedMapping.get(categoryCode)?.mappingRole ?? null;
+  }
 
   readonly mappingTableConfig = computed<TableConfig>(() => ({
     showHeader: true,
@@ -530,16 +546,34 @@ export class PlCatalogueAdminComponent implements OnInit {
     emptyMessage: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.EMPTY'),
   }));
 
-  onLineTargetChange(categoryCode: string, values: string[]): void {
-    const lineId = Number(values[0]);
-    const current = this.editedMapping.get(categoryCode) ?? { catalogueLineId: null, mappingRole: null };
-    this.editedMapping.set(categoryCode, { ...current, catalogueLineId: Number.isFinite(lineId) ? lineId : null });
+  /** Multi-select change for one TARGET line's row — categories removed from the selection stop
+   *  targeting this line (becoming unmapped, not silently reassigned); categories newly added
+   *  here are moved onto this line even if they previously targeted a different one, keeping the
+   *  "each category maps to exactly one line" invariant the coverage check already enforces. */
+  onCategoriesForLineChange(lineId: number, categoryCodes: string[]): void {
+    const selected = new Set(categoryCodes);
+    for (const [code, edit] of this.editedMapping) {
+      if (edit.catalogueLineId === lineId && !selected.has(code)) {
+        this.editedMapping.delete(code);
+      }
+    }
+    for (const code of categoryCodes) {
+      const current = this.editedMapping.get(code);
+      if (current?.catalogueLineId !== lineId) {
+        this.editedMapping.set(code, { catalogueLineId: lineId, mappingRole: current?.mappingRole ?? null });
+      }
+    }
     this.mappingTick.update(v => v + 1);
   }
 
-  onLineRoleChange(categoryCode: string, values: string[]): void {
+  /** DEC-CATMAP-1 edge case confirmed in real Tunisia data (HONORAIRES=COST vs.
+   *  CAPEX_EQUIP=EXCLUDED, both targeting OTHER_ONEOFF): mappingRole is a property of each
+   *  (category, line) pair, not of the line as a whole — two categories sharing a target line
+   *  can legitimately carry different roles, so this stays per-category, not per-line. */
+  onCategoryRoleChange(categoryCode: string, values: string[]): void {
     const role = (values[0] || null) as PlCategoryMappingRole | null;
-    const current = this.editedMapping.get(categoryCode) ?? { catalogueLineId: null, mappingRole: null };
+    const current = this.editedMapping.get(categoryCode);
+    if (!current) return;
     this.editedMapping.set(categoryCode, { ...current, mappingRole: role });
     this.mappingTick.update(v => v + 1);
   }

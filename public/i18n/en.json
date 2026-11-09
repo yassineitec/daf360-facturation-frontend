@@ -3795,11 +3795,11 @@
       "ACTIVATE_ERROR": "Error while activating.",
       "LOAD_ERROR": "Error while loading.",
       "MAPPING": {
-        "COL_CATEGORY": "Category",
+        "COL_CATEGORY": "Source categories",
         "COL_LINE": "P&L line",
-        "COL_ROLE": "Role",
+        "COL_ROLE": "Role per category",
         "COL_STATUS": "Status",
-        "EMPTY": "No categories.",
+        "EMPTY": "No lines.",
         "COVERAGE_BLOCKED": "Unmapped categories: {{codes}}"
       },
       "ROLE": {

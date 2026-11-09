@@ -135,27 +135,33 @@
       [rows]="mappingRows()"
       [config]="mappingTableConfig()">
 
-      <ng-template dafCell="targetLine" let-row>
+      <ng-template dafCell="categories" let-row>
         <daf-select
-          [options]="lineOptions()"
-          [selected]="row['targetLineId'] ? [row['targetLineId']] : []"
-          [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_LINE' | translate"
-          (selectedChange)="onLineTargetChange(row['categoryCode'], $event)" />
+          [options]="categoryOptions()"
+          [selected]="row['categoryCodes']"
+          [config]="{ multiple: true, searchable: true }"
+          [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_CATEGORY' | translate"
+          (selectedChange)="onCategoriesForLineChange(row['lineId'], $event)" />
       </ng-template>
 
-      <ng-template dafCell="role" let-row>
-        <daf-select
-          [options]="roleOptions()"
-          [selected]="row['mappingRole'] ? [row['mappingRole']] : []"
-          [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_ROLE' | translate"
-          (selectedChange)="onLineRoleChange(row['categoryCode'], $event)" />
-      </ng-template>
-
-      <ng-template dafCell="status" let-row>
-        @if (row['mapped']) {
-          <span class="material-symbols-outlined text-success text-[18px]">check_circle</span>
+      <ng-template dafCell="roles" let-row>
+        @if (row['categoryCodes'].length === 0) {
+          <span class="text-sm text-neutral-400">—</span>
         } @else {
-          <span class="material-symbols-outlined text-warning text-[18px]">warning</span>
+          <div class="flex flex-col gap-1.5">
+            @for (code of row['categoryCodes']; track code) {
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-neutral-600 min-w-[140px] truncate" [title]="categoryLabel(code)">
+                  {{ categoryLabel(code) }}
+                </span>
+                <daf-select
+                  [options]="roleOptions()"
+                  [selected]="roleFor(code) ? [roleFor(code)!] : []"
+                  [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_ROLE' | translate"
+                  (selectedChange)="onCategoryRoleChange(code, $event)" />
+              </div>
+            }
+          </div>
         }
       </ng-template>
 
