@@ -29,6 +29,10 @@ export class WizardStepDoc360Component implements OnInit {
   private hideTimer?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
+    // Resumed draft: reflect the origin already chosen.
+    if (this.draft?.origin === 'DOC360') this.selectedSource.set('doc360');
+    else if (this.draft?.origin === 'INTERCO') this.selectedSource.set('interco');
+
     this.search$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -81,7 +85,13 @@ export class WizardStepDoc360Component implements OnInit {
   }
 
   selectSource(source: 'doc360' | 'interco'): void {
-    this.selectedSource.set(this.selectedSource() === source ? null : source);
+    const next = this.selectedSource() === source ? null : source;
+    this.selectedSource.set(next);
+    // Persisted since V123 (affaires.origin) — the card choice used to stay UI-only.
+    this.draftChange.emit({
+      ...this.draft,
+      origin: next === 'doc360' ? 'DOC360' : next === 'interco' ? 'INTERCO' : null,
+    });
   }
 
   clearSelection(): void {

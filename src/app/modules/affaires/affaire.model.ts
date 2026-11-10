@@ -190,7 +190,11 @@ export interface AffaireDetail extends AffaireListItem {
   /** Other ARX entities that contributed to this affaire -- always present (empty array,
    *  never undefined). */
   sellerEntityIds:   number[];
+  /** V123 — creation origin, null when not specified. */
+  origin?:           AffaireOrigin | null;
 }
+
+export type AffaireOrigin = 'DOC360' | 'INTERCO';
 
 export interface RafDetailsDto {
   affaireId:          number;
