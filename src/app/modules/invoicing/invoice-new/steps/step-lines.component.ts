@@ -82,24 +82,31 @@ export interface StepLinesValue {
   <div class="lines-header">
     <span class="section-title">{{ 'INVOICING.STEP_LINES.TITLE' | translate }}</span>
     <div class="lines-header-actions">
-      @if (!readOnly() && ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte())) {
+      @if (!readOnly() && !amountsLocked() && ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte())) {
         <button type="button" class="btn-add-line" (click)="addLine()">
           {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
         </button>
       }
-      @if (!readOnly() && (isAv() || isTm() || isLivrable())) {
+      @if (!readOnly() && !amountsLocked() && (isAv() || isTm() || isLivrable())) {
         <button type="button" class="btn-add-line btn-add-rmb" [disabled]="!categoriesLoaded()"
           (click)="toggleRmbPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_REMBOURSABLE' | translate }}
         </button>
       }
-      @if (!readOnly() && (isAv() || isTm() || isLivrable() || isTsCarryForward())) {
+      @if (!readOnly() && !amountsLocked() && (isAv() || isTm() || isLivrable() || isTsCarryForward())) {
         <button type="button" class="btn-add-line btn-add-rmb" (click)="toggleCarryForwardPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_CARRY_FORWARD' | translate }}
         </button>
       }
     </div>
   </div>
+
+  @if (amountsLocked()) {
+    <div class="raf-alert raf-alert--block">
+      <span class="material-symbols-outlined">lock</span>
+      {{ 'INVOICING.STEP_LINES.AMOUNTS_LOCKED' | translate }}
+    </div>
+  }
 
   <div class="deduction-columns-bar">
     @for (col of deductionColumns(); track $index) {
@@ -273,24 +280,37 @@ export interface StepLinesValue {
                      utilisateur, synchronisées entre elles par setNum() (montant <-> %, dans
                      les deux sens). Seul Budget affaire (le contractAmount réel, fixé une
                      fois par newLine()) et % déjà facturé (toujours 0, pas de facturation
-                     antérieure par construction) restent en lecture seule. -->
+                     antérieure par construction) restent en lecture seule -- comme les trois,
+                     une fois le budget de l'affaire entièrement facturé (amountsLocked()). -->
                 <td class="td-computed">{{ formatAmount(lg.get('budgetAffaire')!.value) }}</td>
                 <td class="td-computed">{{ formatPct(lg.get('pctFacture')!.value ?? 0) }}</td>
-                <td>
-                  <daf-form-field [options]="pctOptions"
-                    [value]="lg.get('pctAvancement')!.value"
-                    (valueChange)="setNum(lg, 'pctAvancement', $event)" />
-                </td>
-                <td>
-                  <daf-form-field [options]="pctOptions"
-                    [value]="lg.get('pctAFacturer')!.value"
-                    (valueChange)="setNum(lg, 'pctAFacturer', $event)" />
-                </td>
-                <td>
-                  <daf-form-field [options]="numOptions"
-                    [value]="lg.get('prixUnitaireHt')!.value"
-                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
-                </td>
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatPct(lg.get('pctAvancement')!.value ?? 0) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="pctOptions"
+                      [value]="lg.get('pctAvancement')!.value"
+                      (valueChange)="setNum(lg, 'pctAvancement', $event)" />
+                  </td>
+                }
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatPct(lg.get('pctAFacturer')!.value ?? 0) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="pctOptions"
+                      [value]="lg.get('pctAFacturer')!.value"
+                      (valueChange)="setNum(lg, 'pctAFacturer', $event)" />
+                  </td>
+                }
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
               } @else if (isAv()) {
                 <!-- Colonnes d'avancement : figées côté serveur à la génération de la facture depuis
                      un WIP validé (DFValidationService.buildInvoiceLine, branche FORFAIT) — cette étape
@@ -303,7 +323,7 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ avPctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ avPctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ avPctAFacturerLabel(i) }}</td>
-                @if (avHasAvancement(i) && !amendMode()) {
+                @if (amountsLocked() || (avHasAvancement(i) && !amendMode())) {
                   <td class="td-computed">{{ formatAmount(lineHtAv(i)) }}</td>
                 } @else {
                   <td>
@@ -318,16 +338,21 @@ export interface StepLinesValue {
                      Budget affaire vaut donc toujours le Montant HT lui-même et les trois
                      pourcentages sont fixés à 100 % (cf. DFValidationService.buildInvoiceLine
                      côté backend, branche REGIE). Seul le montant (Montant HT) est
-                     saisissable. -->
+                     saisissable -- sauf une fois le budget de l'affaire entièrement facturé
+                     (amountsLocked()), où lui aussi repasse en lecture seule. -->
                 <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
-                <td>
-                  <daf-form-field [options]="numOptions"
-                    [value]="lg.get('prixUnitaireHt')!.value"
-                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
-                </td>
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
               } @else if (isTsCarryForward()) {
                 <!-- TS WIP : les quatre colonnes d'avancement portent de VRAIES valeurs,
                      calculées une seule fois côté serveur à la validation DF d'une
@@ -342,7 +367,7 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ tsPctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ tsPctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ tsPctAFacturerLabel(i) }}</td>
-                @if (tsHasAvancement(i) && !amendMode()) {
+                @if (amountsLocked() || (tsHasAvancement(i) && !amendMode())) {
                   <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
                 } @else {
                   <td>
@@ -381,7 +406,7 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ livrablePctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctAFacturerLabel(i) }}</td>
-                @if (livrableHasAvancement(i) && !amendMode()) {
+                @if (amountsLocked() || (livrableHasAvancement(i) && !amendMode())) {
                   <td class="td-computed">{{ formatAmount(lineHtLivrable(i)) }}</td>
                 } @else {
                   <td>
@@ -390,6 +415,9 @@ export interface StepLinesValue {
                       (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                   </td>
                 }
+              } @else if (amountsLocked()) {
+                <td class="td-computed">{{ lg.get('quantite')!.value }}</td>
+                <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
               } @else {
                 <td>
                   <daf-form-field [options]="numOptions"
@@ -518,11 +546,15 @@ export interface StepLinesValue {
                     [value]="lg.get('description')!.value"
                     (valueChange)="setText(lg, 'description', $event)" />
                 </td>
-                <td>
-                  <daf-form-field [options]="numOptions"
-                    [value]="lg.get('prixUnitaireHt')!.value"
-                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
-                </td>
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
                 <td class="td-vat">
                   <daf-select
                     [options]="vatRateOptions()"
@@ -749,6 +781,17 @@ export class StepLinesComponent {
    * combinedLineMeta()'s fallback in next() for how a line added here gets its
    * affaireId/billingMode. */
   readonly readOnly = computed(() => this.isCombined() && !this.isSameAffaireCombined());
+
+  /** True once the affaire's budget is 100% invoiced (step-affaire.component.ts's rafBlocked(),
+   * threaded through via StepAffaireValue.budgetFullyInvoiced -- see its own doc comment).
+   * Unlike readOnly() above, this never blocks reopening the invoice or editing dates/notes/
+   * conditions -- it only locks the amount-DETERMINING fields on every line (quantité, prix
+   * unitaire, and each mode's equivalent) read-only, and hides the add-line/add-reimbursable/
+   * add-carry-forward/add-deduction-column actions (each would add MORE invoiced amount).
+   * Removing a line stays allowed: that only ever reduces the total, never breaches budget.
+   * Always false for any combined invoice (budgetFullyInvoiced is never set there -- no
+   * single affaire's RAF is fetched for one, see StepAffaireValue). */
+  readonly amountsLocked = computed(() => this.affaireData().budgetFullyInvoiced === true);
 
   /** affaireId -> "REF — Intitulé" for the Affaire column, resolved once per distinct
    * affaireId found among the seeded lines (see seedFromInitialLines()). Empty until

@@ -2609,7 +2609,8 @@
       "CARRY_FORWARD_REMOVE_SOURCE": "Retirer ce solde de la ligne",
       "ADD_DEDUCTION_COLUMN": "+ Ajouter une colonne",
       "DEDUCTION_LABEL_PLACEHOLDER": "Nom de la colonne",
-      "DEDUCTION_UNNAMED": "(sans nom)"
+      "DEDUCTION_UNNAMED": "(sans nom)",
+      "AMOUNTS_LOCKED": "Budget de l'affaire entièrement facturé — les montants sont verrouillés, les autres champs restent modifiables."
     },
     "STEP_CONDITIONS": {
       "ISSUE_DATE_LABEL": "Date d'émission",

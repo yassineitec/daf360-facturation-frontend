@@ -2609,7 +2609,8 @@
       "CARRY_FORWARD_REMOVE_SOURCE": "Remove this balance from the line",
       "ADD_DEDUCTION_COLUMN": "+ Add column",
       "DEDUCTION_LABEL_PLACEHOLDER": "Column name",
-      "DEDUCTION_UNNAMED": "(unnamed)"
+      "DEDUCTION_UNNAMED": "(unnamed)",
+      "AMOUNTS_LOCKED": "This affaire's budget is fully invoiced — amounts are locked, every other field stays editable."
     },
     "STEP_CONDITIONS": {
       "ISSUE_DATE_LABEL": "Issue date",

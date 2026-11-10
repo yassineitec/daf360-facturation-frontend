@@ -42,6 +42,16 @@ export interface StepAffaireValue {
    * modes (e.g. a FORFAIT line + a TS line from the same affaire). Undefined for an ordinary
    * single-affaire invoice, where it's meaningless. */
   combinedAffaireCount?: number;
+  /** True once this affaire's RAF (reste à facturer) is exhausted -- see rafBlocked() below.
+   * Computed fresh every time an affaire is selected or an existing invoice is reopened for
+   * edit/amend (never carried from the invoice's own saved data), so it reflects the REAL,
+   * current budget state including every other invoice emitted since. step-lines.component.ts
+   * reads it to lock each line's amount-determining fields read-only once the budget is fully
+   * invoiced, while leaving every other field (dates, notes, conditions, TVA...) editable --
+   * unlike rafBlocked() itself, this must NOT block reopening the invoice, only adjusting its
+   * amount further. Undefined/false for a combined invoice (no single affaire's RAF is
+   * fetched there) -- the amount-lock feature doesn't apply to those yet. */
+  budgetFullyInvoiced?: boolean;
 }
 
 @Component({
@@ -187,7 +197,7 @@ export interface StepAffaireValue {
         <span class="material-symbols-outlined">close</span>
         {{ 'INVOICING.STEP_AFFAIRE.CANCEL' | translate }}
       </button>
-      <button type="button" class="btn-next" (click)="next()" [disabled]="rafBlocked() || rafLoading() || (!selectedAffaire() && !isCombinedInvoice())">
+      <button type="button" class="btn-next" (click)="next()" [disabled]="rafLoading() || (rafBlocked() && !initialValue()) || (!selectedAffaire() && !isCombinedInvoice())">
         {{ 'INVOICING.STEP_AFFAIRE.NEXT' | translate }}
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
@@ -450,7 +460,16 @@ export class StepAffaireComponent implements OnInit {
     // guards explicitly rather than only incidentally via Validators.required.
     if (!this.selectedAffaire()) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid || this.rafBlocked() || this.rafLoading()) return;
+    // rafBlocked() stops a BRAND-NEW invoice from being created over budget (RG12) -- but
+    // reopening an existing invoice for edit/amend must never be blocked by it: that invoice
+    // (or others) is very likely WHY the budget now reads as exhausted, and amending it (due
+    // date, notes, conditions...) shouldn't require more budget to exist. initialValue() is
+    // non-null only when editing (see preselectForEdit()/ngOnInit() above), so it's the exact
+    // signal to exempt. step-lines.component.ts's amountsLocked() is what actually keeps the
+    // amount fields themselves read-only in that case -- this guard only ever gated reaching
+    // that step in the first place.
+    if (this.form.invalid || this.rafLoading()
+        || (this.rafBlocked() && this.initialValue() == null)) return;
     const v = this.form.getRawValue();
     const aff = this.selectedAffaire();
     this.nextStep.emit({
@@ -461,6 +480,7 @@ export class StepAffaireComponent implements OnInit {
       paysId:      aff?.paysId ?? 0,
       currency:    aff?.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
       billingMode: v.billingMode || this.validBillingModeFromAffaire() || '',
+      budgetFullyInvoiced: this.rafBlocked(),
       contractAmount: aff?.contractAmount ?? null,
     });
   }

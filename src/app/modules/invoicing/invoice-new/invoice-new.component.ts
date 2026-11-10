@@ -399,7 +399,12 @@ export class InvoiceNewComponent implements OnInit {
   readonly canGoNext = computed(() => {
     const s = this.step();
     if (s === 1) {
-      return !(this.stepAffaireRef()?.rafBlocked() ?? false)
+      // routeInvoiceId !== null means this is an existing invoice being edited/amended, not
+      // created new -- rafBlocked() must never stop reopening one (see step-affaire's own
+      // next(), which applies the identical exemption). amountsLocked() in step-lines is
+      // what actually keeps the amount fields read-only in that case.
+      const exempt = this.routeInvoiceId !== null;
+      return (exempt || !(this.stepAffaireRef()?.rafBlocked() ?? false))
           && !(this.stepAffaireRef()?.rafLoading() ?? false);
     }
     if (s === 4) return !this.isSaving() && !this.alreadySaved();
