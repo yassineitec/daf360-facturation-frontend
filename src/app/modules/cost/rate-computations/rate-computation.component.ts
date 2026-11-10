@@ -17,14 +17,34 @@ import { PaysRefDto, UserRefDto } from '../../affaires/affaire.model';
 import { AffaireService } from '../../affaires/affaire.service';
 import { CurrencyContextService } from '../../../core/currency-context.service';
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.RATES.${key}_TITLE`, textKey: `GUIDE.RATES.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'calculate', 'rate-header'),
+  step('PAYS', 'public', 'rate-pays'),
+  step('FORMULA', 'function', 'rate-formula'),
+  step('TABLE', 'table_rows', 'rate-table'),
+  step('NEW', 'add', 'rate-new'),
+  step('LIFECYCLE', 'route', 'rate-table'),
+  step('ALLOCATION', 'tune', 'rate-formula-btn'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-rate-computation',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, SelectComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, SelectComponent, PageGuideComponent],
   templateUrl: './rate-computation.component.html',
   styleUrl: './rate-computation.component.scss',
 })
 export class RateComputationComponent implements OnInit {
+  readonly guideSteps = GUIDE_STEPS;
+
   private readonly svc        = inject(CostService);
   private readonly clientSvc  = inject(ClientService);
   private readonly affaireSvc = inject(AffaireService);

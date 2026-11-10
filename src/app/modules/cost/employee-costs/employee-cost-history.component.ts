@@ -93,16 +93,34 @@ type HistoryViewMode = 'timeline' | 'table';
  * event is the natural shape for "what happened, and what did it change" the way a
  * commit log reads, rather than a spreadsheet export.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.EMPLOYEE_COST_HISTORY.${key}_TITLE`, textKey: `GUIDE.EMPLOYEE_COST_HISTORY.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'history', 'ech-header'),
+  step('TOOLBAR', 'search', 'ech-toolbar'),
+  step('LIST', 'timeline', 'ech-list'),
+  step('EXPORT', 'download', 'ech-header'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-employee-cost-history',
   standalone: true,
   imports: [
     TranslatePipe, AvatarComponent, ButtonComponent, CardComponent, DataTableComponent,
     PageComponent, PaginationComponent, RouterLink, SearchToolbarComponent,
+    PageGuideComponent,
   ],
   templateUrl: './employee-cost-history.component.html',
 })
 export class EmployeeCostHistoryComponent implements OnInit {
+  readonly guideSteps = GUIDE_STEPS;
+
   /** Vue tableau uniquement (undefined en vue timeline) — va au `[table]` de la toolbar pour placer
    *  réinitialiser + choix des colonnes à droite de Filtres. */
   readonly table = viewChild(DataTableComponent);

@@ -186,7 +186,7 @@ export class CostLinesComponent implements OnInit {
   draftCount    = computed(() => this.invoices().filter(i => i.status === 'DRAFT').length);
   pendingCount  = computed(() => this.invoices().filter(i => i.status === 'SUBMITTED').length);
   approvedCount = computed(() =>
-    this.invoices().filter(i => ['APPROVED', 'VALIDATED', 'POSTED'].includes(i.status)).length,
+    this.invoices().filter(i => ['APPROVED', 'VALIDATED', 'PARTIALLY_PAID', 'POSTED'].includes(i.status)).length,
   );
 
   readonly totalPagesCount = computed(() => Math.ceil(this.total() / this.size()) || 1);

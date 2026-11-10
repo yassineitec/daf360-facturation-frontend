@@ -5,7 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   BarChartComponent, ButtonComponent, ButtonOptions,
-  ChipGroupComponent, DafCellDirective, DataTableComponent, MetricCardComponent,
+  DafCellDirective, DataTableComponent, MetricCardComponent,
   DrawerComponent, FilterChipsComponent, FilterComponent, FormFieldComponent, FormFieldOptions,
   AvatarComponent, HelpPopoverComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
@@ -16,9 +16,9 @@ import {
 import type {
   AvatarData, BadgeCell, BadgeOptions, BarChartBar, BarChartLegendItem, BarChartOptions,
   BarChartSegmentVariant, BreadcrumbItem,
-  ChipGroupConfig, ChipOption, DrawerConfig,
+  DrawerConfig,
   MetricCardOptions, MetricDelta,
-  FilterField, FilterOption, FilterResult, PageHeaderBadge, ProgressVariant, RadioOption, SelectOption,
+  FilterField, FilterOption, FilterResult, PageHeaderBadge, RadioOption, SelectOption,
   SearchToolbarFilterConfig, TabItem, TableAction, TableColumn, TableConfig, TableRow,
   ToolbarAction,
 } from '@khalilrebhiitec/daf360';
@@ -54,6 +54,8 @@ import {
 import { EmployeeAvatar, EmployeeAvatarService } from '../../core/employee-avatar.service';
 import { ClientContactService } from '../clients/contacts/client-contact.service';
 import { AffaireContactDto }    from '../clients/contacts/client-contact.model';
+import { PageGuideComponent } from '../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../shared/guide/page-guide.types';
 /** A read-only label/value pair. `label` is always a translation key. */
 interface DetailField { label: string; value: string; }
 
@@ -130,18 +132,43 @@ const DEFAULT_CHART_PERIOD = 'YTD';
 /** Les diapositives du carrousel, dans l'ordre de lecture : facturé, déclaré, encaissé. */
 const CHART_SLIDES = ['INVOICED', 'WIP', 'PAYMENTS'] as const;
 type ChartSlideId = typeof CHART_SLIDES[number];
+/** Ce qui s'affiche : une diapositive seule, ou plusieurs combinées (Ctrl + clic). */
+type ChartViewId = ChartSlideId | 'COMPARE';
+
+/** Ordre des barres d'un graphique combiné : le chemin de l'argent — déclaré, facturé, encaissé. */
+const COMBINE_ORDER: readonly ChartSlideId[] = ['WIP', 'INVOICED', 'PAYMENTS'];
+/**
+ * Couleurs du graphique combiné : WIP en orange (`pending`, l'orange de la palette des
+ * graphiques), facturé dans la couleur de sa propre diapositive (`success`), encaissé en
+ * teal foncé pour rester distinct du facturé.
+ */
+const COMBINE_VARIANT: Record<ChartSlideId, NonNullable<BarChartOptions['variant']>> = {
+  WIP: 'pending', INVOICED: 'success', PAYMENTS: 'teal',
+};
 
 function isSlide(v: string | null | undefined): v is ChartSlideId {
   return (CHART_SLIDES as readonly string[]).includes(v ?? '');
 }
 
-function asSlide(v: string | null): ChartSlideId {
-  return isSlide(v) ? v : CHART_SLIDES[0];
+/** `cc` de l'URL → sélection : une ou plusieurs diapositives, sans doublon, dans l'ordre de COMBINE_ORDER. */
+function asSelection(v: string | null): ChartSlideId[] {
+  const picked = (v ?? '').split(',').filter(isSlide);
+  if (!picked.length) return [CHART_SLIDES[0]];
+  return COMBINE_ORDER.filter(id => picked.includes(id));
 }
+
+/** Sélecteurs de diapositive — voir `chartSlideButtons`. Classes entières, pour le scan Tailwind. */
+const SLIDE_BTN_BASE =
+  'inline-flex items-center justify-center gap-2 px-5 py-[9px] text-sm font-bold tracking-wide rounded-lg ' +
+  'border transition-all duration-200 select-none cursor-pointer ' +
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-tertiary focus-visible:ring-offset-1';
+const SLIDE_BTN_ACTIVE = 'bg-tertiary-container border-tertiary text-on-tertiary-container hover:bg-tertiary/20';
+const SLIDE_BTN_IDLE   =
+  'bg-surface-container-lowest border-outline-variant text-on-surface hover:border-tertiary hover:bg-surface-container';
 
 /** Une diapositive prête à rendre — voir `chartSlides`. */
 interface ChartSlideView {
-  id:         ChartSlideId;
+  id:         ChartViewId;
   title:      string;
   /** La ligne sous le titre : moyenne et objectif, quand ils ont du sens pour la série. */
   stats:      { label: string; value: string }[];
@@ -164,10 +191,15 @@ function monthEnd(ym: string): Date {
 /** Ordre d'empilement, du bas vers le haut : le facturé porte la barre, le refusé la coiffe. */
 const WIP_STATUS_ORDER: readonly ChartWipStatus[] = ['INVOICED', 'PENDING', 'REJECTED'];
 
+/**
+ * Les couleurs de statut réservées aux graphiques (`--color-chart-*` de la lib, comme
+ * « Factures par statut » de sa démo) : plus douces que `warning` / `danger`, et un
+ * recolorage des graphiques ne déplace ni badge ni erreur de formulaire.
+ */
 const WIP_STATUS_VARIANT: Record<ChartWipStatus, BarChartSegmentVariant> = {
-  INVOICED: 'tertiary',
-  PENDING:  'warning',
-  REJECTED: 'neutral',
+  INVOICED: 'success',
+  PENDING:  'pending',
+  REJECTED: 'refused',
 };
 
 /** Une barre qui garde la clé de sa période, pour retrouver la période au clic. */
@@ -244,6 +276,28 @@ const MODAL_RESIZE = {
   maximizable: true,
 };
 
+// ── Guide de la page ─────────────────────────────────────────────────────────
+
+const guideStep = (key: string, icon: string, target?: string, tab?: string, selector?: string): GuideStep =>
+  ({ icon, target, tab, selector, titleKey: `GUIDE.AFFAIRE_DETAIL.${key}_TITLE`, textKey: `GUIDE.AFFAIRE_DETAIL.${key}_TEXT` });
+
+/**
+ * Une étape par onglet, construite à partir de `tabs()` : un onglet absent pour ce mode de
+ * facturation (WIP, Ressources, Dépense) n'a pas d'étape. Chaque étape ouvre son onglet
+ * (`tabChange` → `activeTab`) et surligne le panneau.
+ */
+const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: string }> = {
+  overview:   { key: 'OVERVIEW',   icon: 'bar_chart',      target: 'affaire-charts' },
+  ts:         { key: 'TS',         icon: 'add_task',       target: 'affaire-panel' },
+  'ts-wip':   { key: 'TS_WIP',     icon: 'trending_up',    target: 'affaire-panel' },
+  wip:        { key: 'WIP',        icon: 'pending_actions', target: 'affaire-panel' },
+  ressources: { key: 'RESSOURCES', icon: 'group',          target: 'affaire-panel' },
+  depense:    { key: 'DEPENSE',    icon: 'schedule',       target: 'affaire-panel' },
+  factures:   { key: 'INVOICES',   icon: 'receipt_long',   target: 'affaire-panel' },
+  paiements:  { key: 'PAYMENTS',   icon: 'payments',       target: 'affaire-panel' },
+  frais:      { key: 'EXPENSES',   icon: 'receipt',        target: 'affaire-panel' },
+};
+
 @Component({
   selector: 'app-affaire-detail',
   imports: [
@@ -251,8 +305,8 @@ const MODAL_RESIZE = {
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent, ButtonComponent,
     ProgressBarComponent, StatusBadgeComponent, SearchToolbarComponent, DataTableComponent, MetricCardComponent,
     DrawerComponent, RadioGroupComponent, FormFieldComponent, SelectComponent,
-    BarChartComponent, AvatarComponent, ChipGroupComponent, FilterComponent, FilterChipsComponent, SkeletonComponent,
-    HelpPopoverComponent,
+    BarChartComponent, AvatarComponent, FilterComponent, FilterChipsComponent, SkeletonComponent,
+    HelpPopoverComponent, PageGuideComponent,
     TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
@@ -1700,6 +1754,11 @@ export class AffaireDetailComponent implements OnInit {
   //                 pointillée reste l'objectif « budget réparti sur la durée ».
   //   WIP         : le WIP déclaré, empilé par statut (facturé / en attente / refusé).
   //   Paiements   : les règlements reçus, par date de paiement.
+  //   Combiné     : Ctrl + clic sur un sélecteur ajoute (ou retire) sa série ; dès deux
+  //                 séries, elles s'affichent côte à côte par période (barres groupées).
+  //                 Groupées et non empilées : le WIP est HT, facturé et encaissé sont TTC
+  //                 — un empilement les soustrairait l'un de l'autre. La note sous le titre
+  //                 le dit quand le WIP en fait partie.
   //
   // Les trois sont servis par `GET /affaires/{id}/charts` (AffaireChartService), agrégés
   // côté serveur. WIP et paiements reprennent EXACTEMENT les définitions des tuiles : sur
@@ -1739,7 +1798,8 @@ export class AffaireDetailComponent implements OnInit {
     this.chartQueryParams.get('cv') === 'CUMUL' ? 'CUMUL' : 'PERIOD');
   readonly chartStatuses    = signal<ChartWipStatus[]>(asStatuses(this.chartQueryParams.get('cs')));
   readonly chartIncludeTs   = signal(this.chartQueryParams.get('cts') !== '0');
-  readonly chartSlide       = signal<ChartSlideId>(asSlide(this.chartQueryParams.get('cc')));
+  /** Les séries affichées : une seule (diapositive classique) ou plusieurs (Ctrl + clic). */
+  readonly chartSelection   = signal<ChartSlideId[]>(asSelection(this.chartQueryParams.get('cc')));
   /** Le (i) du graphique, posé à la main à côté de Filtres — voir le gabarit. */
   readonly chartHelpOpen    = signal(false);
 
@@ -1800,7 +1860,7 @@ export class AffaireDetailComponent implements OnInit {
       cv:  this.chartView() === 'PERIOD' ? null : this.chartView(),
       cs:  statuses.length === WIP_STATUS_ORDER.length ? null : statuses.join(','),
       cts: this.chartIncludeTs() ? null : '0',
-      cc:  this.chartSlide() === CHART_SLIDES[0] ? null : this.chartSlide(),
+      cc:  this.chartSelection().join(',') === CHART_SLIDES[0] ? null : this.chartSelection().join(','),
     };
     untracked(() => {
       const current = this.route.snapshot.queryParamMap;
@@ -1940,14 +2000,32 @@ export class AffaireDetailComponent implements OnInit {
 
   // ── Carrousel ─────────────────────────────────────────────────────────────
 
-  readonly chartSlideIndex = computed(() => CHART_SLIDES.indexOf(this.chartSlide()));
+  /** Position de la première série sélectionnée dans le carrousel : le point de départ des flèches. */
+  readonly chartSlideIndex = computed(() => CHART_SLIDES.indexOf(this.chartSelection()[0]));
 
-  readonly chartSlideChips = computed<ChipOption[]>(() => {
-    this.translate.currentLang();
-    return CHART_SLIDES.map(id => ({ value: id, label: this.translate.instant('AFFAIRES.DETAIL.CHARTS.SLIDE_' + id) }));
+  /** Une série seule → sa diapositive ; plusieurs → le graphique combiné. */
+  readonly chartViewId = computed<ChartViewId>(() => {
+    const sel = this.chartSelection();
+    return sel.length > 1 ? 'COMPARE' : sel[0];
   });
 
-  readonly chartSlideChipConfig: ChipGroupConfig = { multiple: false };
+  /**
+   * Les sélecteurs de diapositive : le cadre de Filtres (`daf-button` md — padding, coins
+   * `rounded-lg`, police) avec les couleurs des puces `daf-chip-group` qu'ils remplacent.
+   * Aucune variante de `daf-button` ne porte ces couleurs, d'où un bouton natif. Le
+   * `py-[9px]` compense la bordure de 1 px que Filtres n'a pas : même hauteur de 40 px.
+   * Plusieurs boutons peuvent être actifs à la fois (Ctrl + clic).
+   */
+  readonly chartSlideButtons = computed<{ id: ChartSlideId; label: string; active: boolean; classes: string }[]>(() => {
+    this.translate.currentLang();
+    const sel = this.chartSelection();
+    return CHART_SLIDES.map(id => ({
+      id,
+      label:   this.translate.instant('AFFAIRES.DETAIL.CHARTS.SLIDE_' + id),
+      active:  sel.includes(id),
+      classes: `${SLIDE_BTN_BASE} ${sel.includes(id) ? SLIDE_BTN_ACTIVE : SLIDE_BTN_IDLE}`,
+    }));
+  });
 
   /** Sens du dernier déplacement (1 = vers la droite, -1 = vers la gauche) : celui de l'animation. */
   readonly chartSlideDirection = signal<1 | -1>(1);
@@ -1957,22 +2035,42 @@ export class AffaireDetailComponent implements OnInit {
    * par son id, donc l'élément est recréé à chaque changement et son animation d'entrée
    * rejoue — sans piste à faire glisser ni diapositives cachées à neutraliser.
    */
-  readonly activeChartSlides = computed(() => [this.chartSlides()[this.chartSlideIndex()]]);
+  readonly activeChartSlide  = computed(() => this.chartSlides().find(s => s.id === this.chartViewId())!);
+  readonly activeChartSlides = computed(() => [this.activeChartSlide()]);
 
-  /** Puces à choix unique : décocher la puce active renvoie [] — on reste alors où l'on est. */
-  selectChartSlide(selection: string[]): void {
-    const next = selection[0];
-    if (!isSlide(next) || next === this.chartSlide()) return;
-    this.chartSlideDirection.set(CHART_SLIDES.indexOf(next) > this.chartSlideIndex() ? 1 : -1);
-    this.chartSlide.set(next);
+  /**
+   * Clic simple : cette série seule. Ctrl (ou ⌘) + clic : ajoute la série au graphique
+   * affiché, ou l'en retire — sans jamais vider la sélection.
+   */
+  onChartSlideClick(id: ChartSlideId, event: MouseEvent): void {
+    const sel = this.chartSelection();
+    let next: ChartSlideId[];
+    if (event.ctrlKey || event.metaKey) {
+      next = sel.includes(id) ? sel.filter(s => s !== id) : COMBINE_ORDER.filter(s => s === id || sel.includes(s));
+      if (!next.length) return;
+    } else {
+      next = [id];
+    }
+    if (next.join(',') === sel.join(',')) return;
+    this.chartSlideDirection.set(CHART_SLIDES.indexOf(next[0]) >= this.chartSlideIndex() ? 1 : -1);
+    this.chartSelection.set(next);
   }
 
-  /** Bouclé : après Paiements vient Facturation — trois diapositives, pas de fin de course. */
+  /** Bouclé : après Paiements vient Facturation — pas de fin de course. Revient à une série seule. */
   stepChartSlide(delta: number): void {
     const n = CHART_SLIDES.length;
     this.chartSlideDirection.set(delta < 0 ? -1 : 1);
-    this.chartSlide.set(CHART_SLIDES[(this.chartSlideIndex() + delta + n) % n]);
+    this.chartSelection.set([CHART_SLIDES[(this.chartSlideIndex() + delta + n) % n]]);
   }
+
+  /** Annoncé aux lecteurs d'écran à chaque changement de graphique. */
+  readonly chartSlideAnnouncement = computed(() => {
+    this.translate.currentLang();
+    const slide = this.activeChartSlide();
+    return slide.id === 'COMPARE' ? slide.title
+      : this.translate.instant('AFFAIRES.DETAIL.CHARTS.SLIDE_POSITION',
+          { index: this.chartSlideIndex() + 1, count: CHART_SLIDES.length, title: slide.title });
+  });
 
   /** Flèches gauche / droite quand le focus est dans le carrousel (hors champ de saisie). */
   onChartCarouselKey(event: KeyboardEvent): void {
@@ -2000,7 +2098,7 @@ export class AffaireDetailComponent implements OnInit {
   /** Le (i) de la carte suit la diapositive : chaque graphique a sa règle de calcul. */
   readonly chartSlideHelp = computed(() => {
     this.translate.currentLang();
-    return this.translate.instant('AFFAIRES.DETAIL.CHARTS.HELP_' + this.chartSlide());
+    return this.translate.instant('AFFAIRES.DETAIL.CHARTS.HELP_' + this.chartViewId());
   });
 
   // ── Séries ────────────────────────────────────────────────────────────────
@@ -2121,6 +2219,56 @@ export class AffaireDetailComponent implements OnInit {
     });
   });
 
+  /** Légende d'une série dans le graphique combiné : l'unité y est dite, HT ou TTC. */
+  private combineLabel(id: ChartSlideId): string {
+    const key = id === 'WIP' ? 'WIP_HT' : id === 'INVOICED' ? 'INVOICED' : 'COLLECTED_TTC';
+    return this.translate.instant('AFFAIRES.DETAIL.CHARTS.' + key);
+  }
+
+  /**
+   * Combiné — les séries sélectionnées (Ctrl + clic) côte à côte, dans l'ordre du chemin
+   * de l'argent : WIP (HT), facturé, encaissé (TTC). Le WIP suit les statuts cochés, comme
+   * sa diapositive. Le seul taux affiché rapporte l'encaissé au facturé, tous deux TTC, et
+   * seulement quand les deux sont sélectionnés : un taux contre le WIP mélangerait HT et TTC.
+   */
+  private readonly compareBars = computed<ChartBar[]>(() => {
+    this.translate.currentLang();
+    const sel = this.chartSelection();
+    if (sel.length < 2) return [];
+    const current = this.currentBucketKey();
+    const withRate = sel.includes('INVOICED') && sel.includes('PAYMENTS');
+    return this.chartSeries().map(({ bucket, invoiced, wip, payments }) => {
+      const values: Record<ChartSlideId, number> = { WIP: this.wipOf(wip), INVOICED: invoiced, PAYMENTS: payments };
+      const lines = [this.bucketLongLabel(bucket)];
+      for (const id of sel) {
+        let line = `${this.combineLabel(id)} : ${this.money(values[id])}`;
+        if (id === 'PAYMENTS' && withRate && invoiced > 0) {
+          line += ` · ${this.translate.instant('AFFAIRES.DETAIL.CHARTS.CMP_COLLECTED_RATE',
+            { pct: Math.round(payments / invoiced * 100) })}`;
+        }
+        lines.push(line);
+      }
+      return {
+        label:        this.bucketShortLabel(bucket),
+        value:        Math.max(...sel.map(id => values[id])),
+        tooltipLines: lines,
+        highlight:    bucket.key === current,
+        group:        sel.map(id => ({ value: values[id], variant: COMBINE_VARIANT[id] })),
+        key:          bucket.key,
+      };
+    });
+  });
+
+  /** « WIP et facturé », « WIP, facturé et encaissé » — le sujet du titre combiné. */
+  private combineSeriesName(sel: ChartSlideId[]): string {
+    const t = (k: string) => this.translate.instant('AFFAIRES.DETAIL.CHARTS.' + k);
+    const names = sel.map(id => t('CMP_NAME_' + id));
+    const joined = names.length > 1
+      ? `${names.slice(0, -1).join(', ')} ${t('CMP_AND')} ${names.at(-1)}`
+      : names[0] ?? '';
+    return joined.charAt(0).toUpperCase() + joined.slice(1);
+  }
+
   // ── Lignes de référence ───────────────────────────────────────────────────
 
   /** Vue cumulée : le budget, plus les TS intégrés s'ils sont comptés. */
@@ -2158,7 +2306,7 @@ export class AffaireDetailComponent implements OnInit {
     return Math.min(Math.max(months, 1), 60);
   }
 
-  private chartOptions(ariaTitle: string, total: number, variant: ProgressVariant,
+  private chartOptions(ariaTitle: string, total: number, variant: NonNullable<BarChartOptions['variant']>,
                        legend: BarChartLegendItem[], target: number, targetLabel: string): BarChartOptions {
     const withLine = target > 0;
     return {
@@ -2202,6 +2350,11 @@ export class AffaireDetailComponent implements OnInit {
     const invoicedTitle = t('INV_TITLE' + suffix);
     const wipTitle      = t('WIP_TITLE' + suffix);
     const payTitle      = t('PAY_TITLE' + suffix);
+    const sel           = this.chartSelection();
+    const cmpTitle      = t('CMP_TITLE' + suffix, { series: this.combineSeriesName(sel) });
+    const totals: Record<ChartSlideId, number> = { WIP: wipTotal, INVOICED: invoicedTotal, PAYMENTS: paymentsTotal };
+    // Le total du libellé accessible : le facturé s'il est affiché, sinon l'encaissé, sinon le WIP.
+    const cmpAriaTotal  = totals[sel.includes('INVOICED') ? 'INVOICED' : sel.includes('PAYMENTS') ? 'PAYMENTS' : 'WIP'];
 
     // Ligne sous le titre : seulement ce que les indicateurs du haut ne disent pas. Le total
     // et le nombre de factures y sont déjà ; restent la moyenne par période (vue par
@@ -2223,8 +2376,8 @@ export class AffaireDetailComponent implements OnInit {
         stats: stats(invoicedTotal, invoicedObjective, objectiveLabel),
         note: null,
         bars: this.invoicedBars(),
-        options: this.chartOptions(invoicedTitle, invoicedTotal, 'tertiary',
-          [{ label: t(cumul ? 'INVOICED_CUMUL' : 'INVOICED'), variant: 'tertiary' }],
+        options: this.chartOptions(invoicedTitle, invoicedTotal, 'success',
+          [{ label: t(cumul ? 'INVOICED_CUMUL' : 'INVOICED'), variant: 'success' }],
           invoicedTarget, invoicedTargetLabel),
       },
       {
@@ -2242,8 +2395,20 @@ export class AffaireDetailComponent implements OnInit {
         stats: stats(paymentsTotal, cumul ? budget : 0, objectiveLabel),
         note: null,
         bars: this.paymentBars(),
-        options: this.chartOptions(payTitle, paymentsTotal, 'teal',
-          [{ label: t(cumul ? 'COLLECTED_CUMUL' : 'COLLECTED'), variant: 'teal' }],
+        options: this.chartOptions(payTitle, paymentsTotal, 'success',
+          [{ label: t(cumul ? 'COLLECTED_CUMUL' : 'COLLECTED'), variant: 'success' }],
+          budget, this.chartBudgetLabel()),
+      },
+      {
+        id: 'COMPARE', title: cmpTitle,
+        stats: sel.includes('INVOICED') && sel.includes('PAYMENTS') && invoicedTotal > 0
+          ? [{ label: t('CMP_STAT_COLLECTED'), value: `${Math.round(paymentsTotal / invoicedTotal * 100)} %` }]
+          : [],
+        // HT contre TTC : seulement quand le WIP est combiné à une série TTC.
+        note: sel.includes('WIP') && sel.length > 1 ? t('CMP_UNITS_NOTE') : null,
+        bars: this.compareBars(),
+        options: this.chartOptions(cmpTitle, cmpAriaTotal, 'tertiary',
+          sel.map(id => ({ label: this.combineLabel(id), variant: COMBINE_VARIANT[id] })),
           budget, this.chartBudgetLabel()),
       },
     ];
@@ -2267,9 +2432,14 @@ export class AffaireDetailComponent implements OnInit {
 
   /**
    * Chaque barre mène là où vivent ses lignes : Facturation → Factures filtrées sur la
-   * période ; WIP → l'onglet où ce WIP se déclare ; Paiements → Paiements filtrés.
+   * période ; WIP → l'onglet où ce WIP se déclare ; Paiements → Paiements filtrés ;
+   * Combiné → Factures si le facturé en fait partie (le pivot des trois), sinon Paiements,
+   * sinon WIP.
    */
-  onChartBarClick(slide: ChartSlideId, bar: BarChartBar): void {
+  onChartBarClick(view: ChartViewId, bar: BarChartBar): void {
+    const sel = this.chartSelection();
+    const slide: ChartSlideId = view !== 'COMPARE' ? view
+      : sel.includes('INVOICED') ? 'INVOICED' : sel.includes('PAYMENTS') ? 'PAYMENTS' : 'WIP';
     if (slide === 'WIP') {
       this.activeTab.set(this.chartWipModeOnlyTs() ? 'ts-wip' : 'wip');
       return;
@@ -2373,6 +2543,35 @@ export class AffaireDetailComponent implements OnInit {
     );
     return tabs;
   });
+
+  /** Guide de la fiche : en-tête, panneau, indicateurs, puis un passage par onglet visible. */
+  readonly guideSteps = computed<GuideStep[]>(() => [
+    guideStep('INTRO',   'work'),
+    guideStep('HEADER',  'badge',         'affaire-header'),
+    guideStep('DETAILS', 'info',          'affaire-details'),
+    guideStep('ACTIONS', 'bolt',          'affaire-actions'),
+    guideStep('KPIS',    'monitoring',    'affaire-kpis'),
+    guideStep('TABS',    'tab',           'affaire-tabs'),
+    ...this.tabs().flatMap(t => {
+      const s = GUIDE_TAB_STEPS[t.id];
+      return s ? [guideStep(s.key, s.icon, s.target, t.id)] : [];
+    }),
+    guideStep('DRAWER',  'event_note', undefined, undefined, 'daf-drawer button[aria-controls]'),
+    guideStep('END',     'help'),
+  ]);
+
+  /** Onglet ouvert avant le guide : on y revient à sa fermeture. */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
 
   // ═══ Barres d'outils (recherche + filtre + export) ════════════════════════
 

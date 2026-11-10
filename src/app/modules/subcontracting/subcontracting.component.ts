@@ -9,15 +9,32 @@ import { PaysRefDto } from '../affaires/affaire.model';
 import { SousTraitantsTabComponent } from './tabs/sous-traitants-tab.component';
 import { OrdresStTabComponent } from './tabs/ordres-st-tab.component';
 import { CoutsAnalyseTabComponent } from './tabs/couts-analyse-tab.component';
+import { PageGuideComponent } from '../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../shared/guide/page-guide.types';
 
 type TabId = 'st' | 'ordres' | 'analyse';
 const TAB_IDS: TabId[] = ['st', 'ordres', 'analyse'];
+
+/** Guide de la page — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: TabId): GuideStep => ({
+  icon, titleKey: `GUIDE.SUBCONTRACTING.${key}_TITLE`, textKey: `GUIDE.SUBCONTRACTING.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO',    'handshake'),
+  step('TABS',     'tab',        'sc-tabs',  'st'),
+  step('ST',       'groups',     'sc-panel', 'st'),
+  step('ENTITY',   'public',     'sc-entity', 'st'),
+  step('ORDERS',   'assignment', 'sc-panel', 'ordres'),
+  step('COSTS',    'payments',   'sc-panel', 'ordres'),
+  step('ANALYSIS', 'bar_chart',  'sc-panel', 'analyse'),
+  step('END',      'help'),
+];
 
 @Component({
   selector: 'app-subcontracting',
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, SelectComponent, TabsComponent,
-    SousTraitantsTabComponent, OrdresStTabComponent, CoutsAnalyseTabComponent,
+    SousTraitantsTabComponent, OrdresStTabComponent, CoutsAnalyseTabComponent, PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './subcontracting.component.html',
@@ -33,6 +50,21 @@ export class SubcontractingComponent implements OnInit {
 
   /** The entity list is the page's own first request — the tabs load their own data. */
   firstLoad = signal(true);
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: TabId | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab as TabId);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
 
   readonly paysOptions = computed<SelectOption[]>(() =>
     this.pays().map(p => ({ value: String(p.id), label: p.frenchLabel })));

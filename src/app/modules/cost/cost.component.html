@@ -7,3 +7,7 @@
   <app-cost-lines />
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Ses étapes
+     visent les data-guide de app-cost-lines ; « cost-list » est sur les trois vues, seule la visible compte. -->
+<app-page-guide storageKey="costs" [steps]="guideSteps" />

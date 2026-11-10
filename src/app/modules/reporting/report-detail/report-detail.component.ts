@@ -201,6 +201,29 @@ const COST_BUCKETS: { key: keyof PlPeriodDto; label: string }[] = [
  * `:id` route — Angular reuses the component instance in that case and would never re-run
  * `ngOnInit`, so the reload has to react to the input signal itself.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.REPORT_DETAIL.${key}_TITLE`, textKey: `GUIDE.REPORT_DETAIL.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'summarize'),
+  step('HEADER', 'label', 'report-header'),
+  step('IDENTITY', 'badge', 'report-identity'),
+  step('ACTIONS', 'send', 'report-actions'),
+  step('AMEND', 'undo', 'report-actions'),
+  step('EXPORTS', 'download', 'report-actions'),
+  step('KPIS', 'insights', 'report-kpis'),
+  step('TABS', 'tab', 'report-tabs'),
+  step('OVERVIEW', 'dashboard', 'report-panel', 'overview'),
+  step('RECAP', 'table_chart', 'report-panel', 'recap'),
+  step('COMMENTS', 'rate_review', 'report-panel', 'commentaires'),
+  step('TREASURY', 'account_balance', 'report-panel', 'tresorerie'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-report-detail',
   imports: [
@@ -209,6 +232,7 @@ const COST_BUCKETS: { key: keyof PlPeriodDto; label: string }[] = [
     DataTableComponent, DafCellDirective, RadioGroupComponent,
     MetricCardComponent, TabsComponent, ProgressBarComponent, BarChartComponent, AccordionCardComponent,
     SearchToolbarComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -394,6 +418,21 @@ const COST_BUCKETS: { key: keyof PlPeriodDto; label: string }[] = [
   `],
 })
 export class ReportDetailComponent implements OnInit {
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab as never);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide as never);
+    this.tabBeforeGuide = null;
+  }
   private readonly reportSvc     = inject(PlReportService);
   private readonly periodSvc     = inject(PlPeriodService);
   private readonly commentarySvc = inject(VarianceCommentaryService);

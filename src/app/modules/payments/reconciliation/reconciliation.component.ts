@@ -9,13 +9,30 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — chaque `target` est un `data-guide` du gabarit. */
+const GUIDE_STEPS: GuideStep[] = [
+  { icon: 'account_balance', titleKey: 'GUIDE.RECONCILIATION.INTRO_TITLE', textKey: 'GUIDE.RECONCILIATION.INTRO_TEXT', target: 'recon-header' },
+  { icon: 'upload_file', titleKey: 'GUIDE.RECONCILIATION.IMPORT_TITLE', textKey: 'GUIDE.RECONCILIATION.IMPORT_TEXT', target: 'recon-import' },
+  { icon: 'edit_note', titleKey: 'GUIDE.RECONCILIATION.MANUAL_TITLE', textKey: 'GUIDE.RECONCILIATION.MANUAL_TEXT', target: 'recon-import' },
+  { icon: 'history', titleKey: 'GUIDE.RECONCILIATION.HISTORY_TITLE', textKey: 'GUIDE.RECONCILIATION.HISTORY_TEXT', target: 'recon-history' },
+  { icon: 'table_rows', titleKey: 'GUIDE.RECONCILIATION.TRANSACTIONS_TITLE', textKey: 'GUIDE.RECONCILIATION.TRANSACTIONS_TEXT', target: 'recon-transactions' },
+  { icon: 'rule', titleKey: 'GUIDE.RECONCILIATION.ACTIONS_TITLE', textKey: 'GUIDE.RECONCILIATION.ACTIONS_TEXT', target: 'recon-transactions' },
+  { icon: 'hourglass_top', titleKey: 'GUIDE.RECONCILIATION.UNMATCHED_TITLE', textKey: 'GUIDE.RECONCILIATION.UNMATCHED_TEXT', target: 'recon-unmatched' },
+  { icon: 'help', titleKey: 'GUIDE.RECONCILIATION.END_TITLE', textKey: 'GUIDE.RECONCILIATION.END_TEXT' },
+];
+
 @Component({
   selector: 'app-reconciliation',
-  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective, DisplayCurrencyPipe, TranslatePipe],
+  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective, DisplayCurrencyPipe, TranslatePipe, PageGuideComponent],
   templateUrl: './reconciliation.component.html',
   styleUrl:    './reconciliation.component.scss',
 })
 export class ReconciliationComponent implements OnInit {
+  readonly guideSteps = GUIDE_STEPS;
+
   private readonly svc = inject(ReconciliationService);
   private readonly currencyContext = inject(CurrencyContextService);
 

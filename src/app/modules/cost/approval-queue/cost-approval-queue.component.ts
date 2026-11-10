@@ -29,6 +29,25 @@ type ViewMode = 'grid' | 'list';
 /** The three decisions a cost invoice supports — the service has an endpoint for each. */
 type CostDecision = 'approve' | 'return' | 'reject';
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.COST_APPROVAL.${key}_TITLE`, textKey: `GUIDE.COST_APPROVAL.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'fact_check'),
+  step('KPIS', 'monitoring', 'cost-approval-kpis'),
+  step('TOOLBAR', 'search', 'cost-approval-toolbar'),
+  step('LIST', 'grid_view', 'cost-approval-list'),
+  step('COSTS', 'request_quote', 'cost-approval-list'),
+  step('HIRING', 'person_add', 'cost-approval-list'),
+  step('ADVANCES', 'savings', 'cost-approval-list'),
+  step('NEW', 'add', 'cost-approval-new'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-cost-approval-queue',
   standalone: true,
@@ -36,12 +55,15 @@ type CostDecision = 'approve' | 'return' | 'reject';
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, FormFieldComponent,
     ApprovalCardsSectionComponent, ApprovalTableSectionComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
   templateUrl: './cost-approval-queue.component.html',
 })
 export class CostApprovalQueueComponent implements OnInit {
+  readonly guideSteps = GUIDE_STEPS;
+
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(ApprovalTableSectionComponent);
 

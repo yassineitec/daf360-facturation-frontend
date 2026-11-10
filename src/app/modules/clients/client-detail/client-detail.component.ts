@@ -25,6 +25,8 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { ToastService } from '../../../core/toast.service';
 import { CurrencyContextService } from '../../../core/currency-context.service';
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
 
 /**
  * Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n.
@@ -38,6 +40,23 @@ interface DetailField { label: string; value: string; href?: string; }
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Une tuile de la rangée d'indicateurs. `label` est une clé i18n. */
+/** Guide de la fiche — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.CLIENT_DETAIL.${key}_TITLE`, textKey: `GUIDE.CLIENT_DETAIL.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO',    'person'),
+  step('HEADER',   'label',            'client-header'),
+  step('IDENTITY', 'badge',            'client-identity'),
+  step('ACTIONS',  'bolt',             'client-actions'),
+  step('KPIS',     'monitoring',       'client-kpis'),
+  step('TABS',     'tab',              'client-tabs'),
+  step('OVERVIEW', 'dashboard',        'client-panel', 'overview'),
+  step('CONTACTS', 'contacts',         'client-panel', 'contact'),
+  step('TRACE',    'history',          'client-panel', 'trace'),
+  step('END',      'help'),
+];
+
 interface KpiTile {
   label:   string;
   value:   string;
@@ -61,7 +80,7 @@ interface KpiTile {
     TranslatePipe, PermissionDirective,
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ProgressBarComponent, ButtonComponent, AvatarComponent,
-    FieldMessageComponent, FormFieldComponent, CheckboxComponent,
+    FieldMessageComponent, FormFieldComponent, CheckboxComponent, PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './client-detail.component.html',
@@ -85,6 +104,21 @@ export class ClientDetailComponent implements OnInit {
 
   /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
   activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'overview');
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
 
   /**
    * Le corps de la modale de saisie d'un contact. `ModalConfig.body` accepte un

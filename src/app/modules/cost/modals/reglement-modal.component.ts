@@ -10,27 +10,30 @@ import { CostInvoiceDto, CostInvoiceReglementDto, formatAmount } from '../cost.m
 import { CostService } from '../cost.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { CurrencyContextService } from '../../../core/currency-context.service';
+import { invoicePayableAmount } from '../tabs/cost-invoice-display';
 
 /**
- * What `open()` takes. Since V93 a règlement pays a COST INVOICE (one règlement per
- * invoice), never a single cost line.
+ * What `open()` takes. Since V93 a règlement pays a COST INVOICE, never a single cost line;
+ * since V116 an invoice takes several partial règlements, each capped at what remains owed.
  *
  * Three ways in:
- *  - edit: `editing` set — the invoice is fixed to `editing.costInvoiceId`.
+ *  - edit: `editing` set — the invoice is fixed to `editing.costInvoiceId`; `maxAmount` =
+ *    the invoice's remainder + this règlement's own amount.
  *  - create for a known invoice: `costInvoiceId` (+ `expectedAmount` = the invoice's
- *    `netToPay`, proposed as the default "montant payé"; optional `invoiceReference` /
- *    `supplierInvoiceNumber` shown in the header box).
+ *    remainder, proposed as the default "montant payé" and used as the cap; optional
+ *    `invoiceReference` / `supplierInvoiceNumber` shown in the header box).
  *  - create with a picker: `payableInvoices` (no `costInvoiceId`) — the user chooses one;
- *    a single-element array is auto-selected. The default amount is the chosen invoice's
- *    `netToPay`.
+ *    a single-element array is auto-selected. Default amount and cap = its remainder.
  */
 export interface ReglementModalData {
   /** null when creating a NEW règlement; set when editing an existing one. */
   editing: CostInvoiceReglementDto | null;
   /** Create mode: the invoice to pay (hides the picker). */
   costInvoiceId?: number | null;
-  /** Default "montant payé" — callers pass `invoice.netToPay` (TTC − retenue à la source). */
+  /** Create: the invoice's remainder (`amountRemaining`) — default "montant payé" and cap. */
   expectedAmount?: number | null;
+  /** Edit: the most this règlement may reach (remainder + its own amount). Defaults to `expectedAmount`. */
+  maxAmount?: number | null;
   /** Display only: the invoice's internal reference. */
   invoiceReference?: string | null;
   /** Display only: the supplier's own invoice number. */
@@ -42,7 +45,7 @@ export interface ReglementModalData {
    *  above: `findPayable()` below can't always resolve the invoice (e.g. edit mode when the
    *  invoice isn't in the caller's already-loaded list). */
   paysId?: number | null;
-  /** Create mode without `costInvoiceId`: the payable (APPROVED, unpaid) invoices to pick from. */
+  /** Create mode without `costInvoiceId`: the payable (APPROVED / PARTIALLY_PAID, remainder > 0) invoices. */
   payableInvoices?: CostInvoiceDto[];
 }
 
@@ -97,8 +100,10 @@ export interface ReglementModalData {
         <daf-form-field
           [options]="{
             label: ('COST.REGLEMENT.AMOUNT' | translate), type: 'number', required: true,
-            hint: expectedAmount() != null ? ('COST.REGLEMENT.NET_TO_PAY_HINT' | translate:{ amount: expectedAmountLabel() }) : undefined,
-            error: (touched() && !(montantPaye()! > 0)) ? ('COST.REGLEMENT.ERR_AMOUNT_REQUIRED' | translate) : undefined
+            hint: maxAmount() != null ? ('COST.REGLEMENT.REMAINING_HINT' | translate:{ amount: maxAmountLabel() }) : undefined,
+            error: (touched() && !(montantPaye()! > 0)) ? ('COST.REGLEMENT.ERR_AMOUNT_REQUIRED' | translate)
+                 : (touched() && exceedsMax()) ? ('COST.REGLEMENT.ERR_AMOUNT_EXCEEDS' | translate:{ amount: maxAmountLabel() })
+                 : undefined
           }"
           [value]="montantPaye()"
           (valueChange)="montantPaye.set($any($event))" />
@@ -170,6 +175,8 @@ export class ReglementModalComponent {
   invoiceReference      = signal<string | null>(null);
   supplierInvoiceNumber = signal<string | null>(null);
   expectedAmount        = signal<number | null>(null);
+  /** The cap on "montant payé": the remainder (create) or remainder + own amount (edit). */
+  maxAmount             = signal<number | null>(null);
   currency              = signal<string | null>(null);
   montantPaye     = signal<number | null>(null);
   paymentMethodId = signal<number | null>(null);
@@ -204,6 +211,18 @@ export class ReglementModalComponent {
     return amount == null ? '' : formatAmount(amount, this.currency() || this.currencyContext.defaultCurrency() || 'EUR');
   }
 
+  maxAmountLabel(): string {
+    const amount = this.maxAmount();
+    return amount == null ? '' : formatAmount(amount, this.currency() || this.currencyContext.defaultCurrency() || 'EUR');
+  }
+
+  /** Above the cap — half a millime of tolerance for the 3-decimal amounts. */
+  exceedsMax(): boolean {
+    const max = this.maxAmount();
+    const amount = this.montantPaye();
+    return max != null && amount != null && amount - max > 0.0005;
+  }
+
   onInvoiceSelected(values: string[]): void {
     const id = Number(values[0]);
     this.costInvoiceId.set(values.length && Number.isFinite(id) ? id : null);
@@ -226,6 +245,7 @@ export class ReglementModalComponent {
     this.invoiceReference.set(data.invoiceReference ?? null);
     this.supplierInvoiceNumber.set(data.supplierInvoiceNumber ?? null);
     this.expectedAmount.set(data.expectedAmount ?? null);
+    this.maxAmount.set(data.maxAmount ?? data.expectedAmount ?? null);
     this.currency.set(data.currency ?? null);
 
     this.paymentMethodOptions.set([]);
@@ -244,6 +264,7 @@ export class ReglementModalComponent {
       // Fill the header from the picker list when the caller passed the invoice there.
       const inv = this.findPayable(data.editing.costInvoiceId);
       if (inv) this.applyInvoice(inv, false);
+      this.maxAmount.set(data.maxAmount ?? null);
       this.montantPaye.set(data.editing.montantPaye);
       this.paymentMethodId.set(data.editing.paymentMethodId);
       this.dateValue = new Date(data.editing.datePaiement);
@@ -283,8 +304,8 @@ export class ReglementModalComponent {
   }
 
   get canSave(): boolean {
-    return this.costInvoiceId() != null && (this.montantPaye() ?? 0) > 0 && !!this.dateIso
-        && this.paymentMethodId() != null;
+    return this.costInvoiceId() != null && (this.montantPaye() ?? 0) > 0 && !this.exceedsMax()
+        && !!this.dateIso && this.paymentMethodId() != null;
   }
 
   confirm(): void {
@@ -323,11 +344,13 @@ export class ReglementModalComponent {
     return (this.data.payableInvoices ?? []).find(inv => inv.id === id);
   }
 
-  /** Copies the invoice's display fields; `setAmount` also proposes its net to pay. */
+  /** Copies the invoice's display fields; `setAmount` (create) also proposes its remainder,
+   *  which becomes the cap. In edit the caller's `maxAmount` stays. */
   private applyInvoice(inv: CostInvoiceDto | undefined, setAmount = true): void {
     if (!inv) {
       if (setAmount) {
         this.expectedAmount.set(null);
+        this.maxAmount.set(null);
         this.montantPaye.set(null);
       }
       return;
@@ -335,13 +358,17 @@ export class ReglementModalComponent {
     this.invoiceReference.set(inv.reference ?? null);
     this.supplierInvoiceNumber.set(inv.supplierInvoiceNumber ?? null);
     this.currency.set(inv.currency ?? null);
-    this.expectedAmount.set(inv.netToPay ?? null);
-    if (setAmount) this.montantPaye.set(inv.netToPay ?? null);
+    const remaining = invoicePayableAmount(inv);
+    this.expectedAmount.set(remaining);
+    if (setAmount) {
+      this.maxAmount.set(remaining);
+      this.montantPaye.set(remaining);
+    }
   }
 
   private invoiceOptionLabel(inv: CostInvoiceDto): string {
     const ref = inv.reference || ('#' + inv.id);
     const supplierNo = inv.supplierInvoiceNumber ? ' (' + inv.supplierInvoiceNumber + ')' : '';
-    return ref + supplierNo + ' — ' + formatAmount(inv.netToPay, inv.currency || this.currencyContext.defaultCurrency() || 'EUR');
+    return ref + supplierNo + ' — ' + formatAmount(invoicePayableAmount(inv), inv.currency || this.currencyContext.defaultCurrency() || 'EUR');
   }
 }

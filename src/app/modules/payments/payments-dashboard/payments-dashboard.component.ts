@@ -17,17 +17,33 @@ import { PaymentsDashboardStateService } from './payments-dashboard-state.servic
 
 type ViewMode = 'grid' | 'list';
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — chaque `target` est un `data-guide` du gabarit. */
+const GUIDE_STEPS: GuideStep[] = [
+  { icon: 'request_quote', titleKey: 'GUIDE.COLLECTIONS.INTRO_TITLE', textKey: 'GUIDE.COLLECTIONS.INTRO_TEXT' },
+  { icon: 'monitoring', titleKey: 'GUIDE.COLLECTIONS.KPIS_TITLE', textKey: 'GUIDE.COLLECTIONS.KPIS_TEXT', target: 'collections-kpis' },
+  { icon: 'search', titleKey: 'GUIDE.COLLECTIONS.TOOLBAR_TITLE', textKey: 'GUIDE.COLLECTIONS.TOOLBAR_TEXT', target: 'collections-toolbar' },
+  { icon: 'grid_view', titleKey: 'GUIDE.COLLECTIONS.LIST_TITLE', textKey: 'GUIDE.COLLECTIONS.LIST_TEXT', target: 'collections-list' },
+  { icon: 'notifications', titleKey: 'GUIDE.COLLECTIONS.REMINDER_TITLE', textKey: 'GUIDE.COLLECTIONS.REMINDER_TEXT', target: 'collections-list' },
+  { icon: 'account_balance', titleKey: 'GUIDE.COLLECTIONS.RECON_TITLE', textKey: 'GUIDE.COLLECTIONS.RECON_TEXT' },
+  { icon: 'help', titleKey: 'GUIDE.COLLECTIONS.END_TITLE', textKey: 'GUIDE.COLLECTIONS.END_TEXT' },
+];
+
 @Component({
   selector: 'app-payments-dashboard',
   imports: [
     TranslatePipe, PermissionDirective, PageComponent, PageHeaderComponent, ButtonComponent,
     MetricCardComponent, SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe,
-    AgingCardsSectionComponent, AgingTableSectionComponent,
+    AgingCardsSectionComponent, AgingTableSectionComponent, PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './payments-dashboard.component.html',
 })
 export class PaymentsDashboardComponent implements OnInit {
+  readonly guideSteps = GUIDE_STEPS;
+
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(AgingTableSectionComponent);
 

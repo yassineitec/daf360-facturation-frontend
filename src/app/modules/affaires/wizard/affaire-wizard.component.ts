@@ -22,8 +22,52 @@ import { WizardStepBillingComponent }    from './steps/wizard-step-billing.compo
 import { WizardStepResponsablesComponent } from './steps/wizard-step-responsables.component';
 import { WizardStepPlanningComponent }   from './steps/wizard-step-planning.component';
 import { WizardStepRecapComponent }      from './steps/wizard-step-recap.component';
+import { PageGuideComponent }            from '../../../shared/guide/page-guide.component';
+import type { GuideStep }                from '../../../shared/guide/page-guide.types';
 
 const STEP_ICONS = ['description', 'business_center', 'receipt_long', 'group', 'calendar_month', 'fact_check'];
+
+/**
+ * Guide de la création. Il PARCOURT les six étapes de l'assistant : chaque étape du guide
+ * qui porte `tab: '1'`…`'6'` affiche cette étape en aperçu (`previewStep`), sans rien
+ * enregistrer ; `tab: 'real'` revient à l'étape réelle. À la fermeture du guide, l'aperçu
+ * tombe et l'assistant est exactement là où l'utilisateur l'avait laissé.
+ */
+const GUIDE_STEPS: GuideStep[] = [
+  { icon: 'add_business', titleKey: 'GUIDE.AFFAIRE_NEW.INTRO_TITLE',  textKey: 'GUIDE.AFFAIRE_NEW.INTRO_TEXT',  tab: 'real' },
+  { icon: 'linear_scale', titleKey: 'GUIDE.AFFAIRE_NEW.RAIL_TITLE',   textKey: 'GUIDE.AFFAIRE_NEW.RAIL_TEXT',   target: 'wizard-rail', tab: 'real' },
+  { icon: 'description',    titleKey: 'GUIDE.AFFAIRE_NEW.DOC.S1_TITLE', textKey: 'GUIDE.AFFAIRE_NEW.DOC.S1_TEXT', target: 'wizard-card', tab: '1' },
+  { icon: 'business_center', titleKey: 'GUIDE.AFFAIRE_NEW.DOC.S2_TITLE', textKey: 'GUIDE.AFFAIRE_NEW.DOC.S2_TEXT', target: 'wizard-card', tab: '2' },
+  { icon: 'receipt_long',   titleKey: 'GUIDE.AFFAIRE_NEW.DOC.S3_TITLE', textKey: 'GUIDE.AFFAIRE_NEW.DOC.S3_TEXT', target: 'wizard-card', tab: '3' },
+  { icon: 'group',          titleKey: 'GUIDE.AFFAIRE_NEW.DOC.S4_TITLE', textKey: 'GUIDE.AFFAIRE_NEW.DOC.S4_TEXT', target: 'wizard-card', tab: '4' },
+  { icon: 'calendar_month', titleKey: 'GUIDE.AFFAIRE_NEW.DOC.S5_TITLE', textKey: 'GUIDE.AFFAIRE_NEW.DOC.S5_TEXT', target: 'wizard-card', tab: '5' },
+  { icon: 'fact_check',     titleKey: 'GUIDE.AFFAIRE_NEW.DOC.S6_TITLE', textKey: 'GUIDE.AFFAIRE_NEW.DOC.S6_TEXT', target: 'wizard-card', tab: '6' },
+  { icon: 'arrow_forward', titleKey: 'GUIDE.AFFAIRE_NEW.NEXT_TITLE',  textKey: 'GUIDE.AFFAIRE_NEW.NEXT_TEXT',   target: 'wizard-next', tab: 'real' },
+  { icon: 'label',        titleKey: 'GUIDE.AFFAIRE_NEW.HEADER_TITLE', textKey: 'GUIDE.AFFAIRE_NEW.HEADER_TEXT', target: 'wizard-header', tab: 'real' },
+  { icon: 'history',      titleKey: 'GUIDE.AFFAIRE_NEW.DRAFTS_TITLE', textKey: 'GUIDE.AFFAIRE_NEW.DRAFTS_TEXT', target: 'wizard-drafts', tab: 'real' },
+];
+
+/**
+ * Guide de la modification (`affaires/:id/edit`) : le même assistant, sans l'étape 1
+ * (Origine), et des textes propres — chaque « Suivant » y enregistre l'étape tout de suite,
+ * le mode reste modifiable, l'entité est verrouillée. Même aperçu par `tab` que la création.
+ */
+const edit = (key: string, icon: string, target?: string, tab = 'real'): GuideStep => ({
+  icon, titleKey: `GUIDE.AFFAIRE_EDIT.${key}_TITLE`, textKey: `GUIDE.AFFAIRE_EDIT.${key}_TEXT`, target, tab,
+});
+const EDIT_GUIDE_STEPS: GuideStep[] = [
+  edit('INTRO',  'edit_note'),
+  edit('HEADER', 'label',           'wizard-header'),
+  edit('RAIL',   'linear_scale',    'wizard-rail'),
+  edit('S2',     'business_center', 'wizard-card', '2'),
+  edit('S3',     'receipt_long',    'wizard-card', '3'),
+  edit('S4',     'group',           'wizard-card', '4'),
+  edit('S5',     'calendar_month',  'wizard-card', '5'),
+  edit('S6',     'fact_check',      'wizard-card', '6'),
+  edit('NEXT',   'arrow_forward',   'wizard-next'),
+  edit('BACK',   'arrow_back',      'wizard-back'),
+  edit('END',    'help'),
+];
 
 /** Modes ayant encore un endpoint `PATCH /config/{mode}` à l'étape 3. */
 const CONFIGURABLE_MODES = new Set<string>(['FORFAIT', 'REGIE']);
@@ -45,6 +89,7 @@ const CONFIGURABLE_MODES = new Set<string>(['FORFAIT', 'REGIE']);
     WizardStepResponsablesComponent,
     WizardStepPlanningComponent,
     WizardStepRecapComponent,
+    PageGuideComponent,
   ],
   templateUrl: './affaire-wizard.component.html',
   styleUrl: './affaire-wizard.component.scss',
@@ -58,6 +103,10 @@ export class AffaireWizardComponent implements OnInit {
   private readonly userStore      = inject(UserStore);
   private readonly translate      = inject(TranslateService);
   private readonly employeeCostSvc = inject(EmployeeCostService);
+
+  /** Création et modification ont chacune leur guide (clé `affaire-new` / `affaire-edit`). */
+  readonly guideKey   = computed(() => this.editMode() ? 'affaire-edit' : 'affaire-new');
+  readonly guideSteps = computed(() => this.editMode() ? EDIT_GUIDE_STEPS : GUIDE_STEPS);
 
   constructor() {
     effect(() => {
@@ -110,7 +159,11 @@ export class AffaireWizardComponent implements OnInit {
   private readonly reachedStep = computed(() => Math.max(this.maxStepReached(), this.currentStep()));
 
   readonly stepperSteps = computed<StepperStep[]>(() =>
-    this.wizardSteps().slice(this.firstStep() - 1).map((s, i) => ({
+    this.wizardSteps().slice(this.firstStep() - 1).map((s, i) => this.previewStep() !== null
+      // Aperçu du guide : aucune étape n'est présentée comme faite ni verrouillée, le rail
+      // ne sert qu'à situer l'étape expliquée.
+      ? { ...s, completed: false, disabled: false }
+      : {
       ...s,
       // Une étape déjà franchie est marquée terminée ET reste atteignable ; celles qu'on
       // n'a pas encore vues sont désactivées, ce qui bloque le saut en avant au niveau du
@@ -118,10 +171,10 @@ export class AffaireWizardComponent implements OnInit {
       // reste focusable et annoncé comme actionnable).
       completed: i + this.firstStep() < this.reachedStep(),
       disabled:  i + this.firstStep() > this.reachedStep(),
-    })));
+    }));
 
   /** Le rail est 0-based et peut être tronqué en tête : d'où le décalage. */
-  readonly stepperIndex = computed(() => this.currentStep() - this.firstStep());
+  readonly stepperIndex = computed(() => this.shownStep() - this.firstStep());
 
   readonly stepperConfig = computed((): StepperConfig => {
     this.translate.currentLang();
@@ -243,6 +296,23 @@ export class AffaireWizardComponent implements OnInit {
    * font `currentStep.set(...)`.
    */
   readonly maxStepReached = signal(1);
+
+  /**
+   * Étape montrée par le guide de la page, le temps du guide : il parcourt les six étapes
+   * de l'assistant (`GuideStep.tab` = numéro, `'real'` = l'étape réelle). C'est un APERÇU :
+   * `currentStep`, `maxStepReached` et le brouillon ne bougent pas, rien n'est enregistré,
+   * et le voile du guide bloque toute saisie. null = pas d'aperçu.
+   */
+  readonly previewStep = signal<number | null>(null);
+
+  /** L'étape affichée : celle de l'aperçu pendant le guide, l'étape réelle sinon. */
+  readonly shownStep = computed(() => this.previewStep() ?? this.currentStep());
+
+  /** Le guide change d'étape : `'1'`…`'6'` montre cette étape de l'assistant, `'real'` revient à la vraie. */
+  onGuideStep(tab: string): void {
+    const n = Number(tab);
+    this.previewStep.set(Number.isInteger(n) && n >= this.firstStep() && n <= this.wizardSteps().length ? n : null);
+  }
 
   draftId     = signal<number | null>(null);
   isSaving    = signal(false);
@@ -495,6 +565,7 @@ export class AffaireWizardComponent implements OnInit {
       // Le DOC360 lié est prioritaire (rapprochement automatique) ; la saisie manuelle
       // ne sert que si l'affaire n'est pas liée à un projet DOC360.
       erpReference:          d.doc360ErpReference?.trim() || d.erpReference?.trim() || null,
+      origin:                d.origin || null,
       // LIVRABLE part enfin sous son propre code : le backend le refusait (regex du
       // DTO limitée à AV|JAL|TM|CP|RMB), d'où l'ancien détour par JAL.
       billingMode:           d.billingMode || null,
@@ -718,9 +789,9 @@ export class AffaireWizardComponent implements OnInit {
     this.serverError.set(null); // clear API error when user edits — forces re-validation before retry
   }
 
-  readonly cardTitle = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.card.t' + this.currentStep()); });
-  readonly cardSub   = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.card.s' + this.currentStep()); });
-  readonly cardIcon  = computed(() => STEP_ICONS[this.currentStep() - 1]);
+  readonly cardTitle = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.card.t' + this.shownStep()); });
+  readonly cardSub   = computed(() => { this.translate.currentLang(); return this.translate.instant('AFFAIRES.wizard.shell.card.s' + this.shownStep()); });
+  readonly cardIcon  = computed(() => STEP_ICONS[this.shownStep() - 1]);
 
   /**
    * Le nom du mode dans le résumé. Une seule clé par code (`…shell.mode.AV`), donc

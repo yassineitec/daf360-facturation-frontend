@@ -61,6 +61,23 @@ const PERIOD_STATUS_ORDER: PlPeriodStatus[] = ['OPEN', 'CLOSED', 'SUBMITTED', 'A
  * someone holding `FACT_MANAGE_PL_REPORT`; clicking a row that already has a report opens
  * its detail screen (Task 3.2).
  */
+import { PageGuideComponent } from '../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.REPORTING.${key}_TITLE`, textKey: `GUIDE.REPORTING.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'monitoring'),
+  step('ACTIONS', 'more_horiz', 'reporting-actions'),
+  step('KPIS', 'insights', 'reporting-kpis'),
+  step('TOOLBAR', 'search', 'reporting-toolbar'),
+  step('LIST', 'calendar_view_month', 'reporting-list'),
+  step('LIFECYCLE', 'route', 'reporting-list'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-reporting-list',
   imports: [
@@ -68,12 +85,15 @@ const PERIOD_STATUS_ORDER: PlPeriodStatus[] = ['OPEN', 'CLOSED', 'SUBMITTED', 'A
     DataTableComponent, DafCellDirective, PaysFlagSelectComponent,
     FormFieldComponent, SelectComponent, MetricCardComponent, SearchToolbarComponent,
     PlPeriodCardsSectionComponent, PlActionsMenuComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
   templateUrl: './reporting-list.component.html',
 })
 export class ReportingListComponent implements OnInit {
+
+  readonly guideSteps = GUIDE_STEPS;
   private readonly periodSvc = inject(PlPeriodService);
   private readonly reportSvc = inject(PlReportService);
   private readonly clientSvc  = inject(ClientService);

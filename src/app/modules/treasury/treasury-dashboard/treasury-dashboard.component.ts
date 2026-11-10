@@ -50,6 +50,25 @@ interface KpiTile {
  * graphiques, **partageant le même `max`** pour rester comparables à l'œil, et le net —
  * qui, lui, est signé — vit dans le tableau, où une couleur le porte sans ambiguïté.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.TREASURY.${key}_TITLE`, textKey: `GUIDE.TREASURY.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'account_balance'),
+  step('HORIZON', 'date_range', 'treasury-horizon'),
+  step('KPIS', 'insights', 'treasury-kpis'),
+  step('LOW_POINT', 'south', 'treasury-kpis'),
+  step('CHARTS', 'bar_chart', 'treasury-charts'),
+  step('TABLE', 'table_rows', 'treasury-table'),
+  step('FLOWS', 'swap_vert', 'treasury-flows'),
+  step('LIMITS', 'info', 'treasury-limits'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-treasury-dashboard',
   imports: [
@@ -57,12 +76,15 @@ interface KpiTile {
     PageComponent, PageHeaderComponent, SectionCardComponent,
     MetricCardComponent, ButtonComponent, BarChartComponent,
     DataTableComponent, DafCellDirective, PaginationComponent, SearchToolbarComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
   templateUrl: './treasury-dashboard.component.html',
 })
 export class TreasuryDashboardComponent implements OnInit {
+
+  readonly guideSteps = GUIDE_STEPS;
   private readonly svc       = inject(TreasuryService);
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);

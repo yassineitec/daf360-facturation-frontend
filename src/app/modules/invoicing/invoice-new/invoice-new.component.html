@@ -9,7 +9,7 @@
 
 <daf-page [kpis]="0" [breadcrumbs]="true">
 
-  <daf-page-header
+  <daf-page-header data-guide="invoice-wizard-header"
     [title]="pageTitleKey | translate"
     [subtitle]="pageSubtitle()"
     [badges]="headerBadges()"
@@ -18,7 +18,7 @@
 
   <div style="display:flex; flex-direction:column; gap:1rem">
 
-    <div class="form-card">
+    <div class="form-card" data-guide="invoice-wizard-card">
 
       <!-- Titre de l'étape courante -->
       <div class="card-head">
@@ -88,7 +88,7 @@
        style="position:sticky; bottom:1rem; z-index:40; display:flex; flex-wrap:wrap;
               align-items:center; justify-content:space-between; gap:1rem">
 
-    <div style="flex:1 1 320px; min-width:0">
+    <div style="flex:1 1 320px; min-width:0" data-guide="invoice-wizard-rail">
       <daf-stepper
         orientation="horizontal"
         [steps]="stepperSteps()"
@@ -97,7 +97,7 @@
         (stepClick)="onStepClick($event)" />
     </div>
 
-    <div style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
+    <div data-guide="invoice-wizard-actions" style="display:flex; flex-shrink:0; align-items:center; gap:0.5rem">
       <!-- « Annuler » à chaque étape — plus besoin de revenir à l'étape 1 pour abandonner. -->
       <daf-button
         [options]="{ variant: 'ghost', pill: true, iconStart: 'close',
@@ -131,3 +131,8 @@
   </div>
 
 </daf-page>
+
+<!-- Guide de la page : `invoice-new` en création, `invoice-edit` en modification
+     (brouillon ou facture déjà émise). Les étapes de l'assistant dépendent chacune des
+     données de la précédente : le guide les explique sur la carte, sans les afficher. -->
+<app-page-guide [storageKey]="guideKey" [steps]="guideSteps()" />

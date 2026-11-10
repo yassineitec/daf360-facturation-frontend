@@ -102,6 +102,26 @@ function toIsoDay(d: Date): string {
  * Ce qui a disparu au passage : les bordures et fonds en `rgba()` en dur, le vert
  * `#006b58` répété six fois, et les `<button class="decision-btn">` maison.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.SUPPLIER_DETAIL.${key}_TITLE`, textKey: `GUIDE.SUPPLIER_DETAIL.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'store'),
+  step('HEADER', 'label', 'supplier-header'),
+  step('IDENTITY', 'badge', 'supplier-identity'),
+  step('ACTIONS', 'bolt', 'supplier-actions'),
+  step('DEACTIVATE', 'block', 'supplier-actions'),
+  step('KPIS', 'monitoring', 'supplier-kpis'),
+  step('TABS', 'tab', 'supplier-tabs'),
+  step('COSTS', 'receipt_long', 'supplier-panel', 'costs'),
+  step('LEDGER', 'account_balance_wallet', 'supplier-panel', 'ledger'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-supplier-detail',
   imports: [
@@ -109,6 +129,7 @@ function toIsoDay(d: Date): string {
     PageComponent, PageHeaderComponent, SectionCardComponent, MetricCardComponent,
     TabsComponent, DataTableComponent, ButtonComponent, FieldMessageComponent,
     StatusBadgeComponent, SearchToolbarComponent, PaginationComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -306,6 +327,21 @@ function toIsoDay(d: Date): string {
   `],
 })
 export class SupplierDetailComponent implements OnInit {
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab as never);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide as never);
+    this.tabBeforeGuide = null;
+  }
   private readonly svc       = inject(SupplierService);
   private readonly costSvc   = inject(CostService);
   private readonly translate = inject(TranslateService);
@@ -519,7 +555,8 @@ export class SupplierDetailComponent implements OnInit {
       },
       {
         label: 'SUPPLIERS.DETAIL.KPI.REGLEMENTS',
-        value: String(rows.length),
+        // Relevé classique (V116) : seules les écritures REGLEMENT sont des paiements.
+        value: String(rows.filter(r => r.kind === 'REGLEMENT').length),
         delta: null,
         options: { icon: 'payments', iconColor: 'text-secondary', iconBg: 'bg-secondary/10' },
       },
@@ -678,10 +715,8 @@ export class SupplierDetailComponent implements OnInit {
   });
 
   /**
-   * Le mouvement plutôt que le montant : un relevé se lit « qu'est-ce qui reste dû »
-   * (crédit), « qu'ai-je payé en trop » (débit) ou « qu'est-ce qui est soldé » (ni l'un
-   * ni l'autre — un règlement au centime près ne produit aucune des deux colonnes, voir
-   * SupplierLedgerService).
+   * Le mouvement plutôt que le montant — relevé classique (V116, SupplierLedgerService) :
+   * les factures au crédit (ce qui est dû), les règlements au débit (ce qui est payé).
    */
   readonly ledgerFilterFields = computed<FilterField[]>(() => {
     const lang = this.translate.currentLang();
@@ -703,7 +738,6 @@ export class SupplierDetailComponent implements OnInit {
         options: [
           { value: 'CREDIT',  label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_CREDIT') },
           { value: 'DEBIT',   label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_DEBIT') },
-          { value: 'SETTLED', label: t('SUPPLIERS.DETAIL.LEDGER.TYPE_SETTLED') },
         ],
       },
       {
@@ -905,6 +939,7 @@ export class SupplierDetailComponent implements OnInit {
     return [
       { key: 'date',           label: t('SUPPLIERS.DETAIL.LEDGER.COL_DATE'),            type: 'text', sortable: true,
         sortAccessor: row => src(row).date },
+      { key: 'kind',           label: t('SUPPLIERS.DETAIL.LEDGER.FILTER_TYPE'),         type: 'text', sortable: true },
       { key: 'invoice',        label: t('SUPPLIERS.DETAIL.LEDGER.COL_INVOICE'),         type: 'text', sortable: true },
       { key: 'label',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_LABEL'),           type: 'text', sortable: true },
       { key: 'debit',          label: t('SUPPLIERS.DETAIL.LEDGER.COL_DEBIT'),           type: 'text', align: 'right', sortable: true,
@@ -931,12 +966,10 @@ export class SupplierDetailComponent implements OnInit {
       // Une écriture dont la facture n'est pas parmi les 200 chargées n'a pas de
       // catégorie connue : elle sort du résultat dès qu'une catégorie est demandée.
       if (category && !invoiceHasCategory(byId.get(r.costInvoiceId), category)) return false;
-      // « Soldé » = ni débit ni crédit : le règlement couvrait la facture au centime.
       const matchesType =
         !type ||
-        (type === 'CREDIT'  && r.credit != null) ||
-        (type === 'DEBIT'   && r.debit  != null) ||
-        (type === 'SETTLED' && r.credit == null && r.debit == null);
+        (type === 'CREDIT' && r.kind === 'INVOICE') ||
+        (type === 'DEBIT'  && r.kind === 'REGLEMENT');
       return matchesType && (!q || [r.label, this.invoiceName(r.costInvoiceId)]
         .filter(Boolean).join(' ').toLowerCase().includes(q));
     });
@@ -946,16 +979,18 @@ export class SupplierDetailComponent implements OnInit {
     Math.ceil(this.filteredLedgerRows().length / this.ledgerPageSize()));
 
   /**
-   * `id` doit rester l'identifiant du RÈGLEMENT et non l'index de la page : avec un
+   * `id` doit rester l'identifiant de l'ÉCRITURE et non l'index de la page : avec un
    * index, la première ligne de chaque page porterait `id: 0` et le suivi de `daf-data-table`
-   * confondrait deux lignes différentes d'une page à l'autre. `reglementId` est
-   * garanti par le back sur chaque écriture (une écriture = un règlement).
+   * confondrait deux lignes différentes d'une page à l'autre. `rowId` est garanti par le
+   * back sur chaque écriture (−id facture / id règlement, V116).
    */
   readonly ledgerRows = computed<TableRow[]>(() => {
+    const t = (k: string) => this.translate.instant(k);
     const all = this.filteredLedgerRows().map(r => ({
-      id:             r.reglementId,
+      id:             r.rowId,
       _source:        r,
       date:           this.formatDate(r.date),
+      kind:           t(r.kind === 'REGLEMENT' ? 'SUPPLIERS.DETAIL.LEDGER.KIND_REGLEMENT' : 'SUPPLIERS.DETAIL.LEDGER.KIND_INVOICE'),
       invoice:        this.invoiceName(r.costInvoiceId),
       label:          r.label ?? '—',
       debit:          this.fmtAmount(r.debit),
@@ -1011,7 +1046,7 @@ export class SupplierDetailComponent implements OnInit {
     const s = this.supplier();
     if (!s) return;
     this.exportSvc.download(
-      this.exportSvc.supplierLedger(s.id, this.filteredLedgerRows().map(r => r.reglementId)),
+      this.exportSvc.supplierLedger(s.id, this.filteredLedgerRows().map(r => r.rowId)),
       `Releve_${supplierCode(s).replace(/[^A-Za-z0-9-]+/g, '_')}.xlsx`, this.exporting);
   }
 

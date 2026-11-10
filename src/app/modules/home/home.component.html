@@ -18,7 +18,7 @@
     [subtitle]="'HOME.GREETING' | translate: { name: firstName() }" />
 
   <!-- KPI — daf-metric-card, une rangée qui ne casse pas (§1). -->
-  <section style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+  <section data-guide="home-kpis" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
     @for (k of kpiTiles(); track k.label) {
       <daf-metric-card
         style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
@@ -36,7 +36,7 @@
        jamais en grid : `flex-grow: 0` pour que la dernière ligne ne s'étire pas, et le
        `min-width` fait le repli à 3 puis 2 par ligne sans media query.
        ⚠️ Le `gap` de cette rangée et le calcul de SPAN_FLEX doivent rester d'accord. -->
-  <section style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+  <section data-guide="home-modules" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
     @for (m of moduleCards(); track m.id) {
       <daf-card
         [style.flex]="m.flex"
@@ -99,3 +99,7 @@
   </section>
 
 </daf-drawer>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Les étapes visent les
+     `data-guide` ci-dessus, l'onglet du drawer et la bulle des devises (sélecteurs, éléments de la lib). -->
+<app-page-guide storageKey="home" [steps]="guideSteps" />

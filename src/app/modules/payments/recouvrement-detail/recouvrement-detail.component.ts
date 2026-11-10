@@ -26,6 +26,24 @@ import { ListValueDto, localizedLabel } from '../../cost/cost.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { daysPastDue, formatDate, offsetLabel, retardVariant } from '../payments-display';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide du dossier — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.COLLECTION_DETAIL.${key}_TITLE`, textKey: `GUIDE.COLLECTION_DETAIL.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO',     'request_quote'),
+  step('HEADER',    'label',         'collection-header'),
+  step('IDENTITY',  'badge',         'collection-identity'),
+  step('ACTIONS',   'bolt',          'collection-actions'),
+  step('KPIS',      'monitoring',    'collection-kpis'),
+  step('TABS',      'tab',           'collection-tabs'),
+  step('REMINDERS', 'notifications', 'collection-panel', 'reminders'),
+  step('PAYMENTS',  'payments',      'collection-panel', 'payments'),
+  step('END',       'help'),
+];
 
 /** Tri de la colonne statut des relances : l'ordre du cycle d'une relance. */
 const REMINDER_STATE_RANK: Record<string, number> = { pending: 0, suspended: 1, sent: 2 };
@@ -71,6 +89,7 @@ interface KpiTile {
     PageComponent, PageHeaderComponent, SectionCardComponent, TabsComponent,
     MetricCardComponent, ButtonComponent, FormFieldComponent,
     DataTableComponent, DafCellDirective, SearchToolbarComponent, PaymentModalComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -107,6 +126,21 @@ export class RecouvrementDetailComponent implements OnInit {
 
   /** Adossé au paramètre d'URL — voir tabParam : survit au rechargement et au précédent. */
   activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'reminders');
+
+  readonly guideSteps = GUIDE_STEPS;
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
 
   // ═══ Dérivés métier ═══════════════════════════════════════════════════════
 

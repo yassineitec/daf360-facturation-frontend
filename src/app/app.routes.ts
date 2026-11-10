@@ -168,6 +168,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./modules/home/home.component').then(m => m.HomeComponent),
       },
+      {
+        // « Aide & guides » — open to every user, like the home page it documents. Each tab
+        // is filtered by the permissions of the page it describes (`GUIDE_PAGES`).
+        path: 'aide',
+        loadComponent: () =>
+          import('./modules/help/help.component').then(m => m.HelpComponent),
+      },
       { path: 'fournisseurs', redirectTo: 'suppliers', pathMatch: 'full' },
       { path: 'payments',     redirectTo: 'recouvrement', pathMatch: 'full' },
       { path: '', redirectTo: 'home', pathMatch: 'full' },

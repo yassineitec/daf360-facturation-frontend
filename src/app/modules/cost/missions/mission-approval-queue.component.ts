@@ -43,6 +43,22 @@ interface DetailRow {
  * card/table sections, a `ModalService` decision modal) so the two finance approval queues
  * read as one screen with two feeds rather than two unrelated pages.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.COST_MISSIONS.${key}_TITLE`, textKey: `GUIDE.COST_MISSIONS.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'flight_takeoff'),
+  step('KPIS', 'monitoring', 'missions-kpis'),
+  step('TOOLBAR', 'search', 'missions-toolbar'),
+  step('LIST', 'grid_view', 'missions-list'),
+  step('DECIDE', 'gavel', 'missions-list'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-mission-approval-queue',
   standalone: true,
@@ -50,11 +66,14 @@ interface DetailRow {
     TranslatePipe, PageComponent, PageHeaderComponent, MetricCardComponent,
     SearchToolbarComponent, FormFieldComponent, SectionCardComponent,
     MissionApprovalCardsSectionComponent, MissionApprovalTableSectionComponent,
+    PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './mission-approval-queue.component.html',
 })
 export class MissionApprovalQueueComponent implements OnInit {
+  readonly guideSteps = GUIDE_STEPS;
+
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(MissionApprovalTableSectionComponent);
 

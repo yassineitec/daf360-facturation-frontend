@@ -8,7 +8,7 @@
     [subtitle]="'FACTURATION.MISSIONS.SUBTITLE' | translate"
     [badges]="headerBadges()" />
 
-  <section class="grid grid-cols-3 gap-2 sm:gap-6">
+  <section data-guide="missions-kpis" class="grid grid-cols-3 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'FACTURATION.MISSIONS.KPI_PENDING' | translate"
       [value]="stats().pending"
@@ -26,7 +26,7 @@
 
   <!-- Search + a real filter panel (scope and urgency) + the view toggle. All three are
        client-side projections: the queue arrives whole in one call. -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="missions-toolbar"
     [placeholder]="'FACTURATION.MISSIONS.SEARCH_PLACEHOLDER' | translate"
     [value]="searchTerm()"
     [debounce]="200"
@@ -48,13 +48,13 @@
 
   <!-- Content sits free in the page — no outer container card (§1). -->
   @if (viewMode() === 'grid') {
-    <app-mission-approval-cards-section
+    <app-mission-approval-cards-section data-guide="missions-list"
       [items]="visibleItems()"
       [loading]="loading()"
       [emptyMessage]="emptyMessage()"
       (decide)="onDecide($event)" />
   } @else {
-    <app-mission-approval-table-section
+    <app-mission-approval-table-section data-guide="missions-list"
       [items]="visibleItems()"
       [loading]="loading()"
       [emptyMessage]="emptyMessage()"
@@ -172,3 +172,6 @@
     </div>
   }
 </ng-template>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="cost-missions" [steps]="guideSteps" />

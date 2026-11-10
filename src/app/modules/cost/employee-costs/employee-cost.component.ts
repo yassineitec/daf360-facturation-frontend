@@ -29,6 +29,24 @@ import { ExportService } from '../../../core/export.service';
 
 type ViewMode = 'list' | 'grid';
 
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guide de la page — `target` = un `data-guide` du gabarit. */
+const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.EMPLOYEE_COSTS.${key}_TITLE`, textKey: `GUIDE.EMPLOYEE_COSTS.${key}_TEXT`, target, tab,
+});
+const GUIDE_STEPS: GuideStep[] = [
+  step('INTRO', 'badge'),
+  step('KPIS', 'monitoring', 'ec-kpis'),
+  step('TOOLBAR', 'search', 'ec-toolbar'),
+  step('LIST', 'grid_view', 'ec-list'),
+  step('ACTIONS', 'bolt', 'ec-list'),
+  step('ADD', 'add', 'ec-add'),
+  step('EXPORT', 'download', 'ec-export'),
+  step('END', 'help'),
+];
+
 @Component({
   selector: 'app-employee-cost',
   standalone: true,
@@ -37,10 +55,13 @@ type ViewMode = 'list' | 'grid';
     FieldMessageComponent, FormFieldComponent, MultiDatePickerComponent, PageComponent, PageHeaderComponent,
     PaginationComponent, SearchToolbarComponent, SelectComponent, EmployeeCostTableSectionComponent,
     EmployeeCostCardsSectionComponent,
+    PageGuideComponent,
   ],
   templateUrl: './employee-cost.component.html',
 })
 export class EmployeeCostComponent implements OnInit {
+  readonly guideSteps = GUIDE_STEPS;
+
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(EmployeeCostTableSectionComponent);
 

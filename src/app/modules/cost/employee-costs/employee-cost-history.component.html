@@ -7,7 +7,7 @@
        breadcrumb markup/classes as PageHeaderComponent's own template, so it still
        looks and behaves like every other breadcrumb in the app (clickable crumb,
        chevron separator, current page non-interactive). -->
-  <div class="flex items-center justify-between gap-3">
+  <div data-guide="ech-header" class="flex items-center justify-between gap-3">
     <div class="flex items-center gap-3">
       <daf-avatar [data]="avatarData()" size="lg" />
       <nav [attr.aria-label]="'COST.EMPLOYEE_COST.HISTORY_BREADCRUMB_ARIA' | translate"
@@ -32,7 +32,7 @@
 
   <div class="flex flex-col gap-6">
 
-    <daf-search-toolbar
+    <daf-search-toolbar data-guide="ech-toolbar"
       [placeholder]="'COST.EMPLOYEE_COST.HISTORY_SEARCH_PLACEHOLDER' | translate"
       [value]="historySearch()"
       [debounce]="200"
@@ -60,7 +60,7 @@
            underneath, so an UPDATE that touched several fields at once reads as ONE
            event instead of several visually-unrelated rows (see the .ts file's class
            doc comment for why this is the default over a flat table). -->
-      <div class="flex flex-col gap-3">
+      <div data-guide="ech-list" class="flex flex-col gap-3">
         @for (ev of pagedEvents(); track $index) {
           <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md' }">
             <div class="flex items-center gap-2 text-[13px] font-semibold text-on-surface">
@@ -90,7 +90,7 @@
       <!-- Table view — one row per EVENT, "Coût"/"Coût de vente interne"/"Coût de vente
            externe" showing the resulting cost snapshot on every row (see TimelineEvent's
            own doc comment in the .ts file). All plain text columns, no custom cells. -->
-      <daf-data-table [columns]="auditColumns()" [rows]="tableRows()" [config]="tableConfig()"
+      <daf-data-table data-guide="ech-list" [columns]="auditColumns()" [rows]="tableRows()" [config]="tableConfig()"
         (sortChange)="onTableSort($event)" (resetClick)="onTableSort(null)" />
     }
 
@@ -112,3 +112,6 @@
   </div>
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="employee-cost-history" [steps]="guideSteps" />

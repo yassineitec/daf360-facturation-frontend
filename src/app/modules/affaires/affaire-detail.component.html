@@ -123,6 +123,7 @@
                et déborderait une colonne de 30 %. Aucun bouton projeté : ils sont en pied
                de la carte ci-dessous, ce qui supprime définitivement le retour à la ligne de
                la rangée titre/actions. -->
+          <div data-guide="affaire-header">
           <daf-page-header
             size="md"
             [title]="aff.intitule"
@@ -131,6 +132,7 @@
             [badges]="headerBadges()"
             [breadcrumbs]="breadcrumbs()"
             [breadcrumbLabel]="'AFFAIRES.DETAIL.BREADCRUMB_ARIA' | translate" />
+          </div>
 
           <!-- ══════════════════════════════════════════════════════════════════
                PANNEAU DE DÉTAILS — deux cartes empilées, « Détails » puis
@@ -161,7 +163,7 @@
                  états de survol de la lib — comme les autres cartes de la page.
                  Le `div` interne ne fait plus que la colonne de blocs. -->
             <daf-section-card>
-            <div class="dp-card">
+            <div class="dp-card" data-guide="affaire-details">
 
               <!-- 1. Client -->
               <!-- La barre « Progression facturation » (précédemment sa propre carte en bas
@@ -370,7 +372,7 @@
                  pendrait maintenant sous le bord haut de la sienne.
                  ══════════════════════════════════════════════════════════════ -->
             <daf-section-card>
-            <div class="flex flex-col gap-3 bg-surface-container p-6">
+            <div class="flex flex-col gap-3 bg-surface-container p-6" data-guide="affaire-actions">
 
               <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
                 {{ 'AFFAIRES.DETAIL.ACTIONS.QUICK_TITLE' | translate }}
@@ -478,7 +480,7 @@
              sur la plus haute. La rangée est une GRILLE `repeat(auto-fit,minmax(...,1fr))` :
              des colonnes en `1fr` sont égales par construction, là où `flex:1 1 0` peut être
              débordé par le `min-width` d'un item. Le repli reste sans media query. -->
-        <div class="kpi-row">
+        <div class="kpi-row" data-guide="affaire-kpis">
           @for (k of kpiTiles(); track k.label) {
             <daf-metric-card
               class="kpi-cell"
@@ -490,14 +492,16 @@
           }
         </div>
 
+        <div data-guide="affaire-tabs">
         <daf-tabs #tabsRef
           variant="underline"
           [tabs]="tabs()"
           [(active)]="activeTab"
           [tabsLabel]="'AFFAIRES.DETAIL.TABS_ARIA' | translate"
           idPrefix="affaire-detail" />
+        </div>
 
-        <div role="tabpanel"
+        <div role="tabpanel" data-guide="affaire-panel"
              [id]="tabsRef.panelId(activeTab())"
              [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
              class="flex flex-col gap-6">
@@ -514,7 +518,7 @@
                  daf-help-popover : l'en-tête de daf-section-card se placerait au-dessus des
                  puces, ou laisserait une ligne vide sans titre. -->
             <daf-section-card>
-              <div class="flex flex-col gap-4 p-6"
+              <div class="flex flex-col gap-4 p-6" data-guide="affaire-charts"
                    role="region" aria-roledescription="carousel"
                    [attr.aria-label]="'AFFAIRES.DETAIL.CHARTS.CAROUSEL' | translate"
                    (keydown)="onChartCarouselKey($event)">
@@ -523,15 +527,16 @@
                 <!-- Titre à gauche, puces au centre, Filtres + (i) à droite. -->
                 <div class="carousel-head">
                   <div class="carousel-title">
-                    <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">{{ chartSlides()[chartSlideIndex()].title }}</p>
+                    <p class="text-body-md font-bold uppercase tracking-wider text-on-surface">{{ activeChartSlide().title }}</p>
                     <p class="mt-1 text-body-sm text-on-surface-variant">{{ chartRangeLabel() }}</p>
                   </div>
-                  <div class="carousel-nav">
-                    <daf-chip-group
-                      [options]="chartSlideChips()"
-                      [config]="chartSlideChipConfig"
-                      [selected]="[chartSlide()]"
-                      (selectedChange)="selectChartSlide($event)" />
+                  <!-- Clic : ce graphique seul. Ctrl + clic : l'ajoute au graphique affiché (ou l'en retire). -->
+                  <div class="carousel-nav" role="group">
+                    @for (btn of chartSlideButtons(); track btn.id) {
+                      <button type="button" [class]="btn.classes" [attr.aria-pressed]="btn.active"
+                              [attr.title]="'AFFAIRES.DETAIL.CHARTS.SLIDE_MULTI_HINT' | translate"
+                              (click)="onChartSlideClick(btn.id, $event)">{{ btn.label }}</button>
+                    }
                   </div>
                   <div class="carousel-actions">
                     <daf-filter
@@ -609,7 +614,7 @@
 
                   <!-- Position annoncée aux lecteurs d'écran à chaque changement de diapositive. -->
                   <p class="sr-only" aria-live="polite">
-                    {{ 'AFFAIRES.DETAIL.CHARTS.SLIDE_POSITION' | translate: { index: chartSlideIndex() + 1, count: chartSlides().length, title: chartSlides()[chartSlideIndex()].title } }}
+                    {{ chartSlideAnnouncement() }}
                   </p>
                 }
               </div>
@@ -1006,3 +1011,8 @@
     }
   </div>
 </ng-template>
+
+<!-- Guide de la fiche, lancé depuis « Aide & guides » ou l'assistant. Chaque étape d'onglet
+     ouvre son onglet ; à la fermeture, on revient à l'onglet d'avant le guide. -->
+<app-page-guide storageKey="affaire-detail" [steps]="guideSteps()"
+                (tabChange)="onGuideTab($event)" (closed)="onGuideClosed()" />

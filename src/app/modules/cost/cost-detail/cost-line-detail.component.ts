@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { Observable, catchError, forkJoin, map, of } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   ButtonComponent, DafCellDirective, DataTableComponent, FilterComponent,
   MetricCardComponent, ModalService, PageComponent, PageHeaderComponent, PaginationComponent, SectionCardComponent,
@@ -24,6 +24,7 @@ import {
   CostInvoiceAttachmentDto, CostInvoiceDto, SupplierCostSummaryDto,
   SupplierLedgerDto, SupplierLedgerRowDto, costCategoryDisplay,
   CostInvoiceChangeDto, CostInvoiceChangeEntry, FACT_EDIT_VALIDATED_COST, VALIDATED_EDITABLE_STATUSES,
+  formatAmount,
 } from '../cost.model';
 import {
   APPROVAL_BADGE_VARIANT, DECISION_BADGE_VARIANT, DECISION_ICON, STATUS_BADGE_VARIANT,
@@ -88,6 +89,36 @@ const SUPPLIER_INVOICES_DEFAULT_SIZE = 10;
  * Squelette identique à `recouvrement-detail.component.ts` (UI-PLAYBOOK) : deux
  * colonnes en **flex inline**, jamais `grid` ni classes de point de rupture.
  */
+import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../../shared/guide/page-guide.types';
+
+/** Guides de la page, un par mode — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
+const g = (page: string, key: string, icon: string, target?: string, tab?: string): GuideStep => ({
+  icon, titleKey: `GUIDE.${page}.${key}_TITLE`, textKey: `GUIDE.${page}.${key}_TEXT`, target, tab,
+});
+const LINE_GUIDE: GuideStep[] = [
+  g('COST_DETAIL', 'INTRO',       'request_quote'),
+  g('COST_DETAIL', 'HEADER',      'label',           'cd-header'),
+  g('COST_DETAIL', 'IDENTITY',    'badge',           'cd-identity'),
+  g('COST_DETAIL', 'KPIS',        'monitoring',      'cd-kpis'),
+  g('COST_DETAIL', 'TABS',        'tab',             'cd-tabs'),
+  g('COST_DETAIL', 'INFO',        'list',            'cd-panel', 'info'),
+  g('COST_DETAIL', 'APPROVALS',   'fact_check',      'cd-panel', 'approvals'),
+  g('COST_DETAIL', 'ATTACHMENTS', 'attach_file',     'cd-panel', 'attachments'),
+  g('COST_DETAIL', 'CHANGES',     'history',         'cd-panel', 'changes'),
+  g('COST_DETAIL', 'REMINDERS',   'notifications',   'cd-panel', 'reminders'),
+  g('COST_DETAIL', 'LEDGER',      'account_balance', 'cd-panel', 'reglement'),
+  g('COST_DETAIL', 'END',         'help'),
+];
+const supplierGuide = (intro: 'COST_SUPPLIER' | 'COST_UNASSIGNED'): GuideStep[] => [
+  g(intro,           'INTRO',    'store'),
+  g('COST_SUPPLIER', 'IDENTITY', 'badge',           'cd-identity'),
+  g('COST_SUPPLIER', 'KPIS',     'monitoring',      'cd-kpis'),
+  g('COST_SUPPLIER', 'INVOICES', 'list',            'cd-panel', 'info'),
+  g('COST_SUPPLIER', 'LEDGER',   'account_balance', 'cd-panel', 'reglement'),
+  g('COST_DETAIL',   'END',      'help'),
+];
+
 @Component({
   selector: 'app-cost-line-detail',
   imports: [
@@ -96,6 +127,7 @@ const SUPPLIER_INVOICES_DEFAULT_SIZE = 10;
     MetricCardComponent, ButtonComponent, StatusBadgeComponent, FilterComponent,
     DataTableComponent, DafCellDirective, TableActionComponent, SearchToolbarComponent, PaginationComponent,
     CostLinesTableSectionComponent, ReglementModalComponent, CostRemindersPanelComponent,
+    PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -181,6 +213,24 @@ export class CostLineDetailComponent implements OnInit {
   /** Adossé au paramètre d'URL — survit au rechargement et au bouton précédent. */
   activeTab = tabParam(computed(() => this.tabs().map(t => t.id)), 'info');
 
+  /** Un guide par mode : une facture, les factures d'un fournisseur, ou celles sans fournisseur. */
+  readonly guideKey = this.mode === 'line' ? 'cost-detail' : this.mode === 'supplier' ? 'cost-supplier' : 'cost-unassigned';
+  readonly guideSteps = this.mode === 'line' ? LINE_GUIDE
+    : supplierGuide(this.mode === 'supplier' ? 'COST_SUPPLIER' : 'COST_UNASSIGNED');
+
+  /** L'onglet de l'utilisateur, rendu à la fermeture du guide (qui ouvre ceux qu'il explique). */
+  private tabBeforeGuide: string | null = null;
+
+  onGuideTab(tab: string): void {
+    this.tabBeforeGuide ??= this.activeTab();
+    this.activeTab.set(tab);
+  }
+
+  onGuideClosed(): void {
+    if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
+    this.tabBeforeGuide = null;
+  }
+
   // ═══ Résolution approbateur / permissions ═════════════════════════════════
 
   /** Même mécanisme que affaire-ressources-tab.component.ts — ne pas en inventer un second. */
@@ -236,6 +286,17 @@ export class CostLineDetailComponent implements OnInit {
     const inv = this.invoice();
     return !!inv && canReglementInvoice(inv);
   });
+
+  /** 'line' mode: the « Règlements » block — once the invoice is validated (payable or paid). */
+  readonly showPayments = computed(() => {
+    const s = this.invoice()?.status;
+    return s === 'APPROVED' || s === 'PARTIALLY_PAID' || s === 'POSTED';
+  });
+
+  /** An amount in this invoice's currency. */
+  money(v: number | null | undefined): string {
+    return v == null ? '—' : formatAmount(v, this.invoice()?.currency || 'EUR');
+  }
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
@@ -656,6 +717,7 @@ export class CostLineDetailComponent implements OnInit {
       (row: TableRow) => (row['_source'] as SupplierLedgerRowDto)[field] as string | number | null;
     const cols: TableColumn[] = [
       { key: 'date',            label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text', sortable: true, sortAccessor: raw('date') },
+      { key: 'kind',            label: t('COST.DETAIL.LEDGER.FILTER_TYPE'),         type: 'text', sortable: true },
       { key: 'label',           label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text', sortable: true },
       { key: 'netAmount',       label: t('COST.DETAIL.LEDGER.COL_NET_AMOUNT'),      type: 'text', align: 'right', sortable: true, sortAccessor: raw('netAmountLocal') },
       { key: 'fodec',           label: t('COST.DETAIL.LEDGER.COL_FODEC'),           type: 'text', align: 'right', sortable: true, sortAccessor: raw('fodecAmount') },
@@ -688,7 +750,6 @@ export class CostLineDetailComponent implements OnInit {
         options: [
           { value: 'CREDIT',  label: t('COST.DETAIL.LEDGER.TYPE_CREDIT') },
           { value: 'DEBIT',   label: t('COST.DETAIL.LEDGER.TYPE_DEBIT') },
-          { value: 'SETTLED', label: t('COST.DETAIL.LEDGER.TYPE_SETTLED') },
         ],
       },
       {
@@ -745,20 +806,24 @@ export class CostLineDetailComponent implements OnInit {
         if (!day || day < from || day > to) return false;
       }
       if (invoiceFilter && String(r.costInvoiceId) !== invoiceFilter) return false;
-      if (min != null && !isNaN(min) && (r.grossAmountLocal == null || r.grossAmountLocal < min)) return false;
+      const amount = r.grossAmountLocal ?? r.montantPaye ?? null;   // invoice row: TTC; règlement row: paid
+      if (min != null && !isNaN(min) && (amount == null || amount < min)) return false;
       if (!type) return true;
-      if (type === 'CREDIT')  return r.credit != null;
-      if (type === 'DEBIT')   return r.debit  != null;
-      return r.credit == null && r.debit == null; // 'SETTLED'
+      // Classic statement (V116): invoices in crédit, règlements in débit.
+      if (type === 'CREDIT')  return r.kind === 'INVOICE';
+      if (type === 'DEBIT')   return r.kind === 'REGLEMENT';
+      return true;
     });
   });
 
   readonly ledgerRows = computed<TableRow[]>(() => {
     this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
     return this.filteredLedgerRawRows().map(r => ({
-      id:             r.reglementId,
+      id:             r.rowId,
       _source:        r,
       date:           formatDate(r.date),
+      kind:           t(r.kind === 'REGLEMENT' ? 'COST.DETAIL.LEDGER.KIND_REGLEMENT' : 'COST.DETAIL.LEDGER.KIND_INVOICE'),
       label:          r.label ?? '—',
       netAmount:      this.fmtAmount(r.netAmountLocal),
       fodec:          this.fmtAmount(r.fodecAmount),
@@ -774,6 +839,7 @@ export class CostLineDetailComponent implements OnInit {
       soldeDebiteur:  this.fmtAmount(r.soldeDebiteur),
       soldeCrediteur: this.fmtAmount(r.soldeCrediteur),
       _reglementId:   r.reglementId,
+      _rowId:         r.rowId,
       _costInvoiceId: r.costInvoiceId,
     }));
   });
@@ -811,15 +877,15 @@ export class CostLineDetailComponent implements OnInit {
     this.router.navigate(['/finance/cost', id]);
   }
 
-  /** Export généré par le backend (CostExportController) : les règlements affichés
+  /** Export généré par le backend (CostExportController) : les écritures affichées
    * (filtres + recherche appliqués), dans l'ordre de l'écran — le serveur relit le relevé
-   * du fournisseur et n'en garde que ces lignes. */
+   * du fournisseur et n'en garde que ces lignes (par rowId). */
   exportLedgerExcel(): void {
     const supplier = this.ledger()?.supplier;
     const rows = this.filteredLedgerRows();
     if (!supplier || !rows.length) return;
     this.exportSvc.download(
-      this.exportSvc.supplierLedger(supplier.id, rows.map(r => r['_reglementId'] as number)),
+      this.exportSvc.supplierLedger(supplier.id, rows.map(r => r['_rowId'] as number)),
       `Releve_${(supplier.code || 'S-' + supplier.id).replace(/[^A-Za-z0-9-]+/g, '_')}.xlsx`,
       this.exportingLedger);
   }
@@ -1078,12 +1144,26 @@ export class CostLineDetailComponent implements OnInit {
     const paysId = this.effectivePaysId();
     const supplierId = this.currentSupplierId();
     if (!paysId || !supplierId) return;
-    this.svc.getCostInvoices({ paysId, status: 'APPROVED', supplierId, size: SUPPLIER_MODE_PAGE_SIZE }).subscribe({
-      next: page => this.reglementModal.open(
-        { editing: null, payableInvoices: page.content.filter(i => !i.reglement), paysId }, () => this.reloadCurrentMode()),
+    forkJoin([
+      this.loadAllInvoices(paysId, supplierId, 'APPROVED'),
+      this.loadAllInvoices(paysId, supplierId, 'PARTIALLY_PAID'),
+    ]).subscribe({
+      next: ([approved, partial]) => this.reglementModal.open(
+        { editing: null, payableInvoices: [...partial, ...approved].filter(canReglementInvoice), paysId },
+        () => this.reloadCurrentMode()),
       error: () => this.reglementModal.open(
         { editing: null, payableInvoices: [], paysId }, () => this.reloadCurrentMode()),
     });
+  }
+
+  /** Every invoice of the supplier in one status — all pages, so the picker never misses one. */
+  private loadAllInvoices(paysId: number, supplierId: number, status: string): Observable<CostInvoiceDto[]> {
+    const page = (n: number) =>
+      this.svc.getCostInvoices({ paysId, status, supplierId, page: n, size: SUPPLIER_MODE_PAGE_SIZE });
+    return page(0).pipe(switchMap(first => first.totalPages <= 1
+      ? of(first.content)
+      : forkJoin(Array.from({ length: first.totalPages - 1 }, (_, i) => page(i + 1))).pipe(
+          map(rest => [first, ...rest].flatMap(p => p.content)))));
   }
 
   /** List shortcut: the caller already has the exact invoice. */
@@ -1109,6 +1189,8 @@ export class CostLineDetailComponent implements OnInit {
           editing:               reglement,
           costInvoiceId:         reglement.costInvoiceId,
           expectedAmount:        inv ? invoicePayableAmount(inv) : null,
+          // This règlement may reach the remainder plus its own amount (the server checks too).
+          maxAmount:             inv ? (inv.amountRemaining ?? 0) + reglement.montantPaye : null,
           invoiceReference:      inv?.reference ?? null,
           supplierInvoiceNumber: inv?.supplierInvoiceNumber ?? null,
           currency:              inv?.currency ?? null,

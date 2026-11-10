@@ -15,14 +15,14 @@ export function canEditInvoice(inv: Pick<CostInvoiceDto, 'status'>): boolean {
 }
 export const canSubmitInvoice = canEditInvoice;
 
-/** APPROVED and not paid yet — the backend refuses a second règlement on the same invoice. */
-export function canReglementInvoice(inv: Pick<CostInvoiceDto, 'status' | 'reglement'>): boolean {
-  return inv.status === 'APPROVED' && !inv.reglement;
+/** APPROVED (nothing paid) or PARTIALLY_PAID, with something still owed (V116). */
+export function canReglementInvoice(inv: Pick<CostInvoiceDto, 'status' | 'amountRemaining'>): boolean {
+  return (inv.status === 'APPROVED' || inv.status === 'PARTIALLY_PAID') && (inv.amountRemaining ?? 0) > 0;
 }
 
-/** What is paid to the supplier: TTC minus the retenue à la source. */
+/** What a new règlement may pay: net à payer (TTC − retenue à la source) minus what is already paid. */
 export function invoicePayableAmount(inv: CostInvoiceDto): number {
-  return inv.netToPay ?? (inv.grossAmountLocal - (inv.rsAmount ?? 0));
+  return inv.amountRemaining ?? inv.netToPay ?? (inv.grossAmountLocal - (inv.rsAmount ?? 0));
 }
 
 /** Distinct categories of the invoice's lines, in line order, localized. */

@@ -18,6 +18,8 @@ import { InvoiceListItem, INVOICE_STATUT_CONFIG } from '../invoicing/invoice.mod
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 import { HOME_MODULES } from '../finance-modules';
 import type { FinanceModuleDef } from '../finance-modules';
+import { PageGuideComponent } from '../../shared/guide/page-guide.component';
+import type { GuideStep } from '../../shared/guide/page-guide.types';
 
 export interface ActivityItem {
   icon:      string;
@@ -76,6 +78,23 @@ const TONE_ICON: Record<FinanceModuleDef['tone'], { iconColor: string; iconBg: s
   danger:    { iconColor: 'text-danger',    iconBg: 'bg-danger/10'    },
 };
 
+/**
+ * Guide de la page. `target` = un `data-guide` du gabarit (ou de « Aide & guides » dans la
+ * barre) ; `selector` = un élément dessiné par la lib, qui ne peut pas porter d'attribut.
+ * Une cible absente à cette largeur (la barre sur mobile) donne une étape centrée.
+ */
+const GUIDE_STEPS: GuideStep[] = [
+  { icon: 'waving_hand',       titleKey: 'GUIDE.HOME.WELCOME_TITLE',  textKey: 'GUIDE.HOME.WELCOME_TEXT' },
+  { icon: 'monitoring',        titleKey: 'GUIDE.HOME.KPIS_TITLE',     textKey: 'GUIDE.HOME.KPIS_TEXT',     target: 'home-kpis' },
+  { icon: 'apps',              titleKey: 'GUIDE.HOME.MODULES_TITLE',  textKey: 'GUIDE.HOME.MODULES_TEXT',  target: 'home-modules' },
+  { icon: 'history',           titleKey: 'GUIDE.HOME.ACTIVITY_TITLE', textKey: 'GUIDE.HOME.ACTIVITY_TEXT',
+    selector: 'daf-drawer button[aria-controls]' },
+  { icon: 'currency_exchange', titleKey: 'GUIDE.HOME.CURRENCY_TITLE', textKey: 'GUIDE.HOME.CURRENCY_TEXT',
+    // The sidebar row on desktop, the bubble on mobile: whichever is displayed.
+    selector: '[data-guide="currency-switch"], daf-radial-menu button[aria-haspopup]' },
+  { icon: 'help',              titleKey: 'GUIDE.HOME.HELP_TITLE',     textKey: 'GUIDE.HOME.HELP_TEXT',     target: 'help-center' },
+];
+
 /** Statut de facture → icône + teinte de la ligne d'activité. */
 const ACTIVITY_CONFIG: Record<string, { icon: string; tone: string }> = {
   PAID:           { icon: 'check_circle',    tone: 'text-success' },
@@ -97,7 +116,7 @@ const ACTIVITY_CONFIG: Record<string, { icon: string; tone: string }> = {
   imports: [
     TranslatePipe,
     PageComponent, PageHeaderComponent, MetricCardComponent, CardComponent,
-    DrawerComponent, SkeletonComponent, ButtonComponent,
+    DrawerComponent, SkeletonComponent, ButtonComponent, PageGuideComponent,
   ],
   providers: [DisplayCurrencyPipe],
   templateUrl: './home.component.html',
@@ -127,6 +146,8 @@ export class HomeComponent implements OnInit {
   firstLoad = signal(true);
 
   activityDrawerOpen = signal(false);
+
+  readonly guideSteps = GUIDE_STEPS;
 
   readonly firstName = computed(() => (this.currentUser()?.fullName ?? '').split(' ')[0]);
 

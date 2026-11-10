@@ -4,7 +4,7 @@
     [title]="'COST.APPROVAL_QUEUE.TITLE' | translate"
     [subtitle]="'COST.APPROVAL_QUEUE.SUBTITLE' | translate">
     <ng-container pageActions>
-      <daf-button
+      <daf-button data-guide="cost-approval-new"
         [options]="{ variant: 'teal', label: 'COST.APPROVAL_QUEUE.FAB' | translate, iconStart: 'add' }"
         (onClick)="navigateToNew()" />
     </ng-container>
@@ -13,7 +13,7 @@
 
   <!-- Two tiles, both counted from the queues actually loaded. The third tile
        ("Performance d'approbation") is gone — see the component. -->
-  <section class="grid grid-cols-2 gap-2 sm:gap-6">
+  <section data-guide="cost-approval-kpis" class="grid grid-cols-2 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'COST.APPROVAL_QUEUE.KPI_PENDING' | translate"
       [value]="pendingCount()"
@@ -27,7 +27,7 @@
 
   <!-- Search + a real filter panel (type and priority) + view toggle. Both are
        client-side: each queue arrives whole in one call. -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="cost-approval-toolbar"
     [placeholder]="'COST.APPROVAL_QUEUE.SEARCH_PLACEHOLDER' | translate"
     [value]="searchTerm()"
     [debounce]="200"
@@ -49,14 +49,14 @@
 
   <!-- Content sits free in the page — no outer container card -->
   @if (viewMode() === 'grid') {
-    <app-approval-cards-section
+    <app-approval-cards-section data-guide="cost-approval-list"
       [items]="visibleItems()"
       [loading]="isLoading() || hiringLoading() || advancesLoading()"
       [canApproveCost]="canApproveCost()"
       [emptyMessage]="'COST.APPROVAL_QUEUE.EMPTY' | translate"
       (decide)="onDecide($event)" />
   } @else {
-    <app-approval-table-section
+    <app-approval-table-section data-guide="cost-approval-list"
       [items]="visibleItems()"
       [loading]="isLoading() || hiringLoading() || advancesLoading()"
       [canApproveCost]="canApproveCost()"
@@ -246,3 +246,5 @@
   </div>
 </ng-template>
 
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="cost-approval" [steps]="guideSteps" />

@@ -8,7 +8,7 @@
 <daf-page [kpis]="0" [breadcrumbs]="true" [loading]="isPageLoading()"
           [loadingLabel]="'COST.DETAIL.LOADING' | translate">
 
-  <daf-page-header
+  <daf-page-header data-guide="costform-header"
     [title]="pageTitle()"
     [subtitle]="pageSubtitle()"
     [badges]="headerBadges()"
@@ -44,7 +44,7 @@
         <!-- SECTION 1 — Facture fournisseur ───────────────────────────────────
              `section-card--overflow` : l'autocomplétion fournisseur est une liste en
              `position:absolute`, que l'`overflow-hidden` de daf-card rognerait. -->
-        <daf-card class="block section-card--overflow" [options]="sectionCard">
+        <daf-card class="block section-card--overflow" data-guide="costform-invoice" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#006b5812;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -146,7 +146,7 @@
         </daf-card>
 
         <!-- SECTION 2 — Lignes de la facture ─────────────────────────────────── -->
-        <daf-card class="block" [options]="sectionCard">
+        <daf-card class="block" data-guide="costform-lines" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#fef3c720;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -305,7 +305,7 @@
         </daf-card>
 
         <!-- SECTION 3 — Taxes de la facture et totaux ─────────────────────────── -->
-        <daf-card class="block" [options]="sectionCard">
+        <daf-card class="block" data-guide="costform-taxes" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#dbeafe20;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -446,7 +446,7 @@
         </daf-card>
 
         <!-- SECTION 4 — Notes et pièces jointes ───────────────────────────────── -->
-        <daf-card class="block" [options]="sectionCard">
+        <daf-card class="block" data-guide="costform-attach" [options]="sectionCard">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
             <div style="width:40px;height:40px;border-radius:12px;background:#f8fafc;
                         display:flex;align-items:center;justify-content:center;flex-shrink:0;
@@ -535,7 +535,7 @@
         </div>
 
         <!-- Circuit d'approbation (TTC de la facture, toutes ses catégories) -->
-        <div style="background:white;border-radius:1rem;border:1px solid #f0f4f8;overflow:hidden;
+        <div data-guide="costform-circuit" style="background:white;border-radius:1rem;border:1px solid #f0f4f8;overflow:hidden;
                     box-shadow:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03)">
           <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;
                       border-bottom:1px solid #f0f4f8;background:#fafbfc">
@@ -626,7 +626,7 @@
   }
 
   <!-- Barre d'actions — Annuler · rappel des champs obligatoires · Enregistrer brouillon / Soumettre -->
-  <daf-card class="action-bar" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
+  <daf-card class="action-bar" data-guide="costform-actions" [options]="{ variant: 'floating', radius: 'lg', padding: 'sm' }">
     <div class="action-bar__inner">
 
       <div class="action-bar__side">
@@ -664,3 +664,6 @@
   </daf-card>
 
 </daf-page>
+
+<!-- Guide de la page : `cost-new` en création, `cost-edit` en modification. -->
+<app-page-guide [storageKey]="guideKey()" [steps]="guideSteps()" />

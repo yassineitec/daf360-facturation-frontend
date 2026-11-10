@@ -3,13 +3,13 @@
   <daf-page-header
     [title]="'INVOICING.LIST.TITLE' | translate"
     [subtitle]="'INVOICING.LIST.SUBTITLE' | translate">
-    <daf-button pageActions
+    <daf-button pageActions data-guide="invoices-new"
       [options]="{ variant: 'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="navigateToNew()" />
   </daf-page-header>
 
   <!-- KPIs — one row, never wraps. Every amount sums the page on screen. -->
-  <section class="grid grid-cols-4 gap-2 sm:gap-6">
+  <section data-guide="invoices-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
     <daf-metric-card
       [label]="'INVOICING.LIST.KPI.TOTAL' | translate"
       [value]="amountTotal() | displayCurrency : 'EUR'"
@@ -36,7 +36,7 @@
   </section>
 
   <!-- Search + filters (statut and the date range live inside the filter panel) -->
-  <daf-search-toolbar
+  <daf-search-toolbar data-guide="invoices-toolbar"
     [placeholder]="'INVOICING.LIST.SEARCH' | translate"
     [value]="searchText()"
     [debounce]="300"
@@ -59,7 +59,7 @@
   <!-- Content sits free in the page — no outer container card. Both views expose the
        same five outputs, so neither can offer an action the other doesn't. -->
   @if (viewMode() === 'grid') {
-    <app-invoices-cards-section
+    <app-invoices-cards-section data-guide="invoices-list"
       [invoices]="invoices()"
       [loading]="loading()"
       [skeletonCount]="pageSize()"
@@ -70,7 +70,7 @@
       (markSent)="quickMarkSent($event)"
       (recordPayment)="openPaymentModal($event)" />
   } @else {
-    <app-invoices-table-section
+    <app-invoices-table-section data-guide="invoices-list"
       [invoices]="invoices()"
       [loading]="loading()"
       [pageSize]="pageSize()"
@@ -98,6 +98,10 @@
     (pageSizeChange)="onPageSize($event)" />
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». Ses étapes
+     visent les data-guide ci-dessus ; « invoices-list » est sur les deux vues, seule la visible compte. -->
+<app-page-guide storageKey="invoices" [steps]="guideSteps" />
 
 <!-- Modals live at the page root, outside daf-page: they are position: fixed and a
      glass card ancestor would become their containing block (UI-PLAYBOOK §10e). -->

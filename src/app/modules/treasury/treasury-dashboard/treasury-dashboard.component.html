@@ -17,9 +17,11 @@
          une vue embarquée, où <ng-content select="[pageActions]"> ne peut plus le
          trouver et le bouton se rendrait dans le corps de la page (§10f). -->
     <ng-container pageActions>
-      @for (h of horizons; track h) {
-        <daf-button [options]="horizonOptions(h)" (onClick)="setHorizon(h)" />
-      }
+      <div class="flex items-center gap-2" data-guide="treasury-horizon">
+        @for (h of horizons; track h) {
+          <daf-button [options]="horizonOptions(h)" (onClick)="setHorizon(h)" />
+        }
+      </div>
     </ng-container>
   </daf-page-header>
 
@@ -33,7 +35,7 @@
   @if (summary(); as s) {
 
     <!-- KPIs — une ligne, jamais de retour. -->
-    <section class="grid grid-cols-4 gap-2 sm:gap-6">
+    <section data-guide="treasury-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
       @for (k of kpiTiles(); track k.label) {
         <daf-metric-card
           [label]="k.label | translate"
@@ -56,7 +58,7 @@
     <!-- ── Répartition dans le temps ──────────────────────────────────────
          `helpTrigger="hover"` : ces deux cartes sont en lecture seule, aucun champ à
          traverser, donc pas de glyphe `(i)` à ajouter — même traitement que les tuiles. -->
-    <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+    <div data-guide="treasury-charts" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
 
       <daf-section-card style="flex:1 1 380px; min-width:0"
                         helpTrigger="hover"
@@ -99,7 +101,7 @@
       (valueChange)="bucketSearch.set($event)"
       [table]="bucketTable" />
 
-    <daf-data-table #bucketTable
+    <daf-data-table #bucketTable data-guide="treasury-table"
       [columns]="bucketColumns()"
       [rows]="filteredBucketRows()"
       [config]="bucketConfig()">
@@ -150,7 +152,7 @@
          second conteneur de défilement. Le titre passe par `config.title` — c'est le
          mécanisme prévu par la lib, et le `<h3>` qu'elle rend ne dispute pas son `h1`
          au `daf-page-header`. Le div restant ne porte que le flex, aucune chrome. -->
-    <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start">
+    <div data-guide="treasury-flows" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start">
 
       <div style="flex:1 1 380px; min-width:0">
         <daf-search-toolbar class="mb-4 block"
@@ -266,7 +268,7 @@
 
     <!-- Les limites du modèle, écrites sur la page plutôt que laissées à découvrir :
          un prévisionnel qu'on croit être un solde est pire qu'une page absente. -->
-    <div class="flex items-start gap-3 rounded-xl bg-surface-container px-5 py-4 text-body-sm text-on-surface-variant">
+    <div data-guide="treasury-limits" class="flex items-start gap-3 rounded-xl bg-surface-container px-5 py-4 text-body-sm text-on-surface-variant">
       <span class="material-symbols-outlined text-[18px]">info</span>
       <p>
         {{ 'TREASURY.DISCLAIMER' | translate : {
@@ -280,3 +282,6 @@
   }
 
 </daf-page>
+
+<!-- Guide de la page, lancé par « Aide & guides » ou la bulle « Première visite ? ». -->
+<app-page-guide storageKey="treasury" [steps]="guideSteps" />
