@@ -39,6 +39,7 @@ import { CostRemindersPanelComponent } from './cost-reminders-panel.component';
 import { canEditInvoice, canReglementInvoice, invoicePayableAmount } from '../tabs/cost-invoice-display';
 import { UserStore } from '../../../core/user.store';
 import { ExportService } from '../../../core/export.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -104,6 +105,7 @@ export class CostLineDetailComponent implements OnInit {
   private readonly svc         = inject(CostService);
   private readonly affaireSvc  = inject(AffaireService);
   private readonly clientSvc   = inject(ClientService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly supplierSvc = inject(SupplierService);
   private readonly translate   = inject(TranslateService);
   private readonly currency    = inject(DisplayCurrencyPipe);
@@ -348,7 +350,7 @@ export class CostLineDetailComponent implements OnInit {
     }
     const inv = this.invoice();
     if (!inv) return [];
-    const cur = inv.currency ?? 'EUR';
+    const cur = inv.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR';
     const tiles: KpiTile[] = [
       {
         label: 'COST.DETAIL.KPI.NET', value: this.currency.transform(inv.netAmountLocal, cur),
@@ -408,7 +410,7 @@ export class CostLineDetailComponent implements OnInit {
   // ── Tab 1, mode 'line' : lignes de la facture ──────────────────────────────
 
   private fmtCur(v: number | null | undefined): string {
-    return this.currency.transform(v ?? null, this.invoice()?.currency ?? 'EUR');
+    return this.currency.transform(v ?? null, this.invoice()?.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR');
   }
 
   private fmtPct(fraction: number | null | undefined): string {

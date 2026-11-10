@@ -24,6 +24,7 @@ import { ClientContactService }   from '../contacts/client-contact.service';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { ToastService } from '../../../core/toast.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 
 /**
  * Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n.
@@ -73,6 +74,7 @@ export class ClientDetailComponent implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly contactSvc = inject(ClientContactService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly toast      = inject(ToastService);
 
 
@@ -130,7 +132,8 @@ export class ClientDetailComponent implements OnInit {
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
-  private readonly devise = computed(() => this.client()?.defaultCurrency || 'EUR');
+  private readonly devise = computed(() =>
+    this.client()?.defaultCurrency || this.currencyContext.defaultCurrency() || 'EUR');
 
   readonly headerSubtitle = computed(() => {
     const c = this.client();

@@ -4,6 +4,7 @@ import { SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { BodyPortalDirective } from '../../../shared/body-portal.directive';
 import { SubcontractingService } from '../../subcontracting/subcontracting.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import {
   OSTDto, CoutSTDto, SousTraitantDto,
@@ -21,10 +22,11 @@ import {
 export class AffaireOstComponent implements OnInit {
   affaireId     = input.required<number>();
   paysId        = input.required<number>();
-  devise        = input<string>('EUR');
+  devise        = input<string>(inject(CurrencyContextService).defaultCurrency() ?? 'EUR');
   affaireStatut = input<string>('');
 
   private readonly svc = inject(SubcontractingService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   // daf-select options for the sous-traitant picker.
   readonly stOptions = computed<SelectOption[]>(() =>
@@ -44,7 +46,10 @@ export class AffaireOstComponent implements OnInit {
   editOstTarget = signal<OSTDto | null>(null);
   stList        = signal<SousTraitantDto[]>([]);
   stLoading     = signal(false);
-  ostForm       = { sousTraitantId: 0, perimetre: '', montantBudget: 0, devise: 'EUR', alerteDepassementPct: 10 };
+  // Unreachable in practice -- openCreateOst() always resets devise from this.devise() before
+  // the modal opens -- but kept country-neutral rather than a hardcoded literal regardless.
+  ostForm       = { sousTraitantId: 0, perimetre: '', montantBudget: 0,
+                     devise: inject(CurrencyContextService).defaultCurrency() ?? 'EUR', alerteDepassementPct: 10 };
   ostSaving     = signal(false);
   ostError      = signal<string | null>(null);
 
@@ -61,7 +66,9 @@ export class AffaireOstComponent implements OnInit {
   coutsList    = signal<CoutSTDto[]>([]);
   coutsLoading = signal(false);
   showAddCout  = signal(false);
-  coutForm     = { montant: 0, dateCout: '', devise: 'EUR', description: '' };
+  // Unreachable in practice -- openAddCout() (below) always resets devise from the parent
+  // OST's own devise before the drawer opens.
+  coutForm     = { montant: 0, dateCout: '', devise: inject(CurrencyContextService).defaultCurrency() ?? 'EUR', description: '' };
   coutSaving   = signal(false);
   coutError    = signal<string | null>(null);
 

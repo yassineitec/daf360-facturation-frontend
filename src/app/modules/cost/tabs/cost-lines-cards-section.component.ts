@@ -5,6 +5,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { CostInvoiceDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import {
   STATUS_ENTITY_STATUS, approvalLevelKey, formatDate, initials, statusKey,
 } from '../cost-display';
@@ -56,6 +57,7 @@ import {
 export class CostLinesCardsSectionComponent {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   invoices      = input.required<CostInvoiceDto[]>();
   loading       = input(false);
@@ -96,11 +98,11 @@ export class CostLinesCardsSectionComponent {
           },
           metricsColumns: 2,
           metrics: [
-            { label: t('COST.LINES.COL_TTC'),          value: this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'EUR') },
+            { label: t('COST.LINES.COL_TTC'),          value: this.currency.transform(inv.grossAmountLocal, inv.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR') },
             { label: t('COST.LINES.COL_EUR'),          value: this.currency.transform(inv.grossAmountEur, 'EUR') },
             { label: t('COST.LINES.COL_INVOICE_DATE'), value: formatDate(inv.invoiceDate) },
             { label: t('COST.LINES.COL_LINES'),        value: String(inv.lines?.length ?? 0) },
-            { label: t('COST.LINES.COL_NET_AMOUNT'),   value: this.currency.transform(inv.netAmountLocal, inv.currency ?? 'EUR') },
+            { label: t('COST.LINES.COL_NET_AMOUNT'),   value: this.currency.transform(inv.netAmountLocal, inv.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR') },
             { label: t('COST.LINES.COL_APPROVAL'),     value: levelKey ? t(levelKey) : '—' },
           ],
           actions: this.actionsFor(inv, t),

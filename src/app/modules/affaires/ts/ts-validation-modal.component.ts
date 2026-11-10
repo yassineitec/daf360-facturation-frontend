@@ -1,7 +1,8 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BodyPortalDirective } from '../../../shared/body-portal.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 
 export interface ValidationConfig {
   tsId:     number;
@@ -66,6 +67,8 @@ export interface ValidationConfig {
   styleUrl: './ts-validation-modal.component.scss',
 })
 export class TsValidationModalComponent {
+  private readonly currencyContext = inject(CurrencyContextService);
+
   config    = input.required<ValidationConfig>();
   confirmed = output<string | null>();
   cancelled = output<void>();
@@ -78,9 +81,9 @@ export class TsValidationModalComponent {
     if ((e.target as HTMLElement).classList.contains('modal-overlay')) this.cancelled.emit();
   }
 
-  formatAmount(v: number, devise = 'EUR'): string {
+  formatAmount(v: number, devise?: string): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: devise,
+      style: 'currency', currency: devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 }

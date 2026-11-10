@@ -6,6 +6,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { ClientListItemDto } from '../client.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import {
   CLIENT_STATE_BADGE, CLIENT_STATE_LABEL, clientLocation, clientState, initials,
 } from '../client-display';
@@ -44,6 +45,7 @@ export class ClientsTableSectionComponent {
    *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
   readonly table = viewChild(DataTableComponent);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   clients      = input.required<ClientListItemDto[]>();
   loading      = input(false);
@@ -93,7 +95,7 @@ export class ClientsTableSectionComponent {
         adresse: clientLocation(c),
         secteur: c.sector ?? '—',
         projets: String(c.activeAffaireCount),
-        ca:      this.currency.transform(c.totalCA, c.defaultCurrency ?? 'EUR'),
+        ca:      this.currency.transform(c.totalCA, c.defaultCurrency ?? this.currencyContext.defaultCurrency() ?? 'EUR'),
         delai:   c.paymentTermsDays != null ? `${c.paymentTermsDays} j` : '—',
         etat: {
           label:   this.translate.instant(CLIENT_STATE_LABEL[state]),

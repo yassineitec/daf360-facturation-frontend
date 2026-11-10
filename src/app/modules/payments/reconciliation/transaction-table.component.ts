@@ -1,5 +1,6 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { ReconciliationService } from '../reconciliation.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { BankTransaction, MATCH_STATUT_CONFIG } from '../payment.model';
 import { ConfirmMatchModalComponent } from './confirm-match-modal.component';
 import { ManualMatchModalComponent } from './manual-match-modal.component';
@@ -197,6 +198,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 })
 export class TransactionTableComponent {
   private readonly svc = inject(ReconciliationService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   transactions = input.required<BankTransaction[]>();
   refreshNeeded = output<void>();
@@ -255,9 +257,9 @@ export class TransactionTableComponent {
     return MATCH_STATUT_CONFIG[statut] ?? MATCH_STATUT_CONFIG['UNMATCHED'];
   }
 
-  formatAmount(v: number, devise = 'EUR'): string {
+  formatAmount(v: number, devise?: string): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: devise,
+      style: 'currency', currency: devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

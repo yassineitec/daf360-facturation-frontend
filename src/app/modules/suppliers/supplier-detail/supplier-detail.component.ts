@@ -48,6 +48,7 @@ function invoiceHasCategory(inv: CostInvoiceDto | undefined, category: string): 
 import { STATUS_BADGE_VARIANT, statusKey } from '../../cost/cost-display';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { ExportService } from '../../../core/export.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { TableSort, delegatedSort, sortTableRows, tableTools, toTableSort } from '../../../shared/table-tools';
 /**
  * Une ligne clé/valeur du panneau de détails. `label` est toujours une clé i18n.
@@ -309,6 +310,7 @@ export class SupplierDetailComponent implements OnInit {
   private readonly costSvc   = inject(CostService);
   private readonly translate = inject(TranslateService);
   private readonly exportSvc = inject(ExportService);
+  private readonly currencyContext = inject(CurrencyContextService);
   /** Export Excel en cours (factures ou relevé) — grise les boutons d'export. */
   readonly exporting = signal(false);
   private readonly modals    = inject(ModalService);
@@ -850,8 +852,8 @@ export class SupplierDetailComponent implements OnInit {
       supplierNo: inv.supplierInvoiceNumber || '—',
       date:       this.formatDate(inv.invoiceDate),
       lineCount:  String((inv.lines ?? []).length),
-      net:        this.currency.transform(inv.netAmountLocal, inv.currency || 'EUR'),
-      gross:      this.currency.transform(inv.grossAmountLocal, inv.currency || 'EUR'),
+      net:        this.currency.transform(inv.netAmountLocal, inv.currency || this.currencyContext.defaultCurrency() || 'EUR'),
+      gross:      this.currency.transform(inv.grossAmountLocal, inv.currency || this.currencyContext.defaultCurrency() || 'EUR'),
       // Une colonne `badge` attend un objet `{ label, options }` — pas un libellé
       // plus un champ de variante à côté (cf. cost-lines-table-section).
       status: {

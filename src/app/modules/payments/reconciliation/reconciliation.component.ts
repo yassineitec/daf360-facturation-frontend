@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { ReconciliationService } from '../reconciliation.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { BankTransaction, ImportSummary, UnmatchedSummaryDto } from '../payment.model';
 import { ImportDropzoneComponent } from './import-dropzone.component';
 import { TransactionTableComponent } from './transaction-table.component';
@@ -16,6 +17,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 })
 export class ReconciliationComponent implements OnInit {
   private readonly svc = inject(ReconciliationService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   imports            = signal<ImportSummary[]>([]);
   selectedImportId   = signal<number | null>(null);
@@ -98,9 +100,9 @@ export class ReconciliationComponent implements OnInit {
     this.loadUnmatchedSummary();
   }
 
-  formatAmount(v: number, devise = 'EUR'): string {
+  formatAmount(v: number, devise?: string): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: devise,
+      style: 'currency', currency: devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

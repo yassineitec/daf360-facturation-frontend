@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { ReconciliationService } from '../reconciliation.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { BankTransaction } from '../payment.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
@@ -120,6 +121,7 @@ interface ClientOption { id: number; nom: string; }
 export class AcompteModalComponent {
   private readonly svc  = inject(ReconciliationService);
   private readonly http = inject(HttpClient);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   tx        = input.required<BankTransaction>();
   dismissed = output<void>();
@@ -157,9 +159,9 @@ export class AcompteModalComponent {
     });
   }
 
-  formatAmount(v: number, devise = 'EUR'): string {
+  formatAmount(v: number, devise?: string): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: devise,
+      style: 'currency', currency: devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

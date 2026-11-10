@@ -24,6 +24,7 @@ import type {
 } from '@khalilrebhiitec/daf360';
 import { AffaireService } from './affaire.service';
 import { AffaireWizardService } from './affaire-wizard.service';
+import { CurrencyContextService } from '../../core/currency-context.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto, TsHistoryEntry,
   AffaireInvoiceItem, AffairePaymentItem, PaysRefDto, paysLabel,
@@ -775,6 +776,7 @@ export class AffaireDetailComponent implements OnInit {
   private readonly store     = inject(UserStore);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly translate = inject(TranslateService);
   private readonly exportSvc = inject(ExportService);
   /** Export Excel en cours (TS, factures ou paiements) — grise les boutons d'export. */
@@ -890,7 +892,7 @@ export class AffaireDetailComponent implements OnInit {
     const explicit = this.affaire()?.devise;
     if (explicit) return explicit;
     const p = this.paysList().find(p => p.id === this.affaire()?.paysId);
-    return p?.devise || 'EUR';
+    return p?.devise || this.currencyContext.defaultCurrency() || 'EUR';
   });
 
   /**

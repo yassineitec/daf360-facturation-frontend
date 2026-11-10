@@ -9,6 +9,7 @@ import {
 import { CostInvoiceDto, CostInvoiceReglementDto, formatAmount } from '../cost.model';
 import { CostService } from '../cost.service';
 import { FactListService } from '../../../core/fact-list.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 
 /**
  * What `open()` takes. Since V93 a règlement pays a COST INVOICE (one règlement per
@@ -156,6 +157,7 @@ export class ReglementModalComponent {
   private readonly listSvc  = inject(FactListService);
   private readonly modal    = inject(ModalService);
   private readonly translate = inject(TranslateService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   protected modalRef?: ModalRef;
   private onResolved?: () => void;
@@ -199,7 +201,7 @@ export class ReglementModalComponent {
 
   expectedAmountLabel(): string {
     const amount = this.expectedAmount();
-    return amount == null ? '' : formatAmount(amount, this.currency() || 'EUR');
+    return amount == null ? '' : formatAmount(amount, this.currency() || this.currencyContext.defaultCurrency() || 'EUR');
   }
 
   onInvoiceSelected(values: string[]): void {
@@ -340,6 +342,6 @@ export class ReglementModalComponent {
   private invoiceOptionLabel(inv: CostInvoiceDto): string {
     const ref = inv.reference || ('#' + inv.id);
     const supplierNo = inv.supplierInvoiceNumber ? ' (' + inv.supplierInvoiceNumber + ')' : '';
-    return ref + supplierNo + ' — ' + formatAmount(inv.netToPay, inv.currency || 'EUR');
+    return ref + supplierNo + ' — ' + formatAmount(inv.netToPay, inv.currency || this.currencyContext.defaultCurrency() || 'EUR');
   }
 }

@@ -7,6 +7,7 @@ import {
   MetricCardComponent, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { UserStore } from '../../core/user.store';
+import { CurrencyContextService } from '../../core/currency-context.service';
 import { ToastService } from '../../core/toast.service';
 import { AffaireService } from './affaire.service';
 import { AffaireFilter, AffaireListItem, AffairesSummary, PaysRefDto, STATUT_LABELS, paysLabel } from './affaire.model';
@@ -49,6 +50,7 @@ export class AffairesListComponent implements OnInit {
   private readonly store          = inject(UserStore);
   private readonly modals         = inject(ModalService);
   private readonly toast          = inject(ToastService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   /** Même code que `DELETE /affaires/{id}` côté serveur. */
   readonly canDelete = computed(() => this.store.hasPermission('FACT_MANAGE_AFFAIRE'));
@@ -158,7 +160,7 @@ export class AffairesListComponent implements OnInit {
    * dur à 'TND' dans le gabarit : le pipe reconvertissait donc des euros comme s'ils
    * étaient des dinars et affichait un budget divisé par plus de trois.
    */
-  readonly summaryCurrency = computed(() => this.summary()?.devise ?? 'EUR');
+  readonly summaryCurrency = computed(() => this.summary()?.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR');
 
   readonly statsActives     = computed(() => this.summary()?.actives     ?? 0);
   readonly statsSuspendu    = computed(() => this.summary()?.suspendues  ?? 0);

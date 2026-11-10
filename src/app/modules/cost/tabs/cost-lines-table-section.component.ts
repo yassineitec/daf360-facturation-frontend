@@ -5,6 +5,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { CostInvoiceDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { tableTools } from '../../../shared/table-tools';
 import {
@@ -112,6 +113,7 @@ export class CostLinesTableSectionComponent {
    *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
   readonly table = viewChild(DataTableComponent);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   invoices     = input.required<CostInvoiceDto[]>();
   loading      = input(false);
@@ -196,8 +198,8 @@ export class CostLinesTableSectionComponent {
         date:          formatDate(inv.invoiceDate),
         lines:         String(inv.lines?.length ?? 0),
         category:      invoiceCategorySummary(inv, lang, tp),
-        net:           this.currency.transform(inv.netAmountLocal, inv.currency ?? 'EUR'),
-        ttc:           this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'EUR'),
+        net:           this.currency.transform(inv.netAmountLocal, inv.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR'),
+        ttc:           this.currency.transform(inv.grossAmountLocal, inv.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR'),
         status: {
           label:   t(statusKey(inv.status)),
           options: { variant: STATUS_BADGE_VARIANT[inv.status] ?? 'neutral', dot: true, size: 'sm' },

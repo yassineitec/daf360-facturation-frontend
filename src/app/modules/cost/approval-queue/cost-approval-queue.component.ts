@@ -11,6 +11,7 @@ import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import { CostService } from '../cost.service';
 import { ClientService } from '../../clients/client.service';
 import { UserStore } from '../../../core/user.store';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { HiringCostApprovalDto, HiringCostApprovalService } from '../hiring-cost-approval.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { CostInvoiceDto } from '../cost.model';
@@ -49,6 +50,7 @@ export class CostApprovalQueueComponent implements OnInit {
   private readonly hiringSvc = inject(HiringCostApprovalService);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly modal     = inject(ModalService);
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
@@ -193,7 +195,7 @@ export class CostApprovalQueueComponent implements OnInit {
         metrics: [
           { label: t('COST.DETAIL.INFO.APPROVAL_LEVEL'),   value: levelKey ? t(levelKey) : '—' },
           { label: t('COST.LINES.COL_INVOICE_DATE'),       value: formatDate(c.invoiceDate) },
-          { label: t('COST.LINES.COL_TTC'),                value: this.currency.transform(c.grossAmountLocal, c.currency ?? 'EUR') },
+          { label: t('COST.LINES.COL_TTC'),                value: this.currency.transform(c.grossAmountLocal, c.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR') },
           { label: t('COST.LINES.COL_EUR'),                value: this.currency.transform(c.grossAmountEur, 'EUR') },
           { label: t('COST.LINES.COL_LINES'),              value: String(c.lines?.length ?? 0) },
           { label: t('COST.LINES.COL_CATEGORY'),           value: invoiceCategorySummary(c, lang, tp) },
@@ -204,7 +206,7 @@ export class CostApprovalQueueComponent implements OnInit {
 
     const hiringItems: ApprovalItem[] = this.hiringPending().map(h => {
       const snap = this.hiringSvc.parseSnapshot(h.simulationSnapshot);
-      const cur  = snap.localCurrency ?? 'EUR';
+      const cur  = snap.localCurrency ?? this.currencyContext.defaultCurrency() ?? 'EUR';
       const annual = snap.loadedCost != null ? snap.loadedCost * 12 : null;
       return {
         key:       `hiring-${h.id}`,
@@ -333,7 +335,7 @@ export class CostApprovalQueueComponent implements OnInit {
     if (item.kind === 'cost')    return item.cost?.currency ?? null;
     if (item.kind === 'advance') return item.advance?.currency ?? null;
     if (!item.hiring) return null;
-    return this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).localCurrency ?? 'EUR';
+    return this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).localCurrency ?? this.currencyContext.defaultCurrency() ?? 'EUR';
   }
 
   /** The number behind the amount filter: invoice TTC in EUR (else local TTC) for a cost, the requested amount for an advance, annual loaded cost for a hiring request. */
@@ -802,7 +804,7 @@ export class CostApprovalQueueComponent implements OnInit {
   // ── Formatting used by the modal bodies ────────────────────────────────────
   /** Invoice TTC in its own currency, followed by the EUR equivalent when it differs. */
   costAmountLabel(cost: CostInvoiceDto): string {
-    const cur   = cost.currency ?? 'EUR';
+    const cur   = cost.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR';
     const local = this.currency.transform(cost.grossAmountLocal, cur);
     return cur !== 'EUR' && cost.grossAmountEur != null
       ? `${local} (${this.currency.transform(cost.grossAmountEur, 'EUR')})`
@@ -828,7 +830,7 @@ export class CostApprovalQueueComponent implements OnInit {
 
   hiringLoadedCostLabel(item: HiringCostApprovalDto): string {
     const snap = this.hiringSvc.parseSnapshot(item.simulationSnapshot);
-    return this.currency.transform(snap.loadedCost ?? null, snap.localCurrency ?? 'EUR');
+    return this.currency.transform(snap.loadedCost ?? null, snap.localCurrency ?? this.currencyContext.defaultCurrency() ?? 'EUR');
   }
 }
 

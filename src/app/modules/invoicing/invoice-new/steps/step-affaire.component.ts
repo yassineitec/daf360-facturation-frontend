@@ -11,6 +11,7 @@ import { AffaireListItem, RafDetailsDto, TsDto } from '../../../affaires/affaire
 import { AffaireService } from '../../../affaires/affaire.service';
 import { FormFieldComponent, SelectComponent } from '@khalilrebhiitec/daf360';
 import { FactListService } from '../../../../core/fact-list.service';
+import { CurrencyContextService } from '../../../../core/currency-context.service';
 import { ListValueDto } from '../../../cost/cost.model';
 import { invoiceTypeLabel } from '../../../../core/invoice-type-labels.service';
 
@@ -203,6 +204,7 @@ export class StepAffaireComponent implements OnInit {
   private readonly fb          = inject(FormBuilder);
   private readonly translate   = inject(TranslateService);
   private readonly factListSvc = inject(FactListService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   readonly billingModeOptions = [
     { value: 'FORFAIT',  label: this.translate.instant('INVOICING.STEP_AFFAIRE.BILLING_MODES.FORFAIT')  },
@@ -457,15 +459,15 @@ export class StepAffaireComponent implements OnInit {
       invoiceType: v.invoiceType!,
       clientId:    aff?.clientId ?? null,
       paysId:      aff?.paysId ?? 0,
-      currency:    aff?.devise ?? 'EUR',
+      currency:    aff?.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
       billingMode: v.billingMode || this.validBillingModeFromAffaire() || '',
       contractAmount: aff?.contractAmount ?? null,
     });
   }
 
-  formatAmount(v: number, devise = 'EUR'): string {
+  formatAmount(v: number, devise?: string): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: devise,
+      style: 'currency', currency: devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

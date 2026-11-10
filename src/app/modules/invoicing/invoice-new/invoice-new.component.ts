@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, viewChild, inject, effect, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FinancePaths } from '../../../core/finance-paths';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
 import {
@@ -36,6 +37,7 @@ const STEP_ICONS = ['folder_open', 'receipt', 'calendar_month', 'summarize'] as 
 export class InvoiceNewComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly paths     = inject(FinancePaths);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
   private readonly invSvc    = inject(InvoiceService);
@@ -406,7 +408,7 @@ export class InvoiceNewComponent implements OnInit {
     );
     this.summaryTotal.set(
       new Intl.NumberFormat('fr-FR', {
-        style: 'currency', currency: this.affaireValue()?.currency ?? 'EUR',
+        style: 'currency', currency: this.affaireValue()?.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR',
       }).format(ttc)
     );
     this.linesValue.set(v);

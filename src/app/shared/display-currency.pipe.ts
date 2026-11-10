@@ -1,15 +1,20 @@
 import { Pipe, PipeTransform, inject } from '@angular/core';
 import { CurrencyRateService } from '../core/currency-rate.service';
 import { CurrencyDisplayService } from '../core/currency-display.service';
+import { CurrencyContextService } from '../core/currency-context.service';
 import { currencyFractionDigits } from './currency-decimals.util';
 
 @Pipe({ name: 'displayCurrency', standalone: true, pure: false })
 export class DisplayCurrencyPipe implements PipeTransform {
   private ratesSvc   = inject(CurrencyRateService);
   private displaySvc = inject(CurrencyDisplayService);
+  private currencyContext = inject(CurrencyContextService);
 
-  transform(amount: number | null | undefined, sourceCurrency = 'EUR'): string {
+  /** Unreachable in practice -- every call site passes its own resolved sourceCurrency --
+   *  but kept country-neutral rather than a hardcoded literal regardless. */
+  transform(amount: number | null | undefined, sourceCurrency?: string): string {
     if (amount == null) return '—';
+    sourceCurrency ??= this.currencyContext.defaultCurrency() ?? 'EUR';
     const target      = this.displaySvc.selectedCurrency();
     const converted   = this.ratesSvc.convert(amount, sourceCurrency, target);
     const approximate = this.ratesSvc.needsFallbackRate(sourceCurrency) || this.ratesSvc.needsFallbackRate(target);

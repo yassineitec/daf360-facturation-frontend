@@ -12,6 +12,7 @@ import { AffaireService } from '../../../affaires/affaire.service';
 import { StepAffaireValue } from './step-affaire.component';
 import { invoiceTypeLabel } from '../../../../core/invoice-type-labels.service';
 import { FactListService } from '../../../../core/fact-list.service';
+import { CurrencyContextService } from '../../../../core/currency-context.service';
 import { ListValueDto } from '../../../cost/cost.model';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';
@@ -258,6 +259,7 @@ export class StepRecapComponent {
   private readonly route        = inject(ActivatedRoute);
   private readonly translate    = inject(TranslateService);
   private readonly factListSvc  = inject(FactListService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   showActions    = input<boolean>(true);
   affaireData    = input.required<StepAffaireValue>();
@@ -539,7 +541,7 @@ export class StepRecapComponent {
 
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: this.affaireData().currency ?? 'EUR',
+      style: 'currency', currency: this.affaireData().currency ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

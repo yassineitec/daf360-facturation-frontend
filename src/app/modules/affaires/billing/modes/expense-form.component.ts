@@ -15,6 +15,7 @@ import { FactListService } from '../../../../core/fact-list.service';
 import { AffaireDetail } from '../../affaire.model';
 import { ListValueDto } from '../../../cost/cost.model';
 import { SUPPORTED_CURRENCIES } from '../../../../core/currency-display.service';
+import { CurrencyContextService } from '../../../../core/currency-context.service';
 
 /**
  * Saisie d'un frais remboursable — **une seule section, le formulaire**.
@@ -117,6 +118,7 @@ export class ExpenseFormComponent implements OnInit {
   private readonly svc       = inject(BillingService);
   private readonly listSvc   = inject(FactListService);
   private readonly translate = inject(TranslateService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   private readonly categories = signal<ListValueDto[]>([]);
   private readonly currencies = signal<ListValueDto[]>([]);
@@ -141,7 +143,7 @@ export class ExpenseFormComponent implements OnInit {
 
   ngOnInit(): void {
     const paysId = this.affaire().paysId;
-    this.devise.set(this.affaire().devise || 'EUR');
+    this.devise.set(this.affaire().devise || this.currencyContext.defaultCurrency() || 'EUR');
 
     this.listSvc.getListValues('EXPENSE_CATEGORY', paysId)
       .subscribe(v => this.categories.set(v.filter(c => c.isActive)));
@@ -333,6 +335,6 @@ export class ExpenseFormComponent implements OnInit {
     this.dateDepense.set(null);
     this.commentaire.set('');
     this.files.set([]);
-    this.devise.set(this.affaire().devise || 'EUR');
+    this.devise.set(this.affaire().devise || this.currencyContext.defaultCurrency() || 'EUR');
   }
 }

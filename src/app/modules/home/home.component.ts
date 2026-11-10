@@ -11,6 +11,7 @@ import type {
   CardOptions, DrawerConfig, MetricCardOptions, MetricDelta,
 } from '@khalilrebhiitec/daf360';
 import { PaymentService } from '../payments/payment.service';
+import { CurrencyContextService } from '../../core/currency-context.service';
 import { PaymentsDashboardStats } from '../payments/payment.model';
 import { InvoiceService } from '../invoicing/invoice.service';
 import { InvoiceListItem, INVOICE_STATUT_CONFIG } from '../invoicing/invoice.model';
@@ -106,6 +107,7 @@ export class HomeComponent implements OnInit {
   private readonly invoiceSvc     = inject(InvoiceService);
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly ngrx           = inject(Store);
   private readonly translate      = inject(TranslateService);
   private readonly currency       = inject(DisplayCurrencyPipe);
@@ -137,7 +139,7 @@ export class HomeComponent implements OnInit {
     // rendu quand l'utilisateur bascule.
     this.translate.currentLang();
     const s      = this.stats();
-    const devise = s?.devise ?? 'EUR';
+    const devise = s?.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR';
     const money  = (v: number | null | undefined) => this.currency.transform(v ?? null, devise);
 
     return [
@@ -261,7 +263,7 @@ export class HomeComponent implements OnInit {
                 client: inv.clientNom ?? '—',
               }),
               sub:       `${statut}${inv.dateEmission ? ' · ' + this.formatDate(inv.dateEmission) : ''}`,
-              amount:    inv.montantTtc ? this.currency.transform(inv.montantTtc, inv.devise ?? 'EUR') : null,
+              amount:    inv.montantTtc ? this.currency.transform(inv.montantTtc, inv.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR') : null,
               invoice:   inv,
             } satisfies ActivityItem;
           }));

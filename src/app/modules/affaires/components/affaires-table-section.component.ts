@@ -6,6 +6,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import {
   BILLING_MODE_BADGE_VARIANT, RAF_TONE_CLASS, STATUT_BADGE_VARIANT,
   distinctResponsables, initials, rafTone, typeLabel,
@@ -64,6 +65,7 @@ export class AffairesTableSectionComponent {
    *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
   readonly table = viewChild(DataTableComponent);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   affaires     = input.required<AffaireListItem[]>();
   loading      = input(false);
@@ -117,7 +119,7 @@ export class AffairesTableSectionComponent {
   protected readonly rows = computed<TableRow[]>(() => {
     this.translate.currentLang();
     return this.affaires().map(a => {
-      const devise = a.devise ?? 'EUR';
+      const devise = a.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR';
       // Les responsables de l'affaire, dédoublonnés par personne, principal en tête —
       // `affaire_responsables` porte une ligne par activité, pas par personne.
       const people = distinctResponsables(a);

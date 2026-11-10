@@ -2,6 +2,7 @@ import { Component, input, output, signal, inject } from '@angular/core';
 import { TsDto, TS_STATUT_CONFIG } from '../affaire.model';
 import { AffaireService } from '../affaire.service';
 import { UserStore } from '../../../core/user.store';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { TsValidationModalComponent, ValidationConfig } from './ts-validation-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
@@ -80,6 +81,7 @@ export class TsListComponent {
 
   private readonly svc   = inject(AffaireService);
   private readonly store = inject(UserStore);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   actionLoading    = signal(false);
   errorMsg         = signal<string | null>(null);
@@ -131,9 +133,9 @@ export class TsListComponent {
     });
   }
 
-  formatAmount(v: number, devise = 'EUR'): string {
+  formatAmount(v: number, devise?: string): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: devise,
+      style: 'currency', currency: devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

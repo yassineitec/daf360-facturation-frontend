@@ -434,9 +434,11 @@ export interface PaysRefDto {
   /** `pays_ref.english_label` — display-only; blank falls back to `frenchLabel`. */
   englishLabel?: string | null;
   /**
-   * The entity's default currency code (e.g. "EUR", "TND") — populated only by
-   * `GET /ref/pays/arx-entities` (admin/entity-currency use). The plain `/ref/pays`
-   * (194-country) list never sets it, hence optional/nullable here.
+   * The country's default currency code (`pays_ref.devise`, the ARX accounting currency --
+   * e.g. Tunisia=EUR, Egypt=USD, never the national one). Populated by every /ref/pays*
+   * endpoint (RefController maps PaysRef.devise unconditionally in all three), still
+   * optional/nullable here only because the underlying DB column itself is nullable for a
+   * pays that was never seeded with one.
    */
   devise?: string | null;
 }

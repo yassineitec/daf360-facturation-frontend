@@ -20,6 +20,7 @@ import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 import { flagDataUri } from '../../shared/country-flags';
 import { tableTools } from '../../shared/table-tools';
 import { UserStore } from '../../core/user.store';
+import { CurrencyContextService } from '../../core/currency-context.service';
 import { PlPeriodService } from './pl-period.service';
 import { PlReportService } from './pl-report.service';
 import { PlPeriodDto, PlPeriodStatus, PlReportDto, PlReportStatus } from './pl-reporting.model';
@@ -78,6 +79,7 @@ export class ReportingListComponent implements OnInit {
   private readonly clientSvc  = inject(ClientService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly userStore = inject(UserStore);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly translate = inject(TranslateService);
   private readonly router    = inject(Router);
@@ -103,7 +105,7 @@ export class ReportingListComponent implements OnInit {
    *  (the group template's own default) only if the selected pays isn't an ARX entity yet,
    *  never to the previous hardcoded "TND". */
   readonly reportingCurrency = computed(() =>
-    this.entities().find(e => e.id === this.paysId())?.devise ?? 'EUR');
+    this.entities().find(e => e.id === this.paysId())?.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR');
 
   readonly paysOptions = computed<PaysFlagOption[]>(() =>
     this.paysList().map(p => ({

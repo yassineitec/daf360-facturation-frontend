@@ -19,6 +19,7 @@ import type {
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { tableTools } from '../../../shared/table-tools';
 import { UserStore } from '../../../core/user.store';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { ClientService } from '../../clients/client.service';
 import { AffaireService } from '../../affaires/affaire.service';
 import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
@@ -400,6 +401,7 @@ export class ReportDetailComponent implements OnInit {
   private readonly currency      = inject(DisplayCurrencyPipe);
   private readonly modals        = inject(ModalService);
   private readonly userStore     = inject(UserStore);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly fxRateSvc     = inject(PlFxRateAdminService);
 
   /** WP6(h) -- gates the "rates used" button's very existence, same reasoning as the FX-rates
@@ -457,7 +459,7 @@ export class ReportDetailComponent implements OnInit {
    *  hardcoded "TND". */
   readonly reportingCurrency = computed(() => {
     const paysId = this.period()?.paysId ?? this.report()?.paysId;
-    return this.entities().find(e => e.id === paysId)?.devise ?? 'EUR';
+    return this.entities().find(e => e.id === paysId)?.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR';
   });
 
   readonly canManageCommentary = computed(() => this.userStore.hasPermission('FACT_MANAGE_PL_REPORT'));

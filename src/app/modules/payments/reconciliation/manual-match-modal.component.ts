@@ -2,6 +2,7 @@ import { Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { ReconciliationService } from '../reconciliation.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { BankTransaction } from '../payment.model';
 import { InvoiceListItem } from '../../invoicing/invoice.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
@@ -140,6 +141,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 })
 export class ManualMatchModalComponent {
   private readonly svc = inject(ReconciliationService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly search$ = new Subject<string>();
 
   tx        = input.required<BankTransaction>();
@@ -190,9 +192,9 @@ export class ManualMatchModalComponent {
     });
   }
 
-  formatAmount(v: number, devise = 'EUR'): string {
+  formatAmount(v: number, devise?: string): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: devise,
+      style: 'currency', currency: devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

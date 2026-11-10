@@ -3,6 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { AffaireListItem } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { STATUT_ENTITY_STATUS, typeLabel } from '../affaire-display';
 import { enumLabel } from '../../../shared/enum-labels';
 
@@ -76,6 +77,7 @@ import { enumLabel } from '../../../shared/enum-labels';
 export class AffairesCardsSectionComponent {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   affaires     = input.required<AffaireListItem[]>();
   /** Libellés des pays par id — résolus par la page, la section reste sans état (§8b). */
@@ -100,6 +102,12 @@ export class AffairesCardsSectionComponent {
   protected readonly skeletonSlots = computed(() =>
     Array.from({ length: Math.max(1, this.skeletonCount()) }, (_, i) => i),
   );
+
+  /** The affaire's own devise, or the logged-in user's own country default
+   *  (never a hardcoded literal) when this list row doesn't carry one. */
+  private deviseOf(a: AffaireListItem): string {
+    return a.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR';
+  }
 
   /**
    * Built in a computed rather than inline in the template so the options object is
@@ -151,12 +159,12 @@ export class AffairesCardsSectionComponent {
         },
         metricsColumns: 2,
         metrics: [
-          { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, a.devise ?? 'EUR') },
-          { label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),  value: this.currency.transform(a.rafDisponible, a.devise ?? 'EUR') },
-          { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.montantFacture, a.devise ?? 'EUR') },
+          { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, this.deviseOf(a)) },
+          { label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),  value: this.currency.transform(a.rafDisponible, this.deviseOf(a)) },
+          { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.montantFacture, this.deviseOf(a)) },
           // Calculé côté serveur selon le mode de facturation de l'affaire — voir
           // AffaireService#computeWip côté backend.
-          { label: t('AFFAIRES.LIST.TABLE.CARD.WIP'),     value: this.currency.transform(a.wip, a.devise ?? 'EUR') },
+          { label: t('AFFAIRES.LIST.TABLE.CARD.WIP'),     value: this.currency.transform(a.wip, this.deviseOf(a)) },
         ],
         viewLabel: t('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
       } satisfies EntityCardOptions,

@@ -13,6 +13,7 @@ import type {
 import { BillingService, ExpenseDto } from '../billing.service';
 import { FactListService } from '../../../../core/fact-list.service';
 import { UserStore } from '../../../../core/user.store';
+import { CurrencyContextService } from '../../../../core/currency-context.service';
 import { AffaireDetail } from '../../affaire.model';
 import { ListValueDto, localizedLabel } from '../../../cost/cost.model';
 import { DisplayCurrencyPipe } from '../../../../shared/display-currency.pipe';
@@ -75,6 +76,7 @@ export class ExpenseHistoryComponent implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly modals    = inject(ModalService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   private readonly refuseTpl = viewChild.required<TemplateRef<unknown>>('refuseTpl');
 
@@ -237,7 +239,7 @@ export class ExpenseHistoryComponent implements OnInit {
       id:        e.id,
       date:      this.formatDate(e.expenseDate),
       categorie: this.categoryLabel(e.expenseCategoryId),
-      montant:   this.currency.transform(e.montant, e.devise ?? 'EUR'),
+      montant:   this.currency.transform(e.montant, e.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR'),
       // Le nom du fichier plutôt qu'une icône : il dit AUSSI qu'il n'y en a pas, ce qui
       // est une information réelle depuis que le justificatif est facultatif.
       receipt:   e.justificatifName

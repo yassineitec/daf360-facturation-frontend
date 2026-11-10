@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed, ViewChild, TemplateRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FinancePaths } from '../../../core/finance-paths';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
@@ -74,6 +75,7 @@ export class ApprovalDetailComponent implements OnInit {
   private readonly translate  = inject(TranslateService);
   private readonly modal      = inject(ModalService);
   private readonly currency   = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   @ViewChild('refuseTpl') private refuseTpl!: TemplateRef<unknown>;
   @ViewChild('returnTpl') private returnTpl!: TemplateRef<unknown>;
@@ -139,7 +141,8 @@ export class ApprovalDetailComponent implements OnInit {
   readonly statut = computed(() =>
     this.jalon()?.statut ?? this.line()?.statut ?? this.livrableBatch()?.statut ?? '');
 
-  readonly devise = computed(() => this.line()?.devise ?? this.affaire()?.devise ?? 'EUR');
+  readonly devise = computed(() => this.line()?.devise ?? this.affaire()?.devise
+    ?? this.currencyContext.defaultCurrency() ?? 'EUR');
 
   /** Le titre nomme l'élément lui-même ; l'affaire passe en sous-titre (lien). Pour une
    * ligne, le type est déjà le dernier élément du fil d'Ariane : le titre ne garde que

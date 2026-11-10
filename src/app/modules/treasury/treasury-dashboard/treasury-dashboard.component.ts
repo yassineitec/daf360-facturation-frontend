@@ -12,6 +12,7 @@ import type {
 } from '@khalilrebhiitec/daf360';
 
 import { TreasuryService } from '../treasury.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import {
   TreasuryBucket, TreasuryFlow, TreasurySummary,
   TREASURY_HORIZONS, TreasuryHorizon,
@@ -65,6 +66,7 @@ export class TreasuryDashboardComponent implements OnInit {
   private readonly svc       = inject(TreasuryService);
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
 
@@ -462,7 +464,7 @@ export class TreasuryDashboardComponent implements OnInit {
   /** `"12 000,00 TND"` quand la ligne a été convertie, `null` quand elle était déjà en EUR. */
   private originLabel(f: TreasuryFlow): string | null {
     if (!f.deviseOrigine || !f.montantOrigine) return null;
-    if (f.deviseOrigine === (f.devise ?? 'EUR')) return null;
+    if (f.deviseOrigine === (f.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR')) return null;
     return `${f.montantOrigine.toLocaleString(this.locale(), { maximumFractionDigits: 3 })} ${f.deviseOrigine}`;
   }
 

@@ -3,6 +3,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EntityCardComponent, EntityCardOptions, SkeletonComponent } from '@khalilrebhiitec/daf360';
 import { ClientListItemDto } from '../client.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 // Les etats et leurs libelles viennent du meme fichier que ceux du tableau : les deux
 // vues ne peuvent plus diverger (cf. client-display.ts).
 import { CLIENT_STATE_ENTITY, CLIENT_STATE_LABEL, clientState } from '../client-display';
@@ -55,6 +56,7 @@ import { CLIENT_STATE_ENTITY, CLIENT_STATE_LABEL, clientState } from '../client-
 export class ClientsCardsSectionComponent {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   clients          = input.required<ClientListItemDto[]>();
   loading          = input(false);
@@ -92,7 +94,7 @@ export class ClientsCardsSectionComponent {
         },
         metricsColumns: 2,
         metrics: [
-          { label: t('CLIENTS.LIST.CARD.TOTAL_CA'),        value: this.currency.transform(c.totalCA, c.defaultCurrency ?? 'EUR') },
+          { label: t('CLIENTS.LIST.CARD.TOTAL_CA'),        value: this.currency.transform(c.totalCA, c.defaultCurrency ?? this.currencyContext.defaultCurrency() ?? 'EUR') },
           { label: t('CLIENTS.LIST.CARD.ACTIVE_PROJECTS'), value: String(c.activeAffaireCount) },
           { label: t('CLIENTS.LIST.CARD.PAYMENT_TERMS'),   value: c.paymentTermsDays != null ? `${c.paymentTermsDays} j` : '—' },
           { label: t('CLIENTS.LIST.CARD.COUNTRY'),         value: c.countryLabel ?? '—' },

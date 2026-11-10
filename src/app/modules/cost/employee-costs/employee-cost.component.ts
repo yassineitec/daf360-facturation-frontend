@@ -23,6 +23,7 @@ import { ListValueDto, localizedLabel } from '../cost.model';
 import { ClientService } from '../../clients/client.service';
 import { CurrencyRateService } from '../../../core/currency-rate.service';
 import { CurrencyDisplayService, SUPPORTED_CURRENCIES } from '../../../core/currency-display.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { EmployeeCostListStateService } from './employee-cost-list-state.service';
 import { ExportService } from '../../../core/export.service';
 
@@ -54,6 +55,7 @@ export class EmployeeCostComponent implements OnInit {
   private readonly clientSvc  = inject(ClientService);
   private readonly ratesSvc   = inject(CurrencyRateService);
   private readonly displaySvc = inject(CurrencyDisplayService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly router     = inject(Router);
 
   rows          = signal<EmployeeCostDto[]>([]);
@@ -630,7 +632,7 @@ export class EmployeeCostComponent implements OnInit {
   }
 
   onCurrencyChange(values: string[]): void {
-    this.newRecord.currency = values[0] ?? 'EUR';
+    this.newRecord.currency = values[0] ?? this.currencyContext.defaultCurrency() ?? 'EUR';
   }
 
   /** Whichever field the person types into becomes the driver. For "basic"/"internal" the

@@ -1,5 +1,6 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { ReconciliationService } from '../reconciliation.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { BankTransaction } from '../payment.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 
@@ -86,6 +87,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 })
 export class ConfirmMatchModalComponent {
   private readonly svc = inject(ReconciliationService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   tx        = input.required<BankTransaction>();
   dismissed = output<void>();
@@ -108,9 +110,9 @@ export class ConfirmMatchModalComponent {
     });
   }
 
-  formatAmount(v: number, devise = 'EUR'): string {
+  formatAmount(v: number, devise?: string): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: devise,
+      style: 'currency', currency: devise ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

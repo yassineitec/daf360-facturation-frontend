@@ -13,6 +13,7 @@ import { InvoiceService } from '../../invoice.service';
 import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.service';
 import { AffaireService } from '../../../affaires/affaire.service';
 import { FactListService } from '../../../../core/fact-list.service';
+import { CurrencyContextService } from '../../../../core/currency-context.service';
 import { ListValueDto } from '../../../cost/cost.model';
 import { enumLabel, humanise } from '../../../../shared/enum-labels';
 export interface StepLinesValue {
@@ -589,6 +590,7 @@ export class StepLinesComponent {
   private readonly billingSvc = inject(BillingService);
   private readonly affSvc    = inject(AffaireService);
   private readonly listSvc   = inject(FactListService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly translate = inject(TranslateService);
 
   showActions = input<boolean>(true);
@@ -1920,7 +1922,7 @@ export class StepLinesComponent {
 
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: this.affaireData().currency ?? 'EUR',
+      style: 'currency', currency: this.affaireData().currency ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

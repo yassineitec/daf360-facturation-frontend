@@ -7,6 +7,7 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { UserStore } from '../../../core/user.store';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { FactListService } from '../../../core/fact-list.service';
 import { ListValueDto } from '../../cost/cost.model';
 import { AffaireService } from '../../affaires/affaire.service';
@@ -47,6 +48,7 @@ export class OrdresStTabComponent {
   private readonly modal      = inject(ModalService);
   private readonly userStore  = inject(UserStore);
   private readonly listSvc    = inject(FactListService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   @ViewChild('ostTpl')    private ostTpl!:    TemplateRef<unknown>;
   @ViewChild('statutTpl') private statutTpl!: TemplateRef<unknown>;
@@ -102,7 +104,10 @@ export class OrdresStTabComponent {
   editOstTarget = signal<OSTDto | null>(null);
   stList        = signal<SousTraitantDto[]>([]);
   stLoading     = signal(false);
-  ostForm       = { sousTraitantId: 0, perimetre: '', montantBudget: 0, devise: 'EUR', alerteDepassementPct: 10 };
+  // Unreachable in practice -- openCreateOst() always resets devise from defaultOstDevise()
+  // before the modal opens -- but kept country-neutral rather than a hardcoded literal.
+  ostForm       = { sousTraitantId: 0, perimetre: '', montantBudget: 0,
+                     devise: this.currencyContext.defaultCurrency() ?? 'EUR', alerteDepassementPct: 10 };
   ostSaving     = signal(false);
   ostError      = signal<string | null>(null);
 
@@ -147,7 +152,8 @@ export class OrdresStTabComponent {
   coutsList    = signal<CoutSTDto[]>([]);
   coutsLoading = signal(false);
   showAddCout  = signal(false);
-  coutForm     = { montant: 0, dateCout: '', devise: 'EUR', description: '' };
+  // Unreachable in practice -- openAddCout() always resets devise from the parent OST's own.
+  coutForm     = { montant: 0, dateCout: '', devise: this.currencyContext.defaultCurrency() ?? 'EUR', description: '' };
   coutSaving   = signal(false);
   coutError    = signal<string | null>(null);
 
