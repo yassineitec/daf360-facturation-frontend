@@ -4050,7 +4050,7 @@
       "RATES_USED": {
         "MIN_MAX": "Taux min – max appliqué",
         "FROZEN_LINES": "Lignes utilisant un taux figé",
-        "FALLBACK_USED": "Au moins une ligne a utilisé le taux d'un mois antérieur, faute de taux pour le mois.",
+        "FALLBACK_USED": "Taux reporté depuis {{month}}/{{year}}, faute de taux confirmé pour ce mois.",
         "EMPTY": "Aucune conversion de devise n'a été appliquée pour cette période.",
         "ERROR": "Erreur lors du chargement du panneau des taux utilisés."
       },

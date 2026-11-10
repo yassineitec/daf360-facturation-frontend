@@ -584,7 +584,8 @@
           @if (row.anyFallbackUsed) {
             <div class="text-warning flex items-center gap-1">
               <span class="material-symbols-outlined text-[16px]">warning</span>
-              {{ 'REPORTING.DETAIL.RATES_USED.FALLBACK_USED' | translate }}
+              {{ 'REPORTING.DETAIL.RATES_USED.FALLBACK_USED' | translate:{
+                month: row.rateMonth.toString().padStart(2, '0'), year: row.rateYear } }}
             </div>
           }
         </div>

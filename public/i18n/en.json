@@ -4050,7 +4050,7 @@
       "RATES_USED": {
         "MIN_MAX": "Min – max rate applied",
         "FROZEN_LINES": "Lines using a frozen rate",
-        "FALLBACK_USED": "At least one line fell back to an earlier month's rate.",
+        "FALLBACK_USED": "Rate carried forward from {{month}}/{{year}} (no confirmed rate for this month).",
         "EMPTY": "No FX conversion was applied for this period.",
         "ERROR": "Error while loading the rates-used panel."
       },
