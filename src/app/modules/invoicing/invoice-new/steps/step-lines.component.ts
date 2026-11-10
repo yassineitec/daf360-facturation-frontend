@@ -82,18 +82,18 @@ export interface StepLinesValue {
   <div class="lines-header">
     <span class="section-title">{{ 'INVOICING.STEP_LINES.TITLE' | translate }}</span>
     <div class="lines-header-actions">
-      @if (!isCombined() && ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte())) {
+      @if (!readOnly() && ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte())) {
         <button type="button" class="btn-add-line" (click)="addLine()">
           {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
         </button>
       }
-      @if (!isCombined() && (isAv() || isTm() || isLivrable())) {
+      @if (!readOnly() && (isAv() || isTm() || isLivrable())) {
         <button type="button" class="btn-add-line btn-add-rmb" [disabled]="!categoriesLoaded()"
           (click)="toggleRmbPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_REMBOURSABLE' | translate }}
         </button>
       }
-      @if (!isCombined() && (isAv() || isTm() || isLivrable() || isTsCarryForward())) {
+      @if (!readOnly() && (isAv() || isTm() || isLivrable() || isTsCarryForward())) {
         <button type="button" class="btn-add-line btn-add-rmb" (click)="toggleCarryForwardPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_CARRY_FORWARD' | translate }}
         </button>
@@ -113,7 +113,7 @@ export interface StepLinesValue {
         </span>
       }
     }
-    @if (!isCombined() && deductionColumns().includes(null)) {
+    @if (!readOnly() && deductionColumns().includes(null)) {
       <button type="button" class="btn-add-line btn-add-deduction" (click)="addDeductionColumn()">
         {{ 'INVOICING.STEP_LINES.ADD_DEDUCTION_COLUMN' | translate }}
       </button>
@@ -458,7 +458,7 @@ export interface StepLinesValue {
 
               <td>
                 <button type="button" class="remove-line-btn" title="✕" (click)="removeLine(i)"
-                  [disabled]="isCombined()">✕</button>
+                  [disabled]="readOnly()">✕</button>
               </td>
             </tr>
           }
@@ -724,13 +724,31 @@ export class StepLinesComponent {
   readonly isAcompte = computed(() => this.affaireData().invoiceType === 'ACOMPTE');
 
   /** True for a combined (multi-affaire) invoice -- see step-affaire.component.ts's
-   * isCombinedInvoice(). Read-only in this phase: no add/edit controls, next() just
-   * passes the already-correct seeded lines through unchanged. Detected via a null
-   * affaireId (the real, universal signal -- see DFValidationService), NOT
-   * billingMode === 'MIXED': a combined invoice whose lines all share the same mode
-   * (e.g. two FORFAIT affaires) keeps that single mode as its billingMode and only
-   * gets literal "MIXED" when the combined lines actually span different modes. */
+   * isCombinedInvoice(). Detected via a null affaireId (the real, universal signal --
+   * see DFValidationService), NOT billingMode === 'MIXED': a combined invoice whose
+   * lines all share the same mode (e.g. two FORFAIT affaires) keeps that single mode
+   * as its billingMode and only gets literal "MIXED" when the combined lines actually
+   * span different modes. See readOnly() below for which of these can still add/edit
+   * lines. */
   readonly isCombined = computed(() => this.affaireData().affaireId == null);
+
+  /** Mirrors step-affaire.component.ts's isSameAffaireCombined() exactly -- true only for a
+   * combined invoice that's actually ONE affaire (several billing modes merged, e.g. a
+   * FORFAIT line + a TS line from the same affaire), not several distinct ones. There's
+   * exactly one unambiguous affaire to attach a newly-added reimbursable/carry-forward/
+   * deduction-column line to, so readOnly() below lets this case use every normal control. */
+  readonly isSameAffaireCombined = computed(() => {
+    const count = this.affaireData().combinedAffaireCount;
+    return this.isCombined() && count != null && count > 0 && count <= 1;
+  });
+
+  /** Gates every add/edit/remove control below. A genuinely multi-affaire combined invoice
+   * stays fully read-only (next() just passes the already-correct seeded lines through
+   * unchanged) -- a newly-added line would have no single affaire to belong to. A
+   * same-affaire combined invoice behaves like an ordinary invoice instead: see
+   * combinedLineMeta()'s fallback in next() for how a line added here gets its
+   * affaireId/billingMode. */
+  readonly readOnly = computed(() => this.isCombined() && !this.isSameAffaireCombined());
 
   /** affaireId -> "REF — Intitulé" for the Affaire column, resolved once per distinct
    * affaireId found among the seeded lines (see seedFromInitialLines()). Empty until
@@ -1690,9 +1708,12 @@ export class StepLinesComponent {
     });
 
     if (this.isCombined()) {
-      // Read-only: re-emit exactly what was seeded, including each line's own
-      // affaireId/billingMode so the backend's existing matching logic sees real,
-      // stable per-line values -- see combinedLineMeta() above.
+      // Re-emit each originally-seeded line's own affaireId/billingMode unchanged so the
+      // backend's existing matching logic sees real, stable per-line values -- see
+      // combinedLineMeta() above. A line added here (readOnly() lets this happen only for
+      // isSameAffaireCombined()) has no meta entry of its own -- meta[0] is always that
+      // one shared affaire/mode in that case, genuinely ambiguous (and so unreachable)
+      // otherwise.
       const meta = this.combinedLineMeta();
       const combinedLines = (this.linesArray.value as {
         description: string; tauxTva: number;
@@ -1709,11 +1730,33 @@ export class StepLinesComponent {
         pctFacture:    l.pctFacture    ?? undefined,
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
-        affaireId:     meta[i]?.affaireId,
-        billingMode:   meta[i]?.billingMode,
+        affaireId:     meta[i]?.affaireId   ?? meta[0]?.affaireId,
+        billingMode:   meta[i]?.billingMode ?? meta[0]?.billingMode,
         ...dedFields(l),
       }));
-      this.nextStep.emit({ lines: combinedLines, deductionColumns });
+
+      // Reimbursable expenses picked via "Ajouter un remboursable" (readOnly() lets this
+      // happen only for isSameAffaireCombined()) live in the same separate expenseLinesArray
+      // as a normal AV invoice's own -- see the isAv() branch below. No per-line meta of
+      // their own (never part of the original seeded set), so they always take the one
+      // shared affaire/mode directly.
+      const combinedExpenseLines = (this.expenseLinesArray.value as {
+        description: string; prixUnitaireHt: number; tauxTva: number; sourceExpenseId: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
+      }[]).map(l => ({
+        description:     l.description,
+        quantity:        1,
+        unitRate:        l.prixUnitaireHt,
+        vatRatePct:      l.tauxTva,
+        sourceExpenseId: l.sourceExpenseId ?? undefined,
+        sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        affaireId:       meta[0]?.affaireId,
+        billingMode:     meta[0]?.billingMode,
+        ...dedFields(l),
+      }));
+
+      this.nextStep.emit({ lines: [...combinedLines, ...combinedExpenseLines], deductionColumns });
     } else if (this.isAcompte()) {
       // ACOMPTE n'a pas de billingMode qui lui soit propre -- l'affaire porte FORFAIT/
       // RÉGIE/LIVRABLE/TS comme n'importe quelle autre, donc sans cette branche en premier
