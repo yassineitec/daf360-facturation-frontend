@@ -2,6 +2,7 @@ import { BadgeVariant } from '@khalilrebhiitec/daf360';
 import { CostInvoiceDto } from '../cost.model';
 import { HiringCostApprovalDto } from '../hiring-cost-approval.service';
 import { SalaryAdvanceDto } from '../salary-advances/salary-advance-approval.service';
+import { SalaryChangeDto } from '../salary-changes/salary-change-approval.service';
 import { Urgency, urgency } from '../cost-display';
 
 /**
@@ -13,7 +14,7 @@ import { Urgency, urgency } from '../cost-display';
  * `ApprovalItem` is the one shape all three are mapped onto, so the card view, the table
  * view and the filters all read the same thing.
  */
-export type ApprovalKind = 'cost' | 'hiring' | 'advance';
+export type ApprovalKind = 'cost' | 'hiring' | 'advance' | 'salary';
 
 export interface ApprovalMetric {
   label: string;
@@ -41,12 +42,15 @@ export interface ApprovalItem {
   hiring?:   HiringCostApprovalDto;
   /** A salary advance awaiting finance's decision (payroll owns everything after it). */
   advance?:  SalaryAdvanceDto;
+  /** A salary revision of an employee (payroll V38), applied only once approved. */
+  salary?:   SalaryChangeDto;
 }
 
 export const KIND_BADGE_VARIANT: Record<ApprovalKind, BadgeVariant> = {
   cost:    'info',
   hiring:  'secondary',
   advance: 'success',
+  salary:  'warning',
 };
 
 export function kindKey(kind: ApprovalKind): string {

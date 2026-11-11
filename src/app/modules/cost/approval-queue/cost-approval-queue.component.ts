@@ -7,6 +7,7 @@ import {
   SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { SalaryAdvanceApprovalService, SalaryAdvanceDto } from '../salary-advances/salary-advance-approval.service';
+import { SalaryChangeApprovalService, SalaryChangeDto } from '../salary-changes/salary-change-approval.service';
 import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import { CostService } from '../cost.service';
 import { ClientService } from '../../clients/client.service';
@@ -78,13 +79,16 @@ export class CostApprovalQueueComponent implements OnInit {
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly userStore = inject(UserStore);
   private readonly advanceSvc = inject(SalaryAdvanceApprovalService);
+  private readonly salarySvc  = inject(SalaryChangeApprovalService);
 
   @ViewChild('approvalTpl')       private approvalTpl!:       TemplateRef<unknown>;
   @ViewChild('hiringApprovalTpl') private hiringApprovalTpl!: TemplateRef<unknown>;
   @ViewChild('advanceDecisionTpl') private advanceDecisionTpl!: TemplateRef<unknown>;
+  @ViewChild('salaryDecisionTpl') private salaryDecisionTpl!: TemplateRef<unknown>;
   private approvalRef:       ModalRef | null = null;
   private hiringApprovalRef: ModalRef | null = null;
   private advanceRef:        ModalRef | null = null;
+  private salaryRef:         ModalRef | null = null;
 
   paysId        = signal<number>(0);
   /** Cost INVOICES awaiting a decision (V93 — the invoice is the unit of approval). */
@@ -174,6 +178,19 @@ export class CostApprovalQueueComponent implements OnInit {
 
   /** FACT_APPROVE_SALARY_ADVANCE — the code payroll-service enforces on the decision endpoints. */
   readonly canDecideAdvance = computed(() => this.userStore.hasPermission('FACT_APPROVE_SALARY_ADVANCE'));
+
+  // ── Salary revisions (payroll V38) ─────────────────────────────────────────
+  /**
+   * A change of an employee's salary, submitted by RH or payroll. Approving APPLIES it in
+   * payroll; rejecting leaves the salary as it is. Decided by the Country Director, with the
+   * code that already decides candidate costs (APPROVE_HIRING_COST).
+   */
+  salaryChanges     = signal<SalaryChangeDto[]>([]);
+  selectedSalary    = signal<SalaryChangeDto | null>(null);
+  salaryDecision    = signal<'approve' | 'reject'>('approve');
+  salaryComment     = signal('');
+  salaryModalError  = signal<string | null>(null);
+  readonly canDecideSalary = computed(() => this.userStore.hasPermission('APPROVE_HIRING_COST'));
 
   // ── Cost decision modal ────────────────────────────────────────────────────
   selectedCost       = signal<CostInvoiceDto | null>(null);
@@ -277,7 +294,34 @@ export class CostApprovalQueueComponent implements OnInit {
       };
     });
 
-    return [...costItems, ...hiringItems, ...advanceItems];
+    const salaryItems: ApprovalItem[] = this.salaryChanges().map(s => {
+      const cur = s.workingCurrency;
+      return {
+        key:       `salary-${s.id}`,
+        kind:      'salary',
+        id:        s.id,
+        reference: `REV-${s.id}`,
+        title:     s.employeeName ?? '—',
+        level:     null,
+        urgency:   itemUrgency('salary', null),
+        dateLabel: formatDate(s.submittedAt),
+        amountLabel: this.advanceAmount(s.newGrossSalary, cur),
+        sortDate:   s.submittedAt,
+        sortAmount: s.newGrossSalary,
+        metrics: [
+          { label: t('COST.APPROVAL_QUEUE.SALARY_GROSS'),
+            value: `${this.advanceAmount(s.currentGrossSalary, cur)} → ${this.advanceAmount(s.newGrossSalary, cur)}` },
+          { label: t('COST.APPROVAL_QUEUE.SALARY_COST'),
+            value: `${this.advanceAmount(s.monthlyCostBefore, cur)} → ${this.advanceAmount(s.monthlyCostAfter, cur)}` },
+          { label: t('COST.APPROVAL_QUEUE.SALARY_ANNUAL_IMPACT'),
+            value: (this.salaryAnnualImpact(s) > 0 ? '+' : '') + this.advanceAmount(this.salaryAnnualImpact(s), cur) },
+          { label: t('COST.APPROVAL_QUEUE.SALARY_EFFECTIVE_SHORT'), value: this.salaryDate(s.effectiveDate) },
+        ],
+        salary: s,
+      };
+    });
+
+    return [...costItems, ...hiringItems, ...advanceItems, ...salaryItems];
   });
 
   /** Search + the filters, all client-side: each queue arrives whole in one call. */
@@ -311,6 +355,7 @@ export class CostApprovalQueueComponent implements OnInit {
       if (from && to) {
         const day = (item.kind === 'cost' ? item.cost?.invoiceDate
           : item.kind === 'advance' ? item.advance?.createdAt
+          : item.kind === 'salary' ? item.salary?.submittedAt
           : item.hiring?.submittedAt)?.slice(0, 10);
         if (!day || day < from || day > to) return false;
       }
@@ -356,6 +401,7 @@ export class CostApprovalQueueComponent implements OnInit {
   private itemCurrency(item: ApprovalItem): string | null {
     if (item.kind === 'cost')    return item.cost?.currency ?? null;
     if (item.kind === 'advance') return item.advance?.currency ?? null;
+    if (item.kind === 'salary')  return item.salary?.workingCurrency ?? null;
     if (!item.hiring) return null;
     return this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).localCurrency ?? this.currencyContext.defaultCurrency() ?? 'EUR';
   }
@@ -364,6 +410,7 @@ export class CostApprovalQueueComponent implements OnInit {
   private itemAmount(item: ApprovalItem): number | null {
     if (item.kind === 'cost')    return item.cost ? this.costAmount(item.cost) : null;
     if (item.kind === 'advance') return item.advance?.amount ?? null;
+    if (item.kind === 'salary')  return item.salary?.newGrossSalary ?? null;
     if (!item.hiring) return null;
     const loaded = this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).loadedCost;
     return loaded != null ? loaded * 12 : null;
@@ -384,10 +431,12 @@ export class CostApprovalQueueComponent implements OnInit {
     const costs    = this.items().filter(i => i.kind === 'cost').length;
     const hiring   = this.items().filter(i => i.kind === 'hiring').length;
     const advances = this.items().filter(i => i.kind === 'advance').length;
+    const salary   = this.items().filter(i => i.kind === 'salary').length;
+    const base = this.translate.instant(
+      advances ? 'COST.APPROVAL_QUEUE.SPLIT_WITH_ADVANCES' : 'COST.APPROVAL_QUEUE.SPLIT',
+      { costs, hiring, advances });
     return {
-      value: this.translate.instant(
-        advances ? 'COST.APPROVAL_QUEUE.SPLIT_WITH_ADVANCES' : 'COST.APPROVAL_QUEUE.SPLIT',
-        { costs, hiring, advances }),
+      value: salary ? base + ' · ' + this.translate.instant('COST.APPROVAL_QUEUE.SPLIT_SALARY', { salary }) : base,
       direction: 'neutral',
     };
   });
@@ -423,6 +472,8 @@ export class CostApprovalQueueComponent implements OnInit {
             ? [{ value: 'hiring', label: t('COST.APPROVAL_QUEUE.KIND_HIRING') }] : []),
           ...(this.canDecideAdvance()
             ? [{ value: 'advance', label: t('COST.APPROVAL_QUEUE.KIND_ADVANCE') }] : []),
+          ...(this.canDecideSalary()
+            ? [{ value: 'salary', label: t('COST.APPROVAL_QUEUE.KIND_SALARY') }] : []),
         ],
       },
       {
@@ -554,6 +605,17 @@ export class CostApprovalQueueComponent implements OnInit {
       error: () => { this.loadQueue(); this.loadHiringQueue(); },
     });
     this.loadAdvances();
+    this.loadSalaryChanges();
+  }
+
+  /** Not scoped by `paysId` here: payroll-service filters by the caller's own entity scope. */
+  loadSalaryChanges(): void {
+    if (!this.canDecideSalary()) return;
+    this.salarySvc.pending().subscribe({
+      next: pending => this.salaryChanges.set(pending),
+      error: err => this.hiringError.set(err?.error?.detail ?? err?.error?.message
+        ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR')),
+    });
   }
 
   /**
@@ -644,6 +706,11 @@ export class CostApprovalQueueComponent implements OnInit {
 
     if (item.kind === 'advance') {
       this.openAdvanceDecisionModal(item.advance!, decision === 'reject' ? 'reject' : 'approve');
+      return;
+    }
+
+    if (item.kind === 'salary') {
+      this.openSalaryDecisionModal(item.salary!, decision === 'reject' ? 'reject' : 'approve');
       return;
     }
 
@@ -803,6 +870,70 @@ export class CostApprovalQueueComponent implements OnInit {
       error: err => this.advanceModalError.set(
         err?.error?.detail ?? err?.error?.message ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR')),
     });
+  }
+
+  // ── Salary revisions ───────────────────────────────────────────────────────
+  openSalaryDecisionModal(change: SalaryChangeDto, decision: 'approve' | 'reject'): void {
+    this.selectedSalary.set(change);
+    this.salaryDecision.set(decision);
+    this.salaryComment.set('');
+    this.salaryModalError.set(null);
+    const t = (key: string) => this.translate.instant(key);
+    this.salaryRef = this.modal.open({
+      minWidth:    '360px',
+      minHeight:   '260px',
+      resizable:   true,
+      maximizable: true,
+      title: t('COST.APPROVAL_QUEUE.SALARY_MODAL_TITLE'),
+      body:  this.salaryDecisionTpl,
+      size:  'lg',
+      closeOnBackdrop: false,
+      buttons: [
+        { label: t('COST.APPROVAL_QUEUE.MODAL_CANCEL'),  variant: 'secondary', action: r => r.close() },
+        { label: t('COST.APPROVAL_QUEUE.MODAL_CONFIRM'), variant: 'primary',   action: () => this.submitSalaryDecision() },
+      ],
+    });
+  }
+
+  /** Guarded here as well as server-side: a ModalButton has no reactive `disabled`. */
+  submitSalaryDecision(): void {
+    const change = this.selectedSalary();
+    if (!change) return;
+    const comment = this.salaryComment().trim();
+    if (this.salaryDecision() === 'reject' && !comment) {
+      this.salaryModalError.set(this.translate.instant('COST.APPROVAL_QUEUE.REJECT_COMMENT_REQUIRED'));
+      return;
+    }
+    this.salaryModalError.set(null);
+    const call$ = this.salaryDecision() === 'approve'
+      ? this.salarySvc.approve(change.id, comment || null)
+      : this.salarySvc.reject(change.id, comment);
+    call$.subscribe({
+      next: saved => {
+        this.salaryRef?.close();
+        this.salaryChanges.update(list => list.filter(s => s.id !== saved.id));
+      },
+      error: err => this.salaryModalError.set(
+        err?.error?.detail ?? err?.error?.message ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR')),
+    });
+  }
+
+  /** Employer cost difference over a year (after − before) × 12; 0 when either is unknown. */
+  salaryAnnualImpact(s: SalaryChangeDto): number {
+    return s.monthlyCostBefore != null && s.monthlyCostAfter != null
+      ? (s.monthlyCostAfter - s.monthlyCostBefore) * 12 : 0;
+  }
+
+  salaryDate(iso: string | null): string {
+    if (!iso) return '—';
+    const locale = this.translate.currentLang() === 'en' ? 'en-GB' : 'fr-FR';
+    return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  /** « Tickets restaurant 198 TND, Transport 150 TND » — as priced in the simulation. */
+  salaryBenefits(list: { labelFr: string | null; labelEn: string | null; code: string; monthlyValue: number | null }[], currency: string): string {
+    const en = this.translate.currentLang() === 'en';
+    return list.map(b => `${(en ? b.labelEn : null) ?? b.labelFr ?? b.code} ${this.advanceAmount(b.monthlyValue, currency)}`).join(', ');
   }
 
   /** The advance's own currency, with that currency's decimals — never converted. */
