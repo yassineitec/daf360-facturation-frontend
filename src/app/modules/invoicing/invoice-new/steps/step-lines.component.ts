@@ -477,7 +477,7 @@ export interface StepLinesValue {
                       (valueChange)="setNum(lg, 'deductionPct' + ($index + 1), $event)" />
                     @if (lg.get('deductionPct' + ($index + 1))?.value) {
                       <span class="deduction-amount-preview">
-                        -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, currentLineHt(i))) }}
+                        -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, currentLineTtc(i))) }}
                       </span>
                     }
                   </td>
@@ -571,7 +571,7 @@ export interface StepLinesValue {
                         (valueChange)="setNum(lg, 'deductionPct' + ($index + 1), $event)" />
                       @if (lg.get('deductionPct' + ($index + 1))?.value) {
                         <span class="deduction-amount-preview">
-                          -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, lineHtExpense(i))) }}
+                          -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, lineTtcExpense(i))) }}
                         </span>
                       }
                     </td>
@@ -1146,24 +1146,25 @@ export class StepLinesComponent {
     this.linesVersion.update(v => v + 1);
   }
 
-  /** Montant HT de la ligne i dans le mode courant du tableau principal — sert uniquement
+  /** Montant TTC de la ligne i dans le mode courant du tableau principal — sert uniquement
    * à l'aperçu de déduction en direct (lineDeductionAmount), qui doit fonctionner de la
    * même façon quel que soit le mode de facturation actif, sans dupliquer la cellule de
    * déduction une fois par branche @if (isAv()/isTm()/isLivrable()/standard) comme le
-   * fait la colonne Total TTC juste au-dessus dans le gabarit. */
-  currentLineHt(i: number): number {
-    if (this.isAcompte()) return this.lineHtAv(i);
-    if (this.isAv()) return this.lineHtAv(i);
-    if (this.isTm() || this.isTsCarryForward()) return this.lineHtTm(i);
-    if (this.isLivrable()) return this.lineHtLivrable(i);
-    return this.lineHt(i);
+   * fait la colonne Total TTC juste au-dessus dans le gabarit. Les déductions se calculent
+   * sur le TTC (pas le HT) -- même assiette que net_payable_local côté serveur. */
+  currentLineTtc(i: number): number {
+    if (this.isAcompte()) return this.lineTtcAv(i);
+    if (this.isAv()) return this.lineTtcAv(i);
+    if (this.isTm() || this.isTsCarryForward()) return this.lineTtcTm(i);
+    if (this.isLivrable()) return this.lineTtcLivrable(i);
+    return this.lineTtc(i);
   }
 
   /** Montant déduit en direct pour l'affichage (même patron que lineHt()/lineTtc() pour la
-   * TVA) — `lineHt` est le montant HT déjà calculé pour cette ligne dans le mode courant. */
-  lineDeductionAmount(group: FormGroup, columnPosition: number, lineHt: number): number {
+   * TVA) — `lineTtc` est le montant TTC déjà calculé pour cette ligne dans le mode courant. */
+  lineDeductionAmount(group: FormGroup, columnPosition: number, lineTtc: number): number {
     const pct = group.get(`deductionPct${columnPosition}`)?.value;
-    return pct ? lineHt * (pct / 100) : 0;
+    return pct ? lineTtc * (pct / 100) : 0;
   }
 
   /** Safe read of the required `affaireData` input -- returns `null` instead of throwing

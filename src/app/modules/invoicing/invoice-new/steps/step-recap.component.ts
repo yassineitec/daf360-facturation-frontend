@@ -393,7 +393,9 @@ export class StepRecapComponent {
     return this.linesData().lines.reduce((s, l) => {
       const pct = (l as unknown as Record<string, number | undefined>)[`deductionPct${columnPosition}`];
       if (!pct) return s;
-      return s + l.quantity * l.unitRate * (pct / 100);
+      // Assiette TTC (pas HT) -- même base que InvoiceService.computeDeductionTotal côté serveur.
+      const ttc = l.quantity * l.unitRate * (1 + l.vatRatePct / 100);
+      return s + ttc * (pct / 100);
     }, 0);
   }
 
