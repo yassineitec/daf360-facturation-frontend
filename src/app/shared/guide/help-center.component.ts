@@ -34,9 +34,8 @@ interface HelpChoice {
  * `modules/help`), which holds the FAQ and the documentation. A card with nothing behind
  * it is left out.
  *
- * `daf-side-nav` has no footer slot, so the entry is laid over the bottom of the rail
- * (same fixed geometry: left 0, 16rem wide) and fact-shell.component.scss reserves that
- * space at the bottom of the rail's list. Desktop only — the rail turns into the mobile
+ * Projected into `daf-side-nav`'s footer slot (`dafSideNavFooter`, lib 5.13.0), under the
+ * item list: the list scrolls above it, nothing passes under it. Desktop only — the rail turns into the mobile
  * bottom bar below `sm`; there the « Première visite ? » bubble is the way in.
  *
  * The footer takes other rail entries through `<ng-content>`, shown above this one: the
@@ -58,8 +57,7 @@ interface HelpChoice {
   // Same markup and classes as a top-level `daf-side-nav` entry and the same divider as a
   // `divider: true` entry, so it reads as one more item of the rail, pinned to its bottom.
   template: `
-    <div class="fixed bottom-0 left-0 z-[41] hidden w-[calc(16rem-1px)] px-4 pb-4 sm:block"
-         style="background: var(--color-surface, #fff)">
+    <div class="hidden sm:block">
       <div class="flex flex-col gap-1 border-t border-surface-container pt-4">
         <!-- Other footer entries of the rail, above this one (the shell's currency switch). -->
         <ng-content />

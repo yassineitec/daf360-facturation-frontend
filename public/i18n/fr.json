@@ -172,6 +172,12 @@
     }
   },
   "GUIDE": {
+    "GROUPS": {
+      "GENERAL": "Général",
+      "APPROVALS": "Approbations et missions",
+      "INVOICES": "Factures de coût",
+      "STAFF": "Coûts collaborateurs"
+    },
     "HELP_CENTER": "Aide & guides",
     "CLOSE": "Fermer le guide",
     "STEP_OF": "{{current}} / {{total}}",
