@@ -114,7 +114,12 @@ export class HelpComponent {
       ?? guides[0];
   });
 
-  readonly subPageSelected = computed(() => [this.subPage()?.guideKey ?? '']);
+  /** Bumped when a theme header is clicked, so the dropdown snaps back to the current sub-page. */
+  private readonly selectNonce = signal(0);
+  readonly subPageSelected = computed(() => {
+    this.selectNonce();
+    return [this.subPage()?.guideKey ?? ''];
+  });
 
   /** FAQ and documentation of the selected sub-page; videos of the whole tab. */
   readonly content = computed<HelpPageContent>(() => {
@@ -169,13 +174,34 @@ export class HelpComponent {
   /** A tab with several pages (its own + sub-pages) picks one in the « Section » dropdown. */
   readonly usePicker = computed(() => this.guides().length > 1);
 
+  /**
+   * Options of the « Section » dropdown — as in /rh/aide. When the tab's sub-pages carry a
+   * `group`: the tab's own page under « Général », then the sub-pages by theme, each theme
+   * headed by a disabled row. Without: the pages in order, no headers.
+   */
   readonly subPageOptions = computed<SelectOption[]>(() => {
     this.translate.currentLang();
-    return this.guides().map(g => ({ value: g.guideKey, label: this.translate.instant(g.labelKey) as string, icon: g.icon }));
+    const t = (k: string) => this.translate.instant(k) as string;
+    if (!this.guides().some(g => g.group)) {
+      return this.guides().map(g => ({ value: g.guideKey, label: t(g.labelKey), icon: g.icon }));
+    }
+    const order: string[] = [];
+    const byGroup = new Map<string, GuidePageDef[]>();
+    for (const g of this.guides()) {
+      const key = g.group ?? 'GENERAL';
+      if (!byGroup.has(key)) { byGroup.set(key, []); order.push(key); }
+      byGroup.get(key)!.push(g);
+    }
+    return order.flatMap(key => [
+      { value: `__group-${key}`, label: t(`GUIDE.GROUPS.${key}`).toUpperCase(), disabled: true },
+      ...byGroup.get(key)!.map(g => ({ value: g.guideKey, label: t(g.labelKey), icon: g.icon })),
+    ]);
   });
 
+  /** A theme header or an emptied selection keeps the current section. */
   onSubPageSelect(values: string[]): void {
-    if (values[0]) this.subPagePick.set(values[0]);
+    if (values[0] && !values[0].startsWith('__group-')) this.subPagePick.set(values[0]);
+    else this.selectNonce.update(n => n + 1);
   }
 
   /** The right column's guide: the sub-page shown on the left. */

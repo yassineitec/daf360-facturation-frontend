@@ -4,7 +4,13 @@
   [items]="navItems()"
   [config]="sideNavConfig()"
   [activeRoute]="activeRoute()"
-  (itemClick)="onNavClick($event)" />
+  (itemClick)="onNavClick($event)">
+  <!-- Bottom of the sidebar rail (desktop): the display currency, then « Aide & guides ».
+       In the rail's footer slot (lib 5.13.0): the list scrolls above it, not under it. -->
+  <app-help-center dafSideNavFooter>
+    <app-currency-switch />
+  </app-help-center>
+</daf-side-nav>
 
 <main class="shell-content">
   <router-outlet />
@@ -24,11 +30,6 @@
     [active]="currentCurrency()"
     (itemClick)="onCurrencyPick($event)" />
 </div>
-
-<!-- Bottom of the sidebar rail (desktop): the display currency, then « Aide & guides ». -->
-<app-help-center>
-  <app-currency-switch />
-</app-help-center>
 
 <!-- « Première visite ? »: offers a page's guide the first time the page is opened. -->
 <app-guide-hint />

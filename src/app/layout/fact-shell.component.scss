@@ -4,13 +4,6 @@
   display: block;
 }
 
-// Room for the rail's footer (app-help-center: the currency row + « Aide & guides »): without
-// it the last nav entries would scroll under it. daf-side-nav has no footer slot, so this
-// targets its rail (same as hr-shell).
-:host ::ng-deep .daf-nav-rail {
-  padding-bottom: 10rem;
-}
-
 // ── Main content area ─────────────────────────────────────────────────────────
 //
 // LE POINT DE BASCULE DOIT ÊTRE CELUI DE LA LIB, pas un autre.

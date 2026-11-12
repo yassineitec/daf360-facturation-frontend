@@ -20,6 +20,11 @@ export interface GuidePageDef {
   pattern?: RegExp;
   /** Query parameters the URL must carry (a section opened by `?tab=`). */
   query?: Record<string, string>;
+  /**
+   * Theme the sub-page is filed under in the help page's « Section » dropdown
+   * (`GUIDE.GROUPS.<group>`), for a tab with many sub-pages — as in /rh/aide.
+   */
+  group?: string;
 }
 
 /** A new page with a guide adds one line here. Sub-pages first: they are matched first. */
@@ -60,27 +65,27 @@ export const GUIDE_PAGES: GuidePageDef[] = [
     helpTab: 'approval-queue' },
   // Coûts : chaque écran du module, sous l'onglet « Coûts » de l'aide.
   { guideKey: 'cost-approval', labelKey: 'GUIDE.COST_APPROVAL.PAGE', icon: 'fact_check', route: 'cost/approval',
-    permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST', 'FACT_APPROVE_SALARY_ADVANCE'], helpTab: 'costs' },
+    permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST', 'FACT_APPROVE_SALARY_ADVANCE'], helpTab: 'costs', group: 'APPROVALS' },
   { guideKey: 'cost-missions', labelKey: 'GUIDE.COST_MISSIONS.PAGE', icon: 'flight_takeoff', route: 'cost/missions',
-    permissions: ['FACT_APPROVE_MISSION_COST'], helpTab: 'costs' },
+    permissions: ['FACT_APPROVE_MISSION_COST'], helpTab: 'costs', group: 'APPROVALS' },
   { guideKey: 'cost-new', labelKey: 'GUIDE.COST_NEW.PAGE', icon: 'add_card', route: 'cost/new',
-    permissions: ['FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs' },
+    permissions: ['FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs', group: 'INVOICES' },
   { guideKey: 'cost-edit', labelKey: 'GUIDE.COST_EDIT.PAGE', icon: 'edit_note', route: 'cost',
-    pattern: /(^|\/)cost\/\d+\/edit\/?$/, permissions: ['FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs' },
+    pattern: /(^|\/)cost\/\d+\/edit\/?$/, permissions: ['FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs', group: 'INVOICES' },
   { guideKey: 'rate-computations', labelKey: 'GUIDE.RATES.PAGE', icon: 'calculate', route: 'cost/rate-computations',
-    permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs' },
+    permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs', group: 'STAFF' },
   { guideKey: 'employee-cost-history', labelKey: 'GUIDE.EMPLOYEE_COST_HISTORY.PAGE', icon: 'history', route: 'cost',
     pattern: /(^|\/)cost\/employee-costs\/\d+\/history\/?$/, permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'],
-    helpTab: 'costs' },
+    helpTab: 'costs', group: 'STAFF' },
   { guideKey: 'employee-costs', labelKey: 'GUIDE.EMPLOYEE_COSTS.PAGE', icon: 'badge', route: 'cost/employee-costs',
-    permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs' },
+    permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs', group: 'STAFF' },
   { guideKey: 'cost-unassigned', labelKey: 'GUIDE.COST_UNASSIGNED.PAGE', icon: 'store', route: 'cost/supplier/none',
-    permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs' },
+    permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs', group: 'INVOICES' },
   { guideKey: 'cost-supplier', labelKey: 'GUIDE.COST_SUPPLIER.PAGE', icon: 'store', route: 'cost',
     pattern: /(^|\/)cost\/supplier\/\d+\/?$/, permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'],
-    helpTab: 'costs' },
+    helpTab: 'costs', group: 'INVOICES' },
   { guideKey: 'cost-detail', labelKey: 'GUIDE.COST_DETAIL.PAGE', icon: 'request_quote', route: 'cost',
-    pattern: /(^|\/)cost\/\d+\/?$/, permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs' },
+    pattern: /(^|\/)cost\/\d+\/?$/, permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST'], helpTab: 'costs', group: 'INVOICES' },
   // Fournisseurs : l'assistant (création, puis modification `suppliers/42/edit`) et la fiche.
   { guideKey: 'supplier-new', labelKey: 'GUIDE.SUPPLIER_NEW.PAGE', icon: 'add_business', route: 'suppliers/new',
     permissions: ['FACT_MANAGE_COST'], helpTab: 'suppliers' },
