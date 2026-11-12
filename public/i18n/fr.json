@@ -3374,7 +3374,7 @@
         "MARGIN_TARGET": "Objectif de marge",
         "MARGIN_HELP": "(Encaissé − sous-traitance) / encaissé : un % du CA, pas du budget. Les coûts internes valent 0 faute de timesheet, la marge est surévaluée.",
         "BACKLOG": "Backlog",
-        "BACKLOG_HELP": "Ce qui reste du contrat à facturer : budget prévisionnel − Total facturé (la tuile voisine). La pastille est la part du budget encore au backlog. Négatif = budget dépassé.",
+        "BACKLOG_HELP": "Ce qui reste du contrat à facturer : (budget prévisionnel + budget TS) − Total facturé (la tuile voisine). La pastille est la part du budget encore au backlog. Négatif = budget dépassé.",
         "INVOICED": "Total facturé",
         "INVOICED_HELP": "Somme des factures de l'affaire dont le statut n'est pas « Encaissé » — le facturé non encore soldé. C'est le « facturé » de référence : le Backlog et le WIP se calculent dessus."
       },
@@ -4409,8 +4409,8 @@
       }
     },
     "WIP": {
-      "KPI_TS": "TS",
-      "KPI_TS_HELP": "Somme des montants estimés des travaux supplémentaires (TS) validés techniquement et commercialement, pas encore facturés. Un TS sort de ce total une fois sa facture validée par la DF. Ce montant s'ajoute au budget dans le RAF.",
+      "KPI_TS": "Budget TS",
+      "KPI_TS_HELP": "Somme des montants estimés de tous les travaux supplémentaires (TS) de l'affaire, quel que soit leur statut.",
       "TS_ELIGIBLE_TITLE": "TS prêts à facturer",
       "TS_ELIGIBLE_EMPTY": "Aucun TS intégré disponible pour facturation.",
       "TS_ACTIVE_TITLE": "Soumissions en cours",

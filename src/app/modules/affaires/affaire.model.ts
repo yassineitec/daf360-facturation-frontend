@@ -232,8 +232,8 @@ export interface AffaireKpisDto {
   margeBrutePct:              number;
   /** Toujours 0 côté backend. */
   tauxAvancement:             number;
-  /** Budget prévisionnel − `totalFacture` : le reste du contrat à facturer. Négatif =
-   *  budget dépassé. */
+  /** (Budget prévisionnel + budget TS intégrés) − `totalFacture` : le reste du contrat à
+   *  facturer. Négatif = budget dépassé. */
   backlog:                    number;
   /** Somme des factures dont le statut n'est pas `PAID` — le facturé non encore soldé.
    *  Le « facturé » de référence : `backlog` et `wip` se calculent dessus. */
@@ -242,6 +242,9 @@ export interface AffaireKpisDto {
    *  avec `ca` (somme des règlements reçus), qui alimente la marge et la jauge « Santé du
    *  projet » : les deux divergent dès qu'une facture est partiellement réglée. */
   totalEncaisse:              number;
+  /** Somme des montants estimés de tous les TS de l'affaire, tous statuts confondus —
+   *  la tuile « TS ». */
+  totalTs:                    number;
 }
 
 export interface TsDto {

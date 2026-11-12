@@ -3374,7 +3374,7 @@
         "MARGIN_TARGET": "Margin target",
         "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated.",
         "BACKLOG": "Backlog",
-        "BACKLOG_HELP": "What is left of the contract to invoice: forecast budget − Total invoiced (the neighbouring tile). The pill is the share of the budget still in backlog. Negative = overrun.",
+        "BACKLOG_HELP": "What is left of the contract to invoice: (forecast budget + TS budget) − Total invoiced (the neighbouring tile). The pill is the share of the budget still in backlog. Negative = overrun.",
         "INVOICED": "Total invoiced",
         "INVOICED_HELP": "Sum of this project's invoices whose status is not 'Collected' — the invoiced amount still owed. This is the reference 'invoiced' figure: Backlog and WIP are both computed from it."
       },
@@ -4409,8 +4409,8 @@
       }
     },
     "WIP": {
-      "KPI_TS": "TS integrated",
-      "KPI_TS_HELP": "Sum of the estimated amounts of additional works (TS) validated technically and commercially, not yet invoiced. A TS leaves this total once its invoice is validated by the DF. This amount is added to the budget in the RAF.",
+      "KPI_TS": "TS budget",
+      "KPI_TS_HELP": "Sum of the estimated amounts of all additional works (TS) of the job, whatever their status.",
       "TS_ELIGIBLE_TITLE": "Extra work ready to bill",
       "TS_ELIGIBLE_EMPTY": "No integrated extra work available for billing.",
       "TS_ACTIVE_TITLE": "Submissions in progress",
