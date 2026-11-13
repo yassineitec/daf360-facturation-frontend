@@ -1535,7 +1535,7 @@ export class AffaireDetailComponent implements OnInit {
       },
       {
         label: 'AFFAIRES.WIP.KPI_TS',
-        value: this.money(this.raf()?.montantTsIntegres),
+        value: this.money(k?.totalTs),
         delta: null,
         options: { icon: 'schedule', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
                    help: t('AFFAIRES.WIP.KPI_TS_HELP') },
