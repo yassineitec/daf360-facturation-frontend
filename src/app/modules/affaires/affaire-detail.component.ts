@@ -1501,7 +1501,7 @@ export class AffaireDetailComponent implements OnInit {
         deltaUnderLabel: true,
         value: this.money(k?.totalFacture),
         // Le taux de facturation (ex-barre « Facturé » de la carte Avancement) : factures
-        // émises / budget prévisionnel — le même `billingPct` que la pastille de risque.
+        // émises / (budget prévisionnel + TS) — le même `billingPct` que la pastille de risque.
         delta: this.budgetTotal() > 0
           ? { value: `${Math.round(this.billingPct())}%`, direction: 'neutral' as const }
           : null,
@@ -1608,7 +1608,8 @@ export class AffaireDetailComponent implements OnInit {
   //                        Corollaire : le serveur calcule RAF = budget + TS − facturé,
   //                        donc facturé + RAF ≠ budgetTotal dès qu'il y a des TS, et
   //                        rafAvailablePct peut dépasser 100 %.
-  //   billingPct         = totalFacturesEmises / budgetTotal × 100   « taux de facturation »
+  //   billingPct         = totalFacturesEmises / (budgetTotal + totalTs) × 100
+  //                        « taux de facturation » — TS inclus (règle du 2026-11-13)
   //   tsIntegratedPct    = montantTsIntegres / budgetTotal × 100
   //   rafAvailablePct    = rafDisponible / budgetTotal × 100         (pastille RAF)
   //   healthState        = seuils sur billingPct, comparés au **seuil propre à
@@ -1688,14 +1689,23 @@ export class AffaireDetailComponent implements OnInit {
    */
   readonly budgetTotal = computed(() => this.budgetPrevisionnel());
 
-  /** Taux de facturation : ce qui est facturé sur le budget prévisionnel. */
+  /**
+   * Taux de facturation : ce qui est facturé sur **budget prévisionnel + TS** (règle du
+   * 2026-11-13). Le facturé contient les factures de TS : les rapporter au budget seul
+   * faisait passer une affaire agrandie par des TS pour un dépassement. Budget 100 000,
+   * TS 30 000, facturé 130 000 → 100 %, et non 130 %.
+   *
+   * Même enveloppe que le bandeau « Budget dépassé » (`overrunEnvelope`), donc
+   * « > 100 % » ⇔ dépassement. Les autres taux (Backlog, Encaissé, RAF) restent sur
+   * `budgetTotal`.
+   */
   readonly billingPct = computed(() => {
     const b = this.budgetTotal();
     return b > 0 ? ((this.raf()?.totalFacturesEmises ?? 0) / b) * 100 : 0;
   });
 
   readonly tsIntegratedPct = computed(() => {
-    const b = this.budgetTotal();
+    const b = this.overrunEnvelope();
     return b > 0 ? ((this.raf()?.montantTsIntegres ?? 0) / b) * 100 : 0;
   });
 

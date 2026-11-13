@@ -160,10 +160,12 @@ export class AffairesCardsSectionComponent {
         metricsColumns: 2,
         metrics: [
           { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, this.deviseOf(a)) },
-          { label: t('AFFAIRES.LIST.TABLE.HEADERS.RAF'),  value: this.currency.transform(a.rafDisponible, this.deviseOf(a)) },
-          { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.montantFacture, this.deviseOf(a)) },
-          // Calculé côté serveur selon le mode de facturation de l'affaire — voir
-          // AffaireService#computeWip côté backend.
+          // Backlog, Facturé et WIP reprennent À L'IDENTIQUE les tuiles de la fiche
+          // (/finance/affaires/{id}?tab=overview) — mêmes formules que AffaireService#getKpis,
+          // calculées côté serveur dans listAffaires. Le RAF RG12 (rafDisponible) reste
+          // servi pour le blocage de facturation, mais n'est plus affiché ici.
+          { label: t('AFFAIRES.DETAIL.KPI.BACKLOG'),      value: this.currency.transform(a.backlog, this.deviseOf(a)) },
+          { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.totalFacture, this.deviseOf(a)) },
           { label: t('AFFAIRES.LIST.TABLE.CARD.WIP'),     value: this.currency.transform(a.wip, this.deviseOf(a)) },
         ],
         viewLabel: t('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
