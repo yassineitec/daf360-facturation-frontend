@@ -1703,6 +1703,11 @@ export class AffaireDetailComponent implements OnInit {
    */
   readonly budgetOverrun = computed(() => (this.raf()?.rafDisponible ?? 0) < 0);
 
+  /** L'enveloppe citée par le bandeau « Budget dépassé » : budget prévisionnel + la tuile
+   *  « Budget TS » (`totalTs`, tous les TS). Sans le terme TS, le texte annonçait
+   *  « facturé 165 000 pour une enveloppe de 100 000 » à côté d'un dépassement de 5 000. */
+  readonly overrunEnvelope = computed(() => this.budgetTotal() + (this.kpis()?.totalTs ?? 0));
+
   /** Le montant du dépassement, positif. 0 quand il n'y a pas de dépassement. */
   readonly overrunAmount = computed(() => Math.max(0, -(this.raf()?.rafDisponible ?? 0)));
 

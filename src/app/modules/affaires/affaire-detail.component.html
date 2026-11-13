@@ -85,7 +85,7 @@
         <p class="text-body-sm text-on-surface-variant">
           {{ 'AFFAIRES.DETAIL.SIDEBAR.BUDGET_OVERRUN_TEXT' | translate:
              { invoiced: raf()?.totalFacturesEmises | displayCurrency : affaireDevise(),
-               budget:   budgetTotal() | displayCurrency : affaireDevise() } }}
+               budget:   overrunEnvelope() | displayCurrency : affaireDevise() } }}
         </p>
       </div>
       <div class="text-right mr-28">
