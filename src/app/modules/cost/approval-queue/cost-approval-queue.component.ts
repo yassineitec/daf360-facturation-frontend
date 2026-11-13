@@ -6,7 +6,9 @@ import {
   MetricCardOptions, MetricDelta, ModalRef, ModalService, PageComponent, PageHeaderComponent,
   SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
+import { Observable, forkJoin } from 'rxjs';
 import { SalaryAdvanceApprovalService, SalaryAdvanceDto } from '../salary-advances/salary-advance-approval.service';
+import { SalaryAdvanceDecisionModalComponent } from '../salary-advances/salary-advance-decision-modal.component';
 import { SalaryChangeApprovalService, SalaryChangeDto } from '../salary-changes/salary-change-approval.service';
 import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import { CostService } from '../cost.service';
@@ -44,7 +46,7 @@ const GUIDE_STEPS: GuideStep[] = [
   step('LIST', 'grid_view', 'cost-approval-list'),
   step('COSTS', 'request_quote', 'cost-approval-list'),
   step('HIRING', 'person_add', 'cost-approval-list'),
-  step('ADVANCES', 'savings', 'cost-approval-list'),
+  step('ADVANCES', 'account_balance_wallet', 'cost-approval-list'),
   step('NEW', 'add', 'cost-approval-new'),
   step('END', 'help'),
 ];
@@ -56,7 +58,7 @@ const GUIDE_STEPS: GuideStep[] = [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, FormFieldComponent,
     ApprovalCardsSectionComponent, ApprovalTableSectionComponent,
-    PageGuideComponent,
+    PageGuideComponent, SalaryAdvanceDecisionModalComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
@@ -83,11 +85,9 @@ export class CostApprovalQueueComponent implements OnInit {
 
   @ViewChild('approvalTpl')       private approvalTpl!:       TemplateRef<unknown>;
   @ViewChild('hiringApprovalTpl') private hiringApprovalTpl!: TemplateRef<unknown>;
-  @ViewChild('advanceDecisionTpl') private advanceDecisionTpl!: TemplateRef<unknown>;
   @ViewChild('salaryDecisionTpl') private salaryDecisionTpl!: TemplateRef<unknown>;
   private approvalRef:       ModalRef | null = null;
   private hiringApprovalRef: ModalRef | null = null;
-  private advanceRef:        ModalRef | null = null;
   private salaryRef:         ModalRef | null = null;
 
   paysId        = signal<number>(0);
@@ -164,20 +164,23 @@ export class CostApprovalQueueComponent implements OnInit {
 
   readonly canApproveCost = computed(() => this.userStore.hasPermission('FACT_APPROVE_COST_L1'));
 
-  // ── Salary advances (payroll V25) ──────────────────────────────────────────
+  // ── Salary advances (payroll V25 / V39) ────────────────────────────────────
   /**
-   * Awaiting finance's decision. Finance is only the decision hub: once approved, the payout,
-   * the monthly deductions and the rules are payroll's (/payroll/salary-advances).
+   * Two steps land here, each behind its own permission: the validation above the country
+   * threshold (PENDING_DIRECTOR) and the DAF's decision with the final terms (PENDING_FINANCE).
+   * The decision modal is shared with the « Avances sur salaire » page. Payout, deductions and
+   * rules are payroll's (/payroll/salary-advances).
    */
   advances         = signal<SalaryAdvanceDto[]>([]);
   advancesLoading  = signal(false);
-  selectedAdvance  = signal<SalaryAdvanceDto | null>(null);
-  advanceDecision  = signal<'approve' | 'reject'>('approve');
-  advanceComment   = signal('');
-  advanceModalError = signal<string | null>(null);
+  /** The advance being decided — mounts app-salary-advance-decision-modal. */
+  decidingAdvance  = signal<{ advance: SalaryAdvanceDto; decision: 'approve' | 'reject' } | null>(null);
 
-  /** FACT_APPROVE_SALARY_ADVANCE — the code payroll-service enforces on the decision endpoints. */
+  /** FACT_APPROVE_SALARY_ADVANCE — the DAF step, enforced by payroll-service. */
   readonly canDecideAdvance = computed(() => this.userStore.hasPermission('FACT_APPROVE_SALARY_ADVANCE'));
+  /** FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD — the step before the DAF above the threshold. */
+  readonly canValidateAdvance = computed(() =>
+    this.userStore.hasPermission('FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD'));
 
   // ── Salary revisions (payroll V38) ─────────────────────────────────────────
   /**
@@ -270,7 +273,7 @@ export class CostApprovalQueueComponent implements OnInit {
     });
 
     const advanceItems: ApprovalItem[] = this.advances().map(a => {
-      const amount = this.advanceAmount(a.amount, a.currency);
+      const amount = this.advanceAmount(a.requestedAmount ?? a.amount, a.currency);
       return {
         key:       `advance-${a.id}`,
         kind:      'advance',
@@ -282,13 +285,14 @@ export class CostApprovalQueueComponent implements OnInit {
         dateLabel: formatDate(a.createdAt),
         amountLabel: amount,
         sortDate:   a.createdAt,
-        sortAmount: a.amount,
+        sortAmount: a.requestedAmount ?? a.amount,
         metrics: [
+          { label: t('FACTURATION.ADVANCES.COL_STEP'),
+            value: t('FACTURATION.ADVANCES.STATUS.' + a.status) },
           { label: t('FACTURATION.ADVANCES.COL_AMOUNT'), value: amount },
-          { label: t('FACTURATION.ADVANCES.COL_TERMS'),
-            value: `${this.advanceAmount(a.monthlyAmount, a.currency)} × ${a.installments}` },
-          { label: t('FACTURATION.ADVANCES.FIRST_MONTH'), value: this.advanceMonth(a.firstDeductionMonth) },
-          { label: t('FACTURATION.ADVANCES.COL_ASKED_ON'), value: formatDate(a.createdAt) },
+          { label: t('FACTURATION.ADVANCES.COL_MONTHS'),
+            value: tp('FACTURATION.ADVANCES.N_MONTHS', { count: a.requestedInstallments ?? a.installments }) },
+          { label: t('FACTURATION.ADVANCES.COL_AVAILABILITY'), value: formatDate(a.requestedAvailabilityDate) },
         ],
         advance: a,
       };
@@ -409,7 +413,7 @@ export class CostApprovalQueueComponent implements OnInit {
   /** The number behind the amount filter: invoice TTC in EUR (else local TTC) for a cost, the requested amount for an advance, annual loaded cost for a hiring request. */
   private itemAmount(item: ApprovalItem): number | null {
     if (item.kind === 'cost')    return item.cost ? this.costAmount(item.cost) : null;
-    if (item.kind === 'advance') return item.advance?.amount ?? null;
+    if (item.kind === 'advance') return item.advance?.requestedAmount ?? item.advance?.amount ?? null;
     if (item.kind === 'salary')  return item.salary?.newGrossSalary ?? null;
     if (!item.hiring) return null;
     const loaded = this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).loadedCost;
@@ -619,14 +623,18 @@ export class CostApprovalQueueComponent implements OnInit {
   }
 
   /**
+   * Both advance steps the caller may act on, each called only with its permission.
    * Not scoped by `paysId` here: payroll-service filters by the caller's own entity scope.
    */
   loadAdvances(): void {
-    if (!this.canDecideAdvance()) return;
+    const calls: Observable<SalaryAdvanceDto[]>[] = [];
+    if (this.canValidateAdvance()) calls.push(this.advanceSvc.pendingDirector());
+    if (this.canDecideAdvance())   calls.push(this.advanceSvc.pending());
+    if (!calls.length) return;
     this.advancesLoading.set(true);
-    this.advanceSvc.pending().subscribe({
-      next: pending => {
-        this.advances.set(pending);
+    forkJoin(calls).subscribe({
+      next: lists => {
+        this.advances.set(lists.flat());
         this.advancesLoading.set(false);
       },
       error: err => {
@@ -705,7 +713,7 @@ export class CostApprovalQueueComponent implements OnInit {
     }
 
     if (item.kind === 'advance') {
-      this.openAdvanceDecisionModal(item.advance!, decision === 'reject' ? 'reject' : 'approve');
+      this.decidingAdvance.set({ advance: item.advance!, decision: decision === 'reject' ? 'reject' : 'approve' });
       return;
     }
 
@@ -826,50 +834,14 @@ export class CostApprovalQueueComponent implements OnInit {
   }
 
   // ── Salary advances ────────────────────────────────────────────────────────
-  openAdvanceDecisionModal(advance: SalaryAdvanceDto, decision: 'approve' | 'reject'): void {
-    this.selectedAdvance.set(advance);
-    this.advanceDecision.set(decision);
-    this.advanceComment.set('');
-    this.advanceModalError.set(null);
-    const t = (key: string) => this.translate.instant(key);
-    this.advanceRef = this.modal.open({
-      minWidth:    '360px',
-      minHeight:   '260px',
-      resizable:   true,
-      maximizable: true,
-      title: t('FACTURATION.ADVANCES.DECISION_TITLE'),
-      body:  this.advanceDecisionTpl,
-      size:  'md',
-      closeOnBackdrop: false,
-      buttons: [
-        { label: t('COST.APPROVAL_QUEUE.MODAL_CANCEL'),  variant: 'secondary', action: r => r.close() },
-        { label: t('COST.APPROVAL_QUEUE.MODAL_CONFIRM'), variant: 'primary',   action: () => this.submitAdvanceDecision() },
-      ],
-    });
-  }
-
-  /** Guarded here as well as server-side: a ModalButton has no reactive `disabled`. */
-  submitAdvanceDecision(): void {
-    const advance = this.selectedAdvance();
-    if (!advance) return;
-    const comment = this.advanceComment().trim();
-    if (this.advanceDecision() === 'reject' && !comment) {
-      this.advanceModalError.set(this.translate.instant('COST.APPROVAL_QUEUE.REJECT_COMMENT_REQUIRED'));
-      return;
-    }
-    this.advanceModalError.set(null);
-    const call$ = this.advanceDecision() === 'approve'
-      ? this.advanceSvc.approve(advance.id, comment || null)
-      : this.advanceSvc.reject(advance.id, comment);
-    call$.subscribe({
-      next: saved => {
-        this.advanceRef?.close();
-        // Off the queue either way — approved goes to payroll for the payout, rejected is final.
-        this.advances.update(list => list.filter(a => a.id !== saved.id));
-      },
-      error: err => this.advanceModalError.set(
-        err?.error?.detail ?? err?.error?.message ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR')),
-    });
+  /**
+   * Decided in the shared modal. A director's validation moves the advance on to the DAF:
+   * reloading puts it back in this queue for whoever holds the DAF code.
+   */
+  onAdvanceDecided(saved: SalaryAdvanceDto): void {
+    this.decidingAdvance.set(null);
+    this.advances.update(list => list.filter(a => a.id !== saved.id));
+    if (saved.status === 'PENDING_FINANCE') this.loadAdvances();
   }
 
   // ── Salary revisions ───────────────────────────────────────────────────────

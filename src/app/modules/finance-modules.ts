@@ -170,6 +170,18 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
         labelKey: 'FACTURATION.layout.NAV.COST_MISSIONS',
         permissions: ['FACT_APPROVE_MISSION_COST'],
       },
+      // « Avances sur salaire » (spec §4–6) : l'avance vit dans payroll-service (V25/V39),
+      // cet écran l'appelle sur `payrollApiUrl`. Mêmes codes que la route.
+      {
+        id: 'cost-salary-advances',
+        route: 'cost/salary-advances',
+        // `account_balance_wallet`, not `savings`: the piggy bank is avoided across the app.
+        icon: 'account_balance_wallet',
+        tone: 'warning',
+        labelKey: 'FACTURATION.layout.NAV.SALARY_ADVANCES',
+        permissions: ['FACT_APPROVE_SALARY_ADVANCE', 'FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD',
+                      'FACT_VIEW_SALARY_ADVANCES'],
+      },
       {
         id: 'employee-cost',
         route: 'cost/employee-costs',
