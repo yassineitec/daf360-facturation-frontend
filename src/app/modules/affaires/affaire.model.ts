@@ -166,8 +166,12 @@ export interface AffaireListItem {
   rafDisponible?:     number | null;
   /** Somme des factures émises (hors annulées/brouillons/retournées). */
   montantFacture?:    number | null;
-  /** Pas encore un vrai calcul côté serveur — même placeholder que `AffaireKpisDto.wip`. */
+  /** Liste : WIP déclaré + WIP TS déclaré — la même valeur que `AffaireKpisDto.wip`. */
   wip?:               number | null;
+  /** Liste uniquement : tuile Backlog de la fiche (budget + tous les TS − totalFacture). */
+  backlog?:           number | null;
+  /** Liste uniquement : tuile « Total facturé » de la fiche (factures non PAID). */
+  totalFacture?:      number | null;
   rafAlerteSeuilPct:  number;
   paysId:             number;
   devise?:            string;
