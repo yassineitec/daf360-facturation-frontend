@@ -1,5 +1,6 @@
 import { Component, inject, input, output, signal, computed, effect } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { FinancePaths } from '../../../../core/finance-paths';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
 import { InvoiceService } from '../../invoice.service';
@@ -255,6 +256,7 @@ export class StepRecapComponent {
   private readonly contactSvc   = inject(ClientContactService);
   private readonly affSvc       = inject(AffaireService);
   private readonly router       = inject(Router);
+  private readonly paths        = inject(FinancePaths);
   private readonly route        = inject(ActivatedRoute);
   private readonly translate    = inject(TranslateService);
   private readonly factListSvc  = inject(FactListService);
@@ -494,7 +496,7 @@ export class StepRecapComponent {
   }
 
   goToInvoice(id: number): void {
-    this.router.navigate(['..', id], { relativeTo: this.route });
+    this.router.navigate(this.paths.invoice(id));
   }
 
   /** Télécharge l'aperçu PDF (brouillon, non numéroté — mode AV uniquement). */
