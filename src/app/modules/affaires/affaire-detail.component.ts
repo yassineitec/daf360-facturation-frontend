@@ -1692,24 +1692,30 @@ export class AffaireDetailComponent implements OnInit {
   });
 
   /**
-   * Dépassement de budget : le RAF est passé négatif, donc l'affaire a facturé plus que
-   * son enveloppe.
+   * Dépassement de budget : les factures émises (HT) dépassent budget + Budget TS.
+   * Second niveau d'alerte, au-dessus de `rafAlertActive`, et le seul à s'afficher sur la
+   * page (bandeau) plutôt que dans le drawer.
    *
-   * Sur `rafDisponible < 0` et non sur un pourcentage : c'est le chiffre du serveur, donc
-   * le bandeau ne peut pas contredire la tuile RAF, et il n'y a pas de division par zéro
-   * à traiter. C'est le second niveau d'alerte, au-dessus de `rafAlertActive` (le seuil de
-   * vigilance paramétré sur l'affaire) — et le seul à sortir du drawer pour s'afficher sur
-   * la page, parce qu'un dépassement ne doit pas attendre qu'on ouvre un panneau.
+   * Règle du 2026-11-13 : ne lit plus `rafDisponible`. Le RAF ne compte que les TS
+   * INTEGRE, alors que le texte cite budget + TOUS les TS (la tuile « Budget TS ») : une
+   * affaire avec des TS non intégrés pouvait afficher « facturé 120 pour une enveloppe de
+   * 150 » ET un dépassement. Condition, montant et texte partagent désormais la même
+   * enveloppe, celle du Backlog. Le RAF serveur ne change pas (blocage RG12).
    */
-  readonly budgetOverrun = computed(() => (this.raf()?.rafDisponible ?? 0) < 0);
+  readonly budgetOverrun = computed(() => this.overrunAmount() > 0);
 
-  /** L'enveloppe citée par le bandeau « Budget dépassé » : budget prévisionnel + la tuile
-   *  « Budget TS » (`totalTs`, tous les TS). Sans le terme TS, le texte annonçait
-   *  « facturé 165 000 pour une enveloppe de 100 000 » à côté d'un dépassement de 5 000. */
+  /** L'enveloppe du bandeau « Budget dépassé » : budget prévisionnel + la tuile
+   *  « Budget TS » (`totalTs`, tous les TS) — la même que le Backlog. */
   readonly overrunEnvelope = computed(() => this.budgetTotal() + (this.kpis()?.totalTs ?? 0));
 
-  /** Le montant du dépassement, positif. 0 quand il n'y a pas de dépassement. */
-  readonly overrunAmount = computed(() => Math.max(0, -(this.raf()?.rafDisponible ?? 0)));
+  /** Le montant du dépassement, positif : factures émises (HT) − enveloppe. 0 sans
+   *  dépassement, et 0 tant que les KPIs ne sont pas chargés — sans `totalTs`,
+   *  l'enveloppe se réduirait au budget et le bandeau clignoterait à tort. */
+  readonly overrunAmount = computed(() => {
+    const raf = this.raf();
+    if (!raf || !this.kpis()) return 0;
+    return Math.max(0, (raf.totalFacturesEmises ?? 0) - this.overrunEnvelope());
+  });
 
   /**
    * L'état de RISQUE de l'affaire : où en est la facturation par rapport au seuil d'alerte

@@ -3369,7 +3369,7 @@
         "RAF_HELP": "What is left to invoice: budget + integrated additional work − issued invoices. The percentage is the share still available. Negative = overrun.",
         "WIP": "WIP",
         "WIP_SUB": "Work in progress",
-        "WIP_HELP": "Fixed-price: sum of the “Invoiced” column of the rate history (WIP tab), all rows included. T&M/Deliverable: sum of EVERY WIP entry in the WIP tab (whatever its status) − Total invoiced; negative = more was invoiced than the declared WIP. In all three cases, the sum of the “Invoiced” column of the TS WIP tab is added. 0 for other billing modes.",
+        "WIP_HELP": "Sum of the WIP declared in the WIP and TS WIP tabs.",
         "MARGIN": "Gross margin",
         "MARGIN_TARGET": "Margin target",
         "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated.",
@@ -3467,7 +3467,7 @@
         "RAF_ALERT_TITLE": "RAF threshold exceeded",
         "RAF_ALERT_TEXT": "The alert threshold of {{pct}}% has been reached. Check the remaining amount.",
         "BUDGET_OVERRUN_TITLE": "Budget overrun",
-        "BUDGET_OVERRUN_TEXT": "This project has invoiced {{invoiced}} against an envelope of {{budget}} (budget + TS budget). The remaining amount is negative: integrate additional work or correct the invoices involved.",
+        "BUDGET_OVERRUN_TEXT": "This project has invoiced {{invoiced}} against an envelope of {{budget}} (budget + TS budget).",
         "BUDGET_OVERRUN_AMOUNT": "Overrun"
       },
       "MODAL": {
