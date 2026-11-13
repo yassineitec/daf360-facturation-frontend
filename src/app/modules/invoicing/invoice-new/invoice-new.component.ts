@@ -200,6 +200,13 @@ export class InvoiceNewComponent implements OnInit {
         // StepAffaireValue.combinedAffaireCount) -- so the real count comes from the lines.
         const combinedAffaireIds = new Set(
           inv.lines.map(l => l.affaireId).filter((id): id is number => id != null));
+        // Since 2026-11-11 a combined invoice whose lines all come from ONE affaire carries
+        // that real affaireId (DFValidationService.validateDFCombined), so a null affaireId
+        // no longer catches every combined invoice. MIXED is the other signal: no single-mode
+        // branch of step-lines can carry such an invoice's lines without dropping their
+        // avancement columns (same-mode combined invoices still go through their mode's own
+        // branch, which handles them).
+        const combined = inv.affaireId == null || inv.billingMode === 'MIXED';
         this.initialAffaire.set({
           affaireId:   inv.affaireId,
           tsId:        inv.tsId,
@@ -208,7 +215,8 @@ export class InvoiceNewComponent implements OnInit {
           paysId:      inv.paysId,
           currency:    inv.devise,
           billingMode: inv.billingMode,
-          combinedAffaireCount: inv.affaireId == null ? combinedAffaireIds.size : undefined,
+          combined,
+          combinedAffaireCount: combined ? combinedAffaireIds.size : undefined,
         });
         this.initialLines.set({
           lines: inv.lines.map(l => ({
@@ -225,6 +233,7 @@ export class InvoiceNewComponent implements OnInit {
             affaireId:       l.affaireId   ?? undefined,
             billingMode:     l.billingMode ?? undefined,
             tsId:            l.tsId        ?? undefined,
+            sourceLineId:    l.id          ?? undefined,
             deductionPct1:   l.deductionPct1,
             deductionPct2:   l.deductionPct2,
             deductionPct3:   l.deductionPct3,
@@ -238,7 +247,11 @@ export class InvoiceNewComponent implements OnInit {
           conditionsPaiement: inv.conditionsPaiement ?? '',
           bonDeCommande:      inv.bonDeCommande,
           notes:              inv.notes,
-          dateEmission:       inv.dateEmission ?? '',
+          // API returns emittedAt as a full timestamp (2026-11-13T16:57:16+01:00); the amend
+          // endpoint takes a plain date (UpdateInvoiceRequest.emittedAt is a LocalDate). Keep
+          // the date part as written -- the same day the picker shows (step-conditions reads
+          // the first 10 chars) -- or an untouched issue date made every amend fail with 500.
+          dateEmission:       inv.dateEmission ? inv.dateEmission.slice(0, 10) : '',
           invoiceNumber:      inv.invoiceNumber ?? '',
         });
         this.loadingExisting.set(false);

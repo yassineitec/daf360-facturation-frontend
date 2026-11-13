@@ -8,7 +8,7 @@ import {
   FormFieldComponent, FormFieldOptions, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import { PendingCarryForwardDto } from '../../invoice.model';
-import { StepAffaireValue } from './step-affaire.component';
+import { StepAffaireValue, isCombinedStepValue } from './step-affaire.component';
 import { InvoiceService } from '../../invoice.service';
 import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.service';
 import { AffaireService } from '../../../affaires/affaire.service';
@@ -52,6 +52,10 @@ export interface StepLinesValue {
     deductionPct1?: number;
     deductionPct2?: number;
     deductionPct3?: number;
+    // Edit/amend only: the stored invoice line this one re-submits (InvoiceLine.id), seeded
+    // by invoice-new.component.ts and sent back untouched on every branch of next(). The
+    // backend pairs lines on it and refuses to null an existing line's avancement columns.
+    sourceLineId?: number;
   }[];
   // Période facturée — les heures récupérées en T&M, la période de génération du lot en
   // Livrable ; renseignée par le serveur à la génération dans les deux cas et simplement
@@ -761,8 +765,10 @@ export class StepLinesComponent {
    * lines all share the same mode (e.g. two FORFAIT affaires) keeps that single mode
    * as its billingMode and only gets literal "MIXED" when the combined lines actually
    * span different modes. See readOnly() below for which of these can still add/edit
-   * lines. */
-  readonly isCombined = computed(() => this.affaireData().affaireId == null);
+   * lines. Since 2026-11-11 a same-affaire combined invoice carries a real affaireId, so the
+   * explicit combined flag is read too (isCombinedStepValue) -- without it a same-affaire
+   * MIXED invoice matched no branch of next() and lost its avancement columns on save. */
+  readonly isCombined = computed(() => isCombinedStepValue(this.affaireData()));
 
   /** Mirrors step-affaire.component.ts's isSameAffaireCombined() exactly -- true only for a
    * combined invoice that's actually ONE affaire (several billing modes merged, e.g. a
@@ -818,7 +824,7 @@ export class StepLinesComponent {
   /** Read-only combined-invoice line data, captured once from seedFromInitialLines() --
    * index-aligned with linesArray.controls for a combined invoice specifically (never
    * populated for any other mode). */
-  readonly combinedLineMeta = signal<{ affaireId?: number; billingMode?: string }[]>([]);
+  readonly combinedLineMeta = signal<{ affaireId?: number; billingMode?: string; tsId?: number }[]>([]);
 
   private readonly initialPeriodFrom = signal<string | null>(null);
   private readonly initialPeriodTo   = signal<string | null>(null);
@@ -1046,6 +1052,9 @@ export class StepLinesComponent {
           tauxTva:         l.vatRatePct,
           sourceExpenseId: l.sourceExpenseId,
           sourceCarryForwards: l.sourceCarryForwards ?? [],
+          lineId:          l.sourceLineId ?? null,
+          lineAffaireId:   l.affaireId    ?? null,
+          lineBillingMode: l.billingMode  ?? null,
           deductionPct1:   l.deductionPct1 ?? null,
           deductionPct2:   l.deductionPct2 ?? null,
           deductionPct3:   l.deductionPct3 ?? null,
@@ -1069,6 +1078,9 @@ export class StepLinesComponent {
           sourceExpenseId: l.sourceExpenseId ?? null,
           sourceCarryForwards: l.sourceCarryForwards ?? [],
           tsId:            l.tsId ?? null,
+          lineId:          l.sourceLineId ?? null,
+          lineAffaireId:   l.affaireId    ?? null,
+          lineBillingMode: l.billingMode  ?? null,
           profileUserId:   l.profileUserId ?? null,
           deductionPct1:   l.deductionPct1 ?? null,
           deductionPct2:   l.deductionPct2 ?? null,
@@ -1080,7 +1092,8 @@ export class StepLinesComponent {
     if (this.linesArray.length === 0) this.linesArray.push(this.newLine());
 
     if (this.isCombined()) {
-      this.combinedLineMeta.set(initial.lines.map(l => ({ affaireId: l.affaireId, billingMode: l.billingMode })));
+      this.combinedLineMeta.set(initial.lines.map(l => ({
+        affaireId: l.affaireId, billingMode: l.billingMode, tsId: l.tsId })));
       this.resolveAffaireLabels(initial.lines.map(l => l.affaireId).filter((id): id is number => id != null));
     }
 
@@ -1215,6 +1228,14 @@ export class StepLinesComponent {
       // savoir à quel TS une ligne TS appartient déjà, et éviter de fusionner les reliquats
       // de deux TS différents.
       tsId:             [null as number | null],
+      // Identité de la ligne enregistrée (édition/amendement uniquement), jamais affichée :
+      // id de la ligne stockée + affaire/mode qui la possèdent. Portée par la ligne
+      // elle-même plutôt qu'alignée par index (combinedLineMeta), pour qu'un réordonnancement
+      // ou le tri lignes/remboursables ne la décale jamais. Réémise par next() dans TOUTES
+      // les branches -- le backend s'en sert pour ne jamais effacer l'avancement stocké.
+      lineId:           [null as number | null],
+      lineAffaireId:    [null as number | null],
+      lineBillingMode:  [null as string | null],
       profileUserId:    [null as number | null],
       // Toujours créés, que des colonnes de déduction soient actives ou non sur la
       // facture au moment où cette ligne est créée — un contrôle inutilisé ne coûte rien
@@ -1333,6 +1354,10 @@ export class StepLinesComponent {
       tauxTva:          [0],
       sourceExpenseId:  [null as number | null],
       sourceCarryForwards: [[] as { sourceBillingLineId: number; amount: number }[]],
+      // Même identité cachée que newLine() -- voir son commentaire.
+      lineId:           [null as number | null],
+      lineAffaireId:    [null as number | null],
+      lineBillingMode:  [null as string | null],
       deductionPct1:    [null as number | null],
       deductionPct2:    [null as number | null],
       deductionPct3:    [null as number | null],
@@ -1750,6 +1775,18 @@ export class StepLinesComponent {
       deductionPct2: l.deductionPct2 ?? undefined,
       deductionPct3: l.deductionPct3 ?? undefined,
     });
+    // Identité de la ligne enregistrée (cf. contrôles cachés lineId/lineAffaireId/
+    // lineBillingMode de newLine()), réémise par TOUTES les branches ci-dessous : le backend
+    // apparie chaque ligne à sa version précédente par sourceLineId et refuse d'effacer son
+    // avancement stocké (InvoiceService.preserveLineContext). Une ligne neuve n'a rien.
+    type LineIdentityControls = {
+      lineId?: number | null; lineAffaireId?: number | null; lineBillingMode?: string | null;
+    };
+    const identity = (l: LineIdentityControls) => ({
+      sourceLineId: l.lineId ?? undefined,
+      ...(l.lineAffaireId   != null ? { affaireId:   l.lineAffaireId }   : {}),
+      ...(l.lineBillingMode != null ? { billingMode: l.lineBillingMode } : {}),
+    });
 
     if (this.isCombined()) {
       // Re-emit each originally-seeded line's own affaireId/billingMode unchanged so the
@@ -1758,14 +1795,20 @@ export class StepLinesComponent {
       // isSameAffaireCombined()) has no meta entry of its own -- meta[0] is always that
       // one shared affaire/mode in that case, genuinely ambiguous (and so unreachable)
       // otherwise.
+      // Each row's own seeded identity first (lineAffaireId/lineBillingMode, carried on the
+      // row itself so it can't drift by index), then the invoice's first seeded line as the
+      // shared fallback for a row added here. tsId, carry-forward and expense sources are
+      // re-emitted too -- they used to be dropped here, so a TS line lost which TS it bills
+      // on the first save.
       const meta = this.combinedLineMeta();
-      const combinedLines = (this.linesArray.value as {
+      const combinedLines = (this.linesArray.value as ({
         description: string; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
-        prixUnitaireHt: number;
+        prixUnitaireHt: number; tsId: number | null; sourceExpenseId: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map((l, i) => ({
+      } & LineIdentityControls)[]).map(l => ({
         description:   l.description,
         quantity:      1,
         unitRate:      l.prixUnitaireHt,
@@ -1774,8 +1817,12 @@ export class StepLinesComponent {
         pctFacture:    l.pctFacture    ?? undefined,
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
-        affaireId:     meta[i]?.affaireId   ?? meta[0]?.affaireId,
-        billingMode:   meta[i]?.billingMode ?? meta[0]?.billingMode,
+        tsId:          l.tsId ?? undefined,
+        sourceExpenseId: l.sourceExpenseId ?? undefined,
+        sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...identity(l),
+        affaireId:     l.lineAffaireId   ?? meta[0]?.affaireId,
+        billingMode:   l.lineBillingMode ?? meta[0]?.billingMode,
         ...dedFields(l),
       }));
 
@@ -1784,19 +1831,20 @@ export class StepLinesComponent {
       // as a normal AV invoice's own -- see the isAv() branch below. No per-line meta of
       // their own (never part of the original seeded set), so they always take the one
       // shared affaire/mode directly.
-      const combinedExpenseLines = (this.expenseLinesArray.value as {
+      const combinedExpenseLines = (this.expenseLinesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number; sourceExpenseId: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map(l => ({
+      } & LineIdentityControls)[]).map(l => ({
         description:     l.description,
         quantity:        1,
         unitRate:        l.prixUnitaireHt,
         vatRatePct:      l.tauxTva,
         sourceExpenseId: l.sourceExpenseId ?? undefined,
         sourceCarryForwards: l.sourceCarryForwards ?? undefined,
-        affaireId:       meta[0]?.affaireId,
-        billingMode:     meta[0]?.billingMode,
+        ...identity(l),
+        affaireId:       l.lineAffaireId   ?? meta[0]?.affaireId,
+        billingMode:     l.lineBillingMode ?? meta[0]?.billingMode,
         ...dedFields(l),
       }));
 
@@ -1808,12 +1856,12 @@ export class StepLinesComponent {
       // pourcentages à 100 % quoi que l'utilisateur ait saisi -- faux pour une avance,
       // qui est un VRAI pourcentage du budget (cf. setNum()/newLine() plus haut). Réémet
       // donc budgetAffaire/pctFacture/pctAvancement/pctAFacturer tels quels, comme AV.
-      const acompteLines = (this.linesArray.value as {
+      const acompteLines = (this.linesArray.value as ({
         description: string; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[])
+      } & LineIdentityControls)[])
         .map((l, i) => ({
           description:   l.description,
           quantity:      1,          // rétrocompat : quantity=1, unitRate=montantHt
@@ -1823,6 +1871,7 @@ export class StepLinesComponent {
           pctFacture:    l.pctFacture    ?? undefined,
           pctAvancement: l.pctAvancement ?? undefined,
           pctAFacturer:  l.pctAFacturer  ?? undefined,
+          ...identity(l),
           ...dedFields(l),
         }));
       this.nextStep.emit({ lines: acompteLines, deductionColumns });
@@ -1834,13 +1883,13 @@ export class StepLinesComponent {
       // main garde `pctAvancement=null` en permanence (pas de WIP à tracer) et utilise la
       // saisie directe du montant à la place — donc pas de validation "champ requis" ici,
       // contrairement à l'ancien comportement (cf. Livrable, qui n'en a pas non plus).
-      const avancementLines = (this.linesArray.value as {
+      const avancementLines = (this.linesArray.value as ({
         description: string; tauxTva: number; sourceExpenseId: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[])
+      } & LineIdentityControls)[])
         .map((l, i) => ({
           description:     l.description,
           quantity:        1,          // rétrocompat : quantity=1, unitRate=montantHt
@@ -1852,6 +1901,7 @@ export class StepLinesComponent {
           pctAFacturer:    l.pctAFacturer  ?? undefined,
           sourceExpenseId: l.sourceExpenseId ?? undefined,
           sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+          ...identity(l),
           ...dedFields(l),
         }));
 
@@ -1859,17 +1909,18 @@ export class StepLinesComponent {
       // d'avancement — le backend prend la branche "quantity × unitRate" (le calcul
       // AV ne s'applique que quand budgetAffaire ET pctAFacturer sont renseignés,
       // cf. InvoiceService.saveLines côté service).
-      const expenseLines = (this.expenseLinesArray.value as {
+      const expenseLines = (this.expenseLinesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number; sourceExpenseId: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map(l => ({
+      } & LineIdentityControls)[]).map(l => ({
         description:     l.description,
         quantity:        1,
         unitRate:        l.prixUnitaireHt,
         vatRatePct:      l.tauxTva,
         sourceExpenseId: l.sourceExpenseId ?? undefined,
         sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...identity(l),
         ...dedFields(l),
       }));
 
@@ -1878,11 +1929,11 @@ export class StepLinesComponent {
       // Les trois pourcentages sont toujours 100 % (une ligne T&M = la totalité du WIP
       // déjà calculé pour sa période) — Budget affaire égale toujours le montant saisi,
       // cf. template.
-      const tmLines = (this.linesArray.value as {
+      const tmLines = (this.linesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map(l => {
+      } & LineIdentityControls)[]).map(l => {
         const montant = l.prixUnitaireHt ?? 0;
         return {
           description:   l.description,
@@ -1894,6 +1945,7 @@ export class StepLinesComponent {
           pctAvancement: 100,
           pctAFacturer:  100,
           sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+          ...identity(l),
           ...dedFields(l),
         };
       });
@@ -1921,13 +1973,13 @@ export class StepLinesComponent {
       // budgetAffaire × pctAFacturer côté serveur alors que l'en-tête de la facture se
       // calcule, lui, en quantity × unitRate (cf. InvoiceService.computeSubtotal) — les
       // faire partir de la même valeur est ce qui garantit qu'ils concordent.
-      const livrableLines = (this.linesArray.value as {
+      const livrableLines = (this.linesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map((l, i) => ({
+      } & LineIdentityControls)[]).map((l, i) => ({
         description:   l.description,
         quantity:      1,          // rétrocompat : quantity=1, unitRate=montant
         unitRate:      this.lineHtLivrable(i),
@@ -1937,6 +1989,7 @@ export class StepLinesComponent {
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
         sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...identity(l),
         ...dedFields(l),
       }));
       this.nextStep.emit({
@@ -1955,14 +2008,14 @@ export class StepLinesComponent {
       // here exactly as-is, never recalculated, same principle as isAv() above. Carry
       // the period from the server-generated draft so it is preserved on re-save, same
       // as isTm() / isLivrable().
-      const tsLines = (this.linesArray.value as {
+      const tsLines = (this.linesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         tsId: number | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map((l, i) => ({
+      } & LineIdentityControls)[]).map((l, i) => ({
         description:   l.description,
         quantity:      1,
         unitRate:      this.lineHtTm(i),
@@ -1973,6 +2026,7 @@ export class StepLinesComponent {
         pctAFacturer:  l.pctAFacturer  ?? undefined,
         sourceCarryForwards: l.sourceCarryForwards ?? undefined,
         tsId:          l.tsId ?? undefined,
+        ...identity(l),
         ...dedFields(l),
       }));
       this.nextStep.emit({
@@ -1982,13 +2036,21 @@ export class StepLinesComponent {
         deductionColumns,
       });
     } else {
+      // Branche standard (pas de colonnes d'avancement à l'écran) -- mais si une ligne
+      // chargée en porte (budgetAffaire seedé), elles sont réémises telles quelles plutôt
+      // que perdues : c'est exactement par ici qu'une facture combinée mono-affaire MIXED
+      // effaçait ses % avant le correctif du 2026-11-13. Ceinture et bretelles avec
+      // InvoiceService.preserveLineContext côté serveur.
       this.nextStep.emit({
-        lines: (this.linesArray.value as {
+        lines: (this.linesArray.value as ({
           description: string; quantite: number; prixUnitaireHt: number; tauxTva: number;
           sourceExpenseId: number | null; profileUserId: number | null;
           sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
+          budgetAffaire: number | null; pctFacture: number | null;
+          pctAvancement: number | null; pctAFacturer: number | null;
+          tsId: number | null;
           deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-        }[]).map(l => ({
+        } & LineIdentityControls)[]).map(l => ({
           description:     l.description,
           quantity:        l.quantite,
           unitRate:        l.prixUnitaireHt,
@@ -1996,6 +2058,14 @@ export class StepLinesComponent {
           sourceExpenseId: l.sourceExpenseId ?? undefined,
           sourceCarryForwards: l.sourceCarryForwards ?? undefined,
           profileUserId:   l.profileUserId ?? undefined,
+          ...(l.budgetAffaire != null ? {
+            budgetAffaire: l.budgetAffaire,
+            pctFacture:    l.pctFacture    ?? undefined,
+            pctAvancement: l.pctAvancement ?? undefined,
+            pctAFacturer:  l.pctAFacturer  ?? undefined,
+          } : {}),
+          tsId:            l.tsId ?? undefined,
+          ...identity(l),
           ...dedFields(l),
         })),
         periodFrom: null,

@@ -9,7 +9,7 @@ import { ClientDetailDto } from '../../../clients/client.model';
 import { ClientContactService } from '../../../clients/contacts/client-contact.service';
 import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
 import { AffaireService } from '../../../affaires/affaire.service';
-import { StepAffaireValue } from './step-affaire.component';
+import { StepAffaireValue, isCombinedStepValue } from './step-affaire.component';
 import { invoiceTypeLabel } from '../../../../core/invoice-type-labels.service';
 import { FactListService } from '../../../../core/fact-list.service';
 import { CurrencyContextService } from '../../../../core/currency-context.service';
@@ -357,8 +357,9 @@ export class StepRecapComponent {
    * committing. Detected via a null affaireId (the real, universal signal), NOT
    * billingMode === 'MIXED': a combined invoice whose lines all share the same mode keeps
    * that single mode as its billingMode and only gets literal "MIXED" when the combined
-   * lines actually span different modes (see DFValidationService). */
-  readonly isCombined = computed(() => this.affaireData().affaireId == null);
+   * lines actually span different modes (see DFValidationService). Same-affaire combined
+   * invoices carry a real affaireId since 2026-11-11 -- see isCombinedStepValue(). */
+  readonly isCombined = computed(() => isCombinedStepValue(this.affaireData()));
 
   /** affaireId -> "REF — Intitulé", resolved once per distinct affaireId among the combined
    * invoice's lines. Empty until resolveAffaireLabels() resolves (see the effect in the
@@ -444,7 +445,8 @@ export class StepRecapComponent {
       billingMode:   a.billingMode,
       currency:      a.currency,
       tsId:          a.tsId,
-      emittedAt:     c.dateEmission || null,
+      // yyyy-MM-dd only: the backend field is a LocalDate (see invoice-new's seed).
+      emittedAt:     c.dateEmission ? c.dateEmission.slice(0, 10) : null,
       dueDate:       c.dateEcheance,
       notes:         c.notes,
       conditionsPaiement: c.conditionsPaiement,
