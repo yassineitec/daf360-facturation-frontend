@@ -3374,7 +3374,7 @@
         "RAF_HELP": "Ce qui reste à facturer : budget + TS intégrés − factures émises. Le pourcentage est la part encore disponible. Négatif = budget dépassé.",
         "WIP": "WIP",
         "WIP_SUB": "Travaux en cours",
-        "WIP_HELP": "Forfaitaire : somme de la colonne « Facturé » de l'historique des taux (onglet WIP), toutes lignes confondues. Régie/Livrable : somme de TOUS les WIP de l'onglet WIP (quel que soit leur statut) − Total facturé ; négatif = on a facturé plus que le WIP déclaré. Dans les trois cas, s'y ajoute la somme de la colonne « Facturé » de l'onglet TS WIP. Vaut 0 pour les autres modes.",
+        "WIP_HELP": "Somme des WIP déclarés dans les onglets WIP et TS WIP.",
         "MARGIN": "Marge brute",
         "MARGIN_TARGET": "Objectif de marge",
         "MARGIN_HELP": "(Encaissé − sous-traitance) / encaissé : un % du CA, pas du budget. Les coûts internes valent 0 faute de timesheet, la marge est surévaluée.",
@@ -3472,7 +3472,7 @@
         "RAF_ALERT_TITLE": "Alerte RAF dépassée",
         "RAF_ALERT_TEXT": "Le seuil d'alerte de {{pct}}% est atteint. Vérifiez le reste à facturer.",
         "BUDGET_OVERRUN_TITLE": "Budget dépassé",
-        "BUDGET_OVERRUN_TEXT": "L'affaire a facturé {{invoiced}} pour une enveloppe de {{budget}} (budget + budget TS). Le reste à facturer est négatif : intégrez un travail supplémentaire ou corrigez les factures concernées.",
+        "BUDGET_OVERRUN_TEXT": "L'affaire a facturé {{invoiced}} pour une enveloppe de {{budget}} (budget + budget TS).",
         "BUDGET_OVERRUN_AMOUNT": "Dépassement"
       },
       "MODAL": {
