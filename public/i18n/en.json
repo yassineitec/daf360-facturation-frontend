@@ -3472,7 +3472,7 @@
         "RAF_ALERT_TITLE": "RAF threshold exceeded",
         "RAF_ALERT_TEXT": "The alert threshold of {{pct}}% has been reached. Check the remaining amount.",
         "BUDGET_OVERRUN_TITLE": "Budget overrun",
-        "BUDGET_OVERRUN_TEXT": "This project has invoiced {{invoiced}} against an envelope of {{budget}}. The remaining amount is negative: integrate additional work or correct the invoices involved.",
+        "BUDGET_OVERRUN_TEXT": "This project has invoiced {{invoiced}} against an envelope of {{budget}} (budget + TS budget). The remaining amount is negative: integrate additional work or correct the invoices involved.",
         "BUDGET_OVERRUN_AMOUNT": "Overrun"
       },
       "MODAL": {

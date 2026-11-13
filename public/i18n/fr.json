@@ -3472,7 +3472,7 @@
         "RAF_ALERT_TITLE": "Alerte RAF dépassée",
         "RAF_ALERT_TEXT": "Le seuil d'alerte de {{pct}}% est atteint. Vérifiez le reste à facturer.",
         "BUDGET_OVERRUN_TITLE": "Budget dépassé",
-        "BUDGET_OVERRUN_TEXT": "L'affaire a facturé {{invoiced}} pour une enveloppe de {{budget}}. Le reste à facturer est négatif : intégrez un travail supplémentaire ou corrigez les factures concernées.",
+        "BUDGET_OVERRUN_TEXT": "L'affaire a facturé {{invoiced}} pour une enveloppe de {{budget}} (budget + budget TS). Le reste à facturer est négatif : intégrez un travail supplémentaire ou corrigez les factures concernées.",
         "BUDGET_OVERRUN_AMOUNT": "Dépassement"
       },
       "MODAL": {

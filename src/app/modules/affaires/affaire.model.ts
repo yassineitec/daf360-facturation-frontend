@@ -236,8 +236,8 @@ export interface AffaireKpisDto {
   margeBrutePct:              number;
   /** Toujours 0 côté backend. */
   tauxAvancement:             number;
-  /** (Budget prévisionnel + budget TS intégrés) − `totalFacture` : le reste du contrat à
-   *  facturer. Négatif = budget dépassé. */
+  /** (Budget prévisionnel + `totalTs`) − `totalFacture` : le reste du contrat à facturer.
+   *  Négatif = budget dépassé. */
   backlog:                    number;
   /** Somme des factures dont le statut n'est pas `PAID` — le facturé non encore soldé.
    *  Le « facturé » de référence : `backlog` et `wip` se calculent dessus. */
