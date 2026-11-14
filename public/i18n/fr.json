@@ -3467,7 +3467,7 @@
         "BACKLOG": "Backlog",
         "BACKLOG_HELP": "Ce qui reste du contrat à facturer : (budget prévisionnel + budget TS) − Total facturé (la tuile voisine). La pastille est la part du budget encore au backlog. Négatif = budget dépassé.",
         "INVOICED": "Total facturé",
-        "INVOICED_HELP": "Somme des factures de l'affaire dont le statut n'est pas « Encaissé » — le facturé non encore soldé. C'est le « facturé » de référence : le Backlog et le WIP se calculent dessus."
+        "INVOICED_HELP": "Somme des factures de l'affaire dont le statut n'est pas « Encaissé » — le facturé non encore soldé. C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé."
       },
       "INFO": {
         "TITLE": "Informations générales",

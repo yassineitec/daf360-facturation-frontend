@@ -3467,7 +3467,7 @@
         "BACKLOG": "Backlog",
         "BACKLOG_HELP": "What is left of the contract to invoice: (forecast budget + TS budget) − Total invoiced (the neighbouring tile). The pill is the share of the budget still in backlog. Negative = overrun.",
         "INVOICED": "Total invoiced",
-        "INVOICED_HELP": "Sum of this project's invoices whose status is not 'Collected' — the invoiced amount still owed. This is the reference 'invoiced' figure: Backlog and WIP are both computed from it."
+        "INVOICED_HELP": "Sum of this project's invoices whose status is not 'Collected' — the invoiced amount still owed. This is the reference 'invoiced' figure: Backlog is computed from it. The pill is the billing rate: issued invoices excl. VAT / (forecast budget + TS budget); above 100% = budget overrun."
       },
       "INFO": {
         "TITLE": "General information",
