@@ -564,9 +564,15 @@ export const CATEGORY_ICON: Record<string, { icon: string; color: string; bg: st
   DEFAULT:     { icon: 'receipt_long',   color: '#64748B', bg: '#F1F5F9' },
 };
 
-// ── Rate computation ──────────────────────────────────────────────────────────
+// ── Rate computation (F.04 barèmes de taux) ───────────────────────────────────
 
-export type RateComputationStatus = 'DRAFT' | 'COMPUTED' | 'VALIDATED';
+export type RateComputationStatus = 'DRAFT' | 'COMPUTED' | 'VALIDATED' | 'APPROVED';
+
+export interface RateWarningDto {
+  /** NO_COST | EXCLUDED_STAFF_TYPE | ETPT_ZERO | FX_MISSING | PAYROLL_UNAVAILABLE */
+  code: string;
+  detail: string | null;
+}
 
 export interface RateComputationDto {
   id: number;
@@ -582,15 +588,34 @@ export interface RateComputationDto {
   productivityRate: number | null;
   workingDaysPerMonth: number | null;
   sellingMonthsPerYear: number | null;
-  intercoMarginPct: number | null;
-  externalMarginPct: number | null;
+  hoursPerDay: number | null;
+  conversionDaysPerMonth: number | null;
   currency: string | null;
+  /** F.04 results, annualised, barème currency — null until computed. */
+  totalEntityCost: number | null;
+  billableSalaries: number | null;
+  nonbillableSalaries: number | null;
+  poolCategoriesCost: number | null;
+  overheadPool: number | null;
+  etpt: number | null;
+  sellableHoursPerEtpt: number | null;
+  overheadPerHour: number | null;
+  /** Units of the barème currency per 1 EUR / 1 USD (frozen at compute time). */
+  fxEurRate: number | null;
+  fxUsdRate: number | null;
+  fxCapturedAt: string | null;
+  computedAt: string | null;
+  warnings: RateWarningDto[];
+  validatedBy: number | null;
+  validatedByName: string | null;
   validatedAt: string | null;
+  approvedBy: number | null;
+  approvedByName: string | null;
+  approvedAt: string | null;
   pushedToPmAt: string | null;
 }
 
-export interface CreateRateComputationRequest {
-  paysId: number;
+export interface RateParametersRequest {
   periodType: string;
   periodYear: number;
   periodQuarter?: number | null;
@@ -600,60 +625,75 @@ export interface CreateRateComputationRequest {
   productivityRate?: number | null;
   workingDaysPerMonth?: number | null;
   sellingMonthsPerYear?: number | null;
-  intercoMarginPct?: number | null;
-  externalMarginPct?: number | null;
-  currency?: string | null;
+  hoursPerDay?: number | null;
+  conversionDaysPerMonth?: number | null;
 }
+
+export interface CreateRateComputationRequest extends RateParametersRequest {
+  paysId: number;
+}
+
+export type UpdateRateComputationRequest = RateParametersRequest;
 
 export const RATE_COMPUTATION_STATUS_CONFIG: Record<RateComputationStatus, { label: string; bg: string; text: string }> = {
-  DRAFT:     { label: 'Brouillon', bg: '#f1f5f9', text: '#475569' },
-  COMPUTED:  { label: 'Calculé',   bg: '#dbeafe', text: '#1d4ed8' },
-  VALIDATED: { label: 'Validé ✓',  bg: '#d1fae5', text: '#065f46' },
+  DRAFT:     { label: 'Brouillon',     bg: '#f1f5f9', text: '#475569' },
+  COMPUTED:  { label: 'Calculé',       bg: '#dbeafe', text: '#1d4ed8' },
+  VALIDATED: { label: 'Validé (FM)',   bg: '#fef3c7', text: '#92400e' },
+  APPROVED:  { label: 'Approuvé (CD)', bg: '#d1fae5', text: '#065f46' },
 };
 
-// ── Rate computation — cost formula + auto-populated lines ────────────────────
-
-export interface FormulaCostItemDto {
-  categoryCode: string;
-  label: string;
-  allocationMethod: string;
-  amount: number;
-}
-
-export interface RateFormulaItemDto {
-  id: number | null;
-  paysId: number;
-  categoryCode: string;
-  categoryLabel: string;
-  allocationMethod: 'PER_HEADCOUNT' | 'FIXED_AMOUNT' | 'DIRECT';
-  fixedAmountPerEmployee: number | null;
-  labelOverride: string | null;
-  displayOrder: number;
-}
+export type RateCostSource = 'PAYROLL' | 'EMPLOYEE_COST' | 'NONE';
 
 export interface RateComputationLineDto {
   id: number;
   rateComputationId: number;
-  granularity: string;
   profileUserId: number | null;
-  grade: string | null;
-  discipline: string | null;
-  directCost: number | null;
-  allocatedOverhead: number | null;
-  allocatedHqCost: number | null;
-  targetMargin: number | null;
-  formulaItems: FormulaCostItemDto[];
-  dryRate: number | null;
-  intercompanyRate: number | null;
-  externalRate: number | null;
-  source: 'MANUAL' | 'AUTO';
-  ratePerYear: number | null;
-  ratePerMonth: number | null;
-  ratePerDay: number | null;
-  ratePerHour: number | null;
+  employeeProfileId: number | null;
+  employeeName: string | null;
+  staffType: string | null;
+  gradeCode: string | null;
+  gradeLabel: string | null;
+  disciplineCode: string | null;
+  disciplineLabel: string | null;
+  etptWeight: number | null;
+  costSource: RateCostSource;
+  payrollMonthsCovered: number | null;
+  annualLoadedCost: number | null;
+  /** Per hour, barème currency; null = no cost. */
+  directCostPerHour: number | null;
+  overheadPerHour: number | null;
+  totalCostPerHour: number | null;
+  intercoRatePerHour: number | null;
+  saleRatePerHour: number | null;
   rateEur: number | null;
   rateUsd: number | null;
-  rateLocal: number | null;
+}
+
+export interface RateComputationAggregateDto {
+  id: number;
+  granularity: 'GRADE' | 'DISCIPLINE_GRADE';
+  gradeCode: string;
+  gradeLabel: string | null;
+  disciplineCode: string | null;
+  disciplineLabel: string | null;
+  headcount: number;
+  directCostPerHour: number | null;
+  totalCostPerHour: number | null;
+  intercoRatePerHour: number | null;
+  saleRatePerHour: number | null;
+}
+
+export interface PoolCategoryDto {
+  code: string;
+  label: string;
+  inPool: boolean;
+}
+
+export interface PoolCompositionDto {
+  paysId: number;
+  /** true = nothing saved, the guide's default applies. */
+  defaultComposition: boolean;
+  categories: PoolCategoryDto[];
 }
 
 // ── Supplier search result (lightweight DTO for form autocomplete) ────────────
