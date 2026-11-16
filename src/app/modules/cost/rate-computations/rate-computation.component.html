@@ -1,424 +1,374 @@
-<div class="tab-container">
+<!-- /finance/cost/rates — « Barèmes de taux » (méthode F.04). Gabarit des pages d'admin de la
+     facturation (pl-catalogue-admin, reminder-rules) : daf-page + en-tête à actions, bandeaux,
+     daf-data-table ; création / modification dans une daf-modal (ModalService) ; le détail d'un
+     barème s'ouvre sous le tableau, dans une daf-section-card. -->
+<daf-page [kpis]="0" [loading]="pageLoading()" [loadingLabel]="'COST.RATE.TITLE' | translate">
 
-  <div class="page-header" data-guide="rate-header">
-    <div>
-      <h2 class="page-title">{{ 'COST.RATE.TITLE' | translate }}</h2>
-      <p class="page-subtitle" [innerHTML]="'COST.RATE.SUBTITLE' | translate"></p>
-    </div>
-    <div style="display:flex;gap:8px;flex-shrink:0">
-      <button class="btn-add" data-guide="rate-pool-btn" (click)="togglePoolEditor()">
-        {{ (showPoolEditor() ? 'COST.RATE.POOL.BTN_CLOSE' : 'COST.RATE.POOL.BTN_OPEN') | translate }}
-      </button>
+  <daf-page-header data-guide="rate-header"
+    [title]="'COST.RATE.TITLE' | translate"
+    [subtitle]="subtitle()">
+    <!-- Racine STATIQUE du slot : un élément sous un @if ne serait pas projeté. -->
+    <div pageActions class="flex flex-wrap items-center gap-2">
+      @if (paysList().length > 1) {
+        <div data-guide="rate-pays">
+          <daf-select
+            [options]="paysOptions()"
+            [config]="paysSelectConfig()"
+            [selected]="paysId() ? [paysId().toString()] : []"
+            [ariaLabel]="'COST.FORM.PAYS_LABEL' | translate"
+            (selectedChange)="onPaysSelected($event)" />
+        </div>
+      }
+      <daf-button data-guide="rate-pool-btn"
+        [options]="{
+          variant: 'secondary',
+          iconStart: showPoolEditor() ? 'close' : 'tune',
+          active: showPoolEditor(),
+          label: ((showPoolEditor() ? 'COST.RATE.POOL.CLOSE' : 'COST.RATE.POOL.OPEN') | translate)
+        }"
+        (onClick)="togglePoolEditor()" />
       @if (canManage()) {
-        <button class="btn-add" data-guide="rate-new" (click)="toggleAddForm()">
-          {{ (showAddForm() ? 'COST.RATE.BTN_CANCEL' : 'COST.RATE.BTN_NEW') | translate }}
-        </button>
+        <daf-button data-guide="rate-new"
+          [options]="{ variant: 'teal', iconStart: 'add', label: ('COST.RATE.NEW' | translate) }"
+          (onClick)="openCreate()" />
       }
     </div>
+  </daf-page-header>
+
+  @if (serverError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ serverError() }}
+    </div>
+  }
+  @if (actionError()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ actionError() }}
+    </div>
+  }
+
+  <!-- ── Composition du pool d'overhead (par pays) ── -->
+  @if (showPoolEditor()) {
+    <daf-section-card [title]="'COST.RATE.POOL.TITLE' | translate">
+      <div class="flex flex-col gap-4">
+        @if (poolError()) {
+          <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            {{ poolError() }}
+          </div>
+        }
+
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <p class="m-0 max-w-3xl text-body-sm text-on-surface-variant">{{ 'COST.RATE.POOL.HELP' | translate }}</p>
+          @if (pool()?.defaultComposition) {
+            <daf-badge
+              [label]="'COST.RATE.POOL.DEFAULT_BADGE' | translate"
+              [options]="{ variant: 'warning', size: 'sm', icon: 'menu_book' }" />
+          }
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          @for (cat of pool()?.categories ?? []; track cat.code) {
+            <daf-checkbox
+              [options]="{ label: cat.label, hint: cat.code, disabled: !canManage() }"
+              [checked]="poolSelection().has(cat.code)"
+              (checkedChange)="setPoolCategory(cat.code, $event)" />
+          } @empty {
+            <div class="col-span-full flex flex-col items-center gap-2 rounded-xl border border-dashed
+                        border-outline-variant/50 px-6 py-8 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-[32px] text-outline-variant">category</span>
+              <p class="m-0 text-body-md">{{ 'COST.RATE.POOL.EMPTY' | translate }}</p>
+            </div>
+          }
+        </div>
+
+        @if (canManage()) {
+          <div class="flex justify-end">
+            <daf-button
+              [options]="{
+                variant: 'teal', iconStart: 'save',
+                label: ('COST.RATE.POOL.SAVE' | translate),
+                loading: isSavingPool(), disabled: isSavingPool()
+              }"
+              (onClick)="savePool()" />
+          </div>
+        }
+      </div>
+    </daf-section-card>
+  }
+
+  <!-- ── Rappel des formules (même encart d'information que l'onglet Relances) ── -->
+  <div data-guide="rate-formula"
+       class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl bg-surface-container px-5 py-3 text-body-sm text-on-surface-variant">
+    <span class="material-symbols-outlined text-[20px]">function</span>
+    <span class="flex flex-wrap items-center gap-2">
+      <span class="font-semibold text-on-surface">{{ 'COST.RATE.FORMULA_INTERCO_LABEL' | translate }}</span>
+      <code class="formula-expr">{{ 'COST.RATE.FORMULA_INTERCO_EXPR' | translate }}</code>
+    </span>
+    <span class="flex flex-wrap items-center gap-2">
+      <span class="font-semibold text-on-surface">{{ 'COST.RATE.FORMULA_SALE_LABEL' | translate }}</span>
+      <code class="formula-expr">{{ 'COST.RATE.FORMULA_SALE_EXPR' | translate }}</code>
+    </span>
   </div>
 
-  @if (paysList().length > 1) {
-    <div class="pays-picker" data-guide="rate-pays">
-      <daf-select
-        [options]="paysOptions()"
-        [config]="paysSelectConfig()"
-        [selected]="paysId() ? [paysId().toString()] : []"
-        (selectedChange)="onPaysSelected($event)" />
-    </div>
-  }
+  <!-- ── Barèmes ── -->
+  <daf-data-table data-guide="rate-table"
+    [columns]="columns()" [rows]="rows()" [config]="tableConfig()"
+    (rowClick)="onRowClick($event)">
 
-  @if (serverError()) { <div class="banner-error">{{ serverError() }}</div> }
-  @if (actionError()) { <div class="banner-error">{{ actionError() }}</div> }
+    <ng-template dafCell="period" let-row>
+      <span class="inline-flex items-center gap-1 font-semibold text-primary">
+        <span class="material-symbols-outlined text-[18px] text-on-surface-variant">
+          {{ expandedId() === row['id'] ? 'expand_more' : 'chevron_right' }}
+        </span>
+        {{ row['period'] }}
+      </span>
+    </ng-template>
 
-  <!-- Composition du pool d'overhead (par pays) -->
-  @if (showPoolEditor()) {
-    <section class="config-section pool-editor">
-      @if (poolError()) { <div class="banner-error">{{ poolError() }}</div> }
-      <div class="pool-head">
-        <p class="cell-secondary">{{ 'COST.RATE.POOL.HELP' | translate }}</p>
-        @if (pool()?.defaultComposition) {
-          <span class="status-badge badge-default">{{ 'COST.RATE.POOL.DEFAULT_BADGE' | translate }}</span>
+    <ng-template dafCell="_actions" let-row>
+      @let rc = row['_source'];
+      <div class="flex items-center justify-end gap-1">
+        <fact-table-action
+          [icon]="expandedId() === rc.id ? 'visibility_off' : 'visibility'"
+          [tooltip]="tips().detail"
+          (action)="toggleExpand(rc)" />
+        @if (canManage() && isEditable(rc)) {
+          <fact-table-action icon="calculate"
+            [tooltip]="rc.status === 'COMPUTED' ? tips().recompute : tips().compute"
+            [loading]="actionLoadingId() === rc.id"
+            (action)="compute(rc)" />
+          <fact-table-action id="edit" [tooltip]="tips().edit" (action)="startEdit(rc)" />
+          <fact-table-action id="delete" variant="danger" [tooltip]="tips().delete" (action)="confirmDelete(rc)" />
+        }
+        @if (canValidate() && rc.status === 'COMPUTED') {
+          <fact-table-action icon="verified"
+            [tooltip]="tips().validate"
+            [disabled]="actionLoadingId() === rc.id"
+            (action)="validate(rc)" />
+        }
+        @if (canApprove() && rc.status === 'VALIDATED') {
+          <fact-table-action icon="task_alt"
+            [tooltip]="tips().approve"
+            [disabled]="actionLoadingId() === rc.id"
+            (action)="approve(rc)" />
+        }
+        @if ((canValidate() || canApprove()) && (rc.status === 'COMPUTED' || rc.status === 'VALIDATED')) {
+          <fact-table-action icon="undo"
+            [tooltip]="tips().return"
+            [disabled]="actionLoadingId() === rc.id"
+            (action)="returnToDraft(rc)" />
         }
       </div>
-      <div class="pool-grid">
-        @for (cat of pool()?.categories ?? []; track cat.code) {
-          <label class="pool-item">
-            <input type="checkbox"
-              [checked]="poolSelection().has(cat.code)"
-              [disabled]="!canManage()"
-              (change)="togglePoolCategory(cat.code)">
-            <span>{{ cat.label }}</span>
-            <span class="cell-secondary">{{ cat.code }}</span>
-          </label>
-        } @empty {
-          <div class="empty-state">{{ 'COST.RATE.POOL.EMPTY' | translate }}</div>
+    </ng-template>
+
+  </daf-data-table>
+
+  <!-- ── Détail du barème sélectionné ── -->
+  @if (expanded(); as rc) {
+    <daf-section-card id="rate-detail"
+      [title]="'COST.RATE.DETAIL_TITLE' | translate: { period: periodLabel(rc) }">
+      <div class="flex flex-col gap-5">
+
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <daf-badge [label]="rateStatusLabel(rc.status)"
+              [options]="{ variant: statusVariant(rc.status), size: 'sm', dot: true }" />
+            <span class="text-body-sm text-on-surface-variant">{{ periodTypeLabel(rc.periodType) }} · {{ rc.currency ?? '—' }}</span>
+          </div>
+          <daf-button
+            [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close', label: ('COST.RATE.CLOSE_DETAIL' | translate) }"
+            (onClick)="toggleExpand(rc)" />
+        </div>
+
+        @if (detailError()) {
+          <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            {{ detailError() }}
+          </div>
         }
-      </div>
-      @if (canManage()) {
-        <div class="lines-toolbar">
-          <button class="btn-action btn-validate" [disabled]="isSavingPool()" (click)="savePool()">
-            @if (isSavingPool()) { … } @else { {{ 'COST.RATE.POOL.SAVE' | translate }} }
-          </button>
-        </div>
-      }
-    </section>
-  }
 
-  @if (isLoading()) {
-    <div class="loading-state">{{ 'COST.RATE.LOADING' | translate }}</div>
-  } @else {
+        <!-- Calcul : étapes 1 à 5 -->
+        <div class="flex flex-col gap-3">
+          <span class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+            {{ 'COST.RATE.CALC.TITLE' | translate }}
+          </span>
 
-    <section class="config-section" data-guide="rate-table">
-
-      <div class="formula-box" data-guide="rate-formula">
-        <div class="formula-item">
-          <span class="formula-label">{{ 'COST.RATE.FORMULA_INTERCO_LABEL' | translate }}</span>
-          <span class="formula-expr">{{ 'COST.RATE.FORMULA_INTERCO_EXPR' | translate }}</span>
-        </div>
-        <div class="formula-sep">·</div>
-        <div class="formula-item">
-          <span class="formula-label">{{ 'COST.RATE.FORMULA_SALE_LABEL' | translate }}</span>
-          <span class="formula-expr">{{ 'COST.RATE.FORMULA_SALE_EXPR' | translate }}</span>
-        </div>
-      </div>
-
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>{{ 'COST.RATE.TH_PERIOD' | translate }}</th>
-              <th>{{ 'COST.RATE.TH_TYPE' | translate }}</th>
-              <th class="text-right">{{ 'COST.RATE.TH_HQ' | translate }}</th>
-              <th class="text-right">{{ 'COST.RATE.TH_MARGIN' | translate }}</th>
-              <th class="text-right">{{ 'COST.RATE.TH_PRODUCTIVITY' | translate }}</th>
-              <th>{{ 'COST.RATE.TH_CURRENCY' | translate }}</th>
-              <th>{{ 'COST.RATE.TH_STATUS' | translate }}</th>
-              <th>{{ 'COST.RATE.TH_VALIDATED' | translate }}</th>
-              <th>{{ 'COST.RATE.TH_APPROVED' | translate }}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-
-            <!-- Create / edit row -->
-            @if (showAddForm()) {
-              <tr class="row-new">
-                <td></td>
-                <td>
-                  <input class="inline-input" type="number" min="2020" max="2099"
-                    [(ngModel)]="form.periodYear" [placeholder]="'COST.RATE.YEAR_PLACEHOLDER' | translate">
-                  @if (form.periodType === 'QUARTERLY') {
-                    <select class="inline-input" style="margin-top:4px" [(ngModel)]="form.periodQuarter">
-                      <option [ngValue]="null">{{ 'COST.RATE.QUARTER_PLACEHOLDER' | translate }}</option>
-                      @for (q of [1, 2, 3, 4]; track q) {
-                        <option [ngValue]="q">{{ 'COST.RATE.QUARTER_SHORT' | translate }}{{ q }}</option>
-                      }
-                    </select>
-                  }
-                  @if (form.periodType === 'MONTHLY') {
-                    <select class="inline-input" style="margin-top:4px" [(ngModel)]="form.periodMonth">
-                      <option [ngValue]="null">{{ 'COST.RATE.MONTH_PLACEHOLDER' | translate }}</option>
-                      @for (m of months(); track m.value) {
-                        <option [ngValue]="m.value">{{ m.label }}</option>
-                      }
-                    </select>
-                  }
-                </td>
-                <td>
-                  <select class="inline-input" [(ngModel)]="form.periodType">
-                    <option value="ANNUAL">{{ 'COST.RATE.PERIOD.ANNUAL' | translate }}</option>
-                    <option value="QUARTERLY">{{ 'COST.RATE.PERIOD.QUARTERLY' | translate }}</option>
-                    <option value="MONTHLY">{{ 'COST.RATE.PERIOD.MONTHLY' | translate }}</option>
-                  </select>
-                </td>
-                <td class="text-right">
-                  <input class="inline-input text-right" type="number" min="0" max="100" step="0.1"
-                    [(ngModel)]="form.hqCostPct"><span class="pct-suffix">%</span>
-                </td>
-                <td class="text-right">
-                  <input class="inline-input text-right" type="number" min="0" max="100" step="0.1"
-                    [(ngModel)]="form.targetMarginPct"><span class="pct-suffix">%</span>
-                </td>
-                <td class="text-right">
-                  <input class="inline-input text-right" type="number" min="1" max="100" step="0.5"
-                    [(ngModel)]="form.productivityPct"><span class="pct-suffix">%</span>
-                </td>
-                <td class="cell-secondary" [title]="'COST.RATE.CURRENCY_READONLY' | translate">{{ paysCurrency() }}</td>
-                <td colspan="3">
-                  <button class="btn-icon" type="button" (click)="showAdvanced.set(!showAdvanced())">
-                    {{ showAdvanced() ? '▾' : '▸' }} {{ 'COST.RATE.ADVANCED' | translate }}
-                  </button>
-                  @if (formError()) { <span class="inline-error">{{ formError() }}</span> }
-                </td>
-                <td class="cell-actions">
-                  <button class="btn-save" (click)="saveForm()" [disabled]="isSaving()"
-                    [title]="'COST.RATE.SAVE' | translate">
-                    @if (isSaving()) { … } @else { {{ editingId() == null ? '+' : '✓' }} }
-                  </button>
-                  <button class="btn-icon" (click)="closeForm()">✕</button>
-                </td>
-              </tr>
-              @if (showAdvanced()) {
-                <tr class="row-new">
-                  <td></td>
-                  <td colspan="10">
-                    <div class="advanced-row">
-                      <label>{{ 'COST.RATE.WORKING_DAYS' | translate }}
-                        <input class="inline-input" type="number" min="1" max="31" [(ngModel)]="form.workingDaysPerMonth"></label>
-                      <label>{{ 'COST.RATE.HOURS_PER_DAY' | translate }}
-                        <input class="inline-input" type="number" min="1" max="24" [(ngModel)]="form.hoursPerDay"></label>
-                      <label>{{ 'COST.RATE.SELLING_MONTHS' | translate }}
-                        <input class="inline-input" type="number" min="1" max="12" [(ngModel)]="form.sellingMonthsPerYear"></label>
-                      <label>{{ 'COST.RATE.CONVERSION_DAYS' | translate }}
-                        <input class="inline-input" type="number" min="1" max="31" [(ngModel)]="form.conversionDaysPerMonth"></label>
-                    </div>
-                  </td>
-                </tr>
+          @if (rc.computedAt) {
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              @for (tile of calcTiles(); track tile.key) {
+                <daf-metric-card
+                  [label]="('COST.RATE.CALC.' + tile.key) | translate"
+                  [value]="tile.value"
+                  [options]="tile.options" />
               }
-            }
+            </div>
 
-            <!-- Data rows -->
-            @for (rc of computations(); track rc.id) {
-              <tr [class.row-validated]="rc.status === 'APPROVED'">
-                <td class="cell-actions">
-                  <button class="btn-icon" (click)="toggleExpand(rc)" [title]="'COST.RATE.LINES.TOGGLE_TITLE' | translate">
-                    {{ expandedId() === rc.id ? '▾' : '▸' }}
-                  </button>
-                </td>
-                <td class="cell-period"><strong>{{ periodLabel(rc) }}</strong></td>
-                <td class="cell-secondary">{{ periodTypeLabel(rc.periodType) }}</td>
-                <td class="text-right cell-rate">{{ pct(rc.hqCostPct) }}</td>
-                <td class="text-right cell-rate">{{ pct(rc.targetMarginPct) }}</td>
-                <td class="text-right cell-rate">{{ pct(rc.productivityRate) }}</td>
-                <td class="cell-secondary">{{ rc.currency ?? '—' }}</td>
-                <td>
-                  <span class="status-badge"
-                    [style.background]="STATUS_CONFIG[rc.status]?.bg"
-                    [style.color]="STATUS_CONFIG[rc.status]?.text">{{ rateStatusLabel(rc.status) }}</span>
-                </td>
-                <td class="cell-secondary">{{ who(rc.validatedByName, rc.validatedAt) }}</td>
-                <td class="cell-secondary">{{ who(rc.approvedByName, rc.approvedAt) }}</td>
-                <td class="cell-actions actions-wrap">
-                  @if (canManage() && isEditable(rc)) {
-                    <button class="btn-action btn-compute" [disabled]="actionLoadingId() === rc.id"
-                      (click)="compute(rc)" [title]="'COST.RATE.COMPUTE_TITLE' | translate">
-                      @if (actionLoadingId() === rc.id) { … } @else {
-                        {{ (rc.status === 'COMPUTED' ? 'COST.RATE.RECOMPUTE' : 'COST.RATE.COMPUTE') | translate }}
-                      }
-                    </button>
-                    <button class="btn-icon" (click)="startEdit(rc)" [title]="'COST.RATE.EDIT' | translate">✎</button>
-                    <button class="btn-icon btn-danger" (click)="remove(rc)"
-                      [title]="(confirmDeleteId() === rc.id ? 'COST.RATE.DELETE_CONFIRM' : 'COST.RATE.DELETE') | translate">
-                      {{ confirmDeleteId() === rc.id ? '⚠' : '🗑' }}
-                    </button>
-                  }
-                  @if (canValidate() && rc.status === 'COMPUTED') {
-                    <button class="btn-action btn-validate" [disabled]="actionLoadingId() === rc.id"
-                      (click)="validate(rc)" [title]="'COST.RATE.VALIDATE_TITLE' | translate">
-                      {{ 'COST.RATE.VALIDATE' | translate }}
-                    </button>
-                  }
-                  @if (canApprove() && rc.status === 'VALIDATED') {
-                    <button class="btn-action btn-validate" [disabled]="actionLoadingId() === rc.id"
-                      (click)="approve(rc)" [title]="'COST.RATE.APPROVE_TITLE' | translate">
-                      {{ 'COST.RATE.APPROVE' | translate }}
-                    </button>
-                  }
-                  @if ((canValidate() || canApprove()) && (rc.status === 'COMPUTED' || rc.status === 'VALIDATED')) {
-                    <button class="btn-icon" [disabled]="actionLoadingId() === rc.id"
-                      (click)="returnToDraft(rc)" [title]="'COST.RATE.RETURN_TITLE' | translate">↺</button>
-                  }
-                </td>
-              </tr>
+            <p class="m-0 text-body-sm text-on-surface-variant">
+              {{ 'COST.RATE.CALC.ANNUALISED' | translate: { currency: rc.currency } }}
+              @if (rc.fxEurRate && rc.fxUsdRate) {
+                · {{ 'COST.RATE.CALC.FX' | translate: { eur: fmtNumber(rc.fxEurRate, 4), usd: fmtNumber(rc.fxUsdRate, 4), currency: rc.currency } }}
+              }
+            </p>
 
-              @if (expandedId() === rc.id) {
-                <tr class="row-expanded">
-                  <td colspan="11">
-                    @if (detailError()) { <div class="banner-error">{{ detailError() }}</div> }
-
-                    <!-- Calcul card: steps 1-5 -->
-                    <div class="calc-card">
-                      <h4>{{ 'COST.RATE.CALC.TITLE' | translate }}</h4>
-                      @if (rc.computedAt) {
-                        <div class="calc-grid">
-                          <div class="calc-item"><span>{{ 'COST.RATE.CALC.TOTAL_ENTITY_COST' | translate }}</span><strong>{{ fmtLocal(rc.totalEntityCost, rc) }}</strong></div>
-                          <div class="calc-item sub"><span>{{ 'COST.RATE.CALC.BILLABLE_SALARIES' | translate }}</span><strong>{{ fmtLocal(rc.billableSalaries, rc) }}</strong></div>
-                          <div class="calc-item sub"><span>{{ 'COST.RATE.CALC.NONBILLABLE_SALARIES' | translate }}</span><strong>{{ fmtLocal(rc.nonbillableSalaries, rc) }}</strong></div>
-                          <div class="calc-item sub"><span>{{ 'COST.RATE.CALC.POOL_CATEGORIES' | translate }}</span><strong>{{ fmtLocal(rc.poolCategoriesCost, rc) }}</strong></div>
-                          <div class="calc-item"><span>{{ 'COST.RATE.CALC.OVERHEAD_POOL' | translate }}</span><strong>{{ fmtLocal(rc.overheadPool, rc) }}</strong></div>
-                          <div class="calc-item"><span>{{ 'COST.RATE.CALC.ETPT' | translate }}</span><strong>{{ fmtNumber(rc.etpt, 3) }}</strong></div>
-                          <div class="calc-item"><span>{{ 'COST.RATE.CALC.SELLABLE_HOURS' | translate }}</span><strong>{{ fmtNumber(rc.sellableHoursPerEtpt) }}</strong></div>
-                          <div class="calc-item"><span>{{ 'COST.RATE.CALC.OVERHEAD_PER_HOUR' | translate }}</span><strong>{{ fmtLocal(rc.overheadPerHour, rc) }}</strong></div>
-                        </div>
-                        <p class="cell-secondary calc-note">
-                          {{ 'COST.RATE.CALC.ANNUALISED' | translate: { currency: rc.currency } }}
-                          @if (rc.fxEurRate && rc.fxUsdRate) {
-                            · {{ 'COST.RATE.CALC.FX' | translate: { eur: fmtNumber(rc.fxEurRate, 4), usd: fmtNumber(rc.fxUsdRate, 4), currency: rc.currency } }}
-                          }
-                        </p>
-                        @if (rc.warnings.length) {
-                          <div class="warnings">
-                            <strong>{{ 'COST.RATE.WARN.TITLE' | translate }}</strong>
-                            <ul>
-                              @for (w of rc.warnings; track w.code) {
-                                <li>{{ ('COST.RATE.WARN.' + w.code) | translate: { detail: w.detail ?? '' } }}</li>
-                              }
-                            </ul>
-                          </div>
-                        }
-                      } @else {
-                        <p class="cell-secondary">{{ 'COST.RATE.CALC.NOT_COMPUTED' | translate }}</p>
-                      }
-                    </div>
-
-                    @if (rc.computedAt) {
-                      <!-- currency / format toggles -->
-                      <div class="view-toggles">
-                        <div class="toggle-group">
-                          <span class="cell-secondary">{{ 'COST.RATE.VIEW.CURRENCY' | translate }}</span>
-                          @for (c of CURRENCIES; track c) {
-                            <button type="button" [class.active]="displayCurrency() === c" (click)="displayCurrency.set(c)">
-                              {{ c === 'LOCAL' ? (rc.currency ?? ('COST.RATE.VIEW.LOCAL' | translate)) : c }}
-                            </button>
-                          }
-                        </div>
-                        <div class="toggle-group">
-                          <span class="cell-secondary">{{ 'COST.RATE.VIEW.FORMAT' | translate }}</span>
-                          @for (f of FORMATS; track f) {
-                            <button type="button" [class.active]="displayFormat() === f" (click)="displayFormat.set(f)">
-                              {{ ('COST.RATE.VIEW.' + f) | translate }}
-                            </button>
-                          }
-                        </div>
-                      </div>
-
-                      <!-- tabs -->
-                      <div class="detail-tabs">
-                        @for (t of TABS; track t) {
-                          <button type="button" [class.active]="detailTab() === t" (click)="detailTab.set(t)">
-                            {{ ('COST.RATE.TABS.' + t) | translate }}
-                          </button>
-                        }
-                      </div>
-
-                      @if (isLoadingDetail()) {
-                        <div class="loading-state">{{ 'COST.RATE.LINES.LOADING' | translate }}</div>
-                      } @else {
-                        <div class="table-wrap">
-                          <table class="data-table">
-                            @switch (detailTab()) {
-                              @case ('INDIVIDUAL') {
-                                <thead>
-                                  <tr>
-                                    <th>{{ 'COST.RATE.LINES.TH_EMPLOYEE' | translate }}</th>
-                                    <th>{{ 'COST.RATE.LINES.TH_GRADE' | translate }}</th>
-                                    <th>{{ 'COST.RATE.LINES.TH_DISCIPLINE' | translate }}</th>
-                                    <th>{{ 'COST.RATE.LINES.TH_SOURCE' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_DIRECT_COST' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_OVERHEAD' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_TOTAL_COST' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_INTERCO_RATE' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_SALE_RATE' | translate }}</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  @for (line of lines(); track line.id) {
-                                    <tr>
-                                      <td>{{ line.employeeName ?? ('#' + line.profileUserId) }}</td>
-                                      <td class="cell-secondary">{{ line.gradeLabel ?? line.gradeCode ?? '—' }}</td>
-                                      <td class="cell-secondary">{{ line.disciplineLabel ?? line.disciplineCode ?? '—' }}</td>
-                                      <td>
-                                        <span class="status-badge"
-                                          [style.background]="SOURCE_CONFIG[line.costSource]?.bg"
-                                          [style.color]="SOURCE_CONFIG[line.costSource]?.text">{{ sourceLabel(line.costSource) }}</span>
-                                      </td>
-                                      <td class="text-right">{{ fmtRate(line.directCostPerHour, rc) }}</td>
-                                      <td class="text-right">{{ fmtRate(line.overheadPerHour, rc) }}</td>
-                                      <td class="text-right">{{ fmtRate(line.totalCostPerHour, rc) }}</td>
-                                      <td class="text-right">{{ fmtRate(line.intercoRatePerHour, rc) }}</td>
-                                      <td class="text-right"><strong>{{ fmtRate(line.saleRatePerHour, rc) }}</strong></td>
-                                    </tr>
-                                  } @empty {
-                                    <tr><td colspan="9" class="empty-state">{{ 'COST.RATE.LINES.EMPTY' | translate }}</td></tr>
-                                  }
-                                </tbody>
-                              }
-                              @case ('GRADE') {
-                                <thead>
-                                  <tr>
-                                    <th>{{ 'COST.RATE.LINES.TH_GRADE' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_HEADCOUNT' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_DIRECT_COST' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_TOTAL_COST' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_INTERCO_RATE' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_SALE_RATE' | translate }}</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  @for (a of gradeAggregates(); track a.id) {
-                                    <tr>
-                                      <td>{{ a.gradeLabel ?? a.gradeCode }}</td>
-                                      <td class="text-right">{{ a.headcount }}</td>
-                                      <td class="text-right">{{ fmtRate(a.directCostPerHour, rc) }}</td>
-                                      <td class="text-right">{{ fmtRate(a.totalCostPerHour, rc) }}</td>
-                                      <td class="text-right">{{ fmtRate(a.intercoRatePerHour, rc) }}</td>
-                                      <td class="text-right"><strong>{{ fmtRate(a.saleRatePerHour, rc) }}</strong></td>
-                                    </tr>
-                                  } @empty {
-                                    <tr><td colspan="6" class="empty-state">{{ 'COST.RATE.LINES.EMPTY' | translate }}</td></tr>
-                                  }
-                                </tbody>
-                              }
-                              @case ('DISCIPLINE_GRADE') {
-                                <thead>
-                                  <tr>
-                                    <th>{{ 'COST.RATE.LINES.TH_DISCIPLINE' | translate }}</th>
-                                    <th>{{ 'COST.RATE.LINES.TH_GRADE' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_HEADCOUNT' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_DIRECT_COST' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_TOTAL_COST' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_INTERCO_RATE' | translate }}</th>
-                                    <th class="text-right">{{ 'COST.RATE.LINES.TH_SALE_RATE' | translate }}</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  @for (a of disciplineAggregates(); track a.id) {
-                                    <tr>
-                                      <td>{{ a.disciplineLabel ?? a.disciplineCode }}</td>
-                                      <td class="cell-secondary">{{ a.gradeLabel ?? a.gradeCode }}</td>
-                                      <td class="text-right">{{ a.headcount }}</td>
-                                      <td class="text-right">{{ fmtRate(a.directCostPerHour, rc) }}</td>
-                                      <td class="text-right">{{ fmtRate(a.totalCostPerHour, rc) }}</td>
-                                      <td class="text-right">{{ fmtRate(a.intercoRatePerHour, rc) }}</td>
-                                      <td class="text-right"><strong>{{ fmtRate(a.saleRatePerHour, rc) }}</strong></td>
-                                    </tr>
-                                  } @empty {
-                                    <tr><td colspan="7" class="empty-state">{{ 'COST.RATE.LINES.EMPTY' | translate }}</td></tr>
-                                  }
-                                </tbody>
-                              }
-                            }
-                          </table>
-                        </div>
-                      }
+            @if (rc.warnings.length) {
+              <div class="flex items-start gap-2 rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
+                <span class="material-symbols-outlined text-[18px]">warning</span>
+                <div class="flex flex-col gap-1">
+                  <strong>{{ 'COST.RATE.WARN.TITLE' | translate }}</strong>
+                  <ul class="m-0 list-disc pl-5">
+                    @for (w of rc.warnings; track w.code) {
+                      <li>{{ ('COST.RATE.WARN.' + w.code) | translate: { detail: w.detail ?? '' } }}</li>
                     }
-                  </td>
-                </tr>
-              }
+                  </ul>
+                </div>
+              </div>
             }
+          } @else {
+            <div class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-outline-variant/50
+                        px-6 py-8 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-[32px] text-outline-variant">calculate</span>
+              <p class="m-0 text-body-md">{{ 'COST.RATE.CALC.NOT_COMPUTED' | translate }}</p>
+            </div>
+          }
+        </div>
 
-            @empty {
-              @if (!showAddForm()) {
-                <tr><td colspan="11" class="empty-state">{{ 'COST.RATE.EMPTY' | translate }}</td></tr>
+        @if (rc.computedAt) {
+          <!-- Devise / format d'affichage — boutons `toggle`, comme l'horizon de la trésorerie. -->
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-body-sm text-on-surface-variant">{{ 'COST.RATE.VIEW.CURRENCY' | translate }}</span>
+              @for (c of CURRENCIES; track c) {
+                <daf-button [options]="currencyButton(c, rc)" (onClick)="displayCurrency.set(c)" />
               }
-            }
-          </tbody>
-        </table>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-body-sm text-on-surface-variant">{{ 'COST.RATE.VIEW.FORMAT' | translate }}</span>
+              @for (f of FORMATS; track f) {
+                <daf-button [options]="formatButton(f)" (onClick)="displayFormat.set(f)" />
+              }
+            </div>
+          </div>
+
+          <daf-tabs
+            [tabs]="detailTabs()"
+            [active]="detailTab()"
+            (activeChange)="onDetailTab($event)"
+            idPrefix="rate-detail"
+            [tabsLabel]="'COST.RATE.CALC.TITLE' | translate" />
+
+          <daf-data-table [columns]="detailColumns()" [rows]="detailRows()" [config]="detailTableConfig()">
+            <ng-template dafCell="sale" let-row>
+              <strong>{{ row['sale'] }}</strong>
+            </ng-template>
+          </daf-data-table>
+        }
       </div>
-    </section>
+    </daf-section-card>
   }
 
-</div>
+</daf-page>
+
+<!-- ══ Formulaire de création / modification ══ — ModalService projette ce template ;
+     Annuler / Enregistrer sont les boutons du pied de la modale (voir `openFormModal`). -->
+<ng-template #formTpl>
+  <div class="flex flex-col gap-5 p-1">
+
+    @if (formError(); as err) {
+      <daf-field-message [error]="err" />
+    }
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <daf-select
+        [options]="periodTypeOptions()"
+        [selected]="[form().periodType]"
+        [config]="{ label: ('COST.RATE.FIELD_PERIOD_TYPE' | translate), required: true, fullWidth: true }"
+        (selectedChange)="patchForm({ periodType: $event[0] || 'ANNUAL' })" />
+
+      <daf-form-field
+        [value]="form().periodYear"
+        (valueChange)="patchForm({ periodYear: num($event) })"
+        [options]="{
+          label: ('COST.RATE.FIELD_YEAR' | translate),
+          type: 'number', required: true, fullWidth: true,
+          placeholder: ('COST.RATE.YEAR_PLACEHOLDER' | translate),
+          error: formErrorField() === 'year' ? (formError() ?? undefined) : undefined
+        }" />
+
+      @if (form().periodType === 'QUARTERLY') {
+        <daf-select
+          [options]="quarterOptions()"
+          [selected]="form().periodQuarter ? [form().periodQuarter!.toString()] : []"
+          [config]="{
+            label: ('COST.RATE.FIELD_QUARTER' | translate),
+            placeholder: ('COST.RATE.QUARTER_PLACEHOLDER' | translate),
+            required: true, fullWidth: true,
+            error: formErrorField() === 'quarter' ? (formError() ?? undefined) : undefined
+          }"
+          (selectedChange)="patchForm({ periodQuarter: $event[0] ? num($event[0]) : null })" />
+      }
+      @if (form().periodType === 'MONTHLY') {
+        <daf-select
+          [options]="monthOptions()"
+          [selected]="form().periodMonth ? [form().periodMonth!.toString()] : []"
+          [config]="{
+            label: ('COST.RATE.FIELD_MONTH' | translate),
+            placeholder: ('COST.RATE.MONTH_PLACEHOLDER' | translate),
+            required: true, fullWidth: true, searchable: true,
+            error: formErrorField() === 'month' ? (formError() ?? undefined) : undefined
+          }"
+          (selectedChange)="patchForm({ periodMonth: $event[0] ? num($event[0]) : null })" />
+      }
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <daf-form-field
+        [value]="form().hqCostPct"
+        (valueChange)="patchForm({ hqCostPct: num($event) })"
+        [options]="{ label: ('COST.RATE.TH_HQ' | translate), type: 'number', align: 'center', suffixText: '%', fullWidth: true }" />
+      <daf-form-field
+        [value]="form().targetMarginPct"
+        (valueChange)="patchForm({ targetMarginPct: num($event) })"
+        [options]="{ label: ('COST.RATE.TH_MARGIN' | translate), type: 'number', align: 'center', suffixText: '%', fullWidth: true }" />
+      <daf-form-field
+        [value]="form().productivityPct"
+        (valueChange)="patchForm({ productivityPct: num($event) })"
+        [options]="{ label: ('COST.RATE.TH_PRODUCTIVITY' | translate), type: 'number', align: 'center', suffixText: '%', fullWidth: true }" />
+    </div>
+
+    <daf-form-field
+      [value]="paysCurrency()"
+      [options]="{
+        label: ('COST.RATE.TH_CURRENCY' | translate),
+        readonly: true, fullWidth: true,
+        hint: ('COST.RATE.CURRENCY_READONLY' | translate)
+      }" />
+
+    <daf-accordion-card
+      [options]="{ title: ('COST.RATE.ADVANCED' | translate), icon: 'tune' }"
+      [open]="showAdvanced()"
+      (openChange)="showAdvanced.set($event)">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <daf-form-field
+          [value]="form().workingDaysPerMonth"
+          (valueChange)="patchForm({ workingDaysPerMonth: num($event) })"
+          [options]="{ label: ('COST.RATE.WORKING_DAYS' | translate), type: 'number', align: 'center', fullWidth: true }" />
+        <daf-form-field
+          [value]="form().hoursPerDay"
+          (valueChange)="patchForm({ hoursPerDay: num($event) })"
+          [options]="{ label: ('COST.RATE.HOURS_PER_DAY' | translate), type: 'number', align: 'center', fullWidth: true }" />
+        <daf-form-field
+          [value]="form().sellingMonthsPerYear"
+          (valueChange)="patchForm({ sellingMonthsPerYear: num($event) })"
+          [options]="{ label: ('COST.RATE.SELLING_MONTHS' | translate), type: 'number', align: 'center', fullWidth: true }" />
+        <daf-form-field
+          [value]="form().conversionDaysPerMonth"
+          (valueChange)="patchForm({ conversionDaysPerMonth: num($event) })"
+          [options]="{ label: ('COST.RATE.CONVERSION_DAYS' | translate), type: 'number', align: 'center', fullWidth: true }" />
+      </div>
+    </daf-accordion-card>
+
+  </div>
+</ng-template>
 
 <app-page-guide storageKey="rate-computations" [steps]="guideSteps" />
