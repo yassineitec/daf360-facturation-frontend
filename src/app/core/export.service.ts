@@ -43,8 +43,44 @@ export class ExportService {
     return this.post(`/affaires/${affaireId}/export/depense.xlsx`, body);
   }
 
+  /** ids = ressources affichées ; la feuille des heures travaillées est toujours complète. */
+  affaireRessources(affaireId: number, ids: number[]): Observable<Blob> {
+    return this.post(`/affaires/${affaireId}/export/ressources.xlsx`, { ids });
+  }
+
+  affaireExpenses(affaireId: number, ids: number[]): Observable<Blob> {
+    return this.post(`/affaires/${affaireId}/export/expenses.xlsx`, { ids });
+  }
+
+  /** Historique des taux d'avancement (onglet WIP d'une affaire au forfait). */
+  /** Tableau sous l'histogramme de la vue d'ensemble : filtres du graphique + ce que montre
+   *  le tableau (graphique, séries, cumulé, ligne pointillée, ordre des lignes). */
+  affaireChartTable(affaireId: number, body: {
+    from: string | null; to: string | null; granularity: string; includeTs: boolean;
+    statuses: string[]; view: string; selection: string[]; cumul: boolean;
+    target: number | null; targetLabel: string | null; keys: string[]; withTotal: boolean;
+  }): Observable<Blob> {
+    return this.post(`/affaires/${affaireId}/export/chart-table.xlsx`, body);
+  }
+
+  avHistory(affaireId: number, ids: number[]): Observable<Blob> {
+    return this.post(`/affaires/${affaireId}/wip/export/av-history.xlsx`, { ids });
+  }
+
   tsHistory(affaireId: number, tsId: number, ids: number[]): Observable<Blob> {
     return this.post(`/affaires/${affaireId}/wip/export/ts/${tsId}/history.xlsx`, { ids });
+  }
+
+  // ── Factures (/finance/invoicing) ───────────────────────────────────────────────
+
+  /** Liste paginée côté serveur : on envoie ses filtres et son tri (pas d'ids), le serveur
+   * exporte toutes les factures correspondantes — feuilles Factures + Lignes de facturation. */
+  invoices(filter: {
+    affaireId: number | null; clientId: number | null; statut: string | null; search: string | null;
+    from: string | null; to: string | null; dueFrom: string | null; dueTo: string | null;
+    minTtc: number | null; maxTtc: number | null; overdueOnly: boolean; sort: string | null;
+  }): Observable<Blob> {
+    return this.post('/invoices/export.xlsx', filter);
   }
 
   // ── Coûts / Fournisseurs ────────────────────────────────────────────────────────

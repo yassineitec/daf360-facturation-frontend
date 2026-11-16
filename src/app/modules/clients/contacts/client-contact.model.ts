@@ -1,3 +1,5 @@
+import { splitPersonName } from '../../../shared/person-name';
+
 /**
  * Un client a plusieurs contacts ; chaque contact appartient à UN client et se
  * rattache ensuite à plusieurs affaires de ce client.
@@ -40,6 +42,9 @@ export interface SaveClientContactRequest {
  */
 export interface ContactDraft {
   id?:       number;
+  /** Saisis séparément ; `fullName` en est déduit (« Prénom NOM ») et c'est lui qui part au serveur. */
+  firstName: string;
+  lastName:  string;
   fullName:  string;
   fonction:  string;
   email:     string;
@@ -48,12 +53,13 @@ export interface ContactDraft {
 }
 
 export function emptyContactDraft(isPrimary = false): ContactDraft {
-  return { fullName: '', fonction: '', email: '', phone: '', isPrimary };
+  return { firstName: '', lastName: '', fullName: '', fonction: '', email: '', phone: '', isPrimary };
 }
 
 export function toContactDraft(c: ClientContactDto): ContactDraft {
   return {
     id:        c.id,
+    ...splitPersonName(c.fullName),
     fullName:  c.fullName ?? '',
     fonction:  c.fonction ?? '',
     email:     c.email    ?? '',
