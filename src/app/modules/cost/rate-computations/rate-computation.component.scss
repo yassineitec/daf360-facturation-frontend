@@ -274,3 +274,53 @@
   color: #94a3b8;
   font-style: italic;
 }
+
+// ── F.04 barèmes de taux ────────────────────────────────────────────────────
+.pool-editor { margin-bottom: 16px; }
+.pool-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.badge-default { background: #fef3c7; color: #92400e; }
+.pool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 6px 16px;
+  margin-bottom: 8px;
+}
+.pool-item { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+
+.advanced-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.advanced-row label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: #64748b; }
+.advanced-row .inline-input { width: 90px; }
+
+.actions-wrap { white-space: nowrap; }
+.btn-danger { color: #b91c1c; }
+
+.calc-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #f8fafc;
+  h4 { margin: 0 0 8px; font-size: 14px; }
+}
+.calc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 24px; }
+.calc-item {
+  display: flex; justify-content: space-between; gap: 8px; font-size: 13px;
+  &.sub { padding-left: 12px; color: #64748b; }
+}
+.calc-note { margin: 8px 0 0; font-size: 12px; }
+.warnings {
+  margin-top: 10px; padding: 8px 12px; border-radius: 6px;
+  background: #fff7ed; color: #9a3412; font-size: 12px;
+  ul { margin: 4px 0 0; padding-left: 18px; }
+}
+
+.view-toggles { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; }
+.toggle-group, .detail-tabs {
+  display: flex; align-items: center; gap: 4px;
+  button {
+    border: 1px solid #cbd5e1; background: #fff; border-radius: 6px;
+    padding: 3px 10px; font-size: 12px; cursor: pointer;
+    &.active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+  }
+}
+.detail-tabs { margin-bottom: 8px; }
