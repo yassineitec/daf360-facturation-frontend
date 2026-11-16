@@ -6049,9 +6049,17 @@
       "TABS": {
         "ARIA": "Sections du rapport P&L",
         "OVERVIEW": "Vue générale",
+        "TEMPLATE": "Template (classeur)",
         "RECAP": "Récap P&L",
         "COMMENTARIES": "Commentaires",
         "TREASURY": "Trésorerie"
+      },
+      "TEMPLATE": {
+        "HINT": "Les lignes de la feuille « Template » du classeur Excel, avec les mêmes libellés, signes et montants : mois du rapport et cumul de l'année.",
+        "LINE": "Ligne du Template",
+        "MONTH": "Mois",
+        "YTD": "Cumul annuel",
+        "LOAD_ERROR": "Impossible de charger les lignes du Template."
       },
       "OVERVIEW": {
         "WATERFALL_TITLE": "Du CA à l'EBITDA",

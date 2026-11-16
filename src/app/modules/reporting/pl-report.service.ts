@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  MissingCashRowDto, PlReportDetailDto, PlReportDto, ReceivableLineDto,
+  MissingCashRowDto, PlReportDetailDto, PlReportDto, PlTemplateViewDto, ReceivableLineDto,
   ReopenReportRequest, RequestAmendmentRequest,
 } from './pl-reporting.model';
 
@@ -27,6 +27,11 @@ export class PlReportService {
   /** `FACT_VIEW_PL_REPORT`. */
   getReport(id: number): Observable<PlReportDetailDto> {
     return this.http.get<PlReportDetailDto>(`${this.base}/pl-reports/${id}`);
+  }
+
+  /** `FACT_VIEW_PL_REPORT` — the workbook Template sheet's figures for this report's month. */
+  getTemplate(id: number): Observable<PlTemplateViewDto> {
+    return this.http.get<PlTemplateViewDto>(`${this.base}/pl-reports/${id}/template`);
   }
 
   /** Generates a new DRAFT report from a CLOSED period. `FACT_MANAGE_PL_REPORT`. */
