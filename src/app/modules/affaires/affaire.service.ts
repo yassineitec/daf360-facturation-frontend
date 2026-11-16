@@ -65,6 +65,12 @@ export class AffaireService {
     return this.http.get<AffaireDetail>(`${this.base}/affaires/${id}`);
   }
 
+  /** One user by id, including a deactivated one -- unlike {@link getUsers}, a picker that
+   *  only lists people currently selectable. Used to resolve a historical actor reference. */
+  getUser(id: number): Observable<UserRefDto> {
+    return this.http.get<UserRefDto>(`${this.base}/ref/users/${id}`);
+  }
+
   getAffaireRaf(id: number): Observable<RafDetailsDto> {
     return this.http.get<RafDetailsDto>(`${this.base}/affaires/${id}/raf`);
   }

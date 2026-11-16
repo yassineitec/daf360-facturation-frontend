@@ -33,7 +33,7 @@
   }
 
   <!-- ── Search section ── -->
-  @if (!draft.doc360ServerReference) {
+  @if (!draft.doc360ServerReference && draft.origin !== 'INTERCO') {
     <div class="search-section">
       <p class="search-label">{{ 'AFFAIRES.wizard.doc360.search_label' | translate }}</p>
 

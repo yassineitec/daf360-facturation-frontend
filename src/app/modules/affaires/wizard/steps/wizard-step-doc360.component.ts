@@ -87,10 +87,28 @@ export class WizardStepDoc360Component implements OnInit {
   selectSource(source: 'doc360' | 'interco'): void {
     const next = this.selectedSource() === source ? null : source;
     this.selectedSource.set(next);
+
+    if (next === 'interco') {
+      // No project search exists for Interco yet -- drop any DOC360 link so the fiche
+      // never shows a DOC360 badge next to an Interco-tagged affaire.
+      this.searchQuery = '';
+      this.results.set([]);
+      this.showResults.set(false);
+      this.draftChange.emit({
+        ...this.draft,
+        doc360ProjectName:     undefined,
+        doc360ErpReference:    undefined,
+        doc360ServerReference: undefined,
+        doc360ClientName:      undefined,
+        origin:                'INTERCO',
+      });
+      return;
+    }
+
     // Persisted since V123 (affaires.origin) — the card choice used to stay UI-only.
     this.draftChange.emit({
       ...this.draft,
-      origin: next === 'doc360' ? 'DOC360' : next === 'interco' ? 'INTERCO' : null,
+      origin: next === 'doc360' ? 'DOC360' : null,
     });
   }
 

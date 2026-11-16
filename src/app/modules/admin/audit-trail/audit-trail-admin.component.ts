@@ -12,7 +12,7 @@ import { AuditTrailService, AuditTrailEntryDto } from '../../../core/audit-trail
 import { AffaireService } from '../../affaires/affaire.service';
 import {
   tableLabel, tableDomain, recordIdentity, rowAffaireId, computeFieldDiffs, groupBatches,
-  actionVariant, domainVariant, FieldDiff, DisplayRow,
+  actionVariant, domainVariant, isActorField, actorIdIn, FieldDiff, DisplayRow,
 } from './audit-trail-display.util';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
@@ -92,6 +92,12 @@ export class AuditTrailAdminComponent implements OnInit {
    *  or deleted affaire shouldn't block reading the rest of the audit entry. */
   private affaireLabels = signal<Record<number, string>>({});
 
+  /** users_ref id -> display name, resolved lazily for whichever ids show up as `changedBy` on
+   *  the current page, or as a `*_by` field inside the open entry's own JSON (emitted_by,
+   *  completed_by...). 'Utilisateur #<id>' is shown as a placeholder (and kept) if the lookup
+   *  404s -- a deactivated or former account shouldn't block reading the rest of the entry. */
+  private actorLabels = signal<Record<number, string>>({});
+
   /** The row currently shown in the detail/group modal -- read by the modal templates. */
   activeEntry = signal<AuditTrailEntryDto | null>(null);
   activeGroup = signal<AuditTrailEntryDto[] | null>(null);
@@ -128,7 +134,7 @@ export class AuditTrailAdminComponent implements OnInit {
         action: r.entry.action,
         record: recordIdentity(r.entry),
         affaire: affaireCell(rowAffaireId(r.entry)),
-        changedBy: r.entry.changedBy ?? '—',
+        changedBy: this.actorLabelFor(r.entry.changedBy, '—'),
         _entry: r.entry,
       } as TableRow;
     });
@@ -181,6 +187,22 @@ export class AuditTrailAdminComponent implements OnInit {
     return entry ? computeFieldDiffs(entry) : [];
   });
 
+  /** {@link activeDiff}, with every `*_by` field's before/after id swapped for the resolved
+   *  user name once it's in {@link actorLabels} -- `changed` is left exactly as computed from
+   *  the raw ids, since that comparison is correct whichever way the value is displayed. */
+  readonly activeDiffDisplay = computed<FieldDiff[]>(() => {
+    const labels = this.actorLabels();
+    return this.activeDiff().map(d => isActorField(d.field)
+      ? { ...d, before: this.actorDisplay(d.before, labels), after: this.actorDisplay(d.after, labels) }
+      : d);
+  });
+
+  private actorDisplay(raw: string, labels: Record<number, string>): string {
+    const id = actorIdIn(raw);
+    if (id === null) return raw;
+    return labels[id] ?? this.translate.instant('ADMIN.AUDIT_TRAIL.ACTOR_PLACEHOLDER', { id });
+  }
+
   ngOnInit(): void {
     this.auditSvc.listTables().subscribe(tables =>
       this.tableOptions.set(tables.map(t => ({ value: t, label: tableLabel(t) }))));
@@ -215,6 +237,7 @@ export class AuditTrailAdminComponent implements OnInit {
 
   openDetailModal(entry: AuditTrailEntryDto): void {
     this.activeEntry.set(entry);
+    this.resolveActorsFromDiff(entry);
     this.modalRef = this.modal.open({
       title: this.translate.instant('ADMIN.AUDIT_TRAIL.DETAIL_TITLE'),
       body: this.detailTpl,
@@ -261,6 +284,16 @@ export class AuditTrailAdminComponent implements OnInit {
     return this.affaireLabels()[id] ?? this.translate.instant('ADMIN.AUDIT_TRAIL.AFFAIRE_PLACEHOLDER', { id });
   }
 
+  /** `changedBy` is a bare `users_ref` id (the JWT principal facturation's actor-capture
+   *  stores) or null for a scheduled job -- `fallback` differs by call site: the list shows
+   *  '—', the detail modal's own meta line shows ACTOR_SYSTEM, matching what each already
+   *  showed before resolution existed. */
+  actorLabelFor(changedBy: string | null, fallback: string): string {
+    const id = actorIdIn(changedBy);
+    if (id === null) return fallback;
+    return this.actorLabels()[id] ?? this.translate.instant('ADMIN.AUDIT_TRAIL.ACTOR_PLACEHOLDER', { id });
+  }
+
   private load(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
@@ -284,6 +317,7 @@ export class AuditTrailAdminComponent implements OnInit {
         this.totalElements.set(page.totalElements);
         this.isLoading.set(false);
         this.resolveAffaires(page.content);
+        this.resolveActors(page.content.map(e => actorIdIn(e.changedBy)).filter((id): id is number => id !== null));
       },
       error: err => {
         this.loadError.set(err.error?.message ?? this.translate.instant('ADMIN.AUDIT_TRAIL.ERR_LOAD'));
@@ -311,5 +345,40 @@ export class AuditTrailAdminComponent implements OnInit {
       });
       this.affaireLabels.set(next);
     });
+  }
+
+  /** Resolves whichever users_ref ids aren't already cached -- same batched/cached/404-tolerant
+   *  shape as {@link resolveAffaires}, just against `/ref/users/{id}` instead of `/affaires/{id}`. */
+  private resolveActors(ids: number[]): void {
+    const known = this.actorLabels();
+    const missing = Array.from(new Set(ids.filter(id => !(id in known))));
+    if (missing.length === 0) return;
+
+    forkJoin(missing.map(id => this.affaireSvc.getUser(id).pipe(
+      catchError(() => of(null)),
+    ))).subscribe(results => {
+      const next = { ...this.actorLabels() };
+      results.forEach((user, i) => {
+        if (user) next[missing[i]] = user.fullName || user.email;
+      });
+      this.actorLabels.set(next);
+    });
+  }
+
+  /** Every `*_by` field inside the entry's own before/after JSON (emitted_by, completed_by...),
+   *  plus its own `changedBy` -- the modal can be opened for an entry whose page never ran
+   *  through {@link load}'s resolution (e.g. reached from a group modal). */
+  private resolveActorsFromDiff(entry: AuditTrailEntryDto): void {
+    const ids = new Set<number>();
+    const ownId = actorIdIn(entry.changedBy);
+    if (ownId !== null) ids.add(ownId);
+    for (const d of computeFieldDiffs(entry)) {
+      if (!isActorField(d.field)) continue;
+      const before = actorIdIn(d.before);
+      if (before !== null) ids.add(before);
+      const after = actorIdIn(d.after);
+      if (after !== null) ids.add(after);
+    }
+    this.resolveActors([...ids]);
   }
 }
