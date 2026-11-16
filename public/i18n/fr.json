@@ -1112,23 +1112,23 @@
         "RATES": {
           "WHAT": {
             "Q": "À quoi sert un barème de taux ?",
-            "A": "À calculer le taux interco et le taux de vente de chaque collaborateur en régie, à partir de ses coûts. Le barème validé le plus récent est appliqué."
+            "A": "À calculer le taux de coût chargé de chaque collaborateur technique, puis les moyennes par grade et par discipline + grade (méthode F.04). Le barème approuvé le plus récent alimente les taux proposés des affaires T&M."
           },
           "STEPS": {
             "Q": "Dans quel ordre procéder ?",
-            "A": "« + Nouveau barème » (Brouillon) → « Auto-remplir depuis la formule » → « Calculer » (Calculé) → « Valider » (Validé, figé)."
+            "A": "« + Nouveau barème » (Brouillon) → « Calculer » (Calculé) → « Valider (FM) » (Validé) → « Approuver (CD) » (Approuvé, figé)."
           },
           "AUTO": {
-            "Q": "D'où viennent les montants de l'auto-remplissage ?",
-            "A": "Des factures de coût réglées de la période, réparties selon la formule de coût de l'entité, plus les coûts directs des collaborateurs. Les lignes ajoutées à la main ne sont pas touchées."
+            "Q": "D'où viennent les montants du calcul ?",
+            "A": "De l'effectif RH, de la paie (sinon des coûts collaborateurs) et des coûts réglés de la période pour le pool d'overhead. Le détail du calcul est visible en dépliant le barème."
           },
           "METHODS": {
-            "Q": "Par effectif, montant fixe ou direct ?",
-            "A": "Par effectif : le total de la catégorie divisé par le nombre de collaborateurs. Montant fixe : un montant par mois. Direct : les coûts rattachés au collaborateur lui-même."
+            "Q": "Quelles catégories entrent dans l'overhead ?",
+            "A": "Celles choisies dans « Composition du pool ». Sans choix enregistré, le défaut du guide s'applique : toutes les catégories sauf sous-traitants et salaires."
           },
           "LOCKED": {
-            "Q": "Puis-je modifier un barème validé ?",
-            "A": "Non, un barème validé est figé. Créez un nouveau barème pour une autre période."
+            "Q": "Puis-je modifier un barème approuvé ?",
+            "A": "Non, l'approbation fige le barème. Le Country Director doit être une autre personne que le validateur. Créez un nouveau barème pour une autre période."
           }
         },
         "EMPLOYEE_COSTS": {
@@ -1962,20 +1962,22 @@
     },
     "RATES": {
       "PAGE": "Barèmes de taux",
-      "INTRO_TITLE": "Les barèmes de taux TM",
-      "INTRO_TEXT": "Les barèmes calculent, pour chaque collaborateur, un taux intercompany et un taux de vente en régie (Time & Material). Le barème validé le plus récent s'applique.",
+      "INTRO_TITLE": "Les barèmes de taux",
+      "INTRO_TEXT": "Un barème calcule le taux de coût chargé de chaque collaborateur technique, puis les moyennes par grade et par discipline + grade. Le barème approuvé le plus récent alimente les taux proposés des affaires T&M.",
       "PAYS_TITLE": "L'entité",
-      "PAYS_TEXT": "Choisissez l'entité dont vous gérez les barèmes.",
+      "PAYS_TEXT": "Choisissez l'entité dont vous gérez les barèmes. La devise du barème est celle de l'entité.",
+      "POOL_TITLE": "Composition du pool",
+      "POOL_TEXT": "Choisissez les catégories de coût qui entrent dans le pool d'overhead. Sans choix enregistré, le défaut du guide s'applique : toutes les catégories sauf sous-traitants et salaires.",
       "FORMULA_TITLE": "Les formules",
-      "FORMULA_TEXT": "Taux interco = coût × (1 + % HQ) ; taux de vente = coût × (1 + % HQ + % marge), rappelés au-dessus du tableau.",
+      "FORMULA_TEXT": "Taux interco = (coût direct/h + overhead/h) × (1 + % HQ) ; taux de vente = taux interco × (1 + % marge).",
       "TABLE_TITLE": "Les barèmes",
-      "TABLE_TEXT": "Chaque barème : période (mois, trimestre ou année), type, % HQ, % marge, marges interco et externe, devise, statut et date de validation. Dépliez-en un pour voir ses lignes par collaborateur.",
+      "TABLE_TEXT": "Chaque barème : période, % HQ, % marge, productivité, devise, statut, validation (FM) et approbation (CD).",
       "NEW_TITLE": "Nouveau barème",
-      "NEW_TEXT": "« + Nouveau barème » : choisissez la période et les pourcentages. Le barème naît en Brouillon.",
-      "LIFECYCLE_TITLE": "D'un brouillon à un barème validé",
-      "LIFECYCLE_TEXT": "« Auto-remplir depuis la formule » crée une ligne par collaborateur actif à partir des coûts réglés de la période. « Calculer » passe le barème en Calculé (taux journalier, horaire, mensuel, interco et externe). « Valider » le fige.",
-      "ALLOCATION_TITLE": "Formule de coût",
-      "ALLOCATION_TEXT": "Ce bouton ouvre la répartition des catégories de coût : par effectif (total ÷ nombre de collaborateurs), montant fixe, ou direct (coûts rattachés au collaborateur). Elle sert à l'auto-remplissage.",
+      "NEW_TEXT": "« + Nouveau barème » : choisissez la période et les pourcentages. Les paramètres avancés (jours, heures, mois vendables) ont les valeurs du guide par défaut.",
+      "LIFECYCLE_TITLE": "Du brouillon à l'approbation",
+      "LIFECYCLE_TEXT": "« Calculer » lit l'effectif RH, la paie (sinon les coûts collaborateurs) et les coûts réglés. Le Finance Manager valide, puis le Country Director approuve : deux personnes différentes. L'approbation fige le barème.",
+      "DETAIL_TITLE": "Le détail d'un barème",
+      "DETAIL_TEXT": "Dépliez un barème : la carte « Calcul » reprend les étapes 1 à 5 et les alertes, puis trois onglets (individu, grade, discipline + grade) en devise locale, EUR ou USD, au format horaire, journalier, mensuel ou annuel.",
       "END_TITLE": "Besoin d'aide ?",
       "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
     },
@@ -5198,7 +5200,8 @@
       "STATUS": {
         "DRAFT": "Brouillon",
         "COMPUTED": "Calculé",
-        "VALIDATED": "Validé ✓"
+        "VALIDATED": "Validé (FM)",
+        "APPROVED": "Approuvé (CD)"
       },
       "PERIOD": {
         "ANNUAL": "Annuel",
@@ -5225,71 +5228,118 @@
       "YEAR_REQUIRED": "L'année est requise.",
       "QUARTER_REQUIRED": "Le trimestre est requis.",
       "MONTH_REQUIRED": "Le mois est requis.",
-      "CREATE_ERROR": "Erreur de création.",
+      "SAVE_ERROR": "Erreur lors de l'enregistrement.",
       "COMPUTE_ERROR": "Erreur lors du calcul.",
       "VALIDATE_ERROR": "Erreur lors de la validation.",
+      "APPROVE_ERROR": "Erreur lors de l'approbation.",
+      "RETURN_ERROR": "Erreur lors du renvoi en brouillon.",
+      "DELETE_ERROR": "Erreur lors de la suppression.",
       "QUARTER_SHORT": "T",
-      "TITLE": "Barèmes de taux TM",
-      "SUBTITLE": "Configurez le pourcentage de frais HQ et la marge cible utilisés pour calculer le taux intercompany et le taux de vente de chaque collaborateur en mode Time & Material. Le barème <strong>Validé</strong> le plus récent est appliqué automatiquement.",
+      "TITLE": "Barèmes de taux",
+      "SUBTITLE": "Taux de coût chargé par collaborateur, grade et discipline, calculés selon la méthode F.04 : salaires chargés (paie, sinon coûts collaborateurs), pool d'overhead réparti sur les heures vendables, puis % HQ et % marge. Le barème <strong>Approuvé</strong> le plus récent alimente les taux proposés des affaires T&M.",
       "BTN_CANCEL": "✕ Annuler",
       "BTN_NEW": "+ Nouveau barème",
       "FORMULA_INTERCO_LABEL": "Taux interco",
-      "FORMULA_INTERCO_EXPR": "= Coût × (1 + % HQ)",
+      "FORMULA_INTERCO_EXPR": "= (coût direct/h + overhead/h) × (1 + % HQ)",
       "FORMULA_SALE_LABEL": "Taux de vente",
-      "FORMULA_SALE_EXPR": "= Coût × (1 + % HQ + % Marge)",
+      "FORMULA_SALE_EXPR": "= taux interco × (1 + % marge)",
       "TH_PERIOD": "Période",
       "TH_TYPE": "Type",
       "TH_HQ": "% HQ",
       "TH_MARGIN": "% Marge",
-      "INTERCO_MARGIN_PCT": "% Marge Interco",
-      "EXTERNAL_MARGIN_PCT": "% Marge Externe",
+      "TH_PRODUCTIVITY": "Productivité",
       "TH_CURRENCY": "Devise",
       "TH_STATUS": "Statut",
-      "TH_VALIDATED_AT": "Validé le",
+      "TH_VALIDATED": "Validé (FM)",
+      "TH_APPROVED": "Approuvé (CD)",
       "YEAR_PLACEHOLDER": "Année",
       "QUARTER_PLACEHOLDER": "Trim.",
       "MONTH_PLACEHOLDER": "Mois",
+      "ADVANCED": "Paramètres avancés",
+      "WORKING_DAYS": "Jours ouvrés / mois",
+      "HOURS_PER_DAY": "Heures / jour",
+      "SELLING_MONTHS": "Mois vendables / an",
+      "CONVERSION_DAYS": "Jours / mois (conversion)",
+      "CURRENCY_READONLY": "Devise de l'entité (non modifiable)",
+      "SAVE": "Enregistrer",
       "COMPUTE": "Calculer",
-      "VALIDATE": "Valider",
-      "COMPUTE_TITLE": "Calculer (DRAFT → COMPUTED)",
-      "VALIDATE_TITLE": "Valider (COMPUTED → VALIDATED)",
+      "RECOMPUTE": "Recalculer",
+      "VALIDATE": "Valider (FM)",
+      "APPROVE": "Approuver (CD)",
+      "EDIT": "Modifier",
+      "DELETE": "Supprimer",
+      "DELETE_CONFIRM": "Cliquez à nouveau pour confirmer la suppression",
+      "COMPUTE_TITLE": "Calcule les taux à partir de l'effectif RH, de la paie et des coûts réglés de la période",
+      "VALIDATE_TITLE": "Validation Finance Manager (Calculé → Validé)",
+      "APPROVE_TITLE": "Approbation Country Director, par une autre personne que le validateur. Fige le barème et l'applique aux affaires T&M.",
+      "RETURN_TITLE": "Annule la validation et renvoie le barème en brouillon",
       "EMPTY": "Aucun barème configuré. Cliquez sur « + Nouveau barème » pour en créer un.",
       "LOADING": "Chargement...",
-      "FORMULA": {
-        "BTN_OPEN": "⚙ Formule de coût",
-        "BTN_CLOSE": "✕ Fermer la formule",
-        "TH_CATEGORY": "Catégorie",
-        "TH_METHOD": "Méthode d'allocation",
-        "TH_FIXED_AMOUNT": "Montant fixe / employé",
-        "METHOD": {
-          "PER_HEADCOUNT": "Par effectif",
-          "FIXED_AMOUNT": "Montant fixe",
-          "DIRECT": "Direct (par employé)"
-        },
-        "ADD_PLACEHOLDER": "Ajouter une catégorie…",
-        "SAVE": "Enregistrer la formule",
-        "EMPTY": "Aucune catégorie dans la formule. Ajoutez-en une ci-dessous.",
-        "LOAD_ERROR": "Erreur de chargement de la formule.",
-        "SAVE_ERROR": "Erreur lors de la sauvegarde de la formule."
+      "POOL": {
+        "BTN_OPEN": "⚙ Composition du pool",
+        "BTN_CLOSE": "✕ Fermer le pool",
+        "HELP": "Catégories de coût qui entrent dans le pool d'overhead, en plus des salaires non facturables. Les sous-traitants sont toujours exclus ; les salaires viennent de la paie.",
+        "DEFAULT_BADGE": "Défaut du guide",
+        "SAVE": "Enregistrer la composition",
+        "EMPTY": "Aucune catégorie de coût active pour cette entité.",
+        "LOAD_ERROR": "Erreur de chargement de la composition du pool.",
+        "SAVE_ERROR": "Erreur lors de l'enregistrement de la composition du pool."
       },
-      "AUTO_POPULATE": "Auto-remplir depuis la formule",
-      "AUTO_POPULATE_TITLE": "Remplace les lignes auto-générées à partir de la formule de coût du pays (les lignes ajoutées manuellement ne sont pas touchées)",
-      "AUTO_POPULATE_ERROR": "Erreur lors de l'auto-remplissage.",
+      "CALC": {
+        "TITLE": "Calcul",
+        "TOTAL_ENTITY_COST": "1. Coût total de l'entité",
+        "BILLABLE_SALARIES": "Salaires facturables (Technical)",
+        "NONBILLABLE_SALARIES": "Salaires non facturables (Support)",
+        "POOL_CATEGORIES": "Catégories du pool",
+        "OVERHEAD_POOL": "2. Pool d'overhead",
+        "ETPT": "3. ETPT technique",
+        "SELLABLE_HOURS": "4. Heures vendables / ETPT",
+        "OVERHEAD_PER_HOUR": "5. Overhead / heure",
+        "ANNUALISED": "Montants annualisés, en {{currency}}.",
+        "FX": "Taux figés : 1 EUR = {{eur}} {{currency}}, 1 USD = {{usd}} {{currency}}",
+        "NOT_COMPUTED": "Ce barème n'est pas encore calculé."
+      },
+      "WARN": {
+        "TITLE": "Alertes du calcul",
+        "NO_COST": "Collaborateurs facturables sans coût (ni paie ni coût collaborateur) : {{detail}}",
+        "EXCLUDED_STAFF_TYPE": "Collaborateurs exclus (type de personnel ni Technical ni Support) : {{detail}}",
+        "ETPT_ZERO": "ETPT nul : l'overhead par heure est à 0.",
+        "FX_MISSING": "Taux de change manquant, montants ignorés : {{detail}}",
+        "PAYROLL_UNAVAILABLE": "Service de paie injoignable : les coûts collaborateurs sont utilisés pour tout le monde."
+      },
+      "VIEW": {
+        "CURRENCY": "Devise",
+        "LOCAL": "Locale",
+        "FORMAT": "Format",
+        "HOUR": "Horaire",
+        "DAY": "Journalier",
+        "MONTH": "Mensuel",
+        "YEAR": "Annuel"
+      },
+      "TABS": {
+        "INDIVIDUAL": "Individu",
+        "GRADE": "Grade",
+        "DISCIPLINE_GRADE": "Discipline + Grade"
+      },
       "LINES": {
-        "TOGGLE_TITLE": "Afficher / masquer le détail des lignes",
-        "LOADING": "Chargement des lignes...",
-        "LOAD_ERROR": "Erreur de chargement des lignes.",
-        "EMPTY": "Aucune ligne. Utilisez « Auto-remplir depuis la formule » ou ajoutez-en une manuellement.",
-        "TH_EMPLOYEE": "Employé",
-        "TH_GRADE_DISCIPLINE": "Grade / Discipline",
+        "TOGGLE_TITLE": "Afficher / masquer le détail",
+        "LOADING": "Chargement du détail...",
+        "LOAD_ERROR": "Erreur de chargement du détail.",
+        "EMPTY": "Aucune ligne. Lancez « Calculer ».",
+        "TH_EMPLOYEE": "Collaborateur",
+        "TH_GRADE": "Grade",
+        "TH_DISCIPLINE": "Discipline",
+        "TH_HEADCOUNT": "Effectif",
+        "TH_SOURCE": "Source du coût",
         "TH_DIRECT_COST": "Coût direct",
-        "TH_DRY_RATE": "Taux sec",
+        "TH_OVERHEAD": "Overhead",
+        "TH_TOTAL_COST": "Coût total",
         "TH_INTERCO_RATE": "Taux interco",
-        "TH_EXTERNAL_RATE": "Taux externe",
-        "TH_SOURCE": "Source",
+        "TH_SALE_RATE": "Taux de vente",
         "SOURCE": {
-          "AUTO": "Auto",
-          "MANUAL": "Manuel"
+          "PAYROLL": "Paie",
+          "EMPLOYEE_COST": "Coût collab.",
+          "NONE": "Aucune"
         }
       }
     },
