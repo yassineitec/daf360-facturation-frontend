@@ -112,6 +112,8 @@
       [placeholder]="'COMMON.TABLE.SEARCH_PLACEHOLDER' | translate"
       [value]="ressourcesSearch()" [debounce]="200"
       (valueChange)="ressourcesSearch.set($event)"
+      [actions]="exportActions()"
+      (action)="onToolbarAction($event)"
       [table]="ressourcesTable" />
     <div class="res-table-wrap">
       <daf-data-table #ressourcesTable [columns]="ressourcesColumns()" [rows]="filteredRessourcesRows()" [config]="ressourcesTableConfig()">

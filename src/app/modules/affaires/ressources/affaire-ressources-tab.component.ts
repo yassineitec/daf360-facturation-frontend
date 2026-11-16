@@ -6,6 +6,8 @@ import {
   DataTableComponent, DafCellDirective, SearchToolbarComponent, TableColumn, TableConfig, TableRow,
   CardComponent, StatusBadgeComponent, AvatarComponent, ProgressBarComponent,
 } from '@khalilrebhiitec/daf360';
+import type { ToolbarAction } from '@khalilrebhiitec/daf360';
+import { ExportService } from '../../../core/export.service';
 
 import { AffaireService } from '../affaire.service';
 import { LivrableService } from '../livrable.service';
@@ -37,8 +39,9 @@ export class AffaireRessourcesTabComponent implements OnInit {
   private readonly svc = inject(AffaireService);
   private readonly livrableSvc = inject(LivrableService);
   private readonly translate = inject(TranslateService);
+  private readonly exportSvc = inject(ExportService);
 
-  ressources    = signal<AffaireRessourceManageDto[]>([]);
+  ressources   = signal<AffaireRessourceManageDto[]>([]);
   allUsers      = signal<UserRefDto[]>([]);
   loading       = signal(false);
   error         = signal<string | null>(null);
@@ -126,6 +129,26 @@ export class AffaireRessourcesTabComponent implements OnInit {
   readonly ressourcesSearch = signal('');
   readonly filteredRessourcesRows = computed(() =>
     searchTableRows(this.ressourcesRows(), this.ressourcesColumns(), this.ressourcesSearch()));
+
+  // ── Export Excel (généré par le backend, AffaireExportController) ───────────
+  readonly exporting = signal(false);
+
+  readonly exportActions = computed<ToolbarAction[]>(() => {
+    this.translate.currentLang();
+    return [{
+      id: 'export', icon: 'download', position: 'right',
+      label: this.translate.instant('AFFAIRES.DETAIL.TOOLBAR.EXPORT'),
+      disabled: this.filteredRessourcesRows().length === 0 || this.exporting(),
+    }];
+  });
+
+  onToolbarAction(id: string): void {
+    if (id !== 'export') return;
+    const ref = this.affaire.reference ?? String(this.affaire.id);
+    this.exportSvc.download(
+      this.exportSvc.affaireRessources(this.affaire.id, this.filteredRessourcesRows().map(r => r.id)),
+      `Ressources_${ref}.xlsx`, this.exporting);
+  }
 
   /** Outils de tableau communs (`tableTools`), comme sur `/finance/affaires`. */
   readonly ressourcesTableConfig = computed<TableConfig>(() => ({

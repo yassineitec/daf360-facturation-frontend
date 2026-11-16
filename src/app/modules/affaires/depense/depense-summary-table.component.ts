@@ -186,7 +186,10 @@ export class DepenseSummaryTableComponent {
         const periodLabel = sorted.length
           ? `${this.fmtDate(sorted[0])} – ${this.fmtDate(sorted[sorted.length - 1])}`
           : '—';
-        return { email: e.email, userFullName: e.userFullName, totalHours: e.totalHours, totalCost: e.totalCost, periodLabel };
+        // Premier jour ISO (yyyy-mm-dd) : clé de tri chronologique de la colonne Période,
+        // le libellé « jj/mm/aaaa – jj/mm/aaaa » se trierait jour d'abord.
+        const periodStart = sorted[0] ?? null;
+        return { email: e.email, userFullName: e.userFullName, totalHours: e.totalHours, totalCost: e.totalCost, periodLabel, periodStart };
       })
       .filter(a => !q || a.userFullName.toLowerCase().includes(q) || a.email.toLowerCase().includes(q))
       .filter(a => (min == null || a.totalCost >= min) && (max == null || a.totalCost <= max))
@@ -198,7 +201,8 @@ export class DepenseSummaryTableComponent {
     const t = (key: string) => this.translate.instant(key);
     return [
       { key: 'user', label: t('AFFAIRES.WIP.COL_COLLABORATOR'), type: 'text', clickable: true, sortable: true },
-      { key: 'period', label: t('AFFAIRES.DEPENSE.COL_PERIOD'), type: 'text', sortable: true },
+      { key: 'period', label: t('AFFAIRES.DEPENSE.COL_PERIOD'), type: 'text', sortable: true,
+        sortAccessor: row => row['_periodStart'] as string | null },
       { key: 'hours', label: t('AFFAIRES.WIP.COL_HOURS'), type: 'text', align: 'right', sortable: true,
         sortAccessor: row => row['_hours'] as number },
       { key: 'cost', label: t('AFFAIRES.WIP.COL_COST'), type: 'text', align: 'right', sortable: true,
@@ -228,6 +232,7 @@ export class DepenseSummaryTableComponent {
       cost: this.fmtAmt(a.totalCost),
       _hours: a.totalHours,
       _cost: a.totalCost,
+      _periodStart: a.periodStart,
     })), this.columns(), this.sort()),
   );
 

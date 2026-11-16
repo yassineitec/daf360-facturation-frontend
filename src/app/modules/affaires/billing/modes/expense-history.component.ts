@@ -7,8 +7,9 @@ import {
 } from '@khalilrebhiitec/daf360';
 import type {
   BadgeCell, FilterField, FilterResult, SearchToolbarFilterConfig,
-  TableColumn, TableConfig, TableRow,
+  TableColumn, TableConfig, TableRow, ToolbarAction,
 } from '@khalilrebhiitec/daf360';
+import { ExportService } from '../../../../core/export.service';
 
 import { BillingService, ExpenseDto } from '../billing.service';
 import { FactListService } from '../../../../core/fact-list.service';
@@ -54,6 +55,8 @@ function toIsoDay(d: Date): string {
         [filterFields]="filterFields()"
         [filterConfig]="filterConfig()"
         (filterApply)="onFilter($event)"
+        [actions]="exportActions()"
+        (action)="onToolbarAction($event)"
         [table]="expenseTable" />
 
       <daf-data-table #expenseTable [columns]="columns()" [rows]="rows()" [config]="config()" />
@@ -77,6 +80,7 @@ export class ExpenseHistoryComponent implements OnInit {
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly modals    = inject(ModalService);
   private readonly currencyContext = inject(CurrencyContextService);
+  private readonly exportSvc = inject(ExportService);
 
   private readonly refuseTpl = viewChild.required<TemplateRef<unknown>>('refuseTpl');
 
@@ -281,6 +285,27 @@ export class ExpenseHistoryComponent implements OnInit {
       ],
     };
   });
+
+  // ── Export Excel (généré par le backend, AffaireExportController) ───────────
+
+  readonly exporting = signal(false);
+
+  readonly exportActions = computed<ToolbarAction[]>(() => {
+    this.translate.currentLang();
+    return [{
+      id: 'export', icon: 'download', position: 'right',
+      label: this.translate.instant('AFFAIRES.DETAIL.TOOLBAR.EXPORT'),
+      disabled: this.filtered().length === 0 || this.exporting(),
+    }];
+  });
+
+  onToolbarAction(id: string): void {
+    if (id !== 'export') return;
+    const a = this.affaire();
+    this.exportSvc.download(
+      this.exportSvc.affaireExpenses(a.id, this.filtered().map(e => e.id)),
+      `Frais_${a.reference ?? a.id}.xlsx`, this.exporting);
+  }
 
   // ── Actions ─────────────────────────────────────────────────────────────
 

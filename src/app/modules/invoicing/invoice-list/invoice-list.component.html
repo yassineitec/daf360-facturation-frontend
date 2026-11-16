@@ -3,6 +3,9 @@
   <daf-page-header
     [title]="'INVOICING.LIST.TITLE' | translate"
     [subtitle]="'INVOICING.LIST.SUBTITLE' | translate">
+    <daf-button pageActions data-guide="invoices-export"
+      [options]="{ variant: 'ghost', label: ('INVOICING.LIST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !totalElements(), loading: exporting() }"
+      (onClick)="exportExcel()" />
     <daf-button pageActions data-guide="invoices-new"
       [options]="{ variant: 'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="navigateToNew()" />

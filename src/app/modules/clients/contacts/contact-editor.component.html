@@ -46,16 +46,33 @@
           </div>
 
           <div class="ce-fields">
+            <!-- Prénom / Nom, mis en forme à la sortie du champ (daf-form-field n'a pas
+                 de sortie blur : on écoute le focusout natif qui remonte de son input).
+                 Le « Prénom NOM » envoyé au serveur en est déduit. -->
             <daf-form-field
-              [value]="row.fullName"
-              (valueChange)="patch(idx, { fullName: asStr($event) })"
+              [value]="row.firstName"
+              (valueChange)="patchName(idx, { firstName: asStr($event) })"
+              (focusout)="patchName(idx, { firstName: formatFirstName(row.firstName) })"
               [options]="{
-                label: ('CLIENTS.CONTACTS.NAME_LABEL' | translate),
+                label: ('CLIENTS.CONTACTS.FIRST_NAME_LABEL' | translate),
                 type: 'text',
-                placeholder: ('CLIENTS.CONTACTS.NAME_PLACEHOLDER' | translate),
-                maxLength: 255,
+                placeholder: ('CLIENTS.CONTACTS.FIRST_NAME_PLACEHOLDER' | translate),
+                maxLength: 100,
                 required: true,
-                error: rowNameError(row)
+                error: rowFirstNameError(row)
+              }" />
+
+            <daf-form-field
+              [value]="row.lastName"
+              (valueChange)="patchName(idx, { lastName: asStr($event) })"
+              (focusout)="patchName(idx, { lastName: formatLastName(row.lastName) })"
+              [options]="{
+                label: ('CLIENTS.CONTACTS.LAST_NAME_LABEL' | translate),
+                type: 'text',
+                placeholder: ('CLIENTS.CONTACTS.LAST_NAME_PLACEHOLDER' | translate),
+                maxLength: 150,
+                required: true,
+                error: rowLastNameError(row)
               }" />
 
             <!-- Texte libre, et non une liste : « Contact finance », « Ingénierie »,
