@@ -69,9 +69,10 @@ export class RateComputationComponent implements OnInit {
   private readonly userStore = inject(UserStore);
 
   // ── permissions (the backend enforces them too; a 403 shows as an error banner) ──
-  readonly canManage   = computed(() => this.userStore.hasPermission('FACT_MANAGE_COST'));
-  readonly canValidate = computed(() => this.userStore.hasPermission('FACT_VALIDATE_RATES'));
-  readonly canApprove  = computed(() => this.userStore.hasPermission('FACT_APPROVE_RATES'));
+  private readonly isSuperAdmin = computed(() => this.userStore.hasPermission('FACT_SUPER_ADMIN'));
+  readonly canManage   = computed(() => this.isSuperAdmin() || this.userStore.hasPermission('FACT_MANAGE_COST'));
+  readonly canValidate = computed(() => this.isSuperAdmin() || this.userStore.hasPermission('FACT_VALIDATE_RATES'));
+  readonly canApprove  = computed(() => this.isSuperAdmin() || this.userStore.hasPermission('FACT_APPROVE_RATES'));
 
   // ── pays ────────────────────────────────────────────────────────────────
   paysList = signal<PaysRefDto[]>([]);
