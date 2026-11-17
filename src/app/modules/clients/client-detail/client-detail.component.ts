@@ -24,6 +24,7 @@ import { ClientContactService }   from '../contacts/client-contact.service';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { ToastService } from '../../../core/toast.service';
+import { ExportService } from '../../../core/export.service';
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
 
@@ -93,7 +94,10 @@ export class ClientDetailComponent implements OnInit {
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly contactSvc = inject(ClientContactService);
   private readonly toast      = inject(ToastService);
+  private readonly exportSvc  = inject(ExportService);
 
+  /** Export Excel en cours — grise le bouton et ignore un double clic. */
+  readonly exporting = signal(false);
 
   client      = signal<ClientDetailDto | null>(null);
   stats       = signal<ClientStatsDto | null>(null);
@@ -325,6 +329,22 @@ export class ClientDetailComponent implements OnInit {
       label: this.translate.instant(done
         ? 'CLIENTS.DETAIL.ACTIONS.REVOKE_KYC'
         : 'CLIENTS.DETAIL.ACTIONS.VALIDATE_KYC'),
+    };
+  });
+
+  /** Export de la fiche : même bouton secondaire que le KYC, ouvert à tous les lecteurs. */
+  readonly exportButtonOptions = computed<ButtonOptions>(() => {
+    this.translate.currentLang();
+    const busy = this.exporting();
+    return {
+      variant:   'secondary',
+      size:      'sm',
+      fullWidth: true,
+      iconStart: 'download',
+      disabled:  busy,
+      label:     this.translate.instant(busy
+        ? 'CLIENTS.DETAIL.ACTIONS.EXPORTING'
+        : 'CLIENTS.DETAIL.ACTIONS.EXPORT'),
     };
   });
 
@@ -753,6 +773,19 @@ export class ClientDetailComponent implements OnInit {
         },
       ],
     });
+  }
+
+  /**
+   * Export Excel de la fiche, généré par le backend (ClientExportController) : feuille
+   * « Fiche client » (identité, indicateurs, traçabilité) + feuille « Contacts ».
+   */
+  exportClient(): void {
+    const c = this.client();
+    if (!c) return;
+    this.exportSvc.download(
+      this.exportSvc.clientDetail(c.id),
+      `Client_${(c.clientCode || 'C-' + c.id).replace(/[^A-Za-z0-9-]+/g, '_')}.xlsx`,
+      this.exporting);
   }
 
   /** `fromClient*` / `fromTab` ne servent qu'au fil d'Ariane de l'assistant

@@ -71,6 +71,27 @@ export class ExportService {
     return this.post(`/affaires/${affaireId}/wip/export/ts/${tsId}/history.xlsx`, { ids });
   }
 
+  /** TS cochés dans la liste de l'onglet TS WIP (ids = tsId, ordre de la liste) :
+   *  feuille Synthèse + feuille Historique de leurs déclarations. */
+  tsSelection(affaireId: number, tsIds: number[]): Observable<Blob> {
+    return this.post(`/affaires/${affaireId}/wip/export/ts-selection.xlsx`, { ids: tsIds });
+  }
+
+  // ── File d'approbation DF (/finance/billing/approval) ───────────────────────────
+
+  /** Onglet DF : ids affichés de chaque tableau, dans l'ordre de l'écran — une feuille par tableau. */
+  billingApprovalDf(ids: {
+    forfaitLines: number[]; forfaitCreditNotes: number[]; regieLines: number[]; regieCreditNotes: number[];
+    livrableBatches: number[]; livrableCreditNotes: number[]; tsLines: number[];
+  }): Observable<Blob> {
+    return this.post('/billing/pending-df/export.xlsx', ids);
+  }
+
+  /** Onglet Historique : entrées du journal affichées. */
+  billingApprovalHistory(ids: number[]): Observable<Blob> {
+    return this.post('/billing/audit/export.xlsx', { ids });
+  }
+
   // ── Factures (/finance/invoicing) ───────────────────────────────────────────────
 
   /** Liste paginée côté serveur : on envoie ses filtres et son tri (pas d'ids), le serveur
@@ -83,7 +104,84 @@ export class ExportService {
     return this.post('/invoices/export.xlsx', filter);
   }
 
+  // ── Affaires (/finance/affaires) ────────────────────────────────────────────────
+
+  /** Liste paginée côté serveur : on envoie ses filtres et son tri (pas d'ids), le serveur
+   * exporte toutes les affaires correspondantes — feuilles Affaires + Synthèse. */
+  affaires(filter: {
+    paysId: number | null; statut: string | null; search: string | null; clientId: number | null;
+    responsableId: number | null; billingMode: string | null;
+    dateDebutFrom: string | null; dateDebutTo: string | null; sort: string | null;
+  }): Observable<Blob> {
+    // `paysId` en paramètre d'URL : c'est là que PaysIsolationInterceptor le contrôle.
+    const { paysId, ...body } = filter;
+    return this.post('/affaires/export.xlsx', body, paysId != null ? { paysId: String(paysId) } : {});
+  }
+
+  /** Liste des fournisseurs d'une entité — mêmes filtres que GET /suppliers/search ;
+   *  `paysId` en paramètre d'URL (contrôlé par PaysIsolationInterceptor), le reste dans le corps. */
+  suppliers(paysId: number, filter: {
+    search: string | null; status: string | null; typeId: number | null;
+    hasIban: boolean | null; hasTva: boolean | null; sort: string | null;
+  }): Observable<Blob> {
+    return this.post('/suppliers/export.xlsx', filter, { paysId: String(paysId) });
+  }
+
+  // ── Clients ─────────────────────────────────────────────────────────────────────
+
+  /** Liste paginée côté serveur : filtres et tri envoyés (pas d'ids), le serveur exporte
+   * tous les clients correspondants — feuilles Clients + Synthèse. */
+  clients(filter: {
+    search: string | null; isActive: boolean | null; isKycDone: boolean | null; sectorCode: string | null;
+    countryId: number | null; currency: string | null; hasActiveAffaires: boolean | null; sort: string | null;
+  }): Observable<Blob> {
+    return this.post('/clients/export.xlsx', filter);
+  }
+
+  /** Fiche client complète (identité, indicateurs, traçabilité + feuille des contacts). */
+  clientDetail(clientId: number): Observable<Blob> {
+    return this.post(`/clients/${clientId}/export.xlsx`, {});
+  }
+
   // ── Coûts / Fournisseurs ────────────────────────────────────────────────────────
+
+  /** Page /finance/cost : TOUTES les factures de l'entité, le serveur rejoue les filtres de
+   *  l'écran (statut, recherche, catégorie, période, montants) et le tri. `paysId` en URL
+   *  (contrôlé par PaysIsolationInterceptor), le reste dans le corps. */
+  costInvoices(paysId: number, filter: {
+    status: string | null; search: string | null; categoryId: number | null;
+    dateFrom: string | null; dateTo: string | null;
+    amountMin: number | null; amountMax: number | null; sort: string | null;
+  }): Observable<Blob> {
+    return this.post('/cost-invoices/export.xlsx', filter, { paysId: String(paysId) });
+  }
+
+  /** File d'approbation /finance/cost/approval — éléments affichés, ordre de l'écran.
+   *  Factures : seul `id` compte (relues en base). Embauches / avances : telles qu'affichées.
+   *  `pays` en URL, comme GET /cost/approvals/pending (contrôlé par PaysIsolationInterceptor). */
+  costApprovals(paysId: number, items: {
+    kind: string; id: number; reference: string | null; title: string | null; date: string | null;
+    amount: number | null; currency: string | null; status: string | null; details: string | null;
+  }[]): Observable<Blob> {
+    return this.post('/cost/approvals/export.xlsx', { items }, { pays: String(paysId) });
+  }
+
+  /** Ordres de mission /finance/cost/missions — les missions AFFICHÉES, telles que reçues de
+   *  rh-service (la facturation ne peut pas les relire), dans l'ordre de l'écran. */
+  missions(missions: unknown[]): Observable<Blob> {
+    return this.post('/cost/missions/export.xlsx', { missions });
+  }
+
+  /** Barèmes de taux /finance/cost/rate-computations — tous les barèmes de l'entité et leurs
+   *  lignes. `paysId` en URL (contrôlé par PaysIsolationInterceptor). */
+  rateComputations(paysId: number): Observable<Blob> {
+    return this.post('/rate-computations/export.xlsx', {}, { paysId: String(paysId) });
+  }
+
+  /** Vue « Par fournisseur » de /finance/cost : une ligne par fournisseur, totaux EUR. */
+  costBySupplier(paysId: number): Observable<Blob> {
+    return this.post('/cost-invoices/by-supplier/export.xlsx', {}, { paysId: String(paysId) });
+  }
 
   /** ids = `reglementId` des lignes du relevé affichées. */
   supplierLedger(supplierId: number, ids: number[]): Observable<Blob> {

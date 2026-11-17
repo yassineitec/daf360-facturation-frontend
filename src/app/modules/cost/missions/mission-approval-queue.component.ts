@@ -3,13 +3,14 @@ import {
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  FilterField, FilterResult, FormFieldComponent, MetricCardComponent, MetricCardOptions,
+  ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent, MetricCardOptions,
   MetricDelta, ModalRef, ModalService, PageComponent, PageHeaderComponent, PageHeaderBadge,
   SearchToolbarComponent, SearchToolbarFilterConfig, SectionCardComponent,
   ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 
 import { MissionApprovalService, MissionDto, MissionScope } from './mission-approval.service';
+import { ExportService } from '../../../core/export.service';
 import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import {
   MissionApprovalItem, MissionUrgency, daysUntil, localeOf, missionAmountLabel,
@@ -63,7 +64,7 @@ const GUIDE_STEPS: GuideStep[] = [
   selector: 'app-mission-approval-queue',
   standalone: true,
   imports: [
-    TranslatePipe, PageComponent, PageHeaderComponent, MetricCardComponent,
+    TranslatePipe, ButtonComponent, PageComponent, PageHeaderComponent, MetricCardComponent,
     SearchToolbarComponent, FormFieldComponent, SectionCardComponent,
     MissionApprovalCardsSectionComponent, MissionApprovalTableSectionComponent,
     PageGuideComponent,
@@ -80,6 +81,55 @@ export class MissionApprovalQueueComponent implements OnInit {
   private readonly svc = inject(MissionApprovalService);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
+  private readonly exportSvc = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
+
+  /**
+   * Export généré par le backend facturation (MissionExportController) : les missions
+   * AFFICHÉES (recherche + filtres), dans l'ordre de l'écran. Elles viennent de rh-service,
+   * que la facturation ne peut pas relire : on les envoie telles que reçues (dates en jours ISO).
+   */
+  exportExcel(): void {
+    const items = this.visibleItems();
+    if (!items.length) return;
+    const day = (iso: string | null | undefined) => iso ? iso.slice(0, 10) : null;
+    const missions = items.map(({ mission: m }) => ({
+      id: m.id,
+      employeeName: m.employeeName,
+      employeeRoleName: m.employeeRoleName,
+      title: m.title,
+      startDate: day(m.startDate),
+      endDate: day(m.endDate),
+      durationDays: m.durationDays,
+      scope: m.scope,
+      city: m.city,
+      countryLabel: m.countryLabel,
+      hrValidatedByName: m.hrValidatedByName,
+      hrValidatedAt: day(m.hrValidatedAt),
+      hrNotes: m.hrNotes,
+      expenses: m.expenses ? {
+        currency: m.expenses.currency,
+        missionAllowance: m.expenses.missionAllowance,
+        lodgingCost: m.expenses.lodgingCost,
+        hotelName: m.expenses.hotelName,
+        nights: m.expenses.nights,
+        transportMode: m.expenses.transportMode,
+        transportCarrier: m.expenses.transportCarrier,
+        ticketCost: m.expenses.ticketCost,
+        visaFees: m.expenses.visaFees,
+        insuranceFees: m.expenses.insuranceFees,
+        otherFees: m.expenses.otherFees,
+        otherFeesLabel: m.expenses.otherFeesLabel,
+        advanceAmount: m.expenses.advanceAmount,
+        paymentMethod: m.expenses.paymentMethod,
+        totalEstimatedCost: m.expenses.totalEstimatedCost,
+      } : null,
+    }));
+    this.exportSvc.download(this.exportSvc.missions(missions),
+      `Ordres_de_mission_${toIsoDay(new Date())}.xlsx`, this.exporting);
+  }
 
   private readonly decisionTpl = viewChild.required<TemplateRef<unknown>>('decisionTpl');
   private readonly detailTpl = viewChild.required<TemplateRef<unknown>>('detailTpl');

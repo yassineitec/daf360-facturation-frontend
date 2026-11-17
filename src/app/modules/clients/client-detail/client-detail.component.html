@@ -113,6 +113,12 @@
                 [options]="kycButtonOptions()"
                 (onClick)="toggleKyc()" />
 
+              <!-- Export Excel de la fiche (identité, indicateurs, contacts) — lecture,
+                   donc sans garde de permission : qui voit la fiche peut l'exporter. -->
+              <daf-button
+                [options]="exportButtonOptions()"
+                (onClick)="exportClient()" />
+
               <!-- 3. Actions de gestion — rangée de pied. Les deux actions sont NOMMÉES :
                    la pastille d'état qui occupait la place à droite disait « KYC en
                    attente » là où l'on cherchait le bouton pour bloquer le client, et

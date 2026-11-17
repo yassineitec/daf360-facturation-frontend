@@ -6,7 +6,13 @@
   <daf-page-header
     [title]="'FACTURATION.MISSIONS.TITLE' | translate"
     [subtitle]="'FACTURATION.MISSIONS.SUBTITLE' | translate"
-    [badges]="headerBadges()" />
+    [badges]="headerBadges()">
+    <!-- Les missions affichées (recherche + filtres), dans l'ordre de l'écran. -->
+    <daf-button pageActions data-guide="missions-export"
+      [options]="{ variant: 'ghost', label: ('FACTURATION.MISSIONS.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !visibleItems().length, loading: exporting() }"
+      (onClick)="exportExcel()" />
+  </daf-page-header>
 
   <section data-guide="missions-kpis" class="grid grid-cols-3 gap-2 sm:gap-6">
     <daf-metric-card

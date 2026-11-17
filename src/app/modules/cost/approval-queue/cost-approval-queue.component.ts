@@ -23,6 +23,7 @@ import { ApprovalItem, ApprovalKind, itemUrgency } from './approval-item';
 import { ApprovalCardsSectionComponent, ApprovalDecision } from './approval-cards-section.component';
 import { ApprovalTableSectionComponent } from './approval-table-section.component';
 import { CostApprovalQueueStateService } from './cost-approval-queue-state.service';
+import { ExportService } from '../../../core/export.service';
 
 type ViewMode = 'grid' | 'list';
 /** The three decisions a cost invoice supports — the service has an endpoint for each. */
@@ -365,6 +366,40 @@ export class CostApprovalQueueComponent implements OnInit {
     if (!item.hiring) return null;
     const loaded = this.hiringSvc.parseSnapshot(item.hiring.simulationSnapshot).loadedCost;
     return loaded != null ? loaded * 12 : null;
+  }
+
+  // ── Export Excel ────────────────────────────────────────────────────────────
+
+  private readonly exportSvc = inject(ExportService);
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
+
+  /**
+   * Export généré par le backend (CostApprovalExportController) : les éléments AFFICHÉS
+   * (recherche + filtres), dans l'ordre de l'écran. Les factures partent par id et sont
+   * relues en base ; les embauches (rh-service) et les avances (payroll-service), que la
+   * facturation ne peut pas relire, partent telles qu'affichées.
+   */
+  exportExcel(): void {
+    const items = this.visibleItems();
+    if (!items.length || !this.paysId()) return;
+    const t = (key: string) => this.translate.instant(key);
+    const payload = items.map(item => item.kind === 'cost'
+      ? { kind: 'cost', id: item.id, reference: null, title: null, date: null,
+          amount: null, currency: null, status: null, details: null }
+      : {
+          kind:      item.kind,
+          id:        item.id,
+          reference: item.reference,
+          title:     item.title,
+          date:      item.sortDate ? item.sortDate.slice(0, 10) : null,
+          amount:    item.sortAmount,
+          currency:  this.itemCurrency(item),
+          status:    item.kind === 'advance' ? t(`FACTURATION.ADVANCES.STATUS.${item.advance!.status}`) : null,
+          details:   item.metrics.map(m => `${m.label} : ${m.value}`).join(' · '),
+        });
+    this.exportSvc.download(this.exportSvc.costApprovals(this.paysId(), payload),
+      `Approbations_${toIsoDay(new Date())}.xlsx`, this.exporting);
   }
 
   readonly pendingCount = computed(() => this.items().length);

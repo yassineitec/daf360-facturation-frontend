@@ -32,6 +32,7 @@ import { AffaireService } from '../affaire.service';
 import { ToastService } from '../../../core/toast.service';
 import { ClientService } from '../../clients/client.service';
 import { ClientDropdownItemDto } from '../../clients/client.model';
+import { ExportService } from '../../../core/export.service';
 type ActiveTab = 'df' | 'history';
 // Four tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE/TS) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
@@ -949,6 +950,53 @@ export class ApprovalQueueComponent implements OnInit {
 
   historyPage     = signal(0);
   historyPageSize = signal(10);
+
+  // ── Export Excel ────────────────────────────────────────────────────────────
+
+  private readonly exportSvc = inject(ExportService);
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
+
+  /** Ids d'un tableau tels qu'affichés : ses filtres, puis son tri (toutes pages confondues). */
+  private shownIds<R extends { _raw: unknown }>(rows: R[], columns: TableColumn[], sort: TableSort | null,
+                                                 id: (raw: R['_raw']) => number): number[] {
+    return sortTableRows(rows as unknown as TableRow[], columns, sort)
+      .map(r => id((r as unknown as R)._raw));
+  }
+
+  /** Rien à exporter dans l'onglet courant : le bouton est grisé. */
+  readonly exportDisabled = computed(() =>
+    this.activeTab() === 'history' ? !this.filteredHistoryRows().length : !this.dfCount());
+
+  /**
+   * Export généré par le backend (BillingApprovalExportController), selon l'onglet :
+   * DF → une feuille par tableau (lignes et avoirs de chaque mode, lots livrables, TS), chacun
+   * avec SA recherche, SES filtres et son tri ; Historique → les entrées affichées. Les ids
+   * partent dans l'ordre de l'écran, le serveur relit les lignes en base.
+   */
+  exportExcel(): void {
+    if (this.exportDisabled()) return;
+    const d = new Date();
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (this.activeTab() === 'history') {
+      const ids = sortTableRows(this.filteredHistoryRows() as unknown as TableRow[], this.historyColumns(), this.historySort())
+        .map(r => r['id'] as number);
+      this.exportSvc.download(this.exportSvc.billingApprovalHistory(ids), `Approbation_historique_${day}.xlsx`, this.exporting);
+      return;
+    }
+    const lineId = (raw: PendingBillingLineDto) => raw.id;
+    const noteId = (raw: PendingCreditNoteDto) => raw.id;
+    this.exportSvc.download(this.exportSvc.billingApprovalDf({
+      forfaitLines:        this.shownIds(this.filteredLineRowsForfait(), this.lineColumns(), this.lineSort(), lineId),
+      forfaitCreditNotes:  this.shownIds(this.filteredCreditNoteRowsForfait(), this.creditNoteColumns(), this.creditNoteSort(), noteId),
+      regieLines:          this.shownIds(this.filteredLineRowsRegie(), this.lineColumns(), this.lineSort(), lineId),
+      regieCreditNotes:    this.shownIds(this.filteredCreditNoteRowsRegie(), this.creditNoteColumns(), this.creditNoteSort(), noteId),
+      livrableBatches:     this.shownIds(this.filteredLivrableBatchRows(), this.livrableBatchColumns(), this.livrableBatchSort(),
+                                         (raw: PendingLivrableBatchDto) => raw.batchId),
+      livrableCreditNotes: this.shownIds(this.filteredCreditNoteRowsLivrable(), this.creditNoteColumns(), this.creditNoteSort(), noteId),
+      tsLines:             this.shownIds(this.filteredLineRowsTs(), this.lineColumns(), this.lineSort(), lineId),
+    }), `Approbation_DF_${day}.xlsx`, this.exporting);
+  }
   readonly historyTotalPages = computed(() => Math.ceil(this.filteredHistoryRows().length / this.historyPageSize()));
   readonly pagedHistoryRows = computed(() => {
     const rows = sortTableRows(this.filteredHistoryRows(), this.historyColumns(), this.historySort());

@@ -3,7 +3,15 @@
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
   <daf-page-header
     [title]="'AFFAIRES.billing.approval.title' | translate"
-    [subtitle]="'AFFAIRES.billing.approval.subtitle' | translate" />
+    [subtitle]="'AFFAIRES.billing.approval.subtitle' | translate">
+    <!-- Exporte l'onglet affiché : DF → une feuille par tableau (avec la recherche et les
+         filtres de chacun), Historique → les entrées filtrées. -->
+    <daf-button pageActions data-guide="approval-export"
+      [options]="{ variant: 'ghost', iconStart: 'download',
+                   label: ((activeTab() === 'history' ? 'AFFAIRES.billing.approval.export_history' : 'AFFAIRES.billing.approval.export_df') | translate),
+                   disabled: exportDisabled(), loading: exporting() }"
+      (onClick)="exportExcel()" />
+  </daf-page-header>
 
   <!-- ── KPI Stats ─────────────────────────────────────────────────────────── -->
   <section data-guide="approval-kpis" class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-6">
