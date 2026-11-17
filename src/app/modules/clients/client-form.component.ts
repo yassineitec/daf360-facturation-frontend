@@ -191,8 +191,9 @@ export class ClientFormComponent implements OnInit, OnChanges {
     if (this.contactsRequired() && rows.length === 0) {
       return this.translate.instant('CLIENTS.CONTACTS.AT_LEAST_ONE');
     }
-    if (rows.some(r => !r.fullName.trim())) {
-      return this.translate.instant('CLIENTS.CONTACTS.NAME_REQUIRED');
+    // Prénom ET Nom : l'éditeur les saisit séparément et en déduit fullName.
+    if (rows.some(r => !r.firstName.trim() || !r.lastName.trim())) {
+      return this.translate.instant('CLIENTS.CONTACTS.NAMES_REQUIRED');
     }
     if (rows.some(r => r.email.trim() && !EMAIL_RE.test(r.email.trim()))) {
       return this.translate.instant('CLIENTS.FORM.EMAIL_INVALID');

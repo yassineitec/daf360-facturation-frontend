@@ -10,8 +10,9 @@ import {
   StepperComponent, StepperStep, StepperConfig,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow, BadgeCell,
   SearchToolbarComponent, SearchToolbarFilterConfig, StatusBadgeComponent, FilterField, FilterResult,
-  AccordionCardComponent, PaginationComponent, TabsComponent, TabItem,
+  AccordionCardComponent, PaginationComponent, TabsComponent, TabItem, ToolbarAction,
 } from '@khalilrebhiitec/daf360';
+import { ExportService } from '../../../core/export.service';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { WipService, WipTauxSubmitBody } from './wip.service';
@@ -236,10 +237,11 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
   private readonly toast = inject(ToastService);
+  private readonly exportSvc = inject(ExportService);
 
   /** Export Excel en cours (généré par le backend) — met le bouton concerné en chargement
    * et empêche un double clic de lancer deux téléchargements. */
-  readonly exporting = signal<'tm' | 'history' | 'livrables' | null>(null);
+  readonly exporting = signal<'tm' | 'history' | 'livrables' | 'av' | null>(null);
 
   /** Popup partagée Forfaitaire/Régie/Livrable montrant l'email de confirmation client avant
    * le vrai envoi — même intégration que PaymentModalComponent (viewChild + .open(...)),
@@ -978,7 +980,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
 
   /** Téléchargement commun aux exports de l'onglet ; erreur remontée en toast, lisible
    * aussi depuis les popups plein écran (une erreur sous la carte y serait invisible). */
-  private runExport(kind: 'tm' | 'history' | 'livrables', request: Observable<Blob>, filename: string): void {
+  private runExport(kind: 'tm' | 'history' | 'livrables' | 'av', request: Observable<Blob>, filename: string): void {
     this.exporting.set(kind);
     request.subscribe({
       next: blob => {
@@ -1712,6 +1714,32 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     });
     return searchTableRows(rows, this.tauxHistoryColumns(), this.tauxHistorySearch());
   });
+
+  /** Bouton « Exporter » de la barre de l'historique des taux (AV) — fichier généré par le
+   *  backend (WipExportController) à partir des lignes affichées, dans l'ordre de l'écran. */
+  readonly tauxHistoryActions = computed<ToolbarAction[]>(() => {
+    this.translate.currentLang();
+    return [{
+      id: 'export', icon: 'download', position: 'right',
+      label: this.translate.instant('AFFAIRES.DETAIL.TOOLBAR.EXPORT'),
+      disabled: this.filteredTauxHistoryRows().length === 0 || this.exporting() !== null,
+    }];
+  });
+
+  /** Tri d'en-tête courant de l'historique des taux — la lib trie elle-même l'affichage,
+   *  on le suit seulement pour exporter dans l'ordre de l'écran. */
+  readonly tauxHistorySort = signal<TableSort | null>(null);
+  onTauxHistorySort(event: Parameters<typeof toTableSort>[0]): void {
+    this.tauxHistorySort.set(toTableSort(event));
+  }
+
+  onTauxHistoryAction(id: string): void {
+    if (id !== 'export' || this.exporting()) return;
+    const rows = sortTableRows(this.filteredTauxHistoryRows(), this.tauxHistoryColumns(), this.tauxHistorySort());
+    const ref = this.affaire.reference ?? String(this.affaire.id);
+    this.runExport('av', this.exportSvc.avHistory(this.affaire.id, rows.map(r => r['id'] as number)),
+      `Historique_Taux_${ref}.xlsx`);
+  }
 
   readonly tauxHistoryConfig = computed<TableConfig>(() => ({
     showHeader: false,

@@ -9,7 +9,7 @@ import {
   DrawerComponent, FilterChipsComponent, FilterComponent, FormFieldComponent, FormFieldOptions,
   AvatarComponent, HelpPopoverComponent, ModalService,
   PageComponent, PageHeaderComponent, ProgressBarComponent, ProgressBarOptions,
-  RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, SelectComponent, SkeletonComponent,
+  PaginationComponent, RadioGroupComponent, SearchToolbarComponent, SectionCardComponent, SelectComponent, SkeletonComponent,
   StatusBadgeComponent, TabsComponent,
   countActiveFilters, tabParam,
 } from '@khalilrebhiitec/daf360';
@@ -46,7 +46,7 @@ import { AffaireDepenseTabComponent } from './depense/affaire-depense-tab.compon
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
 import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
-import { searchTableRows, tableTools } from '../../shared/table-tools';
+import { TableSort, delegatedSort, searchTableRows, sortTableRows, tableTools, toTableSort } from '../../shared/table-tools';
 import { STATUT_BADGE_VARIANT } from './affaire-display';
 import {
   INVOICE_STATUT_BADGE, TS_STATUT_BADGE, enumLabel,
@@ -307,7 +307,7 @@ const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: strin
     DrawerComponent, RadioGroupComponent, FormFieldComponent, SelectComponent,
     BarChartComponent, AvatarComponent, FilterComponent, FilterChipsComponent, SkeletonComponent,
     HelpPopoverComponent, PageGuideComponent,
-    TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
+    PaginationComponent, TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,
@@ -474,6 +474,9 @@ const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: strin
     /* padding-top : la pastille de la plus haute barre s'affiche au-dessus d'elle ; sans
        cette marge elle était coupée par le bord de la carte. */
     .chart-plot { width: 100%; padding-top: 2.5rem; }
+
+    /* Tableau sous le graphique (.chart-table) : pas de hauteur max ni de défilement propre : la pagination borne déjà le tableau, et
+       un second défilement doublait celui de daf-data-table. */
 
     /* ── Portable et en dessous ────────────────────────────────────────────── */
     /* 1400 px : la fenêtre d'un portable moins la barre latérale de 256 px et les marges
@@ -2340,12 +2343,30 @@ export class AffaireDetailComponent implements OnInit {
       variant,
       clickable:    true,
       yAxis:        { ticks: 4, format: v => this.compactAmount(v) },
+      // Montant écrit dans chaque barre, sans survol. Le texte est le `dataLabel` posé par
+      // withDataLabels() ; une barre trop basse ou groupée le reçoit au-dessus (repli de la lib).
+      showValues:    true,
+      valuePosition: 'inside',
       target:       withLine ? target : undefined,
       targetLabel:  withLine ? `${targetLabel} : ${this.money(target)}` : undefined,
       legend:       withLine ? [...legend, { label: targetLabel, variant: 'neutral', line: true }] : legend,
       emptyMessage: this.translate.instant('AFFAIRES.DETAIL.CHARTS.EMPTY_RANGE'),
       ariaLabel:    `${ariaTitle} — ${this.chartRangeLabel()} — ${this.money(total)}`,
     };
+  }
+
+  /**
+   * Étiquette de chaque barre : le montant compact (« 190 k »), comme l'axe — le montant
+   * exact reste dans la pastille et le tableau. Rien sur une barre à zéro. Graphique combiné
+   * (2 ou 3 séries côte à côte) : chaque série écrit son propre montant dans sa colonne
+   * (`dataLabel` d'entrée de groupe, lib ≥ 5.15, texte vertical) — la `value` de la barre
+   * n'est que la plus haute, l'écrire seule induirait en erreur. Chaîne vide = pas d'étiquette.
+   */
+  private withDataLabels(bars: ChartBar[]): ChartBar[] {
+    const label = (v: number) => v > 0 ? this.compactAmount(v) : '';
+    return bars.map(b => (b.group?.length ?? 0) > 1
+      ? { ...b, dataLabel: '', group: b.group!.map(g => ({ ...g, dataLabel: label(g.value) })) }
+      : { ...b, dataLabel: label(b.value) });
   }
 
   // ── Les trois diapositives ────────────────────────────────────────────────
@@ -2400,7 +2421,7 @@ export class AffaireDetailComponent implements OnInit {
         id: 'INVOICED', title: invoicedTitle,
         stats: stats(invoicedTotal, invoicedObjective, objectiveLabel),
         note: null,
-        bars: this.invoicedBars(),
+        bars: this.withDataLabels(this.invoicedBars()),
         options: this.chartOptions(invoicedTitle, invoicedTotal, 'success',
           [{ label: t(cumul ? 'INVOICED_CUMUL' : 'INVOICED'), variant: 'success' }],
           invoicedTarget, invoicedTargetLabel),
@@ -2409,7 +2430,7 @@ export class AffaireDetailComponent implements OnInit {
         id: 'WIP', title: wipTitle,
         stats: stats(wipTotal, 0, ''),
         note: this.chartWipModeOnlyTs() ? t('WIP_TS_ONLY') : null,
-        bars: this.wipBars(),
+        bars: this.withDataLabels(this.wipBars()),
         options: this.chartOptions(wipTitle, wipTotal, 'tertiary',
           WIP_STATUS_ORDER.filter(s => this.chartStatuses().includes(s))
             .map(s => ({ label: this.wipStatusLabel(s), variant: WIP_STATUS_VARIANT[s] })),
@@ -2419,7 +2440,7 @@ export class AffaireDetailComponent implements OnInit {
         id: 'PAYMENTS', title: payTitle,
         stats: stats(paymentsTotal, cumul ? budget : 0, objectiveLabel),
         note: null,
-        bars: this.paymentBars(),
+        bars: this.withDataLabels(this.paymentBars()),
         options: this.chartOptions(payTitle, paymentsTotal, 'success',
           [{ label: t(cumul ? 'COLLECTED_CUMUL' : 'COLLECTED'), variant: 'success' }],
           budget, this.chartBudgetLabel()),
@@ -2431,13 +2452,225 @@ export class AffaireDetailComponent implements OnInit {
           : [],
         // HT contre TTC : seulement quand le WIP est combiné à une série TTC.
         note: sel.includes('WIP') && sel.length > 1 ? t('CMP_UNITS_NOTE') : null,
-        bars: this.compareBars(),
+        bars: this.withDataLabels(this.compareBars()),
         options: this.chartOptions(cmpTitle, cmpAriaTotal, 'tertiary',
           sel.map(id => ({ label: this.combineLabel(id), variant: COMBINE_VARIANT[id] })),
           budget, this.chartBudgetLabel()),
       },
     ];
   });
+
+  // ── Tableau sous le graphique ─────────────────────────────────────────────
+
+  /**
+   * L'histogramme affiché, en tableau — rien de plus, rien de moins :
+   *  - une ligne par barre (même période, même ordre), + Total en vue par période — en vue
+   *    cumulée la dernière ligne EST le total ;
+   *  - une colonne par série affichée, dans l'ordre du graphique (WIP → facturé → encaissé) ;
+   *    le WIP s'y lit statut par statut quand plusieurs sont cochés, comme ses segments
+   *    empilés, + son total ;
+   *  - ce que dit la pastille au survol : nombre de factures / de paiements de la période,
+   *    taux encaissé / facturé quand les deux séries sont combinées ;
+   *  - la ligne pointillée : objectif de la période (ou budget en cumulé) et % atteint pour
+   *    la facturation seule ; budget seul pour les autres graphiques cumulés.
+   * Tri et recherche comme les autres tableaux (voir chartTableRows) ; le Total est rendu à
+   * part (`total`) pour rester en bas quel que soit le tri. Chaque cellule garde sa valeur
+   * brute sous `_<clé>` : on trie des nombres, pas du texte formaté.
+   */
+  readonly chartTable = computed<{ columns: TableColumn[]; rows: TableRow[]; total: TableRow | null;
+                                    target: number | null; targetLabel: string }>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant('AFFAIRES.DETAIL.CHARTS.' + k);
+    const view     = this.chartViewId();
+    const cumul    = this.chartView() === 'CUMUL';
+    const series   = this.chartSeries();
+    const sel: ChartSlideId[] = view === 'COMPARE' ? this.chartSelection() : [view];
+    const combined = sel.length > 1;
+    const statuses = WIP_STATUS_ORDER.filter(s => this.chartStatuses().includes(s));
+    const withRate = combined && sel.includes('INVOICED') && sel.includes('PAYMENTS');
+    const raw      = (key: string) => (row: TableRow) => row['_' + key] as number | null;
+    const amount   = (key: string, label: string): TableColumn =>
+      ({ key, label, align: 'right', sortable: true, sortAccessor: raw(key) });
+    const count    = (key: string, label: string): TableColumn =>
+      ({ key, label, align: 'center', sortable: true, sortAccessor: raw(key) });
+    const pct      = (part: number, whole: number) => whole > 0 ? `${Math.round(part / whole * 100)} %` : '—';
+    const ratio    = (part: number, whole: number) => whole > 0 ? part / whole : null;
+    const countLabel = (k: string) => t(cumul ? k + '_PERIOD' : k);
+
+    // La ligne pointillée du graphique affiché (voir chartSlides) : 0 = pas de ligne.
+    const target = view === 'INVOICED'
+      ? (cumul ? this.chartBudgetTarget() : this.invoicedPeriodTarget())
+      : (cumul ? this.chartBudgetTarget() : 0);
+    const targetLabel = cumul ? this.chartBudgetLabel() : t('TARGET_' + this.chartGranularity());
+    const withReached = view === 'INVOICED' && target > 0;
+
+    // Période : triée dans l'ordre chronologique (index de la barre), pas alphabétique.
+    const columns: TableColumn[] = [{ key: 'period', label: t('TABLE_PERIOD'), sortable: true, sortAccessor: raw('period') }];
+    for (const id of sel) {
+      if (id === 'WIP') {
+        if (statuses.length > 1) {
+          statuses.forEach(st => columns.push(amount('wip_' + st, this.wipStatusLabel(st))));
+          columns.push(amount('wip', combined ? this.combineLabel('WIP') : t('TOTAL')));
+        } else {
+          columns.push(amount('wip', combined ? this.combineLabel('WIP')
+            : statuses.length ? this.wipStatusLabel(statuses[0]) : t('TOTAL')));
+        }
+      } else if (id === 'INVOICED') {
+        columns.push(amount('invoiced', combined ? this.combineLabel('INVOICED') : t(cumul ? 'INVOICED_CUMUL' : 'INVOICED')));
+        if (!combined) columns.push(count('invoiceCount', countLabel('TABLE_INVOICE_COUNT')));
+      } else {
+        columns.push(amount('payments', combined ? this.combineLabel('PAYMENTS') : t(cumul ? 'COLLECTED_CUMUL' : 'COLLECTED')));
+        if (!combined) columns.push(count('paymentCount', countLabel('TABLE_PAYMENT_COUNT')));
+      }
+    }
+    if (withRate) columns.push(count('rate', t('CMP_STAT_COLLECTED')));
+    if (target > 0) columns.push(amount('target', targetLabel));
+    if (withReached) columns.push(count('reached', t(cumul ? 'STAT_BUDGET' : 'STAT_TARGET')));
+
+    const rowOf = (id: string, index: number, period: string, invoiced: number, wip: ChartWipAmounts,
+                   payments: number, invoiceCount: number, paymentCount: number, rowTarget: number): TableRow => {
+      const wipTotal = this.wipOf(wip);
+      const row: TableRow = {
+        id, period,
+        wip:      this.money(wipTotal),
+        invoiced: this.money(invoiced), invoiceCount,
+        payments: this.money(payments), paymentCount,
+        rate:     pct(payments, invoiced),
+        target:   this.money(rowTarget),
+        reached:  pct(invoiced, rowTarget),
+        _period: index, _wip: wipTotal, _invoiced: invoiced, _invoiceCount: invoiceCount,
+        _payments: payments, _paymentCount: paymentCount, _rate: ratio(payments, invoiced),
+        _target: rowTarget, _reached: ratio(invoiced, rowTarget),
+      };
+      statuses.forEach(st => {
+        row['wip_' + st]  = this.money(wipAmount(wip, st));
+        row['_wip_' + st] = wipAmount(wip, st);
+      });
+      return row;
+    };
+
+    const rows = series.map(({ bucket, invoiced, wip, payments }, i) => rowOf(
+      bucket.key, i, this.bucketLongLabel(bucket), invoiced, wip, payments,
+      bucket.invoiceCount, bucket.paymentCount, target));
+    let total: TableRow | null = null;
+
+    if (!cumul && series.length > 1) {
+      const sum = (f: (x: typeof series[number]) => number) => series.reduce((acc, x) => acc + f(x), 0);
+      const wipSum: ChartWipAmounts = {
+        pending:  sum(x => x.wip.pending),
+        invoiced: sum(x => x.wip.invoiced),
+        rejected: sum(x => x.wip.rejected),
+      };
+      total = rowOf('__total__', series.length, t('TOTAL'), sum(x => x.invoiced), wipSum, sum(x => x.payments),
+        sum(x => x.bucket.invoiceCount), sum(x => x.bucket.paymentCount), target * series.length);
+    }
+    return { columns, rows, total, target: target > 0 ? target : null, targetLabel };
+  });
+
+  /** Recherche du tableau (barre d'outils au-dessus), comme les autres tableaux de la fiche. */
+  readonly chartTableSearch = signal('');
+
+  /**
+   * Tri choisi, attaché au jeu de colonnes où il a été fait : le tableau est recréé quand ses
+   * colonnes changent (chartTableKey), sa flèche de tri repart à zéro, le tri aussi.
+   */
+  private readonly chartTableSortState = signal<{ table: string; sort: TableSort | null } | null>(null);
+  private readonly chartTableSort = computed(() => {
+    const s = this.chartTableSortState();
+    return s && s.table === this.chartTableKey() ? s.sort : null;
+  });
+
+  onChartTableSort(event: Parameters<typeof toTableSort>[0]): void {
+    this.chartTableSortState.set({ table: this.chartTableKey(), sort: toTableSort(event) });
+    this.chartTablePage.set(0);
+  }
+
+  onChartTableSearch(value: string): void {
+    this.chartTableSearch.set(value);
+    this.chartTablePage.set(0);
+  }
+
+  // ── Pagination (comme l'historique TS WIP) — côté client, après recherche et tri ──
+  readonly chartTablePage     = signal(0);
+  readonly chartTablePageSize = signal(20);
+
+  onChartTablePageSize(size: number): void {
+    this.chartTablePageSize.set(size);
+    this.chartTablePage.set(0);
+  }
+
+  /** Périodes trouvées et triées, toutes pages confondues — ce que l'export écrit. */
+  private readonly chartTableDataRows = computed<TableRow[]>(() => {
+    const { columns, rows } = this.chartTable();
+    return sortTableRows(searchTableRows(rows, columns, this.chartTableSearch()), columns, this.chartTableSort());
+  });
+
+  /** Le Total est affiché en vue par période, hors recherche (il additionne toutes les périodes). */
+  private readonly chartTableShowsTotal = computed(() =>
+    !!this.chartTable().total && !this.chartTableSearch().trim());
+
+  readonly chartTableTotalCount = computed(() => this.chartTableDataRows().length);
+
+  readonly chartTableTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.chartTableTotalCount() / this.chartTablePageSize())));
+
+  /**
+   * Lignes rendues : recherche, puis tri fait ici (`manualSort`, comme l'historique TS WIP)
+   * pour que le Total reste en bas — la lib le trierait avec les autres. Sans tri, l'ordre
+   * chronologique des barres. Le Total disparaît pendant une recherche : il additionne
+   * toutes les périodes, pas seulement celles trouvées.
+   */
+  readonly chartTableRows = computed<TableRow[]>(() => {
+    const size = this.chartTablePageSize();
+    const page = Math.min(this.chartTablePage(), this.chartTableTotalPages() - 1);
+    const slice = this.chartTableDataRows().slice(page * size, page * size + size);
+    // Total en bas de CHAQUE page : il porte sur toute la plage, pas sur la page.
+    const total = this.chartTable().total;
+    return total && this.chartTableShowsTotal() ? [...slice, total] : slice;
+  });
+
+  /** Bouton Exporter de la barre d'outils, comme les autres tableaux de la fiche. */
+  readonly chartTableActions = computed(() => this.exportAction(this.chartTableTotalCount() === 0));
+
+  onChartTableAction(id: string): void {
+    if (id === 'export') this.exportChartTable();
+  }
+
+  /**
+   * Excel généré par le backend : il recalcule les montants des mêmes données que le
+   * graphique, avec les colonnes du tableau affiché, les lignes trouvées dans l'ordre de
+   * l'écran (toutes les pages) et le Total s'il est affiché.
+   */
+  exportChartTable(): void {
+    const view = this.chartViewId();
+    const t = this.chartTable();
+    const ref = this.affaire()?.reference ?? this.numId;
+    this.exportSvc.download(this.exportSvc.affaireChartTable(this.numId, {
+      ...this.chartsQuery(),
+      statuses:    this.chartStatuses(),
+      view,
+      selection:   view === 'COMPARE' ? this.chartSelection() : [],
+      cumul:       this.chartView() === 'CUMUL',
+      target:      t.target,
+      targetLabel: t.target ? t.targetLabel : null,
+      keys:        this.chartTableDataRows().map(r => String(r['id'])),
+      withTotal:   this.chartTableShowsTotal(),
+    }), `Tableau_graphique_${ref}.xlsx`, this.exporting);
+  }
+
+  /** Signature des colonnes du tableau : quand elle change, le gabarit recrée le tableau. */
+  readonly chartTableKey = computed(() => this.chartTable().columns.map(c => c.key).join('|'));
+
+  /** Mêmes outils que les autres tableaux de la fiche (tableTools) : tri, colonnes et lignes
+   *  redimensionnables, choix des colonnes, Réinitialiser. Tri délégué : voir chartTableRows. */
+  readonly chartTableConfig = computed<TableConfig>(() => ({
+    showHeader:   false,
+    hoverable:    true,
+    emptyMessage: this.translate.instant(this.chartTableSearch().trim()
+      ? 'AFFAIRES.DETAIL.TOOLBAR.NO_MATCH' : 'AFFAIRES.DETAIL.CHARTS.EMPTY_RANGE'),
+    ...tableTools(this.translate),
+    ...delegatedSort(null),
+  }));
 
   /** « janv. 2025 – oct. 2026 » : la plage réellement servie, après coupe par le serveur. */
   readonly chartRangeLabel = computed(() => {

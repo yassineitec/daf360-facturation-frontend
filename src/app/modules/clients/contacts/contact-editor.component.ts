@@ -4,6 +4,7 @@ import {
   ButtonComponent, CheckboxComponent, FormFieldComponent,
 } from '@khalilrebhiitec/daf360';
 import { ContactDraft, emptyContactDraft } from './client-contact.model';
+import { composePersonName, formatFirstName, formatLastName } from '../../../shared/person-name';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -43,10 +44,16 @@ export class ContactEditorComponent {
    * Une ligne entamée doit au moins porter un nom : c'est la seule colonne NOT NULL
    * de `client_contacts`, et une ligne anonyme part en 400 au moment d'enregistrer.
    */
-  rowNameError(row: ContactDraft): string {
+  rowFirstNameError(row: ContactDraft): string {
     if (!this.touched()) return '';
     this.translate.currentLang();
-    return row.fullName.trim() ? '' : this.translate.instant('CLIENTS.CONTACTS.NAME_REQUIRED');
+    return row.firstName.trim() ? '' : this.translate.instant('CLIENTS.CONTACTS.FIRST_NAME_REQUIRED');
+  }
+
+  rowLastNameError(row: ContactDraft): string {
+    if (!this.touched()) return '';
+    this.translate.currentLang();
+    return row.lastName.trim() ? '' : this.translate.instant('CLIENTS.CONTACTS.LAST_NAME_REQUIRED');
   }
 
   rowEmailError(row: ContactDraft): string {
@@ -93,6 +100,19 @@ export class ContactEditorComponent {
     this.contactsChange.emit(
       this.contacts().map((c, i) => (i === index ? { ...c, ...patch } : c)));
   }
+
+  /** Prénom ou Nom modifié : `fullName` (« Prénom NOM ») est recalculé avec. */
+  patchName(index: number, part: Pick<Partial<ContactDraft>, 'firstName' | 'lastName'>): void {
+    const row = this.contacts()[index];
+    if (!row) return;
+    const firstName = part.firstName ?? row.firstName;
+    const lastName  = part.lastName  ?? row.lastName;
+    if (firstName === row.firstName && lastName === row.lastName) return;
+    this.patch(index, { firstName, lastName, fullName: composePersonName(firstName, lastName) });
+  }
+
+  protected readonly formatFirstName = formatFirstName;
+  protected readonly formatLastName  = formatLastName;
 
   /**
    * Exclusif : désigner un principal déclasse l'autre. Le décochage n'est pas

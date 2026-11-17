@@ -211,8 +211,11 @@
         [filterFields]="tauxHistoryFilterFields()"
         [filterConfig]="tauxHistoryFilterConfig()"
         (filterApply)="onTauxHistoryFilterApply($event)"
+        [actions]="tauxHistoryActions()"
+        (action)="onTauxHistoryAction($event)"
         [table]="tauxHistoryTable" />
-      <daf-data-table #tauxHistoryTable [columns]="tauxHistoryColumns()" [rows]="filteredTauxHistoryRows()" [config]="tauxHistoryConfig()">
+      <daf-data-table #tauxHistoryTable [columns]="tauxHistoryColumns()" [rows]="filteredTauxHistoryRows()" [config]="tauxHistoryConfig()"
+        (sortChange)="onTauxHistorySort($event)">
         <ng-template dafCell="mtClient" let-row>
           @if ($any(row['_line'])?.statut === 'EN_ATTENTE_CLIENT') {
             <!-- daf-form-field de la lib, même champ que le « MT Client » de l'onglet TS WIP

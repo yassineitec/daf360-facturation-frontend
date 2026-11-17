@@ -17,6 +17,7 @@ import { TableSort, sortParam } from '../../../shared/table-tools';
 import { AffaireService } from '../../affaires/affaire.service';
 import type { AffaireListItem, ClientDto } from '../../affaires/affaire.model';
 import { InvoiceListStateService } from './invoice-list-state.service';
+import { ExportService } from '../../../core/export.service';
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
 
@@ -58,6 +59,9 @@ export class InvoiceListComponent implements OnInit {
   readonly guideSteps = GUIDE_STEPS;
   private readonly translate = inject(TranslateService);
   private readonly affaireSvc = inject(AffaireService);
+  private readonly exportSvc  = inject(ExportService);
+  /** Export Excel en cours — état de chargement du bouton. */
+  readonly exporting = signal(false);
 
   @ViewChild('approvalTpl') approvalTpl!: TemplateRef<unknown>;
   @ViewChild('paymentModal', { static: true }) private paymentModal!: PaymentModalComponent;
@@ -323,25 +327,7 @@ export class InvoiceListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
-    const range = this.filterDateRange() ?? [];
-    const dueRange = this.filterDueRange() ?? [];
-    const filter: InvoiceFilter = {
-      page:      this.currentPage(),
-      size:      this.pageSize(),
-      statut:    this.filterStatut() || null,
-      clientId:  this.filterClient()  ? +this.filterClient()  : null,
-      affaireId: this.filterAffaire() ? +this.filterAffaire() : null,
-      // A single picked day is a one-day range.
-      from:      toIsoDate(range[0]),
-      to:        toIsoDate(range[1] ?? range[0]),
-      dueFrom:   toIsoDate(dueRange[0]),
-      dueTo:     toIsoDate(dueRange[1] ?? dueRange[0]),
-      minTtc:    parseAmount(this.filterMinTtc()),
-      maxTtc:    parseAmount(this.filterMaxTtc()),
-      overdueOnly: this.filterOverdue(),
-      search:    this.searchText().trim() || null,
-      sort:      sortParam(this.sort()),
-    };
+    const filter: InvoiceFilter = { page: this.currentPage(), size: this.pageSize(), ...this.currentFilter() };
     this.svc.getInvoices(filter).subscribe({
       next: res => {
         // Page restaurée devenue hors limites (factures supprimées entre-temps) :
@@ -363,6 +349,37 @@ export class InvoiceListComponent implements OnInit {
         this.firstLoad.set(false);
       },
     });
+  }
+
+  /** Filtres + tri de l'écran (sans pagination) — partagés par la liste et l'export Excel. */
+  private currentFilter() {
+    const range = this.filterDateRange() ?? [];
+    const dueRange = this.filterDueRange() ?? [];
+    return {
+      statut:    this.filterStatut() || null,
+      clientId:  this.filterClient()  ? +this.filterClient()  : null,
+      affaireId: this.filterAffaire() ? +this.filterAffaire() : null,
+      // A single picked day is a one-day range.
+      from:      toIsoDate(range[0]),
+      to:        toIsoDate(range[1] ?? range[0]),
+      dueFrom:   toIsoDate(dueRange[0]),
+      dueTo:     toIsoDate(dueRange[1] ?? dueRange[0]),
+      minTtc:    parseAmount(this.filterMinTtc()),
+      maxTtc:    parseAmount(this.filterMaxTtc()),
+      overdueOnly: this.filterOverdue(),
+      search:    this.searchText().trim() || null,
+      sort:      sortParam(this.sort()),
+    };
+  }
+
+  /** Export généré par le backend (InvoiceExportController) : toutes les factures qui
+   * répondent à la recherche, aux filtres et au tri de l'écran — pagination ignorée, un
+   * export est un extrait complet. Deux feuilles : factures et lignes de facturation. */
+  exportExcel(): void {
+    if (!this.totalElements()) return;
+    this.exportSvc.download(
+      this.exportSvc.invoices(this.currentFilter()),
+      `Factures_${toIsoDay(new Date())}.xlsx`, this.exporting);
   }
 
   /** Nouveau tri d'en-tête → retour à la première page, triée par le serveur. */
