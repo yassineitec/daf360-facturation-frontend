@@ -16,6 +16,7 @@ import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
 import { TableSort, sortParam } from '../../../shared/table-tools';
 import { FactListService } from '../../../core/fact-list.service';
+import { ExportService } from '../../../core/export.service';
 import { ListValueDto, localizedLabel } from '../../cost/cost.model';
 import { switchMap } from 'rxjs';
 import { ClientListStateService } from './client-list-state.service';
@@ -68,6 +69,10 @@ export class ClientListComponent implements OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly translate      = inject(TranslateService);
   private readonly listSvc        = inject(FactListService);
+  private readonly exportSvc      = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
 
   readonly guideSteps = GUIDE_STEPS;
 
@@ -300,15 +305,12 @@ export class ClientListComponent implements OnInit {
     this.load();
   }
 
-  load(): void {
-    this.loading.set(true);
-    this.error.set(null);
+  /** Le jeu décrit par la recherche, les filtres et le tri de l'écran — sans la pagination. */
+  private currentFilter() {
     const status = this.filterStatus();
     const kyc    = this.filterKyc();
     const affaires = this.filterAffaires();
-    const filter: ClientFilter = {
-      page:      this.currentPage(),
-      size:      this.pageSize(),
+    return {
       search:    this.searchText().trim() || null,
       isActive:  status === 'active' ? true : status === 'inactive' ? false : null,
       isKycDone: kyc === 'done' ? true : kyc === 'pending' ? false : null,
@@ -317,6 +319,25 @@ export class ClientListComponent implements OnInit {
       currency:  this.filterCurrency() || null,
       hasActiveAffaires: affaires === 'with' ? true : affaires === 'without' ? false : null,
       sort:      sortParam(this.sort()),
+    };
+  }
+
+  /** Export généré par le backend (ClientExportController) : tous les clients qui répondent
+   * à la recherche, aux filtres et au tri — pagination ignorée. Feuilles Clients + Synthèse. */
+  exportExcel(): void {
+    if (!this.totalElements()) return;
+    const d = new Date();
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.exportSvc.download(this.exportSvc.clients(this.currentFilter()), `Clients_${day}.xlsx`, this.exporting);
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    const filter: ClientFilter = {
+      ...this.currentFilter(),
+      page:      this.currentPage(),
+      size:      this.pageSize(),
     };
     this.svc.getClients(filter).subscribe({
       next: res => {

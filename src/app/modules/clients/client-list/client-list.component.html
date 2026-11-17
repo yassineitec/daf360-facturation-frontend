@@ -6,6 +6,12 @@
     <!-- La création exige `FACT_MANAGE_INVOICING` côté API : sans cette garde, un compte
          en lecture seule voyait le bouton et n'apprenait son refus qu'après avoir rempli
          les trois étapes de l'assistant. -->
+    <!-- Même bouton que les listes des affaires et des factures : tous les clients filtrés,
+         pas la page. Lecture seule, donc sans garde de permission. -->
+    <daf-button pageActions data-guide="clients-export"
+      [options]="{ variant: 'ghost', label: ('CLIENTS.LIST.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !totalElements(), loading: exporting() }"
+      (onClick)="exportExcel()" />
     <daf-button pageActions data-guide="clients-new" *appHasPermission="'FACT_MANAGE_INVOICING'"
       [options]="{ variant: 'teal', label: 'CLIENTS.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="goToNewClient()" />

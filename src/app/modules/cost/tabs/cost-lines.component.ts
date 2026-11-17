@@ -17,8 +17,15 @@ import {
   invoiceCategories, invoiceHasCategory, invoiceMatchesText, invoicePayableAmount,
 } from './cost-invoice-display';
 import { CostLinesStateService } from './cost-lines-state.service';
+import { ExportService } from '../../../core/export.service';
 
 type ViewMode = 'grid' | 'list' | 'supplier';
+
+/** Jour local `yyyy-MM-dd` — jamais `toISOString()`, qui recule d'un jour à l'est d'UTC. */
+function toIsoDay(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 /**
  * The cost list page. Since V93 one row / card = one cost INVOICE (a supplier invoice
@@ -44,6 +51,47 @@ export class CostLinesComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly exportSvc = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
+
+  /** Rien à exporter : aucune facture côté serveur (vues factures), aucune carte (vue fournisseur). */
+  readonly exportDisabled = computed(() =>
+    this.viewMode() === 'supplier' ? this.supplierSummaries().length === 0 : this.total() === 0);
+
+  /**
+   * Export généré par le backend (CostListExportController). Vues cartes / tableau : TOUTES
+   * les factures de l'entité — le serveur rejoue le statut, la recherche, la catégorie, la
+   * période, les montants et le tri, alors qu'à l'écran ces filtres (sauf le statut) ne
+   * portent que sur la page chargée. Vue « Par fournisseur » : une ligne par fournisseur.
+   */
+  exportExcel(): void {
+    const paysId = this.paysId();
+    if (!paysId || this.exportDisabled()) return;
+    const day = toIsoDay(new Date());
+    if (this.viewMode() === 'supplier') {
+      this.exportSvc.download(this.exportSvc.costBySupplier(paysId), `Couts_par_fournisseur_${day}.xlsx`, this.exporting);
+      return;
+    }
+    const range = this.dateRangeFilter();
+    const num = (v: string) => {
+      const n = v.trim() ? Number(v) : NaN;
+      return Number.isFinite(n) ? n : null;
+    };
+    this.exportSvc.download(
+      this.exportSvc.costInvoices(paysId, {
+        status:     this.statusFilter() || null,
+        search:     this.searchText().trim() || null,
+        categoryId: this.categoryFilter() ? Number(this.categoryFilter()) : null,
+        dateFrom:   range && range.length >= 2 ? toIsoDay(range[0]) : null,
+        dateTo:     range && range.length >= 2 ? toIsoDay(range[1]) : null,
+        amountMin:  num(this.amountMinFilter()),
+        amountMax:  num(this.amountMaxFilter()),
+        sort:       this.sortParam(),
+      }),
+      `Couts_${day}.xlsx`, this.exporting);
+  }
 
   paysId   = signal<number>(0);
   invoices = signal<CostInvoiceDto[]>([]);

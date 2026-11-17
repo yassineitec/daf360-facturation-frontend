@@ -20,6 +20,8 @@ import { WipTauxDto, WipTauxStatut, WipTmPreviewDto } from './wip.model';
 import { EmailPreviewModalComponent } from './email-preview-modal.component';
 import { DafModalComponent } from '../../../shared/daf-modal.component';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
+import { InvoiceService } from '../../invoicing/invoice.service';
+import { FinancePaths } from '../../../core/finance-paths';
 import { LivrableService } from '../livrable.service';
 import { AffaireLivrableDto, LivrableBatchDto, LivrableBatchStatut } from '../livrable.model';
 import { AffaireDetail } from '../affaire.model';
@@ -47,6 +49,17 @@ type WipFilterValues = Record<string, string | Date[] | null>;
   providers: [DisplayCurrencyPipe],
   templateUrl: './affaire-wip-tab.component.html',
   styles: [`
+    /* Cartes Historique (Régie + Livrable) : aucune animation au survol. La lib anime
+       toute .glass-card en :hover (translateY + scale + ombre + fond) via son styles.css
+       global ; on fige ici l'état de repos. Les boutons révélés au survol (mouseenter /
+       mouseleave sur daf-card) continuent de marcher. */
+    ::ng-deep daf-card.history-card-static > .glass-card,
+    ::ng-deep daf-card.history-card-static > .glass-card:hover {
+      transform: none;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+      transition: none;
+    }
     /* TEST : habille les daf-button à l'intérieur de .wip-icon-actions pour qu'ils
        ressemblent aux boutons d'action de profile-grid-card.component.ts (/rh/profiles) —
        neutres, petits, la couleur ne change qu'au survol — plutôt que les fonds pleins
@@ -231,6 +244,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   private readonly currency = inject(DisplayCurrencyPipe);
   private readonly svc = inject(WipService);
   private readonly billingSvc = inject(BillingService);
+  private readonly invoiceSvc = inject(InvoiceService);
+  private readonly paths = inject(FinancePaths);
   private readonly livrableSvc = inject(LivrableService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
@@ -1377,9 +1392,58 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    * no longer contains an EN_ATTENTE_CLIENT line. */
   loadAvLineHistory(): void {
     this.billingSvc.getBillingLinesDetailed(this.affaire.id).subscribe({
-      next:  lines => this.avLineHistory.set(lines),
+      next:  lines => { this.avLineHistory.set(lines); this.loadAvInvoices(lines); },
       error: () => {},
     });
+  }
+
+  /** N° des factures liées aux lignes (id → numéro), pour la colonne « Facture » de
+   *  l'historique AV. Les lignes de facturation ne portent que `invoiceId` ; un brouillon
+   *  n'a pas encore de numéro (null → libellé de repli « Brouillon #id »). Chargées une à
+   *  une par id plutôt que par la liste filtrée sur l'affaire : une facture qui regroupe
+   *  plusieurs affaires a un affaire_id vide et n'y figurerait pas. */
+  avInvoiceNumbers = signal<Map<number, string | null>>(new Map());
+
+  private loadAvInvoices(lines: LineDetailDto[]): void {
+    const ids = [...new Set(lines.map(l => l.invoiceId).filter((id): id is number => id != null))];
+    for (const id of ids) {
+      this.invoiceSvc.getInvoice(id).subscribe({
+        next:  inv => this.avInvoiceNumbers.update(m => new Map(m).set(id, inv.invoiceNumber)),
+        error: () => {},
+      });
+    }
+  }
+
+  /** Part facturée (0–1) d'un montant, null si pas de base de calcul. */
+  private ratio(part: number | null, total: number): number | null {
+    return part == null || !total ? null : part / total;
+  }
+
+  /** Colonne « Facturé » : une part du montant incrémental affichée en pourcentage
+   *  (« 80 % »), arrondie à 2 décimales, au format de la langue courante. */
+  pct(part: number | null, total: number): string {
+    const r = this.ratio(part, total);
+    if (r == null) return '—';
+    const v = Math.round(r * 10000) / 100;
+    return v.toLocaleString(this.translate.currentLang() || 'fr', { maximumFractionDigits: 2 }) + ' %';
+  }
+
+  /** Ouvre la fiche d'une facture liée à une ligne de l'historique AV. */
+  openInvoice(id: number): void {
+    this.router.navigate(this.paths.invoice(id));
+  }
+
+  /** Factures touchant une période WIP : celle de la ligne d'origine puis celles des lignes
+   *  qui ont repris son reliquat (même chaîne que findChainTail), sans doublon. */
+  private chainInvoiceIds(line: LineDetailDto, lines: LineDetailDto[]): number[] {
+    const ids: number[] = [];
+    let cur: LineDetailDto | undefined = line;
+    for (let i = 0; cur && i < 50; i++) {
+      if (cur.invoiceId != null && !ids.includes(cur.invoiceId)) ids.push(cur.invoiceId);
+      const prevId: number = cur.id;
+      cur = lines.find(l => l.carriedForwardFromLineId === prevId);
+    }
+    return ids;
   }
 
   // ── AV — client-approval workflow (mirrors RÉGIE's own pendingClientLines/
@@ -1559,8 +1623,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       { key: 'mtClient',         label: t('AFFAIRES.WIP.COL_MT_CLIENT'), type: 'custom', sortable: true,
         sortAccessor: row => (row['_line'] as LineDetailDto | null)?.montantHt ?? null },
       { key: 'factureProgress',  label: t('AFFAIRES.WIP.COL_FACTURE_PROGRESS'), type: 'custom', sortable: true,
-        sortAccessor: row => row['_montantFacture'] as number | null },
+        sortAccessor: row => this.ratio(row['_montantFacture'] as number | null, src(row).montantIncremental) },
       { key: 'statut',           label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge', sortable: true },
+      { key: 'invoices',         label: t('AFFAIRES.WIP.COL_INVOICE'), type: 'custom', sortable: true,
+        sortAccessor: row => (row['_invoices'] as { label: string }[])[0]?.label ?? null },
     ];
   });
 
@@ -1595,6 +1661,8 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   readonly tauxHistoryRows = computed<TableRow[]>(() => {
     let runningCumul = 0;
     const lines = this.avLineHistory();
+    const invoiceNumbers = this.avInvoiceNumbers();
+    const draftLabel = this.translate.instant('AFFAIRES.WIP.INVOICE_DRAFT');
     return this.tauxHistory().map(t => {
       // Rounded to 6 decimals at every step, not just for display: plain floating-point
       // addition drifts (e.g. 33.846 + 11.109 renders as 44.955000000000005) since binary
@@ -1609,7 +1677,11 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       // the (not normally expected) case this row has no matching billing line at all —
       // mirrors `_line`'s own `?? null` defensiveness above: no crash, just a dash.
       const tail = line ? this.findChainTail(line, lines) : null;
-      const remainderPending = tail ? Number((tail.wipCarriedForward ?? 0).toFixed(3)) : null;
+      // Tant que le MT Client n'est pas saisi (ligne EN_ATTENTE_CLIENT), rien n'est facturé :
+      // 0 % et tout le montant reste à facturer.
+      const remainderPending = !tail ? null
+        : line!.statut === 'EN_ATTENTE_CLIENT' ? t.montantIncremental
+        : Number((tail.wipCarriedForward ?? 0).toFixed(3));
       const montantFacture = remainderPending !== null
         ? Number((t.montantIncremental - remainderPending).toFixed(3))
         : null;
@@ -1638,6 +1710,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
         _remainderPending: remainderPending,
         _montantFacture:   montantFacture,
         _isComplete:       isComplete,
+        // Colonne « Facture » (dafCell="invoices") : un lien par facture de la chaîne.
+        _invoices: (line ? this.chainInvoiceIds(line, lines) : []).map(id => ({
+          id, label: invoiceNumbers.get(id) ?? `${draftLabel} #${id}`,
+        })),
       } satisfies TableRow;
     });
   });

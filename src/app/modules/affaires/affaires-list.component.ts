@@ -20,6 +20,7 @@ import { ClientService } from '../clients/client.service';
 import { BILLING_MODES } from './affaire-wizard.model';
 import { enumLabel } from '../../shared/enum-labels';
 import { AffairesListStateService } from './affaires-list-state.service';
+import { ExportService } from '../../core/export.service';
 import { PageGuideComponent } from '../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../shared/guide/page-guide.types';
 
@@ -62,6 +63,10 @@ export class AffairesListComponent implements OnInit {
   private readonly modals         = inject(ModalService);
   private readonly toast          = inject(ToastService);
   private readonly currencyContext = inject(CurrencyContextService);
+  private readonly exportSvc      = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
 
   readonly guideSteps = GUIDE_STEPS;
 
@@ -556,6 +561,27 @@ export class AffairesListComponent implements OnInit {
         },
       ],
     });
+  }
+
+  /** Export généré par le backend (AffaireListExportController) : toutes les affaires qui
+   * répondent à la recherche, aux filtres et au tri de l'écran — pagination ignorée, un
+   * export est un extrait complet. Deux feuilles : Affaires et Synthèse (les tuiles). */
+  exportExcel(): void {
+    if (!this.totalElements()) return;
+    const f = this.currentFilter();
+    this.exportSvc.download(
+      this.exportSvc.affaires({
+        paysId:        f.paysId ?? null,
+        statut:        f.statut ?? null,
+        search:        f.search ?? null,
+        clientId:      f.clientId ?? null,
+        responsableId: f.responsableId ?? null,
+        billingMode:   f.billingMode ?? null,
+        dateDebutFrom: f.dateDebutFrom ?? null,
+        dateDebutTo:   f.dateDebutTo ?? null,
+        sort:          this.sortParam() ?? null,
+      }),
+      `Affaires_${toIsoDay(new Date())}.xlsx`, this.exporting);
   }
 
   openNewForm(): void {

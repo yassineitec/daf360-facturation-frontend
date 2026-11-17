@@ -16,6 +16,7 @@ import {
 import { PaysRefDto, UserRefDto } from '../../affaires/affaire.model';
 import { AffaireService } from '../../affaires/affaire.service';
 import { CurrencyContextService } from '../../../core/currency-context.service';
+import { ExportService } from '../../../core/export.service';
 
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
@@ -50,6 +51,22 @@ export class RateComputationComponent implements OnInit {
   private readonly affaireSvc = inject(AffaireService);
   private readonly translate  = inject(TranslateService);
   private readonly currencyContext = inject(CurrencyContextService);
+  private readonly exportSvc  = inject(ExportService);
+
+  /** Export Excel en cours — grise le bouton et ignore un double clic. */
+  readonly exporting = signal(false);
+
+  /**
+   * Export généré par le backend (RateComputationExportController) : tous les barèmes de
+   * l'entité choisie, avec le détail de leurs lignes — l'écran n'en déplie qu'un à la fois.
+   */
+  exportExcel(): void {
+    const paysId = this.paysId();
+    if (!paysId || !this.computations().length) return;
+    const d = new Date();
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.exportSvc.download(this.exportSvc.rateComputations(paysId), `Baremes_taux_${day}.xlsx`, this.exporting);
+  }
 
   paysList = signal<PaysRefDto[]>([]);
   paysId   = signal<number>(0);

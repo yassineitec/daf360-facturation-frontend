@@ -3,6 +3,11 @@
   <daf-page-header
     [title]="'AFFAIRES.LIST.TITLE' | translate"
     [subtitle]="'AFFAIRES.LIST.SUBTITLE' | translate">
+    <!-- Même bouton que la liste des factures : toutes les affaires filtrées, pas la page. -->
+    <daf-button pageActions data-guide="affaires-export"
+      [options]="{ variant: 'ghost', label: ('AFFAIRES.LIST.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !totalElements(), loading: exporting() }"
+      (onClick)="exportExcel()" />
     <daf-button pageActions data-guide="affaires-new"
       [options]="{ variant: 'teal', label: 'AFFAIRES.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="openNewForm()" />

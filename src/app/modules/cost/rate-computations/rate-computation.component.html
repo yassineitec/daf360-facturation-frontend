@@ -6,6 +6,11 @@
       <p class="page-subtitle" [innerHTML]="'COST.RATE.SUBTITLE' | translate"></p>
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0">
+      <!-- Tous les barèmes de l'entité + le détail de leurs lignes, en un classeur. -->
+      <button class="btn-add" data-guide="rate-export" type="button"
+        [disabled]="exporting() || !computations().length" (click)="exportExcel()">
+        {{ (exporting() ? 'COST.RATE.EXPORTING' : 'COST.RATE.EXPORT_EXCEL') | translate }}
+      </button>
       <button class="btn-add" data-guide="rate-formula-btn" (click)="toggleFormulaEditor()">
         {{ (showFormulaEditor() ? 'COST.RATE.FORMULA.BTN_CLOSE' : 'COST.RATE.FORMULA.BTN_OPEN') | translate }}
       </button>
