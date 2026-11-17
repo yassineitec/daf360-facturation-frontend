@@ -461,7 +461,7 @@ export class RateComputationComponent implements OnInit {
     this.svc.getRateComputations(this.paysId()).subscribe({
       next: list => { this.computations.set(list); this.isLoading.set(false); },
       error: err => {
-        this.serverError.set(err.error?.message ?? this.translate.instant('COST.RATE.LOAD_ERROR'));
+        this.serverError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('COST.RATE.LOAD_ERROR'));
         this.isLoading.set(false);
       },
     });
@@ -585,7 +585,7 @@ export class RateComputationComponent implements OnInit {
         this.closeForm();
       },
       error: err => {
-        this.formError.set(err.error?.message ?? this.translate.instant('COST.RATE.SAVE_ERROR'));
+        this.formError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('COST.RATE.SAVE_ERROR'));
         this.isSaving.set(false);
       },
     });
@@ -602,7 +602,7 @@ export class RateComputationComponent implements OnInit {
         if (this.expandedId() === updated.id) this.loadDetail(updated.id);
       },
       error: err => {
-        this.actionError.set(err.error?.message ?? this.translate.instant(errorKey));
+        this.actionError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant(errorKey));
         this.actionLoadingId.set(null);
       },
     });
@@ -638,7 +638,7 @@ export class RateComputationComponent implements OnInit {
         this.actionLoadingId.set(null);
       },
       error: err => {
-        this.actionError.set(err.error?.message ?? this.translate.instant('COST.RATE.DELETE_ERROR'));
+        this.actionError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('COST.RATE.DELETE_ERROR'));
         this.actionLoadingId.set(null);
       },
     });
@@ -658,7 +658,7 @@ export class RateComputationComponent implements OnInit {
     this.poolError.set(null);
     this.svc.getPoolComposition(this.paysId()).subscribe({
       next: p => this.setPool(p),
-      error: err => this.poolError.set(err.error?.message ?? this.translate.instant('COST.RATE.POOL.LOAD_ERROR')),
+      error: err => this.poolError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('COST.RATE.POOL.LOAD_ERROR')),
     });
   }
 
@@ -681,7 +681,7 @@ export class RateComputationComponent implements OnInit {
     this.svc.savePoolComposition(this.paysId(), [...this.poolSelection()]).subscribe({
       next: p => { this.setPool(p); this.isSavingPool.set(false); },
       error: err => {
-        this.poolError.set(err.error?.message ?? this.translate.instant('COST.RATE.POOL.SAVE_ERROR'));
+        this.poolError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('COST.RATE.POOL.SAVE_ERROR'));
         this.isSavingPool.set(false);
       },
     });
@@ -714,7 +714,7 @@ export class RateComputationComponent implements OnInit {
         this.isLoadingDetail.set(false);
       },
       error: err => {
-        this.detailError.set(err.error?.message ?? this.translate.instant('COST.RATE.LINES.LOAD_ERROR'));
+        this.detailError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('COST.RATE.LINES.LOAD_ERROR'));
         this.isLoadingDetail.set(false);
       },
     });
