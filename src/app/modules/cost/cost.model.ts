@@ -603,6 +603,9 @@ export interface RateComputationDto {
   /** Units of the barème currency per 1 EUR / 1 USD (frozen at compute time). */
   fxEurRate: number | null;
   fxUsdRate: number | null;
+  /** Payroll currency (e.g. TND) and units of the barème currency per 1 of it; null when not needed. */
+  localCurrency: string | null;
+  fxLocalRate: number | null;
   fxCapturedAt: string | null;
   computedAt: string | null;
   warnings: RateWarningDto[];

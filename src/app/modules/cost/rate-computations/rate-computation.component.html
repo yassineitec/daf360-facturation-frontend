@@ -209,6 +209,9 @@
               @if (rc.fxEurRate && rc.fxUsdRate) {
                 · {{ 'COST.RATE.CALC.FX' | translate: { eur: fmtNumber(rc.fxEurRate, 4), usd: fmtNumber(rc.fxUsdRate, 4), currency: rc.currency } }}
               }
+              @if (rc.localCurrency && rc.fxLocalRate) {
+                , 1 {{ rc.localCurrency }} = {{ fmtNumber(rc.fxLocalRate, 4) }} {{ rc.currency }}
+              }
             </p>
 
             @if (rc.warnings.length) {
@@ -238,7 +241,7 @@
           <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-body-sm text-on-surface-variant">{{ 'COST.RATE.VIEW.CURRENCY' | translate }}</span>
-              @for (c of CURRENCIES; track c) {
+              @for (c of currencies(rc); track c) {
                 <daf-button [options]="currencyButton(c, rc)" (onClick)="displayCurrency.set(c)" />
               }
             </div>

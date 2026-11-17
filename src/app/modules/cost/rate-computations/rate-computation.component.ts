@@ -39,7 +39,8 @@ const GUIDE_STEPS: GuideStep[] = [
   step('END', 'help'),
 ];
 
-type DisplayCurrency = 'LOCAL' | 'EUR' | 'USD';
+/** LOCAL = the barème currency; PAYROLL = the currency the staff are paid in (e.g. TND). */
+type DisplayCurrency = 'LOCAL' | 'EUR' | 'USD' | 'PAYROLL';
 type DisplayFormat = 'HOUR' | 'DAY' | 'MONTH' | 'YEAR';
 type DetailTab = 'INDIVIDUAL' | 'GRADE' | 'DISCIPLINE_GRADE';
 type FormErrorField = 'year' | 'quarter' | 'month' | null;
@@ -198,7 +199,14 @@ export class RateComputationComponent implements OnInit {
   readonly gradeAggregates = computed(() => this.aggregates().filter(a => a.granularity === 'GRADE'));
   readonly disciplineAggregates = computed(() => this.aggregates().filter(a => a.granularity === 'DISCIPLINE_GRADE'));
 
-  readonly CURRENCIES: DisplayCurrency[] = ['LOCAL', 'EUR', 'USD'];
+  /** One button per distinct currency: EUR / USD are skipped when they are the barème currency. */
+  currencies(rc: RateComputationDto): DisplayCurrency[] {
+    const list: DisplayCurrency[] = ['LOCAL'];
+    if (rc.currency !== 'EUR') list.push('EUR');
+    if (rc.currency !== 'USD') list.push('USD');
+    if (rc.localCurrency && rc.fxLocalRate) list.push('PAYROLL');
+    return list;
+  }
   readonly FORMATS: DisplayFormat[] = ['HOUR', 'DAY', 'MONTH', 'YEAR'];
   readonly TABS: DetailTab[] = ['INDIVIDUAL', 'GRADE', 'DISCIPLINE_GRADE'];
 
@@ -298,8 +306,14 @@ export class RateComputationComponent implements OnInit {
   currencyButton(c: DisplayCurrency, rc: RateComputationDto): ButtonOptions {
     return {
       variant: 'toggle', size: 'sm', active: this.displayCurrency() === c,
-      label: c === 'LOCAL' ? (rc.currency ?? this.translate.instant('COST.RATE.VIEW.LOCAL')) : c,
+      label: this.currencyCode(c, rc),
     };
+  }
+
+  private currencyCode(c: DisplayCurrency, rc: RateComputationDto): string {
+    if (c === 'LOCAL') return rc.currency ?? this.translate.instant('COST.RATE.VIEW.LOCAL');
+    if (c === 'PAYROLL') return rc.localCurrency ?? '';
+    return c;
   }
 
   formatButton(f: DisplayFormat): ButtonOptions {
@@ -696,6 +710,7 @@ export class RateComputationComponent implements OnInit {
     if (this.expandedId() === rc.id) { this.expandedId.set(null); return; }
     this.expandedId.set(rc.id);
     this.detailTab.set('INDIVIDUAL');
+    this.displayCurrency.set('LOCAL');
     this.loadDetail(rc.id);
     // The detail opens under the table: bring it into view.
     setTimeout(() => document.getElementById('rate-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
@@ -731,12 +746,15 @@ export class RateComputationComponent implements OnInit {
     const c = this.displayCurrency();
     if (c === 'EUR') { if (!rc.fxEurRate) return null; v /= rc.fxEurRate; }
     if (c === 'USD') { if (!rc.fxUsdRate) return null; v /= rc.fxUsdRate; }
+    if (c === 'PAYROLL') { if (!rc.fxLocalRate) return null; v /= rc.fxLocalRate; }
     return v;
   }
 
   displayCurrencyCode(rc: RateComputationDto): string {
     const c = this.displayCurrency();
-    return c === 'LOCAL' ? (rc.currency ?? 'EUR') : c;
+    if (c === 'LOCAL') return rc.currency ?? 'EUR';
+    if (c === 'PAYROLL') return rc.localCurrency ?? rc.currency ?? 'EUR';
+    return c;
   }
 
   fmtRate(hourly: number | null, rc: RateComputationDto): string {
