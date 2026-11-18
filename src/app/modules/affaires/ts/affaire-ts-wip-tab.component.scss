@@ -103,6 +103,16 @@
   }
 }
 
+/* Carte Historique : aucune animation au survol (même correctif que les cartes Historique
+   de affaire-wip-tab) — la lib anime toute .glass-card en :hover via son styles.css global. */
+::ng-deep daf-card.history-card-static > .glass-card,
+::ng-deep daf-card.history-card-static > .glass-card:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  transition: none;
+}
+
 /* Tableau de l'historique dans la carte du titre : mêmes marges latérales que le titre,
    et une marge basse pour qu'il ne touche pas le bord de la carte. */
 .ts-history-body {

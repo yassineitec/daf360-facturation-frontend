@@ -13,6 +13,9 @@ import {
 import { TsProgressService, TsTauxSubmitBody } from './ts-progress.service';
 import { TsProgressSummaryDto, TsTauxDto } from './ts-progress.model';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
+import { Router } from '@angular/router';
+import { InvoiceService } from '../../invoicing/invoice.service';
+import { FinancePaths } from '../../../core/finance-paths';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { WIP_TAUX_STATUT_BADGE } from '../../../shared/enum-labels';
 import { EmailPreviewModalComponent } from '../wip/email-preview-modal.component';
@@ -199,7 +202,7 @@ type TsFilterValues = Record<string, string | Date[] | null>;
           <!-- À droite du titre : le compteur et les actions Export Excel / Afficher tout,
                dans la même pastille révélée au survol que l'historique Livrable de
                affaire-wip-tab. -->
-          <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }"
+          <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }" class="history-card-static"
             (mouseenter)="historyCardHovered.set(true)"
             (mouseleave)="historyCardHovered.set(false)">
             <div class="ts-toolbar-title flex items-center justify-between gap-2">
@@ -215,10 +218,6 @@ type TsFilterValues = Record<string, string | Date[] | null>;
                   [class.opacity-0]="!historyCardHovered()"
                   [class.opacity-100]="historyCardHovered()"
                   [class.pointer-events-none]="!historyCardHovered()">
-                  <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
-                                            title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate),
-                                            disabled: !filteredHistoryRows().length, loading: exporting() }"
-                    (onClick)="exportHistoryExcel(filteredHistoryRows())" />
                   <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full',
                                             title: ('AFFAIRES.WIP.HISTORY_SHOW_ALL' | translate) }"
                     (onClick)="openHistoryPopup()" />
@@ -232,6 +231,9 @@ type TsFilterValues = Record<string, string | Date[] | null>;
               [filterFields]="historyFilterFields()"
               [filterConfig]="historyFilterConfig()"
               (filterApply)="onHistoryFilterApply($event)"
+              [actions]="[{ id: 'export', icon: 'download', label: ('AFFAIRES.DETAIL.TOOLBAR.EXPORT' | translate),
+                            position: 'right', disabled: !filteredHistoryRows().length || exporting() }]"
+              (action)="$event === 'export' && exportHistoryExcel(filteredHistoryRows())"
               [table]="historyTable" />
             <!-- Le tableau dans la même carte que le titre et la Recherche/Filtres. -->
             <div class="ts-history-body flex flex-col gap-2">
@@ -241,6 +243,9 @@ type TsFilterValues = Record<string, string | Date[] | null>;
                 </ng-template>
                 <ng-template dafCell="factureProgress" let-row>
                   <ng-container [ngTemplateOutlet]="factureProgressCell" [ngTemplateOutletContext]="{ $implicit: row }" />
+                </ng-template>
+                <ng-template dafCell="invoices" let-row>
+                  <ng-container [ngTemplateOutlet]="invoicesCell" [ngTemplateOutletContext]="{ $implicit: row }" />
                 </ng-template>
               </daf-data-table>
               @if (clientAmountError()) {
@@ -261,14 +266,33 @@ type TsFilterValues = Record<string, string | Date[] | null>;
         } @else {
           <div class="flex flex-col gap-1">
             <span class="text-[12px] whitespace-nowrap">
-              {{ row['_montantFacture'] | displayCurrency : historyDevise() }} / {{ row['_raw'].montantIncremental | displayCurrency : historyDevise() }}
+              {{ pct(row['_montantFacture'], row['_raw'].montantIncremental) }}
             </span>
             @if (row['_isComplete']) {
               <daf-badge [label]="'AFFAIRES.WIP.FACTURE_COMPLETE' | translate"
                 [options]="{ variant: 'success', size: 'sm', dot: true }" />
+            } @else if (row['_montantFacture'] < 0.01) {
+              <daf-badge [label]="'AFFAIRES.WIP.FILTER_INVOICING_NONE' | translate"
+                [options]="{ variant: 'neutral', size: 'sm', dot: true }" />
             } @else {
-              <daf-badge [label]="'AFFAIRES.WIP.FACTURE_PARTIAL' | translate:{ amount: (row['_remainderPending'] | displayCurrency : historyDevise()) }"
+              <daf-badge [label]="'AFFAIRES.WIP.FACTURE_PARTIAL' | translate:{ amount: pct(row['_remainderPending'], row['_raw'].montantIncremental) }"
                 [options]="{ variant: 'warning', size: 'sm', dot: true }" />
+            }
+          </div>
+        }
+      </ng-template>
+
+      <!-- « Facture » — même cellule que dafCell="invoices" de l'historique AV de
+           affaire-wip-tab : un lien par facture liée (ligne d'origine + reprises de
+           reliquat) ; clic → fiche facture. -->
+      <ng-template #invoicesCell let-row>
+        @if (!$any(row['_invoices']).length) {
+          —
+        } @else {
+          <div class="flex flex-col items-start gap-1">
+            @for (inv of $any(row['_invoices']); track inv.id) {
+              <a class="text-[12px] font-semibold uppercase tracking-wider text-outline underline cursor-pointer whitespace-nowrap"
+                (click)="$event.stopPropagation(); openInvoice(inv.id)">{{ inv.label }}</a>
             }
           </div>
         }
@@ -327,6 +351,9 @@ type TsFilterValues = Record<string, string | Date[] | null>;
                 <ng-template dafCell="factureProgress" let-row>
                   <ng-container [ngTemplateOutlet]="factureProgressCell" [ngTemplateOutletContext]="{ $implicit: row }" />
                 </ng-template>
+                <ng-template dafCell="invoices" let-row>
+                  <ng-container [ngTemplateOutlet]="invoicesCell" [ngTemplateOutletContext]="{ $implicit: row }" />
+                </ng-template>
               </daf-data-table>
               <daf-pagination class="wip-pagination"
                 [currentPage]="historyPage()"
@@ -381,6 +408,17 @@ type TsFilterValues = Record<string, string | Date[] | null>;
                    focus:outline-none focus:border-tertiary
                    placeholder:text-on-surface-variant/50" />
         </div>
+        <!-- Choix pour l'export : une case par TS, distincte du clic sur le nom (qui, lui,
+             affiche le TS dans la carte). « Tout sélectionner » porte sur la liste FILTRÉE. -->
+        @if (filteredSummaries().length) {
+          <div class="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-outline-variant text-body-sm text-on-surface-variant">
+            <daf-checkbox
+              [checked]="allFilteredChecked()"
+              [indeterminate]="someFilteredChecked()"
+              [options]="{ label: ('AFFAIRES.WIP.TS_SELECT_ALL' | translate) }"
+              (checkedChange)="toggleAllFiltered($event)" />
+          </div>
+        }
         <ul class="m-0 max-h-52 list-none overflow-y-auto p-0 py-1">
           @for (s of filteredSummaries(); track s.tsId) {
             <li class="flex items-center gap-1.5 px-2.5 py-1.5 text-body-md leading-5
@@ -388,6 +426,13 @@ type TsFilterValues = Record<string, string | Date[] | null>;
               [class]="s.tsId === selectedTsId() ? 'bg-tertiary/10 text-teal font-medium' : 'text-on-surface hover:bg-tertiary/10'"
               role="option" [attr.aria-selected]="s.tsId === selectedTsId()"
               (click)="onTsPick(s)">
+              <!-- stopPropagation : cocher ne doit pas afficher le TS ni fermer la liste. -->
+              <span class="shrink-0" (click)="$event.stopPropagation()">
+                <daf-checkbox
+                  [checked]="exportTsIds().has(s.tsId)"
+                  [ariaLabel]="'AFFAIRES.WIP.TS_EXPORT_CHECK_ARIA' | translate: { ref: s.referenceTs }"
+                  (checkedChange)="toggleExportTs(s.tsId, $event)" />
+              </span>
               <span class="flex-1 min-w-0 truncate">{{ s.referenceTs }}</span>
               @if (s.tsId === selectedTsId()) {
                 <span class="material-symbols-outlined text-teal text-label-sm shrink-0" aria-hidden="true">check</span>
@@ -399,6 +444,15 @@ type TsFilterValues = Record<string, string | Date[] | null>;
             </li>
           }
         </ul>
+        @if (summaries().length) {
+          <div class="p-1.5 border-t border-outline-variant">
+            <daf-button
+              [options]="{ variant: 'primary', size: 'sm', fullWidth: true, iconStart: 'download',
+                           label: ('AFFAIRES.WIP.TS_EXPORT_SELECTED' | translate: { count: exportTsCount() }),
+                           disabled: exportTsCount() === 0, loading: exporting() }"
+              (onClick)="exportCheckedTs()" />
+          </div>
+        }
       </div>
 
       <app-email-preview-modal #emailPreviewModal />
@@ -411,6 +465,9 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
 
   private readonly svc        = inject(TsProgressService);
   private readonly billingSvc = inject(BillingService);
+  private readonly invoiceSvc = inject(InvoiceService);
+  private readonly router     = inject(Router);
+  private readonly paths      = inject(FinancePaths);
   private readonly translate  = inject(TranslateService);
   private readonly currency   = inject(DisplayCurrencyPipe);
   private readonly renderer   = inject(Renderer2);
@@ -445,6 +502,51 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
     const q = this.selectorSearch().trim().toLowerCase();
     return q ? this.summaries().filter(s => s.referenceTs.toLowerCase().includes(q)) : this.summaries();
   });
+
+  // ── Export de plusieurs TS (cases de la liste) ──────────────────────────────
+  //
+  // Indépendant du TS affiché : on coche ce qu'on veut exporter, on clique le nom pour
+  // afficher. Les cases restent cochées d'une ouverture de la liste à l'autre.
+
+  /** tsId cochés pour l'export. */
+  readonly exportTsIds = signal<ReadonlySet<number>>(new Set());
+
+  /** TS cochés, dans l'ordre de la liste — un id qui n'y est plus (rechargement) est ignoré. */
+  private readonly checkedSummaries = computed(() =>
+    this.summaries().filter(s => this.exportTsIds().has(s.tsId)));
+
+  readonly exportTsCount = computed(() => this.checkedSummaries().length);
+
+  readonly allFilteredChecked = computed(() => {
+    const list = this.filteredSummaries();
+    return list.length > 0 && list.every(s => this.exportTsIds().has(s.tsId));
+  });
+
+  readonly someFilteredChecked = computed(() =>
+    !this.allFilteredChecked() && this.filteredSummaries().some(s => this.exportTsIds().has(s.tsId)));
+
+  toggleExportTs(tsId: number, checked: boolean): void {
+    const next = new Set(this.exportTsIds());
+    if (checked) next.add(tsId); else next.delete(tsId);
+    this.exportTsIds.set(next);
+  }
+
+  /** Coche / décoche les TS VISIBLES (après recherche), sans toucher aux autres. */
+  toggleAllFiltered(checked: boolean): void {
+    const next = new Set(this.exportTsIds());
+    for (const s of this.filteredSummaries()) {
+      if (checked) next.add(s.tsId); else next.delete(s.tsId);
+    }
+    this.exportTsIds.set(next);
+  }
+
+  /** Export backend (WipExportController « ts-selection ») : synthèse + historique des TS cochés. */
+  exportCheckedTs(): void {
+    const ids = this.checkedSummaries().map(s => s.tsId);
+    if (!ids.length) return;
+    const ref = (this.affaire.reference ?? String(this.affaire.id)).replace(/[^A-Za-z0-9-]+/g, '_');
+    this.exportSvc.download(this.exportSvc.tsSelection(this.affaire.id, ids), `TS_WIP_${ref}.xlsx`, this.exporting);
+  }
 
   toggleSelector(): void {
     if (this.selectorOpen()) {
@@ -854,14 +956,18 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
         sortAccessor: row => (row['_line'] as (LineDetailDto & { clientApprovedAmount?: number | null }) | null)
           ?.clientApprovedAmount ?? null },
       { key: 'factureProgress', label: t('AFFAIRES.WIP.COL_FACTURE_PROGRESS'), type: 'custom', sortable: true,
-        sortAccessor: row => row['_montantFacture'] as number | null },
+        sortAccessor: row => this.ratio(row['_montantFacture'] as number | null, raw(row).montantIncremental) },
       { key: 'statut',   label: t('AFFAIRES.WIP.COL_STATUS'), type: 'badge', sortable: true },
+      { key: 'invoices', label: t('AFFAIRES.WIP.COL_INVOICE'), type: 'custom', sortable: true,
+        sortAccessor: row => (row['_invoices'] as { label: string }[])[0]?.label ?? null },
     ];
   });
 
   readonly historyRows = computed<TableRow[]>(() => {
     const devise = this.selectedTs()?.devise ?? this.affaire.devise;
     const lines = this.lineHistory();
+    const invoiceNumbers = this.invoiceNumbers();
+    const draftLabel = this.translate.instant('AFFAIRES.WIP.INVOICE_DRAFT');
     let runningCumul = 0;
     return this.tauxHistory().map(t => {
       // Arrondi à 6 décimales à chaque étape, comme tauxHistoryRows de affaire-wip-tab :
@@ -881,6 +987,10 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
         _raw:     t,
         _line:    t.billingLineId != null ? lines.find(l => l.id === t.billingLineId) ?? null : null,
         ...this.factureProgress(t, lines),
+        // Colonne « Facture » (cellule #invoicesCell) : un lien par facture de la chaîne.
+        _invoices: this.chainInvoiceIds(t, lines).map(id => ({
+          id, label: invoiceNumbers.get(id) ?? `${draftLabel} #${id}`,
+        })),
       } satisfies TableRow;
     });
   });
@@ -1158,7 +1268,11 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
   private factureProgress(taux: TsTauxDto, lines: LineDetailDto[]) {
     const originLine = taux.billingLineId != null ? lines.find(l => l.id === taux.billingLineId) ?? null : null;
     const tail = originLine ? this.findChainTail(originLine, lines) : null;
-    const remainderPending = tail ? Number((tail.wipCarriedForward ?? 0).toFixed(3)) : null;
+    // Tant que le MT Client n'est pas saisi (ligne EN_ATTENTE_CLIENT), rien n'est facturé :
+    // 0 % et tout le montant reste à facturer.
+    const remainderPending = !tail ? null
+      : originLine!.statut === 'EN_ATTENTE_CLIENT' ? taux.montantIncremental
+      : Number((tail.wipCarriedForward ?? 0).toFixed(3));
     const montantFacture = remainderPending !== null
       ? Number((taux.montantIncremental - remainderPending).toFixed(3))
       : null;
@@ -1176,9 +1290,64 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
     const tsId = this.selectedTsId();
     if (!tsId || !this.affaire?.id) return;
     this.billingSvc.getBillingLinesDetailed(this.affaire.id).subscribe({
-      next:  lines => this.lineHistory.set(lines.filter(l => l.billingMode === 'TS' && l.tsId === tsId)),
+      next:  lines => {
+        const tsLines = lines.filter(l => l.billingMode === 'TS' && l.tsId === tsId);
+        this.lineHistory.set(tsLines);
+        this.loadInvoiceNumbers(tsLines);
+      },
       error: () => this.lineHistory.set([]),
     });
+  }
+
+  /** N° des factures liées aux lignes (id → numéro), pour la colonne « Facture » — même
+   *  mécanisme que avInvoiceNumbers de affaire-wip-tab : chargées une à une par id (une
+   *  facture multi-affaires a un affaire_id vide), un brouillon n'a pas encore de numéro
+   *  (repli « Brouillon #id »). */
+  invoiceNumbers = signal<Map<number, string | null>>(new Map());
+
+  private loadInvoiceNumbers(lines: LineDetailDto[]): void {
+    const ids = [...new Set(lines.map(l => l.invoiceId).filter((id): id is number => id != null))];
+    for (const id of ids) {
+      if (this.invoiceNumbers().has(id)) continue;
+      this.invoiceSvc.getInvoice(id).subscribe({
+        next:  inv => this.invoiceNumbers.update(m => new Map(m).set(id, inv.invoiceNumber)),
+        error: () => {},
+      });
+    }
+  }
+
+  /** Part facturée (0–1) d'un montant, null si pas de base de calcul. */
+  private ratio(part: number | null, total: number): number | null {
+    return part == null || !total ? null : part / total;
+  }
+
+  /** Colonne « Facturé » : une part du montant incrémental affichée en pourcentage
+   *  (« 80 % »), arrondie à 2 décimales, au format de la langue courante — même rendu
+   *  que pct() de affaire-wip-tab. */
+  pct(part: number | null, total: number): string {
+    const r = this.ratio(part, total);
+    if (r == null) return '—';
+    const v = Math.round(r * 10000) / 100;
+    return v.toLocaleString(this.translate.currentLang() || 'fr', { maximumFractionDigits: 2 }) + ' %';
+  }
+
+  /** Ouvre la fiche d'une facture liée à une ligne de l'historique. */
+  openInvoice(id: number): void {
+    this.router.navigate(this.paths.invoice(id));
+  }
+
+  /** Factures touchant une déclaration : celle de sa ligne d'origine puis celles des lignes
+   *  qui ont repris son reliquat (même chaîne que findChainTail), sans doublon. */
+  private chainInvoiceIds(taux: TsTauxDto, lines: LineDetailDto[]): number[] {
+    const ids: number[] = [];
+    let cur: LineDetailDto | undefined = taux.billingLineId != null
+      ? lines.find(l => l.id === taux.billingLineId) : undefined;
+    for (let i = 0; cur && i < 50; i++) {
+      if (cur.invoiceId != null && !ids.includes(cur.invoiceId)) ids.push(cur.invoiceId);
+      const prevId: number = cur.id;
+      cur = lines.find(l => l.carriedForwardFromLineId === prevId);
+    }
+    return ids;
   }
 
   clientAmountInputs    = signal<Map<number, number | null>>(new Map());

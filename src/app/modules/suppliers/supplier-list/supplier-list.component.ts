@@ -16,6 +16,7 @@ import {
   SupplierDto, SupplierExtraFilter, SupplierStatsDto, SupplierStatusFilter,
 } from '../supplier.model';
 import { FactListService } from '../../../core/fact-list.service';
+import { ExportService } from '../../../core/export.service';
 import { ListValueDto } from '../../cost/cost.model';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { TableSort, sortParam } from '../../../shared/table-tools';
@@ -98,6 +99,10 @@ export class SupplierListComponent implements OnInit {
   private readonly router     = inject(Router);
   private readonly route      = inject(ActivatedRoute);
   private readonly translate  = inject(TranslateService);
+  private readonly exportSvc  = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
 
   paysId = signal(0);
 
@@ -374,6 +379,27 @@ export class SupplierListComponent implements OnInit {
         this.firstLoad.set(false);
       },
     });
+  }
+
+  /** Export généré par le backend (SupplierListExportController) : tous les fournisseurs de
+   * l'entité qui répondent à la recherche, aux filtres et au tri — pagination ignorée.
+   * Feuilles Fournisseurs + Synthèse. */
+  exportExcel(): void {
+    const paysId = this.paysId();
+    if (!paysId || !this.totalElements()) return;
+    const extra = this.extraFilter();
+    const d = new Date();
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.exportSvc.download(
+      this.exportSvc.suppliers(paysId, {
+        search:  this.searchText().trim() || null,
+        status:  this.statusFilter(),
+        typeId:  extra.typeId ?? null,
+        hasIban: extra.hasIban ?? null,
+        hasTva:  extra.hasTva ?? null,
+        sort:    sortParam(this.sort()),
+      }),
+      `Fournisseurs_${day}.xlsx`, this.exporting);
   }
 
   loadStats(): void {

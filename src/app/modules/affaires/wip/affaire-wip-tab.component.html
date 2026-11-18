@@ -248,14 +248,31 @@
           } @else {
             <div class="flex flex-col gap-1">
               <span class="text-[12px] whitespace-nowrap">
-                {{ row['_montantFacture'] | displayCurrency : affaire.devise }} / {{ $any(row['_source']).montantIncremental | displayCurrency : affaire.devise }}
+                {{ pct(row['_montantFacture'], $any(row['_source']).montantIncremental) }}
               </span>
               @if (row['_isComplete']) {
                 <daf-badge [label]="'AFFAIRES.WIP.FACTURE_COMPLETE' | translate"
                   [options]="{ variant: 'success', size: 'sm', dot: true }" />
+              } @else if (row['_montantFacture'] < 0.01) {
+                <daf-badge [label]="'AFFAIRES.WIP.FILTER_INVOICING_NONE' | translate"
+                  [options]="{ variant: 'neutral', size: 'sm', dot: true }" />
               } @else {
-                <daf-badge [label]="'AFFAIRES.WIP.FACTURE_PARTIAL' | translate:{ amount: (row['_remainderPending'] | displayCurrency:affaire.devise) }"
+                <daf-badge [label]="'AFFAIRES.WIP.FACTURE_PARTIAL' | translate:{ amount: pct(row['_remainderPending'], $any(row['_source']).montantIncremental) }"
                   [options]="{ variant: 'warning', size: 'sm', dot: true }" />
+              }
+            </div>
+          }
+        </ng-template>
+        <!-- Colonne « Facture » : un lien par facture liée à la période (ligne d'origine +
+             reprises de reliquat) ; clic → fiche facture. -->
+        <ng-template dafCell="invoices" let-row>
+          @if (!$any(row['_invoices']).length) {
+            —
+          } @else {
+            <div class="flex flex-col items-start gap-1">
+              @for (inv of $any(row['_invoices']); track inv.id) {
+                <a class="text-[12px] font-semibold uppercase tracking-wider text-outline underline cursor-pointer whitespace-nowrap"
+                  (click)="$event.stopPropagation(); openInvoice(inv.id)">{{ inv.label }}</a>
               }
             </div>
           }
@@ -440,7 +457,7 @@
     <!-- TEST : mêmes boutons masqués/révélés au survol de la carte que la carte Régie
          ci-dessus (regieCardHovered) — ici historyCardHovered. Le badge (juste un
          compteur, pas un bouton) reste toujours visible. -->
-    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
+    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md' }" class="history-card-static"
       (mouseenter)="historyCardHovered.set(true)"
       (mouseleave)="historyCardHovered.set(false)">
       <div class="mb-3 flex items-center justify-between gap-2">
@@ -460,10 +477,6 @@
             [class.opacity-0]="!historyCardHovered()"
             [class.opacity-100]="historyCardHovered()"
             [class.pointer-events-none]="!historyCardHovered()">
-            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download',
-                                      title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate), loading: exporting() === 'history',
-                                      disabled: !tmHistory().length }"
-              (onClick)="exportHistoryExcel(tmHistory())" />
             <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full',
                                       title: ('AFFAIRES.WIP.HISTORY_SHOW_ALL' | translate) }"
               (onClick)="openHistoryPage()" />
@@ -482,6 +495,9 @@
           [filterFields]="historyFilterFields()"
           [filterConfig]="tmHistoryCardFilterConfig()"
           (filterApply)="onTmHistoryCardFilterApply($event)"
+          [actions]="[{ id: 'export', icon: 'download', label: ('AFFAIRES.DETAIL.TOOLBAR.EXPORT' | translate),
+                        position: 'right', disabled: !tmHistory().length || exporting() === 'history' }]"
+          (action)="$event === 'export' && exportHistoryExcel(tmHistory())"
           [table]="tmHistoryTable" />
         <daf-data-table #tmHistoryTable [columns]="tmHistoryColumns()" [rows]="filteredTmHistoryRows()" [config]="tmHistoryConfig()" />
         @if (cancelLineError()) {
@@ -812,7 +828,7 @@
 
     <!-- ── Historique — n'apparaît que s'il y a au moins une ligne facturée. ── -->
     @if (livrableHistory().length) {
-    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md', hoverable: true }"
+    <daf-card [options]="{ variant: 'glass', radius: 'xl', padding: 'md' }" class="history-card-static"
       (mouseenter)="livrableHistoryCardHovered.set(true)"
       (mouseleave)="livrableHistoryCardHovered.set(false)">
       <div class="mb-3 flex items-center justify-between gap-2">
@@ -828,9 +844,6 @@
             [class.opacity-0]="!livrableHistoryCardHovered()"
             [class.opacity-100]="livrableHistoryCardHovered()"
             [class.pointer-events-none]="!livrableHistoryCardHovered()">
-            <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'download', title: ('AFFAIRES.WIP.EXPORT_EXCEL' | translate), loading: exporting() === 'livrables',
-                                      disabled: !livrableHistory().length }"
-              (onClick)="exportLivrableHistoryExcel(livrableHistory())" />
             <daf-button [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_full', title: ('AFFAIRES.WIP.HISTORY_SHOW_ALL' | translate) }"
               (onClick)="openHistoryPage()" />
           </div>
@@ -845,6 +858,9 @@
         [filterFields]="livrableHistoryCardFilterFields()"
         [filterConfig]="livrableHistoryCardFilterConfig()"
         (filterApply)="onLivrableHistoryCardFilterApply($event)"
+        [actions]="[{ id: 'export', icon: 'download', label: ('AFFAIRES.DETAIL.TOOLBAR.EXPORT' | translate),
+                      position: 'right', disabled: !livrableHistory().length || exporting() === 'livrables' }]"
+        (action)="$event === 'export' && exportLivrableHistoryExcel(livrableHistory())"
         [table]="livrableHistoryTable" />
       <daf-data-table #livrableHistoryTable [columns]="livrableHistoryColumns()" [rows]="searchedLivrableHistoryCardRows()" [config]="livrableHistoryConfig()" />
     </daf-card>

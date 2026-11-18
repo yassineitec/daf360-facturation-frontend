@@ -4,6 +4,11 @@
     [title]="'COST.APPROVAL_QUEUE.TITLE' | translate"
     [subtitle]="'COST.APPROVAL_QUEUE.SUBTITLE' | translate">
     <ng-container pageActions>
+      <!-- Les éléments affichés (recherche + filtres), les trois files confondues. -->
+      <daf-button data-guide="cost-approval-export"
+        [options]="{ variant: 'ghost', label: ('COST.APPROVAL_QUEUE.EXPORT_EXCEL' | translate), iconStart: 'download',
+                     disabled: !visibleItems().length, loading: exporting() }"
+        (onClick)="exportExcel()" />
       <daf-button data-guide="cost-approval-new"
         [options]="{ variant: 'teal', label: 'COST.APPROVAL_QUEUE.FAB' | translate, iconStart: 'add' }"
         (onClick)="navigateToNew()" />

@@ -19,6 +19,16 @@
             (selectedChange)="onPaysSelected($event)" />
         </div>
       }
+      <!-- Tous les barèmes de l'entité + le détail de leurs lignes, en un classeur. -->
+      <daf-button data-guide="rate-export"
+        [options]="{
+          variant: 'secondary',
+          iconStart: 'download',
+          loading: exporting(),
+          disabled: exporting() || !computations().length,
+          label: ((exporting() ? 'COST.RATE.EXPORTING' : 'COST.RATE.EXPORT_EXCEL') | translate)
+        }"
+        (onClick)="exportExcel()" />
       <daf-button data-guide="rate-pool-btn"
         [options]="{
           variant: 'secondary',
