@@ -108,6 +108,11 @@
                   </div>
                 </daf-section-card>
 
+                <!-- Imputation à un ordre de sous-traitance (V145) : crée / retire le coût ST. -->
+                @if (invoice(); as inv) {
+                  <app-cost-invoice-ost-link [invoiceId]="inv.id" [invoiceStatus]="inv.status" />
+                }
+
                 <!-- Règlements de la facture (plusieurs depuis V116) : déjà payé / reste à payer,
                      puis chaque règlement avec modifier / supprimer. Seul accès pour une facture
                      sans fournisseur, qui n'a pas de relevé. -->

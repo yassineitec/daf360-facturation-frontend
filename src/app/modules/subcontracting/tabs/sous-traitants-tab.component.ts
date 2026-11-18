@@ -22,11 +22,13 @@ function toIsoDay(d: Date): string {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
+import { SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
+import { SupplierService } from '../../suppliers/supplier.service';
 @Component({
   selector: 'app-sous-traitants-tab',
   imports: [
     TranslatePipe, PermissionDirective, ButtonComponent, MetricCardComponent,
-    SearchToolbarComponent, FormFieldComponent, StCardsSectionComponent, StTableSectionComponent,
+    SearchToolbarComponent, FormFieldComponent, StCardsSectionComponent, StTableSectionComponent, SelectComponent,
   ],
   host: { class: 'block' },
   templateUrl: './sous-traitants-tab.component.html',
@@ -41,6 +43,7 @@ export class SousTraitantsTabComponent {
   private readonly translate = inject(TranslateService);
   private readonly modal     = inject(ModalService);
   private readonly userStore = inject(UserStore);
+  private readonly supplierSvc = inject(SupplierService);
 
   @ViewChild('formTpl')   private formTpl!:   TemplateRef<unknown>;
   @ViewChild('deleteTpl') private deleteTpl!: TemplateRef<unknown>;
@@ -178,7 +181,9 @@ export class SousTraitantsTabComponent {
 
   // ── Form state ──────────────────────────────────────────────────────────────
   editTarget = signal<SousTraitantDto | null>(null);
-  form       = { name: '', contactEmail: '', contactPhone: '', taxId: '', country: '' };
+  form       = { name: '', contactEmail: '', contactPhone: '', taxId: '', country: '', supplierId: '' };
+  /** Fournisseurs actifs de l'entité, pour le champ « Fournisseur associé » (V145). */
+  readonly supplierOptions = signal<SelectOption[]>([]);
   saving     = signal(false);
   formError  = signal<string | null>(null);
 
@@ -216,7 +221,7 @@ export class SousTraitantsTabComponent {
   // ── Create / edit ───────────────────────────────────────────────────────────
   openCreate(): void {
     this.editTarget.set(null);
-    this.form = { name: '', contactEmail: '', contactPhone: '', taxId: '', country: '' };
+    this.form = { name: '', contactEmail: '', contactPhone: '', taxId: '', country: '', supplierId: '' };
     this.formError.set(null);
     this.openFormModal();
   }
@@ -229,12 +234,14 @@ export class SousTraitantsTabComponent {
       contactPhone: st.contactPhone ?? '',
       taxId:        st.taxId        ?? '',
       country:      st.country      ?? '',
+      supplierId:   st.supplierId != null ? String(st.supplierId) : '',
     };
     this.formError.set(null);
     this.openFormModal();
   }
 
   private openFormModal(): void {
+    this.loadSupplierOptions();
     const t = (key: string) => this.translate.instant(key);
     this.formRef = this.modal.open({
       minWidth:    '360px',
@@ -249,6 +256,22 @@ export class SousTraitantsTabComponent {
         { label: t('SUBCONTRACTING.ST.MODAL.CANCEL'), variant: 'secondary', action: r => r.close() },
         { label: t('SUBCONTRACTING.ST.MODAL.SAVE'),   variant: 'primary',   action: () => this.save() },
       ],
+    });
+  }
+
+  private loadSupplierOptions(): void {
+    const paysId = this.paysId();
+    if (paysId == null) return;
+    this.supplierSvc.getSuppliers({ paysId, size: 500 }).subscribe({
+      // Première option vide : un select simple ne se « désélectionne » pas, c'est elle qui
+      // permet de retirer le fournisseur associé.
+      next: page => this.supplierOptions.set([
+        { value: '', label: this.translate.instant('SUBCONTRACTING.ST.MODAL.SUPPLIER_PH') },
+        ...page.content
+          .map(s => ({ value: String(s.id), label: s.name }))
+          .sort((x, y) => x.label.localeCompare(y.label)),
+      ]),
+      error: () => this.supplierOptions.set([]),
     });
   }
 
@@ -270,6 +293,7 @@ export class SousTraitantsTabComponent {
       contactPhone: this.form.contactPhone || null,
       taxId:        this.form.taxId        || null,
       country:      this.form.country      || null,
+      supplierId:   this.form.supplierId ? Number(this.form.supplierId) : null,
     };
     const edit = this.editTarget();
     const call$ = edit

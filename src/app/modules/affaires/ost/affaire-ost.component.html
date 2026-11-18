@@ -229,6 +229,9 @@
               <div class="cout-info">
                 <span class="cout-date">{{ fmtDate(c.dateCout) }}</span>
                 <span class="cout-desc">{{ c.description || '—' }}</span>
+                @if (c.costInvoiceReference) {
+                  <span class="cout-invoice">Facture {{ c.costInvoiceReference }}</span>
+                }
               </div>
               <span class="cout-amount">{{ c.montant | displayCurrency : c.devise }}</span>
               <button class="btn-icon btn-icon--danger" *appHasPermission="'FACT_MANAGE_ST'"
@@ -246,12 +249,22 @@
 
       <div class="drawer-footer">
         @if (coutError()) { <div class="alert-error">{{ coutError() }}</div> }
-        @if (!showAddCout()) {
-          <button class="btn-primary" *appHasPermission="'FACT_MANAGE_ST'"
-                  [disabled]="drawerOst()?.statut !== 'EN_COURS'"
-                  (click)="showAddCout.set(true)">
-            Ajouter un coût
-          </button>
+        @if (showInvoicePicker() && drawerOst(); as ost) {
+          <app-st-invoice-picker [ordreId]="ost.id"
+            (linked)="onInvoiceLinked()" (closed)="showInvoicePicker.set(false)" />
+        } @else if (!showAddCout()) {
+          <div class="footer-actions">
+            <button class="btn-primary" *appHasPermission="'FACT_MANAGE_ST'"
+                    [disabled]="drawerOst()?.statut !== 'EN_COURS'"
+                    (click)="showAddCout.set(true)">
+              Ajouter un coût
+            </button>
+            <button class="btn-ghost" *appHasPermission="'FACT_MANAGE_ST'"
+                    [disabled]="drawerOst()?.statut !== 'EN_COURS'"
+                    (click)="showInvoicePicker.set(true)">
+              Depuis une facture fournisseur
+            </button>
+          </div>
           @if (drawerOst()?.statut !== 'EN_COURS') {
             <span class="hint">L'ordre doit être EN_COURS pour ajouter des coûts.</span>
           }

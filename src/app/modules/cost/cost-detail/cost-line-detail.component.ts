@@ -119,6 +119,7 @@ const supplierGuide = (intro: 'COST_SUPPLIER' | 'COST_UNASSIGNED'): GuideStep[] 
   g('COST_DETAIL',   'END',      'help'),
 ];
 
+import { CostInvoiceOstLinkComponent } from '../../subcontracting/components/cost-invoice-ost-link.component';
 @Component({
   selector: 'app-cost-line-detail',
   imports: [
@@ -127,7 +128,7 @@ const supplierGuide = (intro: 'COST_SUPPLIER' | 'COST_UNASSIGNED'): GuideStep[] 
     MetricCardComponent, ButtonComponent, StatusBadgeComponent, FilterComponent,
     DataTableComponent, DafCellDirective, TableActionComponent, SearchToolbarComponent, PaginationComponent,
     CostLinesTableSectionComponent, ReglementModalComponent, CostRemindersPanelComponent,
-    PageGuideComponent,
+    PageGuideComponent, CostInvoiceOstLinkComponent,
   ],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },

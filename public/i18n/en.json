@@ -6526,6 +6526,33 @@
     }
   },
   "SUBCONTRACTING": {
+    "LINK": {
+      "FROM_INVOICE": "From a supplier invoice",
+      "PICKER_TITLE": "Unlinked supplier invoices",
+      "ONLY_SUPPLIER": "Subcontractor's supplier",
+      "ALL_SUPPLIERS": "All suppliers",
+      "EMPTY": "No invoice to link. Drafts, returned or rejected invoices and invoices already linked are not offered.",
+      "ATTACH": "Link",
+      "CANCEL": "Close",
+      "ERROR": "Linking failed.",
+      "LOAD_ERROR": "Unable to load supplier invoices.",
+      "INVOICE_BADGE": "Invoice {{ref}}",
+      "AMOUNT_NOTE": "The subcontracting cost takes the invoice's net amount, date and currency at the time of linking.",
+      "SUPPLIER_MATCH": "Subcontractor's supplier",
+      "SECTION_TITLE": "Subcontracting",
+      "LINKED_TO": "Assigned to order {{ost}}",
+      "LINKED_AFFAIRE": "Project {{affaire}}",
+      "LINKED_ST": "Subcontractor: {{st}}",
+      "NOT_LINKED": "This invoice is not assigned to any subcontracting order.",
+      "LINK_TO_OST": "Assign to a subcontracting order",
+      "SELECT_OST": "Subcontracting order",
+      "SELECT_OST_PH": "Choose an open order",
+      "CONFIRM": "Assign",
+      "NO_CANDIDATE": "No open subcontracting order in this entity.",
+      "UNLINK": "Remove assignment",
+      "NOT_LINKABLE_STATUS": "A draft, returned or rejected invoice cannot be assigned to a subcontracting order.",
+      "UNLINK_ERROR": "Unable to remove the assignment."
+    },
     "TITLE": "Subcontracting",
     "ENTITY": "Entity",
     "TABS": {
@@ -6693,7 +6720,10 @@
         "CANCEL": "Cancel",
         "SAVING": "Saving…",
         "SAVE": "Save",
-        "NAME_REQUIRED": "Name is required."
+        "NAME_REQUIRED": "Name is required.",
+        "SUPPLIER": "Linked supplier",
+        "SUPPLIER_PH": "None",
+        "SUPPLIER_HINT": "Optional: this supplier's invoices are offered first for this subcontractor's orders."
       },
       "DELETE": {
         "TITLE": "Confirm deactivation",

@@ -25,10 +25,11 @@ import { OstTableSectionComponent } from './ost-table-section.component';
 
 type ViewMode = 'grid' | 'list';
 
+import { StInvoicePickerComponent } from '../components/st-invoice-picker.component';
 @Component({
   selector: 'app-ordres-st-tab',
   imports: [
-    TranslatePipe, PermissionDirective, ButtonComponent, CardComponent, DrawerComponent,
+    TranslatePipe, PermissionDirective, ButtonComponent, CardComponent, DrawerComponent, StInvoicePickerComponent,
     FormFieldComponent, MetricCardComponent, SearchToolbarComponent, SelectComponent,
     SkeletonComponent, DisplayCurrencyPipe, TableActionComponent,
     OstCardsSectionComponent, OstTableSectionComponent,
@@ -154,6 +155,8 @@ export class OrdresStTabComponent {
   coutsList    = signal<CoutSTDto[]>([]);
   coutsLoading = signal(false);
   showAddCout  = signal(false);
+  /** Sélecteur « Depuis une facture fournisseur » (V145). */
+  showInvoicePicker = signal(false);
   // Unreachable in practice -- openAddCout() always resets devise from the parent OST's own.
   coutForm     = { montant: 0, dateCout: '', devise: this.currencyContext.defaultCurrency() ?? 'EUR', description: '' };
   coutSaving   = signal(false);
@@ -335,6 +338,7 @@ export class OrdresStTabComponent {
     this.drawerOst.set(o);
     this.drawerOpen.set(true);
     this.showAddCout.set(false);
+    this.showInvoicePicker.set(false);
     this.coutError.set(null);
     this.coutForm = { montant: 0, dateCout: new Date().toISOString().slice(0, 10), devise: o.devise, description: '' };
     this.coutsLoading.set(true);
@@ -377,6 +381,13 @@ export class OrdresStTabComponent {
     this.svc.removeCout(ost.id, cout.id).subscribe({
       next: () => { this.reloadDrawer(ost); this.loadOrdres(affaire.id); },
     });
+  }
+
+  /** Un coût vient d'être créé depuis une facture : recharge le panneau et les ordres. */
+  onInvoiceLinked(ost: OSTDto): void {
+    this.reloadDrawer(ost);
+    const affaire = this.selectedAffaire();
+    if (affaire) this.loadOrdres(affaire.id);
   }
 
   private reloadDrawer(ost: OSTDto): void {

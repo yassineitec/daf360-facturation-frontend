@@ -6526,6 +6526,33 @@
     }
   },
   "SUBCONTRACTING": {
+    "LINK": {
+      "FROM_INVOICE": "Depuis une facture fournisseur",
+      "PICKER_TITLE": "Factures fournisseurs non rattachées",
+      "ONLY_SUPPLIER": "Fournisseur du sous-traitant",
+      "ALL_SUPPLIERS": "Tous les fournisseurs",
+      "EMPTY": "Aucune facture à rattacher. Les brouillons, les factures renvoyées ou rejetées et celles déjà rattachées ne sont pas proposés.",
+      "ATTACH": "Rattacher",
+      "CANCEL": "Fermer",
+      "ERROR": "Le rattachement a échoué.",
+      "LOAD_ERROR": "Impossible de charger les factures fournisseurs.",
+      "INVOICE_BADGE": "Facture {{ref}}",
+      "AMOUNT_NOTE": "Le coût ST reprend le HT, la date et la devise de la facture au moment du rattachement.",
+      "SUPPLIER_MATCH": "Fournisseur du sous-traitant",
+      "SECTION_TITLE": "Sous-traitance",
+      "LINKED_TO": "Imputée à l’ordre {{ost}}",
+      "LINKED_AFFAIRE": "Affaire {{affaire}}",
+      "LINKED_ST": "Sous-traitant : {{st}}",
+      "NOT_LINKED": "Cette facture n'est imputée à aucun ordre de sous-traitance.",
+      "LINK_TO_OST": "Imputer à un ordre de sous-traitance",
+      "SELECT_OST": "Ordre de sous-traitance",
+      "SELECT_OST_PH": "Choisir un ordre en cours",
+      "CONFIRM": "Imputer",
+      "NO_CANDIDATE": "Aucun ordre de sous-traitance en cours dans cette entité.",
+      "UNLINK": "Retirer l'imputation",
+      "NOT_LINKABLE_STATUS": "Une facture en brouillon, renvoyée ou rejetée ne peut pas être imputée à un ordre de sous-traitance.",
+      "UNLINK_ERROR": "Impossible de retirer l'imputation."
+    },
     "TITLE": "Sous-traitance",
     "ENTITY": "Entité",
     "TABS": {
@@ -6693,7 +6720,10 @@
         "CANCEL": "Annuler",
         "SAVING": "Enregistrement…",
         "SAVE": "Enregistrer",
-        "NAME_REQUIRED": "Le nom est obligatoire."
+        "NAME_REQUIRED": "Le nom est obligatoire.",
+        "SUPPLIER": "Fournisseur associé",
+        "SUPPLIER_PH": "Aucun",
+        "SUPPLIER_HINT": "Facultatif : ses factures sont proposées en premier pour les ordres de ce sous-traitant."
       },
       "DELETE": {
         "TITLE": "Confirmer la désactivation",
