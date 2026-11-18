@@ -3,8 +3,11 @@
   <!-- Affaire picker. The orders endpoint is per-affaire, so this is a selector, not a
        list filter — hence a search box whose results you pick from, wrapped in the same
        glass card the search toolbar uses everywhere else. -->
+  <!-- The results list sits OUTSIDE daf-card: the card is overflow-hidden, so a dropdown
+       positioned below it from the inside was clipped and the search looked empty. -->
+  <div class="relative">
   <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
-    <div class="relative flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
+    <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
 
       <div class="relative min-w-0 flex-1">
         <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2
@@ -34,6 +37,9 @@
           (onClick)="searchAffaires()" />
       </div>
 
+    </div>
+  </daf-card>
+
       @if (searchResults().length > 0) {
         <div class="absolute left-4 right-4 top-full z-20 mt-1 max-h-72 overflow-y-auto
                     rounded-xl border border-outline-variant/30 bg-surface-container-lowest shadow-xl">
@@ -49,9 +55,7 @@
           }
         </div>
       }
-
-    </div>
-  </daf-card>
+  </div>
 
   @if (!selectedAffaire()) {
     <div class="flex flex-col items-center gap-2 rounded-xl border border-dashed

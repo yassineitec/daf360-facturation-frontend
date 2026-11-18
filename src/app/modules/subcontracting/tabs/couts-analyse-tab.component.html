@@ -1,8 +1,10 @@
 <div class="flex flex-col gap-8">
 
-  <!-- Affaire picker — same construct as the Ordres tab, so the two read alike -->
+  <!-- Affaire picker — same construct as the Ordres tab, so the two read alike. The results
+       list sits OUTSIDE daf-card (overflow-hidden), otherwise it is clipped and invisible. -->
+  <div class="relative">
   <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
-    <div class="relative flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
+    <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
 
       <div class="relative min-w-0 flex-1">
         <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2
@@ -32,6 +34,9 @@
           (onClick)="searchAffaires()" />
       </div>
 
+    </div>
+  </daf-card>
+
       @if (searchResults().length > 0) {
         <div class="absolute left-4 right-4 top-full z-20 mt-1 max-h-72 overflow-y-auto
                     rounded-xl border border-outline-variant/30 bg-surface-container-lowest shadow-xl">
@@ -47,9 +52,7 @@
           }
         </div>
       }
-
-    </div>
-  </daf-card>
+  </div>
 
   @if (!selectedAffaire()) {
     <div class="flex flex-col items-center gap-2 rounded-xl border border-dashed
