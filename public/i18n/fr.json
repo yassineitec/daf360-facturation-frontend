@@ -1528,6 +1528,8 @@
       "RESSOURCES_TEXT": "Affaire en régie : les collaborateurs facturés et leur taux. « Ajouter une ressource », modifier un taux ou désactiver une ressource ; un taux verrouillé (🔒) ne se modifie plus.",
       "DEPENSE_TITLE": "Dépense",
       "DEPENSE_TEXT": "En lecture seule : les heures saisies dans Timesheet sur l'affaire et leur coût interne estimé, par collaborateur, avec filtres et export Excel.",
+      "SOUS_TRAITANCE_TITLE": "Sous-traitance",
+      "SOUS_TRAITANCE_TEXT": "Les ordres de sous-traitance (OST) de l'affaire : création, suivi du budget consommé, changement de statut et saisie des coûts.",
       "INVOICES_TITLE": "Factures",
       "INVOICES_TEXT": "Les factures de l'affaire, avec recherche, filtres et export. « Consulter » en montre le détail ; « Modifier » n'est possible que sur un brouillon ou une facture retournée, et ouvre la facture dans « Factures ».",
       "PAYMENTS_TITLE": "Paiements",
@@ -3289,7 +3291,8 @@
         "PAYMENTS": "Paiements",
         "WIP": "WIP",
         "RESSOURCES": "Ressources",
-        "DEPENSE": "Dépense"
+        "DEPENSE": "Dépense",
+        "SOUS_TRAITANCE": "Sous-traitance"
       },
       "ACTIONS": {
         "QUICK_TITLE": "Actions rapides",
@@ -6564,6 +6567,7 @@
       "CLEAR": "Effacer",
       "SEARCH": "Rechercher",
       "SELECT_AFFAIRE": "Sélectionnez une affaire pour afficher ses ordres de sous-traitance.",
+      "NO_AFFAIRE_FOUND": "Aucune affaire ne correspond à cette recherche.",
       "NEW": "Nouvel ordre ST",
       "EMPTY": "Aucun ordre de sous-traitance pour cette affaire.",
       "LOADING": "Chargement…",

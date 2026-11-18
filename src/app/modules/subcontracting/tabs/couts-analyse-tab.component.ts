@@ -27,6 +27,8 @@ export class CoutsAnalyseTabComponent {
   searchQuery     = signal('');
   searchResults   = signal<AffaireListItem[]>([]);
   searching       = signal(false);
+  /** Une recherche a abouti : sert à dire « aucune affaire » quand la liste revient vide. */
+  searched        = signal(false);
   selectedAffaire = signal<AffaireListItem | null>(null);
 
   margin  = signal<MarginDto | null>(null);
@@ -65,7 +67,7 @@ export class CoutsAnalyseTabComponent {
     if (!q) return;
     this.searching.set(true);
     this.affaireSvc.getAffaires({ search: q, size: 8 }).subscribe({
-      next: page => { this.searchResults.set(page.content); this.searching.set(false); },
+      next: page => { this.searchResults.set(page.content); this.searching.set(false); this.searched.set(true); },
       error:    () => this.searching.set(false),
     });
   }
@@ -73,6 +75,7 @@ export class CoutsAnalyseTabComponent {
   selectAffaire(a: AffaireListItem): void {
     this.selectedAffaire.set(a);
     this.searchResults.set([]);
+    this.searched.set(false);
     this.searchQuery.set(`${a.reference} — ${a.intitule}`);
     this.loadMargin(a.id);
   }
@@ -81,6 +84,7 @@ export class CoutsAnalyseTabComponent {
     this.selectedAffaire.set(null);
     this.searchQuery.set('');
     this.searchResults.set([]);
+    this.searched.set(false);
     this.margin.set(null);
   }
 

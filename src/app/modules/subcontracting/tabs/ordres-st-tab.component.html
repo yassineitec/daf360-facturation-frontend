@@ -15,7 +15,7 @@
         <input
           type="search"
           [value]="searchQuery()"
-          (input)="searchQuery.set($any($event.target).value)"
+          (input)="searchQuery.set($any($event.target).value); searched.set(false)"
           (keyup.enter)="searchAffaires()"
           [placeholder]="'SUBCONTRACTING.OST.SEARCH_PLACEHOLDER' | translate"
           class="h-11 w-full rounded-full border-2 border-outline-variant/30
@@ -53,6 +53,13 @@
               <span class="text-[11px] text-outline">{{ a.clientName }}</span>
             </button>
           }
+        </div>
+      } @else if (searched() && !searching()) {
+        <div class="absolute left-4 right-4 top-full z-20 mt-1 flex items-center gap-2 rounded-xl
+                    border border-outline-variant/30 bg-surface-container-lowest px-4 py-3
+                    text-body-sm text-on-surface-variant shadow-xl">
+          <span class="material-symbols-outlined text-[18px] text-outline">search_off</span>
+          {{ 'SUBCONTRACTING.OST.NO_AFFAIRE_FOUND' | translate }}
         </div>
       }
   </div>

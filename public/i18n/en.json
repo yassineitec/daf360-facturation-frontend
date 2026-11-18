@@ -1528,6 +1528,8 @@
       "RESSOURCES_TEXT": "Time & Materials project: the billed employees and their rate. « Add a resource », change a rate or deactivate a resource; a locked rate (🔒) can no longer be changed.",
       "DEPENSE_TITLE": "Expense",
       "DEPENSE_TEXT": "Read only: the hours logged in Timesheet on the project and their estimated internal cost, per employee, with filters and Excel export.",
+      "SOUS_TRAITANCE_TITLE": "Subcontracting",
+      "SOUS_TRAITANCE_TEXT": "The project's subcontracting orders (OST): creation, budget consumption, status changes and cost entry.",
       "INVOICES_TITLE": "Invoices",
       "INVOICES_TEXT": "The project’s invoices, with search, filters and export. « View » shows the details; « Edit » is only possible on a draft or returned invoice, and opens the invoice in « Invoices ».",
       "PAYMENTS_TITLE": "Payments",
@@ -3289,7 +3291,8 @@
         "PAYMENTS": "Payments",
         "WIP": "WIP",
         "RESSOURCES": "Resources",
-        "DEPENSE": "Expense"
+        "DEPENSE": "Expense",
+        "SOUS_TRAITANCE": "Subcontracting"
       },
       "ACTIONS": {
         "QUICK_TITLE": "Quick actions",
@@ -6564,6 +6567,7 @@
       "CLEAR": "Clear",
       "SEARCH": "Search",
       "SELECT_AFFAIRE": "Select a project to display its subcontracting orders.",
+      "NO_AFFAIRE_FOUND": "No project matches this search.",
       "NEW": "New ST order",
       "EMPTY": "No subcontracting order for this project.",
       "LOADING": "Loading…",
