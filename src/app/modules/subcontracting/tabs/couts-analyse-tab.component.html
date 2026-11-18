@@ -81,16 +81,19 @@
     </div>
   } @else if (margin(); as m) {
 
-    <!-- Four tiles. "Coûts internes" is deliberately NOT one of them — the backend
-         hardcodes it to zero (SousTraitanceService: `BigDecimal coutsInternes =
-         BigDecimal.ZERO`), so a tile would state a confident 0 that isn't a measurement.
-         It is called out under the bars instead. -->
-    <section class="grid grid-cols-4 gap-2 sm:gap-6">
+    <!-- Marge = facturé HT − coûts internes − coûts ST. L'encaissé est rappelé sous la
+         première tuile, les heures Timesheet sous la deuxième. -->
+    <section class="grid grid-cols-2 gap-2 sm:gap-6 lg:grid-cols-5">
       <daf-metric-card
         [label]="'SUBCONTRACTING.ANALYSIS.KPI.CA' | translate"
-        [value]="m.ca | displayCurrency : m.currency"
+        [value]="m.facture | displayCurrency : m.currency"
         [delta]="caDelta()"
         [options]="kpiCa" />
+      <daf-metric-card
+        [label]="'SUBCONTRACTING.ANALYSIS.KPI.INTERNAL_COSTS' | translate"
+        [value]="m.coutsInternes | displayCurrency : m.currency"
+        [delta]="internalDelta()"
+        [options]="kpiInt" />
       <daf-metric-card
         [label]="'SUBCONTRACTING.ANALYSIS.KPI.ST_COSTS' | translate"
         [value]="m.coutsST | displayCurrency : m.currency"
@@ -110,26 +113,34 @@
         {{ 'SUBCONTRACTING.ANALYSIS.BREAKDOWN_TITLE' | translate }}
       </h3>
 
-      <!-- Three lib progress bars replace three hand-rolled track/fill div pairs whose
-           widths were computed inline and whose colours were raw hex. -->
       <div class="flex flex-col gap-4">
         <daf-progress-bar
           [label]="'SUBCONTRACTING.ANALYSIS.BAR.GROSS_MARGIN' | translate"
-          [value]="barPct(m.margeBrute, m.ca)"
+          [value]="barPct(m.margeBrute, m.facture)"
           [options]="{ variant: m.margeBrute < 0 ? 'danger' : 'tertiary', size: 'sm' }" />
         <daf-progress-bar
+          [label]="'SUBCONTRACTING.ANALYSIS.BAR.INTERNAL_COSTS' | translate"
+          [value]="barPct(m.coutsInternes, m.facture)"
+          [options]="{ variant: 'primary', size: 'sm' }" />
+        <daf-progress-bar
           [label]="'SUBCONTRACTING.ANALYSIS.BAR.ST_COSTS' | translate"
-          [value]="barPct(m.coutsST, m.ca)"
+          [value]="barPct(m.coutsST, m.facture)"
           [options]="{ variant: 'warning', size: 'sm' }" />
       </div>
 
-      <!-- Stated rather than drawn: an "internal costs" bar pinned at 0% reads as
-           "we measured it and it is zero". -->
-      <p class="mt-5 flex items-start gap-2 border-t border-outline-variant/30 pt-4
-                text-body-sm text-on-surface-variant">
-        <span class="material-symbols-outlined text-[18px] text-warning">info</span>
-        {{ 'SUBCONTRACTING.ANALYSIS.INTERNAL_NOT_TRACKED' | translate }}
-      </p>
+      <div class="mt-5 flex flex-col gap-2 border-t border-outline-variant/30 pt-4
+                  text-body-sm text-on-surface-variant">
+        @if (m.heuresNonValorisees > 0) {
+          <p class="flex items-start gap-2 text-warning">
+            <span class="material-symbols-outlined text-[18px]">warning</span>
+            {{ 'SUBCONTRACTING.ANALYSIS.INTERNAL_UNVALUED' | translate : { hours: unvaluedHours(m) } }}
+          </p>
+        }
+        <p class="flex items-start gap-2">
+          <span class="material-symbols-outlined text-[18px] text-outline">info</span>
+          {{ 'SUBCONTRACTING.ANALYSIS.INTERNAL_BASIS' | translate }}
+        </p>
+      </div>
     </daf-card>
 
   }

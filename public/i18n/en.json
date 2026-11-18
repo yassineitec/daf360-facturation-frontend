@@ -6542,20 +6542,22 @@
       "ERROR": "Unable to load margin data.",
       "TITLE": "Margin analysis",
       "KPI": {
-        "CA": "Collected revenue",
+        "CA": "Invoiced revenue (excl. VAT)",
         "INTERNAL_COSTS": "Internal costs",
         "ST_COSTS": "ST costs",
         "GROSS_MARGIN": "Gross margin",
         "MARGIN_RATE": "Margin rate"
       },
-      "BREAKDOWN_TITLE": "Revenue breakdown",
+      "BREAKDOWN_TITLE": "Invoiced revenue breakdown",
       "BAR": {
         "GROSS_MARGIN": "Gross margin",
         "ST_COSTS": "ST costs",
         "INTERNAL_COSTS": "Internal costs"
       },
-      "CA_BASIS": "payments collected",
-      "INTERNAL_NOT_TRACKED": "Internal costs are not computed server-side yet — they are always 0, so the margin shown is collected payments minus subcontracting costs only."
+      "CA_BASIS": "Collected: {{amount}}",
+      "INTERNAL_HOURS": "{{hours}} h Timesheet",
+      "INTERNAL_BASIS": "Internal costs = Timesheet hours × each employee's basic cost on the work date (same calculation as the project's Expense tab), converted to the project currency. Margin base: issued invoices, excl. VAT.",
+      "INTERNAL_UNVALUED": "{{hours}} h have no cost recorded in Employee costs and are counted at 0: the margin shown is overstated."
     },
     "OST": {
       "STATUT": {

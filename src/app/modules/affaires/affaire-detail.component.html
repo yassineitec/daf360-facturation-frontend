@@ -746,7 +746,7 @@
           @if (activeTab() === 'sous-traitance') {
             <app-affaire-ost [affaireId]="aff.id" [paysId]="aff.paysId"
                              [devise]="affaireDevise()"
-                             [affaireStatut]="aff.statut ?? ''" />
+                             [affaireStatut]="aff.statut" />
           }
 
           <!-- ── Factures ─────────────────────────────────────────────── -->

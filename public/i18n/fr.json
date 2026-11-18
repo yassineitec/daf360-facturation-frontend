@@ -6542,20 +6542,22 @@
       "ERROR": "Impossible de charger les données de marge.",
       "TITLE": "Analyse de marge",
       "KPI": {
-        "CA": "CA encaissé",
+        "CA": "CA facturé HT",
         "INTERNAL_COSTS": "Coûts internes",
         "ST_COSTS": "Coûts ST",
         "GROSS_MARGIN": "Marge brute",
         "MARGIN_RATE": "Taux marge"
       },
-      "BREAKDOWN_TITLE": "Répartition du CA",
+      "BREAKDOWN_TITLE": "Répartition du facturé HT",
       "BAR": {
         "GROSS_MARGIN": "Marge brute",
         "ST_COSTS": "Coûts ST",
         "INTERNAL_COSTS": "Coûts internes"
       },
-      "CA_BASIS": "paiements encaissés",
-      "INTERNAL_NOT_TRACKED": "Les coûts internes ne sont pas encore calculés côté serveur : ils valent toujours 0, donc la marge affichée correspond aux encaissements moins les seuls coûts de sous-traitance."
+      "CA_BASIS": "Encaissé : {{amount}}",
+      "INTERNAL_HOURS": "{{hours}} h Timesheet",
+      "INTERNAL_BASIS": "Coûts internes = heures Timesheet × coût de base de chaque collaborateur à la date du travail (même calcul que l'onglet Dépense de l'affaire), converti dans la devise de l'affaire. Base de la marge : factures émises, HT.",
+      "INTERNAL_UNVALUED": "{{hours}} h n'ont aucun coût enregistré dans Coûts employés et sont comptées à 0 : la marge affichée est surestimée."
     },
     "OST": {
       "STATUT": {

@@ -47,11 +47,18 @@ export interface CoutSTDto {
 export interface MarginDto {
   affaireId: number;
   reference: string;
-  ca: number;
+  /** HT des factures émises — la base de la marge. */
+  facture: number;
+  /** Paiements reçus, pour information. */
+  encaisse: number;
+  /** Heures Timesheet × coût de base, converties dans `currency`. */
   coutsInternes: number;
+  heuresInternes: number;
+  /** Heures sans coût enregistré, comptées à 0 dans `coutsInternes`. */
+  heuresNonValorisees: number;
   coutsST: number;
   margeBrute: number;
-  margeBrutePct: number;
+  margeBrutePct: number | null;
   currency: string;
 }
 
