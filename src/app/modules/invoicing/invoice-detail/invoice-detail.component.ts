@@ -267,6 +267,9 @@ export class InvoiceDetailComponent implements OnInit {
   });
 
   readonly identityGridFields = computed<DetailField[]>(() => {
+    // Dépendance à la langue : le libellé de condition est traduit ici (instant),
+    // le gabarit n'affichant `f.value` que tel quel.
+    this.translate.currentLang();
     const inv = this.invoice();
     if (!inv) return [];
     const fields: DetailField[] = [
@@ -276,7 +279,7 @@ export class InvoiceDetailComponent implements OnInit {
       { label: 'INVOICING.DETAIL.INFO.DUE_DATE',   value: this.formatDate(inv.dateEcheance) },
     ];
     if (inv.conditionsPaiement) {
-      fields.push({ label: 'INVOICING.DETAIL.INFO.CONDITIONS', value: this.conditionLabel(inv.conditionsPaiement) });
+      fields.push({ label: 'INVOICING.DETAIL.INFO.CONDITIONS', value: this.translate.instant(this.conditionLabel(inv.conditionsPaiement)) });
     }
     if (inv.bonDeCommande) {
       fields.push({ label: 'INVOICING.DETAIL.INFO.BDC', value: inv.bonDeCommande });
