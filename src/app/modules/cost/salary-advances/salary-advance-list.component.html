@@ -1,0 +1,268 @@
+<!-- /finance/cost/salary-advances — « Avances sur salaire » (spec §4–6). Same page shape as
+     the approval queues next door (UI-PLAYBOOK §1): header, KPI row, search toolbar, table.
+     No header icon (house rule). -->
+<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'FACTURATION.ADVANCES.PAGE_TITLE' | translate">
+
+  <daf-page-header
+    [title]="'FACTURATION.ADVANCES.PAGE_TITLE' | translate"
+    [subtitle]="'FACTURATION.ADVANCES.PAGE_SUBTITLE' | translate" />
+
+  <section class="grid grid-cols-3 gap-2 sm:gap-6">
+    <daf-metric-card
+      [label]="'FACTURATION.ADVANCES.KPI_TO_DECIDE' | translate"
+      [value]="stats().toDecide"
+      [options]="kpiToDecide" />
+    <daf-metric-card
+      [label]="'FACTURATION.ADVANCES.KPI_TO_SIGN' | translate"
+      [value]="stats().toSign"
+      [options]="kpiToSign" />
+    <daf-metric-card
+      [label]="'FACTURATION.ADVANCES.KPI_REPAYING' | translate"
+      [value]="stats().repaying"
+      [options]="kpiRepaying" />
+  </section>
+
+  <daf-search-toolbar
+    [placeholder]="'FACTURATION.ADVANCES.SEARCH' | translate"
+    [value]="search()"
+    [debounce]="200"
+    (valueChange)="search.set($event)"
+    [filterFields]="filterFields()"
+    [filterConfig]="filterConfig()"
+    (filterApply)="filters.set($event)"
+    [views]="viewOptions()"
+    [view]="viewMode()"
+    (viewChange)="viewMode.set($any($event))"
+    [table]="viewMode() === 'list' ? (table() ?? null) : null" />
+
+  @if (error()) {
+    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+      <span class="material-symbols-outlined text-[18px]">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  @if (viewMode() === 'grid') {
+    <!-- Same flat 3-column card grid as the approval queues (UI-PLAYBOOK §1). -->
+    <div class="grid grid-cols-3 gap-5">
+      @if (loading()) {
+        @for (i of skeletonSlots; track i) {
+          <daf-skeleton variant="block" radius="xl" width="100%" height="268px" />
+        }
+      } @else {
+        @for (card of cards(); track card.key) {
+          <daf-entity-card
+            [options]="card.options"
+            (actionClick)="onCardAction(card.advance, $event.id)" />
+        } @empty {
+          <div class="col-span-full flex flex-col items-center gap-2 rounded-xl
+                      border border-dashed border-outline-variant/50 px-6 py-14
+                      text-center text-on-surface-variant">
+            <span class="material-symbols-outlined text-[40px] text-outline-variant">payments</span>
+            <p class="text-body-md">{{ 'FACTURATION.ADVANCES.EMPTY' | translate }}</p>
+          </div>
+        }
+      }
+    </div>
+  } @else {
+    <daf-data-table [columns]="columns()" [rows]="rows()" [config]="tableConfig()">
+      <ng-template dafCell="_actions" let-row>
+        <div class="flex items-center justify-end gap-2">
+          @if (canAct(row['_source'])) {
+            <fact-table-action icon="gavel" [tooltip]="tips().decide" (action)="decide(row['_source'])" />
+          }
+          <fact-table-action icon="visibility" [tooltip]="tips().detail" (action)="openDetail(row['_source'])" />
+        </div>
+      </ng-template>
+    </daf-data-table>
+  }
+
+</daf-page>
+
+<!-- ── Detail, projected by ModalService. ── -->
+<ng-template #detailTpl>
+  @if (selected(); as a) {
+    <div class="flex flex-col gap-5">
+
+      @if (detailError()) {
+        <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+          <span class="material-symbols-outlined text-[18px]">error</span>
+          {{ detailError() }}
+        </div>
+      }
+
+      @if (canAct(a)) {
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-warning/10 px-4 py-3">
+          <span class="text-body-sm text-on-surface">
+            {{ (a.status === 'PENDING_DIRECTOR' ? 'FACTURATION.ADVANCES.ACT_DIRECTOR' : 'FACTURATION.ADVANCES.ACT_DAF') | translate }}
+          </span>
+          <daf-button
+            [options]="{ variant: 'teal', size: 'sm', iconStart: 'gavel', label: ('FACTURATION.ADVANCES.DECIDE' | translate) }"
+            (onClick)="decide(a)" />
+        </div>
+      }
+
+      <!-- What the employee asked (spec §2). -->
+      <daf-section-card [title]="'FACTURATION.ADVANCES.SECTION_REQUEST' | translate">
+        <div class="grid grid-cols-1 gap-x-10 gap-y-5 p-4 sm:grid-cols-3">
+          <div class="flex flex-col gap-1">
+            <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.REQUESTED_AMOUNT' | translate }}</span>
+            <span class="text-body-md text-on-surface">{{ money(a.requestedAmount, a.currency) }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.AVAILABILITY_DATE' | translate }}</span>
+            <span class="text-body-md text-on-surface">{{ date(a.requestedAvailabilityDate) }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.REQUESTED_MONTHS' | translate }}</span>
+            <span class="text-body-md text-on-surface">{{ 'FACTURATION.ADVANCES.N_MONTHS' | translate:{ count: a.requestedInstallments } }}</span>
+          </div>
+        </div>
+        @if (a.reason) {
+          <p class="mx-4 mb-4 whitespace-pre-line rounded-xl bg-surface-container-low px-4 py-3 text-body-md">{{ a.reason }}</p>
+        }
+        <div class="flex flex-col gap-1 px-4 pb-4 text-body-sm text-on-surface-variant">
+          @if (a.directorThreshold !== null) {
+            <span>{{ 'FACTURATION.ADVANCES.THRESHOLD_IS' | translate:{ threshold: money(a.directorThreshold, a.currency) } }}</span>
+          }
+          @if (a.directorDecidedByName) {
+            <span>
+              {{ 'FACTURATION.ADVANCES.DIRECTOR_VALIDATED' | translate:{ name: a.directorDecidedByName } }}
+              @if (a.directorNotes) { — « {{ a.directorNotes }} » }
+            </span>
+          }
+          @if (a.financeDecidedByName) {
+            <span>
+              {{ 'FACTURATION.ADVANCES.DAF_DECIDED' | translate:{ name: a.financeDecidedByName } }}
+              @if (a.financeNotes) { — « {{ a.financeNotes }} » }
+            </span>
+          }
+        </div>
+      </daf-section-card>
+
+      <!-- The final terms (spec §4–5). -->
+      @if (granted(a)) {
+        <daf-section-card [title]="'FACTURATION.ADVANCES.SECTION_TERMS' | translate">
+          <div class="grid grid-cols-1 gap-x-10 gap-y-5 p-4 sm:grid-cols-3">
+            <div class="flex flex-col gap-1">
+              <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.GRANTED_AMOUNT' | translate }}</span>
+              <span class="text-body-md font-semibold text-on-surface">{{ money(a.amount, a.currency) }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.EFFECTIVE_DATE' | translate }}</span>
+              <span class="text-body-md text-on-surface">{{ date(a.effectiveDate) }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.FIRST_DEDUCTION' | translate }}</span>
+              <span class="text-body-md text-on-surface">{{ month(a.firstDeductionMonth) }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.INSTALLMENT_COUNT' | translate }}</span>
+              <span class="text-body-md text-on-surface">{{ a.installments }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.MONTHLY' | translate }}</span>
+              <span class="text-body-md text-on-surface">{{ money(a.monthlyAmount, a.currency) }}</span>
+            </div>
+            @if (a.outstandingAmount !== null) {
+              <div class="flex flex-col gap-1">
+                <span class="text-label-caps text-on-surface-variant">{{ 'FACTURATION.ADVANCES.OUTSTANDING' | translate }}</span>
+                <span class="text-body-md text-on-surface">{{ money(a.outstandingAmount, a.currency) }}</span>
+              </div>
+            }
+          </div>
+          @if (a.schedule.length) {
+            <ul class="mx-4 mb-4 flex flex-col gap-1 rounded-xl bg-surface-container-low px-4 py-3 text-body-sm">
+              @for (line of a.schedule; track line.id) {
+                <li class="flex justify-between gap-3">
+                  <span class="text-on-surface">{{ line.seq }} · {{ month(line.dueMonth) }}</span>
+                  <span class="text-on-surface-variant">
+                    {{ money(line.amount, a.currency) }} · {{ ('FACTURATION.ADVANCES.INSTALLMENT.' + line.status) | translate }}
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        </daf-section-card>
+      }
+
+      <!-- The debt contract (spec §5–6). -->
+      @if (a.contractStatus) {
+        <daf-section-card [title]="'FACTURATION.ADVANCES.SECTION_CONTRACT' | translate">
+          <div class="flex flex-col gap-4 p-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <daf-badge
+                [label]="('FACTURATION.ADVANCES.CONTRACT.' + a.contractStatus) | translate"
+                [options]="{ variant: a.contractStatus === 'SIGNED' ? 'success' : 'info', size: 'sm' }" />
+              @if (a.contractAvailable) {
+                <daf-button
+                  [options]="{ variant: 'ghost', size: 'sm', iconStart: 'description', label: ('FACTURATION.ADVANCES.OPEN_CONTRACT' | translate) }"
+                  (onClick)="openContract(a, false)" />
+              } @else {
+                <span class="text-body-sm text-warning">{{ 'FACTURATION.ADVANCES.CONTRACT_MISSING' | translate }}</span>
+              }
+              @if (a.signedContractAvailable) {
+                <daf-button
+                  [options]="{ variant: 'ghost', size: 'sm', iconStart: 'verified', label: ('FACTURATION.ADVANCES.OPEN_SIGNED' | translate) }"
+                  (onClick)="openContract(a, true)" />
+              }
+              @if (canRegenerate(a)) {
+                <daf-button
+                  [options]="{ variant: 'ghost', size: 'sm', iconStart: 'refresh', loading: busy(), disabled: busy(),
+                               label: ((a.contractAvailable ? 'FACTURATION.ADVANCES.REGENERATE' : 'FACTURATION.ADVANCES.GENERATE') | translate) }"
+                  (onClick)="regenerate(a)" />
+              }
+            </div>
+            @if (a.signedContractUploadedByName) {
+              <span class="text-body-sm text-on-surface-variant">
+                {{ 'FACTURATION.ADVANCES.SIGNED_BY_UPLOAD' | translate:{ name: a.signedContractUploadedByName, date: date(a.signedContractUploadedAt) } }}
+              </span>
+            }
+            @if (canUploadSigned(a)) {
+              <div class="flex flex-col gap-3 rounded-xl border border-outline-variant/40 p-4">
+                <span class="text-body-sm text-on-surface">{{ 'FACTURATION.ADVANCES.UPLOAD_HINT' | translate }}</span>
+                <daf-file-upload
+                  [files]="uploadFiles()"
+                  (filesChange)="onFilesPicked($event)"
+                  [config]="{ accept: '.pdf,.jpg,.jpeg,.png', maxSizeMb: 10, label: ('FACTURATION.ADVANCES.SIGNED_FILE' | translate) }" />
+                <div>
+                  <daf-button
+                    [options]="{ variant: 'teal', size: 'sm', iconStart: 'upload_file', loading: busy(), disabled: busy(),
+                                 label: ('FACTURATION.ADVANCES.UPLOAD_SIGNED' | translate) }"
+                    (onClick)="uploadSigned(a)" />
+                </div>
+              </div>
+            }
+          </div>
+        </daf-section-card>
+      }
+
+      <!-- Who did what. -->
+      @if (a.history.length) {
+        <daf-section-card [title]="'FACTURATION.ADVANCES.SECTION_HISTORY' | translate">
+          <ul class="flex flex-col gap-2 p-4 text-body-sm">
+            @for (h of a.history; track $index) {
+              <li class="flex flex-col gap-0.5 border-b border-outline-variant/30 pb-2 last:border-0">
+                <span class="text-on-surface">
+                  <span class="font-semibold">{{ ('FACTURATION.ADVANCES.STATUS.' + h.toStatus) | translate }}</span>
+                  · {{ h.actorName ?? '—' }} · {{ date(h.createdAt) }}
+                </span>
+                @if (h.notes) {
+                  <span class="text-on-surface-variant">{{ h.notes }}</span>
+                }
+              </li>
+            }
+          </ul>
+        </daf-section-card>
+      }
+    </div>
+  }
+</ng-template>
+
+@if (deciding(); as d) {
+  <app-salary-advance-decision-modal
+    [advance]="d.advance"
+    [initialDecision]="d.decision"
+    (saved)="onDecided($event)"
+    (cancelled)="deciding.set(null)" />
+}

@@ -24,6 +24,7 @@ import type {
 } from '@khalilrebhiitec/daf360';
 import { AffaireService } from './affaire.service';
 import { AffaireWizardService } from './affaire-wizard.service';
+import { CurrencyContextService } from '../../core/currency-context.service';
 import {
   AffaireDetail, RafDetailsDto, AffaireKpisDto, TsDto, TsHistoryEntry,
   AffaireInvoiceItem, AffairePaymentItem, PaysRefDto, paysLabel,
@@ -832,6 +833,7 @@ export class AffaireDetailComponent implements OnInit {
   private readonly store     = inject(UserStore);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly translate = inject(TranslateService);
   private readonly exportSvc = inject(ExportService);
   /** Export Excel en cours (TS, factures ou paiements) — grise les boutons d'export. */
@@ -938,7 +940,17 @@ export class AffaireDetailComponent implements OnInit {
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
-  readonly affaireDevise = computed(() => this.affaire()?.devise || 'TND');
+  /**
+   * La devise de l'affaire, ou à défaut celle par défaut du pays (`pays_ref.devise` —
+   * EUR pour la Tunisie, USD pour l'Égypte, etc.), jamais une constante codée en dur :
+   * un pays sans devise explicite sur l'affaire ne doit pas retomber sur celle d'un autre.
+   */
+  readonly affaireDevise = computed(() => {
+    const explicit = this.affaire()?.devise;
+    if (explicit) return explicit;
+    const p = this.paysList().find(p => p.id === this.affaire()?.paysId);
+    return p?.devise || this.currencyContext.defaultCurrency() || 'EUR';
+  });
 
   /**
    * Le libellé lisible d'un code technique (`ENUMS.<domaine>.<code>`).
@@ -993,6 +1005,12 @@ export class AffaireDetailComponent implements OnInit {
         label:   this.translate.instant('AFFAIRES.DETAIL.BUDGET_NOT_VALIDATED'),
         variant: 'warning',
       });
+    }
+
+    if (a.origin === 'DOC360') {
+      badges.push({ label: this.translate.instant('AFFAIRES.DETAIL.ORIGIN.DOC360'), variant: 'teal' });
+    } else if (a.origin === 'INTERCO') {
+      badges.push({ label: this.translate.instant('AFFAIRES.DETAIL.ORIGIN.INTERCO'), variant: 'secondary' });
     }
 
     // Pas de pastille d'alerte RAF ici : depuis la 4.18.0 le rappel est porté par
@@ -1586,22 +1604,26 @@ export class AffaireDetailComponent implements OnInit {
   //   budgetPrevisionnel = raf.budgetPrevisionnel, sinon affaire.budgetPrevisionnel
   //                        (le RAF arrive après l'affaire : sans ce repli les tuiles
   //                        affichent 0 % pendant un instant au chargement)
-  //   budgetTotal        = budgetPrevisionnel SEUL — le dénominateur de tous les taux.
-  //                        Les TS intégrés n'y entrent PAS : un TS est vendu en plus du
-  //                        contrat, les taux se mesurent sur l'engagement initial.
-  //                        Budget 100, TS 20, facturé 60 → 60 %.
+  //   budgetTotal        = budgetPrevisionnel SEUL — le dénominateur de tous les taux
+  //                        SAUF billingPct (voir ci-dessous, règle du 2026-11-13).
+  //                        Les TS n'y entrent PAS : Backlog %, Encaissé %, RAF %
+  //                        se mesurent sur l'engagement initial.
   //                        Corollaire : le serveur calcule RAF = budget + TS − facturé,
   //                        donc facturé + RAF ≠ budgetTotal dès qu'il y a des TS, et
   //                        rafAvailablePct peut dépasser 100 %.
-  //   billingPct         = totalFacturesEmises / (budgetTotal + totalTs) × 100
+  //   billingPct         = totalFacturesEmises / overrunEnvelope × 100, où
+  //                        overrunEnvelope = budgetTotal + kpis.totalTs (tous les TS)
   //                        « taux de facturation » — TS inclus (règle du 2026-11-13)
+  //                        Budget 100, TS 30, facturé 130 → 100 %.
   //   tsIntegratedPct    = montantTsIntegres / budgetTotal × 100
   //   rafAvailablePct    = rafDisponible / budgetTotal × 100         (pastille RAF)
   //   healthState        = seuils sur billingPct, comparés au **seuil propre à
   //                        l'affaire** (rafAlerteSeuilPct) : < seuil = Optimale,
   //                        ≥ seuil = Vigilance, ≥ 100 % = Critique
   //   rafAlertActive     = billingPct ≥ rafAlerteSeuilPct (même règle, pour l'encart)
-  //   budgetOverrun      = rafDisponible < 0, c'est-à-dire facturé > enveloppe
+  //   budgetOverrun      = totalFacturesEmises > overrunEnvelope (même enveloppe que
+  //                        billingPct et le Backlog, règle du 2026-11-13 — ne lit plus
+  //                        rafDisponible)
   //
   //   ⚠️ `healthState` est une échelle de RISQUE sur la facturation : consommer le budget
   //   est neutre jusqu'à 100 %, le DÉPASSER est l'accident, d'où le rouge au-delà. Elle ne
@@ -1620,19 +1642,13 @@ export class AffaireDetailComponent implements OnInit {
   //   Les trois premières se calculent toutes sur le MÊME « facturé », `totalFacture` :
   //     · totalFacture  = SUM(factures) dont le statut n'est PAS 'PAID' — à la lettre,
   //                       donc DRAFT et CANCELLED y entrent aussi.
-  //     · backlog       = budgetPrevisionnel − totalFacture + TS non facturé.
-  //     · wip           = somme des WIP déclarés (tous statuts) − totalFacture
-  //                       + TS non facturé : le constaté pas encore passé en facture.
-  //                       Le terme hors-TS est négatif quand on a facturé plus que ce
-  //                       que l'onglet WIP a déclaré.
+  //     · backlog       = (budgetPrevisionnel + totalTs) − totalFacture (règle du
+  //                       2026-11-13 ; totalTs = tous les TS, la tuile « Budget TS »).
+  //     · wip           = WIP déclarés (onglet WIP) + WIP TS déclarés (onglet TS WIP),
+  //                       règle du 2026-10-21 — ne retranche plus totalFacture.
   //     · totalEncaisse = SUM(factures) au statut 'PAID' — complément exact de
   //                       totalFacture, donc totalFacture + totalEncaisse = tout le facturé.
-  //   Un chiffre lu sur une tuile se retrouve donc tel quel dans le calcul des deux
-  //   autres : budget + TS non facturé = backlog + totalFacture (le TS non facturé
-  //   abonde les DEUX tuiles Backlog et WIP, règle du 2026-10-13 — les TS se vendent en
-  //   plus du contrat, au même titre que le budget, donc le travail TS déjà validé mais
-  //   pas encore en facture doit apparaître dans les deux). La tuile WIP se lit donc à
-  //   partir de la tuile « Total facturé » affichée juste à côté, plus ce même terme TS.
+  //   Les tuiles se recoupent à l'écran : budget + Budget TS = backlog + totalFacture.
   //
   //   ⚠️ Le sens de la soustraction du WIP a été inversé le 21/09 (il valait
   //   totalFacture − WIP du 18 au 21) : une capture d'écran de cette période se lit à
@@ -1659,7 +1675,8 @@ export class AffaireDetailComponent implements OnInit {
     this.raf()?.budgetPrevisionnel ?? this.affaire()?.budgetPrevisionnel ?? 0);
 
   /**
-   * Le dénominateur de tous les taux de la page : le **budget prévisionnel SEUL**.
+   * Le dénominateur des taux de la page : le **budget prévisionnel SEUL** — sauf le taux
+   * de facturation (`billingPct`), qui divise par budget + Budget TS depuis le 2026-11-13.
    *
    * Les TS intégrés n'entrent PAS dans le budget. Un TS est un travail supplémentaire
    * vendu en plus du contrat initial ; le taux de facturation mesure ce qui est facturé
@@ -1683,8 +1700,13 @@ export class AffaireDetailComponent implements OnInit {
    * Même enveloppe que le bandeau « Budget dépassé » (`overrunEnvelope`), donc
    * « > 100 % » ⇔ dépassement. Les autres taux (Backlog, Encaissé, RAF) restent sur
    * `budgetTotal`.
+   *
+   * 0 tant que les KPIs ne sont pas chargés, comme `overrunAmount` : sans `totalTs`,
+   * l'enveloppe se réduirait au budget et le taux, l'état de santé et l'alerte RAF
+   * afficheraient un instant 130 % avant de retomber.
    */
   readonly billingPct = computed(() => {
+    if (!this.kpis()) return 0;
     const b = this.overrunEnvelope();
     return b > 0 ? ((this.raf()?.totalFacturesEmises ?? 0) / b) * 100 : 0;
   });

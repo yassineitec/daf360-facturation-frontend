@@ -10,9 +10,10 @@ import { ClientDetailDto } from '../../../clients/client.model';
 import { ClientContactService } from '../../../clients/contacts/client-contact.service';
 import { AffaireContactDto }    from '../../../clients/contacts/client-contact.model';
 import { AffaireService } from '../../../affaires/affaire.service';
-import { StepAffaireValue } from './step-affaire.component';
+import { StepAffaireValue, isCombinedStepValue } from './step-affaire.component';
 import { invoiceTypeLabel } from '../../../../core/invoice-type-labels.service';
 import { FactListService } from '../../../../core/fact-list.service';
+import { CurrencyContextService } from '../../../../core/currency-context.service';
 import { ListValueDto } from '../../../cost/cost.model';
 import { StepLinesValue } from './step-lines.component';
 import { StepConditionsValue } from './step-conditions.component';
@@ -260,6 +261,7 @@ export class StepRecapComponent {
   private readonly route        = inject(ActivatedRoute);
   private readonly translate    = inject(TranslateService);
   private readonly factListSvc  = inject(FactListService);
+  private readonly currencyContext = inject(CurrencyContextService);
 
   showActions    = input<boolean>(true);
   affaireData    = input.required<StepAffaireValue>();
@@ -357,8 +359,9 @@ export class StepRecapComponent {
    * committing. Detected via a null affaireId (the real, universal signal), NOT
    * billingMode === 'MIXED': a combined invoice whose lines all share the same mode keeps
    * that single mode as its billingMode and only gets literal "MIXED" when the combined
-   * lines actually span different modes (see DFValidationService). */
-  readonly isCombined = computed(() => this.affaireData().affaireId == null);
+   * lines actually span different modes (see DFValidationService). Same-affaire combined
+   * invoices carry a real affaireId since 2026-11-11 -- see isCombinedStepValue(). */
+  readonly isCombined = computed(() => isCombinedStepValue(this.affaireData()));
 
   /** affaireId -> "REF — Intitulé", resolved once per distinct affaireId among the combined
    * invoice's lines. Empty until resolveAffaireLabels() resolves (see the effect in the
@@ -393,7 +396,9 @@ export class StepRecapComponent {
     return this.linesData().lines.reduce((s, l) => {
       const pct = (l as unknown as Record<string, number | undefined>)[`deductionPct${columnPosition}`];
       if (!pct) return s;
-      return s + l.quantity * l.unitRate * (pct / 100);
+      // Assiette TTC (pas HT) -- même base que InvoiceService.computeDeductionTotal côté serveur.
+      const ttc = l.quantity * l.unitRate * (1 + l.vatRatePct / 100);
+      return s + ttc * (pct / 100);
     }, 0);
   }
 
@@ -442,7 +447,8 @@ export class StepRecapComponent {
       billingMode:   a.billingMode,
       currency:      a.currency,
       tsId:          a.tsId,
-      emittedAt:     c.dateEmission || null,
+      // yyyy-MM-dd only: the backend field is a LocalDate (see invoice-new's seed).
+      emittedAt:     c.dateEmission ? c.dateEmission.slice(0, 10) : null,
       dueDate:       c.dateEcheance,
       notes:         c.notes,
       conditionsPaiement: c.conditionsPaiement,
@@ -541,7 +547,7 @@ export class StepRecapComponent {
 
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: this.affaireData().currency ?? 'TND',
+      style: 'currency', currency: this.affaireData().currency ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

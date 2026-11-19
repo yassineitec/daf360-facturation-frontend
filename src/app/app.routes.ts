@@ -93,7 +93,9 @@ export const routes: Routes = [
         // seul code qui la concerne.
         // FACT_APPROVE_SALARY_ADVANCE, same reason: the advances are decided in the
         // `cost/approval` child.
-        data: { permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST', 'FACT_APPROVE_MISSION_COST', 'FACT_APPROVE_SALARY_ADVANCE'] },
+        // The two other advance codes (V128), for `cost/salary-advances` and `cost/approval`.
+        data: { permissions: ['FACT_VIEW_COST', 'FACT_MANAGE_COST', 'FACT_ADMIN_COST', 'FACT_APPROVE_MISSION_COST', 'FACT_APPROVE_SALARY_ADVANCE',
+                              'FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD', 'FACT_VIEW_SALARY_ADVANCES'] },
         loadChildren: () =>
           import('./modules/cost/cost.routes').then(m => m.COST_ROUTES),
       },

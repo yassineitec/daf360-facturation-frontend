@@ -189,30 +189,73 @@
   </div>
 </ng-template>
 
-<!-- Salary advance — the finance decision. Same three-part body as the two above: what is
-     being decided, the choice, then the comment. -->
-<ng-template #advanceDecisionTpl>
+<!-- Salary advance — the shared decision modal (director step above the threshold, or the
+     DAF's final terms). It opens its own modal; dropped on saved / cancelled. -->
+@if (decidingAdvance(); as d) {
+  <app-salary-advance-decision-modal
+    [advance]="d.advance"
+    [initialDecision]="d.decision"
+    (saved)="onAdvanceDecided($event)"
+    (cancelled)="decidingAdvance.set(null)" />
+}
+
+<!-- Révision salariale (payroll V38) : avant / après, la simulation, puis la décision.
+     Approuver l'applique au salaire ; refuser ne change rien (motif obligatoire). -->
+<ng-template #salaryDecisionTpl>
   <div class="flex flex-col gap-5">
 
-    @if (selectedAdvance(); as a) {
+    @if (selectedSalary(); as s) {
       <div class="flex flex-col gap-1 rounded-xl bg-surface-container-low px-4 py-3">
-        <span class="text-label-caps text-outline">{{ a.employeeName }} · AVS-{{ a.id }}</span>
+        <span class="text-label-caps text-outline">{{ s.employeeName ?? '—' }} · REV-{{ s.id }}</span>
         <span class="text-[22px] font-black leading-tight text-on-surface">
-          {{ advanceAmount(a.amount, a.currency) }}
+          {{ advanceAmount(s.currentGrossSalary, s.workingCurrency) }} → {{ advanceAmount(s.newGrossSalary, s.workingCurrency) }}
         </span>
         <span class="text-body-sm text-on-surface-variant">
-          {{ 'FACTURATION.ADVANCES.TERMS' | translate:{
-            monthly: advanceAmount(a.monthlyAmount, a.currency),
-            count: a.installments,
-            month: advanceMonth(a.firstDeductionMonth) } }}
+          {{ 'COST.APPROVAL_QUEUE.SALARY_EFFECTIVE' | translate: { date: salaryDate(s.effectiveDate), contract: s.contractType } }}
         </span>
-        <span class="text-body-sm text-on-surface-variant">{{ 'FACTURATION.ADVANCES.AFTER_APPROVAL' | translate }}</span>
-        @if (a.reason) {
-          <span class="mt-1 whitespace-pre-line text-body-sm text-on-surface-variant">
-            {{ 'FACTURATION.ADVANCES.EMPLOYEE_SAID' | translate }} « {{ a.reason }} »
-          </span>
-        }
+        <span class="text-body-sm text-on-surface-variant">
+          {{ 'COST.APPROVAL_QUEUE.SALARY_SUBMITTED_BY' | translate: { name: s.submittedByName ?? '—', date: salaryDate(s.submittedAt) } }}
+        </span>
+        <span class="mt-1 whitespace-pre-line text-body-sm text-on-surface-variant">« {{ s.reason }} »</span>
       </div>
+
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div class="flex flex-col rounded-xl border border-outline-variant/40 px-4 py-3">
+          <span class="text-label-caps text-outline">{{ 'COST.APPROVAL_QUEUE.SALARY_NET' | translate }}</span>
+          <span class="text-body-md font-bold text-on-surface">{{ advanceAmount(s.newNetSalary, s.workingCurrency) }}</span>
+          <span class="text-body-sm text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SALARY_WAS' | translate: { value: advanceAmount(s.currentNetSalary, s.workingCurrency) } }}</span>
+        </div>
+        <div class="flex flex-col rounded-xl border border-outline-variant/40 px-4 py-3">
+          <span class="text-label-caps text-outline">{{ 'COST.APPROVAL_QUEUE.SALARY_COST' | translate }}</span>
+          <span class="text-body-md font-bold text-on-surface">{{ advanceAmount(s.monthlyCostAfter, s.workingCurrency) }}</span>
+          <span class="text-body-sm text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SALARY_WAS' | translate: { value: advanceAmount(s.monthlyCostBefore, s.workingCurrency) } }}</span>
+        </div>
+        <div class="flex flex-col rounded-xl border border-outline-variant/40 px-4 py-3">
+          <span class="text-label-caps text-outline">{{ 'COST.APPROVAL_QUEUE.SALARY_ANNUAL_IMPACT' | translate }}</span>
+          <span class="text-body-md font-bold" [class.text-danger]="salaryAnnualImpact(s) > 0" [class.text-success]="salaryAnnualImpact(s) < 0">
+            {{ salaryAnnualImpact(s) > 0 ? '+' : '' }}{{ advanceAmount(salaryAnnualImpact(s), s.workingCurrency) }}
+          </span>
+          <span class="text-body-sm text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SALARY_ANNUAL_HINT' | translate }}</span>
+        </div>
+      </div>
+
+      @if (s.simulation; as sim) {
+        <div class="flex flex-col gap-1 text-body-sm text-on-surface-variant">
+          <span>{{ 'COST.APPROVAL_QUEUE.SALARY_BREAKDOWN' | translate: {
+            gross: advanceAmount(sim.monthly.gross, sim.currency),
+            charges: advanceAmount(sim.monthly.gross + sim.monthly.taxableBenefits - sim.monthly.taxableBase, sim.currency),
+            irpp: advanceAmount(sim.monthly.irpp, sim.currency),
+            employer: advanceAmount(sim.monthly.employerCharges, sim.currency) } }}</span>
+          @if (sim.benefits.length) {
+            <span>{{ 'COST.APPROVAL_QUEUE.SALARY_BENEFITS' | translate }} {{ salaryBenefits(sim.benefits, sim.currency) }}</span>
+          }
+          @if (sim.withBonuses) {
+            <span>{{ 'COST.APPROVAL_QUEUE.SALARY_BONUSES' | translate: {
+              amount: advanceAmount(sim.withBonuses.bonuses, sim.currency),
+              cost: advanceAmount(sim.withBonuses.employerCost, sim.currency) } }}</span>
+          }
+        </div>
+      }
     }
 
     <div class="flex flex-col gap-2">
@@ -221,10 +264,10 @@
         @for (opt of hiringDecisionOptions(); track opt.id) {
           <button type="button"
             class="flex items-center gap-2 rounded-lg border-2 px-4 py-2 text-body-md font-bold transition-all"
-            [class]="advanceDecision() === opt.id
+            [class]="salaryDecision() === opt.id
               ? 'border-tertiary bg-tertiary/10 text-primary'
               : 'border-outline-variant/40 text-on-surface-variant hover:bg-surface-container'"
-            (click)="advanceDecision.set($any(opt.id))">
+            (click)="salaryDecision.set($any(opt.id))">
             <span class="material-symbols-outlined text-[18px]">{{ opt.icon }}</span>
             {{ opt.label }}
           </button>
@@ -233,18 +276,18 @@
     </div>
 
     <daf-form-field
-      [value]="advanceComment()"
-      (valueChange)="advanceComment.set($any($event) || '')"
+      [value]="salaryComment()"
+      (valueChange)="salaryComment.set($any($event) || '')"
       [options]="{
         type: 'textarea', rows: 3,
         label: ('COST.APPROVAL_QUEUE.COMMENT_LABEL' | translate),
-        required: advanceDecision() === 'reject'
+        required: salaryDecision() === 'reject'
       }" />
 
-    @if (advanceModalError()) {
+    @if (salaryModalError()) {
       <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
         <span class="material-symbols-outlined text-[18px]">error</span>
-        {{ advanceModalError() }}
+        {{ salaryModalError() }}
       </div>
     }
 

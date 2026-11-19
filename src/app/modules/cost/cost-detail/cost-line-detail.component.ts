@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { Observable, catchError, forkJoin, map, of } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import {
   ButtonComponent, DafCellDirective, DataTableComponent, FilterComponent,
   MetricCardComponent, ModalService, PageComponent, PageHeaderComponent, PaginationComponent, SectionCardComponent,
@@ -24,6 +24,7 @@ import {
   CostInvoiceAttachmentDto, CostInvoiceDto, SupplierCostSummaryDto,
   SupplierLedgerDto, SupplierLedgerRowDto, costCategoryDisplay,
   CostInvoiceChangeDto, CostInvoiceChangeEntry, FACT_EDIT_VALIDATED_COST, VALIDATED_EDITABLE_STATUSES,
+  formatAmount,
 } from '../cost.model';
 import {
   APPROVAL_BADGE_VARIANT, DECISION_BADGE_VARIANT, DECISION_ICON, STATUS_BADGE_VARIANT,
@@ -39,6 +40,7 @@ import { CostRemindersPanelComponent } from './cost-reminders-panel.component';
 import { canEditInvoice, canReglementInvoice, invoicePayableAmount } from '../tabs/cost-invoice-display';
 import { UserStore } from '../../../core/user.store';
 import { ExportService } from '../../../core/export.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 
 /** Une paire libellé/valeur en lecture seule. `label` est toujours une clé i18n. */
 interface DetailField { label: string; value: string; }
@@ -135,6 +137,7 @@ export class CostLineDetailComponent implements OnInit {
   private readonly svc         = inject(CostService);
   private readonly affaireSvc  = inject(AffaireService);
   private readonly clientSvc   = inject(ClientService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly supplierSvc = inject(SupplierService);
   private readonly translate   = inject(TranslateService);
   private readonly currency    = inject(DisplayCurrencyPipe);
@@ -284,6 +287,17 @@ export class CostLineDetailComponent implements OnInit {
     return !!inv && canReglementInvoice(inv);
   });
 
+  /** 'line' mode: the « Règlements » block — once the invoice is validated (payable or paid). */
+  readonly showPayments = computed(() => {
+    const s = this.invoice()?.status;
+    return s === 'APPROVED' || s === 'PARTIALLY_PAID' || s === 'POSTED';
+  });
+
+  /** An amount in this invoice's currency. */
+  money(v: number | null | undefined): string {
+    return v == null ? '—' : formatAmount(v, this.invoice()?.currency || 'EUR');
+  }
+
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
   readonly headerTitle = computed(() => {
@@ -397,7 +411,7 @@ export class CostLineDetailComponent implements OnInit {
     }
     const inv = this.invoice();
     if (!inv) return [];
-    const cur = inv.currency ?? 'EUR';
+    const cur = inv.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR';
     const tiles: KpiTile[] = [
       {
         label: 'COST.DETAIL.KPI.NET', value: this.currency.transform(inv.netAmountLocal, cur),
@@ -457,7 +471,7 @@ export class CostLineDetailComponent implements OnInit {
   // ── Tab 1, mode 'line' : lignes de la facture ──────────────────────────────
 
   private fmtCur(v: number | null | undefined): string {
-    return this.currency.transform(v ?? null, this.invoice()?.currency ?? 'EUR');
+    return this.currency.transform(v ?? null, this.invoice()?.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR');
   }
 
   private fmtPct(fraction: number | null | undefined): string {
@@ -703,6 +717,7 @@ export class CostLineDetailComponent implements OnInit {
       (row: TableRow) => (row['_source'] as SupplierLedgerRowDto)[field] as string | number | null;
     const cols: TableColumn[] = [
       { key: 'date',            label: t('COST.DETAIL.LEDGER.COL_DATE'),            type: 'text', sortable: true, sortAccessor: raw('date') },
+      { key: 'kind',            label: t('COST.DETAIL.LEDGER.FILTER_TYPE'),         type: 'text', sortable: true },
       { key: 'label',           label: t('COST.DETAIL.LEDGER.COL_LABEL'),           type: 'text', sortable: true },
       { key: 'netAmount',       label: t('COST.DETAIL.LEDGER.COL_NET_AMOUNT'),      type: 'text', align: 'right', sortable: true, sortAccessor: raw('netAmountLocal') },
       { key: 'fodec',           label: t('COST.DETAIL.LEDGER.COL_FODEC'),           type: 'text', align: 'right', sortable: true, sortAccessor: raw('fodecAmount') },
@@ -735,7 +750,6 @@ export class CostLineDetailComponent implements OnInit {
         options: [
           { value: 'CREDIT',  label: t('COST.DETAIL.LEDGER.TYPE_CREDIT') },
           { value: 'DEBIT',   label: t('COST.DETAIL.LEDGER.TYPE_DEBIT') },
-          { value: 'SETTLED', label: t('COST.DETAIL.LEDGER.TYPE_SETTLED') },
         ],
       },
       {
@@ -792,20 +806,24 @@ export class CostLineDetailComponent implements OnInit {
         if (!day || day < from || day > to) return false;
       }
       if (invoiceFilter && String(r.costInvoiceId) !== invoiceFilter) return false;
-      if (min != null && !isNaN(min) && (r.grossAmountLocal == null || r.grossAmountLocal < min)) return false;
+      const amount = r.grossAmountLocal ?? r.montantPaye ?? null;   // invoice row: TTC; règlement row: paid
+      if (min != null && !isNaN(min) && (amount == null || amount < min)) return false;
       if (!type) return true;
-      if (type === 'CREDIT')  return r.credit != null;
-      if (type === 'DEBIT')   return r.debit  != null;
-      return r.credit == null && r.debit == null; // 'SETTLED'
+      // Classic statement (V116): invoices in crédit, règlements in débit.
+      if (type === 'CREDIT')  return r.kind === 'INVOICE';
+      if (type === 'DEBIT')   return r.kind === 'REGLEMENT';
+      return true;
     });
   });
 
   readonly ledgerRows = computed<TableRow[]>(() => {
     this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
     return this.filteredLedgerRawRows().map(r => ({
-      id:             r.reglementId,
+      id:             r.rowId,
       _source:        r,
       date:           formatDate(r.date),
+      kind:           t(r.kind === 'REGLEMENT' ? 'COST.DETAIL.LEDGER.KIND_REGLEMENT' : 'COST.DETAIL.LEDGER.KIND_INVOICE'),
       label:          r.label ?? '—',
       netAmount:      this.fmtAmount(r.netAmountLocal),
       fodec:          this.fmtAmount(r.fodecAmount),
@@ -821,6 +839,7 @@ export class CostLineDetailComponent implements OnInit {
       soldeDebiteur:  this.fmtAmount(r.soldeDebiteur),
       soldeCrediteur: this.fmtAmount(r.soldeCrediteur),
       _reglementId:   r.reglementId,
+      _rowId:         r.rowId,
       _costInvoiceId: r.costInvoiceId,
     }));
   });
@@ -858,15 +877,15 @@ export class CostLineDetailComponent implements OnInit {
     this.router.navigate(['/finance/cost', id]);
   }
 
-  /** Export généré par le backend (CostExportController) : les règlements affichés
+  /** Export généré par le backend (CostExportController) : les écritures affichées
    * (filtres + recherche appliqués), dans l'ordre de l'écran — le serveur relit le relevé
-   * du fournisseur et n'en garde que ces lignes. */
+   * du fournisseur et n'en garde que ces lignes (par rowId). */
   exportLedgerExcel(): void {
     const supplier = this.ledger()?.supplier;
     const rows = this.filteredLedgerRows();
     if (!supplier || !rows.length) return;
     this.exportSvc.download(
-      this.exportSvc.supplierLedger(supplier.id, rows.map(r => r['_reglementId'] as number)),
+      this.exportSvc.supplierLedger(supplier.id, rows.map(r => r['_rowId'] as number)),
       `Releve_${(supplier.code || 'S-' + supplier.id).replace(/[^A-Za-z0-9-]+/g, '_')}.xlsx`,
       this.exportingLedger);
   }
@@ -1125,12 +1144,26 @@ export class CostLineDetailComponent implements OnInit {
     const paysId = this.effectivePaysId();
     const supplierId = this.currentSupplierId();
     if (!paysId || !supplierId) return;
-    this.svc.getCostInvoices({ paysId, status: 'APPROVED', supplierId, size: SUPPLIER_MODE_PAGE_SIZE }).subscribe({
-      next: page => this.reglementModal.open(
-        { editing: null, payableInvoices: page.content.filter(i => !i.reglement), paysId }, () => this.reloadCurrentMode()),
+    forkJoin([
+      this.loadAllInvoices(paysId, supplierId, 'APPROVED'),
+      this.loadAllInvoices(paysId, supplierId, 'PARTIALLY_PAID'),
+    ]).subscribe({
+      next: ([approved, partial]) => this.reglementModal.open(
+        { editing: null, payableInvoices: [...partial, ...approved].filter(canReglementInvoice), paysId },
+        () => this.reloadCurrentMode()),
       error: () => this.reglementModal.open(
         { editing: null, payableInvoices: [], paysId }, () => this.reloadCurrentMode()),
     });
+  }
+
+  /** Every invoice of the supplier in one status — all pages, so the picker never misses one. */
+  private loadAllInvoices(paysId: number, supplierId: number, status: string): Observable<CostInvoiceDto[]> {
+    const page = (n: number) =>
+      this.svc.getCostInvoices({ paysId, status, supplierId, page: n, size: SUPPLIER_MODE_PAGE_SIZE });
+    return page(0).pipe(switchMap(first => first.totalPages <= 1
+      ? of(first.content)
+      : forkJoin(Array.from({ length: first.totalPages - 1 }, (_, i) => page(i + 1))).pipe(
+          map(rest => [first, ...rest].flatMap(p => p.content)))));
   }
 
   /** List shortcut: the caller already has the exact invoice. */
@@ -1156,6 +1189,8 @@ export class CostLineDetailComponent implements OnInit {
           editing:               reglement,
           costInvoiceId:         reglement.costInvoiceId,
           expectedAmount:        inv ? invoicePayableAmount(inv) : null,
+          // This règlement may reach the remainder plus its own amount (the server checks too).
+          maxAmount:             inv ? (inv.amountRemaining ?? 0) + reglement.montantPaye : null,
           invoiceReference:      inv?.reference ?? null,
           supplierInvoiceNumber: inv?.supplierInvoiceNumber ?? null,
           currency:              inv?.currency ?? null,

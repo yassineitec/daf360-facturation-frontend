@@ -40,7 +40,7 @@ const URGENCY_RANK: Record<string, number> = { low: 0, normal: 1, urgent: 2 };
             <fact-table-action icon="visibility" [tooltip]="tips().view"
                                (action)="emit(row, 'view')" />
           }
-          @if (row['_kind'] === 'advance') {
+          @if (row['_kind'] === 'advance' || row['_kind'] === 'salary') {
             <fact-table-action icon="check_circle" [tooltip]="tips().approve"
                                (action)="emit(row, 'approve')" />
             <fact-table-action icon="block" variant="danger" [tooltip]="tips().reject"
@@ -126,6 +126,7 @@ export class ApprovalTableSectionComponent {
       priority: {
         label:   item.kind === 'cost' ? t(urgencyKey(item.level))
                : item.kind === 'advance' ? t(`FACTURATION.ADVANCES.STATUS.${item.advance!.status}`)
+               : item.kind === 'salary' ? t('COST.APPROVAL_QUEUE.SALARY_PENDING')
                : '—',
         options: { variant: URGENCY_BADGE_VARIANT[item.urgency], dot: true, size: 'sm' },
       } satisfies BadgeCell,

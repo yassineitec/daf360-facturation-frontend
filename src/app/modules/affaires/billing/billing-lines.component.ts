@@ -3,6 +3,7 @@ import { NgClass }                                             from '@angular/co
 import { FormsModule }                                        from '@angular/forms';
 import { BillingService, BillingLineDto }                     from './billing.service';
 import { UserStore }                                          from '../../../core/user.store';
+import { CurrencyContextService }                             from '../../../core/currency-context.service';
 import { DisplayCurrencyPipe }                               from '../../../shared/display-currency.pipe';
 import { currencyFractionDigits }                             from '../../../shared/currency-decimals.util';
 
@@ -134,7 +135,7 @@ const STATUT_CFG: Record<string, { label: string; bg: string; color: string; bor
 })
 export class BillingLinesComponent implements OnInit {
   @Input({ required: true }) affaireId!: number;
-  @Input() devise = 'EUR';
+  @Input() devise = inject(CurrencyContextService).defaultCurrency() ?? 'EUR';
 
   private readonly svc   = inject(BillingService);
   private readonly store = inject(UserStore);

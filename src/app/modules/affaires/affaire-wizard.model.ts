@@ -91,6 +91,8 @@ export interface AffaireDraftState {
   doc360ErpReference?: string;
   doc360ServerReference?: string;
   doc360ClientName?: string;
+  /** Step 1 choice (V123) — DOC360 | INTERCO, unset when the step was skipped. */
+  origin?: 'DOC360' | 'INTERCO' | null;
 
   // Step 2 — Informations générales
   clientId?: number;
@@ -219,6 +221,7 @@ export function mapDraftToState(dto: any, clientName: string, clientKycDone: boo
     doc360Ref:                   dto.doc360Ref,
     erpReference:                dto.erpReference ?? null,
     doc360ServerReference:       dto.doc360Ref,
+    origin:                      dto.origin ?? null,
     notes:                       dto.notes,
     billingMode:                 dto.billingMode,
     billingModeLocked:           dto.billingModeLocked ?? false,

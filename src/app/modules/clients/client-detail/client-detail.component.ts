@@ -24,6 +24,7 @@ import { ClientContactService }   from '../contacts/client-contact.service';
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { ToastService } from '../../../core/toast.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { ExportService } from '../../../core/export.service';
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
@@ -93,6 +94,7 @@ export class ClientDetailComponent implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly contactSvc = inject(ClientContactService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly toast      = inject(ToastService);
   private readonly exportSvc  = inject(ExportService);
 
@@ -168,7 +170,8 @@ export class ClientDetailComponent implements OnInit {
 
   // ═══ En-tête ══════════════════════════════════════════════════════════════
 
-  private readonly devise = computed(() => this.client()?.defaultCurrency || 'TND');
+  private readonly devise = computed(() =>
+    this.client()?.defaultCurrency || this.currencyContext.defaultCurrency() || 'EUR');
 
   readonly headerSubtitle = computed(() => {
     const c = this.client();

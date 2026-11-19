@@ -7,8 +7,9 @@ import type { SelectOption } from '@khalilrebhiitec/daf360';
 
 import { AffaireService } from '../affaire.service';
 import { FactListService } from '../../../core/fact-list.service';
-import { CreateTsRequest, TsDto } from '../affaire.model';
+import { CreateTsRequest, PaysRefDto, TsDto } from '../affaire.model';
 import { ListValueDto } from '../../cost/cost.model';
+import { SUPPORTED_CURRENCIES } from '../../../core/currency-display.service';
 
 /**
  * Corps du formulaire « Nouveau travail supplémentaire ».
@@ -77,9 +78,11 @@ import { ListValueDto } from '../../cost/cost.model';
 })
 export class TsFormComponent implements OnInit {
   affaireId = input.required<number>();
-  /** Devise par défaut : celle de l'affaire, pas une constante. */
-  defaultDevise = input<string>('TND');
-  /** Pays de l'affaire : la liste `CURRENCY` de Finance → Admin est paramétrée par pays. */
+  /** Devise par défaut : celle de l'affaire, transmise par l'appelant. Si absente, on
+   *  retombe sur la devise par défaut du pays (`pays_ref.devise`) plutôt qu'une constante. */
+  defaultDevise = input<string>('');
+  /** Pays de l'affaire : la liste `CURRENCY` de Finance → Admin est paramétrée par pays,
+   *  et sert aussi à résoudre la devise par défaut quand `defaultDevise` n'est pas fournie. */
   paysId = input<number | null>(null);
   /** TS à modifier : le formulaire est prérempli et `submit()` fait un PUT au lieu d'un POST. */
   ts = input<TsDto | null>(null);
@@ -93,7 +96,7 @@ export class TsFormComponent implements OnInit {
 
   readonly intitule         = signal('');
   readonly montantEstime    = signal<number | null>(null);
-  readonly devise           = signal('TND');
+  readonly devise           = signal('EUR');
   readonly perimetre        = signal('');
   readonly impactBudgetaire = signal('');
   readonly description      = signal('');
@@ -102,14 +105,28 @@ export class TsFormComponent implements OnInit {
   readonly serverError = signal<string | null>(null);
 
   private readonly currencies = signal<ListValueDto[]>([]);
+  private readonly pays       = signal<PaysRefDto[]>([]);
+
+  /** `defaultDevise`, ou la devise par défaut du pays de l'affaire (`pays_ref.devise`) quand
+   *  elle n'est pas fournie — jamais une constante codée en dur (ex. Égypte = USD, pas TND). */
+  private resolvedDefaultDevise(): string {
+    const explicit = this.defaultDevise();
+    if (explicit) return explicit;
+    const p = this.pays().find(p => p.id === this.paysId());
+    return p?.devise || 'EUR';
+  }
 
   ngOnInit(): void {
-    this.devise.set(this.defaultDevise() || 'TND');
+    this.svc.getPays().subscribe(list => {
+      this.pays.set(list);
+      if (!this.ts()) this.devise.set(this.resolvedDefaultDevise());
+    });
+    this.devise.set(this.resolvedDefaultDevise());
     const ts = this.ts();
     if (ts) {
       this.intitule.set(ts.intitule ?? '');
       this.montantEstime.set(ts.montantEstime ?? null);
-      this.devise.set(ts.devise || this.defaultDevise() || 'TND');
+      this.devise.set(ts.devise || this.resolvedDefaultDevise());
       this.perimetre.set(ts.perimetre ?? '');
       this.impactBudgetaire.set(ts.impactBudgetaire ?? '');
       this.description.set(ts.description ?? '');
@@ -155,7 +172,7 @@ export class TsFormComponent implements OnInit {
   readonly currencyOptions = computed<SelectOption[]>(() => {
     const list = this.currencies();
     if (list.length) return list.map(c => ({ value: c.code, label: c.code }));
-    return ['TND', 'EUR', 'USD', 'MAD', 'DZD'].map(c => ({ value: c, label: c }));
+    return SUPPORTED_CURRENCIES.map(c => ({ value: c, label: c }));
   });
 
   readonly currencyConfig = computed(() => {

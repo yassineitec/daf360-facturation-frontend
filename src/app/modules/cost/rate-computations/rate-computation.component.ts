@@ -15,6 +15,7 @@ import {
 } from '../cost.model';
 import { PaysRefDto, UserRefDto } from '../../affaires/affaire.model';
 import { AffaireService } from '../../affaires/affaire.service';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { ExportService } from '../../../core/export.service';
 
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
@@ -49,6 +50,7 @@ export class RateComputationComponent implements OnInit {
   private readonly clientSvc  = inject(ClientService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly translate  = inject(TranslateService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly exportSvc  = inject(ExportService);
 
   /** Export Excel en cours — grise le bouton et ignore un double clic. */
@@ -153,7 +155,7 @@ export class RateComputationComponent implements OnInit {
   /** Devise du `RateComputation` actuellement déplié -- les lignes n'ont pas leur propre
    *  devise, elles héritent de celle de l'en-tête. */
   readonly expandedCurrency = computed(() =>
-    this.computations().find(rc => rc.id === this.expandedId())?.currency ?? 'EUR');
+    this.computations().find(rc => rc.id === this.expandedId())?.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR');
 
   readonly currentYear = new Date().getFullYear();
 
@@ -166,7 +168,7 @@ export class RateComputationComponent implements OnInit {
     targetMarginPct: 10.0,
     intercoMarginPct:  5.0,
     externalMarginPct: 10.0,
-    currency:        'EUR',
+    currency:        this.currencyContext.defaultCurrency() ?? 'EUR',
   };
 
   readonly STATUS_CONFIG = RATE_COMPUTATION_STATUS_CONFIG;
@@ -273,7 +275,7 @@ export class RateComputationComponent implements OnInit {
       targetMarginPct: this.newRecord.targetMarginPct / 100,
       intercoMarginPct:  this.newRecord.intercoMarginPct  / 100,
       externalMarginPct: this.newRecord.externalMarginPct / 100,
-      currency:        this.newRecord.currency || 'EUR',
+      currency:        this.newRecord.currency || this.currencyContext.defaultCurrency() || 'EUR',
     };
     this.svc.createRateComputation(req).subscribe({
       next: created => {
@@ -285,7 +287,7 @@ export class RateComputationComponent implements OnInit {
           periodQuarter: null, periodMonth: null,
           hqCostPct: 5.0, targetMarginPct: 10.0,
           intercoMarginPct: 5.0, externalMarginPct: 10.0,
-          currency: 'EUR',
+          currency: this.currencyContext.defaultCurrency() ?? 'EUR',
         };
       },
       error: err => {

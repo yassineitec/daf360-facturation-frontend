@@ -26,6 +26,7 @@ import { RemindersPanelComponent } from './reminders-panel.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { UserStore } from '../../../core/user.store';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { InvoiceTypeLabels } from '../../../core/invoice-type-labels.service';
 import { EntityAuditLogDto } from '../../affaires/billing/billing.service';
 import { AffaireService } from '../../affaires/affaire.service';
@@ -104,6 +105,7 @@ export class InvoiceDetailComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly userStore = inject(UserStore);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly affSvc    = inject(AffaireService);
   private readonly typeLabels = inject(InvoiceTypeLabels);
 
@@ -329,7 +331,7 @@ export class InvoiceDetailComponent implements OnInit {
   readonly kpiTiles = computed<KpiTile[]>(() => {
     const inv = this.invoice();
     this.translate.currentLang();
-    const devise = inv?.devise ?? 'TND';
+    const devise = inv?.devise ?? this.currencyContext.defaultCurrency() ?? 'EUR';
     return [
       {
         label: 'INVOICING.DETAIL.KPI.BILLING_PROGRESS',

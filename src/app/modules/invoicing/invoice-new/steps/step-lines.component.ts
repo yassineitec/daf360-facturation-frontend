@@ -8,11 +8,12 @@ import {
   FormFieldComponent, FormFieldOptions, SelectComponent, SelectOption,
 } from '@khalilrebhiitec/daf360';
 import { PendingCarryForwardDto } from '../../invoice.model';
-import { StepAffaireValue } from './step-affaire.component';
+import { StepAffaireValue, isCombinedStepValue } from './step-affaire.component';
 import { InvoiceService } from '../../invoice.service';
 import { BillingService, ExpenseDto } from '../../../affaires/billing/billing.service';
 import { AffaireService } from '../../../affaires/affaire.service';
 import { FactListService } from '../../../../core/fact-list.service';
+import { CurrencyContextService } from '../../../../core/currency-context.service';
 import { ListValueDto } from '../../../cost/cost.model';
 import { enumLabel, humanise } from '../../../../shared/enum-labels';
 export interface StepLinesValue {
@@ -51,6 +52,10 @@ export interface StepLinesValue {
     deductionPct1?: number;
     deductionPct2?: number;
     deductionPct3?: number;
+    // Edit/amend only: the stored invoice line this one re-submits (InvoiceLine.id), seeded
+    // by invoice-new.component.ts and sent back untouched on every branch of next(). The
+    // backend pairs lines on it and refuses to null an existing line's avancement columns.
+    sourceLineId?: number;
   }[];
   // Période facturée — les heures récupérées en T&M, la période de génération du lot en
   // Livrable ; renseignée par le serveur à la génération dans les deux cas et simplement
@@ -81,24 +86,31 @@ export interface StepLinesValue {
   <div class="lines-header">
     <span class="section-title">{{ 'INVOICING.STEP_LINES.TITLE' | translate }}</span>
     <div class="lines-header-actions">
-      @if (!isCombined() && ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte())) {
+      @if (!readOnly() && !amountsLocked() && ((!isAv() && !isTm() && !isLivrable() && !isTsCarryForward()) || isAcompte())) {
         <button type="button" class="btn-add-line" (click)="addLine()">
           {{ 'INVOICING.STEP_LINES.ADD_LINE' | translate }}
         </button>
       }
-      @if (!isCombined() && (isAv() || isTm() || isLivrable())) {
+      @if (!readOnly() && !amountsLocked() && (isAv() || isTm() || isLivrable())) {
         <button type="button" class="btn-add-line btn-add-rmb" [disabled]="!categoriesLoaded()"
           (click)="toggleRmbPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_REMBOURSABLE' | translate }}
         </button>
       }
-      @if (!isCombined() && (isAv() || isTm() || isLivrable() || isTsCarryForward())) {
+      @if (!readOnly() && !amountsLocked() && (isAv() || isTm() || isLivrable() || isTsCarryForward())) {
         <button type="button" class="btn-add-line btn-add-rmb" (click)="toggleCarryForwardPicker()">
           {{ 'INVOICING.STEP_LINES.ADD_CARRY_FORWARD' | translate }}
         </button>
       }
     </div>
   </div>
+
+  @if (amountsLocked()) {
+    <div class="raf-alert raf-alert--block">
+      <span class="material-symbols-outlined">lock</span>
+      {{ 'INVOICING.STEP_LINES.AMOUNTS_LOCKED' | translate }}
+    </div>
+  }
 
   <div class="deduction-columns-bar">
     @for (col of deductionColumns(); track $index) {
@@ -112,7 +124,7 @@ export interface StepLinesValue {
         </span>
       }
     }
-    @if (!isCombined() && deductionColumns().includes(null)) {
+    @if (!readOnly() && deductionColumns().includes(null)) {
       <button type="button" class="btn-add-line btn-add-deduction" (click)="addDeductionColumn()">
         {{ 'INVOICING.STEP_LINES.ADD_DEDUCTION_COLUMN' | translate }}
       </button>
@@ -272,24 +284,37 @@ export interface StepLinesValue {
                      utilisateur, synchronisées entre elles par setNum() (montant <-> %, dans
                      les deux sens). Seul Budget affaire (le contractAmount réel, fixé une
                      fois par newLine()) et % déjà facturé (toujours 0, pas de facturation
-                     antérieure par construction) restent en lecture seule. -->
+                     antérieure par construction) restent en lecture seule -- comme les trois,
+                     une fois le budget de l'affaire entièrement facturé (amountsLocked()). -->
                 <td class="td-computed">{{ formatAmount(lg.get('budgetAffaire')!.value) }}</td>
                 <td class="td-computed">{{ formatPct(lg.get('pctFacture')!.value ?? 0) }}</td>
-                <td>
-                  <daf-form-field [options]="pctOptions"
-                    [value]="lg.get('pctAvancement')!.value"
-                    (valueChange)="setNum(lg, 'pctAvancement', $event)" />
-                </td>
-                <td>
-                  <daf-form-field [options]="pctOptions"
-                    [value]="lg.get('pctAFacturer')!.value"
-                    (valueChange)="setNum(lg, 'pctAFacturer', $event)" />
-                </td>
-                <td>
-                  <daf-form-field [options]="numOptions"
-                    [value]="lg.get('prixUnitaireHt')!.value"
-                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
-                </td>
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatPct(lg.get('pctAvancement')!.value ?? 0) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="pctOptions"
+                      [value]="lg.get('pctAvancement')!.value"
+                      (valueChange)="setNum(lg, 'pctAvancement', $event)" />
+                  </td>
+                }
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatPct(lg.get('pctAFacturer')!.value ?? 0) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="pctOptions"
+                      [value]="lg.get('pctAFacturer')!.value"
+                      (valueChange)="setNum(lg, 'pctAFacturer', $event)" />
+                  </td>
+                }
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
               } @else if (isAv()) {
                 <!-- Colonnes d'avancement : figées côté serveur à la génération de la facture depuis
                      un WIP validé (DFValidationService.buildInvoiceLine, branche FORFAIT) — cette étape
@@ -302,7 +327,7 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ avPctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ avPctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ avPctAFacturerLabel(i) }}</td>
-                @if (avHasAvancement(i) && !amendMode()) {
+                @if (amountsLocked() || (avHasAvancement(i) && !amendMode())) {
                   <td class="td-computed">{{ formatAmount(lineHtAv(i)) }}</td>
                 } @else {
                   <td>
@@ -317,16 +342,21 @@ export interface StepLinesValue {
                      Budget affaire vaut donc toujours le Montant HT lui-même et les trois
                      pourcentages sont fixés à 100 % (cf. DFValidationService.buildInvoiceLine
                      côté backend, branche REGIE). Seul le montant (Montant HT) est
-                     saisissable. -->
+                     saisissable -- sauf une fois le budget de l'affaire entièrement facturé
+                     (amountsLocked()), où lui aussi repasse en lecture seule. -->
                 <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
                 <td class="td-computed">{{ formatPct(100) }}</td>
-                <td>
-                  <daf-form-field [options]="numOptions"
-                    [value]="lg.get('prixUnitaireHt')!.value"
-                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
-                </td>
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
               } @else if (isTsCarryForward()) {
                 <!-- TS WIP : les quatre colonnes d'avancement portent de VRAIES valeurs,
                      calculées une seule fois côté serveur à la validation DF d'une
@@ -341,7 +371,7 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ tsPctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ tsPctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ tsPctAFacturerLabel(i) }}</td>
-                @if (tsHasAvancement(i) && !amendMode()) {
+                @if (amountsLocked() || (tsHasAvancement(i) && !amendMode())) {
                   <td class="td-computed">{{ formatAmount(lineHtTm(i)) }}</td>
                 } @else {
                   <td>
@@ -380,7 +410,7 @@ export interface StepLinesValue {
                 <td class="td-computed">{{ livrablePctFactureLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctAvancementLabel(i) }}</td>
                 <td class="td-computed">{{ livrablePctAFacturerLabel(i) }}</td>
-                @if (livrableHasAvancement(i) && !amendMode()) {
+                @if (amountsLocked() || (livrableHasAvancement(i) && !amendMode())) {
                   <td class="td-computed">{{ formatAmount(lineHtLivrable(i)) }}</td>
                 } @else {
                   <td>
@@ -389,6 +419,9 @@ export interface StepLinesValue {
                       (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
                   </td>
                 }
+              } @else if (amountsLocked()) {
+                <td class="td-computed">{{ lg.get('quantite')!.value }}</td>
+                <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
               } @else {
                 <td>
                   <daf-form-field [options]="numOptions"
@@ -448,7 +481,7 @@ export interface StepLinesValue {
                       (valueChange)="setNum(lg, 'deductionPct' + ($index + 1), $event)" />
                     @if (lg.get('deductionPct' + ($index + 1))?.value) {
                       <span class="deduction-amount-preview">
-                        -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, currentLineHt(i))) }}
+                        -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, currentLineTtc(i))) }}
                       </span>
                     }
                   </td>
@@ -457,7 +490,7 @@ export interface StepLinesValue {
 
               <td>
                 <button type="button" class="remove-line-btn" title="✕" (click)="removeLine(i)"
-                  [disabled]="isCombined()">✕</button>
+                  [disabled]="readOnly()">✕</button>
               </td>
             </tr>
           }
@@ -517,11 +550,15 @@ export interface StepLinesValue {
                     [value]="lg.get('description')!.value"
                     (valueChange)="setText(lg, 'description', $event)" />
                 </td>
-                <td>
-                  <daf-form-field [options]="numOptions"
-                    [value]="lg.get('prixUnitaireHt')!.value"
-                    (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
-                </td>
+                @if (amountsLocked()) {
+                  <td class="td-computed">{{ formatAmount(lg.get('prixUnitaireHt')!.value) }}</td>
+                } @else {
+                  <td>
+                    <daf-form-field [options]="numOptions"
+                      [value]="lg.get('prixUnitaireHt')!.value"
+                      (valueChange)="setNum(lg, 'prixUnitaireHt', $event)" />
+                  </td>
+                }
                 <td class="td-vat">
                   <daf-select
                     [options]="vatRateOptions()"
@@ -538,7 +575,7 @@ export interface StepLinesValue {
                         (valueChange)="setNum(lg, 'deductionPct' + ($index + 1), $event)" />
                       @if (lg.get('deductionPct' + ($index + 1))?.value) {
                         <span class="deduction-amount-preview">
-                          -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, lineHtExpense(i))) }}
+                          -{{ formatAmount(lineDeductionAmount($any(lg), $index + 1, lineTtcExpense(i))) }}
                         </span>
                       }
                     </td>
@@ -589,6 +626,7 @@ export class StepLinesComponent {
   private readonly billingSvc = inject(BillingService);
   private readonly affSvc    = inject(AffaireService);
   private readonly listSvc   = inject(FactListService);
+  private readonly currencyContext = inject(CurrencyContextService);
   private readonly translate = inject(TranslateService);
 
   showActions = input<boolean>(true);
@@ -722,13 +760,44 @@ export class StepLinesComponent {
   readonly isAcompte = computed(() => this.affaireData().invoiceType === 'ACOMPTE');
 
   /** True for a combined (multi-affaire) invoice -- see step-affaire.component.ts's
-   * isCombinedInvoice(). Read-only in this phase: no add/edit controls, next() just
-   * passes the already-correct seeded lines through unchanged. Detected via a null
-   * affaireId (the real, universal signal -- see DFValidationService), NOT
-   * billingMode === 'MIXED': a combined invoice whose lines all share the same mode
-   * (e.g. two FORFAIT affaires) keeps that single mode as its billingMode and only
-   * gets literal "MIXED" when the combined lines actually span different modes. */
-  readonly isCombined = computed(() => this.affaireData().affaireId == null);
+   * isCombinedInvoice(). Detected via a null affaireId (the real, universal signal --
+   * see DFValidationService), NOT billingMode === 'MIXED': a combined invoice whose
+   * lines all share the same mode (e.g. two FORFAIT affaires) keeps that single mode
+   * as its billingMode and only gets literal "MIXED" when the combined lines actually
+   * span different modes. See readOnly() below for which of these can still add/edit
+   * lines. Since 2026-11-11 a same-affaire combined invoice carries a real affaireId, so the
+   * explicit combined flag is read too (isCombinedStepValue) -- without it a same-affaire
+   * MIXED invoice matched no branch of next() and lost its avancement columns on save. */
+  readonly isCombined = computed(() => isCombinedStepValue(this.affaireData()));
+
+  /** Mirrors step-affaire.component.ts's isSameAffaireCombined() exactly -- true only for a
+   * combined invoice that's actually ONE affaire (several billing modes merged, e.g. a
+   * FORFAIT line + a TS line from the same affaire), not several distinct ones. There's
+   * exactly one unambiguous affaire to attach a newly-added reimbursable/carry-forward/
+   * deduction-column line to, so readOnly() below lets this case use every normal control. */
+  readonly isSameAffaireCombined = computed(() => {
+    const count = this.affaireData().combinedAffaireCount;
+    return this.isCombined() && count != null && count > 0 && count <= 1;
+  });
+
+  /** Gates every add/edit/remove control below. A genuinely multi-affaire combined invoice
+   * stays fully read-only (next() just passes the already-correct seeded lines through
+   * unchanged) -- a newly-added line would have no single affaire to belong to. A
+   * same-affaire combined invoice behaves like an ordinary invoice instead: see
+   * combinedLineMeta()'s fallback in next() for how a line added here gets its
+   * affaireId/billingMode. */
+  readonly readOnly = computed(() => this.isCombined() && !this.isSameAffaireCombined());
+
+  /** True once the affaire's budget is 100% invoiced (step-affaire.component.ts's rafBlocked(),
+   * threaded through via StepAffaireValue.budgetFullyInvoiced -- see its own doc comment).
+   * Unlike readOnly() above, this never blocks reopening the invoice or editing dates/notes/
+   * conditions -- it only locks the amount-DETERMINING fields on every line (quantité, prix
+   * unitaire, and each mode's equivalent) read-only, and hides the add-line/add-reimbursable/
+   * add-carry-forward/add-deduction-column actions (each would add MORE invoiced amount).
+   * Removing a line stays allowed: that only ever reduces the total, never breaches budget.
+   * Always false for any combined invoice (budgetFullyInvoiced is never set there -- no
+   * single affaire's RAF is fetched for one, see StepAffaireValue). */
+  readonly amountsLocked = computed(() => this.affaireData().budgetFullyInvoiced === true);
 
   /** affaireId -> "REF — Intitulé" for the Affaire column, resolved once per distinct
    * affaireId found among the seeded lines (see seedFromInitialLines()). Empty until
@@ -755,7 +824,7 @@ export class StepLinesComponent {
   /** Read-only combined-invoice line data, captured once from seedFromInitialLines() --
    * index-aligned with linesArray.controls for a combined invoice specifically (never
    * populated for any other mode). */
-  readonly combinedLineMeta = signal<{ affaireId?: number; billingMode?: string }[]>([]);
+  readonly combinedLineMeta = signal<{ affaireId?: number; billingMode?: string; tsId?: number }[]>([]);
 
   private readonly initialPeriodFrom = signal<string | null>(null);
   private readonly initialPeriodTo   = signal<string | null>(null);
@@ -983,6 +1052,9 @@ export class StepLinesComponent {
           tauxTva:         l.vatRatePct,
           sourceExpenseId: l.sourceExpenseId,
           sourceCarryForwards: l.sourceCarryForwards ?? [],
+          lineId:          l.sourceLineId ?? null,
+          lineAffaireId:   l.affaireId    ?? null,
+          lineBillingMode: l.billingMode  ?? null,
           deductionPct1:   l.deductionPct1 ?? null,
           deductionPct2:   l.deductionPct2 ?? null,
           deductionPct3:   l.deductionPct3 ?? null,
@@ -1006,6 +1078,9 @@ export class StepLinesComponent {
           sourceExpenseId: l.sourceExpenseId ?? null,
           sourceCarryForwards: l.sourceCarryForwards ?? [],
           tsId:            l.tsId ?? null,
+          lineId:          l.sourceLineId ?? null,
+          lineAffaireId:   l.affaireId    ?? null,
+          lineBillingMode: l.billingMode  ?? null,
           profileUserId:   l.profileUserId ?? null,
           deductionPct1:   l.deductionPct1 ?? null,
           deductionPct2:   l.deductionPct2 ?? null,
@@ -1017,7 +1092,8 @@ export class StepLinesComponent {
     if (this.linesArray.length === 0) this.linesArray.push(this.newLine());
 
     if (this.isCombined()) {
-      this.combinedLineMeta.set(initial.lines.map(l => ({ affaireId: l.affaireId, billingMode: l.billingMode })));
+      this.combinedLineMeta.set(initial.lines.map(l => ({
+        affaireId: l.affaireId, billingMode: l.billingMode, tsId: l.tsId })));
       this.resolveAffaireLabels(initial.lines.map(l => l.affaireId).filter((id): id is number => id != null));
     }
 
@@ -1083,24 +1159,25 @@ export class StepLinesComponent {
     this.linesVersion.update(v => v + 1);
   }
 
-  /** Montant HT de la ligne i dans le mode courant du tableau principal — sert uniquement
+  /** Montant TTC de la ligne i dans le mode courant du tableau principal — sert uniquement
    * à l'aperçu de déduction en direct (lineDeductionAmount), qui doit fonctionner de la
    * même façon quel que soit le mode de facturation actif, sans dupliquer la cellule de
    * déduction une fois par branche @if (isAv()/isTm()/isLivrable()/standard) comme le
-   * fait la colonne Total TTC juste au-dessus dans le gabarit. */
-  currentLineHt(i: number): number {
-    if (this.isAcompte()) return this.lineHtAv(i);
-    if (this.isAv()) return this.lineHtAv(i);
-    if (this.isTm() || this.isTsCarryForward()) return this.lineHtTm(i);
-    if (this.isLivrable()) return this.lineHtLivrable(i);
-    return this.lineHt(i);
+   * fait la colonne Total TTC juste au-dessus dans le gabarit. Les déductions se calculent
+   * sur le TTC (pas le HT) -- même assiette que net_payable_local côté serveur. */
+  currentLineTtc(i: number): number {
+    if (this.isAcompte()) return this.lineTtcAv(i);
+    if (this.isAv()) return this.lineTtcAv(i);
+    if (this.isTm() || this.isTsCarryForward()) return this.lineTtcTm(i);
+    if (this.isLivrable()) return this.lineTtcLivrable(i);
+    return this.lineTtc(i);
   }
 
   /** Montant déduit en direct pour l'affichage (même patron que lineHt()/lineTtc() pour la
-   * TVA) — `lineHt` est le montant HT déjà calculé pour cette ligne dans le mode courant. */
-  lineDeductionAmount(group: FormGroup, columnPosition: number, lineHt: number): number {
+   * TVA) — `lineTtc` est le montant TTC déjà calculé pour cette ligne dans le mode courant. */
+  lineDeductionAmount(group: FormGroup, columnPosition: number, lineTtc: number): number {
     const pct = group.get(`deductionPct${columnPosition}`)?.value;
-    return pct ? lineHt * (pct / 100) : 0;
+    return pct ? lineTtc * (pct / 100) : 0;
   }
 
   /** Safe read of the required `affaireData` input -- returns `null` instead of throwing
@@ -1151,6 +1228,14 @@ export class StepLinesComponent {
       // savoir à quel TS une ligne TS appartient déjà, et éviter de fusionner les reliquats
       // de deux TS différents.
       tsId:             [null as number | null],
+      // Identité de la ligne enregistrée (édition/amendement uniquement), jamais affichée :
+      // id de la ligne stockée + affaire/mode qui la possèdent. Portée par la ligne
+      // elle-même plutôt qu'alignée par index (combinedLineMeta), pour qu'un réordonnancement
+      // ou le tri lignes/remboursables ne la décale jamais. Réémise par next() dans TOUTES
+      // les branches -- le backend s'en sert pour ne jamais effacer l'avancement stocké.
+      lineId:           [null as number | null],
+      lineAffaireId:    [null as number | null],
+      lineBillingMode:  [null as string | null],
       profileUserId:    [null as number | null],
       // Toujours créés, que des colonnes de déduction soient actives ou non sur la
       // facture au moment où cette ligne est créée — un contrôle inutilisé ne coûte rien
@@ -1269,6 +1354,10 @@ export class StepLinesComponent {
       tauxTva:          [0],
       sourceExpenseId:  [null as number | null],
       sourceCarryForwards: [[] as { sourceBillingLineId: number; amount: number }[]],
+      // Même identité cachée que newLine() -- voir son commentaire.
+      lineId:           [null as number | null],
+      lineAffaireId:    [null as number | null],
+      lineBillingMode:  [null as string | null],
       deductionPct1:    [null as number | null],
       deductionPct2:    [null as number | null],
       deductionPct3:    [null as number | null],
@@ -1686,19 +1775,40 @@ export class StepLinesComponent {
       deductionPct2: l.deductionPct2 ?? undefined,
       deductionPct3: l.deductionPct3 ?? undefined,
     });
+    // Identité de la ligne enregistrée (cf. contrôles cachés lineId/lineAffaireId/
+    // lineBillingMode de newLine()), réémise par TOUTES les branches ci-dessous : le backend
+    // apparie chaque ligne à sa version précédente par sourceLineId et refuse d'effacer son
+    // avancement stocké (InvoiceService.preserveLineContext). Une ligne neuve n'a rien.
+    type LineIdentityControls = {
+      lineId?: number | null; lineAffaireId?: number | null; lineBillingMode?: string | null;
+    };
+    const identity = (l: LineIdentityControls) => ({
+      sourceLineId: l.lineId ?? undefined,
+      ...(l.lineAffaireId   != null ? { affaireId:   l.lineAffaireId }   : {}),
+      ...(l.lineBillingMode != null ? { billingMode: l.lineBillingMode } : {}),
+    });
 
     if (this.isCombined()) {
-      // Read-only: re-emit exactly what was seeded, including each line's own
-      // affaireId/billingMode so the backend's existing matching logic sees real,
-      // stable per-line values -- see combinedLineMeta() above.
+      // Re-emit each originally-seeded line's own affaireId/billingMode unchanged so the
+      // backend's existing matching logic sees real, stable per-line values -- see
+      // combinedLineMeta() above. A line added here (readOnly() lets this happen only for
+      // isSameAffaireCombined()) has no meta entry of its own -- meta[0] is always that
+      // one shared affaire/mode in that case, genuinely ambiguous (and so unreachable)
+      // otherwise.
+      // Each row's own seeded identity first (lineAffaireId/lineBillingMode, carried on the
+      // row itself so it can't drift by index), then the invoice's first seeded line as the
+      // shared fallback for a row added here. tsId, carry-forward and expense sources are
+      // re-emitted too -- they used to be dropped here, so a TS line lost which TS it bills
+      // on the first save.
       const meta = this.combinedLineMeta();
-      const combinedLines = (this.linesArray.value as {
+      const combinedLines = (this.linesArray.value as ({
         description: string; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
-        prixUnitaireHt: number;
+        prixUnitaireHt: number; tsId: number | null; sourceExpenseId: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map((l, i) => ({
+      } & LineIdentityControls)[]).map(l => ({
         description:   l.description,
         quantity:      1,
         unitRate:      l.prixUnitaireHt,
@@ -1707,11 +1817,38 @@ export class StepLinesComponent {
         pctFacture:    l.pctFacture    ?? undefined,
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
-        affaireId:     meta[i]?.affaireId,
-        billingMode:   meta[i]?.billingMode,
+        tsId:          l.tsId ?? undefined,
+        sourceExpenseId: l.sourceExpenseId ?? undefined,
+        sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...identity(l),
+        affaireId:     l.lineAffaireId   ?? meta[0]?.affaireId,
+        billingMode:   l.lineBillingMode ?? meta[0]?.billingMode,
         ...dedFields(l),
       }));
-      this.nextStep.emit({ lines: combinedLines, deductionColumns });
+
+      // Reimbursable expenses picked via "Ajouter un remboursable" (readOnly() lets this
+      // happen only for isSameAffaireCombined()) live in the same separate expenseLinesArray
+      // as a normal AV invoice's own -- see the isAv() branch below. No per-line meta of
+      // their own (never part of the original seeded set), so they always take the one
+      // shared affaire/mode directly.
+      const combinedExpenseLines = (this.expenseLinesArray.value as ({
+        description: string; prixUnitaireHt: number; tauxTva: number; sourceExpenseId: number | null;
+        sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
+        deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
+      } & LineIdentityControls)[]).map(l => ({
+        description:     l.description,
+        quantity:        1,
+        unitRate:        l.prixUnitaireHt,
+        vatRatePct:      l.tauxTva,
+        sourceExpenseId: l.sourceExpenseId ?? undefined,
+        sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...identity(l),
+        affaireId:       l.lineAffaireId   ?? meta[0]?.affaireId,
+        billingMode:     l.lineBillingMode ?? meta[0]?.billingMode,
+        ...dedFields(l),
+      }));
+
+      this.nextStep.emit({ lines: [...combinedLines, ...combinedExpenseLines], deductionColumns });
     } else if (this.isAcompte()) {
       // ACOMPTE n'a pas de billingMode qui lui soit propre -- l'affaire porte FORFAIT/
       // RÉGIE/LIVRABLE/TS comme n'importe quelle autre, donc sans cette branche en premier
@@ -1719,12 +1856,12 @@ export class StepLinesComponent {
       // pourcentages à 100 % quoi que l'utilisateur ait saisi -- faux pour une avance,
       // qui est un VRAI pourcentage du budget (cf. setNum()/newLine() plus haut). Réémet
       // donc budgetAffaire/pctFacture/pctAvancement/pctAFacturer tels quels, comme AV.
-      const acompteLines = (this.linesArray.value as {
+      const acompteLines = (this.linesArray.value as ({
         description: string; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[])
+      } & LineIdentityControls)[])
         .map((l, i) => ({
           description:   l.description,
           quantity:      1,          // rétrocompat : quantity=1, unitRate=montantHt
@@ -1734,6 +1871,7 @@ export class StepLinesComponent {
           pctFacture:    l.pctFacture    ?? undefined,
           pctAvancement: l.pctAvancement ?? undefined,
           pctAFacturer:  l.pctAFacturer  ?? undefined,
+          ...identity(l),
           ...dedFields(l),
         }));
       this.nextStep.emit({ lines: acompteLines, deductionColumns });
@@ -1745,13 +1883,13 @@ export class StepLinesComponent {
       // main garde `pctAvancement=null` en permanence (pas de WIP à tracer) et utilise la
       // saisie directe du montant à la place — donc pas de validation "champ requis" ici,
       // contrairement à l'ancien comportement (cf. Livrable, qui n'en a pas non plus).
-      const avancementLines = (this.linesArray.value as {
+      const avancementLines = (this.linesArray.value as ({
         description: string; tauxTva: number; sourceExpenseId: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[])
+      } & LineIdentityControls)[])
         .map((l, i) => ({
           description:     l.description,
           quantity:        1,          // rétrocompat : quantity=1, unitRate=montantHt
@@ -1763,6 +1901,7 @@ export class StepLinesComponent {
           pctAFacturer:    l.pctAFacturer  ?? undefined,
           sourceExpenseId: l.sourceExpenseId ?? undefined,
           sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+          ...identity(l),
           ...dedFields(l),
         }));
 
@@ -1770,17 +1909,18 @@ export class StepLinesComponent {
       // d'avancement — le backend prend la branche "quantity × unitRate" (le calcul
       // AV ne s'applique que quand budgetAffaire ET pctAFacturer sont renseignés,
       // cf. InvoiceService.saveLines côté service).
-      const expenseLines = (this.expenseLinesArray.value as {
+      const expenseLines = (this.expenseLinesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number; sourceExpenseId: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map(l => ({
+      } & LineIdentityControls)[]).map(l => ({
         description:     l.description,
         quantity:        1,
         unitRate:        l.prixUnitaireHt,
         vatRatePct:      l.tauxTva,
         sourceExpenseId: l.sourceExpenseId ?? undefined,
         sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...identity(l),
         ...dedFields(l),
       }));
 
@@ -1789,11 +1929,11 @@ export class StepLinesComponent {
       // Les trois pourcentages sont toujours 100 % (une ligne T&M = la totalité du WIP
       // déjà calculé pour sa période) — Budget affaire égale toujours le montant saisi,
       // cf. template.
-      const tmLines = (this.linesArray.value as {
+      const tmLines = (this.linesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map(l => {
+      } & LineIdentityControls)[]).map(l => {
         const montant = l.prixUnitaireHt ?? 0;
         return {
           description:   l.description,
@@ -1805,6 +1945,7 @@ export class StepLinesComponent {
           pctAvancement: 100,
           pctAFacturer:  100,
           sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+          ...identity(l),
           ...dedFields(l),
         };
       });
@@ -1832,13 +1973,13 @@ export class StepLinesComponent {
       // budgetAffaire × pctAFacturer côté serveur alors que l'en-tête de la facture se
       // calcule, lui, en quantity × unitRate (cf. InvoiceService.computeSubtotal) — les
       // faire partir de la même valeur est ce qui garantit qu'ils concordent.
-      const livrableLines = (this.linesArray.value as {
+      const livrableLines = (this.linesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map((l, i) => ({
+      } & LineIdentityControls)[]).map((l, i) => ({
         description:   l.description,
         quantity:      1,          // rétrocompat : quantity=1, unitRate=montant
         unitRate:      this.lineHtLivrable(i),
@@ -1848,6 +1989,7 @@ export class StepLinesComponent {
         pctAvancement: l.pctAvancement ?? undefined,
         pctAFacturer:  l.pctAFacturer  ?? undefined,
         sourceCarryForwards: l.sourceCarryForwards ?? undefined,
+        ...identity(l),
         ...dedFields(l),
       }));
       this.nextStep.emit({
@@ -1866,14 +2008,14 @@ export class StepLinesComponent {
       // here exactly as-is, never recalculated, same principle as isAv() above. Carry
       // the period from the server-generated draft so it is preserved on re-save, same
       // as isTm() / isLivrable().
-      const tsLines = (this.linesArray.value as {
+      const tsLines = (this.linesArray.value as ({
         description: string; prixUnitaireHt: number; tauxTva: number;
         budgetAffaire: number | null; pctFacture: number | null;
         pctAvancement: number | null; pctAFacturer: number | null;
         sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
         tsId: number | null;
         deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-      }[]).map((l, i) => ({
+      } & LineIdentityControls)[]).map((l, i) => ({
         description:   l.description,
         quantity:      1,
         unitRate:      this.lineHtTm(i),
@@ -1884,6 +2026,7 @@ export class StepLinesComponent {
         pctAFacturer:  l.pctAFacturer  ?? undefined,
         sourceCarryForwards: l.sourceCarryForwards ?? undefined,
         tsId:          l.tsId ?? undefined,
+        ...identity(l),
         ...dedFields(l),
       }));
       this.nextStep.emit({
@@ -1893,13 +2036,21 @@ export class StepLinesComponent {
         deductionColumns,
       });
     } else {
+      // Branche standard (pas de colonnes d'avancement à l'écran) -- mais si une ligne
+      // chargée en porte (budgetAffaire seedé), elles sont réémises telles quelles plutôt
+      // que perdues : c'est exactement par ici qu'une facture combinée mono-affaire MIXED
+      // effaçait ses % avant le correctif du 2026-11-13. Ceinture et bretelles avec
+      // InvoiceService.preserveLineContext côté serveur.
       this.nextStep.emit({
-        lines: (this.linesArray.value as {
+        lines: (this.linesArray.value as ({
           description: string; quantite: number; prixUnitaireHt: number; tauxTva: number;
           sourceExpenseId: number | null; profileUserId: number | null;
           sourceCarryForwards: { sourceBillingLineId: number; amount: number }[] | null;
+          budgetAffaire: number | null; pctFacture: number | null;
+          pctAvancement: number | null; pctAFacturer: number | null;
+          tsId: number | null;
           deductionPct1?: number | null; deductionPct2?: number | null; deductionPct3?: number | null;
-        }[]).map(l => ({
+        } & LineIdentityControls)[]).map(l => ({
           description:     l.description,
           quantity:        l.quantite,
           unitRate:        l.prixUnitaireHt,
@@ -1907,6 +2058,14 @@ export class StepLinesComponent {
           sourceExpenseId: l.sourceExpenseId ?? undefined,
           sourceCarryForwards: l.sourceCarryForwards ?? undefined,
           profileUserId:   l.profileUserId ?? undefined,
+          ...(l.budgetAffaire != null ? {
+            budgetAffaire: l.budgetAffaire,
+            pctFacture:    l.pctFacture    ?? undefined,
+            pctAvancement: l.pctAvancement ?? undefined,
+            pctAFacturer:  l.pctAFacturer  ?? undefined,
+          } : {}),
+          tsId:            l.tsId ?? undefined,
+          ...identity(l),
           ...dedFields(l),
         })),
         periodFrom: null,
@@ -1920,7 +2079,7 @@ export class StepLinesComponent {
 
   formatAmount(v: number): string {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency: this.affaireData().currency ?? 'TND',
+      style: 'currency', currency: this.affaireData().currency ?? this.currencyContext.defaultCurrency() ?? 'EUR',
     }).format(v);
   }
 

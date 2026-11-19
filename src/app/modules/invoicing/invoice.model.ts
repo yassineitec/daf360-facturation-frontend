@@ -194,6 +194,9 @@ export interface InvoiceLineRequest {
   sourceCarryForwards?: { sourceBillingLineId: number; amount: number }[];
   // T&M — collaborateur associé à cette ligne, présent uniquement en mode T&M
   profileUserId?: number;
+  // Edit/amend only: id of the stored line this one re-submits (InvoiceLine.id). Lets the
+  // backend pair it exactly with its previous version and keep its avancement context.
+  sourceLineId?: number;
 }
 
 export interface CreateDraftRequest {

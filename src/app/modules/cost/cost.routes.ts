@@ -19,9 +19,23 @@ export const COST_ROUTES: Routes = [
   {
     path: 'approval',
     canActivate: [permissionGuard],
-    data: { permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST', 'FACT_APPROVE_SALARY_ADVANCE'] },
+    data: { permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST', 'FACT_APPROVE_SALARY_ADVANCE',
+                          'FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD'] },
     loadComponent: () =>
       import('./approval-queue/cost-approval-queue.component').then(m => m.CostApprovalQueueComponent),
+  },
+  /**
+   * « Avances sur salaire » (spec §4–6): every advance of the caller's scope, its terms, its
+   * debt contract. Any of the four advance codes opens it; each action is gated by its own
+   * code (payroll-service checks the same ones). Keep in step with finance-modules.ts.
+   */
+  {
+    path: 'salary-advances',
+    canActivate: [permissionGuard],
+    data: { permissions: ['FACT_APPROVE_SALARY_ADVANCE', 'FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD',
+                          'FACT_VIEW_SALARY_ADVANCES'] },
+    loadComponent: () =>
+      import('./salary-advances/salary-advance-list.component').then(m => m.SalaryAdvanceListComponent),
   },
   /**
    * Les ordres de mission chiffrés par RH, en attente de la décision finance.
@@ -104,8 +118,8 @@ export const COST_ROUTES: Routes = [
    * Read-only cost-line detail page. Distinct from `:id/edit` (the edit form) and
    * reached from the approval queue's "view details" action. Deliberately LAST in this
    * array: `:id` is a single-segment wildcard, and placing it earlier would greedily
-   * match the literal single-segment paths above it (`approval`, `missions`, `new`,
-   * `rate-computations`, `employee-costs`).
+   * match the literal single-segment paths above it (`approval`, `salary-advances`,
+   * `missions`, `new`, `rate-computations`, `employee-costs`).
    */
   {
     path: ':id',

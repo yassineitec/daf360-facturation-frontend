@@ -88,7 +88,9 @@ export class ApprovalCardsSectionComponent {
             ? t(urgencyKey(item.level))
             : item.kind === 'advance'
               ? t(`FACTURATION.ADVANCES.STATUS.${item.advance!.status}`)
-              : t('COST.APPROVAL_QUEUE.KIND_HIRING'),
+              : item.kind === 'salary'
+                ? t('COST.APPROVAL_QUEUE.SALARY_PENDING')
+                : t('COST.APPROVAL_QUEUE.KIND_HIRING'),
         },
         metricsColumns: 2,
         metrics: item.metrics,
@@ -108,8 +110,9 @@ export class ApprovalCardsSectionComponent {
       actions.push({ id: 'view', icon: 'visibility', tooltip: t('COST.APPROVAL_QUEUE.VIEW_DETAILS') });
     }
 
-    // Finance only decides; the payout and the deductions are payroll's.
-    if (item.kind === 'advance') {
+    // Finance only decides; the payout and the deductions are payroll's. A salary revision
+    // likewise: approving applies it in payroll.
+    if (item.kind === 'advance' || item.kind === 'salary') {
       actions.push({ id: 'approve', icon: 'check_circle', tooltip: t('COST.APPROVAL_QUEUE.APPROVE_REQUEST') });
       actions.push({ id: 'reject', icon: 'block', tooltip: t('COST.APPROVAL_QUEUE.REJECT'), variant: 'danger' });
       return actions;

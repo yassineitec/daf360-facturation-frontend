@@ -5,8 +5,10 @@ import {
 } from '@khalilrebhiitec/daf360';
 import { CostInvoiceDto } from '../cost.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { CurrencyContextService } from '../../../core/currency-context.service';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { tableTools } from '../../../shared/table-tools';
+import { UserStore } from '../../../core/user.store';
 import {
   APPROVAL_BADGE_VARIANT, STATUS_BADGE_VARIANT, approvalLevelKey, formatDate, statusKey,
 } from '../cost-display';
@@ -112,6 +114,8 @@ export class CostLinesTableSectionComponent {
    *  réinitialiser + choix des colonnes à droite de Filtres, au lieu d'au-dessus de la carte. */
   readonly table = viewChild(DataTableComponent);
   private readonly currency  = inject(DisplayCurrencyPipe);
+  private readonly currencyContext = inject(CurrencyContextService);
+  private readonly userStore = inject(UserStore);
 
   invoices     = input.required<CostInvoiceDto[]>();
   loading      = input(false);
@@ -182,6 +186,8 @@ export class CostLinesTableSectionComponent {
     const lang = this.translate.currentLang();
     const t  = (key: string) => this.translate.instant(key);
     const tp = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
+    // Submit / edit / règlement all hit FACT_MANAGE_COST endpoints: a view-only user gets none.
+    const manage = this.userStore.hasPermission('FACT_MANAGE_COST');
 
     return this.invoices().map(inv => {
       const levelKey = approvalLevelKey(inv.approvalLevelRequired);
@@ -196,8 +202,8 @@ export class CostLinesTableSectionComponent {
         date:          formatDate(inv.invoiceDate),
         lines:         String(inv.lines?.length ?? 0),
         category:      invoiceCategorySummary(inv, lang, tp),
-        net:           this.currency.transform(inv.netAmountLocal, inv.currency ?? 'TND'),
-        ttc:           this.currency.transform(inv.grossAmountLocal, inv.currency ?? 'TND'),
+        net:           this.currency.transform(inv.netAmountLocal, inv.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR'),
+        ttc:           this.currency.transform(inv.grossAmountLocal, inv.currency ?? this.currencyContext.defaultCurrency() ?? 'EUR'),
         status: {
           label:   t(statusKey(inv.status)),
           options: { variant: STATUS_BADGE_VARIANT[inv.status] ?? 'neutral', dot: true, size: 'sm' },
@@ -213,9 +219,9 @@ export class CostLinesTableSectionComponent {
         // Rendered by the projected cells above.
         _reference:    inv.reference ?? `#${inv.id}`,
         _supplier:     inv.supplierName ?? t('COST.LINES.NO_SUPPLIER_CARD'),
-        _canEdit:      canEditInvoice(inv),
-        _canSubmit:    canSubmitInvoice(inv),
-        _canReglement: canReglementInvoice(inv),
+        _canEdit:      manage && canEditInvoice(inv),
+        _canSubmit:    manage && canSubmitInvoice(inv),
+        _canReglement: manage && canReglementInvoice(inv),
         _raw:          inv,
       };
     });
