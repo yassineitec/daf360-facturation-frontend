@@ -375,6 +375,26 @@
             </daf-section-card>
           }
 
+          <!-- ══ Template : les lignes de la feuille « Template » du classeur, mêmes libellés,
+               mêmes signes, mêmes montants — mois du rapport et cumul annuel ══ -->
+          @if (activeTab() === 'template') {
+            <p class="text-sm text-neutral-500">{{ 'REPORTING.DETAIL.TEMPLATE.HINT' | translate }}</p>
+            <daf-data-table
+              [columns]="templateColumns()"
+              [rows]="templateTableRows()"
+              [config]="templateConfig()">
+              <ng-template dafCell="label" let-row>
+                <span [class.font-bold]="row['_strong']" [class.text-primary]="row['_total']">{{ row['label'] }}</span>
+              </ng-template>
+              <ng-template dafCell="month" let-row>
+                <span class="tabular-nums" [class.font-bold]="row['_strong']" [class.text-danger]="row['_negative']">{{ row['month'] }}</span>
+              </ng-template>
+              <ng-template dafCell="ytd" let-row>
+                <span class="tabular-nums" [class.font-bold]="row['_strong']" [class.text-danger]="row['_negativeYtd']">{{ row['ytd'] }}</span>
+              </ng-template>
+            </daf-data-table>
+          }
+
           <!-- ══ Récap P&L : 13 lignes du catalogue, réel / budget / écart ══ -->
           @if (activeTab() === 'recap') {
             <!-- Même barre que l'onglet TS de la fiche affaire : recherche + panneau de

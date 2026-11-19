@@ -6146,9 +6146,17 @@
       "TABS": {
         "ARIA": "P&L report sections",
         "OVERVIEW": "Overview",
+        "TEMPLATE": "Template (workbook)",
         "RECAP": "P&L recap",
         "COMMENTARIES": "Commentary",
         "TREASURY": "Treasury"
+      },
+      "TEMPLATE": {
+        "HINT": "The rows of the Excel workbook's \"Template\" sheet, with the same labels, signs and amounts: the report's month and the year to date.",
+        "LINE": "Template row",
+        "MONTH": "Month",
+        "YTD": "Year to date",
+        "LOAD_ERROR": "The Template rows could not be loaded."
       },
       "OVERVIEW": {
         "WATERFALL_TITLE": "From revenue to EBITDA",
