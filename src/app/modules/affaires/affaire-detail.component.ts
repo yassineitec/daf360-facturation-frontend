@@ -2796,7 +2796,8 @@ export class AffaireDetailComponent implements OnInit {
     }
     // Sous-traitance : les ordres ST de l'affaire, quel que soit le mode de facturation —
     // un sous-traitant peut intervenir sur n'importe quelle affaire.
-    tabs.push({ id: 'sous-traitance', label: t('AFFAIRES.DETAIL.TABS.SOUS_TRAITANCE') });
+    // Masqué en attendant les prochaines évolutions du module sous-traitance.
+    // tabs.push({ id: 'sous-traitance', label: t('AFFAIRES.DETAIL.TABS.SOUS_TRAITANCE') });
     tabs.push(
       { id: 'factures',  label: t('AFFAIRES.DETAIL.TABS.INVOICES'), count: this.invoices().length },
       { id: 'paiements', label: t('AFFAIRES.DETAIL.TABS.PAYMENTS'), count: this.payments().length },
