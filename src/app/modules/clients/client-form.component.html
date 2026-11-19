@@ -12,6 +12,19 @@
 
   <div class="flex flex-col gap-4">
 
+    <!-- Type de client : entité du groupe (inter-company) ou client externe (third party).
+         Le libellé est posé ici, aux classes de `daf-form-field` (petites majuscules grises) :
+         celui de `daf-radio-group` a un style à lui qui détonnait avec les autres champs. -->
+    <div class="flex flex-col gap-1.5" role="group" aria-labelledby="client-type-label">
+      <span id="client-type-label" class="text-[10px] font-semibold uppercase tracking-wider text-outline">
+        {{ 'CLIENTS.FORM.CLIENT_TYPE_LABEL' | translate }}<span class="text-danger ml-0.5">*</span>
+      </span>
+      <daf-radio-group
+        [options]="clientTypeOptions()"
+        [(selected)]="clientType"
+        [config]="clientTypeConfig()" />
+    </div>
+
     <div class="grid grid-cols-2 gap-4">
       <daf-form-field
         [value]="clientName()"

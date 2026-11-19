@@ -14,6 +14,7 @@ import { TableSort, sortParam } from '../../../shared/table-tools';
 import { AgingCardsSectionComponent } from './aging-cards-section.component';
 import { AgingTableSectionComponent } from './aging-table-section.component';
 import { PaymentsDashboardStateService } from './payments-dashboard-state.service';
+import { ExportService } from '../../../core/export.service';
 
 type ViewMode = 'grid' | 'list';
 
@@ -51,6 +52,10 @@ export class PaymentsDashboardComponent implements OnInit {
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly exportSvc = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
 
   stats  = signal<PaymentsDashboardStats | null>(null);
   error  = signal<string | null>(null);
@@ -333,6 +338,28 @@ export class PaymentsDashboardComponent implements OnInit {
     this.pageSize.set(size);
     this.currentPage.set(0);
     this.loadRows();
+  }
+
+  /**
+   * Export Excel de la balance âgée : mêmes filtres, recherche et tri que la liste, rejoués
+   * par le serveur sans pagination (toutes les créances, pas seulement la page affichée).
+   */
+  exportExcel(): void {
+    if (!this.totalElements()) return;
+    const range = this.filterDateRange() ?? [];
+    const d = new Date();
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.exportSvc.download(
+      this.exportSvc.aging({
+        affaireId:   toId(this.filterAffaireId()),
+        clientId:    toId(this.filterClientId()),
+        from:        toIsoDate(range[0]),
+        to:          toIsoDate(range[1]),
+        overdueOnly: this.filterOverdueOnly(),
+        search:      this.searchText().trim() || null,
+        sort:        sortParam(this.sort()),
+      }),
+      `${this.translate.instant('PAYMENTS.DASHBOARD.TITLE')}_${day}.xlsx`, this.exporting);
   }
 
   /**

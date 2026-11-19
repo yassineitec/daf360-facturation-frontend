@@ -93,6 +93,10 @@
       (viewChange)="viewMode.set($any($event))"
       [table]="tableSection()?.table() ?? null">
       <daf-button
+        [options]="{ variant: 'ghost', label: ('SUBCONTRACTING.OST.EXPORT_EXCEL' | translate), iconStart: 'download',
+                     disabled: !visibleOrdres().length, loading: exportingXlsx() }"
+        (onClick)="exportExcel()" />
+      <daf-button
         *appHasPermission="'FACT_MANAGE_ST'"
         [options]="{ variant: 'teal', label: 'SUBCONTRACTING.OST.NEW' | translate, iconStart: 'add' }"
         (onClick)="openCreateOst()" />

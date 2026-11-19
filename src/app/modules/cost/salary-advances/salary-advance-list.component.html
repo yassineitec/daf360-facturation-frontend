@@ -1,11 +1,16 @@
-<!-- /finance/cost/salary-advances — « Avances sur salaire » (spec §4–6). Same page shape as
-     the approval queues next door (UI-PLAYBOOK §1): header, KPI row, search toolbar, table.
-     No header icon (house rule). -->
-<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'FACTURATION.ADVANCES.PAGE_TITLE' | translate">
+<!-- Onglet « Avances sur salaire » (spec §4–6) de la page « Validation des dépenses »
+     (approval-hub.component.ts) : l'en-tête et les onglets appartiennent à la page.
+     KPI row, search toolbar, table. Même rythme vertical que daf-page (32px). -->
+<div class="flex flex-col gap-8">
 
-  <daf-page-header
-    [title]="'FACTURATION.ADVANCES.PAGE_TITLE' | translate"
-    [subtitle]="'FACTURATION.ADVANCES.PAGE_SUBTITLE' | translate" />
+  <!-- Bouton de l'onglet, affiché par la page dans son en-tête (à droite du titre).
+       Export : les avances affichées (recherche + filtres), avec leur échéancier. -->
+  <ng-template #pageActions>
+    <daf-button data-guide="advances-export"
+      [options]="{ variant: 'ghost', label: ('FACTURATION.ADVANCES.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !visible().length, loading: exporting() }"
+      (onClick)="exportExcel()" />
+  </ng-template>
 
   <section class="grid grid-cols-3 gap-2 sm:gap-6">
     <daf-metric-card
@@ -21,6 +26,8 @@
       [value]="stats().repaying"
       [options]="kpiRepaying" />
   </section>
+  <!-- Onglets de « Validation des dépenses », projetés par approval-hub.component.ts. -->
+  <ng-content select="[approvalTabs]" />
 
   <daf-search-toolbar
     [placeholder]="'FACTURATION.ADVANCES.SEARCH' | translate"
@@ -77,7 +84,7 @@
     </daf-data-table>
   }
 
-</daf-page>
+</div>
 
 <!-- ── Detail, projected by ModalService. ── -->
 <ng-template #detailTpl>

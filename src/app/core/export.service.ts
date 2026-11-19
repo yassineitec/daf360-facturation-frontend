@@ -92,6 +92,45 @@ export class ExportService {
     return this.post('/billing/audit/export.xlsx', { ids });
   }
 
+  // ── Recouvrement (/finance/recouvrement) ────────────────────────────────────────
+
+  /** Balance âgée, paginée côté serveur : filtres et tri envoyés, le serveur exporte toutes
+   *  les créances correspondantes — feuilles Créances + Synthèse. Entité = celle de
+   *  l'utilisateur, comme GET /payments/aging. */
+  aging(filter: {
+    affaireId: number | null; clientId: number | null; from: string | null; to: string | null;
+    overdueOnly: boolean; search: string | null; sort: string | null;
+  }): Observable<Blob> {
+    return this.post('/payments/aging/export.xlsx', filter);
+  }
+
+  /** Relevé bancaire sélectionné : ses transactions, le relevé et les non-rapprochés. */
+  reconciliation(importId: number): Observable<Blob> {
+    return this.post(`/bank-reconciliation/imports/${importId}/export.xlsx`, {});
+  }
+
+  /** Fiche de recouvrement d'une facture : identité, indicateurs, relances, encaissements. */
+  recouvrementDetail(invoiceId: number): Observable<Blob> {
+    return this.post(`/invoices/${invoiceId}/recouvrement/export.xlsx`, {});
+  }
+
+  // ── Sous-traitance (/finance/subcontracting) ────────────────────────────────────
+
+  /** Onglet Sous-traitants : ids affichés (ordre de l'écran) ; `paysId` en URL. */
+  sousTraitants(paysId: number, ids: number[]): Observable<Blob> {
+    return this.post('/sous-traitants/export.xlsx', { ids }, { paysId: String(paysId) });
+  }
+
+  /** Onglet Ordres ST : ordres affichés de l'affaire, leurs coûts et la synthèse. */
+  ordresSt(affaireId: number, ids: number[]): Observable<Blob> {
+    return this.post(`/affaires/${affaireId}/ordres-st/export.xlsx`, { ids });
+  }
+
+  /** Onglet Analyse des coûts : marge de l'affaire et ses ordres ST. */
+  margeSt(affaireId: number): Observable<Blob> {
+    return this.post(`/affaires/${affaireId}/marge/export.xlsx`, {});
+  }
+
   // ── Factures (/finance/invoicing) ───────────────────────────────────────────────
 
   /** Liste paginée côté serveur : on envoie ses filtres et son tri (pas d'ids), le serveur
@@ -133,7 +172,8 @@ export class ExportService {
    * tous les clients correspondants — feuilles Clients + Synthèse. */
   clients(filter: {
     search: string | null; isActive: boolean | null; isKycDone: boolean | null; sectorCode: string | null;
-    countryId: number | null; currency: string | null; hasActiveAffaires: boolean | null; sort: string | null;
+    countryId: number | null; currency: string | null; hasActiveAffaires: boolean | null;
+    clientType: string | null; sort: string | null;
   }): Observable<Blob> {
     return this.post('/clients/export.xlsx', filter);
   }
@@ -170,6 +210,13 @@ export class ExportService {
    *  rh-service (la facturation ne peut pas les relire), dans l'ordre de l'écran. */
   missions(missions: unknown[]): Observable<Blob> {
     return this.post('/cost/missions/export.xlsx', { missions });
+  }
+
+  /** Avances sur salaire /finance/cost/approval?tab=advances — les avances AFFICHÉES, telles
+   *  que reçues de payroll-service (la facturation ne peut pas les relire), dans l'ordre de
+   *  l'écran, avec leur échéancier. */
+  salaryAdvances(advances: unknown[]): Observable<Blob> {
+    return this.post('/cost/salary-advances/export.xlsx', { advances });
   }
 
   /** Barèmes de taux /finance/cost/rate-computations — tous les barèmes de l'entité et leurs

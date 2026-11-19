@@ -9,6 +9,7 @@ import { AffaireListItem } from '../../affaires/affaire.model';
 import { SubcontractingService } from '../subcontracting.service';
 import { MarginDto } from '../subcontracting.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { ExportService } from '../../../core/export.service';
 
 @Component({
   selector: 'app-couts-analyse-tab',
@@ -23,6 +24,18 @@ export class CoutsAnalyseTabComponent {
   private readonly svc        = inject(SubcontractingService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly translate  = inject(TranslateService);
+  private readonly exportSvc  = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
+
+  /** Export Excel de la marge de l'affaire sélectionnée et de ses ordres ST. */
+  exportExcel(): void {
+    const affaire = this.selectedAffaire();
+    if (!affaire || !this.margin()) return;
+    this.exportSvc.download(this.exportSvc.margeSt(affaire.id),
+      `Analyse_couts_${affaire.reference.replace(/[^\w.-]+/g, '_')}.xlsx`, this.exporting);
+  }
 
   searchQuery     = signal('');
   searchResults   = signal<AffaireListItem[]>([]);

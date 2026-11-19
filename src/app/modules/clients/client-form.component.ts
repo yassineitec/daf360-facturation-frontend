@@ -4,7 +4,7 @@ import {
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { of, switchMap } from 'rxjs';
 import { ClientService }        from './client.service';
-import { ClientDetailDto, CreateClientRequest } from './client.model';
+import { ClientDetailDto, ClientType, CreateClientRequest } from './client.model';
 import { PaysRefDto } from '../affaires/affaire.model';
 import { ContactEditorComponent } from './contacts/contact-editor.component';
 import { ClientContactService }   from './contacts/client-contact.service';
@@ -13,6 +13,7 @@ import { FactListService } from '../../core/fact-list.service';
 import { ListValueDto, localizedLabel } from '../cost/cost.model';
 import {
   ButtonComponent, FieldMessageComponent, FormFieldComponent, SelectComponent, SelectOption,
+  RadioGroupComponent, RadioGroupConfig, RadioOption,
 } from '@khalilrebhiitec/daf360';
 
 /** Liste configurable du secteur d'activité (V95) — Administration → Listes. */
@@ -24,6 +25,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   selector: 'app-client-form',
   imports: [
     FormFieldComponent, SelectComponent, ButtonComponent, FieldMessageComponent, TranslatePipe,
+    RadioGroupComponent,
     ContactEditorComponent,
   ],
   templateUrl: './client-form.component.html',
@@ -51,6 +53,8 @@ export class ClientFormComponent implements OnInit, OnChanges {
   readonly city             = signal('');
   readonly postalCode       = signal('');
   readonly website          = signal('');
+  /** Type de client : THIRD_PARTY par défaut (client externe). */
+  readonly clientType       = signal<string>('THIRD_PARTY');
   readonly paymentTermsDays = signal('30');
   readonly notes            = signal('');
 
@@ -112,6 +116,21 @@ export class ClientFormComponent implements OnInit, OnChanges {
   });
 
   // ── Select configs ─────────────────────────────────────────────────────────
+  readonly clientTypeOptions = computed<RadioOption[]>(() => {
+    this.translate.currentLang();
+    return [
+      { value: 'THIRD_PARTY',   label: this.translate.instant('CLIENTS.FORM.CLIENT_TYPE_THIRD_PARTY'),
+        hint: this.translate.instant('CLIENTS.FORM.CLIENT_TYPE_THIRD_PARTY_HINT') },
+      { value: 'INTER_COMPANY', label: this.translate.instant('CLIENTS.FORM.CLIENT_TYPE_INTER_COMPANY'),
+        hint: this.translate.instant('CLIENTS.FORM.CLIENT_TYPE_INTER_COMPANY_HINT') },
+    ];
+  });
+  readonly clientTypeConfig = computed<RadioGroupConfig>(() => {
+    this.translate.currentLang();
+    // Pas de `label` : il est posé dans le gabarit, au style des autres champs.
+    return { layout: 'horizontal' };
+  });
+
   readonly sectorSelectConfig = computed(() => {
     this.translate.currentLang();
     return {
@@ -286,6 +305,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
       this.city.set(c.city ?? '');
       this.postalCode.set(c.postalCode ?? '');
       this.website.set(c.website ?? '');
+      this.clientType.set(c.clientType ?? 'THIRD_PARTY');
       this.paymentTermsDays.set(c.paymentTermsDays != null ? String(c.paymentTermsDays) : '30');
       this.selectedCurrency.set(c.defaultCurrency ? [c.defaultCurrency] : []);
       this.notes.set(c.notes ?? '');
@@ -319,6 +339,7 @@ export class ClientFormComponent implements OnInit, OnChanges {
       city:             this.city().trim()            || null,
       postalCode:       this.postalCode().trim()      || null,
       website:          this.website().trim()         || null,
+      clientType:       this.clientType() as ClientType,
       paymentTermsDays: days !== '' ? Number(days) : null,
       defaultCurrency:  this.selectedCurrency()[0]   || null,
       notes:            this.notes().trim()           || null,

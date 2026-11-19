@@ -29,7 +29,7 @@ import { enumLabel } from '../../../shared/enum-labels';
 
       @if (loading()) {
         @for (i of skeletonSlots(); track i) {
-          <daf-skeleton variant="block" radius="xl" width="100%" height="248px" />
+          <daf-skeleton variant="block" radius="xl" width="100%" height="320px" />
         }
       } @else {
         @for (card of cards(); track card.id) {
@@ -158,15 +158,19 @@ export class AffairesCardsSectionComponent {
           statusLabel: t(`AFFAIRES.LIST.TABLE.STATUS.${a.statut}`),
         },
         metricsColumns: 2,
+        // Budget + les CINQ tuiles de la fiche (/finance/affaires/{id}?tab=overview), dans
+        // le même ordre et sous les mêmes libellés : Backlog, Total facturé, Total encaissé,
+        // WIP, Budget TS — mêmes formules que AffaireService#getKpis, calculées côté
+        // serveur dans listAffaires. Six indicateurs = grille 2×3 pleine, sans cellule seule.
+        // Le RAF RG12 (rafDisponible) reste servi pour le blocage de facturation, mais
+        // n'est pas affiché ici.
         metrics: [
           { label: t('AFFAIRES.LIST.TABLE.CARD.BUDGET_LABEL'), value: this.currency.transform(a.budgetPrevisionnel, this.deviseOf(a)) },
-          // Backlog, Facturé et WIP reprennent À L'IDENTIQUE les tuiles de la fiche
-          // (/finance/affaires/{id}?tab=overview) — mêmes formules que AffaireService#getKpis,
-          // calculées côté serveur dans listAffaires. Le RAF RG12 (rafDisponible) reste
-          // servi pour le blocage de facturation, mais n'est plus affiché ici.
-          { label: t('AFFAIRES.DETAIL.KPI.BACKLOG'),      value: this.currency.transform(a.backlog, this.deviseOf(a)) },
-          { label: t('AFFAIRES.LIST.TABLE.CARD.FACTURE'), value: this.currency.transform(a.totalFacture, this.deviseOf(a)) },
-          { label: t('AFFAIRES.LIST.TABLE.CARD.WIP'),     value: this.currency.transform(a.wip, this.deviseOf(a)) },
+          { label: t('AFFAIRES.DETAIL.KPI.BACKLOG'),  value: this.currency.transform(a.backlog, this.deviseOf(a)) },
+          { label: t('AFFAIRES.DETAIL.KPI.INVOICED'), value: this.currency.transform(a.totalFacture, this.deviseOf(a)) },
+          { label: t('AFFAIRES.DETAIL.KPI.CA'),       value: this.currency.transform(a.totalEncaisse, this.deviseOf(a)) },
+          { label: t('AFFAIRES.DETAIL.KPI.WIP'),      value: this.currency.transform(a.wip, this.deviseOf(a)) },
+          { label: t('AFFAIRES.WIP.KPI_TS'),          value: this.currency.transform(a.totalTs, this.deviseOf(a)) },
         ],
         viewLabel: t('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
       } satisfies EntityCardOptions,

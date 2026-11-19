@@ -1,20 +1,19 @@
-<daf-page [loading]="firstLoad()" [kpis]="2" [loadingLabel]="'COST.APPROVAL_QUEUE.TITLE' | translate">
+<!-- Onglet « Dépenses » de la page « Validation des dépenses » (approval-hub.component.ts) :
+     l'en-tête et les onglets appartiennent à la page, ce panneau ne porte que son contenu.
+     Même rythme vertical que daf-page (32px). -->
+<div class="flex flex-col gap-8">
 
-  <daf-page-header
-    [title]="'COST.APPROVAL_QUEUE.TITLE' | translate"
-    [subtitle]="'COST.APPROVAL_QUEUE.SUBTITLE' | translate">
-    <ng-container pageActions>
-      <!-- Les éléments affichés (recherche + filtres), les trois files confondues. -->
-      <daf-button data-guide="cost-approval-export"
-        [options]="{ variant: 'ghost', label: ('COST.APPROVAL_QUEUE.EXPORT_EXCEL' | translate), iconStart: 'download',
-                     disabled: !visibleItems().length, loading: exporting() }"
-        (onClick)="exportExcel()" />
-      <daf-button data-guide="cost-approval-new"
-        [options]="{ variant: 'teal', label: 'COST.APPROVAL_QUEUE.FAB' | translate, iconStart: 'add' }"
-        (onClick)="navigateToNew()" />
-    </ng-container>
-  </daf-page-header>
-
+  <!-- Boutons de l'onglet, affichés par la page dans son en-tête (à droite du titre).
+       Export : les éléments affichés (recherche + filtres), les trois files confondues. -->
+  <ng-template #pageActions>
+    <daf-button data-guide="cost-approval-export"
+      [options]="{ variant: 'ghost', label: ('COST.APPROVAL_QUEUE.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !visibleItems().length, loading: exporting() }"
+      (onClick)="exportExcel()" />
+    <daf-button data-guide="cost-approval-new"
+      [options]="{ variant: 'teal', label: 'COST.APPROVAL_QUEUE.FAB' | translate, iconStart: 'add' }"
+      (onClick)="navigateToNew()" />
+  </ng-template>
 
   <!-- Two tiles, both counted from the queues actually loaded. The third tile
        ("Performance d'approbation") is gone — see the component. -->
@@ -29,6 +28,8 @@
       [value]="urgentCount()"
       [options]="kpiUrgent" />
   </section>
+  <!-- Onglets de « Validation des dépenses », projetés par approval-hub.component.ts. -->
+  <ng-content select="[approvalTabs]" />
 
   <!-- Search + a real filter panel (type and priority) + view toggle. Both are
        client-side: each queue arrives whole in one call. -->
@@ -69,7 +70,7 @@
       (decide)="onDecide($event)" />
   }
 
-</daf-page>
+</div>
 
 <!-- Modal bodies. ModalService projects these into its own host (§10e). -->
 <ng-template #approvalTpl>
