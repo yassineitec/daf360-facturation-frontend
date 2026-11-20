@@ -22,9 +22,10 @@ import {
 import {
   PL_CATALOGUE_SOURCE_TYPES, PlCataloguePreviewResultDto, PlCatalogueSourceType,
   PlCatalogueStatusConfigDto, PlCatalogueStatusConfigVersionDto, PlCategoryLineMappingDto,
-  PlCategoryLineMappingVersionDto, PlCategoryMappingRole, PlCostCategoryDto,
+  PlCategoryLineMappingVersionDto, PlCategoryMappingRole, PlCostCategoryDto, PlCostLineDto,
 } from '../pl-catalogue.model';
 import { DeriveRatesRequest, PlMonthlyExchangeRateDto } from '../pl-fx-rate.model';
+import { CategoryLinkChange, PlCategoryLinkBoardComponent } from './pl-category-link-board.component';
 
 /** Sentinel for the "Global Default" pays option — `paysId=null` server-side, never a real id. */
 const GLOBAL_DEFAULT = 0;
@@ -36,11 +37,6 @@ const DEFAULT_FX_PAIR = 'TND/EUR';
 
 type CatalogueTab = 'status' | 'mapping' | 'fx';
 type MappingSheet = 'template' | 'budget';
-
-interface MappingEdit {
-  catalogueLineId: number | null;
-  mappingRole: PlCategoryMappingRole | null;
-}
 
 /** `row['catalogueLineIds']` on the Budget mapping table is a `number[]`, but `daf-select`'s
  *  `[selected]` input expects `string[]` — this tiny standalone pipe keeps that conversion purely
@@ -82,7 +78,7 @@ export class PlAsStringsPipe implements PipeTransform {
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, SelectComponent,
     TabsComponent, CheckboxComponent, StatusBadgeComponent, DataTableComponent, DafCellDirective,
-    FormFieldComponent, PlAsStringsPipe,
+    FormFieldComponent, PlAsStringsPipe, PlCategoryLinkBoardComponent,
   ],
   host: { class: 'block' },
   templateUrl: './pl-catalogue-admin.component.html',
@@ -167,10 +163,12 @@ export class PlCatalogueAdminComponent implements OnInit {
       myPays:  this.clientSvc.getMyPays(),
       allPays: this.clientSvc.getPays(),
       lines:   this.lineSvc.list(),
+      costLines: this.svc.listCostLines(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: ({ allPays, lines }) => {
+      next: ({ allPays, lines, costLines }) => {
         this.paysList.set(allPays);
         this.lines.set(lines);
+        this.costLines.set(costLines);
         this.loadStatusConfig();
         this.loadRealCostCategories();
         this.loadMapping();
@@ -470,11 +468,9 @@ export class PlCatalogueAdminComponent implements OnInit {
       });
   }
 
-  readonly roleOptions = computed<SelectOption[]>(() => {
-    this.translate.currentLang();
-    const roles: PlCategoryMappingRole[] = ['COST', 'EXTERNAL_COGS', 'MANUAL', 'EXCLUDED'];
-    return roles.map(r => ({ value: r, label: this.translate.instant('REPORTING.PL_CATALOGUE.ROLE.' + r) }));
-  });
+  /** RIGHT-hand column of the category → cost line board: the P&L cost lines (Template rows 20,
+   *  26, 27, 31, 32, 35, 36, 44 + "Hors P&L"), global, fetched once. */
+  costLines = signal<PlCostLineDto[]>([]);
 
   mapping        = signal<PlCategoryLineMappingDto | null>(null);
   mappingLoading = signal(false);
@@ -483,12 +479,20 @@ export class PlCatalogueAdminComponent implements OnInit {
   mappingActivating = signal(false);
   mappingSuccess = signal<string | null>(null);
 
-  /** One entry per `group_catalogue_lines.code` (the "category" in this screen) — seeded from
-   *  `mapping()` on every load, edited locally until "Enregistrer" commits it. Keyed by code, so
-   *  a duplicate entry for the same category is structurally impossible here (unlike a flat
-   *  list) — the coverage check below only ever needs to find UNMAPPED categories. */
-  private editedMapping = new Map<string, MappingEdit>();
-  private mappingTick = signal(0);
+  /** categoryCode → linked cost line id, seeded from `mapping()` on every load (each entry's
+   *  `costLineCode`, so a legacy target such as HR_OVERHEAD shows on "Other Costs"), edited
+   *  locally until "Enregistrer". One key per category: a category can only have one link. */
+  readonly links = signal<Record<string, number>>({});
+
+  private linksFrom(dto: PlCategoryLineMappingDto): Record<string, number> {
+    const idByCode = new Map(this.costLines().map(l => [l.code, l.id]));
+    const links: Record<string, number> = {};
+    for (const e of dto.entries) {
+      const id = e.costLineCode ? idByCode.get(e.costLineCode) : undefined;
+      if (id) links[e.categoryCode] = id;
+    }
+    return links;
+  }
 
   loadMapping(): void {
     this.mappingLoading.set(true);
@@ -499,9 +503,7 @@ export class PlCatalogueAdminComponent implements OnInit {
       .subscribe({
         next: dto => {
           this.mapping.set(dto);
-          this.editedMapping = new Map(
-            dto.entries.map(e => [e.categoryCode, { catalogueLineId: e.catalogueLineId, mappingRole: e.mappingRole }]));
-          this.mappingTick.update(v => v + 1);
+          this.links.set(this.linksFrom(dto));
           this.mappingLoading.set(false);
         },
         error: err => {
@@ -511,104 +513,42 @@ export class PlCatalogueAdminComponent implements OnInit {
       });
   }
 
-  readonly mappingColumns = computed<TableColumn[]>(() => {
-    this.translate.currentLang();
-    const t = (key: string) => this.translate.instant(key);
-    return [
-      { key: 'lineLabel',  label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_LINE') },
-      { key: 'categories', label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_CATEGORY'), type: 'custom' },
-      { key: 'roles',      label: t('REPORTING.PL_CATALOGUE.MAPPING.COL_ROLE'), type: 'custom' },
-    ];
-  });
-
-  /** One row per TARGET line (not per source category) — lets a line like "Material & Energy"
-   *  show every real cost category currently feeding it as a single multi-select, instead of
-   *  forcing the user to find and re-target each category's own row one at a time. The
-   *  underlying `editedMapping` (keyed by category code) is unchanged; this is purely a
-   *  different grouping of the same data for rendering. */
-  readonly mappingRows = computed<TableRow[]>(() => {
-    this.mappingTick();
-    const byLine = new Map<number, string[]>();
-    for (const category of this.realCategories()) {
-      const edit = this.editedMapping.get(category.code);
-      if (edit?.catalogueLineId != null) {
-        const codes = byLine.get(edit.catalogueLineId) ?? [];
-        codes.push(category.code);
-        byLine.set(edit.catalogueLineId, codes);
-      }
-    }
-    return this.lines().map(line => ({
-      id: String(line.id),
-      lineId: line.id,
-      lineLabel: line.excelRow ? `${line.labelFr} (${line.code}) · row ${line.excelRow}` : `${line.labelFr} (${line.code})`,
-      categoryCodes: byLine.get(line.id) ?? [],
-    }));
-  });
-
-  readonly categoryOptions = computed<SelectOption[]>(() =>
-    this.realCategories().map(c => ({ value: c.code, label: `${c.labelFr} (${c.code})` })));
+  onLinkChange(change: CategoryLinkChange): void {
+    this.mappingSuccess.set(null);
+    this.links.update(current => {
+      const next = { ...current };
+      if (change.lineId == null) delete next[change.categoryCode];
+      else next[change.categoryCode] = change.lineId;
+      return next;
+    });
+  }
 
   categoryLabel(code: string): string {
     const c = this.realCategories().find(c => c.code === code);
     return c ? `${c.labelFr} (${c.code})` : code;
   }
 
-  roleFor(categoryCode: string): PlCategoryMappingRole | null {
-    return this.editedMapping.get(categoryCode)?.mappingRole ?? null;
-  }
-
-  readonly mappingTableConfig = computed<TableConfig>(() => ({
-    showHeader: true,
-    hoverable: true,
-    loading: this.mappingLoading() || this.realCategoriesLoading(),
-    emptyMessage: this.translate.instant('REPORTING.PL_CATALOGUE.MAPPING.EMPTY'),
-  }));
-
-  /** Multi-select change for one TARGET line's row — categories removed from the selection stop
-   *  targeting this line (becoming unmapped, not silently reassigned); categories newly added
-   *  here are moved onto this line even if they previously targeted a different one, keeping the
-   *  "each category maps to exactly one line" invariant the coverage check already enforces. */
-  onCategoriesForLineChange(lineId: number, categoryCodes: string[]): void {
-    const selected = new Set(categoryCodes);
-    for (const [code, edit] of this.editedMapping) {
-      if (edit.catalogueLineId === lineId && !selected.has(code)) {
-        this.editedMapping.delete(code);
-      }
-    }
-    for (const code of categoryCodes) {
-      const current = this.editedMapping.get(code);
-      if (current?.catalogueLineId !== lineId) {
-        this.editedMapping.set(code, { catalogueLineId: lineId, mappingRole: current?.mappingRole ?? null });
-      }
-    }
-    this.mappingTick.update(v => v + 1);
-  }
-
-  /** DEC-CATMAP-1 edge case confirmed in real Tunisia data (HONORAIRES=COST vs.
-   *  CAPEX_EQUIP=EXCLUDED, both targeting OTHER_ONEOFF): mappingRole is a property of each
-   *  (category, line) pair, not of the line as a whole — two categories sharing a target line
-   *  can legitimately carry different roles, so this stays per-category, not per-line. */
-  onCategoryRoleChange(categoryCode: string, values: string[]): void {
-    const role = (values[0] || null) as PlCategoryMappingRole | null;
-    const current = this.editedMapping.get(categoryCode);
-    if (!current) return;
-    this.editedMapping.set(categoryCode, { ...current, mappingRole: role });
-    this.mappingTick.update(v => v + 1);
-  }
-
-  /** Mirrors the backend's `coverageCheck` (every active line mapped exactly once) — computed
-   *  client-side so "Enregistrer" can be disabled with an immediate, specific reason instead of
-   *  only finding out after a round trip. The server re-validates independently regardless
-   *  (AC4/AC5) — this is UX, not the authority. */
+  /** Every category linked to exactly one cost line — mirrors the backend's `coverageCheck`,
+   *  so "Enregistrer" is disabled with an immediate reason; the server re-validates anyway. */
   readonly mappingCoverage = computed(() => {
-    this.mappingTick();
-    const unmapped = this.realCategories()
-      .filter(c => {
-        const e = this.editedMapping.get(c.code);
-        return !e || e.catalogueLineId == null || e.mappingRole == null;
-      })
-      .map(c => c.code);
-    return { ok: unmapped.length === 0, unmappedCategoryCodes: unmapped };
+    const links = this.links();
+    const unmapped = this.realCategories().filter(c => !links[c.code]).map(c => c.code);
+    return {
+      ok: unmapped.length === 0,
+      unmappedCategoryCodes: unmapped,
+      linked: this.realCategories().length - unmapped.length,
+      total: this.realCategories().length,
+    };
+  });
+
+  /** True once the links differ from what was loaded — the save button only matters then. */
+  readonly mappingDirty = computed(() => {
+    const dto = this.mapping();
+    if (!dto) return false;
+    const loaded = this.linksFrom(dto);
+    const links = this.links();
+    const keys = new Set([...Object.keys(loaded), ...Object.keys(links)]);
+    return [...keys].some(k => loaded[k] !== links[k]);
   });
 
   saveMappingDraft(): void {
@@ -621,8 +561,11 @@ export class PlCatalogueAdminComponent implements OnInit {
     this.mappingSaving.set(true);
     this.mappingError.set(null);
     this.mappingSuccess.set(null);
-    const entries = [...this.editedMapping.entries()].map(([categoryCode, e]) => ({
-      categoryCode, catalogueLineId: e.catalogueLineId!, mappingRole: e.mappingRole!,
+    // Only real categories of this pays are sent; the server derives each role from the line
+    // (Hors P&L = EXCLUDED), so the role sent here is a placeholder.
+    const links = this.links();
+    const entries = this.realCategories().map(c => ({
+      categoryCode: c.code, catalogueLineId: links[c.code], mappingRole: 'COST' as PlCategoryMappingRole,
     }));
     this.svc.saveCategoryMapping({ paysId: this.effectivePaysId, entries })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -639,6 +582,13 @@ export class PlCatalogueAdminComponent implements OnInit {
       });
   }
 
+  /** Back to what was loaded (the current draft or active version). */
+  resetLinks(): void {
+    const dto = this.mapping();
+    if (dto) this.links.set(this.linksFrom(dto));
+    this.mappingError.set(null);
+  }
+
   readonly canActivateMapping = computed(() => this.mapping()?.configStatus === 'DRAFT');
 
   activateMapping(): void {
@@ -651,9 +601,7 @@ export class PlCatalogueAdminComponent implements OnInit {
       .subscribe({
         next: updated => {
           this.mapping.set(updated);
-          this.editedMapping = new Map(
-            updated.entries.map(e => [e.categoryCode, { catalogueLineId: e.catalogueLineId, mappingRole: e.mappingRole }]));
-          this.mappingTick.update(v => v + 1);
+          this.links.set(this.linksFrom(updated));
           this.mappingActivating.set(false);
           this.mappingSuccess.set(this.translate.instant('REPORTING.PL_CATALOGUE.ACTIVATE_SUCCESS'));
         },

@@ -5999,7 +5999,7 @@
       "PAYS": "Country / Entity",
       "GLOBAL_DEFAULT": "Global default (all countries)",
       "TAB_STATUS": "Statuses",
-      "TAB_MAPPING": "Categories",
+      "TAB_MAPPING": "Categories → P&L lines",
       "TAB_NAV_LABEL": "P&L catalogue",
       "SOURCE_TYPE_LABEL": "Source type",
       "SOURCE_TYPE": {
@@ -6025,6 +6025,20 @@
       "ACTIVATE_SUCCESS": "Version activated.",
       "ACTIVATE_ERROR": "Error while activating.",
       "LOAD_ERROR": "Error while loading.",
+      "LINKS": {
+        "COL_CATEGORIES": "Cost categories",
+        "COL_LINES": "P&L cost lines",
+        "HELP": "Link each cost category to exactly one P&L line: drag the category onto the line, or click the category then the line. Click an arrow to remove it. Every category must be linked before saving.",
+        "COVERAGE": "{{linked}} / {{total}} categories linked",
+        "UNLINKED": "Not linked",
+        "UNLINK": "Remove link",
+        "ARROW_HINT": "Click to remove this link",
+        "ROW": "R{{row}}",
+        "PICK_LINE": "Choose a P&L line",
+        "RESET": "Discard changes",
+        "LOADING": "Loading categories…",
+        "NO_CATEGORIES": "No active cost category for this country."
+      },
       "MAPPING": {
         "COL_CATEGORY": "Source categories",
         "COL_LINE": "P&L line",

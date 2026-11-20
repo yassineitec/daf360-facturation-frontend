@@ -123,72 +123,57 @@
         {{ mappingSuccess() }}
       </div>
     }
+    <div class="flex items-center gap-3 flex-wrap">
+      @if (mapping(); as m) {
+        <daf-badge
+          [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + m.configStatus) | translate"
+          [options]="{ variant: badgeVariant(m.configStatus) }" />
+      }
+      <span class="text-sm tabular-nums"
+            [class.text-success]="mappingCoverage().ok" [class.text-danger]="!mappingCoverage().ok">
+        {{ 'REPORTING.PL_CATALOGUE.LINKS.COVERAGE' | translate: { linked: mappingCoverage().linked, total: mappingCoverage().total } }}
+      </span>
+      <span class="flex-1"></span>
+      <daf-button
+        [options]="{ variant: 'secondary', iconStart: 'history', label: ('REPORTING.PL_CATALOGUE.HISTORY.BUTTON' | translate) }"
+        (onClick)="openMappingHistory()" />
+    </div>
+
+    <p class="text-sm text-neutral-500 max-w-[75ch]">{{ 'REPORTING.PL_CATALOGUE.LINKS.HELP' | translate }}</p>
+
     @if (!mappingCoverage().ok) {
       <div class="flex items-center gap-2 rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
         <span class="material-symbols-outlined text-[18px]">warning</span>
         {{ 'REPORTING.PL_CATALOGUE.MAPPING.COVERAGE_BLOCKED' | translate: { codes: mappingCoverage().unmappedCategoryCodes.join(', ') } }}
       </div>
     }
-    <div class="flex items-center gap-3">
-      @if (mapping(); as m) {
-        <daf-badge
-          [label]="('REPORTING.PL_CATALOGUE.CONFIG_STATUS.' + m.configStatus) | translate"
-          [options]="{ variant: badgeVariant(m.configStatus) }" />
-      }
-      <daf-button
-        [options]="{ variant: 'secondary', iconStart: 'history', label: ('REPORTING.PL_CATALOGUE.HISTORY.BUTTON' | translate) }"
-        (onClick)="openMappingHistory()" />
-    </div>
 
-    <daf-data-table
-      [columns]="mappingColumns()"
-      [rows]="mappingRows()"
-      [config]="mappingTableConfig()">
-
-      <ng-template dafCell="categories" let-row>
-        <daf-select
-          [options]="categoryOptions()"
-          [selected]="row['categoryCodes']"
-          [config]="{
-            multiple: true, searchable: true, staticLabel: true, triggerIcon: 'add',
-            placeholder: ('REPORTING.PL_CATALOGUE.MAPPING.ADD_CATEGORIES' | translate)
-          }"
-          [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_CATEGORY' | translate"
-          (selectedChange)="onCategoriesForLineChange(row['lineId'], $event)" />
-      </ng-template>
-
-      <ng-template dafCell="roles" let-row>
-        @if (row['categoryCodes'].length === 0) {
-          <span class="text-sm text-neutral-400">—</span>
-        } @else {
-          <div class="flex flex-col gap-1.5">
-            @for (code of row['categoryCodes']; track code) {
-              <div class="flex items-center gap-2">
-                <span class="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-700 min-w-[140px] max-w-[220px] truncate" [title]="categoryLabel(code)">
-                  {{ categoryLabel(code) }}
-                </span>
-                <daf-select
-                  [options]="roleOptions()"
-                  [selected]="roleFor(code) ? [roleFor(code)!] : []"
-                  [ariaLabel]="'REPORTING.PL_CATALOGUE.MAPPING.COL_ROLE' | translate"
-                  (selectedChange)="onCategoryRoleChange(code, $event)" />
-              </div>
-            }
-          </div>
-        }
-      </ng-template>
-
-    </daf-data-table>
+    @if (mappingLoading() || realCategoriesLoading()) {
+      <div class="text-sm text-neutral-500">{{ 'REPORTING.PL_CATALOGUE.LINKS.LOADING' | translate }}</div>
+    } @else if (realCategories().length === 0) {
+      <div class="text-sm text-neutral-500">{{ 'REPORTING.PL_CATALOGUE.LINKS.NO_CATEGORIES' | translate }}</div>
+    } @else {
+      <app-pl-category-link-board
+        [categories]="realCategories()"
+        [costLines]="costLines()"
+        [links]="links()"
+        (linkChange)="onLinkChange($event)" />
+    }
 
     <div class="flex items-center gap-3">
       <daf-button
         [options]="{
           variant: 'primary', iconStart: 'save',
           label: ('REPORTING.PL_CATALOGUE.SAVE_DRAFT' | translate),
-          loading: mappingSaving(), disabled: mappingLoading() || !mappingCoverage().ok
+          loading: mappingSaving(), disabled: mappingLoading() || !mappingCoverage().ok || !mappingDirty()
         }"
         (onClick)="saveMappingDraft()" />
-      @if (canActivateMapping()) {
+      @if (mappingDirty()) {
+        <daf-button
+          [options]="{ variant: 'ghost', iconStart: 'undo', label: ('REPORTING.PL_CATALOGUE.LINKS.RESET' | translate) }"
+          (onClick)="resetLinks()" />
+      }
+      @if (canActivateMapping() && !mappingDirty()) {
         @if (canApprove()) {
           <daf-button
             [options]="{

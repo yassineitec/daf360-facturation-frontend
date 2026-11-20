@@ -5999,7 +5999,7 @@
       "PAYS": "Pays / Entité",
       "GLOBAL_DEFAULT": "Défaut global (tous pays)",
       "TAB_STATUS": "Statuts",
-      "TAB_MAPPING": "Catégories",
+      "TAB_MAPPING": "Catégories → lignes P&L",
       "TAB_NAV_LABEL": "Catalogue P&L",
       "SOURCE_TYPE_LABEL": "Type de source",
       "SOURCE_TYPE": {
@@ -6025,6 +6025,20 @@
       "ACTIVATE_SUCCESS": "Version activée.",
       "ACTIVATE_ERROR": "Erreur lors de l'activation.",
       "LOAD_ERROR": "Erreur lors du chargement.",
+      "LINKS": {
+        "COL_CATEGORIES": "Catégories de coût",
+        "COL_LINES": "Lignes de coût du P&L",
+        "HELP": "Reliez chaque catégorie de coût à une seule ligne du P&L : glissez la catégorie sur la ligne, ou cliquez sur la catégorie puis sur la ligne. Cliquez sur une flèche pour la supprimer. Toutes les catégories doivent être reliées pour enregistrer.",
+        "COVERAGE": "{{linked}} / {{total}} catégories reliées",
+        "UNLINKED": "Non reliée",
+        "UNLINK": "Supprimer le lien",
+        "ARROW_HINT": "Cliquer pour supprimer ce lien",
+        "ROW": "L{{row}}",
+        "PICK_LINE": "Choisir une ligne P&L",
+        "RESET": "Annuler les modifications",
+        "LOADING": "Chargement des catégories…",
+        "NO_CATEGORIES": "Aucune catégorie de coût active pour ce pays."
+      },
       "MAPPING": {
         "COL_CATEGORY": "Catégories sources",
         "COL_LINE": "Ligne P&L",
