@@ -172,6 +172,10 @@ export interface AffaireListItem {
   backlog?:           number | null;
   /** Liste uniquement : tuile « Total facturé » de la fiche (factures non PAID). */
   totalFacture?:      number | null;
+  /** Liste uniquement : tuile « Encaissé » de la fiche (factures PAID). */
+  totalEncaisse?:     number | null;
+  /** Liste uniquement : tuile « Budget TS » de la fiche (tous les TS, tous statuts). */
+  totalTs?:           number | null;
   rafAlerteSeuilPct:  number;
   paysId:             number;
   devise?:            string;
@@ -182,6 +186,8 @@ export interface AffaireListItem {
 
 export interface AffaireDetail extends AffaireListItem {
   notes:             string | null;
+  /** Type du client : INTER_COMPANY (entité du groupe) ou THIRD_PARTY (client externe). */
+  clientType?:       'INTER_COMPANY' | 'THIRD_PARTY' | null;
   doc360Ref:         string | null;
   erpReference?:     string | null;
   devise:            string;

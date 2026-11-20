@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent,
-  MetricCardOptions, MetricDelta, ModalRef, ModalService, PageComponent, PageHeaderComponent,
+  MetricCardOptions, MetricDelta, ModalRef, ModalService,
   SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
 import { Observable, forkJoin } from 'rxjs';
@@ -56,7 +56,7 @@ const GUIDE_STEPS: GuideStep[] = [
   selector: 'app-cost-approval-queue',
   standalone: true,
   imports: [
-    TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
+    TranslatePipe, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, FormFieldComponent,
     ApprovalCardsSectionComponent, ApprovalTableSectionComponent,
     PageGuideComponent, SalaryAdvanceDecisionModalComponent,
@@ -70,6 +70,8 @@ export class CostApprovalQueueComponent implements OnInit {
 
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(ApprovalTableSectionComponent);
+  /** Boutons de l'onglet — rendus dans l'en-tête de approval-hub.component.ts. */
+  readonly pageActions = viewChild<TemplateRef<unknown>>('pageActions');
 
   private readonly svc       = inject(CostService);
   private readonly clientSvc = inject(ClientService);
@@ -762,6 +764,16 @@ export class CostApprovalQueueComponent implements OnInit {
         window.open(`/rh/candidates/${item.hiring!.candidateId}`, '_blank', 'noopener');
         return;
       }
+      // Simulation de coût du candidat, côté Payroll — ouverte dans la même fenêtre
+      // (routeur du shell partagé entre les apps).
+      if (decision === 'simulation') {
+        this.router.navigateByUrl(`/payroll/candidate-simulation/${item.hiring!.candidateId}`);
+        return;
+      }
+      // Le lien « Voir la simulation » de daf-entity-card émet AUSSI un actionClick
+      // { id: 'view' } juste après viewClick : sans ce garde-fou, il ouvrirait la pop-up
+      // « Approuver » par-dessus la navigation.
+      if (decision === 'view') return;
       this.openHiringDecisionModal(item.hiring!, decision === 'reject' ? 'reject' : 'approve');
       return;
     }

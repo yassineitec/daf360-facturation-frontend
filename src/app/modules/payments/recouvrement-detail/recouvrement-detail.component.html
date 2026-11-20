@@ -105,6 +105,13 @@
                              label: 'PAYMENTS.DETAIL.ACTIONS.SEE_AFFAIRE' | translate }"
                 (onClick)="goToAffaire()" />
 
+              <daf-button
+                style="flex:1 1 100%"
+                [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'download',
+                             loading: exporting(),
+                             label: 'PAYMENTS.DETAIL.ACTIONS.EXPORT' | translate }"
+                (onClick)="exportExcel()" />
+
               <!-- Le motif de suspension : un champ en pied de carte plutôt qu'une
                    modale, parce qu'il est facultatif et que la confirmation est le
                    bouton juste en dessous. -->

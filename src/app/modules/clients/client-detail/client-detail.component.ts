@@ -231,6 +231,13 @@ export class ClientDetailComponent implements OnInit {
     const c = this.client();
     if (!c) return [];
     const fields: DetailField[] = [
+      // Inter-company (entité du groupe) ou third party (client externe).
+      {
+        label: 'CLIENTS.FORM.CLIENT_TYPE_LABEL',
+        value: this.translate.instant(c.clientType === 'INTER_COMPANY'
+          ? 'CLIENTS.FORM.CLIENT_TYPE_INTER_COMPANY'
+          : 'CLIENTS.FORM.CLIENT_TYPE_THIRD_PARTY'),
+      },
       { label: 'CLIENTS.DETAIL.INFO.SECTOR',   value: c.sector ?? '—' },
       { label: 'CLIENTS.DETAIL.INFO.CURRENCY', value: this.devise() },
       {

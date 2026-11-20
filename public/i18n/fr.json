@@ -66,10 +66,10 @@
         "RECOVERY": "Recouvrement",
         "TREASURY": "Trésorerie",
         "SUBCONTRACTING": "Sous-traitance",
-        "COST": "Coûts",
-        "COST_OVERVIEW": "Gestion des coûts",
-        "COST_LINES": "Gestion des coûts",
-        "COST_APPROVAL": "Approbation Coûts",
+        "COST": "Dépenses",
+        "COST_OVERVIEW": "Gestion des dépenses",
+        "COST_LINES": "Gestion des dépenses",
+        "COST_APPROVAL": "Validation des dépenses",
         "BILLING_APPROVAL": "Approbation Facturation",
         "EMPLOYEE_COST": "Coûts collaborateurs",
         "SUPPLIERS": "Fournisseurs",
@@ -85,6 +85,7 @@
     "ADVANCES": {
       "PAGE_TITLE": "Avances sur salaire",
       "PAGE_SUBTITLE": "Demandes des collaborateurs, conditions accordées et contrats de dette",
+      "EXPORT_EXCEL": "Exporter en Excel",
       "KPI_TO_DECIDE": "À traiter",
       "KPI_TO_SIGN": "Contrats à signer",
       "KPI_REPAYING": "En remboursement",
@@ -3085,6 +3086,11 @@
       "CODE_LABEL": "Code client",
       "CODE_HINT": "(auto si vide)",
       "TAX_ID_LABEL": "N° fiscal / TVA",
+      "CLIENT_TYPE_LABEL": "Type de client",
+      "CLIENT_TYPE_THIRD_PARTY": "Third party",
+      "CLIENT_TYPE_THIRD_PARTY_HINT": "Client externe au groupe",
+      "CLIENT_TYPE_INTER_COMPANY": "Inter-company",
+      "CLIENT_TYPE_INTER_COMPANY_HINT": "Entité du groupe",
       "SECTION_CONTACT": "Coordonnées de la société",
       "ADDRESS_LABEL": "Adresse",
       "ADDRESS_PLACEHOLDER": "Rue, numéro…",
@@ -4796,7 +4802,7 @@
       "CONFIG": "Configuration"
     },
     "PAGE": {
-      "TITLE": "Gestion des coûts",
+      "TITLE": "Gestion des dépenses",
       "SUBTITLE": "Lignes de coût"
     },
     "URGENCY": {
@@ -5059,7 +5065,12 @@
       }
     },
     "APPROVAL_QUEUE": {
-      "TITLE": "File d'approbation",
+      "TITLE": "Validation des dépenses",
+      "TAB_REQUESTS": "Dépenses",
+      "TABS_LABEL": "Types de validation",
+      "TAB_HINT_REQUESTS": "Les factures de coût, demandes d'embauche, avances et révisions salariales en attente de votre décision.",
+      "TAB_HINT_MISSIONS": "Les ordres de mission chiffrés par les RH, en attente de la décision finance.",
+      "TAB_HINT_ADVANCES": "Les avances sur salaire de votre périmètre : décision, signature et remboursement.",
       "SUBTITLE": "Flux de travail consolidé pour les validations financières.",
       "SEARCH_PLACEHOLDER": "ID, titre, ou montant...",
       "FILTERS": "Filtres",
@@ -5071,7 +5082,7 @@
       "APPROVE_REQUEST": "Approuver la demande",
       "COMPLEMENT": "Complément",
       "EMPTY": "Aucune demande en attente.",
-      "FAB": "Nouvelle Demande",
+      "FAB": "Nouvelle demande",
       "EXPORT_EXCEL": "Exporter en Excel",
       "MODAL_TITLE": "Décision d'approbation",
       "MODAL_CANCEL": "Annuler",
@@ -5106,6 +5117,7 @@
       "SALARY_BONUSES": "Le mois de la date d'effet porte {{amount}} de primes exceptionnelles (coût employeur ce mois-là : {{cost}}).",
       "REFERENCE": "Référence",
       "VIEW_CANDIDATE": "Voir le candidat",
+      "VIEW_SIMULATION": "Voir la simulation",
       "VIEW_DETAILS": "Voir le détail",
       "FILTER_ALL": "Tous",
       "SPLIT": "{{costs}} facturation · {{hiring}} recrutement",
@@ -6240,6 +6252,7 @@
       "TITLE": "Recouvrement",
       "SUBTITLE": "Suivi des encaissements, relances et factures impayées",
       "RECON_BTN": "Rapprochement bancaire",
+      "EXPORT_EXCEL": "Exporter Excel",
       "RECON_DISABLED": "Rapprochement bancaire — bientôt disponible",
       "DAYS": "{{n}} j",
       "ERROR_LOAD": "Impossible de charger les factures impayées.",
@@ -6318,7 +6331,8 @@
         "SUSPEND_REMINDERS": "Suspendre les relances",
         "REACTIVATE_REMINDERS": "Réactiver les relances",
         "SEE_INVOICE": "Voir la facture",
-        "SEE_AFFAIRE": "Voir l'affaire"
+        "SEE_AFFAIRE": "Voir l'affaire",
+        "EXPORT": "Exporter Excel"
       },
       "TABS": {
         "REMINDERS": "Échéancier de relances",
@@ -6362,6 +6376,7 @@
       "TX_TITLE_PLAIN": "Transactions",
       "TX_COUNT": "{{count}} opération(s)",
       "REFRESH": "Actualiser",
+      "EXPORT_EXCEL": "Exporter Excel",
       "LOADING_TX": "Chargement des transactions…",
       "ERROR_IMPORTS": "Impossible de charger les imports.",
       "ERROR_TX": "Impossible de charger les transactions.",
@@ -6483,6 +6498,7 @@
       "COST_ANALYSIS": "Analyse des coûts"
     },
     "ANALYSIS": {
+      "EXPORT_EXCEL": "Exporter Excel",
       "SEARCH_PLACEHOLDER": "Rechercher une affaire…",
       "CLEAR": "Effacer",
       "ANALYZE": "Analyser",
@@ -6517,6 +6533,7 @@
       "SEARCH": "Rechercher",
       "SELECT_AFFAIRE": "Sélectionnez une affaire pour afficher ses ordres de sous-traitance.",
       "NEW": "Nouvel ordre ST",
+      "EXPORT_EXCEL": "Exporter Excel",
       "EMPTY": "Aucun ordre de sous-traitance pour cette affaire.",
       "LOADING": "Chargement…",
       "REALIZED": "Réalisé:",
@@ -6615,6 +6632,7 @@
       "INACTIVE": "Inactif",
       "COUNT": "{{count}} sous-traitant(s)",
       "NEW": "Nouveau sous-traitant",
+      "EXPORT_EXCEL": "Exporter Excel",
       "SELECT_ENTITY": "Sélectionnez une entité pour afficher les sous-traitants.",
       "LOADING": "Chargement…",
       "EMPTY": "Aucun sous-traitant enregistré pour cette entité.",

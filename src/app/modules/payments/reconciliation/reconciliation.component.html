@@ -106,7 +106,13 @@
             }
           </h2>
           @if (selectedImportId() && !loadingTx()) {
-            <button class="btn-refresh" [title]="'PAYMENTS.RECON.REFRESH' | translate" (click)="onRefreshNeeded()">↻</button>
+            <div style="display:flex; align-items:center; gap:0.5rem">
+              <daf-button
+                [options]="{ variant: 'ghost', size: 'sm', label: ('PAYMENTS.RECON.EXPORT_EXCEL' | translate),
+                             iconStart: 'download', disabled: !transactions().length, loading: exporting() }"
+                (onClick)="exportExcel()" />
+              <button class="btn-refresh" [title]="'PAYMENTS.RECON.REFRESH' | translate" (click)="onRefreshNeeded()">↻</button>
+            </div>
           }
         </div>
 

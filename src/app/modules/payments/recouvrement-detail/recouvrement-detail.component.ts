@@ -27,6 +27,7 @@ import { PermissionDirective } from '../../../shared/permission.directive';
 import { daysPastDue, formatDate, offsetLabel, retardVariant } from '../payments-display';
 import { searchTableRows, tableTools } from '../../../shared/table-tools';
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
+import { ExportService } from '../../../core/export.service';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
 
 /** Guide du dossier — `target` = un `data-guide` du gabarit, `tab` = l'onglet à ouvrir. */
@@ -102,6 +103,10 @@ export class RecouvrementDetailComponent implements OnInit {
   private readonly currency  = inject(DisplayCurrencyPipe);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
+  private readonly exportSvc = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
 
   /**
    * Lu sur `paramMap` plutôt que par `input()` lié à la route : ce remote est monté par
@@ -589,6 +594,13 @@ export class RecouvrementDetailComponent implements OnInit {
       error: err => this.actionError.set(err?.error?.message
         ?? this.translate.instant('PAYMENTS.DETAIL.ACTION_ERROR')),
     });
+  }
+
+  /** Fiche de recouvrement en Excel : identité et indicateurs, relances, encaissements. */
+  exportExcel(): void {
+    const num = this.invoice()?.invoiceNumber ?? String(this.invoiceId);
+    this.exportSvc.download(this.exportSvc.recouvrementDetail(this.invoiceId),
+      `Recouvrement_${num.replace(/[^\w.-]+/g, '_')}.xlsx`, this.exporting);
   }
 
   /** La fiche du **document** — l'autre moitié de l'histoire (lignes, TVA, avoir). */

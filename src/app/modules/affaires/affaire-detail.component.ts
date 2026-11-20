@@ -601,6 +601,31 @@ const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: strin
       color:       var(--color-on-surface-variant, #44474c);
     }
 
+    /* « CLIENT » + pastille du type de client, sur une ligne. */
+    .dp-client__label-row {
+      display:     flex;
+      align-items: center;
+      gap:         .5rem;
+    }
+    .dp-client-type {
+      display:        inline-flex;
+      align-items:    center;
+      gap:            .2rem;
+      padding:        .125rem .5rem;
+      border-radius:  9999px;
+      font-size:      9px;
+      font-weight:    700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background:     var(--color-surface-container, #eceef0);
+      color:          var(--color-on-surface-variant, #44474c);
+    }
+    .dp-client-type .material-symbols-outlined { font-size: 12px; }
+    .dp-client-type--group {
+      background: color-mix(in srgb, var(--color-tertiary, #00c1ad) 15%, transparent);
+      color:      var(--color-tertiary, #00c1ad);
+    }
+
     /* Regroupe la méta (entité · devise) et, pour FACT_SUPER_ADMIN seulement, l'icône de
        bascule de l'entité propriétaire — les deux restent sur la même ligne de base que
        le nom du client. */

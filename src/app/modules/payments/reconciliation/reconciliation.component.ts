@@ -8,6 +8,8 @@ import { ManualTransactionModalComponent } from './manual-transaction-modal.comp
 import { PermissionDirective } from '../../../shared/permission.directive';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ButtonComponent } from '@khalilrebhiitec/daf360';
+import { ExportService } from '../../../core/export.service';
 
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
@@ -26,7 +28,7 @@ const GUIDE_STEPS: GuideStep[] = [
 
 @Component({
   selector: 'app-reconciliation',
-  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective, DisplayCurrencyPipe, TranslatePipe, PageGuideComponent],
+  imports: [ImportDropzoneComponent, TransactionTableComponent, ManualTransactionModalComponent, PermissionDirective, DisplayCurrencyPipe, TranslatePipe, PageGuideComponent, ButtonComponent],
   templateUrl: './reconciliation.component.html',
   styleUrl:    './reconciliation.component.scss',
 })
@@ -35,6 +37,10 @@ export class ReconciliationComponent implements OnInit {
 
   private readonly svc = inject(ReconciliationService);
   private readonly currencyContext = inject(CurrencyContextService);
+  private readonly exportSvc = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
 
   imports            = signal<ImportSummary[]>([]);
   selectedImportId   = signal<number | null>(null);
@@ -115,6 +121,14 @@ export class ReconciliationComponent implements OnInit {
     const id = this.selectedImportId();
     if (id) this.loadTransactions(id);
     this.loadUnmatchedSummary();
+  }
+
+  /** Export Excel du relevé sélectionné : ses transactions, le relevé et les non-rapprochés. */
+  exportExcel(): void {
+    const id = this.selectedImportId();
+    if (!id) return;
+    const name = (this.selectedImport()?.filename ?? String(id)).replace(/\.[^.]+$/, '');
+    this.exportSvc.download(this.exportSvc.reconciliation(id), `Rapprochement_${name}.xlsx`, this.exporting);
   }
 
   formatAmount(v: number, devise?: string): string {

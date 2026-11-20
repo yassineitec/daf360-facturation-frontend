@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { permissionGuard } from '@khalilrebhiitec/daf360';
+import { APPROVAL_TABS_PERMISSIONS } from './approval-queue/approval-tabs.config';
 
 export const COST_ROUTES: Routes = [
   /**
@@ -18,39 +19,20 @@ export const COST_ROUTES: Routes = [
    */
   {
     path: 'approval',
+    // « Validation des dépenses » : une page, trois onglets (Dépenses · Missions · Avances
+    // sur salaire, `?tab=`). Ouverte à qui peut voir au moins un onglet — chaque onglet est
+    // ensuite filtré par ses propres codes dans approval-hub.component.ts.
     canActivate: [permissionGuard],
-    data: { permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST', 'FACT_APPROVE_SALARY_ADVANCE',
-                          'FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD'] },
+    data: { permissions: APPROVAL_TABS_PERMISSIONS },
     loadComponent: () =>
-      import('./approval-queue/cost-approval-queue.component').then(m => m.CostApprovalQueueComponent),
+      import('./approval-queue/approval-hub.component').then(m => m.ApprovalHubComponent),
   },
   /**
-   * « Avances sur salaire » (spec §4–6): every advance of the caller's scope, its terms, its
-   * debt contract. Any of the four advance codes opens it; each action is gated by its own
-   * code (payroll-service checks the same ones). Keep in step with finance-modules.ts.
+   * « Avances sur salaire » et « Missions » sont devenus des onglets de `approval`. Les
+   * anciennes adresses (guides d'aide, liens partagés, favoris) y renvoient directement.
    */
-  {
-    path: 'salary-advances',
-    canActivate: [permissionGuard],
-    data: { permissions: ['FACT_APPROVE_SALARY_ADVANCE', 'FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD',
-                          'FACT_VIEW_SALARY_ADVANCES'] },
-    loadComponent: () =>
-      import('./salary-advances/salary-advance-list.component').then(m => m.SalaryAdvanceListComponent),
-  },
-  /**
-   * Les ordres de mission chiffrés par RH, en attente de la décision finance.
-   *
-   * Porte son propre garde : celui du parent `cost` accepte quatre codes (dont celui-ci,
-   * pour laisser entrer le décideur), et sans ce second garde un simple lecteur de coûts
-   * atteindrait l'écran, alors que chaque appel lui renverrait un 403.
-   */
-  {
-    path: 'missions',
-    canActivate: [permissionGuard],
-    data: { permissions: ['FACT_APPROVE_MISSION_COST'] },
-    loadComponent: () =>
-      import('./missions/mission-approval-queue.component').then(m => m.MissionApprovalQueueComponent),
-  },
+  { path: 'salary-advances', pathMatch: 'full', redirectTo: 'approval?tab=advances' },
+  { path: 'missions',        pathMatch: 'full', redirectTo: 'approval?tab=missions' },
   {
     path: 'new',
     loadComponent: () =>

@@ -7,7 +7,7 @@ import { ApprovalItem, kindKey } from './approval-item';
 import { initials, urgencyKey } from '../cost-display';
 
 /** One decision the queue can emit, for any kind of request. */
-export type ApprovalDecision = 'approve' | 'return' | 'reject' | 'candidate' | 'view';
+export type ApprovalDecision = 'approve' | 'return' | 'reject' | 'candidate' | 'view' | 'simulation';
 
 /**
  * Card view of `/finance/cost/approval` — one `daf-entity-card` per pending request,
@@ -33,7 +33,8 @@ export type ApprovalDecision = 'approve' | 'return' | 'reject' | 'candidate' | '
         @for (card of cards(); track card.key) {
           <daf-entity-card
             [options]="card.options"
-            (actionClick)="decide.emit({ item: card.item, decision: $any($event.id) })" />
+            (actionClick)="decide.emit({ item: card.item, decision: $any($event.id) })"
+            (viewClick)="decide.emit({ item: card.item, decision: 'simulation' })" />
         } @empty {
           <div class="col-span-full flex flex-col items-center gap-2 rounded-xl
                       border border-dashed border-outline-variant/50 px-6 py-14
@@ -95,6 +96,9 @@ export class ApprovalCardsSectionComponent {
         metricsColumns: 2,
         metrics: item.metrics,
         actions: this.actionsFor(item, t),
+        // Recrutement : lien en bas à droite vers la simulation du candidat dans Payroll
+        // (/payroll/candidate-simulation/:candidateId).
+        viewLabel: item.kind === 'hiring' ? t('COST.APPROVAL_QUEUE.VIEW_SIMULATION') : undefined,
       } satisfies EntityCardOptions,
     }));
   });
