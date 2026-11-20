@@ -14,30 +14,22 @@
   </daf-page-header>
 
   <!-- KPIs — one row, never wraps -->
-  <section data-guide="affaires-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
+  <!-- « Projets actifs », puis les cinq tuiles de la fiche affaire (vue générale),
+       sommées sur tout le jeu filtré. -->
+  <section data-guide="affaires-kpis" class="grid grid-cols-6 gap-2 sm:gap-4">
     <daf-metric-card
       [label]="'AFFAIRES.LIST.KPI.ACTIVE' | translate"
       [value]="statsActives()"
       [delta]="kpiDelta()"
       [options]="kpiActive" />
 
-    <daf-metric-card
-      [label]="'AFFAIRES.LIST.KPI.RAF' | translate"
-      [value]="statsRafTotal() | displayCurrency : summaryCurrency()"
-      [delta]="kpiDelta()"
-      [options]="kpiRaf" />
-
-    <daf-metric-card
-      [label]="'AFFAIRES.LIST.KPI.BUDGET' | translate"
-      [value]="statsBudgetTotal() | displayCurrency : summaryCurrency()"
-      [delta]="kpiDelta()"
-      [options]="kpiBudget" />
-
-    <daf-metric-card
-      [label]="'AFFAIRES.LIST.KPI.PENDING' | translate"
-      [value]="statsSuspendu()"
-      [delta]="kpiDelta()"
-      [options]="kpiPending" />
+    @for (k of overviewKpis(); track k.label) {
+      <daf-metric-card
+        [label]="k.label | translate"
+        [value]="k.value | displayCurrency : summaryCurrency()"
+        [delta]="k.delta"
+        [options]="k.options" />
+    }
   </section>
 
   <!-- Search + filters + view toggle -->

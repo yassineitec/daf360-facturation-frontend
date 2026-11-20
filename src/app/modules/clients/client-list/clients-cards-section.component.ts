@@ -47,10 +47,9 @@ import { CLIENT_STATE_ENTITY, CLIENT_STATE_LABEL, clientState } from '../client-
       gap: 0.25rem;
       padding: 0.25rem 0.625rem;
       border-radius: 9999px;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.02em;
       pointer-events: none;
       background: var(--color-surface-container);
       color: var(--color-on-surface-variant);

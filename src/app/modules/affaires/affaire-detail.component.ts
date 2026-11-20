@@ -613,10 +613,9 @@ const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: strin
       gap:            .2rem;
       padding:        .125rem .5rem;
       border-radius:  9999px;
-      font-size:      9px;
+      font-size:      10px;
       font-weight:    700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
+      letter-spacing: .02em;
       background:     var(--color-surface-container, #eceef0);
       color:          var(--color-on-surface-variant, #44474c);
     }
