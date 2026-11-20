@@ -43,6 +43,9 @@ type KycFilter = '' | 'done' | 'pending';
 /** Affaires en cours — mapped to the backend `hasActiveAffaires` flag. */
 type AffairesFilter = '' | 'with' | 'without';
 
+/** Type de client — sent as `clientType`. */
+type ClientTypeFilter = '' | 'INTER_COMPANY' | 'THIRD_PARTY';
+
 /** Same fixed list as the client form's « Devise par défaut » select. */
 const CURRENCY_CODES = ['TND', 'EGP', 'EUR', 'USD'];
 
@@ -105,6 +108,8 @@ export class ClientListComponent implements OnInit {
   filterCurrency = signal('');
   /** Avec / sans affaire EN_COURS — sent as `hasActiveAffaires`. */
   filterAffaires = signal<AffairesFilter>('');
+  /** Inter-company / third party — sent as `clientType`. */
+  filterClientType = signal<ClientTypeFilter>('');
   viewMode     = signal<ViewMode>('grid');
 
   private readonly listState = inject(ClientListStateService);
@@ -124,6 +129,7 @@ export class ClientListComponent implements OnInit {
       country:    this.filterCountry(),
       currency:   this.filterCurrency(),
       affaires:   this.filterAffaires(),
+      clientType: this.filterClientType(),
       sort:       this.sort(),
       page:       this.currentPage(),
       pageSize:   this.pageSize(),
@@ -145,6 +151,7 @@ export class ClientListComponent implements OnInit {
     this.filterCountry.set(s.country);
     this.filterCurrency.set(s.currency);
     this.filterAffaires.set(s.affaires);
+    this.filterClientType.set(s.clientType ?? '');
     this.sort.set(s.sort);
     this.currentPage.set(s.page);
     this.pageSize.set(s.pageSize);
@@ -210,6 +217,16 @@ export class ClientListComponent implements OnInit {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
+      {
+        name: 'clientType',
+        label: t('CLIENTS.FORM.CLIENT_TYPE_LABEL'),
+        type: 'select',
+        placeholder: t('CLIENTS.LIST.FILTER.ALL'),
+        options: [
+          { value: 'THIRD_PARTY',   label: t('CLIENTS.FORM.CLIENT_TYPE_THIRD_PARTY')   },
+          { value: 'INTER_COMPANY', label: t('CLIENTS.FORM.CLIENT_TYPE_INTER_COMPANY') },
+        ],
+      },
       {
         name: 'sector',
         label: t('CLIENTS.LIST.FILTER.SECTOR'),
@@ -294,6 +311,7 @@ export class ClientListComponent implements OnInit {
         country:  this.filterCountry()  ? [this.filterCountry()]  : [],
         currency: this.filterCurrency() ? [this.filterCurrency()] : [],
         affaires: this.filterAffaires() ? [this.filterAffaires()] : [],
+        clientType: this.filterClientType() ? [this.filterClientType()] : [],
       },
     };
   });
@@ -318,6 +336,7 @@ export class ClientListComponent implements OnInit {
       countryId: this.filterCountry() ? Number(this.filterCountry()) : null,
       currency:  this.filterCurrency() || null,
       hasActiveAffaires: affaires === 'with' ? true : affaires === 'without' ? false : null,
+      clientType: this.filterClientType() || null,
       sort:      sortParam(this.sort()),
     };
   }
@@ -393,6 +412,7 @@ export class ClientListComponent implements OnInit {
     this.filterCountry.set((result['country'] as string | null) ?? '');
     this.filterCurrency.set((result['currency'] as string | null) ?? '');
     this.filterAffaires.set(((result['affaires'] as string | null) ?? '') as AffairesFilter);
+    this.filterClientType.set(((result['clientType'] as string | null) ?? '') as ClientTypeFilter);
     this.currentPage.set(0);
     this.load();
   }

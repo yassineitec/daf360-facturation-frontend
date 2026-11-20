@@ -66,10 +66,10 @@
         "RECOVERY": "Collections",
         "TREASURY": "Treasury",
         "SUBCONTRACTING": "Subcontracting",
-        "COST": "Costs",
-        "COST_OVERVIEW": "Cost management",
-        "COST_LINES": "Cost management",
-        "COST_APPROVAL": "Cost Approval",
+        "COST": "Expenses",
+        "COST_OVERVIEW": "Expense management",
+        "COST_LINES": "Expense management",
+        "COST_APPROVAL": "Expense validation",
         "BILLING_APPROVAL": "Billing Approval",
         "EMPLOYEE_COST": "Employee costs",
         "SUPPLIERS": "Suppliers",
@@ -85,6 +85,7 @@
     "ADVANCES": {
       "PAGE_TITLE": "Salary advances",
       "PAGE_SUBTITLE": "Employee requests, granted terms and debt agreements",
+      "EXPORT_EXCEL": "Export to Excel",
       "KPI_TO_DECIDE": "To process",
       "KPI_TO_SIGN": "Agreements to sign",
       "KPI_REPAYING": "Being repaid",
@@ -3089,6 +3090,11 @@
       "CODE_LABEL": "Client code",
       "CODE_HINT": "(auto if empty)",
       "TAX_ID_LABEL": "Tax ID / VAT",
+      "CLIENT_TYPE_LABEL": "Client type",
+      "CLIENT_TYPE_THIRD_PARTY": "Third party",
+      "CLIENT_TYPE_THIRD_PARTY_HINT": "Client outside the group",
+      "CLIENT_TYPE_INTER_COMPANY": "Inter-company",
+      "CLIENT_TYPE_INTER_COMPANY_HINT": "Group entity",
       "SECTION_CONTACT": "Company details",
       "ADDRESS_LABEL": "Address",
       "ADDRESS_PLACEHOLDER": "Street, number…",
@@ -4801,7 +4807,7 @@
       "CONFIG": "Configuration"
     },
     "PAGE": {
-      "TITLE": "Cost management",
+      "TITLE": "Expense management",
       "SUBTITLE": "Cost lines"
     },
     "URGENCY": {
@@ -5064,7 +5070,12 @@
       }
     },
     "APPROVAL_QUEUE": {
-      "TITLE": "Approval queue",
+      "TITLE": "Expense validation",
+      "TAB_REQUESTS": "Expenses",
+      "TABS_LABEL": "Validation types",
+      "TAB_HINT_REQUESTS": "Cost invoices, hiring requests, advances and salary revisions awaiting your decision.",
+      "TAB_HINT_MISSIONS": "Mission orders costed by HR, awaiting the finance decision.",
+      "TAB_HINT_ADVANCES": "Salary advances in your scope: decision, signature and repayment.",
       "SUBTITLE": "Consolidated workflow for financial validations.",
       "SEARCH_PLACEHOLDER": "ID, title, or amount...",
       "FILTERS": "Filters",
@@ -5076,7 +5087,7 @@
       "APPROVE_REQUEST": "Approve request",
       "COMPLEMENT": "Complement",
       "EMPTY": "No pending requests.",
-      "FAB": "New Request",
+      "FAB": "New request",
       "EXPORT_EXCEL": "Export to Excel",
       "MODAL_TITLE": "Approval decision",
       "MODAL_CANCEL": "Cancel",
@@ -5111,6 +5122,7 @@
       "SALARY_BONUSES": "The effective month carries {{amount}} of exceptional bonuses (employer cost that month: {{cost}}).",
       "REFERENCE": "Reference",
       "VIEW_CANDIDATE": "View candidate",
+      "VIEW_SIMULATION": "View simulation",
       "VIEW_DETAILS": "View details",
       "FILTER_ALL": "All",
       "SPLIT": "{{costs}} billing · {{hiring}} recruitment",
@@ -6329,6 +6341,7 @@
       "TITLE": "Collections",
       "SUBTITLE": "Track collections, reminders and unpaid invoices",
       "RECON_BTN": "Bank reconciliation",
+      "EXPORT_EXCEL": "Export to Excel",
       "RECON_DISABLED": "Bank reconciliation — coming soon",
       "DAYS": "{{n}} d",
       "ERROR_LOAD": "Unable to load unpaid invoices.",
@@ -6407,7 +6420,8 @@
         "SUSPEND_REMINDERS": "Suspend reminders",
         "REACTIVATE_REMINDERS": "Resume reminders",
         "SEE_INVOICE": "View invoice",
-        "SEE_AFFAIRE": "View project"
+        "SEE_AFFAIRE": "View project",
+        "EXPORT": "Export to Excel"
       },
       "TABS": {
         "REMINDERS": "Reminder schedule",
@@ -6451,6 +6465,7 @@
       "TX_TITLE_PLAIN": "Transactions",
       "TX_COUNT": "{{count}} operation(s)",
       "REFRESH": "Refresh",
+      "EXPORT_EXCEL": "Export to Excel",
       "LOADING_TX": "Loading transactions…",
       "ERROR_IMPORTS": "Unable to load imports.",
       "ERROR_TX": "Unable to load transactions.",
@@ -6599,6 +6614,7 @@
       "COST_ANALYSIS": "Cost analysis"
     },
     "ANALYSIS": {
+      "EXPORT_EXCEL": "Export to Excel",
       "SEARCH_PLACEHOLDER": "Search for a project…",
       "CLEAR": "Clear",
       "ANALYZE": "Analyze",
@@ -6636,6 +6652,7 @@
       "SELECT_AFFAIRE": "Select a project to display its subcontracting orders.",
       "NO_AFFAIRE_FOUND": "No project matches this search.",
       "NEW": "New ST order",
+      "EXPORT_EXCEL": "Export to Excel",
       "EMPTY": "No subcontracting order for this project.",
       "LOADING": "Loading…",
       "REALIZED": "Realized:",
@@ -6734,6 +6751,7 @@
       "INACTIVE": "Inactive",
       "COUNT": "{{count}} subcontractor(s)",
       "NEW": "New subcontractor",
+      "EXPORT_EXCEL": "Export to Excel",
       "SELECT_ENTITY": "Select an entity to display subcontractors.",
       "LOADING": "Loading…",
       "EMPTY": "No subcontractor recorded for this entity.",

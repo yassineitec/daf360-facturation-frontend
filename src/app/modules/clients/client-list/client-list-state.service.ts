@@ -12,6 +12,7 @@ export interface ClientListState {
   country:    string;
   currency:   string;
   affaires:   '' | 'with' | 'without';
+  clientType: '' | 'INTER_COMPANY' | 'THIRD_PARTY';
   sort:       TableSort | null;
   page:       number;
   pageSize:   number;

@@ -38,6 +38,10 @@
     (viewChange)="viewMode.set($any($event))"
     [table]="tableSection()?.table() ?? null">
     <daf-button
+      [options]="{ variant: 'ghost', label: ('SUBCONTRACTING.ST.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: paysId() == null || !visibleList().length, loading: exporting() }"
+      (onClick)="exportExcel()" />
+    <daf-button
       *appHasPermission="'FACT_MANAGE_ST'"
       [options]="{ variant: 'teal', label: 'SUBCONTRACTING.ST.NEW' | translate, iconStart: 'add' }"
       (onClick)="openCreate()" />

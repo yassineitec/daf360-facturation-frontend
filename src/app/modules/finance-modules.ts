@@ -1,4 +1,5 @@
 import { Route } from '@angular/router';
+import { APPROVAL_TABS_PERMISSIONS } from './cost/approval-queue/approval-tabs.config';
 
 /**
  * La liste des modules finance — **une seule fois**, pour la barre latérale ET la page
@@ -158,29 +159,11 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
         icon: 'price_check',
         tone: 'warning',
         labelKey: 'FACTURATION.layout.NAV.COST_APPROVAL',
-      },
-      // Les ordres de mission chiffrés par RH, en attente de la décision finance. La
-      // mission vit dans rh-service (V78) : cet écran l'appelle sur `hrApiUrl`, comme
-      // l'approbation des coûts d'embauche le fait déjà.
-      {
-        id: 'cost-missions',
-        route: 'cost/missions',
-        icon: 'flight_takeoff',
-        tone: 'warning',
-        labelKey: 'FACTURATION.layout.NAV.COST_MISSIONS',
-        permissions: ['FACT_APPROVE_MISSION_COST'],
-      },
-      // « Avances sur salaire » (spec §4–6) : l'avance vit dans payroll-service (V25/V39),
-      // cet écran l'appelle sur `payrollApiUrl`. Mêmes codes que la route.
-      {
-        id: 'cost-salary-advances',
-        route: 'cost/salary-advances',
-        // `account_balance_wallet`, not `savings`: the piggy bank is avoided across the app.
-        icon: 'account_balance_wallet',
-        tone: 'warning',
-        labelKey: 'FACTURATION.layout.NAV.SALARY_ADVANCES',
-        permissions: ['FACT_APPROVE_SALARY_ADVANCE', 'FACT_VALIDATE_SALARY_ADVANCE_ABOVE_THRESHOLD',
-                      'FACT_VIEW_SALARY_ADVANCES'],
+        // « Missions » et « Avances sur salaire » ne sont plus dans la barre : ce sont des
+        // onglets de cet écran (approval-hub.component.ts). L'entrée s'affiche donc pour
+        // qui peut ouvrir l'un des trois onglets, et la page s'ouvre sur le
+        // premier autorisé. Même union que le garde de la route `cost/approval`.
+        permissions: APPROVAL_TABS_PERMISSIONS,
       },
       {
         id: 'employee-cost',

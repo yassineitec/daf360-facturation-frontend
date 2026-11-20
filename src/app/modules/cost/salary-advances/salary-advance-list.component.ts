@@ -3,13 +3,14 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   BadgeCell, BadgeVariant, ButtonComponent, DafCellDirective, DataTableComponent, EntityCardAction,
   EntityCardComponent, EntityCardOptions, FileUploadComponent, FilterField,
-  FilterResult, MetricCardComponent, MetricCardOptions, ModalRef, ModalService, PageComponent,
-  PageHeaderComponent, SearchToolbarComponent, SearchToolbarFilterConfig, SectionCardComponent,
+  FilterResult, MetricCardComponent, MetricCardOptions, ModalRef, ModalService,
+  SearchToolbarComponent, SearchToolbarFilterConfig, SectionCardComponent,
   SkeletonComponent, StatusBadgeComponent, TableColumn, TableConfig, TableRow, ToolbarToggleOption, UploadedFile,
 } from '@khalilrebhiitec/daf360';
 
 import { ToastService } from '../../../core/toast.service';
 import { UserStore } from '../../../core/user.store';
+import { ExportService } from '../../../core/export.service';
 import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { tableTools } from '../../../shared/table-tools';
@@ -45,7 +46,7 @@ const STATUS_VARIANT: Record<AdvanceStatus, BadgeVariant> = {
   selector: 'app-salary-advance-list',
   standalone: true,
   imports: [
-    TranslatePipe, PageComponent, PageHeaderComponent, MetricCardComponent, SearchToolbarComponent,
+    TranslatePipe, MetricCardComponent, SearchToolbarComponent,
     DataTableComponent, DafCellDirective, TableActionComponent, SectionCardComponent, ButtonComponent,
     FileUploadComponent, StatusBadgeComponent, SalaryAdvanceDecisionModalComponent,
     EntityCardComponent, SkeletonComponent,
@@ -60,7 +61,50 @@ export class SalaryAdvanceListComponent implements OnInit {
   private readonly userStore = inject(UserStore);
   private readonly toast = inject(ToastService);
 
+  private readonly exportSvc = inject(ExportService);
+
   readonly table = viewChild(DataTableComponent);
+  /** Bouton de l'onglet — rendu dans l'en-tête de approval-hub.component.ts. */
+  readonly pageActions = viewChild<TemplateRef<unknown>>('pageActions');
+  readonly exporting = signal(false);
+
+  /** Export Excel des avances affichées (recherche + filtres), avec leur échéancier. */
+  exportExcel(): void {
+    const items = this.visible();
+    if (!items.length) return;
+    const day = (iso: string | null | undefined) => iso ? iso.slice(0, 10) : null;
+    const advances = items.map(a => ({
+      id: a.id,
+      employeeName: a.employeeName,
+      currency: a.currency,
+      requestedAmount: a.requestedAmount,
+      requestedInstallments: a.requestedInstallments,
+      requestedAvailabilityDate: day(a.requestedAvailabilityDate),
+      amount: a.amount,
+      installments: a.installments,
+      monthlyAmount: a.monthlyAmount,
+      firstDeductionMonth: a.firstDeductionMonth,
+      lastDeductionMonth: a.lastDeductionMonth,
+      effectiveDate: day(a.effectiveDate),
+      status: a.status,
+      reason: a.reason,
+      directorDecidedByName: a.directorDecidedByName,
+      directorDecidedAt: day(a.directorDecidedAt),
+      financeDecidedByName: a.financeDecidedByName,
+      financeDecidedAt: day(a.financeDecidedAt),
+      financeNotes: a.financeNotes,
+      contractStatus: a.contractStatus,
+      disbursedOn: day(a.disbursedOn),
+      disbursedByName: a.disbursedByName,
+      outstandingAmount: a.outstandingAmount,
+      createdAt: day(a.createdAt),
+      schedule: (a.schedule ?? []).map(i => ({ seq: i.seq, dueMonth: i.dueMonth, amount: i.amount, status: i.status })),
+    }));
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    this.exportSvc.download(this.exportSvc.salaryAdvances(advances),
+      `Avances_sur_salaire_${today}.xlsx`, this.exporting);
+  }
   private readonly detailTpl = viewChild.required<TemplateRef<unknown>>('detailTpl');
   private detailRef: ModalRef | null = null;
 
@@ -108,7 +152,9 @@ export class SalaryAdvanceListComponent implements OnInit {
   }
 
   load(): void {
-    if (!this.firstLoad()) this.loading.set(true);
+    // Toujours : sous approval-hub, seule la toute première ouverture de la page a le
+    // squelette pleine page — un changement d'onglet compte sur celui de la liste.
+    this.loading.set(true);
     this.error.set(null);
     this.svc.list().subscribe({
       next: list => {

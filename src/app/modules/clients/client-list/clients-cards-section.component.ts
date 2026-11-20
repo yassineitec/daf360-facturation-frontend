@@ -22,6 +22,45 @@ import { CLIENT_STATE_ENTITY, CLIENT_STATE_LABEL, clientState } from '../client-
   imports: [EntityCardComponent, SkeletonComponent],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
+  styles: [`
+    .client-card {
+      position: relative;
+      transition: translate 200ms, scale 200ms;
+    }
+    .client-card:hover { translate: 0 -0.25rem; scale: 1.02; }
+    /* L'effet de survol passe sur le conteneur : on neutralise celui de la carte. Le pied
+       de carte (Voir le dossier) n'apparaît qu'au survol ; hors survol, on réserve en bas
+       la place de la pastille. */
+    .client-card ::ng-deep .glass-card {
+      height: 100%;
+      translate: none !important;
+      scale: none !important;
+      padding-bottom: 2.25rem;
+    }
+    .client-card:hover ::ng-deep .glass-card { padding-bottom: 1.25rem; }
+    .client-type {
+      position: absolute;
+      left: 1.25rem;
+      bottom: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      background: var(--color-surface-container);
+      color: var(--color-on-surface-variant);
+    }
+    .client-type .material-symbols-outlined { font-size: 14px; }
+    .client-type--group {
+      background: color-mix(in srgb, var(--color-tertiary) 15%, transparent);
+      color: var(--color-tertiary);
+    }
+  `],
   template: `
     <!-- Same flat 3-column grid as app-affaires-cards-section — the two finance list
          pages must agree. NB: never write a backtick inside this template literal
@@ -35,10 +74,20 @@ import { CLIENT_STATE_ENTITY, CLIENT_STATE_LABEL, clientState } from '../client-
         }
       } @else {
         @for (card of cards(); track card.id) {
-          <daf-entity-card
-            [options]="card.options"
-            (cardClick)="open.emit(card.id)"
-            (viewClick)="open.emit(card.id)" />
+          <!-- Le type de client (inter-company / third party) s'affiche en bas à gauche.
+               daf-entity-card n'a pas d'emplacement pour ça : la pastille est posée
+               par-dessus, dans un conteneur qui porte à sa place l'effet de survol de
+               la carte, pour que les deux bougent ensemble. -->
+          <div class="client-card">
+            <daf-entity-card
+              [options]="card.options"
+              (cardClick)="open.emit(card.id)"
+              (viewClick)="open.emit(card.id)" />
+            <span class="client-type" [class.client-type--group]="card.group">
+              <span class="material-symbols-outlined">{{ card.group ? 'hub' : 'handshake' }}</span>
+              {{ card.typeLabel }}
+            </span>
+          </div>
         } @empty {
           <div class="col-span-full flex flex-col items-center gap-2 rounded-xl
                       border border-dashed border-outline-variant/50 px-6 py-14
@@ -71,12 +120,18 @@ export class ClientsCardsSectionComponent {
     Array.from({ length: Math.max(1, this.skeletonCount()) }, (_, i) => i),
   );
 
-  protected readonly cards = computed<{ id: number; options: EntityCardOptions }[]>(() => {
+  protected readonly cards = computed<{
+    id: number; group: boolean; typeLabel: string; options: EntityCardOptions;
+  }[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
 
     return this.clients().map(c => ({
       id: c.id,
+      group: c.clientType === 'INTER_COMPANY',
+      typeLabel: t(c.clientType === 'INTER_COMPANY'
+        ? 'CLIENTS.FORM.CLIENT_TYPE_INTER_COMPANY'
+        : 'CLIENTS.FORM.CLIENT_TYPE_THIRD_PARTY'),
       options: {
         variant: 'glass',
         clickable: true,

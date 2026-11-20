@@ -1,8 +1,12 @@
 <daf-page [kpis]="0" [loadingLabel]="'COST.PAGE.TITLE' | translate">
 
+  <!-- Boutons à droite du titre, comme sur les autres pages : déclarés par app-cost-lines
+       (#pageActions), qui porte l'état dont ils dépendent (export, création). -->
   <daf-page-header
     [title]="'COST.PAGE.TITLE' | translate"
-    [subtitle]="'COST.PAGE.SUBTITLE' | translate" />
+    [subtitle]="'COST.PAGE.SUBTITLE' | translate">
+    <ng-container pageActions [ngTemplateOutlet]="lines()?.pageActions() ?? null" />
+  </daf-page-header>
 
   <app-cost-lines />
 

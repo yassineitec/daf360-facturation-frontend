@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, viewChild } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PageComponent, PageHeaderComponent } from '@khalilrebhiitec/daf360';
 import { CostLinesComponent } from './tabs/cost-lines.component';
@@ -30,10 +31,12 @@ const GUIDE_STEPS: GuideStep[] = [
 @Component({
   selector: 'app-cost',
   standalone: true,
-  imports: [TranslatePipe, PageComponent, PageHeaderComponent, CostLinesComponent, PageGuideComponent],
+  imports: [TranslatePipe, NgTemplateOutlet, PageComponent, PageHeaderComponent, CostLinesComponent, PageGuideComponent],
   host: { class: 'block' },
   templateUrl: './cost.component.html',
 })
 export class CostComponent {
   readonly guideSteps = GUIDE_STEPS;
+  /** Fournit les boutons de l'en-tête (export, nouvelle facture). */
+  readonly lines = viewChild(CostLinesComponent);
 }

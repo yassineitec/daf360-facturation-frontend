@@ -1,18 +1,16 @@
-<!-- /finance/cost/missions — the same page shape as /finance/cost/approval next door
-     (UI-PLAYBOOK §1): header, KPI row, search toolbar with filters + view toggle, one
-     stateless section per view. `daf-page` owns the 32px rhythm. -->
-<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'FACTURATION.MISSIONS.TITLE' | translate">
+<!-- Onglet « Missions » de la page « Validation des dépenses » (approval-hub.component.ts) :
+     l'en-tête et les onglets appartiennent à la page. KPI row, search toolbar with filters +
+     view toggle, one stateless section per view. Même rythme vertical que daf-page (32px). -->
+<div class="flex flex-col gap-8">
 
-  <daf-page-header
-    [title]="'FACTURATION.MISSIONS.TITLE' | translate"
-    [subtitle]="'FACTURATION.MISSIONS.SUBTITLE' | translate"
-    [badges]="headerBadges()">
-    <!-- Les missions affichées (recherche + filtres), dans l'ordre de l'écran. -->
-    <daf-button pageActions data-guide="missions-export"
+  <!-- Bouton de l'onglet, affiché par la page dans son en-tête (à droite du titre).
+       Export : les missions affichées (recherche + filtres), dans l'ordre de l'écran. -->
+  <ng-template #pageActions>
+    <daf-button data-guide="missions-export"
       [options]="{ variant: 'ghost', label: ('FACTURATION.MISSIONS.EXPORT_EXCEL' | translate), iconStart: 'download',
                    disabled: !visibleItems().length, loading: exporting() }"
       (onClick)="exportExcel()" />
-  </daf-page-header>
+  </ng-template>
 
   <section data-guide="missions-kpis" class="grid grid-cols-3 gap-2 sm:gap-6">
     <daf-metric-card
@@ -29,6 +27,8 @@
       [value]="stats().international"
       [options]="kpiInternational" />
   </section>
+  <!-- Onglets de « Validation des dépenses », projetés par approval-hub.component.ts. -->
+  <ng-content select="[approvalTabs]" />
 
   <!-- Search + a real filter panel (scope and urgency) + the view toggle. All three are
        client-side projections: the queue arrives whole in one call. -->
@@ -67,7 +67,7 @@
       (decide)="onDecide($event)" />
   }
 
-</daf-page>
+</div>
 
 <!-- ── Modal bodies. ModalService projects these into its own host (§10e). ── -->
 

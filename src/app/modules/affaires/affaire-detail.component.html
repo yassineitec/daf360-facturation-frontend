@@ -189,9 +189,24 @@
                     </button>
                   </span>
                 </div>
-                <h3 class="dp-label" id="dp-h-client">
-                  {{ 'AFFAIRES.DETAIL.INFO.CLIENT' | translate }}
-                </h3>
+                <!-- Libellé « Client » suivi du type du client (inter-company / third party),
+                     même pastille que sur les cartes de la liste des clients. -->
+                <div class="dp-client__label-row">
+                  <h3 class="dp-label" id="dp-h-client">
+                    {{ 'AFFAIRES.DETAIL.INFO.CLIENT' | translate }}
+                  </h3>
+                  @if (aff.clientType) {
+                    <span class="dp-client-type"
+                          [class.dp-client-type--group]="aff.clientType === 'INTER_COMPANY'">
+                      <span class="material-symbols-outlined" aria-hidden="true">
+                        {{ aff.clientType === 'INTER_COMPANY' ? 'hub' : 'handshake' }}
+                      </span>
+                      {{ (aff.clientType === 'INTER_COMPANY'
+                            ? 'CLIENTS.FORM.CLIENT_TYPE_INTER_COMPANY'
+                            : 'CLIENTS.FORM.CLIENT_TYPE_THIRD_PARTY') | translate }}
+                    </span>
+                  }
+                </div>
                 <!-- Plus de barre de facturation ici : elle doublait la carte « Avancement du
                      budget » de la Vue générale. -->
               </section>

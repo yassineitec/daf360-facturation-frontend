@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -45,6 +45,8 @@ function toIsoDay(d: Date): string {
 export class CostLinesComponent implements OnInit {
   /** Vue tableau uniquement (undefined en vues cartes et fournisseur) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(CostLinesTableSectionComponent);
+  /** Boutons de la page — rendus dans l'en-tête de cost.component. */
+  readonly pageActions = viewChild<TemplateRef<unknown>>('pageActions');
 
   private readonly svc       = inject(CostService);
   private readonly clientSvc = inject(ClientService);

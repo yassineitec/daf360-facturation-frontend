@@ -22,6 +22,7 @@ import {
 import { isOver, ostStatutKey } from '../subcontracting-display';
 import { OstCardsSectionComponent } from './ost-cards-section.component';
 import { OstTableSectionComponent } from './ost-table-section.component';
+import { ExportService } from '../../../core/export.service';
 
 type ViewMode = 'grid' | 'list';
 
@@ -50,6 +51,19 @@ export class OrdresStTabComponent {
   private readonly userStore  = inject(UserStore);
   private readonly listSvc    = inject(FactListService);
   private readonly currencyContext = inject(CurrencyContextService);
+  private readonly exportSvc  = inject(ExportService);
+
+  /** Export Excel en cours (distinct de `exporting`, qui suit l'export CSV comptable d'un ordre). */
+  readonly exportingXlsx = signal(false);
+
+  /** Export Excel des ordres affichés de l'affaire, avec leurs coûts réalisés. */
+  exportExcel(): void {
+    const affaire = this.selectedAffaire();
+    if (!affaire || !this.visibleOrdres().length) return;
+    this.exportSvc.download(
+      this.exportSvc.ordresSt(affaire.id, this.visibleOrdres().map(o => o.id)),
+      `Ordres_ST_${affaire.reference.replace(/[^\w.-]+/g, '_')}.xlsx`, this.exportingXlsx);
+  }
 
   @ViewChild('ostTpl')    private ostTpl!:    TemplateRef<unknown>;
   @ViewChild('statutTpl') private statutTpl!: TemplateRef<unknown>;

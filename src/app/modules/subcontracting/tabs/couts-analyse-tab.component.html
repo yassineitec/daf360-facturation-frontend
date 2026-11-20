@@ -25,6 +25,10 @@
       <div class="flex shrink-0 items-center gap-2">
         @if (selectedAffaire()) {
           <daf-button
+            [options]="{ variant: 'ghost', label: ('SUBCONTRACTING.ANALYSIS.EXPORT_EXCEL' | translate), iconStart: 'download',
+                         disabled: !margin(), loading: exporting() }"
+            (onClick)="exportExcel()" />
+          <daf-button
             [options]="{ variant: 'ghost', label: 'SUBCONTRACTING.ANALYSIS.CLEAR' | translate, iconStart: 'close' }"
             (onClick)="clearAffaire()" />
         }

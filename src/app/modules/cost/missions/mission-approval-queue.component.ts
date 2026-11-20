@@ -4,7 +4,7 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent, MetricCardOptions,
-  MetricDelta, ModalRef, ModalService, PageComponent, PageHeaderComponent, PageHeaderBadge,
+  MetricDelta, ModalRef, ModalService, PageHeaderBadge,
   SearchToolbarComponent, SearchToolbarFilterConfig, SectionCardComponent,
   ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
@@ -64,7 +64,7 @@ const GUIDE_STEPS: GuideStep[] = [
   selector: 'app-mission-approval-queue',
   standalone: true,
   imports: [
-    TranslatePipe, ButtonComponent, PageComponent, PageHeaderComponent, MetricCardComponent,
+    TranslatePipe, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, FormFieldComponent, SectionCardComponent,
     MissionApprovalCardsSectionComponent, MissionApprovalTableSectionComponent,
     PageGuideComponent,
@@ -77,6 +77,8 @@ export class MissionApprovalQueueComponent implements OnInit {
 
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(MissionApprovalTableSectionComponent);
+  /** Bouton de l'onglet — rendu dans l'en-tête de approval-hub.component.ts. */
+  readonly pageActions = viewChild<TemplateRef<unknown>>('pageActions');
 
   private readonly svc = inject(MissionApprovalService);
   private readonly modal = inject(ModalService);
@@ -178,7 +180,9 @@ export class MissionApprovalQueueComponent implements OnInit {
   }
 
   load(): void {
-    if (!this.firstLoad()) this.loading.set(true);
+    // Toujours : sous approval-hub, seule la toute première ouverture de la page a le
+    // squelette pleine page — un changement d'onglet compte sur celui de la liste.
+    this.loading.set(true);
     this.error.set(null);
     this.svc.pending().subscribe({
       next: list => {

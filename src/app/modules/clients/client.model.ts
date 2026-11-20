@@ -19,11 +19,15 @@ export interface ClientListItemDto {
   defaultCurrency:   string | null;
   isKycDone:         boolean;
   isActive:          boolean;
+  /** INTER_COMPANY (entité du groupe) ou THIRD_PARTY (client externe). */
+  clientType:        ClientType;
   activeAffaireCount:number;
   totalCA:           number;
   /** `totalCA` converted to EUR at the current configured rate — currency-safe for cross-client summing. */
   totalCaEur:        number;
 }
+
+export type ClientType = 'INTER_COMPANY' | 'THIRD_PARTY';
 
 export interface ClientDetailDto {
   id:                number;
@@ -42,6 +46,8 @@ export interface ClientDetailDto {
   city:              string | null;
   postalCode:        string | null;
   website:           string | null;
+  /** INTER_COMPANY (entité du groupe) ou THIRD_PARTY (client externe). */
+  clientType:        ClientType;
   /** Valeur CLIENT_SECTOR (liste configurable, Administration → Listes). */
   sectorId:          number | null;
   /** Code de `sectorId` : retrouve la surcharge de l'entité quand l'admin a renommé la valeur. */
@@ -95,6 +101,7 @@ export interface CreateClientRequest {
   city?:             string | null;
   postalCode?:       string | null;
   website?:          string | null;
+  clientType?:       ClientType | null;
   sectorId?:         number | null;
   notes?:            string | null;
   /**
@@ -132,6 +139,8 @@ export interface ClientFilter {
   currency?:  string | null;
   /** true = au moins une affaire EN_COURS, false = aucune. */
   hasActiveAffaires?: boolean | null;
+  /** INTER_COMPANY ou THIRD_PARTY ; null = indifférent. */
+  clientType?: ClientType | null;
   page?:      number;
   size?:      number;
   /** `colonne,asc|desc` — clé de colonne du tableau, traduite côté serveur (ClientService.SORT_COLUMNS). */

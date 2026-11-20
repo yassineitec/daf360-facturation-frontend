@@ -11,6 +11,7 @@ import { SubcontractingService } from '../subcontracting.service';
 import { CreateSousTraitantRequest, SousTraitantDto } from '../subcontracting.model';
 import { StCardsSectionComponent } from './st-cards-section.component';
 import { StTableSectionComponent } from './st-table-section.component';
+import { ExportService } from '../../../core/export.service';
 
 type ViewMode = 'grid' | 'list';
 type StatusFilter = '' | 'active' | 'inactive';
@@ -44,6 +45,20 @@ export class SousTraitantsTabComponent {
   private readonly modal     = inject(ModalService);
   private readonly userStore = inject(UserStore);
   private readonly supplierSvc = inject(SupplierService);
+  private readonly exportSvc = inject(ExportService);
+
+  /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
+  readonly exporting = signal(false);
+
+  /** Export Excel des sous-traitants affichés (recherche + filtres), dans l'ordre de l'écran. */
+  exportExcel(): void {
+    const paysId = this.paysId();
+    if (paysId == null || !this.visibleList().length) return;
+    const d = new Date();
+    this.exportSvc.download(
+      this.exportSvc.sousTraitants(paysId, this.visibleList().map(st => st.id)),
+      `${this.translate.instant('SUBCONTRACTING.TABS.SUBCONTRACTORS')}_${toIsoDay(d)}.xlsx`, this.exporting);
+  }
 
   @ViewChild('formTpl')   private formTpl!:   TemplateRef<unknown>;
   @ViewChild('deleteTpl') private deleteTpl!: TemplateRef<unknown>;
