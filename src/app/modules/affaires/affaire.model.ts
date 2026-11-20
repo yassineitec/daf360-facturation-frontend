@@ -349,6 +349,12 @@ export interface AffairesSummary {
   devise:      string;
   /** Devises écartées faute de taux `RATE_EUR_*` — leurs montants ne sont dans aucun total. */
   devisesIgnorees: string[];
+  /** Tuiles de la fiche (vue générale), sommées sur tout le jeu filtré, en EUR. */
+  backlogTotal:  number;
+  factureTotal:  number;
+  encaisseTotal: number;
+  wipTotal:      number;
+  tsTotal:       number;
 }
 
 export interface AffaireFilter {

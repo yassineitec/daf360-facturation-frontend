@@ -191,9 +191,39 @@ export class AffairesListComponent implements OnInit {
    * through `[style]` bindings and carried its own 50 lines of card SCSS.
    */
   readonly kpiActive  : MetricCardOptions = { icon: 'work',                    iconColor: 'text-primary',   iconBg: 'bg-primary/10'   };
-  readonly kpiRaf     : MetricCardOptions = { icon: 'account_balance_wallet',  iconColor: 'text-teal',      iconBg: 'bg-teal/10'      };
-  readonly kpiBudget  : MetricCardOptions = { icon: 'payments',                iconColor: 'text-secondary', iconBg: 'bg-secondary/10' };
-  readonly kpiPending : MetricCardOptions = { icon: 'pause_circle',            iconColor: 'text-warning',   iconBg: 'bg-warning/10'   };
+
+  /**
+   * Les cinq tuiles de la fiche affaire (/finance/affaires/:id?tab=overview) — mêmes
+   * libellés, icônes, couleurs et bulles d'aide — sommées sur tout le jeu filtré par
+   * `GET /affaires/summary`. Les pourcentages suivent ceux de la fiche : Backlog et
+   * Encaissé sur le budget prévisionnel, Facturé sur budget + TS.
+   */
+  readonly overviewKpis = computed(() => {
+    this.translate.currentLang();
+    const t = (key: string) => this.translate.instant(key);
+    const s = this.summary();
+    const budget = s?.budgetTotal ?? 0;
+    const envelope = budget + (s?.tsTotal ?? 0);
+    const pct = (v: number | undefined, base: number): MetricDelta | null =>
+      s && base > 0 ? { value: `${Math.round(((v ?? 0) / base) * 100)}%`, direction: 'neutral' } : null;
+    return [
+      { label: 'AFFAIRES.DETAIL.KPI.BACKLOG', value: s?.backlogTotal ?? 0, delta: pct(s?.backlogTotal, budget),
+        options: { icon: 'inventory_2', iconColor: 'text-teal', iconBg: 'bg-teal/10', valueColor: 'text-primary',
+                   help: t('AFFAIRES.DETAIL.KPI.BACKLOG_HELP') } as MetricCardOptions },
+      { label: 'AFFAIRES.DETAIL.KPI.INVOICED', value: s?.factureTotal ?? 0, delta: pct(s?.factureTotal, envelope),
+        options: { icon: 'receipt_long', iconColor: 'text-primary', iconBg: 'bg-primary/10',
+                   help: t('AFFAIRES.DETAIL.KPI.INVOICED_HELP') } as MetricCardOptions },
+      { label: 'AFFAIRES.DETAIL.KPI.CA', value: s?.encaisseTotal ?? 0, delta: pct(s?.encaisseTotal, budget),
+        options: { icon: 'account_balance_wallet', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
+                   valueColor: 'text-secondary', help: t('AFFAIRES.DETAIL.KPI.CA_HELP') } as MetricCardOptions },
+      { label: 'AFFAIRES.DETAIL.KPI.WIP', value: s?.wipTotal ?? 0, delta: null,
+        options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10',
+                   help: t('AFFAIRES.DETAIL.KPI.WIP_HELP') } as MetricCardOptions },
+      { label: 'AFFAIRES.WIP.KPI_TS', value: s?.tsTotal ?? 0, delta: null,
+        options: { icon: 'schedule', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
+                   help: t('AFFAIRES.WIP.KPI_TS_HELP') } as MetricCardOptions },
+    ];
+  });
 
   /** Un filtre est-il actif ? Décide seulement de la légende des tuiles. */
   readonly hasActiveFilter = computed(() =>
