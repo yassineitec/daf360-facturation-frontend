@@ -245,6 +245,24 @@ export interface FieldDiff {
 
 const NO_VALUE = '—';
 
+/** A field ending in `_by` is this codebase's established "who did this" naming convention
+ *  (created_by, deleted_by, emitted_by, completed_by...) -- the same suffix the generic audit
+ *  trail's own `changed_by` column uses. Matching on it, rather than a per-table field list,
+ *  works for every audited table without extra configuration -- the same tradeoff
+ *  {@link recordIdentity}'s IDENTITY_FIELD_CANDIDATES already makes. */
+export function isActorField(field: string): boolean {
+  return /_by$/i.test(field);
+}
+
+/** The value is a plausible `users_ref` id (a bare positive integer) -- never matches `—`,
+ *  a date, or free text, so a non-id `*_by` value (there are none today, but the check costs
+ *  nothing) is left exactly as it reads today rather than mis-resolved. */
+export function actorIdIn(value: string | null): number | null {
+  if (!value || !/^\d+$/.test(value)) return null;
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
 function display(value: unknown): string {
   if (value === null || value === undefined) return NO_VALUE;
   if (typeof value === 'object') return JSON.stringify(value);

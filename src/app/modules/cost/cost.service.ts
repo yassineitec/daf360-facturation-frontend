@@ -10,8 +10,8 @@ import {
   CostReminderDto,
   ForexPreviewDto, CircuitPreviewDto,
   ListValueDto, SupplierSearchItem, SupplierLedgerDto, SupplierCostSummaryDto,
-  RateComputationDto, CreateRateComputationRequest,
-  RateFormulaItemDto, RateComputationLineDto,
+  RateComputationDto, CreateRateComputationRequest, UpdateRateComputationRequest,
+  RateComputationLineDto, RateComputationAggregateDto, PoolCompositionDto,
   CreateReglementRequest, UpdateReglementRequest,
 } from './cost.model';
 
@@ -295,7 +295,7 @@ export class CostService {
     return this.http.get<SupplierSearchItem>(`${this.base}/suppliers/${id}`);
   }
 
-  // ── Rate computations ──────────────────────────────────────────────────────
+  // ── Rate computations (F.04 barèmes de taux) ───────────────────────────────
 
   getRateComputations(paysId: number): Observable<RateComputationDto[]> {
     const params = new HttpParams().set('paysId', String(paysId));
@@ -308,6 +308,14 @@ export class CostService {
     return this.http.post<RateComputationDto>(`${this.base}/rate-computations`, req);
   }
 
+  updateRateComputation(id: number, req: UpdateRateComputationRequest): Observable<RateComputationDto> {
+    return this.http.put<RateComputationDto>(`${this.base}/rate-computations/${id}`, req);
+  }
+
+  deleteRateComputation(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/rate-computations/${id}`);
+  }
+
   computeRateComputation(id: number): Observable<RateComputationDto> {
     return this.http.post<RateComputationDto>(`${this.base}/rate-computations/${id}/compute`, {});
   }
@@ -316,33 +324,30 @@ export class CostService {
     return this.http.post<RateComputationDto>(`${this.base}/rate-computations/${id}/validate`, {});
   }
 
-  // ── Rate computation — cost formula + auto-populated lines ──────────────────
+  approveRateComputation(id: number): Observable<RateComputationDto> {
+    return this.http.post<RateComputationDto>(`${this.base}/rate-computations/${id}/approve`, {});
+  }
 
-  getFormulaItems(paysId: number): Observable<RateFormulaItemDto[]> {
+  returnRateComputation(id: number): Observable<RateComputationDto> {
+    return this.http.post<RateComputationDto>(`${this.base}/rate-computations/${id}/return`, {});
+  }
+
+  getRateComputationLines(id: number): Observable<RateComputationLineDto[]> {
+    return this.http.get<RateComputationLineDto[]>(`${this.base}/rate-computations/${id}/lines`);
+  }
+
+  getRateComputationAggregates(id: number): Observable<RateComputationAggregateDto[]> {
+    return this.http.get<RateComputationAggregateDto[]>(`${this.base}/rate-computations/${id}/aggregates`);
+  }
+
+  getPoolComposition(paysId: number): Observable<PoolCompositionDto> {
     const params = new HttpParams().set('paysId', String(paysId));
-    return this.http.get<RateFormulaItemDto[]>(`${this.base}/rate-computations/formula-items`, { params });
+    return this.http.get<PoolCompositionDto>(`${this.base}/rate-computations/pool-categories`, { params });
   }
 
-  saveFormulaItems(paysId: number, items: RateFormulaItemDto[]): Observable<RateFormulaItemDto[]> {
+  savePoolComposition(paysId: number, codes: string[]): Observable<PoolCompositionDto> {
     const params = new HttpParams().set('paysId', String(paysId));
-    return this.http.put<RateFormulaItemDto[]>(`${this.base}/rate-computations/formula-items`, items, { params });
-  }
-
-  getAvailableCostCategories(paysId: number): Observable<RateFormulaItemDto[]> {
-    const params = new HttpParams().set('paysId', String(paysId));
-    return this.http.get<RateFormulaItemDto[]>(
-      `${this.base}/rate-computations/formula-items/available-categories`, { params },
-    );
-  }
-
-  getRateComputationLines(rateComputationId: number): Observable<RateComputationLineDto[]> {
-    return this.http.get<RateComputationLineDto[]>(`${this.base}/rate-computations/${rateComputationId}/lines`);
-  }
-
-  autoPopulateLines(rateComputationId: number): Observable<RateComputationLineDto[]> {
-    return this.http.post<RateComputationLineDto[]>(
-      `${this.base}/rate-computations/${rateComputationId}/auto-populate-lines`, {},
-    );
+    return this.http.put<PoolCompositionDto>(`${this.base}/rate-computations/pool-categories`, codes, { params });
   }
 
   /**

@@ -43,6 +43,7 @@ import { AffaireTsWipTabComponent } from './ts/affaire-ts-wip-tab.component';
 import { AffaireWipTabComponent } from './wip/affaire-wip-tab.component';
 import { AffaireRessourcesTabComponent } from './ressources/affaire-ressources-tab.component';
 import { AffaireDepenseTabComponent } from './depense/affaire-depense-tab.component';
+import { AffaireOstComponent } from './ost/affaire-ost.component';
 import { ExpenseFormComponent } from './billing/modes/expense-form.component';
 import { ExpenseHistoryComponent } from './billing/modes/expense-history.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
@@ -295,6 +296,7 @@ const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: strin
   wip:        { key: 'WIP',        icon: 'pending_actions', target: 'affaire-panel' },
   ressources: { key: 'RESSOURCES', icon: 'group',          target: 'affaire-panel' },
   depense:    { key: 'DEPENSE',    icon: 'schedule',       target: 'affaire-panel' },
+  'sous-traitance': { key: 'SOUS_TRAITANCE', icon: 'handshake', target: 'affaire-panel' },
   factures:   { key: 'INVOICES',   icon: 'receipt_long',   target: 'affaire-panel' },
   paiements:  { key: 'PAYMENTS',   icon: 'payments',       target: 'affaire-panel' },
   frais:      { key: 'EXPENSES',   icon: 'receipt',        target: 'affaire-panel' },
@@ -309,7 +311,7 @@ const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: strin
     DrawerComponent, RadioGroupComponent, FormFieldComponent, SelectComponent,
     BarChartComponent, AvatarComponent, FilterComponent, FilterChipsComponent, SkeletonComponent,
     HelpPopoverComponent, PageGuideComponent,
-    PaginationComponent, TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent,
+    PaginationComponent, TsFormComponent, TsRowMenuComponent, AffaireTsWipTabComponent, AffaireWipTabComponent, AffaireRessourcesTabComponent, AffaireDepenseTabComponent, AffaireOstComponent,
     // La fiche utilise les deux morceaux séparément : le formulaire dans la modale
     // « Frais remboursables », l'historique dans l'onglet « Frais ».
     ExpenseFormComponent, ExpenseHistoryComponent,
@@ -2844,6 +2846,10 @@ export class AffaireDetailComponent implements OnInit {
     if (wipMode === 'FORFAIT' || wipMode === 'LIVRABLE') {
       tabs.push({ id: 'depense', label: t('AFFAIRES.DETAIL.TABS.DEPENSE') });
     }
+    // Sous-traitance : les ordres ST de l'affaire, quel que soit le mode de facturation —
+    // un sous-traitant peut intervenir sur n'importe quelle affaire.
+    // Masqué en attendant les prochaines évolutions du module sous-traitance.
+    // tabs.push({ id: 'sous-traitance', label: t('AFFAIRES.DETAIL.TABS.SOUS_TRAITANCE') });
     tabs.push(
       { id: 'factures',  label: t('AFFAIRES.DETAIL.TABS.INVOICES'), count: this.invoices().length },
       { id: 'paiements', label: t('AFFAIRES.DETAIL.TABS.PAYMENTS'), count: this.payments().length },

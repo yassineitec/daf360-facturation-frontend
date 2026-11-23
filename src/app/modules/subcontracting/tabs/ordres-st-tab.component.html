@@ -3,8 +3,11 @@
   <!-- Affaire picker. The orders endpoint is per-affaire, so this is a selector, not a
        list filter — hence a search box whose results you pick from, wrapped in the same
        glass card the search toolbar uses everywhere else. -->
+  <!-- The results list sits OUTSIDE daf-card: the card is overflow-hidden, so a dropdown
+       positioned below it from the inside was clipped and the search looked empty. -->
+  <div class="relative">
   <daf-card [options]="{ variant: 'glass', padding: 'none', radius: 'xl' }">
-    <div class="relative flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
+    <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
 
       <div class="relative min-w-0 flex-1">
         <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2
@@ -12,7 +15,7 @@
         <input
           type="search"
           [value]="searchQuery()"
-          (input)="searchQuery.set($any($event.target).value)"
+          (input)="searchQuery.set($any($event.target).value); searched.set(false)"
           (keyup.enter)="searchAffaires()"
           [placeholder]="'SUBCONTRACTING.OST.SEARCH_PLACEHOLDER' | translate"
           class="h-11 w-full rounded-full border-2 border-outline-variant/30
@@ -34,6 +37,9 @@
           (onClick)="searchAffaires()" />
       </div>
 
+    </div>
+  </daf-card>
+
       @if (searchResults().length > 0) {
         <div class="absolute left-4 right-4 top-full z-20 mt-1 max-h-72 overflow-y-auto
                     rounded-xl border border-outline-variant/30 bg-surface-container-lowest shadow-xl">
@@ -48,10 +54,15 @@
             </button>
           }
         </div>
+      } @else if (searched() && !searching()) {
+        <div class="absolute left-4 right-4 top-full z-20 mt-1 flex items-center gap-2 rounded-xl
+                    border border-outline-variant/30 bg-surface-container-lowest px-4 py-3
+                    text-body-sm text-on-surface-variant shadow-xl">
+          <span class="material-symbols-outlined text-[18px] text-outline">search_off</span>
+          {{ 'SUBCONTRACTING.OST.NO_AFFAIRE_FOUND' | translate }}
+        </div>
       }
-
-    </div>
-  </daf-card>
+  </div>
 
   @if (!selectedAffaire()) {
     <div class="flex flex-col items-center gap-2 rounded-xl border border-dashed
@@ -148,11 +159,21 @@
           {{ ost.montantRealise | displayCurrency : ost.devise }} / {{ ost.montantBudget | displayCurrency : ost.devise }}
         </span>
       </div>
-      <daf-button
-        *appHasPermission="'FACT_MANAGE_ST'"
-        [options]="{ variant: 'teal', size: 'sm', label: 'SUBCONTRACTING.OST.COST_MODAL.ADD' | translate, iconStart: 'add' }"
-        (onClick)="showAddCout.set(!showAddCout())" />
+      <div class="flex flex-wrap justify-end gap-2" *appHasPermission="'FACT_MANAGE_ST'">
+        <daf-button
+          [options]="{ variant: 'secondary', size: 'sm', label: 'SUBCONTRACTING.LINK.FROM_INVOICE' | translate,
+                       iconStart: 'receipt_long', disabled: ost.statut !== 'EN_COURS' }"
+          (onClick)="showInvoicePicker.set(!showInvoicePicker()); showAddCout.set(false)" />
+        <daf-button
+          [options]="{ variant: 'teal', size: 'sm', label: 'SUBCONTRACTING.OST.COST_MODAL.ADD' | translate, iconStart: 'add' }"
+          (onClick)="showAddCout.set(!showAddCout()); showInvoicePicker.set(false)" />
+      </div>
     </section>
+
+    @if (showInvoicePicker()) {
+      <app-st-invoice-picker [ordreId]="ost.id"
+        (linked)="onInvoiceLinked(ost)" (closed)="showInvoicePicker.set(false)" />
+    }
 
     @if (showAddCout()) {
       <section class="flex flex-col gap-3 rounded-xl bg-surface-container-low p-4">
@@ -197,6 +218,13 @@
               <span class="text-[11px] text-on-surface-variant">
                 {{ fmtDate(c.dateCout) }}@if (c.description) { · {{ c.description }} }
               </span>
+              @if (c.costInvoiceReference) {
+                <span class="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5
+                             text-[11px] font-semibold text-primary">
+                  <span class="material-symbols-outlined text-[13px]">receipt_long</span>
+                  {{ 'SUBCONTRACTING.LINK.INVOICE_BADGE' | translate : { ref: c.costInvoiceReference } }}
+                </span>
+              }
             </div>
             <fact-table-action
               *appHasPermission="'FACT_MANAGE_ST'"

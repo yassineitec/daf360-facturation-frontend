@@ -6,6 +6,7 @@ import { BodyPortalDirective } from '../../../shared/body-portal.directive';
 import { SubcontractingService } from '../../subcontracting/subcontracting.service';
 import { CurrencyContextService } from '../../../core/currency-context.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { StInvoicePickerComponent } from '../../subcontracting/components/st-invoice-picker.component';
 import {
   OSTDto, CoutSTDto, SousTraitantDto,
   CreateOSTRequest, CreateCoutSTRequest,
@@ -15,7 +16,7 @@ import {
 
 @Component({
   selector: 'app-affaire-ost',
-  imports: [FormsModule, PermissionDirective, BodyPortalDirective, SelectComponent, DisplayCurrencyPipe],
+  imports: [FormsModule, PermissionDirective, BodyPortalDirective, SelectComponent, DisplayCurrencyPipe, StInvoicePickerComponent],
   templateUrl: './affaire-ost.component.html',
   styleUrl: './affaire-ost.component.scss',
 })
@@ -66,6 +67,8 @@ export class AffaireOstComponent implements OnInit {
   coutsList    = signal<CoutSTDto[]>([]);
   coutsLoading = signal(false);
   showAddCout  = signal(false);
+  /** Sélecteur « Depuis une facture fournisseur » (V145). */
+  showInvoicePicker = signal(false);
   // Unreachable in practice -- openAddCout() (below) always resets devise from the parent
   // OST's own devise before the drawer opens.
   coutForm     = { montant: 0, dateCout: '', devise: inject(CurrencyContextService).defaultCurrency() ?? 'EUR', description: '' };
@@ -176,6 +179,7 @@ export class AffaireOstComponent implements OnInit {
     this.drawerOst.set(o);
     this.drawerOpen.set(true);
     this.showAddCout.set(false);
+    this.showInvoicePicker.set(false);
     this.coutError.set(null);
     this.coutForm = { montant: 0, dateCout: this.today, devise: o.devise, description: '' };
     this.coutsLoading.set(true);
@@ -210,6 +214,14 @@ export class AffaireOstComponent implements OnInit {
       },
       error: err => { this.coutSaving.set(false); this.coutError.set(err?.error?.message ?? 'Erreur lors de l\'ajout.'); },
     });
+  }
+
+  /** Un coût vient d'être créé depuis une facture : recharge les coûts et les ordres. */
+  onInvoiceLinked(): void {
+    const ost = this.drawerOst();
+    if (!ost) return;
+    this.svc.listCouts(ost.id).subscribe(l => this.coutsList.set(l));
+    this.loadOrdres();
   }
 
   removeCout(cout: CoutSTDto): void {

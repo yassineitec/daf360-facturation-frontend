@@ -140,14 +140,6 @@
         {{ 'REPORTING.CLOSE_PERIOD_HELP' | translate }}
       </p>
       <daf-form-field
-        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_INTERCOMPANY_IN' | translate) }"
-        [value]="closeIntercompanyInbound()"
-        (valueChange)="closeIntercompanyInbound.set($event === null || $event === '' ? null : +$event)" />
-      <daf-form-field
-        [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_INTERCOMPANY_OUT' | translate) }"
-        [value]="closeIntercompanyOutbound()"
-        (valueChange)="closeIntercompanyOutbound.set($event === null || $event === '' ? null : +$event)" />
-      <daf-form-field
         [options]="{ type: 'number', label: ('REPORTING.CLOSE_PERIOD_INTERSEDE_IN' | translate) }"
         [value]="closeIntersedeInbound()"
         (valueChange)="closeIntersedeInbound.set($event === null || $event === '' ? null : +$event)" />

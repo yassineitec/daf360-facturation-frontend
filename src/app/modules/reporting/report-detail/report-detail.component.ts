@@ -29,7 +29,7 @@ import { PlFxRateAdminService } from '../pl-fx-rate-admin.service';
 import { RatesUsedPanelRowDto } from '../pl-fx-rate.model';
 import { VarianceCommentaryService } from '../variance-commentary.service';
 import {
-  MissingCashRowDto, PlPeriodDto, PlReportDto, PlReportLineDto, PlReportStatus,
+  MissingCashRowDto, PlPeriodDto, PlReportDto, PlReportLineDto, PlReportStatus, PlTemplateRowDto,
   ReceivableLineDto, ReopenMethod, VarianceCommentaryDto,
   VarianceSectionType,
 } from '../pl-reporting.model';
@@ -138,7 +138,7 @@ interface LineCommentaryVm {
   commentary: VarianceCommentaryDto | null;
 }
 
-type ReportTab = 'overview' | 'recap' | 'commentaires' | 'tresorerie';
+type ReportTab = 'overview' | 'template' | 'recap' | 'commentaires' | 'tresorerie';
 type CashTab = 'receivables' | 'missing-cash';
 type CommentaryTab = 'lines' | 'sections';
 
@@ -472,6 +472,12 @@ export class ReportDetailComponent implements OnInit {
   exportingPdf  = signal(false);
   isExportingWorkbook = signal(false);
 
+  // ── Workbook Template rows -- lazy-loaded when the tab first opens, per report id ──────────
+  private templateLoadedFor: number | null = null;
+  isLoadingTemplate = signal(false);
+  templateRows      = signal<PlTemplateRowDto[]>([]);
+  templateError     = signal(false);
+
   // ── Cash position (Receivables / Missing Cash) -- lazy-loaded when the tab first opens ─────
   receivablesLoaded    = signal(false);
   isLoadingReceivables = signal(false);
@@ -528,6 +534,32 @@ export class ReportDetailComponent implements OnInit {
       if (this.activeTab() !== 'tresorerie' || !this.period()) return;
       const sub = this.cashTab();
       untracked(() => sub === 'receivables' ? this.loadReceivables() : this.loadMissingCash());
+    });
+
+    // Template tab: fetched the first time it is shown for a given report (a versioned reopen
+    // navigates to a new id on the same component).
+    effect(() => {
+      const id = this.report()?.id;
+      if (this.activeTab() !== 'template' || id == null || id === this.templateLoadedFor) return;
+      untracked(() => this.loadTemplate(id));
+    });
+  }
+
+  private loadTemplate(reportId: number): void {
+    this.templateLoadedFor = reportId;
+    this.isLoadingTemplate.set(true);
+    this.templateError.set(false);
+    this.reportSvc.getTemplate(reportId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: view => {
+        this.templateRows.set(view.rows);
+        this.isLoadingTemplate.set(false);
+      },
+      error: () => {
+        this.templateLoadedFor = null;
+        this.templateRows.set([]);
+        this.templateError.set(true);
+        this.isLoadingTemplate.set(false);
+      },
     });
   }
 
@@ -719,6 +751,52 @@ export class ReportDetailComponent implements OnInit {
     ];
   });
 
+  // ── Template table — the workbook's own rows, labels and signs, month + YTD ──
+
+  readonly templateColumns = computed<TableColumn[]>(() => {
+    this.translate.currentLang();
+    const t = (k: string) => this.translate.instant(k);
+    const month = this.report()?.periodMonth;
+    const year = this.report()?.periodYear;
+    const monthLabel = month && year
+      ? new Date(year, month - 1, 1).toLocaleDateString(this.translate.currentLang() || 'fr', { month: 'long', year: 'numeric' })
+      : t('REPORTING.DETAIL.TEMPLATE.MONTH');
+    return [
+      { key: 'label', label: t('REPORTING.DETAIL.TEMPLATE.LINE'),  type: 'custom' },
+      { key: 'month', label: monthLabel,                            type: 'custom', align: 'right' },
+      { key: 'ytd',   label: t('REPORTING.DETAIL.TEMPLATE.YTD'),   type: 'custom', align: 'right' },
+    ];
+  });
+
+  private formatTemplateValue(row: PlTemplateRowDto, v: number | null): string {
+    if (v == null) return '—';
+    if (row.style === 'PERCENT') return `${v.toFixed(1)}%`;
+    // Average FTE is a headcount, not money: no currency, decimals only when it has some.
+    if (row.style === 'COUNT') return Number.isInteger(v) ? String(v) : v.toFixed(2);
+    return this.currency.transform(v, this.reportingCurrency());
+  }
+
+  readonly templateTableRows = computed<TableRow[]>(() => this.templateRows().map(row => ({
+    id:     row.excelRow,
+    label:  row.label,
+    month:  this.formatTemplateValue(row, row.month),
+    ytd:    this.formatTemplateValue(row, row.ytd),
+    _strong: row.style === 'SUBTOTAL' || row.style === 'TOTAL',
+    _total:  row.style === 'TOTAL',
+    _negative: (row.month ?? 0) < 0,
+    _negativeYtd: (row.ytd ?? 0) < 0,
+  })));
+
+  readonly templateConfig = computed<TableConfig>(() => ({
+    showHeader:   false,
+    hoverable:    true,
+    loading:      this.isLoadingTemplate(),
+    skeletonRows: 22,
+    emptyMessage: this.translate.instant(this.templateError()
+      ? 'REPORTING.DETAIL.TEMPLATE.LOAD_ERROR'
+      : 'REPORTING.EMPTY'),
+  }));
+
   // ── Toolbars (search + filter panel) of the three tables ─────────────────
 
   /** Panel labels shared by the three toolbars. Each table then adds its own
@@ -872,6 +950,7 @@ export class ReportDetailComponent implements OnInit {
     const count = (n: number) => (n ? { count: n } : {});
     return [
       { id: 'overview',     label: t('REPORTING.DETAIL.TABS.OVERVIEW') },
+      { id: 'template',     label: t('REPORTING.DETAIL.TABS.TEMPLATE') },
       { id: 'recap',        label: t('REPORTING.DETAIL.TABS.RECAP'),        ...count(this.lines().length) },
       { id: 'commentaires', label: t('REPORTING.DETAIL.TABS.COMMENTARIES'), ...count(this.commentaries().length) },
       { id: 'tresorerie',   label: t('REPORTING.DETAIL.TABS.TREASURY') },

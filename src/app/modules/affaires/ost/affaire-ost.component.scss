@@ -54,6 +54,14 @@
   font-size: 0.8125rem;
 }
 
+.alert-info {
+  padding: 0.625rem 0.875rem;
+  background: #e0f2fe;
+  color: #075985;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+}
+
 .spinner {
   width: 16px;
   height: 16px;
@@ -375,3 +383,17 @@
 
 .add-form { display: flex; flex-direction: column; gap: 0.625rem; }
 .add-form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+.cout-invoice {
+  display: inline-block;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

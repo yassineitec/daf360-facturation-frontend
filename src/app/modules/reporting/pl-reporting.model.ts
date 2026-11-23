@@ -130,6 +130,27 @@ export interface PlReportDetailDto {
   lines: PlReportLineDto[];
 }
 
+/** One row of the workbook's "Template" sheet, as the export computes it. */
+export interface PlTemplateRowDto {
+  /** Row number on the Template sheet. */
+  excelRow: number;
+  label: string;
+  /** `PERCENT` values are already ×100; `BALANCE` is a stock (YTD = the month's balance). */
+  style: 'LINE' | 'SUBTOTAL' | 'TOTAL' | 'PERCENT' | 'BALANCE' | 'COUNT';
+  /** `null` when the report's own month could not be computed. */
+  month: number | null;
+  ytd: number | null;
+}
+
+/** `GET /api/fact/pl-reports/{id}/template` — Template sheet rows 11-42 + 52, month and YTD. */
+export interface PlTemplateViewDto {
+  reportId: number;
+  periodYear: number;
+  periodMonth: number;
+  rows: PlTemplateRowDto[];
+  excludedMonths: string[];
+}
+
 export type ReopenMethod = 'OPTION_1_VERSIONED' | 'OPTION_2_CONSUMED';
 
 export interface ReopenReportRequest {

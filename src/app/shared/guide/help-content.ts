@@ -417,7 +417,8 @@ export const HELP_CONTENT: Record<string, HelpPageContent> = {
     docs: [
       { titleKey: 'GUIDE.RATES.FORMULA_TITLE',    textKey: 'GUIDE.RATES.FORMULA_TEXT' },
       { titleKey: 'GUIDE.RATES.LIFECYCLE_TITLE',  textKey: 'GUIDE.RATES.LIFECYCLE_TEXT' },
-      { titleKey: 'GUIDE.RATES.ALLOCATION_TITLE', textKey: 'GUIDE.RATES.ALLOCATION_TEXT' },
+      { titleKey: 'GUIDE.RATES.POOL_TITLE',       textKey: 'GUIDE.RATES.POOL_TEXT' },
+      { titleKey: 'GUIDE.RATES.DETAIL_TITLE',     textKey: 'GUIDE.RATES.DETAIL_TEXT' },
     ],
     videos: [],
   },

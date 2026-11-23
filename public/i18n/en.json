@@ -1113,24 +1113,24 @@
         },
         "RATES": {
           "WHAT": {
-            "Q": "What is a rate scale for?",
-            "A": "To compute each time & materials employee’s interco rate and selling rate from their costs. The latest validated scale applies."
+            "Q": "What is a rate card for?",
+            "A": "To compute the loaded cost rate of each technical employee, then the averages per grade and per discipline + grade (F.04 method). The latest approved rate card feeds the proposed rates of T&M projects."
           },
           "STEPS": {
             "Q": "In which order?",
-            "A": "« + New scale » (Draft) → « Auto-fill from formula » → « Compute » (Computed) → « Validate » (Validated, locked)."
+            "A": "« + New rate card » (Draft) → « Compute » (Computed) → « Validate (FM) » (Validated) → « Approve (CD) » (Approved, locked)."
           },
           "AUTO": {
-            "Q": "Where do the auto-fill amounts come from?",
-            "A": "From the period’s paid cost invoices, split according to the entity’s cost formula, plus employees’ direct costs. Lines added by hand are left untouched."
+            "Q": "Where do the computed amounts come from?",
+            "A": "From HR headcount, payroll (otherwise employee costs) and the period's booked costs for the overhead pool. The computation details are shown by expanding the rate card."
           },
           "METHODS": {
-            "Q": "Per headcount, fixed amount or direct?",
-            "A": "Per headcount: the category total divided by the number of employees. Fixed amount: an amount per month. Direct: the costs tied to the employee themselves."
+            "Q": "Which categories enter the overhead?",
+            "A": "Those chosen in « Pool composition ». With nothing saved, the guide's default applies: every category except subcontractors and salaries."
           },
           "LOCKED": {
-            "Q": "Can I change a validated scale?",
-            "A": "No, a validated scale is locked. Create a new scale for another period."
+            "Q": "Can I change an approved rate card?",
+            "A": "No, approval locks the rate card. The Country Director must be someone other than the validator. Create a new rate card for another period."
           }
         },
         "EMPLOYEE_COSTS": {
@@ -1530,6 +1530,8 @@
       "RESSOURCES_TEXT": "Time & Materials project: the billed employees and their rate. « Add a resource », change a rate or deactivate a resource; a locked rate (🔒) can no longer be changed.",
       "DEPENSE_TITLE": "Expense",
       "DEPENSE_TEXT": "Read only: the hours logged in Timesheet on the project and their estimated internal cost, per employee, with filters and Excel export.",
+      "SOUS_TRAITANCE_TITLE": "Subcontracting",
+      "SOUS_TRAITANCE_TEXT": "The project's subcontracting orders (OST): creation, budget consumption, status changes and cost entry.",
       "INVOICES_TITLE": "Invoices",
       "INVOICES_TEXT": "The project’s invoices, with search, filters and export. « View » shows the details; « Edit » is only possible on a draft or returned invoice, and opens the invoice in « Invoices ».",
       "PAYMENTS_TITLE": "Payments",
@@ -1963,21 +1965,23 @@
       "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
     },
     "RATES": {
-      "PAGE": "Rate scales",
-      "INTRO_TITLE": "TM rate scales",
-      "INTRO_TEXT": "Scales compute, for each employee, an intercompany rate and a time & materials selling rate. The latest validated scale applies.",
+      "PAGE": "Rate cards",
+      "INTRO_TITLE": "Rate cards",
+      "INTRO_TEXT": "A rate card computes the loaded cost rate of each technical employee, then the averages per grade and per discipline + grade. The latest approved rate card feeds the proposed rates of T&M projects.",
       "PAYS_TITLE": "The entity",
-      "PAYS_TEXT": "Pick the entity whose scales you manage.",
+      "PAYS_TEXT": "Choose the entity whose rate cards you manage. The rate card currency is the entity's currency.",
+      "POOL_TITLE": "Pool composition",
+      "POOL_TEXT": "Choose the cost categories that enter the overhead pool. With nothing saved, the guide's default applies: every category except subcontractors and salaries.",
       "FORMULA_TITLE": "The formulas",
-      "FORMULA_TEXT": "Interco rate = cost × (1 + % HQ); selling rate = cost × (1 + % HQ + % margin), recalled above the table.",
-      "TABLE_TITLE": "The scales",
-      "TABLE_TEXT": "Each scale: period (month, quarter or year), type, % HQ, % margin, interco and external margins, currency, status and validation date. Expand one to see its lines per employee.",
-      "NEW_TITLE": "New scale",
-      "NEW_TEXT": "« + New scale »: pick the period and percentages. The scale starts as Draft.",
-      "LIFECYCLE_TITLE": "From draft to validated scale",
-      "LIFECYCLE_TEXT": "« Auto-fill from formula » creates one line per active employee from the period’s paid costs. « Compute » moves the scale to Computed (daily, hourly, monthly, interco and external rates). « Validate » locks it.",
-      "ALLOCATION_TITLE": "Cost formula",
-      "ALLOCATION_TEXT": "This button opens the cost category allocation: per headcount (total ÷ number of employees), fixed amount, or direct (costs tied to the employee). It drives auto-fill.",
+      "FORMULA_TEXT": "Interco rate = (direct cost/h + overhead/h) × (1 + HQ %); sale rate = interco rate × (1 + margin %).",
+      "TABLE_TITLE": "The rate cards",
+      "TABLE_TEXT": "Each rate card: period, HQ %, margin %, productivity, currency, status, validation (FM) and approval (CD).",
+      "NEW_TITLE": "New rate card",
+      "NEW_TEXT": "\"+ New rate card\": choose the period and the percentages. Advanced parameters (days, hours, sellable months) default to the guide's values.",
+      "LIFECYCLE_TITLE": "From draft to approval",
+      "LIFECYCLE_TEXT": "\"Compute\" reads HR headcount, payroll (otherwise employee costs) and booked costs. The Finance Manager validates, then the Country Director approves: two different people. Approval freezes the rate card.",
+      "DETAIL_TITLE": "Rate card details",
+      "DETAIL_TEXT": "Expand a rate card: the \"Computation\" card shows steps 1 to 5 and the warnings, then three tabs (individual, grade, discipline + grade) in local currency, EUR or USD, hourly, daily, monthly or annual.",
       "END_TITLE": "Need help?",
       "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
     },
@@ -3298,7 +3302,8 @@
         "PAYMENTS": "Payments",
         "WIP": "WIP",
         "RESSOURCES": "Resources",
-        "DEPENSE": "Expense"
+        "DEPENSE": "Expense",
+        "SOUS_TRAITANCE": "Subcontracting"
       },
       "ACTIONS": {
         "QUICK_TITLE": "Quick actions",
@@ -5255,7 +5260,8 @@
       "STATUS": {
         "DRAFT": "Draft",
         "COMPUTED": "Computed",
-        "VALIDATED": "Validated ✓"
+        "VALIDATED": "Validated (FM)",
+        "APPROVED": "Approved (CD)"
       },
       "PERIOD": {
         "ANNUAL": "Annual",
@@ -5279,76 +5285,137 @@
       "NO_PAYS": "No country configured.",
       "LOAD_PAYS_ERROR": "Unable to load countries.",
       "LOAD_ERROR": "Loading error.",
-      "YEAR_REQUIRED": "The year is required.",
-      "QUARTER_REQUIRED": "The quarter is required.",
-      "MONTH_REQUIRED": "The month is required.",
-      "CREATE_ERROR": "Creation error.",
+      "YEAR_REQUIRED": "Year is required.",
+      "QUARTER_REQUIRED": "Quarter is required.",
+      "MONTH_REQUIRED": "Month is required.",
+      "SAVE_ERROR": "Error while saving.",
       "COMPUTE_ERROR": "Error during computation.",
       "VALIDATE_ERROR": "Error during validation.",
+      "APPROVE_ERROR": "Error during approval.",
+      "RETURN_ERROR": "Error while returning to draft.",
+      "DELETE_ERROR": "Error while deleting.",
       "QUARTER_SHORT": "Q",
-      "TITLE": "TM rate scales",
-      "SUBTITLE": "Configure the HQ cost percentage and target margin used to compute the intercompany rate and sale rate of each employee in Time & Material mode. The most recent <strong>Validated</strong> scale is applied automatically.",
+      "TITLE": "Rate cards",
+      "SUBTITLE": "Loaded cost rates per employee, grade and discipline, computed with the F.04 method: loaded salaries (payroll, otherwise employee costs), overhead pool spread over sellable hours, then HQ % and margin %. The latest <strong>Approved</strong> rate card feeds the proposed rates of T&M projects.",
       "BTN_CANCEL": "✕ Cancel",
-      "BTN_NEW": "+ New scale",
+      "BTN_NEW": "+ New rate card",
       "EXPORT_EXCEL": "Export to Excel",
       "EXPORTING": "Exporting…",
       "FORMULA_INTERCO_LABEL": "Interco rate",
-      "FORMULA_INTERCO_EXPR": "= Cost × (1 + % HQ)",
+      "FORMULA_INTERCO_EXPR": "= (direct cost/h + overhead/h) × (1 + HQ %)",
       "FORMULA_SALE_LABEL": "Sale rate",
-      "FORMULA_SALE_EXPR": "= Cost × (1 + % HQ + % Margin)",
+      "FORMULA_SALE_EXPR": "= interco rate × (1 + margin %)",
       "TH_PERIOD": "Period",
       "TH_TYPE": "Type",
-      "TH_HQ": "% HQ",
-      "TH_MARGIN": "% Margin",
-      "INTERCO_MARGIN_PCT": "% Interco Margin",
-      "EXTERNAL_MARGIN_PCT": "% External Margin",
+      "TH_HQ": "HQ %",
+      "TH_MARGIN": "Margin %",
+      "TH_PRODUCTIVITY": "Productivity",
       "TH_CURRENCY": "Currency",
       "TH_STATUS": "Status",
-      "TH_VALIDATED_AT": "Validated on",
+      "TH_VALIDATED": "Validated (FM)",
+      "TH_APPROVED": "Approved (CD)",
       "YEAR_PLACEHOLDER": "Year",
-      "QUARTER_PLACEHOLDER": "Qtr.",
+      "QUARTER_PLACEHOLDER": "Qtr",
       "MONTH_PLACEHOLDER": "Month",
+      "ADVANCED": "Advanced parameters",
+      "WORKING_DAYS": "Working days / month",
+      "HOURS_PER_DAY": "Hours / day",
+      "SELLING_MONTHS": "Sellable months / year",
+      "CONVERSION_DAYS": "Days / month (conversion)",
+      "CURRENCY_READONLY": "Entity currency (read-only)",
+      "SAVE": "Save",
       "COMPUTE": "Compute",
-      "VALIDATE": "Validate",
-      "COMPUTE_TITLE": "Compute (DRAFT → COMPUTED)",
-      "VALIDATE_TITLE": "Validate (COMPUTED → VALIDATED)",
-      "EMPTY": "No scale configured. Click « + New scale » to create one.",
+      "RECOMPUTE": "Recompute",
+      "VALIDATE": "Validate (FM)",
+      "APPROVE": "Approve (CD)",
+      "EDIT": "Edit",
+      "DELETE": "Delete",
+      "DELETE_CONFIRM": "Click again to confirm deletion",
+      "COMPUTE_TITLE": "Computes the rates from HR headcount, payroll and the period's booked costs",
+      "VALIDATE_TITLE": "Finance Manager validation (Computed → Validated)",
+      "APPROVE_TITLE": "Country Director approval, by someone other than the validator. Freezes the rate card and applies it to T&M projects.",
+      "RETURN_TITLE": "Cancels the validation and returns the rate card to draft",
+      "EMPTY": "No rate card configured. Click \"+ New rate card\" to create one.",
       "LOADING": "Loading...",
-      "FORMULA": {
-        "BTN_OPEN": "⚙ Cost formula",
-        "BTN_CLOSE": "✕ Close formula",
-        "TH_CATEGORY": "Category",
-        "TH_METHOD": "Allocation method",
-        "TH_FIXED_AMOUNT": "Fixed amount / employee",
-        "METHOD": {
-          "PER_HEADCOUNT": "Per headcount",
-          "FIXED_AMOUNT": "Fixed amount",
-          "DIRECT": "Direct (per employee)"
-        },
-        "ADD_PLACEHOLDER": "Add a category…",
-        "SAVE": "Save formula",
-        "EMPTY": "No category in the formula yet. Add one below.",
-        "LOAD_ERROR": "Error loading the formula.",
-        "SAVE_ERROR": "Error saving the formula."
+      "NEW": "New rate card",
+      "EDIT_TITLE": "Edit rate card {{period}}",
+      "CANCEL": "Cancel",
+      "FIELD_PERIOD_TYPE": "Period type",
+      "FIELD_YEAR": "Year",
+      "FIELD_QUARTER": "Quarter",
+      "FIELD_MONTH": "Month",
+      "DELETE_CONFIRM_TITLE": "Delete the rate card?",
+      "DELETE_CONFIRM_BODY": "The {{period}} rate card and its computed detail will be permanently deleted.",
+      "DETAIL_TITLE": "Rate card {{period}} — detail",
+      "CLOSE_DETAIL": "Close detail",
+      "POOL": {
+        "BTN_OPEN": "⚙ Pool composition",
+        "BTN_CLOSE": "✕ Close pool",
+        "TITLE": "Overhead pool composition",
+        "OPEN": "Pool composition",
+        "CLOSE": "Close pool",
+        "HELP": "Cost categories that enter the overhead pool, on top of non-billable salaries. Subcontractors are always excluded; salaries come from payroll.",
+        "DEFAULT_BADGE": "Guide default",
+        "SAVE": "Save composition",
+        "EMPTY": "No active cost category for this entity.",
+        "LOAD_ERROR": "Error loading the pool composition.",
+        "SAVE_ERROR": "Error saving the pool composition."
       },
-      "AUTO_POPULATE": "Auto-fill from formula",
-      "AUTO_POPULATE_TITLE": "Replaces the auto-generated lines from the country's cost formula (manually added lines are left untouched)",
-      "AUTO_POPULATE_ERROR": "Error during auto-fill.",
+      "CALC": {
+        "TITLE": "Computation",
+        "TOTAL_ENTITY_COST": "1. Total entity cost",
+        "BILLABLE_SALARIES": "Billable salaries (Technical)",
+        "NONBILLABLE_SALARIES": "Non-billable salaries (Support)",
+        "POOL_CATEGORIES": "Pool categories",
+        "OVERHEAD_POOL": "2. Overhead pool",
+        "ETPT": "3. Technical FTE",
+        "SELLABLE_HOURS": "4. Sellable hours / FTE",
+        "OVERHEAD_PER_HOUR": "5. Overhead / hour",
+        "ANNUALISED": "Annualised amounts, in {{currency}}.",
+        "FX": "Frozen rates: 1 EUR = {{eur}} {{currency}}, 1 USD = {{usd}} {{currency}}",
+        "NOT_COMPUTED": "This rate card has not been computed yet."
+      },
+      "WARN": {
+        "TITLE": "Computation warnings",
+        "NO_COST": "Billable employees with no cost (neither payroll nor employee cost): {{detail}}",
+        "EXCLUDED_STAFF_TYPE": "Excluded employees (staff type neither Technical nor Support): {{detail}}",
+        "ETPT_ZERO": "Zero FTE: overhead per hour is 0.",
+        "FX_MISSING": "Missing exchange rate, amounts skipped: {{detail}}",
+        "PAYROLL_UNAVAILABLE": "Payroll service unreachable: employee costs are used for everyone."
+      },
+      "VIEW": {
+        "CURRENCY": "Currency",
+        "LOCAL": "Local",
+        "FORMAT": "Format",
+        "HOUR": "Hourly",
+        "DAY": "Daily",
+        "MONTH": "Monthly",
+        "YEAR": "Annual"
+      },
+      "TABS": {
+        "INDIVIDUAL": "Individual",
+        "GRADE": "Grade",
+        "DISCIPLINE_GRADE": "Discipline + Grade"
+      },
       "LINES": {
-        "TOGGLE_TITLE": "Show / hide line detail",
-        "LOADING": "Loading lines...",
-        "LOAD_ERROR": "Error loading lines.",
-        "EMPTY": "No lines yet. Use « Auto-fill from formula » or add one manually.",
+        "TOGGLE_TITLE": "Show / hide details",
+        "LOADING": "Loading details...",
+        "LOAD_ERROR": "Error loading details.",
+        "EMPTY": "No line. Run \"Compute\".",
         "TH_EMPLOYEE": "Employee",
-        "TH_GRADE_DISCIPLINE": "Grade / Discipline",
+        "TH_GRADE": "Grade",
+        "TH_DISCIPLINE": "Discipline",
+        "TH_HEADCOUNT": "Headcount",
+        "TH_SOURCE": "Cost source",
         "TH_DIRECT_COST": "Direct cost",
-        "TH_DRY_RATE": "Dry rate",
-        "TH_INTERCO_RATE": "Intercompany rate",
-        "TH_EXTERNAL_RATE": "External rate",
-        "TH_SOURCE": "Source",
+        "TH_OVERHEAD": "Overhead",
+        "TH_TOTAL_COST": "Total cost",
+        "TH_INTERCO_RATE": "Interco rate",
+        "TH_SALE_RATE": "Sale rate",
         "SOURCE": {
-          "AUTO": "Auto",
-          "MANUAL": "Manual"
+          "PAYROLL": "Payroll",
+          "EMPLOYEE_COST": "Employee cost",
+          "NONE": "None"
         }
       }
     },
@@ -5905,9 +5972,7 @@
     "CLOSE_PERIOD": "Close",
     "CLOSE_PERIOD_ERROR": "Error closing the period.",
     "CLOSE_PERIOD_TITLE": "Close period",
-    "CLOSE_PERIOD_HELP": "All fields are optional and default to zero. There's no live connection to the Intercompany platform yet — enter the figures for this month by hand.",
-    "CLOSE_PERIOD_INTERCOMPANY_IN": "Intercompany billed to us",
-    "CLOSE_PERIOD_INTERCOMPANY_OUT": "Intercompany billed by us",
+    "CLOSE_PERIOD_HELP": "All fields are optional and default to zero. The Intercompany lines are computed automatically: (+) from the clients typed \"Interco\", (−) from the \"Intercompany subcontracting\" cost category.",
     "CLOSE_PERIOD_INTERSEDE_IN": "Intersede (+)",
     "CLOSE_PERIOD_INTERSEDE_OUT": "Intersede (−)",
     "CLOSE_PERIOD_WIP_PRIOR": "WIP, prior years",
@@ -5962,7 +6027,7 @@
       "PAYS": "Country / Entity",
       "GLOBAL_DEFAULT": "Global default (all countries)",
       "TAB_STATUS": "Statuses",
-      "TAB_MAPPING": "Categories",
+      "TAB_MAPPING": "Categories → P&L lines",
       "TAB_NAV_LABEL": "P&L catalogue",
       "SOURCE_TYPE_LABEL": "Source type",
       "SOURCE_TYPE": {
@@ -5988,6 +6053,20 @@
       "ACTIVATE_SUCCESS": "Version activated.",
       "ACTIVATE_ERROR": "Error while activating.",
       "LOAD_ERROR": "Error while loading.",
+      "LINKS": {
+        "COL_CATEGORIES": "Cost categories",
+        "COL_LINES": "P&L cost lines",
+        "HELP": "Link each cost category to exactly one P&L line: drag the category onto the line, or click the category then the line. Click an arrow to remove it. Every category must be linked before saving.",
+        "COVERAGE": "{{linked}} / {{total}} categories linked",
+        "UNLINKED": "Not linked",
+        "UNLINK": "Remove link",
+        "ARROW_HINT": "Click to remove this link",
+        "ROW": "R{{row}}",
+        "PICK_LINE": "Choose a P&L line",
+        "RESET": "Discard changes",
+        "LOADING": "Loading categories…",
+        "NO_CATEGORIES": "No active cost category for this country."
+      },
       "MAPPING": {
         "COL_CATEGORY": "Source categories",
         "COL_LINE": "P&L line",
@@ -6109,9 +6188,17 @@
       "TABS": {
         "ARIA": "P&L report sections",
         "OVERVIEW": "Overview",
+        "TEMPLATE": "Template (workbook)",
         "RECAP": "P&L recap",
         "COMMENTARIES": "Commentary",
         "TREASURY": "Treasury"
+      },
+      "TEMPLATE": {
+        "HINT": "The rows of the Excel workbook's \"Template\" sheet, with the same labels, signs and amounts: the report's month and the year to date.",
+        "LINE": "Template row",
+        "MONTH": "Month",
+        "YTD": "Year to date",
+        "LOAD_ERROR": "The Template rows could not be loaded."
       },
       "OVERVIEW": {
         "WATERFALL_TITLE": "From revenue to EBITDA",
@@ -6508,6 +6595,33 @@
     }
   },
   "SUBCONTRACTING": {
+    "LINK": {
+      "FROM_INVOICE": "From a supplier invoice",
+      "PICKER_TITLE": "Unlinked supplier invoices",
+      "ONLY_SUPPLIER": "Subcontractor's supplier",
+      "ALL_SUPPLIERS": "All suppliers",
+      "EMPTY": "No invoice to link. Drafts, returned or rejected invoices and invoices already linked are not offered.",
+      "ATTACH": "Link",
+      "CANCEL": "Close",
+      "ERROR": "Linking failed.",
+      "LOAD_ERROR": "Unable to load supplier invoices.",
+      "INVOICE_BADGE": "Invoice {{ref}}",
+      "AMOUNT_NOTE": "The subcontracting cost takes the invoice's net amount, date and currency at the time of linking.",
+      "SUPPLIER_MATCH": "Subcontractor's supplier",
+      "SECTION_TITLE": "Subcontracting",
+      "LINKED_TO": "Assigned to order {{ost}}",
+      "LINKED_AFFAIRE": "Project {{affaire}}",
+      "LINKED_ST": "Subcontractor: {{st}}",
+      "NOT_LINKED": "This invoice is not assigned to any subcontracting order.",
+      "LINK_TO_OST": "Assign to a subcontracting order",
+      "SELECT_OST": "Subcontracting order",
+      "SELECT_OST_PH": "Choose an open order",
+      "CONFIRM": "Assign",
+      "NO_CANDIDATE": "No open subcontracting order in this entity.",
+      "UNLINK": "Remove assignment",
+      "NOT_LINKABLE_STATUS": "A draft, returned or rejected invoice cannot be assigned to a subcontracting order.",
+      "UNLINK_ERROR": "Unable to remove the assignment."
+    },
     "TITLE": "Subcontracting",
     "ENTITY": "Entity",
     "TABS": {
@@ -6525,20 +6639,22 @@
       "ERROR": "Unable to load margin data.",
       "TITLE": "Margin analysis",
       "KPI": {
-        "CA": "Collected revenue",
+        "CA": "Invoiced revenue (excl. VAT)",
         "INTERNAL_COSTS": "Internal costs",
         "ST_COSTS": "ST costs",
         "GROSS_MARGIN": "Gross margin",
         "MARGIN_RATE": "Margin rate"
       },
-      "BREAKDOWN_TITLE": "Revenue breakdown",
+      "BREAKDOWN_TITLE": "Invoiced revenue breakdown",
       "BAR": {
         "GROSS_MARGIN": "Gross margin",
         "ST_COSTS": "ST costs",
         "INTERNAL_COSTS": "Internal costs"
       },
-      "CA_BASIS": "payments collected",
-      "INTERNAL_NOT_TRACKED": "Internal costs are not computed server-side yet — they are always 0, so the margin shown is collected payments minus subcontracting costs only."
+      "CA_BASIS": "Collected: {{amount}}",
+      "INTERNAL_HOURS": "{{hours}} h Timesheet",
+      "INTERNAL_BASIS": "Internal costs = Timesheet hours × each employee's basic cost on the work date (same calculation as the project's Expense tab), converted to the project currency. Margin base: issued invoices, excl. VAT.",
+      "INTERNAL_UNVALUED": "{{hours}} h have no cost recorded in Employee costs and are counted at 0: the margin shown is overstated."
     },
     "OST": {
       "STATUT": {
@@ -6550,6 +6666,7 @@
       "CLEAR": "Clear",
       "SEARCH": "Search",
       "SELECT_AFFAIRE": "Select a project to display its subcontracting orders.",
+      "NO_AFFAIRE_FOUND": "No project matches this search.",
       "NEW": "New ST order",
       "EXPORT_EXCEL": "Export to Excel",
       "EMPTY": "No subcontracting order for this project.",
@@ -6675,7 +6792,10 @@
         "CANCEL": "Cancel",
         "SAVING": "Saving…",
         "SAVE": "Save",
-        "NAME_REQUIRED": "Name is required."
+        "NAME_REQUIRED": "Name is required.",
+        "SUPPLIER": "Linked supplier",
+        "SUPPLIER_PH": "None",
+        "SUPPLIER_HINT": "Optional: this supplier's invoices are offered first for this subcontractor's orders."
       },
       "DELETE": {
         "TITLE": "Confirm deactivation",

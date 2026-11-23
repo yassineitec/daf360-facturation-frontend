@@ -19,11 +19,13 @@ import { ExportService } from '../../../core/export.service';
   ],
   host: { class: 'block' },
   templateUrl: './couts-analyse-tab.component.html',
+  providers: [DisplayCurrencyPipe],
 })
 export class CoutsAnalyseTabComponent {
   private readonly svc        = inject(SubcontractingService);
   private readonly affaireSvc = inject(AffaireService);
   private readonly translate  = inject(TranslateService);
+  private readonly displayCurrency = inject(DisplayCurrencyPipe);
   private readonly exportSvc  = inject(ExportService);
 
   /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
@@ -40,6 +42,8 @@ export class CoutsAnalyseTabComponent {
   searchQuery     = signal('');
   searchResults   = signal<AffaireListItem[]>([]);
   searching       = signal(false);
+  /** Une recherche a abouti : sert à dire « aucune affaire » quand la liste revient vide. */
+  searched        = signal(false);
   selectedAffaire = signal<AffaireListItem | null>(null);
 
   margin  = signal<MarginDto | null>(null);
@@ -49,16 +53,29 @@ export class CoutsAnalyseTabComponent {
   /** Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4). */
   readonly kpiCa : MetricCardOptions = { icon: 'payments',  iconColor: 'text-primary', iconBg: 'bg-primary/10' };
   readonly kpiSt : MetricCardOptions = { icon: 'handshake', iconColor: 'text-warning', iconBg: 'bg-warning/10' };
+  readonly kpiInt: MetricCardOptions = { icon: 'schedule',  iconColor: 'text-tertiary', iconBg: 'bg-tertiary/10' };
 
   /**
-   * `MarginDto.ca` is `SUM(payments.amount_local)` joined through the affaire's
-   * invoices — money actually **collected**, not invoiced revenue. The tile used to be
-   * labelled "CA global", which reads as turnover; the caption says which it is.
+   * `MarginDto.facture` est le HT des factures émises — la base de la marge. L'encaissé
+   * (paiements reçus) n'est plus la base : il est rappelé sous la tuile, pour information.
    */
   readonly caDelta = computed(() => {
     this.translate.currentLang();
-    return { value: this.translate.instant('SUBCONTRACTING.ANALYSIS.CA_BASIS'), direction: 'neutral' as const };
+    const m = this.margin();
+    const amount = m ? this.displayCurrency.transform(m.encaisse, m.currency) : '—';
+    return { value: this.translate.instant('SUBCONTRACTING.ANALYSIS.CA_BASIS', { amount }), direction: 'neutral' as const };
   });
+
+  /** Heures Timesheet derrière les coûts internes, sous la tuile. */
+  readonly internalDelta = computed(() => {
+    this.translate.currentLang();
+    const hours = (this.margin()?.heuresInternes ?? 0).toLocaleString(this.translate.currentLang() || 'fr', { maximumFractionDigits: 2 });
+    return { value: this.translate.instant('SUBCONTRACTING.ANALYSIS.INTERNAL_HOURS', { hours }), direction: 'neutral' as const };
+  });
+
+  unvaluedHours(m: { heuresNonValorisees: number }): string {
+    return m.heuresNonValorisees.toLocaleString(this.translate.currentLang() || 'fr', { maximumFractionDigits: 2 });
+  }
 
   /**
    * Margin can be negative, so its two tiles recolour together. Both branches are
@@ -78,7 +95,7 @@ export class CoutsAnalyseTabComponent {
     if (!q) return;
     this.searching.set(true);
     this.affaireSvc.getAffaires({ search: q, size: 8 }).subscribe({
-      next: page => { this.searchResults.set(page.content); this.searching.set(false); },
+      next: page => { this.searchResults.set(page.content); this.searching.set(false); this.searched.set(true); },
       error:    () => this.searching.set(false),
     });
   }
@@ -86,6 +103,7 @@ export class CoutsAnalyseTabComponent {
   selectAffaire(a: AffaireListItem): void {
     this.selectedAffaire.set(a);
     this.searchResults.set([]);
+    this.searched.set(false);
     this.searchQuery.set(`${a.reference} — ${a.intitule}`);
     this.loadMargin(a.id);
   }
@@ -94,6 +112,7 @@ export class CoutsAnalyseTabComponent {
     this.selectedAffaire.set(null);
     this.searchQuery.set('');
     this.searchResults.set([]);
+    this.searched.set(false);
     this.margin.set(null);
   }
 
