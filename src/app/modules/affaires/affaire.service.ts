@@ -36,6 +36,7 @@ export class AffaireService {
     if (filter.search)   params = params.set('search',   filter.search);
     if (filter.responsableId) params = params.set('responsableId', String(filter.responsableId));
     if (filter.billingMode)   params = params.set('billingMode',   filter.billingMode);
+    if (filter.clientType)    params = params.set('clientType',    filter.clientType);
     if (filter.dateDebutFrom) params = params.set('dateDebutFrom', filter.dateDebutFrom);
     if (filter.dateDebutTo)   params = params.set('dateDebutTo',   filter.dateDebutTo);
     if (filter.sort)          params = params.set('sort',          filter.sort);
@@ -55,6 +56,7 @@ export class AffaireService {
     if (filter.search)   params = params.set('search',   filter.search);
     if (filter.responsableId) params = params.set('responsableId', String(filter.responsableId));
     if (filter.billingMode)   params = params.set('billingMode',   filter.billingMode);
+    if (filter.clientType)    params = params.set('clientType',    filter.clientType);
     if (filter.dateDebutFrom) params = params.set('dateDebutFrom', filter.dateDebutFrom);
     if (filter.dateDebutTo)   params = params.set('dateDebutTo',   filter.dateDebutTo);
 

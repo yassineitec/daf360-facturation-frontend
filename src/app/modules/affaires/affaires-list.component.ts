@@ -88,6 +88,7 @@ export class AffairesListComponent implements OnInit {
       paysId:        this.filterPaysId(),
       responsableId: this.filterResponsableId(),
       billingMode:   this.filterBillingMode(),
+      clientType:    this.filterClientType(),
       dateDebut:     this.filterDateDebut(),
       sort:          this.sort(),
       sortParam:     this.sortParam(),
@@ -136,6 +137,9 @@ export class AffairesListComponent implements OnInit {
   filterResponsableId = signal<number | null>(null);
   /** Mode de facturation (`billingMode`, filtre serveur) — '' = tous. */
   filterBillingMode   = signal('');
+  /** Type du client de l'affaire (`clientType`, filtre serveur) : THIRD_PARTY (3rd) |
+   *  INTER_COMPANY (Interco) — '' = tous. */
+  filterClientType    = signal('');
   /** Période de début de l'affaire (`dateDebutFrom`/`dateDebutTo`, bornes incluses) — null = toutes. */
   filterDateDebut     = signal<Date[] | null>(null);
   viewMode     = signal<ViewMode>('grid');
@@ -234,7 +238,7 @@ export class AffairesListComponent implements OnInit {
   readonly hasActiveFilter = computed(() =>
     !!this.searchText().trim() || !!this.filterStatut() || this.filterClientId() !== null
     || this.filterPaysId() !== null || this.filterResponsableId() !== null
-    || !!this.filterBillingMode() || !!this.filterDateDebut()?.length);
+    || !!this.filterBillingMode() || !!this.filterClientType() || !!this.filterDateDebut()?.length);
 
   /**
    * Même légende sur les quatre tuiles. Elle dit sur quoi porte le chiffre — tout le
@@ -274,6 +278,16 @@ export class AffairesListComponent implements OnInit {
         placeholder: t('AFFAIRES.LIST.FILTER_ALL_CLIENTS'),
         searchable: true,
         options: this.clientOptions(),
+      },
+      {
+        name: 'clientType',
+        label: t('CLIENTS.FORM.CLIENT_TYPE_LABEL'),
+        type: 'select',
+        placeholder: t('AFFAIRES.LIST.FILTER_ALL'),
+        options: [
+          { value: 'THIRD_PARTY',   label: t('CLIENTS.FORM.CLIENT_TYPE_THIRD_PARTY') },
+          { value: 'INTER_COMPANY', label: t('CLIENTS.FORM.CLIENT_TYPE_INTER_COMPANY') },
+        ],
       },
       {
         name: 'pays',
@@ -328,6 +342,7 @@ export class AffairesListComponent implements OnInit {
         pays:   this.filterPaysId()   !== null ? [String(this.filterPaysId())]   : [],
         manager:     this.filterResponsableId() !== null ? [String(this.filterResponsableId())] : [],
         billingMode: this.filterBillingMode() ? [this.filterBillingMode()] : [],
+        clientType:  this.filterClientType() ? [this.filterClientType()] : [],
         dateDebut:   this.filterDateDebut(),
       },
     };
@@ -413,6 +428,7 @@ export class AffairesListComponent implements OnInit {
     this.filterPaysId.set(s.paysId);
     this.filterResponsableId.set(s.responsableId);
     this.filterBillingMode.set(s.billingMode);
+    this.filterClientType.set(s.clientType ?? '');
     this.filterDateDebut.set(s.dateDebut);
     this.sort.set(s.sort);
     this.sortParam.set(s.sortParam);
@@ -431,6 +447,7 @@ export class AffairesListComponent implements OnInit {
       paysId:   this.filterPaysId(),
       responsableId: this.filterResponsableId(),
       billingMode:   this.filterBillingMode() || null,
+      clientType:    this.filterClientType() || null,
       // Un seul jour choisi = une période d'un jour.
       dateDebutFrom: range?.length ? toIsoDay(range[0]) : null,
       dateDebutTo:   range?.length ? toIsoDay(range[range.length - 1]) : null,
@@ -501,6 +518,7 @@ export class AffairesListComponent implements OnInit {
     this.filterResponsableId.set(Number.isFinite(manager) && manager > 0 ? manager : null);
 
     this.filterBillingMode.set((result['billingMode'] as string | null) ?? '');
+    this.filterClientType.set((result['clientType'] as string | null) ?? '');
 
     const dateDebut = result['dateDebut'];
     this.filterDateDebut.set(Array.isArray(dateDebut) && dateDebut.length ? dateDebut as Date[] : null);
@@ -612,6 +630,7 @@ export class AffairesListComponent implements OnInit {
         clientId:      f.clientId ?? null,
         responsableId: f.responsableId ?? null,
         billingMode:   f.billingMode ?? null,
+        clientType:    f.clientType ?? null,
         dateDebutFrom: f.dateDebutFrom ?? null,
         dateDebutTo:   f.dateDebutTo ?? null,
         sort:          this.sortParam() ?? null,

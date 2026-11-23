@@ -12,6 +12,8 @@ export interface AffairesListState {
   paysId:        number | null;
   responsableId: number | null;
   billingMode:   string;
+  /** Type de client (THIRD_PARTY | INTER_COMPANY) — '' = tous. Absent d'un état sauvé avant. */
+  clientType?:   string;
   dateDebut:     Date[] | null;
   sort:          AffaireSort | null;
   sortParam:     string | null;
