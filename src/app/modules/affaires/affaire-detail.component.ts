@@ -1554,11 +1554,12 @@ export class AffaireDetailComponent implements OnInit {
                    help: t('AFFAIRES.DETAIL.KPI.CA_HELP') },
       },
       {
-        label: 'AFFAIRES.DETAIL.KPI.WIP',
-        value: this.money(k?.wip),
+        // WIP restant = WIP non facturé (règle du 2026-11-23) — remplace le WIP déclaré.
+        label: 'AFFAIRES.DETAIL.KPI.WIP_RESTANT',
+        value: this.money(k?.wipRestant),
         delta: null,
         options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10',
-                   help: t('AFFAIRES.DETAIL.KPI.WIP_HELP') },
+                   help: t('AFFAIRES.DETAIL.KPI.WIP_RESTANT_HELP') },
       },
       {
         label: 'AFFAIRES.WIP.KPI_TS',
@@ -1566,6 +1567,15 @@ export class AffaireDetailComponent implements OnInit {
         delta: null,
         options: { icon: 'schedule', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
                    help: t('AFFAIRES.WIP.KPI_TS_HELP') },
+      },
+      {
+        // Revenue = WIP non facturé et non validé + facturé (règle du 2026-11-23) — calculé
+        // par le backend (AffaireService#getKpis), le front ne fait que l'afficher.
+        label: 'AFFAIRES.DETAIL.KPI.REVENUE',
+        value: this.money(k?.revenue),
+        delta: null,
+        options: { icon: 'trending_up', iconColor: 'text-primary', iconBg: 'bg-primary/10',
+                   help: t('AFFAIRES.DETAIL.KPI.REVENUE_HELP') },
       },
     ];
   });

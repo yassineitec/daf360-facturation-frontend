@@ -158,10 +158,11 @@ export class AffairesCardsSectionComponent {
           statusLabel: t(`AFFAIRES.LIST.TABLE.STATUS.${a.statut}`),
         },
         metricsColumns: 2,
-        // Budget + les CINQ tuiles de la fiche (/finance/affaires/{id}?tab=overview), dans
+        // Budget + les SIX tuiles de la fiche (/finance/affaires/{id}?tab=overview), dans
         // le même ordre et sous les mêmes libellés : Backlog, Total facturé, Total encaissé,
-        // WIP, Budget TS — mêmes formules que AffaireService#getKpis, calculées côté
-        // serveur dans listAffaires. Six indicateurs = grille 2×3 pleine, sans cellule seule.
+        // WIP restant, Budget TS, Revenue — mêmes formules que AffaireService#getKpis,
+        // calculées côté serveur dans listAffaires (règles du 2026-11-23). Sept indicateurs :
+        // la dernière ligne de la grille 2 colonnes n'a qu'une cellule (Revenue).
         // Le RAF RG12 (rafDisponible) reste servi pour le blocage de facturation, mais
         // n'est pas affiché ici.
         metrics: [
@@ -169,8 +170,9 @@ export class AffairesCardsSectionComponent {
           { label: t('AFFAIRES.DETAIL.KPI.BACKLOG'),  value: this.currency.transform(a.backlog, this.deviseOf(a)) },
           { label: t('AFFAIRES.DETAIL.KPI.INVOICED'), value: this.currency.transform(a.totalFacture, this.deviseOf(a)) },
           { label: t('AFFAIRES.DETAIL.KPI.CA'),       value: this.currency.transform(a.totalEncaisse, this.deviseOf(a)) },
-          { label: t('AFFAIRES.DETAIL.KPI.WIP'),      value: this.currency.transform(a.wip, this.deviseOf(a)) },
+          { label: t('AFFAIRES.DETAIL.KPI.WIP_RESTANT'), value: this.currency.transform(a.wipRestant, this.deviseOf(a)) },
           { label: t('AFFAIRES.WIP.KPI_TS'),          value: this.currency.transform(a.totalTs, this.deviseOf(a)) },
+          { label: t('AFFAIRES.DETAIL.KPI.REVENUE'),  value: this.currency.transform(a.revenue, this.deviseOf(a)) },
         ],
         viewLabel: t('AFFAIRES.LIST.TABLE.SEE_DETAIL'),
       } satisfies EntityCardOptions,

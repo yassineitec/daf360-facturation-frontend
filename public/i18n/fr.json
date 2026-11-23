@@ -3486,13 +3486,17 @@
         "WIP": "WIP",
         "WIP_SUB": "Travaux en cours",
         "WIP_HELP": "Somme des WIP déclarés dans les onglets WIP et TS WIP.",
+        "WIP_RESTANT": "WIP restant",
+        "WIP_RESTANT_HELP": "WIP non facturé : lignes des onglets WIP et TS WIP en attente ou validées mais pas encore facturées, plus les soldes reportés non refacturés.",
         "MARGIN": "Marge brute",
         "MARGIN_TARGET": "Objectif de marge",
         "MARGIN_HELP": "(Encaissé − sous-traitance) / encaissé : un % du CA, pas du budget. Les coûts internes valent 0 faute de timesheet, la marge est surévaluée.",
         "BACKLOG": "Backlog",
-        "BACKLOG_HELP": "Ce qui reste du contrat à facturer : (budget prévisionnel + budget TS) − Total facturé (la tuile voisine). La pastille est la part du budget encore au backlog. Négatif = budget dépassé.",
+        "BACKLOG_HELP": "WIP non facturé et non validé (lignes encore en attente dans les onglets WIP et TS WIP) + Reste à facturer (budget + TS intégrés − factures émises). La pastille est la part du budget. Négatif = budget dépassé.",
         "INVOICED": "Total facturé",
-        "INVOICED_HELP": "Somme des factures de l'affaire dont le statut n'est pas « Encaissé » — le facturé non encore soldé. C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé."
+        "INVOICED_HELP": "Somme des factures de l'affaire dont le statut n'est pas « Encaissé » — le facturé non encore soldé. C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé.",
+        "REVENUE": "Revenue",
+        "REVENUE_HELP": "WIP non facturé et non validé (lignes encore en attente dans les onglets WIP et TS WIP) + Total facturé."
       },
       "INFO": {
         "TITLE": "Informations générales",
