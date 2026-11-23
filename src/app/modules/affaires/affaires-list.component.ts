@@ -216,12 +216,17 @@ export class AffairesListComponent implements OnInit {
       { label: 'AFFAIRES.DETAIL.KPI.CA', value: s?.encaisseTotal ?? 0, delta: pct(s?.encaisseTotal, budget),
         options: { icon: 'account_balance_wallet', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
                    valueColor: 'text-secondary', help: t('AFFAIRES.DETAIL.KPI.CA_HELP') } as MetricCardOptions },
-      { label: 'AFFAIRES.DETAIL.KPI.WIP', value: s?.wipTotal ?? 0, delta: null,
+      // WIP restant = WIP non facturé (règle du 2026-11-23), comme la tuile de la fiche.
+      { label: 'AFFAIRES.DETAIL.KPI.WIP_RESTANT', value: s?.wipRestantTotal ?? 0, delta: null,
         options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10',
-                   help: t('AFFAIRES.DETAIL.KPI.WIP_HELP') } as MetricCardOptions },
+                   help: t('AFFAIRES.DETAIL.KPI.WIP_RESTANT_HELP') } as MetricCardOptions },
       { label: 'AFFAIRES.WIP.KPI_TS', value: s?.tsTotal ?? 0, delta: null,
         options: { icon: 'schedule', iconColor: 'text-secondary', iconBg: 'bg-secondary/10',
                    help: t('AFFAIRES.WIP.KPI_TS_HELP') } as MetricCardOptions },
+      // Revenue = WIP non facturé et non validé + Total facturé (règle du 2026-11-23).
+      { label: 'AFFAIRES.DETAIL.KPI.REVENUE', value: s?.revenueTotal ?? 0, delta: null,
+        options: { icon: 'trending_up', iconColor: 'text-primary', iconBg: 'bg-primary/10',
+                   help: t('AFFAIRES.DETAIL.KPI.REVENUE_HELP') } as MetricCardOptions },
     ];
   });
 

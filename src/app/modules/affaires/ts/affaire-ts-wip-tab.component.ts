@@ -13,6 +13,7 @@ import {
 import { TsProgressService, TsTauxSubmitBody } from './ts-progress.service';
 import { TsProgressSummaryDto, TsTauxDto } from './ts-progress.model';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
+import { LinkedInvoiceInfo, wipInvoicedProgress } from '../wip/wip-invoiced';
 import { Router } from '@angular/router';
 import { InvoiceService } from '../../invoicing/invoice.service';
 import { FinancePaths } from '../../../core/finance-paths';
@@ -967,6 +968,7 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
     const devise = this.selectedTs()?.devise ?? this.affaire.devise;
     const lines = this.lineHistory();
     const invoiceNumbers = this.invoiceNumbers();
+    const invoiceInfo = this.invoiceInfo();
     const draftLabel = this.translate.instant('AFFAIRES.WIP.INVOICE_DRAFT');
     let runningCumul = 0;
     return this.tauxHistory().map(t => {
@@ -986,7 +988,7 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
                     options: { variant: this.tauxBadgeVariant(t.statut), dot: true } } satisfies BadgeCell,
         _raw:     t,
         _line:    t.billingLineId != null ? lines.find(l => l.id === t.billingLineId) ?? null : null,
-        ...this.factureProgress(t, lines),
+        ...this.factureProgress(t, lines, invoiceInfo),
         // Colonne « Facture » (cellule #invoicesCell) : un lien par facture de la chaîne.
         _invoices: this.chainInvoiceIds(t, lines).map(id => ({
           id, label: invoiceNumbers.get(id) ?? `${draftLabel} #${id}`,
@@ -1248,38 +1250,17 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
     return WIP_TAUX_STATUT_BADGE[statut] ?? 'neutral';
   }
 
-  /** Same mechanic as AffaireWipTabComponent.findChainTail() (AV) / the old TS batch tab's
-   * own factureProgress(): a partial client confirmation never modifies the declaration's own
-   * BillingLine — it just sets that line's wipCarriedForward. Walking carriedForwardFromLineId
-   * forward finds whatever later line (if any) picked that remainder up; the tail's own
-   * wipCarriedForward is what's still genuinely outstanding right now. */
-  private findChainTail(line: LineDetailDto, lines: LineDetailDto[]): LineDetailDto {
-    let tail = line;
-    for (let i = 0; i < 50; i++) {
-      const next = lines.find(l => l.carriedForwardFromLineId === tail.id);
-      if (!next) break;
-      tail = next;
-    }
-    return tail;
-  }
-
   /** Fields read by the history table's "Facturé" cell (factureProgress column): how much of
    * this declaration's montantIncremental has actually been confirmed/billed so far. */
-  private factureProgress(taux: TsTauxDto, lines: LineDetailDto[]) {
+  private factureProgress(taux: TsTauxDto, lines: LineDetailDto[], invoices: ReadonlyMap<number, LinkedInvoiceInfo>) {
     const originLine = taux.billingLineId != null ? lines.find(l => l.id === taux.billingLineId) ?? null : null;
-    const tail = originLine ? this.findChainTail(originLine, lines) : null;
-    // Tant que le MT Client n'est pas saisi (ligne EN_ATTENTE_CLIENT), rien n'est facturé :
-    // 0 % et tout le montant reste à facturer.
-    const remainderPending = !tail ? null
-      : originLine!.statut === 'EN_ATTENTE_CLIENT' ? taux.montantIncremental
-      : Number((tail.wipCarriedForward ?? 0).toFixed(3));
-    const montantFacture = remainderPending !== null
-      ? Number((taux.montantIncremental - remainderPending).toFixed(3))
-      : null;
+    // Depuis le 2026-11-23 : seules les factures soumises comptent (un brouillon créé par la
+    // validation DF reste « Non facturé »), pour le montant saisi dans la facture.
+    const p = wipInvoicedProgress(taux.montantIncremental, originLine, lines, invoices);
     return {
-      _remainderPending: remainderPending,
-      _montantFacture:   montantFacture,
-      _isComplete:       remainderPending !== null && remainderPending < 0.01,
+      _remainderPending: p.remainderPending,
+      _montantFacture:   p.montantFacture,
+      _isComplete:       p.isComplete,
     };
   }
 
@@ -1304,13 +1285,22 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
    *  facture multi-affaires a un affaire_id vide), un brouillon n'a pas encore de numéro
    *  (repli « Brouillon #id »). */
   invoiceNumbers = signal<Map<number, string | null>>(new Map());
+  /** Statut + totaux HT des lignes de ces mêmes factures — colonne « Facturé » (voir
+   *  wipInvoicedProgress) : un brouillon ne compte pas comme facturé. */
+  invoiceInfo = signal<Map<number, LinkedInvoiceInfo>>(new Map());
 
   private loadInvoiceNumbers(lines: LineDetailDto[]): void {
     const ids = [...new Set(lines.map(l => l.invoiceId).filter((id): id is number => id != null))];
     for (const id of ids) {
-      if (this.invoiceNumbers().has(id)) continue;
+      // Rechargée à chaque fois (plus de saut si déjà connue) : le statut change quand la
+      // facture est complétée puis soumise, la colonne « Facturé » doit le suivre.
       this.invoiceSvc.getInvoice(id).subscribe({
-        next:  inv => this.invoiceNumbers.update(m => new Map(m).set(id, inv.invoiceNumber)),
+        next:  inv => {
+          this.invoiceNumbers.update(m => new Map(m).set(id, inv.invoiceNumber));
+          this.invoiceInfo.update(m => new Map(m).set(id, {
+            status: inv.statut, lineTotals: (inv.lines ?? []).map(l => l.lineTotal),
+          }));
+        },
         error: () => {},
       });
     }
@@ -1337,7 +1327,7 @@ export class AffaireTsWipTabComponent implements OnInit, OnDestroy {
   }
 
   /** Factures touchant une déclaration : celle de sa ligne d'origine puis celles des lignes
-   *  qui ont repris son reliquat (même chaîne que findChainTail), sans doublon. */
+   *  qui ont repris son reliquat (même chaîne que wipInvoicedProgress), sans doublon. */
   private chainInvoiceIds(taux: TsTauxDto, lines: LineDetailDto[]): number[] {
     const ids: number[] = [];
     let cur: LineDetailDto | undefined = taux.billingLineId != null

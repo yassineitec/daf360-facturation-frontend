@@ -20,6 +20,7 @@ import { WipTauxDto, WipTauxStatut, WipTmPreviewDto } from './wip.model';
 import { EmailPreviewModalComponent } from './email-preview-modal.component';
 import { DafModalComponent } from '../../../shared/daf-modal.component';
 import { BillingService, LineDetailDto } from '../billing/billing.service';
+import { LinkedInvoiceInfo, wipInvoicedProgress } from './wip-invoiced';
 import { InvoiceService } from '../../invoicing/invoice.service';
 import { FinancePaths } from '../../../core/finance-paths';
 import { LivrableService } from '../livrable.service';
@@ -1403,12 +1404,20 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
    *  une par id plutôt que par la liste filtrée sur l'affaire : une facture qui regroupe
    *  plusieurs affaires a un affaire_id vide et n'y figurerait pas. */
   avInvoiceNumbers = signal<Map<number, string | null>>(new Map());
+  /** Statut + totaux HT des lignes de ces mêmes factures — colonne « Facturé » (voir
+   *  wipInvoicedProgress) : un brouillon ne compte pas comme facturé. */
+  avInvoiceInfo = signal<Map<number, LinkedInvoiceInfo>>(new Map());
 
   private loadAvInvoices(lines: LineDetailDto[]): void {
     const ids = [...new Set(lines.map(l => l.invoiceId).filter((id): id is number => id != null))];
     for (const id of ids) {
       this.invoiceSvc.getInvoice(id).subscribe({
-        next:  inv => this.avInvoiceNumbers.update(m => new Map(m).set(id, inv.invoiceNumber)),
+        next:  inv => {
+          this.avInvoiceNumbers.update(m => new Map(m).set(id, inv.invoiceNumber));
+          this.avInvoiceInfo.update(m => new Map(m).set(id, {
+            status: inv.statut, lineTotals: (inv.lines ?? []).map(l => l.lineTotal),
+          }));
+        },
         error: () => {},
       });
     }
@@ -1434,7 +1443,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
   }
 
   /** Factures touchant une période WIP : celle de la ligne d'origine puis celles des lignes
-   *  qui ont repris son reliquat (même chaîne que findChainTail), sans doublon. */
+   *  qui ont repris son reliquat (même chaîne que wipInvoicedProgress), sans doublon. */
   private chainInvoiceIds(line: LineDetailDto, lines: LineDetailDto[]): number[] {
     const ids: number[] = [];
     let cur: LineDetailDto | undefined = line;
@@ -1630,27 +1639,6 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     ];
   });
 
-  /** Walks a taux row's originating billing line forward through every later billing line
-   * that claimed part of its unpaid carry-forward remainder (`carriedForwardFromLineId`
-   * pointing back at it), returning the chain's current tail. `avLineHistory()` already
-   * holds EVERY billing line ever created for this affaire — fresh taux submissions AND the
-   * later "consumer" lines a manual invoice creates when someone picks up part of a
-   * carry-forward remainder (see the reimbursable/carry-forward invoice-line picker) — so
-   * this needs no extra request, just a client-side walk over what's already fetched. The
-   * tail's own `wipCarriedForward` is what's STILL not invoiced right now for this WIP
-   * period, however many invoices have touched it since. Capped at 50 hops as cheap
-   * insurance against a corrupted chain that somehow cycles back on itself — not expected in
-   * practice for a chain this short-lived. */
-  private findChainTail(line: LineDetailDto, lines: LineDetailDto[]): LineDetailDto {
-    let tail = line;
-    for (let i = 0; i < 50; i++) {
-      const next = lines.find(l => l.carriedForwardFromLineId === tail.id);
-      if (!next) break;
-      tail = next;
-    }
-    return tail;
-  }
-
   /** `cumul` is a pure display aid — the running sum of `tauxSaisi` down the table in its
    * existing period-ascending order (the backend already returns tauxHistory() sorted by
    * periodDateFrom), regardless of each row's own statut. This is deliberately simpler than
@@ -1662,6 +1650,7 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
     let runningCumul = 0;
     const lines = this.avLineHistory();
     const invoiceNumbers = this.avInvoiceNumbers();
+    const invoiceInfo = this.avInvoiceInfo();
     const draftLabel = this.translate.instant('AFFAIRES.WIP.INVOICE_DRAFT');
     return this.tauxHistory().map(t => {
       // Rounded to 6 decimals at every step, not just for display: plain floating-point
@@ -1676,18 +1665,10 @@ export class AffaireWipTabComponent implements OnInit, OnDestroy {
       // AND any later carry-forward pickups), not just the first one. `line` may be null in
       // the (not normally expected) case this row has no matching billing line at all —
       // mirrors `_line`'s own `?? null` defensiveness above: no crash, just a dash.
-      const tail = line ? this.findChainTail(line, lines) : null;
-      // Tant que le MT Client n'est pas saisi (ligne EN_ATTENTE_CLIENT), rien n'est facturé :
-      // 0 % et tout le montant reste à facturer.
-      const remainderPending = !tail ? null
-        : line!.statut === 'EN_ATTENTE_CLIENT' ? t.montantIncremental
-        : Number((tail.wipCarriedForward ?? 0).toFixed(3));
-      const montantFacture = remainderPending !== null
-        ? Number((t.montantIncremental - remainderPending).toFixed(3))
-        : null;
-      // Epsilon guard against float noise, same rounding-then-compare spirit as
-      // lastValidatedTaux()/canSubmitTaux() above (toFixed() before comparing).
-      const isComplete = remainderPending !== null && remainderPending < 0.01;
+      // Depuis le 2026-11-23 : seules les factures soumises comptent (un brouillon créé par
+      // la validation DF reste « Non facturé »), pour le montant saisi dans la facture.
+      const { remainderPending, montantFacture, isComplete } =
+        wipInvoicedProgress(t.montantIncremental, line, lines, invoiceInfo);
       return {
         id:      t.id,
         period:  this.formatWipPeriod(t.periodDateFrom, t.periodDateTo),

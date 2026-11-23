@@ -176,6 +176,10 @@ export interface AffaireListItem {
   totalEncaisse?:     number | null;
   /** Liste uniquement : tuile « Budget TS » de la fiche (tous les TS, tous statuts). */
   totalTs?:           number | null;
+  /** Liste uniquement : tuile « WIP restant » de la fiche (WIP non facturé). */
+  wipRestant?:        number | null;
+  /** Liste uniquement : tuile « Revenue » de la fiche (WIP non facturé et non validé + Total facturé). */
+  revenue?:           number | null;
   rafAlerteSeuilPct:  number;
   paysId:             number;
   devise?:            string;
@@ -246,7 +250,7 @@ export interface AffaireKpisDto {
   margeBrutePct:              number;
   /** Toujours 0 côté backend. */
   tauxAvancement:             number;
-  /** (Budget prévisionnel + `totalTs`) − `totalFacture` : le reste du contrat à facturer.
+  /** WIP non facturé et non validé + Reste à facturer (`raf`) — règle du 2026-11-23.
    *  Négatif = budget dépassé. */
   backlog:                    number;
   /** Somme des factures dont le statut n'est pas `PAID` — le facturé non encore soldé.
@@ -259,6 +263,12 @@ export interface AffaireKpisDto {
   /** Somme des montants estimés de tous les TS de l'affaire, tous statuts confondus —
    *  la tuile « TS ». */
   totalTs:                    number;
+  /** Tuile « Revenue » : WIP en attente (ni validé, ni facturé, ni rejeté) des onglets WIP
+   *  et TS WIP + `totalFacture`. Optionnel : absent d'un backend antérieur au 2026-11-23. */
+  revenue?:                   number | null;
+  /** Tuile « WIP restant » : WIP non facturé (en attente + validé non facturé) des onglets
+   *  WIP et TS WIP. Optionnel : absent d'un backend antérieur au 2026-11-23. */
+  wipRestant?:                number | null;
 }
 
 export interface TsDto {
@@ -355,6 +365,10 @@ export interface AffairesSummary {
   encaisseTotal: number;
   wipTotal:      number;
   tsTotal:       number;
+  /** Σ WIP restant (WIP non facturé). Optionnel : absent d'un backend antérieur au 2026-11-23. */
+  wipRestantTotal?: number | null;
+  /** Σ Revenue (WIP non facturé et non validé + Total facturé). Même remarque. */
+  revenueTotal?:    number | null;
 }
 
 export interface AffaireFilter {
