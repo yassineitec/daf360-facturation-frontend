@@ -269,6 +269,8 @@ export interface AffaireKpisDto {
   /** Tuile « WIP restant » : WIP non facturé (en attente + validé non facturé) des onglets
    *  WIP et TS WIP. Optionnel : absent d'un backend antérieur au 2026-11-23. */
   wipRestant?:                number | null;
+  /** Part TS WIP de `wipRestant` — affichée « / TS » sur la tuile WIP restant. */
+  wipRestantTs?:              number | null;
 }
 
 export interface TsDto {
@@ -380,6 +382,8 @@ export interface AffaireFilter {
   responsableId?: number | null;
   /** Mode de facturation (`FORFAIT` | `REGIE` | `LIVRABLE`). */
   billingMode?:   string | null;
+  /** Type du client de l'affaire (`THIRD_PARTY` = 3rd | `INTER_COMPANY` = Interco). */
+  clientType?:    string | null;
   /** Date de début de l'affaire, bornes incluses, jours ISO `yyyy-MM-dd`. */
   dateDebutFrom?: string | null;
   dateDebutTo?:   string | null;

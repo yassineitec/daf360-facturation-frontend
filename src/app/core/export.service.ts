@@ -149,7 +149,7 @@ export class ExportService {
    * exporte toutes les affaires correspondantes — feuilles Affaires + Synthèse. */
   affaires(filter: {
     paysId: number | null; statut: string | null; search: string | null; clientId: number | null;
-    responsableId: number | null; billingMode: string | null;
+    responsableId: number | null; billingMode: string | null; clientType: string | null;
     dateDebutFrom: string | null; dateDebutTo: string | null; sort: string | null;
   }): Observable<Blob> {
     // `paysId` en paramètre d'URL : c'est là que PaysIsolationInterceptor le contrôle.

@@ -91,6 +91,8 @@ interface KpiTile {
   options: MetricCardOptions;
   /** Pastille sous le libellé plutôt que sous le montant (Backlog : « 40 % » sous « BACKLOG »). */
   deltaUnderLabel?: boolean;
+  /** Petite ligne posée À CÔTÉ du montant (même ligne) au lieu de dessous. */
+  deltaInline?: boolean;
 }
 
 interface RowDetail {
@@ -392,6 +394,19 @@ const GUIDE_TAB_STEPS: Record<string, { key: string; icon: string; target: strin
       left:     1rem;
       margin:   0;
       /* La lib pose text-[10px] sur la pastille : deux crans au-dessus. */
+      font-size: 12px;
+    }
+
+    /* Petite ligne À CÔTÉ du montant (le « / TS » de WIP restant) : le bloc montant +
+       petite ligne passe en ligne, aligné sur la ligne de base des chiffres. */
+    :host ::ng-deep .kpi-cell--delta-inline > div > div:nth-child(2) {
+      display:     flex;
+      flex-wrap:   wrap;
+      align-items: baseline;
+      column-gap:  0.375rem;
+    }
+    :host ::ng-deep .kpi-cell--delta-inline > div > div:nth-child(2) > p + p {
+      margin: 0;
       font-size: 12px;
     }
 
@@ -1556,9 +1571,12 @@ export class AffaireDetailComponent implements OnInit {
       {
         // WIP restant = WIP non facturé (règle du 2026-11-23) — remplace le WIP déclaré.
         label: 'AFFAIRES.DETAIL.KPI.WIP_RESTANT',
+        deltaInline: true,
         value: this.money(k?.wipRestant),
-        delta: null,
+        // « / TS » = part de l'onglet TS WIP, en petit et en gris à côté du montant.
+        delta: { value: `/ TS ${this.money(k?.wipRestantTs)}`, direction: 'neutral' as const },
         options: { icon: 'pending_actions', iconColor: 'text-warning', iconBg: 'bg-warning/10',
+                   deltaColor: 'text-outline',
                    help: t('AFFAIRES.DETAIL.KPI.WIP_RESTANT_HELP') },
       },
       {

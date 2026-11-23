@@ -3492,7 +3492,7 @@
         "MARGIN_TARGET": "Margin target",
         "MARGIN_HELP": "(Collected − subcontracting) / collected: a % of revenue, not of budget. Internal costs are 0 for lack of timesheets, so it is overstated.",
         "BACKLOG": "Backlog",
-        "BACKLOG_HELP": "WIP neither invoiced nor validated (lines still pending in the WIP and VO WIP tabs) + Remaining to invoice (budget + integrated VOs − issued invoices). The pill is the share of the budget. Negative = budget overrun.",
+        "BACKLOG_HELP": "(Forecast budget + VO budget) − (Total invoiced + Remaining WIP). The pill is the share of the budget. Negative = budget overrun.",
         "INVOICED": "Total invoiced",
         "INVOICED_HELP": "Sum of this project's invoices whose status is not 'Collected' — the invoiced amount still owed. This is the reference 'invoiced' figure: Backlog is computed from it. The pill is the billing rate: issued invoices excl. VAT / (forecast budget + VO budget); above 100% = budget overrun.",
         "REVENUE": "Revenue",
