@@ -161,13 +161,63 @@
     @if (hiringDecision() === 'reject') {
       <daf-form-field
         [value]="hiringContrePropSig() != null ? hiringContrePropSig()!.toString() : ''"
-        (valueChange)="hiringContrePropSig.set($any($event) ? +$any($event) : null)"
+        (valueChange)="onHiringCounterChange($event)"
         [options]="{
           type: 'number',
           label: ('COST.APPROVAL_QUEUE.COUNTER_OFFER' | translate),
           placeholder: ('COST.APPROVAL_QUEUE.COUNTER_OFFER_PH' | translate),
-          hint: ('COST.APPROVAL_QUEUE.COUNTER_OFFER_HINT' | translate)
+          hint: ((selectedHiring()?.jobOfferId != null
+            ? 'COST.APPROVAL_QUEUE.COUNTER_OFFER_HINT_OFFER'
+            : 'COST.APPROVAL_QUEUE.COUNTER_OFFER_HINT') | translate)
         }" />
+
+      <!-- Costing of the counter-proposal: what the DAF commits to before it goes out. -->
+      @if (hiringContrePropSig() != null) {
+        <div class="flex flex-col gap-2 rounded-xl bg-surface-container-low px-4 py-3">
+          <span class="text-label-caps text-outline">{{ 'COST.APPROVAL_QUEUE.COUNTER_SIM_TITLE' | translate }}</span>
+          @if (hiringCounterSimLoading()) {
+            <span class="text-body-sm text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.COUNTER_SIM_RUNNING' | translate }}</span>
+          } @else if (hiringCounterSimError()) {
+            <span class="text-body-sm text-danger">{{ hiringCounterSimError() }}</span>
+          } @else if (hiringCounterSim(); as sim) {
+            <div class="flex justify-between gap-4 text-body-sm">
+              <span class="text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SIM_NET' | translate }}</span>
+              <span class="font-bold text-on-surface">{{ simAmount(sim.inputNet, sim.localCurrency) }}</span>
+            </div>
+            <div class="flex justify-between gap-4 text-body-sm">
+              <span class="text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SIM_GROSS' | translate }}</span>
+              <span class="font-bold text-on-surface">{{ simAmount(sim.gross, sim.localCurrency) }}</span>
+            </div>
+            <div class="flex justify-between gap-4 text-body-sm">
+              <span class="text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SIM_EMPLOYEE_CHARGES' | translate }}</span>
+              <span class="font-bold text-on-surface">{{ simAmount(sim.employeeCharges, sim.localCurrency) }}</span>
+            </div>
+            <div class="flex justify-between gap-4 text-body-sm">
+              <span class="text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SIM_IRPP' | translate }}</span>
+              <span class="font-bold text-on-surface">{{ simAmount(sim.irppAmount, sim.localCurrency) }}</span>
+            </div>
+            <div class="flex justify-between gap-4 text-body-sm">
+              <span class="text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SIM_EMPLOYER_CHARGES' | translate }}</span>
+              <span class="font-bold text-on-surface">{{ simAmount(sim.employerCharges, sim.localCurrency) }}</span>
+            </div>
+            <div class="flex justify-between gap-4 border-t border-outline-variant pt-2 text-body-md">
+              <span class="font-bold text-on-surface">{{ 'COST.APPROVAL_QUEUE.SIM_LOADED_COST' | translate }}</span>
+              <span class="font-bold text-primary">{{ simAmount(sim.loadedCost, sim.localCurrency) }}</span>
+            </div>
+            @if (selectedHiring(); as item) {
+              @if (hiringRequestedLoadedCost(item); as requested) {
+                <div class="flex justify-between gap-4 text-body-sm">
+                  <span class="text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SIM_VS_REQUEST' | translate }}</span>
+                  <span class="font-bold text-on-surface">{{ simAmount(sim.loadedCost - requested, sim.localCurrency) }}</span>
+                </div>
+              }
+            }
+            @if (!sim.convergenceOk) {
+              <span class="text-body-sm text-on-surface-variant">{{ 'COST.APPROVAL_QUEUE.SIM_PARTIAL' | translate }}</span>
+            }
+          }
+        </div>
+      }
     }
 
     <daf-form-field
