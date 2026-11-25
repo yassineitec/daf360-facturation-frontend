@@ -3487,7 +3487,7 @@
       "KPI": {
         "CA": "Total encaissé",
         "CA_SUB": "Chiffre d'affaires réel",
-        "CA_HELP": "Somme des factures de l'affaire dont le statut est « Encaissé ». Complément exact de « Total facturé » : les deux réunis font tout le facturé. Un acompte sur une facture encore partiellement payée ne compte pas ici.",
+        "CA_HELP": "Somme HT des factures de l'affaire dont le statut est « Encaissé ». Ces factures sont aussi comprises dans « Total facturé ». Un acompte sur une facture encore partiellement payée ne compte pas ici.",
         "RAF": "RAF Disponible",
         "RAF_USAGE": "Consommation budget",
         "RAF_HELP": "Ce qui reste à facturer : budget + TS intégrés − factures émises. Le pourcentage est la part encore disponible. Négatif = budget dépassé.",
@@ -3502,7 +3502,7 @@
         "BACKLOG": "Backlog",
         "BACKLOG_HELP": "(Budget prévisionnel + Budget TS) − (Total facturé + WIP restant). La pastille est la part du budget. Négatif = budget dépassé.",
         "INVOICED": "Total facturé",
-        "INVOICED_HELP": "Somme de toutes les factures de l'affaire, sauf celles au statut « Annulée » (factures encaissées comprises). C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé.",
+        "INVOICED_HELP": "Somme HT de toutes les factures de l'affaire, sauf celles au statut « Annulée » (factures encaissées comprises). C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé.",
         "REVENUE": "Revenue",
         "REVENUE_HELP": "WIP non facturé et non validé (lignes encore en attente dans les onglets WIP et TS WIP) + Total facturé."
       },
@@ -3548,6 +3548,7 @@
         "AMOUNT": "Montant",
         "STATUS": "Statut",
         "AMOUNT_HT": "Montant HT",
+        "AMOUNT_TTC": "Montant TTC",
         "AMOUNT_TVA": "TVA",
         "PERIOD": "Période couverte",
         "PROGRESS": "Avancement facturé",
