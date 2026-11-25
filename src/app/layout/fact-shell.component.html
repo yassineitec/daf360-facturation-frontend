@@ -7,7 +7,19 @@
   (itemClick)="onNavClick($event)">
   <!-- Bottom of the sidebar rail (desktop): the display currency, then « Aide & guides ».
        In the rail's footer slot (lib 5.13.0): the list scrolls above it, not under it. -->
+  <!-- From the top: the country picker (lib 5.19.0 — no separator of its own,
+       app-help-center draws the line), the currency, « Aide & guides ». On mobile the
+       shell's navbar keeps the globe instead. -->
   <app-help-center dafSideNavFooter>
+    <daf-country-picker
+      [separator]="false"
+      [countries]="countryPicker.countries()"
+      [allCountriesLabel]="countryPicker.allCountriesLabel()"
+      [multiCountry]="countryPicker.multiCountry()"
+      [activeCountry]="countryPicker.activeCountry()"
+      [activeCountries]="countryPicker.activeCountries()"
+      (countryChange)="countryPicker.onCountryChange($event)"
+      (countriesChange)="countryPicker.onCountriesChange($event)" />
     <app-currency-switch />
   </app-help-center>
 </daf-side-nav>

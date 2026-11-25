@@ -1,7 +1,9 @@
-import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryId,
   ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent,
   MetricCardOptions, MetricDelta, ModalRef, ModalService, PageComponent, PageHeaderComponent,
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
@@ -20,6 +22,7 @@ import { InvoiceListStateService } from './invoice-list-state.service';
 import { ExportService } from '../../../core/export.service';
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 /** Guide de la page — chaque `target` est un `data-guide` du gabarit. */
 const GUIDE_STEPS: GuideStep[] = [
@@ -121,6 +124,34 @@ export class InvoiceListComponent implements OnInit {
       page:       this.currentPage(),
       pageSize:   this.pageSize(),
       viewMode:   this.viewMode(),
+    });
+  });
+
+  // ── Pays : les drapeaux de la barre (store partagé avec le shell) ──────────
+  /**
+   * Ids FINANCE de tous les drapeaux cochés (`178,63`) ; null = « Tous les pays » (le serveur
+   * applique alors le périmètre du rôle). Envoyé à la liste, à l'export et aux options du
+   * filtre « Affaire ».
+   */
+  readonly paysId = computed<string | null>(() => this.headerPaysList() ?? null);
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+  /** Pays des données affichées — pour ne recharger que sur un VRAI changement de drapeau. */
+  private loadedPaysId: string | null | undefined = undefined;
+
+  /**
+   * Changement de drapeau = nouveau jeu : page 0, liste rechargée, et la liste d'affaires
+   * du filtre « Affaire » suit le pays (premier passage après `ngOnInit`). Un filtre Affaire
+   * déjà choisi sur l'ancien pays est retiré : il viderait la liste sans raison visible.
+   */
+  private readonly followHeaderCountry = effect(() => {
+    const paysId = this.paysId();
+    untracked(() => {
+      if (paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.filterAffaire.set('');
+      this.currentPage.set(0);
+      this.load();
+      this.loadAffaireOptions();
     });
   });
 
@@ -294,10 +325,17 @@ export class InvoiceListComponent implements OnInit {
 
   ngOnInit(): void {
     this.restoreState();
+    this.loadedPaysId = this.paysId();
     this.load();
     this.affaireSvc.getClients().subscribe(list => this.clients.set(list));
-    this.affaireSvc.getAffaires({ size: 200 }).subscribe({
-      next:  page => this.affaires.set(page.content),
+    this.loadAffaireOptions();
+  }
+
+  /** Options du filtre « Affaire » : les affaires du pays du drapeau (toutes sur « Tous »). */
+  private loadAffaireOptions(): void {
+    const paysId = this.paysId();
+    this.affaireSvc.getAffaires({ size: 200, paysId }).subscribe({
+      next:  page => { if (paysId === this.paysId()) this.affaires.set(page.content); },
       error: () => this.affaires.set([]),
     });
   }
@@ -356,6 +394,7 @@ export class InvoiceListComponent implements OnInit {
     const range = this.filterDateRange() ?? [];
     const dueRange = this.filterDueRange() ?? [];
     return {
+      paysId:    this.paysId(),
       statut:    this.filterStatut() || null,
       clientId:  this.filterClient()  ? +this.filterClient()  : null,
       affaireId: this.filterAffaire() ? +this.filterAffaire() : null,

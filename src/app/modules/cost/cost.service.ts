@@ -63,9 +63,9 @@ export class CostService {
     sort?: string | null;
   }): Observable<PageResponse<CostLineDto>> {
     let params = new HttpParams()
-      .set('paysId', String(filter.paysId))
       .set('page', String(filter.page ?? 0))
       .set('size', String(filter.size ?? 25));
+    if (filter.paysId)             params = params.set('paysId', String(filter.paysId));
     if (filter.status)             params = params.set('status', filter.status);
     if (filter.supplierId != null) params = params.set('supplierId', String(filter.supplierId));
     if (filter.noSupplier)         params = params.set('noSupplier', 'true');
@@ -80,7 +80,8 @@ export class CostService {
   // ── Cost invoices (V93) — entry, approval, payment, attachments ──────────────
 
   getCostInvoices(filter: {
-    paysId: number;
+    /** Un id finance, ou plusieurs (`178,63`) ; null = tout le périmètre du rôle. */
+    paysId: number | string | null;
     status?: string | null;
     supplierId?: number | null;
     noSupplier?: boolean;
@@ -120,8 +121,8 @@ export class CostService {
   }
 
   /** "By supplier" cards — invoice count + EUR totals per supplier, all statuses. */
-  getCostInvoicesBySupplier(paysId: number): Observable<SupplierCostSummaryDto[]> {
-    const params = new HttpParams().set('paysId', String(paysId));
+  getCostInvoicesBySupplier(paysId: number | string | null): Observable<SupplierCostSummaryDto[]> {
+    const params = paysId ? new HttpParams().set('paysId', String(paysId)) : new HttpParams();
     return this.http.get<SupplierCostSummaryDto[]>(`${this.base}/cost-invoices/by-supplier`, { params }).pipe(
       catchError(() => of([] as SupplierCostSummaryDto[])),
     );
@@ -176,8 +177,9 @@ export class CostService {
 
   // ── Pending approvals queue ────────────────────────────────────────────────
 
-  getPendingApprovals(paysId: number): Observable<CostInvoiceDto[]> {
-    const params = new HttpParams().set('pays', String(paysId));
+  /** `paysId` : un id finance ou plusieurs (`178,63`) ; null = tout le périmètre du rôle. */
+  getPendingApprovals(paysId: number | string | null): Observable<CostInvoiceDto[]> {
+    const params = paysId ? new HttpParams().set('pays', String(paysId)) : new HttpParams();
     return this.http.get<CostInvoiceDto[]>(`${this.base}/cost/approvals/pending`, { params }).pipe(
       catchError(() => of([] as CostInvoiceDto[])),
     );

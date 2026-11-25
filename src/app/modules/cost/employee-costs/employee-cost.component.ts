@@ -1,7 +1,9 @@
-import { Component, OnInit, TemplateRef, inject, signal, computed, effect, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, signal, computed, effect, untracked, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryId,
   ButtonComponent, CardComponent, DafCellDirective, DataTableComponent, FieldMessageComponent, FilterField,
   FilterResult, FormFieldComponent, MetricCardOptions, ModalRef, ModalService,
   MultiDatePickerComponent, MultiDatePickerConfig, PageComponent, PageHeaderComponent,
@@ -26,6 +28,7 @@ import { CurrencyDisplayService, SUPPORTED_CURRENCIES } from '../../../core/curr
 import { CurrencyContextService } from '../../../core/currency-context.service';
 import { EmployeeCostListStateService } from './employee-cost-list-state.service';
 import { ExportService } from '../../../core/export.service';
+import { injectHeaderRhPays } from '../../../core/header-rh-pays';
 
 type ViewMode = 'list' | 'grid';
 
@@ -532,8 +535,28 @@ export class EmployeeCostComponent implements OnInit {
     this.page.set(0);
   }
 
+  // ── Pays : le drapeau de la navbar (store partagé avec le shell) ───────────
+  /**
+   * Ids RH de tous les drapeaux cochés (`179,64`) ; null = « Tous les pays ». Filtre sur le
+   * pays de l'EMPLOYÉ (`users_ref.pays_id`), borné par le serveur au périmètre du rôle.
+   */
+  private readonly headerRhPays = injectHeaderRhPays();
+  readonly paysId = computed<string | null>(() => this.headerRhPays() ?? null);
+  private loadedPaysId: string | null | undefined = undefined;
+  /** Changement de drapeau : coûts rechargés, retour à la première page. */
+  private readonly followHeaderCountry = effect(() => {
+    const paysId = this.paysId();
+    untracked(() => {
+      if (paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.page.set(0);
+      this.load();
+    });
+  });
+
   ngOnInit(): void {
     this.restoreState();
+    this.loadedPaysId = this.paysId();
     this.load();
     this.usersLoading.set(true);
     this.affaireSvc.getUsers().subscribe({
@@ -552,10 +575,12 @@ export class EmployeeCostComponent implements OnInit {
   }
 
   private load(): void {
+    const paysId = this.paysId();
     this.isLoading.set(true);
     this.serverError.set(null);
-    this.svc.list().subscribe({
+    this.svc.list(paysId).subscribe({
       next: list => {
+        if (paysId !== this.paysId()) return;   // réponse de l'ancien pays
         this.rows.set(list);
         this.isLoading.set(false);
         this.hasLoadedOnce.set(true);

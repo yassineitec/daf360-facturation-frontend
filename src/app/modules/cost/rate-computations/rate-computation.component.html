@@ -9,16 +9,6 @@
     [subtitle]="subtitle()">
     <!-- Racine STATIQUE du slot : un élément sous un @if ne serait pas projeté. -->
     <div pageActions class="flex flex-wrap items-center gap-2">
-      @if (paysList().length > 1) {
-        <div data-guide="rate-pays">
-          <daf-select
-            [options]="paysOptions()"
-            [config]="paysSelectConfig()"
-            [selected]="paysId() ? [paysId().toString()] : []"
-            [ariaLabel]="'COST.FORM.PAYS_LABEL' | translate"
-            (selectedChange)="onPaysSelected($event)" />
-        </div>
-      }
       <!-- Tous les barèmes de l'entité + le détail de leurs lignes, en un classeur. -->
       <daf-button data-guide="rate-export"
         [options]="{
@@ -44,6 +34,9 @@
       }
     </div>
   </daf-page-header>
+
+  <!-- Plus de sélecteur de pays ici : l'entité est le drapeau de la navbar (sinon le pays
+       de l'utilisateur). -->
 
   @if (serverError()) {
     <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">

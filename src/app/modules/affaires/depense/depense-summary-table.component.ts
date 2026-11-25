@@ -59,9 +59,6 @@ export class DepenseSummaryTableComponent {
    * is active) — so switching, say, Année never offers only the year currently applied. */
   monthOptions = input<FilterOption[]>([]);
   yearOptions = input<FilterOption[]>([]);
-  /** Collaborator-country options, same "computed by the parent from the unfiltered
-   * preview" rule as Mois/Année. */
-  paysOptions = input<FilterOption[]>([]);
   collaboratorSelected = output<string>();
   /** Bubbles the Pays/Période/Mois/Année part of this panel's result up to the parent tab, whose
    * `filteredLignes()` also drives the KPI tiles — Discipline stays local (see
@@ -122,7 +119,6 @@ export class DepenseSummaryTableComponent {
     this.translate.currentLang();
     return [
       { name: 'discipline', label: this.translate.instant('AFFAIRES.WIP.COL_DISCIPLINE'), type: 'multiselect', options: this.disciplineOptions() },
-      { name: 'pays',       label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_COUNTRY'), type: 'multiselect', options: this.paysOptions() },
       { name: 'period',     label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_PERIOD'), type: 'daterange' },
       { name: 'month',      label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_MONTH'),  type: 'select', options: this.monthOptions() },
       { name: 'year',       label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_YEAR'),   type: 'select', options: this.yearOptions() },

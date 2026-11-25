@@ -354,7 +354,8 @@
       "OVERDUE_COUNT": "{{count}} فواتير حرجة",
       "NO_DELAY": "لا تأخير",
       "PLUS_90_TITLE": "متأخرة منذ أكثر من 90 يومًا",
-      "PLUS_90_COUNT": "{{count}} فاتورة"
+      "PLUS_90_COUNT": "{{count}} فاتورة",
+      "SCOPE": "المبالغ: {{country}} ({{currency}})"
     },
     "MODULES": {
       "TREASURY_BALANCE": "الرصيد الموحد",

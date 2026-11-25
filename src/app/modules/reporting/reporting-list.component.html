@@ -7,14 +7,15 @@
     [subtitle]="'REPORTING.SUBTITLE' | translate">
     <ng-container pageActions>
       <div class="flex items-center gap-3" data-guide="reporting-actions">
-        <!-- No visible label: the flag + country name say it, and a label on top made the
-             select taller than the button next to it. -->
-        @if (paysList().length > 1) {
-          <app-pays-flag-select
-            [options]="paysOptions()"
-            [selected]="paysId() ? [paysId().toString()] : []"
-            [placeholder]="paysSelectPlaceholder()"
-            (selectedChange)="onPaysSelected($event)" />
+        <!-- L'entité vient des drapeaux de la barre (une seule : voir injectFlagEntity) ;
+             plus de sélecteur de pays ici, on montre seulement laquelle. -->
+        @if (currentPays(); as p) {
+          <span class="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-outline-variant
+                       text-label-md font-semibold text-on-surface-variant whitespace-nowrap"
+                [title]="p.label">
+            <span [class]="'fi fi-' + p.isoCode.toLowerCase()" style="border-radius:2px"></span>
+            {{ p.label }}
+          </span>
         }
         <!-- One "Actions" menu: the main action (new period, only with FACT_MANAGE_COST)
              first, then the two rarely-used settings screens. -->

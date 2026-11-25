@@ -3,21 +3,8 @@
   <daf-page-header
     [title]="'SUBCONTRACTING.TITLE' | translate"
     [subtitle]="'SUBCONTRACTING.SUBTITLE' | translate">
-    <!-- ng-container is the static root: an element inside a structural directive or
-         @if lives in an embedded view, where <ng-content select="[pageActions]"> can
-         never match it (§10f). -->
-    <!-- The entity selector scopes the SUBCONTRACTORS DIRECTORY ONLY — the other two
-         tabs are affaire-scoped and ignore it. Showing it on all three made it read as
-         a page-wide filter that silently governed a third of the page. -->
-    <ng-container pageActions>
-      @if (activeTab() === 'st' && pays().length > 0) {
-        <daf-select data-guide="sc-entity"
-          [options]="paysOptions()"
-          [config]="{ label: ('SUBCONTRACTING.ENTITY' | translate), searchable: true }"
-          [selected]="paysSelected()"
-          (selectedChange)="onPaysSelect($event)" />
-      }
-    </ng-container>
+    <!-- Plus de sélecteur « Entité » : c'est le drapeau de la navbar (sinon le pays de
+         l'utilisateur) qui fixe l'entité des onglets — voir `selectedPaysId`. -->
   </daf-page-header>
 
   <!-- daf-tabs is strip-only — the consumer renders the panel, which is what keeps the
@@ -42,7 +29,7 @@
     </p>
 
     @switch (activeTab()) {
-      @case ('st')     { <app-sous-traitants-tab [paysId]="selectedPaysId()" /> }
+      @case ('st')     { <app-sous-traitants-tab [paysId]="selectedPaysId()" [listPays]="listPays()" /> }
       @case ('ordres') { <app-ordres-st-tab      [paysId]="selectedPaysId()" /> }
       @default         { <app-couts-analyse-tab /> }
     }

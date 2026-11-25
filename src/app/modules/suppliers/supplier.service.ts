@@ -14,7 +14,8 @@ export class SupplierService {
 
   /** Paginated search — uses GET /search?paysId=&q=&status=&typeId=&hasIban=&hasTva=&page=&size= */
   getSuppliers(params: SupplierExtraFilter & {
-    paysId: number;
+    /** Ids finance (`178,63`, drapeaux de la barre) ; null = tout le périmètre du rôle. */
+    paysId: number | string | null;
     search?: string;
     /**
      * `ACTIVE` (défaut serveur), `INACTIVE` ou `ALL`. Omis = actifs seuls, ce que
@@ -27,9 +28,9 @@ export class SupplierService {
     sort?: string | null;
   }): Observable<PageResponse<SupplierDto>> {
     let p = new HttpParams()
-      .set('paysId', String(params.paysId))
       .set('page', String(params.page ?? 0))
       .set('size', String(params.size ?? 20));
+    if (params.paysId) p = p.set('paysId', String(params.paysId));
     if (params.search) p = p.set('q', params.search);
     // `ACTIVE` n'est pas envoyé : c'est déjà le défaut serveur, et une requête sans
     // filtre est ce que les autres appelants émettent.
@@ -48,9 +49,10 @@ export class SupplierService {
    * maintenant ce que la réponse contient réellement — complétude bancaire, complétude
    * fiscale, couverture géographique.
    */
-  getStats(paysId: number, filter: SupplierExtraFilter = {}): Observable<SupplierStatsDto> {
+  getStats(paysId: number | string | null, filter: SupplierExtraFilter = {}): Observable<SupplierStatsDto> {
     // Mêmes filtres type / IBAN / TVA que la liste : les tuiles suivent le panneau.
-    const p = this.withExtraFilter(new HttpParams().set('paysId', String(paysId)), filter);
+    const base = paysId ? new HttpParams().set('paysId', String(paysId)) : new HttpParams();
+    const p = this.withExtraFilter(base, filter);
     return this.http.get<SupplierDto[]>(this.base, { params: p }).pipe(
       map(list => ({
         total:     list.length,

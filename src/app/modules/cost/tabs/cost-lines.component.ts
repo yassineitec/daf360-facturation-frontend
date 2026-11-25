@@ -1,7 +1,9 @@
-import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryId,
   ButtonComponent, FilterField, FilterResult, MetricCardComponent, MetricCardOptions,
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
 } from '@khalilrebhiitec/daf360';
@@ -18,6 +20,7 @@ import {
 } from './cost-invoice-display';
 import { CostLinesStateService } from './cost-lines-state.service';
 import { ExportService } from '../../../core/export.service';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 type ViewMode = 'grid' | 'list' | 'supplier';
 
@@ -70,7 +73,7 @@ export class CostLinesComponent implements OnInit {
    */
   exportExcel(): void {
     const paysId = this.paysId();
-    if (!paysId || this.exportDisabled()) return;
+    if (this.exportDisabled()) return;
     const day = toIsoDay(new Date());
     if (this.viewMode() === 'supplier') {
       this.exportSvc.download(this.exportSvc.costBySupplier(paysId), `Couts_par_fournisseur_${day}.xlsx`, this.exporting);
@@ -95,7 +98,35 @@ export class CostLinesComponent implements OnInit {
       `Couts_${day}.xlsx`, this.exporting);
   }
 
-  paysId   = signal<number>(0);
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+
+  /**
+   * Les entités dont on lit les coûts : ids FINANCE de tous les drapeaux cochés (`178,63`) ;
+   * null = « Tous les pays » (le serveur applique alors le périmètre du rôle). Les montants
+   * de la vue « par fournisseur » sont en EUR : ils s'additionnent d'un pays à l'autre.
+   */
+  readonly paysId = computed<string | null>(() => this.headerPaysList() ?? null);
+  private loadedPaysId: string | null | undefined = undefined;
+
+  /**
+   * Changement de pays (drapeau, ou arrivée du pays de l'utilisateur) : page 0, liste
+   * rechargée, vue « par fournisseur » recalculée — ses cartes étaient celles de l'ancien pays.
+   */
+  private readonly followPays = effect(() => {
+    const paysId = this.paysId();
+    untracked(() => {
+      if (paysId === this.loadedPaysId) return;
+      const first = this.loadedPaysId === undefined;
+      this.loadedPaysId = paysId;
+      if (!first) this.page.set(0);
+      this.supplierSummaries.set([]);
+      this.supplierSummariesLoaded.set(false);
+      this.load();
+      // Retour (ou déjà) sur la vue « par fournisseur » : elle ne se charge sinon qu'à la bascule.
+      if (this.viewMode() === 'supplier') this.loadSupplierSummaries();
+    });
+  });
+
   invoices = signal<CostInvoiceDto[]>([]);
   total    = signal(0);
   page     = signal(0);
@@ -318,33 +349,27 @@ export class CostLinesComponent implements OnInit {
 
   ngOnInit(): void {
     this.restoreState();
-    this.clientSvc.getMyPays().subscribe({
-      next: paysId => {
-        if (paysId != null && paysId > 0) {
-          this.paysId.set(paysId);
-          this.load();
-          // Retour sur la vue « par fournisseur » : elle ne se charge qu'à la bascule.
-          if (this.viewMode() === 'supplier') this.loadSupplierSummaries();
-        } else {
-          this.serverError.set(this.translate.instant('COST.LINES.NO_PAYS'));
-        }
-      },
-      error: () => this.serverError.set(this.translate.instant('COST.LINES.NO_PAYS_DETERMINE')),
-    });
+    // Le premier chargement est fait par `followPays` (drapeaux) : sans drapeau, le serveur
+    // borne déjà la liste au périmètre du rôle — plus besoin du pays de l'utilisateur ici.
   }
 
+  /** Bumped à chaque chargement : une page lente de l'ancien pays est ignorée. */
+  private loadSeq = 0;
+
   load(): void {
-    if (!this.paysId()) return;
+    const paysId = this.paysId();
+    const seq = ++this.loadSeq;
     this.isLoading.set(true);
     this.serverError.set(null);
     this.svc.getCostInvoices({
-      paysId: this.paysId(),
+      paysId,
       status: this.statusFilter() || null,
       page:   this.page(),
       size:   this.size(),
       sort:   this.sortParam(),
     }).subscribe({
       next: p => {
+        if (seq !== this.loadSeq) return;
         // Page restaurée devenue hors limites (factures supprimées entre-temps) :
         // on retombe sur la première plutôt que d'afficher une liste vide.
         if (p.content.length === 0 && this.page() > 0) {
@@ -410,10 +435,11 @@ export class CostLinesComponent implements OnInit {
   }
 
   private loadSupplierSummaries(): void {
-    if (!this.paysId()) return;
+    const paysId = this.paysId();
     this.supplierSummariesLoading.set(true);
-    this.svc.getCostInvoicesBySupplier(this.paysId()).subscribe({
+    this.svc.getCostInvoicesBySupplier(paysId).subscribe({
       next: rows => {
+        if (paysId !== this.paysId()) return;   // réponse de l'ancien pays
         this.supplierSummaries.set(rows);
         this.supplierSummariesLoading.set(false);
         this.supplierSummariesLoaded.set(true);

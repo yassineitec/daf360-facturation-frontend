@@ -7,6 +7,7 @@ import { DepenseSummaryTableComponent } from './depense-summary-table.component'
 import { DepenseCollaboratorDetailComponent } from './depense-collaborator-detail.component';
 import { AffaireDetail } from '../affaire.model';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 /** Filter value for lines whose collaborator has no country (no matching DAF360 user_ref). */
 const NO_PAYS = '__NONE__';
@@ -49,7 +50,14 @@ export class AffaireDepenseTabComponent implements OnInit {
   protected readonly filterYear = signal<number | null>(null);
   /** Pays (collaborator's country) — independent of the Période/Mois/Année mode above, so it
    * combines with whichever is active. Values are `String(paysId)` or `NO_PAYS`. */
-  protected readonly filterPays = signal<string[]>([]);
+  protected readonly filterPays = computed<string[]>(() =>
+    (this.headerPaysList() ?? '').split(',').filter(Boolean));
+  /**
+   * Les drapeaux de la barre, en ids FINANCE (`178,63`) — même espace que `l.paysId` (le
+   * `users_ref.pays_id` du collaborateur, libellé par `pays_ref`). Le champ « Pays » du
+   * panneau est retiré : un collaborateur sans pays connu n'apparaît que sans drapeau.
+   */
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
   /** Coût min/max — bounds on each collaborator's total cost over the lines left by the
    * filters above (Pays + Période/Mois/Année); a collaborator outside them is dropped whole,
    * so the KPI tiles follow the table. `null` = no bound. */
@@ -128,23 +136,6 @@ export class AffaireDepenseTabComponent implements OnInit {
   protected readonly yearFilterOptions = computed<FilterOption[]>(() =>
     this.availableYears().map(y => ({ value: String(y), label: String(y) })),
   );
-
-  /** Same "from the UNFILTERED preview" rule as Mois/Année. Collaborators with no DAF360
-   * user_ref (paysId null) are grouped under a "Non renseigné" option, listed last. */
-  protected readonly paysFilterOptions = computed<FilterOption[]>(() => {
-    const isEn = (this.translate.currentLang() ?? '').startsWith('en');
-    const seen = new Map<string, string>();
-    let hasNone = false;
-    for (const l of this.preview()?.lignes ?? []) {
-      if (l.paysId == null) hasNone = true;
-      else seen.set(String(l.paysId), (isEn && l.paysLabelEn) || l.paysLabel || String(l.paysId));
-    }
-    const options: FilterOption[] = [...seen.entries()]
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-    if (hasNone) options.push({ value: NO_PAYS, label: this.translate.instant('AFFAIRES.DEPENSE.FILTER_COUNTRY_NONE') });
-    return options;
-  });
 
   /** Single source of truth every consumer reads instead of `preview()?.lignes` directly —
    * `kpiTiles` below, and (from Task 6 onward) both child tables' `[lignes]` binding. ISO
@@ -249,9 +240,7 @@ export class AffaireDepenseTabComponent implements OnInit {
     const period = result['period'];
     const month  = result['month'];
     const year   = result['year'];
-    const pays   = result['pays'];
-
-    this.filterPays.set(Array.isArray(pays) ? pays as string[] : pays ? [String(pays)] : []);
+    // Pays : plus dans le panneau — ce sont les drapeaux de la barre (`filterPays`).
     // Already parsed to `number | null` by the summary table before bubbling up.
     const costMin = result['costMin'];
     const costMax = result['costMax'];

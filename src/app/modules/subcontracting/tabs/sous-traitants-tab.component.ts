@@ -1,4 +1,4 @@
-import { Component, TemplateRef, ViewChild, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { Component, TemplateRef, ViewChild, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent,
@@ -38,7 +38,10 @@ export class SousTraitantsTabComponent {
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(StTableSectionComponent);
 
+  /** L'entité d'un NOUVEAU sous-traitant (une seule) — voir SubcontractingComponent. */
   paysId = input<number | null>(null);
+  /** Les entités listées : drapeaux cochés (`178,63`) ; null = tout le périmètre du rôle. */
+  listPays = input<string | null>(null);
 
   private readonly svc       = inject(SubcontractingService);
   private readonly translate = inject(TranslateService);
@@ -52,11 +55,10 @@ export class SousTraitantsTabComponent {
 
   /** Export Excel des sous-traitants affichés (recherche + filtres), dans l'ordre de l'écran. */
   exportExcel(): void {
-    const paysId = this.paysId();
-    if (paysId == null || !this.visibleList().length) return;
+    if (!this.visibleList().length) return;
     const d = new Date();
     this.exportSvc.download(
-      this.exportSvc.sousTraitants(paysId, this.visibleList().map(st => st.id)),
+      this.exportSvc.sousTraitants(this.listPays(), this.visibleList().map(st => st.id)),
       `${this.translate.instant('SUBCONTRACTING.TABS.SUBCONTRACTORS')}_${toIsoDay(d)}.xlsx`, this.exporting);
   }
 
@@ -206,17 +208,17 @@ export class SousTraitantsTabComponent {
   deleting     = signal(false);
 
   constructor() {
+    // Les drapeaux changent : la liste suit (null = tout le périmètre du rôle).
     effect(() => {
-      const id = this.paysId();
-      if (id != null) this.load(id);
-      else this.list.set([]);
+      const pays = this.listPays();
+      untracked(() => this.load(pays));
     });
   }
 
-  load(paysId: number): void {
+  load(pays: string | null = this.listPays()): void {
     this.loading.set(true);
     this.error.set(null);
-    this.svc.listSousTraitants(paysId).subscribe({
+    this.svc.listSousTraitants(pays).subscribe({
       next: l => { this.list.set(l); this.loading.set(false); },
       error: () => {
         this.error.set(this.translate.instant('SUBCONTRACTING.ST.ERROR_LOAD'));
@@ -291,7 +293,8 @@ export class SousTraitantsTabComponent {
   }
 
   save(): void {
-    const paysId = this.paysId();
+    // Une modification garde l'entité du sous-traitant ; une création prend celle de la page.
+    const paysId = this.editTarget()?.paysId ?? this.paysId();
     if (paysId == null) return;
     if (!this.form.name.trim()) {
       // The modal's button `disabled` is fixed at open time, so required-field
@@ -318,7 +321,7 @@ export class SousTraitantsTabComponent {
       next: () => {
         this.saving.set(false);
         this.formRef?.close();
-        this.load(paysId);
+        this.load();
       },
       error: err => {
         this.saving.set(false);
@@ -344,15 +347,14 @@ export class SousTraitantsTabComponent {
 
   doDelete(): void {
     const target = this.deleteTarget();
-    const paysId = this.paysId();
-    if (!target || paysId == null) return;
+    if (!target) return;
     this.deleting.set(true);
     this.svc.deleteSousTraitant(target.id).subscribe({
       next: () => {
         this.deleting.set(false);
         this.deleteRef?.close();
         this.deleteTarget.set(null);
-        this.load(paysId);
+        this.load();
       },
       error: err => {
         this.deleting.set(false);

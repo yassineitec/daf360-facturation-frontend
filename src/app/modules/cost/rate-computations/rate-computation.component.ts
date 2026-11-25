@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import {
   AccordionCardComponent, BadgeCell, BadgeVariant, ButtonComponent, ButtonOptions, CheckboxComponent,
@@ -23,6 +23,7 @@ import { ExportService } from '../../../core/export.service';
 
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 /** Guide de la page — `target` = un `data-guide` du gabarit. */
 const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
@@ -30,7 +31,7 @@ const step = (key: string, icon: string, target?: string, tab?: string): GuideSt
 });
 const GUIDE_STEPS: GuideStep[] = [
   step('INTRO', 'calculate', 'rate-header'),
-  step('PAYS', 'public', 'rate-pays'),
+  // Plus d'étape « PAYS » : le sélecteur de la page est remplacé par le drapeau de la navbar.
   step('POOL', 'tune', 'rate-pool-btn'),
   step('FORMULA', 'function', 'rate-formula'),
   step('TABLE', 'table_rows', 'rate-table'),
@@ -124,27 +125,44 @@ export class RateComputationComponent implements OnInit {
   readonly canApprove  = computed(() => this.isSuperAdmin() || this.userStore.hasPermission('FACT_APPROVE_RATES'));
 
   // ── pays ────────────────────────────────────────────────────────────────
+  /** Référentiel des pays — sert à la devise du barème (plus de sélecteur sur la page). */
   paysList = signal<PaysRefDto[]>([]);
-  paysId   = signal<number>(0);
+  /** Le pays de l'utilisateur (`/ref/me`) — 0 tant qu'il n'est pas connu. */
+  private readonly ownPaysId = signal<number>(0);
+  /** Ids FINANCE de tous les drapeaux cochés (`178,63`) ; undefined = « Tous les pays ». */
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
 
-  /** Searchable drop-down: pays_ref holds the 194 countries since V75. */
-  readonly paysOptions = computed<SelectOption[]>(() =>
-    this.paysList().map(p => ({ value: String(p.id), label: `${p.frenchLabel} (${p.isoCode})` })));
-
-  /** In `[pageActions]`, next to the buttons: no floating label (same as /finance/reporting/pl-catalogue). */
-  readonly paysSelectConfig = computed(() => {
-    this.translate.currentLang();
-    return { searchable: true, fullWidth: false, placeholder: this.translate.instant('COST.FORM.PAYS_LABEL') };
+  /**
+   * L'entité des barèmes — UNE seule : un barème, sa formule et sa création sont propres à
+   * une entité (comme /rh/admin). Un drapeau → ce pays ; aucun → le pays de l'utilisateur ;
+   * plusieurs → le pays de l'utilisateur s'il est coché, sinon le premier coché.
+   * 0 = pas encore connu : rien n'est chargé.
+   */
+  readonly paysId = computed<number>(() => {
+    const ids = (this.headerPaysList() ?? '').split(',').map(Number).filter(id => Number.isInteger(id) && id > 0);
+    const own = this.ownPaysId();
+    if (ids.length === 1) return ids[0];
+    if (!ids.length || ids.includes(own)) return own;
+    return ids[0];
   });
+  private loadedPaysId = 0;
 
   /** The barème currency is the pays currency (pays_ref.devise), never typed. */
   readonly paysCurrency = computed(() =>
     this.paysList().find(p => p.id === this.paysId())?.devise ?? '—');
 
-  onPaysSelected(values: string[]): void {
-    const id = Number(values[0]);
-    if (Number.isFinite(id) && id > 0) this.selectPays(id);
-  }
+  /** Changement de pays : formulaire fermé, pool replié, détail replié, barèmes rechargés. */
+  private readonly followPays = effect(() => {
+    const paysId = this.paysId();
+    untracked(() => {
+      if (!paysId || paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.closeForm();
+      this.showPoolEditor.set(false);
+      this.expandedId.set(null);
+      this.load();
+    });
+  });
 
   // ── list ────────────────────────────────────────────────────────────────
   computations    = signal<RateComputationDto[]>([]);
@@ -456,41 +474,38 @@ export class RateComputationComponent implements OnInit {
   }));
 
   ngOnInit(): void {
-    this.isLoading.set(true);
+    // Le chargement est fait par `followPays`, dès que le pays est connu : le drapeau tout
+    // de suite, ou le pays de l'utilisateur à la réponse de /ref/me.
+    if (!this.paysId()) this.isLoading.set(true);
     forkJoin({ myPays: this.clientSvc.getMyPays(), allPays: this.clientSvc.getPays() }).subscribe({
       next: ({ myPays, allPays }) => {
         this.paysList.set(allPays);
-        const resolved = myPays ?? (allPays.length > 0 ? allPays[0].id : 0);
-        if (resolved > 0) {
-          this.paysId.set(resolved);
-          this.load();
-        } else {
+        if (myPays != null && myPays > 0) {
+          this.ownPaysId.set(myPays);
+        } else if (!this.paysId()) {
           this.serverError.set(this.translate.instant('COST.RATE.NO_PAYS'));
           this.isLoading.set(false);
         }
       },
       error: () => {
+        if (this.paysId()) return;
         this.serverError.set(this.translate.instant('COST.RATE.LOAD_PAYS_ERROR'));
         this.isLoading.set(false);
       },
     });
   }
 
-  selectPays(id: number): void {
-    if (id === this.paysId()) return;
-    this.paysId.set(id);
-    this.closeForm();
-    this.showPoolEditor.set(false);
-    this.expandedId.set(null);
-    this.load();
-  }
-
   private load(): void {
+    const paysId = this.paysId();
     this.isLoading.set(true);
     this.serverError.set(null);
     this.actionError.set(null);
-    this.svc.getRateComputations(this.paysId()).subscribe({
-      next: list => { this.computations.set(list); this.isLoading.set(false); },
+    this.svc.getRateComputations(paysId).subscribe({
+      next: list => {
+        if (paysId !== this.paysId()) return;   // réponse de l'ancien pays
+        this.computations.set(list);
+        this.isLoading.set(false);
+      },
       error: err => {
         this.serverError.set(err.error?.detail ?? err.error?.message ?? this.translate.instant('COST.RATE.LOAD_ERROR'));
         this.isLoading.set(false);

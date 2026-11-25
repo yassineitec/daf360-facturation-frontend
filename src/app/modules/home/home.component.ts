@@ -1,11 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   ButtonComponent, CardComponent, DrawerComponent, MetricCardComponent, PageComponent,
-  PageHeaderComponent, SkeletonComponent, selectCurrentUser,
+  PageHeaderComponent, SkeletonComponent, selectCurrentUser, selectSelectedCountryId,
 } from '@khalilrebhiitec/daf360';
 import type {
   CardOptions, DrawerConfig, MetricCardOptions, MetricDelta,
@@ -15,11 +15,14 @@ import { CurrencyContextService } from '../../core/currency-context.service';
 import { PaymentsDashboardStats } from '../payments/payment.model';
 import { InvoiceService } from '../invoicing/invoice.service';
 import { InvoiceListItem, INVOICE_STATUT_CONFIG } from '../invoicing/invoice.model';
+import { AffaireService } from '../affaires/affaire.service';
+import { PaysRefDto, paysLabel } from '../affaires/affaire.model';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 import { HOME_MODULES } from '../finance-modules';
 import type { FinanceModuleDef } from '../finance-modules';
 import { PageGuideComponent } from '../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../shared/guide/page-guide.types';
+import { HeaderPaysService } from '../../core/header-pays.service';
 
 export interface ActivityItem {
   icon:      string;
@@ -131,7 +134,71 @@ export class HomeComponent implements OnInit {
   private readonly translate      = inject(TranslateService);
   private readonly currency       = inject(DisplayCurrencyPipe);
 
+  private readonly affaireSvc     = inject(AffaireService);
+
   private readonly currentUser = toSignal(this.ngrx.select(selectCurrentUser));
+
+  // ── Pays : les drapeaux de la barre (store partagé avec le shell) ─────────────
+  /** Ids FINANCE de tous les drapeaux cochés (`178,63`) ; undefined = « Tous les pays ». */
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+
+  /**
+   * Pays des montants (tuiles KPI). Les KPI ne valent que pour UN pays : la devise sert
+   * d'affichage, elle ne convertit pas, et des montants en TND et en EGP ne s'additionnent
+   * pas. Donc :
+   * - un drapeau → ce pays ;
+   * - aucun → null : le serveur prend le pays de l'utilisateur, comme avant ;
+   * - plusieurs → le pays de l'utilisateur s'il est coché, sinon le premier coché.
+   * La mention « Montants : Tunisie (TND) » sous les tuiles dit lequel.
+   * Le compteur « à valider » et l'activité récente, eux, suivent TOUS les drapeaux.
+   */
+  readonly paysId = computed<number | null>(() => {
+    const ids = (this.headerPaysList() ?? '').split(',').map(Number).filter(id => Number.isInteger(id) && id > 0);
+    if (ids.length <= 1) return ids[0] ?? null;
+    const iso = (this.currentUser()?.isoCode ?? '').toUpperCase();
+    const own = this.paysList().find(p => (p.isoCode ?? '').toUpperCase() === iso)?.id;
+    return own != null && ids.includes(own) ? own : ids[0];
+  });
+
+  /** Libellés des pays, pour dire de quel pays sont les montants. */
+  private readonly paysList = signal<PaysRefDto[]>([]);
+
+  /**
+   * « Montants : Tunisie (EUR) » sous les KPI.
+   *
+   * Les KPI ne valent que pour UN pays — des montants en devises différentes ne
+   * s'additionnent pas. Avec « Tous les pays » dans la navbar, le serveur retombe sur le pays
+   * de l'utilisateur ; sans cette mention, le chiffre aurait l'air d'un total groupe.
+   */
+  readonly kpiScopeLabel = computed<string | null>(() => {
+    this.translate.currentLang();
+    const s = this.stats();
+    if (!s) return null;
+    // Drapeau : id FINANCE (déjà traduit). « Tous les pays » : le pays de l'utilisateur, cherché
+    // par code ISO — l'id du jeton est un id RH, qui ne désigne pas le même pays en finance.
+    const id   = this.paysId();
+    const iso  = (this.currentUser()?.isoCode ?? '').toUpperCase();
+    const pays = id != null
+      ? this.paysList().find(p => p.id === id)
+      : this.paysList().find(p => (p.isoCode ?? '').toUpperCase() === iso);
+    if (!pays) return null;
+    return this.translate.instant('HOME.KPI.SCOPE', {
+      country:  paysLabel(pays, this.translate.currentLang()),
+      currency: s.devise ?? '',
+    });
+  });
+
+  /** Bumped à chaque chargement : une réponse lente pour l'ancien pays est ignorée. */
+  private loadSeq = 0;
+
+  constructor() {
+    // Premier chargement, puis un par changement de drapeau.
+    effect(() => {
+      const paysId = this.paysId();
+      const paysList = this.headerPaysList() ?? null;
+      untracked(() => this.load(paysId, paysList));
+    });
+  }
 
   stats           = signal<PaymentsDashboardStats | null>(null);
   loadingActivity = signal(true);
@@ -259,20 +326,30 @@ export class HomeComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.paymentSvc.getStats().subscribe({
-      next:  s  => { this.stats.set(s); this.firstLoad.set(false); },
-      error: () => this.firstLoad.set(false),
+    this.affaireSvc.getPays().subscribe(list => this.paysList.set(list));
+  }
+
+  /** KPI, compteur « à valider » et activité récente, pour le pays du drapeau. */
+  private load(paysId: number | null, paysList: string | null): void {
+    const seq = ++this.loadSeq;
+    const current = () => seq === this.loadSeq;
+    this.loadingActivity.set(true);
+
+    this.paymentSvc.getStats(paysId).subscribe({
+      next:  s  => { if (!current()) return; this.stats.set(s); this.firstLoad.set(false); },
+      error: () => { if (!current()) return; this.stats.set(null); this.firstLoad.set(false); },
     });
 
-    this.invoiceSvc.getInvoices({ page: 0, size: 1, statut: 'SUBMITTED', from: null, to: null, search: null })
+    this.invoiceSvc.getInvoices({ paysId: paysList, page: 0, size: 1, statut: 'SUBMITTED', from: null, to: null, search: null })
       .subscribe({
-        next:  res => this.pendingCount.set(res.totalElements),
-        error: ()  => this.pendingCount.set(0),
+        next:  res => { if (current()) this.pendingCount.set(res.totalElements); },
+        error: ()  => { if (current()) this.pendingCount.set(0); },
       });
 
-    this.invoiceSvc.getInvoices({ page: 0, size: 6, statut: null, from: null, to: null, search: null })
+    this.invoiceSvc.getInvoices({ paysId: paysList, page: 0, size: 6, statut: null, from: null, to: null, search: null })
       .subscribe({
         next: res => {
+          if (!current()) return;
           this.recentActivity.set(res.content.map(inv => {
             const cfg = ACTIVITY_CONFIG[inv.statut] ?? { icon: 'receipt_long', tone: 'text-outline' };
             const statut = INVOICE_STATUT_CONFIG[inv.statut]?.label ?? inv.statut;
@@ -290,7 +367,7 @@ export class HomeComponent implements OnInit {
           }));
           this.loadingActivity.set(false);
         },
-        error: () => this.loadingActivity.set(false),
+        error: () => { if (current()) this.loadingActivity.set(false); },
       });
   }
 

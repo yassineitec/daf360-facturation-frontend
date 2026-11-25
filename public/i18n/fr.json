@@ -2270,7 +2270,8 @@
       "OVERDUE_COUNT": "{{count}} factures critiques",
       "NO_DELAY": "Aucun retard",
       "PLUS_90_TITLE": "Échu depuis +90 jours",
-      "PLUS_90_COUNT": "{{count}} facture(s)"
+      "PLUS_90_COUNT": "{{count}} facture(s)",
+      "SCOPE": "Montants : {{country}} ({{currency}})"
     },
     "MODULES": {
       "TREASURY_BALANCE": "Solde Consolidé",
@@ -2747,6 +2748,7 @@
       "SAVED_MSG": "Facture enregistrée.",
       "EXPORT_PDF": "Exporter en PDF",
       "EXPORTING": "Export…",
+      "VIEW_AFFAIRE": "Voir l'affaire",
       "VIEW_INVOICE": "Voir la facture",
       "LINES_TITLE": "Lignes de facturation",
       "DESC": "Description",
@@ -2921,6 +2923,7 @@
       },
       "FILTER": {
         "ALL": "Tous",
+        "LOCATION": "Localisation du client",
         "SECTOR": "Secteur",
         "STATUS": "Statut",
         "ACTIVE": "Actifs",
@@ -3499,7 +3502,7 @@
         "BACKLOG": "Backlog",
         "BACKLOG_HELP": "(Budget prévisionnel + Budget TS) − (Total facturé + WIP restant). La pastille est la part du budget. Négatif = budget dépassé.",
         "INVOICED": "Total facturé",
-        "INVOICED_HELP": "Somme des factures de l'affaire dont le statut n'est pas « Encaissé » — le facturé non encore soldé. C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé.",
+        "INVOICED_HELP": "Somme de toutes les factures de l'affaire, sauf celles au statut « Annulée » (factures encaissées comprises). C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé.",
         "REVENUE": "Revenue",
         "REVENUE_HELP": "WIP non facturé et non validé (lignes encore en attente dans les onglets WIP et TS WIP) + Total facturé."
       },
@@ -3942,6 +3945,7 @@
         "discipline": "Discipline",
         "disc_loading": "Chargement…",
         "disc_ph": "Choisir ou saisir une discipline…",
+        "disc_list_ph": "Choisir une discipline…",
         "doc360_unavailable_ph": "DOC360 indisponible — choisir ou saisir…",
         "duplicate": "Cette combinaison collaborateur + activité existe déjà dans une autre ligne.",
         "add_row": "Ajouter une ligne",
@@ -7221,6 +7225,7 @@
         "BILLING_PERMISSION": "Permissions liées au module de facturation.",
         "INVOICE_TYPE": "Types de facture disponibles à l'émission.",
         "CLIENT_SECTOR": "Secteurs d'activité proposés à la création ou modification d'un client.",
+        "AFFAIRE_DISCIPLINE": "Disciplines proposées pour les responsables d'une affaire (hors projet DOC360).",
         "WITHHOLDING_RATE": "Taux de retenue à la source sur les coûts fournisseurs, chacun avec son assiette (HT, TTC ou TVA)."
       },
       "COL_CODE": "Code",

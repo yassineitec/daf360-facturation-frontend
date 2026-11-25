@@ -1,4 +1,6 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, untracked } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { selectSelectedCountryId } from '@khalilrebhiitec/daf360';
 import { ReconciliationService } from '../reconciliation.service';
 import { CurrencyContextService } from '../../../core/currency-context.service';
 import { BankTransaction, ImportSummary, UnmatchedSummaryDto } from '../payment.model';
@@ -56,16 +58,42 @@ export class ReconciliationComponent implements OnInit {
     this.imports().find(i => i.id === this.selectedImportId()) ?? null
   );
 
+  /**
+   * Le drapeau de la navbar : les relevés et les non-rapprochés sont ceux de son pays
+   * (le service lit la même valeur pour chaque appel). Au changement, on repart du premier
+   * relevé du nouveau pays — celui qui était sélectionné appartient à l'ancien.
+   */
+  // Drapeaux cochés + entité unique (import, synthèse) : recharger dès que l'un change.
+  private readonly paysKey = computed(() => `${this.svc.listPays() ?? ''}|${this.svc.paysId() ?? ''}`);
+  private loadedCountry: unknown = undefined;
+  private readonly followHeaderCountry = effect(() => {
+    const country = this.paysKey();
+    untracked(() => {
+      if (country === this.loadedCountry) return;
+      this.loadedCountry = country;
+      this.selectedImportId.set(null);
+      this.transactions.set([]);
+      this.loadImports();
+      this.loadUnmatchedSummary();
+    });
+  });
+
   ngOnInit(): void {
+    this.loadedCountry = this.paysKey();
     this.loadImports();
     this.loadUnmatchedSummary();
   }
 
+  /** Bumped à chaque chargement : une liste lente de l'ancien pays est ignorée. */
+  private importsSeq = 0;
+
   loadImports(): void {
+    const seq = ++this.importsSeq;
     this.loadingImports.set(true);
     this.errorImports.set(null);
     this.svc.getImports().subscribe({
       next: list => {
+        if (seq !== this.importsSeq) return;
         this.imports.set(list);
         this.loadingImports.set(false);
         if (list.length > 0 && !this.selectedImportId()) {
@@ -128,7 +156,7 @@ export class ReconciliationComponent implements OnInit {
     const id = this.selectedImportId();
     if (!id) return;
     const name = (this.selectedImport()?.filename ?? String(id)).replace(/\.[^.]+$/, '');
-    this.exportSvc.download(this.exportSvc.reconciliation(id), `Rapprochement_${name}.xlsx`, this.exporting);
+    this.exportSvc.download(this.exportSvc.reconciliation(id, this.svc.listPays(), this.svc.paysId()), `Rapprochement_${name}.xlsx`, this.exporting);
   }
 
   formatAmount(v: number, devise?: string): string {

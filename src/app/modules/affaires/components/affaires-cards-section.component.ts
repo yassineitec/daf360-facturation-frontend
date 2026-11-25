@@ -19,6 +19,28 @@ import { enumLabel } from '../../../shared/enum-labels';
   imports: [EntityCardComponent, SkeletonComponent],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
+  // Pastille « 3rd / Interco » : même dessin que sur les cartes de la page clients
+  // (clients-cards-section), mais dans le flux, à gauche du nom du client.
+  styles: [`
+    .client-type {
+      display: inline-flex;
+      flex-shrink: 0;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: var(--color-surface-container);
+      color: var(--color-on-surface-variant);
+    }
+    .client-type .material-symbols-outlined { font-size: 14px; }
+    .client-type--group {
+      background: color-mix(in srgb, var(--color-tertiary) 15%, transparent);
+      color: var(--color-tertiary);
+    }
+  `],
   template: `
     <!-- Standard breakpoints, not an arbitrary min-[…] variant: these are also
          force-listed in styles.css's @source inline(), so the columns can never be
@@ -52,14 +74,21 @@ import { enumLabel } from '../../../shared/enum-labels';
               (cardClick)="open.emit(card.id)"
               (viewClick)="open.emit(card.id)"
               (actionClick)="onAction($event.id, card.id)" />
-            <span class="absolute bottom-5 text-[12px] font-semibold text-outline
-                         truncate max-w-[45%] opacity-0 group-hover:opacity-100
-                         transition-opacity duration-100 pointer-events-none"
-                  [class.left-5]="!card.deletable"
-                  [class.left-14]="card.deletable"
-                  [class.leading-7]="card.deletable">
-              {{ card.clientName }}
-            </span>
+            <!-- Pastille du type de client (3rd / Interco, même dessin que la page clients)
+                 puis le nom du client, sur une ligne. -->
+            <div class="absolute bottom-5 flex items-center gap-2 max-w-[60%] opacity-0
+                        group-hover:opacity-100 transition-opacity duration-100 pointer-events-none"
+                 [class.left-5]="!card.deletable"
+                 [class.left-14]="card.deletable"
+                 [class.h-7]="card.deletable">
+              @if (card.typeLabel) {
+                <span class="client-type" [class.client-type--group]="card.group">
+                  <span class="material-symbols-outlined">{{ card.group ? 'hub' : 'handshake' }}</span>
+                  {{ card.typeLabel }}
+                </span>
+              }
+              <span class="text-[12px] font-semibold text-outline truncate min-w-0">{{ card.clientName }}</span>
+            </div>
           </div>
         } @empty {
           <div class="col-span-full flex flex-col items-center gap-2 rounded-xl
@@ -115,7 +144,7 @@ export class AffairesCardsSectionComponent {
    * translation lives in one place (UI-PLAYBOOK §6). `currentLang()` is read so the
    * cards re-translate on a language switch — `translate.instant` is not reactive.
    */
-  protected readonly cards = computed<{ id: number; clientName: string; deletable: boolean; options: EntityCardOptions }[]>(() => {
+  protected readonly cards = computed<{ id: number; clientName: string; group: boolean; typeLabel: string | null; deletable: boolean; options: EntityCardOptions }[]>(() => {
     this.translate.currentLang();
     const t = (key: string, params?: Record<string, unknown>) => this.translate.instant(key, params);
     const canDelete = this.canDelete();
@@ -124,6 +153,9 @@ export class AffairesCardsSectionComponent {
       id: a.id,
       // Affiché séparément, superposé au pied de carte — voir le template.
       clientName: a.clientName ?? '—',
+      // Pastille 3rd / Interco devant le nom (rien si le type est inconnu).
+      group: a.clientType === 'INTER_COMPANY',
+      typeLabel: a.clientType ? t('CLIENTS.FORM.CLIENT_TYPE_' + a.clientType) : null,
       // Brouillons seulement : le serveur refuse tout autre statut (suppression logique).
       deletable: canDelete && a.statut === 'DRAFT',
       options: {

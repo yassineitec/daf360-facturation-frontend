@@ -13,8 +13,10 @@ export class EmployeeCostService {
   private readonly base = `${environment.factApiUrl}/api/fact/employee-costs`;
   private readonly http = inject(HttpClient);
 
-  list(): Observable<EmployeeCostDto[]> {
-    return this.http.get<EmployeeCostDto[]>(this.base).pipe(
+  /** `paysId` : drapeau de la navbar (pays de l'employé) ; absent = tous les pays. */
+  list(paysId?: number | string | null): Observable<EmployeeCostDto[]> {
+    const params = paysId ? new HttpParams().set('paysId', String(paysId)) : undefined;
+    return this.http.get<EmployeeCostDto[]>(this.base, { params }).pipe(
       catchError(() => of([] as EmployeeCostDto[])),
     );
   }

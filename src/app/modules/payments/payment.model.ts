@@ -58,6 +58,8 @@ export interface AgingRow {
 }
 
 export interface AgingFilter {
+  /** Ids finance des drapeaux (`178,63`) ; absent = tout le périmètre du rôle (côté serveur). */
+  paysId?:     number | string | null;
   affaireId?:  number | null;
   clientId?:   number | null;
   from?:       string | null;

@@ -1,16 +1,17 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  PageComponent, PageHeaderComponent, SelectComponent, SelectOption, TabItem, TabsComponent,
-  tabParam,
+  PageComponent, PageHeaderComponent, TabItem, TabsComponent, tabParam,
 } from '@khalilrebhiitec/daf360';
-import { AffaireService } from '../affaires/affaire.service';
-import { PaysRefDto } from '../affaires/affaire.model';
+import { catchError, of } from 'rxjs';
+import { ClientService } from '../clients/client.service';
 import { SousTraitantsTabComponent } from './tabs/sous-traitants-tab.component';
 import { OrdresStTabComponent } from './tabs/ordres-st-tab.component';
 import { CoutsAnalyseTabComponent } from './tabs/couts-analyse-tab.component';
 import { PageGuideComponent } from '../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../shared/guide/page-guide.types';
+import { HeaderPaysService } from '../../core/header-pays.service';
 
 type TabId = 'st' | 'ordres' | 'analyse';
 const TAB_IDS: TabId[] = ['st', 'ordres', 'analyse'];
@@ -23,7 +24,7 @@ const GUIDE_STEPS: GuideStep[] = [
   step('INTRO',    'handshake'),
   step('TABS',     'tab',        'sc-tabs',  'st'),
   step('ST',       'groups',     'sc-panel', 'st'),
-  step('ENTITY',   'public',     'sc-entity', 'st'),
+  // Plus d'étape « ENTITY » : le sélecteur d'entité est remplacé par le drapeau de la navbar.
   step('ORDERS',   'assignment', 'sc-panel', 'ordres'),
   step('COSTS',    'payments',   'sc-panel', 'ordres'),
   step('ANALYSIS', 'bar_chart',  'sc-panel', 'analyse'),
@@ -33,23 +34,52 @@ const GUIDE_STEPS: GuideStep[] = [
 @Component({
   selector: 'app-subcontracting',
   imports: [
-    TranslatePipe, PageComponent, PageHeaderComponent, SelectComponent, TabsComponent,
+    TranslatePipe, PageComponent, PageHeaderComponent, TabsComponent,
     SousTraitantsTabComponent, OrdresStTabComponent, CoutsAnalyseTabComponent, PageGuideComponent,
   ],
   host: { class: 'block' },
   templateUrl: './subcontracting.component.html',
 })
-export class SubcontractingComponent implements OnInit {
-  private readonly affaireSvc = inject(AffaireService);
+export class SubcontractingComponent {
   private readonly translate  = inject(TranslateService);
 
   /** Adossé au paramètre d'URL : voir tabParam. Survit au rechargement et au précédent. */
   activeTab      = tabParam<TabId>(TAB_IDS, 'st');
-  pays           = signal<PaysRefDto[]>([]);
-  selectedPaysId = signal<number | null>(null);
 
-  /** The entity list is the page's own first request — the tabs load their own data. */
-  firstLoad = signal(true);
+  /**
+   * Le pays de l'utilisateur côté FINANCE (`/ref/me`) — et non celui du jeton, qui est un id
+   * RH et ne désigne pas le même pays dans `pays_ref`.
+   */
+  private readonly ownPaysId = toSignal(
+    inject(ClientService).getMyPays().pipe(catchError(() => of(null))),
+    { initialValue: null },
+  );
+
+  /** Ids FINANCE de tous les drapeaux cochés (`178,63`) ; undefined = « Tous les pays ». */
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+
+  /**
+   * Les entités LISTÉES (onglet Sous-traitants) : tous les drapeaux cochés ; null = « Tous
+   * les pays » (le serveur applique alors le périmètre du rôle).
+   */
+  readonly listPays = computed<string | null>(() => this.headerPaysList() ?? null);
+
+  /**
+   * L'entité d'un NOUVEAU sous-traitant (et des onglets qui n'en prennent qu'une) : un
+   * seul pays — le drapeau s'il n'y en a qu'un ; sinon le pays de l'utilisateur s'il est
+   * coché (ou si rien n'est coché), sinon le premier coché. Le sélecteur « Entité » de la
+   * page est retiré — il démarrait sur le premier des 194 pays de `pays_ref`.
+   */
+  readonly selectedPaysId = computed<number | null>(() => {
+    const ids = (this.listPays() ?? '').split(',').map(Number).filter(id => Number.isInteger(id) && id > 0);
+    const own = this.ownPaysId() ?? null;
+    if (ids.length === 1) return ids[0];
+    if (!ids.length || (own != null && ids.includes(own))) return own;
+    return ids[0];
+  });
+
+  /** Plus de requête propre à la page (la liste des pays servait le sélecteur retiré). */
+  firstLoad = signal(false);
 
   readonly guideSteps = GUIDE_STEPS;
 
@@ -65,14 +95,6 @@ export class SubcontractingComponent implements OnInit {
     if (this.tabBeforeGuide) this.activeTab.set(this.tabBeforeGuide);
     this.tabBeforeGuide = null;
   }
-
-  readonly paysOptions = computed<SelectOption[]>(() =>
-    this.pays().map(p => ({ value: String(p.id), label: p.frenchLabel })));
-
-  readonly paysSelected = computed(() => {
-    const id = this.selectedPaysId();
-    return id != null ? [String(id)] : [];
-  });
 
   readonly tabs = computed<TabItem[]>(() => {
     this.translate.currentLang();
@@ -95,19 +117,4 @@ export class SubcontractingComponent implements OnInit {
     return this.translate.instant(`SUBCONTRACTING.INTRO.${this.activeTab().toUpperCase()}`);
   });
 
-  ngOnInit(): void {
-    this.affaireSvc.getPays().subscribe({
-      next: p => {
-        this.pays.set(p);
-        if (p.length > 0) this.selectedPaysId.set(p[0].id);
-        this.firstLoad.set(false);
-      },
-      error: () => this.firstLoad.set(false),
-    });
-  }
-
-  onPaysSelect(values: string[]): void {
-    const val = values[0];
-    this.selectedPaysId.set(val ? +val : null);
-  }
 }

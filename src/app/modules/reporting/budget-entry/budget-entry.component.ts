@@ -1,4 +1,5 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { injectFlagEntity } from '../../../core/flag-entity';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -10,7 +11,7 @@ import {
 import { ClientService } from '../../clients/client.service';
 import { AffaireService } from '../../affaires/affaire.service';
 import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
-import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
+import { PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
 import { UserStore } from '../../../core/user.store';
 import { BudgetReferenceService } from '../budget-reference.service';
 import { GroupCatalogueLineService } from '../group-catalogue-line.service';
@@ -62,7 +63,7 @@ const GUIDE_STEPS: GuideStep[] = [
   selector: 'app-budget-entry',
   imports: [
     ReactiveFormsModule, TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent,
-    FormFieldComponent, SelectComponent, PaysFlagSelectComponent,
+    FormFieldComponent, SelectComponent,
     PageGuideComponent,
   ],
   host: { class: 'block' },
@@ -119,6 +120,25 @@ export class BudgetEntryComponent implements OnInit {
       this.loadBudget();
     }
   }
+
+  /** Le pays de l'utilisateur (`/ref/me`) — 0 tant qu'il n'est pas connu. */
+  private readonly ownPaysId = signal(0);
+  /** L'entité tirée des drapeaux (une seule) — remplace le sélecteur de pays de la page. */
+  private readonly flagEntity = injectFlagEntity(this.ownPaysId);
+  private flagsReady = false;
+  /** Changement de drapeaux : l'écran passe à la nouvelle entité. */
+  private readonly followFlags = effect(() => {
+    const id = this.flagEntity();
+    untracked(() => {
+      if (!this.flagsReady || id <= 0 || id === this.paysId()) return;
+      this.paysId.set(id);
+      this.loadBudget();
+    });
+  });
+  /** Le pays affiché (drapeau + nom) à la place de l'ancien sélecteur. */
+  readonly currentPays = computed(() =>
+    this.paysOptions().find(o => o.value === String(this.paysId())) ?? null);
+
 
   // ── Year selector — "current year ± 1" per Task 3.3's brief ────────────────
   private readonly currentYear = new Date().getFullYear();
@@ -226,7 +246,9 @@ export class BudgetEntryComponent implements OnInit {
         ];
         this.paysList.set(pays);
         this.catalogueLines.set([...catalogueLines].sort((a, b) => a.sortOrder - b.sortOrder));
-        const resolved = myPays ?? (pays.length > 0 ? pays[0].id : 0);
+        this.ownPaysId.set(myPays ?? (pays.length > 0 ? pays[0].id : 0));
+        const resolved = this.flagEntity();
+        this.flagsReady = true;
         if (resolved > 0) {
           this.paysId.set(resolved);
           this.loadBudget();

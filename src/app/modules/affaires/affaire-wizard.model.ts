@@ -61,6 +61,8 @@ export interface DisciplineDto {
    */
   id: number | null;
   levelLabel: string;
+  /** Libellé EN — porté seulement par les valeurs de la liste `AFFAIRE_DISCIPLINE` (Admin). */
+  levelLabelEn?: string | null;
   levelConcat?: string;
 }
 

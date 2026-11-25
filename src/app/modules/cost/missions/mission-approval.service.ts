@@ -85,8 +85,11 @@ export class MissionApprovalService {
   private readonly base = `${environment.hrApiUrl}/api/hr/missions`;
 
   /** La file d'attente finance : les missions validées par RH et chiffrées. */
-  pending(): Observable<MissionDto[]> {
-    return this.http.get<MissionDto[]>(`${this.base}/pending-finance`);
+  /** `paysId` : ids RH des drapeaux (`179,64`) ; absent = tout le périmètre du rôle. */
+  pending(paysId?: string | null): Observable<MissionDto[]> {
+    return this.http.get<MissionDto[]>(`${this.base}/pending-finance`, {
+      params: paysId ? { paysId } : {},
+    });
   }
 
   approve(id: number, notes: string | null): Observable<MissionDto> {

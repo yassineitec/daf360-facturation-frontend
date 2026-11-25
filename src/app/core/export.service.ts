@@ -98,15 +98,27 @@ export class ExportService {
    *  les créances correspondantes — feuilles Créances + Synthèse. Entité = celle de
    *  l'utilisateur, comme GET /payments/aging. */
   aging(filter: {
+    paysId?: number | string | null;   // ou plusieurs ids (`178,63`)
+    /** Pays de la feuille Synthèse (les tuiles de l'écran) : UN pays. */
+    statsPaysId?: number | null;
     affaireId: number | null; clientId: number | null; from: string | null; to: string | null;
     overdueOnly: boolean; search: string | null; sort: string | null;
   }): Observable<Blob> {
-    return this.post('/payments/aging/export.xlsx', filter);
+    // `paysId` en paramètre d'URL : c'est là que PaysIsolationInterceptor le contrôle.
+    const { paysId, statsPaysId, ...body } = filter;
+    const params: Record<string, string> = {};
+    if (paysId != null) params['paysId'] = String(paysId);
+    if (statsPaysId != null) params['statsPaysId'] = String(statsPaysId);
+    return this.post('/payments/aging/export.xlsx', body, params);
   }
 
   /** Relevé bancaire sélectionné : ses transactions, le relevé et les non-rapprochés. */
-  reconciliation(importId: number): Observable<Blob> {
-    return this.post(`/bank-reconciliation/imports/${importId}/export.xlsx`, {});
+  /** `paysId` : entités listées (`178,63`) ; `statsPaysId` : l'entité de la synthèse. */
+  reconciliation(importId: number, paysId?: number | string | null, statsPaysId?: number | null): Observable<Blob> {
+    const params: Record<string, string> = {};
+    if (paysId != null) params['paysId'] = String(paysId);
+    if (statsPaysId != null) params['statsPaysId'] = String(statsPaysId);
+    return this.post(`/bank-reconciliation/imports/${importId}/export.xlsx`, {}, params);
   }
 
   /** Fiche de recouvrement d'une facture : identité, indicateurs, relances, encaissements. */
@@ -117,8 +129,8 @@ export class ExportService {
   // ── Sous-traitance (/finance/subcontracting) ────────────────────────────────────
 
   /** Onglet Sous-traitants : ids affichés (ordre de l'écran) ; `paysId` en URL. */
-  sousTraitants(paysId: number, ids: number[]): Observable<Blob> {
-    return this.post('/sous-traitants/export.xlsx', { ids }, { paysId: String(paysId) });
+  sousTraitants(paysId: number | string | null, ids: number[]): Observable<Blob> {
+    return this.post('/sous-traitants/export.xlsx', { ids }, paysId ? { paysId: String(paysId) } : {});
   }
 
   /** Onglet Ordres ST : ordres affichés de l'affaire, leurs coûts et la synthèse. */
@@ -136,11 +148,14 @@ export class ExportService {
   /** Liste paginée côté serveur : on envoie ses filtres et son tri (pas d'ids), le serveur
    * exporte toutes les factures correspondantes — feuilles Factures + Lignes de facturation. */
   invoices(filter: {
+    paysId?: number | string | null;   // ou plusieurs ids (`178,63`)
     affaireId: number | null; clientId: number | null; statut: string | null; search: string | null;
     from: string | null; to: string | null; dueFrom: string | null; dueTo: string | null;
     minTtc: number | null; maxTtc: number | null; overdueOnly: boolean; sort: string | null;
   }): Observable<Blob> {
-    return this.post('/invoices/export.xlsx', filter);
+    // `paysId` en paramètre d'URL : c'est là que PaysIsolationInterceptor le contrôle.
+    const { paysId, ...body } = filter;
+    return this.post('/invoices/export.xlsx', body, paysId != null ? { paysId: String(paysId) } : {});
   }
 
   // ── Affaires (/finance/affaires) ────────────────────────────────────────────────
@@ -148,7 +163,7 @@ export class ExportService {
   /** Liste paginée côté serveur : on envoie ses filtres et son tri (pas d'ids), le serveur
    * exporte toutes les affaires correspondantes — feuilles Affaires + Synthèse. */
   affaires(filter: {
-    paysId: number | null; statut: string | null; search: string | null; clientId: number | null;
+    paysId: number | string | null; statut: string | null; search: string | null; clientId: number | null;
     responsableId: number | null; billingMode: string | null; clientType: string | null;
     dateDebutFrom: string | null; dateDebutTo: string | null; sort: string | null;
   }): Observable<Blob> {
@@ -159,11 +174,11 @@ export class ExportService {
 
   /** Liste des fournisseurs d'une entité — mêmes filtres que GET /suppliers/search ;
    *  `paysId` en paramètre d'URL (contrôlé par PaysIsolationInterceptor), le reste dans le corps. */
-  suppliers(paysId: number, filter: {
+  suppliers(paysId: number | string | null, filter: {
     search: string | null; status: string | null; typeId: number | null;
     hasIban: boolean | null; hasTva: boolean | null; sort: string | null;
   }): Observable<Blob> {
-    return this.post('/suppliers/export.xlsx', filter, { paysId: String(paysId) });
+    return this.post('/suppliers/export.xlsx', filter, paysId ? { paysId: String(paysId) } : {});
   }
 
   // ── Clients ─────────────────────────────────────────────────────────────────────
@@ -171,11 +186,13 @@ export class ExportService {
   /** Liste paginée côté serveur : filtres et tri envoyés (pas d'ids), le serveur exporte
    * tous les clients correspondants — feuilles Clients + Synthèse. */
   clients(filter: {
+    paysId?: number | string | null;   // entités (drapeaux de la barre), en paramètre d'URL
     search: string | null; isActive: boolean | null; isKycDone: boolean | null; sectorCode: string | null;
     countryId: number | null; currency: string | null; hasActiveAffaires: boolean | null;
     clientType: string | null; sort: string | null;
   }): Observable<Blob> {
-    return this.post('/clients/export.xlsx', filter);
+    const { paysId, ...body } = filter;
+    return this.post('/clients/export.xlsx', body, paysId ? { paysId: String(paysId) } : {});
   }
 
   /** Fiche client complète (identité, indicateurs, traçabilité + feuille des contacts). */
@@ -188,22 +205,22 @@ export class ExportService {
   /** Page /finance/cost : TOUTES les factures de l'entité, le serveur rejoue les filtres de
    *  l'écran (statut, recherche, catégorie, période, montants) et le tri. `paysId` en URL
    *  (contrôlé par PaysIsolationInterceptor), le reste dans le corps. */
-  costInvoices(paysId: number, filter: {
+  costInvoices(paysId: number | string | null, filter: {
     status: string | null; search: string | null; categoryId: number | null;
     dateFrom: string | null; dateTo: string | null;
     amountMin: number | null; amountMax: number | null; sort: string | null;
   }): Observable<Blob> {
-    return this.post('/cost-invoices/export.xlsx', filter, { paysId: String(paysId) });
+    return this.post('/cost-invoices/export.xlsx', filter, paysId ? { paysId: String(paysId) } : {});
   }
 
   /** File d'approbation /finance/cost/approval — éléments affichés, ordre de l'écran.
    *  Factures : seul `id` compte (relues en base). Embauches / avances : telles qu'affichées.
    *  `pays` en URL, comme GET /cost/approvals/pending (contrôlé par PaysIsolationInterceptor). */
-  costApprovals(paysId: number, items: {
+  costApprovals(paysId: number | string | null, items: {
     kind: string; id: number; reference: string | null; title: string | null; date: string | null;
     amount: number | null; currency: string | null; status: string | null; details: string | null;
   }[]): Observable<Blob> {
-    return this.post('/cost/approvals/export.xlsx', { items }, { pays: String(paysId) });
+    return this.post('/cost/approvals/export.xlsx', { items }, paysId ? { pays: String(paysId) } : {});
   }
 
   /** Ordres de mission /finance/cost/missions — les missions AFFICHÉES, telles que reçues de
@@ -226,8 +243,8 @@ export class ExportService {
   }
 
   /** Vue « Par fournisseur » de /finance/cost : une ligne par fournisseur, totaux EUR. */
-  costBySupplier(paysId: number): Observable<Blob> {
-    return this.post('/cost-invoices/by-supplier/export.xlsx', {}, { paysId: String(paysId) });
+  costBySupplier(paysId: number | string | null): Observable<Blob> {
+    return this.post('/cost-invoices/by-supplier/export.xlsx', {}, paysId ? { paysId: String(paysId) } : {});
   }
 
   /** ids = `rowId` des lignes du relevé affichées (−id facture / id règlement). */

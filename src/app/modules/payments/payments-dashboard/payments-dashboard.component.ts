@@ -1,7 +1,10 @@
-import { Component, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectCurrentUser, selectSelectedCountryId,
   ButtonComponent, FilterField, FilterResult, MetricCardComponent, MetricCardOptions,
   MetricDelta, PageComponent, PageHeaderComponent, PaginationComponent,
   SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
@@ -15,11 +18,14 @@ import { AgingCardsSectionComponent } from './aging-cards-section.component';
 import { AgingTableSectionComponent } from './aging-table-section.component';
 import { PaymentsDashboardStateService } from './payments-dashboard-state.service';
 import { ExportService } from '../../../core/export.service';
+import { AffaireService } from '../../affaires/affaire.service';
+import { PaysRefDto, paysLabel } from '../../affaires/affaire.model';
 
 type ViewMode = 'grid' | 'list';
 
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 /** Guide de la page — chaque `target` est un `data-guide` du gabarit. */
 const GUIDE_STEPS: GuideStep[] = [
@@ -56,6 +62,68 @@ export class PaymentsDashboardComponent implements OnInit {
 
   /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
   readonly exporting = signal(false);
+
+  // ── Pays : le drapeau de la navbar (store partagé avec le shell) ───────────
+  private readonly ngrx        = inject(Store);
+  private readonly affaireSvc  = inject(AffaireService);
+  private readonly currentUser = toSignal(this.ngrx.select(selectCurrentUser));
+  /** Ids FINANCE de tous les drapeaux cochés (`178,63`) ; undefined = « Tous les pays ». */
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+
+  /**
+   * Les pays de la BALANCE ÂGÉE (liste et export) : tous les drapeaux cochés ; null = tout
+   * le périmètre du rôle. Chaque ligne porte sa devise, la liste peut donc mélanger les pays.
+   */
+  readonly rowsPays = computed<string | null>(() => this.headerPaysList() ?? null);
+
+  /**
+   * Le pays des KPI (tuiles de montants) : UN pays — la devise de la barre ne convertit pas,
+   * des TND et des EGP ne s'additionnent pas. Un drapeau → ce pays ; aucun → null (le
+   * serveur prend le pays de l'utilisateur) ; plusieurs → le pays de l'utilisateur s'il est
+   * coché, sinon le premier coché. La mention « Montants : … » sous les tuiles le dit.
+   */
+  readonly paysId = computed<number | null>(() => {
+    const ids = (this.rowsPays() ?? '').split(',').map(Number).filter(id => Number.isInteger(id) && id > 0);
+    if (ids.length <= 1) return ids[0] ?? null;
+    const iso = (this.currentUser()?.isoCode ?? '').toUpperCase();
+    const own = this.paysList().find(p => (p.isoCode ?? '').toUpperCase() === iso)?.id;
+    return own != null && ids.includes(own) ? own : ids[0];
+  });
+  private loadedPaysKey: string | undefined = undefined;
+  /** Drapeaux + pays des KPI : recharger dès que l'un des deux change. */
+  private readonly paysKey = computed(() => `${this.rowsPays() ?? ''}|${this.paysId() ?? ''}`);
+  private readonly paysList = signal<PaysRefDto[]>([]);
+
+  /** « Montants : Tunisie (EUR) » sous les KPI — dit de quel pays sont les chiffres. */
+  readonly kpiScopeLabel = computed<string | null>(() => {
+    this.translate.currentLang();
+    const s = this.stats();
+    if (!s) return null;
+    // Drapeau : id FINANCE (déjà traduit). « Tous les pays » : le pays de l'utilisateur, cherché
+    // par code ISO — l'id du jeton est un id RH, qui ne désigne pas le même pays en finance.
+    const id   = this.paysId();
+    const iso  = (this.currentUser()?.isoCode ?? '').toUpperCase();
+    const pays = id != null
+      ? this.paysList().find(p => p.id === id)
+      : this.paysList().find(p => (p.isoCode ?? '').toUpperCase() === iso);
+    if (!pays) return null;
+    return this.translate.instant('HOME.KPI.SCOPE', {
+      country:  paysLabel(pays, this.translate.currentLang()),
+      currency: s.devise ?? '',
+    });
+  });
+
+  /** Changement de drapeau : KPI et balance rechargés, page 0 (premier passage après ngOnInit). */
+  private readonly followHeaderCountry = effect(() => {
+    const key = this.paysKey();
+    untracked(() => {
+      if (key === this.loadedPaysKey) return;
+      this.loadedPaysKey = key;
+      this.currentPage.set(0);
+      this.loadStats();
+      this.loadRows();
+    });
+  });
 
   stats  = signal<PaymentsDashboardStats | null>(null);
   error  = signal<string | null>(null);
@@ -248,13 +316,16 @@ export class PaymentsDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.restoreState();
+    this.affaireSvc.getPays().subscribe(list => this.paysList.set(list));
+    this.loadedPaysKey = this.paysKey();
     this.loadStats();
     this.loadRows();
   }
 
   loadStats(): void {
-    this.svc.getStats().subscribe({
-      next:  s  => this.stats.set(s),
+    const paysId = this.paysId();
+    this.svc.getStats(paysId).subscribe({
+      next:  s  => { if (paysId === this.paysId()) this.stats.set(s); },
       // The tiles fall back to "—" on their own; a stats failure must not blank the list.
       error: () => this.stats.set(null),
     });
@@ -265,6 +336,7 @@ export class PaymentsDashboardComponent implements OnInit {
     this.error.set(null);
     const range = this.filterDateRange() ?? [];
     const filter: AgingFilter = {
+      paysId:      this.rowsPays(),
       page:        this.currentPage(),
       size:        this.pageSize(),
       affaireId:   toId(this.filterAffaireId()),
@@ -351,6 +423,8 @@ export class PaymentsDashboardComponent implements OnInit {
     const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     this.exportSvc.download(
       this.exportSvc.aging({
+        paysId:      this.rowsPays(),
+        statsPaysId: this.paysId(),
         affaireId:   toId(this.filterAffaireId()),
         clientId:    toId(this.filterClientId()),
         from:        toIsoDate(range[0]),

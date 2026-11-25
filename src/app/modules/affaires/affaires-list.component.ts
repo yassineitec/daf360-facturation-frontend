@@ -1,7 +1,9 @@
-import { Component, OnInit, inject, signal, computed, viewChild, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, viewChild, effect, untracked } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryId,
   ButtonComponent, FilterField, FilterResult, MetricCardOptions, MetricDelta, ModalService, PageComponent,
   PageHeaderComponent, PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig,
   MetricCardComponent, ToolbarToggleOption,
@@ -23,6 +25,7 @@ import { AffairesListStateService } from './affaires-list-state.service';
 import { ExportService } from '../../core/export.service';
 import { PageGuideComponent } from '../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../shared/guide/page-guide.types';
+import { HeaderPaysService } from '../../core/header-pays.service';
 
 type ViewMode = 'grid' | 'list';
 
@@ -131,8 +134,30 @@ export class AffairesListComponent implements OnInit {
   searchText   = signal('');
   /** Statut de l'affaire (`statut`, filtre serveur) — '' = tous. */
   filterStatut = signal('');
-  /** Pays / entité de l'affaire (`paysId`, filtre serveur) — null = tous. */
-  filterPaysId = signal<number | null>(null);
+  /**
+   * Pays / entité de l'affaire (`paysId`, filtre serveur) — null = tous. C'est le drapeau de
+   * la navbar (store partagé avec le shell) : le panneau de filtres n'a plus de champ Pays.
+   */
+  readonly filterPaysId = computed<string | null>(() => this.headerPaysList() ?? null);
+  /** Multi-pays : ids FINANCE de tous les drapeaux cochés (`178,63`), traduits depuis les ids RH. */
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+  /** Pays des données affichées — pour ne recharger que sur un VRAI changement de drapeau. */
+  private loadedPaysId: string | null | undefined = undefined;
+
+  /**
+   * Changement de drapeau = nouveau jeu : page 0, liste et tuiles rechargées. Le premier
+   * passage arrive après `ngOnInit`, qui a déjà chargé ce pays.
+   */
+  private readonly followHeaderCountry = effect(() => {
+    const paysId = this.filterPaysId();
+    untracked(() => {
+      if (paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.currentPage.set(0);
+      this.load();
+      this.loadSummary();
+    });
+  });
   /** Manager de l'affaire (`responsableId`, filtre serveur) — null = tous. */
   filterResponsableId = signal<number | null>(null);
   /** Mode de facturation (`billingMode`, filtre serveur) — '' = tous. */
@@ -289,16 +314,7 @@ export class AffairesListComponent implements OnInit {
           { value: 'INTER_COMPANY', label: t('CLIENTS.FORM.CLIENT_TYPE_INTER_COMPANY') },
         ],
       },
-      {
-        name: 'pays',
-        label: t('AFFAIRES.LIST.TABLE.HEADERS.PAYS'),
-        type: 'select',
-        placeholder: t('AFFAIRES.LIST.FILTER_ALL_PAYS'),
-        searchable: true,
-        options: [...this.paysLabels()]
-          .map(([id, label]) => ({ value: String(id), label }))
-          .sort((a, b) => a.label.localeCompare(b.label)),
-      },
+      // Pas de champ Pays : le pays est le drapeau de la navbar.
       {
         name: 'manager',
         label: t('AFFAIRES.LIST.TABLE.HEADERS.MANAGER'),
@@ -339,7 +355,6 @@ export class AffairesListComponent implements OnInit {
       initialValues: {
         statut: this.filterStatut() ? [this.filterStatut()] : [],
         client: this.filterClientId() !== null ? [String(this.filterClientId())] : [],
-        pays:   this.filterPaysId()   !== null ? [String(this.filterPaysId())]   : [],
         manager:     this.filterResponsableId() !== null ? [String(this.filterResponsableId())] : [],
         billingMode: this.filterBillingMode() ? [this.filterBillingMode()] : [],
         clientType:  this.filterClientType() ? [this.filterClientType()] : [],
@@ -376,6 +391,7 @@ export class AffairesListComponent implements OnInit {
         .filter(u => !!u.fullName)
         .map(u => ({ value: String(u.id), label: u.fullName }))
         .sort((a, b) => a.label.localeCompare(b.label))));
+    this.loadedPaysId = this.filterPaysId();
     this.load();
     this.loadSummary();
   }
@@ -425,7 +441,7 @@ export class AffairesListComponent implements OnInit {
     this.filterStatut.set(s.statut);
     this.filterClientId.set(s.clientId);
     this.clientName.set(s.clientName);
-    this.filterPaysId.set(s.paysId);
+    // `s.paysId` n'est plus restauré : le pays vient du drapeau de la navbar.
     this.filterResponsableId.set(s.responsableId);
     this.filterBillingMode.set(s.billingMode);
     this.filterClientType.set(s.clientType ?? '');
@@ -510,9 +526,6 @@ export class AffairesListComponent implements OnInit {
 
   applyFilters(result: FilterResult): void {
     this.filterStatut.set((result['statut'] as string | null) ?? '');
-
-    const pays = Number(result['pays']);
-    this.filterPaysId.set(Number.isFinite(pays) && pays > 0 ? pays : null);
 
     const manager = Number(result['manager']);
     this.filterResponsableId.set(Number.isFinite(manager) && manager > 0 ? manager : null);
