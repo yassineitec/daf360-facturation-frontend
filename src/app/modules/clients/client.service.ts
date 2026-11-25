@@ -14,11 +14,12 @@ export class ClientService {
   private readonly http = inject(HttpClient);
 
   getClients(filter: ClientFilter): Observable<PageResponse<ClientListItemDto>> {
-    // Country (paysId) is intentionally ignored — the list is not scoped by pays,
-    // which also avoids the pays-isolation 403 on this endpoint.
+    // `paysId` = l'ENTITÉ qui facture (drapeaux de la barre, `178,63`) ; le serveur la borne
+    // au périmètre du rôle. Absent = tout le périmètre.
     let params = new HttpParams()
       .set('page', String(filter.page ?? 0))
       .set('size', String(filter.size ?? 20));
+    if (filter.paysId)            params = params.set('paysId',    String(filter.paysId));
     if (filter.search)            params = params.set('search',    filter.search);
     if (filter.isActive != null)  params = params.set('isActive',  String(filter.isActive));
     if (filter.isKycDone != null) params = params.set('isKycDone', String(filter.isKycDone));
@@ -32,6 +33,14 @@ export class ClientService {
     if (filter.clientType)        params = params.set('clientType', filter.clientType);
     if (filter.sort)              params = params.set('sort',      filter.sort);
     return this.http.get<PageResponse<ClientListItemDto>>(`${this.base}/clients`, { params });
+  }
+
+  /** Ids `pays_ref` des pays d'ADRESSE présents chez les clients des entités `paysId`
+   *  (drapeaux de la barre, `178,63` ; absent = tout le périmètre du rôle). */
+  getClientCountryIds(paysId?: string | null): Observable<number[]> {
+    let params = new HttpParams();
+    if (paysId) params = params.set('paysId', paysId);
+    return this.http.get<number[]>(`${this.base}/clients/countries`, { params });
   }
 
   getClient(id: number): Observable<ClientDetailDto> {

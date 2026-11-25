@@ -39,9 +39,10 @@ export class HiringCostApprovalService {
   private http   = inject(HttpClient);
   private hrBase = `${environment.hrApiUrl}/api/hr/cost-approvals`;
 
-  getPendingByPays(paysId: number): Observable<HiringCostApprovalDto[]> {
+  /** `paysId` : ids RH (`179,64`, drapeaux de la barre) ; null = tout le périmètre du rôle. */
+  getPendingByPays(paysId: number | string | null): Observable<HiringCostApprovalDto[]> {
     return this.http.get<HiringCostApprovalDto[]>(`${this.hrBase}/pending`, {
-      params: { paysId: paysId.toString() },
+      params: paysId ? { paysId: String(paysId) } : {},
     });
   }
 

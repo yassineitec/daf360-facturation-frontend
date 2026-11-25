@@ -186,12 +186,12 @@ export interface AffaireListItem {
   billingMode?:       string | null;
   dateDebut:          string | null;
   dateFin:            string | null;
+  /** Type du client : INTER_COMPANY (entité du groupe) ou THIRD_PARTY (client externe). */
+  clientType?:        'INTER_COMPANY' | 'THIRD_PARTY' | null;
 }
 
 export interface AffaireDetail extends AffaireListItem {
   notes:             string | null;
-  /** Type du client : INTER_COMPANY (entité du groupe) ou THIRD_PARTY (client externe). */
-  clientType?:       'INTER_COMPANY' | 'THIRD_PARTY' | null;
   doc360Ref:         string | null;
   erpReference?:     string | null;
   devise:            string;
@@ -374,7 +374,8 @@ export interface AffairesSummary {
 }
 
 export interface AffaireFilter {
-  paysId?:   number | null;
+  /** Un id finance, ou plusieurs séparés par des virgules (`178,63`, drapeaux de la barre). */
+  paysId?:   number | string | null;
   statut?:   string | null;
   clientId?: number | null;
   search?:   string | null;

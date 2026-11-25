@@ -1692,14 +1692,14 @@ export class AffaireDetailComponent implements OnInit {
   //   backend, la page ne les recalcule pas (seule la pastille % du Backlog est dérivée
   //   ici) ; la cinquième vient du RAF. À savoir :
   //   Les trois premières se calculent toutes sur le MÊME « facturé », `totalFacture` :
-  //     · totalFacture  = SUM(factures) dont le statut n'est PAS 'PAID' — à la lettre,
-  //                       donc DRAFT et CANCELLED y entrent aussi.
+  //     · totalFacture  = SUM(factures) dont le statut n'est PAS 'CANCELLED' (règle du
+  //                       2026-11-25) — PAID et DRAFT y entrent donc.
   //     · backlog       = (budgetPrevisionnel + totalTs) − totalFacture (règle du
   //                       2026-11-13 ; totalTs = tous les TS, la tuile « Budget TS »).
   //     · wip           = WIP déclarés (onglet WIP) + WIP TS déclarés (onglet TS WIP),
   //                       règle du 2026-10-21 — ne retranche plus totalFacture.
-  //     · totalEncaisse = SUM(factures) au statut 'PAID' — complément exact de
-  //                       totalFacture, donc totalFacture + totalEncaisse = tout le facturé.
+  //     · totalEncaisse = SUM(factures) au statut 'PAID' — déjà comprises dans
+  //                       totalFacture depuis le 2026-11-25 (ce n'est plus un complément).
   //   Les tuiles se recoupent à l'écran : budget + Budget TS = backlog + totalFacture.
   //
   //   ⚠️ Le sens de la soustraction du WIP a été inversé le 21/09 (il valait

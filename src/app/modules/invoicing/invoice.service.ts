@@ -22,6 +22,7 @@ export class InvoiceService {
     let params = new HttpParams()
       .set('page', String(filter.page ?? 0))
       .set('size', String(filter.size ?? 20));
+    if (filter.paysId)    params = params.set('paysId',    String(filter.paysId));
     if (filter.statut)    params = params.set('statut',    filter.statut);
     if (filter.affaireId) params = params.set('affaireId', String(filter.affaireId));
     if (filter.clientId)  params = params.set('clientId',  String(filter.clientId));

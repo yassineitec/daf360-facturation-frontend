@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Store } from '@ngrx/store';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
-import { SelectComponent, SelectOption } from '@khalilrebhiitec/daf360';
+import { selectSelectedCountryId } from '@khalilrebhiitec/daf360';
 import { forkJoin } from 'rxjs';
 
 import { CostService } from '../cost.service';
@@ -13,13 +14,14 @@ import {
   RateFormulaItemDto, RateComputationLineDto,
   formatAmount,
 } from '../cost.model';
-import { PaysRefDto, UserRefDto } from '../../affaires/affaire.model';
+import { UserRefDto } from '../../affaires/affaire.model';
 import { AffaireService } from '../../affaires/affaire.service';
 import { CurrencyContextService } from '../../../core/currency-context.service';
 import { ExportService } from '../../../core/export.service';
 
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 /** Guide de la page — `target` = un `data-guide` du gabarit. */
 const step = (key: string, icon: string, target?: string, tab?: string): GuideStep => ({
@@ -27,7 +29,7 @@ const step = (key: string, icon: string, target?: string, tab?: string): GuideSt
 });
 const GUIDE_STEPS: GuideStep[] = [
   step('INTRO', 'calculate', 'rate-header'),
-  step('PAYS', 'public', 'rate-pays'),
+  // Plus d'étape « PAYS » : le sélecteur de la page est remplacé par le drapeau de la navbar.
   step('FORMULA', 'function', 'rate-formula'),
   step('TABLE', 'table_rows', 'rate-table'),
   step('NEW', 'add', 'rate-new'),
@@ -39,7 +41,7 @@ const GUIDE_STEPS: GuideStep[] = [
 @Component({
   selector: 'app-rate-computation',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, SelectComponent, PageGuideComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, PageGuideComponent],
   templateUrl: './rate-computation.component.html',
   styleUrl: './rate-computation.component.scss',
 })
@@ -68,41 +70,39 @@ export class RateComputationComponent implements OnInit {
     this.exportSvc.download(this.exportSvc.rateComputations(paysId), `Baremes_taux_${day}.xlsx`, this.exporting);
   }
 
-  paysList = signal<PaysRefDto[]>([]);
-  paysId   = signal<number>(0);
+  /** Le pays de l'utilisateur (`/ref/me`) — 0 tant qu'il n'est pas connu. */
+  private readonly ownPaysId = signal<number>(0);
+  /** Ids FINANCE de tous les drapeaux cochés (`178,63`) ; undefined = « Tous les pays ». */
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
 
   /**
-   * Le pays se choisit dans une LISTE DÉROULANTE avec recherche, et non plus dans une
-   * bande d'onglets.
-   *
-   * <p>Les onglets tenaient tant que `pays_ref` portait onze lignes. Depuis V75 elle porte
-   * les 194 pays, et une bande de 194 boutons n'est pas une navigation : c'est un mur.
-   * `daf-select` avec `searchable: true` fait le même travail en une ligne — et la
-   * recherche porte sur le libellé affiché, donc « TN » comme « Tunisie » trouvent la
-   * Tunisie.
+   * L'entité des barèmes — UNE seule : un barème, sa formule et sa création sont propres à
+   * une entité (comme /rh/admin). Un drapeau → ce pays ; aucun → le pays de l'utilisateur ;
+   * plusieurs → le pays de l'utilisateur s'il est coché, sinon le premier coché.
+   * 0 = pas encore connu : rien n'est chargé.
    */
-  readonly paysOptions = computed<SelectOption[]>(() =>
-    this.paysList().map(p => ({
-      value: String(p.id),
-      label: `${p.frenchLabel} (${p.isoCode})`,
-    })));
-
-  readonly paysSelectConfig = computed(() => {
-    this.translate.currentLang();
-    return {
-      // Clé existante de COST.FORM : « Pays / Entité ». Ici le pays EST le contexte
-      // d'entité du calcul de taux, donc le libellé est juste — et pas besoin d'une
-      // nouvelle clé dans les trois locales.
-      label: this.translate.instant('COST.FORM.PAYS_LABEL'),
-      searchable: true,
-      fullWidth: false,
-    };
+  readonly paysId = computed<number>(() => {
+    const ids = (this.headerPaysList() ?? '').split(',').map(Number).filter(id => Number.isInteger(id) && id > 0);
+    const own = this.ownPaysId();
+    if (ids.length === 1) return ids[0];
+    if (!ids.length || ids.includes(own)) return own;
+    return ids[0];
   });
+  private loadedPaysId = 0;
 
-  onPaysSelected(values: string[]): void {
-    const id = Number(values[0]);
-    if (Number.isFinite(id) && id > 0) this.selectPays(id);
-  }
+  /** Changement de pays : formulaires fermés, détail replié, barèmes rechargés. */
+  private readonly followPays = effect(() => {
+    const paysId = this.paysId();
+    untracked(() => {
+      if (!paysId || paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.showAddForm.set(false);
+      this.showFormulaEditor.set(false);
+      this.expandedId.set(null);
+      this.lines.set([]);
+      this.load();
+    });
+  });
 
   computations    = signal<RateComputationDto[]>([]);
   isLoading       = signal(false);
@@ -190,23 +190,20 @@ export class RateComputationComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.isLoading.set(true);
-    forkJoin({
-      myPays:  this.clientSvc.getMyPays(),
-      allPays: this.clientSvc.getPays(),
-    }).subscribe({
-      next: ({ myPays, allPays }) => {
-        this.paysList.set(allPays);
-        const resolved = myPays ?? (allPays.length > 0 ? allPays[0].id : 0);
-        if (resolved > 0) {
-          this.paysId.set(resolved);
-          this.load();
-        } else {
+    // Le chargement est fait par `followPays`, dès que le pays est connu : le drapeau tout
+    // de suite, ou le pays de l'utilisateur à la réponse de /ref/me.
+    if (!this.paysId()) this.isLoading.set(true);
+    this.clientSvc.getMyPays().subscribe({
+      next: myPays => {
+        if (myPays != null && myPays > 0) {
+          this.ownPaysId.set(myPays);
+        } else if (!this.paysId()) {
           this.serverError.set(this.translate.instant('COST.RATE.NO_PAYS'));
           this.isLoading.set(false);
         }
       },
       error: () => {
+        if (this.paysId()) return;
         this.serverError.set(this.translate.instant('COST.RATE.LOAD_PAYS_ERROR'));
         this.isLoading.set(false);
       },
@@ -219,22 +216,14 @@ export class RateComputationComponent implements OnInit {
     });
   }
 
-  selectPays(id: number): void {
-    if (id === this.paysId()) return;
-    this.paysId.set(id);
-    this.showAddForm.set(false);
-    this.showFormulaEditor.set(false);
-    this.expandedId.set(null);
-    this.lines.set([]);
-    this.load();
-  }
-
   private load(): void {
+    const paysId = this.paysId();
     this.isLoading.set(true);
     this.serverError.set(null);
     this.actionError.set(null);
-    this.svc.getRateComputations(this.paysId()).subscribe({
+    this.svc.getRateComputations(paysId).subscribe({
       next: list => {
+        if (paysId !== this.paysId()) return;   // réponse de l'ancien pays
         this.computations.set(list);
         this.isLoading.set(false);
       },

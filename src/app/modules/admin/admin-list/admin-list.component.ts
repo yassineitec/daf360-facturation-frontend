@@ -1,8 +1,11 @@
 import {
-  Component, OnInit, inject, signal, computed, untracked, ViewChild, TemplateRef,
+  Component, OnInit, inject, signal, computed, effect, untracked, ViewChild, TemplateRef,
 } from '@angular/core';
 import { FormsModule }  from '@angular/forms';
 import { forkJoin }     from 'rxjs';
+import { injectFlagEntity } from '../../../core/flag-entity';
+// Toujours utilisé par la fenêtre « Ajouter une entité » (onglet Devises par entité).
+import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
 import { FactRolesAdminComponent } from '../roles/fact-roles-admin.component';
 import { ReminderRulesAdminComponent } from '../reminder-rules/reminder-rules-admin.component';
 import { CostReminderRulesAdminComponent } from '../cost-reminder-rules/cost-reminder-rules-admin.component';
@@ -10,7 +13,6 @@ import { WipEmailTemplatesAdminComponent } from '../wip-email-templates/wip-emai
 import { DocumentTemplatesAdminComponent } from '../document-templates/document-templates-admin.component';
 import { AuditTrailAdminComponent } from '../audit-trail/audit-trail-admin.component';
 import { CostConfigComponent } from '../../cost/tabs/cost-config.component';
-import { PaysFlagSelectComponent, PaysFlagOption } from '../../../shared/pays-flag-select/pays-flag-select.component';
 import { flagDataUri } from '../../../shared/country-flags';
 import {
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableRow,
@@ -93,7 +95,7 @@ const step = (key: string, icon: string, target?: string, tab?: string): GuideSt
 });
 const ADMIN_GUIDE: GuideStep[] = [
   step('INTRO', 'settings'),
-  step('PAYS', 'flag', 'admin-pays'),
+  // Plus d'étape « PAYS » : le sélecteur de la page est remplacé par le drapeau de la navbar.
   step('TABS', 'tab', 'admin-tabs'),
   step('LISTS', 'checklist', 'admin-panel', 'lists'),
   step('FOREX', 'currency_exchange', 'admin-panel', 'forex'),
@@ -184,8 +186,12 @@ export class AdminListComponent implements OnInit {
   readonly listColumns = computed<TableColumn[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
+    // Colonne Code dimensionnée sur le code le plus long de la liste (toutes pages confondues,
+    // pour ne pas bouger en changeant de page) : sinon les codes longs débordent sur le libellé.
+    const longestCode = this.listValues().reduce((m, v) => Math.max(m, v.code?.length ?? 0), 0);
+    const codeWidth = Math.max(120, Math.ceil(longestCode * 7.5 + 64));
     const cols: TableColumn[] = [
-      { key: 'code',      label: t('ADMIN.LISTS.COL_CODE'),      width: '120px' },
+      { key: 'code',      label: t('ADMIN.LISTS.COL_CODE'),      width: `${codeWidth}px` },
     ];
     if (this.isSubCategoryType()) {
       cols.push({ key: 'parent', label: t('ADMIN.LISTS.COL_PARENT') });
@@ -501,7 +507,30 @@ export class AdminListComponent implements OnInit {
     if (before && before !== this.activeTab()) this.onTabChange(before);
   }
   paysList  = signal<PaysRefDto[]>([]);
-  paysId    = signal<number>(0);
+
+  /** Le pays de l'utilisateur côté finance (`/ref/me`) — 0 tant qu'il n'est pas connu. */
+  private readonly ownPaysId = signal<number>(0);
+  /**
+   * L'entité paramétrée (listes, configuration des coûts) — UNE seule, tirée des drapeaux
+   * de la barre (même règle que /rh/admin, voir injectFlagEntity) : un drapeau → ce pays ;
+   * aucun → le pays de l'utilisateur ; plusieurs → le sien s'il est coché, sinon le premier
+   * coché. Le sélecteur « Pays / Entité » de la page est retiré. 0 = pas encore connu.
+   */
+  readonly paysId = injectFlagEntity(this.ownPaysId);
+  private loadedPaysId = 0;
+
+  /** Changement de drapeau : valeurs de listes (page 0) et catégories parentes rechargées. */
+  private readonly followPays = effect(() => {
+    const paysId = this.paysId();
+    untracked(() => {
+      if (!paysId || !this.loadedPaysId || paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.listCurrentPage.set(0);
+      this.loadListValues();
+      this.loadParentCategories();
+    });
+  });
+
   isLoading = signal(false);
   pageError = signal<string | null>(null);
 
@@ -549,33 +578,7 @@ export class AdminListComponent implements OnInit {
     this.activeTab.set(id as AdminTab);
   }
 
-  // ── Pays / Entité dropdown ───────────────────────────────────────────────
-  /**
-   * Le code ISO reste dans le libellé en plus du drapeau : `app-pays-flag-select`
-   * filtre sur le libellé, donc taper « TN » trouve toujours la Tunisie même pour un
-   * pays sans drapeau connu (voir `country-flags.ts`).
-   */
-  readonly paysOptions = computed<PaysFlagOption[]>(() =>
-    this.paysList().map(p => ({
-      value: String(p.id),
-      label: `${p.frenchLabel} (${p.isoCode})`,
-      isoCode: p.isoCode,
-    })));
-
-  readonly paysSelectLabel = computed(() => {
-    this.translate.currentLang();
-    return this.translate.instant('ADMIN.PAYS.LABEL');
-  });
-
-  readonly paysSelectPlaceholder = computed(() => {
-    this.translate.currentLang();
-    return this.translate.instant('ADMIN.PAYS.SEARCH');
-  });
-
-  onPaysSelected(values: string[]): void {
-    const id = Number(values[0]);
-    if (Number.isFinite(id) && id > 0) this.selectPays(id);
-  }
+  // (Le sélecteur « Pays / Entité » de la page est retiré : voir `paysId`.)
 
   /*
    * `flagUrl` vivait ici : elle construisait une URL vers flagcdn.com pour la vignette
@@ -880,8 +883,10 @@ export class AdminListComponent implements OnInit {
         ];
         this.paysList.set(pays);
         const resolved = myPays ?? (pays.length > 0 ? pays[0].id : 0);
-        if (resolved > 0) {
-          this.paysId.set(resolved);
+        if (resolved > 0) this.ownPaysId.set(resolved);
+        if (this.paysId() > 0) {
+          // Les changements de drapeau suivants passent par `followPays`.
+          this.loadedPaysId = this.paysId();
           this.loadListTypes();
           this.loadListValues();
           this.loadForex();
@@ -895,14 +900,6 @@ export class AdminListComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
-  }
-
-  selectPays(id: number): void {
-    if (id === this.paysId()) return;
-    this.paysId.set(id);
-    this.listCurrentPage.set(0);
-    this.loadListValues();
-    this.loadParentCategories();
   }
 
   // ── Lists ──────────────────────────────────────────────────────────────────
@@ -931,6 +928,7 @@ export class AdminListComponent implements OnInit {
     BILLING_PERMISSION:       'admin_panel_settings',
     INVOICE_TYPE:             'description',
     CLIENT_SECTOR:            'domain',
+    AFFAIRE_DISCIPLINE:       'engineering',
     VAT_RATE:                 'percent',
     WITHHOLDING_RATE:         'percent',
     OTHER_TAX_TYPE:           'add_circle',
@@ -984,6 +982,7 @@ export class AdminListComponent implements OnInit {
     PAYMENT_METHOD:           'general',
     ACTIVITE:                 'general',
     CLIENT_SECTOR:            'general',
+    AFFAIRE_DISCIPLINE:       'general',
   };
 
   /** Même langage ton → couleur d'icône que les cartes de /rh/admin, un ton par

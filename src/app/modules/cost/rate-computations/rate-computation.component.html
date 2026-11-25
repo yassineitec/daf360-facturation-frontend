@@ -20,17 +20,8 @@
     </div>
   </div>
 
-  <!-- Une liste déroulante cherchable, et non plus une bande d'onglets : `pays_ref` porte
-       les 194 pays depuis V75, et 194 boutons ne sont pas une navigation. -->
-  @if (paysList().length > 1) {
-    <div class="pays-picker" data-guide="rate-pays">
-      <daf-select
-        [options]="paysOptions()"
-        [config]="paysSelectConfig()"
-        [selected]="paysId() ? [paysId().toString()] : []"
-        (selectedChange)="onPaysSelected($event)" />
-    </div>
-  }
+  <!-- Plus de sélecteur de pays ici : l'entité est le drapeau de la navbar (sinon le pays
+       de l'utilisateur). -->
 
   @if (serverError()) {
     <div class="banner-error">{{ serverError() }}</div>

@@ -9,7 +9,7 @@ export interface AffairesListState {
   statut:        string;
   clientId:      number | null;
   clientName:    string | null;
-  paysId:        number | null;
+  paysId:        number | string | null;
   responsableId: number | null;
   billingMode:   string;
   /** Type de client (THIRD_PARTY | INTER_COMPANY) — '' = tous. Absent d'un état sauvé avant. */

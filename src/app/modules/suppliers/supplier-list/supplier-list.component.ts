@@ -1,8 +1,10 @@
-import { Component, DestroyRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryId,
   ButtonComponent, FieldMessageComponent, MetricCardComponent, MetricCardOptions,
   MetricDelta, PageComponent, PageHeaderComponent, PaginationComponent,
   SearchToolbarComponent, ToolbarToggleOption,
@@ -23,6 +25,7 @@ import { TableSort, sortParam } from '../../../shared/table-tools';
 import { SuppliersCardsSectionComponent } from './suppliers-cards-section.component';
 import { SuppliersTableSectionComponent } from './suppliers-table-section.component';
 import { SupplierListStateService } from './supplier-list-state.service';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 type ViewMode = 'grid' | 'list';
 
@@ -104,7 +107,55 @@ export class SupplierListComponent implements OnInit {
   /** Export Excel en cours — état de chargement du bouton, ignore un double clic. */
   readonly exporting = signal(false);
 
-  paysId = signal(0);
+  /** Le pays de l'utilisateur (`/ref/me`) — 0 tant qu'il n'est pas connu. */
+  private readonly ownPaysId = signal(0);
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+
+  /**
+   * Les entités des fournisseurs : ids FINANCE de tous les drapeaux cochés (`178,63`) ;
+   * null = « Tous les pays » (le serveur applique alors le périmètre du rôle).
+   */
+  readonly paysId = computed<string | null>(() => this.headerPaysList() ?? null);
+  private loadedPaysId: string | null | undefined = undefined;
+
+  /**
+   * Le pays des CATÉGORIES (liste SUPPLIER_CATEGORY, paramétrée par pays) : un seul pays
+   * à la fois — le drapeau s'il n'y en a qu'un ; sinon le pays de l'utilisateur s'il est
+   * coché (ou si rien n'est coché), sinon le premier coché. 0 = pas encore connu.
+   */
+  readonly categoryPaysId = computed<number>(() => {
+    const ids = (this.paysId() ?? '').split(',').map(Number).filter(id => Number.isInteger(id) && id > 0);
+    const own = this.ownPaysId();
+    if (ids.length === 1) return ids[0];
+    if (!ids.length || ids.includes(own)) return own;
+    return ids[0];
+  });
+  private loadedCategoryPaysId = 0;
+
+  /** Changement de drapeaux : liste (page 0) et tuiles rechargées. */
+  private readonly followPays = effect(() => {
+    const paysId = this.paysId();
+    untracked(() => {
+      if (paysId === this.loadedPaysId) return;
+      const first = this.loadedPaysId === undefined;
+      this.loadedPaysId = paysId;
+      if (!first) this.currentPage.set(0);
+      this.loadSuppliers();
+      this.loadStats();
+    });
+  });
+
+  /** Catégories du pays retenu, comme dans l'administration (paramétrage par pays). */
+  private readonly followCategoryPays = effect(() => {
+    const paysId = this.categoryPaysId();
+    untracked(() => {
+      if (!paysId || paysId === this.loadedCategoryPaysId) return;
+      this.loadedCategoryPaysId = paysId;
+      this.factListSvc.getListValues('SUPPLIER_CATEGORY', paysId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(list => { if (paysId === this.categoryPaysId()) this.supplierTypes.set(list); });
+    });
+  });
 
   suppliers = signal<SupplierDto[]>([]);
   stats     = signal<SupplierStatsDto>({ total: 0, withIban: 0, withTva: 0, countries: 0 });
@@ -322,32 +373,16 @@ export class SupplierListComponent implements OnInit {
 
   ngOnInit(): void {
     this.restoreState();
+    // Liste et tuiles : `followPays` (drapeaux). Le pays de l'utilisateur ne sert plus qu'aux
+    // catégories (`categoryPaysId`) — sans lui, le serveur borne déjà la liste au périmètre.
     this.clientSvc.getMyPays().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: id => {
-        if (id && id > 0) {
-          this.paysId.set(id);
-          // Catégories du pays, comme dans l'administration (paramétrage par pays) —
-          // le pays `0` ne renvoyait que les valeurs globales d'origine.
-          this.factListSvc.getListValues('SUPPLIER_CATEGORY', id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(list => this.supplierTypes.set(list));
-          this.loadSuppliers();
-          this.loadStats();
-        } else {
-          this.firstLoad.set(false);
-          this.error.set(this.translate.instant('SUPPLIERS.LIST.ERROR_PAYS'));
-        }
-      },
-      error: () => {
-        this.firstLoad.set(false);
-        this.error.set(this.translate.instant('SUPPLIERS.LIST.ERROR_PAYS'));
-      },
+      next: id => { if (id && id > 0) this.ownPaysId.set(id); },
+      error: () => { /* catégories du premier drapeau, ou aucune */ },
     });
   }
 
   loadSuppliers(): void {
     const paysId = this.paysId();
-    if (!paysId) return;
     this.loading.set(true);
     this.error.set(null);
     this.svc.getSuppliers({
@@ -360,6 +395,7 @@ export class SupplierListComponent implements OnInit {
       sort:   sortParam(this.sort()),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: r => {
+        if (paysId !== this.paysId()) return;   // réponse de l'ancien pays
         // Page restaurée devenue hors limites (fournisseurs désactivés entre-temps) :
         // on retombe sur la première plutôt que d'afficher une liste vide.
         if (r.content.length === 0 && this.currentPage() > 0) {
@@ -386,7 +422,7 @@ export class SupplierListComponent implements OnInit {
    * Feuilles Fournisseurs + Synthèse. */
   exportExcel(): void {
     const paysId = this.paysId();
-    if (!paysId || !this.totalElements()) return;
+    if (!this.totalElements()) return;
     const extra = this.extraFilter();
     const d = new Date();
     const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -404,9 +440,8 @@ export class SupplierListComponent implements OnInit {
 
   loadStats(): void {
     const paysId = this.paysId();
-    if (!paysId) return;
     this.svc.getStats(paysId, this.extraFilter()).pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(s => this.stats.set(s));
+      .subscribe(s => { if (paysId === this.paysId()) this.stats.set(s); });
   }
 
   /**

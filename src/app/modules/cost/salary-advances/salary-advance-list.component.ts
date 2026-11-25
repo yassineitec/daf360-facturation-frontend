@@ -1,6 +1,8 @@
-import { Component, OnInit, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryId,
   BadgeCell, BadgeVariant, ButtonComponent, DafCellDirective, DataTableComponent, EntityCardAction,
   EntityCardComponent, EntityCardOptions, FileUploadComponent, FilterField,
   FilterResult, MetricCardComponent, MetricCardOptions, ModalRef, ModalService,
@@ -11,6 +13,7 @@ import {
 import { ToastService } from '../../../core/toast.service';
 import { UserStore } from '../../../core/user.store';
 import { ExportService } from '../../../core/export.service';
+import { injectHeaderRhPays, inRhPays } from '../../../core/header-rh-pays';
 import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import { TableActionComponent } from '../../../shared/table-action.component';
 import { tableTools } from '../../../shared/table-tools';
@@ -147,7 +150,25 @@ export class SalaryAdvanceListComponent implements OnInit {
   readonly kpiToSign: MetricCardOptions = { icon: 'contract_edit', iconColor: 'text-info', iconBg: 'bg-info/10' };
   readonly kpiRepaying: MetricCardOptions = { icon: 'event_repeat', iconColor: 'text-success', iconBg: 'bg-success/10' };
 
+  // ── Pays : le drapeau de la navbar (store partagé avec le shell) ───────────
+  /**
+   * pays_id du drapeau ; null = « Tous les pays ». payroll-service borne déjà à la portée
+   * de l'appelant mais ne prend pas de pays : on garde les avances de ce pays (KPI compris).
+   */
+  /** Ids RH de tous les drapeaux cochés (`179,64`) ; undefined = « Tous les pays ». */
+  private readonly headerPaysId = injectHeaderRhPays();
+  private loadedPaysId: string | undefined | null = null;
+  private readonly followHeaderCountry = effect(() => {
+    const paysId = this.headerPaysId();
+    untracked(() => {
+      if (paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.load();
+    });
+  });
+
   ngOnInit(): void {
+    this.loadedPaysId = this.headerPaysId();
     this.load();
   }
 
@@ -156,9 +177,11 @@ export class SalaryAdvanceListComponent implements OnInit {
     // squelette pleine page — un changement d'onglet compte sur celui de la liste.
     this.loading.set(true);
     this.error.set(null);
+    const paysId = this.headerPaysId();
     this.svc.list().subscribe({
       next: list => {
-        this.advances.set(list);
+        if (paysId !== this.headerPaysId()) return;   // réponse de l'ancien pays
+        this.advances.set(list.filter(a => inRhPays(paysId, a.paysId)));
         this.loading.set(false);
         this.firstLoad.set(false);
       },

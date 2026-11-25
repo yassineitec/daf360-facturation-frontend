@@ -259,6 +259,8 @@ export interface CreditNoteRequest {
 }
 
 export interface InvoiceFilter {
+  /** Pays (pays_id) du drapeau de la navbar ; absent = tous les pays de la portée. */
+  paysId?:    number | string | null;   // ou plusieurs ids séparés par des virgules (`178,63`)
   statut?:    string | null;
   affaireId?: number | null;
   clientId?:  number | null;

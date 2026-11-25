@@ -1,7 +1,9 @@
-import { Component, OnInit, inject, signal, computed, effect, viewChild } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, untracked, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryId,
   ButtonComponent, FieldMessageComponent, FilterField, FilterResult, MetricCardComponent,
   MetricCardOptions,
   MetricDelta, PageComponent, PageHeaderComponent, PaginationComponent,
@@ -22,6 +24,7 @@ import { switchMap } from 'rxjs';
 import { ClientListStateService } from './client-list-state.service';
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
 import type { GuideStep } from '../../../shared/guide/page-guide.types';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 /** Guide de la page — chaque `target` est un `data-guide` du gabarit. */
 const GUIDE_STEPS: GuideStep[] = [
@@ -87,7 +90,7 @@ export class ClientListComponent implements OnInit {
   pageSize      = signal(20);
   /** Liste CLIENT_SECTOR de l'entité de l'utilisateur — options du filtre « Secteur ». */
   sectors       = signal<ListValueDto[]>([]);
-  /** Référentiel `/ref/pays` — options du filtre « Pays » (pays du client). */
+  /** Référentiel `/ref/pays` — options du filtre « Pays d'origine » et libellés des entités. */
   paysList      = signal<PaysRefDto[]>([]);
 
   /** `firstLoad` drives the whole-page skeleton, `loading` only the card grid (§5). */
@@ -102,8 +105,36 @@ export class ClientListComponent implements OnInit {
   filterStatus = signal<StatusFilter>('');
   /** KYC validé / en attente — sent as `isKycDone`, independent from the activity status. */
   filterKyc    = signal<KycFilter>('');
-  /** Pays du CLIENT (`countryId`, id `pays_ref` en chaîne) — sent as `countryId`. */
-  filterCountry = signal('');
+  /**
+   * Pays d'ORIGINE du client (adresse : `countryId`, id `pays_ref` en chaîne) — un champ du
+   * panneau « Filtres ». '' = tous. À ne pas confondre avec l'entité ci-dessous.
+   */
+  readonly filterCountry = signal('');
+  /** Pays d'adresse présents chez les clients du périmètre — seules options du filtre
+   *  « Localisation du client ». null = pas encore chargés (toute la liste en attendant). */
+  private readonly clientCountryIds = signal<Set<number> | null>(null);
+
+  /**
+   * ENTITÉ ITEC qui facture le client (`clients.pays_id`) : les drapeaux de la barre, en
+   * ids FINANCE (`178,63`) ; null = « Tous les pays » (le serveur applique le périmètre du
+   * rôle). Même notion que le pays d'une affaire ou d'une facture.
+   */
+  readonly filterEntity = computed<string | null>(() => this.headerPaysList() ?? null);
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+  /** Entités des données affichées — pour ne recharger que sur un VRAI changement de drapeau. */
+  private loadedEntity: string | null | undefined;
+
+  /** Changement de drapeau = nouveau jeu : page 0, liste rechargée (premier passage après ngOnInit). */
+  private readonly followHeaderCountry = effect(() => {
+    const entity = this.filterEntity();
+    untracked(() => {
+      if (entity === this.loadedEntity) return;
+      this.loadedEntity = entity;
+      this.currentPage.set(0);
+      this.load();
+      this.loadClientCountries();
+    });
+  });
   /** Devise par défaut du client — sent as `currency`. */
   filterCurrency = signal('');
   /** Avec / sans affaire EN_COURS — sent as `hasActiveAffaires`. */
@@ -148,7 +179,7 @@ export class ClientListComponent implements OnInit {
     this.filterSector.set(s.sector);
     this.filterStatus.set(s.status);
     this.filterKyc.set(s.kyc);
-    this.filterCountry.set(s.country);
+    this.filterCountry.set(s.country ?? '');
     this.filterCurrency.set(s.currency);
     this.filterAffaires.set(s.affaires);
     this.filterClientType.set(s.clientType ?? '');
@@ -176,9 +207,14 @@ export class ClientListComponent implements OnInit {
 
   readonly deltaAllCountries = computed<MetricDelta>(() => {
     this.translate.currentLang();
-    // With the « Pays » filter on, the total is that country's — say so instead of « tous pays ».
-    const country = this.paysList().find(p => String(p.id) === this.filterCountry());
-    if (country) return { value: paysLabel(country, this.translate.currentLang()), direction: 'neutral' };
+    // Drapeaux cochés : le total est celui de ces entités — on les nomme au lieu de « tous pays ».
+    const lang = this.translate.currentLang();
+    const ids = (this.filterEntity() ?? '').split(',').filter(Boolean);
+    const names = ids
+      .map(id => this.paysList().find(p => String(p.id) === id))
+      .filter((p): p is PaysRefDto => !!p)
+      .map(p => paysLabel(p, lang));
+    if (names.length) return { value: names.join(', '), direction: 'neutral' };
     return { value: this.translate.instant('CLIENTS.LIST.KPI.ALL_COUNTRIES'), direction: 'neutral' };
   });
 
@@ -200,9 +236,8 @@ export class ClientListComponent implements OnInit {
    * Sector and status live *inside* the filter panel — never as loose selects or a
    * pill row next to the search (§1).
    *
-   * ⚠️ The « Pays » filter is the CLIENT's country (`countryId`, an address field), never
-   * the entity `paysId`: the list stays un-scoped by pays, which is what avoids the
-   * pays-isolation 403 on that endpoint.
+   * Deux pays distincts : les drapeaux de la barre = l'ENTITÉ qui facture (`paysId`), et le
+   * champ « Pays d'origine » du panneau = l'ADRESSE du client (`countryId`).
    */
   /** Cartes ou tableau — mêmes icônes et mêmes intitulés que la liste des affaires. */
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
@@ -262,14 +297,16 @@ export class ClientListComponent implements OnInit {
         ],
       },
       {
+        // Pays de l'ADRESSE du client. L'entité qui le facture, elle, vient des drapeaux.
+        // Seuls les pays présents chez les clients du périmètre sont proposés.
         name: 'country',
-        label: t('CLIENTS.LIST.CARD.COUNTRY'),
+        label: t('CLIENTS.LIST.FILTER.LOCATION'),
         type: 'select',
         placeholder: t('CLIENTS.LIST.FILTER.ALL'),
         searchable: true,
         options: this.paysList()
-          .map(p => ({ value: String(p.id), label: paysLabel(p, this.translate.currentLang()) }))
-          .sort((a, b) => a.label.localeCompare(b.label)),
+          .filter(p => this.clientCountryIds()?.has(p.id) ?? true)
+          .map(p => ({ value: String(p.id), label: paysLabel(p, this.translate.currentLang()) })),
       },
       {
         name: 'currency',
@@ -308,7 +345,7 @@ export class ClientListComponent implements OnInit {
         sector: this.filterSector() ? [this.filterSector()] : [],
         status: this.filterStatus() ? [this.filterStatus()] : [],
         kyc:    this.filterKyc()    ? [this.filterKyc()]    : [],
-        country:  this.filterCountry()  ? [this.filterCountry()]  : [],
+        country: this.filterCountry() ? [this.filterCountry()] : [],
         currency: this.filterCurrency() ? [this.filterCurrency()] : [],
         affaires: this.filterAffaires() ? [this.filterAffaires()] : [],
         clientType: this.filterClientType() ? [this.filterClientType()] : [],
@@ -320,7 +357,18 @@ export class ClientListComponent implements OnInit {
     this.restoreState();
     this.loadSectors();
     this.svc.getPays().subscribe(list => this.paysList.set(list));
+    this.loadedEntity = this.filterEntity();
     this.load();
+    this.loadClientCountries();
+  }
+
+  /** Options du filtre « Localisation du client » : les pays d'adresse des clients des
+   *  entités choisies dans la barre. En cas d'erreur, on garde tous les pays. */
+  private loadClientCountries(): void {
+    this.svc.getClientCountryIds(this.filterEntity()).subscribe({
+      next:  ids => this.clientCountryIds.set(new Set(ids)),
+      error: ()  => this.clientCountryIds.set(null),
+    });
   }
 
   /** Le jeu décrit par la recherche, les filtres et le tri de l'écran — sans la pagination. */
@@ -329,6 +377,7 @@ export class ClientListComponent implements OnInit {
     const kyc    = this.filterKyc();
     const affaires = this.filterAffaires();
     return {
+      paysId:    this.filterEntity(),
       search:    this.searchText().trim() || null,
       isActive:  status === 'active' ? true : status === 'inactive' ? false : null,
       isKycDone: kyc === 'done' ? true : kyc === 'pending' ? false : null,

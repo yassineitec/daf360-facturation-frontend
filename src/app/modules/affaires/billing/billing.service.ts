@@ -266,23 +266,30 @@ export class BillingService {
       `${this.base}/billing/pending-rf/jalons`, this.opts);
   }
 
-  getPendingDFLines(): Observable<PendingBillingLineDto[]> {
+  /** `paysId` : drapeau de la navbar (pays de l'affaire) ; absent = tous les pays. */
+  getPendingDFLines(paysId?: number | string | null): Observable<PendingBillingLineDto[]> {
     return this.http.get<PendingBillingLineDto[]>(
-      `${this.base}/billing/pending-df`, this.opts);
+      `${this.base}/billing/pending-df`, this.paysOpts(paysId));
   }
 
   /** LIVRABLE's own grouped-by-batch pending-DF listing — excluded from getPendingDFLines()
    * on the backend so a multi-document submission shows as one row here instead of several
    * ungrouped ones there. */
-  getPendingLivrableBatches(): Observable<PendingLivrableBatchDto[]> {
+  getPendingLivrableBatches(paysId?: number | string | null): Observable<PendingLivrableBatchDto[]> {
     return this.http.get<PendingLivrableBatchDto[]>(
-      `${this.base}/billing/pending-df/livrable-batches`, this.opts);
+      `${this.base}/billing/pending-df/livrable-batches`, this.paysOpts(paysId));
   }
 
   /** Credit notes (avoirs) sitting SUBMITTED, cross-affaire — see PendingCreditNoteDto. */
-  getPendingCreditNotes(): Observable<PendingCreditNoteDto[]> {
+  getPendingCreditNotes(paysId?: number | string | null): Observable<PendingCreditNoteDto[]> {
     return this.http.get<PendingCreditNoteDto[]>(
-      `${this.base}/billing/pending-df/credit-notes`, this.opts);
+      `${this.base}/billing/pending-df/credit-notes`, this.paysOpts(paysId));
+  }
+
+  /** `withCredentials` + `?paysId=` quand un pays est choisi. */
+  /** Un id finance ou plusieurs séparés par des virgules (`178,63`, drapeaux de la barre). */
+  private paysOpts(paysId?: number | string | null) {
+    return paysId ? { ...this.opts, params: { paysId: String(paysId) } } : this.opts;
   }
 
   getLivrableBatchDetail(batchId: number): Observable<LivrableBatchDto> {

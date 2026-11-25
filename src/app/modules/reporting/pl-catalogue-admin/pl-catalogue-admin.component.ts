@@ -1,4 +1,5 @@
-import { Component, DestroyRef, OnInit, Pipe, PipeTransform, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, Pipe, PipeTransform, TemplateRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { injectFlagEntity } from '../../../core/flag-entity';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
@@ -113,12 +114,32 @@ export class PlCatalogueAdminComponent implements OnInit {
   /** `GLOBAL_DEFAULT` (0) = the `paysId IS NULL` global default row, never a real pays id. */
   paysId = signal<number>(GLOBAL_DEFAULT);
 
+  /** Le pays de l'utilisateur (`/ref/me`) — 0 tant qu'il n'est pas connu. */
+  private readonly ownPaysId = signal(0);
+  /** L'entité tirée des drapeaux de la barre (une seule — voir injectFlagEntity). */
+  private readonly flagEntity = injectFlagEntity(this.ownPaysId);
+
+  /**
+   * Deux choix seulement : le « Défaut global » (`paysId IS NULL`, la règle commune) ou
+   * l'entité des drapeaux. Plus de liste des 194 pays : c'est la barre qui choisit l'entité.
+   */
   readonly paysOptions = computed<SelectOption[]>(() => {
     this.translate.currentLang();
+    const entity = this.paysList().find(p => p.id === this.flagEntity());
     return [
       { value: String(GLOBAL_DEFAULT), label: this.translate.instant('REPORTING.PL_CATALOGUE.GLOBAL_DEFAULT') },
-      ...this.paysList().map(p => ({ value: String(p.id), label: `${p.frenchLabel} (${p.isoCode})` })),
+      ...(entity ? [{ value: String(entity.id), label: `${entity.frenchLabel} (${entity.isoCode})` }] : []),
     ];
+  });
+
+  /** Drapeaux changés pendant qu'une ENTITÉ est affichée : on passe à la nouvelle. */
+  private readonly followFlags = effect(() => {
+    const id = this.flagEntity();
+    untracked(() => {
+      if (this.firstLoad() || id <= 0) return;
+      const current = this.paysId();
+      if (current !== GLOBAL_DEFAULT && current !== id) this.onPaysSelected([String(id)]);
+    });
   });
 
   private get effectivePaysId(): number | null {
@@ -168,8 +189,9 @@ export class PlCatalogueAdminComponent implements OnInit {
       allPays: this.clientSvc.getPays(),
       lines:   this.lineSvc.list(),
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: ({ allPays, lines }) => {
+      next: ({ myPays, allPays, lines }) => {
         this.paysList.set(allPays);
+        this.ownPaysId.set(myPays ?? 0);
         this.lines.set(lines);
         this.loadStatusConfig();
         this.loadRealCostCategories();

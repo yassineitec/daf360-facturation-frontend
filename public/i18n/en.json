@@ -2266,7 +2266,8 @@
       "OVERDUE_COUNT": "{{count}} critical invoices",
       "NO_DELAY": "No overdue",
       "PLUS_90_TITLE": "Past due 90+ days",
-      "PLUS_90_COUNT": "{{count}} invoice(s)"
+      "PLUS_90_COUNT": "{{count}} invoice(s)",
+      "SCOPE": "Amounts: {{country}} ({{currency}})"
     },
     "MODULES": {
       "TREASURY_BALANCE": "Consolidated Balance",
@@ -2743,6 +2744,7 @@
       "SAVED_MSG": "Invoice saved.",
       "EXPORT_PDF": "Export as PDF",
       "EXPORTING": "Exporting…",
+      "VIEW_AFFAIRE": "View project",
       "VIEW_INVOICE": "View invoice",
       "LINES_TITLE": "Billing lines",
       "DESC": "Description",
@@ -2917,6 +2919,7 @@
       },
       "FILTER": {
         "ALL": "All",
+        "LOCATION": "Client location",
         "SECTOR": "Sector",
         "STATUS": "Status",
         "ACTIVE": "Active",
@@ -3494,7 +3497,7 @@
         "BACKLOG": "Backlog",
         "BACKLOG_HELP": "(Forecast budget + VO budget) − (Total invoiced + Remaining WIP). The pill is the share of the budget. Negative = budget overrun.",
         "INVOICED": "Total invoiced",
-        "INVOICED_HELP": "Sum of this project's invoices whose status is not 'Collected' — the invoiced amount still owed. This is the reference 'invoiced' figure: Backlog is computed from it. The pill is the billing rate: issued invoices excl. VAT / (forecast budget + VO budget); above 100% = budget overrun.",
+        "INVOICED_HELP": "Sum of all this project's invoices except those with status 'Cancelled' (collected invoices included). This is the reference 'invoiced' figure: Backlog is computed from it. The pill is the billing rate: issued invoices excl. VAT / (forecast budget + VO budget); above 100% = budget overrun.",
         "REVENUE": "Revenue",
         "REVENUE_HELP": "WIP neither invoiced nor validated (lines still pending in the WIP and VO WIP tabs) + Total invoiced."
       },
@@ -3937,6 +3940,7 @@
         "discipline": "Discipline",
         "disc_loading": "Loading…",
         "disc_ph": "Pick or type a discipline…",
+        "disc_list_ph": "Pick a discipline…",
         "doc360_unavailable_ph": "DOC360 unavailable — pick or type…",
         "duplicate": "This staff member + activity combination already exists in another row.",
         "add_row": "Add a row",
@@ -7087,6 +7091,7 @@
         "BILLING_PERMISSION": "Billing permissions",
         "INVOICE_TYPE": "Invoice types",
         "CLIENT_SECTOR": "Business sectors",
+        "AFFAIRE_DISCIPLINE": "Disciplines",
         "WITHHOLDING_RATE": "Withholding tax rates",
         "OTHER_TAX_TYPE": "Other taxes (types)"
       },
@@ -7107,6 +7112,7 @@
         "BILLING_PERMISSION": "Permissions related to the billing module.",
         "INVOICE_TYPE": "Invoice types available for issuance.",
         "CLIENT_SECTOR": "Business sectors offered when creating or editing a client.",
+        "AFFAIRE_DISCIPLINE": "Disciplines offered for affaire managers (outside DOC360 projects).",
         "WITHHOLDING_RATE": "Withholding tax rates on supplier costs, each with its base (net, gross or VAT)."
       },
       "COL_CODE": "Code",

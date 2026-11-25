@@ -124,7 +124,8 @@ export interface CreateClientRequest {
 }
 
 export interface ClientFilter {
-  paysId?:    number;
+  /** ENTITÉ qui facture (`clients.pays_id`) : les drapeaux de la barre, `178,63`. */
+  paysId?:    number | string | null;
   search?:    string | null;
   isActive?:  boolean | null;
   isKycDone?: boolean | null;

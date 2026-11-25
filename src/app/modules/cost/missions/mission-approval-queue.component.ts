@@ -1,8 +1,10 @@
 import {
-  Component, OnInit, TemplateRef, computed, inject, signal, viewChild,
+  Component, OnInit, TemplateRef, computed, effect, inject, signal, untracked, viewChild,
 } from '@angular/core';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryId,
   ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent, MetricCardOptions,
   MetricDelta, ModalRef, ModalService, PageHeaderBadge,
   SearchToolbarComponent, SearchToolbarFilterConfig, SectionCardComponent,
@@ -11,6 +13,7 @@ import {
 
 import { MissionApprovalService, MissionDto, MissionScope } from './mission-approval.service';
 import { ExportService } from '../../../core/export.service';
+import { injectHeaderRhPays, inRhPays } from '../../../core/header-rh-pays';
 import { currencyFractionDigits } from '../../../shared/currency-decimals.util';
 import {
   MissionApprovalItem, MissionUrgency, daysUntil, localeOf, missionAmountLabel,
@@ -175,7 +178,25 @@ export class MissionApprovalQueueComponent implements OnInit {
    */
   private readonly locale = computed(() => localeOf(this.translate.currentLang()));
 
+  // ── Pays : le drapeau de la navbar (store partagé avec le shell) ───────────
+  /**
+   * pays_id du drapeau ; null = « Tous les pays ». L'API RH des missions borne déjà à la
+   * portée de l'appelant mais ne prend pas de pays : on garde les missions de ce pays.
+   */
+  /** Ids RH de tous les drapeaux cochés (`179,64`) ; undefined = « Tous les pays ». */
+  private readonly headerPaysId = injectHeaderRhPays();
+  private loadedPaysId: string | undefined | null = null;
+  private readonly followHeaderCountry = effect(() => {
+    const paysId = this.headerPaysId();
+    untracked(() => {
+      if (paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.load();
+    });
+  });
+
   ngOnInit(): void {
+    this.loadedPaysId = this.headerPaysId();
     this.load();
   }
 
@@ -184,9 +205,12 @@ export class MissionApprovalQueueComponent implements OnInit {
     // squelette pleine page — un changement d'onglet compte sur celui de la liste.
     this.loading.set(true);
     this.error.set(null);
-    this.svc.pending().subscribe({
+    const paysId = this.headerPaysId();
+    // Le serveur borne aux drapeaux et au périmètre du rôle ; le filtre local reste une sûreté.
+    this.svc.pending(paysId).subscribe({
       next: list => {
-        this.missions.set(list);
+        if (paysId !== this.headerPaysId()) return;   // réponse de l'ancien pays
+        this.missions.set(list.filter(m => inRhPays(paysId, m.paysId)));
         this.loading.set(false);
         this.firstLoad.set(false);
       },

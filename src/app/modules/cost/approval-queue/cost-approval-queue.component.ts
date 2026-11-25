@@ -1,7 +1,9 @@
-import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  selectSelectedCountryIds,
   ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent,
   MetricCardOptions, MetricDelta, ModalRef, ModalService,
   SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
@@ -28,6 +30,7 @@ import { ApprovalCardsSectionComponent, ApprovalDecision } from './approval-card
 import { ApprovalTableSectionComponent } from './approval-table-section.component';
 import { CostApprovalQueueStateService } from './cost-approval-queue-state.service';
 import { ExportService } from '../../../core/export.service';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 
 type ViewMode = 'grid' | 'list';
 /** The three decisions a cost invoice supports — the service has an endpoint for each. */
@@ -93,7 +96,55 @@ export class CostApprovalQueueComponent implements OnInit {
   private hiringApprovalRef: ModalRef | null = null;
   private salaryRef:         ModalRef | null = null;
 
-  paysId        = signal<number>(0);
+  // ── Pays : le drapeau de la navbar (store partagé avec le shell) ───────────
+  //
+  // DEUX ESPACES D'IDENTIFIANTS. Le drapeau porte un id RH. Les factures de coûts sont des
+  // données FINANCE (`pays_ref`) : elles prennent l'id traduit par code ISO
+  // (HeaderPaysService). Les embauches (API RH) et les avances / changements de salaire
+  // (payroll, mêmes ids que le RH) gardent l'id RH brut.
+  private readonly headerCountryIds = inject(Store).selectSignal(selectSelectedCountryIds);
+  /**
+   * Ids RH de tous les drapeaux cochés, triés (`179,64`) ; null = « Tous les pays ». Pour
+   * l'API RH (embauches) et le filtre des files payroll.
+   */
+  readonly headerPaysIds = computed<string | null>(() => {
+    const ids = [...new Set(this.headerCountryIds().map(Number)
+      .filter(id => Number.isInteger(id) && id > 0))].sort((a, b) => a - b);
+    return ids.length ? ids.join(',') : null;
+  });
+  /** Ids FINANCE des mêmes drapeaux (`178,63`) ; undefined = « Tous les pays » ou pas résolu. */
+  private readonly headerFinancePaysList = inject(HeaderPaysService).paysList;
+  /** La file « coûts » (API finance) : tous les drapeaux ; null = tout le périmètre du rôle. */
+  readonly paysId = computed<string | null>(() => this.headerFinancePaysList() ?? null);
+  /** La file « embauches » (API RH) : tous les drapeaux (ids RH) ; null = tout le périmètre. */
+  private readonly hiringPaysId = computed<string | null>(() => this.headerPaysIds());
+  private loadedKey: string | undefined = undefined;
+  private readonly paysKey = computed(() => `${this.paysId() ?? ''}|${this.headerPaysIds() ?? ''}`);
+
+  /** Changement de drapeaux : les quatre files sont rechargées. Premier passage après ngOnInit. */
+  private readonly followHeaderCountry = effect(() => {
+    const key = this.paysKey();
+    untracked(() => {
+      if (this.loadedKey === undefined || key === this.loadedKey) return;
+      this.loadedKey = key;
+      this.loadQueue();
+      this.loadHiringQueue();
+      this.loadAdvances();
+      this.loadSalaryChanges();
+    });
+  });
+
+  /**
+   * Avances et changements de salaire viennent de payroll-service, qui borne déjà à la
+   * portée de l'appelant mais ne prend pas de pays : on n'en garde que ceux des drapeaux.
+   */
+  private inHeaderPays<T extends { paysId: number | null }>(list: T[]): T[] {
+    const ids = this.headerPaysIds();
+    if (!ids) return list;
+    const set = new Set(ids.split(','));
+    return list.filter(x => x.paysId != null && set.has(String(x.paysId)));
+  }
+
   /** Cost INVOICES awaiting a decision (V93 — the invoice is the unit of approval). */
   costs         = signal<CostInvoiceDto[]>([]);
   hiringPending = signal<HiringCostApprovalDto[]>([]);
@@ -437,7 +488,7 @@ export class CostApprovalQueueComponent implements OnInit {
    */
   exportExcel(): void {
     const items = this.visibleItems();
-    if (!items.length || !this.paysId()) return;
+    if (!items.length) return;
     const t = (key: string) => this.translate.instant(key);
     const payload = items.map(item => item.kind === 'cost'
       ? { kind: 'cost', id: item.id, reference: null, title: null, date: null,
@@ -637,23 +688,23 @@ export class CostApprovalQueueComponent implements OnInit {
 
   ngOnInit(): void {
     this.restoreState();
-    this.clientSvc.getMyPays().subscribe({
-      next: id => {
-        if (id != null && id > 0) this.paysId.set(id);
-        this.loadQueue();
-        this.loadHiringQueue();
-      },
-      error: () => { this.loadQueue(); this.loadHiringQueue(); },
-    });
+    // Sans drapeau, les deux API bornent déjà au périmètre du rôle : plus besoin d'attendre
+    // le pays de l'utilisateur (`/ref/me`) pour charger.
+    this.loadedKey = this.paysKey();
+    this.loadQueue();
+    this.loadHiringQueue();
     this.loadAdvances();
     this.loadSalaryChanges();
   }
 
-  /** Not scoped by `paysId` here: payroll-service filters by the caller's own entity scope. */
+  /**
+   * payroll-service filters by the caller's own entity scope and takes no pays: the header's
+   * country is applied here, on each row's `paysId`.
+   */
   loadSalaryChanges(): void {
     if (!this.canDecideSalary()) return;
     this.salarySvc.pending().subscribe({
-      next: pending => this.salaryChanges.set(pending),
+      next: pending => this.salaryChanges.set(this.inHeaderPays(pending)),
       error: err => this.hiringError.set(err?.error?.detail ?? err?.error?.message
         ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR')),
     });
@@ -671,7 +722,7 @@ export class CostApprovalQueueComponent implements OnInit {
     this.advancesLoading.set(true);
     forkJoin(calls).subscribe({
       next: lists => {
-        this.advances.set(lists.flat());
+        this.advances.set(this.inHeaderPays(lists.flat()));
         this.advancesLoading.set(false);
       },
       error: err => {
@@ -683,9 +734,13 @@ export class CostApprovalQueueComponent implements OnInit {
   }
 
   loadQueue(): void {
+    const paysId = this.paysId();
     this.isLoading.set(true);
-    this.svc.getPendingApprovals(this.paysId()).subscribe({
-      next:  items => { this.costs.set(items); this.isLoading.set(false); this.firstLoad.set(false); },
+    this.svc.getPendingApprovals(paysId).subscribe({
+      next:  items => {
+        if (paysId !== this.paysId()) return;   // réponse de l'ancien pays
+        this.costs.set(items); this.isLoading.set(false); this.firstLoad.set(false);
+      },
       error: ()    => { this.isLoading.set(false); this.firstLoad.set(false); },
     });
   }
@@ -704,8 +759,12 @@ export class CostApprovalQueueComponent implements OnInit {
     if (!this.canDecideHiring()) return;
     this.hiringLoading.set(true);
     this.hiringError.set(null);
-    this.hiringSvc.getPendingByPays(this.paysId()).subscribe({
-      next:  items => { this.hiringPending.set(items); this.hiringLoading.set(false); },
+    const paysId = this.hiringPaysId();
+    this.hiringSvc.getPendingByPays(paysId).subscribe({
+      next:  items => {
+        if (paysId !== this.hiringPaysId()) return;   // réponse de l'ancien pays
+        this.hiringPending.set(items); this.hiringLoading.set(false);
+      },
       error: err => {
         this.hiringError.set(err?.error?.detail ?? err?.error?.message
           ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR'));

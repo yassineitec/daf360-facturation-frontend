@@ -3,7 +3,9 @@ import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FinancePaths } from '../../../core/finance-paths';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
 import { forkJoin, Observable, Subscription, switchMap } from 'rxjs';
+import { Store } from '@ngrx/store';
 import {
+  selectSelectedCountryId,
   DataTableComponent, DafCellDirective, TableColumn, TableConfig, TableAction, TableRow,
   PageComponent, PageHeaderComponent, MetricCardComponent, MetricCardOptions,
   TabsComponent, TabItem, PaginationComponent,
@@ -33,6 +35,7 @@ import { ToastService } from '../../../core/toast.service';
 import { ClientService } from '../../clients/client.service';
 import { ClientDropdownItemDto } from '../../clients/client.model';
 import { ExportService } from '../../../core/export.service';
+import { HeaderPaysService } from '../../../core/header-pays.service';
 type ActiveTab = 'df' | 'history';
 // Four tabs grouped by billing mode (FORFAIT/REGIE/LIVRABLE/TS) instead of by entity
 // type — each tab stacks the sections relevant to its mode (see the .html), e.g.
@@ -1182,8 +1185,35 @@ export class ApprovalQueueComponent implements OnInit {
     }
   }
 
+  // ── Pays : le drapeau de la navbar (store partagé avec le shell) ───────────
+  private readonly headerPaysList = inject(HeaderPaysService).paysList;
+  /**
+   * Ids FINANCE de tous les drapeaux cochés (`178,63`) ; null = « Tous les pays » (le serveur
+   * applique alors le périmètre du rôle). Filtre les files DF par pays de l'affaire.
+   */
+  readonly paysId = computed<string | null>(() => this.headerPaysList() ?? null);
+  private loadedPaysId: string | null | undefined = undefined;
+
+  /**
+   * Changement de drapeau : les files DF sont rechargées pour le nouveau pays, et les
+   * sélections vidées — des lignes cochées sur l'ancien pays ne sont plus à l'écran, une
+   * validation groupée ne doit pas les emporter. Premier passage après `ngOnInit`.
+   */
+  private readonly followHeaderCountry = effect(() => {
+    const paysId = this.paysId();
+    untracked(() => {
+      if (paysId === this.loadedPaysId) return;
+      this.loadedPaysId = paysId;
+      this.dfLineSelection.clear();
+      this.livrableSelection.clear();
+      this.cancelClientPicker();
+      this.loadDF();
+    });
+  });
+
   ngOnInit(): void {
     this.restoreState();
+    this.loadedPaysId = this.paysId();
     // Jalons no longer have a tab of their own, but the "En attente RF" KPI still
     // needs a count — fetched once here, independent of which tab is active.
     this.loadRF();
@@ -1261,14 +1291,20 @@ export class ApprovalQueueComponent implements OnInit {
   /** AV taux no longer have a queue of their own — a taux's BillingLine appears in
    * pendingLines below exactly like every other mode, once the client has confirmed an
    * amount (see docs/superpowers/specs/2026-09-21-av-client-confirmation-design.md). */
+  /** Bumped à chaque chargement DF : une réponse lente pour l'ancien pays est ignorée. */
+  private dfSeq = 0;
+
   private loadDF(): void {
+    const seq = ++this.dfSeq;
+    const paysId = this.paysId();
     this.dfLoading.set(true);
     forkJoin({
-      livrableBatches: this.svc.getPendingLivrableBatches(),
-      lines: this.svc.getPendingDFLines(),
-      creditNotes: this.svc.getPendingCreditNotes(),
+      livrableBatches: this.svc.getPendingLivrableBatches(paysId),
+      lines: this.svc.getPendingDFLines(paysId),
+      creditNotes: this.svc.getPendingCreditNotes(paysId),
     }).subscribe({
       next: ({ livrableBatches, lines, creditNotes }) => {
+        if (seq !== this.dfSeq) return;
         this.pendingLivrableBatches.set(livrableBatches);
         this.pendingLines.set(lines);
         this.pendingCreditNotes.set(creditNotes);

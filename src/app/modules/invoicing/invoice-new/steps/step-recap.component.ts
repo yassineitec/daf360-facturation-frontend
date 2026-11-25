@@ -216,6 +216,14 @@ import { StepConditionsValue } from './step-conditions.component';
             {{ exportingPdf() ? ('INVOICING.STEP_RECAP.EXPORTING' | translate) : ('INVOICING.STEP_RECAP.EXPORT_PDF' | translate) }}
           </button>
         }
+        <!-- Facture d'une seule affaire : lien vers sa fiche. Une facture combinée
+             (plusieurs affaires, affaireId null) n'a pas de fiche unique : pas de bouton. -->
+        @if (affaireData().affaireId; as affId) {
+          <button type="button" class="btn-draft" (click)="goToAffaire(affId)">
+            <span class="material-symbols-outlined">work</span>
+            {{ 'INVOICING.STEP_RECAP.VIEW_AFFAIRE' | translate }}
+          </button>
+        }
         <button type="button" class="btn-submit" (click)="goToInvoice(invId)">
           {{ 'INVOICING.STEP_RECAP.VIEW_INVOICE' | translate }}
           <span class="material-symbols-outlined">arrow_forward</span>
@@ -499,6 +507,10 @@ export class StepRecapComponent {
       },
       error: err => { this.saving.set(false); this.serverError.set(err?.error?.message ?? 'Erreur.'); },
     });
+  }
+
+  goToAffaire(id: number): void {
+    this.router.navigate(this.paths.affaire(id));
   }
 
   goToInvoice(id: number): void {

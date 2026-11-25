@@ -28,6 +28,11 @@
         [options]="k.options" />
     }
   </section>
+  <!-- De quel pays sont ces montants : ils ne valent que pour un pays (une devise), même
+       quand la navbar est sur « Tous les pays ». -->
+  @if (kpiScopeLabel(); as scope) {
+    <p class="-mt-4 text-body-sm text-on-surface-variant">{{ scope }}</p>
+  }
 
   <!-- Modules — même source que la barre latérale.
 

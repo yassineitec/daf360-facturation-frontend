@@ -5,24 +5,8 @@
   <daf-page-header
     [title]="'ADMIN.PAGE.TITLE' | translate"
     [subtitle]="'ADMIN.PAGE.SUBTITLE' | translate">
-
-    <!-- Sélecteur de pays (multi-pays seulement), avec drapeau — `app-pays-flag-select`,
-         pas `daf-select` : ses options n'affichent qu'une icône Material Symbol ou du
-         texte, pas une image par option.
-
-         Le `div pageActions` est la racine STATIQUE et le `@if` vit dedans : un élément
-         imbriqué dans un `@if` vit dans une vue embarquée, et `<ng-content
-         select="[pageActions]">` ne le trouverait jamais (UI-PLAYBOOK §10f). -->
-    <div pageActions class="pays-card" data-guide="admin-pays">
-      @if (paysList().length > 1) {
-        <app-pays-flag-select
-          [options]="paysOptions()"
-          [selected]="paysId() ? [paysId().toString()] : []"
-          [label]="paysSelectLabel()"
-          [placeholder]="paysSelectPlaceholder()"
-          (selectedChange)="onPaysSelected($event)" />
-      }
-    </div>
+    <!-- Plus de sélecteur « Pays / Entité » : l'entité paramétrée vient des drapeaux de la
+         barre (une seule — voir `paysId`). -->
   </daf-page-header>
 
   @if (pageError()) {

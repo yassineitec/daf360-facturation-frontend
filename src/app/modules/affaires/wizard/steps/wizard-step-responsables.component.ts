@@ -14,6 +14,9 @@ import { AffaireDraftState, DisciplineDto, ResponsableItem } from '../../affaire
 import { UserRefDto } from '../../affaire.model';
 import { ListValueDto, localizedLabel } from '../../../cost/cost.model';
 
+/** Liste configurable des disciplines — Finance → Admin → Listes (V118). */
+const DISCIPLINE_LIST_TYPE = 'AFFAIRE_DISCIPLINE';
+
 @Component({
   selector: 'app-wizard-step-responsables',
   standalone: true,
@@ -46,6 +49,12 @@ export class WizardStepResponsablesComponent implements OnInit {
    * le badge aurait annoncé une origine que la liste n'a pas.
    */
   disciplinesFromDoc360 = signal(false);
+  /**
+   * Vrai quand la liste vient de Finance → Admin → Listes (`AFFAIRE_DISCIPLINE`).
+   * La saisie libre est alors fermée : c'est elle qui avait mis `bridgs` et `bim&cad`
+   * en base. Une discipline manquante s'ajoute dans l'administration.
+   */
+  disciplinesFromAdmin = signal(false);
 
   // ── Budget tracking ────────────────────────────────────────────
   //
@@ -95,11 +104,15 @@ export class WizardStepResponsablesComponent implements OnInit {
   // serveur comme la chaîne « null ». Le séparateur reste en place — c'est le libellé qui
   // suit, et c'est `substring` qui le récupère, pas un `split` qui casserait sur un libellé
   // contenant lui-même une barre.
-  readonly disciplineOptions = computed<SelectOption[]>(() =>
-    this.disciplines().map(d => ({
+  // Comme l'activité : la valeur garde le libellé FR (c'est lui qui est enregistré et que
+  // la présélection compare), seul le libellé affiché suit la langue.
+  readonly disciplineOptions = computed<SelectOption[]>(() => {
+    const lang = this.translate.currentLang();
+    return this.disciplines().map(d => ({
       value: (d.id ?? '') + '|' + d.levelLabel,
-      label: d.levelLabel,
-    })));
+      label: localizedLabel(d.levelLabel, d.levelLabelEn ?? null, lang) ?? d.levelLabel,
+    }));
+  });
 
   readonly selectConfig = computed(() => {
     this.translate.currentLang();
@@ -115,13 +128,16 @@ export class WizardStepResponsablesComponent implements OnInit {
    */
   readonly disciplineConfig = computed(() => {
     this.translate.currentLang();
-    const key = this.isDisciplineAvail()
-      ? 'AFFAIRES.wizard.responsables.disc_ph'
-      : 'AFFAIRES.wizard.responsables.doc360_unavailable_ph';
+    const fromAdmin = this.disciplinesFromAdmin();
+    const key = fromAdmin
+      ? 'AFFAIRES.wizard.responsables.disc_list_ph'
+      : this.isDisciplineAvail()
+        ? 'AFFAIRES.wizard.responsables.disc_ph'
+        : 'AFFAIRES.wizard.responsables.doc360_unavailable_ph';
     return {
       placeholder: this.translate.instant(key),
       searchable:  true,
-      creatable:   true,
+      creatable:   !fromAdmin,
       fullWidth:   true,
     };
   });
@@ -198,8 +214,9 @@ export class WizardStepResponsablesComponent implements OnInit {
   }
 
   /**
-   * Les disciplines déjà employées dans cette base — le repli quand l'ODS ne peut pas
-   * répondre (pas de référence de projet, compte expiré, projet sans discipline).
+   * Le repli quand l'ODS ne peut pas répondre (pas de référence de projet, compte expiré,
+   * projet sans discipline) : la liste `AFFAIRE_DISCIPLINE` de l'administration, sinon
+   * les disciplines déjà employées dans cette base.
    *
    * Une entrée garde son identifiant DOC360 quand elle en a un : la choisir raccroche une
    * affaire neuve à une vraie discipline, au lieu de n'en garder que le nom.
@@ -207,6 +224,51 @@ export class WizardStepResponsablesComponent implements OnInit {
   loadKnownDisciplines(): void {
     this.isLoadingDisc.set(true);
     this.disciplinesFromDoc360.set(false);
+    this.disciplinesFromAdmin.set(false);
+    // La liste paramétrée dans Finance → Admin → Listes, pays de l'affaire (valeurs
+    // globales comprises). Une valeur semée depuis DOC360 porte le code `DOC360_<id>` :
+    // l'identifiant est repris pour que l'affaire reste rattachée à la vraie discipline.
+    if (this.draft.paysId) {
+      this.listSvc.getListValuesOrFail(DISCIPLINE_LIST_TYPE, this.draft.paysId).subscribe({
+        next: values => {
+          if (!values.length) { this.loadDisciplinesInUse(); return; }
+          const discs: DisciplineDto[] = values.map(v => {
+            const m = /^DOC360_(\d+)$/.exec(v.code ?? '');
+            return { id: m ? Number(m[1]) : null, levelLabel: v.labelFr, levelLabelEn: v.labelEn };
+          });
+          this.disciplines.set(this.withDraftLabels(discs));
+          this.disciplinesFromAdmin.set(true);
+          this.isLoadingDisc.set(false);
+        },
+        error: () => this.loadDisciplinesInUse(),
+      });
+      return;
+    }
+    this.loadDisciplinesInUse();
+  }
+
+  /**
+   * Les disciplines déjà saisies sur les lignes du brouillon (édition d'une affaire) mais
+   * absentes de la liste — désactivées ou renommées depuis dans l'administration. Sans
+   * elles, le sélecteur afficherait un champ vide alors que la ligne a une discipline.
+   */
+  private withDraftLabels(discs: DisciplineDto[]): DisciplineDto[] {
+    const known = new Set(discs.map(d => d.levelLabel.trim().toLowerCase()));
+    const extra: DisciplineDto[] = [];
+    for (const r of this.draft.responsables) {
+      const label = r.disciplineLabel?.trim();
+      if (label && !known.has(label.toLowerCase())) {
+        known.add(label.toLowerCase());
+        extra.push({ id: r.disciplineId ?? null, levelLabel: label });
+      }
+    }
+    return [...discs, ...extra];
+  }
+
+  /** Repli quand la liste d'administration est vide ou injoignable : l'ancien comportement. */
+  private loadDisciplinesInUse(): void {
+    this.isLoadingDisc.set(true);
+    this.disciplinesFromAdmin.set(false);
     this.wizardSvc.getKnownDisciplines().subscribe({
       next: discs => {
         this.disciplines.set(discs);

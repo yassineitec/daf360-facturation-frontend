@@ -14,10 +14,10 @@ export class SubcontractingService {
 
   // ── Sous-traitants ─────────────────────────────────────────────────────
 
-  listSousTraitants(paysId: number): Observable<SousTraitantDto[]> {
-    return this.http.get<SousTraitantDto[]>(`${this.base}/sous-traitants`, {
-      params: new HttpParams().set('paysId', String(paysId)),
-    });
+  /** `paysId` : un id finance, ou plusieurs (`178,63`) ; null = tout le périmètre du rôle. */
+  listSousTraitants(paysId: number | string | null): Observable<SousTraitantDto[]> {
+    const params = paysId ? new HttpParams().set('paysId', String(paysId)) : new HttpParams();
+    return this.http.get<SousTraitantDto[]>(`${this.base}/sous-traitants`, { params });
   }
 
   // Affaire-scoped: pays is resolved server-side, so no pays param is sent and

@@ -3,7 +3,8 @@ import { Router, NavigationEnd, RouterOutlet, ActivatedRoute } from '@angular/ro
 import { filter, map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TranslateService } from '@ngx-translate/core';
-import { RadialMenuComponent, SideNavComponent } from '@khalilrebhiitec/daf360';
+import { CountryPickerComponent, RadialMenuComponent, SideNavComponent } from '@khalilrebhiitec/daf360';
+import { CountryPickerService } from '../core/country-picker.service';
 import type { NavItem, RadialMenuConfig, RadialMenuItem, SideNavConfig } from '@khalilrebhiitec/daf360';
 import { UserStore } from '../core/user.store';
 import {
@@ -21,7 +22,7 @@ import { CURRENCY_GLYPHS, CurrencySwitchComponent } from './currency-switch.comp
 @Component({
   selector: 'app-fact-shell',
   standalone: true,
-  imports: [RouterOutlet, SideNavComponent, RadialMenuComponent, HelpCenterComponent, GuideHintComponent, HelpChatComponent, CurrencySwitchComponent],
+  imports: [RouterOutlet, SideNavComponent, CountryPickerComponent, RadialMenuComponent, HelpCenterComponent, GuideHintComponent, HelpChatComponent, CurrencySwitchComponent],
   templateUrl: './fact-shell.component.html',
   styleUrl: './fact-shell.component.scss',
 })
@@ -32,6 +33,8 @@ export class FactShellComponent {
   private readonly injector       = inject(Injector);
   private readonly translate      = inject(TranslateService);
   private readonly currencySvc    = inject(CurrencyDisplayService);
+  /** Sélecteur de pays du bas de la barre latérale (lib 5.19.0) — chargé dès l'ouverture. */
+  readonly countryPicker = (() => { const s = inject(CountryPickerService); s.load(); return s; })();
 
   // styles.css is injected + awaited by the shell (ensureRemoteStyles) before
   // this route activates — no runtime injection here.

@@ -1,4 +1,5 @@
-import { Component, DestroyRef, OnInit, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { injectFlagEntity } from '../../core/flag-entity';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -15,7 +16,7 @@ import { PlActionsMenuComponent, PlActionsMenuItem } from './pl-actions-menu.com
 import { ClientService } from '../clients/client.service';
 import { AffaireService } from '../affaires/affaire.service';
 import { PaysRefDto, paysLabel } from '../affaires/affaire.model';
-import { PaysFlagSelectComponent, PaysFlagOption } from '../../shared/pays-flag-select/pays-flag-select.component';
+import { PaysFlagOption } from '../../shared/pays-flag-select/pays-flag-select.component';
 import { DisplayCurrencyPipe } from '../../shared/display-currency.pipe';
 import { flagDataUri } from '../../shared/country-flags';
 import { tableTools } from '../../shared/table-tools';
@@ -82,7 +83,7 @@ const GUIDE_STEPS: GuideStep[] = [
   selector: 'app-reporting-list',
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent,
-    DataTableComponent, DafCellDirective, PaysFlagSelectComponent,
+    DataTableComponent, DafCellDirective,
     FormFieldComponent, SelectComponent, MetricCardComponent, SearchToolbarComponent,
     PlPeriodCardsSectionComponent, PlActionsMenuComponent,
     PageGuideComponent,
@@ -144,6 +145,24 @@ export class ReportingListComponent implements OnInit {
     if (Number.isFinite(id) && id > 0) this.selectPays(id);
   }
 
+  /** Le pays de l'utilisateur (`/ref/me`) — 0 tant qu'il n'est pas connu. */
+  private readonly ownPaysId = signal(0);
+  /** L'entité tirée des drapeaux (une seule) — remplace le sélecteur de pays de la page. */
+  private readonly flagEntity = injectFlagEntity(this.ownPaysId);
+  private flagsReady = false;
+  /** Changement de drapeaux : l'écran passe à la nouvelle entité. */
+  private readonly followFlags = effect(() => {
+    const id = this.flagEntity();
+    untracked(() => {
+      if (!this.flagsReady || id <= 0 || id === this.paysId()) return;
+      this.selectPays(id);
+    });
+  });
+  /** Le pays affiché (drapeau + nom) à la place de l'ancien sélecteur. */
+  readonly currentPays = computed(() =>
+    this.paysOptions().find(o => o.value === String(this.paysId())) ?? null);
+
+
   // ── Data ─────────────────────────────────────────────────────────────────
   periods = signal<PlPeriodDto[]>([]);
   reports = signal<PlReportDto[]>([]);
@@ -181,7 +200,9 @@ export class ReportingListComponent implements OnInit {
           ...allPays.filter(p => !inUseIds.has(p.id)),
         ];
         this.paysList.set(pays);
-        const resolved = myPays ?? (pays.length > 0 ? pays[0].id : 0);
+        this.ownPaysId.set(myPays ?? (pays.length > 0 ? pays[0].id : 0));
+        const resolved = this.flagEntity();
+        this.flagsReady = true;
         if (resolved > 0) {
           this.paysId.set(resolved);
           this.loadData();
