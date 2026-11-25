@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   SousTraitantDto, OSTDto, CoutSTDto, MarginDto,
+  LinkableCostInvoiceDto, CostInvoiceOstLinkDto, OstCandidateDto,
   CreateSousTraitantRequest, CreateOSTRequest, CreateCoutSTRequest,
 } from './subcontracting.model';
 
@@ -66,6 +67,36 @@ export class SubcontractingService {
 
   addCout(ordreId: number, req: CreateCoutSTRequest): Observable<CoutSTDto> {
     return this.http.post<CoutSTDto>(`${this.base}/ordres-st/${ordreId}/couts`, req);
+  }
+
+  // ── Lien factures fournisseurs (V145) ──────────────────────────────────
+
+  /** Factures non rattachées de l'entité ; `tous` ignore le fournisseur associé au ST. */
+  listLinkableInvoices(ordreId: number, tous: boolean): Observable<LinkableCostInvoiceDto[]> {
+    return this.http.get<LinkableCostInvoiceDto[]>(`${this.base}/ordres-st/${ordreId}/factures-rattachables`, {
+      params: new HttpParams().set('tous', String(tous)),
+    });
+  }
+
+  addCoutFromInvoice(ordreId: number, costInvoiceId: number): Observable<CoutSTDto> {
+    return this.http.post<CoutSTDto>(`${this.base}/ordres-st/${ordreId}/couts/depuis-facture`, { costInvoiceId });
+  }
+
+  /** null quand la facture n'est imputée à aucun OST (204). */
+  getInvoiceOstLink(costInvoiceId: number): Observable<CostInvoiceOstLinkDto | null> {
+    return this.http.get<CostInvoiceOstLinkDto | null>(`${this.base}/cost-invoices/${costInvoiceId}/ost-link`);
+  }
+
+  listOstCandidates(costInvoiceId: number): Observable<OstCandidateDto[]> {
+    return this.http.get<OstCandidateDto[]>(`${this.base}/cost-invoices/${costInvoiceId}/ost-candidates`);
+  }
+
+  linkInvoiceToOst(costInvoiceId: number, ordreId: number): Observable<CoutSTDto> {
+    return this.http.put<CoutSTDto>(`${this.base}/cost-invoices/${costInvoiceId}/ost-link`, { ordreId });
+  }
+
+  unlinkInvoice(costInvoiceId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/cost-invoices/${costInvoiceId}/ost-link`);
   }
 
   removeCout(ordreId: number, coutId: number): Observable<void> {

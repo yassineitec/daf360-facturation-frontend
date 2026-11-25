@@ -770,8 +770,6 @@ export class ReportingListComponent implements OnInit {
   private periodBeingClosed: PlPeriodDto | null = null;
 
   closingId = signal<number | null>(null);
-  closeIntercompanyInbound  = signal<number | null>(null);
-  closeIntercompanyOutbound = signal<number | null>(null);
   closeIntersedeInbound     = signal<number | null>(null);
   closeIntersedeOutbound    = signal<number | null>(null);
   closeWipPreviousYears     = signal<number | null>(null);
@@ -788,8 +786,6 @@ export class ReportingListComponent implements OnInit {
   openClosePeriod(period: PlPeriodDto, event?: MouseEvent): void {
     event?.stopPropagation();
     this.periodBeingClosed = period;
-    this.closeIntercompanyInbound.set(null);
-    this.closeIntercompanyOutbound.set(null);
     this.closeIntersedeInbound.set(null);
     this.closeIntersedeOutbound.set(null);
     this.closeWipPreviousYears.set(null);
@@ -825,8 +821,6 @@ export class ReportingListComponent implements OnInit {
     this.closingId.set(period.id);
     this.error.set(null);
     this.periodSvc.closePeriod(period.id, {
-      intercompanyInbound:  this.closeIntercompanyInbound(),
-      intercompanyOutbound: this.closeIntercompanyOutbound(),
       intersedeInbound:     this.closeIntersedeInbound(),
       intersedeOutbound:    this.closeIntersedeOutbound(),
       wipPreviousYears:     this.closeWipPreviousYears(),

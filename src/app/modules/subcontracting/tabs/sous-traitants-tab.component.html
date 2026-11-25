@@ -127,6 +127,15 @@
           label: ('SUBCONTRACTING.ST.MODAL.COUNTRY' | translate),
           placeholder: ('SUBCONTRACTING.ST.MODAL.COUNTRY_PLACEHOLDER' | translate) }" />
     </div>
+
+    <daf-select
+      [options]="supplierOptions()"
+      [config]="{ label: ('SUBCONTRACTING.ST.MODAL.SUPPLIER' | translate),
+                  placeholder: ('SUBCONTRACTING.ST.MODAL.SUPPLIER_PH' | translate),
+                  hint: ('SUBCONTRACTING.ST.MODAL.SUPPLIER_HINT' | translate),
+                  searchable: true, fullWidth: true }"
+      [selected]="form.supplierId ? [form.supplierId] : []"
+      (selectedChange)="form.supplierId = $event[0] || ''" />
   </div>
 </ng-template>
 

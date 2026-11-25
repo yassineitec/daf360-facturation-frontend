@@ -26,10 +26,11 @@ import { ExportService } from '../../../core/export.service';
 
 type ViewMode = 'grid' | 'list';
 
+import { StInvoicePickerComponent } from '../components/st-invoice-picker.component';
 @Component({
   selector: 'app-ordres-st-tab',
   imports: [
-    TranslatePipe, PermissionDirective, ButtonComponent, CardComponent, DrawerComponent,
+    TranslatePipe, PermissionDirective, ButtonComponent, CardComponent, DrawerComponent, StInvoicePickerComponent,
     FormFieldComponent, MetricCardComponent, SearchToolbarComponent, SelectComponent,
     SkeletonComponent, DisplayCurrencyPipe, TableActionComponent,
     OstCardsSectionComponent, OstTableSectionComponent,
@@ -76,6 +77,8 @@ export class OrdresStTabComponent {
   searchQuery     = signal('');
   searchResults   = signal<AffaireListItem[]>([]);
   searching       = signal(false);
+  /** Une recherche a abouti : sert à dire « aucune affaire » quand la liste revient vide. */
+  searched        = signal(false);
   selectedAffaire = signal<AffaireListItem | null>(null);
 
   // ── OST list ─────────────────────────────────────────────────────────
@@ -166,6 +169,8 @@ export class OrdresStTabComponent {
   coutsList    = signal<CoutSTDto[]>([]);
   coutsLoading = signal(false);
   showAddCout  = signal(false);
+  /** Sélecteur « Depuis une facture fournisseur » (V145). */
+  showInvoicePicker = signal(false);
   // Unreachable in practice -- openAddCout() always resets devise from the parent OST's own.
   coutForm     = { montant: 0, dateCout: '', devise: this.currencyContext.defaultCurrency() ?? 'EUR', description: '' };
   coutSaving   = signal(false);
@@ -191,7 +196,7 @@ export class OrdresStTabComponent {
     if (!q) return;
     this.searching.set(true);
     this.affaireSvc.getAffaires({ search: q, size: 8 }).subscribe({
-      next: page => { this.searchResults.set(page.content); this.searching.set(false); },
+      next: page => { this.searchResults.set(page.content); this.searching.set(false); this.searched.set(true); },
       error:    () => this.searching.set(false),
     });
   }
@@ -199,6 +204,7 @@ export class OrdresStTabComponent {
   selectAffaire(a: AffaireListItem): void {
     this.selectedAffaire.set(a);
     this.searchResults.set([]);
+    this.searched.set(false);
     this.searchQuery.set(`${a.reference} — ${a.intitule}`);
     this.loadOrdres(a.id);
     this.stLoading.set(true);
@@ -214,6 +220,7 @@ export class OrdresStTabComponent {
     this.selectedAffaire.set(null);
     this.searchQuery.set('');
     this.searchResults.set([]);
+    this.searched.set(false);
     this.ordres.set([]);
   }
 
@@ -345,6 +352,7 @@ export class OrdresStTabComponent {
     this.drawerOst.set(o);
     this.drawerOpen.set(true);
     this.showAddCout.set(false);
+    this.showInvoicePicker.set(false);
     this.coutError.set(null);
     this.coutForm = { montant: 0, dateCout: new Date().toISOString().slice(0, 10), devise: o.devise, description: '' };
     this.coutsLoading.set(true);
@@ -387,6 +395,13 @@ export class OrdresStTabComponent {
     this.svc.removeCout(ost.id, cout.id).subscribe({
       next: () => { this.reloadDrawer(ost); this.loadOrdres(affaire.id); },
     });
+  }
+
+  /** Un coût vient d'être créé depuis une facture : recharge le panneau et les ordres. */
+  onInvoiceLinked(ost: OSTDto): void {
+    this.reloadDrawer(ost);
+    const affaire = this.selectedAffaire();
+    if (affaire) this.loadOrdres(affaire.id);
   }
 
   private reloadDrawer(ost: OSTDto): void {

@@ -58,14 +58,14 @@
       <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_ACTION' | translate }}</span>{{ 'ADMIN.AUDIT_TRAIL.ACTION_' + entry.action | translate }}</div>
       <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_PK' | translate }}</span>{{ recordIdentity(entry) }}</div>
       <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_AFFAIRE' | translate }}</span>{{ affaireLabelFor(entry) }}</div>
-      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_ACTOR' | translate }}</span>{{ entry.changedBy ?? ('ADMIN.AUDIT_TRAIL.ACTOR_SYSTEM' | translate) }}</div>
+      <div><span class="detail-meta-label">{{ 'ADMIN.AUDIT_TRAIL.COL_ACTOR' | translate }}</span>{{ actorLabelFor(entry.changedBy, 'ADMIN.AUDIT_TRAIL.ACTOR_SYSTEM' | translate) }}</div>
     </div>
 
     @if (activeDiff().length === 0) {
       <p class="text-muted">{{ 'ADMIN.AUDIT_TRAIL.DETAIL_NO_FIELDS' | translate }}</p>
     } @else {
       <div class="diff-list">
-        @for (d of activeDiff(); track d.field) {
+        @for (d of activeDiffDisplay(); track d.field) {
           <div class="diff-row">
             <div class="diff-field-name">{{ d.field }}</div>
             @if (d.changed) {

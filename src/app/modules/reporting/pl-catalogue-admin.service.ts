@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   CoverageCheckResultDto, PlCataloguePreviewResultDto, PlCatalogueSourceType,
   PlCatalogueStatusConfigDto, PlCatalogueStatusConfigVersionDto, PlCategoryLineMappingDto,
-  PlCategoryLineMappingVersionDto, PlCostCategoryDto, SaveCategoryMappingRequest, SaveStatusConfigRequest,
+  PlCategoryLineMappingVersionDto, PlCostCategoryDto, PlCostLineDto, SaveCategoryMappingRequest, SaveStatusConfigRequest,
 } from './pl-catalogue.model';
 
 /** Thin wrapper over `/api/fact/admin/pl-catalogue` — every call needs `FACT_ADMIN_PL_CATALOGUE`
@@ -63,6 +63,11 @@ export class PlCatalogueAdminService {
     let params = new HttpParams();
     if (paysId != null) params = params.set('paysId', String(paysId));
     return this.http.get<PlCostCategoryDto[]>(`${this.base}/category-mapping/categories`, { params });
+  }
+
+  /** The P&L cost lines (right-hand column) a category can be linked to. */
+  listCostLines(): Observable<PlCostLineDto[]> {
+    return this.http.get<PlCostLineDto[]>(`${this.base}/category-mapping/cost-lines`);
   }
 
   getCategoryMapping(paysId: number | null): Observable<PlCategoryLineMappingDto> {

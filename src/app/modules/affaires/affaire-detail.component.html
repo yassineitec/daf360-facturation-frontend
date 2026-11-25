@@ -758,6 +758,13 @@
             <app-affaire-depense-tab [affaire]="aff" />
           }
 
+          <!-- ── Sous-traitance — ordres ST de l'affaire, tous modes ──────── -->
+          @if (activeTab() === 'sous-traitance') {
+            <app-affaire-ost [affaireId]="aff.id" [paysId]="aff.paysId"
+                             [devise]="affaireDevise()"
+                             [affaireStatut]="aff.statut" />
+          }
+
           <!-- ── Factures ─────────────────────────────────────────────── -->
           @if (activeTab() === 'factures') {
             <daf-search-toolbar

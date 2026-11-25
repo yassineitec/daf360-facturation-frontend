@@ -202,6 +202,7 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
     // Sur deux parts, comme dans l'ancienne mise en page (`wide: true`).
     homeSpan: 2,
   },
+  // Masqué du menu en attendant les prochaines évolutions du module (la route reste active).
   // {
   //   id: 'subcontracting',
   //   route: 'subcontracting',

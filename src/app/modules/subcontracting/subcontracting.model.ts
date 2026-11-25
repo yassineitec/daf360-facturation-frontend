@@ -10,6 +10,9 @@ export interface SousTraitantDto {
   country: string | null;
   isActive: boolean;
   createdAt: string;
+  /** Fournisseur associé (V145), facultatif. */
+  supplierId: number | null;
+  supplierName: string | null;
 }
 
 export interface OSTDto {
@@ -42,16 +45,70 @@ export interface CoutSTDto {
   description: string | null;
   saisiePar: number;
   saisieAt: string;
+  /** Facture fournisseur dont le coût est issu (V145) — null pour un coût saisi à la main. */
+  costInvoiceId: number | null;
+  costInvoiceReference: string | null;
 }
+
+/** Facture fournisseur rattachable à un OST. */
+export interface LinkableCostInvoiceDto {
+  id: number;
+  reference: string;
+  supplierId: number | null;
+  supplierName: string | null;
+  supplierInvoiceNumber: string | null;
+  invoiceDate: string;
+  netAmount: number;
+  currency: string;
+  status: string;
+  matchesSupplier: boolean;
+}
+
+/** Le coût ST issu d'une facture fournisseur, vu depuis la facture. */
+export interface CostInvoiceOstLinkDto {
+  coutId: number;
+  ordreId: number;
+  referenceOst: string;
+  ostStatut: string;
+  affaireId: number;
+  affaireReference: string;
+  affaireIntitule: string | null;
+  sousTraitantName: string | null;
+  montant: number;
+  devise: string;
+  dateCout: string;
+}
+
+/** OST en cours auquel une facture fournisseur peut être imputée. */
+export interface OstCandidateDto {
+  ordreId: number;
+  referenceOst: string;
+  perimetre: string | null;
+  affaireId: number;
+  affaireReference: string;
+  affaireIntitule: string | null;
+  sousTraitantName: string | null;
+  matchesSupplier: boolean;
+}
+
+/** Statuts de facture fournisseur qu'on ne rattache pas (miroir du serveur). */
+export const NOT_LINKABLE_INVOICE_STATUSES = ['DRAFT', 'RETURNED', 'REJECTED'];
 
 export interface MarginDto {
   affaireId: number;
   reference: string;
-  ca: number;
+  /** HT des factures émises — la base de la marge. */
+  facture: number;
+  /** Paiements reçus, pour information. */
+  encaisse: number;
+  /** Heures Timesheet × coût de base, converties dans `currency`. */
   coutsInternes: number;
+  heuresInternes: number;
+  /** Heures sans coût enregistré, comptées à 0 dans `coutsInternes`. */
+  heuresNonValorisees: number;
   coutsST: number;
   margeBrute: number;
-  margeBrutePct: number;
+  margeBrutePct: number | null;
   currency: string;
 }
 
@@ -62,6 +119,8 @@ export interface CreateSousTraitantRequest {
   contactPhone?: string | null;
   taxId?: string | null;
   country?: string | null;
+  /** Fournisseur associé ; sur une mise à jour, null le détache. */
+  supplierId?: number | null;
 }
 
 export interface CreateOSTRequest {

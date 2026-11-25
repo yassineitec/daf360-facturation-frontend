@@ -49,6 +49,18 @@ export interface PlCategoryLineMappingEntryDto {
   catalogueLineId: number;
   catalogueLineCode: string | null;
   mappingRole: PlCategoryMappingRole;
+  /** The P&L cost line this entry feeds (legacy targets folded in, EXCLUDED = OUT_OF_PL);
+   *  null when the target is no cost line. */
+  costLineCode: string | null;
+}
+
+/** A P&L cost line a category can be linked to (`GET .../category-mapping/cost-lines`), in sheet
+ *  order. `excelRow` is null for "Hors P&L" (OUT_OF_PL). */
+export interface PlCostLineDto {
+  id: number;
+  code: string;
+  excelRow: number | null;
+  label: string;
 }
 
 export interface PlCategoryLineMappingDto {

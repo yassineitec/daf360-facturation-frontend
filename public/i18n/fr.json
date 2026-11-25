@@ -1114,23 +1114,23 @@
         "RATES": {
           "WHAT": {
             "Q": "À quoi sert un barème de taux ?",
-            "A": "À calculer le taux interco et le taux de vente de chaque collaborateur en régie, à partir de ses coûts. Le barème validé le plus récent est appliqué."
+            "A": "À calculer le taux de coût chargé de chaque collaborateur technique, puis les moyennes par grade et par discipline + grade (méthode F.04). Le barème approuvé le plus récent alimente les taux proposés des affaires T&M."
           },
           "STEPS": {
             "Q": "Dans quel ordre procéder ?",
-            "A": "« + Nouveau barème » (Brouillon) → « Auto-remplir depuis la formule » → « Calculer » (Calculé) → « Valider » (Validé, figé)."
+            "A": "« + Nouveau barème » (Brouillon) → « Calculer » (Calculé) → « Valider (FM) » (Validé) → « Approuver (CD) » (Approuvé, figé)."
           },
           "AUTO": {
-            "Q": "D'où viennent les montants de l'auto-remplissage ?",
-            "A": "Des factures de coût réglées de la période, réparties selon la formule de coût de l'entité, plus les coûts directs des collaborateurs. Les lignes ajoutées à la main ne sont pas touchées."
+            "Q": "D'où viennent les montants du calcul ?",
+            "A": "De l'effectif RH, de la paie (sinon des coûts collaborateurs) et des coûts réglés de la période pour le pool d'overhead. Le détail du calcul est visible en dépliant le barème."
           },
           "METHODS": {
-            "Q": "Par effectif, montant fixe ou direct ?",
-            "A": "Par effectif : le total de la catégorie divisé par le nombre de collaborateurs. Montant fixe : un montant par mois. Direct : les coûts rattachés au collaborateur lui-même."
+            "Q": "Quelles catégories entrent dans l'overhead ?",
+            "A": "Celles choisies dans « Composition du pool ». Sans choix enregistré, le défaut du guide s'applique : toutes les catégories sauf sous-traitants et salaires."
           },
           "LOCKED": {
-            "Q": "Puis-je modifier un barème validé ?",
-            "A": "Non, un barème validé est figé. Créez un nouveau barème pour une autre période."
+            "Q": "Puis-je modifier un barème approuvé ?",
+            "A": "Non, l'approbation fige le barème. Le Country Director doit être une autre personne que le validateur. Créez un nouveau barème pour une autre période."
           }
         },
         "EMPLOYEE_COSTS": {
@@ -1530,6 +1530,8 @@
       "RESSOURCES_TEXT": "Affaire en régie : les collaborateurs facturés et leur taux. « Ajouter une ressource », modifier un taux ou désactiver une ressource ; un taux verrouillé (🔒) ne se modifie plus.",
       "DEPENSE_TITLE": "Dépense",
       "DEPENSE_TEXT": "En lecture seule : les heures saisies dans Timesheet sur l'affaire et leur coût interne estimé, par collaborateur, avec filtres et export Excel.",
+      "SOUS_TRAITANCE_TITLE": "Sous-traitance",
+      "SOUS_TRAITANCE_TEXT": "Les ordres de sous-traitance (OST) de l'affaire : création, suivi du budget consommé, changement de statut et saisie des coûts.",
       "INVOICES_TITLE": "Factures",
       "INVOICES_TEXT": "Les factures de l'affaire, avec recherche, filtres et export. « Consulter » en montre le détail ; « Modifier » n'est possible que sur un brouillon ou une facture retournée, et ouvre la facture dans « Factures ».",
       "PAYMENTS_TITLE": "Paiements",
@@ -1964,20 +1966,22 @@
     },
     "RATES": {
       "PAGE": "Barèmes de taux",
-      "INTRO_TITLE": "Les barèmes de taux TM",
-      "INTRO_TEXT": "Les barèmes calculent, pour chaque collaborateur, un taux intercompany et un taux de vente en régie (Time & Material). Le barème validé le plus récent s'applique.",
+      "INTRO_TITLE": "Les barèmes de taux",
+      "INTRO_TEXT": "Un barème calcule le taux de coût chargé de chaque collaborateur technique, puis les moyennes par grade et par discipline + grade. Le barème approuvé le plus récent alimente les taux proposés des affaires T&M.",
       "PAYS_TITLE": "L'entité",
-      "PAYS_TEXT": "Choisissez l'entité dont vous gérez les barèmes.",
+      "PAYS_TEXT": "Choisissez l'entité dont vous gérez les barèmes. La devise du barème est celle de l'entité.",
+      "POOL_TITLE": "Composition du pool",
+      "POOL_TEXT": "Choisissez les catégories de coût qui entrent dans le pool d'overhead. Sans choix enregistré, le défaut du guide s'applique : toutes les catégories sauf sous-traitants et salaires.",
       "FORMULA_TITLE": "Les formules",
-      "FORMULA_TEXT": "Taux interco = coût × (1 + % HQ) ; taux de vente = coût × (1 + % HQ + % marge), rappelés au-dessus du tableau.",
+      "FORMULA_TEXT": "Taux interco = (coût direct/h + overhead/h) × (1 + % HQ) ; taux de vente = taux interco × (1 + % marge).",
       "TABLE_TITLE": "Les barèmes",
-      "TABLE_TEXT": "Chaque barème : période (mois, trimestre ou année), type, % HQ, % marge, marges interco et externe, devise, statut et date de validation. Dépliez-en un pour voir ses lignes par collaborateur.",
+      "TABLE_TEXT": "Chaque barème : période, % HQ, % marge, productivité, devise, statut, validation (FM) et approbation (CD).",
       "NEW_TITLE": "Nouveau barème",
-      "NEW_TEXT": "« + Nouveau barème » : choisissez la période et les pourcentages. Le barème naît en Brouillon.",
-      "LIFECYCLE_TITLE": "D'un brouillon à un barème validé",
-      "LIFECYCLE_TEXT": "« Auto-remplir depuis la formule » crée une ligne par collaborateur actif à partir des coûts réglés de la période. « Calculer » passe le barème en Calculé (taux journalier, horaire, mensuel, interco et externe). « Valider » le fige.",
-      "ALLOCATION_TITLE": "Formule de coût",
-      "ALLOCATION_TEXT": "Ce bouton ouvre la répartition des catégories de coût : par effectif (total ÷ nombre de collaborateurs), montant fixe, ou direct (coûts rattachés au collaborateur). Elle sert à l'auto-remplissage.",
+      "NEW_TEXT": "« + Nouveau barème » : choisissez la période et les pourcentages. Les paramètres avancés (jours, heures, mois vendables) ont les valeurs du guide par défaut.",
+      "LIFECYCLE_TITLE": "Du brouillon à l'approbation",
+      "LIFECYCLE_TEXT": "« Calculer » lit l'effectif RH, la paie (sinon les coûts collaborateurs) et les coûts réglés. Le Finance Manager valide, puis le Country Director approuve : deux personnes différentes. L'approbation fige le barème.",
+      "DETAIL_TITLE": "Le détail d'un barème",
+      "DETAIL_TEXT": "Dépliez un barème : la carte « Calcul » reprend les étapes 1 à 5 et les alertes, puis trois onglets (individu, grade, discipline + grade) en devise locale, EUR ou USD, au format horaire, journalier, mensuel ou annuel.",
       "END_TITLE": "Besoin d'aide ?",
       "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
     },
@@ -3301,7 +3305,8 @@
         "PAYMENTS": "Paiements",
         "WIP": "WIP",
         "RESSOURCES": "Ressources",
-        "DEPENSE": "Dépense"
+        "DEPENSE": "Dépense",
+        "SOUS_TRAITANCE": "Sous-traitance"
       },
       "ACTIONS": {
         "QUICK_TITLE": "Actions rapides",
@@ -5124,7 +5129,7 @@
       "SALARY_BENEFITS": "Avantages :",
       "SALARY_BONUSES": "Le mois de la date d'effet porte {{amount}} de primes exceptionnelles (coût employeur ce mois-là : {{cost}}).",
       "REFERENCE": "Référence",
-      "VIEW_CANDIDATE": "Voir le candidat",
+      "VIEW_CANDIDATE": "Voir la simulation du candidat",
       "VIEW_SIMULATION": "Voir la simulation",
       "VIEW_DETAILS": "Voir le détail",
       "FILTER_ALL": "Tous",
@@ -5140,6 +5145,20 @@
       "COUNTER_OFFER": "Salaire contre proposition",
       "COUNTER_OFFER_PH": "Montant net proposé par la direction…",
       "COUNTER_OFFER_HINT": "Optionnel — écrase le salaire net RH du candidat si renseigné.",
+      "COUNTER_OFFER_HINT_OFFER": "Optionnel — ce montant devient votre offre, déjà validée : RH l'envoie au candidat par mail, qui l'accepte, la refuse ou fait une contre-proposition.",
+      "COUNTER_SIM_TITLE": "Simulation de la contre-proposition (mensuel)",
+      "COUNTER_SIM_RUNNING": "Calcul en cours…",
+      "COUNTER_SIM_ERROR": "La simulation a échoué.",
+      "COUNTER_SIM_WAIT": "La simulation de la contre-proposition est en cours — patientez un instant.",
+      "COUNTER_SIM_REQUIRED": "La contre-proposition doit être simulée avant d'être validée.",
+      "SIM_NET": "Salaire net",
+      "SIM_GROSS": "Salaire brut",
+      "SIM_EMPLOYEE_CHARGES": "Charges salariales",
+      "SIM_IRPP": "Impôt sur le revenu",
+      "SIM_EMPLOYER_CHARGES": "Charges patronales",
+      "SIM_LOADED_COST": "Coût employeur",
+      "SIM_VS_REQUEST": "Écart avec la demande",
+      "SIM_PARTIAL": "Convergence partielle : montants estimés.",
       "FILTER_AMOUNT_MIN": "Montant min",
       "FILTER_AMOUNT_MAX": "Montant max",
       "FILTER_AMOUNT_PH": "Ex. 1 500,50"
@@ -5245,7 +5264,8 @@
       "STATUS": {
         "DRAFT": "Brouillon",
         "COMPUTED": "Calculé",
-        "VALIDATED": "Validé ✓"
+        "VALIDATED": "Validé (FM)",
+        "APPROVED": "Approuvé (CD)"
       },
       "PERIOD": {
         "ANNUAL": "Annuel",
@@ -5272,73 +5292,134 @@
       "YEAR_REQUIRED": "L'année est requise.",
       "QUARTER_REQUIRED": "Le trimestre est requis.",
       "MONTH_REQUIRED": "Le mois est requis.",
-      "CREATE_ERROR": "Erreur de création.",
+      "SAVE_ERROR": "Erreur lors de l'enregistrement.",
       "COMPUTE_ERROR": "Erreur lors du calcul.",
       "VALIDATE_ERROR": "Erreur lors de la validation.",
+      "APPROVE_ERROR": "Erreur lors de l'approbation.",
+      "RETURN_ERROR": "Erreur lors du renvoi en brouillon.",
+      "DELETE_ERROR": "Erreur lors de la suppression.",
       "QUARTER_SHORT": "T",
-      "TITLE": "Barèmes de taux TM",
-      "SUBTITLE": "Configurez le pourcentage de frais HQ et la marge cible utilisés pour calculer le taux intercompany et le taux de vente de chaque collaborateur en mode Time & Material. Le barème <strong>Validé</strong> le plus récent est appliqué automatiquement.",
+      "TITLE": "Barèmes de taux",
+      "SUBTITLE": "Taux de coût chargé par collaborateur, grade et discipline, calculés selon la méthode F.04 : salaires chargés (paie, sinon coûts collaborateurs), pool d'overhead réparti sur les heures vendables, puis % HQ et % marge. Le barème <strong>Approuvé</strong> le plus récent alimente les taux proposés des affaires T&M.",
       "BTN_CANCEL": "✕ Annuler",
       "BTN_NEW": "+ Nouveau barème",
       "EXPORT_EXCEL": "Exporter en Excel",
       "EXPORTING": "Export…",
       "FORMULA_INTERCO_LABEL": "Taux interco",
-      "FORMULA_INTERCO_EXPR": "= Coût × (1 + % HQ)",
+      "FORMULA_INTERCO_EXPR": "= (coût direct/h + overhead/h) × (1 + % HQ)",
       "FORMULA_SALE_LABEL": "Taux de vente",
-      "FORMULA_SALE_EXPR": "= Coût × (1 + % HQ + % Marge)",
+      "FORMULA_SALE_EXPR": "= taux interco × (1 + % marge)",
       "TH_PERIOD": "Période",
       "TH_TYPE": "Type",
       "TH_HQ": "% HQ",
       "TH_MARGIN": "% Marge",
-      "INTERCO_MARGIN_PCT": "% Marge Interco",
-      "EXTERNAL_MARGIN_PCT": "% Marge Externe",
+      "TH_PRODUCTIVITY": "Productivité",
       "TH_CURRENCY": "Devise",
       "TH_STATUS": "Statut",
-      "TH_VALIDATED_AT": "Validé le",
+      "TH_VALIDATED": "Validé (FM)",
+      "TH_APPROVED": "Approuvé (CD)",
       "YEAR_PLACEHOLDER": "Année",
       "QUARTER_PLACEHOLDER": "Trim.",
       "MONTH_PLACEHOLDER": "Mois",
+      "ADVANCED": "Paramètres avancés",
+      "WORKING_DAYS": "Jours ouvrés / mois",
+      "HOURS_PER_DAY": "Heures / jour",
+      "SELLING_MONTHS": "Mois vendables / an",
+      "CONVERSION_DAYS": "Jours / mois (conversion)",
+      "CURRENCY_READONLY": "Devise de l'entité (non modifiable)",
+      "SAVE": "Enregistrer",
       "COMPUTE": "Calculer",
-      "VALIDATE": "Valider",
-      "COMPUTE_TITLE": "Calculer (DRAFT → COMPUTED)",
-      "VALIDATE_TITLE": "Valider (COMPUTED → VALIDATED)",
+      "RECOMPUTE": "Recalculer",
+      "VALIDATE": "Valider (FM)",
+      "APPROVE": "Approuver (CD)",
+      "EDIT": "Modifier",
+      "DELETE": "Supprimer",
+      "DELETE_CONFIRM": "Cliquez à nouveau pour confirmer la suppression",
+      "COMPUTE_TITLE": "Calcule les taux à partir de l'effectif RH, de la paie et des coûts réglés de la période",
+      "VALIDATE_TITLE": "Validation Finance Manager (Calculé → Validé)",
+      "APPROVE_TITLE": "Approbation Country Director, par une autre personne que le validateur. Fige le barème et l'applique aux affaires T&M.",
+      "RETURN_TITLE": "Annule la validation et renvoie le barème en brouillon",
       "EMPTY": "Aucun barème configuré. Cliquez sur « + Nouveau barème » pour en créer un.",
       "LOADING": "Chargement...",
-      "FORMULA": {
-        "BTN_OPEN": "⚙ Formule de coût",
-        "BTN_CLOSE": "✕ Fermer la formule",
-        "TH_CATEGORY": "Catégorie",
-        "TH_METHOD": "Méthode d'allocation",
-        "TH_FIXED_AMOUNT": "Montant fixe / employé",
-        "METHOD": {
-          "PER_HEADCOUNT": "Par effectif",
-          "FIXED_AMOUNT": "Montant fixe",
-          "DIRECT": "Direct (par employé)"
-        },
-        "ADD_PLACEHOLDER": "Ajouter une catégorie…",
-        "SAVE": "Enregistrer la formule",
-        "EMPTY": "Aucune catégorie dans la formule. Ajoutez-en une ci-dessous.",
-        "LOAD_ERROR": "Erreur de chargement de la formule.",
-        "SAVE_ERROR": "Erreur lors de la sauvegarde de la formule."
+      "NEW": "Nouveau barème",
+      "EDIT_TITLE": "Modifier le barème {{period}}",
+      "CANCEL": "Annuler",
+      "FIELD_PERIOD_TYPE": "Type de période",
+      "FIELD_YEAR": "Année",
+      "FIELD_QUARTER": "Trimestre",
+      "FIELD_MONTH": "Mois",
+      "DELETE_CONFIRM_TITLE": "Supprimer le barème ?",
+      "DELETE_CONFIRM_BODY": "Le barème {{period}} et son détail calculé seront supprimés définitivement.",
+      "DETAIL_TITLE": "Détail du barème {{period}}",
+      "CLOSE_DETAIL": "Fermer le détail",
+      "POOL": {
+        "BTN_OPEN": "⚙ Composition du pool",
+        "BTN_CLOSE": "✕ Fermer le pool",
+        "TITLE": "Composition du pool d'overhead",
+        "OPEN": "Composition du pool",
+        "CLOSE": "Fermer le pool",
+        "HELP": "Catégories de coût qui entrent dans le pool d'overhead, en plus des salaires non facturables. Les sous-traitants sont toujours exclus ; les salaires viennent de la paie.",
+        "DEFAULT_BADGE": "Défaut du guide",
+        "SAVE": "Enregistrer la composition",
+        "EMPTY": "Aucune catégorie de coût active pour cette entité.",
+        "LOAD_ERROR": "Erreur de chargement de la composition du pool.",
+        "SAVE_ERROR": "Erreur lors de l'enregistrement de la composition du pool."
       },
-      "AUTO_POPULATE": "Auto-remplir depuis la formule",
-      "AUTO_POPULATE_TITLE": "Remplace les lignes auto-générées à partir de la formule de coût du pays (les lignes ajoutées manuellement ne sont pas touchées)",
-      "AUTO_POPULATE_ERROR": "Erreur lors de l'auto-remplissage.",
+      "CALC": {
+        "TITLE": "Calcul",
+        "TOTAL_ENTITY_COST": "1. Coût total de l'entité",
+        "BILLABLE_SALARIES": "Salaires facturables (Technical)",
+        "NONBILLABLE_SALARIES": "Salaires non facturables (Support)",
+        "POOL_CATEGORIES": "Catégories du pool",
+        "OVERHEAD_POOL": "2. Pool d'overhead",
+        "ETPT": "3. ETPT technique",
+        "SELLABLE_HOURS": "4. Heures vendables / ETPT",
+        "OVERHEAD_PER_HOUR": "5. Overhead / heure",
+        "ANNUALISED": "Montants annualisés, en {{currency}}.",
+        "FX": "Taux figés : 1 EUR = {{eur}} {{currency}}, 1 USD = {{usd}} {{currency}}",
+        "NOT_COMPUTED": "Ce barème n'est pas encore calculé."
+      },
+      "WARN": {
+        "TITLE": "Alertes du calcul",
+        "NO_COST": "Collaborateurs facturables sans coût (ni paie ni coût collaborateur) : {{detail}}",
+        "EXCLUDED_STAFF_TYPE": "Collaborateurs exclus (type de personnel ni Technical ni Support) : {{detail}}",
+        "ETPT_ZERO": "ETPT nul : l'overhead par heure est à 0.",
+        "FX_MISSING": "Taux de change manquant, montants ignorés : {{detail}}",
+        "PAYROLL_UNAVAILABLE": "Service de paie injoignable : les coûts collaborateurs sont utilisés pour tout le monde."
+      },
+      "VIEW": {
+        "CURRENCY": "Devise",
+        "LOCAL": "Locale",
+        "FORMAT": "Format",
+        "HOUR": "Horaire",
+        "DAY": "Journalier",
+        "MONTH": "Mensuel",
+        "YEAR": "Annuel"
+      },
+      "TABS": {
+        "INDIVIDUAL": "Individu",
+        "GRADE": "Grade",
+        "DISCIPLINE_GRADE": "Discipline + Grade"
+      },
       "LINES": {
-        "TOGGLE_TITLE": "Afficher / masquer le détail des lignes",
-        "LOADING": "Chargement des lignes...",
-        "LOAD_ERROR": "Erreur de chargement des lignes.",
-        "EMPTY": "Aucune ligne. Utilisez « Auto-remplir depuis la formule » ou ajoutez-en une manuellement.",
-        "TH_EMPLOYEE": "Employé",
-        "TH_GRADE_DISCIPLINE": "Grade / Discipline",
+        "TOGGLE_TITLE": "Afficher / masquer le détail",
+        "LOADING": "Chargement du détail...",
+        "LOAD_ERROR": "Erreur de chargement du détail.",
+        "EMPTY": "Aucune ligne. Lancez « Calculer ».",
+        "TH_EMPLOYEE": "Collaborateur",
+        "TH_GRADE": "Grade",
+        "TH_DISCIPLINE": "Discipline",
+        "TH_HEADCOUNT": "Effectif",
+        "TH_SOURCE": "Source du coût",
         "TH_DIRECT_COST": "Coût direct",
-        "TH_DRY_RATE": "Taux sec",
+        "TH_OVERHEAD": "Overhead",
+        "TH_TOTAL_COST": "Coût total",
         "TH_INTERCO_RATE": "Taux interco",
-        "TH_EXTERNAL_RATE": "Taux externe",
-        "TH_SOURCE": "Source",
+        "TH_SALE_RATE": "Taux de vente",
         "SOURCE": {
-          "AUTO": "Auto",
-          "MANUAL": "Manuel"
+          "PAYROLL": "Paie",
+          "EMPLOYEE_COST": "Coût collab.",
+          "NONE": "Aucune"
         }
       }
     },
@@ -5895,9 +5976,7 @@
     "CLOSE_PERIOD": "Clôturer",
     "CLOSE_PERIOD_ERROR": "Erreur lors de la clôture de la période.",
     "CLOSE_PERIOD_TITLE": "Clôturer la période",
-    "CLOSE_PERIOD_HELP": "Tous les champs sont facultatifs et valent zéro par défaut. Il n'y a pas encore de connexion directe avec la plateforme Intercompagnie — saisissez les montants du mois à la main.",
-    "CLOSE_PERIOD_INTERCOMPANY_IN": "Intercompagnie facturée à nous",
-    "CLOSE_PERIOD_INTERCOMPANY_OUT": "Intercompagnie facturée par nous",
+    "CLOSE_PERIOD_HELP": "Tous les champs sont facultatifs et valent zéro par défaut. Les lignes Intercompagnie sont calculées automatiquement : (+) à partir des clients de type « Interco », (−) à partir de la catégorie de coûts « Sous-traitance intercompany ».",
     "CLOSE_PERIOD_INTERSEDE_IN": "Intersede (+)",
     "CLOSE_PERIOD_INTERSEDE_OUT": "Intersede (−)",
     "CLOSE_PERIOD_WIP_PRIOR": "En cours, années antérieures",
@@ -5952,7 +6031,7 @@
       "PAYS": "Pays / Entité",
       "GLOBAL_DEFAULT": "Défaut global (tous pays)",
       "TAB_STATUS": "Statuts",
-      "TAB_MAPPING": "Catégories",
+      "TAB_MAPPING": "Catégories → lignes P&L",
       "TAB_NAV_LABEL": "Catalogue P&L",
       "SOURCE_TYPE_LABEL": "Type de source",
       "SOURCE_TYPE": {
@@ -5978,6 +6057,20 @@
       "ACTIVATE_SUCCESS": "Version activée.",
       "ACTIVATE_ERROR": "Erreur lors de l'activation.",
       "LOAD_ERROR": "Erreur lors du chargement.",
+      "LINKS": {
+        "COL_CATEGORIES": "Catégories de coût",
+        "COL_LINES": "Lignes de coût du P&L",
+        "HELP": "Reliez chaque catégorie de coût à une seule ligne du P&L : glissez la catégorie sur la ligne, ou cliquez sur la catégorie puis sur la ligne. Cliquez sur une flèche pour la supprimer. Toutes les catégories doivent être reliées pour enregistrer.",
+        "COVERAGE": "{{linked}} / {{total}} catégories reliées",
+        "UNLINKED": "Non reliée",
+        "UNLINK": "Supprimer le lien",
+        "ARROW_HINT": "Cliquer pour supprimer ce lien",
+        "ROW": "L{{row}}",
+        "PICK_LINE": "Choisir une ligne P&L",
+        "RESET": "Annuler les modifications",
+        "LOADING": "Chargement des catégories…",
+        "NO_CATEGORIES": "Aucune catégorie de coût active pour ce pays."
+      },
       "MAPPING": {
         "COL_CATEGORY": "Catégories sources",
         "COL_LINE": "Ligne P&L",
@@ -6099,9 +6192,17 @@
       "TABS": {
         "ARIA": "Sections du rapport P&L",
         "OVERVIEW": "Vue générale",
+        "TEMPLATE": "Template (classeur)",
         "RECAP": "Récap P&L",
         "COMMENTARIES": "Commentaires",
         "TREASURY": "Trésorerie"
+      },
+      "TEMPLATE": {
+        "HINT": "Les lignes de la feuille « Template » du classeur Excel, avec les mêmes libellés, signes et montants : mois du rapport et cumul de l'année.",
+        "LINE": "Ligne du Template",
+        "MONTH": "Mois",
+        "YTD": "Cumul annuel",
+        "LOAD_ERROR": "Impossible de charger les lignes du Template."
       },
       "OVERVIEW": {
         "WATERFALL_TITLE": "Du CA à l'EBITDA",
@@ -6498,6 +6599,33 @@
     }
   },
   "SUBCONTRACTING": {
+    "LINK": {
+      "FROM_INVOICE": "Depuis une facture fournisseur",
+      "PICKER_TITLE": "Factures fournisseurs non rattachées",
+      "ONLY_SUPPLIER": "Fournisseur du sous-traitant",
+      "ALL_SUPPLIERS": "Tous les fournisseurs",
+      "EMPTY": "Aucune facture à rattacher. Les brouillons, les factures renvoyées ou rejetées et celles déjà rattachées ne sont pas proposés.",
+      "ATTACH": "Rattacher",
+      "CANCEL": "Fermer",
+      "ERROR": "Le rattachement a échoué.",
+      "LOAD_ERROR": "Impossible de charger les factures fournisseurs.",
+      "INVOICE_BADGE": "Facture {{ref}}",
+      "AMOUNT_NOTE": "Le coût ST reprend le HT, la date et la devise de la facture au moment du rattachement.",
+      "SUPPLIER_MATCH": "Fournisseur du sous-traitant",
+      "SECTION_TITLE": "Sous-traitance",
+      "LINKED_TO": "Imputée à l’ordre {{ost}}",
+      "LINKED_AFFAIRE": "Affaire {{affaire}}",
+      "LINKED_ST": "Sous-traitant : {{st}}",
+      "NOT_LINKED": "Cette facture n'est imputée à aucun ordre de sous-traitance.",
+      "LINK_TO_OST": "Imputer à un ordre de sous-traitance",
+      "SELECT_OST": "Ordre de sous-traitance",
+      "SELECT_OST_PH": "Choisir un ordre en cours",
+      "CONFIRM": "Imputer",
+      "NO_CANDIDATE": "Aucun ordre de sous-traitance en cours dans cette entité.",
+      "UNLINK": "Retirer l'imputation",
+      "NOT_LINKABLE_STATUS": "Une facture en brouillon, renvoyée ou rejetée ne peut pas être imputée à un ordre de sous-traitance.",
+      "UNLINK_ERROR": "Impossible de retirer l'imputation."
+    },
     "TITLE": "Sous-traitance",
     "ENTITY": "Entité",
     "TABS": {
@@ -6515,20 +6643,22 @@
       "ERROR": "Impossible de charger les données de marge.",
       "TITLE": "Analyse de marge",
       "KPI": {
-        "CA": "CA encaissé",
+        "CA": "CA facturé HT",
         "INTERNAL_COSTS": "Coûts internes",
         "ST_COSTS": "Coûts ST",
         "GROSS_MARGIN": "Marge brute",
         "MARGIN_RATE": "Taux marge"
       },
-      "BREAKDOWN_TITLE": "Répartition du CA",
+      "BREAKDOWN_TITLE": "Répartition du facturé HT",
       "BAR": {
         "GROSS_MARGIN": "Marge brute",
         "ST_COSTS": "Coûts ST",
         "INTERNAL_COSTS": "Coûts internes"
       },
-      "CA_BASIS": "paiements encaissés",
-      "INTERNAL_NOT_TRACKED": "Les coûts internes ne sont pas encore calculés côté serveur : ils valent toujours 0, donc la marge affichée correspond aux encaissements moins les seuls coûts de sous-traitance."
+      "CA_BASIS": "Encaissé : {{amount}}",
+      "INTERNAL_HOURS": "{{hours}} h Timesheet",
+      "INTERNAL_BASIS": "Coûts internes = heures Timesheet × coût de base de chaque collaborateur à la date du travail (même calcul que l'onglet Dépense de l'affaire), converti dans la devise de l'affaire. Base de la marge : factures émises, HT.",
+      "INTERNAL_UNVALUED": "{{hours}} h n'ont aucun coût enregistré dans Coûts employés et sont comptées à 0 : la marge affichée est surestimée."
     },
     "OST": {
       "STATUT": {
@@ -6540,6 +6670,7 @@
       "CLEAR": "Effacer",
       "SEARCH": "Rechercher",
       "SELECT_AFFAIRE": "Sélectionnez une affaire pour afficher ses ordres de sous-traitance.",
+      "NO_AFFAIRE_FOUND": "Aucune affaire ne correspond à cette recherche.",
       "NEW": "Nouvel ordre ST",
       "EXPORT_EXCEL": "Exporter Excel",
       "EMPTY": "Aucun ordre de sous-traitance pour cette affaire.",
@@ -6665,7 +6796,10 @@
         "CANCEL": "Annuler",
         "SAVING": "Enregistrement…",
         "SAVE": "Enregistrer",
-        "NAME_REQUIRED": "Le nom est obligatoire."
+        "NAME_REQUIRED": "Le nom est obligatoire.",
+        "SUPPLIER": "Fournisseur associé",
+        "SUPPLIER_PH": "Aucun",
+        "SUPPLIER_HINT": "Facultatif : ses factures sont proposées en premier pour les ordres de ce sous-traitant."
       },
       "DELETE": {
         "TITLE": "Confirmer la désactivation",

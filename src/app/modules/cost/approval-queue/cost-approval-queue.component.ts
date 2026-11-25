@@ -17,7 +17,7 @@ import { CostService } from '../cost.service';
 import { ClientService } from '../../clients/client.service';
 import { UserStore } from '../../../core/user.store';
 import { CurrencyContextService } from '../../../core/currency-context.service';
-import { HiringCostApprovalDto, HiringCostApprovalService } from '../hiring-cost-approval.service';
+import { HiringCostApprovalDto, HiringCostApprovalService, HiringSimulationResult } from '../hiring-cost-approval.service';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { CostInvoiceDto } from '../cost.model';
 import { approvalLevelKey, formatDate } from '../cost-display';
@@ -261,6 +261,13 @@ export class CostApprovalQueueComponent implements OnInit {
   hiringCommentSig    = signal('');
   hiringContrePropSig = signal<number | null>(null);
   hiringModalError    = signal<string | null>(null);
+  /** Costing of the counter-proposal — what the DAF commits to, shown before confirming. */
+  hiringCounterSim        = signal<HiringSimulationResult | null>(null);
+  hiringCounterSimLoading = signal(false);
+  hiringCounterSimError   = signal<string | null>(null);
+  /** Raw engine answer, sent with the decision: the next round is stored with its costing. */
+  private hiringCounterSimRaw: string | null = null;
+  private hiringCounterSimTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * The two queues merged onto one shape (see `approval-item.ts`) so the card grid, the
@@ -820,7 +827,9 @@ export class CostApprovalQueueComponent implements OnInit {
 
     if (item.kind === 'hiring') {
       if (decision === 'candidate') {
-        window.open(`/rh/candidates/${item.hiring!.candidateId}`, '_blank', 'noopener');
+        // The candidate's cost detail lives in payroll (simulations, rounds, breakdown) —
+        // that is what finance needs to decide, not the RH recruitment record.
+        this.router.navigateByUrl(`/payroll/candidate-simulation/${item.hiring!.candidateId}`);
         return;
       }
       // Simulation de coût du candidat, côté Payroll — ouverte dans la même fenêtre
@@ -894,6 +903,7 @@ export class CostApprovalQueueComponent implements OnInit {
     this.hiringCommentSig.set('');
     this.hiringContrePropSig.set(null);
     this.hiringModalError.set(null);
+    this.resetCounterSim();
     const t = (key: string) => this.translate.instant(key);
     this.hiringApprovalRef = this.modal.open({
       minWidth:    '360px',
@@ -922,11 +932,20 @@ export class CostApprovalQueueComponent implements OnInit {
       return;
     }
 
-    this.hiringModalError.set(null);
     const contreProp = this.hiringContrePropSig();
+    // A counter-proposal on an offer round goes straight to the candidate: never uncosted.
+    if (decision === 'reject' && contreProp != null && item.jobOfferId != null && !this.hiringCounterSimRaw) {
+      this.hiringModalError.set(this.translate.instant(this.hiringCounterSimLoading()
+        ? 'COST.APPROVAL_QUEUE.COUNTER_SIM_WAIT'
+        : 'COST.APPROVAL_QUEUE.COUNTER_SIM_REQUIRED'));
+      return;
+    }
+
+    this.hiringModalError.set(null);
     const call$ = decision === 'approve'
       ? this.hiringSvc.approve(item.id, comment || undefined)
-      : this.hiringSvc.reject(item.id, comment, contreProp ?? undefined);
+      : this.hiringSvc.reject(item.id, comment, contreProp ?? undefined,
+          contreProp != null ? this.hiringCounterSimRaw ?? undefined : undefined);
 
     call$.subscribe({
       next: () => {
@@ -937,6 +956,61 @@ export class CostApprovalQueueComponent implements OnInit {
         err?.error?.detail ?? err?.error?.message
         ?? this.translate.instant('COST.APPROVAL_QUEUE.GENERIC_ERROR')),
     });
+  }
+
+  /**
+   * The DAF types its counter-proposal: the previous costing no longer matches the figure, so
+   * it is dropped at once, and the new one runs after a short pause in typing.
+   */
+  onHiringCounterChange(raw: unknown): void {
+    const value = raw === '' || raw == null ? null : +raw;
+    this.hiringContrePropSig.set(value != null && Number.isFinite(value) && value > 0 ? value : null);
+    this.resetCounterSim();
+    const net = this.hiringContrePropSig();
+    if (net == null) return;
+    this.hiringCounterSimTimer = setTimeout(() => this.runCounterSim(net), 500);
+  }
+
+  private runCounterSim(net: number): void {
+    const item = this.selectedHiring();
+    if (!item) return;
+    this.hiringCounterSimLoading.set(true);
+    this.hiringCounterSimError.set(null);
+    this.hiringSvc.simulateFromNet(item.paysId, net, item.contractTypeCode || 'CDI').subscribe({
+      next: res => {
+        // Typed again while the engine was answering: this result is for an old figure.
+        if (this.hiringContrePropSig() !== net) return;
+        this.hiringCounterSim.set(res);
+        this.hiringCounterSimRaw = JSON.stringify(res);
+        this.hiringCounterSimLoading.set(false);
+      },
+      error: err => {
+        if (this.hiringContrePropSig() !== net) return;
+        this.hiringCounterSimLoading.set(false);
+        this.hiringCounterSimError.set(err?.error?.detail ?? err?.error?.message
+          ?? this.translate.instant('COST.APPROVAL_QUEUE.COUNTER_SIM_ERROR'));
+      },
+    });
+  }
+
+  private resetCounterSim(): void {
+    if (this.hiringCounterSimTimer) clearTimeout(this.hiringCounterSimTimer);
+    this.hiringCounterSimTimer = null;
+    this.hiringCounterSim.set(null);
+    this.hiringCounterSimRaw = null;
+    this.hiringCounterSimLoading.set(false);
+    this.hiringCounterSimError.set(null);
+  }
+
+  /** The request's own loaded cost, to compare the counter-proposal with. */
+  hiringRequestedLoadedCost(item: HiringCostApprovalDto): number | null {
+    return this.hiringSvc.parseSnapshot(item.simulationSnapshot).loadedCost ?? null;
+  }
+
+  /** An amount in the engine's currency for the counter-proposal costing. */
+  simAmount(value: number | null | undefined, currency: string | null | undefined): string {
+    return this.currency.transform(value ?? null,
+      currency ?? this.currencyContext.defaultCurrency() ?? 'EUR');
   }
 
   // ── Salary advances ────────────────────────────────────────────────────────

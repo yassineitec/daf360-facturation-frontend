@@ -22,6 +22,22 @@ export interface HiringCostApprovalDto {
   approvedBy?: number;
   approvedAt?: string;
   approvalNotes?: string;
+  /** The offer round this request gates — null on a legacy pre-validation. */
+  jobOfferId?: number | null;
+  /** The net figure being decided on (the round's proposal). */
+  proposedSalary?: number | null;
+}
+
+/** The payroll engine's answer for a net salary — what the DAF sees for its counter-proposal. */
+export interface HiringSimulationResult {
+  inputNet: number;
+  gross: number;
+  loadedCost: number;
+  employeeCharges: number;
+  employerCharges: number;
+  irppAmount: number;
+  localCurrency: string;
+  convergenceOk: boolean;
 }
 
 export interface HiringSimSnapshot {
@@ -50,8 +66,24 @@ export class HiringCostApprovalService {
     return this.http.post<HiringCostApprovalDto>(`${this.hrBase}/${id}/approve`, { notes });
   }
 
-  reject(id: number, notes?: string, contrePropSalaire?: number): Observable<HiringCostApprovalDto> {
-    return this.http.post<HiringCostApprovalDto>(`${this.hrBase}/${id}/reject`, { notes, contrePropSalaire });
+  /**
+   * Refuse. With a counter-proposal on an offer round, that figure goes straight to the
+   * candidate as the DAF's own offer — so its costing travels with it (the server refuses an
+   * uncosted round).
+   */
+  reject(id: number, notes?: string, contrePropSalaire?: number,
+         contrePropSimulationSnapshot?: string): Observable<HiringCostApprovalDto> {
+    return this.http.post<HiringCostApprovalDto>(`${this.hrBase}/${id}/reject`,
+      { notes, contrePropSalaire, contrePropSimulationSnapshot });
+  }
+
+  /**
+   * Costs a net salary through the payroll engine — same call RH makes in the offer modal,
+   * without benefits (the server would otherwise add every benefit of the country).
+   */
+  simulateFromNet(paysId: number, inputNet: number, contractType: string): Observable<HiringSimulationResult> {
+    return this.http.post<HiringSimulationResult>(`${environment.payrollApiUrl}/api/payroll/simulations/individual`,
+      { paysId, inputNet, contractType, selectedBenefitCodes: [] });
   }
 
   parseSnapshot(json: string): HiringSimSnapshot {
