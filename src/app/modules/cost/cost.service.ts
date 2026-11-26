@@ -91,9 +91,10 @@ export class CostService {
     sort?: string | null;
   }): Observable<PageResponse<CostInvoiceDto>> {
     let params = new HttpParams()
-      .set('paysId', String(filter.paysId))
       .set('page', String(filter.page ?? 0))
       .set('size', String(filter.size ?? 25));
+    // null = tout le périmètre du rôle : on n'envoie PAS le paramètre (String(null) = "null" → 500 côté back).
+    if (filter.paysId != null && filter.paysId !== '') params = params.set('paysId', String(filter.paysId));
     if (filter.status)             params = params.set('status', filter.status);
     if (filter.supplierId != null) params = params.set('supplierId', String(filter.supplierId));
     if (filter.noSupplier)         params = params.set('noSupplier', 'true');
