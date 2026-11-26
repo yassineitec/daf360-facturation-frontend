@@ -33,17 +33,19 @@
     [views]="viewOptions()"
     [view]="viewMode()"
     (viewChange)="setViewMode($any($event))"
-    [table]="tableSection()?.table() ?? null" />
-
-  <!-- Boutons de la page, affichés par cost.component dans son en-tête (à droite du titre),
-       comme sur les autres pages.
-       Export — vues factures : toutes les factures filtrées (toutes pages) ; vue « Par
-       fournisseur » : les totaux des cartes. Lecture seule, sans garde de permission. -->
-  <ng-template #pageActions>
+    [table]="tableSection()?.table() ?? null">
+    <!-- Export projeté par la toolbar, juste à gauche de « Filtres ». -->
     <daf-button data-guide="cost-export"
       [options]="{ variant: 'ghost', label: ('COST.LINES.EXPORT_EXCEL' | translate), iconStart: 'download',
                    disabled: exportDisabled(), loading: exporting() }"
       (onClick)="exportExcel()" />
+  </daf-search-toolbar>
+
+  <!-- Boutons de la page, affichés par cost.component dans son en-tête (à droite du titre),
+       comme sur les autres pages. L'export est désormais dans la toolbar ;
+       Export — vues factures : toutes les factures filtrées (toutes pages) ; vue « Par
+       fournisseur » : les totaux des cartes. Lecture seule, sans garde de permission. -->
+  <ng-template #pageActions>
     <daf-button data-guide="cost-new"
       [options]="{ variant: 'teal', label: 'COST.LINES.NEW_LINE' | translate, iconStart: 'add' }"
       (onClick)="openCreate()" />

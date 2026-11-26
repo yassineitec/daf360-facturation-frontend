@@ -28,6 +28,9 @@ export interface AffaireInvoiceItem {
   id:            number;
   invoiceNumber: string | null;
   invoiceType:   string | null;
+  /** Code de la liste configurable INVOICE_TYPE (STANDARD, ACOMPTE…) — le « type de
+   * facture » métier ; `invoiceType` n'est que le marqueur INVOICE / CREDIT_NOTE. */
+  invoiceTypeCode?: string | null;
   montantTtc:    number | null;
   devise:        string | null;
   statut:        string | null;

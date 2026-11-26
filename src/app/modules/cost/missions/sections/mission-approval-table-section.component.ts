@@ -87,7 +87,9 @@ export class MissionApprovalTableSectionComponent {
         sortAccessor: row => item(row).amount },
       { key: 'urgency',     label: t('FACTURATION.MISSIONS.COL_URGENCY'), type: 'badge', sortable: true,
         sortAccessor: row => URGENCY_RANK[item(row).urgency] },
-      { key: '_actions',    label: '', align: 'right', width: '1%' },
+      // Largeur réelle, pas '1%' : en table-layout fixe (colonnes redimensionnables) 1 % ne
+      // fait que quelques pixels et les boutons débordaient sur la colonne voisine.
+      { key: '_actions',    label: '', align: 'right', width: '9.5rem' }, // 3 boutons
     ];
   });
 

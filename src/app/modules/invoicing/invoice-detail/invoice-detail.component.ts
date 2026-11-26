@@ -1,6 +1,7 @@
 import {
   Component, OnInit, TemplateRef, computed, inject, input, signal, viewChild,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
@@ -242,10 +243,30 @@ export class InvoiceDetailComponent implements OnInit {
 
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     this.translate.currentLang();
+    const current = { label: this.invoice()?.invoiceNumber ?? this.translate.instant('INVOICING.DETAIL.DRAFT_TITLE') };
+
+    // Arrivée depuis une fiche affaire (`?fromAffaire=&fromAffaireRef=&fromTab=`) : le fil
+    // part de cette affaire, et y ramène sur l'onglet qu'on avait quitté.
+    const from = this.fromParams();
+    const affaireId  = Number(from.get('fromAffaire')) || null;
+    const affaireRef = from.get('fromAffaireRef');
+    if (affaireId && affaireRef) {
+      const tab = from.get('fromTab');
+      return [
+        { label: this.translate.instant('AFFAIRES.DETAIL.BACK_TO_LIST'), link: ['../../affaires'] },
+        { label: affaireRef, link: this.affaireRoute(affaireId), queryParams: tab ? { tab } : undefined },
+        current,
+      ];
+    }
+
     return [
       { label: this.translate.instant('INVOICING.DETAIL.BACK'), link: ['..'] },
-      { label: this.invoice()?.invoiceNumber ?? this.translate.instant('INVOICING.DETAIL.DRAFT_TITLE') },
+      current,
     ];
+  });
+
+  private readonly fromParams = toSignal(this.route.queryParamMap, {
+    initialValue: this.route.snapshot.queryParamMap,
   });
 
   // ═══ Colonne identité ═════════════════════════════════════════════════════

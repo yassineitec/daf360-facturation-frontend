@@ -110,7 +110,9 @@ export class OstTableSectionComponent {
       { key: 'consumption', label: t('SUBCONTRACTING.OST.CARD.CONSUMED'),    type: 'custom', sortable: true,
         sortAccessor: row => row['_pct'] as number },
       { key: 'statut',      label: t('SUBCONTRACTING.OST.TABLE.STATUS'),     type: 'badge',  sortable: true },
-      { key: '_actions',    label: '', align: 'right', width: '1%' },
+      // Largeur réelle, pas '1%' : en table-layout fixe (colonnes redimensionnables) 1 % ne
+      // fait que quelques pixels et les boutons débordaient sur la colonne voisine.
+      { key: '_actions',    label: '', align: 'right', width: '12rem' }, // jusqu'à 4 boutons
     ];
   });
 

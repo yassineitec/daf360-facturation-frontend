@@ -140,6 +140,14 @@ export const routes: Routes = [
               },
             ],
           },
+          {
+            // « Activités » : l'ancien onglet Historique de la Validation, en page à part.
+            // Même composant, en mode `activities` (voir ApprovalQueueComponent).
+            path: 'activities',
+            data: { mode: 'activities' },
+            loadComponent: () =>
+              import('./modules/affaires/billing/approval-queue.component').then(m => m.ApprovalQueueComponent),
+          },
         ],
       },
       {

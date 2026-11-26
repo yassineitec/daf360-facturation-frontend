@@ -61,8 +61,8 @@
         "HOME": "Accueil",
         "AFFAIRES": "Affaires",
         "CLIENTS": "Clients",
-        "INVOICING": "Factures",
-        "INVOICING_LIST": "Toutes les factures",
+        "INVOICING": "Facturation",
+        "INVOICING_LIST": "Consultation",
         "RECOVERY": "Recouvrement",
         "TREASURY": "Trésorerie",
         "SUBCONTRACTING": "Sous-traitance",
@@ -70,7 +70,8 @@
         "COST_OVERVIEW": "Gestion des dépenses",
         "COST_LINES": "Gestion des dépenses",
         "COST_APPROVAL": "Validation des dépenses",
-        "BILLING_APPROVAL": "Approbation Facturation",
+        "BILLING_APPROVAL": "Validation",
+        "BILLING_ACTIVITIES": "Activités",
         "EMPLOYEE_COST": "Coûts collaborateurs",
         "SUPPLIERS": "Fournisseurs",
         "REPORTING": "P&L",
@@ -1643,7 +1644,7 @@
       "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
     },
     "INVOICES": {
-      "PAGE": "Factures",
+      "PAGE": "Consultation",
       "INTRO_TITLE": "Les factures",
       "INTRO_TEXT": "Toutes les factures clients, du brouillon au paiement. Ce guide fait le tour de la page et du parcours d'une facture.",
       "NEW_TITLE": "Nouvelle facture",
@@ -1771,12 +1772,19 @@
       "END_TITLE": "Besoin d'aide ?",
       "END_TEXT": "Relancez ce guide à tout moment depuis « Aide & guides », en bas du menu, ou posez votre question à l'assistant."
     },
+    "BILLING_ACTIVITIES": {
+      "PAGE": "Activités",
+      "INTRO_TITLE": "Les activités de facturation",
+      "INTRO_TEXT": "Toutes les actions enregistrées sur les demandes de facturation : création, soumission, validation, retour. Recherchez, filtrez et exportez le journal.",
+      "KPIS_TITLE": "Les indicateurs",
+      "KPIS_TEXT": "Calculés sur les entrées affichées : ils suivent la recherche et les filtres. « Validations » regroupe les validations DF, RF, manager et les accords client ; « Retours / refus » les renvois et rejets."
+    },
     "APPROVAL_QUEUE": {
-      "PAGE": "File d'approbation",
+      "PAGE": "Validation",
       "INTRO_TITLE": "La file d'approbation",
       "INTRO_TEXT": "Ici se valident les demandes de facturation venues des affaires (WIP, avancements, livrables, TS) et les notes de crédit. Valider une demande crée la facture en brouillon. Ce guide ouvre les onglets tout seul et vous rend le vôtre à la fin.",
       "KPIS_TITLE": "Les indicateurs",
-      "KPIS_TEXT": "« En attente de validation » compte toutes les demandes à traiter (lignes, lots de livrables, notes de crédit). « Historique des actions » compte les décisions chargées dans l'onglet Historique (les 200 dernières). « En attente RF » ne concerne pas ces demandes.",
+      "KPIS_TEXT": "« En attente de validation » compte toutes les demandes à traiter (lignes, lots de livrables, notes de crédit). Les quatre cartes suivantes la détaillent par mode : Forfaitaire, Régie, Livrable et TS, avec les mêmes chiffres que les onglets.",
       "TABS_TITLE": "Les onglets",
       "TABS_TEXT": "« En attente de validation » : ce qui attend une décision. « Historique » : le journal des décisions prises.",
       "SUBTABS_TITLE": "Par mode de facturation",
@@ -2344,8 +2352,8 @@
   },
   "INVOICING": {
     "LIST": {
-      "TITLE": "Facturation",
-      "SUBTITLE": "Gérez vos émissions et suivis de factures clients.",
+      "TITLE": "Consultation",
+      "SUBTITLE": "Consultez toutes les factures clients, du brouillon au paiement.",
       "NEW_BTN": "Nouvelle facture",
       "EXPORT_EXCEL": "Exporter en Excel",
       "LOADING": "Chargement des factures…",
@@ -2377,6 +2385,27 @@
       },
       "VIEW_GRID": "Vue grille",
       "VIEW_LIST": "Vue liste",
+      "VIEW_AFFAIRE": "Vue par affaire",
+      "BY_AFFAIRE": {
+        "COUNT": "{{count}} facture(s)",
+        "OVERDUE": "{{count}} en retard",
+        "UP_TO_DATE": "À jour",
+        "NO_AFFAIRE": "Sans affaire",
+        "M_INVOICES": "Factures",
+        "M_BILLED": "Facturé TTC",
+        "M_OPEN": "Reste à encaisser",
+        "M_OVERDUE": "En retard",
+        "VIEW": "Voir les factures",
+        "BANNER": "Factures de l'affaire {{affaire}}",
+        "OPEN_AFFAIRE": "Voir la fiche affaire",
+        "F_RESPONSABLE": "Responsable",
+        "F_MODE": "Mode de facturation",
+        "F_BUDGET": "Budget",
+        "F_CURRENCY": "Devise",
+        "F_START": "Date de début",
+        "F_END": "Date de fin",
+        "CLEAR": "Toutes les factures"
+      },
       "CARD": {
         "HT": "Montant HT",
         "DUE_DATE": "Échéance",
@@ -3487,7 +3516,7 @@
       "KPI": {
         "CA": "Total encaissé",
         "CA_SUB": "Chiffre d'affaires réel",
-        "CA_HELP": "Somme HT des factures de l'affaire dont le statut est « Encaissé ». Ces factures sont aussi comprises dans « Total facturé ». Un acompte sur une facture encore partiellement payée ne compte pas ici.",
+        "CA_HELP": "Somme HT des factures de l'affaire dont le statut est « Encaissé », hors lignes de frais remboursables. Ces factures sont aussi comprises dans « Total facturé ». Un acompte sur une facture encore partiellement payée ne compte pas ici.",
         "RAF": "RAF Disponible",
         "RAF_USAGE": "Consommation budget",
         "RAF_HELP": "Ce qui reste à facturer : budget + TS intégrés − factures émises. Le pourcentage est la part encore disponible. Négatif = budget dépassé.",
@@ -3502,7 +3531,7 @@
         "BACKLOG": "Backlog",
         "BACKLOG_HELP": "(Budget prévisionnel + Budget TS) − (Total facturé + WIP restant). La pastille est la part du budget. Négatif = budget dépassé.",
         "INVOICED": "Total facturé",
-        "INVOICED_HELP": "Somme HT de toutes les factures de l'affaire, sauf celles au statut « Annulée » (factures encaissées comprises). C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé.",
+        "INVOICED_HELP": "Somme HT de toutes les factures de l'affaire, sauf celles au statut « Annulée » (factures encaissées comprises), hors lignes de frais remboursables (refacturés en plus du contrat). C'est le « facturé » de référence : le Backlog se calcule dessus. La pastille est le taux de facturation : factures émises HT / (budget prévisionnel + budget TS) ; au-delà de 100 % = budget dépassé.",
         "REVENUE": "Revenue",
         "REVENUE_HELP": "WIP non facturé et non validé (lignes encore en attente dans les onglets WIP et TS WIP) + Total facturé."
       },
@@ -3542,7 +3571,7 @@
       },
       "INVOICES": {
         "NUMBER": "N° Facture",
-        "TYPE": "Type",
+        "TYPE": "Type de facture",
         "EMITTED": "Émission",
         "DUE": "Échéance",
         "AMOUNT": "Montant",
@@ -4238,9 +4267,18 @@
         "err_motif_required": "Le motif est obligatoire.",
         "err_action": "Erreur lors de l'action."
       },
+      "activities": {
+        "title": "Activités",
+        "subtitle": "Journal des actions et décisions sur les demandes de facturation.",
+        "kpi_total": "Actions",
+        "kpi_total_sub": "dont {{count}} aujourd'hui",
+        "kpi_submit": "Soumissions",
+        "kpi_validate": "Validations",
+        "kpi_return": "Retours / refus"
+      },
       "approval": {
-        "title": "File d'approbation",
-        "subtitle": "Flux de travail consolidé pour les validations financières et RH.",
+        "title": "Validation",
+        "subtitle": "Validez les demandes de facturation issues des affaires.",
         "export_df": "Exporter la file DF",
         "export_history": "Exporter l'historique",
         "back": "Retour aux affaires",
@@ -4528,6 +4566,7 @@
         "COL_RECEIPT": "Justificatif",
         "COL_STATUS": "Statut",
         "COL_REASON": "Motif",
+        "COL_INVOICE": "Facture",
         "NO_RECEIPT": "Aucun",
         "EMPTY": "Aucun frais soumis sur cette affaire.",
         "VALIDATE": "Valider le frais",

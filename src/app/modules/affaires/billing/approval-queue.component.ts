@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed, effect, untracked, viewChild, ViewChild, TemplateRef, WritableSignal } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
+import { NgTemplateOutlet } from '@angular/common';
 import { FinancePaths } from '../../../core/finance-paths';
 import { TranslatePipe, TranslateService }    from '@ngx-translate/core';
 import { forkJoin, Observable, Subscription, switchMap } from 'rxjs';
@@ -150,7 +151,6 @@ import type { GuideStep } from '../../../shared/guide/page-guide.types';
 const GUIDE_STEPS: GuideStep[] = [
   { icon: 'fact_check', titleKey: 'GUIDE.APPROVAL_QUEUE.INTRO_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.INTRO_TEXT' },
   { icon: 'monitoring', titleKey: 'GUIDE.APPROVAL_QUEUE.KPIS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.KPIS_TEXT', target: 'approval-kpis' },
-  { icon: 'tab', titleKey: 'GUIDE.APPROVAL_QUEUE.TABS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.TABS_TEXT', target: 'approval-tabs', tab: 'df:forfaitaire' },
   { icon: 'category', titleKey: 'GUIDE.APPROVAL_QUEUE.SUBTABS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.SUBTABS_TEXT', target: 'approval-subtabs', tab: 'df:forfaitaire' },
   { icon: 'percent', titleKey: 'GUIDE.APPROVAL_QUEUE.FORFAIT_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.FORFAIT_TEXT', target: 'approval-panel', tab: 'df:forfaitaire' },
   { icon: 'schedule', titleKey: 'GUIDE.APPROVAL_QUEUE.REGIE_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.REGIE_TEXT', target: 'approval-panel', tab: 'df:regie' },
@@ -158,7 +158,14 @@ const GUIDE_STEPS: GuideStep[] = [
   { icon: 'add_task', titleKey: 'GUIDE.APPROVAL_QUEUE.TS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.TS_TEXT', target: 'approval-panel', tab: 'df:ts' },
   { icon: 'done_all', titleKey: 'GUIDE.APPROVAL_QUEUE.ACTIONS_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.ACTIONS_TEXT', target: 'approval-panel', tab: 'df:forfaitaire' },
   { icon: 'undo', titleKey: 'GUIDE.APPROVAL_QUEUE.CREDIT_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.CREDIT_TEXT', target: 'approval-panel', tab: 'df:forfaitaire' },
-  { icon: 'history', titleKey: 'GUIDE.APPROVAL_QUEUE.HISTORY_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.HISTORY_TEXT', target: 'approval-panel', tab: 'history' },
+  { icon: 'help', titleKey: 'GUIDE.APPROVAL_QUEUE.END_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.END_TEXT' },
+];
+
+/** Guide de la page « Activités » (même composant, route `billing/activities`). */
+const ACTIVITIES_GUIDE_STEPS: GuideStep[] = [
+  { icon: 'history', titleKey: 'GUIDE.BILLING_ACTIVITIES.INTRO_TITLE', textKey: 'GUIDE.BILLING_ACTIVITIES.INTRO_TEXT' },
+  { icon: 'monitoring', titleKey: 'GUIDE.BILLING_ACTIVITIES.KPIS_TITLE', textKey: 'GUIDE.BILLING_ACTIVITIES.KPIS_TEXT', target: 'activities-kpis' },
+  { icon: 'manage_search', titleKey: 'GUIDE.APPROVAL_QUEUE.HISTORY_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.HISTORY_TEXT', target: 'approval-panel' },
   { icon: 'help', titleKey: 'GUIDE.APPROVAL_QUEUE.END_TITLE', textKey: 'GUIDE.APPROVAL_QUEUE.END_TEXT' },
 ];
 
@@ -170,7 +177,7 @@ const GUIDE_STEPS: GuideStep[] = [
     PageComponent, PageHeaderComponent, MetricCardComponent,
     TabsComponent, StatusBadgeComponent, FormFieldComponent, PaginationComponent,
     SearchToolbarComponent, CheckboxComponent, BulkActionBarComponent, BodyPortalDirective,
-    ButtonComponent, PageGuideComponent,
+    ButtonComponent, PageGuideComponent, NgTemplateOutlet,
   ],
   templateUrl: './approval-queue.component.html',
   styleUrl: './approval-queue.component.scss',
@@ -188,6 +195,14 @@ export class ApprovalQueueComponent implements OnInit {
   private readonly clientSvc  = inject(ClientService);
 
   @ViewChild('dfRetourTpl') private dfRetourTpl!: TemplateRef<unknown>;
+
+  /**
+   * Le même écran sert deux entrées du menu « Facturation » :
+   * - `billing/approval` (« Validation ») : la file DF seule ;
+   * - `billing/activities` (« Activités », `data.mode = 'activities'`) : l'ancien onglet
+   *   Historique, devenu une page à part.
+   */
+  readonly activitiesMode = this.route.snapshot.data['mode'] === 'activities';
 
   // Mirrors first-load skeleton pattern used elsewhere (see CostApprovalQueueComponent) —
   // only the very first fetch shows the daf-page skeleton, tab switches never do.
@@ -297,22 +312,38 @@ export class ApprovalQueueComponent implements OnInit {
   private dfRetourEntityId = 0;
   private dfRetourType: 'line' | 'livrableBatch' | 'creditNote' = 'line';
 
-  readonly kpiRfOptions: MetricCardOptions = { icon: 'pending_actions', iconBg: 'bg-warning/10', iconColor: 'text-warning' };
+  // Une carte par mode, mêmes icônes que les onglets.
+  readonly kpiForfaitOptions:  MetricCardOptions = { icon: 'percent',     iconBg: 'bg-primary/10',   iconColor: 'text-primary' };
+  readonly kpiRegieOptions:    MetricCardOptions = { icon: 'schedule',    iconBg: 'bg-teal/10',      iconColor: 'text-teal' };
+  readonly kpiLivrableOptions: MetricCardOptions = { icon: 'inventory_2', iconBg: 'bg-warning/10',   iconColor: 'text-warning' };
+  readonly kpiTsOptions:       MetricCardOptions = { icon: 'add_task',    iconBg: 'bg-secondary/10', iconColor: 'text-secondary' };
   readonly kpiDfOptions: MetricCardOptions = { icon: 'task_alt', iconBg: 'bg-tertiary/10', iconColor: 'text-tertiary' };
   readonly kpiHistoryOptions: MetricCardOptions = { icon: 'history', iconBg: 'bg-teal/10', iconColor: 'text-teal' };
+
+  // ── KPI de la page « Activités » ── calculés sur les entrées affichées (recherche et
+  // filtres compris), comme les tuiles de la liste des affaires.
+  readonly kpiActSubmitOptions:   MetricCardOptions = { icon: 'send',         iconBg: 'bg-tertiary/10', iconColor: 'text-tertiary' };
+  readonly kpiActValidateOptions: MetricCardOptions = { icon: 'task_alt',     iconBg: 'bg-success/10',  iconColor: 'text-success' };
+  readonly kpiActReturnOptions:   MetricCardOptions = { icon: 'undo',         iconBg: 'bg-danger/10',   iconColor: 'text-danger' };
+
+  readonly activityStats = computed(() => {
+    const today = new Date().toDateString();
+    let todayCount = 0, submits = 0, validations = 0, returns = 0;
+    for (const r of this.filteredHistoryRows()) {
+      const a = r.action ?? '';
+      if (r._createdAt && new Date(r._createdAt).toDateString() === today) todayCount++;
+      if (a.startsWith('SUBMIT')) submits++;
+      // CANCEL_VALIDATE_DF commence par CANCEL : il n'est pas compté comme une validation.
+      else if (a.startsWith('VALIDATE') || a.startsWith('CLIENT_APPROVE')) validations++;
+      else if (a.startsWith('RETURN') || a.startsWith('REJECT')) returns++;
+    }
+    return { total: this.filteredHistoryRows().length, today: todayCount, submits, validations, returns };
+  });
 
   readonly dfCount = computed(() =>
     this.pendingLines().length + this.pendingLivrableBatches().length
       + this.pendingCreditNotes().length
   );
-
-  readonly tabItems = computed<TabItem[]>(() => {
-    this.translate.currentLang();
-    return [
-      { id: 'df',      label: this.translate.instant('AFFAIRES.billing.approval.tab_df'),      icon: 'task_alt', count: this.dfCount() || null },
-      { id: 'history', label: this.translate.instant('AFFAIRES.billing.approval.tab_history'), icon: 'history' },
-    ];
-  });
 
   // ── "df" sub-strip (daf-tabs, variant="pill") — now grouped by billing mode
   // (FORFAIT/REGIE/LIVRABLE) instead of by entity type: each tab stacks every section
@@ -321,10 +352,10 @@ export class ApprovalQueueComponent implements OnInit {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
-      { id: 'forfaitaire', label: t('AFFAIRES.billing.approval.tab_forfaitaire'),      count: this.forfaitaireCount() || null },
-      { id: 'regie',       label: t('AFFAIRES.billing.approval.tab_regie'),            count: this.regieCount() || null },
-      { id: 'livrable',    label: t('AFFAIRES.billing.approval.tab_livrable_batches'), count: this.livrableCount() || null },
-      { id: 'ts',          label: t('AFFAIRES.billing.approval.tab_ts'),               count: this.tsCount() || null },
+      { id: 'forfaitaire', label: t('AFFAIRES.billing.approval.tab_forfaitaire') },
+      { id: 'regie',       label: t('AFFAIRES.billing.approval.tab_regie') },
+      { id: 'livrable',    label: t('AFFAIRES.billing.approval.tab_livrable_batches') },
+      { id: 'ts',          label: t('AFFAIRES.billing.approval.tab_ts') },
     ];
   });
 
@@ -1202,6 +1233,7 @@ export class ApprovalQueueComponent implements OnInit {
   private readonly followHeaderCountry = effect(() => {
     const paysId = this.paysId();
     untracked(() => {
+      if (this.activitiesMode) return;
       if (paysId === this.loadedPaysId) return;
       this.loadedPaysId = paysId;
       this.dfLineSelection.clear();
@@ -1214,12 +1246,15 @@ export class ApprovalQueueComponent implements OnInit {
   ngOnInit(): void {
     this.restoreState();
     this.loadedPaysId = this.paysId();
-    // Jalons no longer have a tab of their own, but the "En attente RF" KPI still
-    // needs a count — fetched once here, independent of which tab is active.
-    this.loadRF();
+    // Page « Activités » : seul le journal est chargé.
+    if (this.activitiesMode) {
+      this.activeTab.set('history');
+      this.loadHistory();
+      return;
+    }
+    // L'historique a sa propre page : la Validation n'affiche que la file DF.
+    this.activeTab.set('df');
     this.loadDF();
-    // Retour sur l'onglet Historique : son journal n'est chargé qu'à l'ouverture de l'onglet.
-    if (this.activeTab() === 'history') this.loadHistory();
   }
 
   onTabChange(id: string): void {
@@ -1231,7 +1266,7 @@ export class ApprovalQueueComponent implements OnInit {
     this.cancelClientPicker();
   }
 
-  readonly guideSteps = GUIDE_STEPS;
+  readonly guideSteps = this.activitiesMode ? ACTIVITIES_GUIDE_STEPS : GUIDE_STEPS;
 
   /** Onglet et sous-onglet de l'utilisateur, rendus à la fermeture du guide. */
   private beforeGuide: { tab: ActiveTab; sub: DfSubTab } | null = null;
@@ -1284,9 +1319,7 @@ export class ApprovalQueueComponent implements OnInit {
   }
 
   /** Feeds only the "En attente RF" KPI now — jalons have no tab of their own. */
-  private loadRF(): void {
-    this.svc.getPendingJalons().subscribe({ next: j => this.pendingJalons.set(j) });
-  }
+
 
   /** AV taux no longer have a queue of their own — a taux's BillingLine appears in
    * pendingLines below exactly like every other mode, once the client has confirmed an
@@ -1318,8 +1351,8 @@ export class ApprovalQueueComponent implements OnInit {
   private loadHistory(): void {
     this.histLoading.set(true);
     this.svc.getAuditLog().subscribe({
-      next:  a => { this.auditLog.set(a); this.histLoading.set(false); },
-      error: () => this.histLoading.set(false),
+      next:  a => { this.auditLog.set(a); this.histLoading.set(false); this.firstLoad.set(false); },
+      error: () => { this.histLoading.set(false); this.firstLoad.set(false); },
     });
   }
 

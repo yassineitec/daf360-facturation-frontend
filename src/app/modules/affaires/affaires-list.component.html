@@ -3,11 +3,6 @@
   <daf-page-header
     [title]="'AFFAIRES.LIST.TITLE' | translate"
     [subtitle]="'AFFAIRES.LIST.SUBTITLE' | translate">
-    <!-- Même bouton que la liste des factures : toutes les affaires filtrées, pas la page. -->
-    <daf-button pageActions data-guide="affaires-export"
-      [options]="{ variant: 'ghost', label: ('AFFAIRES.LIST.EXPORT_EXCEL' | translate), iconStart: 'download',
-                   disabled: !totalElements(), loading: exporting() }"
-      (onClick)="exportExcel()" />
     <daf-button pageActions data-guide="affaires-new"
       [options]="{ variant: 'teal', label: 'AFFAIRES.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="openNewForm()" />
@@ -45,7 +40,14 @@
     [views]="viewOptions()"
     [view]="viewMode()"
     (viewChange)="viewMode.set($any($event))"
-    [table]="tableSection()?.table() ?? null" />
+    [table]="tableSection()?.table() ?? null">
+    <!-- Projeté par la toolbar juste à gauche de « Filtres ». Exporte toutes les affaires
+         filtrées, pas seulement la page. -->
+    <daf-button data-guide="affaires-export"
+      [options]="{ variant: 'ghost', label: ('AFFAIRES.LIST.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !totalElements(), loading: exporting() }"
+      (onClick)="exportExcel()" />
+  </daf-search-toolbar>
 
   <!-- Bandeau de contexte quand la liste est restreinte à un client (arrivée depuis sa
        fiche) : sans lui, l'utilisateur verrait une liste amputée sans savoir pourquoi. -->

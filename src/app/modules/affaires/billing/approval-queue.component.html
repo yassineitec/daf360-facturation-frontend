@@ -1,34 +1,73 @@
-<daf-page [loading]="firstLoad()" [kpis]="3" [loadingLabel]="'AFFAIRES.billing.approval.title' | translate">
+<!-- Deux pages du menu « Facturation » : « Validation » (file DF) et « Activités »
+     (activitiesMode : l'ancien onglet Historique, seul). -->
+<daf-page [loading]="firstLoad()" [kpis]="activitiesMode ? 4 : 5"
+  [loadingLabel]="(activitiesMode ? 'AFFAIRES.billing.activities.title' : 'AFFAIRES.billing.approval.title') | translate">
 
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
   <daf-page-header
-    [title]="'AFFAIRES.billing.approval.title' | translate"
-    [subtitle]="'AFFAIRES.billing.approval.subtitle' | translate">
-    <!-- Exporte l'onglet affiché : DF → une feuille par tableau (avec la recherche et les
-         filtres de chacun), Historique → les entrées filtrées. -->
-    <daf-button pageActions data-guide="approval-export"
+    [title]="(activitiesMode ? 'AFFAIRES.billing.activities.title' : 'AFFAIRES.billing.approval.title') | translate"
+    [subtitle]="(activitiesMode ? 'AFFAIRES.billing.activities.subtitle' : 'AFFAIRES.billing.approval.subtitle') | translate" />
+
+  <!-- Bouton d'export, projeté dans la barre de recherche affichée (à gauche de « Filtres »),
+       comme sur les autres pages. Exporte l'onglet affiché : DF → une feuille par tableau
+       (avec la recherche et les filtres de chacun), Historique → les entrées filtrées. -->
+  <ng-template #exportBtn>
+    <daf-button data-guide="approval-export"
       [options]="{ variant: 'ghost', iconStart: 'download',
                    label: ((activeTab() === 'history' ? 'AFFAIRES.billing.approval.export_history' : 'AFFAIRES.billing.approval.export_df') | translate),
                    disabled: exportDisabled(), loading: exporting() }"
       (onClick)="exportExcel()" />
-  </daf-page-header>
+  </ng-template>
 
   <!-- ── KPI Stats ─────────────────────────────────────────────────────────── -->
-  <section data-guide="approval-kpis" class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-6">
-    <daf-metric-card
-      [label]="'AFFAIRES.billing.approval.kpi_rf' | translate"
-      [value]="pendingJalons().length"
-      [options]="kpiRfOptions" />
+  @if (activitiesMode) {
+    <!-- KPI de la page « Activités » : sur les entrées affichées (recherche + filtres). -->
+    <section data-guide="activities-kpis" class="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4">
+      <daf-metric-card
+        [label]="'AFFAIRES.billing.activities.kpi_total' | translate"
+        [value]="activityStats().total"
+        [delta]="{ value: ('AFFAIRES.billing.activities.kpi_total_sub' | translate: { count: activityStats().today }), direction: 'neutral' }"
+        [options]="kpiHistoryOptions" />
+      <daf-metric-card
+        [label]="'AFFAIRES.billing.activities.kpi_submit' | translate"
+        [value]="activityStats().submits"
+        [options]="kpiActSubmitOptions" />
+      <daf-metric-card
+        [label]="'AFFAIRES.billing.activities.kpi_validate' | translate"
+        [value]="activityStats().validations"
+        [options]="kpiActValidateOptions" />
+      <daf-metric-card
+        [label]="'AFFAIRES.billing.activities.kpi_return' | translate"
+        [value]="activityStats().returns"
+        [options]="kpiActReturnOptions" />
+    </section>
+  }
+
+  @if (!activitiesMode) {
+  <!-- Total de la file, puis une carte par mode (mêmes compteurs que les onglets). -->
+  <section data-guide="approval-kpis" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-4">
     <daf-metric-card
       [label]="'AFFAIRES.billing.approval.kpi_df' | translate"
       [value]="dfCount()"
       [options]="kpiDfOptions" />
     <daf-metric-card
-      [label]="'AFFAIRES.billing.approval.kpi_history' | translate"
-      [value]="auditLog().length"
-      [delta]="{ value: ('AFFAIRES.billing.approval.kpi_history_sub' | translate), direction: 'neutral' }"
-      [options]="kpiHistoryOptions" />
+      [label]="'AFFAIRES.billing.approval.tab_forfaitaire' | translate"
+      [value]="forfaitaireCount()"
+      [options]="kpiForfaitOptions" />
+    <daf-metric-card
+      [label]="'AFFAIRES.billing.approval.tab_regie' | translate"
+      [value]="regieCount()"
+      [options]="kpiRegieOptions" />
+    <daf-metric-card
+      [label]="'AFFAIRES.billing.approval.tab_livrable_batches' | translate"
+      [value]="livrableCount()"
+      [options]="kpiLivrableOptions" />
+    <daf-metric-card
+      [label]="'AFFAIRES.billing.approval.tab_ts' | translate"
+      [value]="tsCount()"
+      [options]="kpiTsOptions" />
   </section>
+  }
 
   <!-- ── Client picker (combined-invoice DF approval, 2+ affaires selected) ───────
        Always shown once 2+ affaires are selected, even when they already share one
@@ -70,19 +109,9 @@
     </section>
   }
 
-  <!-- ── Tabs ──────────────────────────────────────────────────────────────── -->
-  <daf-tabs #tabsRef data-guide="approval-tabs"
-    [tabs]="tabItems()"
-    [active]="activeTab()"
-    (activeChange)="onTabChange($event)"
-    variant="underline"
-    idPrefix="billing-approval"
-    [tabsLabel]="'AFFAIRES.billing.approval.title' | translate" />
-
-  <div role="tabpanel" data-guide="approval-panel"
-       [id]="tabsRef.panelId(activeTab())"
-       [attr.aria-labelledby]="tabsRef.tabId(activeTab())"
-       class="flex flex-col gap-6">
+  <!-- Plus de barre d'onglets principale : la Validation n'a que la file DF (l'historique est
+       la page « Activités »). Les onglets de mode ci-dessous prennent son style souligné. -->
+  <div data-guide="approval-panel" class="flex flex-col gap-6">
 
     <!-- ── DF Tab ─────────────────────────────────────────────────────── -->
     @if (activeTab() === 'df') {
@@ -107,15 +136,15 @@
              daf-filter ne seed son état interne depuis initialValues qu'une seule fois par
              instance, donc les clés du tableau précédent resteraient collées après un
              changement d'onglet ou de section. -->
-        <div data-guide="approval-subtabs" class="flex flex-wrap items-center gap-3 rounded-xl bg-white p-3">
-          <daf-tabs #dfSubTabsRef
-            style="--daf-tabs-fade: #fff"
-            [tabs]="dfSubTabItems()"
-            [active]="activeDfSubTab()"
-            (activeChange)="onDfSubTabChange($event)"
-            variant="pill"
-            idPrefix="billing-approval-df"
-            [tabsLabel]="'AFFAIRES.billing.approval.tab_df' | translate" />
+        <daf-tabs #dfSubTabsRef data-guide="approval-subtabs"
+          [tabs]="dfSubTabItems()"
+          [active]="activeDfSubTab()"
+          (activeChange)="onDfSubTabChange($event)"
+          variant="underline"
+          idPrefix="billing-approval-df"
+          [tabsLabel]="'AFFAIRES.billing.approval.tab_df' | translate" />
+
+        <div class="flex flex-wrap items-center gap-3 rounded-xl bg-white p-3">
 
           <!-- Barre recherche/filtre du tableau PRINCIPAL de l'onglet actif, sur la même
                ligne que les pill-tabs — les tableaux secondaires (lignes forfaitaire,
@@ -128,7 +157,9 @@
               [value]="lineForfaitSearch()" (valueChange)="onLineForfaitSearch($event)"
               [filterFields]="lineFilterFieldsForfait()" [filterConfig]="lineFilterConfigForfait()"
               (filterApply)="onLineForfaitFilterApply($event)"
-              [table]="dfMainTable() ?? null" />
+              [table]="dfMainTable() ?? null">
+              <ng-container [ngTemplateOutlet]="exportBtn" />
+            </daf-search-toolbar>
           }
           @if (activeDfSubTab() === 'regie') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
@@ -136,7 +167,9 @@
               [value]="lineRegieSearch()" (valueChange)="onLineRegieSearch($event)"
               [filterFields]="lineFilterFieldsRegie()" [filterConfig]="lineFilterConfigRegie()"
               (filterApply)="onLineRegieFilterApply($event)"
-              [table]="dfMainTable() ?? null" />
+              [table]="dfMainTable() ?? null">
+              <ng-container [ngTemplateOutlet]="exportBtn" />
+            </daf-search-toolbar>
           }
           @if (activeDfSubTab() === 'livrable') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
@@ -144,7 +177,9 @@
               [value]="livrableBatchSearch()" (valueChange)="onLivrableBatchSearch($event)"
               [filterFields]="livrableBatchFilterFields()" [filterConfig]="livrableBatchFilterConfig()"
               (filterApply)="onLivrableBatchFilterApply($event)"
-              [table]="dfMainTable() ?? null" />
+              [table]="dfMainTable() ?? null">
+              <ng-container [ngTemplateOutlet]="exportBtn" />
+            </daf-search-toolbar>
           }
           @if (activeDfSubTab() === 'ts') {
             <daf-search-toolbar class="min-w-0 flex-1" [card]="false"
@@ -152,7 +187,9 @@
               [value]="tsSearch()" (valueChange)="onTsSearch($event)"
               [filterFields]="lineFilterFieldsTs()" [filterConfig]="lineFilterConfigTs()"
               (filterApply)="onTsFilterApply($event)"
-              [table]="dfMainTable() ?? null" />
+              [table]="dfMainTable() ?? null">
+              <ng-container [ngTemplateOutlet]="exportBtn" />
+            </daf-search-toolbar>
           }
         </div>
 
@@ -757,7 +794,9 @@
             [value]="historySearch()" (valueChange)="onHistorySearch($event)"
             [filterFields]="historyFilterFields()" [filterConfig]="historyFilterConfig()"
             (filterApply)="onHistoryFilterApply($event)"
-            [table]="historyTable() ?? null" />
+            [table]="historyTable() ?? null">
+            <ng-container [ngTemplateOutlet]="exportBtn" />
+          </daf-search-toolbar>
         </div>
 
         @if (filteredHistoryRows().length === 0) {

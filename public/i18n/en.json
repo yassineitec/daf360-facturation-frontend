@@ -61,8 +61,8 @@
         "HOME": "Home",
         "AFFAIRES": "Projects",
         "CLIENTS": "Clients",
-        "INVOICING": "Invoices",
-        "INVOICING_LIST": "All invoices",
+        "INVOICING": "Invoicing",
+        "INVOICING_LIST": "Browse",
         "RECOVERY": "Collections",
         "TREASURY": "Treasury",
         "SUBCONTRACTING": "Subcontracting",
@@ -70,7 +70,8 @@
         "COST_OVERVIEW": "Expense management",
         "COST_LINES": "Expense management",
         "COST_APPROVAL": "Expense validation",
-        "BILLING_APPROVAL": "Billing Approval",
+        "BILLING_APPROVAL": "Approval",
+        "BILLING_ACTIVITIES": "Activities",
         "EMPLOYEE_COST": "Employee costs",
         "SUPPLIERS": "Suppliers",
         "REPORTING": "P&L",
@@ -1643,7 +1644,7 @@
       "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
     },
     "INVOICES": {
-      "PAGE": "Invoices",
+      "PAGE": "Browse",
       "INTRO_TITLE": "Invoices",
       "INTRO_TEXT": "Every client invoice, from draft to payment. This guide tours the page and an invoice’s journey.",
       "NEW_TITLE": "New invoice",
@@ -1771,12 +1772,19 @@
       "END_TITLE": "Need help?",
       "END_TEXT": "Restart this guide at any time from « Help & guides » at the bottom of the menu, or ask the assistant."
     },
+    "BILLING_ACTIVITIES": {
+      "PAGE": "Activities",
+      "INTRO_TITLE": "Billing activities",
+      "INTRO_TEXT": "Every action recorded on billing requests: creation, submission, approval, return. Search, filter and export the log.",
+      "KPIS_TITLE": "Indicators",
+      "KPIS_TEXT": "Computed on the displayed entries: they follow the search and filters. « Approvals » covers DF, RF and manager approvals plus client approvals; « Returns / rejections » covers returns and rejections."
+    },
     "APPROVAL_QUEUE": {
-      "PAGE": "Approval queue",
+      "PAGE": "Approval",
       "INTRO_TITLE": "The approval queue",
       "INTRO_TEXT": "This is where billing requests from projects (WIP, progress, deliverables, TS) and credit notes are approved. Approving a request creates the draft invoice. This guide opens the tabs by itself and gives yours back at the end.",
       "KPIS_TITLE": "The indicators",
-      "KPIS_TEXT": "« Pending validation » counts every request to handle (lines, deliverable batches, credit notes). « Action history » counts the decisions loaded in the History tab (the latest 200). « Pending RF » does not concern these requests.",
+      "KPIS_TEXT": "« Pending validation » counts every request to handle (lines, deliverable batches, credit notes). The next four cards break it down by mode: Fixed price, Time & materials, Deliverable and TS, with the same figures as the tabs.",
       "TABS_TITLE": "The tabs",
       "TABS_TEXT": "« Pending validation »: what awaits a decision. « History »: the log of decisions taken.",
       "SUBTABS_TITLE": "By billing mode",
@@ -2344,7 +2352,7 @@
   },
   "INVOICING": {
     "LIST": {
-      "TITLE": "Invoicing",
+      "TITLE": "Browse",
       "SUBTITLE": "Manage your customer invoice issuance and tracking.",
       "NEW_BTN": "New invoice",
       "EXPORT_EXCEL": "Export to Excel",
@@ -2377,6 +2385,27 @@
       },
       "VIEW_GRID": "Grid view",
       "VIEW_LIST": "List view",
+      "VIEW_AFFAIRE": "By project view",
+      "BY_AFFAIRE": {
+        "COUNT": "{{count}} invoice(s)",
+        "OVERDUE": "{{count}} overdue",
+        "UP_TO_DATE": "Up to date",
+        "NO_AFFAIRE": "No project",
+        "M_INVOICES": "Invoices",
+        "M_BILLED": "Billed (incl. tax)",
+        "M_OPEN": "Left to collect",
+        "M_OVERDUE": "Overdue",
+        "VIEW": "View invoices",
+        "BANNER": "Invoices of project {{affaire}}",
+        "OPEN_AFFAIRE": "Open project",
+        "F_RESPONSABLE": "Manager",
+        "F_MODE": "Billing mode",
+        "F_BUDGET": "Budget",
+        "F_CURRENCY": "Currency",
+        "F_START": "Start date",
+        "F_END": "End date",
+        "CLEAR": "All invoices"
+      },
       "CARD": {
         "HT": "Net amount",
         "DUE_DATE": "Due date",
@@ -3487,7 +3516,7 @@
       "KPI": {
         "CA": "Total collected",
         "CA_SUB": "Actual revenue",
-        "CA_HELP": "Sum excl. VAT of this project's invoices whose status is 'Collected'. These invoices are also included in 'Total invoiced'. A part-payment on an invoice that is still partly paid does not count here.",
+        "CA_HELP": "Sum excl. VAT of this project's invoices whose status is 'Collected', excluding reimbursable expense lines. These invoices are also included in 'Total invoiced'. A part-payment on an invoice that is still partly paid does not count here.",
         "RAF": "Remaining to invoice",
         "RAF_USAGE": "Budget usage",
         "RAF_HELP": "What is left to invoice: budget + integrated VOs − issued invoices. The percentage is the share still available. Negative = overrun.",
@@ -3502,7 +3531,7 @@
         "BACKLOG": "Backlog",
         "BACKLOG_HELP": "(Forecast budget + VO budget) − (Total invoiced + Remaining WIP). The pill is the share of the budget. Negative = budget overrun.",
         "INVOICED": "Total invoiced",
-        "INVOICED_HELP": "Sum excl. VAT of all this project's invoices except those with status 'Cancelled' (collected invoices included). This is the reference 'invoiced' figure: Backlog is computed from it. The pill is the billing rate: issued invoices excl. VAT / (forecast budget + VO budget); above 100% = budget overrun.",
+        "INVOICED_HELP": "Sum excl. VAT of all this project's invoices except those with status 'Cancelled' (collected invoices included), excluding reimbursable expense lines (re-billed on top of the contract). This is the reference 'invoiced' figure: Backlog is computed from it. The pill is the billing rate: issued invoices excl. VAT / (forecast budget + VO budget); above 100% = budget overrun.",
         "REVENUE": "Revenue",
         "REVENUE_HELP": "WIP neither invoiced nor validated (lines still pending in the WIP and VO WIP tabs) + Total invoiced."
       },
@@ -3542,7 +3571,7 @@
       },
       "INVOICES": {
         "NUMBER": "Invoice No.",
-        "TYPE": "Type",
+        "TYPE": "Invoice type",
         "EMITTED": "Issued",
         "DUE": "Due",
         "AMOUNT": "Amount",
@@ -4238,8 +4267,17 @@
         "err_motif_required": "The reason is required.",
         "err_action": "Error during the action."
       },
+      "activities": {
+        "title": "Activities",
+        "subtitle": "Log of actions and decisions on billing requests.",
+        "kpi_total": "Actions",
+        "kpi_total_sub": "{{count}} today",
+        "kpi_submit": "Submissions",
+        "kpi_validate": "Approvals",
+        "kpi_return": "Returns / rejections"
+      },
       "approval": {
-        "title": "Approval queue",
+        "title": "Approval",
         "subtitle": "Consolidated workflow for financial and HR validations.",
         "export_df": "Export DF queue",
         "export_history": "Export history",
@@ -4528,6 +4566,7 @@
         "COL_RECEIPT": "Receipt",
         "COL_STATUS": "Status",
         "COL_REASON": "Reason",
+        "COL_INVOICE": "Invoice",
         "NO_RECEIPT": "None",
         "EMPTY": "No expense submitted on this project.",
         "VALIDATE": "Approve expense",

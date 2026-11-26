@@ -8,10 +8,6 @@
          les trois étapes de l'assistant. -->
     <!-- Même bouton que les listes des affaires et des factures : tous les clients filtrés,
          pas la page. Lecture seule, donc sans garde de permission. -->
-    <daf-button pageActions data-guide="clients-export"
-      [options]="{ variant: 'ghost', label: ('CLIENTS.LIST.EXPORT_EXCEL' | translate), iconStart: 'download',
-                   disabled: !totalElements(), loading: exporting() }"
-      (onClick)="exportExcel()" />
     <daf-button pageActions data-guide="clients-new" *appHasPermission="'FACT_MANAGE_INVOICING'"
       [options]="{ variant: 'teal', label: 'CLIENTS.LIST.NEW_BTN' | translate, iconStart: 'add' }"
       (onClick)="goToNewClient()" />
@@ -56,7 +52,13 @@
     [views]="viewOptions()"
     [view]="viewMode()"
     (viewChange)="viewMode.set($any($event))"
-    [table]="tableSection()?.table() ?? null" />
+    [table]="tableSection()?.table() ?? null">
+    <!-- Export projeté par la toolbar, juste à gauche de « Filtres ». -->
+    <daf-button data-guide="clients-export"
+      [options]="{ variant: 'ghost', label: ('CLIENTS.LIST.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !totalElements(), loading: exporting() }"
+      (onClick)="exportExcel()" />
+  </daf-search-toolbar>
 
   <!-- `daf-field-message` : la ligne de message de la lib, la même sur toutes les pages. -->
   @if (error(); as err) {
