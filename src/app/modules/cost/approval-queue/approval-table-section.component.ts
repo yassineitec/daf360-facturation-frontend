@@ -105,7 +105,9 @@ export class ApprovalTableSectionComponent {
         sortAccessor: row => item(row).sortAmount },
       { key: 'priority',  label: t('COST.APPROVAL_QUEUE.PRIORITY'),     type: 'badge', sortable: true,
         sortAccessor: row => URGENCY_RANK[item(row).urgency] },
-      { key: '_actions',  label: '', width: '1%' },
+      // Largeur réelle, pas '1%' : en table-layout fixe (colonnes redimensionnables) 1 % ne
+      // fait que quelques pixels et les boutons débordaient sur la colonne voisine.
+      { key: '_actions',  label: '', align: 'right', width: '12rem' }, // jusqu'à 4 boutons
     ];
   });
 

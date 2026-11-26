@@ -716,6 +716,7 @@
                        presence alone is enough — no need to also check row['statut']. -->
                   @if (row['invoiceId']) {
                     <a [routerLink]="['/finance/invoicing', row['invoiceId']]"
+                      [queryParams]="invoiceOriginParams()"
                       class="text-body-sm font-semibold text-tertiary hover:underline">
                       {{ 'AFFAIRES.DETAIL.MODAL.OPEN_INVOICE' | translate }}
                     </a>

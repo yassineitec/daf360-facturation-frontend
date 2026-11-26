@@ -83,6 +83,9 @@ export interface ExpenseDto {
   justificatifName:  string | null;
   statut:            ExpenseStatut;
   billingLotId:      number | null;
+  /** Facture (brouillon ou au-delà) à laquelle ce frais est rattaché — null tant qu'il
+   * n'a pas été ajouté comme ligne « remboursable » d'une facture. */
+  invoiceId?:        number | null;
   motifRejet:        string | null;
   validatedBy:       number | null;
   validatedAt:       string | null;

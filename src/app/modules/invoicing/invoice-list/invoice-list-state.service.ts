@@ -17,7 +17,7 @@ export interface InvoiceListState {
   sort:       TableSort | null;
   page:       number;
   pageSize:   number;
-  viewMode:   'grid' | 'list';
+  viewMode:   'grid' | 'list' | 'affaire';
 }
 
 /**

@@ -1010,6 +1010,18 @@ export class AffaireDetailComponent implements OnInit {
     return this.typeLabels.label(code, this.affaire()?.paysId);
   }
 
+  /** Clé du type de facture d'une ligne : le code configurable (invoice_type_id) ; à défaut,
+   * un avoir garde son marqueur CREDIT_NOTE pour rester reconnaissable. */
+  private invoiceTypeKey(inv: AffaireInvoiceItem): string | null {
+    return inv.invoiceTypeCode || (inv.invoiceType === 'CREDIT_NOTE' ? inv.invoiceType : null);
+  }
+
+  /** Libellé affiché dans la colonne « Type de facture ». */
+  private invoiceTypeDisplay(inv: AffaireInvoiceItem): string {
+    const key = this.invoiceTypeKey(inv);
+    return key ? this.invoiceTypeText(key) : '—';
+  }
+
   /**
    * Le pays de l'affaire. La fiche ne reçoit qu'un `paysId` ; le référentiel est chargé
    * une fois et mémorisé pour la session par le service, donc l'afficher ici ne coûte
@@ -2956,7 +2968,7 @@ export class AffaireDetailComponent implements OnInit {
       name:    'type',
       label:   t('AFFAIRES.DETAIL.INVOICES.TYPE'),
       type:    'select',
-      options: [...new Set(this.invoices().map(i => i.invoiceType).filter((s): s is string => !!s))]
+      options: [...new Set(this.invoices().map(i => this.invoiceTypeKey(i)).filter((s): s is string => !!s))]
         .sort().map(value => ({ value, label: this.invoiceTypeText(value) })),
     }, {
       name:  'emittedRange',
@@ -3113,12 +3125,12 @@ export class AffaireDetailComponent implements OnInit {
     const overdueOnly = this.invoiceOverdueOnly(), today = toIsoDay(new Date());
     return this.invoices().filter(i =>
       (!statut || i.statut === statut) &&
-      (!type || i.invoiceType === type) &&
+      (!type || this.invoiceTypeKey(i) === type) &&
       inDayRange(i.dateEmission, range) &&
       // Même règle que les échéances de la vue d'ensemble : échéance passée, pas soldée.
       (!overdueOnly || (!!i.dateEcheance && i.dateEcheance.slice(0, 10) < today
         && !(i.statut && SETTLED_INVOICE_STATUTS.has(i.statut)))) &&
-      (!q || `${i.invoiceNumber ?? ''} ${i.invoiceType ?? ''} ${this.invoiceTypeText(i.invoiceType)}`.toLowerCase().includes(q)));
+      (!q || `${i.invoiceNumber ?? ''} ${this.invoiceTypeKey(i) ?? ''} ${this.invoiceTypeDisplay(i)}`.toLowerCase().includes(q)));
   });
 
   readonly filteredPayments = computed(() => {
@@ -3235,7 +3247,7 @@ export class AffaireDetailComponent implements OnInit {
   readonly invoiceRows = computed<TableRow[]>(() => this.filteredInvoices().map(inv => ({
     id:       inv.id,
     numero:   inv.invoiceNumber ?? '—',
-    type:     this.invoiceTypeText(inv.invoiceType),
+    type:     this.invoiceTypeDisplay(inv),
     emission: this.formatDate(inv.dateEmission),
     echeance: this.formatDate(inv.dateEcheance),
     montantHt:  this.currency.transform(inv.montantHt, inv.devise || this.affaireDevise()),
@@ -3957,7 +3969,7 @@ export class AffaireDetailComponent implements OnInit {
   openInvoiceView(inv: AffaireInvoiceItem): void {
     const devise = inv.devise || this.affaireDevise();
     const fields: DetailField[] = [
-      { label: 'AFFAIRES.DETAIL.INVOICES.TYPE',    value: this.invoiceTypeText(inv.invoiceType) },
+      { label: 'AFFAIRES.DETAIL.INVOICES.TYPE',    value: this.invoiceTypeDisplay(inv) },
       { label: 'AFFAIRES.DETAIL.INVOICES.STATUS',  value: this.enumText('INVOICE_STATUT', inv.statut) },
       { label: 'AFFAIRES.DETAIL.INFO.CLIENT',      value: inv.clientNom ?? this.affaire()?.clientName ?? '—' },
     ];
@@ -4181,8 +4193,22 @@ export class AffaireDetailComponent implements OnInit {
     });
   }
 
+  /** `fromAffaire*` / `fromTab` ne servent qu'au fil d'Ariane de la fiche facture
+   * (« Affaires › AFF-xxx › F-yyy »), qui ramène sur l'onglet quitté. */
   private goToInvoice(id: number): void {
-    this.router.navigate(['../../invoicing', id], { relativeTo: this.route });
+    this.router.navigate(['../../invoicing', id], {
+      relativeTo: this.route,
+      queryParams: this.invoiceOriginParams(),
+    });
+  }
+
+  /** Paramètres d'origine posés sur tout lien vers une fiche facture (bouton et `routerLink`). */
+  invoiceOriginParams(): Record<string, unknown> {
+    return {
+      fromAffaire:    this.numId,
+      fromAffaireRef: this.affaire()?.reference ?? undefined,
+      fromTab:        this.activeTab(),
+    };
   }
 
   goToPayments(): void {

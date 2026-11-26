@@ -1,104 +1,221 @@
-<daf-page [loading]="firstLoad()" [loadingLabel]="'INVOICING.LIST.LOADING' | translate">
+<daf-page [loading]="firstLoad()" [kpis]="lockedAffaireId ? 0 : 4"
+          [breadcrumbs]="!!lockedAffaireId" [headerSize]="lockedAffaireId ? 'md' : 'hero'" [loadingLabel]="'INVOICING.LIST.LOADING' | translate">
 
-  <daf-page-header
-    [title]="'INVOICING.LIST.TITLE' | translate"
-    [subtitle]="'INVOICING.LIST.SUBTITLE' | translate">
-    <daf-button pageActions data-guide="invoices-export"
-      [options]="{ variant: 'ghost', label: ('INVOICING.LIST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !totalElements(), loading: exporting() }"
-      (onClick)="exportExcel()" />
-    <daf-button pageActions data-guide="invoices-new"
-      [options]="{ variant: 'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart: 'add' }"
-      (onClick)="navigateToNew()" />
-  </daf-page-header>
+  <!-- Page d'une affaire (route invoicing/affaire/:affaireId, lockedAffaireId) : même squelette
+       que la fiche facture — carte d'identité à gauche, indicateurs et factures à droite.
+       FLEX en style inline (pas de grid ni de point de rupture), comme la fiche facture. -->
+  @if (lockedAffaireId) {
+    <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start">
+      <!-- ═══ GAUCHE (30 %, sticky) — identité de l'affaire et actions ═══ -->
+      <div style="flex:0 1 30%; min-width:320px">
+        <div style="position:sticky; top:1.5rem; display:flex; flex-direction:column; gap:1.5rem">
 
-  <!-- KPIs — one row, never wraps. Every amount sums the page on screen. -->
-  <section data-guide="invoices-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
-    <daf-metric-card
-      [label]="'INVOICING.LIST.KPI.TOTAL' | translate"
-      [value]="amountTotal() | displayCurrency : 'EUR'"
-      [delta]="deltaCurrentPage()"
-      [options]="kpiTotal" />
+          <daf-page-header
+            size="md"
+            [title]="lockedAffaire()?.intitule || lockedAffaire()?.reference || '…'"
+            [subtitle]="lockedSubtitle()"
+            [badges]="affaireBadges()"
+            [breadcrumbs]="affaireBreadcrumbs()" />
 
-    <daf-metric-card
-      [label]="'INVOICING.LIST.KPI.PENDING' | translate"
-      [value]="amountEnAttente() | displayCurrency : 'EUR'"
-      [delta]="deltaPending()"
-      [options]="kpiPending" />
+          <daf-section-card>
+            <div class="flex flex-col gap-5 p-6">
+              @for (f of affaireLeadFields(); track f.label) {
+                <div class="flex flex-col gap-1">
+                  <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    {{ f.label | translate }}
+                  </p>
+                  <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                </div>
+              }
+              <div style="display:flex; flex-wrap:wrap; gap:1.25rem">
+                @for (f of affaireGridFields(); track f.label) {
+                  <div class="flex flex-col gap-1" style="flex:1 1 40%">
+                    <p class="text-label-caps font-extrabold uppercase tracking-widest text-on-surface-variant">
+                      {{ f.label | translate }}
+                    </p>
+                    <p class="text-body-md font-bold text-on-surface">{{ f.value }}</p>
+                  </div>
+                }
+              </div>
+            </div>
 
-    <daf-metric-card
-      [label]="'INVOICING.LIST.KPI.OVERDUE' | translate"
-      [value]="amountEnRetard() | displayCurrency : 'EUR'"
-      [delta]="deltaOverdue()"
-      [options]="kpiOverdue" />
+            <div class="border-t border-outline-variant/30 bg-surface-container p-6"
+                 style="display:flex; flex-wrap:wrap; gap:0.5rem">
+              <div style="flex:1 1 100%">
+                <daf-button data-guide="invoices-new"
+                  [options]="{ variant: 'primary', fullWidth: true, iconStart: 'add',
+                               label: 'INVOICING.LIST.NEW_BTN' | translate }"
+                  (onClick)="navigateToNew()" />
+              </div>
+              <daf-button
+                style="flex:1 1 100%"
+                [options]="{ variant: 'ghost', size: 'sm', fullWidth: true, iconStart: 'business_center',
+                             label: 'INVOICING.DETAIL.ACTIONS.SEE_AFFAIRE' | translate }"
+                (onClick)="openAffaire()" />
+            </div>
+          </daf-section-card>
+        </div>
+      </div>
 
-    <daf-metric-card
-      [label]="'INVOICING.LIST.KPI.DISPUTED' | translate"
-      [value]="amountEnLitige() | displayCurrency : 'EUR'"
-      [delta]="deltaDisputed()"
-      [options]="kpiDisputed" />
-  </section>
-
-  <!-- Search + filters (statut and the date range live inside the filter panel) -->
-  <daf-search-toolbar data-guide="invoices-toolbar"
-    [placeholder]="'INVOICING.LIST.SEARCH' | translate"
-    [value]="searchText()"
-    [debounce]="300"
-    (valueChange)="onSearchTextChange($event)"
-    [filterFields]="filterFields()"
-    [filterConfig]="filterConfig()"
-    (filterApply)="applyFilters($event)"
-    [views]="viewOptions()"
-    [view]="viewMode()"
-    (viewChange)="viewMode.set($any($event))"
-    [table]="tableSection()?.table() ?? null" />
-
-  @if (error() || actionError()) {
-    <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-      <span class="material-symbols-outlined text-[18px]">error</span>
-      {{ error() ?? actionError() }}
+      <!-- ═══ DROITE (70 %) — indicateurs, recherche, tableau des factures ═══ -->
+      <div style="flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:1.5rem">
+        <!-- Mêmes 4 indicateurs, en tuiles souples comme la fiche facture. -->
+        <div data-guide="invoices-kpis" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:stretch">
+          @for (k of affaireKpiTiles(); track k.label) {
+            <daf-metric-card
+              style="flex:1 1 200px; min-height:118px; display:flex; flex-direction:column"
+              [label]="k.label | translate"
+              [value]="k.value | displayCurrency : 'EUR'"
+              [delta]="k.delta"
+              [options]="k.options" />
+          }
+        </div>
+        <ng-container [ngTemplateOutlet]="toolbarTpl" />
+        <ng-container [ngTemplateOutlet]="listTpl" />
+      </div>
     </div>
-  }
-
-  <!-- Content sits free in the page — no outer container card. Both views expose the
-       same five outputs, so neither can offer an action the other doesn't. -->
-  @if (viewMode() === 'grid') {
-    <app-invoices-cards-section data-guide="invoices-list"
-      [invoices]="invoices()"
-      [loading]="loading()"
-      [skeletonCount]="pageSize()"
-      [emptyMessage]="'INVOICING.LIST.TABLE.EMPTY' | translate"
-      (open)="navigateToDetail($event)"
-      (approve)="openApprovalModal($event)"
-      (emitInvoice)="quickEmit($event)"
-      (markSent)="quickMarkSent($event)"
-      (recordPayment)="openPaymentModal($event)" />
   } @else {
-    <app-invoices-table-section data-guide="invoices-list"
-      [invoices]="invoices()"
-      [loading]="loading()"
-      [pageSize]="pageSize()"
-      [emptyMessage]="'INVOICING.LIST.TABLE.EMPTY' | translate"
-      [sort]="sort()"
-      (sortChange)="onSortChange($event)"
-      (open)="navigateToDetail($event)"
-      (approve)="openApprovalModal($event)"
-      (emitInvoice)="quickEmit($event)"
-      (markSent)="quickMarkSent($event)"
-      (recordPayment)="openPaymentModal($event)" />
+    <daf-page-header
+      [title]="'INVOICING.LIST.TITLE' | translate"
+      [subtitle]="'INVOICING.LIST.SUBTITLE' | translate">
+      <daf-button pageActions data-guide="invoices-new"
+        [options]="{ variant: 'teal', label: 'INVOICING.LIST.NEW_BTN' | translate, iconStart: 'add' }"
+        (onClick)="navigateToNew()" />
+    </daf-page-header>
+
+    <!-- KPIs — one row, never wraps. Sur toutes les factures filtrées (GET /invoices/summary). -->
+    <section data-guide="invoices-kpis" class="grid grid-cols-4 gap-2 sm:gap-6">
+      <daf-metric-card
+        [label]="'INVOICING.LIST.KPI.TOTAL' | translate"
+        [value]="amountTotal() | displayCurrency : 'EUR'"
+        [delta]="deltaCurrentPage()"
+        [options]="kpiTotal" />
+
+      <daf-metric-card
+        [label]="'INVOICING.LIST.KPI.PENDING' | translate"
+        [value]="amountEnAttente() | displayCurrency : 'EUR'"
+        [delta]="deltaPending()"
+        [options]="kpiPending" />
+
+      <daf-metric-card
+        [label]="'INVOICING.LIST.KPI.OVERDUE' | translate"
+        [value]="amountEnRetard() | displayCurrency : 'EUR'"
+        [delta]="deltaOverdue()"
+        [options]="kpiOverdue" />
+
+      <daf-metric-card
+        [label]="'INVOICING.LIST.KPI.DISPUTED' | translate"
+        [value]="amountEnLitige() | displayCurrency : 'EUR'"
+        [delta]="deltaDisputed()"
+        [options]="kpiDisputed" />
+    </section>
+
+    <ng-container [ngTemplateOutlet]="toolbarTpl" />
+
+    <!-- Liste restreinte à une affaire (carte de la vue « Par affaire » ou filtre) : sans ce
+         bandeau, on verrait une liste amputée sans savoir pourquoi. -->
+    @if (lockedAffaireId ? null : filteredAffaireLabel(); as affLabel) {
+      <div class="flex flex-wrap items-center gap-3 rounded-xl bg-primary/10 px-4 py-3 text-body-md text-on-surface">
+        <span class="material-symbols-outlined text-headline-lg text-primary">folder_open</span>
+        <span class="min-w-0 flex-1">{{ 'INVOICING.LIST.BY_AFFAIRE.BANNER' | translate: { affaire: affLabel } }}</span>
+        <daf-button
+          [options]="{ variant: 'ghost', size: 'sm', iconStart: 'open_in_new',
+                       label: 'INVOICING.LIST.BY_AFFAIRE.OPEN_AFFAIRE' | translate }"
+          (onClick)="openAffaire()" />
+        <daf-button
+          [options]="{ variant: 'ghost', size: 'sm', iconStart: 'close',
+                       label: 'INVOICING.LIST.BY_AFFAIRE.CLEAR' | translate }"
+          (onClick)="clearAffaireFilter()" />
+      </div>
+    }
+
+    <ng-container [ngTemplateOutlet]="listTpl" />
   }
 
-  <daf-pagination
-    [currentPage]="currentPage()"
-    [totalPages]="totalPages()"
-    [totalElements]="totalElements()"
-    [pageSize]="pageSize()"
-    [pageSizeOptions]="[10, 20, 50, 100]"
-    [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
-    [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
-    [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
-    [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
-    (pageChange)="goToPage($event)"
-    (pageSizeChange)="onPageSize($event)" />
+  <!-- Barre de recherche et liste, partagées par la liste et la page d'affaire. -->
+  <ng-template #toolbarTpl>
+    <!-- Search + filters (statut and the date range live inside the filter panel) -->
+    <!-- Recréée quand toolbarKey change (filtre Affaire posé par une carte) : voir le .ts. -->
+    @for (k of [toolbarKey()]; track k) {
+      <daf-search-toolbar data-guide="invoices-toolbar"
+        [placeholder]="'INVOICING.LIST.SEARCH' | translate"
+        [value]="searchText()"
+        [debounce]="300"
+        (valueChange)="onSearchTextChange($event)"
+        [filterFields]="filterFields()"
+        [filterConfig]="filterConfig()"
+        (filterApply)="applyFilters($event)"
+        [views]="viewOptions()"
+        [view]="viewMode()"
+        (viewChange)="onViewChange($event)"
+        [table]="tableSection()?.table() ?? null">
+        <!-- Export projeté par la toolbar, juste à gauche de « Filtres ». -->
+        <daf-button data-guide="invoices-export"
+          [options]="{ variant: 'ghost', label: ('INVOICING.LIST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !totalElements(), loading: exporting() }"
+          (onClick)="exportExcel()" />
+      </daf-search-toolbar>
+    }
+  </ng-template>
+
+  <ng-template #listTpl>
+    @if (error() || actionError()) {
+      <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+        <span class="material-symbols-outlined text-[18px]">error</span>
+        {{ error() ?? actionError() }}
+      </div>
+    }
+
+    <!-- Content sits free in the page — no outer container card. Both views expose the
+         same five outputs, so neither can offer an action the other doesn't. -->
+    @if (viewMode() === 'grid') {
+      <app-invoices-cards-section data-guide="invoices-list"
+        [invoices]="invoices()"
+        [loading]="loading()"
+        [skeletonCount]="pageSize()"
+        [emptyMessage]="'INVOICING.LIST.TABLE.EMPTY' | translate"
+        (open)="navigateToDetail($event)"
+        (approve)="openApprovalModal($event)"
+        (emitInvoice)="quickEmit($event)"
+        (markSent)="quickMarkSent($event)"
+        (recordPayment)="openPaymentModal($event)" />
+    } @else if (viewMode() === 'affaire') {
+      <!-- Vue « Par affaire » : une carte par affaire (agrégée par le serveur) ; un clic ouvre
+           la liste filtrée sur elle. -->
+      <app-invoices-by-affaire-section data-guide="invoices-list"
+        [groups]="affaireGroups()"
+        [loading]="loading()"
+        [emptyMessage]="'INVOICING.LIST.TABLE.EMPTY' | translate"
+        (pick)="onAffairePick($event)" />
+    } @else {
+      <app-invoices-table-section data-guide="invoices-list"
+        [invoices]="invoices()"
+        [loading]="loading()"
+        [pageSize]="pageSize()"
+        [emptyMessage]="'INVOICING.LIST.TABLE.EMPTY' | translate"
+        [sort]="sort()"
+        (sortChange)="onSortChange($event)"
+        (open)="navigateToDetail($event)"
+        (approve)="openApprovalModal($event)"
+        (emitInvoice)="quickEmit($event)"
+        (markSent)="quickMarkSent($event)"
+        (recordPayment)="openPaymentModal($event)" />
+    }
+
+    @if (viewMode() !== 'affaire') {
+    <daf-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [totalElements]="totalElements()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50, 100]"
+      [perPageLabel]="'COMMON.PAGINATION.PER_PAGE' | translate"
+      [summaryLabel]="'COMMON.PAGINATION.SUMMARY' | translate"
+      [firstPageLabel]="'COMMON.PAGINATION.FIRST' | translate"
+      [lastPageLabel]="'COMMON.PAGINATION.LAST' | translate"
+      (pageChange)="goToPage($event)"
+      (pageSizeChange)="onPageSize($event)" />
+    }
+  </ng-template>
 
 </daf-page>
 

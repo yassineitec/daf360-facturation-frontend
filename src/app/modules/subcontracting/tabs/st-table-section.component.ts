@@ -76,7 +76,9 @@ export class StTableSectionComponent {
       { key: 'phone',   label: t('SUBCONTRACTING.ST.TABLE.PHONE'),   type: 'text',   sortable: true },
       { key: 'taxId',   label: t('SUBCONTRACTING.ST.TABLE.TAX_ID'),  type: 'text',   sortable: true },
       { key: 'status',  label: t('SUBCONTRACTING.ST.TABLE.STATUS'),  type: 'badge',  sortable: true },
-      { key: '_actions', label: '', align: 'right', width: '1%' },
+      // Largeur réelle, pas '1%' : en table-layout fixe (colonnes redimensionnables) 1 % ne
+      // fait que quelques pixels et les boutons débordaient sur la colonne voisine.
+      { key: '_actions', label: '', align: 'right', width: '7rem' }, // jusqu'à 2 boutons
     ];
   });
 

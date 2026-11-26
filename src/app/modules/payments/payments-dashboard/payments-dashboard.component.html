@@ -7,10 +7,6 @@
          an embedded view, where <ng-content select="[pageActions]"> can never match it
          and the button silently renders in the page body instead (§10f). -->
     <ng-container pageActions>
-      <daf-button
-        [options]="{ variant: 'ghost', label: ('PAYMENTS.DASHBOARD.EXPORT_EXCEL' | translate), iconStart: 'download',
-                     disabled: !totalElements(), loading: exporting() }"
-        (onClick)="exportExcel()" />
       <!-- Désactivé volontairement : le rapprochement bancaire reste hors périmètre du
            recouvrement pour l'instant. Le bouton est laissé visible — il annonce la
            fonction à venir — mais inerte, et `title` dit pourquoi au survol. -->
@@ -77,7 +73,13 @@
     [views]="viewOptions()"
     [view]="viewMode()"
     (viewChange)="viewMode.set($any($event))"
-    [table]="tableSection()?.table() ?? null" />
+    [table]="tableSection()?.table() ?? null">
+    <!-- Export projeté par la toolbar, juste à gauche de « Filtres ». -->
+    <daf-button
+      [options]="{ variant: 'ghost', label: ('PAYMENTS.DASHBOARD.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !totalElements(), loading: exporting() }"
+      (onClick)="exportExcel()" />
+  </daf-search-toolbar>
 
   @if (error()) {
     <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">

@@ -2,9 +2,12 @@ import {
   ChangeDetectionStrategy, Component, OnInit, TemplateRef, computed, inject, input, signal, viewChild,
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { Router } from '@angular/router';
 import {
-  DataTableComponent, FormFieldComponent, ModalService, SearchToolbarComponent,
+  DafCellDirective, DataTableComponent, FormFieldComponent, ModalService, SearchToolbarComponent,
 } from '@khalilrebhiitec/daf360';
+import { InvoiceService } from '../../../invoicing/invoice.service';
+import { FinancePaths } from '../../../../core/finance-paths';
 import type {
   BadgeCell, FilterField, FilterResult, SearchToolbarFilterConfig,
   TableColumn, TableConfig, TableRow, ToolbarAction,
@@ -42,7 +45,7 @@ function toIsoDay(d: Date): string {
   selector: 'app-expense-history',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, SearchToolbarComponent, DataTableComponent, FormFieldComponent],
+  imports: [TranslatePipe, SearchToolbarComponent, DataTableComponent, DafCellDirective, FormFieldComponent],
   providers: [DisplayCurrencyPipe],
   host: { class: 'block' },
   template: `
@@ -59,7 +62,17 @@ function toIsoDay(d: Date): string {
         (action)="onToolbarAction($event)"
         [table]="expenseTable" />
 
-      <daf-data-table #expenseTable [columns]="columns()" [rows]="rows()" [config]="config()" />
+      <daf-data-table #expenseTable [columns]="columns()" [rows]="rows()" [config]="config()">
+        <!-- Colonne « Facture » : même rendu que celle du WIP ; clic → fiche facture. -->
+        <ng-template dafCell="invoice" let-row>
+          @if ($any(row['_invoice']); as inv) {
+            <a class="text-[12px] font-semibold uppercase tracking-wider text-outline underline cursor-pointer whitespace-nowrap"
+              (click)="$event.stopPropagation(); openInvoice(inv.id)">{{ inv.label }}</a>
+          } @else {
+            —
+          }
+        </ng-template>
+      </daf-data-table>
     </div>
 
     <ng-template #refuseTpl>
@@ -81,6 +94,13 @@ export class ExpenseHistoryComponent implements OnInit {
   private readonly modals    = inject(ModalService);
   private readonly currencyContext = inject(CurrencyContextService);
   private readonly exportSvc = inject(ExportService);
+  private readonly invoiceSvc = inject(InvoiceService);
+  private readonly paths     = inject(FinancePaths);
+  private readonly router    = inject(Router);
+
+  /** N° des factures liées aux frais (id → numéro) ; un brouillon n'a pas encore de
+   *  numéro (null → « Brouillon #id »). Chargées une à une par id, comme dans le WIP. */
+  private readonly invoiceNumbers = signal<Map<number, string | null>>(new Map());
 
   private readonly refuseTpl = viewChild.required<TemplateRef<unknown>>('refuseTpl');
 
@@ -112,9 +132,30 @@ export class ExpenseHistoryComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.svc.getExpenses(this.affaire().id).subscribe({
-      next:  e => { this.expenses.set(e); this.loading.set(false); },
+      next:  e => { this.expenses.set(e); this.loading.set(false); this.loadInvoiceNumbers(e); },
       error: () => this.loading.set(false),
     });
+  }
+
+  private loadInvoiceNumbers(expenses: ExpenseDto[]): void {
+    const ids = [...new Set(expenses.map(e => e.invoiceId).filter((id): id is number => id != null))];
+    for (const id of ids) {
+      if (this.invoiceNumbers().has(id)) continue;
+      this.invoiceSvc.getInvoice(id).subscribe({
+        next:  inv => this.invoiceNumbers.update(m => new Map(m).set(id, inv.invoiceNumber)),
+        error: () => {},
+      });
+    }
+  }
+
+  /** Libellé du lien : n° de facture, ou « Brouillon #id » tant qu'elle n'est pas émise. */
+  private invoiceLabel(id: number): string {
+    return this.invoiceNumbers().get(id)
+      ?? `${this.translate.instant('AFFAIRES.WIP.INVOICE_DRAFT')} #${id}`;
+  }
+
+  openInvoice(id: number): void {
+    this.router.navigate(this.paths.invoice(id));
   }
 
   // ── Filtres ─────────────────────────────────────────────────────────────
@@ -209,6 +250,8 @@ export class ExpenseHistoryComponent implements OnInit {
       { key: 'receipt',   label: t('COL_RECEIPT'),  type: 'text', sortable: true },
       { key: 'statut',    label: t('COL_STATUS'),   type: 'badge', sortable: true },
       { key: 'motif',     label: t('COL_REASON'),   type: 'text', sortable: true },
+      { key: 'invoice',   label: t('COL_INVOICE'),  type: 'custom', sortable: true,
+        sortAccessor: row => (row['_invoice'] as { label: string } | null)?.label ?? null },
     ];
   });
 
@@ -253,6 +296,8 @@ export class ExpenseHistoryComponent implements OnInit {
         options: { variant: EXPENSE_STATUT_BADGE[e.statut] ?? 'neutral', dot: true, size: 'sm' },
       } satisfies BadgeCell,
       motif: e.motifRejet ?? '—',
+      // Colonne « Facture » (dafCell="invoice") : null = frais pas encore facturé.
+      _invoice: e.invoiceId != null ? { id: e.invoiceId, label: this.invoiceLabel(e.invoiceId) } : null,
       _raw:  e,
     }));
   });

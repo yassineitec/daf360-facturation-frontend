@@ -7,6 +7,7 @@ import {
   CreateDraftRequest, UpdateDraftRequest, ApproveDecisionRequest,
   RecordPaymentRequest, DisputeRequest, CreditNoteRequest,
   InvoiceFilter, PageResponse, PendingCarryForwardDto,
+  InvoiceListSummary, InvoiceAffaireGroup,
 } from './invoice.model';
 import { AffaireListItem, AffaireDetail } from '../affaires/affaire.model';
 import { EntityAuditLogDto } from '../affaires/billing/billing.service';
@@ -19,9 +20,26 @@ export class InvoiceService {
   // ── Invoice CRUD ──────────────────────────────────────────────────────────
 
   getInvoices(filter: InvoiceFilter = {}): Observable<PageResponse<InvoiceListItem>> {
-    let params = new HttpParams()
+    let params = this.filterParams(filter)
       .set('page', String(filter.page ?? 0))
       .set('size', String(filter.size ?? 20));
+    if (filter.sort)      params = params.set('sort',      filter.sort);
+    return this.http.get<PageResponse<InvoiceListItem>>(`${this.base}/invoices`, { params });
+  }
+
+  /** Tuiles KPI : mêmes filtres que la liste, sur toutes les factures filtrées. */
+  getInvoiceSummary(filter: InvoiceFilter = {}): Observable<InvoiceListSummary> {
+    return this.http.get<InvoiceListSummary>(`${this.base}/invoices/summary`, { params: this.filterParams(filter) });
+  }
+
+  /** Vue « Par affaire » : mêmes filtres que la liste, une entrée par affaire. */
+  getInvoicesByAffaire(filter: InvoiceFilter = {}): Observable<InvoiceAffaireGroup[]> {
+    return this.http.get<InvoiceAffaireGroup[]>(`${this.base}/invoices/by-affaire`, { params: this.filterParams(filter) });
+  }
+
+  /** Les filtres de l'écran en paramètres (sans pagination ni tri). */
+  private filterParams(filter: InvoiceFilter): HttpParams {
+    let params = new HttpParams();
     if (filter.paysId)    params = params.set('paysId',    String(filter.paysId));
     if (filter.statut)    params = params.set('statut',    filter.statut);
     if (filter.affaireId) params = params.set('affaireId', String(filter.affaireId));
@@ -34,8 +52,7 @@ export class InvoiceService {
     if (filter.maxTtc != null) params = params.set('maxTtc', String(filter.maxTtc));
     if (filter.overdueOnly)    params = params.set('overdueOnly', 'true');
     if (filter.search)    params = params.set('search',    filter.search);
-    if (filter.sort)      params = params.set('sort',      filter.sort);
-    return this.http.get<PageResponse<InvoiceListItem>>(`${this.base}/invoices`, { params });
+    return params;
   }
 
   getInvoice(id: number): Observable<InvoiceDetail> {

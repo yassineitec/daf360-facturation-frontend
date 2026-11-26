@@ -210,7 +210,9 @@ export class InvoiceNewComponent implements OnInit {
         this.initialAffaire.set({
           affaireId:   inv.affaireId,
           tsId:        inv.tsId,
-          invoiceType: inv.invoiceType ?? '',
+          // Le code configurable (INVOICE_TYPE), pas inv.invoiceType qui vaut toujours
+          // INVOICE/CREDIT_NOTE et ne correspondait à aucune option de la liste.
+          invoiceType: inv.invoiceTypeCode ?? '',
           clientId:    inv.clientId,
           paysId:      inv.paysId,
           currency:    inv.devise,

@@ -72,7 +72,6 @@ export class FactShellComponent {
     this.translate.currentLang();
     return {
       sectionLabel: this.translate.instant('FACTURATION.layout.SECTION'),
-      collapsible:  true,
     };
   });
 

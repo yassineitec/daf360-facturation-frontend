@@ -122,6 +122,13 @@ export const FINANCE_MODULES: FinanceModuleDef[] = [
         tone: 'tertiary',
         labelKey: 'FACTURATION.layout.NAV.BILLING_APPROVAL',
       },
+      {
+        id: 'billing-activities',
+        route: 'billing/activities',
+        icon: 'history',
+        tone: 'tertiary',
+        labelKey: 'FACTURATION.layout.NAV.BILLING_ACTIVITIES',
+      },
     ],
   },
   // « Recouvrement » EST cet écran. Il s'appelait « Paiements » et cohabitait avec une

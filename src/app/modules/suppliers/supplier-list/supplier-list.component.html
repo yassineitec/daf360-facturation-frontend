@@ -10,10 +10,6 @@
          montrait à des comptes qui prenaient un 403 après trois étapes d'assistant. -->
     <!-- Même bouton que les listes des affaires, clients et factures : tous les fournisseurs
          filtrés, pas la page. Lecture seule, donc sans garde de permission. -->
-    <daf-button pageActions data-guide="suppliers-export"
-      [options]="{ variant: 'ghost', label: ('SUPPLIERS.LIST.EXPORT_EXCEL' | translate), iconStart: 'download',
-                   disabled: !totalElements(), loading: exporting() }"
-      (onClick)="exportExcel()" />
     <daf-button pageActions data-guide="suppliers-new" *appHasPermission="'FACT_MANAGE_COST'"
       [options]="{ variant: 'teal', label: 'SUPPLIERS.LIST.NEW' | translate, iconStart: 'add' }"
       (onClick)="goToNewSupplier()" />
@@ -68,7 +64,13 @@
     [views]="viewOptions()"
     [view]="viewMode()"
     (viewChange)="viewMode.set($any($event))"
-    [table]="tableSection()?.table() ?? null" />
+    [table]="tableSection()?.table() ?? null">
+    <!-- Export projeté par la toolbar, juste à gauche de « Filtres ». -->
+    <daf-button data-guide="suppliers-export"
+      [options]="{ variant: 'ghost', label: ('SUPPLIERS.LIST.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !totalElements(), loading: exporting() }"
+      (onClick)="exportExcel()" />
+  </daf-search-toolbar>
 
   <!-- Quand on ne regarde plus les seuls actifs, le dire : les pastilles de statut de
        la table le montrent ligne par ligne, mais pas le fait que la LISTE a changé de

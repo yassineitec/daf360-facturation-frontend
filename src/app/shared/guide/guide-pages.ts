@@ -63,6 +63,9 @@ export const GUIDE_PAGES: GuidePageDef[] = [
   { guideKey: 'approval-detail', labelKey: 'GUIDE.APPROVAL_DETAIL.PAGE', icon: 'fact_check', route: 'billing/approval',
     pattern: /(^|\/)billing\/approval\/[a-z]+\/\d+\/?$/, permissions: ['FACT_VIEW_BILLING', 'FACT_MANAGE_BILLING'],
     helpTab: 'approval-queue' },
+  // Facturation › Activités : le journal des décisions, rangé sous l'aide de la Validation.
+  { guideKey: 'billing-activities', labelKey: 'GUIDE.BILLING_ACTIVITIES.PAGE', icon: 'history', route: 'billing/activities',
+    permissions: ['FACT_VIEW_BILLING', 'FACT_MANAGE_BILLING'], helpTab: 'approval-queue' },
   // Coûts : chaque écran du module, sous l'onglet « Coûts » de l'aide.
   { guideKey: 'cost-approval', labelKey: 'GUIDE.COST_APPROVAL.PAGE', icon: 'fact_check', route: 'cost/approval',
     permissions: ['FACT_APPROVE_COST_L1', 'APPROVE_HIRING_COST', 'FACT_APPROVE_SALARY_ADVANCE'], helpTab: 'costs', group: 'APPROVALS' },

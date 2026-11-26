@@ -3,13 +3,9 @@
      view toggle, one stateless section per view. Même rythme vertical que daf-page (32px). -->
 <div class="flex flex-col gap-8">
 
-  <!-- Bouton de l'onglet, affiché par la page dans son en-tête (à droite du titre).
+  <!-- Actions de l'onglet affichées par la page dans son en-tête (vide : l'export est dans la toolbar).
        Export : les missions affichées (recherche + filtres), dans l'ordre de l'écran. -->
   <ng-template #pageActions>
-    <daf-button data-guide="missions-export"
-      [options]="{ variant: 'ghost', label: ('FACTURATION.MISSIONS.EXPORT_EXCEL' | translate), iconStart: 'download',
-                   disabled: !visibleItems().length, loading: exporting() }"
-      (onClick)="exportExcel()" />
   </ng-template>
 
   <section data-guide="missions-kpis" class="grid grid-cols-3 gap-2 sm:gap-6">
@@ -43,7 +39,13 @@
     [views]="viewOptions()"
     [view]="viewMode()"
     (viewChange)="setView($event)"
-    [table]="tableSection()?.table() ?? null" />
+    [table]="tableSection()?.table() ?? null">
+    <!-- Export projeté par la toolbar, juste à gauche de « Filtres ». -->
+    <daf-button data-guide="missions-export"
+      [options]="{ variant: 'ghost', label: ('FACTURATION.MISSIONS.EXPORT_EXCEL' | translate), iconStart: 'download',
+                   disabled: !visibleItems().length, loading: exporting() }"
+      (onClick)="exportExcel()" />
+  </daf-search-toolbar>
 
   @if (error()) {
     <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">

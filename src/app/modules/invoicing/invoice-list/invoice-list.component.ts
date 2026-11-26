@@ -7,17 +7,23 @@ import {
   ButtonComponent, FilterField, FilterResult, FormFieldComponent, MetricCardComponent,
   MetricCardOptions, MetricDelta, ModalRef, ModalService, PageComponent, PageHeaderComponent,
   PaginationComponent, SearchToolbarComponent, SearchToolbarFilterConfig, ToolbarToggleOption,
+  SectionCardComponent, PageHeaderBadge, BreadcrumbItem,
 } from '@khalilrebhiitec/daf360';
 import { InvoiceService } from '../invoice.service';
-import { INVOICE_STATUT_CONFIG, InvoiceFilter, InvoiceListItem } from '../invoice.model';
-import { PENDING_STATUTS, isOverdue } from '../invoice-display';
+import { INVOICE_STATUT_CONFIG, InvoiceAffaireGroup, InvoiceFilter, InvoiceListItem, InvoiceListSummary } from '../invoice.model';
+import { PENDING_STATUTS, formatDate, isOverdue } from '../invoice-display';
+import { AffairePick, InvoicesByAffaireSectionComponent } from './invoices-by-affaire-section.component';
+import { FinancePaths } from '../../../core/finance-paths';
 import { InvoicesCardsSectionComponent } from './invoices-cards-section.component';
 import { InvoicesTableSectionComponent } from './invoices-table-section.component';
 import { PaymentModalComponent } from '../payment-modal.component';
 import { DisplayCurrencyPipe } from '../../../shared/display-currency.pipe';
 import { TableSort, sortParam } from '../../../shared/table-tools';
 import { AffaireService } from '../../affaires/affaire.service';
-import type { AffaireListItem, ClientDto } from '../../affaires/affaire.model';
+import type { AffaireDetail, AffaireListItem, ClientDto } from '../../affaires/affaire.model';
+import { STATUT_LABELS } from '../../affaires/affaire.model';
+import { STATUT_BADGE_VARIANT as AFFAIRE_STATUT_BADGE } from '../../affaires/affaire-display';
+import { NgTemplateOutlet } from '@angular/common';
 import { InvoiceListStateService } from './invoice-list-state.service';
 import { ExportService } from '../../../core/export.service';
 import { PageGuideComponent } from '../../../shared/guide/page-guide.component';
@@ -37,15 +43,16 @@ const GUIDE_STEPS: GuideStep[] = [
 ];
 
 type ApprovalDecision = 'APPROVE' | 'RETURN' | 'REJECT';
-type ViewMode = 'grid' | 'list';
+/** `affaire` : les affaires, chacune dépliable sur ses factures (invoices-by-affaire-section). */
+type ViewMode = 'grid' | 'list' | 'affaire';
 
 @Component({
   selector: 'app-invoice-list',
   imports: [
     TranslatePipe, PageComponent, PageHeaderComponent, ButtonComponent, MetricCardComponent,
     SearchToolbarComponent, PaginationComponent, DisplayCurrencyPipe, FormFieldComponent,
-    InvoicesCardsSectionComponent, InvoicesTableSectionComponent, PaymentModalComponent,
-    PageGuideComponent,
+    InvoicesCardsSectionComponent, InvoicesTableSectionComponent, InvoicesByAffaireSectionComponent, PaymentModalComponent,
+    PageGuideComponent, SectionCardComponent, NgTemplateOutlet,
   ],
   host: { class: 'block' },
   templateUrl: './invoice-list.component.html',
@@ -53,10 +60,27 @@ type ViewMode = 'grid' | 'list';
 export class InvoiceListComponent implements OnInit {
   /** Vue tableau uniquement (undefined en vue cartes) — son `daf-data-table` va au `[table]` de la toolbar. */
   readonly tableSection = viewChild(InvoicesTableSectionComponent);
+  /**
+   * Clé de la barre de recherche : l'incrémenter la recrée. Elle ne relit `initialValues`
+   * que tant que l'utilisateur n'a pas filtré lui-même ; recréée, elle repart des filtres de
+   * la page — c'est ainsi qu'un filtre posé par le code (carte d'affaire) s'y affiche.
+   */
+  readonly toolbarKey = signal(0);
+  protected readonly paths = inject(FinancePaths);
 
   private readonly svc       = inject(InvoiceService);
   private readonly router    = inject(Router);
   private readonly route     = inject(ActivatedRoute);
+
+  /**
+   * Route `invoicing/affaire/:affaireId` : la page d'UNE affaire (KPI + factures), ouverte
+   * depuis sa carte. Le filtre Affaire y est figé, l'état de la liste principale n'est ni
+   * relu ni écrasé, et la vue « Par affaire » n'est pas proposée.
+   */
+  readonly lockedAffaireId: number | null = Number(this.route.snapshot.paramMap.get('affaireId')) || null;
+  /** En-tête de la page d'affaire. */
+  readonly lockedAffaire = signal<AffaireDetail | null>(null);
+  private readonly currencyPipe = new DisplayCurrencyPipe();
   private readonly modal     = inject(ModalService);
 
   readonly guideSteps = GUIDE_STEPS;
@@ -110,6 +134,7 @@ export class InvoiceListComponent implements OnInit {
    * l'état restauré, sans l'écraser par des valeurs vides.
    */
   private readonly persistState = effect(() => {
+    if (this.lockedAffaireId) return; // la page d'affaire ne touche pas à l'état de la liste
     this.listState.save({
       searchText: this.searchText(),
       statut:     this.filterStatut(),
@@ -148,7 +173,7 @@ export class InvoiceListComponent implements OnInit {
     untracked(() => {
       if (paysId === this.loadedPaysId) return;
       this.loadedPaysId = paysId;
-      this.filterAffaire.set('');
+      if (!this.lockedAffaireId) this.filterAffaire.set('');
       this.currentPage.set(0);
       this.load();
       this.loadAffaireOptions();
@@ -172,9 +197,14 @@ export class InvoiceListComponent implements OnInit {
 
   readonly viewOptions = computed<ToolbarToggleOption[]>(() => {
     this.translate.currentLang();
+    // Page d'affaire : tableau uniquement, pas de sélecteur de vue.
+    if (this.lockedAffaireId) return [];
     return [
       { id: 'grid', icon: 'grid_view',  tooltip: this.translate.instant('INVOICING.LIST.VIEW_GRID') },
       { id: 'list', icon: 'table_rows', tooltip: this.translate.instant('INVOICING.LIST.VIEW_LIST') },
+      ...(this.lockedAffaireId ? [] : [
+        { id: 'affaire', icon: 'folder_open', tooltip: this.translate.instant('INVOICING.LIST.VIEW_AFFAIRE') },
+      ]),
     ];
   });
 
@@ -182,22 +212,21 @@ export class InvoiceListComponent implements OnInit {
   approvalDecision = signal<ApprovalDecision>('APPROVE');
   approvalCommentSig = signal('');
 
-  // ── KPI counts / amounts — all scoped to the page on screen ────────────────
-  readonly statsEnAttente = computed(() => this.invoices().filter(i => PENDING_STATUTS.includes(i.statut)).length);
-  readonly statsEnRetard  = computed(() => this.invoices().filter(i => isOverdue(i)).length);
-  readonly statsEnLitige  = computed(() => this.invoices().filter(i => i.statut === 'DISPUTED').length);
+  // ── KPI — sur TOUTES les factures filtrées (GET /invoices/summary), pas la seule page ──
+  // Total = TTC (volume facturé) ; en attente / en retard / en litige = net à payer (argent
+  // encore à recouvrer). Mêmes règles qu'avant, calculées par le serveur.
+  readonly summary = signal<InvoiceListSummary | null>(null);
+  readonly statsTotal     = computed(() => this.summary()?.count ?? 0);
+  readonly statsEnAttente = computed(() => this.summary()?.pendingCount ?? 0);
+  readonly statsEnRetard  = computed(() => this.summary()?.overdueCount ?? 0);
+  readonly statsEnLitige  = computed(() => this.summary()?.disputedCount ?? 0);
+  readonly amountTotal     = computed(() => this.summary()?.totalTtcEur ?? 0);
+  readonly amountEnAttente = computed(() => this.summary()?.pendingEur ?? 0);
+  readonly amountEnRetard  = computed(() => this.summary()?.overdueEur ?? 0);
+  readonly amountEnLitige  = computed(() => this.summary()?.disputedEur ?? 0);
 
-  // amountTotal reste sur montantTtc : c'est le volume facturé (valeur faciale), pas un
-  // montant dû -- les 3 agrégats suivants représentent de l'argent encore à recouvrer et
-  // doivent donc refléter montantNetAPayer (= montantTtc quand aucune déduction V93
-  // n'est utilisée).
-  readonly amountTotal     = computed(() => this.invoices().reduce((s, i) => s + (i.montantTtcEur ?? 0), 0));
-  readonly amountEnAttente = computed(() =>
-    this.invoices().filter(i => PENDING_STATUTS.includes(i.statut)).reduce((s, i) => s + (i.montantNetAPayerEur ?? 0), 0));
-  readonly amountEnRetard  = computed(() =>
-    this.invoices().filter(i => isOverdue(i)).reduce((s, i) => s + (i.montantNetAPayerEur ?? 0), 0));
-  readonly amountEnLitige  = computed(() =>
-    this.invoices().filter(i => i.statut === 'DISPUTED').reduce((s, i) => s + (i.montantNetAPayerEur ?? 0), 0));
+  /** Vue « Par affaire » : une entrée par affaire, calculée par le serveur. */
+  readonly affaireGroups = signal<InvoiceAffaireGroup[]>([]);
 
   /** Complete literal Tailwind classes on lib tokens (UI-PLAYBOOK §3/§4). */
   readonly kpiTotal    : MetricCardOptions = { icon: 'receipt_long', iconColor: 'text-primary', iconBg: 'bg-primary/10' };
@@ -208,14 +237,8 @@ export class InvoiceListComponent implements OnInit {
   };
   readonly kpiDisputed : MetricCardOptions = { icon: 'gavel', iconColor: 'text-warning', iconBg: 'bg-warning/10' };
 
-  /**
-   * The three right-hand tiles caption themselves with their own page count, which
-   * matches their page-scoped amount. The Total tile used to caption itself with
-   * `totalElements` — the full result-set count next to a page-only sum, which read
-   * as "this is the portfolio total". It says "page courante" instead; the pagination
-   * summary carries the real total.
-   */
-  readonly deltaCurrentPage = computed<MetricDelta>(() => this.delta('INVOICING.LIST.KPI.CURRENT_PAGE'));
+  /** Chaque tuile porte son nombre de factures — sur tout le jeu filtré, comme son montant. */
+  readonly deltaCurrentPage = computed<MetricDelta>(() => this.countDelta(this.statsTotal(), 'INVOICING.LIST.KPI.INVOICES_SUFFIX'));
   readonly deltaPending     = computed<MetricDelta>(() => this.countDelta(this.statsEnAttente(), 'INVOICING.LIST.KPI.PENDING_SUFFIX'));
   readonly deltaOverdue     = computed<MetricDelta>(() => this.countDelta(this.statsEnRetard(),  'INVOICING.LIST.KPI.OVERDUE_SUFFIX'));
   readonly deltaDisputed    = computed<MetricDelta>(() => this.countDelta(this.statsEnLitige(),  'INVOICING.LIST.KPI.DISPUTED_SUFFIX'));
@@ -241,7 +264,10 @@ export class InvoiceListComponent implements OnInit {
   });
 
   /** Statut and the date range live *inside* the filter panel — never loose next to the search (§1). */
-  readonly filterFields = computed<FilterField[]>(() => {
+  readonly filterFields = computed<FilterField[]>(() =>
+    this.allFilterFields().filter(f => !this.lockedAffaireId || f.name !== 'affaire'));
+
+  private readonly allFilterFields = computed<FilterField[]>(() => {
     this.translate.currentLang();
     const t = (key: string) => this.translate.instant(key);
     return [
@@ -324,7 +350,17 @@ export class InvoiceListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.restoreState();
+    if (this.lockedAffaireId) {
+      this.filterAffaire.set(String(this.lockedAffaireId));
+      // Page d'affaire : vue tableau par défaut (la grille reste au choix).
+      this.viewMode.set('list');
+      this.affaireSvc.getAffaire(this.lockedAffaireId).subscribe({
+        next:  a => this.lockedAffaire.set(a),
+        error: () => this.lockedAffaire.set(null),
+      });
+    } else {
+      this.restoreState();
+    }
     this.loadedPaysId = this.paysId();
     this.load();
     this.affaireSvc.getClients().subscribe(list => this.clients.set(list));
@@ -362,12 +398,132 @@ export class InvoiceListComponent implements OnInit {
     this.viewMode.set(s.viewMode);
   }
 
+/** Libellé de l'affaire filtrée, pour le bandeau (options du filtre, sinon la carte cliquée). */
+  private readonly pickedLabel = signal<string | null>(null);
+  readonly filteredAffaireLabel = computed(() => {
+    const id = this.filterAffaire();
+    if (!id) return null;
+    return this.affaireOptions().find(o => o.value === id)?.label ?? this.pickedLabel() ?? `#${id}`;
+  });
+
+  /** Clic sur une carte d'affaire : la page de l'affaire (ses KPI et ses factures). */
+  onAffairePick(pick: AffairePick): void {
+    this.pickedLabel.set(pick.label);
+    this.router.navigate([...this.paths.invoices(), 'affaire', pick.id]);
+  }
+
+  /** Bandeau « ✕ » (filtre Affaire posé depuis le panneau) : retour à toutes les factures. */
+  clearAffaireFilter(): void {
+    this.setAffaireFilter(null);
+  }
+
+  // ── Page d'affaire : en-tête, carte d'identité, indicateurs ──────────────────
+  readonly affaireBadges = computed<PageHeaderBadge[]>(() => {
+    const a = this.lockedAffaire();
+    if (!a) return [];
+    this.translate.currentLang();
+    return [{ label: this.translate.instant(STATUT_LABELS[a.statut] ?? a.statut),
+              variant: AFFAIRE_STATUT_BADGE[a.statut] ?? 'neutral', dot: true }];
+  });
+
+  readonly affaireBreadcrumbs = computed<BreadcrumbItem[]>(() => {
+    this.translate.currentLang();
+    return [
+      { label: this.translate.instant('FACTURATION.layout.NAV.INVOICING_LIST'), link: this.paths.invoices() as string[] },
+      { label: this.lockedAffaire()?.reference ?? '…' },
+    ];
+  });
+
+  readonly affaireLeadFields = computed<{ label: string; value: string }[]>(() => {
+    const a = this.lockedAffaire();
+    if (!a) return [];
+    return [
+      { label: 'INVOICING.DETAIL.INFO.CLIENT',  value: a.clientName ?? '—' },
+      { label: 'INVOICING.DETAIL.INFO.AFFAIRE', value: [a.reference, a.intitule].filter(Boolean).join(' — ') },
+    ];
+  });
+
+  readonly affaireGridFields = computed<{ label: string; value: string }[]>(() => {
+    const a = this.lockedAffaire();
+    if (!a) return [];
+    const date = (d: string | null) => d ? formatDate(d) : '—';
+    return [
+      { label: 'INVOICING.LIST.BY_AFFAIRE.F_RESPONSABLE', value: a.responsableFullName ?? '—' },
+      { label: 'INVOICING.LIST.BY_AFFAIRE.F_MODE',        value: a.billingMode ?? '—' },
+      { label: 'INVOICING.LIST.BY_AFFAIRE.F_BUDGET',      value: this.currencyPipe.transform(a.budgetPrevisionnel, a.devise) },
+      { label: 'INVOICING.LIST.BY_AFFAIRE.F_CURRENCY',    value: a.devise ?? '—' },
+      { label: 'INVOICING.LIST.BY_AFFAIRE.F_START',       value: date(a.dateDebut) },
+      { label: 'INVOICING.LIST.BY_AFFAIRE.F_END',         value: date(a.dateFin) },
+    ];
+  });
+
+  /** Les 4 indicateurs de la liste, en tuiles (page d'affaire). */
+  readonly affaireKpiTiles = computed(() => [
+    { label: 'INVOICING.LIST.KPI.TOTAL',    value: this.amountTotal(),     delta: this.deltaCurrentPage(), options: this.kpiTotal },
+    { label: 'INVOICING.LIST.KPI.PENDING',  value: this.amountEnAttente(), delta: this.deltaPending(),     options: this.kpiPending },
+    { label: 'INVOICING.LIST.KPI.OVERDUE',  value: this.amountEnRetard(),  delta: this.deltaOverdue(),     options: this.kpiOverdue },
+    { label: 'INVOICING.LIST.KPI.DISPUTED', value: this.amountEnLitige(),  delta: this.deltaDisputed(),    options: this.kpiDisputed },
+  ]);
+
+  /** Sous-titre de la page d'affaire : référence · client (le titre est l'intitulé). */
+  readonly lockedSubtitle = computed(() => {
+    const a = this.lockedAffaire();
+    return a ? [a.reference, a.clientName].filter(Boolean).join(' · ') : '';
+  });
+
+  private setAffaireFilter(affaire: string | null): void {
+    this.filterAffaire.set(affaire ?? '');
+    this.currentPage.set(0);
+    this.toolbarKey.update(k => k + 1);
+    this.load();
+  }
+
+  openAffaire(): void {
+    if (this.filterAffaire()) this.router.navigate(this.paths.affaire(this.filterAffaire()));
+  }
+
+  /** Entrée ou sortie de la vue « Par affaire » : la source des données change, on recharge. */
+  onViewChange(view: string): void {
+    const wasByAffaire = this.viewMode() === 'affaire';
+    this.viewMode.set(view as ViewMode);
+    if (wasByAffaire !== (view === 'affaire')) this.load();
+  }
+
+  /** Bumped à chaque chargement : une réponse lente d'un ancien filtre est ignorée. */
+  private loadSeq = 0;
+
   load(): void {
     this.loading.set(true);
     this.error.set(null);
-    const filter: InvoiceFilter = { page: this.currentPage(), size: this.pageSize(), ...this.currentFilter() };
-    this.svc.getInvoices(filter).subscribe({
+    const seq = ++this.loadSeq;
+    const filter = this.currentFilter();
+    // Tuiles KPI : toujours sur tout le jeu filtré, quelle que soit la vue.
+    this.svc.getInvoiceSummary(filter).subscribe({
+      next:  s => { if (seq === this.loadSeq) this.summary.set(s); },
+      error: () => { if (seq === this.loadSeq) this.summary.set(null); },
+    });
+    // Vue « Par affaire » : les affaires, agrégées par le serveur — pas de liste de factures.
+    if (this.viewMode() === 'affaire') {
+      this.svc.getInvoicesByAffaire(filter).subscribe({
+        next: groups => {
+          if (seq !== this.loadSeq) return;
+          this.affaireGroups.set(groups);
+          this.loading.set(false);
+          this.firstLoad.set(false);
+        },
+        error: () => {
+          if (seq !== this.loadSeq) return;
+          this.error.set(this.translate.instant('INVOICING.LIST.LOAD_ERROR'));
+          this.loading.set(false);
+          this.firstLoad.set(false);
+        },
+      });
+      return;
+    }
+    const pageFilter: InvoiceFilter = { page: this.currentPage(), size: this.pageSize(), ...filter };
+    this.svc.getInvoices(pageFilter).subscribe({
       next: res => {
+        if (seq !== this.loadSeq) return;
         // Page restaurée devenue hors limites (factures supprimées entre-temps) :
         // on retombe sur la première plutôt que d'afficher une liste vide.
         if (res.content.length === 0 && this.currentPage() > 0) {
@@ -382,6 +538,7 @@ export class InvoiceListComponent implements OnInit {
         this.firstLoad.set(false);
       },
       error: () => {
+        if (seq !== this.loadSeq) return;
         this.error.set(this.translate.instant('INVOICING.LIST.LOAD_ERROR'));
         this.loading.set(false);
         this.firstLoad.set(false);
@@ -439,7 +596,9 @@ export class InvoiceListComponent implements OnInit {
     const dates = result['dates'];
     this.filterDateRange.set(Array.isArray(dates) && dates.length ? (dates as Date[]) : null);
     this.filterClient.set((result['client'] as string | null) ?? '');
-    this.filterAffaire.set((result['affaire'] as string | null) ?? '');
+    this.filterAffaire.set(this.lockedAffaireId
+      ? String(this.lockedAffaireId)
+      : ((result['affaire'] as string | null) ?? ''));
     this.filterOverdue.set(result['overdue'] === true);
     const dueDates = result['dueDates'];
     this.filterDueRange.set(Array.isArray(dueDates) && dueDates.length ? (dueDates as Date[]) : null);
@@ -462,8 +621,9 @@ export class InvoiceListComponent implements OnInit {
     this.load();
   }
 
-  navigateToDetail(id: number): void { this.router.navigate([id],    { relativeTo: this.route }); }
-  navigateToNew():        void { this.router.navigate(['new'], { relativeTo: this.route }); }
+  // Chemins absolus : la page d'affaire (`invoicing/affaire/:id`) partage ce composant.
+  navigateToDetail(id: number): void { this.router.navigate(this.paths.invoice(id)); }
+  navigateToNew():        void { this.router.navigate([...this.paths.invoices(), 'new']); }
 
   // ── Row quick actions ──────────────────────────────────────────────────────
   quickEmit(item: InvoiceListItem): void {

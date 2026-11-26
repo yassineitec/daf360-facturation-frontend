@@ -96,6 +96,11 @@ export interface InvoiceDetail extends InvoiceListItem {
    * declaration couldn't be corrected because a later period already exists for it. The amend
    * itself still succeeded -- this is advisory only. */
   wipSyncWarning:          string | null;
+  /** Valeur de la liste configurable INVOICE_TYPE (invoices.invoice_type_id). */
+  invoiceTypeId?:          number | null;
+  /** Code de cette valeur (STANDARD, ACOMPTE…) -- ce que la liste « Type de facture » attend.
+   * `invoiceType` reste le marqueur facture/avoir (INVOICE / CREDIT_NOTE). */
+  invoiceTypeCode?:        string | null;
 }
 
 /**
@@ -256,6 +261,38 @@ export interface CreditNoteRequest {
   // to go once partial credit notes are implemented, but the backend ignores it today —
   // see the TODO on the modal's amount field.
   montantTtc?: number | null;
+}
+
+/** Tuiles KPI de la liste, sur toutes les factures filtrées (GET /invoices/summary). */
+export interface InvoiceListSummary {
+  count:         number;
+  pendingCount:  number;
+  overdueCount:  number;
+  disputedCount: number;
+  totalTtcEur:   number;
+  pendingEur:    number;
+  overdueEur:    number;
+  disputedEur:   number;
+  /** false : au moins une devise sans taux EUR — ses montants manquent aux totaux. */
+  eurComplete:   boolean;
+}
+
+export interface CurrencyAmount {
+  currency: string;
+  amount:   number;
+}
+
+/** Une affaire de la vue « Par affaire » (GET /invoices/by-affaire) ; affaireId null = sans affaire. */
+export interface InvoiceAffaireGroup {
+  affaireId:       number | null;
+  affaireRef:      string | null;
+  affaireIntitule: string | null;
+  clients:         string[];
+  invoiceCount:    number;
+  overdueCount:    number;
+  billed:          CurrencyAmount[];
+  /** Net à payer − règlements des factures ouvertes ou en litige. */
+  toCollect:       CurrencyAmount[];
 }
 
 export interface InvoiceFilter {

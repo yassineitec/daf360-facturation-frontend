@@ -178,7 +178,9 @@ export class CostLinesTableSectionComponent {
         sortAccessor: row => raw(row).grossAmountLocal },
       { key: 'status',        label: t('COST.LINES.COL_STATUS'),         type: 'badge',  sortable: sortable('status') },
       { key: 'approval',      label: t('COST.LINES.COL_APPROVAL'),       type: 'badge',  sortable: sortable('approval') },
-      { key: '_actions',      label: '', width: '1%' },
+      // Largeur réelle, pas '1%' : en table-layout fixe (colonnes redimensionnables) 1 % ne
+      // fait que quelques pixels et les boutons débordaient sur la colonne voisine.
+      { key: '_actions',      label: '', align: 'right', width: '9.5rem' }, // jusqu'à 3 boutons
     ];
   });
 

@@ -119,7 +119,10 @@ export class InvoicesTableSectionComponent {
       { key: 'date',      label: t('INVOICING.LIST.TABLE.DATE'),   type: 'custom', sortable: true },
       // Never `clickable: true` on a projected actions column — that styles the cell as
       // a link rather than an action (§6b rule 4).
-      { key: '_actions',  label: '', width: '1%' },
+      // Largeur réelle, pas '1%' : avec les colonnes redimensionnables le tableau est en
+      // table-layout fixe, où 1 % ne fait que quelques pixels — les boutons débordaient sur
+      // la colonne Date / Échéance. 9.5rem = jusqu'à 3 boutons (ex. envoyée + paiement + voir).
+      { key: '_actions',  label: '', align: 'right', width: '9.5rem' },
     ];
     // Toutes triables, par le serveur (`manualSort`) : la liste est paginée côté serveur,
     // la clé de colonne part en `?sort=` et `InvoiceService.LIST_SORT_COLUMNS` la traduit.

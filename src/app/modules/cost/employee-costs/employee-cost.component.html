@@ -2,9 +2,6 @@
 
   <daf-page-header
     [title]="'COST.EMPLOYEE_COST.TITLE' | translate">
-    <daf-button pageActions data-guide="ec-export"
-      [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !filteredRows().length, loading: exporting() }"
-      (onClick)="exportExcel()" />
     <daf-button pageActions data-guide="ec-add"
       [options]="{ variant: 'teal', label: ('COST.EMPLOYEE_COST.ADD' | translate), iconStart: 'add' }"
       (onClick)="openAdd()" />
@@ -98,7 +95,12 @@
       [views]="viewOptions()"
       [view]="viewMode()"
       (viewChange)="viewMode.set($any($event))"
-      [table]="tableSection()?.table() ?? null" />
+      [table]="tableSection()?.table() ?? null">
+      <!-- Export projeté par la toolbar, juste à gauche de « Filtres ». -->
+      <daf-button data-guide="ec-export"
+        [options]="{ variant: 'ghost', label: ('COST.EMPLOYEE_COST.EXPORT_EXCEL' | translate), iconStart: 'download', disabled: !filteredRows().length, loading: exporting() }"
+        (onClick)="exportExcel()" />
+    </daf-search-toolbar>
 
     @if (serverError() || actionError()) {
       <div class="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
